@@ -22,7 +22,8 @@ thiserror          = "2.0"
 toml               = "0.8"
 
 [dev-dependencies]
-insta = { version = "1.39", features = ["yaml"] }
+insta    = { version = "1.39", features = ["yaml"] }
+tempfile = "3"
 
 [profile.release]
 codegen-units = 1

@@ -125,7 +125,7 @@ Every rule is independently toggleable.
 
 ## 🗺️ Using *Prose* with another formatter
 
-*Prose* works well as a second pass after any other Python formatter that owns line length and quote normalization. If you already use one, configure it to skip trailing-comma enforcement and let *Prose* handle alignment, ordering, and the singleton rule on top. See `docs/interop.md` for specifics.
+*Prose* works well as a second pass after any other Python formatter that owns line length and quote normalization. If you already use one, configure it to skip trailing-comma enforcement and let *Prose* handle alignment, ordering, and the singleton rule on top.
 
 ---
 
