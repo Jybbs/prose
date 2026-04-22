@@ -21,12 +21,16 @@ description = "Build the prose binary in debug mode"
 run         = "cargo build"
 
 [tasks.ci]
-depends     = ["lint", "test", "wheel"]
-description = "Full local CI: lint, test, build wheel"
+depends     = ["fmt-check", "lint", "test", "wheel"]
+description = "Full local CI: fmt-check, lint, test, build wheel"
 
 [tasks.fmt]
 description = "Format Rust source with rustfmt"
 run         = "cargo fmt --all"
+
+[tasks."fmt-check"]
+description = "Verify Rust source matches rustfmt without rewriting"
+run         = "cargo fmt --all --check"
 
 [tasks.lint]
 description = "Run clippy with all warnings treated as errors"
