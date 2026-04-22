@@ -131,12 +131,78 @@ Every rule is independently toggleable.
 
 ## 🗜️ Development
 
-Requires Rust 1.80+ and Python 3.10+.
+### One-time setup
+
+*Prose* uses [mise](https://mise.jdx.dev) to manage every toolchain and CLI the project depends on through a single `mise.toml`. After installing mise once and wiring it into your shell, `mise install` provisions everything else.
+
+**1. Install mise:**
 
 ```bash
-cargo build
-cargo test
-cargo insta review
-maturin develop
+curl https://mise.run | sh
 ```
+
+The installer drops the binary into `~/.local/bin/mise`.
+
+**2. Wire mise into zsh.** Three init files cover three load contexts (*every shell, login shells, interactive shells*) so mise-managed tools resolve correctly whether you are inside an interactive terminal, a login shell, or a non-interactive subprocess:
+
+```bash
+# ~/.zshenv  (sourced for every shell, including non-interactive)
+export PATH="$HOME/.local/bin:$PATH"
+
+# ~/.zprofile  (sourced for login shells, before .zshrc)
+eval "$(mise activate zsh --shims)"
+
+# ~/.zshrc  (sourced for interactive shells)
+eval "$(mise activate zsh)"
+```
+
+`.zshenv` puts `mise` itself on `PATH` so the later `eval` lines can find it. `.zprofile`'s `--shims` activation makes mise-managed binaries resolvable in non-interactive contexts (*scripts, editors, GUI launches*). `.zshrc`'s full activation gives interactive shells the per-directory tool resolution and task discovery.
+
+**3. Clone and provision:**
+
+```bash
+git clone https://github.com/Jybbs/prose.git
+cd prose
+mise install
+```
+
+`mise install` provisions:
+
+| Tool | Purpose |
+|---|---|
+| `rust` (stable) | Rust toolchain via rustup |
+| `python` (3.14) | Python interpreter for wheel builds |
+| `uv` | Python package and venv manager |
+| `maturin` | Rust → Python wheel builder |
+| `cargo-insta` | Snapshot test review |
+
+### Daily workflow
+
+Tasks are defined in `mise.toml` and discoverable via `mise tasks`:
+
+| Command | What it does |
+|---|---|
+| `mise build` | Compile in debug mode |
+| `mise test` | Run all tests including `insta` snapshots |
+| `mise review` | Interactively accept pending snapshot diffs |
+| `mise wheel` | Build the wheel and install into `.venv` |
+| `mise lint` | Run `clippy` with all warnings as errors |
+| `mise fmt` | Format Rust source with `rustfmt` |
+| `mise ci` | Lint + test + wheel (full local sweep) |
+
+### Editor
+
+<details>
+<summary>VSCode</summary>
+
+Install [`rust-analyzer`](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) and [`Even Better TOML`](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml). The `rust-analyzer` extension bundles its own language server, so it works without additional global Rust installs.
+
+Suggested user settings (apply to any Rust project):
+
+```json
+"rust-analyzer.check.command": "clippy",
+"rust-analyzer.imports.granularity.group": "module"
+```
+
+</details>
 
