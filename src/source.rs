@@ -4,37 +4,24 @@
 //! borrowed, so `Source` carries no lifetime parameter and can move
 //! across thread boundaries without lifetime gymnastics.
 
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::str::FromStr;
 
-use ruff_python_ast::ModModule;
 use ruff_python_ast::token::Tokens;
-use ruff_python_parser::{Parsed, parse_module};
+use ruff_python_ast::ModModule;
+use ruff_python_parser::{parse_module, ParseError, Parsed};
 use ruff_source_file::{LineColumn, SourceFile, SourceFileBuilder};
 use ruff_text_size::{Ranged, TextSize};
 use thiserror::Error;
-
-
-/// Failure to parse a buffer of Python source.
-///
-/// The wrapped `ruff_python_parser::ParseError` is exposed so callers
-/// can inspect the error's location and category without going through
-/// `Display`.
-#[derive(Debug, Error)]
-#[error("python parse failed: {0}")]
-pub struct ParseError(#[from] pub ruff_python_parser::ParseError);
-
 
 /// Owned wrapper around a parsed Python source file.
 ///
 /// Holds the source text, the parsed AST, the token stream, and a lazy
 /// line index.
 pub struct Source {
-    file   : SourceFile,
-    parsed : Parsed<ModModule>,
+    file: SourceFile,
+    parsed: Parsed<ModModule>,
 }
-
 
 impl Source {
     /// Reads a file from disk and parses it as Python source.
@@ -43,17 +30,17 @@ impl Source {
     ///
     /// Returns `SourceError::Io` if the read fails and `SourceError::Parse`
     /// if the bytes are read successfully but do not form a valid module.
-    pub fn from_path(path: &Path) -> Result<Self, SourceError> {
-        let text = fs::read_to_string(path).map_err(|source| SourceError::Io {
-            path: path.to_owned(),
-            source,
-        })?;
-        Self::build(text, path.display().to_string()).map_err(SourceError::Parse)
+    /// The underlying `std::io::Error` from `fs_err` carries the path in
+    /// its `Display`, so no additional wrapping is needed.
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, SourceError> {
+        let path = path.as_ref();
+        let text = fs_err::read_to_string(path)?;
+        Self::build(text, path.display().to_string()).map_err(Into::into)
     }
 
     fn build(text: String, name: String) -> Result<Self, ParseError> {
         let parsed = parse_module(&text)?;
-        let file   = SourceFileBuilder::new(name, text).finish();
+        let file = SourceFileBuilder::new(name, text).finish();
         Ok(Self { file, parsed })
     }
 
@@ -103,7 +90,6 @@ impl Source {
     }
 }
 
-
 /// Parses Python source from an in-memory string.
 ///
 /// The resulting `Source` carries the synthetic name `<source>` for
@@ -117,20 +103,14 @@ impl FromStr for Source {
     }
 }
 
-
 /// Failure to load and parse a Python source file from disk.
 #[derive(Debug, Error)]
 pub enum SourceError {
-    #[error("failed to read {}", path.display())]
-    Io {
-        path   : PathBuf,
-        #[source]
-        source : std::io::Error,
-    },
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
     #[error(transparent)]
     Parse(#[from] ParseError),
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -147,8 +127,8 @@ mod tests {
 
     #[test]
     fn from_path_missing_file_returns_io_error() {
-        let result = Source::from_path(Path::new("/definitely/does/not/exist.py"));
-        assert!(matches!(result, Err(SourceError::Io { .. })));
+        let result = Source::from_path("/definitely/does/not/exist.py");
+        assert!(matches!(result, Err(SourceError::Io(_))));
     }
 
     #[test]
@@ -164,7 +144,7 @@ mod tests {
     #[test]
     fn line_col_counts_characters_not_bytes() {
         let src = "αβγ";
-        let s   = Source::from_str(src).expect("multibyte source parses");
+        let s = Source::from_str(src).expect("multibyte source parses");
         let (line, col) = s.line_col(TextSize::new(6));
         assert_eq!(line, 0);
         assert_eq!(col, 3);
@@ -173,7 +153,7 @@ mod tests {
     #[test]
     fn line_col_handles_unix_newlines() {
         let src = "a\nb\nc\n";
-        let s   = Source::from_str(src).expect("LF input parses");
+        let s = Source::from_str(src).expect("LF input parses");
         assert_eq!(s.line_col(TextSize::new(0)), (0, 0));
         assert_eq!(s.line_col(TextSize::new(2)), (1, 0));
         assert_eq!(s.line_col(TextSize::new(4)), (2, 0));
@@ -182,16 +162,31 @@ mod tests {
     #[test]
     fn line_col_handles_windows_newlines() {
         let src = "a\r\nb\r\nc\r\n";
-        let s   = Source::from_str(src).expect("CRLF input parses");
+        let s = Source::from_str(src).expect("CRLF input parses");
         assert_eq!(s.line_col(TextSize::new(0)), (0, 0));
         assert_eq!(s.line_col(TextSize::new(3)), (1, 0));
         assert_eq!(s.line_col(TextSize::new(6)), (2, 0));
     }
 
     #[test]
-    fn parse_error_returns_typed_error() {
-        let result = Source::from_str("def foo(");
-        assert!(matches!(result, Err(ParseError(_))));
+    fn name_is_path_display_for_from_path() {
+        let tmp = tempfile::NamedTempFile::new().expect("temp file creates");
+        std::fs::write(tmp.path(), b"x = 1\n").expect("temp file writes");
+
+        let s = Source::from_path(tmp.path()).expect("existing file parses");
+        assert_eq!(s.name(), tmp.path().display().to_string());
+    }
+
+    #[test]
+    fn name_is_source_placeholder_for_from_str() {
+        let s = Source::from_str("x = 1").expect("simple source parses");
+        assert_eq!(s.name(), "<source>");
+    }
+
+    #[test]
+    fn parse_error_returns_ruff_parse_error() {
+        let result: Result<Source, ParseError> = Source::from_str("def foo(");
+        assert!(result.is_err());
     }
 
     #[test]
@@ -211,7 +206,7 @@ mod tests {
     #[test]
     fn slice_at_multibyte_boundary_returns_full_codepoint() {
         let src = "α = 1";
-        let s   = Source::from_str(src).expect("multibyte source parses");
+        let s = Source::from_str(src).expect("multibyte source parses");
         let alpha = s.slice(TextRange::new(TextSize::new(0), TextSize::new(2)));
         assert_eq!(alpha, "α");
     }

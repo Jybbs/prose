@@ -62,17 +62,25 @@ The `0.1.0` release ships eight rules:
 Before:
 
 ```python
-from collections import Counter
 from sklearn.cluster import AgglomerativeClustering
 from loguru import logger
+from collections import Counter
 
-config = {"linkage": "ward", "metric": "euclidean", "n_clusters": None, "threshold": 0.7}
+config = {"threshold": 0.7, "metric": "euclidean", "linkage": "ward", "n_clusters": None}
 
 class Posting(BaseModel, extra="forbid"):
     title: str
     company: str
     location: str | None = None
     date_posted: date | None
+
+    def render(self, separator: str, include_location: bool, include_date: bool) -> str: ...
+
+    def _slug(self):
+        return self.company.lower().replace(" ", "-")
+
+    def key(self):
+        return f"{self._slug()}-{self.date_posted}"
 ```
 
 After:
@@ -95,6 +103,20 @@ class Posting(BaseModel, extra="forbid"):
     title       : str
 
     location: str | None = None
+
+    def _slug(self):
+        return self.company.lower().replace(" ", "-")
+
+    def key(self):
+        return f"{self._slug()}-{self.date_posted}"
+
+    def render(
+        self,
+        include_date     : bool,
+        include_location : bool,
+        separator        : str
+    ) -> str:
+        ...
 ```
 
 ---
