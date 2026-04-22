@@ -19,9 +19,12 @@ ruff_python_parser = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10
 ruff_source_file   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10" }
 ruff_text_size     = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10" }
 serde              = { version = "1.0", features = ["derive"] }
+serde_ignored      = "0.1"
 thiserror          = "2.0"
+toml               = "0.8"
 
 [dev-dependencies]
+indoc    = "2"
 insta    = { version = "1.39", features = ["glob", "yaml"] }
 tempfile = "3"
 

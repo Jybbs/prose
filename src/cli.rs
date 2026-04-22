@@ -118,7 +118,10 @@ mod tests {
 
     #[test]
     fn command_version_matches_crate() {
-        assert_eq!(Cli::command().get_version(), Some(env!("CARGO_PKG_VERSION")));
+        assert_eq!(
+            Cli::command().get_version(),
+            Some(env!("CARGO_PKG_VERSION"))
+        );
     }
 
     #[test]
