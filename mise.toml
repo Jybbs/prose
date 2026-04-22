@@ -1,0 +1,45 @@
+# ============================================================================
+# Project tool environment
+# ============================================================================
+
+[tools]
+cargo-insta = "latest"
+maturin     = "latest"
+python      = "3.14"
+rust        = "stable"
+uv          = "latest"
+
+[settings]
+python.uv_venv_auto = "create|source"
+
+# ============================================================================
+# Tasks
+# ============================================================================
+
+[tasks.build]
+description = "Build the prose binary in debug mode"
+run         = "cargo build"
+
+[tasks.ci]
+depends     = ["lint", "test", "wheel"]
+description = "Full local CI: lint, test, build wheel"
+
+[tasks.fmt]
+description = "Format Rust source with rustfmt"
+run         = "cargo fmt --all"
+
+[tasks.lint]
+description = "Run clippy with all warnings treated as errors"
+run         = "cargo clippy --all-targets -- -D warnings"
+
+[tasks.review]
+description = "Interactively review pending snapshot diffs"
+run         = "cargo insta review"
+
+[tasks.test]
+description = "Run all tests including insta snapshots"
+run         = "cargo test"
+
+[tasks.wheel]
+description = "Build the maturin wheel into the active virtualenv"
+run         = "maturin develop"

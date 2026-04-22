@@ -1,6 +1,6 @@
 //! Parses the `[tool.prose]` section from `pyproject.toml`.
 //!
-//! Every Tier 1 rule is independently toggleable. Defaults mirror the
+//! Every rule is independently toggleable. Defaults mirror the
 //! enabled-everywhere preset described in the README.
 
 use serde::Deserialize;
