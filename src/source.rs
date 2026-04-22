@@ -18,6 +18,7 @@ use thiserror::Error;
 ///
 /// Holds the source text, the parsed AST, the token stream, and a lazy
 /// line index.
+#[derive(Debug)]
 pub struct Source {
     file: SourceFile,
     parsed: Parsed<ModModule>,
@@ -123,6 +124,15 @@ mod tests {
         let s = Source::from_str("").expect("empty source parses");
         assert_eq!(s.text(), "");
         assert!(s.ast().body.is_empty());
+    }
+
+    #[test]
+    fn from_path_bad_syntax_returns_parse_error() {
+        let tmp = tempfile::NamedTempFile::new().expect("temp file creates");
+        std::fs::write(tmp.path(), b"def foo(").expect("temp file writes");
+
+        let result = Source::from_path(tmp.path());
+        assert!(matches!(result, Err(SourceError::Parse(_))));
     }
 
     #[test]
