@@ -39,7 +39,7 @@ impl Source {
         Self::build(text, path.display().to_string()).map_err(Into::into)
     }
 
-    fn build(text: String, name: String) -> Result<Self, ParseError> {
+    fn build(text: String, name: impl Into<Box<str>>) -> Result<Self, ParseError> {
         let parsed = parse_module(&text)?;
         let file = SourceFileBuilder::new(name, text).finish();
         Ok(Self { file, parsed })
@@ -49,14 +49,14 @@ impl Source {
         self.parsed.syntax()
     }
 
-    /// Converts a byte offset into a zero-indexed `(line, column)` pair.
+    /// Returns the line and column for a byte offset.
     ///
     /// Columns count UTF scalar values (characters), not bytes, so a
     /// multi-byte sequence advances the column by one rather than by its
-    /// byte length.
-    pub fn line_col(&self, offset: TextSize) -> (usize, usize) {
-        let LineColumn { line, column } = self.file.to_source_code().line_column(offset);
-        (line.to_zero_indexed(), column.to_zero_indexed())
+    /// byte length. Line and column are both `OneIndexed`. Call
+    /// `to_zero_indexed()` on either field when a zero-based index is needed.
+    pub fn line_col(&self, offset: TextSize) -> LineColumn {
+        self.file.to_source_code().line_column(offset)
     }
 
     /// Borrows the source's name.
@@ -65,6 +65,19 @@ impl Source {
     /// synthetic `"<source>"` for sources parsed from in-memory strings.
     pub fn name(&self) -> &str {
         self.file.name()
+    }
+
+    /// Reparses with replacement source text, preserving the original name.
+    ///
+    /// The pipeline calls this after each rule applies its edit list, so the
+    /// next rule sees a freshly-parsed AST whose ranges point into the new
+    /// buffer. Diagnostic labels keep the original path or `<source>` placeholder.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ParseError` if `text` is not a valid Python module.
+    pub fn reparse(&self, text: String) -> Result<Self, ParseError> {
+        Self::build(text, self.file.name())
     }
 
     /// Returns the byte slice spanned by anything `Ranged`.
@@ -100,7 +113,7 @@ impl FromStr for Source {
     type Err = ParseError;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        Self::build(text.to_owned(), "<source>".to_owned())
+        Self::build(text.to_owned(), "<source>")
     }
 }
 
@@ -115,9 +128,17 @@ pub enum SourceError {
 
 #[cfg(test)]
 mod tests {
+    use ruff_source_file::OneIndexed;
     use ruff_text_size::TextRange;
 
     use super::*;
+
+    fn line_col(line: usize, column: usize) -> LineColumn {
+        LineColumn {
+            line: OneIndexed::from_zero_indexed(line),
+            column: OneIndexed::from_zero_indexed(column),
+        }
+    }
 
     #[test]
     fn empty_input_parses_as_empty_module() {
@@ -155,27 +176,25 @@ mod tests {
     fn line_col_counts_characters_not_bytes() {
         let src = "αβγ";
         let s = Source::from_str(src).expect("multibyte source parses");
-        let (line, col) = s.line_col(TextSize::new(6));
-        assert_eq!(line, 0);
-        assert_eq!(col, 3);
+        assert_eq!(s.line_col(TextSize::new(6)), line_col(0, 3));
     }
 
     #[test]
     fn line_col_handles_unix_newlines() {
         let src = "a\nb\nc\n";
         let s = Source::from_str(src).expect("LF input parses");
-        assert_eq!(s.line_col(TextSize::new(0)), (0, 0));
-        assert_eq!(s.line_col(TextSize::new(2)), (1, 0));
-        assert_eq!(s.line_col(TextSize::new(4)), (2, 0));
+        assert_eq!(s.line_col(TextSize::new(0)), line_col(0, 0));
+        assert_eq!(s.line_col(TextSize::new(2)), line_col(1, 0));
+        assert_eq!(s.line_col(TextSize::new(4)), line_col(2, 0));
     }
 
     #[test]
     fn line_col_handles_windows_newlines() {
         let src = "a\r\nb\r\nc\r\n";
         let s = Source::from_str(src).expect("CRLF input parses");
-        assert_eq!(s.line_col(TextSize::new(0)), (0, 0));
-        assert_eq!(s.line_col(TextSize::new(3)), (1, 0));
-        assert_eq!(s.line_col(TextSize::new(6)), (2, 0));
+        assert_eq!(s.line_col(TextSize::new(0)), line_col(0, 0));
+        assert_eq!(s.line_col(TextSize::new(3)), line_col(1, 0));
+        assert_eq!(s.line_col(TextSize::new(6)), line_col(2, 0));
     }
 
     #[test]
@@ -196,6 +215,27 @@ mod tests {
     #[test]
     fn parse_error_returns_ruff_parse_error() {
         let result: Result<Source, ParseError> = Source::from_str("def foo(");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn reparse_preserves_name_from_path() {
+        let tmp = tempfile::NamedTempFile::new().expect("temp file creates");
+        std::fs::write(tmp.path(), b"x = 1\n").expect("temp file writes");
+
+        let original = Source::from_path(tmp.path()).expect("existing file parses");
+        let reparsed = original
+            .reparse("y = 2\n".to_owned())
+            .expect("replacement parses");
+
+        assert_eq!(reparsed.name(), original.name());
+        assert_eq!(reparsed.text(), "y = 2\n");
+    }
+
+    #[test]
+    fn reparse_returns_parse_error_for_bad_replacement() {
+        let s = Source::from_str("x = 1\n").expect("original parses");
+        let result = s.reparse("def foo(".to_owned());
         assert!(result.is_err());
     }
 

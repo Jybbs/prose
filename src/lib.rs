@@ -8,3 +8,4 @@ pub mod pipeline;
 pub mod primitives;
 pub mod rules;
 pub mod source;
+pub mod walker;
