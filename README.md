@@ -209,7 +209,8 @@ Tasks are defined in `mise.toml` and discoverable via `mise tasks`:
 | `mise review` | Interactively accept pending snapshot diffs |
 | `mise wheel` | Build the wheel and install into `.venv` |
 | `mise lint` | Run `clippy` with all warnings as errors |
-| `mise fmt` | Format Rust source with `rustfmt` |
+| `mise format` | Format Rust source with `rustfmt` |
+| `mise check` | Verify Rust source matches `rustfmt` without rewriting |
 | `mise ci` | Lint + test + wheel (full local sweep) |
 
 ### Editor

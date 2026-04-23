@@ -20,17 +20,17 @@ python.uv_venv_auto = "create|source"
 description = "Build the prose binary in debug mode"
 run         = "cargo build"
 
-[tasks.ci]
-depends     = ["fmt-check", "lint", "test", "wheel"]
-description = "Full local CI: fmt-check, lint, test, build wheel"
-
-[tasks.fmt]
-description = "Format Rust source with rustfmt"
-run         = "cargo fmt --all"
-
-[tasks."fmt-check"]
+[tasks.check]
 description = "Verify Rust source matches rustfmt without rewriting"
 run         = "cargo fmt --all --check"
+
+[tasks.ci]
+depends     = ["check", "lint", "test", "wheel"]
+description = "Full local CI: check, lint, test, build wheel"
+
+[tasks.format]
+description = "Format Rust source with rustfmt"
+run         = "cargo fmt --all"
 
 [tasks.lint]
 description = "Run clippy with all warnings treated as errors"
