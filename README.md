@@ -192,11 +192,11 @@ mise install
 
 | Tool | Purpose |
 |---|---|
-| `rust` (stable) | Rust toolchain via rustup |
-| `python` (3.14) | Python interpreter for wheel builds |
-| `uv` | Python package and venv manager |
-| `maturin` | Rust → Python wheel builder |
 | `cargo-insta` | Snapshot test review |
+| `maturin` | Rust → Python wheel builder |
+| `python` (3.14) | Python interpreter for wheel builds |
+| `rust` (stable) | Rust toolchain via rustup |
+| `uv` | Python package and venv manager |
 
 ### Daily workflow
 
@@ -205,12 +205,13 @@ Tasks are defined in `mise.toml` and discoverable via `mise tasks`:
 | Command | What it does |
 |---|---|
 | `mise build` | Compile in debug mode |
-| `mise test` | Run all tests including `insta` snapshots |
-| `mise review` | Interactively accept pending snapshot diffs |
-| `mise wheel` | Build the wheel and install into `.venv` |
-| `mise lint` | Run `clippy` with all warnings as errors |
-| `mise fmt` | Format Rust source with `rustfmt` |
+| `mise check` | Verify Rust source matches `rustfmt` without rewriting |
 | `mise ci` | Lint + test + wheel (full local sweep) |
+| `mise format` | Format Rust source with `rustfmt` |
+| `mise lint` | Run `clippy` with all warnings as errors |
+| `mise review` | Interactively accept pending snapshot diffs |
+| `mise test` | Run all tests including `insta` snapshots |
+| `mise wheel` | Build the wheel and install into `.venv` |
 
 ### Editor
 
