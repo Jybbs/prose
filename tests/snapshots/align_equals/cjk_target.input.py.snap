@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: "apply(rule, source)"
+input_file: tests/fixtures/align_equals/cjk_target.input.py
+---
+"""
+CJK identifiers count as two display columns per character. Padding
+math uses display columns, not bytes, so a two-character CJK target
+sits four columns wide and the rule lines up its `=` with ASCII
+neighbors by display position rather than by byte length.
+"""
+
+alpha  = 1
+名前   = 2
+longer = 3

@@ -17,10 +17,12 @@ use thiserror::Error;
 /// `None` on a field means the user did not set that key in their
 /// `pyproject.toml`; downstream consumers apply their own fallback
 /// rather than reading a synthesized default here.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
     pub line_length: Option<NonZeroUsize>,
+    pub max_align_shift: NonZeroUsize,
+    pub max_align_shift_policy: MaxAlignShiftPolicy,
     pub rules: RuleToggles,
     pub target_version: Option<PythonVersion>,
 }
@@ -52,14 +54,7 @@ impl Config {
         P: AsRef<Path>,
         F: FnMut(&str),
     {
-        let start = from.as_ref();
-        let initial = if start.is_dir() {
-            Some(start)
-        } else {
-            start.parent()
-        };
-
-        for dir in std::iter::successors(initial, |p| p.parent()) {
+        for dir in from.as_ref().ancestors() {
             let candidate = dir.join("pyproject.toml");
             match fs_err::read_to_string(&candidate) {
                 Ok(contents) => {
@@ -76,6 +71,18 @@ impl Config {
     }
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            line_length: None,
+            max_align_shift: NonZeroUsize::new(8).expect("8 is non-zero"),
+            max_align_shift_policy: MaxAlignShiftPolicy::default(),
+            rules: RuleToggles::default(),
+            target_version: None,
+        }
+    }
+}
+
 /// Failure to load a `[tool.prose]` configuration from a `pyproject.toml`.
 #[derive(Debug, Error)]
 pub enum ConfigError {
@@ -83,6 +90,40 @@ pub enum ConfigError {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Toml(#[from] toml::de::Error),
+}
+
+/// What to do when an alignment group's widest padding exceeds
+/// `max-align-shift`.
+///
+/// `Split` greedily partitions the group so each contiguous
+/// sub-group satisfies the cap, and each sub-group of size `>= 2`
+/// aligns independently. `Drop` excludes the widest member(s) from
+/// the padding calculation until the cap is satisfied, leaving those
+/// members at their original spacing while neighbors align around
+/// them. `Skip` leaves the entire group unaligned.
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum MaxAlignShiftPolicy {
+    Drop,
+    Skip,
+    #[default]
+    Split,
+}
+
+fn parse_prose_section<F>(contents: &str, on_unknown: &mut F) -> Result<Option<Config>, ConfigError>
+where
+    F: FnMut(&str),
+{
+    let value: toml::Value = toml::from_str(contents)?;
+    let Some(prose) = value.get("tool").and_then(|t| t.get("prose")).cloned() else {
+        return Ok(None);
+    };
+
+    let config: Config = serde_ignored::deserialize(prose.into_deserializer(), |path| {
+        on_unknown(&path.to_string())
+    })?;
+
+    Ok(Some(config))
 }
 
 /// Per-rule on/off flags parsed from `[tool.prose.rules]`.
@@ -115,22 +156,6 @@ impl Default for RuleToggles {
             strip_trailing_commas: true,
         }
     }
-}
-
-fn parse_prose_section<F>(contents: &str, on_unknown: &mut F) -> Result<Option<Config>, ConfigError>
-where
-    F: FnMut(&str),
-{
-    let value: toml::Value = toml::from_str(contents)?;
-    let Some(prose) = value.get("tool").and_then(|t| t.get("prose")).cloned() else {
-        return Ok(None);
-    };
-
-    let config: Config = serde_ignored::deserialize(prose.into_deserializer(), |path| {
-        on_unknown(&path.to_string())
-    })?;
-
-    Ok(Some(config))
 }
 
 #[cfg(test)]

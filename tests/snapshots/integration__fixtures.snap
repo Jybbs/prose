@@ -1,6 +1,0 @@
----
-source: tests/integration.rs
-expression: "apply(rule, &source)"
-input_file: tests/fixtures/identity/basic.input.py
----
-x = 1
