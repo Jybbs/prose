@@ -12,6 +12,7 @@ use thiserror::Error;
 
 use crate::config::Config;
 use crate::rules::align_equals::AlignEquals;
+use crate::rules::one_per_line_collections::OnePerLineCollections;
 use crate::source::Source;
 
 /// Every rule in `prose` implements this trait and nothing more.
@@ -67,7 +68,9 @@ impl Pipeline {
     /// PR adds one registration line at its ordered slot below.
     pub fn with_defaults(config: &Config) -> Self {
         let mut rules: Vec<Box<dyn Rule>> = Vec::new();
-        // if config.rules.one_per_line_collections { rules.push(Box::new(OnePerLineCollections)); }
+        if config.rules.one_per_line_collections {
+            rules.push(Box::new(OnePerLineCollections::from_config(config)));
+        }
         // if config.rules.alphabetize { rules.push(Box::new(Alphabetize)); }
         // if config.rules.strip_trailing_commas { rules.push(Box::new(StripTrailingCommas)); }
         // if config.rules.match_case_align { rules.push(Box::new(MatchCaseAlign)); }
@@ -366,16 +369,17 @@ mod tests {
     }
 
     #[test]
-    fn with_defaults_registers_align_equals_when_enabled() {
+    fn with_defaults_registers_enabled_rules() {
         let config = Config::default();
         let pipeline = Pipeline::with_defaults(&config);
-        assert_eq!(pipeline.len(), 1);
+        assert_eq!(pipeline.len(), 2);
     }
 
     #[test]
-    fn with_defaults_respects_rule_toggle() {
+    fn with_defaults_respects_rule_toggles() {
         let mut config = Config::default();
         config.rules.align_equals = false;
+        config.rules.one_per_line_collections = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());
     }

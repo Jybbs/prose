@@ -17,6 +17,7 @@ use std::path::PathBuf;
 use prose::config::{Config, MaxAlignShiftPolicy};
 use prose::pipeline::{Pipeline, Rule};
 use prose::rules::align_equals::AlignEquals;
+use prose::rules::one_per_line_collections::OnePerLineCollections;
 use prose::source::Source;
 
 fn align_equals_with(policy: MaxAlignShiftPolicy) -> AlignEquals {
@@ -33,6 +34,7 @@ fn apply(rule: &str, source: Source) -> String {
         "align_equals_drop" => vec![Box::new(align_equals_with(MaxAlignShiftPolicy::Drop))],
         "align_equals_skip" => vec![Box::new(align_equals_with(MaxAlignShiftPolicy::Skip))],
         "identity" => Vec::new(),
+        "one_per_line_collections" => vec![Box::new(OnePerLineCollections::default())],
         other => panic!("no transform wired for fixture directory `{other}`"),
     };
     let (formatted, _) = Pipeline::from_rules(rules)

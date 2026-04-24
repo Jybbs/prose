@@ -1,0 +1,14 @@
+"""
+A literal whose source range contains a comment is left alone to
+preserve author-intended prose that slicing would drop. A trailing
+comment outside the literal's range still allows the literal to
+expand when the inline form overflows. Atomic items inside the
+expanded form flow across balanced lines.
+"""
+
+keeps_interior_comment = [
+    1,
+    2,  # noqa: E501
+    3,
+]
+trailing_comment_expands = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh"]  # sits after `]`

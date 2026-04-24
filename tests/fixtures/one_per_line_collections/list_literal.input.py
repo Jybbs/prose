@@ -1,0 +1,10 @@
+"""
+A multi-item list literal stays inline when the whole line fits in
+the 88-character budget. A list whose inline form would overflow the
+budget expands. Inside the expanded form, a run of atomic items flows
+across as few balanced lines as fit under the line-length budget and
+the `max_atomics_per_line` cap (default 8) at the item-indent column.
+"""
+
+short_list = [2, 3, 5, 7, 11, 13]
+long_list = ["San Francisco", "Los Angeles", "New York", "Chicago", "Boston", "Seattle", "Miami"]

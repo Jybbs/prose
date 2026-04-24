@@ -1,0 +1,11 @@
+"""
+Comprehensions are not literals and stay inline. `item_count` only
+matches `Expr::Dict`, `Expr::List`, and `Expr::Set`, so `ListComp`,
+`DictComp`, `SetComp`, and `GeneratorExp` fall through `should_expand`
+and the visitor keeps descending through their bodies without rewrite.
+"""
+
+list_comp = [x * 2 for x in range(10)]
+dict_comp = {k: v for k, v in pairs.items()}
+set_comp  = {x for x in items}
+gen_exp   = (x for x in items)

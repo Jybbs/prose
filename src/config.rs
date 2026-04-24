@@ -23,6 +23,7 @@ pub struct Config {
     pub line_length: Option<NonZeroUsize>,
     pub max_align_shift: NonZeroUsize,
     pub max_align_shift_policy: MaxAlignShiftPolicy,
+    pub max_atomics_per_line: Option<NonZeroUsize>,
     pub rules: RuleToggles,
     pub target_version: Option<PythonVersion>,
 }
@@ -77,6 +78,7 @@ impl Default for Config {
             line_length: None,
             max_align_shift: NonZeroUsize::new(8).expect("8 is non-zero"),
             max_align_shift_policy: MaxAlignShiftPolicy::default(),
+            max_atomics_per_line: None,
             rules: RuleToggles::default(),
             target_version: None,
         }
