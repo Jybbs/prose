@@ -42,18 +42,20 @@
 //!
 //! The extra indent step is four spaces, matching PEP 8 and the
 //! chalkline style guide. Trailing commas are not emitted on the
-//! final item of the whole collection; `strip_trailing_commas` owns
+//! final item of the whole collection. `strip_trailing_commas` owns
 //! that concern elsewhere in the pipeline.
 
 use std::num::NonZeroUsize;
 use std::ops::Range;
 
 use ruff_diagnostics::Edit;
+use ruff_python_ast::token::parenthesized_range;
 use ruff_python_ast::visitor::{walk_expr, Visitor};
-use ruff_python_ast::{DictItem, Expr};
-use ruff_python_trivia::CommentRanges;
-use ruff_source_file::LineRanges;
+use ruff_python_ast::{AnyNodeRef, DictItem, Expr};
+use ruff_python_trivia::{leading_indentation, CommentRanges};
+use ruff_source_file::{find_newline, LineEnding, LineRanges};
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
 use crate::pipeline::Rule;
@@ -93,11 +95,15 @@ impl Rule for OnePerLineCollections {
     }
 
     fn apply(&self, source: &Source) -> Vec<Edit> {
+        let newline = find_newline(source.text())
+            .map_or(LineEnding::Lf, |(_, ending)| ending)
+            .as_str();
         let mut visitor = Expander {
             comment_ranges: CommentRanges::from(source.tokens()),
             edits: Vec::new(),
             line_length: self.line_length,
             max_atomics_per_line: self.max_atomics_per_line,
+            newline,
             source,
         };
         visitor.visit_body(&source.ast().body);
@@ -110,6 +116,7 @@ struct Expander<'a> {
     edits: Vec<Edit>,
     line_length: usize,
     max_atomics_per_line: usize,
+    newline: &'static str,
     source: &'a Source,
 }
 
@@ -156,7 +163,7 @@ impl Expander<'_> {
         let available = self.line_length.saturating_sub(item_indent);
         let mut out = String::new();
         out.push(open);
-        out.push('\n');
+        out.push_str(self.newline);
         for segment in segments(&atomics) {
             match segment {
                 Segment::OnePerLine(range) => {
@@ -166,28 +173,26 @@ impl Expander<'_> {
                         if idx + 1 < total {
                             out.push(',');
                         }
-                        out.push('\n');
+                        out.push_str(self.newline);
                     }
                 }
                 Segment::Flow(range) => {
-                    let widths: Vec<usize> =
-                        range.clone().map(|i| texts[i].chars().count()).collect();
+                    let run_start = range.start;
+                    let widths: Vec<usize> = range.map(|i| texts[i].width()).collect();
                     for line_range in flow_lines(&widths, available, self.max_atomics_per_line) {
                         out.push_str(&item_prefix);
-                        let absolute =
-                            (range.start + line_range.start)..(range.start + line_range.end);
-                        for (line_pos, idx) in absolute.clone().enumerate() {
+                        let line_size = line_range.len();
+                        let absolute = (run_start + line_range.start)..(run_start + line_range.end);
+                        for (line_pos, idx) in absolute.enumerate() {
                             out.push_str(&texts[idx]);
-                            let is_last_overall = idx + 1 == total;
-                            let is_last_on_line = line_pos + 1 == absolute.len();
-                            if !is_last_overall {
+                            if idx + 1 != total {
                                 out.push(',');
-                                if !is_last_on_line {
+                                if line_pos + 1 != line_size {
                                     out.push(' ');
                                 }
                             }
                         }
-                        out.push('\n');
+                        out.push_str(self.newline);
                     }
                 }
             }
@@ -203,11 +208,12 @@ impl Expander<'_> {
     /// `indent`, so nested qualifying children are already recursively
     /// expanded in the returned strings.
     fn gather_items(&self, expr: &Expr, indent: usize) -> (char, char, Vec<String>, Vec<bool>) {
+        let parent = AnyNodeRef::from(expr);
         if let Expr::Dict(d) = expr {
             let texts = d
                 .items
                 .iter()
-                .map(|item| self.serialize_dict_item(item, indent))
+                .map(|item| self.serialize_dict_item(item, parent, indent))
                 .collect();
             // Dict items are never treated as atomic, even when both
             // key and value render atomically. The `key: value` pair
@@ -224,22 +230,20 @@ impl Expander<'_> {
         };
         let texts = elts
             .iter()
-            .map(|e| self.serialize_expr(e, indent, indent))
+            .map(|e| self.serialize_expr(e, parent, indent, indent))
             .collect();
         let atomics = elts.iter().map(is_atomic).collect();
         (open, close, texts, atomics)
     }
 
     /// Returns the leading-whitespace column of the line containing
-    /// `offset`. Tabs count as one column each; the rule's output uses
-    /// spaces only, so tab-indented input is preserved on non-rewritten
-    /// lines and re-emitted as spaces on rewritten ones.
+    /// `offset`, in characters. Tabs and form-feeds count as one
+    /// column each. The rule's output uses spaces only, so tab-indented
+    /// input is preserved on non-rewritten lines and re-emitted as
+    /// spaces on rewritten ones.
     fn line_indent(&self, offset: TextSize) -> usize {
-        let text = self.source.text();
-        let line_start = text.line_start(offset).to_usize();
-        text[line_start..]
-            .bytes()
-            .take_while(|&b| b == b' ' || b == b'\t')
+        leading_indentation(self.source.text().line_str(offset))
+            .chars()
             .count()
     }
 
@@ -251,16 +255,16 @@ impl Expander<'_> {
     /// long key that pushes its value past the budget correctly
     /// triggers expansion of the value. When the value does expand,
     /// its closing bracket still lands at `indent`.
-    fn serialize_dict_item(&self, item: &DictItem, indent: usize) -> String {
+    fn serialize_dict_item(&self, item: &DictItem, parent: AnyNodeRef, indent: usize) -> String {
         match &item.key {
             Some(key) => {
                 let key_text = self.source.slice(key);
-                let value_column = indent + key_text.chars().count() + 2;
-                let value_text = self.serialize_expr(&item.value, value_column, indent);
+                let value_column = indent + key_text.width() + 2;
+                let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
                 format!("{key_text}: {value_text}")
             }
             None => {
-                let value_text = self.serialize_expr(&item.value, indent + 2, indent);
+                let value_text = self.serialize_expr(&item.value, parent, indent + 2, indent);
                 format!("**{value_text}")
             }
         }
@@ -272,12 +276,22 @@ impl Expander<'_> {
     /// (used for the line-length overflow check). `indent` is where
     /// its closing bracket should land if it expands. They differ for
     /// dict values, where the key text sits between the line indent
-    /// and the value's own starting column.
-    fn serialize_expr(&self, expr: &Expr, column: usize, indent: usize) -> String {
+    /// and the value's own starting column. `parent` is the immediate
+    /// enclosing collection, used to recover any explicit parentheses
+    /// around `expr` that `expr.range()` would otherwise drop.
+    fn serialize_expr(
+        &self,
+        expr: &Expr,
+        parent: AnyNodeRef,
+        column: usize,
+        indent: usize,
+    ) -> String {
         if self.should_expand(expr, column) {
             return self.expand(expr, indent);
         }
-        self.source.slice(expr.range()).to_owned()
+        let range = parenthesized_range(expr.into(), parent, self.source.tokens())
+            .unwrap_or_else(|| expr.range());
+        self.source.slice(range).to_owned()
     }
 
     /// Returns `true` when `expr` is a qualifying collection whose
@@ -300,7 +314,7 @@ impl Expander<'_> {
             return false;
         }
         let current = self.source.slice(expr.range());
-        current.contains('\n') || column + current.chars().count() > self.line_length
+        current.contains('\n') || column + current.width() > self.line_length
     }
 }
 
@@ -325,12 +339,9 @@ fn flow_lines(widths: &[usize], available: usize, max_atomics: usize) -> Vec<Ran
     let by_width = total_slot_width(widths).div_ceil(available.max(1));
     let by_cap = n.div_ceil(max_atomics.max(1));
     let initial = by_width.max(by_cap).max(1);
-    for num_lines in initial..=n {
-        if let Some(lines) = try_even(widths, num_lines, available, max_atomics) {
-            return lines;
-        }
-    }
-    (0..n).map(|i| i..(i + 1)).collect()
+    (initial..=n)
+        .find_map(|num_lines| try_even(widths, num_lines, available, max_atomics))
+        .unwrap_or_else(|| (0..n).map(|i| i..(i + 1)).collect())
 }
 
 /// Attempts an even distribution of `widths.len()` items across
@@ -374,8 +385,8 @@ fn try_even(
 /// token and therefore do not benefit from a dedicated line.
 ///
 /// Covers literal values, bare names, attribute chains over atomic
-/// bases (*`pkg.CONST`, `cls.name.upper`*), and unary operations over
-/// atomic operands (*`-1`, `not flag`*). Starred expressions (`*name`,
+/// bases (`pkg.CONST`, `cls.name.upper`), and unary operations over
+/// atomic operands (`-1`, `not flag`). Starred expressions (`*name`,
 /// `**name`) are intentionally non-atomic so a spread in the middle
 /// of a list or set splits its surrounding atomics into two
 /// independent runs that each flow on their own. Everything else
@@ -394,25 +405,23 @@ fn is_atomic(expr: &Expr) -> bool {
 }
 
 /// Partitions `atomics` into segments. Every contiguous run of
-/// atomic items becomes one `Flow` segment; every non-atomic item
+/// atomic items becomes one `Flow` segment. Every non-atomic item
 /// becomes a singleton `OnePerLine` segment. Non-atomic items always
 /// break atomic runs.
 fn segments(atomics: &[bool]) -> Vec<Segment> {
-    let mut segments = Vec::new();
-    let mut i = 0;
-    while i < atomics.len() {
-        if atomics[i] {
-            let run_start = i;
-            while i < atomics.len() && atomics[i] {
-                i += 1;
+    let mut start = 0;
+    atomics
+        .chunk_by(|a, b| a == b)
+        .map(|chunk| {
+            let range = start..start + chunk.len();
+            start += chunk.len();
+            if chunk[0] {
+                Segment::Flow(range)
+            } else {
+                Segment::OnePerLine(range)
             }
-            segments.push(Segment::Flow(run_start..i));
-        } else {
-            segments.push(Segment::OnePerLine(i..i + 1));
-            i += 1;
-        }
-    }
-    segments
+        })
+        .collect()
 }
 
 /// Returns the total width `widths` occupy when laid out with
