@@ -12,7 +12,7 @@ use thiserror::Error;
 
 use crate::config::Config;
 use crate::rules::align_equals::AlignEquals;
-use crate::rules::one_per_line_collections::OnePerLineCollections;
+use crate::rules::collection_layout::CollectionLayout;
 use crate::source::Source;
 
 /// Every rule in `prose` implements this trait and nothing more.
@@ -62,14 +62,14 @@ impl Pipeline {
 
     /// Builds a pipeline registering every rule enabled in `config`.
     ///
-    /// Execution order: `one_per_line_collections` → `alphabetize` →
+    /// Execution order: `collection_layout` → `alphabetize` →
     /// `strip_trailing_commas` → `match_case_align` → `singleton_rule`
     /// → `align_imports` → `align_colons` → `align_equals`. Each rule
     /// PR adds one registration line at its ordered slot below.
     pub fn with_defaults(config: &Config) -> Self {
         let mut rules: Vec<Box<dyn Rule>> = Vec::new();
-        if config.rules.one_per_line_collections {
-            rules.push(Box::new(OnePerLineCollections::from_config(config)));
+        if config.rules.collection_layout {
+            rules.push(Box::new(CollectionLayout::from_config(config)));
         }
         // if config.rules.alphabetize { rules.push(Box::new(Alphabetize)); }
         // if config.rules.strip_trailing_commas { rules.push(Box::new(StripTrailingCommas)); }
@@ -379,7 +379,7 @@ mod tests {
     fn with_defaults_respects_rule_toggles() {
         let mut config = Config::default();
         config.rules.align_equals = false;
-        config.rules.one_per_line_collections = false;
+        config.rules.collection_layout = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());
     }

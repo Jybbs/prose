@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: "apply(rule, source)"
-input_file: tests/fixtures/one_per_line_collections/nested_blocks.input.py
+input_file: tests/fixtures/collection_layout/nested_blocks.input.py
 ---
 """
 Collections inside function and class bodies compute their enclosing

@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: "apply(rule, source)"
-input_file: tests/fixtures/one_per_line_collections/matrix.input.py
+input_file: tests/fixtures/collection_layout/matrix.input.py
 ---
 """
 A matrix-style nested list stays entirely inline when the whole

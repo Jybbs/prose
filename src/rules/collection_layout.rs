@@ -65,12 +65,12 @@ const DEFAULT_LINE_LENGTH: usize = 88;
 const DEFAULT_MAX_ATOMICS_PER_LINE: usize = 8;
 const INDENT_STEP: usize = 4;
 
-pub struct OnePerLineCollections {
+pub struct CollectionLayout {
     line_length: usize,
     max_atomics_per_line: usize,
 }
 
-impl OnePerLineCollections {
+impl CollectionLayout {
     pub fn from_config(config: &Config) -> Self {
         Self {
             line_length: config
@@ -83,15 +83,15 @@ impl OnePerLineCollections {
     }
 }
 
-impl Default for OnePerLineCollections {
+impl Default for CollectionLayout {
     fn default() -> Self {
         Self::from_config(&Config::default())
     }
 }
 
-impl Rule for OnePerLineCollections {
+impl Rule for CollectionLayout {
     fn name(&self) -> &'static str {
-        "one-per-line-collections"
+        "collection-layout"
     }
 
     fn apply(&self, source: &Source) -> Vec<Edit> {

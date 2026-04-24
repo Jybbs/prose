@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: "apply(rule, source)"
-input_file: tests/fixtures/one_per_line_collections/with_comments.input.py
+input_file: tests/fixtures/collection_layout/with_comments.input.py
 ---
 """
 A literal whose source range contains a comment is left alone to

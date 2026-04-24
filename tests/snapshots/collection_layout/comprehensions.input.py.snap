@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: "apply(rule, source)"
-input_file: tests/fixtures/one_per_line_collections/comprehensions.input.py
+input_file: tests/fixtures/collection_layout/comprehensions.input.py
 ---
 """
 Comprehensions are not literals and stay inline. `item_count` only

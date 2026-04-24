@@ -4,4 +4,4 @@
 //! declared here as they come online.
 
 pub mod align_equals;
-pub mod one_per_line_collections;
+pub mod collection_layout;

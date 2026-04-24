@@ -139,8 +139,8 @@ pub struct RuleToggles {
     pub align_equals: bool,
     pub align_imports: bool,
     pub alphabetize: bool,
+    pub collection_layout: bool,
     pub match_case_align: bool,
-    pub one_per_line_collections: bool,
     pub singleton_rule: bool,
     pub strip_trailing_commas: bool,
 }
@@ -152,8 +152,8 @@ impl Default for RuleToggles {
             align_equals: true,
             align_imports: true,
             alphabetize: true,
+            collection_layout: true,
             match_case_align: true,
-            one_per_line_collections: true,
             singleton_rule: true,
             strip_trailing_commas: true,
         }
@@ -207,8 +207,8 @@ mod tests {
                 align-equals = false
                 align-imports = false
                 alphabetize = false
+                collection-layout = false
                 match-case-align = false
-                one-per-line-collections = false
                 singleton-rule = false
                 strip-trailing-commas = false
             "#},

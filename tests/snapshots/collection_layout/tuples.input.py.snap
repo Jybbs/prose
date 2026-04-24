@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: "apply(rule, source)"
-input_file: tests/fixtures/one_per_line_collections/tuples.input.py
+input_file: tests/fixtures/collection_layout/tuples.input.py
 ---
 """
 Tuples are out of scope for this rule. `Expr::Tuple` is not matched

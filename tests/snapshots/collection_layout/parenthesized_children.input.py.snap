@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: "apply(rule, source)"
-input_file: tests/fixtures/one_per_line_collections/parenthesized_children.input.py
+input_file: tests/fixtures/collection_layout/parenthesized_children.input.py
 ---
 """
 Parenthesized child expressions inside a multi-item list keep their

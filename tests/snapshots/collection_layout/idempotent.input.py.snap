@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: "apply(rule, source)"
-input_file: tests/fixtures/one_per_line_collections/idempotent.input.py
+input_file: tests/fixtures/collection_layout/idempotent.input.py
 ---
 """
 An already-canonically-expanded collection produces no edit on a

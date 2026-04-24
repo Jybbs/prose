@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: "apply(rule, source)"
-input_file: tests/fixtures/one_per_line_collections/single_item.input.py
+input_file: tests/fixtures/collection_layout/single_item.input.py
 ---
 """
 Single-item and empty literals keep their original inline form

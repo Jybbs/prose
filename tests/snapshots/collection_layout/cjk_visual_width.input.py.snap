@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: "apply(rule, source)"
-input_file: tests/fixtures/one_per_line_collections/cjk_visual_width.input.py
+input_file: tests/fixtures/collection_layout/cjk_visual_width.input.py
 ---
 """
 A list of CJK strings whose inline form has fewer code points than the
