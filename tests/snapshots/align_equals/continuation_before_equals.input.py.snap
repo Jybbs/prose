@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: "apply(rule, source)"
+input_file: tests/fixtures/align_equals/continuation_before_equals.input.py
+---
+"""
+A backslash continuation between the target and the `=` sits out the
+group, leaving neighboring assignments unaligned.
+"""
+
+foo \
+    = 1
+bar = 2

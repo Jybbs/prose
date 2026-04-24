@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: "apply(rule, source)"
+input_file: tests/fixtures/align_equals/basic.input.py
+---
+"""
+Three consecutive single-target assignments with varying LHS widths.
+"""
+
+x       = 1
+foo     = 2
+bar_baz = 3

@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: "apply(rule, source)"
+input_file: tests/fixtures/align_equals/multi_line_target.input.py
+---
+"""
+A target that spans multiple lines leaves the group intact but the
+multi-line entry does not participate.
+"""
+
+alpha = 1
+(
+    x,
+    y,
+) = 2, 3
+beta = 4

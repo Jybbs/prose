@@ -1,24 +1,26 @@
 //! Computes per-line padding widths for alignment rules.
 //!
-//! `compute` is a stateless helper shared by `align_equals`,
-//! `align_colons`, `align_imports`, and `match_case_align`. Group
-//! boundaries stay rule-specific; only the padding math lives here.
-
-use unicode_width::UnicodeWidthStr;
+//! `compute` is a stateless helper for the alignment rules that do
+//! not track group min/max themselves: `align_colons`,
+//! `align_imports`, and `match_case_align`. `align_equals` inlines
+//! the padding math because its shift-limit policy already carries
+//! min and max in hand, so calling `compute` would re-scan for the
+//! max. Group boundaries stay rule-specific, leaving only the
+//! padding math here.
 
 /// Returns the per-line padding widths that align a shared token.
 ///
-/// The target column is `max(width(s))` across `befores`. Each returned
-/// padding is `target - width(s)`, leaving zero padding on the longest
-/// line. Widths use `unicode-width` conventions, so zero-width combining
-/// marks, CJK full-width, and East Asian ambiguous characters all
-/// contribute correctly.
+/// `widths` is the display width of each row's left-hand-side region
+/// (the text preceding the shared token). The target column is
+/// `max(widths)` and each returned padding is `target - widths[i]`,
+/// leaving zero padding on the widest row. Callers add any
+/// post-target spacing (typically one space) themselves.
 ///
 /// Returns an empty `Vec` for empty input and `vec![0]` for a single
 /// item, leaving the singleton rule free to apply its own spacing.
-pub fn compute(befores: &[&str]) -> Vec<usize> {
-    let target = befores.iter().map(|s| s.width()).max().unwrap_or(0);
-    befores.iter().map(|s| target - s.width()).collect()
+pub fn compute(widths: &[usize]) -> Vec<usize> {
+    let target = widths.iter().copied().max().unwrap_or(0);
+    widths.iter().map(|&w| target - w).collect()
 }
 
 #[cfg(test)]
@@ -26,18 +28,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ascii_pads_shorter_to_longest() {
-        assert_eq!(compute(&["a", "abc", "ab"]), vec![2, 0, 1]);
-    }
-
-    #[test]
-    fn cjk_counts_as_double_width() {
-        assert_eq!(compute(&["中", "ab", "a"]), vec![0, 0, 1]);
-    }
-
-    #[test]
-    fn combining_marks_are_zero_width() {
-        assert_eq!(compute(&["a\u{0301}", "ab"]), vec![1, 0]);
+    fn ascending_widths_pad_shorter_to_longest() {
+        assert_eq!(compute(&[1, 3, 2]), vec![2, 0, 1]);
     }
 
     #[test]
@@ -47,11 +39,11 @@ mod tests {
 
     #[test]
     fn identical_widths_all_zero() {
-        assert_eq!(compute(&["ab", "cd", "ef"]), vec![0, 0, 0]);
+        assert_eq!(compute(&[2, 2, 2]), vec![0, 0, 0]);
     }
 
     #[test]
     fn single_item_returns_zero() {
-        assert_eq!(compute(&["x"]), vec![0]);
+        assert_eq!(compute(&[5]), vec![0]);
     }
 }

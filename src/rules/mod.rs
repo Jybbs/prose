@@ -2,3 +2,5 @@
 //!
 //! Each rule is added as its corresponding issue lands. Modules are
 //! declared here as they come online.
+
+pub mod align_equals;
