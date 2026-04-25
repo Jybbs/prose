@@ -11,6 +11,7 @@ use ruff_text_size::Ranged;
 use thiserror::Error;
 
 use crate::config::Config;
+use crate::rules::align_colons::AlignColons;
 use crate::rules::align_equals::AlignEquals;
 use crate::rules::collection_layout::CollectionLayout;
 use crate::source::Source;
@@ -44,14 +45,30 @@ pub trait Rule: Send + Sync {
 
 /// Ordered sequence of enabled rules, run against each source file.
 ///
-/// Use [`Pipeline::with_defaults`] to build one from a loaded [`Config`].
-/// Construct directly with an empty rule list for tests that exercise
-/// the identity path.
+/// Use [`Pipeline::with_defaults`] to build one from a loaded [`Config`],
+/// [`Pipeline::for_rule`] to register exactly one rule by name, or
+/// [`Pipeline::from_rules`] for an empty or custom-ordered rule list.
 pub struct Pipeline {
     rules: Vec<Box<dyn Rule>>,
 }
 
 impl Pipeline {
+    /// Builds a pipeline registering exactly one rule by name.
+    ///
+    /// Returns `None` when `name` does not match any registered rule.
+    /// Bypasses each rule's `enabled` flag. Names are snake_case
+    /// (`align_colons`, `align_equals`, `collection_layout`), not the
+    /// kebab-case form returned by [`Rule::name`].
+    pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
+        let rule: Box<dyn Rule> = match name {
+            "align_colons" => Box::new(AlignColons::from_config(config)),
+            "align_equals" => Box::new(AlignEquals::from_config(config)),
+            "collection_layout" => Box::new(CollectionLayout::from_config(config)),
+            _ => return None,
+        };
+        Some(Self::from_rules(vec![rule]))
+    }
+
     /// Constructs a pipeline from an explicit rule list.
     ///
     /// Primarily used by tests and by any future integration that
@@ -68,16 +85,18 @@ impl Pipeline {
     /// PR adds one registration line at its ordered slot below.
     pub fn with_defaults(config: &Config) -> Self {
         let mut rules: Vec<Box<dyn Rule>> = Vec::new();
-        if config.rules.collection_layout {
+        if config.rules.collection_layout.enabled {
             rules.push(Box::new(CollectionLayout::from_config(config)));
         }
-        // if config.rules.alphabetize { rules.push(Box::new(Alphabetize)); }
-        // if config.rules.strip_trailing_commas { rules.push(Box::new(StripTrailingCommas)); }
-        // if config.rules.match_case_align { rules.push(Box::new(MatchCaseAlign)); }
-        // if config.rules.singleton_rule { rules.push(Box::new(SingletonRule)); }
-        // if config.rules.align_imports { rules.push(Box::new(AlignImports)); }
-        // if config.rules.align_colons { rules.push(Box::new(AlignColons)); }
-        if config.rules.align_equals {
+        // if config.rules.alphabetize.enabled { rules.push(Box::new(Alphabetize)); }
+        // if config.rules.strip_trailing_commas.enabled { rules.push(Box::new(StripTrailingCommas)); }
+        // if config.rules.match_case_align.enabled { rules.push(Box::new(MatchCaseAlign)); }
+        // if config.rules.singleton_rule.enabled { rules.push(Box::new(SingletonRule)); }
+        // if config.rules.align_imports.enabled { rules.push(Box::new(AlignImports)); }
+        if config.rules.align_colons.enabled {
+            rules.push(Box::new(AlignColons::from_config(config)));
+        }
+        if config.rules.align_equals.enabled {
             rules.push(Box::new(AlignEquals::from_config(config)));
         }
         Self { rules }
@@ -372,14 +391,15 @@ mod tests {
     fn with_defaults_registers_enabled_rules() {
         let config = Config::default();
         let pipeline = Pipeline::with_defaults(&config);
-        assert_eq!(pipeline.len(), 2);
+        assert_eq!(pipeline.len(), 3);
     }
 
     #[test]
     fn with_defaults_respects_rule_toggles() {
         let mut config = Config::default();
-        config.rules.align_equals = false;
-        config.rules.collection_layout = false;
+        config.rules.align_colons.enabled = false;
+        config.rules.align_equals.enabled = false;
+        config.rules.collection_layout.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());
     }

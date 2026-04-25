@@ -1,0 +1,22 @@
+"""
+Google-style `Args:` section inside a function docstring. Each
+argument entry's `:` aligns to the widest argument name's column.
+The leading and trailing sections of the docstring stay untouched,
+and the body of the function is unaffected.
+"""
+
+def transfer(source: str, destination: str, amount: float, memo: str) -> None:
+    """
+    Transfers funds between two accounts.
+
+    Args:
+        source: account id to debit from.
+        destination: account id to credit to.
+        amount: quantity in the account's base currency.
+        memo: optional note that accompanies the transfer.
+
+    Returns:
+        None.
+    """
+    _debit(source, amount)
+    _credit(destination, amount, memo)

@@ -1,12 +1,8 @@
 //! Recursive path discovery for the `check` and `format` subcommands.
 //!
-//! Wraps `ignore::WalkBuilder` with the defaults prose wants. Honors
-//! `.gitignore`, `.ignore`, the user's global ignore file, and skips
-//! hidden files. Yields the Python source files under the input paths,
-//! using `ruff_python_ast::PySourceType` to classify extensions so
-//! prose covers `.py`, `.pyi`, and `.pyw` in lockstep with the rest of
-//! the ruff ecosystem. The walker is a serial iterator, leaving rayon
-//! to attach downstream via `par_bridge`.
+//! Wraps `ignore::WalkBuilder`, honoring `.gitignore`, `.ignore`, the
+//! user's global ignore file, and hidden-file conventions. Yields
+//! Python source files (`.py`, `.pyi`, `.pyw`) under the input paths.
 
 use std::path::PathBuf;
 
@@ -15,22 +11,16 @@ use ruff_python_ast::PySourceType;
 
 /// Walks `paths` recursively and yields the Python files under them.
 ///
-/// `paths` may contain directories or individual files. Directories are
-/// traversed, whereas regular files are yielded only when `PySourceType`
-/// classifies them as Python source (`.py`, `.pyi`, `.pyw`). Entries
-/// are filtered through the `ignore` crate's default ignore-file stack,
-/// so `.gitignore`, `.ignore`, the global ignore config, and
-/// hidden-file conventions are honored automatically.
-///
-/// Returns an empty iterator when `paths` is empty, so the caller does
-/// not have to special-case that branch.
+/// `paths` may contain directories or individual files. Regular files
+/// are yielded only when `PySourceType` classifies them as Python
+/// source. Returns an empty iterator when `paths` is empty.
 pub fn walk(paths: &[PathBuf]) -> impl Iterator<Item = Result<PathBuf, ignore::Error>> + Send {
     let builder = paths.split_first().map(|(first, rest)| {
-        let mut b = WalkBuilder::new(first);
+        let mut builder = WalkBuilder::new(first);
         for path in rest {
-            b.add(path);
+            builder.add(path);
         }
-        b
+        builder
     });
 
     builder
@@ -41,7 +31,7 @@ pub fn walk(paths: &[PathBuf]) -> impl Iterator<Item = Result<PathBuf, ignore::E
                 .map(|e| {
                     let is_python_file = e.file_type().is_some_and(|ft| ft.is_file())
                         && PySourceType::try_from_path(e.path())
-                            .is_some_and(|ty| ty.is_py_file_or_stub());
+                            .is_some_and(PySourceType::is_py_file_or_stub);
                     is_python_file.then(|| e.into_path())
                 })
                 .transpose()

@@ -1,0 +1,47 @@
+---
+source: tests/config_parsing.rs
+expression: config
+input_file: tests/fixtures/config/full_override.toml
+---
+Config {
+    line_length: Some(
+        100,
+    ),
+    rules: RuleConfigs {
+        align_colons: AlignmentConfig {
+            enabled: false,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
+        align_equals: AlignmentConfig {
+            enabled: false,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
+        align_imports: ToggleOnly {
+            enabled: false,
+        },
+        alphabetize: ToggleOnly {
+            enabled: false,
+        },
+        collection_layout: CollectionLayoutConfig {
+            enabled: false,
+            max_atomics_per_line: None,
+        },
+        match_case_align: ToggleOnly {
+            enabled: false,
+        },
+        singleton_rule: ToggleOnly {
+            enabled: false,
+        },
+        strip_trailing_commas: ToggleOnly {
+            enabled: false,
+        },
+    },
+    target_version: Some(
+        PythonVersion {
+            major: 3,
+            minor: 12,
+        },
+    ),
+}

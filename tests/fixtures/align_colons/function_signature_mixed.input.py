@@ -1,0 +1,15 @@
+"""
+Function signature mixing annotated and bare parameters. A bare
+parameter between two annotated ones breaks the alignment group,
+so the annotated runs on either side align independently against
+their own widest names, not across the bare break.
+"""
+
+def combine(
+    user: User,
+    source: str,
+    legacy,
+    target_path: str,
+    destination: Filesystem,
+) -> None:
+    _impl(user, source, legacy, target_path, destination)

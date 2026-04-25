@@ -1,0 +1,19 @@
+"""
+The phrase `Args:` appears once in the docstring's body prose and
+again as the section header. Only the real header triggers
+alignment; the inline phrase is left as-is.
+"""
+
+def emit(channel: str, severity: str, payload: str) -> None:
+    """
+    Sends a structured event.
+
+    The `Args:` phrase below is part of the description, not a
+    section header, so the parser ignores it.
+
+    Args:
+        channel: target stream.
+        severity: log level.
+        payload: serialized event.
+    """
+    _send(channel, severity, payload)
