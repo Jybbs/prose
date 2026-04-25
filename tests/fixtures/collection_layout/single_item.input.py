@@ -1,0 +1,12 @@
+"""
+Single-item and empty literals keep their original inline form
+regardless of line length. `item_count` returns `Some(0)` or
+`Some(1)` for these cases, both of which short-circuit
+`should_expand` ahead of the line-length check.
+"""
+
+only_list  = [42]
+only_dict  = {"solitary": 1}
+only_set   = {42}
+empty_list = []
+empty_dict = {}

@@ -1,0 +1,40 @@
+---
+source: tests/integration.rs
+expression: "apply(rule, source)"
+input_file: tests/fixtures/collection_layout/unpacking.input.py
+---
+"""
+Dict `**` unpacking and list or set `*` unpacking survive the
+expansion. Dict items with `key == None` serialize as `**value` via
+an explicit branch and always land on their own line alongside the
+dict's other entries. Starred expressions in list and set elts slice
+through the `Expr::Starred` range verbatim; they are non-atomic, so
+a spread in the middle of a list splits its surrounding atomics into
+two independent runs that each flow on their own, and a set made
+entirely of spreads goes one entry per line.
+"""
+
+dict_unpack = {
+    "alpha": 1,
+    **extra_config,
+    "beta": 2,
+    "gamma": 3,
+    "delta": 4,
+    "epsilon": 5,
+    "zeta": 6
+}
+list_unpack = [
+    1, 2, 3,
+    *middle_range,
+    100, 200, 300, 400, 500, 600,
+    700, 800, 900, 1000, 1100, 1200
+]
+set_unpack = {
+    *alpha_set,
+    *beta_set,
+    *gamma_set,
+    *delta_set,
+    *epsilon_set,
+    *zeta_set,
+    *eta_set
+}

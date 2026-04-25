@@ -1,0 +1,22 @@
+---
+source: tests/integration.rs
+expression: "apply(rule, source)"
+input_file: tests/fixtures/collection_layout/matrix.input.py
+---
+"""
+A matrix-style nested list stays entirely inline when the whole
+thing fits in the 88-character budget. When the outer list would
+overflow, it expands row-by-row. Each inner row checks fit at its
+item-indent column, and rows that still fit stay inline to produce
+the canonical matrix-by-row layout rather than the every-cell-its-own-line
+degenerate form.
+"""
+
+small_matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+tall_matrix = [
+    [100, 200, 300],
+    [400, 500, 600],
+    [700, 800, 900],
+    [1000, 1100, 1200],
+    [1300, 1400, 1500]
+]

@@ -1,0 +1,35 @@
+---
+source: tests/integration.rs
+expression: "apply(rule, source)"
+input_file: tests/fixtures/collection_layout/nested_blocks.input.py
+---
+"""
+Collections inside function and class bodies compute their enclosing
+indent from the opening bracket's line, not from the module top-level.
+Short collections at any indent level stay inline. A long dict at
+any depth expands with each entry on its own line; a long list or
+set of atomic items flow-packs across balanced lines at the item
+indent.
+"""
+
+
+def build_config():
+    short_local = {"alpha": 1, "beta": 2}
+    long_local = {
+        "alpha": 1,
+        "beta": 2,
+        "gamma": 3,
+        "delta": 4,
+        "epsilon": 5,
+        "zeta": 6,
+        "eta": 7
+    }
+    return short_local, long_local
+
+
+class Defaults:
+    SHORT_PRIMES = [2, 3, 5, 7]
+    LONG_PRIMES = [
+        101, 103, 107, 109, 113, 127, 131, 137,
+        139, 149, 151, 157, 163, 167, 173, 179
+    ]
