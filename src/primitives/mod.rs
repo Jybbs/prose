@@ -1,7 +1,6 @@
-//! Shared primitives used across rule implementations.
-//!
-//! `aligner` computes padding widths for any group of lines that share
-//! an alignable token. `orderer` reshuffles sibling AST nodes and
-//! regenerates source for the alphabetization rules.
+//! Shared primitives used across rule implementations. `aligner`
+//! emits alignment edits for groups sharing a token. `locator` lifts
+//! position helpers over `Source`.
 
 pub mod aligner;
+pub mod locator;

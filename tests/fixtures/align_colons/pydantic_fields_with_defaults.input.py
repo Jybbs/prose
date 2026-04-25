@@ -1,0 +1,13 @@
+"""
+Annotated class fields mixing bare declarations (`name: type`) and
+assignments with defaults (`name: type = value`). Both shapes
+participate in the same alignment group because they share the
+`:` structure `align_colons` anchors on.
+"""
+
+class Settings:
+    debug: bool = False
+    log_level: str = "INFO"
+    timeout: int
+    retries: int = 3
+    backend: str

@@ -1,0 +1,27 @@
+[tool.prose]
+line-length = 100
+target-version = "3.12"
+
+[tool.prose.rules.align-colons]
+enabled = false
+
+[tool.prose.rules.align-equals]
+enabled = false
+
+[tool.prose.rules.align-imports]
+enabled = false
+
+[tool.prose.rules.alphabetize]
+enabled = false
+
+[tool.prose.rules.collection-layout]
+enabled = false
+
+[tool.prose.rules.match-case-align]
+enabled = false
+
+[tool.prose.rules.singleton-rule]
+enabled = false
+
+[tool.prose.rules.strip-trailing-commas]
+enabled = false

@@ -4,7 +4,8 @@
 //! filesystem root, stopping at the first `pyproject.toml` that
 //! carries a `[tool.prose]` section. Reaching the root without a match
 //! resolves to full defaults, so *Prose* works on a fresh Python
-//! project with no configuration step.
+//! project with no configuration step. Each rule's configuration
+//! lives under `[tool.prose.rules.<name>]`.
 
 use std::{num::NonZeroUsize, path::Path};
 
@@ -12,23 +13,74 @@ use ruff_python_ast::PythonVersion;
 use serde::{de::IntoDeserializer, Deserialize};
 use thiserror::Error;
 
+/// Configuration shared by the alignment rules (`align_colons`, `align_equals`).
+#[derive(Debug, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct AlignmentConfig {
+    pub enabled: bool,
+    pub max_shift: NonZeroUsize,
+    pub max_shift_policy: MaxAlignShiftPolicy,
+}
+
+impl Default for AlignmentConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_shift: NonZeroUsize::new(8).expect("8 is non-zero"),
+            max_shift_policy: MaxAlignShiftPolicy::default(),
+        }
+    }
+}
+
+/// Configuration for the `collection_layout` rule.
+#[derive(Debug, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct CollectionLayoutConfig {
+    pub enabled: bool,
+    pub max_atomics_per_line: Option<NonZeroUsize>,
+}
+
+impl Default for CollectionLayoutConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_atomics_per_line: None,
+        }
+    }
+}
+
 /// The `[tool.prose]` section of a user's `pyproject.toml`.
 ///
-/// `None` on a field means the user did not set that key in their
-/// `pyproject.toml`; downstream consumers apply their own fallback
-/// rather than reading a synthesized default here.
-#[derive(Debug, Deserialize)]
+/// `None` on `line_length` or `target_version` means the user did not
+/// set that key in their `pyproject.toml`. Downstream consumers apply
+/// their own fallback rather than reading a synthesized default here.
+/// Per-rule settings live under `rules`, where each rule's sub-table
+/// carries `enabled` plus that rule's own knobs.
+#[derive(Debug, Default, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
     pub line_length: Option<NonZeroUsize>,
-    pub max_align_shift: NonZeroUsize,
-    pub max_align_shift_policy: MaxAlignShiftPolicy,
-    pub max_atomics_per_line: Option<NonZeroUsize>,
-    pub rules: RuleToggles,
+    pub rules: RuleConfigs,
     pub target_version: Option<PythonVersion>,
 }
 
 impl Config {
+    /// Parses a `pyproject.toml` snippet directly from a string.
+    ///
+    /// Returns `Config::default()` when `contents` carries no
+    /// `[tool.prose]` section. Unknown keys under `[tool.prose]` warn
+    /// to stderr, mirroring [`Config::load`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `ConfigError::Toml` when `contents` is not valid TOML.
+    pub fn from_pyproject_str(contents: &str) -> Result<Self, ConfigError> {
+        let mut on_unknown = |key: &str| {
+            eprintln!("warning: unknown key `{key}` in [tool.prose]");
+        };
+        Ok(parse_prose_section(contents, &mut on_unknown)?.unwrap_or_default())
+    }
+
     /// Walks upward from `from` and returns the first `[tool.prose]`
     /// section found in a `pyproject.toml` along the way, or
     /// `Config::default()` if no such section exists on the chain.
@@ -72,19 +124,6 @@ impl Config {
     }
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            line_length: None,
-            max_align_shift: NonZeroUsize::new(8).expect("8 is non-zero"),
-            max_align_shift_policy: MaxAlignShiftPolicy::default(),
-            max_atomics_per_line: None,
-            rules: RuleToggles::default(),
-            target_version: None,
-        }
-    }
-}
-
 /// Failure to load a `[tool.prose]` configuration from a `pyproject.toml`.
 #[derive(Debug, Error)]
 pub enum ConfigError {
@@ -94,8 +133,8 @@ pub enum ConfigError {
     Toml(#[from] toml::de::Error),
 }
 
-/// What to do when an alignment group's widest padding exceeds
-/// `max-align-shift`.
+/// What to do when an alignment group's widest padding exceeds the
+/// rule's `max-shift`.
 ///
 /// `Split` greedily partitions the group so each contiguous
 /// sub-group satisfies the cap, and each sub-group of size `>= 2`
@@ -128,35 +167,34 @@ where
     Ok(Some(config))
 }
 
-/// Per-rule on/off flags parsed from `[tool.prose.rules]`.
+/// Per-rule configuration parsed from `[tool.prose.rules.<name>]`.
 ///
-/// Every flag defaults to `true`. Users opt a rule out by setting it
-/// to `false` in their `pyproject.toml`.
-#[derive(Debug, Deserialize)]
+/// Each field is a sub-table whose `enabled` key (defaulting to
+/// `true`) toggles the rule and whose remaining keys carry that
+/// rule's knobs.
+#[derive(Debug, Default, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
-pub struct RuleToggles {
-    pub align_colons: bool,
-    pub align_equals: bool,
-    pub align_imports: bool,
-    pub alphabetize: bool,
-    pub collection_layout: bool,
-    pub match_case_align: bool,
-    pub singleton_rule: bool,
-    pub strip_trailing_commas: bool,
+pub struct RuleConfigs {
+    pub align_colons: AlignmentConfig,
+    pub align_equals: AlignmentConfig,
+    pub align_imports: ToggleOnly,
+    pub alphabetize: ToggleOnly,
+    pub collection_layout: CollectionLayoutConfig,
+    pub match_case_align: ToggleOnly,
+    pub singleton_rule: ToggleOnly,
+    pub strip_trailing_commas: ToggleOnly,
 }
 
-impl Default for RuleToggles {
+/// Sub-table shape for rules whose only knob is `enabled`.
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ToggleOnly {
+    pub enabled: bool,
+}
+
+impl Default for ToggleOnly {
     fn default() -> Self {
-        Self {
-            align_colons: true,
-            align_equals: true,
-            align_imports: true,
-            alphabetize: true,
-            collection_layout: true,
-            match_case_align: true,
-            singleton_rule: true,
-            strip_trailing_commas: true,
-        }
+        Self { enabled: true }
     }
 }
 
@@ -178,7 +216,7 @@ mod tests {
 
         assert_eq!(config.line_length, None);
         assert_eq!(config.target_version, None);
-        assert!(config.rules.align_equals);
+        assert!(config.rules.align_equals.enabled);
     }
 
     #[test]
@@ -189,37 +227,7 @@ mod tests {
         let config = Config::load(tmp.path()).expect("loads");
 
         assert_eq!(config.line_length, None);
-        assert!(config.rules.align_equals);
-    }
-
-    #[test]
-    fn load_full_override() {
-        let tmp = TempDir::new().expect("tempdir");
-        write_pyproject(
-            tmp.path(),
-            indoc! {r#"
-                [tool.prose]
-                line-length = 100
-                target-version = "3.12"
-
-                [tool.prose.rules]
-                align-colons = false
-                align-equals = false
-                align-imports = false
-                alphabetize = false
-                collection-layout = false
-                match-case-align = false
-                singleton-rule = false
-                strip-trailing-commas = false
-            "#},
-        );
-
-        let config = Config::load(tmp.path()).expect("loads");
-
-        assert_eq!(config.line_length, NonZeroUsize::new(100));
-        assert_eq!(config.target_version, Some(PythonVersion::PY312));
-        assert!(!config.rules.align_colons);
-        assert!(!config.rules.strip_trailing_commas);
+        assert!(config.rules.align_equals.enabled);
     }
 
     #[test]
@@ -235,13 +243,42 @@ mod tests {
     #[test]
     fn load_partial_override_preserves_other_rule_defaults() {
         let tmp = TempDir::new().expect("tempdir");
-        write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
+        write_pyproject(
+            tmp.path(),
+            "[tool.prose.rules.align-equals]\nenabled = false\n",
+        );
 
         let config = Config::load(tmp.path()).expect("loads");
 
-        assert!(!config.rules.align_equals);
-        assert!(config.rules.align_colons);
-        assert!(config.rules.strip_trailing_commas);
+        assert!(!config.rules.align_equals.enabled);
+        assert!(config.rules.align_colons.enabled);
+        assert!(config.rules.strip_trailing_commas.enabled);
+    }
+
+    #[test]
+    fn load_per_rule_policy_overrides_are_independent() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_pyproject(
+            tmp.path(),
+            indoc! {r#"
+                [tool.prose.rules.align-colons]
+                max-shift-policy = "drop"
+
+                [tool.prose.rules.align-equals]
+                max-shift-policy = "skip"
+            "#},
+        );
+
+        let config = Config::load(tmp.path()).expect("loads");
+
+        assert_eq!(
+            config.rules.align_colons.max_shift_policy,
+            MaxAlignShiftPolicy::Drop
+        );
+        assert_eq!(
+            config.rules.align_equals.max_shift_policy,
+            MaxAlignShiftPolicy::Skip
+        );
     }
 
     #[test]
@@ -281,7 +318,7 @@ mod tests {
             .expect("loads");
 
         assert_eq!(captured, ["unknown-future-key"]);
-        assert!(config.rules.align_equals);
+        assert!(config.rules.align_equals.enabled);
     }
 
     #[test]
