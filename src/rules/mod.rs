@@ -9,3 +9,4 @@ pub mod align_imports;
 pub mod collection_layout;
 pub mod match_case_align;
 pub mod singleton_rule;
+pub mod strip_trailing_commas;

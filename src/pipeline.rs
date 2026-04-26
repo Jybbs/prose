@@ -17,6 +17,7 @@ use crate::rules::align_imports::AlignImports;
 use crate::rules::collection_layout::CollectionLayout;
 use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::singleton_rule::SingletonRule;
+use crate::rules::strip_trailing_commas::StripTrailingCommas;
 use crate::source::Source;
 
 /// Every rule in `prose` implements this trait and nothing more.
@@ -61,8 +62,9 @@ impl Pipeline {
     /// Returns `None` when `name` does not match any registered rule.
     /// Bypasses each rule's `enabled` flag. Names are snake_case
     /// (`align_colons`, `align_equals`, `align_imports`,
-    /// `collection_layout`, `singleton_rule`), not the kebab-case form
-    /// returned by [`Rule::name`].
+    /// `collection_layout`, `match_case_align`, `singleton_rule`,
+    /// `strip_trailing_commas`), not the kebab-case form returned
+    /// by [`Rule::name`].
     pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
         let rule: Box<dyn Rule> = match name {
             "align_colons" => Box::new(AlignColons::from_config(config)),
@@ -71,6 +73,7 @@ impl Pipeline {
             "collection_layout" => Box::new(CollectionLayout::from_config(config)),
             "match_case_align" => Box::new(MatchCaseAlign::from_config(config)),
             "singleton_rule" => Box::new(SingletonRule::from_config(config)),
+            "strip_trailing_commas" => Box::new(StripTrailingCommas::from_config(config)),
             _ => return None,
         };
         Some(Self::from_rules(vec![rule]))
@@ -96,7 +99,9 @@ impl Pipeline {
             rules.push(Box::new(CollectionLayout::from_config(config)));
         }
         // if config.rules.alphabetize.enabled { rules.push(Box::new(Alphabetize)); }
-        // if config.rules.strip_trailing_commas.enabled { rules.push(Box::new(StripTrailingCommas)); }
+        if config.rules.strip_trailing_commas.enabled {
+            rules.push(Box::new(StripTrailingCommas::from_config(config)));
+        }
         if config.rules.match_case_align.enabled {
             rules.push(Box::new(MatchCaseAlign::from_config(config)));
         }
@@ -404,7 +409,7 @@ mod tests {
     fn with_defaults_registers_enabled_rules() {
         let config = Config::default();
         let pipeline = Pipeline::with_defaults(&config);
-        assert_eq!(pipeline.len(), 6);
+        assert_eq!(pipeline.len(), 7);
     }
 
     #[test]
@@ -416,6 +421,7 @@ mod tests {
         config.rules.collection_layout.enabled = false;
         config.rules.match_case_align.enabled = false;
         config.rules.singleton_rule.enabled = false;
+        config.rules.strip_trailing_commas.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());
     }
