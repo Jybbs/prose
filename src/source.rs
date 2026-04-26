@@ -7,11 +7,11 @@
 use std::path::Path;
 use std::str::FromStr;
 
-use ruff_python_ast::token::Tokens;
+use ruff_python_ast::token::{Token, Tokens};
 use ruff_python_ast::ModModule;
 use ruff_python_parser::{parse_module, ParseError, Parsed};
 use ruff_source_file::{LineColumn, SourceFile, SourceFileBuilder};
-use ruff_text_size::{Ranged, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use thiserror::Error;
 
 /// Owned wrapper around a parsed Python source file.
@@ -47,6 +47,17 @@ impl Source {
 
     pub fn ast(&self) -> &ModModule {
         self.parsed.syntax()
+    }
+
+    /// Returns the first token in `range` for which `predicate` is
+    /// true. Callers that just need the offset can chain
+    /// `.map(Token::start)`. Used by every rule that anchors alignment
+    /// on a specific keyword or operator token.
+    pub fn first_token_in_range<F>(&self, range: TextRange, mut predicate: F) -> Option<&Token>
+    where
+        F: FnMut(&Token) -> bool,
+    {
+        self.tokens().in_range(range).iter().find(|&t| predicate(t))
     }
 
     /// Returns the line and column for a byte offset.
@@ -128,6 +139,7 @@ pub enum SourceError {
 
 #[cfg(test)]
 mod tests {
+    use ruff_python_ast::token::TokenKind;
     use ruff_source_file::OneIndexed;
     use ruff_text_size::TextRange;
 
@@ -145,6 +157,59 @@ mod tests {
         let s = Source::from_str("").expect("empty source parses");
         assert_eq!(s.text(), "");
         assert!(s.ast().body.is_empty());
+    }
+
+    #[test]
+    fn first_token_in_range_returns_first_match_when_multiple_satisfy() {
+        // Chained assignment carries two `=` tokens; the helper must
+        // return the leftmost one, not just any match.
+        let s = Source::from_str("a = b = 1\n").expect("parses");
+        let token = s
+            .first_token_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Equal)
+            .expect("two `=` tokens, picks first");
+
+        assert_eq!(token.start(), TextSize::new(2));
+    }
+
+    #[test]
+    fn first_token_in_range_returns_none_for_empty_range() {
+        let s = Source::from_str("x = 1\n").expect("parses");
+        let empty = TextRange::empty(TextSize::new(0));
+
+        assert!(s.first_token_in_range(empty, |_| true).is_none());
+    }
+
+    #[test]
+    fn first_token_in_range_returns_none_when_no_token_matches() {
+        let s = Source::from_str("x = 1\n").expect("parses");
+        let result =
+            s.first_token_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Colon);
+
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn first_token_in_range_returns_token_for_single_match() {
+        let s = Source::from_str("x = 1\n").expect("parses");
+        let token = s
+            .first_token_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Equal)
+            .expect("one `=` token");
+
+        assert_eq!(token.start(), TextSize::new(2));
+    }
+
+    #[test]
+    fn first_token_in_range_supports_predicate_compositions() {
+        // Mirrors how align_equals's aug-assign arm picks any token in
+        // the augmented-assign-operator family rather than a specific kind.
+        let s = Source::from_str("x += 1\n").expect("parses");
+        let token = s
+            .first_token_in_range(s.ast().body[0].range(), |t| {
+                t.kind().as_augmented_assign_operator().is_some()
+            })
+            .expect("`+=` is an aug-assign operator");
+
+        assert_eq!(token.start(), TextSize::new(2));
     }
 
     #[test]

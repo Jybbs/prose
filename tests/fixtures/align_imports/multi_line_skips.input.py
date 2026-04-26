@@ -1,0 +1,17 @@
+"""
+A multi-line `from`-import (parenthesized continuation) skips
+alignment, since shifting the `import` keyword would leave its
+continuation indent visually disconnected. The skipper also acts
+as a group breaker, so the single-line neighbors above align only
+with each other and the single-line neighbors below do the same,
+without crossing the multi-line stretch.
+"""
+
+from collections import OrderedDict
+from typing import Optional
+from sys import (
+    path,
+    platform,
+)
+from os.path import join
+from re import sub

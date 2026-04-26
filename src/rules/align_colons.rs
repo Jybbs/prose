@@ -14,7 +14,6 @@ use ruff_python_ast::{AnyParameterRef, Expr, ExprDict, Parameters, Stmt};
 use ruff_python_trivia::{CommentRanges, PythonWhitespace};
 use ruff_source_file::{LineRanges, UniversalNewlines};
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
 use crate::pipeline::Rule;
@@ -27,22 +26,13 @@ pub struct AlignColons {
 
 impl AlignColons {
     pub fn from_config(config: &Config) -> Self {
-        let rule = &config.rules.align_colons;
         Self {
-            settings: aligner::Settings {
-                max_shift: rule.max_shift.get(),
-                policy: rule.max_shift_policy,
-                suffix_len: 1,
-            },
+            settings: (&config.rules.align_colons).into(),
         }
     }
 }
 
 impl Rule for AlignColons {
-    fn name(&self) -> &'static str {
-        "align-colons"
-    }
-
     fn apply(&self, source: &Source) -> Vec<Edit> {
         let mut visitor = Visitor {
             comment_ranges: CommentRanges::from(source.tokens()),
@@ -52,6 +42,10 @@ impl Rule for AlignColons {
         };
         visitor.visit_body(&source.ast().body);
         visitor.edits
+    }
+
+    fn name(&self) -> &'static str {
+        "align-colons"
     }
 }
 
@@ -65,9 +59,11 @@ struct Visitor<'a> {
 impl Visitor<'_> {
     fn class_field_member(&self, stmt: &Stmt) -> Option<aligner::Member> {
         let ann = stmt.as_ann_assign_stmt()?;
-        let colon_start =
-            self.find_colon(TextRange::new(ann.target.end(), ann.annotation.start()))?;
-        Some(self.lhs_info(colon_start))
+        aligner::line_anchored_member_at_kind(
+            self.source,
+            TextRange::new(ann.target.end(), ann.annotation.start()),
+            TokenKind::Colon,
+        )
     }
 
     /// Returns `true` when every member's colon sits on a distinct
@@ -122,7 +118,7 @@ impl Visitor<'_> {
                 let line_offset = TextSize::try_from(after_header + line_indent_len + colon_rel)
                     .expect("docstring colon offset fits in TextSize");
                 let colon_start = ds_range.start() + line.start() + line_offset;
-                members.push(self.lhs_info(colon_start));
+                members.push(aligner::line_anchored_member(self.source, colon_start));
             }
         }
         members
@@ -136,37 +132,15 @@ impl Visitor<'_> {
         aligner::emit_group(self.source, members, self.settings, &mut self.edits);
     }
 
-    /// Finds the first `:` token in `range`. Returns `None` when no
-    /// colon falls in the range.
-    fn find_colon(&self, range: TextRange) -> Option<TextSize> {
-        self.source
-            .tokens()
-            .in_range(range)
-            .iter()
-            .find(|t| t.kind() == TokenKind::Colon)
-            .map(|t| t.start())
-    }
-
-    /// Computes the alignment member for a colon at `colon_start`,
-    /// anchored on the colon's line.
-    fn lhs_info(&self, colon_start: TextSize) -> aligner::Member {
-        let line_start = self.source.text().line_start(colon_start);
-        let prefix = self.source.slice(TextRange::new(line_start, colon_start));
-        let trimmed_end = prefix.trim_whitespace_end();
-        let gap_start = line_start + TextSize::of(trimmed_end);
-        aligner::Member {
-            gap: TextRange::new(gap_start, colon_start),
-            width: trimmed_end.trim_whitespace_start().width(),
-        }
-    }
-
     /// Builds an alignment member from a single annotated parameter,
     /// or returns `None` to signal a group break.
     fn parameter_member(&self, param_ref: AnyParameterRef<'_>) -> Option<aligner::Member> {
         let annotation = param_ref.annotation()?;
-        let name_range = param_ref.name().range();
-        let colon_start = self.find_colon(TextRange::new(name_range.end(), annotation.start()))?;
-        Some(self.lhs_info(colon_start))
+        aligner::line_anchored_member_at_kind(
+            self.source,
+            TextRange::new(param_ref.name().end(), annotation.start()),
+            TokenKind::Colon,
+        )
     }
 
     /// Processes consecutive `AnnAssign` statements in a class body,
@@ -189,8 +163,11 @@ impl Visitor<'_> {
             .iter()
             .filter_map(|item| {
                 let key = item.key.as_ref()?;
-                let colon_start = self.find_colon(TextRange::new(key.end(), item.value.start()))?;
-                Some(self.lhs_info(colon_start))
+                aligner::line_anchored_member_at_kind(
+                    self.source,
+                    TextRange::new(key.end(), item.value.start()),
+                    TokenKind::Colon,
+                )
             })
             .collect();
         self.emit(&members);

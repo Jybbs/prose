@@ -1,0 +1,17 @@
+"""
+Bare `import M` statements without aliases break the surrounding
+`import`-as group, since they have no `as` keyword to align
+against. Non-import statements between imports also break the
+run. Each broken side aligns only with its own contiguous
+neighbors of the same form.
+"""
+
+import collections as c
+import datetime as dt
+import os
+import re as r
+import json as j
+
+from sys import path
+LOG_LEVEL = "INFO"
+from typing import Optional

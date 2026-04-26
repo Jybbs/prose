@@ -18,8 +18,10 @@ Config {
             max_shift: 8,
             max_shift_policy: Split,
         },
-        align_imports: ToggleOnly {
+        align_imports: AlignmentConfig {
             enabled: false,
+            max_shift: 8,
+            max_shift_policy: Split,
         },
         alphabetize: ToggleOnly {
             enabled: false,

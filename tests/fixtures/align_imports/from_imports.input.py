@@ -1,0 +1,11 @@
+"""
+A run of consecutive `from M import N` statements aligns the
+`import` keyword across them. Each module path's display width
+determines the shared target column, with the widest module
+fixing where the rest pad to.
+"""
+
+from collections import OrderedDict
+from typing import Optional
+from sys import path
+from os.path import join

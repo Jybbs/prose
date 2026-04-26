@@ -5,10 +5,14 @@
 //! one-space buffer before the aligned token.
 
 use ruff_diagnostics::Edit;
+use ruff_python_ast::token::{Token, TokenKind};
 use ruff_python_ast::Stmt;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_python_trivia::{lines_before, PythonWhitespace};
+use ruff_source_file::LineRanges;
+use ruff_text_size::{Ranged, TextRange, TextSize};
+use unicode_width::UnicodeWidthStr;
 
-use crate::config::MaxAlignShiftPolicy;
+use crate::config::{AlignmentConfig, MaxAlignShiftPolicy};
 use crate::source::Source;
 
 /// One row in an alignment group.
@@ -33,6 +37,16 @@ pub struct Settings {
     pub max_shift: usize,
     pub policy: MaxAlignShiftPolicy,
     pub suffix_len: usize,
+}
+
+impl From<&AlignmentConfig> for Settings {
+    fn from(c: &AlignmentConfig) -> Self {
+        Self {
+            max_shift: c.max_shift.get(),
+            policy: c.max_shift_policy,
+            suffix_len: 1,
+        }
+    }
 }
 
 /// Aligns the members of a group, dispatching through `settings.policy`
@@ -86,21 +100,91 @@ fn emit_with_paddings(
     }));
 }
 
-/// Returns `true` when the token gap between two AST nodes carries
-/// exactly one newline and no comment, meaning the surrounding nodes
-/// sit on directly adjacent source lines. Backs `line_adjacent_groups`,
-/// which is the public interface every alignment rule consumes.
+/// Returns `true` when the gap between two AST nodes carries exactly
+/// one newline and no comment, meaning the surrounding nodes sit on
+/// directly adjacent source lines. Backs `line_adjacent_groups`, which
+/// is the public interface every alignment rule consumes.
 fn is_line_adjacent(source: &Source, gap: TextRange) -> bool {
-    source
-        .tokens()
-        .in_range(gap)
-        .iter()
-        .try_fold(0usize, |n, t| match t.kind() {
-            k if k.is_comment() => None,
-            k if k.is_any_newline() => Some(n + 1),
-            _ => Some(n),
-        })
-        == Some(1)
+    !source.slice(gap).contains('#') && lines_before(gap.end(), source.text()) == 1
+}
+
+/// Builds a `Member` for a row whose aligned token sits at `anchor`.
+/// Width is the display width of the line's content from the first
+/// non-whitespace character to the last non-whitespace character
+/// before the gap, leaving the gap free for the rule to rewrite.
+/// Shared by every rule that aligns at a token's line position.
+pub fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
+    let line_start = source.text().line_start(anchor);
+    let prefix = source.slice(TextRange::new(line_start, anchor));
+    let trimmed_end = prefix.trim_whitespace_end();
+    let gap_start = line_start + TextSize::of(trimmed_end);
+    Member {
+        gap: TextRange::new(gap_start, anchor),
+        width: trimmed_end.trim_whitespace_start().width(),
+    }
+}
+
+/// Builds a `Member` for a row whose aligned token sits at `anchor`,
+/// with width measured by the display width of `target` plus
+/// `extra_width`. Pass `extra_width = 0` when the LHS is exactly
+/// `target` (e.g. `x = 1`); pass a non-zero value when the LHS
+/// visually extends past `target` by characters not covered by the
+/// slice (e.g. the `+` of `x += 1` widens the LHS by one column
+/// without being part of the target range).
+pub fn range_anchored_member(
+    source: &Source,
+    target: TextRange,
+    anchor: TextSize,
+    extra_width: usize,
+) -> Member {
+    Member {
+        gap: TextRange::new(target.end(), anchor),
+        width: source.slice(target).width() + extra_width,
+    }
+}
+
+/// Builds a `Member` whose anchor is the first token of `kind` within
+/// `search`. Convenience for the dominant rule-side composition: find
+/// a keyword or operator token in a tight range, then build a
+/// line-anchored member from its start. Returns `None` when the search
+/// turns up nothing.
+pub fn line_anchored_member_at_kind(
+    source: &Source,
+    search: TextRange,
+    kind: TokenKind,
+) -> Option<Member> {
+    let anchor = source
+        .first_token_in_range(search, |t| t.kind() == kind)
+        .map(Token::start)?;
+    Some(line_anchored_member(source, anchor))
+}
+
+/// Builds a `Member` whose anchor is the first token in `search`
+/// satisfying `predicate`, with width measured by `target` plus
+/// `extra_width`. Returns `None` if no token matches, or if the span
+/// from `target.start()` to the anchor crosses a newline (continuation
+/// imports, line-broken assignments). Use this when alignment must
+/// stay confined to a single source line.
+pub fn range_anchored_member_single_line<F>(
+    source: &Source,
+    target: TextRange,
+    search: TextRange,
+    predicate: F,
+    extra_width: usize,
+) -> Option<Member>
+where
+    F: FnMut(&Token) -> bool,
+{
+    let anchor = source
+        .first_token_in_range(search, predicate)
+        .map(Token::start)?;
+    if source
+        .text()
+        .contains_line_break(TextRange::new(target.start(), anchor))
+    {
+        return None;
+    }
+    Some(range_anchored_member(source, target, anchor, extra_width))
 }
 
 /// Walks `body`, qualifying each statement through `qualify` and
@@ -108,7 +192,9 @@ fn is_line_adjacent(source: &Source, gap: TextRange) -> bool {
 /// pair sits on adjacent source lines. A non-qualifying statement, a
 /// comment in the inter-statement gap, or a blank line breaks the
 /// current run. Empty groups (statements that fail qualification with
-/// no qualified neighbors) are skipped.
+/// no qualified neighbors) are skipped. Thin wrapper over
+/// [`keyed_line_adjacent_groups`] for rules whose qualifier produces
+/// only one form, so every member shares an implicit `()` key.
 pub fn line_adjacent_groups<'a, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -117,26 +203,52 @@ pub fn line_adjacent_groups<'a, M, F>(
 where
     F: FnMut(&'a Stmt) -> Option<M>,
 {
-    let mut groups = Vec::new();
-    let mut iter = body.iter().peekable();
-    while let Some(stmt) = iter.next() {
-        let Some(first) = qualify(stmt) else {
-            continue;
-        };
-        let mut cursor_end = stmt.range().end();
-        let mut members = vec![first];
-        while let Some(&next_stmt) = iter.peek() {
-            let gap = TextRange::new(cursor_end, next_stmt.range().start());
-            if !is_line_adjacent(source, gap) {
-                break;
+    keyed_line_adjacent_groups(source, body, move |stmt| qualify(stmt).map(|m| ((), m)))
+}
+
+/// Generalization of [`line_adjacent_groups`] for rules that admit
+/// more than one member shape. The qualifier returns `Option<(K, M)>`
+/// where `K` tags the shape; a run extends only while the next member
+/// shares both the active key and line-adjacency. A key change at an
+/// otherwise-adjacent boundary closes the active run and starts a
+/// fresh one without losing the boundary statement, which keeps
+/// `align_imports` from mixing `from`-import members with
+/// `import M as A` members in a single group. Walks `body` exactly
+/// once and calls `is_line_adjacent` at most once per gap.
+pub fn keyed_line_adjacent_groups<'a, K, M, F>(
+    source: &'a Source,
+    body: &'a [Stmt],
+    mut qualify: F,
+) -> Vec<Vec<M>>
+where
+    K: Eq,
+    F: FnMut(&'a Stmt) -> Option<(K, M)>,
+{
+    let mut groups: Vec<Vec<M>> = Vec::new();
+    let mut active: Option<(K, Vec<M>, TextSize)> = None;
+    for stmt in body {
+        let stmt_range = stmt.range();
+        active = match (qualify(stmt), active) {
+            (Some((key, member)), Some((active_key, mut members, last_end))) => {
+                if active_key == key
+                    && is_line_adjacent(source, TextRange::new(last_end, stmt_range.start()))
+                {
+                    members.push(member);
+                    Some((active_key, members, stmt_range.end()))
+                } else {
+                    groups.push(members);
+                    Some((key, vec![member], stmt_range.end()))
+                }
             }
-            let Some(next) = qualify(next_stmt) else {
-                break;
-            };
-            cursor_end = next_stmt.range().end();
-            members.push(next);
-            iter.next();
-        }
+            (Some((key, member)), None) => Some((key, vec![member], stmt_range.end())),
+            (None, Some((_, members, _))) => {
+                groups.push(members);
+                None
+            }
+            (None, None) => None,
+        };
+    }
+    if let Some((_, members, _)) = active {
         groups.push(members);
     }
     groups
@@ -238,12 +350,6 @@ mod tests {
         )
     }
 
-    fn sorted_summaries(edits: &[Edit]) -> Vec<(u32, u32, String)> {
-        let mut out: Vec<_> = edits.iter().map(summary).collect();
-        out.sort();
-        out
-    }
-
     /// Builds a `Settings` carrying the test's cap and policy. All
     /// inline tests use `suffix_len = 1`, matching both rules in production.
     fn settings(max_shift: usize, policy: MaxAlignShiftPolicy) -> Settings {
@@ -252,6 +358,12 @@ mod tests {
             policy,
             suffix_len: 1,
         }
+    }
+
+    fn sorted_summaries(edits: &[Edit]) -> Vec<(u32, u32, String)> {
+        let mut out: Vec<_> = edits.iter().map(summary).collect();
+        out.sort();
+        out
     }
 
     /// Pulls a sortable `(start, end, content)` tuple out of an `Edit`.
@@ -422,5 +534,110 @@ mod tests {
             edits.is_empty(),
             "gap that already matches the target width must not emit",
         );
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_flushes_trailing_active_run() {
+        let source = Source::from_str("x = 1\ny = 2\n").expect("parses");
+        let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
+            s.as_assign_stmt().map(|_| ((), ()))
+        });
+
+        assert_eq!(groups.len(), 1);
+        assert_eq!(groups[0].len(), 2);
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_merges_same_key_adjacent_stmts() {
+        let source = Source::from_str("x = 1\ny = 2\nz = 3\n").expect("parses");
+        let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
+            s.as_assign_stmt().map(|_| ((), ()))
+        });
+
+        assert_eq!(groups.len(), 1);
+        assert_eq!(groups[0].len(), 3);
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_non_qualifier_closes_active_run() {
+        let source = Source::from_str("x = 1\npass\ny = 2\n").expect("parses");
+        let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
+            s.as_assign_stmt().map(|_| ((), ()))
+        });
+
+        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_returns_empty_for_empty_body() {
+        let source = Source::from_str("").expect("parses");
+        let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
+            s.as_assign_stmt().map(|_| ((), ()))
+        });
+
+        assert!(groups.is_empty());
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_splits_on_blank_line() {
+        let source = Source::from_str("x = 1\n\ny = 2\n").expect("parses");
+        let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
+            s.as_assign_stmt().map(|_| ((), ()))
+        });
+
+        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_splits_on_comment_in_gap() {
+        let source = Source::from_str("x = 1\n# comment\ny = 2\n").expect("parses");
+        let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
+            s.as_assign_stmt().map(|_| ((), ()))
+        });
+
+        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_splits_on_key_change_at_adjacent_boundary() {
+        // Two assigns flanking an aug-assign, all line-adjacent. The
+        // distinct keys force the run to split even though no whitespace
+        // breaks the adjacency, exercising the `keyed`-only invariant.
+        let source = Source::from_str("x = 1\ny += 2\nz = 3\n").expect("parses");
+        let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
+            if s.is_assign_stmt() {
+                Some(("assign", ()))
+            } else if s.is_aug_assign_stmt() {
+                Some(("aug", ()))
+            } else {
+                None
+            }
+        });
+
+        assert_eq!(
+            groups.iter().map(Vec::len).collect::<Vec<_>>(),
+            vec![1, 1, 1],
+        );
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_yields_singleton_for_lone_qualifier() {
+        let source = Source::from_str("x = 1\n").expect("parses");
+        let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
+            s.as_assign_stmt().map(|_| ((), ()))
+        });
+
+        assert_eq!(groups.len(), 1);
+        assert_eq!(groups[0].len(), 1);
+    }
+
+    #[test]
+    fn line_anchored_member_collapses_gap_at_line_start() {
+        let source = Source::from_str("xy\n").expect("parses");
+        let member = line_anchored_member(&source, TextSize::new(0));
+
+        // anchor sits at line start: empty gap, zero width.
+        assert_eq!(member.gap.start(), member.gap.end());
+        assert_eq!(member.width, 0);
     }
 }

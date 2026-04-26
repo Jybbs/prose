@@ -5,4 +5,5 @@
 
 pub mod align_colons;
 pub mod align_equals;
+pub mod align_imports;
 pub mod collection_layout;
