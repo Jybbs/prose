@@ -49,15 +49,26 @@ impl Source {
         self.parsed.syntax()
     }
 
-    /// Returns the first token in `range` for which `predicate` is
-    /// true. Callers that just need the offset can chain
-    /// `.map(Token::start)`. Used by every rule that anchors alignment
-    /// on a specific keyword or operator token.
-    pub fn first_token_in_range<F>(&self, range: TextRange, mut predicate: F) -> Option<&Token>
+    /// Returns the start offset of the first token in `range` for
+    /// which `predicate` is true. Callers that need the full `&Token`
+    /// (kind, range, flags) should chain
+    /// `tokens().in_range(range).iter().find(...)` directly. This
+    /// helper exists for the dominant case of "find a kind, take its
+    /// start offset," which every alignment-rule member constructor
+    /// reduces to.
+    pub fn first_token_offset_in_range<F>(
+        &self,
+        range: TextRange,
+        mut predicate: F,
+    ) -> Option<TextSize>
     where
         F: FnMut(&Token) -> bool,
     {
-        self.tokens().in_range(range).iter().find(|&t| predicate(t))
+        self.tokens()
+            .in_range(range)
+            .iter()
+            .find(|&t| predicate(t))
+            .map(Token::start)
     }
 
     /// Returns the line and column for a byte offset.
@@ -160,56 +171,56 @@ mod tests {
     }
 
     #[test]
-    fn first_token_in_range_returns_first_match_when_multiple_satisfy() {
-        // Chained assignment carries two `=` tokens; the helper must
-        // return the leftmost one, not just any match.
+    fn first_token_offset_in_range_returns_first_match_when_multiple_satisfy() {
+        // Chained assignment carries two `=` tokens, and the helper
+        // must return the leftmost one, not just any match.
         let s = Source::from_str("a = b = 1\n").expect("parses");
-        let token = s
-            .first_token_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Equal)
+        let offset = s
+            .first_token_offset_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Equal)
             .expect("two `=` tokens, picks first");
 
-        assert_eq!(token.start(), TextSize::new(2));
+        assert_eq!(offset, TextSize::new(2));
     }
 
     #[test]
-    fn first_token_in_range_returns_none_for_empty_range() {
+    fn first_token_offset_in_range_returns_none_for_empty_range() {
         let s = Source::from_str("x = 1\n").expect("parses");
         let empty = TextRange::empty(TextSize::new(0));
 
-        assert!(s.first_token_in_range(empty, |_| true).is_none());
+        assert!(s.first_token_offset_in_range(empty, |_| true).is_none());
     }
 
     #[test]
-    fn first_token_in_range_returns_none_when_no_token_matches() {
+    fn first_token_offset_in_range_returns_none_when_no_token_matches() {
         let s = Source::from_str("x = 1\n").expect("parses");
-        let result =
-            s.first_token_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Colon);
+        let result = s
+            .first_token_offset_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Colon);
 
         assert!(result.is_none());
     }
 
     #[test]
-    fn first_token_in_range_returns_token_for_single_match() {
+    fn first_token_offset_in_range_returns_offset_for_single_match() {
         let s = Source::from_str("x = 1\n").expect("parses");
-        let token = s
-            .first_token_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Equal)
+        let offset = s
+            .first_token_offset_in_range(s.ast().body[0].range(), |t| t.kind() == TokenKind::Equal)
             .expect("one `=` token");
 
-        assert_eq!(token.start(), TextSize::new(2));
+        assert_eq!(offset, TextSize::new(2));
     }
 
     #[test]
-    fn first_token_in_range_supports_predicate_compositions() {
+    fn first_token_offset_in_range_supports_predicate_compositions() {
         // Mirrors how align_equals's aug-assign arm picks any token in
         // the augmented-assign-operator family rather than a specific kind.
         let s = Source::from_str("x += 1\n").expect("parses");
-        let token = s
-            .first_token_in_range(s.ast().body[0].range(), |t| {
+        let offset = s
+            .first_token_offset_in_range(s.ast().body[0].range(), |t| {
                 t.kind().as_augmented_assign_operator().is_some()
             })
             .expect("`+=` is an aug-assign operator");
 
-        assert_eq!(token.start(), TextSize::new(2));
+        assert_eq!(offset, TextSize::new(2));
     }
 
     #[test]

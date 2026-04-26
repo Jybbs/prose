@@ -15,6 +15,7 @@ use crate::rules::align_colons::AlignColons;
 use crate::rules::align_equals::AlignEquals;
 use crate::rules::align_imports::AlignImports;
 use crate::rules::collection_layout::CollectionLayout;
+use crate::rules::singleton_rule::SingletonRule;
 use crate::source::Source;
 
 /// Every rule in `prose` implements this trait and nothing more.
@@ -59,14 +60,15 @@ impl Pipeline {
     /// Returns `None` when `name` does not match any registered rule.
     /// Bypasses each rule's `enabled` flag. Names are snake_case
     /// (`align_colons`, `align_equals`, `align_imports`,
-    /// `collection_layout`), not the kebab-case form returned by
-    /// [`Rule::name`].
+    /// `collection_layout`, `singleton_rule`), not the kebab-case form
+    /// returned by [`Rule::name`].
     pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
         let rule: Box<dyn Rule> = match name {
             "align_colons" => Box::new(AlignColons::from_config(config)),
             "align_equals" => Box::new(AlignEquals::from_config(config)),
             "align_imports" => Box::new(AlignImports::from_config(config)),
             "collection_layout" => Box::new(CollectionLayout::from_config(config)),
+            "singleton_rule" => Box::new(SingletonRule::from_config(config)),
             _ => return None,
         };
         Some(Self::from_rules(vec![rule]))
@@ -83,8 +85,8 @@ impl Pipeline {
     /// Builds a pipeline registering every rule enabled in `config`.
     ///
     /// Execution order: `collection_layout` → `alphabetize` →
-    /// `strip_trailing_commas` → `match_case_align` → `singleton_rule`
-    /// → `align_imports` → `align_colons` → `align_equals`. Each rule
+    /// `strip_trailing_commas` → `match_case_align` → `align_imports`
+    /// → `align_colons` → `align_equals` → `singleton_rule`. Each rule
     /// PR adds one registration line at its ordered slot below.
     pub fn with_defaults(config: &Config) -> Self {
         let mut rules: Vec<Box<dyn Rule>> = Vec::new();
@@ -94,7 +96,6 @@ impl Pipeline {
         // if config.rules.alphabetize.enabled { rules.push(Box::new(Alphabetize)); }
         // if config.rules.strip_trailing_commas.enabled { rules.push(Box::new(StripTrailingCommas)); }
         // if config.rules.match_case_align.enabled { rules.push(Box::new(MatchCaseAlign)); }
-        // if config.rules.singleton_rule.enabled { rules.push(Box::new(SingletonRule)); }
         if config.rules.align_imports.enabled {
             rules.push(Box::new(AlignImports::from_config(config)));
         }
@@ -103,6 +104,9 @@ impl Pipeline {
         }
         if config.rules.align_equals.enabled {
             rules.push(Box::new(AlignEquals::from_config(config)));
+        }
+        if config.rules.singleton_rule.enabled {
+            rules.push(Box::new(SingletonRule::from_config(config)));
         }
         Self { rules }
     }
@@ -396,7 +400,7 @@ mod tests {
     fn with_defaults_registers_enabled_rules() {
         let config = Config::default();
         let pipeline = Pipeline::with_defaults(&config);
-        assert_eq!(pipeline.len(), 4);
+        assert_eq!(pipeline.len(), 5);
     }
 
     #[test]
@@ -406,6 +410,7 @@ mod tests {
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.collection_layout.enabled = false;
+        config.rules.singleton_rule.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());
     }

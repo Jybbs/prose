@@ -1,6 +1,6 @@
 //! Computes padding widths and emits alignment edits for rules that
 //! align a shared token across a group of lines. `emit_group` is the
-//! entry point. Per-rule knobs travel through `Settings`; both
+//! entry point. Per-rule knobs travel through `Settings`, where both
 //! `align_colons` and `align_equals` use `suffix_len = 1`, leaving a
 //! one-space buffer before the aligned token.
 
@@ -20,10 +20,14 @@ use crate::source::Source;
 /// `width` is the display-column width of the row's left-hand-side
 /// region, from the start of the member to the start of the gap. `gap`
 /// is the whitespace range ending immediately before the aligned
-/// token that the rule will rewrite.
+/// token that the rule will rewrite. `line_start` is the offset of
+/// the start of the source line containing the gap, captured at
+/// construction time so [`distinct_lines`] can compare line identity
+/// without re-scanning the source.
 #[derive(Clone, Copy, Debug)]
 pub struct Member {
     pub gap: TextRange,
+    pub line_start: TextSize,
     pub width: usize,
 }
 
@@ -63,8 +67,7 @@ pub fn emit_group(source: &Source, members: &[Member], settings: Settings, edits
             (mn.min(m.width), mx.max(m.width))
         });
     if max_w - min_w <= settings.max_shift {
-        let paddings: Vec<usize> = members.iter().map(|m| max_w - m.width).collect();
-        emit_with_paddings(source, members, &paddings, settings.suffix_len, edits);
+        emit_with_paddings(source, members, max_w, settings.suffix_len, edits);
         return;
     }
     match settings.policy {
@@ -74,20 +77,20 @@ pub fn emit_group(source: &Source, members: &[Member], settings: Settings, edits
     }
 }
 
-/// Rewrites each member's gap to `suffix_len + paddings[i]` spaces,
-/// skipping members whose gap already carries that exact width of
-/// ASCII spaces. Emits `Edit::deletion` when the target width is
-/// zero and the current gap is non-empty, since `Edit::range_replacement`
-/// rejects empty content. Parallel-slice API: `members.len() == paddings.len()`.
+/// Rewrites each member's gap to `suffix_len + (max_w - m.width)`
+/// spaces, skipping members whose gap already carries that exact
+/// width of ASCII spaces. Emits `Edit::deletion` when the target
+/// width is zero and the current gap is non-empty, because
+/// `Edit::range_replacement` rejects empty content.
 fn emit_with_paddings(
     source: &Source,
     members: &[Member],
-    paddings: &[usize],
+    max_w: usize,
     suffix_len: usize,
     edits: &mut Vec<Edit>,
 ) {
-    edits.extend(members.iter().zip(paddings).filter_map(|(m, &p)| {
-        let target_len = suffix_len + p;
+    edits.extend(members.iter().filter_map(|m| {
+        let target_len = suffix_len + (max_w - m.width);
         let gap_text = source.slice(m.gap);
         let already_correct = gap_text.len() == target_len && gap_text.bytes().all(|b| b == b' ');
         if already_correct {
@@ -120,6 +123,7 @@ pub fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
     let gap_start = line_start + TextSize::of(trimmed_end);
     Member {
         gap: TextRange::new(gap_start, anchor),
+        line_start,
         width: trimmed_end.trim_whitespace_start().width(),
     }
 }
@@ -127,7 +131,7 @@ pub fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
 /// Builds a `Member` for a row whose aligned token sits at `anchor`,
 /// with width measured by the display width of `target` plus
 /// `extra_width`. Pass `extra_width = 0` when the LHS is exactly
-/// `target` (e.g. `x = 1`); pass a non-zero value when the LHS
+/// `target` (e.g. `x = 1`), and pass a non-zero value when the LHS
 /// visually extends past `target` by characters not covered by the
 /// slice (e.g. the `+` of `x += 1` widens the LHS by one column
 /// without being part of the target range).
@@ -139,8 +143,19 @@ pub fn range_anchored_member(
 ) -> Member {
     Member {
         gap: TextRange::new(target.end(), anchor),
+        line_start: source.text().line_start(anchor),
         width: source.slice(target).width() + extra_width,
     }
+}
+
+/// Returns `true` when every member's aligned token sits on a
+/// distinct source line. Two `:`-anchored members on the same line
+/// have no column to align to, so rules that align across lines key
+/// off this predicate to decide whether alignment applies.
+pub fn distinct_lines(members: &[Member]) -> bool {
+    members
+        .windows(2)
+        .all(|w| w[0].line_start != w[1].line_start)
 }
 
 /// Builds a `Member` whose anchor is the first token of `kind` within
@@ -153,9 +168,7 @@ pub fn line_anchored_member_at_kind(
     search: TextRange,
     kind: TokenKind,
 ) -> Option<Member> {
-    let anchor = source
-        .first_token_in_range(search, |t| t.kind() == kind)
-        .map(Token::start)?;
+    let anchor = source.first_token_offset_in_range(search, |t| t.kind() == kind)?;
     Some(line_anchored_member(source, anchor))
 }
 
@@ -175,9 +188,7 @@ pub fn range_anchored_member_single_line<F>(
 where
     F: FnMut(&Token) -> bool,
 {
-    let anchor = source
-        .first_token_in_range(search, predicate)
-        .map(Token::start)?;
+    let anchor = source.first_token_offset_in_range(search, predicate)?;
     if source
         .text()
         .contains_line_break(TextRange::new(target.start(), anchor))
@@ -208,13 +219,14 @@ where
 
 /// Generalization of [`line_adjacent_groups`] for rules that admit
 /// more than one member shape. The qualifier returns `Option<(K, M)>`
-/// where `K` tags the shape; a run extends only while the next member
-/// shares both the active key and line-adjacency. A key change at an
-/// otherwise-adjacent boundary closes the active run and starts a
-/// fresh one without losing the boundary statement, which keeps
+/// where `K` tags the shape, and a run extends only while the next
+/// member shares both the active key and line-adjacency. A key change
+/// at an otherwise-adjacent boundary closes the active run and starts
+/// a fresh one without losing the boundary statement, which keeps
 /// `align_imports` from mixing `from`-import members with
 /// `import M as A` members in a single group. Walks `body` exactly
-/// once and calls `is_line_adjacent` at most once per gap.
+/// once and calls `is_line_adjacent` at most once per qualifying
+/// statement.
 pub fn keyed_line_adjacent_groups<'a, K, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -225,31 +237,24 @@ where
     F: FnMut(&'a Stmt) -> Option<(K, M)>,
 {
     let mut groups: Vec<Vec<M>> = Vec::new();
-    let mut active: Option<(K, Vec<M>, TextSize)> = None;
+    let mut active: Option<(K, TextSize)> = None;
     for stmt in body {
-        let stmt_range = stmt.range();
-        active = match (qualify(stmt), active) {
-            (Some((key, member)), Some((active_key, mut members, last_end))) => {
-                if active_key == key
-                    && is_line_adjacent(source, TextRange::new(last_end, stmt_range.start()))
-                {
-                    members.push(member);
-                    Some((active_key, members, stmt_range.end()))
-                } else {
-                    groups.push(members);
-                    Some((key, vec![member], stmt_range.end()))
-                }
-            }
-            (Some((key, member)), None) => Some((key, vec![member], stmt_range.end())),
-            (None, Some((_, members, _))) => {
-                groups.push(members);
-                None
-            }
-            (None, None) => None,
+        let Some((key, member)) = qualify(stmt) else {
+            active = None;
+            continue;
         };
-    }
-    if let Some((_, members, _)) = active {
-        groups.push(members);
+        let extends = active.as_ref().is_some_and(|(active_key, last_end)| {
+            active_key == &key && is_line_adjacent(source, TextRange::new(*last_end, stmt.start()))
+        });
+        if extends {
+            groups
+                .last_mut()
+                .expect("active implies groups non-empty")
+                .push(member);
+        } else {
+            groups.push(vec![member]);
+        }
+        active = Some((key, stmt.end()));
     }
     groups
 }
@@ -271,8 +276,7 @@ fn emit_drop(source: &Source, members: &[Member], settings: Settings, edits: &mu
         return;
     }
     let max_w = kept.last().expect("kept non-empty").width;
-    let paddings: Vec<usize> = kept.iter().map(|m| max_w - m.width).collect();
-    emit_with_paddings(source, kept, &paddings, settings.suffix_len, edits);
+    emit_with_paddings(source, kept, max_w, settings.suffix_len, edits);
 }
 
 /// Greedy partitioning: extends the current sub-group while its
@@ -297,8 +301,7 @@ fn emit_split(source: &Source, members: &[Member], settings: Settings, edits: &m
             end += 1;
         }
         let sub = &members[cursor..end];
-        let paddings: Vec<usize> = sub.iter().map(|m| max_w - m.width).collect();
-        emit_with_paddings(source, sub, &paddings, settings.suffix_len, edits);
+        emit_with_paddings(source, sub, max_w, settings.suffix_len, edits);
         cursor = end;
     }
 }
@@ -330,6 +333,7 @@ mod tests {
         let mut text = String::new();
         let mut members = Vec::new();
         for &(width, gap_chars) in specs {
+            let line_start = u32::try_from(text.len()).expect("test source fits in u32");
             for _ in 0..width {
                 text.push('x');
             }
@@ -341,6 +345,7 @@ mod tests {
             text.push_str("= 0\n");
             members.push(Member {
                 gap: TextRange::new(TextSize::new(gap_start), TextSize::new(gap_end)),
+                line_start: TextSize::new(line_start),
                 width,
             });
         }
@@ -507,11 +512,10 @@ mod tests {
         let (source, members) = rows(&[(3, 4)]);
         let mut edits = Vec::new();
 
-        emit_with_paddings(&source, &members, &[0], 0, &mut edits);
+        // max_w == m.width → padding = 0, suffix_len = 0 → target_len = 0
+        // → must emit deletion (range_replacement rejects empty content).
+        emit_with_paddings(&source, &members, members[0].width, 0, &mut edits);
 
-        // target_len = 0 + 0 → must emit deletion (range_replacement
-        // rejects empty content). Deletion has no content, so the
-        // summary's content slot is the empty string.
         assert_eq!(edits.len(), 1);
         assert_eq!(
             summary(&edits[0]),
@@ -528,7 +532,9 @@ mod tests {
         let (source, members) = rows(&[(3, 1)]);
         let mut edits = Vec::new();
 
-        emit_with_paddings(&source, &members, &[0], 1, &mut edits);
+        // max_w == m.width → padding = 0, suffix_len = 1 → target_len = 1.
+        // The fabricated gap is one space already, so emit nothing.
+        emit_with_paddings(&source, &members, members[0].width, 1, &mut edits);
 
         assert!(
             edits.is_empty(),

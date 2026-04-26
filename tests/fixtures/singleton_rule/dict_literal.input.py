@@ -1,0 +1,19 @@
+"""
+A single-entry dict strips its pre-`:` padding because there is no
+sibling key to align against. A two-entry dict has neighbors and so
+the rule leaves its alignment alone for `align_colons` to own. A
+nested singleton inside a multi-entry parent strips through the
+visitor's recursive walk, even though its surrounding dict stays
+padded.
+"""
+
+single = {"only_key"  : compute_value()}
+
+paired = {
+    "first"  : 1,
+    "second" : 2,
+}
+
+nested = {
+    "outer" : {"inner" : "value"},
+}

@@ -1,0 +1,19 @@
+"""
+A method's `self` parameter is unannotated, so the parameter walk
+yields a `None` that splits the slice into runs. A method with one
+annotated parameter after `self` produces a singleton run and strips
+the parameter's pre-`:` padding. The same applies to a keyword-only
+parameter introduced by `*`. A method with two annotated parameters
+after `self` lands a size-two run on a single source line, so it
+strips too because same-line `:`s have no column to align against.
+"""
+
+class Service:
+    def fetch(self, timeout : float) -> bytes:
+        return b""
+
+    def store(self, *, ttl : int = 3600) -> None:
+        pass
+
+    def render(self, template : str, context : dict) -> str:
+        return ""
