@@ -1,0 +1,24 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/singleton_rule/function_signature.input.py
+---
+"""
+A single-parameter signature with extra padding before its `:` is
+the canonical singleton case, so the rule strips that padding to
+zero. Multi-parameter signatures collapsed onto one line do the same,
+since with every `:` on the same line there is no column to align
+against. A multi-parameter signature spread across multiple lines
+belongs to `align_colons` and stays padded for that pass to align.
+"""
+
+def fetch(timeout: float) -> bytes:
+    return b""
+
+
+def store(record: Record, *, ttl: int = 3600) -> None:
+    pass
+
+
+def render(template: str, context: dict, *, escape: bool = True) -> str:
+    return ""

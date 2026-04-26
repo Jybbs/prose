@@ -1,0 +1,19 @@
+"""
+A multi-line single-parameter signature strips its pre-`:` padding,
+because the parameter and its `:` sit on the same line and the
+member width is non-zero. A multi-line multi-parameter signature
+qualifies two distinct-line members, so the rule defers to
+`align_colons` and the padding stays for that pass to align.
+"""
+
+def fetch(
+    timeout : float,
+) -> bytes:
+    return b""
+
+
+def render(
+    template : str,
+    context  : dict,
+) -> str:
+    return ""

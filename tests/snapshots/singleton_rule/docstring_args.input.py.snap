@@ -1,0 +1,26 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/singleton_rule/docstring_args.input.py
+---
+"""
+A docstring `Args:` section with one entry strips the pre-`:` padding
+on that entry. A section with two or more entries keeps padding so
+that `align_colons` can align them in a separate pass.
+"""
+
+def fetch(timeout):
+    """Loads the resource over the network.
+
+    Args:
+        timeout: Maximum seconds to wait before giving up.
+    """
+
+
+def render(template, context):
+    """Expands the template with substitutions.
+
+    Args:
+        template : The template string.
+        context  : Substitution dictionary.
+    """
