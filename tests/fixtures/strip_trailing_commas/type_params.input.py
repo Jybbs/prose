@@ -1,0 +1,27 @@
+"""
+A multi-line generic-syntax type-parameter list drops its trailing
+comma in any of three syntactic homes: function definitions, class
+definitions, and type-alias statements. The list's range covers
+`[...]`, and the backward scan from before the closing `]` lands
+on the comma after the last type parameter.
+"""
+
+
+def transform[
+    T,
+    U,
+](x: T) -> U:
+    raise NotImplementedError
+
+
+class Container[
+    T,
+    U,
+]:
+    pass
+
+
+type Pair[
+    T,
+    U,
+] = tuple[T, U]
