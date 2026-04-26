@@ -7,7 +7,8 @@
 //! project with no configuration step. Each rule's configuration
 //! lives under `[tool.prose.rules.<name>]`.
 
-use std::{num::NonZeroUsize, path::Path};
+use std::num::NonZeroUsize;
+use std::path::Path;
 
 use ruff_python_ast::PythonVersion;
 use serde::{de::IntoDeserializer, Deserialize};
@@ -180,7 +181,7 @@ pub struct RuleConfigs {
     pub align_imports: AlignmentConfig,
     pub alphabetize: ToggleOnly,
     pub collection_layout: CollectionLayoutConfig,
-    pub match_case_align: ToggleOnly,
+    pub match_case_align: AlignmentConfig,
     pub singleton_rule: ToggleOnly,
     pub strip_trailing_commas: ToggleOnly,
 }

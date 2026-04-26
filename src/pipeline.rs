@@ -15,6 +15,7 @@ use crate::rules::align_colons::AlignColons;
 use crate::rules::align_equals::AlignEquals;
 use crate::rules::align_imports::AlignImports;
 use crate::rules::collection_layout::CollectionLayout;
+use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::singleton_rule::SingletonRule;
 use crate::source::Source;
 
@@ -68,6 +69,7 @@ impl Pipeline {
             "align_equals" => Box::new(AlignEquals::from_config(config)),
             "align_imports" => Box::new(AlignImports::from_config(config)),
             "collection_layout" => Box::new(CollectionLayout::from_config(config)),
+            "match_case_align" => Box::new(MatchCaseAlign::from_config(config)),
             "singleton_rule" => Box::new(SingletonRule::from_config(config)),
             _ => return None,
         };
@@ -95,7 +97,9 @@ impl Pipeline {
         }
         // if config.rules.alphabetize.enabled { rules.push(Box::new(Alphabetize)); }
         // if config.rules.strip_trailing_commas.enabled { rules.push(Box::new(StripTrailingCommas)); }
-        // if config.rules.match_case_align.enabled { rules.push(Box::new(MatchCaseAlign)); }
+        if config.rules.match_case_align.enabled {
+            rules.push(Box::new(MatchCaseAlign::from_config(config)));
+        }
         if config.rules.align_imports.enabled {
             rules.push(Box::new(AlignImports::from_config(config)));
         }
@@ -400,7 +404,7 @@ mod tests {
     fn with_defaults_registers_enabled_rules() {
         let config = Config::default();
         let pipeline = Pipeline::with_defaults(&config);
-        assert_eq!(pipeline.len(), 5);
+        assert_eq!(pipeline.len(), 6);
     }
 
     #[test]
@@ -410,6 +414,7 @@ mod tests {
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.collection_layout.enabled = false;
+        config.rules.match_case_align.enabled = false;
         config.rules.singleton_rule.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());

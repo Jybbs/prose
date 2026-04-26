@@ -10,16 +10,18 @@ use std::str::FromStr;
 use ruff_python_ast::token::{Token, Tokens};
 use ruff_python_ast::ModModule;
 use ruff_python_parser::{parse_module, ParseError, Parsed};
-use ruff_source_file::{LineColumn, SourceFile, SourceFileBuilder};
+use ruff_python_trivia::CommentRanges;
+use ruff_source_file::{LineColumn, LineRanges, SourceFile, SourceFileBuilder};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use thiserror::Error;
 
 /// Owned wrapper around a parsed Python source file.
 ///
-/// Holds the source text, the parsed AST, the token stream, and a lazy
-/// line index.
+/// Holds the source text, the parsed AST, the token stream, a lazy
+/// line index, and a `CommentRanges` index built during parsing.
 #[derive(Debug)]
 pub struct Source {
+    comment_ranges: CommentRanges,
     file: SourceFile,
     parsed: Parsed<ModModule>,
 }
@@ -42,11 +44,27 @@ impl Source {
     fn build(text: String, name: impl Into<Box<str>>) -> Result<Self, ParseError> {
         let parsed = parse_module(&text)?;
         let file = SourceFileBuilder::new(name, text).finish();
-        Ok(Self { file, parsed })
+        let comment_ranges = CommentRanges::from(parsed.tokens());
+        Ok(Self {
+            comment_ranges,
+            file,
+            parsed,
+        })
     }
 
     pub fn ast(&self) -> &ModModule {
         self.parsed.syntax()
+    }
+
+    /// Returns the comment-range index built during parsing.
+    pub fn comment_ranges(&self) -> &CommentRanges {
+        &self.comment_ranges
+    }
+
+    /// Returns `true` when the source text in `range` carries at least
+    /// one line break.
+    pub fn contains_line_break(&self, range: TextRange) -> bool {
+        self.file.source_text().contains_line_break(range)
     }
 
     /// Returns the start offset of the first token in `range` for
@@ -69,6 +87,11 @@ impl Source {
             .iter()
             .find(|&t| predicate(t))
             .map(Token::start)
+    }
+
+    /// Returns `true` when at least one comment lies within `range`.
+    pub fn intersects_comment(&self, range: TextRange) -> bool {
+        self.comment_ranges.intersects(range)
     }
 
     /// Returns the line and column for a byte offset.
@@ -161,6 +184,14 @@ mod tests {
             line: OneIndexed::from_zero_indexed(line),
             column: OneIndexed::from_zero_indexed(column),
         }
+    }
+
+    #[test]
+    fn comment_ranges_indexes_each_comment_in_the_source() {
+        let s = Source::from_str("# top\nx = 1  # trail\n").expect("parses");
+        let ranges = s.comment_ranges();
+        assert!(ranges.intersects(TextRange::new(TextSize::new(0), TextSize::new(1))));
+        assert!(ranges.intersects(TextRange::new(TextSize::new(13), TextSize::new(14))));
     }
 
     #[test]

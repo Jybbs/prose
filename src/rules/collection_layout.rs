@@ -11,9 +11,8 @@ use ruff_python_ast::helpers::is_dotted_name;
 use ruff_python_ast::token::parenthesized_range;
 use ruff_python_ast::visitor::{walk_expr, Visitor};
 use ruff_python_ast::{AnyNodeRef, DictItem, Expr};
-use ruff_python_trivia::CommentRanges;
-use ruff_source_file::{find_newline, LineEnding, LineRanges};
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_source_file::{find_newline, LineEnding};
+use ruff_text_size::{Ranged, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
@@ -51,7 +50,6 @@ impl Rule for CollectionLayout {
             .map_or(LineEnding::Lf, |(_, ending)| ending)
             .as_str();
         let mut visitor = Expander {
-            comment_ranges: CommentRanges::from(source.tokens()),
             edits: Vec::new(),
             line_length: self.line_length,
             max_atomics_per_line: self.max_atomics_per_line,
@@ -68,7 +66,6 @@ impl Rule for CollectionLayout {
 }
 
 struct Expander<'a> {
-    comment_ranges: CommentRanges,
     edits: Vec<Edit>,
     line_length: usize,
     max_atomics_per_line: usize,
@@ -79,15 +76,6 @@ struct Expander<'a> {
 impl Expander<'_> {
     fn column_of(&self, offset: TextSize) -> usize {
         locator::column_of(self.source, offset)
-    }
-
-    /// Returns `true` when a comment falls inside `range`, meaning the
-    /// rule must not rewrite this literal because slicing through it
-    /// would drop the comment. Backed by a per-`apply` `CommentRanges`,
-    /// so the lookup is a binary search rather than a token-stream
-    /// walk.
-    fn contains_comment(&self, range: TextRange) -> bool {
-        self.comment_ranges.intersects(range)
     }
 
     /// Builds the expanded form of `expr` as a string, recursively
@@ -244,10 +232,10 @@ impl Expander<'_> {
             return false;
         }
         let range = expr.range();
-        if self.contains_comment(range) {
+        if self.source.intersects_comment(range) {
             return false;
         }
-        self.source.text().contains_line_break(range)
+        self.source.contains_line_break(range)
             || column + self.source.slice(range).width() > self.line_length
     }
 }

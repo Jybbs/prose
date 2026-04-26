@@ -30,8 +30,10 @@ Config {
             enabled: false,
             max_atomics_per_line: None,
         },
-        match_case_align: ToggleOnly {
+        match_case_align: AlignmentConfig {
             enabled: false,
+            max_shift: 8,
+            max_shift_policy: Split,
         },
         singleton_rule: ToggleOnly {
             enabled: false,
