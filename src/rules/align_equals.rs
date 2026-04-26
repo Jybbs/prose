@@ -10,9 +10,7 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::statement_visitor::{walk_body, StatementVisitor};
 use ruff_python_ast::token::TokenKind;
 use ruff_python_ast::Stmt;
-use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
-use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
 use crate::pipeline::Rule;
@@ -25,22 +23,13 @@ pub struct AlignEquals {
 
 impl AlignEquals {
     pub fn from_config(config: &Config) -> Self {
-        let rule = &config.rules.align_equals;
         Self {
-            settings: aligner::Settings {
-                max_shift: rule.max_shift.get(),
-                policy: rule.max_shift_policy,
-                suffix_len: 1,
-            },
+            settings: (&config.rules.align_equals).into(),
         }
     }
 }
 
 impl Rule for AlignEquals {
-    fn name(&self) -> &'static str {
-        "align-equals"
-    }
-
     fn apply(&self, source: &Source) -> Vec<Edit> {
         let mut visitor = Visitor {
             edits: Vec::new(),
@@ -49,6 +38,10 @@ impl Rule for AlignEquals {
         };
         visitor.visit_body(&source.ast().body);
         visitor.edits
+    }
+
+    fn name(&self) -> &'static str {
+        "align-equals"
     }
 }
 
@@ -77,28 +70,16 @@ impl<'a> Visitor<'a> {
     /// `=` contains a line break, since rewriting across a continuation
     /// would flatten the author's multi-line layout.
     fn qualify(&self, stmt: &Stmt) -> Option<aligner::Member> {
-        let text = self.source.text();
-        let tokens = self.source.tokens();
-        let (gap, width) = match stmt {
+        match stmt {
             Stmt::AnnAssign(a) => {
                 let value = a.value.as_deref()?;
-                let target_range = a.target.range();
                 let annotation_range = a.annotation.range();
-                let equal = tokens
-                    .in_range(TextRange::new(
-                        annotation_range.end(),
-                        value.range().start(),
-                    ))
-                    .iter()
-                    .find(|t| t.kind() == TokenKind::Equal)?;
-                if text.contains_line_break(TextRange::new(target_range.start(), equal.start())) {
-                    return None;
-                }
-                (
-                    TextRange::new(annotation_range.end(), equal.start()),
-                    self.source
-                        .slice(target_range.cover(annotation_range))
-                        .width(),
+                aligner::range_anchored_member_single_line(
+                    self.source,
+                    a.target.range().cover(annotation_range),
+                    TextRange::new(annotation_range.end(), value.range().start()),
+                    |t| t.kind() == TokenKind::Equal,
+                    0,
                 )
             }
             Stmt::Assign(a) => {
@@ -106,35 +87,26 @@ impl<'a> Visitor<'a> {
                     return None;
                 };
                 let target_range = target.range();
-                let equal = tokens
-                    .in_range(TextRange::new(target_range.end(), a.value.range().start()))
-                    .iter()
-                    .find(|t| t.kind() == TokenKind::Equal)?;
-                if text.contains_line_break(TextRange::new(target_range.start(), equal.start())) {
-                    return None;
-                }
-                (
-                    TextRange::new(target_range.end(), equal.start()),
-                    self.source.slice(target_range).width(),
+                aligner::range_anchored_member_single_line(
+                    self.source,
+                    target_range,
+                    TextRange::new(target_range.end(), a.value.range().start()),
+                    |t| t.kind() == TokenKind::Equal,
+                    0,
                 )
             }
             Stmt::AugAssign(a) => {
                 let target_range = a.target.range();
-                let op = tokens
-                    .in_range(TextRange::new(target_range.end(), a.value.range().start()))
-                    .iter()
-                    .find(|t| t.kind().as_augmented_assign_operator().is_some())?;
-                if text.contains_line_break(TextRange::new(target_range.start(), op.start())) {
-                    return None;
-                }
-                (
-                    TextRange::new(target_range.end(), op.start()),
-                    self.source.slice(target_range).width() + a.op.as_str().len(),
+                aligner::range_anchored_member_single_line(
+                    self.source,
+                    target_range,
+                    TextRange::new(target_range.end(), a.value.range().start()),
+                    |t| t.kind().as_augmented_assign_operator().is_some(),
+                    a.op.as_str().len(),
                 )
             }
-            _ => return None,
-        };
-        Some(aligner::Member { gap, width })
+            _ => None,
+        }
     }
 }
 

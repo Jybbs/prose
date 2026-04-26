@@ -13,6 +13,7 @@ use thiserror::Error;
 use crate::config::Config;
 use crate::rules::align_colons::AlignColons;
 use crate::rules::align_equals::AlignEquals;
+use crate::rules::align_imports::AlignImports;
 use crate::rules::collection_layout::CollectionLayout;
 use crate::source::Source;
 
@@ -25,11 +26,6 @@ use crate::source::Source;
 /// Rules must be `Send + Sync` so that the pipeline can run across
 /// files in parallel without moving the rule list per worker.
 pub trait Rule: Send + Sync {
-    /// Stable identifier matching the rule's `[tool.prose.rules]` key
-    /// (kebab-case, e.g. `"align-equals"`). Surfaces in diagnostic
-    /// output when a rule produces unparseable text.
-    fn name(&self) -> &'static str;
-
     /// Computes the edit list this rule would apply to `source`.
     ///
     /// Edits must not overlap after sorting. The pipeline's applicator
@@ -41,6 +37,11 @@ pub trait Rule: Send + Sync {
     /// `IsolationLevel` yet. The pipeline sorts the list itself and
     /// wraps `Fix` only if a future rule needs those annotations.
     fn apply(&self, source: &Source) -> Vec<Edit>;
+
+    /// Stable identifier matching the rule's `[tool.prose.rules]` key
+    /// (kebab-case, e.g. `"align-equals"`). Surfaces in diagnostic
+    /// output when a rule produces unparseable text.
+    fn name(&self) -> &'static str;
 }
 
 /// Ordered sequence of enabled rules, run against each source file.
@@ -57,12 +58,14 @@ impl Pipeline {
     ///
     /// Returns `None` when `name` does not match any registered rule.
     /// Bypasses each rule's `enabled` flag. Names are snake_case
-    /// (`align_colons`, `align_equals`, `collection_layout`), not the
-    /// kebab-case form returned by [`Rule::name`].
+    /// (`align_colons`, `align_equals`, `align_imports`,
+    /// `collection_layout`), not the kebab-case form returned by
+    /// [`Rule::name`].
     pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
         let rule: Box<dyn Rule> = match name {
             "align_colons" => Box::new(AlignColons::from_config(config)),
             "align_equals" => Box::new(AlignEquals::from_config(config)),
+            "align_imports" => Box::new(AlignImports::from_config(config)),
             "collection_layout" => Box::new(CollectionLayout::from_config(config)),
             _ => return None,
         };
@@ -92,7 +95,9 @@ impl Pipeline {
         // if config.rules.strip_trailing_commas.enabled { rules.push(Box::new(StripTrailingCommas)); }
         // if config.rules.match_case_align.enabled { rules.push(Box::new(MatchCaseAlign)); }
         // if config.rules.singleton_rule.enabled { rules.push(Box::new(SingletonRule)); }
-        // if config.rules.align_imports.enabled { rules.push(Box::new(AlignImports)); }
+        if config.rules.align_imports.enabled {
+            rules.push(Box::new(AlignImports::from_config(config)));
+        }
         if config.rules.align_colons.enabled {
             rules.push(Box::new(AlignColons::from_config(config)));
         }
@@ -204,13 +209,13 @@ mod tests {
     }
 
     impl Rule for SentinelRule {
-        fn name(&self) -> &'static str {
-            self.name
-        }
-
         fn apply(&self, _source: &Source) -> Vec<Edit> {
             self.log.lock().expect("log mutex").push(self.name);
             self.edits.clone()
+        }
+
+        fn name(&self) -> &'static str {
+            self.name
         }
     }
 
@@ -223,13 +228,13 @@ mod tests {
     }
 
     impl Rule for TextCapturingRule {
-        fn name(&self) -> &'static str {
-            self.name
-        }
-
         fn apply(&self, source: &Source) -> Vec<Edit> {
             self.seen.lock().unwrap().push(source.text().to_owned());
             self.edits.clone()
+        }
+
+        fn name(&self) -> &'static str {
+            self.name
         }
     }
 
@@ -391,7 +396,7 @@ mod tests {
     fn with_defaults_registers_enabled_rules() {
         let config = Config::default();
         let pipeline = Pipeline::with_defaults(&config);
-        assert_eq!(pipeline.len(), 3);
+        assert_eq!(pipeline.len(), 4);
     }
 
     #[test]
@@ -399,6 +404,7 @@ mod tests {
         let mut config = Config::default();
         config.rules.align_colons.enabled = false;
         config.rules.align_equals.enabled = false;
+        config.rules.align_imports.enabled = false;
         config.rules.collection_layout.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());

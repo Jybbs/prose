@@ -5,7 +5,6 @@
 [![Rust 1.80+](https://img.shields.io/badge/rust-1.80+-8a80cb.svg)](https://www.rust-lang.org/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-8a80cb.svg)](https://www.python.org/)
 [![maturin](https://img.shields.io/badge/built%20with-maturin-8a80cb.svg)](https://www.maturin.rs/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-8a80cb.svg)](./LICENSE)
 
 </div>
 

@@ -3,7 +3,7 @@
 //! `Config::load` walks upward from a starting path toward the
 //! filesystem root, stopping at the first `pyproject.toml` that
 //! carries a `[tool.prose]` section. Reaching the root without a match
-//! resolves to full defaults, so *Prose* works on a fresh Python
+//! resolves to full defaults, so Prose works on a fresh Python
 //! project with no configuration step. Each rule's configuration
 //! lives under `[tool.prose.rules.<name>]`.
 
@@ -177,7 +177,7 @@ where
 pub struct RuleConfigs {
     pub align_colons: AlignmentConfig,
     pub align_equals: AlignmentConfig,
-    pub align_imports: ToggleOnly,
+    pub align_imports: AlignmentConfig,
     pub alphabetize: ToggleOnly,
     pub collection_layout: CollectionLayoutConfig,
     pub match_case_align: ToggleOnly,

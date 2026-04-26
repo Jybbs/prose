@@ -7,11 +7,12 @@ use std::num::NonZeroUsize;
 use std::ops::Range;
 
 use ruff_diagnostics::Edit;
+use ruff_python_ast::helpers::is_dotted_name;
 use ruff_python_ast::token::parenthesized_range;
 use ruff_python_ast::visitor::{walk_expr, Visitor};
 use ruff_python_ast::{AnyNodeRef, DictItem, Expr};
 use ruff_python_trivia::CommentRanges;
-use ruff_source_file::{find_newline, LineEnding};
+use ruff_source_file::{find_newline, LineEnding, LineRanges};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -45,10 +46,6 @@ impl CollectionLayout {
 }
 
 impl Rule for CollectionLayout {
-    fn name(&self) -> &'static str {
-        "collection-layout"
-    }
-
     fn apply(&self, source: &Source) -> Vec<Edit> {
         let newline = find_newline(source.text())
             .map_or(LineEnding::Lf, |(_, ending)| ending)
@@ -63,6 +60,10 @@ impl Rule for CollectionLayout {
         };
         visitor.visit_body(&source.ast().body);
         visitor.edits
+    }
+
+    fn name(&self) -> &'static str {
+        "collection-layout"
     }
 }
 
@@ -242,11 +243,12 @@ impl Expander<'_> {
         if count <= 1 {
             return false;
         }
-        if self.contains_comment(expr.range()) {
+        let range = expr.range();
+        if self.contains_comment(range) {
             return false;
         }
-        let current = self.source.slice(expr.range());
-        current.contains('\n') || column + current.width() > self.line_length
+        self.source.text().contains_line_break(range)
+            || column + self.source.slice(range).width() > self.line_length
     }
 }
 
@@ -303,24 +305,19 @@ fn flow_lines(widths: &[usize], available: usize, max_atomics: usize) -> Vec<Ran
 /// Returns `true` for expressions that render as a single compact
 /// token and therefore do not benefit from a dedicated line.
 ///
-/// Covers literal values, bare names, attribute chains over atomic
-/// bases (`pkg.CONST`, `cls.name.upper`), and unary operations over
-/// atomic operands (`-1`, `not flag`). Starred expressions (`*name`,
-/// `**name`) are intentionally non-atomic so a spread in the middle
-/// of a list or set splits its surrounding atomics into two
-/// independent runs that each flow on their own. Everything else
-/// (calls, comparisons, arithmetic, nested collections, comprehensions)
-/// is considered structured and earns a line of its own in the output.
+/// Covers literal values, dotted names (`pkg`, `cls.name.upper`,
+/// reached via `ruff_python_ast::helpers::is_dotted_name`), and unary
+/// operations over atomic operands (`-1`, `not flag`). Starred
+/// expressions (`*name`, `**name`) are intentionally non-atomic so a
+/// spread in the middle of a list or set splits its surrounding
+/// atomics into two independent runs that each flow on their own.
+/// Everything else (calls, comparisons, arithmetic, nested
+/// collections, comprehensions) is considered structured and earns a
+/// line of its own in the output.
 fn is_atomic(expr: &Expr) -> bool {
-    if expr.is_literal_expr() {
-        return true;
-    }
-    match expr {
-        Expr::Attribute(a) => is_atomic(&a.value),
-        Expr::Name(_) => true,
-        Expr::UnaryOp(u) => is_atomic(&u.operand),
-        _ => false,
-    }
+    expr.is_literal_expr()
+        || is_dotted_name(expr)
+        || matches!(expr, Expr::UnaryOp(u) if is_atomic(&u.operand))
 }
 
 /// Partitions `atomics` into segments. Every contiguous run of
@@ -384,20 +381,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn flow_lines_returns_empty_for_empty_widths() {
-        assert!(flow_lines(&[], 80, 8).is_empty());
-    }
-
-    #[test]
     fn flow_lines_packs_into_one_line_when_budget_allows() {
         let lines = flow_lines(&[1, 1, 1, 1], 80, 8);
         assert_eq!(lines, vec![0..4]);
     }
 
     #[test]
-    fn flow_lines_splits_when_max_atomics_forces_it() {
-        let lines = flow_lines(&[1; 6], 80, 3);
-        assert_eq!(lines, vec![0..3, 3..6]);
+    fn flow_lines_returns_empty_for_empty_widths() {
+        assert!(flow_lines(&[], 80, 8).is_empty());
     }
 
     #[test]
@@ -407,13 +398,9 @@ mod tests {
     }
 
     #[test]
-    fn try_even_rejects_zero_lines() {
-        assert!(try_even(&[0, 1, 2], 0, 80, 8).is_none());
-    }
-
-    #[test]
-    fn try_even_rejects_more_lines_than_items() {
-        assert!(try_even(&[0, 1, 2], 3, 80, 8).is_none());
+    fn flow_lines_splits_when_max_atomics_forces_it() {
+        let lines = flow_lines(&[1; 6], 80, 3);
+        assert_eq!(lines, vec![0..3, 3..6]);
     }
 
     #[test]
@@ -423,12 +410,22 @@ mod tests {
     }
 
     #[test]
-    fn try_even_returns_none_when_slot_overflows() {
-        assert!(try_even(&[0, 50, 100], 1, 60, 8).is_none());
+    fn try_even_rejects_more_lines_than_items() {
+        assert!(try_even(&[0, 1, 2], 3, 80, 8).is_none());
+    }
+
+    #[test]
+    fn try_even_rejects_zero_lines() {
+        assert!(try_even(&[0, 1, 2], 0, 80, 8).is_none());
     }
 
     #[test]
     fn try_even_returns_none_when_max_atomics_exceeded() {
         assert!(try_even(&[0, 1, 2, 3, 4, 5], 1, 80, 3).is_none());
+    }
+
+    #[test]
+    fn try_even_returns_none_when_slot_overflows() {
+        assert!(try_even(&[0, 50, 100], 1, 60, 8).is_none());
     }
 }
