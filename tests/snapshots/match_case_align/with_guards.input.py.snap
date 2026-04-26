@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/match_case_align/with_guards.input.py
+---
+"""
+Arms carrying an `if` guard between the pattern and the colon.
+The wildcard `case _` is short enough to break the greedy
+split-policy run, falling into a singleton sub-group whose
+colon hugs its pattern.
+"""
+
+match point:
+    case (x, y) if x == 0 : label = "y_axis"
+    case (x, y) if y == 0 : label = "x_axis"
+    case (x, y) if x == y : label = "diagonal"
+    case _: label = "general"

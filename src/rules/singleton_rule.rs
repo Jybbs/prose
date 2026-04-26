@@ -10,7 +10,7 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::visitor::{walk_expr, walk_parameters, walk_stmt, Visitor as AstVisitor};
-use ruff_python_ast::{Expr, ExprDict, Parameters, Stmt};
+use ruff_python_ast::{Expr, ExprDict, MatchCase, Parameters, Stmt};
 
 use crate::config::Config;
 use crate::pipeline::Rule;
@@ -56,7 +56,7 @@ impl Visitor<'_> {
     /// indented line and the "gap" is leading indent rather than
     /// padding.
     fn emit(&mut self, members: &[aligner::Member]) {
-        if members.is_empty() || (members.len() >= 2 && aligner::distinct_lines(members)) {
+        if members.len() >= 2 && aligner::distinct_lines(members) {
             return;
         }
         self.edits.extend(
@@ -79,6 +79,10 @@ impl Visitor<'_> {
 
     fn process_docstring_args(&mut self, body: &[Stmt]) {
         self.emit(&colon_targets::docstring_args(self.source, body));
+    }
+
+    fn process_match(&mut self, cases: &[MatchCase]) {
+        self.emit(&colon_targets::match_case_members(self.source, cases));
     }
 
     fn process_parameters(&mut self, params: &Parameters) {
@@ -107,9 +111,8 @@ impl<'a> AstVisitor<'a> for Visitor<'a> {
                 self.process_class_fields(&cd.body);
                 self.process_docstring_args(&cd.body);
             }
-            Stmt::FunctionDef(fd) => {
-                self.process_docstring_args(&fd.body);
-            }
+            Stmt::FunctionDef(fd) => self.process_docstring_args(&fd.body),
+            Stmt::Match(m) => self.process_match(&m.cases),
             _ => {}
         }
         walk_stmt(self, stmt);

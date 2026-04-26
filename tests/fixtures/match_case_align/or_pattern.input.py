@@ -1,0 +1,14 @@
+"""
+Arms with `case A | B` pattern alternations. The third arm's
+pattern is wide enough to break the greedy split-policy run,
+falling into its own singleton sub-group whose colon hugs.
+The first two align against each other at the narrower column.
+"""
+
+match status:
+    case "ok" | "pass":
+        result = True
+    case "warn":
+        result = True
+    case "fail" | "error" | "panic":
+        result = False

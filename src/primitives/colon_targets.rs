@@ -1,11 +1,14 @@
-//! Member constructors for the four `:` alignment contexts: dict
+//! Member constructors for the five `:` alignment contexts: dict
 //! items, Pydantic-style class fields, annotated function parameters,
-//! and Google/numpy docstring `Args:` entries. `align_colons` consumes
-//! these to align multi-item groups, whereas `singleton_rule` consumes
-//! the same shapes to strip pre-colon padding from singleton groups.
+//! Google/numpy docstring `Args:` entries, and `match` arm cases.
+//! `align_colons` and `match_case_align` consume them to align
+//! multi-item groups, whereas `singleton_rule` consumes them to strip
+//! pre-colon padding from groups that have no column to align to.
 
 use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::{AnyParameterRef, DictItem, ExprDict, ExprStringLiteral, Parameters, Stmt};
+use ruff_python_ast::{
+    AnyParameterRef, DictItem, ExprDict, ExprStringLiteral, MatchCase, Parameters, Stmt,
+};
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -102,6 +105,27 @@ pub fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
         }
     }
     members
+}
+
+/// Builds an alignment member for a `match` arm, anchored on the
+/// `:` between the pattern (or its `if` guard) and the arm body's
+/// first statement.
+pub fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::Member> {
+    let pre_colon_end = case
+        .guard
+        .as_deref()
+        .map_or(case.pattern.end(), Ranged::end);
+    let body_start = case.body.first()?.start();
+    aligner::line_anchored_member_at_kind(
+        source,
+        TextRange::new(pre_colon_end, body_start),
+        TokenKind::Colon,
+    )
+}
+
+/// Returns one alignment member per `case` arm in `cases`.
+pub fn match_case_members(source: &Source, cases: &[MatchCase]) -> Vec<aligner::Member> {
+    cases.iter().filter_map(|c| match_case(source, c)).collect()
 }
 
 /// Builds an alignment member for an annotated function parameter,

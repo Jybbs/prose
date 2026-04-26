@@ -13,7 +13,6 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::statement_visitor::{walk_body, StatementVisitor};
 use ruff_python_ast::token::TokenKind;
 use ruff_python_ast::Stmt;
-use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::config::Config;
@@ -95,7 +94,7 @@ impl Visitor<'_> {
     /// indent would misalign if the keyword shifted.
     fn qualify_from(&self, stmt: &Stmt) -> Option<aligner::Member> {
         let s = stmt.as_import_from_stmt()?;
-        if self.source.text().contains_line_break(s.range) {
+        if self.source.contains_line_break(s.range) {
             return None;
         }
         aligner::line_anchored_member_at_kind(self.source, s.range, TokenKind::Import)
@@ -107,7 +106,7 @@ impl Visitor<'_> {
     /// other statement shape.
     fn qualify_import_as(&self, stmt: &Stmt) -> Option<aligner::Member> {
         let s = stmt.as_import_stmt()?;
-        if self.source.text().contains_line_break(s.range) {
+        if self.source.contains_line_break(s.range) {
             return None;
         }
         let [alias] = s.names.as_slice() else {

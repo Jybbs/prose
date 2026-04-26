@@ -1,8 +1,8 @@
 //! Computes padding widths and emits alignment edits for rules that
 //! align a shared token across a group of lines. `emit_group` is the
-//! entry point. Per-rule knobs travel through `Settings`, where both
-//! `align_colons` and `align_equals` use `suffix_len = 1`, leaving a
-//! one-space buffer before the aligned token.
+//! entry point. Per-rule knobs travel through `Settings`, where every
+//! alignment rule uses `suffix_len = 1`, leaving a one-space buffer
+//! before the aligned token.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::{Token, TokenKind};
@@ -33,14 +33,24 @@ pub struct Member {
 
 /// Emission knobs shared by every alignment rule.
 ///
-/// `suffix_len` is the fixed gap between the rightmost content character
-/// and the aligned token (currently `1` for both `align_colons` and
-/// `align_equals`, leaving a one-space buffer before the token).
+/// `suffix_len` is the gap between content and aligned token when
+/// alignment fires (currently `1` for every rule).
+/// `strip_singleton_subgroup` overrides that to `0` for size-one
+/// sub-groups in `emit_split`, used by the `:`-anchored rules.
 #[derive(Clone, Copy, Debug)]
 pub struct Settings {
     pub max_shift: usize,
     pub policy: MaxAlignShiftPolicy,
+    pub strip_singleton_subgroup: bool,
     pub suffix_len: usize,
+}
+
+impl Settings {
+    /// Returns a copy of `self` with `strip_singleton_subgroup` enabled.
+    pub fn with_singleton_subgroup_strip(mut self) -> Self {
+        self.strip_singleton_subgroup = true;
+        self
+    }
 }
 
 impl From<&AlignmentConfig> for Settings {
@@ -48,6 +58,7 @@ impl From<&AlignmentConfig> for Settings {
         Self {
             max_shift: c.max_shift.get(),
             policy: c.max_shift_policy,
+            strip_singleton_subgroup: false,
             suffix_len: 1,
         }
     }
@@ -56,7 +67,7 @@ impl From<&AlignmentConfig> for Settings {
 /// Aligns the members of a group, dispatching through `settings.policy`
 /// when the widest padding exceeds `settings.max_shift`. A `Split`
 /// sub-group of size one collapses its gap to `settings.suffix_len`
-/// spaces.
+/// spaces, or to zero when `settings.strip_singleton_subgroup` is set.
 pub fn emit_group(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>) {
     let Some(first) = members.first() else {
         return;
@@ -282,7 +293,8 @@ fn emit_drop(source: &Source, members: &[Member], settings: Settings, edits: &mu
 /// Greedy partitioning: extends the current sub-group while its
 /// widest padding stays under the cap, then starts a new sub-group.
 /// Each contiguous sub-group aligns independently. A singleton
-/// sub-group collapses its gap to `suffix_len` spaces.
+/// sub-group collapses its gap to `suffix_len` by default, or to
+/// zero when `settings.strip_singleton_subgroup` is set.
 fn emit_split(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>) {
     let mut cursor = 0;
     while cursor < members.len() {
@@ -301,7 +313,12 @@ fn emit_split(source: &Source, members: &[Member], settings: Settings, edits: &m
             end += 1;
         }
         let sub = &members[cursor..end];
-        emit_with_paddings(source, sub, max_w, settings.suffix_len, edits);
+        let suffix = if sub.len() == 1 && settings.strip_singleton_subgroup {
+            0
+        } else {
+            settings.suffix_len
+        };
+        emit_with_paddings(source, sub, max_w, suffix, edits);
         cursor = end;
     }
 }
@@ -321,6 +338,16 @@ mod tests {
             member.gap.start().to_u32(),
             member.gap.end().to_u32(),
             " ".repeat(n),
+        )
+    }
+
+    /// Builds the expected summary tuple for an `Edit::range_deletion`
+    /// over a member's gap.
+    fn delete(member: &Member) -> (u32, u32, String) {
+        (
+            member.gap.start().to_u32(),
+            member.gap.end().to_u32(),
+            String::new(),
         )
     }
 
@@ -356,11 +383,14 @@ mod tests {
     }
 
     /// Builds a `Settings` carrying the test's cap and policy. All
-    /// inline tests use `suffix_len = 1`, matching both rules in production.
+    /// inline tests use `suffix_len = 1`, matching every rule in
+    /// production. `strip_singleton_subgroup` defaults off; the one
+    /// test that exercises the strip path enables it explicitly.
     fn settings(max_shift: usize, policy: MaxAlignShiftPolicy) -> Settings {
         Settings {
             max_shift,
             policy,
+            strip_singleton_subgroup: false,
             suffix_len: 1,
         }
     }
@@ -484,6 +514,25 @@ mod tests {
         );
 
         assert!(edits.is_empty(), "skip policy must not emit edits");
+    }
+
+    #[test]
+    fn emit_group_split_strips_singleton_subgroup_when_flag_is_set() {
+        let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
+        let mut edits = Vec::new();
+
+        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
+        emit_group(&source, &members, settings, &mut edits);
+
+        // [15] singleton sub-group collapses to 0 with strip on.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![
+                fill(&members[0], 2),
+                delete(&members[2]),
+                fill(&members[3], 2)
+            ],
+        );
     }
 
     #[test]

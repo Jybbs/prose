@@ -8,7 +8,6 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::visitor::{walk_expr, walk_parameters, walk_stmt, Visitor as AstVisitor};
 use ruff_python_ast::{Expr, ExprDict, Parameters, Stmt};
-use ruff_python_trivia::CommentRanges;
 use ruff_text_size::Ranged;
 
 use crate::config::Config;
@@ -23,7 +22,8 @@ pub struct AlignColons {
 impl AlignColons {
     pub fn from_config(config: &Config) -> Self {
         Self {
-            settings: (&config.rules.align_colons).into(),
+            settings: aligner::Settings::from(&config.rules.align_colons)
+                .with_singleton_subgroup_strip(),
         }
     }
 }
@@ -31,7 +31,6 @@ impl AlignColons {
 impl Rule for AlignColons {
     fn apply(&self, source: &Source) -> Vec<Edit> {
         let mut visitor = Visitor {
-            comment_ranges: CommentRanges::from(source.tokens()),
             edits: Vec::new(),
             settings: self.settings,
             source,
@@ -46,7 +45,6 @@ impl Rule for AlignColons {
 }
 
 struct Visitor<'a> {
-    comment_ranges: CommentRanges,
     edits: Vec<Edit>,
     settings: aligner::Settings,
     source: &'a Source,
@@ -68,7 +66,7 @@ impl Visitor<'_> {
     }
 
     fn process_dict(&mut self, d: &ExprDict) {
-        if d.len() < 2 || self.comment_ranges.intersects(d.range()) {
+        if d.len() < 2 || self.source.intersects_comment(d.range()) {
             return;
         }
         self.emit(&colon_targets::dict_members(self.source, d));
@@ -104,9 +102,7 @@ impl<'a> AstVisitor<'a> for Visitor<'a> {
                 self.process_class_fields(&cd.body);
                 self.process_docstring_args(&cd.body);
             }
-            Stmt::FunctionDef(fd) => {
-                self.process_docstring_args(&fd.body);
-            }
+            Stmt::FunctionDef(fd) => self.process_docstring_args(&fd.body),
             _ => {}
         }
         walk_stmt(self, stmt);
