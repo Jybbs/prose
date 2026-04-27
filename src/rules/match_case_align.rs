@@ -93,8 +93,7 @@ impl Visitor<'_> {
         let [body_first] = case.body.as_slice() else {
             return None;
         };
-        if is_compound_statement(body_first)
-            || self.source.contains_line_break(body_first.range())
+        if is_compound_statement(body_first) || self.source.contains_line_break(body_first.range())
         {
             return None;
         }
