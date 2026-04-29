@@ -1,6 +1,5 @@
 [tool.prose]
 line-length = 100
-target-version = "3.12"
 
 [tool.prose.rules.align-colons]
 enabled = false

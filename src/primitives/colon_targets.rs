@@ -1,13 +1,17 @@
-//! Member constructors for the five `:` alignment contexts: dict
-//! items, Pydantic-style class fields, annotated function parameters,
-//! Google/numpy docstring `Args:` entries, and `match` arm cases.
-//! `align_colons` and `match_case_align` consume them to align
-//! multi-item groups, whereas `singleton_rule` consumes them to strip
-//! pre-colon padding from groups that have no column to align to.
+//! Member constructors for the five `:` alignment contexts. The
+//! contexts are dict items, Pydantic-style class fields, annotated
+//! function parameters, Google/numpy docstring `Args:` entries, and
+//! `match` arm cases. `align_colons` and `match_case_align` consume
+//! them to align multi-item groups, whereas `singleton_rule` consumes
+//! them to strip pre-colon padding from groups that have no column to
+//! align to.
+
+use std::cmp::Ordering;
 
 use ruff_python_ast::token::TokenKind;
+use ruff_python_ast::visitor::{walk_expr, walk_parameters, walk_stmt, Visitor as AstVisitor};
 use ruff_python_ast::{
-    AnyParameterRef, DictItem, ExprDict, ExprStringLiteral, MatchCase, Parameters, Stmt,
+    AnyParameterRef, DictItem, Expr, ExprDict, ExprStringLiteral, MatchCase, Parameters, Stmt,
 };
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::UniversalNewlines;
@@ -16,40 +20,87 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::primitives::aligner;
 use crate::source::Source;
 
-/// Builds an alignment member for a class-body annotated assignment,
-/// anchored on the `:` between target and annotation. Returns `None`
-/// for any other statement shape.
-pub fn class_field(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
-    let ann = stmt.as_ann_assign_stmt()?;
-    aligner::line_anchored_member_at_kind(
-        source,
-        TextRange::new(ann.target.end(), ann.annotation.start()),
-        TokenKind::Colon,
-    )
+/// Receiver for the colon-context walker. `handle` is the catch-all
+/// for class fields, docstring args, and parameters. `dict` carries
+/// the surrounding `ExprDict` for callers that need its range.
+/// `match_arms` is split out so a rule can opt out of match-arm
+/// alignment by overriding it to a no-op. Call `walk` to drive the
+/// emitter across `source`'s module body.
+pub(crate) trait ColonEmitter {
+    fn handle(&mut self, _members: &[aligner::Member]) {}
+    fn dict(&mut self, _d: &ExprDict, members: &[aligner::Member]) {
+        self.handle(members);
+    }
+    fn match_arms(&mut self, members: &[aligner::Member]) {
+        self.handle(members);
+    }
+
+    /// Drives `self` across every `:` context in `source`'s module
+    /// body. Recurses into nested classes, functions, matches, and
+    /// expressions so a single call covers the whole tree.
+    fn walk(&mut self, source: &Source)
+    where
+        Self: Sized,
+    {
+        let mut visitor = ContextVisitor {
+            emitter: self,
+            source,
+        };
+        visitor.visit_body(&source.ast().body);
+    }
+}
+
+struct ContextVisitor<'a, E> {
+    emitter: &'a mut E,
+    source: &'a Source,
+}
+
+impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
+    fn visit_expr(&mut self, expr: &'a Expr) {
+        if let Expr::Dict(d) = expr {
+            self.emitter.dict(d, &dict_members(self.source, d));
+        }
+        walk_expr(self, expr);
+    }
+
+    fn visit_parameters(&mut self, parameters: &'a Parameters) {
+        for group in parameter_groups(self.source, parameters) {
+            self.emitter.handle(&group);
+        }
+        walk_parameters(self, parameters);
+    }
+
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        match stmt {
+            Stmt::ClassDef(cd) => {
+                for group in class_field_groups(self.source, &cd.body) {
+                    self.emitter.handle(&group);
+                }
+                self.emitter.handle(&docstring_args(self.source, &cd.body));
+            }
+            Stmt::FunctionDef(fd) => {
+                self.emitter.handle(&docstring_args(self.source, &fd.body));
+            }
+            Stmt::Match(m) => {
+                self.emitter
+                    .match_arms(&match_case_members(self.source, &m.cases));
+            }
+            _ => {}
+        }
+        walk_stmt(self, stmt);
+    }
 }
 
 /// Walks `body`, qualifying each statement through `class_field`,
 /// and returns one group per run of contiguous line-adjacent
 /// annotated-assignment statements.
-pub fn class_field_groups(source: &Source, body: &[Stmt]) -> Vec<Vec<aligner::Member>> {
+fn class_field_groups(source: &Source, body: &[Stmt]) -> Vec<Vec<aligner::Member>> {
     aligner::line_adjacent_groups(source, body, |s| class_field(source, s))
-}
-
-/// Builds an alignment member for a `key: value` dict entry, anchored
-/// on the `:` between key and value. Returns `None` for `**spread`
-/// entries that have no key.
-pub fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
-    let key = item.key.as_ref()?;
-    aligner::line_anchored_member_at_kind(
-        source,
-        TextRange::new(key.end(), item.value.start()),
-        TokenKind::Colon,
-    )
 }
 
 /// Returns one alignment member per `key: value` entry in `d`.
 /// `**spread` entries (no key) contribute nothing.
-pub fn dict_members(source: &Source, d: &ExprDict) -> Vec<aligner::Member> {
+fn dict_members(source: &Source, d: &ExprDict) -> Vec<aligner::Member> {
     d.iter()
         .filter_map(|item| dict_item(source, item))
         .collect()
@@ -62,7 +113,7 @@ pub fn dict_members(source: &Source, d: &ExprDict) -> Vec<aligner::Member> {
 /// An entry is any line whose first non-whitespace content runs up
 /// to a `:` before the line ends. Continuation lines, blank lines,
 /// and the next section header end the block.
-pub fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
+fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
     let Some(string_literal) = body
         .first()
         .and_then(Stmt::as_expr_stmt)
@@ -73,32 +124,37 @@ pub fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
     };
     let ds_range = string_literal.range();
     let text = source.slice(ds_range);
-    let Some((header_offset, header_indent_len)) = find_args_header(text) else {
+    let mut lines = text.universal_newlines();
+    let Some(header_indent_len) = lines.find_map(|line| {
+        let stripped = line.trim_whitespace_start();
+        let after = stripped.strip_prefix("Args:")?;
+        after
+            .trim_whitespace()
+            .is_empty()
+            .then(|| line.len() - stripped.len())
+    }) else {
         return Vec::new();
     };
 
     let mut members = Vec::new();
     let mut entry_indent_len: Option<usize> = None;
-    let after_header = header_offset + "Args:".len();
-    for line in text[after_header..].universal_newlines().skip(1) {
-        let content = line.as_str();
-        let stripped = content.trim_whitespace_start();
-        let line_indent_len = content.len() - stripped.len();
+    for line in lines {
+        let stripped = line.trim_whitespace_start();
+        let line_indent_len = line.len() - stripped.len();
 
         if stripped.is_empty() || line_indent_len <= header_indent_len {
             break;
         }
 
         let expected = *entry_indent_len.get_or_insert(line_indent_len);
-        if line_indent_len > expected {
-            continue;
-        }
-        if line_indent_len < expected {
-            break;
+        match line_indent_len.cmp(&expected) {
+            Ordering::Greater => continue,
+            Ordering::Less => break,
+            Ordering::Equal => {}
         }
 
         if let Some(colon_rel) = find_entry_colon(stripped) {
-            let line_offset = TextSize::try_from(after_header + line_indent_len + colon_rel)
+            let line_offset = TextSize::try_from(line_indent_len + colon_rel)
                 .expect("docstring colon offset fits in TextSize");
             let colon_start = ds_range.start() + line.start() + line_offset;
             members.push(aligner::line_anchored_member(source, colon_start));
@@ -110,68 +166,55 @@ pub fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
 /// Builds an alignment member for a `match` arm, anchored on the
 /// `:` between the pattern (or its `if` guard) and the arm body's
 /// first statement.
-pub fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::Member> {
+pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::Member> {
     let pre_colon_end = case
         .guard
         .as_deref()
         .map_or(case.pattern.end(), Ranged::end);
     let body_start = case.body.first()?.start();
-    aligner::line_anchored_member_at_kind(
-        source,
-        TextRange::new(pre_colon_end, body_start),
-        TokenKind::Colon,
-    )
+    colon_member(source, pre_colon_end, body_start)
 }
 
 /// Returns one alignment member per `case` arm in `cases`.
-pub fn match_case_members(source: &Source, cases: &[MatchCase]) -> Vec<aligner::Member> {
+fn match_case_members(source: &Source, cases: &[MatchCase]) -> Vec<aligner::Member> {
     cases.iter().filter_map(|c| match_case(source, c)).collect()
-}
-
-/// Builds an alignment member for an annotated function parameter,
-/// anchored on the `:` between name and annotation. Returns `None` for
-/// unannotated parameters, signaling a group break to callers.
-pub fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Member> {
-    let annotation = param.annotation()?;
-    aligner::line_anchored_member_at_kind(
-        source,
-        TextRange::new(param.name().end(), annotation.start()),
-        TokenKind::Colon,
-    )
 }
 
 /// Walks `params` in source order and returns one group per run of
 /// contiguous annotated parameters, splitting at every unannotated
-/// parameter (*the `self`/`cls` boundary, positional-only and
-/// keyword-only separators when bare, anything else without an
-/// annotation*).
-pub fn parameter_groups(source: &Source, params: &Parameters) -> Vec<Vec<aligner::Member>> {
+/// parameter.
+fn parameter_groups(source: &Source, params: &Parameters) -> Vec<Vec<aligner::Member>> {
     let optional: Vec<Option<aligner::Member>> = params
         .iter_source_order()
         .map(|p| parameter(source, p))
         .collect();
     optional
         .split(Option::is_none)
-        .map(|run| run.iter().flatten().copied().collect())
+        .filter(|chunk| !chunk.is_empty())
+        .map(|chunk| chunk.iter().flatten().copied().collect())
         .collect()
 }
 
-/// Returns `(byte_offset_of_args, line_indent_len)` for the first
-/// `Args:` section header, which means a line whose first
-/// non-whitespace content is exactly `Args:` followed only by
-/// whitespace. The indent length is the byte count of leading
-/// whitespace on the header's line, surfaced so callers can compare
-/// subsequent entry-line indents without recomputing.
-fn find_args_header(body: &str) -> Option<(usize, usize)> {
-    body.universal_newlines().find_map(|line| {
-        let content = line.as_str();
-        let stripped = content.trim_whitespace_start();
-        let after = stripped.strip_prefix("Args:")?;
-        after.trim_whitespace().is_empty().then(|| {
-            let indent_len = content.len() - stripped.len();
-            (line.start().to_usize() + indent_len, indent_len)
-        })
-    })
+/// Builds an alignment member for a class-body annotated assignment,
+/// anchored on the `:` between target and annotation. Returns `None`
+/// for any other statement shape.
+fn class_field(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
+    let ann = stmt.as_ann_assign_stmt()?;
+    colon_member(source, ann.target.end(), ann.annotation.start())
+}
+
+/// Builds a `:`-anchored alignment member from the half-open span
+/// `[start, end)` searched for the colon token.
+fn colon_member(source: &Source, start: TextSize, end: TextSize) -> Option<aligner::Member> {
+    aligner::line_anchored_member_at_kind(source, TextRange::new(start, end), TokenKind::Colon)
+}
+
+/// Builds an alignment member for a `key: value` dict entry, anchored
+/// on the `:` between key and value. Returns `None` for `**spread`
+/// entries that have no key.
+fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
+    let key = item.key.as_ref()?;
+    colon_member(source, key.end(), item.value.start())
 }
 
 /// Finds the byte offset of the `:` within a docstring entry line's
@@ -194,4 +237,44 @@ fn find_entry_colon(stripped: &str) -> Option<usize> {
         }
     }
     None
+}
+
+/// Builds an alignment member for an annotated function parameter,
+/// anchored on the `:` between name and annotation. Returns `None` for
+/// unannotated parameters, signaling a group break to callers.
+fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Member> {
+    let annotation = param.annotation()?;
+    colon_member(source, param.name().end(), annotation.start())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn find_entry_colon_accepts_star_and_double_star() {
+        assert_eq!(find_entry_colon("*args: list"), Some(5));
+        assert_eq!(find_entry_colon("**kwargs: dict"), Some(8));
+    }
+
+    #[test]
+    fn find_entry_colon_rejects_non_identifier_first_char() {
+        assert!(find_entry_colon("1arg: int").is_none());
+        assert!(find_entry_colon(": orphan").is_none());
+        assert!(find_entry_colon("").is_none());
+    }
+
+    #[test]
+    fn find_entry_colon_returns_none_when_no_top_level_colon() {
+        assert!(find_entry_colon("argname only").is_none());
+        assert!(find_entry_colon("name (only: parens)").is_none());
+    }
+
+    #[test]
+    fn find_entry_colon_skips_colons_inside_parens_and_brackets() {
+        assert_eq!(
+            find_entry_colon("x (Dict[str, int]): mapping"),
+            Some("x (Dict[str, int])".len()),
+        );
+    }
 }

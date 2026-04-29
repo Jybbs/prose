@@ -14,7 +14,9 @@ use ruff_python_ast::PySourceType;
 /// `paths` may contain directories or individual files. Regular files
 /// are yielded only when `PySourceType` classifies them as Python
 /// source. Returns an empty iterator when `paths` is empty.
-pub fn walk(paths: &[PathBuf]) -> impl Iterator<Item = Result<PathBuf, ignore::Error>> + Send {
+pub(crate) fn walk(
+    paths: &[PathBuf],
+) -> impl Iterator<Item = Result<PathBuf, ignore::Error>> + Send {
     let builder = paths.split_first().map(|(first, rest)| {
         let mut builder = WalkBuilder::new(first);
         for path in rest {

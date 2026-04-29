@@ -20,14 +20,14 @@ use crate::pipeline::Rule;
 use crate::primitives::aligner;
 use crate::source::Source;
 
-pub struct AlignImports {
+pub(crate) struct AlignImports {
     settings: aligner::Settings,
 }
 
 impl AlignImports {
-    pub fn from_config(config: &Config) -> Self {
+    pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: (&config.rules.align_imports).into(),
+            settings: aligner::Settings::from(&config.rules.align_imports),
         }
     }
 }

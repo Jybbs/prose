@@ -10,7 +10,7 @@ use std::str::FromStr;
 use ruff_python_ast::token::{Token, Tokens};
 use ruff_python_ast::ModModule;
 use ruff_python_parser::{parse_module, ParseError, Parsed};
-use ruff_python_trivia::CommentRanges;
+use ruff_python_trivia::{leading_indentation, lines_before, CommentRanges};
 use ruff_source_file::{LineColumn, LineRanges, SourceFile, SourceFileBuilder};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use thiserror::Error;
@@ -61,10 +61,25 @@ impl Source {
         &self.comment_ranges
     }
 
-    /// Returns `true` when the source text in `range` carries at least
-    /// one line break.
-    pub fn contains_line_break(&self, range: TextRange) -> bool {
-        self.file.source_text().contains_line_break(range)
+    /// Returns the zero-indexed character column of `offset` on its line.
+    pub fn column_of(&self, offset: TextSize) -> usize {
+        self.line_col(offset).column.to_zero_indexed()
+    }
+
+    /// Returns `true` when the source text in `ranged` carries at
+    /// least one line break.
+    pub fn contains_line_break<R: Ranged>(&self, ranged: R) -> bool {
+        self.file.source_text().contains_line_break(ranged.range())
+    }
+
+    /// Returns the character-width of the leading-whitespace prefix on
+    /// the line containing `offset`. Tabs and form-feeds count as one
+    /// character each. Recognizes Python's full whitespace set via
+    /// `ruff_python_trivia`.
+    pub fn line_indent_width(&self, offset: TextSize) -> usize {
+        leading_indentation(self.text().line_str(offset))
+            .chars()
+            .count()
     }
 
     /// Returns the start offset of the first token in `range` for
@@ -89,9 +104,16 @@ impl Source {
             .map(Token::start)
     }
 
-    /// Returns `true` when at least one comment lies within `range`.
-    pub fn intersects_comment(&self, range: TextRange) -> bool {
-        self.comment_ranges.intersects(range)
+    /// Returns `true` when at least one comment lies within `ranged`.
+    pub fn intersects_comment<R: Ranged>(&self, ranged: R) -> bool {
+        self.comment_ranges.intersects(ranged.range())
+    }
+
+    /// Returns `true` when the gap between two AST nodes carries
+    /// exactly one newline and no comment, meaning the surrounding
+    /// nodes sit on directly adjacent source lines.
+    pub fn is_line_adjacent(&self, gap: TextRange) -> bool {
+        !self.slice(gap).contains('#') && lines_before(gap.end(), self.text()) == 1
     }
 
     /// Returns the line and column for a byte offset.
@@ -100,16 +122,8 @@ impl Source {
     /// multi-byte sequence advances the column by one rather than by its
     /// byte length. Line and column are both `OneIndexed`. Call
     /// `to_zero_indexed()` on either field when a zero-based index is needed.
-    pub fn line_col(&self, offset: TextSize) -> LineColumn {
+    fn line_col(&self, offset: TextSize) -> LineColumn {
         self.file.to_source_code().line_column(offset)
-    }
-
-    /// Borrows the source's name.
-    ///
-    /// Returns the path display for sources read from disk and the
-    /// synthetic `"<source>"` for sources parsed from in-memory strings.
-    pub fn name(&self) -> &str {
-        self.file.name()
     }
 
     /// Reparses with replacement source text, preserving the original name.
@@ -305,38 +319,9 @@ mod tests {
     }
 
     #[test]
-    fn name_is_path_display_for_from_path() {
-        let tmp = tempfile::NamedTempFile::new().expect("temp file creates");
-        std::fs::write(tmp.path(), b"x = 1\n").expect("temp file writes");
-
-        let s = Source::from_path(tmp.path()).expect("existing file parses");
-        assert_eq!(s.name(), tmp.path().display().to_string());
-    }
-
-    #[test]
-    fn name_is_source_placeholder_for_from_str() {
-        let s = Source::from_str("x = 1").expect("simple source parses");
-        assert_eq!(s.name(), "<source>");
-    }
-
-    #[test]
     fn parse_error_returns_ruff_parse_error() {
         let result: Result<Source, ParseError> = Source::from_str("def foo(");
         assert!(result.is_err());
-    }
-
-    #[test]
-    fn reparse_preserves_name_from_path() {
-        let tmp = tempfile::NamedTempFile::new().expect("temp file creates");
-        std::fs::write(tmp.path(), b"x = 1\n").expect("temp file writes");
-
-        let original = Source::from_path(tmp.path()).expect("existing file parses");
-        let reparsed = original
-            .reparse("y = 2\n".to_owned())
-            .expect("replacement parses");
-
-        assert_eq!(reparsed.name(), original.name());
-        assert_eq!(reparsed.text(), "y = 2\n");
     }
 
     #[test]

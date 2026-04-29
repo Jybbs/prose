@@ -1,0 +1,18 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/alphabetize/bare_imports.input.py
+---
+"""
+Bare `import` statement runs alphabetize within blank-line bounds,
+mirroring the `from`-import-run pass on the `Stmt::Import` shape.
+Bare imports sit above `from`-imports as their own group, and the
+two run families never interleave.
+"""
+
+import argparse
+import os
+import zlib
+
+import numpy as np
+import pandas as pd

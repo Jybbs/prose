@@ -1,0 +1,28 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/alphabetize/kwargs.input.py
+---
+"""
+Keyword arguments at call sites alphabetize into a single group.
+A `**kwargs` splat carries no `arg` name and stays pinned in its
+source slot. The fixture covers a multi-line call (line mode) and
+the splat-pin case in one snapshot.
+"""
+
+posting = Posting(
+    company="Cianbro",
+    date_posted=None,
+    description="Wire conduits.",
+    title="Electrician",
+    url="https://example.com",
+)
+
+
+merged = combine(
+    first=1,
+    fourth=4,
+    **overrides,
+    second=2,
+    third=3,
+)

@@ -1,0 +1,21 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/alphabetize/enum.input.py
+---
+"""
+Enum members alphabetize as a single group. Detection runs against
+the simple name of any base class, so `StrEnum` qualifies the same
+way `Enum` and `IntEnum` do.
+"""
+
+from enum import StrEnum
+
+
+class OnetSkillType(StrEnum):
+    ABILITY    = "ability"
+    DWA        = "dwa"
+    KNOWLEDGE  = "knowledge"
+    SKILL      = "skill"
+    TASK       = "task"
+    TECHNOLOGY = "technology"

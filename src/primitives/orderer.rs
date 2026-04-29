@@ -1,23 +1,26 @@
-//! Reorders sibling AST nodes by a key function while preserving
-//! each item's leading attached comments and the rest of its last
-//! line. `reorder` is the entry point. Items partition into
-//! sections by an explicit `group` key, and each section sorts
-//! independently. Interstitial text between adjacent items stays
-//! in source position.
+//! Reorders sibling AST nodes by a `classify` closure. Items
+//! returning `None` pin in their source slot, and items returning
+//! `Some(key)` redistribute across the remaining slots in `key`
+//! order. Each item's extent comes from its `Ranged` impl, and
+//! interstitial text between adjacent items stays in source
+//! position.
 
-use ruff_diagnostics::Edit;
+use std::borrow::Cow;
+use std::ops::Range;
+
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::source::Source;
 
-/// Returns the source-level extent of `items[i]`: the item's own
-/// range plus any comment-only lines directly above it (no
-/// intervening blank line) and the rest of its last line. Bounded
-/// by the previous item's end (or `outer.start()` for the first
-/// item) and the next item's start (or `outer.end()` for the last).
-pub fn block_range<T: Ranged>(
+/// Returns the source-level extent of `items[i]`, made of the
+/// item's own range plus any comment-only lines directly above it
+/// (no intervening blank line) and the rest of its last line.
+/// Bounded by the previous item's end (or `outer.start()` for the
+/// first item) and the next item's start (or `outer.end()` for the
+/// last).
+pub(crate) fn block_range<T: Ranged>(
     source: &Source,
     items: &[T],
     i: usize,
@@ -30,6 +33,92 @@ pub fn block_range<T: Ranged>(
         leading_attached_start(source, item.start(), lower),
         source.text().line_end(item.end()).min(upper),
     )
+}
+
+/// Recursive sibling rewriter. Each item gets its block source slice
+/// passed to `render_block`, which returns either `Cow::Borrowed` (no
+/// internal change) or `Cow::Owned` (subtree rewrote itself, e.g.
+/// nested sort folded in). When the items don't need reordering at
+/// this scope *and* every rendered child is borrowed, the function
+/// returns `Cow::Borrowed(source.slice(blocks_span))` with no
+/// allocation. Any other case returns `Cow::Owned(rendered)` covering
+/// the same span, with each block's content placed by the sorted
+/// order and the gaps between blocks copied verbatim from source.
+pub(crate) fn reorder_text<'src, 'a, T, S, F>(
+    source: &'src Source,
+    items: &'a [T],
+    classify: impl FnMut(&'a T) -> Option<S>,
+    mut render_block: F,
+) -> Cow<'src, str>
+where
+    T: Ranged,
+    S: Ord,
+    F: FnMut(usize, &'src str) -> Cow<'src, str>,
+{
+    if items.is_empty() {
+        return Cow::Borrowed("");
+    }
+    let blocks: Vec<TextRange> = items.iter().map(|t| t.range()).collect();
+    let rendered: Vec<Cow<'src, str>> = blocks
+        .iter()
+        .enumerate()
+        .map(|(i, &block)| render_block(i, source.slice(block)))
+        .collect();
+    let mut order: Vec<usize> = (0..items.len()).collect();
+    let permuted = permute_in_place(&mut order, items, 0..items.len(), classify);
+    let any_owned = rendered.iter().any(|c| matches!(c, Cow::Owned(_)));
+    let span = blocks[0].cover(*blocks.last().expect("non-empty blocks"));
+    if !permuted && !any_owned {
+        return Cow::Borrowed(source.slice(span));
+    }
+    Cow::Owned(assemble_blocks(source, &blocks, &rendered, &order))
+}
+
+/// Splices each rendered child at its sorted position, copying the
+/// source text between adjacent blocks verbatim. `blocks` must be
+/// non-empty and in source order; `rendered` and `order` must have
+/// the same length as `blocks`.
+pub(crate) fn assemble_blocks<'src>(
+    source: &'src Source,
+    blocks: &[TextRange],
+    rendered: &[Cow<'src, str>],
+    order: &[usize],
+) -> String {
+    let span = blocks[0].cover(*blocks.last().expect("non-empty blocks"));
+    let mut out = String::with_capacity(span.len().to_usize());
+    for (i, &idx) in order.iter().enumerate() {
+        out.push_str(&rendered[idx]);
+        if let Some(next) = blocks.get(i + 1) {
+            out.push_str(source.slice(TextRange::new(blocks[i].end(), next.start())));
+        }
+    }
+    out
+}
+
+/// Permutes the slots of `order` within `range` in place by sorting
+/// items classified as `Some(K)`. Items returning `None` pin in their
+/// current slot. Stable across equal keys. Returns `true` when the
+/// permutation actually rewrote any slot.
+pub(crate) fn permute_in_place<'a, T, K>(
+    order: &mut [usize],
+    items: &'a [T],
+    range: Range<usize>,
+    mut classify: impl FnMut(&'a T) -> Option<K>,
+) -> bool
+where
+    K: Ord,
+{
+    let (slots, mut keyed): (Vec<usize>, Vec<(K, usize)>) = range
+        .filter_map(|slot| classify(&items[order[slot]]).map(|k| (slot, (k, order[slot]))))
+        .unzip();
+    if keyed.is_sorted_by_key(|x| &x.0) {
+        return false;
+    }
+    keyed.sort_by(|a, b| a.0.cmp(&b.0));
+    for (slot, (_, src)) in slots.into_iter().zip(keyed) {
+        order[slot] = src;
+    }
+    true
 }
 
 /// Walks backward through own-line comments preceding `item_start`,
@@ -54,89 +143,17 @@ fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize
     current
 }
 
-/// Reorders `items` by `key` and pushes one replacement edit onto
-/// `edits` when the resulting order differs from the input. Items
-/// partition into sections by `group`: consecutive items sharing
-/// the same value form one section, and each section sorts
-/// independently. Interstitial content between adjacent items
-/// (blank lines, detached comments) stays in source position.
-/// `outer` bounds the first item's leading-comment scan and the
-/// last item's trailing-content scan, typically the parent body's
-/// range. Inputs of fewer than two items emit nothing.
-pub fn reorder<'a, T, K, G>(
-    source: &Source,
-    items: &'a [T],
-    outer: TextRange,
-    mut key: impl FnMut(&'a T) -> K,
-    mut group: impl FnMut(&'a T) -> G,
-    edits: &mut Vec<Edit>,
-) where
-    T: Ranged,
-    K: Ord,
-    G: Eq,
-{
-    let (keys, groups): (Vec<K>, Vec<G>) = items.iter().map(|t| (key(t), group(t))).unzip();
-    let Some(order) = section_sorted(&keys, &groups) else {
-        return;
-    };
-    let blocks: Vec<TextRange> = (0..items.len())
-        .map(|i| block_range(source, items, i, outer))
-        .collect();
-    edits.push(splice(source, &blocks, &order));
-}
-
-/// Returns indices `[0, keys.len())` reordered so that consecutive
-/// equal-`groups` runs are sorted by `keys` independently. Returns
-/// `None` when every adjacent same-group pair is already in order,
-/// signaling that no reorder is needed.
-fn section_sorted<K: Ord, G: Eq>(keys: &[K], groups: &[G]) -> Option<Vec<usize>> {
-    keys.windows(2)
-        .zip(groups.windows(2))
-        .any(|(k, g)| g[0] == g[1] && k[0] > k[1])
-        .then(|| {
-            let mut order: Vec<usize> = (0..keys.len()).collect();
-            for chunk in order.chunk_by_mut(|&a, &b| groups[a] == groups[b]) {
-                chunk.sort_by_key(|&i| &keys[i]);
-            }
-            order
-        })
-}
-
-/// Builds the spliced replacement edit: each output position writes
-/// the block at `order[i]`, with the original gap between blocks
-/// `i` and `i + 1` between consecutive writes.
-fn splice(source: &Source, blocks: &[TextRange], order: &[usize]) -> Edit {
-    let span = blocks[0].cover(*blocks.last().expect("non-empty blocks"));
-    let mut out = String::with_capacity(span.len().to_usize());
-    for (i, &idx) in order.iter().enumerate() {
-        out.push_str(source.slice(blocks[idx]));
-        if let Some(next) = blocks.get(i + 1) {
-            out.push_str(source.slice(TextRange::new(blocks[i].end(), next.start())));
-        }
-    }
-    Edit::range_replacement(out, span)
-}
-
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
     use indoc::indoc;
-    use ruff_python_ast::Stmt;
     use ruff_text_size::TextLen;
 
     use super::*;
 
     fn body_range(source: &Source) -> TextRange {
         TextRange::up_to(source.text().text_len())
-    }
-
-    fn name(stmt: &Stmt) -> &str {
-        match stmt {
-            Stmt::ClassDef(c) => c.name.as_str(),
-            Stmt::FunctionDef(f) => f.name.as_str(),
-            _ => "",
-        }
     }
 
     #[test]
@@ -180,94 +197,113 @@ mod tests {
     }
 
     #[test]
-    fn reorder_already_sorted_input_emits_nothing() {
+    fn permute_in_place_pins_unclassified() {
+        let mut order = vec![0, 1, 2];
+        let items = ["b", "x", "a"];
+        let permuted = permute_in_place(&mut order, &items, 0..3, |s: &&str| {
+            (*s != "x").then_some(*s)
+        });
+        assert!(permuted);
+        assert_eq!(order, vec![2, 1, 0]);
+    }
+
+    #[test]
+    fn permute_in_place_returns_false_when_already_sorted() {
+        let mut order = vec![0, 1, 2];
+        let items = ["a", "b", "c"];
+        let permuted = permute_in_place(&mut order, &items, 0..3, |s: &&str| Some(*s));
+        assert!(!permuted);
+        assert_eq!(order, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn permute_in_place_returns_false_when_fewer_than_two_classified() {
+        let mut order = vec![0, 1, 2];
+        let items = ["x", "x", "a"];
+        let permuted = permute_in_place(&mut order, &items, 0..3, |s: &&str| {
+            (*s != "x").then_some(*s)
+        });
+        assert!(!permuted);
+        assert_eq!(order, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn reorder_text_inline_swaps_two_items() {
+        let src = "def f(b, a): pass\n";
+        let source = Source::from_str(src).expect("parses");
+        let func = source.ast().body[0].as_function_def_stmt().expect("def");
+        let params = &func.parameters;
+        let cow = reorder_text(
+            &source,
+            &params.args,
+            |p| Some(p.parameter.name.as_str()),
+            |_, slice| Cow::Borrowed(slice),
+        );
+        assert!(matches!(cow, Cow::Owned(_)));
+        assert_eq!(&*cow, "a, b");
+    }
+
+    #[test]
+    fn reorder_text_pins_non_classified() {
+        let src = indoc! {"
+            def b(): pass
+            CONST = 1
+            def a(): pass
+        "};
+        let source = Source::from_str(src).expect("parses");
+        let body = &source.ast().body;
+        let cow = reorder_text(
+            &source,
+            body,
+            |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
+            |_, slice| Cow::Borrowed(slice),
+        );
+        assert_eq!(&*cow, "def a(): pass\nCONST = 1\ndef b(): pass");
+    }
+
+    #[test]
+    fn reorder_text_returns_borrowed_when_already_sorted_and_no_render_change() {
         let src = "def a(): pass\ndef b(): pass\n";
         let source = Source::from_str(src).expect("parses");
-        let mut edits = Vec::new();
-        reorder(
+        let cow = reorder_text(
             &source,
             &source.ast().body,
-            body_range(&source),
-            name,
-            |_| (),
-            &mut edits,
+            |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
+            |_, slice| Cow::Borrowed(slice),
         );
-        assert!(edits.is_empty());
+        assert!(matches!(cow, Cow::Borrowed(_)));
     }
 
     #[test]
-    fn reorder_empty_input_emits_nothing() {
+    fn reorder_text_returns_empty_borrowed_for_empty_items() {
         let source = Source::from_str("").expect("parses");
-        let mut edits = Vec::new();
-        reorder(
+        let body = &source.ast().body;
+        let cow = reorder_text(
             &source,
-            &source.ast().body,
-            body_range(&source),
-            name,
-            |_| (),
-            &mut edits,
+            body.as_slice(),
+            |stmt: &ruff_python_ast::Stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
+            |_, slice| Cow::Borrowed(slice),
         );
-        assert!(edits.is_empty());
+        assert!(matches!(cow, Cow::Borrowed("")));
     }
 
     #[test]
-    fn reorder_single_item_input_emits_nothing() {
-        let source = Source::from_str("def a(): pass\n").expect("parses");
-        let mut edits = Vec::new();
-        reorder(
-            &source,
-            &source.ast().body,
-            body_range(&source),
-            name,
-            |_| (),
-            &mut edits,
-        );
-        assert!(edits.is_empty());
-    }
-
-    #[test]
-    fn section_sorted_already_sorted_returns_none() {
-        let keys = ["a", "b", "c"];
-        let groups = [(); 3];
-        assert_eq!(section_sorted(&keys, &groups), None);
-    }
-
-    #[test]
-    fn section_sorted_distinct_groups_return_none() {
-        // Each item is its own group, so no within-section pair
-        // can be out of order. No reorder is needed.
-        let keys = ["b", "a", "d", "c"];
-        let groups = [0, 1, 2, 3];
-        assert_eq!(section_sorted(&keys, &groups), None);
-    }
-
-    #[test]
-    fn section_sorted_sorts_within_each_section_independently() {
-        // Two sections (group 0: indices 0..2, group 1: indices 2..4).
-        // Each section sorts by key without crossing the boundary.
-        let keys = ["b", "a", "d", "c"];
-        let groups = [0, 0, 1, 1];
-        assert_eq!(section_sorted(&keys, &groups), Some(vec![1, 0, 3, 2]));
-    }
-
-    #[test]
-    fn section_sorted_unsorted_single_section_sorts_fully() {
-        let keys = ["c", "a", "b"];
-        let groups = [(); 3];
-        assert_eq!(section_sorted(&keys, &groups), Some(vec![1, 2, 0]));
-    }
-
-    #[test]
-    fn splice_writes_blocks_in_reordered_positions_with_original_gaps() {
-        let src = "def b(): pass\ndef a(): pass\n";
+    fn reorder_text_returns_owned_when_render_block_owns_even_without_sort() {
+        let src = "def a(): pass\ndef b(): pass\n";
         let source = Source::from_str(src).expect("parses");
-        let blocks = [
-            TextRange::new(0u32.into(), 13u32.into()),
-            TextRange::new(14u32.into(), 27u32.into()),
-        ];
-        let edit = splice(&source, &blocks, &[1, 0]);
-        assert_eq!(edit.start().to_u32(), 0);
-        assert_eq!(edit.end().to_u32(), 27);
-        assert_eq!(edit.content(), Some("def a(): pass\ndef b(): pass"));
+        let cow = reorder_text(
+            &source,
+            &source.ast().body,
+            |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
+            |i, slice| {
+                if i == 0 {
+                    Cow::Owned(slice.replace("def a", "def A"))
+                } else {
+                    Cow::Borrowed(slice)
+                }
+            },
+        );
+        assert!(matches!(cow, Cow::Owned(_)));
+        assert!((*cow).contains("def A"));
     }
 }

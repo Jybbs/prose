@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/alphabetize/from_imports.input.py
+---
+"""
+`from`-import statements alphabetize within each blank-line-bounded
+run by module name. Cross-run reordering does not happen, so a
+stranded run separated by a blank line stays in its own bucket.
+"""
+
+from collections import Counter
+from hamilton.function_modifiers import extract_fields
+from loguru import logger
+
+from enum import StrEnum
+from pydantic import BaseModel

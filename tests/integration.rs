@@ -20,9 +20,10 @@ use prose::source::Source;
 
 fn build_pipeline(rule: &str, config: &Config) -> Pipeline {
     if rule == "identity" {
-        return Pipeline::from_rules(Vec::new());
+        return Pipeline::empty();
     }
-    Pipeline::for_rule(rule, config)
+    let kebab = rule.replace('_', "-");
+    Pipeline::for_rule(&kebab, config)
         .unwrap_or_else(|| panic!("no rule registered for fixture directory `{rule}`"))
 }
 
