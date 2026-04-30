@@ -62,18 +62,23 @@ jobs:
     steps:
       - name: Summarize and gate
         env:
-          REF    : ${{ github.head_ref || github.ref_name }}
-          RESULT : ${{ needs.check.result }}
-          SHA    : ${{ github.sha }}
+          REF      : ${{ github.head_ref || github.ref_name }}
+          REPO_URL : ${{ github.server_url }}/${{ github.repository }}
+          RESULT   : ${{ needs.check.result }}
+          RUN_ID   : ${{ github.run_id }}
+          SHA      : ${{ github.sha }}
         run: |
           short="${SHA:0:7}"
           {
             echo "## 🪻 Prose CI"
             echo ""
             if [[ "$RESULT" == "success" ]]; then
-              echo "All checks passed on \`$REF\` at \`$short\`."
+              msg="All checks passed"
             else
-              echo "Result: \`$RESULT\` on \`$REF\` at \`$short\`. See failing checks above."
+              msg="Result \`$RESULT\`"
             fi
+            echo "$msg for [\`$short\`]($REPO_URL/commit/$SHA) on [\`$REF\`]($REPO_URL/tree/$REF)."
+            echo ""
+            echo "[Diff against main]($REPO_URL/compare/main...$REF) · [Run details]($REPO_URL/actions/runs/$RUN_ID)"
           } >> "$GITHUB_STEP_SUMMARY"
           [[ "$RESULT" == "success" ]]
