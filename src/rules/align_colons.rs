@@ -50,15 +50,15 @@ struct Emitter<'a> {
 }
 
 impl ColonEmitter for Emitter<'_> {
-    fn handle(&mut self, members: &[aligner::Member]) {
-        if aligner::is_alignment_candidate(members) {
-            aligner::emit_group(self.source, members, self.settings, &mut self.edits);
-        }
-    }
-
     fn dict(&mut self, d: &ExprDict, members: &[aligner::Member]) {
         if !self.source.intersects_comment(d) {
             self.handle(members);
+        }
+    }
+
+    fn handle(&mut self, members: &[aligner::Member]) {
+        if aligner::is_alignment_candidate(members) {
+            aligner::emit_group(self.source, members, self.settings, &mut self.edits);
         }
     }
 

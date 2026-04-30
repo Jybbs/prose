@@ -1,8 +1,9 @@
 """
-Keyword arguments at call sites alphabetize into a single group.
-A `**kwargs` splat carries no `arg` name and stays pinned in its
-source slot. The fixture covers a multi-line call (line mode) and
-the splat-pin case in one snapshot.
+Keyword arguments at call sites alphabetize within splat-bounded
+segments. A `**kwargs` splat carries no `arg` name and acts as a
+hard partition, so named kwargs never cross the splat boundary
+during sort. The fixture covers a call with no splat and a call
+with a mid-list splat.
 """
 
 posting = Posting(

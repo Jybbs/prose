@@ -27,6 +27,17 @@ pub struct Source {
 }
 
 impl Source {
+    fn build(text: String, name: impl Into<Box<str>>) -> Result<Self, ParseError> {
+        let parsed = parse_module(&text)?;
+        let file = SourceFileBuilder::new(name, text).finish();
+        let comment_ranges = CommentRanges::from(parsed.tokens());
+        Ok(Self {
+            comment_ranges,
+            file,
+            parsed,
+        })
+    }
+
     /// Reads a file from disk and parses it as Python source.
     ///
     /// # Errors
@@ -41,24 +52,18 @@ impl Source {
         Self::build(text, path.display().to_string()).map_err(Into::into)
     }
 
-    fn build(text: String, name: impl Into<Box<str>>) -> Result<Self, ParseError> {
-        let parsed = parse_module(&text)?;
-        let file = SourceFileBuilder::new(name, text).finish();
-        let comment_ranges = CommentRanges::from(parsed.tokens());
-        Ok(Self {
-            comment_ranges,
-            file,
-            parsed,
-        })
+    /// Returns the line and column for a byte offset.
+    ///
+    /// Columns count UTF scalar values (characters), not bytes, so a
+    /// multi-byte sequence advances the column by one rather than by its
+    /// byte length. Line and column are both `OneIndexed`. Call
+    /// `to_zero_indexed()` on either field when a zero-based index is needed.
+    fn line_col(&self, offset: TextSize) -> LineColumn {
+        self.file.to_source_code().line_column(offset)
     }
 
     pub fn ast(&self) -> &ModModule {
         self.parsed.syntax()
-    }
-
-    /// Returns the comment-range index built during parsing.
-    pub fn comment_ranges(&self) -> &CommentRanges {
-        &self.comment_ranges
     }
 
     /// Returns the zero-indexed character column of `offset` on its line.
@@ -66,20 +71,15 @@ impl Source {
         self.line_col(offset).column.to_zero_indexed()
     }
 
+    /// Returns the comment-range index built during parsing.
+    pub fn comment_ranges(&self) -> &CommentRanges {
+        &self.comment_ranges
+    }
+
     /// Returns `true` when the source text in `ranged` carries at
     /// least one line break.
     pub fn contains_line_break<R: Ranged>(&self, ranged: R) -> bool {
         self.file.source_text().contains_line_break(ranged.range())
-    }
-
-    /// Returns the character-width of the leading-whitespace prefix on
-    /// the line containing `offset`. Tabs and form-feeds count as one
-    /// character each. Recognizes Python's full whitespace set via
-    /// `ruff_python_trivia`.
-    pub fn line_indent_width(&self, offset: TextSize) -> usize {
-        leading_indentation(self.text().line_str(offset))
-            .chars()
-            .count()
     }
 
     /// Returns the start offset of the first token in `range` for
@@ -116,14 +116,14 @@ impl Source {
         !self.slice(gap).contains('#') && lines_before(gap.end(), self.text()) == 1
     }
 
-    /// Returns the line and column for a byte offset.
-    ///
-    /// Columns count UTF scalar values (characters), not bytes, so a
-    /// multi-byte sequence advances the column by one rather than by its
-    /// byte length. Line and column are both `OneIndexed`. Call
-    /// `to_zero_indexed()` on either field when a zero-based index is needed.
-    fn line_col(&self, offset: TextSize) -> LineColumn {
-        self.file.to_source_code().line_column(offset)
+    /// Returns the character-width of the leading-whitespace prefix on
+    /// the line containing `offset`. Tabs and form-feeds count as one
+    /// character each. Recognizes Python's full whitespace set via
+    /// `ruff_python_trivia`.
+    pub fn line_indent_width(&self, offset: TextSize) -> usize {
+        leading_indentation(self.text().line_str(offset))
+            .chars()
+            .count()
     }
 
     /// Reparses with replacement source text, preserving the original name.

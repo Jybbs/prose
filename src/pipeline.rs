@@ -31,6 +31,12 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
+    /// Constructs a pipeline that performs no rewrites. Useful for
+    /// callers that need a `Pipeline` value but no rules to run.
+    pub fn empty() -> Self {
+        Self { rules: Vec::new() }
+    }
+
     /// Builds a pipeline registering exactly one rule by name.
     ///
     /// Returns `None` when `name` does not match any registered rule.
@@ -52,12 +58,6 @@ impl Pipeline {
             _ => return None,
         };
         Some(Self::from_rules(vec![rule]))
-    }
-
-    /// Constructs a pipeline that performs no rewrites. Useful for
-    /// callers that need a `Pipeline` value but no rules to run.
-    pub fn empty() -> Self {
-        Self { rules: Vec::new() }
     }
 
     fn from_rules(rules: Vec<Box<dyn Rule>>) -> Self {

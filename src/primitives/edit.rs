@@ -12,20 +12,23 @@ use crate::source::Source;
 
 /// Folds any leaf edits whose range falls inside `range` into the
 /// source slice for that range. Returns `Cow::Borrowed` when no leaf
-/// edit applies.
+/// edit applies. `edits` must be sorted by `range().start()`, an
+/// invariant that `collect_leaf_edits` upholds via the AST visitor's
+/// source-order pre-order walk.
 pub(crate) fn apply_inline_edits<'src>(
     source: &'src Source,
     range: TextRange,
     edits: &[Edit],
 ) -> Cow<'src, str> {
-    let mut inside: Vec<&Edit> = edits
+    let lo = edits.partition_point(|e| e.range().start() < range.start());
+    let hi = lo + edits[lo..].partition_point(|e| e.range().start() <= range.end());
+    let mut inside = edits[lo..hi]
         .iter()
-        .filter(|e| range.contains_range(e.range()))
-        .collect();
-    if inside.is_empty() {
+        .filter(|e| e.range().end() <= range.end())
+        .peekable();
+    if inside.peek().is_none() {
         return Cow::Borrowed(source.slice(range));
     }
-    inside.sort();
     let mut out = String::with_capacity(range.len().to_usize());
     let mut cursor = range.start();
     for edit in inside {
@@ -79,8 +82,7 @@ mod tests {
     #[test]
     fn narrow_edit_handles_multibyte_codepoint_at_divergence() {
         let span = TextRange::new(0u32.into(), 7u32.into());
-        let (range, text) =
-            narrow_edit("α = 1\n".to_owned(), span, "β = 1\n").expect("differs");
+        let (range, text) = narrow_edit("α = 1\n".to_owned(), span, "β = 1\n").expect("differs");
         assert_eq!(range.start().to_u32(), 0);
         assert_eq!(range.end().to_u32(), 2);
         assert_eq!(text, "α");
@@ -131,8 +133,7 @@ mod tests {
     #[test]
     fn narrow_edit_trims_common_prefix_and_suffix() {
         let span = TextRange::new(0u32.into(), 7u32.into());
-        let (range, text) =
-            narrow_edit("ab1cdef".to_owned(), span, "ab2cdef").expect("differs");
+        let (range, text) = narrow_edit("ab1cdef".to_owned(), span, "ab2cdef").expect("differs");
         assert_eq!(range.start().to_u32(), 2);
         assert_eq!(range.end().to_u32(), 3);
         assert_eq!(text, "1");

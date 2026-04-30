@@ -27,10 +27,12 @@ use crate::source::Source;
 /// alignment by overriding it to a no-op. Call `walk` to drive the
 /// emitter across `source`'s module body.
 pub(crate) trait ColonEmitter {
-    fn handle(&mut self, _members: &[aligner::Member]) {}
     fn dict(&mut self, _d: &ExprDict, members: &[aligner::Member]) {
         self.handle(members);
     }
+
+    fn handle(&mut self, _members: &[aligner::Member]) {}
+
     fn match_arms(&mut self, members: &[aligner::Member]) {
         self.handle(members);
     }
@@ -91,11 +93,45 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
     }
 }
 
+/// Builds an alignment member for a `match` arm, anchored on the
+/// `:` between the pattern (or its `if` guard) and the arm body's
+/// first statement.
+pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::Member> {
+    let pre_colon_end = case
+        .guard
+        .as_deref()
+        .map_or(case.pattern.end(), Ranged::end);
+    let body_start = case.body.first()?.start();
+    colon_member(source, pre_colon_end, body_start)
+}
+
+/// Builds an alignment member for a class-body annotated assignment,
+/// anchored on the `:` between target and annotation. Returns `None`
+/// for any other statement shape.
+fn class_field(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
+    let ann = stmt.as_ann_assign_stmt()?;
+    colon_member(source, ann.target.end(), ann.annotation.start())
+}
+
 /// Walks `body`, qualifying each statement through `class_field`,
 /// and returns one group per run of contiguous line-adjacent
 /// annotated-assignment statements.
 fn class_field_groups(source: &Source, body: &[Stmt]) -> Vec<Vec<aligner::Member>> {
     aligner::line_adjacent_groups(source, body, |s| class_field(source, s))
+}
+
+/// Builds a `:`-anchored alignment member from the half-open span
+/// `[start, end)` searched for the colon token.
+fn colon_member(source: &Source, start: TextSize, end: TextSize) -> Option<aligner::Member> {
+    aligner::line_anchored_member_at_kind(source, TextRange::new(start, end), TokenKind::Colon)
+}
+
+/// Builds an alignment member for a `key: value` dict entry, anchored
+/// on the `:` between key and value. Returns `None` for `**spread`
+/// entries that have no key.
+fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
+    let key = item.key.as_ref()?;
+    colon_member(source, key.end(), item.value.start())
 }
 
 /// Returns one alignment member per `key: value` entry in `d`.
@@ -163,60 +199,6 @@ fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
     members
 }
 
-/// Builds an alignment member for a `match` arm, anchored on the
-/// `:` between the pattern (or its `if` guard) and the arm body's
-/// first statement.
-pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::Member> {
-    let pre_colon_end = case
-        .guard
-        .as_deref()
-        .map_or(case.pattern.end(), Ranged::end);
-    let body_start = case.body.first()?.start();
-    colon_member(source, pre_colon_end, body_start)
-}
-
-/// Returns one alignment member per `case` arm in `cases`.
-fn match_case_members(source: &Source, cases: &[MatchCase]) -> Vec<aligner::Member> {
-    cases.iter().filter_map(|c| match_case(source, c)).collect()
-}
-
-/// Walks `params` in source order and returns one group per run of
-/// contiguous annotated parameters, splitting at every unannotated
-/// parameter.
-fn parameter_groups(source: &Source, params: &Parameters) -> Vec<Vec<aligner::Member>> {
-    let optional: Vec<Option<aligner::Member>> = params
-        .iter_source_order()
-        .map(|p| parameter(source, p))
-        .collect();
-    optional
-        .split(Option::is_none)
-        .filter(|chunk| !chunk.is_empty())
-        .map(|chunk| chunk.iter().flatten().copied().collect())
-        .collect()
-}
-
-/// Builds an alignment member for a class-body annotated assignment,
-/// anchored on the `:` between target and annotation. Returns `None`
-/// for any other statement shape.
-fn class_field(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
-    let ann = stmt.as_ann_assign_stmt()?;
-    colon_member(source, ann.target.end(), ann.annotation.start())
-}
-
-/// Builds a `:`-anchored alignment member from the half-open span
-/// `[start, end)` searched for the colon token.
-fn colon_member(source: &Source, start: TextSize, end: TextSize) -> Option<aligner::Member> {
-    aligner::line_anchored_member_at_kind(source, TextRange::new(start, end), TokenKind::Colon)
-}
-
-/// Builds an alignment member for a `key: value` dict entry, anchored
-/// on the `:` between key and value. Returns `None` for `**spread`
-/// entries that have no key.
-fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
-    let key = item.key.as_ref()?;
-    colon_member(source, key.end(), item.value.start())
-}
-
 /// Finds the byte offset of the `:` within a docstring entry line's
 /// post-indent content. The pre-colon region may include the argument
 /// name and an optional parenthesized type (e.g. `x (int)`). Returns
@@ -239,12 +221,36 @@ fn find_entry_colon(stripped: &str) -> Option<usize> {
     None
 }
 
+/// Returns one alignment member per `case` arm in `cases`.
+fn match_case_members(source: &Source, cases: &[MatchCase]) -> Vec<aligner::Member> {
+    cases.iter().filter_map(|c| match_case(source, c)).collect()
+}
+
 /// Builds an alignment member for an annotated function parameter,
 /// anchored on the `:` between name and annotation. Returns `None` for
 /// unannotated parameters, signaling a group break to callers.
 fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Member> {
     let annotation = param.annotation()?;
     colon_member(source, param.name().end(), annotation.start())
+}
+
+/// Walks `params` in source order and returns one group per run of
+/// contiguous annotated parameters, splitting at every unannotated
+/// parameter.
+fn parameter_groups(source: &Source, params: &Parameters) -> Vec<Vec<aligner::Member>> {
+    let mut groups: Vec<Vec<aligner::Member>> = Vec::new();
+    let mut current: Vec<aligner::Member> = Vec::new();
+    for p in params.iter_source_order() {
+        match parameter(source, p) {
+            Some(m) => current.push(m),
+            None if !current.is_empty() => groups.push(std::mem::take(&mut current)),
+            None => {}
+        }
+    }
+    if !current.is_empty() {
+        groups.push(current);
+    }
+    groups
 }
 
 #[cfg(test)]

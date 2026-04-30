@@ -61,18 +61,6 @@ impl From<&AlignmentConfig> for Settings {
     }
 }
 
-/// Returns `true` when `members` form a multi-row group whose
-/// aligned tokens sit on distinct source lines. The two
-/// alignment-vs-collapse rules pivot on this predicate: the
-/// alignment side acts when it is `true`, the collapse side acts
-/// when it is `false`.
-pub(crate) fn is_alignment_candidate(members: &[Member]) -> bool {
-    members.len() >= 2
-        && members
-            .windows(2)
-            .all(|w| w[0].line_start != w[1].line_start)
-}
-
 /// Aligns the members of a group, dispatching through `settings.policy`
 /// when the widest padding exceeds `settings.max_shift`. A `Split`
 /// sub-group of size one collapses its gap to one space, or to zero
@@ -100,6 +88,18 @@ pub(crate) fn emit_group(
         MaxAlignShiftPolicy::Skip => {}
         MaxAlignShiftPolicy::Split => emit_split(source, members, settings, edits),
     }
+}
+
+/// Returns `true` when `members` form a multi-row group whose
+/// aligned tokens sit on distinct source lines. The two
+/// alignment-vs-collapse rules pivot on this predicate: the
+/// alignment side acts when it is `true`, the collapse side acts
+/// when it is `false`.
+pub(crate) fn is_alignment_candidate(members: &[Member]) -> bool {
+    members.len() >= 2
+        && members
+            .windows(2)
+            .all(|w| w[0].line_start != w[1].line_start)
 }
 
 /// Generalization of [`line_adjacent_groups`] for rules that admit
@@ -194,26 +194,6 @@ pub(crate) fn line_anchored_member_at_kind(
     Some(line_anchored_member(source, anchor))
 }
 
-/// Builds a `Member` for a row whose aligned token sits at `anchor`,
-/// with width measured by the display width of `target` plus
-/// `extra_width`. Pass `extra_width = 0` when the LHS is exactly
-/// `target` (e.g. `x = 1`), and pass a non-zero value when the LHS
-/// visually extends past `target` by characters not covered by the
-/// slice (e.g. the `+` of `x += 1` widens the LHS by one column
-/// without being part of the target range).
-fn range_anchored_member(
-    source: &Source,
-    target: TextRange,
-    anchor: TextSize,
-    extra_width: usize,
-) -> Member {
-    Member {
-        gap: TextRange::new(target.end(), anchor),
-        line_start: source.text().line_start(anchor),
-        width: source.slice(target).width() + extra_width,
-    }
-}
-
 /// Builds a `Member` whose anchor is the first token in `search`
 /// satisfying `predicate`, with width measured by `target` plus
 /// `extra_width`. Returns `None` if no token matches, or if the span
@@ -238,6 +218,21 @@ where
         return None;
     }
     Some(range_anchored_member(source, target, anchor, extra_width))
+}
+
+/// Returns the edit needed to make `range` carry exactly `n` ASCII
+/// spaces, or `None` if it already does. Emits `Edit::range_deletion`
+/// when `n` is zero, because `Edit::range_replacement` rejects empty
+/// content.
+pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) -> Option<Edit> {
+    let text = source.slice(range);
+    if text.len() == n && text.bytes().all(|b| b == b' ') {
+        return None;
+    }
+    if n == 0 {
+        return Some(Edit::range_deletion(range));
+    }
+    Some(Edit::range_replacement(" ".repeat(n), range))
 }
 
 /// Sorts by width, keeps only the members whose width sits within
@@ -293,21 +288,6 @@ fn emit_split(source: &Source, members: &[Member], settings: Settings, edits: &m
     }
 }
 
-/// Returns the edit needed to make `range` carry exactly `n` ASCII
-/// spaces, or `None` if it already does. Emits `Edit::range_deletion`
-/// when `n` is zero, because `Edit::range_replacement` rejects empty
-/// content.
-pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) -> Option<Edit> {
-    let text = source.slice(range);
-    if text.len() == n && text.bytes().all(|b| b == b' ') {
-        return None;
-    }
-    if n == 0 {
-        return Some(Edit::range_deletion(range));
-    }
-    Some(Edit::range_replacement(" ".repeat(n), range))
-}
-
 /// Rewrites each member's gap to `suffix_len + (max_w - m.width)`
 /// spaces. Members whose gap already carries that width of ASCII
 /// spaces emit nothing.
@@ -325,6 +305,26 @@ fn emit_with_paddings(
     );
 }
 
+/// Builds a `Member` for a row whose aligned token sits at `anchor`,
+/// with width measured by the display width of `target` plus
+/// `extra_width`. Pass `extra_width = 0` when the LHS is exactly
+/// `target` (e.g. `x = 1`), and pass a non-zero value when the LHS
+/// visually extends past `target` by characters not covered by the
+/// slice (e.g. the `+` of `x += 1` widens the LHS by one column
+/// without being part of the target range).
+fn range_anchored_member(
+    source: &Source,
+    target: TextRange,
+    anchor: TextSize,
+    extra_width: usize,
+) -> Member {
+    Member {
+        gap: TextRange::new(target.end(), anchor),
+        line_start: source.text().line_start(anchor),
+        width: source.slice(target).width() + extra_width,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -333,16 +333,6 @@ mod tests {
 
     use super::*;
 
-    /// Builds the expected `(start, end, content)` tuple for an edit
-    /// that rewrites a member's gap to `n` spaces.
-    fn fill(member: &Member, n: usize) -> (u32, u32, String) {
-        (
-            member.gap.start().to_u32(),
-            member.gap.end().to_u32(),
-            " ".repeat(n),
-        )
-    }
-
     /// Builds the expected summary tuple for an `Edit::range_deletion`
     /// over a member's gap.
     fn delete(member: &Member) -> (u32, u32, String) {
@@ -350,6 +340,16 @@ mod tests {
             member.gap.start().to_u32(),
             member.gap.end().to_u32(),
             String::new(),
+        )
+    }
+
+    /// Builds the expected `(start, end, content)` tuple for an edit
+    /// that rewrites a member's gap to `n` spaces.
+    fn fill(member: &Member, n: usize) -> (u32, u32, String) {
+        (
+            member.gap.start().to_u32(),
+            member.gap.end().to_u32(),
+            " ".repeat(n),
         )
     }
 
@@ -516,25 +516,6 @@ mod tests {
     }
 
     #[test]
-    fn emit_group_split_strips_singleton_subgroup_when_flag_is_set() {
-        let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
-        let mut edits = Vec::new();
-
-        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
-        emit_group(&source, &members, settings, &mut edits);
-
-        // [15] singleton sub-group collapses to 0 with strip on.
-        assert_eq!(
-            sorted_summaries(&edits),
-            vec![
-                fill(&members[0], 2),
-                delete(&members[2]),
-                fill(&members[3], 2)
-            ],
-        );
-    }
-
-    #[test]
     fn emit_group_split_partitions_into_contiguous_subgroups() {
         let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
         let mut edits = Vec::new();
@@ -552,6 +533,25 @@ mod tests {
         assert_eq!(
             sorted_summaries(&edits),
             vec![fill(&members[0], 2), fill(&members[3], 2)],
+        );
+    }
+
+    #[test]
+    fn emit_group_split_strips_singleton_subgroup_when_flag_is_set() {
+        let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
+        let mut edits = Vec::new();
+
+        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
+        emit_group(&source, &members, settings, &mut edits);
+
+        // [15] singleton sub-group collapses to 0 with strip on.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![
+                fill(&members[0], 2),
+                delete(&members[2]),
+                fill(&members[3], 2)
+            ],
         );
     }
 

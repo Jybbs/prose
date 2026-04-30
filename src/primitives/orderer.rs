@@ -14,6 +14,27 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::source::Source;
 
+/// Splices each rendered child at its sorted position, copying the
+/// source text between adjacent blocks verbatim. `blocks` must be
+/// non-empty and in source order; `rendered` and `order` must have
+/// the same length as `blocks`.
+pub(crate) fn assemble_blocks<'src>(
+    source: &'src Source,
+    blocks: &[TextRange],
+    rendered: &[Cow<'src, str>],
+    order: &[usize],
+) -> String {
+    let span = blocks[0].cover(*blocks.last().expect("non-empty blocks"));
+    let mut out = String::with_capacity(span.len().to_usize());
+    for (i, &idx) in order.iter().enumerate() {
+        out.push_str(&rendered[idx]);
+        if let Some(next) = blocks.get(i + 1) {
+            out.push_str(source.slice(TextRange::new(blocks[i].end(), next.start())));
+        }
+    }
+    out
+}
+
 /// Returns the source-level extent of `items[i]`, made of the
 /// item's own range plus any comment-only lines directly above it
 /// (no intervening blank line) and the rest of its last line.
@@ -33,6 +54,32 @@ pub(crate) fn block_range<T: Ranged>(
         leading_attached_start(source, item.start(), lower),
         source.text().line_end(item.end()).min(upper),
     )
+}
+
+/// Permutes the slots of `order` within `range` in place by sorting
+/// items classified as `Some(K)`. Items returning `None` pin in their
+/// current slot. Stable across equal keys. Returns `true` when the
+/// permutation actually rewrote any slot.
+pub(crate) fn permute_in_place<'a, T, K>(
+    order: &mut [usize],
+    items: &'a [T],
+    range: Range<usize>,
+    mut classify: impl FnMut(&'a T) -> Option<K>,
+) -> bool
+where
+    K: Ord,
+{
+    let (slots, mut keyed): (Vec<usize>, Vec<(K, usize)>) = range
+        .filter_map(|slot| classify(&items[order[slot]]).map(|k| (slot, (k, order[slot]))))
+        .unzip();
+    if keyed.is_sorted_by_key(|x| &x.0) {
+        return false;
+    }
+    keyed.sort_by(|a, b| a.0.cmp(&b.0));
+    for (slot, (_, src)) in slots.into_iter().zip(keyed) {
+        order[slot] = src;
+    }
+    true
 }
 
 /// Recursive sibling rewriter. Each item gets its block source slice
@@ -74,59 +121,15 @@ where
     Cow::Owned(assemble_blocks(source, &blocks, &rendered, &order))
 }
 
-/// Splices each rendered child at its sorted position, copying the
-/// source text between adjacent blocks verbatim. `blocks` must be
-/// non-empty and in source order; `rendered` and `order` must have
-/// the same length as `blocks`.
-pub(crate) fn assemble_blocks<'src>(
-    source: &'src Source,
-    blocks: &[TextRange],
-    rendered: &[Cow<'src, str>],
-    order: &[usize],
-) -> String {
-    let span = blocks[0].cover(*blocks.last().expect("non-empty blocks"));
-    let mut out = String::with_capacity(span.len().to_usize());
-    for (i, &idx) in order.iter().enumerate() {
-        out.push_str(&rendered[idx]);
-        if let Some(next) = blocks.get(i + 1) {
-            out.push_str(source.slice(TextRange::new(blocks[i].end(), next.start())));
-        }
-    }
-    out
-}
-
-/// Permutes the slots of `order` within `range` in place by sorting
-/// items classified as `Some(K)`. Items returning `None` pin in their
-/// current slot. Stable across equal keys. Returns `true` when the
-/// permutation actually rewrote any slot.
-pub(crate) fn permute_in_place<'a, T, K>(
-    order: &mut [usize],
-    items: &'a [T],
-    range: Range<usize>,
-    mut classify: impl FnMut(&'a T) -> Option<K>,
-) -> bool
-where
-    K: Ord,
-{
-    let (slots, mut keyed): (Vec<usize>, Vec<(K, usize)>) = range
-        .filter_map(|slot| classify(&items[order[slot]]).map(|k| (slot, (k, order[slot]))))
-        .unzip();
-    if keyed.is_sorted_by_key(|x| &x.0) {
-        return false;
-    }
-    keyed.sort_by(|a, b| a.0.cmp(&b.0));
-    for (slot, (_, src)) in slots.into_iter().zip(keyed) {
-        order[slot] = src;
-    }
-    true
-}
-
 /// Walks backward through own-line comments preceding `item_start`,
 /// stopping at the first comment that is inline (not own-line) or
 /// separated from the running attachment point by a blank line.
 fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize) -> TextSize {
     let text = source.text();
     let mut current = text.line_start(item_start);
+    if lower > current {
+        return item_start;
+    }
     for comment in source
         .comment_ranges()
         .comments_in_range(TextRange::new(lower, current))
