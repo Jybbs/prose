@@ -1,4 +1,5 @@
-name: CI
+name     : 🪻 CI
+run-name : 🪻 CI · ${{ github.head_ref || github.ref_name }}
 
 on:
   pull_request:
@@ -14,7 +15,7 @@ permissions:
 
 jobs:
   plan:
-    name    : Plan
+    name    : 🗺️ Plan
     runs-on : ubuntu-latest
     outputs:
       save-rust-cache: ${{ steps.plan.outputs.save-rust-cache }}
@@ -34,29 +35,45 @@ jobs:
       matrix:
         include:
           - command    : cargo fmt --all --check
-            name       : fmt
+            name       : 🪶 Format
             shared-key : prose-fmt
+          - command    : cargo machete
+            name       : 🪓 Unused
+            shared-key : prose-audit
           - command    : cargo clippy --all-targets --locked -- -D warnings
-            name       : clippy
+            name       : 📎 Clippy
             shared-key : prose-build
           - command    : cargo build --all-targets --locked
-            name       : build
+            name       : 🗜️ Build
             shared-key : prose-build
           - command    : cargo test --locked
-            name       : test
+            name       : ⚖️ Test
             shared-key : prose-build
     with:
       command    : ${{ matrix.command }}
       save-cache : ${{ fromJSON(needs.plan.outputs.save-rust-cache) }}
       shared-key : ${{ matrix.shared-key }}
 
-  ci:
-    name    : CI
+  gate:
+    name    : 🗞️ All checks
     needs   : [check]
     if      : always()
     runs-on : ubuntu-latest
     steps:
-      - name: Aggregate check results
-        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
-        with:
-          jobs: ${{ toJSON(needs) }}
+      - name: Summarize and gate
+        env:
+          REF    : ${{ github.head_ref || github.ref_name }}
+          RESULT : ${{ needs.check.result }}
+          SHA    : ${{ github.sha }}
+        run: |
+          short="${SHA:0:7}"
+          {
+            echo "## 🪻 Prose CI"
+            echo ""
+            if [[ "$RESULT" == "success" ]]; then
+              echo "All checks passed on \`$REF\` at \`$short\`."
+            else
+              echo "Result: \`$RESULT\` on \`$REF\` at \`$short\`. See failing checks above."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          [[ "$RESULT" == "success" ]]

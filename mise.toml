@@ -3,11 +3,12 @@
 # ============================================================================
 
 [tools]
-cargo-insta = "latest"
-maturin     = "latest"
-python      = "3.14"
-rust        = "stable"
-uv          = "latest"
+cargo-insta   = "latest"
+cargo-machete = "latest"
+maturin       = "latest"
+python        = "3.14"
+rust          = "stable"
+uv            = "latest"
 
 [settings]
 python.uv_venv_auto = "create|source"
@@ -15,6 +16,10 @@ python.uv_venv_auto = "create|source"
 # ============================================================================
 # Tasks
 # ============================================================================
+
+[tasks.audit]
+description = "Detect unused dependencies in Cargo.toml"
+run         = "cargo machete"
 
 [tasks.build]
 description = "Build the prose binary in debug mode"
@@ -25,8 +30,8 @@ description = "Verify Rust source matches rustfmt without rewriting"
 run         = "cargo fmt --all --check"
 
 [tasks.ci]
-depends     = ["check", "lint", "test", "wheel"]
-description = "Full local CI: check, lint, test, build wheel"
+depends     = ["audit", "check", "lint", "test", "wheel"]
+description = "Full local CI: audit, check, lint, test, build wheel"
 
 [tasks.format]
 description = "Format Rust source with rustfmt"

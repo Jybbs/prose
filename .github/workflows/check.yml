@@ -26,14 +26,18 @@ env:
   CARGO_TERM_COLOR        : always
 
 jobs:
-  run:
-    runs-on: ubuntu-latest
+  cargo:
+    name    : ${{ inputs.command }}
+    runs-on : ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: ./.github/actions/setup-toolchain
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
           save-cache : ${{ inputs.save-cache }}
           shared-key : ${{ inputs.shared-key }}
 
-      - run: ${{ inputs.command }}
+      - name : Run ${{ inputs.command }}
+        run  : ${{ inputs.command }}
