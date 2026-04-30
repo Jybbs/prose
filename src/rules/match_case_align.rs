@@ -19,12 +19,12 @@ use crate::pipeline::Rule;
 use crate::primitives::{aligner, colon_targets};
 use crate::source::Source;
 
-pub struct MatchCaseAlign {
+pub(crate) struct MatchCaseAlign {
     settings: aligner::Settings,
 }
 
 impl MatchCaseAlign {
-    pub fn from_config(config: &Config) -> Self {
+    pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: aligner::Settings::from(&config.rules.match_case_align)
                 .with_singleton_subgroup_strip(),
@@ -58,14 +58,13 @@ impl Visitor<'_> {
     /// Emits alignment and collapse edits for a sub-group and drains it.
     fn flush_subgroup(&mut self, group: &mut Vec<(aligner::Member, TextRange)>) {
         let (members, ranges): (Vec<aligner::Member>, Vec<TextRange>) = group.drain(..).unzip();
-        if members.len() >= 2 {
+        if aligner::is_alignment_candidate(&members) {
             aligner::emit_group(self.source, &members, self.settings, &mut self.edits);
         }
         self.edits.extend(
             ranges
                 .into_iter()
-                .filter(|range| self.source.slice(*range) != " ")
-                .map(|range| Edit::range_replacement(" ".to_owned(), range)),
+                .filter_map(|r| aligner::space_padding_edit(self.source, r, 1)),
         );
     }
 
@@ -93,8 +92,7 @@ impl Visitor<'_> {
         let [body_first] = case.body.as_slice() else {
             return None;
         };
-        if is_compound_statement(body_first) || self.source.contains_line_break(body_first.range())
-        {
+        if is_compound_statement(body_first) || self.source.contains_line_break(body_first) {
             return None;
         }
         let member = colon_targets::match_case(self.source, case)?;

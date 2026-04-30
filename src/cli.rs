@@ -23,6 +23,17 @@ use crate::pipeline::Pipeline;
 use crate::source::Source;
 use crate::walker;
 
+#[derive(Debug, clap::Args)]
+struct CheckArgs {
+    /// One or more files or directories to check. Omit when using `--stdin`.
+    #[arg(conflicts_with = "stdin", value_name = "PATH")]
+    paths: Vec<PathBuf>,
+
+    /// Read source from stdin instead of the filesystem.
+    #[arg(long)]
+    stdin: bool,
+}
+
 #[derive(Debug, Parser)]
 #[command(
     about,
@@ -31,38 +42,27 @@ use crate::walker;
     propagate_version = true,
     version
 )]
-pub enum Cli {
+enum Cli {
     /// Check files for formatting violations without rewriting.
     Check(CheckArgs),
 
-    /// Rewrite files to conform to the prose style.
+    /// Rewrite files to conform to the Prose style.
     Format(FormatArgs),
 }
 
 #[derive(Debug, clap::Args)]
-pub struct CheckArgs {
-    /// One or more files or directories to check. Omit when using `--stdin`.
-    #[arg(conflicts_with = "stdin", value_name = "PATH")]
-    pub paths: Vec<PathBuf>,
-
-    /// Read source from stdin instead of the filesystem.
-    #[arg(long)]
-    pub stdin: bool,
-}
-
-#[derive(Debug, clap::Args)]
-pub struct FormatArgs {
+struct FormatArgs {
     /// Show a unified diff instead of writing changes.
     #[arg(long)]
-    pub diff: bool,
+    diff: bool,
 
     /// One or more files or directories to format. Omit when using `--stdin`.
     #[arg(conflicts_with = "stdin", value_name = "PATH")]
-    pub paths: Vec<PathBuf>,
+    paths: Vec<PathBuf>,
 
     /// Read source from stdin instead of the filesystem.
     #[arg(long)]
-    pub stdin: bool,
+    stdin: bool,
 }
 
 pub fn run() -> anyhow::Result<ExitCode> {
@@ -161,11 +161,7 @@ fn run_pipeline_on_stdin<R: Read>(stdin: R, pipeline: &Pipeline) -> anyhow::Resu
     Ok(pipeline.run(source)?)
 }
 
-/// Placeholder diff emitter for `--diff` mode.
-///
-/// Prints a two-line banner for now. A real unified diff lands when
-/// the first rule PR gives the `--diff` path something non-empty to
-/// print.
+/// Writes a unified-diff banner to `writer`.
 fn write_diff<W: Write>(writer: &mut W, name: impl std::fmt::Display) -> anyhow::Result<()> {
     writeln!(writer, "--- {name}\n+++ {name}").context("writing diff")?;
     Ok(())

@@ -3,6 +3,7 @@
 //! tuple literals, and any literal whose source range contains a
 //! comment are out of scope.
 
+use std::borrow::Cow;
 use std::num::NonZeroUsize;
 use std::ops::Range;
 
@@ -12,25 +13,24 @@ use ruff_python_ast::token::parenthesized_range;
 use ruff_python_ast::visitor::{walk_expr, Visitor};
 use ruff_python_ast::{AnyNodeRef, DictItem, Expr};
 use ruff_source_file::{find_newline, LineEnding};
-use ruff_text_size::{Ranged, TextSize};
+use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
 use crate::pipeline::Rule;
-use crate::primitives::locator;
 use crate::source::Source;
 
 const DEFAULT_LINE_LENGTH: usize = 88;
 const DEFAULT_MAX_ATOMICS_PER_LINE: usize = 8;
 const INDENT_STEP: usize = 4;
 
-pub struct CollectionLayout {
+pub(crate) struct CollectionLayout {
     line_length: usize,
     max_atomics_per_line: usize,
 }
 
 impl CollectionLayout {
-    pub fn from_config(config: &Config) -> Self {
+    pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             line_length: config
                 .line_length
@@ -73,11 +73,7 @@ struct Expander<'a> {
     source: &'a Source,
 }
 
-impl Expander<'_> {
-    fn column_of(&self, offset: TextSize) -> usize {
-        locator::column_of(self.source, offset)
-    }
-
+impl<'a> Expander<'a> {
     /// Builds the expanded form of `expr` as a string, recursively
     /// expanding any qualifying child collections so the caller's
     /// single `range_replacement` covers every descendant rewrite.
@@ -133,20 +129,20 @@ impl Expander<'_> {
     /// per-item atomicity for the collection at `expr`. The text is
     /// produced via `serialize_expr` / `serialize_dict_item` at
     /// `indent`, so nested qualifying children are already recursively
-    /// expanded in the returned strings.
-    fn gather_items(&self, expr: &Expr, indent: usize) -> (char, char, Vec<String>, Vec<bool>) {
+    /// expanded in the returned strings. Items that need no expansion
+    /// pass through as `Cow::Borrowed` of their source slice.
+    fn gather_items(
+        &self,
+        expr: &Expr,
+        indent: usize,
+    ) -> (char, char, Vec<Cow<'a, str>>, Vec<bool>) {
         let parent = AnyNodeRef::from(expr);
         if let Expr::Dict(d) = expr {
-            let texts = d
+            let texts: Vec<Cow<'a, str>> = d
                 .items
                 .iter()
                 .map(|item| self.serialize_dict_item(item, parent, indent))
                 .collect();
-            // Dict items are never treated as atomic, even when both
-            // key and value render atomically. The `key: value` pair
-            // has internal structure that benefits from a dedicated
-            // line, both for readability and so that `align_colons`
-            // has rows to align across.
             let atomics = vec![false; d.items.len()];
             return ('{', '}', texts, atomics);
         }
@@ -155,20 +151,11 @@ impl Expander<'_> {
             Expr::Set(s) => ('{', '}', &s.elts),
             _ => unreachable!("gather_items called on non-collection expr"),
         };
-        let (texts, atomics): (Vec<String>, Vec<bool>) = elts
+        let (texts, atomics): (Vec<Cow<'a, str>>, Vec<bool>) = elts
             .iter()
             .map(|e| (self.serialize_expr(e, parent, indent, indent), is_atomic(e)))
             .unzip();
         (open, close, texts, atomics)
-    }
-
-    /// Returns the leading-whitespace column of the line containing
-    /// `offset`, in characters. Tabs and form-feeds count as one
-    /// column each. The rule's output uses spaces only, so tab-indented
-    /// input is preserved on non-rewritten lines and re-emitted as
-    /// spaces on rewritten ones.
-    fn line_indent(&self, offset: TextSize) -> usize {
-        locator::line_indent_width(self.source, offset)
     }
 
     /// Serializes a dict item as `key: value` or `**value`.
@@ -178,20 +165,40 @@ impl Expander<'_> {
     /// line-length check is offset by the key text plus `": "`, so a
     /// long key that pushes its value past the budget correctly
     /// triggers expansion of the value. When the value does expand,
-    /// its closing bracket still lands at `indent`.
-    fn serialize_dict_item(&self, item: &DictItem, parent: AnyNodeRef, indent: usize) -> String {
+    /// its closing bracket still lands at `indent`. When the value
+    /// passes through borrowed and the source already carries the
+    /// canonical `": "` gap, the item's source slice is returned
+    /// borrowed.
+    fn serialize_dict_item(
+        &self,
+        item: &DictItem,
+        parent: AnyNodeRef,
+        indent: usize,
+    ) -> Cow<'a, str> {
         if let Some(key) = &item.key {
             let key_text = self.source.slice(key);
             let value_column = indent + key_text.width() + 2;
             let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
-            format!("{key_text}: {value_text}")
+            let canonical = matches!(value_text, Cow::Borrowed(_))
+                && self
+                    .source
+                    .slice(TextRange::new(key.end(), item.value.start()))
+                    == ": ";
+            if canonical {
+                Cow::Borrowed(self.source.slice(item))
+            } else {
+                Cow::Owned(format!("{key_text}: {value_text}"))
+            }
         } else {
             let value_text = self.serialize_expr(&item.value, parent, indent + 2, indent);
-            format!("**{value_text}")
+            Cow::Owned(format!("**{value_text}"))
         }
     }
 
-    /// Serializes `expr` into the expanded output.
+    /// Serializes `expr` into the expanded output. Returns
+    /// `Cow::Borrowed` of the source slice (with explicit parentheses
+    /// recovered) when `expr` needs no expansion, `Cow::Owned` when
+    /// `expr` itself expands.
     ///
     /// `column` is where the expression actually begins on its line
     /// (used for the line-length overflow check). `indent` is where
@@ -206,13 +213,13 @@ impl Expander<'_> {
         parent: AnyNodeRef,
         column: usize,
         indent: usize,
-    ) -> String {
+    ) -> Cow<'a, str> {
         if self.should_expand(expr, column) {
-            return self.expand(expr, indent);
+            return Cow::Owned(self.expand(expr, indent));
         }
         let range = parenthesized_range(expr.into(), parent, self.source.tokens())
             .unwrap_or_else(|| expr.range());
-        self.source.slice(range).to_owned()
+        Cow::Borrowed(self.source.slice(range))
     }
 
     /// Returns `true` when `expr` is a qualifying collection whose
@@ -242,9 +249,9 @@ impl Expander<'_> {
 
 impl<'a> Visitor<'a> for Expander<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
-        let column = self.column_of(expr.start());
+        let column = self.source.column_of(expr.start());
         if self.should_expand(expr, column) {
-            let indent = self.line_indent(expr.start());
+            let indent = self.source.line_indent_width(expr.start());
             let replacement = self.expand(expr, indent);
             if replacement != self.source.slice(expr.range()) {
                 self.edits

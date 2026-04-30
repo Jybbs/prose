@@ -1,9 +1,9 @@
 //! Removes the trailing comma after the last element of any
-//! bracketed container: function calls, function signatures, class
-//! base lists, generic-syntax type-parameter lists on `def` /
-//! `class` / `type`, dict literals, list literals, and set literals.
-//! Tuples and any container whose final non-trivia token is not a
-//! comma are left unchanged.
+//! bracketed container. The covered shapes are function calls,
+//! function signatures, class base lists, generic-syntax
+//! type-parameter lists on `def` / `class` / `type`, dict literals,
+//! list literals, and set literals. Tuples and any container whose
+//! final non-trivia token is not a comma are left unchanged.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::visitor::{walk_arguments, walk_expr, walk_stmt, walk_type_params, Visitor};
@@ -15,10 +15,10 @@ use crate::config::Config;
 use crate::pipeline::Rule;
 use crate::source::Source;
 
-pub struct StripTrailingCommas;
+pub(crate) struct StripTrailingCommas;
 
 impl StripTrailingCommas {
-    pub fn from_config(_config: &Config) -> Self {
+    pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }
 }

@@ -14,91 +14,66 @@ use crate::config::Config;
 use crate::rules::align_colons::AlignColons;
 use crate::rules::align_equals::AlignEquals;
 use crate::rules::align_imports::AlignImports;
+use crate::rules::alphabetize::Alphabetize;
 use crate::rules::collection_layout::CollectionLayout;
 use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::singleton_rule::SingletonRule;
 use crate::rules::strip_trailing_commas::StripTrailingCommas;
 use crate::source::Source;
 
-/// Every rule in `prose` implements this trait and nothing more.
-///
-/// Implementations inspect `source` and return the edits that would
-/// bring it into conformance. An empty `Vec<Edit>` means the rule has
-/// nothing to say, and the pipeline skips the reparse for that rule.
-///
-/// Rules must be `Send + Sync` so that the pipeline can run across
-/// files in parallel without moving the rule list per worker.
-pub trait Rule: Send + Sync {
-    /// Computes the edit list this rule would apply to `source`.
-    ///
-    /// Edits must not overlap after sorting. The pipeline's applicator
-    /// debug-asserts this invariant, which is a rule-authoring bug if
-    /// it ever fires.
-    ///
-    /// Returns a bare `Vec<Edit>` rather than `ruff_diagnostics::Fix`
-    /// because prose has no concept of `Applicability` or
-    /// `IsolationLevel` yet. The pipeline sorts the list itself and
-    /// wraps `Fix` only if a future rule needs those annotations.
-    fn apply(&self, source: &Source) -> Vec<Edit>;
-
-    /// Stable identifier matching the rule's `[tool.prose.rules]` key
-    /// (kebab-case, e.g. `"align-equals"`). Surfaces in diagnostic
-    /// output when a rule produces unparseable text.
-    fn name(&self) -> &'static str;
-}
-
 /// Ordered sequence of enabled rules, run against each source file.
 ///
 /// Use [`Pipeline::with_defaults`] to build one from a loaded [`Config`],
 /// [`Pipeline::for_rule`] to register exactly one rule by name, or
-/// [`Pipeline::from_rules`] for an empty or custom-ordered rule list.
+/// [`Pipeline::empty`] for a pipeline with no rules.
 pub struct Pipeline {
     rules: Vec<Box<dyn Rule>>,
 }
 
 impl Pipeline {
+    /// Constructs a pipeline that performs no rewrites. Useful for
+    /// callers that need a `Pipeline` value but no rules to run.
+    pub fn empty() -> Self {
+        Self { rules: Vec::new() }
+    }
+
     /// Builds a pipeline registering exactly one rule by name.
     ///
     /// Returns `None` when `name` does not match any registered rule.
-    /// Bypasses each rule's `enabled` flag. Names are snake_case
-    /// (`align_colons`, `align_equals`, `align_imports`,
-    /// `collection_layout`, `match_case_align`, `singleton_rule`,
-    /// `strip_trailing_commas`), not the kebab-case form returned
-    /// by [`Rule::name`].
+    /// Bypasses each rule's `enabled` flag. Names are the kebab-case
+    /// form returned by [`Rule::name`] (`align-colons`,
+    /// `align-equals`, `align-imports`, `alphabetize`,
+    /// `collection-layout`, `match-case-align`, `singleton-rule`,
+    /// `strip-trailing-commas`).
     pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
         let rule: Box<dyn Rule> = match name {
-            "align_colons" => Box::new(AlignColons::from_config(config)),
-            "align_equals" => Box::new(AlignEquals::from_config(config)),
-            "align_imports" => Box::new(AlignImports::from_config(config)),
-            "collection_layout" => Box::new(CollectionLayout::from_config(config)),
-            "match_case_align" => Box::new(MatchCaseAlign::from_config(config)),
-            "singleton_rule" => Box::new(SingletonRule::from_config(config)),
-            "strip_trailing_commas" => Box::new(StripTrailingCommas::from_config(config)),
+            "align-colons" => Box::new(AlignColons::from_config(config)),
+            "align-equals" => Box::new(AlignEquals::from_config(config)),
+            "align-imports" => Box::new(AlignImports::from_config(config)),
+            "alphabetize" => Box::new(Alphabetize::from_config(config)),
+            "collection-layout" => Box::new(CollectionLayout::from_config(config)),
+            "match-case-align" => Box::new(MatchCaseAlign::from_config(config)),
+            "singleton-rule" => Box::new(SingletonRule::from_config(config)),
+            "strip-trailing-commas" => Box::new(StripTrailingCommas::from_config(config)),
             _ => return None,
         };
         Some(Self::from_rules(vec![rule]))
     }
 
-    /// Constructs a pipeline from an explicit rule list.
-    ///
-    /// Primarily used by tests and by any future integration that
-    /// wants a subset or a custom ordering outside `Config` control.
-    pub fn from_rules(rules: Vec<Box<dyn Rule>>) -> Self {
+    fn from_rules(rules: Vec<Box<dyn Rule>>) -> Self {
         Self { rules }
     }
 
     /// Builds a pipeline registering every rule enabled in `config`.
-    ///
-    /// Execution order: `collection_layout` → `alphabetize` →
-    /// `strip_trailing_commas` → `match_case_align` → `align_imports`
-    /// → `align_colons` → `align_equals` → `singleton_rule`. Each rule
-    /// PR adds one registration line at its ordered slot below.
+    /// Rules whose `enabled` flag is `false` are silently skipped.
     pub fn with_defaults(config: &Config) -> Self {
         let mut rules: Vec<Box<dyn Rule>> = Vec::new();
         if config.rules.collection_layout.enabled {
             rules.push(Box::new(CollectionLayout::from_config(config)));
         }
-        // if config.rules.alphabetize.enabled { rules.push(Box::new(Alphabetize)); }
+        if config.rules.alphabetize.enabled {
+            rules.push(Box::new(Alphabetize::from_config(config)));
+        }
         if config.rules.strip_trailing_commas.enabled {
             rules.push(Box::new(StripTrailingCommas::from_config(config)));
         }
@@ -120,13 +95,13 @@ impl Pipeline {
         Self { rules }
     }
 
-    /// Returns `true` when the pipeline has no rules registered.
-    pub fn is_empty(&self) -> bool {
+    #[cfg(test)]
+    fn is_empty(&self) -> bool {
         self.rules.is_empty()
     }
 
-    /// Number of rules the pipeline would run.
-    pub fn len(&self) -> usize {
+    #[cfg(test)]
+    fn len(&self) -> usize {
         self.rules.len()
     }
 
@@ -177,6 +152,26 @@ pub enum PipelineError {
         #[source]
         source: ParseError,
     },
+}
+
+/// Every rule in Prose implements this trait and nothing more.
+///
+/// Implementations inspect `source` and return the edits that would
+/// bring it into conformance. An empty `Vec<Edit>` means the rule has
+/// nothing to say, and the pipeline skips the reparse for that rule.
+///
+/// Rules must be `Send + Sync` so that the pipeline can run across
+/// files in parallel without moving the rule list per worker.
+pub(crate) trait Rule: Send + Sync {
+    /// Computes the edit list this rule would apply to `source`.
+    /// Edits must not overlap after sorting, an invariant the
+    /// pipeline's applicator debug-asserts.
+    fn apply(&self, source: &Source) -> Vec<Edit>;
+
+    /// Stable identifier matching the rule's `[tool.prose.rules]` key
+    /// (kebab-case, e.g. `"align-equals"`). Surfaces in diagnostic
+    /// output when a rule produces unparseable text.
+    fn name(&self) -> &'static str;
 }
 
 /// Splices `edits` into `text` and returns the resulting string.
@@ -409,7 +404,7 @@ mod tests {
     fn with_defaults_registers_enabled_rules() {
         let config = Config::default();
         let pipeline = Pipeline::with_defaults(&config);
-        assert_eq!(pipeline.len(), 7);
+        assert_eq!(pipeline.len(), 8);
     }
 
     #[test]
@@ -418,6 +413,7 @@ mod tests {
         config.rules.align_colons.enabled = false;
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
+        config.rules.alphabetize.enabled = false;
         config.rules.collection_layout.enabled = false;
         config.rules.match_case_align.enabled = false;
         config.rules.singleton_rule.enabled = false;

@@ -10,7 +10,6 @@
 use std::num::NonZeroUsize;
 use std::path::Path;
 
-use ruff_python_ast::PythonVersion;
 use serde::{de::IntoDeserializer, Deserialize};
 use thiserror::Error;
 
@@ -52,17 +51,16 @@ impl Default for CollectionLayoutConfig {
 
 /// The `[tool.prose]` section of a user's `pyproject.toml`.
 ///
-/// `None` on `line_length` or `target_version` means the user did not
-/// set that key in their `pyproject.toml`. Downstream consumers apply
-/// their own fallback rather than reading a synthesized default here.
-/// Per-rule settings live under `rules`, where each rule's sub-table
-/// carries `enabled` plus that rule's own knobs.
+/// `None` on `line_length` means the user did not set that key in
+/// their `pyproject.toml`. Downstream consumers apply their own
+/// fallback rather than reading a synthesized default here. Per-rule
+/// settings live under `rules`, where each rule's sub-table carries
+/// `enabled` plus that rule's own knobs.
 #[derive(Debug, Default, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
     pub line_length: Option<NonZeroUsize>,
     pub rules: RuleConfigs,
-    pub target_version: Option<PythonVersion>,
 }
 
 impl Config {
@@ -76,10 +74,7 @@ impl Config {
     ///
     /// Returns `ConfigError::Toml` when `contents` is not valid TOML.
     pub fn from_pyproject_str(contents: &str) -> Result<Self, ConfigError> {
-        let mut on_unknown = |key: &str| {
-            eprintln!("warning: unknown key `{key}` in [tool.prose]");
-        };
-        Ok(parse_prose_section(contents, &mut on_unknown)?.unwrap_or_default())
+        Ok(parse_prose_section(contents, &mut warn_unknown_key)?.unwrap_or_default())
     }
 
     /// Walks upward from `from` and returns the first `[tool.prose]`
@@ -96,9 +91,7 @@ impl Config {
     /// cannot be read, and `ConfigError::Toml` if its contents are not
     /// valid TOML.
     pub fn load<P: AsRef<Path>>(from: P) -> Result<Self, ConfigError> {
-        Self::load_with_warnings(from, |key| {
-            eprintln!("warning: unknown key `{key}` in [tool.prose]");
-        })
+        Self::load_with_warnings(from, warn_unknown_key)
     }
 
     /// Shared implementation backing `load`, factored out so tests can
@@ -152,22 +145,6 @@ pub enum MaxAlignShiftPolicy {
     Split,
 }
 
-fn parse_prose_section<F>(contents: &str, on_unknown: &mut F) -> Result<Option<Config>, ConfigError>
-where
-    F: FnMut(&str),
-{
-    let value: toml::Value = toml::from_str(contents)?;
-    let Some(prose) = value.get("tool").and_then(|t| t.get("prose")).cloned() else {
-        return Ok(None);
-    };
-
-    let config: Config = serde_ignored::deserialize(prose.into_deserializer(), |path| {
-        on_unknown(&path.to_string())
-    })?;
-
-    Ok(Some(config))
-}
-
 /// Per-rule configuration parsed from `[tool.prose.rules.<name>]`.
 ///
 /// Each field is a sub-table whose `enabled` key (defaulting to
@@ -199,6 +176,26 @@ impl Default for ToggleOnly {
     }
 }
 
+fn parse_prose_section<F>(contents: &str, on_unknown: &mut F) -> Result<Option<Config>, ConfigError>
+where
+    F: FnMut(&str),
+{
+    let value: toml::Value = toml::from_str(contents)?;
+    let Some(prose) = value.get("tool").and_then(|t| t.get("prose")).cloned() else {
+        return Ok(None);
+    };
+
+    let config: Config = serde_ignored::deserialize(prose.into_deserializer(), |path| {
+        on_unknown(&path.to_string())
+    })?;
+
+    Ok(Some(config))
+}
+
+fn warn_unknown_key(key: &str) {
+    eprintln!("warning: unknown key `{key}` in [tool.prose]");
+}
+
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
@@ -216,7 +213,6 @@ mod tests {
         let config = Config::load(tmp.path()).expect("loads");
 
         assert_eq!(config.line_length, None);
-        assert_eq!(config.target_version, None);
         assert!(config.rules.align_equals.enabled);
     }
 
@@ -294,16 +290,6 @@ mod tests {
         let config = Config::load(&nested).expect("loads");
 
         assert_eq!(config.line_length, NonZeroUsize::new(120));
-    }
-
-    #[test]
-    fn load_rejects_malformed_target_version() {
-        let tmp = TempDir::new().expect("tempdir");
-        write_pyproject(tmp.path(), "[tool.prose]\ntarget-version = \"py310\"\n");
-
-        let result = Config::load(tmp.path());
-
-        assert!(matches!(result, Err(ConfigError::Toml(_))));
     }
 
     #[test]

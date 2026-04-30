@@ -17,14 +17,14 @@ use crate::pipeline::Rule;
 use crate::primitives::aligner;
 use crate::source::Source;
 
-pub struct AlignEquals {
+pub(crate) struct AlignEquals {
     settings: aligner::Settings,
 }
 
 impl AlignEquals {
-    pub fn from_config(config: &Config) -> Self {
+    pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: (&config.rules.align_equals).into(),
+            settings: aligner::Settings::from(&config.rules.align_equals),
         }
     }
 }
@@ -51,7 +51,7 @@ struct Visitor<'a> {
     source: &'a Source,
 }
 
-impl<'a> Visitor<'a> {
+impl Visitor<'_> {
     fn process_body(&mut self, body: &[Stmt]) {
         for members in aligner::line_adjacent_groups(self.source, body, |s| self.qualify(s)) {
             aligner::emit_group(self.source, &members, self.settings, &mut self.edits);

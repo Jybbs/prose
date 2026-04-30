@@ -1,0 +1,27 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/alphabetize/try_full_arms.input.py
+---
+"""
+A `try` statement exercises every arm shape in one block: the
+`try` body, multiple `except` handlers, an `else` clause that
+runs on success, and a `finally` clause that always runs. Each
+arm sorts independently of the others.
+"""
+
+try:
+    from alpha import b
+    from zeta import a
+except ValueError:
+    from delta import d
+    from omega import c
+except KeyError:
+    from beta import f
+    from gamma import e
+else:
+    from rho import h
+    from sigma import g
+finally:
+    from phi import j
+    from psi import i

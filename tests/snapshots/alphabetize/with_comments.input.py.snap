@@ -1,0 +1,25 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/alphabetize/with_comments.input.py
+---
+"""
+Comments attached above each method travel with the method when
+its slot moves. Detached comments separated by a blank line stay
+in source position because `Orderer`'s block-range detection stops
+at the blank-line boundary.
+"""
+
+class Matcher:
+    def __init__(self, clusters):
+        pass
+
+    # describes the constructor
+
+    # describes the private validator
+    def _validate(self, resume):
+        pass
+
+    # describes the public match entry point
+    def match(self, resume):
+        pass
