@@ -3,12 +3,12 @@
 # ============================================================================
 
 [tools]
-cargo-insta   = "latest"
-cargo-machete = "latest"
-maturin       = "latest"
-python        = "3.14"
-rust          = "stable"
-uv            = "latest"
+"cargo:cargo-machete" = "latest"
+cargo-insta           = "latest"
+maturin               = "latest"
+python                = "3.14"
+rust                  = "stable"
+uv                    = "latest"
 
 [settings]
 python.uv_venv_auto = "create|source"
