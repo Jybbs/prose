@@ -1,0 +1,81 @@
+name     : 🪻 CI
+run-name : 🪻 CI · ${{ github.head_ref || github.ref_name }}
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  cancel-in-progress : true
+  group              : ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name    : 🗺️ Plan
+    runs-on : ubuntu-latest
+    outputs:
+      save-rust-cache: ${{ steps.plan.outputs.save-rust-cache }}
+    steps:
+      - id   : plan
+        name : Compute cache-save flag
+        run: |
+          save="${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}"
+          echo "save-rust-cache=$save" >> "$GITHUB_OUTPUT"
+
+  check:
+    name  : ${{ matrix.name }}
+    needs : plan
+    uses  : ./.github/workflows/check.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - command    : cargo fmt --all --check
+            name       : 🪶 Format
+            shared-key : prose-fmt
+          - command    : cargo machete
+            name       : 🪓 Unused
+            shared-key : prose-audit
+          - command    : cargo clippy --all-targets --locked -- -D warnings
+            name       : 📎 Clippy
+            shared-key : prose-build
+          - command    : cargo build --all-targets --locked
+            name       : 🗜️ Build
+            shared-key : prose-build
+          - command    : cargo test --locked
+            name       : ⚖️ Test
+            shared-key : prose-build
+    with:
+      command    : ${{ matrix.command }}
+      save-cache : ${{ fromJSON(needs.plan.outputs.save-rust-cache) }}
+      shared-key : ${{ matrix.shared-key }}
+
+  gate:
+    name    : 🗞️ All checks
+    needs   : [check]
+    if      : always()
+    runs-on : ubuntu-latest
+    steps:
+      - name: Summarize and gate
+        env:
+          REF      : ${{ github.head_ref || github.ref_name }}
+          REPO_URL : ${{ github.server_url }}/${{ github.repository }}
+          RESULT   : ${{ needs.check.result }}
+          SHA      : ${{ github.sha }}
+        run: |
+          short="${SHA:0:7}"
+          {
+            echo "## 🪻 Prose CI"
+            echo ""
+            if [[ "$RESULT" == "success" ]]; then
+              msg="All checks passed"
+            else
+              msg="Result \`$RESULT\`"
+            fi
+            echo "$msg for [\`$short\`]($REPO_URL/commit/$SHA) on [\`$REF\`]($REPO_URL/tree/$REF)."
+          } >> "$GITHUB_STEP_SUMMARY"
+          [[ "$RESULT" == "success" ]]
