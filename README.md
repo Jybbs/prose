@@ -2,9 +2,9 @@
 <img src="assets/title.svg" alt="Prose" width="800">
 <h3><em>A Python typesetter for the reader</em></h3>
 
-[![Rust 1.80+](https://img.shields.io/badge/rust-1.80+-8a80cb.svg)](https://www.rust-lang.org/)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-8a80cb.svg)](https://www.python.org/)
-[![maturin](https://img.shields.io/badge/built%20with-maturin-8a80cb.svg)](https://www.maturin.rs/)
+[![Rust 1.82+](https://img.shields.io/badge/rust-1.82+-8a80cb?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-8a80cb?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![maturin](https://img.shields.io/badge/built_with-maturin-8a80cb?style=for-the-badge)](https://www.maturin.rs/)
 
 </div>
 

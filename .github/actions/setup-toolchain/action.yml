@@ -1,0 +1,25 @@
+name        : Set up the Prose toolchain
+description : Provision the mise-managed tool stack and restore the Cargo cache. Callers run actions/checkout before this composite because the ./.github/actions/... reference resolves against the working tree.
+
+inputs:
+  save-cache:
+    default     : 'false'
+    description : When 'true' the Rust cache writes back to GHA after the job. Pass 'true' only on main-branch runs so PRs cannot thrash the shared cache.
+  shared-key:
+    default     : prose
+    description : Swatinem cache scope. Distinct keys partition caches by profile so a fmt-only restore stays small and a build run carries the full target directory.
+
+runs:
+  using: composite
+  steps:
+    - name: Install mise tools
+      uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      with:
+        cache: true
+
+    - name: Restore Cargo cache
+      uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+      with:
+        cache-on-failure : 'true'
+        save-if          : ${{ inputs.save-cache }}
+        shared-key       : ${{ inputs.shared-key }}

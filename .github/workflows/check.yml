@@ -1,0 +1,39 @@
+name: Check
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description : The cargo command to run, passed straight to bash inside the runner.
+        required    : true
+        type        : string
+      save-cache:
+        default     : false
+        description : When true the Rust cache writes back to GHA. Set true only on main-branch runs.
+        required    : false
+        type        : boolean
+      shared-key:
+        default     : prose
+        description : Swatinem cache scope. Distinct keys allow per-profile cache isolation.
+        required    : false
+        type        : string
+
+permissions:
+  contents: read
+
+env:
+  CARGO_PROFILE_DEV_DEBUG : line-tables-only
+  CARGO_TERM_COLOR        : always
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          save-cache : ${{ inputs.save-cache }}
+          shared-key : ${{ inputs.shared-key }}
+
+      - run: ${{ inputs.command }}
