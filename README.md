@@ -150,7 +150,34 @@ Every rule is independently toggleable.
 
 ## 🗺️ Composition
 
-*Prose* runs as a second pass after any other Python formatter that owns line length and quote normalization. Configure the upstream formatter to skip trailing-comma enforcement and let *Prose* handle alignment, ordering, and the singleton rule on top.
+*Prose* runs as the second pass in a two-stage pipeline. The first pass owns tokens (*line wrapping, quote normalization, indentation, blank-line discipline*) and the second pass owns layout (*alignment, alphabetization, the singleton rule, one-entry-per-line collections, trailing-comma stripping*). [Ruff](https://docs.astral.sh/ruff/) is the canonical first pass, in that `ruff format` matches the token-level scope and its lint config shares the `pyproject.toml` root with `[tool.prose]`.
+
+```bash
+ruff format && prose format
+```
+
+Running *Prose* first is incorrect. *Prose*'s alignment math depends on already-settled line breaks, and an upstream re-wrap will undo per-line layout decisions, forcing a third pass.
+
+### Ruff Configuration
+
+| Code | Conflict | Reason |
+|---|---|---|
+| `COM812` | Lint re-adds trailing commas | `strip-trailing-commas` removes them in multi-line collections and signatures |
+| `E203` | Lint flags whitespace before `:` | `align-colons` produces it in dict literals, dataclass fields, function signatures, and docstring `Args:` blocks |
+| `E221` | Lint flags multiple spaces before `=` | `align-equals` produces it across consecutive assignments at the same indentation |
+| `E272` | Lint flags multiple spaces before `import` / `as` | `align-imports` produces it across `from ... import ...` and `import ... as ...` groups |
+| `E501` | Lint flags lines past `line-length` | A long member in an alignment group pads shorter lines rightward, occasionally past the configured limit |
+| `skip-magic-trailing-comma` | Formatter re-expands collections by trailing-comma presence | `prose format` controls collection layout independently of comma signaling |
+
+### Other Tools
+
+Black formats, Flake8 lints, and isort sorts, so each pairs with *Prose* at a different layer:
+
+| Tool | Pairing |
+|---|---|
+| [Black](https://black.readthedocs.io/) | Run Black with `--skip-magic-trailing-comma`, then *Prose* second. Black collapses collections that `one-per-line-collections` re-expands and preserves trailing commas that `strip-trailing-commas` removes |
+| [Flake8](https://flake8.pycqa.org/) | Add `extend-ignore = E203, E221, E272` to `.flake8` or `setup.cfg` (*and `C812` if [`flake8-commas`](https://github.com/PyCQA/flake8-commas) is installed*). Flake8 inherits the same `pycodestyle` codes Ruff inherits |
+| [isort](https://pycqa.github.io/isort/) | Run isort first, *Prose* second, with no configuration adjustment. *Prose* alphabetizes within isort's groups and aligns the `import` keyword that isort leaves un-aligned |
 
 ---
 
