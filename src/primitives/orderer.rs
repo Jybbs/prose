@@ -14,22 +14,26 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::source::Source;
 
-/// Splices each rendered child at its sorted position, copying the
-/// source text between adjacent blocks verbatim. `blocks` must be
-/// non-empty and in source order; `rendered` and `order` must have
-/// the same length as `blocks`.
+/// Splices each rendered child at its sorted position. `gap_override`
+/// returning `Some(text)` for new-order slot `i` substitutes that
+/// text for the source gap between slot `i` and slot `i + 1`. A
+/// `None` return copies the source gap verbatim. `blocks` must be
+/// non-empty and in source order, with `rendered` and `order` the
+/// same length as `blocks`.
 pub(crate) fn assemble_blocks<'src>(
     source: &'src Source,
     blocks: &[TextRange],
     rendered: &[Cow<'src, str>],
     order: &[usize],
+    mut gap_override: impl FnMut(usize) -> Option<&'src str>,
 ) -> String {
-    let span = blocks[0].cover(*blocks.last().expect("non-empty blocks"));
-    let mut out = String::with_capacity(span.len().to_usize());
-    for (i, &idx) in order.iter().enumerate() {
+    let mut out = String::with_capacity(blocks_span(blocks).len().to_usize());
+    for (i, (&idx, block)) in order.iter().zip(blocks).enumerate() {
         out.push_str(&rendered[idx]);
         if let Some(next) = blocks.get(i + 1) {
-            out.push_str(source.slice(TextRange::new(blocks[i].end(), next.start())));
+            let gap = gap_override(i)
+                .unwrap_or_else(|| source.slice(TextRange::new(block.end(), next.start())));
+            out.push_str(gap);
         }
     }
     out
@@ -48,12 +52,31 @@ pub(crate) fn block_range<T: Ranged>(
     outer: TextRange,
 ) -> TextRange {
     let item = items[i].range();
-    let lower = items[..i].last().map_or(outer.start(), |t| t.range().end());
-    let upper = items.get(i + 1).map_or(outer.end(), |t| t.range().start());
+    let lower = items[..i].last().map_or(outer.start(), |t| t.end());
+    let upper = items.get(i + 1).map_or(outer.end(), |t| t.start());
     TextRange::new(
         leading_attached_start(source, item.start(), lower),
         source.text().line_end(item.end()).min(upper),
     )
+}
+
+/// Total source extent covered by `blocks`. Requires non-empty input.
+pub(crate) fn blocks_span(blocks: &[TextRange]) -> TextRange {
+    blocks[0].cover(*blocks.last().expect("non-empty blocks"))
+}
+
+/// Convenience wrapper for `permute_in_place` over the full `items`
+/// span. Shared by every caller that sorts the entire slice rather
+/// than a sub-run.
+pub(crate) fn permute_full<'a, T, K>(
+    order: &mut [usize],
+    items: &'a [T],
+    classify: impl FnMut(&'a T) -> Option<K>,
+) -> bool
+where
+    K: Ord,
+{
+    permute_in_place(order, items, 0..items.len(), classify)
 }
 
 /// Permutes the slots of `order` within `range` in place by sorting
@@ -70,7 +93,10 @@ where
     K: Ord,
 {
     let (slots, mut keyed): (Vec<usize>, Vec<(K, usize)>) = range
-        .filter_map(|slot| classify(&items[order[slot]]).map(|k| (slot, (k, order[slot]))))
+        .filter_map(|slot| {
+            let src = order[slot];
+            classify(&items[src]).map(|k| (slot, (k, src)))
+        })
         .unzip();
     if keyed.is_sorted_by_key(|x| &x.0) {
         return false;
@@ -105,20 +131,22 @@ where
     if items.is_empty() {
         return Cow::Borrowed("");
     }
-    let blocks: Vec<TextRange> = items.iter().map(|t| t.range()).collect();
-    let rendered: Vec<Cow<'src, str>> = blocks
+    let (blocks, rendered): (Vec<TextRange>, Vec<Cow<'src, str>>) = items
         .iter()
         .enumerate()
-        .map(|(i, &block)| render_block(i, source.slice(block)))
-        .collect();
+        .map(|(i, t)| {
+            let block = t.range();
+            (block, render_block(i, source.slice(block)))
+        })
+        .unzip();
     let mut order: Vec<usize> = (0..items.len()).collect();
-    let permuted = permute_in_place(&mut order, items, 0..items.len(), classify);
-    let any_owned = rendered.iter().any(|c| matches!(c, Cow::Owned(_)));
-    let span = blocks[0].cover(*blocks.last().expect("non-empty blocks"));
-    if !permuted && !any_owned {
-        return Cow::Borrowed(source.slice(span));
+    let permuted = permute_full(&mut order, items, classify);
+    if !permuted && rendered.iter().all(|c| matches!(c, Cow::Borrowed(_))) {
+        return Cow::Borrowed(source.slice(blocks_span(&blocks)));
     }
-    Cow::Owned(assemble_blocks(source, &blocks, &rendered, &order))
+    Cow::Owned(assemble_blocks(source, &blocks, &rendered, &order, |_| {
+        None
+    }))
 }
 
 /// Walks backward through own-line comments preceding `item_start`,
@@ -148,55 +176,114 @@ fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use indoc::indoc;
     use ruff_text_size::TextLen;
 
     use super::*;
+    use crate::test_support::parse;
 
     fn body_range(source: &Source) -> TextRange {
         TextRange::up_to(source.text().text_len())
     }
 
+    fn borrow<'a>(_: usize, slice: &'a str) -> Cow<'a, str> {
+        Cow::Borrowed(slice)
+    }
+
+    #[test]
+    fn assemble_blocks_mixes_overridden_and_source_gaps() {
+        let source = parse("def a(): pass\ndef b(): pass\ndef c(): pass\n");
+        let blocks: Vec<TextRange> = source.ast().body.iter().map(|s| s.range()).collect();
+        let rendered: Vec<Cow<str>> = blocks
+            .iter()
+            .map(|&b| Cow::Borrowed(source.slice(b)))
+            .collect();
+        let order = vec![0, 1, 2];
+        let assembled = assemble_blocks(&source, &blocks, &rendered, &order, |i| {
+            (i == 0).then_some(" ; ")
+        });
+        assert_eq!(assembled, "def a(): pass ; def b(): pass\ndef c(): pass");
+    }
+
+    #[test]
+    fn assemble_blocks_substitutes_gap_when_override_returns_some() {
+        let source = parse("def a(): pass\ndef b(): pass\n");
+        let blocks: Vec<TextRange> = source.ast().body.iter().map(|s| s.range()).collect();
+        let rendered: Vec<Cow<str>> = blocks
+            .iter()
+            .map(|&b| Cow::Borrowed(source.slice(b)))
+            .collect();
+        let order = vec![0, 1];
+        let assembled = assemble_blocks(&source, &blocks, &rendered, &order, |_| Some(" ; "));
+        assert_eq!(assembled, "def a(): pass ; def b(): pass");
+    }
+
     #[test]
     fn block_range_excludes_detached_comment_above_blank_line() {
-        let src = indoc! {"
+        let source = parse(indoc! {"
             # detached
 
             def a(): pass
-        "};
-        let source = Source::from_str(src).expect("parses");
+        "});
         let block = block_range(&source, &source.ast().body, 0, body_range(&source));
         assert_eq!(source.slice(block), "def a(): pass");
     }
 
     #[test]
     fn block_range_extends_back_through_attached_comments() {
-        let src = indoc! {"
+        let source = parse(indoc! {"
             # one
             # two
             def a(): pass
-        "};
-        let source = Source::from_str(src).expect("parses");
+        "});
         let block = block_range(&source, &source.ast().body, 0, body_range(&source));
         assert_eq!(source.slice(block), "# one\n# two\ndef a(): pass");
     }
 
     #[test]
     fn block_range_extends_forward_through_inline_trailing_comment() {
-        let src = "def a(): pass  # trailing\n";
-        let source = Source::from_str(src).expect("parses");
+        let source = parse("def a(): pass  # trailing\n");
         let block = block_range(&source, &source.ast().body, 0, body_range(&source));
         assert_eq!(source.slice(block), "def a(): pass  # trailing");
     }
 
     #[test]
+    fn block_range_extends_to_end_of_final_line_for_multi_line_item() {
+        let source = parse(indoc! {"
+            def a(
+                x,
+                y,
+            ): pass  # trailing
+        "});
+        let block = block_range(&source, &source.ast().body, 0, body_range(&source));
+        assert_eq!(
+            source.slice(block),
+            "def a(\n    x,\n    y,\n): pass  # trailing"
+        );
+    }
+
+    #[test]
+    fn block_range_last_item_uses_outer_end_as_upper_bound() {
+        let source = parse("def a(): pass\ndef b(): pass  # trailing\n");
+        let body = &source.ast().body;
+        let block = block_range(&source, body, body.len() - 1, body_range(&source));
+        assert_eq!(source.slice(block), "def b(): pass  # trailing");
+    }
+
+    #[test]
     fn block_range_lower_bound_blocks_back_extension_into_prior_item() {
-        let src = "def a(): pass\ndef b(): pass\n";
-        let source = Source::from_str(src).expect("parses");
+        let source = parse("def a(): pass\ndef b(): pass\n");
         let block = block_range(&source, &source.ast().body, 1, body_range(&source));
         assert_eq!(source.slice(block), "def b(): pass");
+    }
+
+    #[test]
+    fn permute_in_place_leaves_slots_outside_range_untouched() {
+        let mut order = vec![0, 1, 2, 3];
+        let items = ["d", "c", "b", "a"];
+        let permuted = permute_in_place(&mut order, &items, 1..3, |s: &&str| Some(*s));
+        assert!(permuted);
+        assert_eq!(order, vec![0, 2, 1, 3]);
     }
 
     #[test]
@@ -208,6 +295,15 @@ mod tests {
         });
         assert!(permuted);
         assert_eq!(order, vec![2, 1, 0]);
+    }
+
+    #[test]
+    fn permute_in_place_preserves_relative_order_of_equal_keys() {
+        let mut order = vec![0, 1, 2, 3];
+        let items = [(2, 'a'), (1, 'b'), (1, 'c'), (1, 'd')];
+        let permuted = permute_in_place(&mut order, &items, 0..4, |t: &(u8, char)| Some(t.0));
+        assert!(permuted);
+        assert_eq!(order, vec![1, 2, 3, 0]);
     }
 
     #[test]
@@ -232,15 +328,14 @@ mod tests {
 
     #[test]
     fn reorder_text_inline_swaps_two_items() {
-        let src = "def f(b, a): pass\n";
-        let source = Source::from_str(src).expect("parses");
+        let source = parse("def f(b, a): pass\n");
         let func = source.ast().body[0].as_function_def_stmt().expect("def");
         let params = &func.parameters;
         let cow = reorder_text(
             &source,
             &params.args,
             |p| Some(p.parameter.name.as_str()),
-            |_, slice| Cow::Borrowed(slice),
+            borrow,
         );
         assert!(matches!(cow, Cow::Owned(_)));
         assert_eq!(&*cow, "a, b");
@@ -248,52 +343,49 @@ mod tests {
 
     #[test]
     fn reorder_text_pins_non_classified() {
-        let src = indoc! {"
+        let source = parse(indoc! {"
             def b(): pass
             CONST = 1
             def a(): pass
-        "};
-        let source = Source::from_str(src).expect("parses");
+        "});
         let body = &source.ast().body;
         let cow = reorder_text(
             &source,
             body,
             |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
-            |_, slice| Cow::Borrowed(slice),
+            borrow,
         );
         assert_eq!(&*cow, "def a(): pass\nCONST = 1\ndef b(): pass");
     }
 
     #[test]
     fn reorder_text_returns_borrowed_when_already_sorted_and_no_render_change() {
-        let src = "def a(): pass\ndef b(): pass\n";
-        let source = Source::from_str(src).expect("parses");
+        let source = parse("def a(): pass\ndef b(): pass\n");
         let cow = reorder_text(
             &source,
             &source.ast().body,
             |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
-            |_, slice| Cow::Borrowed(slice),
+            borrow,
         );
         assert!(matches!(cow, Cow::Borrowed(_)));
     }
 
     #[test]
     fn reorder_text_returns_empty_borrowed_for_empty_items() {
-        let source = Source::from_str("").expect("parses");
+        let source = parse("");
         let body = &source.ast().body;
         let cow = reorder_text(
             &source,
             body.as_slice(),
             |stmt: &ruff_python_ast::Stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
-            |_, slice| Cow::Borrowed(slice),
+            borrow,
         );
         assert!(matches!(cow, Cow::Borrowed("")));
     }
 
     #[test]
     fn reorder_text_returns_owned_when_render_block_owns_even_without_sort() {
-        let src = "def a(): pass\ndef b(): pass\n";
-        let source = Source::from_str(src).expect("parses");
+        let source = parse("def a(): pass\ndef b(): pass\n");
         let cow = reorder_text(
             &source,
             &source.ast().body,
@@ -308,5 +400,18 @@ mod tests {
         );
         assert!(matches!(cow, Cow::Owned(_)));
         assert!((*cow).contains("def A"));
+    }
+
+    #[test]
+    fn reorder_text_returns_owned_when_sort_and_render_owned_combine() {
+        let source = parse("def b(): pass\ndef a(): pass\n");
+        let cow = reorder_text(
+            &source,
+            &source.ast().body,
+            |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
+            |_, slice| Cow::Owned(slice.replace("def ", "DEF ")),
+        );
+        assert!(matches!(cow, Cow::Owned(_)));
+        assert_eq!(&*cow, "DEF a(): pass\nDEF b(): pass");
     }
 }

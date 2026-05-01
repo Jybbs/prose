@@ -75,76 +75,88 @@ pub(crate) fn narrow_edit(
     Some((span.add_start(prefix_len).sub_end(suffix_len), text))
 }
 
+/// Narrows `text` against the source slice covered by `span` and
+/// shapes the result as either a deletion or replacement Edit.
+/// Returns `None` when the text already matches the source slice.
+pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: String) -> Option<Edit> {
+    let (narrowed_span, narrowed_text) = narrow_edit(text, span, source.slice(span))?;
+    Some(if narrowed_text.is_empty() {
+        Edit::range_deletion(narrowed_span)
+    } else {
+        Edit::range_replacement(narrowed_text, narrowed_span)
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::range;
 
     #[test]
     fn narrow_edit_handles_multibyte_codepoint_at_divergence() {
-        let span = TextRange::new(0u32.into(), 7u32.into());
-        let (range, text) = narrow_edit("α = 1\n".to_owned(), span, "β = 1\n").expect("differs");
-        assert_eq!(range.start().to_u32(), 0);
-        assert_eq!(range.end().to_u32(), 2);
+        let span = range(0, 7);
+        let (r, text) = narrow_edit("α = 1\n".to_owned(), span, "β = 1\n").expect("differs");
+        assert_eq!(r.start().to_u32(), 0);
+        assert_eq!(r.end().to_u32(), 2);
         assert_eq!(text, "α");
     }
 
     #[test]
     fn narrow_edit_handles_pure_deletion() {
-        let span = TextRange::new(0u32.into(), 3u32.into());
-        let (range, text) = narrow_edit("ab".to_owned(), span, "abc").expect("differs");
-        assert_eq!(range.start().to_u32(), 2);
-        assert_eq!(range.end().to_u32(), 3);
+        let span = range(0, 3);
+        let (r, text) = narrow_edit("ab".to_owned(), span, "abc").expect("differs");
+        assert_eq!(r.start().to_u32(), 2);
+        assert_eq!(r.end().to_u32(), 3);
         assert_eq!(text, "");
     }
 
     #[test]
     fn narrow_edit_handles_pure_insertion() {
-        let span = TextRange::new(0u32.into(), 3u32.into());
-        let (range, text) = narrow_edit("abxc".to_owned(), span, "abc").expect("differs");
-        assert_eq!(range.start().to_u32(), 2);
-        assert_eq!(range.end().to_u32(), 2);
+        let span = range(0, 3);
+        let (r, text) = narrow_edit("abxc".to_owned(), span, "abc").expect("differs");
+        assert_eq!(r.start().to_u32(), 2);
+        assert_eq!(r.end().to_u32(), 2);
         assert_eq!(text, "x");
     }
 
     #[test]
     fn narrow_edit_returns_none_when_text_equals_source() {
-        let span = TextRange::new(0u32.into(), 5u32.into());
-        assert!(narrow_edit("hello".to_owned(), span, "hello").is_none());
+        assert!(narrow_edit("hello".to_owned(), range(0, 5), "hello").is_none());
     }
 
     #[test]
     fn narrow_edit_returns_whole_input_when_no_common_prefix_or_suffix() {
-        let span = TextRange::new(0u32.into(), 3u32.into());
-        let (range, text) = narrow_edit("abc".to_owned(), span, "xyz").expect("differs");
-        assert_eq!(range.start().to_u32(), 0);
-        assert_eq!(range.end().to_u32(), 3);
+        let span = range(0, 3);
+        let (r, text) = narrow_edit("abc".to_owned(), span, "xyz").expect("differs");
+        assert_eq!(r.start().to_u32(), 0);
+        assert_eq!(r.end().to_u32(), 3);
         assert_eq!(text, "abc");
     }
 
     #[test]
     fn narrow_edit_trims_common_prefix() {
-        let span = TextRange::new(0u32.into(), 3u32.into());
-        let (range, text) = narrow_edit("abc".to_owned(), span, "abd").expect("differs");
-        assert_eq!(range.start().to_u32(), 2);
-        assert_eq!(range.end().to_u32(), 3);
+        let span = range(0, 3);
+        let (r, text) = narrow_edit("abc".to_owned(), span, "abd").expect("differs");
+        assert_eq!(r.start().to_u32(), 2);
+        assert_eq!(r.end().to_u32(), 3);
         assert_eq!(text, "c");
     }
 
     #[test]
     fn narrow_edit_trims_common_prefix_and_suffix() {
-        let span = TextRange::new(0u32.into(), 7u32.into());
-        let (range, text) = narrow_edit("ab1cdef".to_owned(), span, "ab2cdef").expect("differs");
-        assert_eq!(range.start().to_u32(), 2);
-        assert_eq!(range.end().to_u32(), 3);
+        let span = range(0, 7);
+        let (r, text) = narrow_edit("ab1cdef".to_owned(), span, "ab2cdef").expect("differs");
+        assert_eq!(r.start().to_u32(), 2);
+        assert_eq!(r.end().to_u32(), 3);
         assert_eq!(text, "1");
     }
 
     #[test]
     fn narrow_edit_trims_common_suffix() {
-        let span = TextRange::new(0u32.into(), 3u32.into());
-        let (range, text) = narrow_edit("abc".to_owned(), span, "xbc").expect("differs");
-        assert_eq!(range.start().to_u32(), 0);
-        assert_eq!(range.end().to_u32(), 1);
+        let span = range(0, 3);
+        let (r, text) = narrow_edit("abc".to_owned(), span, "xbc").expect("differs");
+        assert_eq!(r.start().to_u32(), 0);
+        assert_eq!(r.end().to_u32(), 1);
         assert_eq!(text, "a");
     }
 }

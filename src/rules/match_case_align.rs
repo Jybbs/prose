@@ -113,15 +113,13 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use super::*;
+    use crate::test_support::parse;
 
     /// Parses `src` as a module and tests whether its first top-level
     /// statement would qualify a `match` arm.
     fn collapsible(src: &str) -> bool {
-        let s = Source::from_str(src).expect("test source parses");
-        !is_compound_statement(&s.ast().body[0])
+        !is_compound_statement(&parse(src).ast().body[0])
     }
 
     #[test]

@@ -1,0 +1,29 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/composition/match_dispatch.input.py
+---
+"""
+Cross-rule composition over a match statement: match_case_align
+collapses single-statement arms onto their pattern lines, alphabetize
+sorts the kwargs inside the dispatched calls, strip_trailing_commas
+removes the dangling commas the source carries, and the singleton
+rule strips the lone-key dict's pre-`:` padding. The full pipeline
+running twice produces no further change.
+"""
+
+def dispatch(event):
+    match event.kind:
+        case "create" : return Counter(action="create", source=event.src, timestamp=event.ts)
+        case "update" : return Counter(action="update", source=event.src, timestamp=event.ts)
+        case "delete" : return Counter(action="delete", source=event.src, timestamp=event.ts)
+        case _        : return None
+
+
+SETTINGS = {
+    "default_action": "noop"
+}
+
+
+def required_only(name):
+    return {name}

@@ -1,7 +1,8 @@
 """
-`from`-import statements alphabetize within each blank-line-bounded
-run by module name. Cross-run reordering does not happen, so a
-stranded run separated by a blank line stays in its own bucket.
+Every `from`-import statement at a body's top level collapses into
+a single alphabetized block. Blank lines that the user wrote between
+imports are removed so the form reads as one paragraph regardless
+of how the source was originally arranged.
 """
 
 from loguru import logger

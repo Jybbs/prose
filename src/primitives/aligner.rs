@@ -327,11 +327,10 @@ fn range_anchored_member(
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use ruff_text_size::TextSize;
 
     use super::*;
+    use crate::test_support::parse;
 
     /// Builds the expected summary tuple for an `Edit::range_deletion`
     /// over a member's gap.
@@ -378,10 +377,7 @@ mod tests {
                 width,
             });
         }
-        (
-            Source::from_str(&text).expect("test source parses"),
-            members,
-        )
+        (parse(&text), members)
     }
 
     /// Builds a `Settings` carrying the test's cap and policy with
@@ -487,7 +483,7 @@ mod tests {
 
     #[test]
     fn emit_group_handles_empty_member_slice() {
-        let source = Source::from_str("x = 0\n").expect("parses");
+        let source = parse("x = 0\n");
         let mut edits = Vec::new();
 
         emit_group(
@@ -592,7 +588,7 @@ mod tests {
 
     #[test]
     fn keyed_line_adjacent_groups_flushes_trailing_active_run() {
-        let source = Source::from_str("x = 1\ny = 2\n").expect("parses");
+        let source = parse("x = 1\ny = 2\n");
         let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
             s.as_assign_stmt().map(|_| ((), ()))
         });
@@ -603,7 +599,7 @@ mod tests {
 
     #[test]
     fn keyed_line_adjacent_groups_merges_same_key_adjacent_stmts() {
-        let source = Source::from_str("x = 1\ny = 2\nz = 3\n").expect("parses");
+        let source = parse("x = 1\ny = 2\nz = 3\n");
         let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
             s.as_assign_stmt().map(|_| ((), ()))
         });
@@ -614,7 +610,7 @@ mod tests {
 
     #[test]
     fn keyed_line_adjacent_groups_non_qualifier_closes_active_run() {
-        let source = Source::from_str("x = 1\npass\ny = 2\n").expect("parses");
+        let source = parse("x = 1\npass\ny = 2\n");
         let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
             s.as_assign_stmt().map(|_| ((), ()))
         });
@@ -624,7 +620,7 @@ mod tests {
 
     #[test]
     fn keyed_line_adjacent_groups_returns_empty_for_empty_body() {
-        let source = Source::from_str("").expect("parses");
+        let source = parse("");
         let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
             s.as_assign_stmt().map(|_| ((), ()))
         });
@@ -634,7 +630,7 @@ mod tests {
 
     #[test]
     fn keyed_line_adjacent_groups_splits_on_blank_line() {
-        let source = Source::from_str("x = 1\n\ny = 2\n").expect("parses");
+        let source = parse("x = 1\n\ny = 2\n");
         let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
             s.as_assign_stmt().map(|_| ((), ()))
         });
@@ -644,7 +640,7 @@ mod tests {
 
     #[test]
     fn keyed_line_adjacent_groups_splits_on_comment_in_gap() {
-        let source = Source::from_str("x = 1\n# comment\ny = 2\n").expect("parses");
+        let source = parse("x = 1\n# comment\ny = 2\n");
         let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
             s.as_assign_stmt().map(|_| ((), ()))
         });
@@ -657,7 +653,7 @@ mod tests {
         // Two assigns flanking an aug-assign, all line-adjacent. The
         // distinct keys force the run to split even though no whitespace
         // breaks the adjacency, exercising the `keyed`-only invariant.
-        let source = Source::from_str("x = 1\ny += 2\nz = 3\n").expect("parses");
+        let source = parse("x = 1\ny += 2\nz = 3\n");
         let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
             if s.is_assign_stmt() {
                 Some(("assign", ()))
@@ -676,7 +672,7 @@ mod tests {
 
     #[test]
     fn keyed_line_adjacent_groups_yields_singleton_for_lone_qualifier() {
-        let source = Source::from_str("x = 1\n").expect("parses");
+        let source = parse("x = 1\n");
         let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
             s.as_assign_stmt().map(|_| ((), ()))
         });
@@ -687,7 +683,7 @@ mod tests {
 
     #[test]
     fn line_anchored_member_collapses_gap_at_line_start() {
-        let source = Source::from_str("xy\n").expect("parses");
+        let source = parse("xy\n");
         let member = line_anchored_member(&source, TextSize::new(0));
 
         // anchor sits at line start, with empty gap and zero width.
@@ -697,7 +693,7 @@ mod tests {
 
     #[test]
     fn space_padding_edit_inserts_when_range_empty_and_n_positive() {
-        let source = Source::from_str("xy\n").expect("parses");
+        let source = parse("xy\n");
         let range = TextRange::new(TextSize::new(1), TextSize::new(1));
         let edit = space_padding_edit(&source, range, 2).expect("0-vs-2 spaces emits");
         assert_eq!(summary(&edit), (1, 1, "  ".to_owned()));
@@ -705,7 +701,7 @@ mod tests {
 
     #[test]
     fn space_padding_edit_replaces_when_text_has_non_space_chars() {
-        let source = Source::from_str("a:b\n").expect("parses");
+        let source = parse("a:b\n");
         let range = TextRange::new(TextSize::new(1), TextSize::new(2));
         let edit = space_padding_edit(&source, range, 1).expect("non-space content emits");
         assert_eq!(summary(&edit), (1, 2, " ".to_owned()));
@@ -713,7 +709,7 @@ mod tests {
 
     #[test]
     fn space_padding_edit_returns_none_for_empty_range_at_zero() {
-        let source = Source::from_str("xy\n").expect("parses");
+        let source = parse("xy\n");
         let range = TextRange::new(TextSize::new(1), TextSize::new(1));
         assert!(space_padding_edit(&source, range, 0).is_none());
     }
