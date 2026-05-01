@@ -39,14 +39,29 @@ impl<'a> FixturePath<'a> {
     }
 
     fn config(&self) -> Config {
+        self.sidecar_contents()
+            .map(|c| {
+                Config::from_pyproject_str(&c)
+                    .unwrap_or_else(|e| panic!("parse sidecar config: {e}"))
+            })
+            .unwrap_or_default()
+    }
+
+    fn harness_options(&self) -> common::HarnessOptions {
+        self.sidecar_contents()
+            .as_deref()
+            .map(common::parse_harness_options)
+            .unwrap_or_default()
+    }
+
+    fn sidecar_contents(&self) -> Option<String> {
         let stem = common::case_stem(self.0)
             .strip_suffix(".input")
             .expect("fixture path ends in .input.py");
         let sidecar = self.0.with_file_name(format!("{stem}.config.toml"));
         match fs_err::read_to_string(&sidecar) {
-            Ok(contents) => Config::from_pyproject_str(&contents)
-                .unwrap_or_else(|e| panic!("parse sidecar {sidecar:?}: {e}")),
-            Err(e) if e.kind() == ErrorKind::NotFound => Config::default(),
+            Ok(c) => Some(c),
+            Err(e) if e.kind() == ErrorKind::NotFound => None,
             Err(e) => panic!("read sidecar: {e}"),
         }
     }
@@ -100,17 +115,60 @@ fn fixtures() {
 }
 
 #[test]
-fn prose_is_stable_after_ruff() {
-    let pipeline = Pipeline::with_defaults(&Config::default());
-    insta::glob!("fixtures/composition/*.input.py", |path| {
-        let case = FixturePath(path).case();
-        let input = fs_err::read_to_string(path)
-            .unwrap_or_else(|e| panic!("read composition fixture: {e}"));
+fn pipeline_is_idempotent() {
+    insta::glob!("fixtures/**/*.input.py", |path| {
+        let fixture = FixturePath(path);
+        let directory = fixture.directory();
+        let case = fixture.case();
+        if directory == "identity" {
+            return;
+        }
 
+        let pipeline = Pipeline::with_defaults(&fixture.config());
+        let source = Source::from_path(path).expect("fixture input reads and parses as Python");
+        let (first, _) = pipeline
+            .run(source)
+            .expect("first full-pipeline pass succeeds");
+        let reparsed = first
+            .text()
+            .parse::<Source>()
+            .expect("full-pipeline output reparses as Python");
+        let (second, changed) = pipeline
+            .run(reparsed)
+            .expect("second full-pipeline pass succeeds");
+        assert!(
+            !changed,
+            "fixture `{directory}/{case}` not idempotent under full pipeline: second pass emitted edits",
+        );
+        assert!(
+            second.text() == first.text(),
+            "fixture `{directory}/{case}` not byte-stable under full pipeline:\n{}",
+            common::unified_diff(first.text(), second.text()),
+        );
+    });
+}
+
+#[test]
+fn prose_is_stable_after_ruff() {
+    insta::glob!("fixtures/**/*.input.py", |path| {
+        let fixture = FixturePath(path);
+        let directory = fixture.directory();
+        let case = fixture.case();
+        if directory == "identity" || fixture.harness_options().skip_ruff_coexistence {
+            return;
+        }
+
+        let input = fs_err::read_to_string(path).unwrap_or_else(|e| panic!("read fixture: {e}"));
         let post_ruff = format_module_source(&input, PyFormatOptions::default())
-            .unwrap_or_else(|e| panic!("ruff format failed on `{case}`: {e}"))
+            .unwrap_or_else(|e| {
+                panic!(
+                    "ruff format failed on `{directory}/{case}`: {e}\n\
+                     set `[harness] skip_ruff_coexistence = true` in the sidecar to opt this fixture out",
+                )
+            })
             .into_code();
 
+        let pipeline = Pipeline::with_defaults(&fixture.config());
         let format = |text: &str| {
             pipeline
                 .run(
@@ -123,13 +181,15 @@ fn prose_is_stable_after_ruff() {
         let one = format(&post_ruff);
         let two = format(one.text());
 
-        assert!(
-            one.text() != post_ruff,
-            "prose was a no-op on `{case}` after ruff — composition fixture should require transformation",
-        );
+        if directory == "composition" {
+            assert!(
+                one.text() != post_ruff,
+                "prose was a no-op on `{case}` after ruff — composition fixture should require transformation",
+            );
+        }
         assert!(
             two.text() == one.text(),
-            "prose not stable on `{case}` after ruff:\n\
+            "prose not stable on `{directory}/{case}` after ruff:\n\
              --- post-ruff (input to prose) ---\n{post_ruff}\
              --- diff between first and second prose pass ---\n{}",
             common::unified_diff(one.text(), two.text()),

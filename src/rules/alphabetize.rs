@@ -396,8 +396,11 @@ fn method_group(f: &StmtFunctionDef) -> u8 {
 fn partition_divider_slots(source: &Source, order: &[usize], items: &[DictItem]) -> Vec<usize> {
     let is_multiline =
         |i: usize| items[i].key.is_some() && source.contains_line_break(items[i].range());
-    (0..order.len() - 1)
-        .filter(|&s| is_multiline(order[s]) || is_multiline(order[s + 1]))
+    order
+        .windows(2)
+        .enumerate()
+        .filter(|(_, w)| is_multiline(w[0]) || is_multiline(w[1]))
+        .map(|(i, _)| i)
         .collect()
 }
 
@@ -511,7 +514,7 @@ fn rewrite_dict_text<'src>(
     source: &'src Source,
     d: &ExprDict,
 ) -> Option<(TextRange, Cow<'src, str>)> {
-    if d.items.is_empty() || has_keep_marker(source, d) {
+    if d.is_empty() || has_keep_marker(source, d) {
         return None;
     }
     let [first, .., last] = d.items.as_slice() else {
@@ -519,21 +522,20 @@ fn rewrite_dict_text<'src>(
     };
     let multi_line = source.contains_line_break(first.range().cover(last.range()));
     let blocks: Vec<TextRange> = if multi_line {
-        (0..d.items.len())
+        (0..d.len())
             .map(|i| block_range(source, &d.items, i, d.range()))
             .collect()
     } else {
-        d.items.iter().map(|item| item.range()).collect()
+        d.iter().map(Ranged::range).collect()
     };
     let span = blocks_span(&blocks);
-    let block_texts: Vec<Cow<'src, str>> = d
-        .items
+    let block_texts: Vec<Cow<'src, str>> = blocks
         .iter()
-        .enumerate()
-        .map(|(i, item)| rewrite_item_block(source, blocks[i], item))
+        .zip(d)
+        .map(|(&block, item)| rewrite_item_block(source, block, item))
         .collect();
     let any_nested_rewrite = block_texts.iter().any(|c| matches!(c, Cow::Owned(_)));
-    let mut order: Vec<usize> = (0..d.items.len()).collect();
+    let mut order: Vec<usize> = (0..d.len()).collect();
     let permuted = permute_full(&mut order, &d.items, |item| dict_sort_key(source, item));
     let assembled = if multi_line {
         let divider_slots = partition_divider_slots(source, &order, &d.items);
@@ -560,7 +562,7 @@ fn rewrite_item_block<'src>(
     block: TextRange,
     item: &DictItem,
 ) -> Cow<'src, str> {
-    let Expr::Dict(inner) = &item.value else {
+    let Some(inner) = item.value.as_dict_expr() else {
         return Cow::Borrowed(source.slice(block));
     };
     let Some((inner_span, inner_text)) = rewrite_dict_text(source, inner) else {
