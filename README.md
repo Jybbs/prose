@@ -14,15 +14,16 @@
 
 *Prose* formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries and lists, alphabetizes methods and fields within their groups, applies a singleton rule for colon padding, and treats code like prose rather than minified text.
 
-**Status:** pre-alpha. Under active development. No public release yet.
+> [!WARNING]
+> Pre-alpha. Under active development. No public release yet.
 
 ---
 
 ## 🗞️ Philosophy
 
-Code is read far more often than it is written. A reader's eye moves down a page and across adjacent lines looking for parallels, patterns, and shape. When every `=` sits at a different column and every collection is compressed onto one line, that shape disappears, leaving the reader to reconstruct it character by character. *Prose* restores the shape. Aligned columns let the eye skim. One-per-line collections make each entry a unit. Alphabetized groupings give every reader the same predictable landmarks.
+Code is read far more often than it is written. A reader's eye moves down a page and across adjacent lines looking for parallels, patterns, and shape. When every `=` sits at a different column and every collection is compressed onto one line, that shape disappears. *Prose* restores it: aligned columns let the eye skim, one-per-line collections make each entry a unit, alphabetized groupings give every reader the same landmarks.
 
-The trade-offs the minimalist formatters were built to avoid (*wider diffs, more vertical scrolling, occasional re-alignment churn*) no longer dominate the equation. Agentic assistants do most of the typing now, and every modern code host offers whitespace-ignoring diffs. What remains is the daily experience of reading code, and *Prose* is built for that experience.
+The trade-offs minimalist formatters were built to avoid (*wider diffs, more vertical scrolling, occasional re-alignment churn*) no longer dominate the equation. Agentic assistants do most of the typing, and every modern code host offers whitespace-ignoring diffs. What remains is the daily experience of reading code.
 
 ---
 
@@ -32,29 +33,32 @@ The trade-offs the minimalist formatters were built to avoid (*wider diffs, more
 uv tool install prose
 ```
 
-Not yet published.
+> [!IMPORTANT]
+> Not yet on PyPI. Build from source until `0.1.0` ships.
 
 ```bash
-prose format path/
-prose check path/
-prose format --diff path/
-prose check --stdin < file.py
+prose format path/              # rewrite files in place
+prose check path/               # exit non-zero on violations
+prose format --diff path/       # show the diff without writing
+prose check --stdin < file.py   # read from stdin
 ```
 
 ---
 
 ## 🪶 Rules
 
-The `0.1.0` release ships eight rules:
+Eight rules ship in `0.1.0`:
 
-1. **Align `:`** in collection literals, Pydantic / dataclass fields, function signatures, and docstring Args sections
-2. **Align `=`** across consecutive assignments at the same indentation
-3. **Align `import`** keyword in `from ... import ...` groups and `as` in `import ... as ...` groups
-4. **Alphabetize** classes in a module, methods within a class (*grouped dunders → properties → privates → publics*), enum members, Pydantic fields (*required then optional*), function parameters, keyword arguments, and `from` imports
-5. **Match-case alignment** when every case body is a single expression
-6. **One entry per line** for dict / list / set literals, even when they fit inline
-7. **Singleton rule** skips colon padding when only one item exists in the aligned group
-8. **Strip trailing commas** in multi-line collections and signatures
+| Rule | Coverage |
+|---|---|
+| `align-colons` | Collection literals, Pydantic / dataclass fields, function signatures, and docstring `Args:` sections |
+| `align-equals` | Consecutive assignments at the same indentation |
+| `align-imports` | The `import` keyword in `from ... import ...` groups and `as` in `import ... as ...` groups |
+| `alphabetize` | Classes, methods (*grouped dunders → properties → privates → publics*), enum members, Pydantic fields (*required then optional*), function parameters, keyword arguments, and `from` imports |
+| `match-case-align` | Single-expression case bodies |
+| `one-per-line-collections` | `dict`, `list`, and `set` literals, even when they fit inline |
+| `singleton-rule` | Skips colon padding when only one item exists in the aligned group |
+| `strip-trailing-commas` | Multi-line collections and signatures |
 
 ### Example
 
@@ -144,19 +148,52 @@ Every rule is independently toggleable.
 
 ---
 
-## 🗺️ Using *Prose* with another formatter
+## 🗺️ Composition
 
-*Prose* works well as a second pass after any other Python formatter that owns line length and quote normalization. If you already use one, configure it to skip trailing-comma enforcement and let *Prose* handle alignment, ordering, and the singleton rule on top.
+*Prose* runs as a second pass after any other Python formatter that owns line length and quote normalization. Configure the upstream formatter to skip trailing-comma enforcement and let *Prose* handle alignment, ordering, and the singleton rule on top.
+
+---
+
+## 🪡 Integrations
+
+Wire *Prose* into anything that runs on save, on commit, or in CI.
+
+### CI
+
+```yaml
+- run: uv tool install prose
+- run: prose check .
+```
+
+### Format on Save
+
+Any editor that supports run-on-save (*VSCode's `runOnSave`, Vim's `autocmd BufWritePost`, JetBrains File Watchers*) can shell out to `prose format <file>`.
+
+### Pre-Commit
+
+Add a `local` hook to your `.pre-commit-config.yaml`:
+
+```yaml
+- repo: local
+  hooks:
+    - id: prose
+      name: prose
+      entry: prose format
+      language: system
+      types: [python]
+```
+
+Swap `entry: prose format` for `entry: prose check` for the check-only variant.
 
 ---
 
 ## 🗜️ Development
 
-### One-time setup
+### One-Time Setup
 
-*Prose* uses [mise](https://mise.jdx.dev) to manage every toolchain and CLI the project depends on through a single `mise.toml`. After installing mise once and wiring it into your shell, `mise install` provisions everything else.
+*Prose* uses [mise](https://mise.jdx.dev) to manage every toolchain and CLI through a single `mise.toml`. Install mise, wire it into your shell, then `mise install` provisions the rest.
 
-**1. Install mise:**
+#### Install Mise
 
 ```bash
 curl https://mise.run | sh
@@ -164,7 +201,9 @@ curl https://mise.run | sh
 
 The installer drops the binary into `~/.local/bin/mise`.
 
-**2. Wire mise into zsh.** Three init files cover three load contexts (*every shell, login shells, interactive shells*) so mise-managed tools resolve correctly whether you are inside an interactive terminal, a login shell, or a non-interactive subprocess:
+#### Wire Mise into Zsh
+
+Three init files cover the three load contexts (*every shell, login shells, interactive shells*) so mise-managed tools resolve correctly whether you are inside an interactive terminal, a login shell, or a non-interactive subprocess:
 
 ```bash
 # ~/.zshenv  (sourced for every shell, including non-interactive)
@@ -179,7 +218,7 @@ eval "$(mise activate zsh)"
 
 `.zshenv` puts `mise` itself on `PATH` so the later `eval` lines can find it. `.zprofile`'s `--shims` activation makes mise-managed binaries resolvable in non-interactive contexts (*scripts, editors, GUI launches*). `.zshrc`'s full activation gives interactive shells the per-directory tool resolution and task discovery.
 
-**3. Clone and provision:**
+#### Clone and Provision
 
 ```bash
 git clone https://github.com/Jybbs/prose.git
@@ -197,7 +236,7 @@ mise install
 | `rust` (stable) | Rust toolchain via rustup |
 | `uv` | Python package and venv manager |
 
-### Daily workflow
+### Daily Workflow
 
 Tasks are defined in `mise.toml` and discoverable via `mise tasks`:
 
@@ -227,4 +266,3 @@ Suggested user settings (apply to any Rust project):
 ```
 
 </details>
-
