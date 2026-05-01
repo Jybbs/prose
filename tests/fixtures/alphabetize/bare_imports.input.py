@@ -1,8 +1,8 @@
 """
-Bare `import` statement runs alphabetize within blank-line bounds,
-mirroring the `from`-import-run pass on the `Stmt::Import` shape.
-Bare imports sit above `from`-imports as their own group, and the
-two run families never interleave.
+Every bare `import` statement at a body's top level collapses into
+a single alphabetized block. Blank lines that the user wrote between
+imports are removed so the form reads as one paragraph regardless
+of how the source was originally arranged.
 """
 
 import zlib

@@ -1,0 +1,72 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/composition/recursive_partition.input.py
+---
+"""
+Long single-line dict with multiple levels of nested dicts. The full
+pipeline exercises every dict-handling feature in concert:
+collection_layout expands the outer dict and recurses into any value
+whose inline form overflows, alphabetize sorts and partitions
+single-line entries before multi-line entries with a blank-line
+divider at every level, align_colons aligns colons within each
+line-adjacent group so the divider closes the active alignment run,
+and strip_trailing_commas removes the dangling commas the recursive
+expansion leaves behind. Every level carries multiple siblings of each
+shape, so the sort, partition, and per-group alignment are visible at
+every depth. The full pipeline running twice on this input produces
+no further change.
+"""
+
+DEPLOY = {
+    "owner"   : "core",
+    "region"  : "us-east",
+    "stage"   : "prod",
+    "version" : 12,
+
+    "services": {
+        "worker": {"concurrency": 8, "queue": "tasks"},
+
+        "api": {
+            "port"    : 8080,
+            "retries" : 3,
+            "timeout" : 30,
+
+            "endpoints": {
+                "health"    : "/health",
+                "metrics"   : "/metrics",
+                "readiness" : "/ready",
+                "version"   : "/v"
+            },
+
+            "headers": {
+                "request_id" : "x-req",
+                "trace_id"   : "x-trace",
+                "user_agent" : "deploy/1"
+            }
+        },
+
+        "gateway": {
+            "rate_limit" : 1000,
+            "timeout"    : 5,
+            "upstream"   : {"fallback": "api.backup", "primary": "api.internal"}
+        }
+    },
+
+    "telemetry": {
+        "interval" : 30,
+        "sink"     : "datadog",
+
+        "logs": {
+            "format" : "json",
+            "level"  : "info",
+
+            "destinations": {
+                "file"        : "/var/log/app",
+                "remote_sink" : "logserver",
+                "stdout"      : True,
+                "syslog"      : False
+            }
+        }
+    }
+}

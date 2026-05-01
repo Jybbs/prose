@@ -6,8 +6,6 @@
 //! them to strip pre-colon padding from groups that have no column to
 //! align to.
 
-use std::cmp::Ordering;
-
 use ruff_python_ast::token::TokenKind;
 use ruff_python_ast::visitor::{walk_expr, walk_parameters, walk_stmt, Visitor as AstVisitor};
 use ruff_python_ast::{
@@ -60,7 +58,9 @@ struct ContextVisitor<'a, E> {
 impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
     fn visit_expr(&mut self, expr: &'a Expr) {
         if let Expr::Dict(d) = expr {
-            self.emitter.dict(d, &dict_members(self.source, d));
+            for group in dict_member_groups(self.source, &d.items) {
+                self.emitter.dict(d, &group);
+            }
         }
         walk_expr(self, expr);
     }
@@ -134,12 +134,32 @@ fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
     colon_member(source, key.end(), item.value.start())
 }
 
-/// Returns one alignment member per `key: value` entry in `d`.
-/// `**spread` entries (no key) contribute nothing.
-fn dict_members(source: &Source, d: &ExprDict) -> Vec<aligner::Member> {
-    d.iter()
-        .filter_map(|item| dict_item(source, item))
-        .collect()
+/// Returns one group per run of line-adjacent `key: value` entries in
+/// `d`. A blank line between two entries closes the active run and
+/// starts a fresh one, so each contiguous-line group aligns
+/// independently. `**spread` entries skip the colon scan but do not
+/// break the run, matching the long-standing rule that an unpacking
+/// passes alignment through.
+fn dict_member_groups(source: &Source, items: &[DictItem]) -> Vec<Vec<aligner::Member>> {
+    let mut groups: Vec<Vec<aligner::Member>> = Vec::new();
+    let mut last_keyed_end: Option<TextSize> = None;
+    for item in items {
+        let Some(member) = dict_item(source, item) else {
+            continue;
+        };
+        let extends = last_keyed_end
+            .is_some_and(|prev| source.is_line_adjacent(TextRange::new(prev, item.start())));
+        if extends {
+            groups
+                .last_mut()
+                .expect("active run implies non-empty groups")
+                .push(member);
+        } else {
+            groups.push(vec![member]);
+        }
+        last_keyed_end = Some(item.end());
+    }
+    groups
 }
 
 /// Returns one alignment member per entry in the body's leading
@@ -158,8 +178,7 @@ fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
     else {
         return Vec::new();
     };
-    let ds_range = string_literal.range();
-    let text = source.slice(ds_range);
+    let text = source.slice(string_literal);
     let mut lines = text.universal_newlines();
     let Some(header_indent_len) = lines.find_map(|line| {
         let stripped = line.trim_whitespace_start();
@@ -167,7 +186,7 @@ fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
         after
             .trim_whitespace()
             .is_empty()
-            .then(|| line.len() - stripped.len())
+            .then_some(line.len() - stripped.len())
     }) else {
         return Vec::new();
     };
@@ -183,16 +202,17 @@ fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
         }
 
         let expected = *entry_indent_len.get_or_insert(line_indent_len);
-        match line_indent_len.cmp(&expected) {
-            Ordering::Greater => continue,
-            Ordering::Less => break,
-            Ordering::Equal => {}
+        if line_indent_len > expected {
+            continue;
+        }
+        if line_indent_len < expected {
+            break;
         }
 
         if let Some(colon_rel) = find_entry_colon(stripped) {
-            let line_offset = TextSize::try_from(line_indent_len + colon_rel)
-                .expect("docstring colon offset fits in TextSize");
-            let colon_start = ds_range.start() + line.start() + line_offset;
+            let colon_start = string_literal.start()
+                + line.start()
+                + TextSize::of(&line[..line_indent_len + colon_rel]);
             members.push(aligner::line_anchored_member(source, colon_start));
         }
     }
@@ -204,13 +224,12 @@ fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
 /// name and an optional parenthesized type (e.g. `x (int)`). Returns
 /// `None` when the line does not look like an entry.
 fn find_entry_colon(stripped: &str) -> Option<usize> {
-    let bytes = stripped.as_bytes();
-    let &first = bytes.first()?;
+    let first = stripped.bytes().next()?;
     if !(first.is_ascii_alphabetic() || first == b'_' || first == b'*') {
         return None;
     }
     let mut paren_depth = 0usize;
-    for (cursor, &b) in bytes.iter().enumerate() {
+    for (cursor, b) in stripped.bytes().enumerate() {
         match b {
             b'(' | b'[' => paren_depth += 1,
             b')' | b']' => paren_depth = paren_depth.saturating_sub(1),
@@ -238,19 +257,15 @@ fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Mem
 /// contiguous annotated parameters, splitting at every unannotated
 /// parameter.
 fn parameter_groups(source: &Source, params: &Parameters) -> Vec<Vec<aligner::Member>> {
-    let mut groups: Vec<Vec<aligner::Member>> = Vec::new();
-    let mut current: Vec<aligner::Member> = Vec::new();
-    for p in params.iter_source_order() {
-        match parameter(source, p) {
-            Some(m) => current.push(m),
-            None if !current.is_empty() => groups.push(std::mem::take(&mut current)),
-            None => {}
-        }
-    }
-    if !current.is_empty() {
-        groups.push(current);
-    }
-    groups
+    let members: Vec<_> = params
+        .iter_source_order()
+        .map(|p| parameter(source, p))
+        .collect();
+    members
+        .split(Option::is_none)
+        .filter(|chunk| !chunk.is_empty())
+        .map(|chunk| chunk.iter().copied().flatten().collect())
+        .collect()
 }
 
 #[cfg(test)]
@@ -261,6 +276,12 @@ mod tests {
     fn find_entry_colon_accepts_star_and_double_star() {
         assert_eq!(find_entry_colon("*args: list"), Some(5));
         assert_eq!(find_entry_colon("**kwargs: dict"), Some(8));
+    }
+
+    #[test]
+    fn find_entry_colon_accepts_underscore_led_name() {
+        assert_eq!(find_entry_colon("_arg: int"), Some(4));
+        assert_eq!(find_entry_colon("_: int"), Some(1));
     }
 
     #[test]

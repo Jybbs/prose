@@ -11,7 +11,9 @@ use ruff_python_ast::token::{Token, Tokens};
 use ruff_python_ast::ModModule;
 use ruff_python_parser::{parse_module, ParseError, Parsed};
 use ruff_python_trivia::{leading_indentation, lines_before, CommentRanges};
-use ruff_source_file::{LineColumn, LineRanges, SourceFile, SourceFileBuilder};
+use ruff_source_file::{
+    find_newline, LineColumn, LineEnding, LineRanges, SourceFile, SourceFileBuilder,
+};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use thiserror::Error;
 
@@ -104,6 +106,12 @@ impl Source {
             .map(Token::start)
     }
 
+    /// Returns `true` when at least one blank line separates the
+    /// source ahead of `offset` from the preceding non-whitespace.
+    pub fn has_blank_line_before(&self, offset: TextSize) -> bool {
+        lines_before(offset, self.text()) >= 2
+    }
+
     /// Returns `true` when at least one comment lies within `ranged`.
     pub fn intersects_comment<R: Ranged>(&self, ranged: R) -> bool {
         self.comment_ranges.intersects(ranged.range())
@@ -124,6 +132,14 @@ impl Source {
         leading_indentation(self.text().line_str(offset))
             .chars()
             .count()
+    }
+
+    /// Returns the line-ending sequence used in this source, or
+    /// `"\n"` when the source carries no line break.
+    pub fn newline_str(&self) -> &'static str {
+        find_newline(self.text())
+            .map_or(LineEnding::Lf, |(_, ending)| ending)
+            .as_str()
     }
 
     /// Reparses with replacement source text, preserving the original name.
@@ -192,6 +208,7 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::*;
+    use crate::test_support::{assert_send_sync, range};
 
     fn line_col(line: usize, column: usize) -> LineColumn {
         LineColumn {
@@ -204,8 +221,8 @@ mod tests {
     fn comment_ranges_indexes_each_comment_in_the_source() {
         let s = Source::from_str("# top\nx = 1  # trail\n").expect("parses");
         let ranges = s.comment_ranges();
-        assert!(ranges.intersects(TextRange::new(TextSize::new(0), TextSize::new(1))));
-        assert!(ranges.intersects(TextRange::new(TextSize::new(13), TextSize::new(14))));
+        assert!(ranges.intersects(range(0, 1)));
+        assert!(ranges.intersects(range(13, 14)));
     }
 
     #[test]
@@ -349,13 +366,12 @@ mod tests {
     fn slice_at_multibyte_boundary_returns_full_codepoint() {
         let src = "α = 1";
         let s = Source::from_str(src).expect("multibyte source parses");
-        let alpha = s.slice(TextRange::new(TextSize::new(0), TextSize::new(2)));
+        let alpha = s.slice(range(0, 2));
         assert_eq!(alpha, "α");
     }
 
     #[test]
     fn source_is_send_and_sync() {
-        fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<Source>();
     }
 

@@ -12,9 +12,8 @@ covering Pydantic, msgspec, attrs, and similar libraries without
 naming the field constructor.
 """
 
-from typing import Annotated
-
 from pydantic import BaseModel, Field
+from typing import Annotated
 
 
 class Posting(BaseModel):

@@ -1,0 +1,30 @@
+---
+source: tests/integration.rs
+expression: "&output"
+input_file: tests/fixtures/alphabetize/dict_keep_marker.input.py
+---
+"""
+A trailing `# prose: keep` comment on the opening `{` line preserves
+source order for that single dict. The unmarked sibling alphabetizes
+and partitions through the same machinery, so the contrast lands side
+by side: same scrambled input, two different outputs.
+"""
+
+unmarked = {
+    "name"     : "prose",
+    "version"  : "0.1.0",
+
+    "config"   : {
+        "strict"  : True,
+        "verbose" : False,
+    },
+}
+
+marked = {  # prose: keep
+    "version"  : "0.1.0",
+    "config"   : {
+        "strict"  : True,
+        "verbose" : False,
+    },
+    "name"     : "prose",
+}

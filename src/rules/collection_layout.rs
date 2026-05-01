@@ -12,12 +12,12 @@ use ruff_python_ast::helpers::is_dotted_name;
 use ruff_python_ast::token::parenthesized_range;
 use ruff_python_ast::visitor::{walk_expr, Visitor};
 use ruff_python_ast::{AnyNodeRef, DictItem, Expr};
-use ruff_source_file::{find_newline, LineEnding};
 use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
 use crate::pipeline::Rule;
+use crate::primitives::edit::narrowed_replacement;
 use crate::source::Source;
 
 const DEFAULT_LINE_LENGTH: usize = 88;
@@ -46,14 +46,11 @@ impl CollectionLayout {
 
 impl Rule for CollectionLayout {
     fn apply(&self, source: &Source) -> Vec<Edit> {
-        let newline = find_newline(source.text())
-            .map_or(LineEnding::Lf, |(_, ending)| ending)
-            .as_str();
         let mut visitor = Expander {
             edits: Vec::new(),
             line_length: self.line_length,
             max_atomics_per_line: self.max_atomics_per_line,
-            newline,
+            newline: source.newline_str(),
             source,
         };
         visitor.visit_body(&source.ast().body);
@@ -75,14 +72,18 @@ struct Expander<'a> {
 
 impl<'a> Expander<'a> {
     /// Builds the expanded form of `expr` as a string, recursively
-    /// expanding any qualifying child collections so the caller's
-    /// single `range_replacement` covers every descendant rewrite.
+    /// expanding any qualifying child collections.
     fn expand(&self, expr: &Expr, indent: usize) -> String {
         let item_indent = indent + INDENT_STEP;
-        let (open, close, texts, atomics) = self.gather_items(expr, item_indent);
+        let GatheredItems {
+            atomics,
+            close,
+            open,
+            ranges,
+            texts,
+        } = self.gather_items(expr, item_indent);
         let total = texts.len();
         let item_prefix = " ".repeat(item_indent);
-        let close_prefix = " ".repeat(indent);
         let available = self.line_length.saturating_sub(item_indent);
         let mut out = String::new();
         out.push(open);
@@ -97,65 +98,78 @@ impl<'a> Expander<'a> {
                             out.push(',');
                         }
                         out.push_str(self.newline);
+                        if idx + 1 < total
+                            && self.source.has_blank_line_before(ranges[idx + 1].start())
+                        {
+                            out.push_str(self.newline);
+                        }
                     }
                 }
                 Segment::Flow(range) => {
                     let run_start = range.start;
                     let widths: Vec<usize> = range.map(|i| texts[i].width()).collect();
                     for line_range in flow_lines(&widths, available, self.max_atomics_per_line) {
+                        let line_start = run_start + line_range.start;
+                        let line_end = run_start + line_range.end;
+                        let parts: Vec<&str> =
+                            (line_start..line_end).map(|i| texts[i].as_ref()).collect();
                         out.push_str(&item_prefix);
-                        let line_size = line_range.len();
-                        let absolute = (run_start + line_range.start)..(run_start + line_range.end);
-                        for (line_pos, idx) in absolute.enumerate() {
-                            out.push_str(&texts[idx]);
-                            if idx + 1 != total {
-                                out.push(',');
-                                if line_pos + 1 != line_size {
-                                    out.push(' ');
-                                }
-                            }
+                        out.push_str(&parts.join(", "));
+                        if line_end < total {
+                            out.push(',');
                         }
                         out.push_str(self.newline);
                     }
                 }
             }
         }
-        out.push_str(&close_prefix);
+        out.push_str(&" ".repeat(indent));
         out.push(close);
         out
     }
 
-    /// Collects the bracket pair, per-item serialized text, and
-    /// per-item atomicity for the collection at `expr`. The text is
-    /// produced via `serialize_expr` / `serialize_dict_item` at
-    /// `indent`, so nested qualifying children are already recursively
-    /// expanded in the returned strings. Items that need no expansion
-    /// pass through as `Cow::Borrowed` of their source slice.
-    fn gather_items(
-        &self,
-        expr: &Expr,
-        indent: usize,
-    ) -> (char, char, Vec<Cow<'a, str>>, Vec<bool>) {
+    /// Collects the bracket pair, per-item serialized text, per-item
+    /// atomicity, and per-item source range for the collection at
+    /// `expr`. The text is produced via `serialize_expr` /
+    /// `serialize_dict_item` at `indent`, so nested qualifying
+    /// children are already recursively expanded in the returned
+    /// strings. Items that need no expansion pass through as
+    /// `Cow::Borrowed` of their source slice.
+    fn gather_items(&self, expr: &Expr, indent: usize) -> GatheredItems<'a> {
         let parent = AnyNodeRef::from(expr);
         if let Expr::Dict(d) = expr {
-            let texts: Vec<Cow<'a, str>> = d
-                .items
+            let (texts, ranges): (Vec<Cow<'a, str>>, Vec<TextRange>) = d
                 .iter()
-                .map(|item| self.serialize_dict_item(item, parent, indent))
-                .collect();
-            let atomics = vec![false; d.items.len()];
-            return ('{', '}', texts, atomics);
+                .map(|item| (self.serialize_dict_item(item, parent, indent), item.range()))
+                .unzip();
+            return GatheredItems {
+                atomics: vec![false; d.len()],
+                close: '}',
+                open: '{',
+                ranges,
+                texts,
+            };
         }
         let (open, close, elts) = match expr {
             Expr::List(l) => ('[', ']', &l.elts),
             Expr::Set(s) => ('{', '}', &s.elts),
             _ => unreachable!("gather_items called on non-collection expr"),
         };
-        let (texts, atomics): (Vec<Cow<'a, str>>, Vec<bool>) = elts
-            .iter()
-            .map(|e| (self.serialize_expr(e, parent, indent, indent), is_atomic(e)))
-            .unzip();
-        (open, close, texts, atomics)
+        let mut texts = Vec::with_capacity(elts.len());
+        let mut atomics = Vec::with_capacity(elts.len());
+        let mut ranges = Vec::with_capacity(elts.len());
+        for e in elts {
+            texts.push(self.serialize_expr(e, parent, indent, indent));
+            atomics.push(is_atomic(e));
+            ranges.push(e.range());
+        }
+        GatheredItems {
+            atomics,
+            close,
+            open,
+            ranges,
+            texts,
+        }
     }
 
     /// Serializes a dict item as `key: value` or `**value`.
@@ -166,9 +180,9 @@ impl<'a> Expander<'a> {
     /// long key that pushes its value past the budget correctly
     /// triggers expansion of the value. When the value does expand,
     /// its closing bracket still lands at `indent`. When the value
-    /// passes through borrowed and the source already carries the
-    /// canonical `": "` gap, the item's source slice is returned
-    /// borrowed.
+    /// passes through borrowed and the source carries an
+    /// `align-colons`-shaped gap (`[ ]*: `), the item's source slice
+    /// is returned borrowed so the alignment padding round-trips.
     fn serialize_dict_item(
         &self,
         item: &DictItem,
@@ -179,13 +193,14 @@ impl<'a> Expander<'a> {
             let key_text = self.source.slice(key);
             let value_column = indent + key_text.width() + 2;
             let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
-            let canonical = matches!(value_text, Cow::Borrowed(_))
-                && self
-                    .source
-                    .slice(TextRange::new(key.end(), item.value.start()))
-                    == ": ";
-            if canonical {
+            let gap = self
+                .source
+                .slice(TextRange::new(key.end(), item.value.start()));
+            let aligned = is_align_colons_gap(gap);
+            if aligned && matches!(value_text, Cow::Borrowed(_)) {
                 Cow::Borrowed(self.source.slice(item))
+            } else if aligned {
+                Cow::Owned(format!("{key_text}{gap}{value_text}"))
             } else {
                 Cow::Owned(format!("{key_text}: {value_text}"))
             }
@@ -224,46 +239,50 @@ impl<'a> Expander<'a> {
 
     /// Returns `true` when `expr` is a qualifying collection whose
     /// inline form would overflow the line-length budget at `column`.
-    ///
-    /// Multi-line input always returns `true` so that oddball layouts
-    /// canonicalize through `expand`. Single-line input only returns
-    /// `true` when `column + inline_length > line_length`.
+    /// Multi-line input always returns `true`. Single-line input
+    /// returns `true` only when `column + inline_length > line_length`.
     fn should_expand(&self, expr: &Expr, column: usize) -> bool {
-        let count = match expr {
-            Expr::Dict(d) => d.items.len(),
-            Expr::List(l) => l.elts.len(),
-            Expr::Set(s) => s.elts.len(),
+        let multi_item = match expr {
+            Expr::Dict(d) => d.len() > 1,
+            Expr::List(l) => l.len() > 1,
+            Expr::Set(s) => s.len() > 1,
             _ => return false,
         };
-        if count <= 1 {
-            return false;
-        }
         let range = expr.range();
-        if self.source.intersects_comment(range) {
-            return false;
-        }
-        self.source.contains_line_break(range)
-            || column + self.source.slice(range).width() > self.line_length
+        multi_item
+            && !self.source.intersects_comment(range)
+            && (self.source.contains_line_break(range)
+                || column + self.source.slice(range).width() > self.line_length)
     }
 }
 
 impl<'a> Visitor<'a> for Expander<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
-        let column = self.source.column_of(expr.start());
-        if self.should_expand(expr, column) {
-            let indent = self.source.line_indent_width(expr.start());
-            let replacement = self.expand(expr, indent);
-            if replacement != self.source.slice(expr.range()) {
-                self.edits
-                    .push(Edit::range_replacement(replacement, expr.range()));
-            }
+        let range = expr.range();
+        if !self.should_expand(expr, self.source.column_of(range.start())) {
+            walk_expr(self, expr);
             return;
         }
-        walk_expr(self, expr);
+        let indent = self.source.line_indent_width(range.start());
+        let replacement = self.expand(expr, indent);
+        self.edits
+            .extend(narrowed_replacement(self.source, range, replacement));
     }
 }
 
+/// Per-item state collected from a dict, list, or set literal:
+/// serialized text, atomicity for layout dispatch, and source range
+/// for blank-line-preservation lookups.
+struct GatheredItems<'src> {
+    atomics: Vec<bool>,
+    close: char,
+    open: char,
+    ranges: Vec<TextRange>,
+    texts: Vec<Cow<'src, str>>,
+}
+
 /// Describes how a contiguous slice of items should lay out.
+#[derive(Debug, PartialEq)]
 enum Segment {
     /// Items in the range flow across as few balanced lines as fit.
     Flow(Range<usize>),
@@ -273,9 +292,9 @@ enum Segment {
 
 /// Distributes items into the smallest number of lines such that no
 /// line exceeds `available` characters and no line carries more than
-/// `max_atomics` items, giving roughly equal item counts per line for
-/// visual balance. Escalates to more lines if the even split at the
-/// minimum line count would still overflow either cap.
+/// `max_atomics` items, giving roughly equal item counts per line.
+/// Escalates to more lines if the even split at the minimum line
+/// count would still overflow either cap.
 fn flow_lines(widths: &[usize], available: usize, max_atomics: usize) -> Vec<Range<usize>> {
     if widths.is_empty() {
         return Vec::new();
@@ -297,22 +316,24 @@ fn flow_lines(widths: &[usize], available: usize, max_atomics: usize) -> Vec<Ran
         .unwrap_or_else(|| (0..n).map(|i| i..(i + 1)).collect())
 }
 
-/// Returns `true` for expressions that render as a single compact
-/// token and therefore do not benefit from a dedicated line.
-///
-/// Covers literal values, dotted names (`pkg`, `cls.name.upper`,
-/// reached via `ruff_python_ast::helpers::is_dotted_name`), and unary
-/// operations over atomic operands (`-1`, `not flag`). Starred
-/// expressions (`*name`, `**name`) are intentionally non-atomic so a
-/// spread in the middle of a list or set splits its surrounding
-/// atomics into two independent runs that each flow on their own.
-/// Everything else (calls, comparisons, arithmetic, nested
-/// collections, comprehensions) is considered structured and earns a
-/// line of its own in the output.
+/// Returns `true` when `gap` is zero or more ASCII spaces, then
+/// `:`, then one ASCII space.
+fn is_align_colons_gap(gap: &str) -> bool {
+    gap.strip_suffix(": ")
+        .is_some_and(|prefix| prefix.bytes().all(|b| b == b' '))
+}
+
+/// True for expressions that render as a single compact token and
+/// therefore do not benefit from a dedicated line. Covers literals,
+/// dotted names, and unary operations over atomic operands. Starred
+/// expressions are non-atomic so a spread splits surrounding atomics
+/// into independent runs.
 fn is_atomic(expr: &Expr) -> bool {
     expr.is_literal_expr()
         || is_dotted_name(expr)
-        || matches!(expr, Expr::UnaryOp(u) if is_atomic(&u.operand))
+        || expr
+            .as_unary_op_expr()
+            .is_some_and(|u| is_atomic(&u.operand))
 }
 
 /// Partitions `atomics` into segments. Every contiguous run of
@@ -376,6 +397,40 @@ mod tests {
     use super::*;
 
     #[test]
+    fn align_colons_gap_accepts_canonical_and_padded_forms() {
+        assert!(is_align_colons_gap(": "));
+        assert!(is_align_colons_gap(" : "));
+        assert!(is_align_colons_gap("    : "));
+    }
+
+    #[test]
+    fn align_colons_gap_rejects_non_padding_shapes() {
+        assert!(!is_align_colons_gap(":"));
+        assert!(!is_align_colons_gap(":  "));
+        assert!(!is_align_colons_gap(" :"));
+        assert!(!is_align_colons_gap("\t: "));
+        assert!(!is_align_colons_gap(""));
+    }
+
+    #[test]
+    fn flow_lines_escalates_when_initial_split_overflows() {
+        // Total width forces an initial guess of 2 lines, but the
+        // only even 2-line split puts three 10-wide items on one line
+        // and overflows. The find_map must escalate to 3 lines.
+        let lines = flow_lines(&[10, 10, 10, 1, 1, 1], 23, 8);
+        assert_eq!(lines, vec![0..2, 2..4, 4..6]);
+    }
+
+    #[test]
+    fn flow_lines_falls_back_to_one_per_line_when_no_split_fits() {
+        // The lone 100-wide item exceeds available=10, pushing initial
+        // above n=1 so the find_map range is empty. The fallback
+        // emits one item per line.
+        let lines = flow_lines(&[100], 10, 8);
+        assert_eq!(lines, vec![0..1]);
+    }
+
+    #[test]
     fn flow_lines_packs_into_one_line_when_budget_allows() {
         let lines = flow_lines(&[1, 1, 1, 1], 80, 8);
         assert_eq!(lines, vec![0..4]);
@@ -396,6 +451,25 @@ mod tests {
     fn flow_lines_splits_when_max_atomics_forces_it() {
         let lines = flow_lines(&[1; 6], 80, 3);
         assert_eq!(lines, vec![0..3, 3..6]);
+    }
+
+    #[test]
+    fn segments_partitions_alternating_atomic_runs() {
+        let result = segments(&[true, true, false, true, false, false]);
+        assert_eq!(
+            result,
+            vec![
+                Segment::Flow(0..2),
+                Segment::OnePerLine(2..3),
+                Segment::Flow(3..4),
+                Segment::OnePerLine(4..6),
+            ],
+        );
+    }
+
+    #[test]
+    fn segments_returns_empty_for_empty_input() {
+        assert!(segments(&[]).is_empty());
     }
 
     #[test]

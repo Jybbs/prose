@@ -40,13 +40,13 @@ impl Pipeline {
     /// Builds a pipeline registering exactly one rule by name.
     ///
     /// Returns `None` when `name` does not match any registered rule.
-    /// Bypasses each rule's `enabled` flag. Names are the kebab-case
-    /// form returned by [`Rule::name`] (`align-colons`,
+    /// Bypasses each rule's `enabled` flag. Names accept either the
+    /// kebab-case form returned by [`Rule::name`] (`align-colons`,
     /// `align-equals`, `align-imports`, `alphabetize`,
     /// `collection-layout`, `match-case-align`, `singleton-rule`,
-    /// `strip-trailing-commas`).
+    /// `strip-trailing-commas`) or the snake-case equivalent.
     pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
-        let rule: Box<dyn Rule> = match name {
+        let rule: Box<dyn Rule> = match name.replace('_', "-").as_str() {
             "align-colons" => Box::new(AlignColons::from_config(config)),
             "align-equals" => Box::new(AlignEquals::from_config(config)),
             "align-imports" => Box::new(AlignImports::from_config(config)),
@@ -201,12 +201,10 @@ fn apply_edits(text: &str, mut edits: Vec<Edit>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
     use std::sync::{Arc, Mutex};
 
-    use ruff_text_size::TextRange;
-
     use super::*;
+    use crate::test_support::{assert_send_sync, parse, range};
 
     /// Test-only rule that records its own name into a shared log and
     /// returns the edit list supplied at construction time.
@@ -244,10 +242,6 @@ mod tests {
         fn name(&self) -> &'static str {
             self.name
         }
-    }
-
-    fn range(start: u32, end: u32) -> TextRange {
-        TextRange::new(start.into(), end.into())
     }
 
     #[test]
@@ -317,7 +311,7 @@ mod tests {
                 seen: seen.clone(),
             }),
         ]);
-        let source = Source::from_str("x = 1\n").expect("parses");
+        let source = parse("x = 1\n");
 
         pipeline.run(source).expect("both stages succeed");
 
@@ -327,7 +321,7 @@ mod tests {
     #[test]
     fn empty_pipeline_returns_identical_source() {
         let pipeline = Pipeline::from_rules(Vec::new());
-        let source = Source::from_str("x = 1\n").expect("parses");
+        let source = parse("x = 1\n");
 
         let (result, changed) = pipeline.run(source).expect("identity run succeeds");
 
@@ -337,7 +331,6 @@ mod tests {
 
     #[test]
     fn pipeline_is_send_and_sync() {
-        fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<Pipeline>();
     }
 
@@ -349,7 +342,7 @@ mod tests {
             log: log.clone(),
             name: "breaks-parse",
         })]);
-        let source = Source::from_str("x = 1\n").expect("parses");
+        let source = parse("x = 1\n");
 
         let err = pipeline.run(source).expect_err("reparse should fail");
 
@@ -378,7 +371,7 @@ mod tests {
                 name: "third",
             }),
         ]);
-        let source = Source::from_str("x = 1\n").expect("parses");
+        let source = parse("x = 1\n");
 
         pipeline.run(source).expect("all rules succeed");
 
@@ -392,7 +385,7 @@ mod tests {
             log: Arc::new(Mutex::new(Vec::new())),
             name: "rewrite-x-to-y",
         })]);
-        let source = Source::from_str("x = 1\n").expect("parses");
+        let source = parse("x = 1\n");
 
         let (result, changed) = pipeline.run(source).expect("rewrite succeeds");
 

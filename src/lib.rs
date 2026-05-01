@@ -8,4 +8,6 @@ pub mod pipeline;
 mod primitives;
 mod rules;
 pub mod source;
+#[cfg(test)]
+mod test_support;
 mod walker;
