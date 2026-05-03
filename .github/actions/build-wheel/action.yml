@@ -1,0 +1,44 @@
+name        : Build wheel
+description : Checks out, runs `maturin-action`, and uploads the resulting artifact. Used by the release workflow's build matrix and sdist job.
+
+inputs:
+  command:
+    description : maturin subcommand (`build` or `sdist`)
+    required    : true
+  target:
+    description : Cargo target triple (Linux/macOS/Windows wheel rows). Empty for sdist.
+    required    : false
+    default     : ''
+  manylinux:
+    description : Manylinux compatibility tag (`auto` on Linux, empty elsewhere)
+    required    : false
+    default     : ''
+  args:
+    description : Additional flags passed to maturin
+    required    : false
+    default     : ''
+  name:
+    description : Tag suffix in the uploaded `wheels-{name}` artifact.
+    default     : sdist
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+    - name: Run maturin
+      uses: PyO3/maturin-action@3e2bdf6ba6453a61e649744019b8a2d906c7eb38
+      with:
+        command   : ${{ inputs.command }}
+        target    : ${{ inputs.target }}
+        manylinux : ${{ inputs.manylinux }}
+        args      : ${{ inputs.args }}
+        sccache   : ${{ github.ref_type != 'tag' }}
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name               : wheels-${{ inputs.name }}
+        path               : target/wheels/*
+        if-no-files-found  : error
+        retention-days     : 7

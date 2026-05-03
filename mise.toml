@@ -18,27 +18,27 @@ python.uv_venv_auto = "create|source"
 # ============================================================================
 
 [tasks.audit]
-description = "Detect unused dependencies in Cargo.toml"
+description = "Detect unused dependencies in `Cargo.toml`"
 run         = "cargo machete"
 
 [tasks.build]
-description = "Build the prose binary in debug mode"
+description = "Build the `prose` binary in debug mode"
 run         = "cargo build"
 
 [tasks.check]
-description = "Verify Rust source matches rustfmt without rewriting"
+description = "Verify Rust source matches `rustfmt` without rewriting"
 run         = "cargo fmt --all --check"
 
 [tasks.ci]
 depends     = ["audit", "check", "lint", "test", "wheel"]
-description = "Full local CI: audit, check, lint, test, build wheel"
+description = "Full local CI: `audit`, `check`, `lint`, `test`, `wheel`"
 
 [tasks.format]
-description = "Format Rust source with rustfmt"
+description = "Format Rust source with `rustfmt`"
 run         = "cargo fmt --all"
 
 [tasks.lint]
-description = "Run clippy with all warnings treated as errors"
+description = "Run `clippy` with all warnings treated as errors"
 run         = "cargo clippy --all-targets -- -D warnings"
 
 [tasks.review]
@@ -46,9 +46,9 @@ description = "Interactively review pending snapshot diffs"
 run         = "cargo insta review"
 
 [tasks.test]
-description = "Run all tests including insta snapshots"
+description = "Run all tests including `insta` snapshots"
 run         = "cargo test"
 
 [tasks.wheel]
-description = "Build the maturin wheel into the active virtualenv"
+description = "Build the `maturin` wheel into the active virtualenv"
 run         = "maturin develop"

@@ -20,7 +20,7 @@ classifiers     = [
 description     = "A Python typesetter for the reader."
 keywords        = ["formatter", "legibility", "linter", "python", "style"]
 license         = { text = "MIT" }
-name            = "prose"
+name            = "prose-formatter"
 readme          = "README.md"
 requires-python = ">=3.10"
 version         = "0.1.0.dev0"

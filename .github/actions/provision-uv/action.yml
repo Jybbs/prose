@@ -1,0 +1,10 @@
+name        : Provision uv with a warm wheel cache
+description : Install the uv binary and restore `~/.cache/uv` keyed off the PEP 723 scripts so subsequent `uv run --script` invocations skip the PyPI fetch.
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      with:
+        enable-cache          : true
+        cache-dependency-glob : .github/scripts/*.py
