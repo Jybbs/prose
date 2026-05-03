@@ -98,7 +98,7 @@ jobs:
           command : sdist
 
   publish:
-    name            : 📯 Publish to PyPI
+    name            : ${{ github.ref_type == 'tag' && '📯 Publish to PyPI' || '🕯️ Publish dry-run' }}
     needs           : [build, sdist]
     runs-on         : ubuntu-latest
     timeout-minutes : 15
@@ -116,6 +116,8 @@ jobs:
           merge-multiple : true
 
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+        with:
+          cache-dependency-glob: ""
 
       - name: Smoke-install built wheel
         run: |
