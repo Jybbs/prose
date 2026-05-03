@@ -1,5 +1,5 @@
 name        : Build wheel
-description : Checks out, runs `maturin-action`, and uploads the resulting artifact. Used by the release workflow's build matrix and sdist job.
+description : Runs `maturin-action` and uploads the resulting artifact. Caller must check out the repo before invoking this composite.
 
 inputs:
   command:
@@ -24,8 +24,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
     - name: Run maturin
       uses: PyO3/maturin-action@3e2bdf6ba6453a61e649744019b8a2d906c7eb38
       with:
