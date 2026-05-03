@@ -18,11 +18,6 @@
 # breaks the trust relationship. Update PyPI before the next tag.
 #
 # https://docs.pypi.org/trusted-publishers/adding-a-publisher/
-#
-# Note: `pypa/gh-action-pypi-publish` pins by version (`@v1.14.0`) rather
-# than commit SHA. Its GHCR image is tagged by version only, so SHA-pinning
-# a Docker-based action breaks at image pull. Every other third-party action
-# in this pipeline intentionally uses a SHA pin.
 
 name     : 🪻 Release
 run-name : 🪻 Release · ${{ github.head_ref || github.ref_name }}
@@ -105,15 +100,13 @@ jobs:
   publish:
     name            : 📯 Publish to PyPI
     needs           : [build, sdist]
-    if              : github.ref_type == 'tag'
     runs-on         : ubuntu-latest
     timeout-minutes : 15
     environment:
       name : release
       url  : https://pypi.org/p/prose-formatter
     permissions:
-      id-token     : write
-      attestations : write
+      id-token: write
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
@@ -129,8 +122,13 @@ jobs:
           uv tool install --no-index --find-links=dist prose-formatter
           prose --version
 
+      - name: Generate PEP 740 attestations
+        uses: astral-sh/attest-action@f589a42a7efb6fe400b4f400de60b4bc90390027
+        if: github.ref_type == 'tag'
+
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.14.0
+        if: github.ref_type == 'tag'
+        run: uv publish --trusted-publishing=always dist/*
 
   gate:
     name            : 🗞️ Brief
