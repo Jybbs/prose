@@ -128,7 +128,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@6733eb7d741f0b11ec6a39b58540dab7590f9b7d
 
   gate:
-    name            : 🗞️ Release Summary
+    name            : 🗞️ Summary
     needs           : [build, sdist, publish]
     if              : always()
     runs-on         : ubuntu-latest
