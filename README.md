@@ -14,8 +14,8 @@
 
 *Prose* formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries and lists, alphabetizes methods and fields within their groups, applies a singleton rule for colon padding, and treats code like prose rather than minified text.
 
-> [!WARNING]
-> Pre-alpha. Under active development. No public release yet.
+> [!NOTE]
+> Alpha (`0.1.0`). The eight rules below are stable, with additional rules planned for later releases.
 
 ---
 
@@ -32,9 +32,6 @@ The trade-offs minimalist formatters were built to avoid (*wider diffs, more ver
 ```bash
 uv tool install prose-formatter
 ```
-
-> [!IMPORTANT]
-> Not yet on PyPI. Build from source until `0.1.0` ships.
 
 ```bash
 prose format path/              # rewrite files in place
