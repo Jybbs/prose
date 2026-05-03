@@ -1,0 +1,22 @@
+changelog:
+  categories:
+    - title: ✨ Features
+      labels:
+        - 🦉 engine
+        - 🪜 alignment
+        - 🪉 ordering
+        - 🪶 formatting
+        - 🪄 cli
+    - title: 📰 Docs
+      labels:
+        - 📰 docs
+    - title: 🗜️ Build
+      labels:
+        - 🗜️ build
+    - title: 🧱 Internals
+      labels:
+        - ⚖️ tests
+        - 🗺️ architecture
+    - title: Other
+      labels:
+        - "*"
