@@ -18,6 +18,11 @@
 # breaks the trust relationship. Update PyPI before the next tag.
 #
 # https://docs.pypi.org/trusted-publishers/adding-a-publisher/
+#
+# Note: `pypa/gh-action-pypi-publish` pins by version (`@v1.14.0`) rather
+# than commit SHA. Its GHCR image is tagged by version only, so SHA-pinning
+# a Docker-based action breaks at image pull. Every other third-party action
+# in this pipeline intentionally uses a SHA pin.
 
 name     : 🪻 Release
 run-name : 🪻 Release · ${{ github.head_ref || github.ref_name }}
@@ -125,7 +130,7 @@ jobs:
           prose --version
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@6733eb7d741f0b11ec6a39b58540dab7590f9b7d
+        uses: pypa/gh-action-pypi-publish@v1.14.0
 
   gate:
     name            : 🗞️ Brief
