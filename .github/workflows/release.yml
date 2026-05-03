@@ -1,6 +1,6 @@
 # Prose release pipeline · tag-driven publish to PyPI via OIDC.
 #
-# Triggers on `v*` tag push (build + publish) and packaging-relevant PRs
+# Triggers on bare-semver tag push (build + publish) and packaging-relevant PRs
 # (build dry-run only). Builds wheels for Linux x86_64/aarch64, macOS
 # x86_64/aarch64, Windows x86_64, plus an sdist. Trusted publishing means
 # no API tokens are stored in repo or org secrets.
@@ -24,7 +24,7 @@ run-name : 🪻 Release · ${{ github.head_ref || github.ref_name }}
 
 on:
   push:
-    tags: ['v*']
+    tags: ['[0-9]*']
   pull_request:
     paths:
       - pyproject.toml

@@ -5,7 +5,7 @@ requires      = ["maturin>=1.7,<2.0"]
 [project]
 authors         = [{ name = "Jibbs" }]
 classifiers     = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -23,7 +23,7 @@ license         = { text = "MIT" }
 name            = "prose-formatter"
 readme          = "README.md"
 requires-python = ">=3.10"
-version         = "0.1.0.dev0"
+version         = "0.1.0"
 
 [project.urls]
 Repository = "https://github.com/Jybbs/prose"
