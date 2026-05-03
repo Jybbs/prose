@@ -1,4 +1,4 @@
-name: Check
+name : 🪻 Check
 
 on:
   workflow_call:
@@ -9,13 +9,11 @@ on:
         type        : string
       save-cache:
         default     : false
-        description : When true the Rust cache writes back to GHA. Set true only on main-branch runs.
-        required    : false
+        description : When true the mise and Cargo caches write back to GHA. Set true only on main-branch runs.
         type        : boolean
       shared-key:
         default     : prose
         description : Swatinem cache scope. Distinct keys allow per-profile cache isolation.
-        required    : false
         type        : string
 
 permissions:
@@ -30,14 +28,20 @@ jobs:
     name    : ${{ inputs.command }}
     runs-on : ubuntu-latest
     steps:
-      - name: Check out source
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
+      - name: Install mise tools
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
         with:
-          save-cache : ${{ inputs.save-cache }}
-          shared-key : ${{ inputs.shared-key }}
+          cache      : true
+          cache_save : ${{ inputs.save-cache }}
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
+        with:
+          cache-on-failure : 'true'
+          save-if          : ${{ inputs.save-cache }}
+          shared-key       : ${{ inputs.shared-key }}
 
       - name : Run ${{ inputs.command }}
         run  : ${{ inputs.command }}

@@ -1,0 +1,153 @@
+# Prose release pipeline · tag-driven publish to PyPI via OIDC.
+#
+# Triggers on `v*` tag push (build + publish) and packaging-relevant PRs
+# (build dry-run only). Builds wheels for Linux x86_64/aarch64, macOS
+# x86_64/aarch64, Windows x86_64, plus an sdist. Trusted publishing means
+# no API tokens are stored in repo or org secrets.
+#
+# The PyPI trusted-publisher contract must exist before the first tag push.
+# Field values, set under Account → Publishing on pypi.org, must match:
+#
+#   PyPI Project Name    prose-formatter
+#   Owner                Jybbs
+#   Repository name      prose
+#   Workflow filename    release.yml
+#   Environment name     release
+#
+# Renaming this file, the `release` environment, the repo, or the owner
+# breaks the trust relationship. Update PyPI before the next tag.
+#
+# https://docs.pypi.org/trusted-publishers/adding-a-publisher/
+
+name     : 🪻 Release
+run-name : 🪻 Release · ${{ github.head_ref || github.ref_name }}
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - pyproject.toml
+      - Cargo.toml
+      - .github/workflows/release.yml
+
+concurrency:
+  cancel-in-progress : ${{ github.event_name == 'pull_request' }}
+  group              : ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name            : 🗺️ Plan
+    runs-on         : ubuntu-latest
+    timeout-minutes : 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/provision-uv
+
+      - name : Parse tag and validate versions
+        run  : ./.github/scripts/parse-version.py
+
+  build:
+    name            : 🎻 ${{ matrix.name }}
+    needs           : plan
+    runs-on         : ${{ matrix.runner }}
+    timeout-minutes : 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name      : linux-x86_64
+            runner    : ubuntu-latest
+            target    : x86_64-unknown-linux-gnu
+            manylinux : auto
+          - name      : linux-aarch64
+            runner    : ubuntu-24.04-arm
+            target    : aarch64-unknown-linux-gnu
+            manylinux : auto
+          - name      : macos-x86_64
+            runner    : macos-15-intel
+            target    : x86_64-apple-darwin
+          - name      : macos-aarch64
+            runner    : macos-latest
+            target    : aarch64-apple-darwin
+          - name      : windows-x86_64
+            runner    : windows-latest
+            target    : x86_64-pc-windows-msvc
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/build-wheel
+        with:
+          command   : build
+          target    : ${{ matrix.target }}
+          manylinux : ${{ matrix.manylinux }}
+          args      : --release --locked
+          name      : ${{ matrix.name }}
+
+  sdist:
+    name            : 🚢 sdist
+    needs           : plan
+    runs-on         : ubuntu-latest
+    timeout-minutes : 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/build-wheel
+        with:
+          command : sdist
+
+  publish:
+    name            : 📯 Publish to PyPI
+    needs           : [build, sdist]
+    if              : github.ref_type == 'tag'
+    runs-on         : ubuntu-latest
+    timeout-minutes : 15
+    environment:
+      name : release
+      url  : https://pypi.org/p/prose-formatter
+    permissions:
+      id-token     : write
+      attestations : write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          path           : dist
+          pattern        : wheels-*
+          merge-multiple : true
+
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+
+      - name: Smoke-install built wheel
+        run: |
+          uv tool install --no-index --find-links=dist prose-formatter
+          prose --version
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@6733eb7d741f0b11ec6a39b58540dab7590f9b7d
+
+  gate:
+    name            : 🗞️ Brief
+    needs           : [build, sdist, publish]
+    if              : always()
+    runs-on         : ubuntu-latest
+    timeout-minutes : 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/provision-uv
+
+      - name: Download all artifacts
+        if: needs.build.result != 'cancelled' && needs.sdist.result != 'cancelled'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          path           : dist
+          pattern        : wheels-*
+          merge-multiple : true
+
+      - name: Write release summary
+        env:
+          BUILD   : ${{ needs.build.result }}
+          SDIST   : ${{ needs.sdist.result }}
+          PUBLISH : ${{ needs.publish.result }}
+        run: ./.github/scripts/summary.py release

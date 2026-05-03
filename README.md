@@ -30,7 +30,7 @@ The trade-offs minimalist formatters were built to avoid (*wider diffs, more ver
 ## 🪄 Install & Usage
 
 ```bash
-uv tool install prose
+uv tool install prose-formatter
 ```
 
 > [!IMPORTANT]
@@ -188,7 +188,7 @@ Wire *Prose* into anything that runs on save, on commit, or in CI.
 ### CI
 
 ```yaml
-- run: uv tool install prose
+- run: uv tool install prose-formatter
 - run: prose check .
 ```
 
