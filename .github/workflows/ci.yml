@@ -43,7 +43,7 @@ jobs:
       shared-key : ${{ matrix.shared-key }}
 
   gate:
-    name    : 🗞️ Summary
+    name    : 🗞️ Brief
     needs   : check
     if      : always()
     runs-on : ubuntu-latest
