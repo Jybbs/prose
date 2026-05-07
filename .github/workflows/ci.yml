@@ -43,13 +43,15 @@ jobs:
       shared-key : ${{ matrix.shared-key }}
 
   gate:
-    name    : 🗞️ Brief
+    name    : 🗞️ CI Brief
     needs   : check
     if      : always()
     runs-on : ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: ./.github/actions/provision-uv
+      - name: Check out repository
+        uses: ./.github/actions/checkout-prose
+      - name: Provision uv
+        uses: ./.github/actions/provision-uv
 
       - name: Summarize and gate
         env:

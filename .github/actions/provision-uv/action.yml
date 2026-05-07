@@ -1,11 +1,18 @@
 name        : Provision uv with a warm wheel cache
-description : Install the uv binary and restore `~/.cache/uv` keyed off the PEP 723 scripts so subsequent `uv run --script` invocations skip the PyPI fetch.
+description : Install the uv binary and restore `~/.cache/uv` keyed off the PEP 723 scripts so subsequent `uv run --script` invocations skip the PyPI fetch. Callers that do not run scripts (*publish job downloading wheels*) may pass an empty `cache-dependency-glob` to skip the cache key.
+
+inputs:
+  cache-dependency-glob:
+    description : Files whose hash keys the uv cache. Empty disables the cache.
+    required    : false
+    default     : .github/scripts/*.py
 
 runs:
   using: composite
   steps:
-    - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+    - name: Install uv
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
       with:
         version               : latest
         enable-cache          : true
-        cache-dependency-glob : .github/scripts/*.py
+        cache-dependency-glob : ${{ inputs.cache-dependency-glob }}

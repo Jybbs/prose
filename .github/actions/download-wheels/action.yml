@@ -1,0 +1,12 @@
+name        : Download wheel artifacts
+description : Pull every `wheels-*` artifact uploaded by the build matrix into `dist/`, with one site for the `actions/download-artifact` SHA pin.
+
+runs:
+  using: composite
+  steps:
+    - name: Download wheel artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        path           : dist
+        pattern        : wheels-*
+        merge-multiple : true
