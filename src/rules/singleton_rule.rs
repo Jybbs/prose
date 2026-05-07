@@ -11,9 +11,9 @@
 use ruff_diagnostics::Edit;
 
 use crate::config::Config;
-use crate::pipeline::Rule;
 use crate::primitives::aligner;
 use crate::primitives::colon_targets::ColonEmitter;
+use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
 pub(crate) struct SingletonRule;
@@ -31,8 +31,8 @@ impl Rule for SingletonRule {
         emitter.edits
     }
 
-    fn name(&self) -> &'static str {
-        "singleton-rule"
+    fn id(&self) -> RuleId {
+        RuleId::from(ruff_macros::kebab_case!(SingletonRule))
     }
 }
 

@@ -5,27 +5,19 @@
 //! `Source` to the next rule. Alignment rules run last so earlier
 //! rewrites settle before padding widths are computed.
 
-use ruff_diagnostics::Edit;
 use ruff_python_parser::ParseError;
-use ruff_text_size::Ranged;
 use thiserror::Error;
 
-use crate::config::Config;
-use crate::rules::align_colons::AlignColons;
-use crate::rules::align_equals::AlignEquals;
-use crate::rules::align_imports::AlignImports;
-use crate::rules::alphabetize::Alphabetize;
-use crate::rules::collection_layout::CollectionLayout;
-use crate::rules::match_case_align::MatchCaseAlign;
-use crate::rules::singleton_rule::SingletonRule;
-use crate::rules::strip_trailing_commas::StripTrailingCommas;
+use crate::primitives::edit::apply_edits;
+use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
 /// Ordered sequence of enabled rules, run against each source file.
 ///
-/// Use [`Pipeline::with_defaults`] to build one from a loaded [`Config`],
-/// [`Pipeline::for_rule`] to register exactly one rule by name, or
-/// [`Pipeline::empty`] for a pipeline with no rules.
+/// Use [`Pipeline::with_defaults`] to build one from a loaded
+/// [`crate::config::Config`], [`Pipeline::for_rule`] to register
+/// exactly one rule by name, or [`Pipeline::empty`] for a pipeline
+/// with no rules.
 pub struct Pipeline {
     rules: Vec<Box<dyn Rule>>,
 }
@@ -37,61 +29,7 @@ impl Pipeline {
         Self { rules: Vec::new() }
     }
 
-    /// Builds a pipeline registering exactly one rule by name.
-    ///
-    /// Returns `None` when `name` does not match any registered rule.
-    /// Bypasses each rule's `enabled` flag. Names accept either the
-    /// kebab-case form returned by [`Rule::name`] (`align-colons`,
-    /// `align-equals`, `align-imports`, `alphabetize`,
-    /// `collection-layout`, `match-case-align`, `singleton-rule`,
-    /// `strip-trailing-commas`) or the snake-case equivalent.
-    pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
-        let rule: Box<dyn Rule> = match name.replace('_', "-").as_str() {
-            "align-colons" => Box::new(AlignColons::from_config(config)),
-            "align-equals" => Box::new(AlignEquals::from_config(config)),
-            "align-imports" => Box::new(AlignImports::from_config(config)),
-            "alphabetize" => Box::new(Alphabetize::from_config(config)),
-            "collection-layout" => Box::new(CollectionLayout::from_config(config)),
-            "match-case-align" => Box::new(MatchCaseAlign::from_config(config)),
-            "singleton-rule" => Box::new(SingletonRule::from_config(config)),
-            "strip-trailing-commas" => Box::new(StripTrailingCommas::from_config(config)),
-            _ => return None,
-        };
-        Some(Self::from_rules(vec![rule]))
-    }
-
-    fn from_rules(rules: Vec<Box<dyn Rule>>) -> Self {
-        Self { rules }
-    }
-
-    /// Builds a pipeline registering every rule enabled in `config`.
-    /// Rules whose `enabled` flag is `false` are silently skipped.
-    pub fn with_defaults(config: &Config) -> Self {
-        let mut rules: Vec<Box<dyn Rule>> = Vec::new();
-        if config.rules.collection_layout.enabled {
-            rules.push(Box::new(CollectionLayout::from_config(config)));
-        }
-        if config.rules.alphabetize.enabled {
-            rules.push(Box::new(Alphabetize::from_config(config)));
-        }
-        if config.rules.strip_trailing_commas.enabled {
-            rules.push(Box::new(StripTrailingCommas::from_config(config)));
-        }
-        if config.rules.match_case_align.enabled {
-            rules.push(Box::new(MatchCaseAlign::from_config(config)));
-        }
-        if config.rules.align_imports.enabled {
-            rules.push(Box::new(AlignImports::from_config(config)));
-        }
-        if config.rules.align_colons.enabled {
-            rules.push(Box::new(AlignColons::from_config(config)));
-        }
-        if config.rules.align_equals.enabled {
-            rules.push(Box::new(AlignEquals::from_config(config)));
-        }
-        if config.rules.singleton_rule.enabled {
-            rules.push(Box::new(SingletonRule::from_config(config)));
-        }
+    pub(crate) fn from_rules(rules: Vec<Box<dyn Rule>>) -> Self {
         Self { rules }
     }
 
@@ -103,6 +41,14 @@ impl Pipeline {
     #[cfg(test)]
     fn len(&self) -> usize {
         self.rules.len()
+    }
+
+    /// Returns every registered rule's id in a stable order. Useful
+    /// for CLI `--select` / `--ignore` validation and for rule
+    /// listings. Surfaces the same registry that
+    /// [`RuleId::from_str`](crate::rule::RuleId) consults.
+    pub fn known_ids() -> &'static [RuleId] {
+        crate::rule::KNOWN_IDS
     }
 
     /// Runs each registered rule against `source` in order and reports
@@ -130,13 +76,13 @@ impl Pipeline {
                 debug_assert!(
                     new_text != source.text(),
                     "rule `{}` emitted edits that produced identical text",
-                    rule.name(),
+                    rule.id(),
                 );
                 source
                     .reparse(new_text)
                     .map(|src| (src, true))
                     .map_err(|source| PipelineError::Reparse {
-                        rule: rule.name(),
+                        rule: rule.id(),
                         source,
                     })
             })
@@ -148,80 +94,38 @@ impl Pipeline {
 pub enum PipelineError {
     #[error("rule `{rule}` produced output that did not parse")]
     Reparse {
-        rule: &'static str,
+        rule: RuleId,
         #[source]
         source: ParseError,
     },
-}
-
-/// Every rule in Prose implements this trait and nothing more.
-///
-/// Implementations inspect `source` and return the edits that would
-/// bring it into conformance. An empty `Vec<Edit>` means the rule has
-/// nothing to say, and the pipeline skips the reparse for that rule.
-///
-/// Rules must be `Send + Sync` so that the pipeline can run across
-/// files in parallel without moving the rule list per worker.
-pub(crate) trait Rule: Send + Sync {
-    /// Computes the edit list this rule would apply to `source`.
-    /// Edits must not overlap after sorting, an invariant the
-    /// pipeline's applicator debug-asserts.
-    fn apply(&self, source: &Source) -> Vec<Edit>;
-
-    /// Stable identifier matching the rule's `[tool.prose.rules]` key
-    /// (kebab-case, e.g. `"align-equals"`). Surfaces in diagnostic
-    /// output when a rule produces unparseable text.
-    fn name(&self) -> &'static str;
-}
-
-/// Splices `edits` into `text` and returns the resulting string.
-///
-/// Sorts edits by start-then-end (via `Edit`'s `Ord` impl), then walks
-/// the list forward once, copying the unchanged spans between edits
-/// into a pre-sized buffer and substituting each edit's replacement
-/// at its position. Linear in the source length regardless of how
-/// many edits apply. Debug builds assert the sorted edits are
-/// non-overlapping, a rule-authoring invariant.
-fn apply_edits(text: &str, mut edits: Vec<Edit>) -> String {
-    edits.sort_unstable();
-    debug_assert!(
-        edits.is_sorted_by(|a, b| a.end() <= b.start()),
-        "edits overlap"
-    );
-    let mut out = String::with_capacity(text.len());
-    let mut cursor = 0usize;
-    for edit in edits {
-        out.push_str(&text[cursor..edit.start().to_usize()]);
-        out.push_str(edit.content().unwrap_or_default());
-        cursor = edit.end().to_usize();
-    }
-    out.push_str(&text[cursor..]);
-    out
 }
 
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
 
+    use ruff_diagnostics::Edit;
+
     use super::*;
+    use crate::config::Config;
     use crate::test_support::{assert_send_sync, parse, range};
 
-    /// Test-only rule that records its own name into a shared log and
+    /// Test-only rule that records its own id into a shared log and
     /// returns the edit list supplied at construction time.
     struct SentinelRule {
         edits: Vec<Edit>,
+        id: RuleId,
         log: Arc<Mutex<Vec<&'static str>>>,
-        name: &'static str,
     }
 
     impl Rule for SentinelRule {
         fn apply(&self, _source: &Source) -> Vec<Edit> {
-            self.log.lock().expect("log mutex").push(self.name);
+            self.log.lock().expect("log mutex").push(self.id.as_str());
             self.edits.clone()
         }
 
-        fn name(&self) -> &'static str {
-            self.name
+        fn id(&self) -> RuleId {
+            self.id
         }
     }
 
@@ -229,7 +133,7 @@ mod tests {
     /// returns the edit list supplied at construction.
     struct TextCapturingRule {
         edits: Vec<Edit>,
-        name: &'static str,
+        id: RuleId,
         seen: Arc<Mutex<Vec<String>>>,
     }
 
@@ -239,61 +143,9 @@ mod tests {
             self.edits.clone()
         }
 
-        fn name(&self) -> &'static str {
-            self.name
+        fn id(&self) -> RuleId {
+            self.id
         }
-    }
-
-    #[test]
-    fn apply_edits_handles_insertions_and_deletions() {
-        let out = apply_edits(
-            "abcd",
-            vec![
-                Edit::insertion("<".to_owned(), 0u32.into()),
-                Edit::range_deletion(range(2, 3)),
-            ],
-        );
-
-        assert_eq!(out, "<abd");
-    }
-
-    #[test]
-    fn apply_edits_handles_multiple_non_overlapping_edits() {
-        let out = apply_edits(
-            "abcdef",
-            vec![
-                Edit::range_replacement("X".to_owned(), range(0, 1)),
-                Edit::range_replacement("Y".to_owned(), range(4, 5)),
-            ],
-        );
-
-        assert_eq!(out, "XbcdYf");
-    }
-
-    #[test]
-    #[cfg(debug_assertions)]
-    #[should_panic(expected = "edits overlap")]
-    fn apply_edits_panics_on_overlap_in_debug() {
-        let _ = apply_edits(
-            "abcdef",
-            vec![
-                Edit::range_replacement("X".to_owned(), range(0, 3)),
-                Edit::range_replacement("Y".to_owned(), range(2, 4)),
-            ],
-        );
-    }
-
-    #[test]
-    fn apply_edits_sorts_unsorted_input() {
-        let out = apply_edits(
-            "abcdef",
-            vec![
-                Edit::range_replacement("Y".to_owned(), range(4, 5)),
-                Edit::range_replacement("X".to_owned(), range(0, 1)),
-            ],
-        );
-
-        assert_eq!(out, "XbcdYf");
     }
 
     #[test]
@@ -302,12 +154,12 @@ mod tests {
         let pipeline = Pipeline::from_rules(vec![
             Box::new(TextCapturingRule {
                 edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
-                name: "rewrite-x-to-y",
+                id: RuleId::from("rewrite-x-to-y"),
                 seen: seen.clone(),
             }),
             Box::new(TextCapturingRule {
                 edits: Vec::new(),
-                name: "downstream-observer",
+                id: RuleId::from("downstream-observer"),
                 seen: seen.clone(),
             }),
         ]);
@@ -330,24 +182,37 @@ mod tests {
     }
 
     #[test]
+    fn known_ids_matches_with_defaults_registration() {
+        let config = Config::default();
+        let pipeline = Pipeline::with_defaults(&config);
+        let mut registered: Vec<&'static str> =
+            pipeline.rules.iter().map(|r| r.id().as_str()).collect();
+        registered.sort_unstable();
+        let mut known: Vec<&'static str> =
+            Pipeline::known_ids().iter().map(|id| id.as_str()).collect();
+        known.sort_unstable();
+        assert_eq!(registered, known);
+    }
+
+    #[test]
     fn pipeline_is_send_and_sync() {
         assert_send_sync::<Pipeline>();
     }
 
     #[test]
-    fn reparse_failure_surfaces_rule_name() {
+    fn reparse_failure_surfaces_rule_id() {
         let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
             edits: vec![Edit::range_replacement("def foo(".to_owned(), range(0, 5))],
+            id: RuleId::from("breaks-parse"),
             log: log.clone(),
-            name: "breaks-parse",
         })]);
         let source = parse("x = 1\n");
 
         let err = pipeline.run(source).expect_err("reparse should fail");
 
         match err {
-            PipelineError::Reparse { rule, .. } => assert_eq!(rule, "breaks-parse"),
+            PipelineError::Reparse { rule, .. } => assert_eq!(rule.as_str(), "breaks-parse"),
         }
     }
 
@@ -357,18 +222,18 @@ mod tests {
         let pipeline = Pipeline::from_rules(vec![
             Box::new(SentinelRule {
                 edits: Vec::new(),
+                id: RuleId::from("first"),
                 log: log.clone(),
-                name: "first",
             }),
             Box::new(SentinelRule {
                 edits: Vec::new(),
+                id: RuleId::from("second"),
                 log: log.clone(),
-                name: "second",
             }),
             Box::new(SentinelRule {
                 edits: Vec::new(),
+                id: RuleId::from("third"),
                 log: log.clone(),
-                name: "third",
             }),
         ]);
         let source = parse("x = 1\n");
@@ -382,8 +247,8 @@ mod tests {
     fn run_reports_changed_when_a_rule_rewrites_text() {
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
             edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+            id: RuleId::from("rewrite-x-to-y"),
             log: Arc::new(Mutex::new(Vec::new())),
-            name: "rewrite-x-to-y",
         })]);
         let source = parse("x = 1\n");
 

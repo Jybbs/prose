@@ -15,8 +15,8 @@ use ruff_python_ast::{MatchCase, Stmt, StmtMatch};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::config::Config;
-use crate::pipeline::Rule;
 use crate::primitives::{aligner, colon_targets};
+use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
 pub(crate) struct MatchCaseAlign {
@@ -43,8 +43,8 @@ impl Rule for MatchCaseAlign {
         visitor.edits
     }
 
-    fn name(&self) -> &'static str {
-        "match-case-align"
+    fn id(&self) -> RuleId {
+        RuleId::from(ruff_macros::kebab_case!(MatchCaseAlign))
     }
 }
 

@@ -13,8 +13,8 @@ use ruff_python_ast::Stmt;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::config::Config;
-use crate::pipeline::Rule;
 use crate::primitives::aligner;
+use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
 pub(crate) struct AlignEquals {
@@ -40,8 +40,8 @@ impl Rule for AlignEquals {
         visitor.edits
     }
 
-    fn name(&self) -> &'static str {
-        "align-equals"
+    fn id(&self) -> RuleId {
+        RuleId::from(ruff_macros::kebab_case!(AlignEquals))
     }
 }
 

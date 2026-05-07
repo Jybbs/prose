@@ -1,7 +1,9 @@
-//! Edit-shaping primitives shared across rules. `narrow_edit` trims
-//! a candidate replacement to its minimal divergent range against
-//! the source. `apply_inline_edits` folds a list of edits into a
-//! source range, returning `Cow::Borrowed` when no edit applies.
+//! Edit-shaping primitives shared across rules. `apply_edits` splices
+//! a sorted edit list into a source string, the pipeline runner's
+//! transform between rules. `apply_inline_edits` folds a list of
+//! edits into a source range, returning `Cow::Borrowed` when no
+//! edit applies. `narrow_edit` trims a candidate replacement to its
+//! minimal divergent range against the source.
 
 use std::borrow::Cow;
 
@@ -9,6 +11,31 @@ use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::source::Source;
+
+/// Splices `edits` into `text` and returns the resulting string.
+///
+/// Sorts edits by start-then-end (via `Edit`'s `Ord` impl), then walks
+/// the list forward once, copying the unchanged spans between edits
+/// into a pre-sized buffer and substituting each edit's replacement
+/// at its position. Linear in the source length regardless of how
+/// many edits apply. Debug builds assert the sorted edits are
+/// non-overlapping, a rule-authoring invariant.
+pub(crate) fn apply_edits(text: &str, mut edits: Vec<Edit>) -> String {
+    edits.sort_unstable();
+    debug_assert!(
+        edits.is_sorted_by(|a, b| a.end() <= b.start()),
+        "edits overlap"
+    );
+    let mut out = String::with_capacity(text.len());
+    let mut cursor = TextSize::default();
+    for edit in edits {
+        out.push_str(&text[TextRange::new(cursor, edit.start())]);
+        out.push_str(edit.content().unwrap_or_default());
+        cursor = edit.end();
+    }
+    out.push_str(&text[TextRange::new(cursor, text.text_len())]);
+    out
+}
 
 /// Folds any leaf edits whose range falls inside `range` into the
 /// source slice for that range. Returns `Cow::Borrowed` when no leaf
@@ -91,6 +118,58 @@ pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: Strin
 mod tests {
     use super::*;
     use crate::test_support::range;
+
+    #[test]
+    fn apply_edits_handles_insertions_and_deletions() {
+        let out = apply_edits(
+            "abcd",
+            vec![
+                Edit::insertion("<".to_owned(), 0u32.into()),
+                Edit::range_deletion(range(2, 3)),
+            ],
+        );
+
+        assert_eq!(out, "<abd");
+    }
+
+    #[test]
+    fn apply_edits_handles_multiple_non_overlapping_edits() {
+        let out = apply_edits(
+            "abcdef",
+            vec![
+                Edit::range_replacement("X".to_owned(), range(0, 1)),
+                Edit::range_replacement("Y".to_owned(), range(4, 5)),
+            ],
+        );
+
+        assert_eq!(out, "XbcdYf");
+    }
+
+    #[test]
+    #[cfg(debug_assertions)]
+    #[should_panic(expected = "edits overlap")]
+    fn apply_edits_panics_on_overlap_in_debug() {
+        let _ = apply_edits(
+            "abcdef",
+            vec![
+                Edit::range_replacement("X".to_owned(), range(0, 3)),
+                Edit::range_replacement("Y".to_owned(), range(2, 4)),
+            ],
+        );
+    }
+
+    #[test]
+    fn apply_edits_sorts_unsorted_input() {
+        let out = apply_edits(
+            "abcdef",
+            vec![
+                Edit::range_replacement("Y".to_owned(), range(4, 5)),
+                Edit::range_replacement("X".to_owned(), range(0, 1)),
+            ],
+        );
+
+        assert_eq!(out, "XbcdYf");
+    }
 
     #[test]
     fn narrow_edit_handles_multibyte_codepoint_at_divergence() {

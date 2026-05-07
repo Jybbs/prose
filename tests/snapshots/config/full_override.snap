@@ -8,6 +8,26 @@ Config {
         100,
     ),
     rules: RuleConfigs {
+        collection_layout: CollectionLayoutConfig {
+            enabled: false,
+            max_atomics_per_line: None,
+        },
+        alphabetize: ToggleOnly {
+            enabled: false,
+        },
+        strip_trailing_commas: ToggleOnly {
+            enabled: false,
+        },
+        match_case_align: AlignmentConfig {
+            enabled: false,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
+        align_imports: AlignmentConfig {
+            enabled: false,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
         align_colons: AlignmentConfig {
             enabled: false,
             max_shift: 8,
@@ -18,27 +38,7 @@ Config {
             max_shift: 8,
             max_shift_policy: Split,
         },
-        align_imports: AlignmentConfig {
-            enabled: false,
-            max_shift: 8,
-            max_shift_policy: Split,
-        },
-        alphabetize: ToggleOnly {
-            enabled: false,
-        },
-        collection_layout: CollectionLayoutConfig {
-            enabled: false,
-            max_atomics_per_line: None,
-        },
-        match_case_align: AlignmentConfig {
-            enabled: false,
-            max_shift: 8,
-            max_shift_policy: Split,
-        },
         singleton_rule: ToggleOnly {
-            enabled: false,
-        },
-        strip_trailing_commas: ToggleOnly {
             enabled: false,
         },
     },

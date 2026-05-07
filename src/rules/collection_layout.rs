@@ -16,8 +16,8 @@ use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
-use crate::pipeline::Rule;
 use crate::primitives::edit::narrowed_replacement;
+use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
 const DEFAULT_LINE_LENGTH: usize = 88;
@@ -57,8 +57,8 @@ impl Rule for CollectionLayout {
         visitor.edits
     }
 
-    fn name(&self) -> &'static str {
-        "collection-layout"
+    fn id(&self) -> RuleId {
+        RuleId::from(ruff_macros::kebab_case!(CollectionLayout))
     }
 }
 
