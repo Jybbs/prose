@@ -139,7 +139,7 @@ jobs:
         run: uv publish --trusted-publishing=always dist/*
 
   gate:
-    name            : 🗞️ Release Brief
+    name            : 🗞️ Brief
     needs           : [build, sdist, publish]
     if              : always()
     runs-on         : ubuntu-latest

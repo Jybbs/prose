@@ -3,8 +3,16 @@ run-name : 🪻 CI · ${{ github.head_ref || github.ref_name }}
 
 on:
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - LICENSE
+      - assets/**
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - LICENSE
+      - assets/**
   workflow_dispatch:
 
 concurrency:
@@ -43,7 +51,7 @@ jobs:
       shared-key : ${{ matrix.shared-key }}
 
   gate:
-    name    : 🗞️ CI Brief
+    name    : 🗞️ Brief
     needs   : check
     if      : always()
     runs-on : ubuntu-latest
