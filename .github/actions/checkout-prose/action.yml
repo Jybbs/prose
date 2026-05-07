@@ -1,7 +1,0 @@
-name        : Check out the Prose repo
-description : Wrap `actions/checkout` at the project's pinned SHA so every workflow shares one site for SHA-pin updates.
-
-runs:
-  using: composite
-  steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd

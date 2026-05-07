@@ -45,7 +45,7 @@ jobs:
     timeout-minutes : 5
     steps:
       - name: Check out repository
-        uses: ./.github/actions/checkout-prose
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Provision uv
         uses: ./.github/actions/provision-uv
 
@@ -80,7 +80,7 @@ jobs:
             target    : x86_64-pc-windows-msvc
     steps:
       - name: Check out repository
-        uses: ./.github/actions/checkout-prose
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Build wheel
         uses: ./.github/actions/build-wheel
         with:
@@ -97,7 +97,7 @@ jobs:
     timeout-minutes : 10
     steps:
       - name: Check out repository
-        uses: ./.github/actions/checkout-prose
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Build sdist
         uses: ./.github/actions/build-wheel
         with:
@@ -114,6 +114,9 @@ jobs:
     permissions:
       id-token: write
     steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
       - name: Download all artifacts
         uses: ./.github/actions/download-wheels
 
@@ -143,7 +146,7 @@ jobs:
     timeout-minutes : 5
     steps:
       - name: Check out repository
-        uses: ./.github/actions/checkout-prose
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Provision uv
         uses: ./.github/actions/provision-uv
 
