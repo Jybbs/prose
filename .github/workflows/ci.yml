@@ -3,8 +3,16 @@ run-name : 🪻 CI · ${{ github.head_ref || github.ref_name }}
 
 on:
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - LICENSE
+      - assets/**
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - LICENSE
+      - assets/**
   workflow_dispatch:
 
 concurrency:
@@ -48,8 +56,10 @@ jobs:
     if      : always()
     runs-on : ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: ./.github/actions/provision-uv
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Provision uv
+        uses: ./.github/actions/provision-uv
 
       - name: Summarize and gate
         env:

@@ -44,8 +44,10 @@ jobs:
     runs-on         : ubuntu-latest
     timeout-minutes : 5
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: ./.github/actions/provision-uv
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Provision uv
+        uses: ./.github/actions/provision-uv
 
       - name : Parse tag and validate versions
         run  : ./.github/scripts/parse-version.py
@@ -77,8 +79,10 @@ jobs:
             runner    : windows-latest
             target    : x86_64-pc-windows-msvc
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: ./.github/actions/build-wheel
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Build wheel
+        uses: ./.github/actions/build-wheel
         with:
           command   : build
           target    : ${{ matrix.target }}
@@ -92,8 +96,10 @@ jobs:
     runs-on         : ubuntu-latest
     timeout-minutes : 10
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: ./.github/actions/build-wheel
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Build sdist
+        uses: ./.github/actions/build-wheel
         with:
           command : sdist
 
@@ -108,14 +114,14 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          path           : dist
-          pattern        : wheels-*
-          merge-multiple : true
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - name: Download all artifacts
+        uses: ./.github/actions/download-wheels
+
+      - name: Provision uv
+        uses: ./.github/actions/provision-uv
         with:
           cache-dependency-glob: ""
 
@@ -139,16 +145,14 @@ jobs:
     runs-on         : ubuntu-latest
     timeout-minutes : 5
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: ./.github/actions/provision-uv
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Provision uv
+        uses: ./.github/actions/provision-uv
 
       - name: Download all artifacts
         if: needs.build.result != 'cancelled' && needs.sdist.result != 'cancelled'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          path           : dist
-          pattern        : wheels-*
-          merge-multiple : true
+        uses: ./.github/actions/download-wheels
 
       - name: Write release summary
         env:
