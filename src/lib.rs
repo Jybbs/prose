@@ -6,6 +6,7 @@ pub mod cli;
 pub mod config;
 pub mod pipeline;
 mod primitives;
+pub mod rule;
 mod rules;
 pub mod source;
 #[cfg(test)]

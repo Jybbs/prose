@@ -28,11 +28,11 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange};
 
 use crate::config::Config;
-use crate::pipeline::Rule;
 use crate::primitives::edit::{apply_inline_edits, narrowed_replacement};
 use crate::primitives::orderer::{
     assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
 };
+use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
 pub(crate) struct Alphabetize;
@@ -65,8 +65,8 @@ impl Rule for Alphabetize {
         }
     }
 
-    fn name(&self) -> &'static str {
-        "alphabetize"
+    fn id(&self) -> RuleId {
+        RuleId::from(ruff_macros::kebab_case!(Alphabetize))
     }
 }
 

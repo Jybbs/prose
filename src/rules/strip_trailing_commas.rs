@@ -12,7 +12,7 @@ use ruff_python_trivia::{BackwardsTokenizer, SimpleTokenKind};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::config::Config;
-use crate::pipeline::Rule;
+use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
 pub(crate) struct StripTrailingCommas;
@@ -33,8 +33,8 @@ impl Rule for StripTrailingCommas {
         visitor.edits
     }
 
-    fn name(&self) -> &'static str {
-        "strip-trailing-commas"
+    fn id(&self) -> RuleId {
+        RuleId::from(ruff_macros::kebab_case!(StripTrailingCommas))
     }
 }
 

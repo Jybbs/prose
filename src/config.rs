@@ -13,6 +13,8 @@ use std::path::Path;
 use serde::{de::IntoDeserializer, Deserialize};
 use thiserror::Error;
 
+pub use crate::rule::RuleConfigs;
+
 /// Configuration shared by the alignment rules (`align_colons`, `align_equals`).
 #[derive(Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -143,24 +145,6 @@ pub enum MaxAlignShiftPolicy {
     Skip,
     #[default]
     Split,
-}
-
-/// Per-rule configuration parsed from `[tool.prose.rules.<name>]`.
-///
-/// Each field is a sub-table whose `enabled` key (defaulting to
-/// `true`) toggles the rule and whose remaining keys carry that
-/// rule's knobs.
-#[derive(Debug, Default, Deserialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct RuleConfigs {
-    pub align_colons: AlignmentConfig,
-    pub align_equals: AlignmentConfig,
-    pub align_imports: AlignmentConfig,
-    pub alphabetize: ToggleOnly,
-    pub collection_layout: CollectionLayoutConfig,
-    pub match_case_align: AlignmentConfig,
-    pub singleton_rule: ToggleOnly,
-    pub strip_trailing_commas: ToggleOnly,
 }
 
 /// Sub-table shape for rules whose only knob is `enabled`.
