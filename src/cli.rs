@@ -15,11 +15,13 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use anyhow::Context;
-use clap::Parser;
+use clap::builder::{PossibleValuesParser, TypedValueParser};
+use clap::{error::ErrorKind, Parser};
 use rayon::iter::{ParallelBridge, ParallelIterator};
 
 use crate::config::Config;
 use crate::pipeline::Pipeline;
+use crate::rule::RuleId;
 use crate::source::Source;
 use crate::walker;
 
@@ -28,6 +30,9 @@ struct CheckArgs {
     /// One or more files or directories to check. Omit when using `--stdin`.
     #[arg(conflicts_with = "stdin", value_name = "PATH")]
     paths: Vec<PathBuf>,
+
+    #[command(flatten)]
+    rules: RuleFilter,
 
     /// Read source from stdin instead of the filesystem.
     #[arg(long)]
@@ -60,29 +65,47 @@ struct FormatArgs {
     #[arg(conflicts_with = "stdin", value_name = "PATH")]
     paths: Vec<PathBuf>,
 
+    #[command(flatten)]
+    rules: RuleFilter,
+
     /// Read source from stdin instead of the filesystem.
     #[arg(long)]
     stdin: bool,
 }
 
+/// Subset of registered rules to run, applied as `select - ignore`.
+#[derive(Debug, Default, clap::Args)]
+struct RuleFilter {
+    /// Comma-separated rule slugs to skip, subtracted from
+    /// whichever set would otherwise have run.
+    #[arg(long, value_delimiter = ',', value_name = "RULES", value_parser = rule_id_parser())]
+    ignore: Vec<RuleId>,
+
+    /// Comma-separated rule slugs to run, replacing the
+    /// configured-enabled set.
+    #[arg(long, value_delimiter = ',', value_name = "RULES", value_parser = rule_id_parser())]
+    select: Vec<RuleId>,
+}
+
 pub fn run() -> anyhow::Result<ExitCode> {
-    match Cli::parse() {
-        Cli::Check(args) => Ok(if check_with_io(args, io::stdin())? {
+    match Cli::try_parse() {
+        Ok(Cli::Check(args)) => Ok(if check_with_io(args, io::stdin())? {
             ExitCode::SUCCESS
         } else {
             ExitCode::FAILURE
         }),
-        Cli::Format(args) => {
+        Ok(Cli::Format(args)) => {
             format_with_io(args, io::stdin(), io::stdout().lock())?;
             Ok(ExitCode::SUCCESS)
         }
+        Err(err) => Ok(report_clap_error(err)),
     }
 }
 
 /// Returns `true` when nothing would change, `false` when at least one
 /// file or the stdin input would be rewritten.
 fn check_with_io<R: Read>(args: CheckArgs, stdin: R) -> anyhow::Result<bool> {
-    let pipeline = load_pipeline()?;
+    let pipeline = load_pipeline(&args.rules.select, &args.rules.ignore)?;
 
     if args.stdin {
         let (_, changed) = run_pipeline_on_stdin(stdin, &pipeline)?;
@@ -106,7 +129,7 @@ fn format_with_io<R: Read, W: Write>(
     stdin: R,
     mut stdout: W,
 ) -> anyhow::Result<()> {
-    let pipeline = load_pipeline()?;
+    let pipeline = load_pipeline(&args.rules.select, &args.rules.ignore)?;
 
     if args.stdin {
         let (formatted, changed) = run_pipeline_on_stdin(stdin, &pipeline)?;
@@ -141,10 +164,10 @@ fn format_with_io<R: Read, W: Write>(
     Ok(())
 }
 
-fn load_pipeline() -> anyhow::Result<Pipeline> {
+fn load_pipeline(select: &[RuleId], ignore: &[RuleId]) -> anyhow::Result<Pipeline> {
     let cwd = std::env::current_dir().context("reading current working directory")?;
     let config = Config::load(&cwd).context("loading [tool.prose] config")?;
-    Ok(Pipeline::with_defaults(&config))
+    Ok(Pipeline::with_filters(&config, select, ignore))
 }
 
 /// Loads a single Python file from disk and runs the pipeline over it.
@@ -152,6 +175,28 @@ fn process_path(path: &Path, pipeline: &Pipeline) -> anyhow::Result<(Source, boo
     let source =
         Source::from_path(path).with_context(|| format!("loading `{}`", path.display()))?;
     Ok(pipeline.run(source)?)
+}
+
+/// Prints a clap parse failure to its preferred stream and resolves
+/// the exit code. Help and version output exits `SUCCESS`. Unknown
+/// rule slugs surface as `ErrorKind::InvalidValue` and exit `4`.
+/// Other failures exit `2`.
+fn report_clap_error(err: clap::Error) -> ExitCode {
+    let _ = err.print();
+    match err.kind() {
+        ErrorKind::InvalidValue => ExitCode::from(4),
+        _ => ExitCode::from(err.exit_code() as u8),
+    }
+}
+
+/// Returns a value parser that accepts any registered rule slug and
+/// produces a [`RuleId`]. Errors render with clap's `[possible
+/// values: ...]` suffix listing every known slug.
+fn rule_id_parser() -> impl TypedValueParser<Value = RuleId> {
+    PossibleValuesParser::new(Pipeline::known_ids().iter().map(RuleId::as_str)).map(|s| {
+        s.parse::<RuleId>()
+            .expect("clap pre-validates against KNOWN_IDS")
+    })
 }
 
 /// Reads a Python source from `stdin`, parses it, and runs the pipeline.
@@ -177,11 +222,20 @@ mod tests {
     use super::*;
 
     fn check_args(paths: Vec<PathBuf>, stdin: bool) -> CheckArgs {
-        CheckArgs { paths, stdin }
+        CheckArgs {
+            paths,
+            rules: RuleFilter::default(),
+            stdin,
+        }
     }
 
     fn format_args(paths: Vec<PathBuf>, stdin: bool, diff: bool) -> FormatArgs {
-        FormatArgs { diff, paths, stdin }
+        FormatArgs {
+            diff,
+            paths,
+            rules: RuleFilter::default(),
+            stdin,
+        }
     }
 
     #[test]
@@ -202,6 +256,27 @@ mod tests {
         };
         assert_eq!(args.paths, [PathBuf::from("a.py"), PathBuf::from("b/")]);
         assert!(!args.stdin);
+    }
+
+    #[test]
+    fn check_parses_with_select_and_ignore_lists() {
+        let cli = Cli::try_parse_from([
+            "prose",
+            "check",
+            "--select",
+            "align-equals,align-colons",
+            "--ignore",
+            "alphabetize",
+        ])
+        .expect("parses");
+        let Cli::Check(args) = cli else {
+            panic!("expected Check variant");
+        };
+        assert_eq!(
+            args.rules.select,
+            [RuleId::from("align-equals"), RuleId::from("align-colons")],
+        );
+        assert_eq!(args.rules.ignore, [RuleId::from("alphabetize")]);
     }
 
     #[test]
@@ -230,9 +305,33 @@ mod tests {
     }
 
     #[test]
+    fn check_rejects_empty_select_value() {
+        let err = Cli::try_parse_from(["prose", "check", "--select="]).unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::InvalidValue);
+    }
+
+    #[test]
     fn check_rejects_paths_with_stdin() {
         let err = Cli::try_parse_from(["prose", "check", "--stdin", "a.py"]).unwrap_err();
         assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
+    }
+
+    #[test]
+    fn check_rejects_unknown_ignore_slug_with_known_list() {
+        let err = Cli::try_parse_from(["prose", "check", "--ignore", "not-a-rule"]).unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::InvalidValue);
+        let rendered = err.to_string();
+        assert!(rendered.contains("not-a-rule"));
+        assert!(rendered.contains("align-equals"));
+    }
+
+    #[test]
+    fn check_rejects_unknown_select_slug_with_known_list() {
+        let err = Cli::try_parse_from(["prose", "check", "--select", "not-a-rule"]).unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::InvalidValue);
+        let rendered = err.to_string();
+        assert!(rendered.contains("not-a-rule"));
+        assert!(rendered.contains("align-equals"));
     }
 
     #[test]
@@ -271,6 +370,24 @@ mod tests {
         assert!(args.diff);
         assert_eq!(args.paths, [PathBuf::from("a.py")]);
         assert!(!args.stdin);
+    }
+
+    #[test]
+    fn format_parses_with_select_and_ignore_lists() {
+        let cli = Cli::try_parse_from([
+            "prose",
+            "format",
+            "--select",
+            "align-equals",
+            "--ignore",
+            "alphabetize",
+        ])
+        .expect("parses");
+        let Cli::Format(args) = cli else {
+            panic!("expected Format variant");
+        };
+        assert_eq!(args.rules.select, [RuleId::from("align-equals")]);
+        assert_eq!(args.rules.ignore, [RuleId::from("alphabetize")]);
     }
 
     #[test]
