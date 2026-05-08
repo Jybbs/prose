@@ -61,6 +61,11 @@ impl SuppressionMap {
         let range = ranged.range();
         self.spans.binary_search_by(|s| s.ordering(range)).is_ok()
     }
+
+    /// Returns `true` when the source carries no suppressed spans.
+    pub fn is_empty(&self) -> bool {
+        self.spans.is_empty()
+    }
 }
 
 fn merge(mut spans: Vec<TextRange>) -> Vec<TextRange> {

@@ -69,7 +69,10 @@ impl Pipeline {
             .iter()
             .try_fold((source, false), |(source, changed), rule| {
                 let mut edits = rule.apply(&source);
-                edits.retain(|edit| !source.suppression_map().intersects(edit));
+                let suppression = source.suppression_map();
+                if !suppression.is_empty() {
+                    edits.retain(|edit| !suppression.intersects(edit));
+                }
                 if edits.is_empty() {
                     return Ok((source, changed));
                 }
