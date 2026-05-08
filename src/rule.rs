@@ -97,10 +97,11 @@ impl FromStr for RuleId {
 }
 
 /// Generates [`KNOWN_IDS`], [`RuleConfigs`], [`Pipeline::for_rule`],
-/// and [`Pipeline::with_defaults`] from a registry table. Each row
-/// pairs the rule's `[tool.prose.rules]` field name with its config
-/// sub-table type and rule struct. The kebab-case slug is derived
-/// from the type identifier via `ruff_macros::kebab_case!`.
+/// [`Pipeline::with_defaults`], and [`Pipeline::with_filters`] from a
+/// registry table. Each row pairs the rule's `[tool.prose.rules]`
+/// field name with its config sub-table type and rule struct. The
+/// kebab-case slug is derived from the type identifier via
+/// `ruff_macros::kebab_case!`.
 macro_rules! register_rules {
     ($($field:ident: $config:ty => $ty:ident),* $(,)?) => {
         pub(crate) const KNOWN_IDS: &[RuleId] = &[
@@ -137,16 +138,36 @@ macro_rules! register_rules {
                 Some(Self::from_rules(vec![rule]))
             }
 
-            /// Builds a pipeline registering every rule enabled in
-            /// `config`. Rules whose `enabled` flag is `false` are
-            /// silently skipped.
+            /// Builds a pipeline from every rule whose `enabled`
+            /// flag is set in `config`.
             pub fn with_defaults(config: &Config) -> Self {
+                Self::with_filters(config, &[], &[])
+            }
+
+            /// Builds a pipeline applying `select` and `ignore`
+            /// against `config`'s rule toggles.
+            ///
+            /// A non-empty `select` replaces the configured-enabled
+            /// set, whereas an empty `select` falls back to it.
+            /// `ignore` then subtracts from the base, yielding
+            /// `select - ignore`.
+            pub fn with_filters(
+                config: &Config,
+                select: &[RuleId],
+                ignore: &[RuleId],
+            ) -> Self {
                 let mut rules: Vec<Box<dyn Rule>> = Vec::new();
-                $(
-                    if config.rules.$field.enabled {
+                $({
+                    let id = RuleId(ruff_macros::kebab_case!($ty));
+                    let included = if select.is_empty() {
+                        config.rules.$field.enabled
+                    } else {
+                        select.contains(&id)
+                    };
+                    if included && !ignore.contains(&id) {
                         rules.push(Box::new($ty::from_config(config)));
                     }
-                )*
+                })*
                 Self::from_rules(rules)
             }
         }

@@ -152,6 +152,10 @@ mod tests {
         }
     }
 
+    fn registered_slugs(pipeline: &Pipeline) -> Vec<&'static str> {
+        pipeline.rules.iter().map(|r| r.id().as_str()).collect()
+    }
+
     #[test]
     fn downstream_rule_apply_sees_upstream_rewritten_text() {
         let seen = Arc::new(Mutex::new(Vec::<String>::new()));
@@ -320,5 +324,51 @@ mod tests {
         config.rules.strip_trailing_commas.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());
+    }
+
+    #[test]
+    fn with_filters_ignore_subtracts_from_configured_set() {
+        let pipeline = Pipeline::with_filters(
+            &Config::default(),
+            &[],
+            &[RuleId::from("align-equals"), RuleId::from("alphabetize")],
+        );
+        let slugs = registered_slugs(&pipeline);
+        assert_eq!(slugs.len(), 6);
+        assert!(!slugs.contains(&"align-equals"));
+        assert!(!slugs.contains(&"alphabetize"));
+    }
+
+    #[test]
+    fn with_filters_select_minus_ignore_drops_overlap() {
+        let pipeline = Pipeline::with_filters(
+            &Config::default(),
+            &[RuleId::from("align-equals"), RuleId::from("align-colons")],
+            &[RuleId::from("align-equals")],
+        );
+        assert_eq!(registered_slugs(&pipeline), ["align-colons"]);
+    }
+
+    #[test]
+    fn with_filters_select_overrides_disabled_config() {
+        let mut config = Config::default();
+        config.rules.align_colons.enabled = false;
+        config.rules.align_equals.enabled = false;
+        config.rules.align_imports.enabled = false;
+        config.rules.alphabetize.enabled = false;
+        config.rules.collection_layout.enabled = false;
+        config.rules.match_case_align.enabled = false;
+        config.rules.singleton_rule.enabled = false;
+        config.rules.strip_trailing_commas.enabled = false;
+
+        let pipeline = Pipeline::with_filters(&config, &[RuleId::from("align-equals")], &[]);
+        assert_eq!(registered_slugs(&pipeline), ["align-equals"]);
+    }
+
+    #[test]
+    fn with_filters_select_with_default_config_restricts_to_listed_rules() {
+        let pipeline =
+            Pipeline::with_filters(&Config::default(), &[RuleId::from("align-equals")], &[]);
+        assert_eq!(registered_slugs(&pipeline), ["align-equals"]);
     }
 }
