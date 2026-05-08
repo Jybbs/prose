@@ -68,7 +68,11 @@ impl Pipeline {
         self.rules
             .iter()
             .try_fold((source, false), |(source, changed), rule| {
-                let edits = rule.apply(&source);
+                let mut edits = rule.apply(&source);
+                let suppression = source.suppression_map();
+                if !suppression.is_empty() {
+                    edits.retain(|edit| !suppression.intersects(edit));
+                }
                 if edits.is_empty() {
                     return Ok((source, changed));
                 }
@@ -244,6 +248,29 @@ mod tests {
     }
 
     #[test]
+    fn run_drops_edits_whose_range_overlaps_a_suppressed_span() {
+        // Source: "# fmt: off\nx = 1\n# fmt: on\nz = 9\n"
+        //         |0--------|11----|17--------|27----|33
+        // Edit at 11..16 (`x = 1`) sits inside the suppressed
+        // [0..17) span and must be dropped, leaving the unsuppressed
+        // edit at 27..32 (`z = 9`) to apply.
+        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
+            edits: vec![
+                Edit::range_replacement("y".to_owned(), range(11, 16)),
+                Edit::range_replacement("Z".to_owned(), range(27, 32)),
+            ],
+            id: RuleId::from("rewrite-x-and-z"),
+            log: Arc::new(Mutex::new(Vec::new())),
+        })]);
+        let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
+
+        let (result, changed) = pipeline.run(source).expect("filtered run succeeds");
+
+        assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nZ\n");
+        assert!(changed);
+    }
+
+    #[test]
     fn run_reports_changed_when_a_rule_rewrites_text() {
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
             edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
@@ -256,6 +283,21 @@ mod tests {
 
         assert_eq!(result.text(), "y = 1\n");
         assert!(changed);
+    }
+
+    #[test]
+    fn run_skips_reparse_when_every_edit_is_suppressed() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
+            edits: vec![Edit::range_replacement("y".to_owned(), range(11, 16))],
+            id: RuleId::from("rewrite-x-to-y"),
+            log: Arc::new(Mutex::new(Vec::new())),
+        })]);
+        let source = parse("# fmt: off\nx = 1\n# fmt: on\n");
+
+        let (result, changed) = pipeline.run(source).expect("filtered run succeeds");
+
+        assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\n");
+        assert!(!changed);
     }
 
     #[test]

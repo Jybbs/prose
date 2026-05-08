@@ -17,15 +17,19 @@ use ruff_source_file::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use thiserror::Error;
 
+use crate::suppression::SuppressionMap;
+
 /// Owned wrapper around a parsed Python source file.
 ///
 /// Holds the source text, the parsed AST, the token stream, a lazy
-/// line index, and a `CommentRanges` index built during parsing.
+/// line index, a `CommentRanges` index built during parsing, and a
+/// `SuppressionMap` of `# fmt: off` / `# fmt: skip` spans.
 #[derive(Debug)]
 pub struct Source {
     comment_ranges: CommentRanges,
     file: SourceFile,
     parsed: Parsed<ModModule>,
+    suppression: SuppressionMap,
 }
 
 impl Source {
@@ -33,10 +37,12 @@ impl Source {
         let parsed = parse_module(&text)?;
         let file = SourceFileBuilder::new(name, text).finish();
         let comment_ranges = CommentRanges::from(parsed.tokens());
+        let suppression = SuppressionMap::from_comments(file.source_text(), &comment_ranges);
         Ok(Self {
             comment_ranges,
             file,
             parsed,
+            suppression,
         })
     }
 
@@ -163,6 +169,11 @@ impl Source {
     /// emits ranges aligned to source token boundaries.
     pub fn slice<R: Ranged>(&self, ranged: R) -> &str {
         self.file.slice(ranged.range())
+    }
+
+    /// Returns the suppression index built during parsing.
+    pub fn suppression_map(&self) -> &SuppressionMap {
+        &self.suppression
     }
 
     pub fn text(&self) -> &str {
