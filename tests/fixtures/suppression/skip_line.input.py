@@ -1,0 +1,14 @@
+"""
+A trailing fmt: skip pins one line's original spacing. The other
+members of the same alignment group still pad to the group's
+target column, and the assignment run after the skip line aligns
+as a separate group.
+"""
+
+x = 1
+foo = 2
+bar_baz = 3
+short = 4  # fmt: skip
+aa = 5
+bbb = 6
+cccc = 7
