@@ -103,16 +103,11 @@ jobs:
         with:
           command : sdist
 
-  publish:
-    name            : ${{ github.ref_type == 'tag' && '📯 Publish to PyPI' || '🕯️ Publish dry-run' }}
+  validate:
+    name            : 🕯️ Validate
     needs           : [build, sdist]
     runs-on         : ubuntu-latest
-    timeout-minutes : 15
-    environment:
-      name : release
-      url  : https://pypi.org/p/prose-formatter
-    permissions:
-      id-token: write
+    timeout-minutes : 10
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -130,33 +125,56 @@ jobs:
           uv tool install --no-index --find-links=dist prose-formatter
           prose --version
 
+  publish:
+    name            : 📯 Publish to PyPI
+    needs           : validate
+    if              : github.ref_type == 'tag'
+    runs-on         : ubuntu-latest
+    timeout-minutes : 10
+    environment:
+      name : release
+      url  : https://pypi.org/p/prose-formatter
+    permissions:
+      id-token: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Download all artifacts
+        uses: ./.github/actions/download-wheels
+
+      - name: Provision uv
+        uses: ./.github/actions/provision-uv
+        with:
+          cache-dependency-glob: ""
+
       - name: Generate PEP 740 attestations
         uses: astral-sh/attest-action@f589a42a7efb6fe400b4f400de60b4bc90390027
-        if: github.ref_type == 'tag'
 
       - name: Publish to PyPI
-        if: github.ref_type == 'tag'
         run: uv publish --trusted-publishing=always dist/*
 
   gate:
     name            : 🗞️ Brief
-    needs           : [build, sdist, publish]
+    needs           : [build, sdist, validate, publish]
     if              : always()
     runs-on         : ubuntu-latest
     timeout-minutes : 5
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - name: Provision uv
-        uses: ./.github/actions/provision-uv
 
       - name: Download all artifacts
         if: needs.build.result != 'cancelled' && needs.sdist.result != 'cancelled'
         uses: ./.github/actions/download-wheels
 
+      - name: Provision uv
+        uses: ./.github/actions/provision-uv
+
       - name: Write release summary
         env:
-          BUILD   : ${{ needs.build.result }}
-          SDIST   : ${{ needs.sdist.result }}
-          PUBLISH : ${{ needs.publish.result }}
+          BUILD    : ${{ needs.build.result }}
+          SDIST    : ${{ needs.sdist.result }}
+          VALIDATE : ${{ needs.validate.result }}
+          PUBLISH  : ${{ needs.publish.result }}
         run: ./.github/scripts/summary.py release

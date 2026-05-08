@@ -4,8 +4,8 @@
 Build dry-run for {{ commit_link }} on {{ tree_link }}.
 {% elif publish == "success" -%}
 Published [*Prose* {{ version }}]({{ pypi_url }}) from {{ commit_link }} on tag {{ tag_link }}.
-{% elif build != "success" or sdist != "success" -%}
-Build matrix failed for tag {{ tag_link }} at {{ commit_link }}. Publish skipped.
+{% elif build != "success" or sdist != "success" or validate != "success" -%}
+Pre-publish checks failed for tag {{ tag_link }} at {{ commit_link }}. Publish skipped.
 {% else -%}
 Publish failed for tag {{ tag_link }} at {{ commit_link }}.
 {% endif %}

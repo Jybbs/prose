@@ -6,8 +6,10 @@
 //! rewrites settle before padding widths are computed.
 
 use ruff_python_parser::ParseError;
+use ruff_text_size::Ranged;
 use thiserror::Error;
 
+use crate::diagnostics::{Diagnostic, Severity};
 use crate::primitives::edit::apply_edits;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
@@ -51,31 +53,43 @@ impl Pipeline {
         crate::rule::KNOWN_IDS
     }
 
-    /// Runs each registered rule against `source` in order and reports
-    /// whether the pipeline changed the text.
+    /// Runs each registered rule against `source` in order and
+    /// returns the rewritten source paired with one `Diagnostic` per
+    /// surviving edit.
     ///
-    /// Per rule, the pipeline calls `apply`, splices the returned edits
-    /// into the current text, reparses into a fresh `Source`, and hands
-    /// that to the next rule. An empty pipeline collapses to the
-    /// identity transform and reports `changed = false`.
+    /// Per rule, the pipeline calls `apply`, drops edits inside any
+    /// `# fmt: off` span via the `SuppressionMap`, derives one
+    /// `Severity::Format` `Diagnostic` per surviving edit, then
+    /// splices the edits into the current text and reparses for the
+    /// next rule. An empty pipeline collapses to the identity
+    /// transform and returns no diagnostics.
     ///
     /// # Errors
     ///
     /// Returns `PipelineError::Reparse` when a rule's edit list
     /// produces text that does not re-parse as Python. This surfaces
     /// rule bugs rather than silently swallowing them.
-    pub fn run(&self, source: Source) -> Result<(Source, bool), PipelineError> {
+    pub fn run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
         self.rules
             .iter()
-            .try_fold((source, false), |(source, changed), rule| {
+            .try_fold((source, Vec::new()), |(source, mut diagnostics), rule| {
                 let mut edits = rule.apply(&source);
                 let suppression = source.suppression_map();
                 if !suppression.is_empty() {
                     edits.retain(|edit| !suppression.intersects(edit));
                 }
                 if edits.is_empty() {
-                    return Ok((source, changed));
+                    return Ok((source, diagnostics));
                 }
+                let rule_id = rule.id();
+                let message = rule.message();
+                diagnostics.extend(edits.iter().map(|edit| Diagnostic {
+                    fix: Some(edit.clone()),
+                    message: message.to_owned(),
+                    range: edit.range(),
+                    rule: rule_id,
+                    severity: Severity::Format,
+                }));
                 let new_text = apply_edits(source.text(), edits);
                 debug_assert!(
                     new_text != source.text(),
@@ -84,7 +98,7 @@ impl Pipeline {
                 );
                 source
                     .reparse(new_text)
-                    .map(|src| (src, true))
+                    .map(|src| (src, diagnostics))
                     .map_err(|source| PipelineError::Reparse {
                         rule: rule.id(),
                         source,
@@ -131,6 +145,10 @@ mod tests {
         fn id(&self) -> RuleId {
             self.id
         }
+
+        fn message(&self) -> &'static str {
+            "test rule"
+        }
     }
 
     /// Test-only rule that captures `source.text()` at apply time and
@@ -149,6 +167,10 @@ mod tests {
 
         fn id(&self) -> RuleId {
             self.id
+        }
+
+        fn message(&self) -> &'static str {
+            "test rule"
         }
     }
 
@@ -183,10 +205,10 @@ mod tests {
         let pipeline = Pipeline::from_rules(Vec::new());
         let source = parse("x = 1\n");
 
-        let (result, changed) = pipeline.run(source).expect("identity run succeeds");
+        let (result, diagnostics) = pipeline.run(source).expect("identity run succeeds");
 
         assert_eq!(result.text(), "x = 1\n");
-        assert!(!changed);
+        assert!(diagnostics.is_empty());
     }
 
     #[test]
@@ -268,14 +290,15 @@ mod tests {
         })]);
         let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
 
-        let (result, changed) = pipeline.run(source).expect("filtered run succeeds");
+        let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
 
         assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nZ\n");
-        assert!(changed);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].rule.as_str(), "rewrite-x-and-z");
     }
 
     #[test]
-    fn run_reports_changed_when_a_rule_rewrites_text() {
+    fn run_emits_one_diagnostic_per_surviving_edit() {
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
             edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
             id: RuleId::from("rewrite-x-to-y"),
@@ -283,10 +306,13 @@ mod tests {
         })]);
         let source = parse("x = 1\n");
 
-        let (result, changed) = pipeline.run(source).expect("rewrite succeeds");
+        let (result, diagnostics) = pipeline.run(source).expect("rewrite succeeds");
 
         assert_eq!(result.text(), "y = 1\n");
-        assert!(changed);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].rule.as_str(), "rewrite-x-to-y");
+        assert_eq!(diagnostics[0].severity, Severity::Format);
+        assert!(diagnostics[0].fix.is_some());
     }
 
     #[test]
@@ -298,10 +324,10 @@ mod tests {
         })]);
         let source = parse("# fmt: off\nx = 1\n# fmt: on\n");
 
-        let (result, changed) = pipeline.run(source).expect("filtered run succeeds");
+        let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
 
         assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\n");
-        assert!(!changed);
+        assert!(diagnostics.is_empty());
     }
 
     #[test]

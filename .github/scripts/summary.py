@@ -10,8 +10,8 @@ Subcommands:
     ci       Render the CI gate summary (reads `RESULT` plus the GitHub
              defaults). Exits 0 on `success`, 1 otherwise.
     release  Render the Release gate summary (reads `BUILD`, `SDIST`,
-             `PUBLISH` plus the GitHub defaults). Exits 0 when every
-             required job succeeded, 1 otherwise.
+             `VALIDATE`, `PUBLISH` plus the GitHub defaults). Exits 0
+             when every required job succeeded, 1 otherwise.
 
 Both subcommands append to `$GITHUB_STEP_SUMMARY`.
 """
@@ -76,15 +76,17 @@ def release():
     """
     Render the Release gate summary and exit with the pipeline verdict.
 
-    Reads `BUILD`, `SDIST`, `PUBLISH` plus the GitHub-runner defaults,
-    renders `release-summary.md.j2`, and exits 0 when every required
-    job (build, sdist, plus publish on tag runs) succeeded.
+    Reads `BUILD`, `SDIST`, `VALIDATE`, `PUBLISH` plus the GitHub-runner
+    defaults, renders `release-summary.md.j2`, and exits 0 when every
+    required job (build, sdist, validate, plus publish on tag runs)
+    succeeded.
     """
     BUILD    = environ["BUILD"]
     IS_TAG   = environ.get("GITHUB_REF_TYPE") == "tag"
     PUBLISH  = environ["PUBLISH"]
     REF_NAME = environ["GITHUB_REF_NAME"]
     SDIST    = environ["SDIST"]
+    VALIDATE = environ["VALIDATE"]
     VERSION   = REF_NAME.removeprefix("v")
     platforms = [
         (label, target, next(Path("dist").glob(pattern), None))
@@ -101,11 +103,13 @@ def release():
         sdist       = SDIST,
         tag_link    = f"[`{REF_NAME}`]({REPO_URL}/releases/tag/{REF_NAME})",
         tree_link   = f"[`{REF_NAME}`]({REPO_URL}/tree/{REF_NAME})",
+        validate    = VALIDATE,
         version     = VERSION
     )
     raise SystemExit(
         BUILD != "success"
         or SDIST != "success"
+        or VALIDATE != "success"
         or (IS_TAG and PUBLISH != "success")
     )
 

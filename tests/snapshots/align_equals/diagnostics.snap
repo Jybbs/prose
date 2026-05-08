@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+---
+align-equals@242..243
+align-equals@256..257

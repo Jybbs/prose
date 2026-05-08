@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+---
+collection-layout@363..478
+collection-layout@497..603

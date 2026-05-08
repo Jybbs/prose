@@ -50,6 +50,12 @@ pub(crate) trait Rule: Send + Sync {
     /// `[tool.prose.rules]` key. Surfaces in `--select`,
     /// `# prose: ignore`, and diagnostic output.
     fn id(&self) -> RuleId;
+
+    /// One-line imperative carried as `Diagnostic.message`. Defaults
+    /// to the registry-supplied string for `self.id()`.
+    fn message(&self) -> &'static str {
+        message_for_id(self.id())
+    }
 }
 
 /// Stable, parseable rule identifier wrapping a kebab-case slug.
@@ -96,14 +102,15 @@ impl FromStr for RuleId {
     }
 }
 
-/// Generates [`KNOWN_IDS`], [`RuleConfigs`], [`Pipeline::for_rule`],
-/// [`Pipeline::with_defaults`], and [`Pipeline::with_filters`] from a
-/// registry table. Each row pairs the rule's `[tool.prose.rules]`
-/// field name with its config sub-table type and rule struct. The
+/// Generates [`KNOWN_IDS`], [`RuleConfigs`], [`message_for_id`],
+/// [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
+/// [`Pipeline::with_filters`] from a registry table. Each row pairs
+/// the rule's `[tool.prose.rules]` field name with its config
+/// sub-table type, rule struct, and one-line imperative. The
 /// kebab-case slug is derived from the type identifier via
 /// `ruff_macros::kebab_case!`.
 macro_rules! register_rules {
-    ($($field:ident: $config:ty => $ty:ident),* $(,)?) => {
+    ($($field:ident: $config:ty => $ty:ident => $msg:literal),* $(,)?) => {
         pub(crate) const KNOWN_IDS: &[RuleId] = &[
             $(RuleId(ruff_macros::kebab_case!($ty))),*
         ];
@@ -122,6 +129,15 @@ macro_rules! register_rules {
         // Routes a missing-`Default` error to the offending `$config`
         // row instead of the macro-emitted derive site.
         $(const _: fn() -> $config = <$config as Default>::default;)*
+
+        /// Default backing for [`Rule::message`]. Matches each
+        /// registered slug to its registry-supplied imperative.
+        pub(crate) fn message_for_id(id: RuleId) -> &'static str {
+            match id.as_str() {
+                $(ruff_macros::kebab_case!($ty) => $msg,)*
+                _ => unreachable!("rule id must be registered"),
+            }
+        }
 
         impl Pipeline {
             /// Builds a pipeline registering exactly one rule by name.
@@ -175,14 +191,14 @@ macro_rules! register_rules {
 }
 
 register_rules! {
-    collection_layout:     CollectionLayoutConfig => CollectionLayout,
-    alphabetize:           ToggleOnly             => Alphabetize,
-    strip_trailing_commas: ToggleOnly             => StripTrailingCommas,
-    match_case_align:      AlignmentConfig        => MatchCaseAlign,
-    align_imports:         AlignmentConfig        => AlignImports,
-    align_colons:          AlignmentConfig        => AlignColons,
-    align_equals:          AlignmentConfig        => AlignEquals,
-    singleton_rule:        ToggleOnly             => SingletonRule,
+    collection_layout:     CollectionLayoutConfig => CollectionLayout    => "expand collection to one entry per line",
+    alphabetize:           ToggleOnly             => Alphabetize         => "alphabetize this group",
+    strip_trailing_commas: ToggleOnly             => StripTrailingCommas => "strip trailing comma",
+    match_case_align:      AlignmentConfig        => MatchCaseAlign      => "align match-case arrows",
+    align_imports:         AlignmentConfig        => AlignImports        => "align consecutive `import`s",
+    align_colons:          AlignmentConfig        => AlignColons         => "align consecutive `:` separators",
+    align_equals:          AlignmentConfig        => AlignEquals         => "align consecutive `=` operators",
+    singleton_rule:        ToggleOnly             => SingletonRule       => "drop padding from singleton group",
 }
 
 #[cfg(test)]
