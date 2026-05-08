@@ -60,23 +60,13 @@ impl Source {
         Self::build(text, path.display().to_string()).map_err(Into::into)
     }
 
-    /// Returns the line and column for a byte offset.
-    ///
-    /// Columns count UTF scalar values (characters), not bytes, so a
-    /// multi-byte sequence advances the column by one rather than by its
-    /// byte length. Line and column are both `OneIndexed`. Call
-    /// `to_zero_indexed()` on either field when a zero-based index is needed.
-    fn line_col(&self, offset: TextSize) -> LineColumn {
-        self.file.to_source_code().line_column(offset)
-    }
-
     pub fn ast(&self) -> &ModModule {
         self.parsed.syntax()
     }
 
     /// Returns the zero-indexed character column of `offset` on its line.
     pub fn column_of(&self, offset: TextSize) -> usize {
-        self.line_col(offset).column.to_zero_indexed()
+        self.line_column(offset).column.to_zero_indexed()
     }
 
     /// Returns the comment-range index built during parsing.
@@ -118,6 +108,13 @@ impl Source {
         lines_before(offset, self.text()) >= 2
     }
 
+    /// Returns the source name. For `from_path` inputs this is
+    /// `path.display().to_string()`, for `from_str` inputs the
+    /// synthetic placeholder `<source>`.
+    pub fn filename(&self) -> &str {
+        self.file.name()
+    }
+
     /// Returns `true` when at least one comment lies within `ranged`.
     pub fn intersects_comment<R: Ranged>(&self, ranged: R) -> bool {
         self.comment_ranges.intersects(ranged.range())
@@ -128,6 +125,13 @@ impl Source {
     /// nodes sit on directly adjacent source lines.
     pub fn is_line_adjacent(&self, gap: TextRange) -> bool {
         !self.slice(gap).contains('#') && lines_before(gap.end(), self.text()) == 1
+    }
+
+    /// Returns the line and column for a byte offset. Columns count
+    /// UTF scalar values (characters), not bytes. Line and column are
+    /// both `OneIndexed`.
+    pub fn line_column(&self, offset: TextSize) -> LineColumn {
+        self.file.to_source_code().line_column(offset)
     }
 
     /// Returns the character-width of the leading-whitespace prefix on
@@ -221,7 +225,7 @@ mod tests {
     use super::*;
     use crate::test_support::{assert_send_sync, range};
 
-    fn line_col(line: usize, column: usize) -> LineColumn {
+    fn line_column(line: usize, column: usize) -> LineColumn {
         LineColumn {
             line: OneIndexed::from_zero_indexed(line),
             column: OneIndexed::from_zero_indexed(column),
@@ -322,28 +326,28 @@ mod tests {
     }
 
     #[test]
-    fn line_col_counts_characters_not_bytes() {
+    fn line_column_counts_characters_not_bytes() {
         let src = "αβγ";
         let s = Source::from_str(src).expect("multibyte source parses");
-        assert_eq!(s.line_col(TextSize::new(6)), line_col(0, 3));
+        assert_eq!(s.line_column(TextSize::new(6)), line_column(0, 3));
     }
 
     #[test]
-    fn line_col_handles_unix_newlines() {
+    fn line_column_handles_unix_newlines() {
         let src = "a\nb\nc\n";
         let s = Source::from_str(src).expect("LF input parses");
-        assert_eq!(s.line_col(TextSize::new(0)), line_col(0, 0));
-        assert_eq!(s.line_col(TextSize::new(2)), line_col(1, 0));
-        assert_eq!(s.line_col(TextSize::new(4)), line_col(2, 0));
+        assert_eq!(s.line_column(TextSize::new(0)), line_column(0, 0));
+        assert_eq!(s.line_column(TextSize::new(2)), line_column(1, 0));
+        assert_eq!(s.line_column(TextSize::new(4)), line_column(2, 0));
     }
 
     #[test]
-    fn line_col_handles_windows_newlines() {
+    fn line_column_handles_windows_newlines() {
         let src = "a\r\nb\r\nc\r\n";
         let s = Source::from_str(src).expect("CRLF input parses");
-        assert_eq!(s.line_col(TextSize::new(0)), line_col(0, 0));
-        assert_eq!(s.line_col(TextSize::new(3)), line_col(1, 0));
-        assert_eq!(s.line_col(TextSize::new(6)), line_col(2, 0));
+        assert_eq!(s.line_column(TextSize::new(0)), line_column(0, 0));
+        assert_eq!(s.line_column(TextSize::new(3)), line_column(1, 0));
+        assert_eq!(s.line_column(TextSize::new(6)), line_column(2, 0));
     }
 
     #[test]

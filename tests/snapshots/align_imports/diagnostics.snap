@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+---
+align-imports@204..205
+align-imports@227..228
+align-imports@250..251

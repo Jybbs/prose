@@ -1,0 +1,13 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+---
+align-colons@491..491
+align-colons@520..520
+align-colons@541..541
+align-colons@564..564
+align-equals@501..502
+align-equals@531..532
+align-equals@588..589
+align-imports@424..425
+alphabetize@386..850

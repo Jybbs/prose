@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+---
+singleton-rule@366..368
+singleton-rule@460..461
+singleton-rule@471..472
