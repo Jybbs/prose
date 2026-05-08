@@ -1,5 +1,5 @@
 <div align="center">
-<img src="assets/title.svg" alt="Prose" width="800">
+<img src="https://github.com/Jybbs/prose/raw/main/assets/title.svg" alt="Prose" width="800">
 <h3><em>A Python typesetter for the reader</em></h3>
 
 [![Rust 1.82+](https://img.shields.io/badge/rust-1.82+-8a80cb?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
