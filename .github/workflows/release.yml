@@ -72,6 +72,9 @@ jobs:
       - name : Check out repository
         uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+
       - name : Rewrite README for PyPI
         run  : ./.github/scripts/transform_readme.py
 
@@ -93,6 +96,9 @@ jobs:
     steps:
       - name : Check out repository
         uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
 
       - name : Rewrite README for PyPI
         run  : ./.github/scripts/transform_readme.py
