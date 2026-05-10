@@ -176,5 +176,6 @@ jobs:
           PUBLISH  : ${{ needs.publish.result }}
           REF      : ${{ github.head_ref || github.ref_name }}
           SDIST    : ${{ needs.sdist.result }}
+          SHA      : ${{ github.event.pull_request.head.sha || github.sha }}
           VALIDATE : ${{ needs.validate.result }}
         run  : ./.github/scripts/summary.py release

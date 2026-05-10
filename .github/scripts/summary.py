@@ -39,7 +39,7 @@ class Summary:
         here = Path(__file__).parent
         ref  = environ["REF"]
         repo = environ["GITHUB_REPOSITORY"]
-        sha  = environ["GITHUB_SHA"]
+        sha  = environ["SHA"]
         base = f"{environ['GITHUB_SERVER_URL']}/{repo}"
 
         self.is_tag = environ.get("GITHUB_REF_TYPE") == "tag"
@@ -52,6 +52,7 @@ class Summary:
         self.env.globals.update(
             codecov_url = f"https://app.codecov.io/gh/{repo}/commit/{sha}",
             commit_link = f"[`{sha[:7]}`]({base}/commit/{sha})",
+            commit_url  = f"{base}/commit/{sha}",
             is_tag      = self.is_tag,
             pypi_url    = f"https://pypi.org/project/prose-formatter/{ref}/",
             ref         = ref,

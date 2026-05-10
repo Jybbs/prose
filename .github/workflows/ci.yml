@@ -104,4 +104,5 @@ jobs:
           CHECK    : ${{ needs.check.result }}
           COVERAGE : ${{ needs.coverage.result }}
           REF      : ${{ github.head_ref || github.ref_name }}
+          SHA      : ${{ github.event.pull_request.head.sha || github.sha }}
         run  : ./.github/scripts/summary.py ci
