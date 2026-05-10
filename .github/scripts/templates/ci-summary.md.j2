@@ -1,3 +1,8 @@
 ## 🪻 Prose CI
 
-{{ msg }} for [`{{ short }}`]({{ commit_url }}) on [`{{ ref }}`]({{ tree_url }}).
+| Stage | Result |
+|---|---|
+| 🪶 Lint, build, test | {{ check_mark }} `{{ check }}` |
+| ☂️ Coverage | {{ coverage_mark }} `{{ coverage }}`{% if coverage_percent %} · **{{ coverage_percent }}%** lines covered{% endif %} |
+
+Commit {{ commit_link }} on {{ tree_link }} · [run log]({{ run_url }}){% if coverage_percent %} · [Codecov dashboard]({{ codecov_url }}){% endif %}

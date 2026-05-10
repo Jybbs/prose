@@ -108,6 +108,7 @@ Before:
 ```python
 from pydantic import BaseModel
 from datetime import date
+from collections.abc import Iterable
 from decimal import Decimal
 
 DEFAULT_LIMIT = 50
@@ -117,17 +118,12 @@ PAGE_SIZE = 25
 class Posting(BaseModel, extra="forbid"):
     title: str
     company: str
+    skills: Iterable[str] | None = None
     location: str | None = None
     date_posted: date
     salary_max: Decimal | None = None
 
-    def render(
-        self,
-        separator: str,
-        include_location: bool,
-        include_date: bool,
-        max_width: int = 80,
-    ) -> str: ...
+    def render(self, separator: str, include_location: bool, include_date: bool, max_width: int = 80) -> str: ...
 
 config = {"threshold": 0.7, "metric": "euclidean", "linkage": "ward", "n_clusters": None, "random_state": 42,}
 ```
@@ -135,9 +131,10 @@ config = {"threshold": 0.7, "metric": "euclidean", "linkage": "ward", "n_cluster
 After:
 
 ```python
-from datetime import date
-from decimal  import Decimal
-from pydantic import BaseModel
+from collections.abc import Iterable
+from datetime        import date
+from decimal         import Decimal
+from pydantic        import BaseModel
 
 DEFAULT_LIMIT  = 50
 RETRY_INTERVAL = 30
@@ -147,8 +144,9 @@ class Posting(BaseModel, extra="forbid"):
     company     : str
     date_posted : date
     title       : str
-    location    : str | None     = None
-    salary_max  : Decimal | None = None
+    location    : str | None           = None
+    salary_max  : Decimal | None       = None
+    skills      : Iterable[str] | None = None
 
     def render(
         self,

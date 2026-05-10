@@ -3,8 +3,8 @@
 {% if not is_tag -%}
 Build dry-run for {{ commit_link }} on {{ tree_link }}.
 {% elif publish == "success" -%}
-Published [*Prose* {{ version }}]({{ pypi_url }}) from {{ commit_link }} on tag {{ tag_link }}.
-{% elif build != "success" or sdist != "success" or validate != "success" -%}
+Published [*Prose* {{ ref }}]({{ pypi_url }}) from {{ commit_link }} on tag {{ tag_link }}.
+{% elif prepub_failed -%}
 Pre-publish checks failed for tag {{ tag_link }} at {{ commit_link }}. Publish skipped.
 {% else -%}
 Publish failed for tag {{ tag_link }} at {{ commit_link }}.
@@ -14,15 +14,15 @@ Publish failed for tag {{ tag_link }} at {{ commit_link }}.
 
 | Platform | Target | Status | Artifact |
 |---|---|---|---|
-{% for label, target, path in platforms %}
-| {{ label }} | {{ ('`' ~ target ~ '`') if target else '—' }} | {{ '✅' if path else '❌' }} | {{ ('`' ~ path.name ~ '`') if path else '—' }} |
+{% for a in platforms %}
+| {{ a.label }} | {{ a.target }} | {{ a.mark }} | {{ a.artifact }} |
 {% endfor %}
 {% if is_tag and publish == "success" %}
 
 ### Install
 
 ```bash
-pip install prose-formatter=={{ version }}
+pip install prose-formatter=={{ ref }}
 ```
 
 Each artifact ships a [SLSA build-provenance attestation](https://slsa.dev/spec/v1.0/provenance) verifiable on the [PyPI project page]({{ pypi_url }}).

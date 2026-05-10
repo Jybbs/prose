@@ -19,35 +19,41 @@
 #
 # https://docs.pypi.org/trusted-publishers/adding-a-publisher/
 
-name     : 🪻 Release
-run-name : 🪻 Release · ${{ github.head_ref || github.ref_name }}
+name        : 🪻 Release
+run-name    : 🪻 Release · ${{ github.head_ref || github.ref_name }}
+permissions : { contents: read }
 
 on:
-  push:
-    tags: ['[0-9]*']
   pull_request:
     paths:
       - pyproject.toml
       - Cargo.toml
       - .github/workflows/release.yml
 
+  push:
+    tags: ['[0-9]*']
+
 concurrency:
   cancel-in-progress : ${{ github.event_name == 'pull_request' }}
   group              : ${{ github.workflow }}-${{ github.head_ref || github.ref }}
 
-permissions:
-  contents: read
-
 jobs:
   plan:
     name            : 🗺️ Plan
+    outputs         : { matrix: "${{ steps.matrix.outputs.matrix }}" }
     runs-on         : ubuntu-latest
     timeout-minutes : 5
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - name: Provision uv
-        uses: ./.github/actions/provision-uv
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+
+      - name : Emit build matrix
+        id   : matrix
+        run  : ./.github/scripts/emit-matrix.py
 
       - name : Parse tag and validate versions
         run  : ./.github/scripts/parse-version.py
@@ -57,128 +63,118 @@ jobs:
     needs           : plan
     runs-on         : ${{ matrix.runner }}
     timeout-minutes : 30
+
     strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name      : linux-x86_64
-            runner    : ubuntu-latest
-            target    : x86_64-unknown-linux-gnu
-            manylinux : auto
-          - name      : linux-aarch64
-            runner    : ubuntu-24.04-arm
-            target    : aarch64-unknown-linux-gnu
-            manylinux : auto
-          - name      : macos-x86_64
-            runner    : macos-15-intel
-            target    : x86_64-apple-darwin
-          - name      : macos-aarch64
-            runner    : macos-latest
-            target    : aarch64-apple-darwin
-          - name      : windows-x86_64
-            runner    : windows-latest
-            target    : x86_64-pc-windows-msvc
+      fail-fast : false
+      matrix    : ${{ fromJSON(needs.plan.outputs.matrix) }}
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - name: Rewrite README for PyPI
-        run : ./.github/scripts/transform_readme.py
-      - name: Build wheel
-        uses: ./.github/actions/build-wheel
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Rewrite README for PyPI
+        run  : ./.github/scripts/transform_readme.py
+
+      - name : Build wheel
+        uses : ./.github/actions/build-wheel
         with:
-          command   : build
-          target    : ${{ matrix.target }}
-          manylinux : ${{ matrix.manylinux }}
           args      : --release --locked
+          command   : build
+          manylinux : ${{ matrix.manylinux }}
           name      : ${{ matrix.name }}
+          target    : ${{ matrix.target }}
 
   sdist:
     name            : 🚢 sdist
     needs           : plan
     runs-on         : ubuntu-latest
     timeout-minutes : 10
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - name: Rewrite README for PyPI
-        run : ./.github/scripts/transform_readme.py
-      - name: Build sdist
-        uses: ./.github/actions/build-wheel
-        with:
-          command : sdist
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Rewrite README for PyPI
+        run  : ./.github/scripts/transform_readme.py
+
+      - name : Build sdist
+        uses : ./.github/actions/build-wheel
+        with : { command: sdist }
 
   validate:
     name            : 🕯️ Validate
     needs           : [build, sdist]
     runs-on         : ubuntu-latest
     timeout-minutes : 10
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Download all artifacts
-        uses: ./.github/actions/download-wheels
+      - name : Download all artifacts
+        uses : ./.github/actions/download-wheels
 
-      - name: Provision uv
-        uses: ./.github/actions/provision-uv
-        with:
-          cache-dependency-glob: ""
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+        with : { cache-dependency-glob: "" }
 
-      - name: Smoke-install built wheel
-        run: |
+      - name : Smoke-install built wheel
+        run  : |
           uv tool install --no-index --find-links=dist prose-formatter
           prose --version
 
   publish:
     name            : 📯 Publish to PyPI
-    needs           : validate
     if              : github.ref_type == 'tag'
+    needs           : validate
+    permissions     : { id-token: write }
     runs-on         : ubuntu-latest
     timeout-minutes : 10
+
     environment:
       name : release
       url  : https://pypi.org/p/prose-formatter
-    permissions:
-      id-token: write
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Download all artifacts
-        uses: ./.github/actions/download-wheels
+      - name : Download all artifacts
+        uses : ./.github/actions/download-wheels
 
-      - name: Provision uv
-        uses: ./.github/actions/provision-uv
-        with:
-          cache-dependency-glob: ""
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+        with : { cache-dependency-glob: "" }
 
-      - name: Generate PEP 740 attestations
-        uses: astral-sh/attest-action@f589a42a7efb6fe400b4f400de60b4bc90390027
+      - name : Generate PEP 740 attestations
+        uses : astral-sh/attest-action@f589a42a7efb6fe400b4f400de60b4bc90390027
 
-      - name: Publish to PyPI
-        run: uv publish --trusted-publishing=always dist/*
+      - name : Publish to PyPI
+        run  : uv publish --trusted-publishing=always dist/*
 
   gate:
     name            : 🗞️ Brief
-    needs           : [build, sdist, validate, publish]
     if              : always()
+    needs           : [build, sdist, validate, publish]
     runs-on         : ubuntu-latest
     timeout-minutes : 5
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Download all artifacts
-        if: needs.build.result != 'cancelled' && needs.sdist.result != 'cancelled'
-        uses: ./.github/actions/download-wheels
+      - name : Download all artifacts
+        if   : needs.build.result != 'cancelled' && needs.sdist.result != 'cancelled'
+        uses : ./.github/actions/download-wheels
 
-      - name: Provision uv
-        uses: ./.github/actions/provision-uv
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
 
-      - name: Write release summary
+      - name : Write release summary
         env:
           BUILD    : ${{ needs.build.result }}
+          PUBLISH  : ${{ needs.publish.result }}
+          REF      : ${{ github.head_ref || github.ref_name }}
           SDIST    : ${{ needs.sdist.result }}
           VALIDATE : ${{ needs.validate.result }}
-          PUBLISH  : ${{ needs.publish.result }}
-        run: ./.github/scripts/summary.py release
+        run  : ./.github/scripts/summary.py release

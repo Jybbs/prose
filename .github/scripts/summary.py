@@ -4,15 +4,16 @@
 # dependencies = ["jinja2"]
 # ///
 """
-Render a 🪻 Prose step summary and gate the workflow's exit code.
+Render a Prose step summary and gate the workflow's exit code.
 
 Subcommands:
-    ci       Render the CI gate summary (reads `CHECK` and `COVERAGE`
-             plus the GitHub defaults). Exits 0 when both succeeded,
-             1 otherwise.
-    release  Render the Release gate summary (reads `BUILD`, `SDIST`,
-             `VALIDATE`, `PUBLISH` plus the GitHub defaults). Exits 0
-             when every required job succeeded, 1 otherwise.
+    ci       Render the CI gate summary. Reads `CHECK`, `COVERAGE`,
+             `COVERAGE_PERCENT`, plus the GitHub-runner defaults.
+             Exits 0 only when both required jobs succeeded.
+    release  Render the Release gate summary. Reads `BUILD`, `SDIST`,
+             `VALIDATE`, `PUBLISH`, plus the GitHub-runner defaults.
+             Exits 0 when every required job succeeded. `PUBLISH` is
+             required only on tag runs.
 
 Both subcommands append to `$GITHUB_STEP_SUMMARY`.
 """
@@ -21,98 +22,104 @@ from jinja2  import Environment, FileSystemLoader
 from os      import environ
 from pathlib import Path
 from sys     import argv
-
-ENV = Environment(
-    keep_trailing_newline = True,
-    loader                = FileSystemLoader(Path(__file__).with_name("templates")),
-    lstrip_blocks         = True,
-    trim_blocks           = True
-)
-PLATFORMS = [
-    ("🐧 Linux x86_64",   "*manylinux*x86_64.whl",  "x86_64-unknown-linux-gnu"),
-    ("🐧 Linux aarch64",  "*manylinux*aarch64.whl", "aarch64-unknown-linux-gnu"),
-    ("🍎 macOS x86_64",   "*macosx*x86_64.whl",     "x86_64-apple-darwin"),
-    ("🍎 macOS aarch64",  "*macosx*arm64.whl",      "aarch64-apple-darwin"),
-    ("🪟 Windows x86_64", "*win_amd64.whl",         "x86_64-pc-windows-msvc"),
-    ("🚢 sdist",          "*.tar.gz",               None)
-]
-REPO_URL  = f"{environ['GITHUB_SERVER_URL']}/{environ['GITHUB_REPOSITORY']}"
-SHA       = environ["GITHUB_SHA"]
+from tomllib import loads
 
 
-def ci():
+class Summary:
     """
-    Render the CI gate summary and exit with the matrix verdict.
+    Render a Prose CI or Release step summary and gate the workflow.
 
-    Reads `CHECK` and `COVERAGE` plus the GitHub-runner defaults,
-    renders `ci-summary.md.j2`, and exits 0 only when both succeeded.
+    `__init__` pre-composes every URL and link that's stable for the
+    whole script invocation into `env.globals`. Per-render kwargs in
+    `ci()` and `release()` carry only what genuinely varies: gate
+    inputs, the artifacts glob, and the pre-publish-failure boolean.
     """
-    CHECK    = environ["CHECK"]
-    COVERAGE = environ["COVERAGE"]
-    REF      = environ.get("GITHUB_HEAD_REF") or environ["GITHUB_REF_NAME"]
-    emit(
-        "ci-summary.md.j2",
-        commit_url = f"{REPO_URL}/commit/{SHA}",
-        msg        = f"Check `{CHECK}` · coverage `{COVERAGE}`",
-        ref        = REF,
-        short      = SHA[:7],
-        tree_url   = f"{REPO_URL}/tree/{REF}"
-    )
-    raise SystemExit(CHECK != "success" or COVERAGE != "success")
+
+    def __init__(self):
+        here = Path(__file__).parent
+        ref  = environ["REF"]
+        repo = environ["GITHUB_REPOSITORY"]
+        sha  = environ["GITHUB_SHA"]
+        base = f"{environ['GITHUB_SERVER_URL']}/{repo}"
+
+        self.is_tag = environ.get("GITHUB_REF_TYPE") == "tag"
+        self.env    = Environment(
+            keep_trailing_newline = True,
+            loader                = FileSystemLoader(here / "templates"),
+            lstrip_blocks         = True,
+            trim_blocks           = True
+        )
+        self.env.globals.update(
+            codecov_url = f"https://app.codecov.io/gh/{repo}/commit/{sha}",
+            commit_link = f"[`{sha[:7]}`]({base}/commit/{sha})",
+            is_tag      = self.is_tag,
+            pypi_url    = f"https://pypi.org/project/prose-formatter/{ref}/",
+            ref         = ref,
+            run_url     = f"{base}/actions/runs/{environ['GITHUB_RUN_ID']}",
+            tag_link    = f"[`{ref}`]({base}/releases/tag/{ref})",
+            tree_link   = f"[`{ref}`]({base}/tree/{ref})"
+        )
+        self.platforms = loads((here / "platforms.toml").read_text())["platforms"]
+
+    def _emit(self, template: str, **context):
+        """
+        Render `template` with `context` and append to `$GITHUB_STEP_SUMMARY`.
+        """
+        with open(environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+            f.write(self.env.get_template(template).render(**context))
+
+    def ci(self):
+        """
+        Render the CI gate summary and exit with the matrix verdict.
+        """
+        status = {k.lower(): environ[k] for k in ["CHECK", "COVERAGE"]}
+        marks  = {
+            f"{k}_mark": {"success": "✅"}.get(v, "❌")
+            for k, v in status.items()
+        }
+        self._emit(
+            "ci-summary.md.j2",
+            **status,
+            **marks,
+            coverage_percent = environ.get("COVERAGE_PERCENT")
+        )
+        raise SystemExit(any(v != "success" for v in status.values()))
+
+    def release(self):
+        """
+        Render the Release gate summary and exit with the pipeline verdict.
+        """
+        artifacts = [
+            {
+                "label":    p["label"],
+                "target":   f"`{p['target']}`" if p.get("target") else "—",
+                "mark":     "✅" if path else "❌",
+                "artifact": f"`{path.name}`" if path else "—"
+            }
+            for p in self.platforms
+            for path in [next(Path("dist").glob(p["pattern"]), None)]
+        ]
+        status = {k.lower(): environ[k] for k in [
+            "BUILD", "PUBLISH", "SDIST", "VALIDATE"
+        ]}
+        prepub_failed = any(
+            status[k] != "success" for k in ["build", "sdist", "validate"]
+        )
+
+        self._emit(
+            "release-summary.md.j2",
+            **status,
+            platforms     = artifacts,
+            prepub_failed = prepub_failed
+        )
+
+        raise SystemExit(
+            prepub_failed or (self.is_tag and status["publish"] != "success")
+        )
 
 
-def emit(template: str, **vars):
-    """
-    Render `template` with `vars` and append to `$GITHUB_STEP_SUMMARY`.
+if __name__ == "__main__":
 
-    Args:
-        template : Filename of a `.md.j2` template under `templates/`.
-        vars     : Substitution context passed to `Template.render`.
-    """
-    with open(environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
-        f.write(ENV.get_template(template).render(**vars))
-
-
-def release():
-    """
-    Render the Release gate summary and exit with the pipeline verdict.
-
-    Reads `BUILD`, `SDIST`, `VALIDATE`, `PUBLISH` plus the GitHub-runner
-    defaults, renders `release-summary.md.j2`, and exits 0 when every
-    required job (build, sdist, validate, plus publish on tag runs)
-    succeeded.
-    """
-    BUILD    = environ["BUILD"]
-    IS_TAG   = environ.get("GITHUB_REF_TYPE") == "tag"
-    PUBLISH  = environ["PUBLISH"]
-    REF_NAME = environ["GITHUB_REF_NAME"]
-    SDIST    = environ["SDIST"]
-    VALIDATE = environ["VALIDATE"]
-    VERSION   = REF_NAME.removeprefix("v")
-    platforms = [
-        (label, target, next(Path("dist").glob(pattern), None))
-        for label, pattern, target in PLATFORMS
-    ]
-    emit(
-        "release-summary.md.j2",
-        build       = BUILD,
-        commit_link = f"[`{SHA[:7]}`]({REPO_URL}/commit/{SHA})",
-        is_tag      = IS_TAG,
-        platforms   = platforms,
-        publish     = PUBLISH,
-        pypi_url    = f"https://pypi.org/project/prose-formatter/{VERSION}/",
-        sdist       = SDIST,
-        tag_link    = f"[`{REF_NAME}`]({REPO_URL}/releases/tag/{REF_NAME})",
-        tree_link   = f"[`{REF_NAME}`]({REPO_URL}/tree/{REF_NAME})",
-        validate    = VALIDATE,
-        version     = VERSION
-    )
-    raise SystemExit(
-        BUILD != "success"
-        or SDIST != "success"
-        or VALIDATE != "success"
-        or (IS_TAG and PUBLISH != "success")
-    )
-
-
-{"ci": ci, "release": release}[argv[1]]()
+    if (cmd := argv[1]) not in {"ci", "release"}:
+        raise SystemExit(f"unknown subcommand: {cmd}")
+    getattr(Summary(), cmd)()
