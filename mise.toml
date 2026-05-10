@@ -3,12 +3,13 @@
 # ============================================================================
 
 [tools]
-"cargo:cargo-machete" = "latest"
-cargo-insta           = "latest"
-maturin               = "latest"
-python                = "3.14"
-rust                  = "stable"
-uv                    = "latest"
+"aqua:taiki-e/cargo-llvm-cov" = "latest"
+"github:bnjbvr/cargo-machete" = "latest"
+cargo-insta                   = "latest"
+maturin                       = "latest"
+python                        = "3.14"
+rust                          = { version = "stable", components = "llvm-tools-preview" }
+uv                            = "latest"
 
 [settings]
 python.uv_venv_auto = "create|source"
@@ -40,6 +41,10 @@ run         = "cargo fmt --all"
 [tasks.lint]
 description = "Run `clippy` with all warnings treated as errors"
 run         = "cargo clippy --all-targets -- -D warnings"
+
+[tasks.readme]
+description = "Rewrite `README.md` in place to absolute URLs for PyPI"
+run         = "./.github/scripts/transform_readme.py"
 
 [tasks.review]
 description = "Interactively review pending snapshot diffs"

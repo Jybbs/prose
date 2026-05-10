@@ -176,7 +176,7 @@ impl Source {
     }
 
     /// Returns the suppression index built during parsing.
-    pub fn suppression_map(&self) -> &SuppressionMap {
+    pub(crate) fn suppression_map(&self) -> &SuppressionMap {
         &self.suppression
     }
 

@@ -1,5 +1,5 @@
 name        : Build wheel
-description : Runs `maturin-action` and uploads the resulting artifact. Caller must check out the repo before invoking this composite.
+description : Runs `maturin-action` and uploads the resulting artifact. Caller must check out the repo and rewrite the README before invoking this composite.
 
 inputs:
   command:

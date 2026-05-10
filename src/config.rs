@@ -192,6 +192,15 @@ mod tests {
     }
 
     #[test]
+    fn from_pyproject_str_with_unknown_key_warns_and_returns_config() {
+        let config =
+            Config::from_pyproject_str("[tool.prose]\nline-length = 100\nunknown-future-key = 1\n")
+                .expect("parses");
+
+        assert_eq!(config.line_length, NonZeroUsize::new(100));
+    }
+
+    #[test]
     fn load_absent_file_returns_defaults() {
         let tmp = TempDir::new().expect("tempdir");
         let config = Config::load(tmp.path()).expect("loads");
@@ -289,6 +298,16 @@ mod tests {
             .expect("loads");
 
         assert_eq!(captured, ["unknown-future-key"]);
+        assert!(config.rules.align_equals.enabled);
+    }
+
+    #[test]
+    fn load_unknown_key_routes_through_default_warn_callback() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_pyproject(tmp.path(), "[tool.prose]\nunknown-future-key = \"x\"\n");
+
+        let config = Config::load(tmp.path()).expect("loads");
+
         assert!(config.rules.align_equals.enabled);
     }
 

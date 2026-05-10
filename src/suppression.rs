@@ -11,7 +11,7 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 /// rules must not emit edits. Range queries run in O(log n) over the
 /// list.
 #[derive(Debug)]
-pub struct SuppressionMap {
+pub(crate) struct SuppressionMap {
     spans: Vec<TextRange>,
 }
 
@@ -22,7 +22,7 @@ impl SuppressionMap {
     /// extends through end of file. A stray `# fmt: on` is a no-op.
     /// Two consecutive `# fmt: off` directives flatten, with the first
     /// `# fmt: on` closing the block.
-    pub fn from_comments(source_text: &str, comments: &CommentRanges) -> Self {
+    pub(crate) fn from_comments(source_text: &str, comments: &CommentRanges) -> Self {
         let mut spans: Vec<TextRange> = Vec::new();
         let mut open_off: Option<TextSize> = None;
         for range in comments {
@@ -57,13 +57,13 @@ impl SuppressionMap {
     /// Returns `true` when `ranged`'s span overlaps any suppressed
     /// span by at least one byte. Empty ranges report overlap when
     /// their offset strictly sits inside a span.
-    pub fn intersects<R: Ranged>(&self, ranged: R) -> bool {
+    pub(crate) fn intersects<R: Ranged>(&self, ranged: R) -> bool {
         let range = ranged.range();
         self.spans.binary_search_by(|s| s.ordering(range)).is_ok()
     }
 
     /// Returns `true` when the source carries no suppressed spans.
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.spans.is_empty()
     }
 }

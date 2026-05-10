@@ -1,10 +1,10 @@
 <div align="center">
-<img src="https://github.com/Jybbs/prose/raw/main/assets/title.svg" alt="Prose" width="800">
+<img src="assets/brand/title.svg" alt="Prose" width="800">
 <h3><em>A Python typesetter for the reader</em></h3>
 
-[![Rust 1.82+](https://img.shields.io/badge/rust-1.82+-8a80cb?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-8a80cb?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![maturin](https://img.shields.io/badge/built_with-maturin-8a80cb?style=for-the-badge)](https://www.maturin.rs/)
+[![Rust](assets/badges/rust.svg)![1.82+](https://img.shields.io/badge/1.82+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
+[![Python](assets/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
+[![Coverage](assets/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
 
 </div>
 
@@ -15,7 +15,7 @@
 *Prose* formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries and lists, alphabetizes methods and fields within their groups, applies a singleton rule for colon padding, and treats code like prose rather than minified text.
 
 > [!NOTE]
-> Alpha (`0.1.0`). The eight rules below are stable, with additional rules planned for later releases.
+> Alpha. The eight auto-fix rules below ship in `0.1.x`. The `0.2` cycle expands the surface around them (*structured output formats, suppression directives, rule subsetting, an exit-code matrix*) and brings additional auto-fix and lint-only rules online.
 
 ---
 
@@ -33,18 +33,62 @@ The trade-offs minimalist formatters were built to avoid (*wider diffs, more ver
 uv tool install prose-formatter
 ```
 
+The binary exposes `format`, `check`, and `completions`:
+
 ```bash
-prose format path/              # rewrite files in place
-prose check path/               # exit non-zero on violations
-prose format --diff path/       # show the diff without writing
-prose check --stdin < file.py   # read from stdin
+prose format path/                          # rewrite files in place
+prose check path/                           # exit non-zero on violations
+prose format --diff path/                   # show the diff without writing
+prose check --stdin < file.py               # read from stdin
 ```
+
+Subset the active rules with `--select` and `--ignore`:
+
+```bash
+prose check --select align-equals path/         # run a single rule
+prose check --ignore strip-trailing-commas path/  # subtract one
+prose check --select align-equals,align-colons path/  # comma list
+```
+
+Pick a structured output format for editors, pre-commit, and CI:
+
+```bash
+prose check --output-format json path/      # newline-delimited JSON
+prose check --output-format github path/    # GitHub Actions annotations
+prose check --output-format sarif path/     # SARIF for Code Scanning
+prose check --color always path/            # force color, NO_COLOR honored
+prose completions zsh                       # shell completion script
+```
+
+Source ranges may opt out of formatting via block markers:
+
+```python
+# fmt: off
+keep_this_block_exactly_as_written = (1,2,3)
+# fmt: on
+```
+
+`# fmt: skip` on the same line opts out a single statement. Line-level lint suppression via `# prose: ignore[<rule>]` lands alongside the lint rules in `0.2`.
+
+---
+
+## 🦉 Exit Codes
+
+The binary resolves every run into one of five exit codes, which CI gates and pre-commit hooks compile against:
+
+| Code | Meaning |
+|---|---|
+| `0` | Clean: no diagnostics, no rewrites pending |
+| `1` | Format would change: at least one auto-fix diagnostic |
+| `2` | Lint violation: at least one lint-only diagnostic |
+| `3` | Parse error: input could not be parsed as Python |
+| `4` | Config error: `pyproject.toml`, `--select` / `--ignore`, or argument validation |
+
+When two outcomes apply to the same run, the higher number wins. `prose --help` prints the same table beneath the option list. In `format` mode, code `1` is suppressed when the rewrite succeeds because the changes were applied rather than left pending. Codes `2`, `3`, and `4` apply identically across both subcommands.
 
 ---
 
 ## 🪶 Rules
-
-Eight rules ship in `0.1.0`:
 
 | Rule | Coverage |
 |---|---|
@@ -52,8 +96,8 @@ Eight rules ship in `0.1.0`:
 | `align-equals` | Consecutive assignments at the same indentation |
 | `align-imports` | The `import` keyword in `from ... import ...` groups and `as` in `import ... as ...` groups |
 | `alphabetize` | Classes, methods (*grouped dunders → properties → privates → publics*), enum members, Pydantic fields (*required then optional*), function parameters, keyword arguments, and `from` imports |
+| `collection-layout` | Expands `dict`, `list`, and `set` literals to one entry per line, even when they fit inline |
 | `match-case-align` | Single-expression case bodies |
-| `one-per-line-collections` | `dict`, `list`, and `set` literals, even when they fit inline |
 | `singleton-rule` | Skips colon padding when only one item exists in the aligned group |
 | `strip-trailing-commas` | Multi-line collections and signatures |
 
@@ -62,86 +106,101 @@ Eight rules ship in `0.1.0`:
 Before:
 
 ```python
-from sklearn.cluster import AgglomerativeClustering
-from loguru import logger
-from collections import Counter
+from pydantic import BaseModel
+from datetime import date
+from decimal import Decimal
 
-config = {"threshold": 0.7, "metric": "euclidean", "linkage": "ward", "n_clusters": None}
+DEFAULT_LIMIT = 50
+RETRY_INTERVAL = 30
+PAGE_SIZE = 25
 
 class Posting(BaseModel, extra="forbid"):
     title: str
     company: str
     location: str | None = None
-    date_posted: date | None
+    date_posted: date
+    salary_max: Decimal | None = None
 
-    def render(self, separator: str, include_location: bool, include_date: bool) -> str: ...
+    def render(
+        self,
+        separator: str,
+        include_location: bool,
+        include_date: bool,
+        max_width: int = 80,
+    ) -> str: ...
 
-    def _slug(self):
-        return self.company.lower().replace(" ", "-")
-
-    def key(self):
-        return f"{self._slug()}-{self.date_posted}"
+config = {"threshold": 0.7, "metric": "euclidean", "linkage": "ward", "n_clusters": None, "random_state": 42,}
 ```
 
 After:
 
 ```python
-from collections     import Counter
-from loguru          import logger
-from sklearn.cluster import AgglomerativeClustering
+from datetime import date
+from decimal  import Decimal
+from pydantic import BaseModel
 
-config = {
-    "linkage"    : "ward",
-    "metric"     : "euclidean",
-    "n_clusters" : None,
-    "threshold"  : 0.7
-}
+DEFAULT_LIMIT  = 50
+RETRY_INTERVAL = 30
+PAGE_SIZE      = 25
 
 class Posting(BaseModel, extra="forbid"):
     company     : str
-    date_posted : date | None
+    date_posted : date
     title       : str
-
-    location: str | None = None
-
-    def _slug(self):
-        return self.company.lower().replace(" ", "-")
-
-    def key(self):
-        return f"{self._slug()}-{self.date_posted}"
+    location    : str | None     = None
+    salary_max  : Decimal | None = None
 
     def render(
         self,
         include_date     : bool,
         include_location : bool,
-        separator        : str
-    ) -> str:
-        ...
+        separator        : str,
+        max_width        : int = 80
+    ) -> str: ...
+
+config = {
+    "linkage"      : "ward",
+    "metric"       : "euclidean",
+    "n_clusters"   : None,
+    "random_state" : 42,
+    "threshold"    : 0.7
+}
 ```
 
 ---
 
 ## ⚖️ Configuration
 
-`[tool.prose]` in your `pyproject.toml`:
+*Prose* loads the nearest `[tool.prose]` section found by walking upward from the working directory. With no configuration, every rule runs at its default. To tune a rule, write its sub-table:
 
 ```toml
 [tool.prose]
-line-length    = 88
-target-version = "py310"
+line-length = 88
 
-[tool.prose.rules]
-align-colons             = true
-align-equals             = true
-align-imports            = true
-alphabetize              = true
-match-case-align         = true
-one-per-line-collections = true
-singleton-rule           = true
-strip-trailing-commas    = true
+[tool.prose.rules.align-equals]
+enabled = false                # disable a rule outright
+
+[tool.prose.rules.align-colons]
+max-shift        = 12          # cap padding width
+max-shift-policy = "drop"      # how to handle overrun groups
+
+[tool.prose.rules.collection-layout]
+max-atomics-per-line = 3       # keep short tuples on one line
 ```
 
-Every rule is independently toggleable.
+Per-rule knobs:
+
+| Key | Type | Where | Meaning |
+|---|---|---|---|
+| `enabled` | `bool` | every rule sub-table | Toggle the rule on or off. Defaults to `true` |
+| `max-shift` | positive int | alignment rules | Ceiling on per-line padding. Defaults to `8` |
+| `max-shift-policy` | `"split"` \| `"drop"` \| `"skip"` | alignment rules | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation, `skip` leaves the whole group unaligned. Defaults to `"split"` |
+| `max-atomics-per-line` | positive int | `collection-layout` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. Defaults to `8` |
+| `line-length` | positive int | top-level `[tool.prose]` | Honored by line-length-aware rules. Defaults to `88` |
+
+Alignment rules are `align-colons`, `align-equals`, `align-imports`, and `match-case-align`. Toggle-only rules are `alphabetize`, `singleton-rule`, and `strip-trailing-commas`.
+
+Per-invocation overrides via `--select` and `--ignore` (*see Install & Usage above*) take precedence over the configured-enabled set.
 
 ---
 
@@ -172,7 +231,7 @@ Black formats, Flake8 lints, and isort sorts, so each pairs with *Prose* at a di
 
 | Tool | Pairing |
 |---|---|
-| [Black](https://black.readthedocs.io/) | Run Black with `--skip-magic-trailing-comma`, then *Prose* second. Black collapses collections that `one-per-line-collections` re-expands and preserves trailing commas that `strip-trailing-commas` removes |
+| [Black](https://black.readthedocs.io/) | Run Black with `--skip-magic-trailing-comma`, then *Prose* second. Black collapses collections that `collection-layout` re-expands and preserves trailing commas that `strip-trailing-commas` removes |
 | [Flake8](https://flake8.pycqa.org/) | Add `extend-ignore = E203, E221, E272` to `.flake8` or `setup.cfg` (*and `C812` if [`flake8-commas`](https://github.com/PyCQA/flake8-commas) is installed*). Flake8 inherits the same `pycodestyle` codes Ruff inherits |
 | [isort](https://pycqa.github.io/isort/) | Run isort first, *Prose* second, with no configuration adjustment. *Prose* alphabetizes within isort's groups and aligns the `import` keyword that isort leaves un-aligned |
 
@@ -182,16 +241,37 @@ Black formats, Flake8 lints, and isort sorts, so each pairs with *Prose* at a di
 
 Wire *Prose* into anything that runs on save, on commit, or in CI.
 
-### CI
+### GitHub Actions
+
+The minimal check-on-CI shape:
 
 ```yaml
 - run: uv tool install prose-formatter
 - run: prose check .
 ```
 
-### Format on Save
+For inline annotations on the PR diff, use the `github` output format. *Prose* emits [workflow commands](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions) that GitHub renders as native check-run annotations:
 
-Any editor that supports run-on-save (*VSCode's `runOnSave`, Vim's `autocmd BufWritePost`, JetBrains File Watchers*) can shell out to `prose format <file>`.
+```yaml
+- run: uv tool install prose-formatter
+- run: prose check --output-format github .
+```
+
+For findings that persist across runs and surface in [Code Scanning](https://docs.github.com/en/code-security/code-scanning), emit SARIF and upload it:
+
+```yaml
+- run: uv tool install prose-formatter
+- run: prose check --output-format sarif . > prose.sarif
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: prose.sarif
+```
+
+CI gates compile against the [exit-code matrix](#exit-codes) above. A non-zero status without `continue-on-error` fails the step.
+
+### Editor
+
+Any editor that supports run-on-save (*VSCode's `runOnSave`, Vim's `autocmd BufWritePost`, JetBrains File Watchers*) can shell out to `prose format <file>`. For editors that consume structured diagnostics, `prose check --output-format json --stdin` emits one [Ruff-shaped](https://docs.astral.sh/ruff/configuration/#output-format) record per line.
 
 ### Pre-Commit
 
@@ -207,7 +287,17 @@ Add a `local` hook to your `.pre-commit-config.yaml`:
       types: [python]
 ```
 
-Swap `entry: prose format` for `entry: prose check` for the check-only variant.
+Swap `entry: prose format` for `entry: prose check` for the check-only variant. The hook surfaces the same exit codes the CLI uses, so a `format` hook never fails on rewrites it applies and a `check` hook fails the commit when changes are pending.
+
+### Shell Completions
+
+```bash
+prose completions zsh > "${fpath[1]}/_prose"
+prose completions bash > /etc/bash_completion.d/prose
+prose completions fish > ~/.config/fish/completions/prose.fish
+```
+
+`elvish` and `powershell` are also supported.
 
 ---
 

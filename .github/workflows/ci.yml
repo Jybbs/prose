@@ -3,16 +3,13 @@ run-name : 🪻 CI · ${{ github.head_ref || github.ref_name }}
 
 on:
   pull_request:
-    paths-ignore:
+    paths-ignore: &doc-paths
       - '**.md'
       - LICENSE
       - assets/**
   push:
-    branches: [main]
-    paths-ignore:
-      - '**.md'
-      - LICENSE
-      - assets/**
+    branches     : [main]
+    paths-ignore : *doc-paths
   workflow_dispatch:
 
 concurrency:
@@ -50,9 +47,39 @@ jobs:
       save-cache : ${{ github.event_name == 'push' }}
       shared-key : ${{ matrix.shared-key }}
 
+  coverage:
+    name    : ☂️ Coverage
+    runs-on : ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Install mise tools
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+        with:
+          cache      : true
+          cache_save : ${{ github.event_name == 'push' }}
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
+        with:
+          cache-on-failure : 'true'
+          save-if          : ${{ github.event_name == 'push' }}
+          shared-key       : prose-coverage
+
+      - name : Generate LCOV report
+        run  : cargo llvm-cov --workspace --locked --lcov --output-path lcov.info
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@3f20e214133d0983f9a10f3d63b0faf9241a3daa
+        with:
+          files            : lcov.info
+          token            : ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error : true
+
   gate:
     name    : 🗞️ Brief
-    needs   : check
+    needs   : [check, coverage]
     if      : always()
     runs-on : ubuntu-latest
     steps:
@@ -63,5 +90,6 @@ jobs:
 
       - name: Summarize and gate
         env:
-          RESULT : ${{ needs.check.result }}
+          CHECK    : ${{ needs.check.result }}
+          COVERAGE : ${{ needs.coverage.result }}
         run: ./.github/scripts/summary.py ci
