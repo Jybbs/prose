@@ -10,7 +10,7 @@ mod primitives;
 pub mod rule;
 mod rules;
 pub mod source;
-pub mod suppression;
+pub(crate) mod suppression;
 #[cfg(test)]
 mod test_support;
 mod walker;

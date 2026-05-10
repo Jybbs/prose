@@ -18,8 +18,8 @@ pub(crate) use sarif::Sarif;
 pub(crate) use text::Text;
 
 /// One pipeline run paired with the diagnostics it produced.
-pub type Run<'a> = (&'a Source, &'a [Diagnostic]);
+pub(crate) type Run<'a> = (&'a Source, &'a [Diagnostic]);
 
-pub trait Emitter {
+pub(crate) trait Emitter {
     fn emit(&self, writer: &mut dyn Write, runs: &[Run<'_>]) -> io::Result<()>;
 }

@@ -7,10 +7,20 @@ use clap::builder::{PossibleValuesParser, TypedValueParser};
 use clap::{error::ErrorKind, ColorChoice, CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 
+use super::exit_status::ExitStatus;
 use crate::pipeline::Pipeline;
 use crate::rule::RuleId;
 
-#[derive(Debug, clap::Args)]
+/// Matrix appended to `prose --help` via `after_long_help`.
+const EXIT_CODE_TABLE: &str = "\
+Exit codes:
+  0    Clean: no diagnostics, no rewrites pending
+  1    Format would change: at least one Severity::Format diagnostic
+  2    Lint violation: at least one Severity::Lint diagnostic
+  3    Parse error: input could not be parsed as Python
+  4    Config error: pyproject.toml, --select / --ignore, or arg validation";
+
+#[derive(Debug, Default, clap::Args)]
 pub(crate) struct CheckArgs {
     /// Output format for diagnostics.
     #[arg(long, value_enum, default_value_t)]
@@ -31,6 +41,7 @@ pub(crate) struct CheckArgs {
 #[derive(Debug, Parser)]
 #[command(
     about,
+    after_long_help = EXIT_CODE_TABLE,
     arg_required_else_help = true,
     name = "prose",
     propagate_version = true,
@@ -60,7 +71,7 @@ pub(crate) enum Command {
     Format(FormatArgs),
 }
 
-#[derive(Debug, clap::Args)]
+#[derive(Debug, Default, clap::Args)]
 pub(crate) struct FormatArgs {
     /// Show a unified diff instead of writing changes.
     #[arg(long)]
@@ -91,6 +102,12 @@ pub(crate) enum OutputFormat {
     Text,
 }
 
+impl OutputFormat {
+    pub(crate) fn is_text(self) -> bool {
+        matches!(self, Self::Text)
+    }
+}
+
 /// Subset of registered rules to run, applied as `select - ignore`.
 #[derive(Debug, Default, clap::Args)]
 pub(crate) struct RuleFilter {
@@ -105,16 +122,10 @@ pub(crate) struct RuleFilter {
     pub(crate) select: Vec<RuleId>,
 }
 
-/// Prints a clap parse failure to its preferred stream and resolves
-/// the exit code. Help and version output exits `SUCCESS`. Unknown
-/// rule slugs surface as `ErrorKind::InvalidValue` and exit `4`.
-/// Other failures exit `2`.
+/// Prints a clap parse failure and resolves the exit code.
 pub(crate) fn report_clap_error(err: clap::Error) -> ExitCode {
     let _ = err.print();
-    match err.kind() {
-        ErrorKind::InvalidValue => ExitCode::from(4),
-        _ => ExitCode::from(err.exit_code() as u8),
-    }
+    clap_error_status(err.kind()).into()
 }
 
 /// Returns a config error when `--diff` pairs with a non-text
@@ -124,7 +135,7 @@ pub(crate) fn validate_diff_format_combination(cli: &Cli) -> Option<clap::Error>
     let Command::Format(args) = &cli.command else {
         return None;
     };
-    (args.diff && !matches!(args.output_format, OutputFormat::Text)).then(|| {
+    (args.diff && !args.output_format.is_text()).then(|| {
         Cli::command().error(
             ErrorKind::InvalidValue,
             "`--diff` requires `--output-format text`",
@@ -132,14 +143,22 @@ pub(crate) fn validate_diff_format_combination(cli: &Cli) -> Option<clap::Error>
     })
 }
 
+/// Help / version land at `Clean`, every other clap error at `ConfigError`.
+fn clap_error_status(kind: ErrorKind) -> ExitStatus {
+    match kind {
+        ErrorKind::DisplayHelp
+        | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand
+        | ErrorKind::DisplayVersion => ExitStatus::Clean,
+        _ => ExitStatus::ConfigError,
+    }
+}
+
 /// Returns a value parser that accepts any registered rule slug and
 /// produces a [`RuleId`]. Errors render with clap's `[possible
 /// values: ...]` suffix listing every known slug.
 fn rule_id_parser() -> impl TypedValueParser<Value = RuleId> {
-    PossibleValuesParser::new(Pipeline::known_ids().iter().map(RuleId::as_str)).map(|s| {
-        s.parse::<RuleId>()
-            .expect("clap pre-validates against KNOWN_IDS")
-    })
+    PossibleValuesParser::new(Pipeline::known_ids().iter().map(RuleId::as_str))
+        .try_map(|s| s.parse::<RuleId>())
 }
 
 #[cfg(test)]
@@ -158,6 +177,31 @@ mod tests {
             panic!("expected Format variant");
         };
         args
+    }
+
+    fn parse_err(args: &[&str]) -> clap::Error {
+        Cli::try_parse_from(args).expect_err("expected parse failure")
+    }
+
+    #[test]
+    fn after_long_help_documents_the_exit_code_matrix() {
+        let table = Cli::command()
+            .get_after_long_help()
+            .expect("after_long_help is set")
+            .to_string();
+        for code in 0..=4 {
+            let needle = format!("  {code}    ");
+            assert!(
+                table.contains(&needle),
+                "after_long_help missing row for code {code}: {table}",
+            );
+        }
+        for label in ["Clean", "Format", "Lint", "Parse", "Config"] {
+            assert!(
+                table.contains(label),
+                "after_long_help missing label `{label}`: {table}",
+            );
+        }
     }
 
     #[test]
@@ -253,6 +297,53 @@ mod tests {
         let rendered = err.to_string();
         assert!(rendered.contains("not-a-rule"));
         assert!(rendered.contains("align-equals"));
+    }
+
+    #[test]
+    fn clap_error_status_routes_argument_conflict_to_config_error() {
+        let err = parse_err(&["prose", "format", "--stdin", "a.py"]);
+        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
+        assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
+    }
+
+    #[test]
+    fn clap_error_status_routes_diff_with_non_text_format_to_config_error() {
+        let cli = Cli::try_parse_from(["prose", "format", "--diff", "--output-format", "json"])
+            .expect("parses");
+        let err = validate_diff_format_combination(&cli).expect("validation surfaces error");
+        assert_eq!(err.kind(), ErrorKind::InvalidValue);
+        assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
+    }
+
+    #[test]
+    fn clap_error_status_routes_help_on_missing_subcommand_to_clean() {
+        let err = parse_err(&["prose"]);
+        assert_eq!(
+            err.kind(),
+            ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand
+        );
+        assert_eq!(clap_error_status(err.kind()), ExitStatus::Clean);
+    }
+
+    #[test]
+    fn clap_error_status_routes_help_to_clean() {
+        let err = parse_err(&["prose", "--help"]);
+        assert_eq!(err.kind(), ErrorKind::DisplayHelp);
+        assert_eq!(clap_error_status(err.kind()), ExitStatus::Clean);
+    }
+
+    #[test]
+    fn clap_error_status_routes_invalid_value_to_config_error() {
+        let err = parse_err(&["prose", "check", "--select", "not-a-rule"]);
+        assert_eq!(err.kind(), ErrorKind::InvalidValue);
+        assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
+    }
+
+    #[test]
+    fn clap_error_status_routes_version_to_clean() {
+        let err = parse_err(&["prose", "--version"]);
+        assert_eq!(err.kind(), ErrorKind::DisplayVersion);
+        assert_eq!(clap_error_status(err.kind()), ExitStatus::Clean);
     }
 
     #[test]

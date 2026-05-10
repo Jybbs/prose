@@ -7,8 +7,9 @@
 Render a 🪻 Prose step summary and gate the workflow's exit code.
 
 Subcommands:
-    ci       Render the CI gate summary (reads `RESULT` plus the GitHub
-             defaults). Exits 0 on `success`, 1 otherwise.
+    ci       Render the CI gate summary (reads `CHECK` and `COVERAGE`
+             plus the GitHub defaults). Exits 0 when both succeeded,
+             1 otherwise.
     release  Render the Release gate summary (reads `BUILD`, `SDIST`,
              `VALIDATE`, `PUBLISH` plus the GitHub defaults). Exits 0
              when every required job succeeded, 1 otherwise.
@@ -43,21 +44,21 @@ def ci():
     """
     Render the CI gate summary and exit with the matrix verdict.
 
-    Reads `RESULT` plus the GitHub-runner defaults, renders
-    `ci-summary.md.j2`, and exits 0 when `RESULT == "success"`,
-    1 otherwise.
+    Reads `CHECK` and `COVERAGE` plus the GitHub-runner defaults,
+    renders `ci-summary.md.j2`, and exits 0 only when both succeeded.
     """
-    REF    = environ.get("GITHUB_HEAD_REF") or environ["GITHUB_REF_NAME"]
-    RESULT = environ["RESULT"]
+    CHECK    = environ["CHECK"]
+    COVERAGE = environ["COVERAGE"]
+    REF      = environ.get("GITHUB_HEAD_REF") or environ["GITHUB_REF_NAME"]
     emit(
         "ci-summary.md.j2",
         commit_url = f"{REPO_URL}/commit/{SHA}",
-        msg        = f"Result `{RESULT}`",
+        msg        = f"Check `{CHECK}` · coverage `{COVERAGE}`",
         ref        = REF,
         short      = SHA[:7],
         tree_url   = f"{REPO_URL}/tree/{REF}"
     )
-    raise SystemExit(RESULT != "success")
+    raise SystemExit(CHECK != "success" or COVERAGE != "success")
 
 
 def emit(template: str, **vars):

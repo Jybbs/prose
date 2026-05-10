@@ -1,3 +1,3 @@
-fn main() -> anyhow::Result<std::process::ExitCode> {
+fn main() -> std::process::ExitCode {
     prose::cli::run()
 }
