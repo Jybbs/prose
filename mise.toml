@@ -42,6 +42,10 @@ run         = "cargo fmt --all"
 description = "Run `clippy` with all warnings treated as errors"
 run         = "cargo clippy --all-targets -- -D warnings"
 
+[tasks.readme]
+description = "Rewrite `README.md` in place to absolute URLs for PyPI"
+run         = "./.github/scripts/transform_readme.py"
+
 [tasks.review]
 description = "Interactively review pending snapshot diffs"
 run         = "cargo insta review"

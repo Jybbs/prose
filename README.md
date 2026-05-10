@@ -1,10 +1,10 @@
 <div align="center">
-<img src="https://github.com/Jybbs/prose/raw/main/assets/brand/title.svg" alt="Prose" width="800">
+<img src="assets/brand/title.svg" alt="Prose" width="800">
 <h3><em>A Python typesetter for the reader</em></h3>
 
-[![Rust](https://github.com/Jybbs/prose/raw/main/assets/badges/rust.svg)![1.82+](https://img.shields.io/badge/1.82+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
-[![Python](https://github.com/Jybbs/prose/raw/main/assets/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
-[![Coverage](https://github.com/Jybbs/prose/raw/main/assets/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
+[![Rust](assets/badges/rust.svg)![1.82+](https://img.shields.io/badge/1.82+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
+[![Python](assets/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
+[![Coverage](assets/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
 
 </div>
 
