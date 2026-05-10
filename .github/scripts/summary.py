@@ -87,10 +87,10 @@ class Summary:
         """
         artifacts = [
             {
-                "label":    p["label"],
-                "target":   f"`{p['target']}`" if p.get("target") else "—",
-                "mark":     "✅" if path else "❌",
-                "artifact": f"`{path.name}`" if path else "—"
+                "label":  p["label"],
+                "mark":   "✅" if path else "❌",
+                "size":   path.stat().st_size if path else None,
+                "target": f"`{p['target']}`" if p.get("target") else "—"
             }
             for p in self.platforms
             for path in [next(Path("dist").glob(p["pattern"]), None)]

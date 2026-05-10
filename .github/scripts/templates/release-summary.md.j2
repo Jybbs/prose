@@ -1,21 +1,21 @@
 ## 🪻 Prose Release
 
 {% if not is_tag -%}
-Build dry-run for {{ commit_link }} on {{ tree_link }}.
+Build dry-run from {{ commit_link }}.
 {% elif publish == "success" -%}
-Published [*Prose* {{ ref }}]({{ pypi_url }}) from {{ commit_link }} on tag {{ tag_link }}.
+Published [*Prose* {{ ref }}]({{ pypi_url }}) from {{ commit_link }}, tagged {{ tag_link }}.
 {% elif prepub_failed -%}
-Pre-publish checks failed for tag {{ tag_link }} at {{ commit_link }}. Publish skipped.
+Pre-publish checks failed at {{ commit_link }} for tag {{ tag_link }}. Publish skipped.
 {% else -%}
 Publish failed for tag {{ tag_link }} at {{ commit_link }}.
 {% endif %}
 
 ### Builds
 
-| Platform | Target | Status | Artifact |
+| Platform | Target | Status | Size |
 |---|---|---|---|
 {% for a in platforms %}
-| {{ a.label }} | {{ a.target }} | {{ a.mark }} | {{ a.artifact }} |
+| {{ a.label }} | {{ a.target }} | {{ a.mark }} | {{ a.size | filesizeformat if a.size else "—" }} |
 {% endfor %}
 {% if is_tag and publish == "success" %}
 
@@ -25,5 +25,11 @@ Publish failed for tag {{ tag_link }} at {{ commit_link }}.
 pip install prose-formatter=={{ ref }}
 ```
 
-Each artifact ships a [SLSA build-provenance attestation](https://slsa.dev/spec/v1.0/provenance) verifiable on the [PyPI project page]({{ pypi_url }}).
+### Verify
+
+Every wheel ships a [PEP 740 attestation](https://peps.python.org/pep-0740/) visible on the [PyPI project page]({{ pypi_url }}), plus a [SLSA build provenance attestation](https://slsa.dev/spec/v1.0/provenance) verifiable through the GitHub CLI:
+
+```bash
+gh attestation verify <wheel> --repo Jybbs/prose
+```
 {% endif %}
