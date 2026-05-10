@@ -4,13 +4,19 @@ expression: config
 input_file: tests/fixtures/config/full_override.toml
 ---
 Config {
-    line_length: Some(
+    code_line_length: Some(
         100,
     ),
+    docstring_line_length: Some(
+        60,
+    ),
+    docstring_structured_policy: DocstringLineLength,
     rules: RuleConfigs {
         collection_layout: CollectionLayoutConfig {
             enabled: false,
-            max_atomics_per_line: None,
+            max_atomics_per_line: Some(
+                3,
+            ),
         },
         alphabetize: ToggleOnly {
             enabled: false,

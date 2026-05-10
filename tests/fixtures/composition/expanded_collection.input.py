@@ -1,6 +1,6 @@
 """
 Long dict literal that fits on one line in source but overflows the
-line-length budget once expanded. collection_layout puts each entry on
+`code-line-length` budget once expanded. collection_layout puts each entry on
 its own line and recursively expands the long nested dict, alphabetize
 partitions single-line entries before the multi-line entry and sorts
 within each partition, align_colons aligns the colons across the

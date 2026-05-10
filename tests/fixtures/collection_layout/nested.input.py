@@ -3,7 +3,7 @@ Nested collections expand independently. A qualifying child serializes
 through the parent's `expand` when the parent also qualifies. A
 qualifying child inside a non-qualifying parent expands via `walk_expr`
 falling through into the parent's descendants. Each child's
-line-length check uses its own column, including the key-offset for
+`code-line-length` check uses its own column, including the key-offset for
 dict values, so tiered structures expand level-by-level only where
 the inline form would overflow.
 """

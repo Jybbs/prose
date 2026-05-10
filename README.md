@@ -173,7 +173,7 @@ config = {
 
 ```toml
 [tool.prose]
-line-length = 88
+code-line-length = 88
 
 [tool.prose.rules.align-equals]
 enabled = false                # disable a rule outright
@@ -194,7 +194,11 @@ Per-rule knobs:
 | `max-shift` | positive int | alignment rules | Ceiling on per-line padding, defaulting to `8` |
 | `max-shift-policy` | `"split"` \| `"drop"` \| `"skip"` | alignment rules | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation, `skip` leaves the whole group unaligned, defaulting to `"split"` |
 | `max-atomics-per-line` | positive int | `collection-layout` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap, defaulting to `8` |
-| `line-length` | positive int | top-level `[tool.prose]` | Honored by line-length-aware rules, defaulting to `88` |
+| `code-line-length` | positive int | top-level `[tool.prose]` | Honored by line-length-aware rules, defaulting to `88` |
+| `docstring-line-length` | positive int | top-level `[tool.prose]` | Description-prose budget for `docstring-wrap`, defaulting to `76` |
+| `docstring-structured-policy` | `"code-line-length"` \| `"docstring-line-length"` | top-level `[tool.prose]` | Source budget for structured docstring sections, defaulting to `"code-line-length"` |
+
+Docstrings carry two readings inside one triple-quoted region. Description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Structured sections (*`Args:`, `Returns:`, `Raises:`*) read as code-shaped tables and reuse `code-line-length` (*88 by default*) to match surrounding indentation, though `docstring-structured-policy` switches them to `docstring-line-length` if a project prefers a single narrower budget across the whole docstring. The `docstring-wrap` rule will consume both budgets when it lands later in `0.2`.
 
 **Alignment rules** are `align-colons`, `align-equals`, `align-imports`, and `match-case-align`. **Toggle-only rules** are `alphabetize`, `singleton-rule`, and `strip-trailing-commas`.
 

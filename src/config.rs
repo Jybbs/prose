@@ -46,23 +46,36 @@ impl Default for CollectionLayoutConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            max_atomics_per_line: None,
+            max_atomics_per_line: NonZeroUsize::new(8),
         }
     }
 }
 
 /// The `[tool.prose]` section of a user's `pyproject.toml`.
 ///
-/// `None` on `line_length` means the user did not set that key in
-/// their `pyproject.toml`. Downstream consumers apply their own
-/// fallback rather than reading a synthesized default here. Per-rule
-/// settings live under `rules`, where each rule's sub-table carries
-/// `enabled` plus that rule's own knobs.
-#[derive(Debug, Default, Deserialize)]
+/// `code_line_length` defaults to `Some(88)`. `docstring_line_length`
+/// defaults to `Some(76)`. `docstring_structured_policy` defaults
+/// to `CodeLineLength`. Per-rule settings live under `rules`, where
+/// each rule's sub-table carries `enabled` plus that rule's own
+/// knobs.
+#[derive(Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
-    pub line_length: Option<NonZeroUsize>,
+    pub code_line_length: Option<NonZeroUsize>,
+    pub docstring_line_length: Option<NonZeroUsize>,
+    pub docstring_structured_policy: DocstringStructuredPolicy,
     pub rules: RuleConfigs,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            code_line_length: NonZeroUsize::new(88),
+            docstring_line_length: NonZeroUsize::new(76),
+            docstring_structured_policy: DocstringStructuredPolicy::default(),
+            rules: RuleConfigs::default(),
+        }
+    }
 }
 
 impl Config {
@@ -103,20 +116,16 @@ impl Config {
         P: AsRef<Path>,
         F: FnMut(&str),
     {
-        for dir in from.as_ref().ancestors() {
-            let candidate = dir.join("pyproject.toml");
-            match fs_err::read_to_string(&candidate) {
-                Ok(contents) => {
-                    if let Some(config) = parse_prose_section(&contents, &mut on_unknown)? {
-                        return Ok(config);
-                    }
-                }
-                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-                Err(e) => return Err(e.into()),
-            }
-        }
-
-        Ok(Self::default())
+        from.as_ref()
+            .ancestors()
+            .find_map(
+                |dir| match fs_err::read_to_string(dir.join("pyproject.toml")) {
+                    Ok(contents) => parse_prose_section(&contents, &mut on_unknown).transpose(),
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+                    Err(e) => Some(Err(e.into())),
+                },
+            )
+            .unwrap_or_else(|| Ok(Self::default()))
     }
 }
 
@@ -127,6 +136,18 @@ pub enum ConfigError {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Toml(#[from] toml::de::Error),
+}
+
+/// Which budget structured docstring sections wrap to.
+///
+/// `CodeLineLength` reuses `Config::code_line_length`.
+/// `DocstringLineLength` reuses `Config::docstring_line_length`.
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum DocstringStructuredPolicy {
+    #[default]
+    CodeLineLength,
+    DocstringLineLength,
 }
 
 /// What to do when an alignment group's widest padding exceeds the
@@ -187,17 +208,78 @@ mod tests {
 
     use super::*;
 
+    fn assert_toml_error(toml: &str) {
+        assert!(matches!(
+            Config::from_pyproject_str(toml),
+            Err(ConfigError::Toml(_))
+        ));
+    }
+
     fn write_pyproject(dir: &Path, contents: &str) {
         std::fs::write(dir.join("pyproject.toml"), contents).expect("pyproject writes");
     }
 
     #[test]
-    fn from_pyproject_str_with_unknown_key_warns_and_returns_config() {
-        let config =
-            Config::from_pyproject_str("[tool.prose]\nline-length = 100\nunknown-future-key = 1\n")
-                .expect("parses");
+    fn docstring_line_length_defaults_to_76_when_field_absent() {
+        let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
 
-        assert_eq!(config.line_length, NonZeroUsize::new(100));
+        assert_eq!(config.docstring_line_length, NonZeroUsize::new(76));
+    }
+
+    #[test]
+    fn docstring_line_length_explicit_override_takes_effect() {
+        let config = Config::from_pyproject_str("[tool.prose]\ndocstring-line-length = 100\n")
+            .expect("parses");
+
+        assert_eq!(config.docstring_line_length, NonZeroUsize::new(100));
+    }
+
+    #[test]
+    fn docstring_line_length_negative_returns_toml_error() {
+        assert_toml_error("[tool.prose]\ndocstring-line-length = -1\n");
+    }
+
+    #[test]
+    fn docstring_line_length_zero_returns_toml_error() {
+        assert_toml_error("[tool.prose]\ndocstring-line-length = 0\n");
+    }
+
+    #[test]
+    fn docstring_structured_policy_defaults_to_code_line_length_when_field_absent() {
+        let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+
+        assert_eq!(
+            config.docstring_structured_policy,
+            DocstringStructuredPolicy::CodeLineLength
+        );
+    }
+
+    #[test]
+    fn docstring_structured_policy_explicit_override_to_docstring_line_length() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose]\ndocstring-structured-policy = \"docstring-line-length\"\n",
+        )
+        .expect("parses");
+
+        assert_eq!(
+            config.docstring_structured_policy,
+            DocstringStructuredPolicy::DocstringLineLength
+        );
+    }
+
+    #[test]
+    fn docstring_structured_policy_invalid_value_returns_toml_error() {
+        assert_toml_error("[tool.prose]\ndocstring-structured-policy = \"nonsense\"\n");
+    }
+
+    #[test]
+    fn from_pyproject_str_with_unknown_key_warns_and_returns_config() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose]\ncode-line-length = 100\nunknown-future-key = 1\n",
+        )
+        .expect("parses");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(100));
     }
 
     #[test]
@@ -205,7 +287,7 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         let config = Config::load(tmp.path()).expect("loads");
 
-        assert_eq!(config.line_length, None);
+        assert_eq!(config.code_line_length, NonZeroUsize::new(88));
         assert!(config.rules.align_equals.enabled);
     }
 
@@ -216,7 +298,7 @@ mod tests {
 
         let config = Config::load(tmp.path()).expect("loads");
 
-        assert_eq!(config.line_length, None);
+        assert_eq!(config.code_line_length, NonZeroUsize::new(88));
         assert!(config.rules.align_equals.enabled);
     }
 
@@ -277,12 +359,12 @@ mod tests {
         let nested = tmp.path().join("a/b");
         std::fs::create_dir_all(&nested).expect("nested dirs create");
 
-        write_pyproject(tmp.path(), "[tool.prose]\nline-length = 80\n");
-        write_pyproject(&nested, "[tool.prose]\nline-length = 120\n");
+        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+        write_pyproject(&nested, "[tool.prose]\ncode-line-length = 120\n");
 
         let config = Config::load(&nested).expect("loads");
 
-        assert_eq!(config.line_length, NonZeroUsize::new(120));
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
     }
 
     #[test]
@@ -316,10 +398,10 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         let nested = tmp.path().join("a/b/c");
         std::fs::create_dir_all(&nested).expect("nested dirs create");
-        write_pyproject(tmp.path(), "[tool.prose]\nline-length = 120\n");
+        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 120\n");
 
         let config = Config::load(&nested).expect("loads");
 
-        assert_eq!(config.line_length, NonZeroUsize::new(120));
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
     }
 }
