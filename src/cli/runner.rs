@@ -36,10 +36,7 @@ pub(crate) fn check_with_io<R: Read, W: Write>(
     } else {
         walker::walk(&args.paths)
             .par_bridge()
-            .map(|entry| match entry {
-                Ok(path) => process_path(&path, &pipeline),
-                Err(e) => walk_error(e),
-            })
+            .map(|entry| entry.map_or_else(walk_error, |path| process_path(&path, &pipeline)))
             .collect()
     };
     emit_outcomes(&outcomes, args.output_format, &mut stdout)?;
@@ -66,15 +63,16 @@ pub(crate) fn format_with_io<R: Read, W: Write>(
 }
 
 fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
-    match outcome {
-        FileOutcome::Parsed(formatted, diagnostics) if !diagnostics.is_empty() => {
-            match fs_err::write(path, formatted.text()).inspect_err(|e| eprintln!("error: {e}")) {
-                Ok(()) => FileOutcome::Parsed(formatted, diagnostics),
-                Err(_) => FileOutcome::Failed(ExitStatus::ConfigError),
-            }
-        }
-        other => other,
-    }
+    let (formatted, diagnostics) = match outcome {
+        FileOutcome::Parsed(f, d) if !d.is_empty() => (f, d),
+        other => return other,
+    };
+    fs_err::write(path, formatted.text())
+        .inspect_err(|e| eprintln!("error: {e}"))
+        .map_or_else(
+            |_| FileOutcome::Failed(ExitStatus::ConfigError),
+            |()| FileOutcome::Parsed(formatted, diagnostics),
+        )
 }
 
 fn emit_outcomes<W: Write>(
@@ -105,22 +103,26 @@ fn format_paths_diff<W: Write>(
     pipeline: &Pipeline,
     stdout: &mut W,
 ) -> anyhow::Result<ExitStatus> {
-    let entries: Vec<(PathBuf, String, FileOutcome)> = walker::walk(paths)
+    let entries: Vec<(Option<(PathBuf, String)>, FileOutcome)> = walker::walk(paths)
         .par_bridge()
-        .map(|entry| match entry {
-            Ok(path) => {
-                let (original, outcome) = process_path_with_original(&path, pipeline);
-                (path, original, outcome)
-            }
-            Err(e) => (PathBuf::new(), String::new(), walk_error(e)),
+        .map(|entry| {
+            entry.map_or_else(
+                |e| (None, walk_error(e)),
+                |path| {
+                    let (original, outcome) = process_path_with_original(&path, pipeline);
+                    (Some((path, original)), outcome)
+                },
+            )
         })
         .collect();
     let outcomes: Vec<FileOutcome> = entries
         .into_iter()
-        .map(|(path, original, outcome)| -> anyhow::Result<FileOutcome> {
-            if let FileOutcome::Parsed(formatted, diags) = &outcome {
+        .map(|(meta, outcome)| -> anyhow::Result<FileOutcome> {
+            if let (Some((path, original)), FileOutcome::Parsed(formatted, diags)) =
+                (&meta, &outcome)
+            {
                 if !diags.is_empty() {
-                    write_diff(stdout, path.display(), &original, formatted.text())?;
+                    write_diff(stdout, path.display(), original, formatted.text())?;
                 }
             }
             Ok(outcome)
@@ -140,9 +142,10 @@ fn format_paths_rewrite<W: Write>(
 ) -> anyhow::Result<ExitStatus> {
     let outcomes: Vec<FileOutcome> = walker::walk(paths)
         .par_bridge()
-        .map(|entry| match entry {
-            Ok(path) => apply_rewrite(&path, process_path(&path, pipeline)),
-            Err(e) => walk_error(e),
+        .map(|entry| {
+            entry.map_or_else(walk_error, |path| {
+                apply_rewrite(&path, process_path(&path, pipeline))
+            })
         })
         .collect();
     if !format.is_text() {
@@ -208,18 +211,18 @@ fn process_path_with_original(path: &Path, pipeline: &Pipeline) -> (String, File
 }
 
 fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline) -> (String, FileOutcome) {
-    let text =
-        match io::read_to_string(stdin).inspect_err(|e| eprintln!("error: reading stdin: {e}")) {
-            Ok(text) => text,
-            Err(_) => return (String::new(), FileOutcome::Failed(ExitStatus::ConfigError)),
-        };
-    let outcome = match text
+    let Ok(text) =
+        io::read_to_string(stdin).inspect_err(|e| eprintln!("error: reading stdin: {e}"))
+    else {
+        return (String::new(), FileOutcome::Failed(ExitStatus::ConfigError));
+    };
+    let outcome = text
         .parse::<Source>()
         .inspect_err(|e| eprintln!("error: parse error in stdin: {e}"))
-    {
-        Ok(source) => run_pipeline(source, pipeline),
-        Err(_) => FileOutcome::Failed(ExitStatus::ParseError),
-    };
+        .map_or_else(
+            |_| FileOutcome::Failed(ExitStatus::ParseError),
+            |source| run_pipeline(source, pipeline),
+        );
     (text, outcome)
 }
 
@@ -237,13 +240,13 @@ fn read_source_or_status(path: &Path) -> Result<Source, ExitStatus> {
 }
 
 fn run_pipeline(source: Source, pipeline: &Pipeline) -> FileOutcome {
-    match pipeline
+    pipeline
         .run(source)
         .inspect_err(|e| eprintln!("error: {e}"))
-    {
-        Ok((s, d)) => FileOutcome::Parsed(s, d),
-        Err(_) => FileOutcome::Failed(ExitStatus::ConfigError),
-    }
+        .map_or_else(
+            |_| FileOutcome::Failed(ExitStatus::ConfigError),
+            |(s, d)| FileOutcome::Parsed(s, d),
+        )
 }
 
 fn status_from_outcomes(outcomes: &[FileOutcome], demote_format_change: bool) -> ExitStatus {
