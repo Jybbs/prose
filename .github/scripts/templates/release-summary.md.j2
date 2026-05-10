@@ -12,10 +12,10 @@ Publish failed for tag {{ tag_link }} at {{ commit_link }}.
 
 ### Builds
 
-| Platform | Target | Status | Size |
-|---|---|---|---|
+| Platform | Target | Status |
+|---|---|---|
 {% for a in platforms %}
-| {{ a.label }} | {{ a.target }} | {{ a.mark }} | {{ a.size | filesizeformat if a.size else "—" }} |
+| {{ a.label }} | {{ a.target }} | {{ a.mark }} |
 {% endfor %}
 {% if is_tag and publish == "success" %}
 

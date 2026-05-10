@@ -89,7 +89,6 @@ class Summary:
             {
                 "label":  p["label"],
                 "mark":   "✅" if path else "❌",
-                "size":   path.stat().st_size if path else None,
                 "target": f"`{p['target']}`" if p.get("target") else "—"
             }
             for p in self.platforms
