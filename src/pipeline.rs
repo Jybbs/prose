@@ -61,8 +61,10 @@ impl Pipeline {
     /// `# fmt: off` span via the `SuppressionMap`, derives one
     /// `Severity::Format` `Diagnostic` per surviving edit, then
     /// splices the edits into the current text and reparses for the
-    /// next rule. An empty pipeline collapses to the identity
-    /// transform and returns no diagnostics.
+    /// next rule. After the rule chain finishes, every `Severity::Lint`
+    /// diagnostic whose line carries a matching `# prose: ignore`
+    /// directive is dropped. An empty pipeline collapses to the
+    /// identity transform and returns no diagnostics.
     ///
     /// # Errors
     ///
@@ -70,12 +72,12 @@ impl Pipeline {
     /// produces text that does not re-parse as Python. This surfaces
     /// rule bugs rather than silently swallowing them.
     pub fn run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
-        self.rules
-            .iter()
-            .try_fold((source, Vec::new()), |(source, mut diagnostics), rule| {
+        let (source, mut diagnostics) = self.rules.iter().try_fold(
+            (source, Vec::new()),
+            |(source, mut diagnostics), rule| {
                 let mut edits = rule.apply(&source);
                 let suppression = source.suppression_map();
-                if !suppression.is_empty() {
+                if suppression.has_format_suppression() {
                     edits.retain(|edit| !suppression.intersects(edit));
                 }
                 if edits.is_empty() {
@@ -103,7 +105,17 @@ impl Pipeline {
                         rule: rule.id(),
                         source,
                     })
-            })
+            },
+        )?;
+        let suppression = source.suppression_map();
+        if suppression.has_lint_suppression() {
+            diagnostics.retain(|d| {
+                d.severity != Severity::Lint
+                    || !suppression
+                        .is_lint_suppressed_at(source.line_index(d.range.start()), d.rule)
+            });
+        }
+        Ok((source, diagnostics))
     }
 }
 

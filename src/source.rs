@@ -12,7 +12,7 @@ use ruff_python_ast::ModModule;
 use ruff_python_parser::{parse_module, ParseError, Parsed};
 use ruff_python_trivia::{leading_indentation, lines_before, CommentRanges};
 use ruff_source_file::{
-    find_newline, LineColumn, LineEnding, LineRanges, SourceFile, SourceFileBuilder,
+    find_newline, LineColumn, LineEnding, LineRanges, OneIndexed, SourceFile, SourceFileBuilder,
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use thiserror::Error;
@@ -29,7 +29,7 @@ pub struct Source {
     comment_ranges: CommentRanges,
     file: SourceFile,
     parsed: Parsed<ModModule>,
-    suppression: SuppressionMap,
+    suppression: Box<SuppressionMap>,
 }
 
 impl Source {
@@ -37,7 +37,10 @@ impl Source {
         let parsed = parse_module(&text)?;
         let file = SourceFileBuilder::new(name, text).finish();
         let comment_ranges = CommentRanges::from(parsed.tokens());
-        let suppression = SuppressionMap::from_comments(file.source_text(), &comment_ranges);
+        let suppression = Box::new(SuppressionMap::from_comments(
+            &file.to_source_code(),
+            &comment_ranges,
+        ));
         Ok(Self {
             comment_ranges,
             file,
@@ -142,6 +145,11 @@ impl Source {
         leading_indentation(self.text().line_str(offset))
             .chars()
             .count()
+    }
+
+    /// Returns the one-indexed line number for `offset`.
+    pub fn line_index(&self, offset: TextSize) -> OneIndexed {
+        self.file.to_source_code().line_index(offset)
     }
 
     /// Returns the line-ending sequence used in this source, or

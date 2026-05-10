@@ -14,18 +14,24 @@ Cargo.toml versions match. Exits 1 when either file disagrees with the tag.
 """
 
 from os      import environ
+from pathlib import Path
 from re      import sub
-from tomllib import load
+from tomllib import loads
 
 
-if environ.get("GITHUB_REF_TYPE") != "tag":
-    raise SystemExit
+if __name__ == "__main__":
 
-version = environ["GITHUB_REF_NAME"]
-for file, table, expected in [
-    ("pyproject.toml", "project", version),
-    ("Cargo.toml",     "package", sub(r"\.?(a|b|rc|dev|post)(\d+)", r"-\1.\2", version)),
-]:
-    with open(file, "rb") as f:
-        if (actual := load(f)[table]["version"]) != expected:
-            raise SystemExit(f"::error::{file} version mismatch: expected {expected}, got {actual}")
+    if environ.get("GITHUB_REF_TYPE") != "tag":
+        raise SystemExit
+
+    version       = environ["GITHUB_REF_NAME"]
+    cargo_version = sub(r"\.?(a|b|rc|dev|post)(\d+)", r"-\1.\2", version)
+
+    for file, table, expected in [
+        ("Cargo.toml",     "package", cargo_version),
+        ("pyproject.toml", "project", version)
+    ]:
+        if (actual := loads(Path(file).read_text())[table]["version"]) != expected:
+            raise SystemExit(
+                f"::error::{file} version mismatch: expected {expected}, got {actual}"
+            )

@@ -3,7 +3,7 @@ build-backend = "maturin"
 requires      = ["maturin>=1.7,<2.0"]
 
 [project]
-authors         = [{ name = "Jibbs" }]
+authors         = [{ name = "Jybbs" }]
 classifiers     = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -26,7 +26,9 @@ requires-python = ">=3.10"
 version         = "0.1.2"
 
 [project.urls]
-Repository = "https://github.com/Jybbs/prose"
+changelog = "https://github.com/Jybbs/prose/releases"
+issues    = "https://github.com/Jybbs/prose/issues"
+source    = "https://github.com/Jybbs/prose"
 
 [tool.maturin]
 bindings = "bin"

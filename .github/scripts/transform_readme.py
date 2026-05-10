@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """
 Rewrite the README's relative `assets/` paths to absolute raw URLs.
 
@@ -11,9 +14,11 @@ from re      import sub
 
 
 if __name__ == "__main__":
-    readme  = Path("README.md")
-    prefix  = "https://github.com/Jybbs/prose/raw/main/"
-    content = readme.read_text(encoding = "utf8")
+
+    prefix = "https://github.com/Jybbs/prose/raw/main/"
+    readme = Path("README.md")
+
+    content = readme.read_text(encoding="utf-8")
     content = sub(r"\]\((assets/[^)]+)\)", rf"]({prefix}\g<1>)",   content)
     content = sub(r'src="(assets/[^"]+)"', rf'src="{prefix}\g<1>"', content)
-    readme.write_text(content, encoding = "utf8")
+    readme.write_text(content, encoding="utf-8")

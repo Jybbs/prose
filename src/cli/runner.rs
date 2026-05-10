@@ -316,6 +316,26 @@ mod tests {
         }
     }
 
+    struct ErrorReader;
+
+    impl Read for ErrorReader {
+        fn read(&mut self, _: &mut [u8]) -> io::Result<usize> {
+            Err(io::Error::other("simulated stdin failure"))
+        }
+    }
+
+    struct FailingWriter;
+
+    impl Write for FailingWriter {
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+
+        fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+            Err(io::Error::other("simulated write failure"))
+        }
+    }
+
     fn format_args(paths: Vec<PathBuf>, stdin: bool, diff: bool) -> FormatArgs {
         FormatArgs {
             diff,
@@ -413,6 +433,13 @@ mod tests {
     }
 
     #[test]
+    fn check_stdin_with_read_failure_returns_config_error() {
+        let status = check_with_io(check_args(Vec::new(), true), ErrorReader, Vec::<u8>::new())
+            .expect("runs without anyhow");
+        assert_eq!(status, ExitStatus::ConfigError);
+    }
+
+    #[test]
     fn check_unparseable_path_returns_parse_error() {
         let tmp = TempDir::new().expect("tempdir");
         let file = tmp.path().join("a.py");
@@ -434,6 +461,34 @@ mod tests {
         let status = check_with_io(check_args(Vec::new(), true), stdin, Vec::<u8>::new())
             .expect("runs without anyhow");
         assert_eq!(status, ExitStatus::ParseError);
+    }
+
+    #[test]
+    fn emit_outcomes_propagates_writer_failure() {
+        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let diags = vec![diagnostic(
+            Severity::Format,
+            TextRange::new(0.into(), 1.into()),
+            "synthetic-format",
+        )];
+        let outcomes = vec![FileOutcome::Parsed(source, diags)];
+        let result = emit_outcomes(&outcomes, OutputFormat::Json, &mut FailingWriter);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn emit_outcomes_renders_each_output_format() {
+        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let outcomes = vec![FileOutcome::Parsed(source, Vec::new())];
+        for format in [
+            OutputFormat::Github,
+            OutputFormat::Json,
+            OutputFormat::Sarif,
+            OutputFormat::Text,
+        ] {
+            let mut buf = Vec::new();
+            emit_outcomes(&outcomes, format, &mut buf).expect("emits");
+        }
     }
 
     #[test]
@@ -471,6 +526,43 @@ mod tests {
     }
 
     #[test]
+    fn format_paths_rewrite_emits_json_when_format_is_non_text() {
+        let tmp = TempDir::new().expect("tempdir");
+        let file = tmp.path().join("a.py");
+        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+
+        let mut args = format_args(vec![tmp.path().to_path_buf()], false, false);
+        args.output_format = OutputFormat::Json;
+        let mut stdout = Vec::new();
+        let status = format_with_io(args, io::empty(), &mut stdout).expect("runs successfully");
+
+        assert_eq!(status, ExitStatus::Clean);
+        assert!(!stdout.is_empty());
+    }
+
+    #[test]
+    fn format_stdin_diff_writes_unified_hunks() {
+        let stdin = Cursor::new(b"alpha = 1\nb = 22\n".to_vec());
+        let mut stdout = Vec::new();
+        let status = format_with_io(format_args(Vec::new(), true, true), stdin, &mut stdout)
+            .expect("runs successfully");
+        assert_eq!(status, ExitStatus::FormatChange);
+        let out = String::from_utf8(stdout).expect("utf-8");
+        assert!(out.contains("@@"));
+    }
+
+    #[test]
+    fn format_stdin_emits_json_when_format_is_non_text() {
+        let stdin = Cursor::new(b"alpha = 1\nb = 22\n".to_vec());
+        let mut stdout = Vec::new();
+        let mut args = format_args(Vec::new(), true, false);
+        args.output_format = OutputFormat::Json;
+        let status = format_with_io(args, stdin, &mut stdout).expect("runs successfully");
+        assert_eq!(status, ExitStatus::Clean);
+        assert!(!stdout.is_empty());
+    }
+
+    #[test]
     fn format_stdin_prints_input_verbatim_when_pipeline_is_empty() {
         let stdin = Cursor::new(b"x = 1\n".to_vec());
         let mut stdout = Vec::new();
@@ -478,6 +570,18 @@ mod tests {
             .expect("runs successfully");
         assert_eq!(status, ExitStatus::Clean);
         assert_eq!(stdout, b"x = 1\n");
+    }
+
+    #[test]
+    fn format_stdin_with_read_failure_returns_config_error() {
+        let mut stdout = Vec::new();
+        let status = format_with_io(
+            format_args(Vec::new(), true, false),
+            ErrorReader,
+            &mut stdout,
+        )
+        .expect("runs without anyhow");
+        assert_eq!(status, ExitStatus::ConfigError);
     }
 
     #[test]
@@ -515,6 +619,27 @@ mod tests {
     }
 
     #[test]
+    fn process_path_with_original_returns_empty_string_on_io_error() {
+        let pipeline =
+            crate::pipeline::Pipeline::with_filters(&crate::config::Config::default(), &[], &[]);
+        let tmp = TempDir::new().expect("tempdir");
+        let nonexistent = tmp.path().join("does_not_exist.py");
+        let (original, outcome) = process_path_with_original(&nonexistent, &pipeline);
+        assert_eq!(original, "");
+        assert!(matches!(
+            outcome,
+            FileOutcome::Failed(ExitStatus::ConfigError),
+        ));
+    }
+
+    #[test]
+    fn read_source_or_status_returns_config_error_on_missing_file() {
+        let tmp = TempDir::new().expect("tempdir");
+        let result = read_source_or_status(&tmp.path().join("missing.py"));
+        assert!(matches!(result, Err(ExitStatus::ConfigError)));
+    }
+
+    #[test]
     fn status_from_outcomes_demotes_format_change_when_demoted() {
         let source = "x = 1\n".parse::<Source>().expect("parses");
         let outcomes = vec![FileOutcome::Parsed(
@@ -530,5 +655,14 @@ mod tests {
             status_from_outcomes(&outcomes, false),
             ExitStatus::FormatChange,
         );
+    }
+
+    #[test]
+    fn walk_error_returns_failed_with_config_error() {
+        let outcome = walk_error("synthetic walk failure");
+        assert!(matches!(
+            outcome,
+            FileOutcome::Failed(ExitStatus::ConfigError),
+        ));
     }
 }

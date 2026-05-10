@@ -1,5 +1,6 @@
-name     : 🪻 CI
-run-name : 🪻 CI · ${{ github.head_ref || github.ref_name }}
+name        : 🪻 CI
+run-name    : 🪻 CI · ${{ github.head_ref || github.ref_name }}
+permissions : { contents: read }
 
 on:
   pull_request:
@@ -7,24 +8,29 @@ on:
       - '**.md'
       - LICENSE
       - assets/**
+
   push:
     branches     : [main]
     paths-ignore : *doc-paths
+
   workflow_dispatch:
 
 concurrency:
   cancel-in-progress : ${{ github.event_name == 'pull_request' }}
   group              : ${{ github.workflow }}-${{ github.head_ref || github.ref }}
 
-permissions:
-  contents: read
+env:
+  CARGO_PROFILE_DEV_DEBUG : line-tables-only
+  CARGO_TERM_COLOR        : always
 
 jobs:
   check:
-    name : ${{ matrix.name }}
-    uses : ./.github/workflows/check.yml
+    name    : ${{ matrix.name }}
+    runs-on : ubuntu-latest
+
     strategy:
       fail-fast: false
+
       matrix:
         include:
           - command    : cargo fmt --all --check
@@ -42,54 +48,61 @@ jobs:
           - command    : cargo test --locked
             name       : ⚖️ Test
             shared-key : prose-build
-    with:
-      command    : ${{ matrix.command }}
-      save-cache : ${{ github.event_name == 'push' }}
-      shared-key : ${{ matrix.shared-key }}
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision cargo
+        uses : ./.github/actions/provision-cargo
+        with:
+          save-cache : ${{ github.event_name == 'push' }}
+          shared-key : ${{ matrix.shared-key }}
+
+      - name : ${{ matrix.command }}
+        run  : ${{ matrix.command }}
 
   coverage:
     name    : ☂️ Coverage
     runs-on : ubuntu-latest
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Install mise tools
-        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - name : Provision cargo
+        uses : ./.github/actions/provision-cargo
         with:
-          cache      : true
-          cache_save : ${{ github.event_name == 'push' }}
-
-      - name: Restore Cargo cache
-        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
-        with:
-          cache-on-failure : 'true'
-          save-if          : ${{ github.event_name == 'push' }}
-          shared-key       : prose-coverage
+          save-cache : ${{ github.event_name == 'push' }}
+          shared-key : prose-coverage
 
       - name : Generate LCOV report
-        run  : cargo llvm-cov --workspace --locked --lcov --output-path lcov.info
+        run  : cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info
 
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@3f20e214133d0983f9a10f3d63b0faf9241a3daa
+      - name : Upload to Codecov
+        uses : codecov/codecov-action@3f20e214133d0983f9a10f3d63b0faf9241a3daa
         with:
-          files            : lcov.info
-          token            : ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error : true
+          files            : target/lcov.info
+          token            : ${{ secrets.CODECOV_TOKEN }}
 
   gate:
     name    : 🗞️ Brief
-    needs   : [check, coverage]
     if      : always()
+    needs   : [check, coverage]
     runs-on : ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - name: Provision uv
-        uses: ./.github/actions/provision-uv
 
-      - name: Summarize and gate
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+
+      - name : Summarize and gate
         env:
           CHECK    : ${{ needs.check.result }}
           COVERAGE : ${{ needs.coverage.result }}
-        run: ./.github/scripts/summary.py ci
+          REF      : ${{ github.head_ref || github.ref_name }}
+          SHA      : ${{ github.event.pull_request.head.sha || github.sha }}
+        run  : ./.github/scripts/summary.py ci

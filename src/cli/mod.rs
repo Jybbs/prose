@@ -55,12 +55,16 @@ pub fn run() -> ExitCode {
         }
         Command::Format(args) => runner::format_with_io(args, io::stdin(), stdout),
     };
+    finalize(result).into()
+}
+
+fn finalize(result: anyhow::Result<ExitStatus>) -> ExitStatus {
     match result {
-        Ok(status) => status.into(),
-        Err(err) if is_broken_pipe(&err) => ExitCode::SUCCESS,
+        Ok(status) => status,
+        Err(err) if is_broken_pipe(&err) => ExitStatus::Clean,
         Err(err) => {
             log_error_chain(&err);
-            ExitStatus::ConfigError.into()
+            ExitStatus::ConfigError
         }
     }
 }
@@ -84,6 +88,27 @@ mod tests {
     use super::*;
 
     #[test]
+    fn finalize_clears_broken_pipe_to_clean() {
+        let err = anyhow::Error::from(io::Error::new(io::ErrorKind::BrokenPipe, "x"));
+        assert_eq!(finalize(Err(err)), ExitStatus::Clean);
+    }
+
+    #[test]
+    fn finalize_returns_config_error_for_other_errors() {
+        let err = anyhow::Error::msg("simulated");
+        assert_eq!(finalize(Err(err)), ExitStatus::ConfigError);
+    }
+
+    #[test]
+    fn finalize_returns_input_status_on_ok() {
+        assert_eq!(finalize(Ok(ExitStatus::Clean)), ExitStatus::Clean);
+        assert_eq!(
+            finalize(Ok(ExitStatus::FormatChange)),
+            ExitStatus::FormatChange,
+        );
+    }
+
+    #[test]
     fn is_broken_pipe_detects_io_error_in_chain() {
         let err = anyhow::Error::from(io::Error::new(io::ErrorKind::BrokenPipe, "x"));
         assert!(is_broken_pipe(&err));
@@ -100,5 +125,11 @@ mod tests {
         let err = anyhow::Error::from(io::Error::new(io::ErrorKind::BrokenPipe, "x"))
             .context("writing stdout");
         assert!(is_broken_pipe(&err));
+    }
+
+    #[test]
+    fn log_error_chain_walks_each_cause() {
+        let err = anyhow::Error::msg("root").context("ctx");
+        log_error_chain(&err);
     }
 }
