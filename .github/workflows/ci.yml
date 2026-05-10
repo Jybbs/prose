@@ -68,7 +68,7 @@ jobs:
           shared-key       : prose-coverage
 
       - name : Generate LCOV report
-        run  : cargo llvm-cov nextest --workspace --locked --lcov --output-path lcov.info
+        run  : cargo llvm-cov --workspace --locked --lcov --output-path lcov.info
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@3f20e214133d0983f9a10f3d63b0faf9241a3daa

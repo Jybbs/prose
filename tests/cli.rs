@@ -55,23 +55,15 @@ fn check_unparseable_fixture_exits_parse_error() {
 }
 
 #[test]
-fn color_always_exits_zero() {
+fn color_arms_exit_zero() {
     let (_dir, path) = fixture("clean.py", "x = 1\n");
-    prose()
-        .args(["--color", "always", "check"])
-        .arg(&path)
-        .assert()
-        .success();
-}
-
-#[test]
-fn color_never_exits_zero() {
-    let (_dir, path) = fixture("clean.py", "x = 1\n");
-    prose()
-        .args(["--color", "never", "check"])
-        .arg(&path)
-        .assert()
-        .success();
+    for arm in ["always", "never"] {
+        prose()
+            .args(["--color", arm, "check"])
+            .arg(&path)
+            .assert()
+            .success();
+    }
 }
 
 #[test]
@@ -80,12 +72,16 @@ fn completions_bash_exits_zero() {
 }
 
 #[test]
-fn diff_with_json_format_exits_config_error() {
-    prose()
-        .args(["format", "--diff", "--output-format", "json"])
-        .arg(".")
-        .assert()
-        .code(4);
+fn config_errors_exit_four() {
+    let cases: &[&[&str]] = &[
+        &["check", "--stdin", "."],
+        &["--not-a-flag"],
+        &["check", "--select", "not-a-rule", "."],
+        &["format", "--diff", "--output-format", "json", "."],
+    ];
+    for args in cases {
+        prose().args(*args).assert().code(4);
+    }
 }
 
 #[test]
@@ -115,25 +111,6 @@ fn help_exits_clean() {
 #[test]
 fn no_args_prints_help_and_exits_clean() {
     prose().assert().success();
-}
-
-#[test]
-fn stdin_with_positional_paths_exits_config_error() {
-    prose().args(["check", "--stdin", "."]).assert().code(4);
-}
-
-#[test]
-fn unknown_flag_exits_config_error() {
-    prose().arg("--not-a-flag").assert().code(4);
-}
-
-#[test]
-fn unknown_rule_exits_config_error() {
-    prose()
-        .args(["check", "--select", "not-a-rule"])
-        .arg(".")
-        .assert()
-        .code(4);
 }
 
 #[test]
