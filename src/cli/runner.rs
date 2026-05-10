@@ -56,7 +56,7 @@ pub(crate) fn format_with_io<R: Read, W: Write>(
         return format_stdin(stdin, args.diff, args.output_format, &pipeline, &mut stdout);
     }
     if args.diff {
-        format_paths_diff(&args.paths, args.output_format, &pipeline, &mut stdout)
+        format_paths_diff(&args.paths, &pipeline, &mut stdout)
     } else {
         format_paths_rewrite(&args.paths, args.output_format, &pipeline, &mut stdout)
     }
@@ -99,7 +99,6 @@ fn emit_outcomes<W: Write>(
 
 fn format_paths_diff<W: Write>(
     paths: &[PathBuf],
-    format: OutputFormat,
     pipeline: &Pipeline,
     stdout: &mut W,
 ) -> anyhow::Result<ExitStatus> {
@@ -128,9 +127,6 @@ fn format_paths_diff<W: Write>(
             Ok(outcome)
         })
         .collect::<anyhow::Result<_>>()?;
-    if !format.is_text() {
-        emit_outcomes(&outcomes, format, stdout)?;
-    }
     Ok(status_from_outcomes(&outcomes, false))
 }
 
@@ -492,6 +488,37 @@ mod tests {
     }
 
     #[test]
+    fn format_diff_returns_clean_for_already_canonical_file() {
+        let tmp = TempDir::new().expect("tempdir");
+        let file = tmp.path().join("a.py");
+        std::fs::write(&file, "x = 1\n").expect("writes");
+
+        let status = format_with_io(
+            format_args(vec![tmp.path().to_path_buf()], false, true),
+            io::empty(),
+            Vec::<u8>::new(),
+        )
+        .expect("runs successfully");
+
+        assert_eq!(status, ExitStatus::Clean);
+    }
+
+    #[test]
+    fn format_diff_returns_config_error_for_missing_path() {
+        let tmp = TempDir::new().expect("tempdir");
+        let missing = tmp.path().join("does_not_exist");
+
+        let status = format_with_io(
+            format_args(vec![missing], false, true),
+            io::empty(),
+            Vec::<u8>::new(),
+        )
+        .expect("runs without anyhow");
+
+        assert_eq!(status, ExitStatus::ConfigError);
+    }
+
+    #[test]
     fn format_diff_returns_format_change_for_pending_change() {
         let tmp = TempDir::new().expect("tempdir");
         let file = tmp.path().join("a.py");
@@ -616,6 +643,25 @@ mod tests {
         assert_eq!(status, ExitStatus::Clean);
         let after = std::fs::read_to_string(&file).expect("reads");
         assert_ne!(after, "alpha = 1\nb = 22\n");
+    }
+
+    #[test]
+    fn format_writes_return_config_error_when_target_is_readonly() {
+        let tmp = TempDir::new().expect("tempdir");
+        let file = tmp.path().join("a.py");
+        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+        let mut perms = std::fs::metadata(&file).expect("metadata").permissions();
+        perms.set_readonly(true);
+        std::fs::set_permissions(&file, perms).expect("set_permissions");
+
+        let status = format_with_io(
+            format_args(vec![tmp.path().to_path_buf()], false, false),
+            io::empty(),
+            Vec::<u8>::new(),
+        )
+        .expect("runs successfully");
+
+        assert_eq!(status, ExitStatus::ConfigError);
     }
 
     #[test]

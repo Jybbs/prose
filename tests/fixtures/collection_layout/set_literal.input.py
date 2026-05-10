@@ -2,7 +2,7 @@
 A multi-item set literal stays inline when the whole line fits in
 the 88-character budget. A set whose inline form would overflow the
 budget expands. Inside the expanded form, a run of atomic items flows
-across as few balanced lines as fit under the line-length budget and
+across as few balanced lines as fit under the `code-line-length` budget and
 the `max_atomics_per_line` cap (default 8) at the item-indent column.
 """
 

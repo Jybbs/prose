@@ -1,10 +1,9 @@
 //! Expands multi-item `dict`, `list`, and `set` literals when the
-//! inline form would overflow `Config::line_length`. Comprehensions,
-//! tuple literals, and any literal whose source range contains a
-//! comment are out of scope.
+//! inline form would overflow `Config::code_line_length`.
+//! Comprehensions, tuple literals, and any literal whose source range
+//! contains a comment are out of scope.
 
 use std::borrow::Cow;
-use std::num::NonZeroUsize;
 use std::ops::Range;
 
 use ruff_diagnostics::Edit;
@@ -20,26 +19,26 @@ use crate::primitives::edit::narrowed_replacement;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
-const DEFAULT_LINE_LENGTH: usize = 88;
-const DEFAULT_MAX_ATOMICS_PER_LINE: usize = 8;
 const INDENT_STEP: usize = 4;
 
 pub(crate) struct CollectionLayout {
-    line_length: usize,
+    code_line_length: usize,
     max_atomics_per_line: usize,
 }
 
 impl CollectionLayout {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            line_length: config
-                .line_length
-                .map_or(DEFAULT_LINE_LENGTH, NonZeroUsize::get),
+            code_line_length: config
+                .code_line_length
+                .expect("Config::default synthesizes Some(88)")
+                .get(),
             max_atomics_per_line: config
                 .rules
                 .collection_layout
                 .max_atomics_per_line
-                .map_or(DEFAULT_MAX_ATOMICS_PER_LINE, NonZeroUsize::get),
+                .expect("CollectionLayoutConfig::default synthesizes Some(8)")
+                .get(),
         }
     }
 }
@@ -47,8 +46,8 @@ impl CollectionLayout {
 impl Rule for CollectionLayout {
     fn apply(&self, source: &Source) -> Vec<Edit> {
         let mut visitor = Expander {
+            code_line_length: self.code_line_length,
             edits: Vec::new(),
-            line_length: self.line_length,
             max_atomics_per_line: self.max_atomics_per_line,
             newline: source.newline_str(),
             source,
@@ -63,8 +62,8 @@ impl Rule for CollectionLayout {
 }
 
 struct Expander<'a> {
+    code_line_length: usize,
     edits: Vec<Edit>,
-    line_length: usize,
     max_atomics_per_line: usize,
     newline: &'static str,
     source: &'a Source,
@@ -84,7 +83,7 @@ impl<'a> Expander<'a> {
         } = self.gather_items(expr, item_indent);
         let total = texts.len();
         let item_prefix = " ".repeat(item_indent);
-        let available = self.line_length.saturating_sub(item_indent);
+        let available = self.code_line_length.saturating_sub(item_indent);
         let mut out = String::new();
         out.push(open);
         out.push_str(self.newline);
@@ -107,14 +106,12 @@ impl<'a> Expander<'a> {
                 }
                 Segment::Flow(range) => {
                     let run_start = range.start;
-                    let widths: Vec<usize> = range.map(|i| texts[i].width()).collect();
+                    let widths: Vec<usize> = texts[range].iter().map(|c| c.width()).collect();
                     for line_range in flow_lines(&widths, available, self.max_atomics_per_line) {
                         let line_start = run_start + line_range.start;
                         let line_end = run_start + line_range.end;
-                        let parts: Vec<&str> =
-                            (line_start..line_end).map(|i| texts[i].as_ref()).collect();
                         out.push_str(&item_prefix);
-                        out.push_str(&parts.join(", "));
+                        out.push_str(&texts[line_start..line_end].join(", "));
                         if line_end < total {
                             out.push(',');
                         }
@@ -123,7 +120,7 @@ impl<'a> Expander<'a> {
                 }
             }
         }
-        out.push_str(&" ".repeat(indent));
+        out.extend(std::iter::repeat_n(' ', indent));
         out.push(close);
         out
     }
@@ -138,12 +135,17 @@ impl<'a> Expander<'a> {
     fn gather_items(&self, expr: &Expr, indent: usize) -> GatheredItems<'a> {
         let parent = AnyNodeRef::from(expr);
         if let Expr::Dict(d) = expr {
-            let (texts, ranges): (Vec<Cow<'a, str>>, Vec<TextRange>) = d
+            let (texts, (atomics, ranges)): (Vec<_>, (Vec<_>, Vec<_>)) = d
                 .iter()
-                .map(|item| (self.serialize_dict_item(item, parent, indent), item.range()))
+                .map(|item| {
+                    (
+                        self.serialize_dict_item(item, parent, indent),
+                        (false, item.range()),
+                    )
+                })
                 .unzip();
             return GatheredItems {
-                atomics: vec![false; d.len()],
+                atomics,
                 close: '}',
                 open: '{',
                 ranges,
@@ -155,14 +157,15 @@ impl<'a> Expander<'a> {
             Expr::Set(s) => ('{', '}', &s.elts),
             _ => unreachable!("gather_items called on non-collection expr"),
         };
-        let mut texts = Vec::with_capacity(elts.len());
-        let mut atomics = Vec::with_capacity(elts.len());
-        let mut ranges = Vec::with_capacity(elts.len());
-        for e in elts {
-            texts.push(self.serialize_expr(e, parent, indent, indent));
-            atomics.push(is_atomic(e));
-            ranges.push(e.range());
-        }
+        let (texts, (atomics, ranges)): (Vec<_>, (Vec<_>, Vec<_>)) = elts
+            .iter()
+            .map(|e| {
+                (
+                    self.serialize_expr(e, parent, indent, indent),
+                    (is_atomic(e), e.range()),
+                )
+            })
+            .unzip();
         GatheredItems {
             atomics,
             close,
@@ -176,7 +179,7 @@ impl<'a> Expander<'a> {
     ///
     /// `indent` is the column where the item sits (the item-indent of
     /// the enclosing dict). The value's actual column for the
-    /// line-length check is offset by the key text plus `": "`, so a
+    /// `code-line-length` check is offset by the key text plus `": "`, so a
     /// long key that pushes its value past the budget correctly
     /// triggers expansion of the value. When the value does expand,
     /// its closing bracket still lands at `indent`. When the value
@@ -199,10 +202,9 @@ impl<'a> Expander<'a> {
             let aligned = is_align_colons_gap(gap);
             if aligned && matches!(value_text, Cow::Borrowed(_)) {
                 Cow::Borrowed(self.source.slice(item))
-            } else if aligned {
-                Cow::Owned(format!("{key_text}{gap}{value_text}"))
             } else {
-                Cow::Owned(format!("{key_text}: {value_text}"))
+                let separator = if aligned { gap } else { ": " };
+                Cow::Owned(format!("{key_text}{separator}{value_text}"))
             }
         } else {
             let value_text = self.serialize_expr(&item.value, parent, indent + 2, indent);
@@ -216,7 +218,7 @@ impl<'a> Expander<'a> {
     /// `expr` itself expands.
     ///
     /// `column` is where the expression actually begins on its line
-    /// (used for the line-length overflow check). `indent` is where
+    /// (used for the `code-line-length` overflow check). `indent` is where
     /// its closing bracket should land if it expands. They differ for
     /// dict values, where the key text sits between the line indent
     /// and the value's own starting column. `parent` is the immediate
@@ -238,9 +240,10 @@ impl<'a> Expander<'a> {
     }
 
     /// Returns `true` when `expr` is a qualifying collection whose
-    /// inline form would overflow the line-length budget at `column`.
+    /// inline form would overflow the `code-line-length` budget at `column`.
     /// Multi-line input always returns `true`. Single-line input
-    /// returns `true` only when `column + inline_length > line_length`.
+    /// returns `true` only when `column + inline_length >
+    /// code_line_length`.
     fn should_expand(&self, expr: &Expr, column: usize) -> bool {
         let multi_item = match expr {
             Expr::Dict(d) => d.len() > 1,
@@ -252,7 +255,7 @@ impl<'a> Expander<'a> {
         multi_item
             && !self.source.intersects_comment(range)
             && (self.source.contains_line_break(range)
-                || column + self.source.slice(range).width() > self.line_length)
+                || column + self.source.slice(range).width() > self.code_line_length)
     }
 }
 
@@ -300,13 +303,12 @@ fn flow_lines(widths: &[usize], available: usize, max_atomics: usize) -> Vec<Ran
         return Vec::new();
     }
     let n = widths.len();
-    let mut prefix = Vec::with_capacity(n + 1);
-    let mut sum = 0usize;
-    prefix.push(sum);
-    for &w in widths {
-        sum += w;
-        prefix.push(sum);
-    }
+    let prefix: Vec<usize> = std::iter::once(0)
+        .chain(widths.iter().scan(0usize, |sum, &w| {
+            *sum += w;
+            Some(*sum)
+        }))
+        .collect();
     let total_slot = prefix[n] + 2 * n.saturating_sub(1);
     let by_width = total_slot.div_ceil(available.max(1));
     let by_cap = n.div_ceil(max_atomics.max(1));
@@ -329,11 +331,10 @@ fn is_align_colons_gap(gap: &str) -> bool {
 /// expressions are non-atomic so a spread splits surrounding atomics
 /// into independent runs.
 fn is_atomic(expr: &Expr) -> bool {
-    expr.is_literal_expr()
-        || is_dotted_name(expr)
-        || expr
-            .as_unary_op_expr()
-            .is_some_and(|u| is_atomic(&u.operand))
+    std::iter::successors(Some(expr), |e| {
+        e.as_unary_op_expr().map(|u| u.operand.as_ref())
+    })
+    .any(|e| e.is_literal_expr() || is_dotted_name(e))
 }
 
 /// Partitions `atomics` into segments. Every contiguous run of
@@ -341,17 +342,16 @@ fn is_atomic(expr: &Expr) -> bool {
 /// becomes a singleton `OnePerLine` segment. Non-atomic items always
 /// break atomic runs.
 fn segments(atomics: &[bool]) -> Vec<Segment> {
-    let mut start = 0;
     atomics
         .chunk_by(|a, b| a == b)
-        .map(|chunk| {
-            let range = start..start + chunk.len();
-            start += chunk.len();
-            if chunk[0] {
+        .scan(0, |start, chunk| {
+            let range = *start..*start + chunk.len();
+            *start += chunk.len();
+            Some(if chunk[0] {
                 Segment::Flow(range)
             } else {
                 Segment::OnePerLine(range)
-            }
+            })
         })
         .collect()
 }
