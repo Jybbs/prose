@@ -19,10 +19,14 @@ concurrency:
   cancel-in-progress : ${{ github.event_name == 'pull_request' }}
   group              : ${{ github.workflow }}-${{ github.head_ref || github.ref }}
 
+env:
+  CARGO_PROFILE_DEV_DEBUG : line-tables-only
+  CARGO_TERM_COLOR        : always
+
 jobs:
   check:
-    name : ${{ matrix.name }}
-    uses : ./.github/workflows/check.yml
+    name    : ${{ matrix.name }}
+    runs-on : ubuntu-latest
 
     strategy:
       fail-fast: false
@@ -45,40 +49,35 @@ jobs:
             name       : ⚖️ Test
             shared-key : prose-build
 
-    with:
-      command    : ${{ matrix.command }}
-      save-cache : ${{ github.event_name == 'push' }}
-      shared-key : ${{ matrix.shared-key }}
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision cargo
+        uses : ./.github/actions/provision-cargo
+        with:
+          save-cache : ${{ github.event_name == 'push' }}
+          shared-key : ${{ matrix.shared-key }}
+
+      - name : ${{ matrix.command }}
+        run  : ${{ matrix.command }}
 
   coverage:
     name    : ☂️ Coverage
-    outputs : { percent: "${{ steps.summary.outputs.total-coverage }}" }
     runs-on : ubuntu-latest
 
     steps:
       - name : Check out repository
         uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name : Install mise tools
-        uses : jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - name : Provision cargo
+        uses : ./.github/actions/provision-cargo
         with:
-          cache      : true
-          cache_save : ${{ github.event_name == 'push' }}
-
-      - name : Restore Cargo cache
-        uses : Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
-        with:
-          cache-on-failure : 'true'
-          save-if          : ${{ github.event_name == 'push' }}
-          shared-key       : prose-coverage
+          save-cache : ${{ github.event_name == 'push' }}
+          shared-key : prose-coverage
 
       - name : Generate LCOV report
         run  : cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info
-
-      - name : Extract line coverage percent
-        id   : summary
-        uses : zgosalvez/github-actions-report-lcov@7d72c57ce4bc101a4a0bf9d726b6c435abde8439
-        with : { coverage-files: target/lcov.info }
 
       - name : Upload to Codecov
         uses : codecov/codecov-action@3f20e214133d0983f9a10f3d63b0faf9241a3daa
@@ -102,8 +101,7 @@ jobs:
 
       - name : Summarize and gate
         env:
-          CHECK            : ${{ needs.check.result }}
-          COVERAGE         : ${{ needs.coverage.result }}
-          COVERAGE_PERCENT : ${{ needs.coverage.outputs.percent }}
-          REF              : ${{ github.head_ref || github.ref_name }}
+          CHECK    : ${{ needs.check.result }}
+          COVERAGE : ${{ needs.coverage.result }}
+          REF      : ${{ github.head_ref || github.ref_name }}
         run  : ./.github/scripts/summary.py ci

@@ -77,12 +77,7 @@ class Summary:
             f"{k}_mark": {"success": "✅"}.get(v, "❌")
             for k, v in status.items()
         }
-        self._emit(
-            "ci-summary.md.j2",
-            **status,
-            **marks,
-            coverage_percent = environ.get("COVERAGE_PERCENT")
-        )
+        self._emit("ci-summary.md.j2", **status, **marks)
         raise SystemExit(any(v != "success" for v in status.values()))
 
     def release(self):

@@ -1,0 +1,30 @@
+name        : Provision the cargo toolchain with a warm build cache
+description : Install mise tools, which provisions the Rust toolchain pinned in `mise.toml`, and restore the Swatinem cargo cache for the given `shared-key`. Cache write-back is gated by `save-cache` so PR runs read but do not pollute caches.
+
+inputs:
+  save-cache:
+    default     : 'false'
+    description : When `'true'` the mise and Cargo caches write back to GHA. Set to `'true'` only on main-branch runs.
+    required    : false
+
+  shared-key:
+    default     : prose
+    description : Swatinem cache scope. Distinct keys allow per-profile cache isolation.
+    required    : false
+
+runs:
+  using: composite
+
+  steps:
+    - name : Install mise tools
+      uses : jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      with:
+        cache      : true
+        cache_save : ${{ inputs.save-cache }}
+
+    - name : Restore Cargo cache
+      uses : Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
+      with:
+        cache-on-failure : 'true'
+        save-if          : ${{ inputs.save-cache }}
+        shared-key       : ${{ inputs.shared-key }}
