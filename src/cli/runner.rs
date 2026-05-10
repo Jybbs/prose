@@ -575,9 +575,12 @@ mod tests {
     #[test]
     fn format_stdin_with_read_failure_returns_config_error() {
         let mut stdout = Vec::new();
-        let status =
-            format_with_io(format_args(Vec::new(), true, false), ErrorReader, &mut stdout)
-                .expect("runs without anyhow");
+        let status = format_with_io(
+            format_args(Vec::new(), true, false),
+            ErrorReader,
+            &mut stdout,
+        )
+        .expect("runs without anyhow");
         assert_eq!(status, ExitStatus::ConfigError);
     }
 
