@@ -12,18 +12,18 @@
 
 ## 🪻 About
 
-*Prose* formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries and lists, alphabetizes methods and fields within their groups, applies a singleton rule for colon padding, and treats code like prose rather than minified text.
+***Prose*** formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries and lists, alphabetizes methods and fields within their groups, applies a singleton rule for colon padding, and treats code like prose rather than minified text.
 
 > [!NOTE]
-> Alpha. The eight auto-fix rules below ship in `0.1.x`. The `0.2` cycle expands the surface around them (*structured output formats, suppression directives, rule subsetting, an exit-code matrix*) and brings additional auto-fix and lint-only rules online.
+> ***Prose*** is currently in alpha, meaning the **eight** [auto-fix rules](#rules) below ship in `0.1.x`. The `0.2` cycle expands the surface around them (*structured output formats, suppression directives, rule subsetting, an exit-code matrix*) and brings additional auto-fix and lint-only rules online.
 
 ---
 
 ## 🗞️ Philosophy
 
-Code is read far more often than it is written. A reader's eye moves down a page and across adjacent lines looking for parallels, patterns, and shape. When every `=` sits at a different column and every collection is compressed onto one line, that shape disappears. *Prose* restores it: aligned columns let the eye skim, one-per-line collections make each entry a unit, alphabetized groupings give every reader the same landmarks.
+Code is read far more often than it is written. A reader's eye moves down a page and across adjacent lines looking for parallels, patterns, and **shape**. When every `=` sits at a different column and every collection is compressed onto one line, that shape disappears, forcing the eye to slow down. ***Prose*** restores it, with aligned columns letting the eye skim, one-per-line collections making each entry a unit, and alphabetized groupings giving every reader the same landmarks.
 
-The trade-offs minimalist formatters were built to avoid (*wider diffs, more vertical scrolling, occasional re-alignment churn*) no longer dominate the equation. Agentic assistants do most of the typing, and every modern code host offers whitespace-ignoring diffs. What remains is the daily experience of reading code.
+The trade-offs minimalist formatters were built to avoid (*wider diffs, more vertical scrolling, occasional re-alignment churn*) no longer dominate the equation. Agentic assistants do much of the typing, and every modern code host offers whitespace-ignoring diffs. What remains is the daily experience of reading code.
 
 ---
 
@@ -74,15 +74,15 @@ keep_this_block_exactly_as_written = (1,2,3)
 
 ## 🦉 Exit Codes
 
-The binary resolves every run into one of five exit codes, which CI gates and pre-commit hooks compile against:
+The binary resolves every run into one of **five** exit codes, which CI gates and pre-commit hooks compile against:
 
 | Code | Meaning |
 |---|---|
-| `0` | Clean: no diagnostics, no rewrites pending |
-| `1` | Format would change: at least one auto-fix diagnostic |
-| `2` | Lint violation: at least one lint-only diagnostic |
-| `3` | Parse error: input could not be parsed as Python |
-| `4` | Config error: `pyproject.toml`, `--select` / `--ignore`, or argument validation |
+| `0` | **Clean**: no diagnostics, no rewrites pending |
+| `1` | **Format would change**: at least one auto-fix diagnostic |
+| `2` | **Lint violation**: at least one lint-only diagnostic |
+| `3` | **Parse error**: input could not be parsed as Python |
+| `4` | **Config error**: `pyproject.toml`, `--select` / `--ignore`, or argument validation |
 
 When two outcomes apply to the same run, the higher number wins. `prose --help` prints the same table beneath the option list. In `format` mode, code `1` is suppressed when the rewrite succeeds because the changes were applied rather than left pending. Codes `2`, `3`, and `4` apply identically across both subcommands.
 
@@ -169,7 +169,7 @@ config = {
 
 ## ⚖️ Configuration
 
-*Prose* loads the nearest `[tool.prose]` section found by walking upward from the working directory. With no configuration, every rule runs at its default. To tune a rule, write its sub-table:
+***Prose*** loads the nearest `[tool.prose]` section found by walking upward from the working directory. With no configuration, every rule runs at its default. To tune a rule, write its sub-table:
 
 ```toml
 [tool.prose]
@@ -190,27 +190,28 @@ Per-rule knobs:
 
 | Key | Type | Where | Meaning |
 |---|---|---|---|
-| `enabled` | `bool` | every rule sub-table | Toggle the rule on or off. Defaults to `true` |
-| `max-shift` | positive int | alignment rules | Ceiling on per-line padding. Defaults to `8` |
-| `max-shift-policy` | `"split"` \| `"drop"` \| `"skip"` | alignment rules | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation, `skip` leaves the whole group unaligned. Defaults to `"split"` |
-| `max-atomics-per-line` | positive int | `collection-layout` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. Defaults to `8` |
-| `line-length` | positive int | top-level `[tool.prose]` | Honored by line-length-aware rules. Defaults to `88` |
+| `enabled` | `bool` | every rule sub-table | Toggle the rule on or off, defaulting to `true` |
+| `max-shift` | positive int | alignment rules | Ceiling on per-line padding, defaulting to `8` |
+| `max-shift-policy` | `"split"` \| `"drop"` \| `"skip"` | alignment rules | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation, `skip` leaves the whole group unaligned, defaulting to `"split"` |
+| `max-atomics-per-line` | positive int | `collection-layout` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap, defaulting to `8` |
+| `line-length` | positive int | top-level `[tool.prose]` | Honored by line-length-aware rules, defaulting to `88` |
 
-Alignment rules are `align-colons`, `align-equals`, `align-imports`, and `match-case-align`. Toggle-only rules are `alphabetize`, `singleton-rule`, and `strip-trailing-commas`.
+**Alignment rules** are `align-colons`, `align-equals`, `align-imports`, and `match-case-align`. **Toggle-only rules** are `alphabetize`, `singleton-rule`, and `strip-trailing-commas`.
 
-Per-invocation overrides via `--select` and `--ignore` (*see Install & Usage above*) take precedence over the configured-enabled set.
+Per-invocation overrides via `--select` and `--ignore` (*see [Install & Usage](#install--usage) above*) take precedence over the configured-enabled set.
 
 ---
 
 ## 🗺️ Composition
 
-*Prose* runs as the second pass in a two-stage pipeline. The first pass owns tokens (*line wrapping, quote normalization, indentation, blank-line discipline*) and the second pass owns layout (*alignment, alphabetization, the singleton rule, one-entry-per-line collections, trailing-comma stripping*). [Ruff](https://docs.astral.sh/ruff/) is the canonical first pass, in that `ruff format` matches the token-level scope and its lint config shares the `pyproject.toml` root with `[tool.prose]`.
+***Prose*** runs as the second pass in a **two-stage pipeline**. The first pass owns tokens (*line wrapping, quote normalization, indentation, blank-line discipline*) and the second pass owns layout (*alignment, alphabetization, the singleton rule, one-entry-per-line collections, trailing-comma stripping*). [Ruff](https://docs.astral.sh/ruff/) is the canonical first pass, in that `ruff format` matches the token-level scope and its lint config shares the `pyproject.toml` root with `[tool.prose]`.
 
 ```bash
 ruff format && prose format
 ```
 
-Running *Prose* first is incorrect. *Prose*'s alignment math depends on already-settled line breaks, and an upstream re-wrap will undo per-line layout decisions, forcing a third pass.
+> [!IMPORTANT]
+> Running ***Prose*** first is incorrect, because ***Prose***'s alignment math depends on already-settled line breaks and an upstream re-wrap will undo per-line layout decisions, forcing a third pass.
 
 ### Ruff Configuration
 
@@ -225,19 +226,19 @@ Running *Prose* first is incorrect. *Prose*'s alignment math depends on already-
 
 ### Other Tools
 
-Black formats, Flake8 lints, and isort sorts, so each pairs with *Prose* at a different layer:
+Black formats, Flake8 lints, and isort sorts, so each pairs with ***Prose*** at a different layer:
 
 | Tool | Pairing |
 |---|---|
-| [Black](https://black.readthedocs.io/) | Run Black with `--skip-magic-trailing-comma`, then *Prose* second. Black collapses collections that `collection-layout` re-expands and preserves trailing commas that `strip-trailing-commas` removes |
-| [Flake8](https://flake8.pycqa.org/) | Add `extend-ignore = E203, E221, E272` to `.flake8` or `setup.cfg` (*and `C812` if [`flake8-commas`](https://github.com/PyCQA/flake8-commas) is installed*). Flake8 inherits the same `pycodestyle` codes Ruff inherits |
-| [isort](https://pycqa.github.io/isort/) | Run isort first, *Prose* second, with no configuration adjustment. *Prose* alphabetizes within isort's groups and aligns the `import` keyword that isort leaves un-aligned |
+| **[Black](https://black.readthedocs.io/)** | Run Black with `--skip-magic-trailing-comma`, then ***Prose*** second. Black collapses collections that `collection-layout` re-expands and preserves trailing commas that `strip-trailing-commas` removes |
+| **[Flake8](https://flake8.pycqa.org/)** | Add `extend-ignore = E203, E221, E272` to `.flake8` or `setup.cfg` (*and `C812` if [`flake8-commas`](https://github.com/PyCQA/flake8-commas) is installed*). Flake8 inherits the same `pycodestyle` codes Ruff inherits |
+| **[isort](https://pycqa.github.io/isort/)** | Run isort first, ***Prose*** second, with no configuration adjustment. ***Prose*** alphabetizes within isort's groups and aligns the `import` keyword that isort leaves un-aligned |
 
 ---
 
 ## 🪡 Integrations
 
-Wire *Prose* into anything that runs on save, on commit, or in CI.
+Wire ***Prose*** into anything that runs on save, on commit, or in CI.
 
 ### GitHub Actions
 
@@ -248,7 +249,7 @@ The minimal check-on-CI shape:
 - run: prose check .
 ```
 
-For inline annotations on the PR diff, use the `github` output format. *Prose* emits [workflow commands](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions) that GitHub renders as native check-run annotations:
+For inline annotations on the PR diff, use the `github` output format. ***Prose*** emits [workflow commands](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions) that GitHub renders as native check-run annotations:
 
 ```yaml
 - run: uv tool install prose-formatter
@@ -295,7 +296,7 @@ prose completions bash > /etc/bash_completion.d/prose
 prose completions fish > ~/.config/fish/completions/prose.fish
 ```
 
-`elvish` and `powershell` are also supported.
+Both `elvish` and `powershell` are supported targets for the `completions` subcommand.
 
 ---
 
@@ -303,7 +304,7 @@ prose completions fish > ~/.config/fish/completions/prose.fish
 
 ### One-Time Setup
 
-*Prose* uses [mise](https://mise.jdx.dev) to manage every toolchain and CLI through a single `mise.toml`. Install mise, wire it into your shell, then `mise install` provisions the rest.
+***Prose*** uses [mise](https://mise.jdx.dev) to manage every toolchain and CLI through a single `mise.toml`. Install mise, wire it into your shell, then `mise install` provisions the rest.
 
 #### Install Mise
 
@@ -370,7 +371,7 @@ Tasks are defined in `mise.toml` and discoverable via `mise tasks`:
 
 Install [`rust-analyzer`](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) and [`Even Better TOML`](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml). The `rust-analyzer` extension bundles its own language server, so it works without additional global Rust installs.
 
-Suggested user settings (apply to any Rust project):
+Suggested user settings (*apply to any Rust project*):
 
 ```json
 "rust-analyzer.check.command": "clippy",
