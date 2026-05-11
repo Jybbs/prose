@@ -1,0 +1,5 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+---
+multi-line-docstrings@247..247
