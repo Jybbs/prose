@@ -7,7 +7,6 @@
 //! padding widths are computed.
 
 use ruff_python_parser::ParseError;
-use ruff_text_size::Ranged;
 use thiserror::Error;
 
 use crate::diagnostics::{Diagnostic, Severity};
@@ -93,13 +92,11 @@ impl Pipeline {
                 }
                 let rule_id = rule.id();
                 let message = rule.message();
-                diagnostics.extend(edits.iter().map(|edit| Diagnostic {
-                    fix: Some(edit.clone()),
-                    message: message.to_owned(),
-                    range: edit.range(),
-                    rule: rule_id,
-                    severity: Severity::Format,
-                }));
+                diagnostics.extend(
+                    edits
+                        .iter()
+                        .map(|edit| Diagnostic::format(rule_id, edit.clone(), message.to_owned())),
+                );
                 let new_text = apply_edits(source.text(), edits);
                 debug_assert!(
                     new_text != source.text(),
@@ -189,15 +186,11 @@ mod tests {
         }
 
         fn lint(&self, _source: &Source) -> Vec<Diagnostic> {
+            let rule = self.id;
+            let message = self.message();
             self.ranges
                 .iter()
-                .map(|range| Diagnostic {
-                    fix: None,
-                    message: self.message().to_owned(),
-                    range: *range,
-                    rule: self.id,
-                    severity: Severity::Lint,
-                })
+                .map(|&range| Diagnostic::lint(rule, range, message.to_owned()))
                 .collect()
         }
 

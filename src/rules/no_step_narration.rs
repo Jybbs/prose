@@ -4,11 +4,11 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_trivia::{
-    is_pragma_comment, is_python_whitespace, CommentRanges, PythonWhitespace,
+    is_pragma_comment, is_python_whitespace, CommentRanges, Cursor, PythonWhitespace,
 };
 
 use crate::config::Config;
-use crate::diagnostics::{Diagnostic, Severity};
+use crate::diagnostics::Diagnostic;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -37,22 +37,10 @@ impl Rule for NoStepNarration {
             .comment_ranges()
             .into_iter()
             .filter(|range| CommentRanges::is_own_line(range.start(), text))
-            .filter(|range| is_step_narration(&text[*range]))
-            .map(|range| Diagnostic {
-                fix: None,
-                message: message.to_owned(),
-                range,
-                rule,
-                severity: Severity::Lint,
-            })
+            .filter(|&range| is_step_narration(&text[range]))
+            .map(|range| Diagnostic::lint(rule, range, message.to_owned()))
             .collect()
     }
-}
-
-/// `\s+\S` against `rest`.
-fn has_space_then_text(rest: &str) -> bool {
-    let trimmed = rest.trim_whitespace_start();
-    trimmed.len() < rest.len() && !trimmed.is_empty()
 }
 
 /// Returns `true` when `comment` matches the numbered-step shape and
@@ -70,36 +58,46 @@ fn is_step_narration(comment: &str) -> bool {
 
 /// Matches the `^\d+\.\s+\S` body.
 fn matches_numeric_dot(body: &str) -> bool {
-    let digits = body.bytes().take_while(u8::is_ascii_digit).count();
-    if digits == 0 {
+    let mut cursor = Cursor::new(body);
+    if !cursor.eat_if(|c| c.is_ascii_digit()) {
         return false;
     }
-    let Some(after_dot) = body[digits..].strip_prefix('.') else {
+    cursor.eat_while(|c| c.is_ascii_digit());
+    if !cursor.eat_char('.') {
         return false;
-    };
-    has_space_then_text(after_dot)
+    }
+    if !cursor.eat_if(is_python_whitespace) {
+        return false;
+    }
+    cursor.eat_while(is_python_whitespace);
+    !cursor.is_eof()
 }
 
 /// Matches the `^[Ss]tep\s+\d+[:.]\s+\S` body.
 fn matches_step_word(body: &str) -> bool {
-    let Some(after_step) = body
+    let Some(rest) = body
         .strip_prefix("Step")
         .or_else(|| body.strip_prefix("step"))
     else {
         return false;
     };
-    if !after_step.starts_with(is_python_whitespace) {
+    let mut cursor = Cursor::new(rest);
+    if !cursor.eat_if(is_python_whitespace) {
         return false;
     }
-    let rest = after_step.trim_whitespace_start();
-    let digits = rest.bytes().take_while(u8::is_ascii_digit).count();
-    if digits == 0 {
+    cursor.eat_while(is_python_whitespace);
+    if !cursor.eat_if(|c| c.is_ascii_digit()) {
         return false;
     }
-    let Some(after_sep) = rest[digits..].strip_prefix([':', '.']) else {
+    cursor.eat_while(|c| c.is_ascii_digit());
+    if !cursor.eat_if(|c| c == ':' || c == '.') {
         return false;
-    };
-    has_space_then_text(after_sep)
+    }
+    if !cursor.eat_if(is_python_whitespace) {
+        return false;
+    }
+    cursor.eat_while(is_python_whitespace);
+    !cursor.is_eof()
 }
 
 #[cfg(test)]
