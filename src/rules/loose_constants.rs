@@ -95,20 +95,6 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
     }
 }
 
-/// Returns `true` when `value` is a call whose callable resolves to
-/// `TypeVar`, `ParamSpec`, `NewType`, or `TypeAliasType`, either bare
-/// (*`TypeVar(...)`*) or attribute-qualified (*`typing.TypeVar(...)`*).
-fn is_typing_constructor_call(value: &Expr) -> bool {
-    let last = value
-        .as_call_expr()
-        .and_then(|call| UnqualifiedName::from_expr(&call.func))
-        .and_then(|q| q.segments().last().copied());
-    matches!(
-        last,
-        Some("NewType" | "ParamSpec" | "TypeAliasType" | "TypeVar"),
-    )
-}
-
 /// Returns `true` when `target.id` matches `SCREAMING_CASE`, is not a
 /// dunder, is not in the per-project allowlist, and (when present) the
 /// right-hand side is not a `TypeVar` / `ParamSpec` / `NewType` /
@@ -142,6 +128,20 @@ fn is_type_checking_block(stmt: &StmtIf) -> bool {
         Expr::Attribute(attr) => attr.attr.as_str() == "TYPE_CHECKING",
         _ => false,
     }
+}
+
+/// Returns `true` when `value` is a call whose callable resolves to
+/// `TypeVar`, `ParamSpec`, `NewType`, or `TypeAliasType`, either bare
+/// (`TypeVar(...)`) or attribute-qualified (`typing.TypeVar(...)`).
+fn is_typing_constructor_call(value: &Expr) -> bool {
+    let last = value
+        .as_call_expr()
+        .and_then(|call| UnqualifiedName::from_expr(&call.func))
+        .and_then(|q| q.segments().last().copied());
+    matches!(
+        last,
+        Some("NewType" | "ParamSpec" | "TypeAliasType" | "TypeVar"),
+    )
 }
 
 #[cfg(test)]
