@@ -1,5 +1,6 @@
 ---
 source: tests/config_parsing.rs
+assertion_line: 30
 expression: config
 input_file: tests/fixtures/config/target_version_only.toml
 ---
@@ -31,6 +32,13 @@ Config {
             enabled: true,
         },
         blank_lines: ToggleOnly {
+            enabled: true,
+        },
+        bare_import_allowlist: BareImportAllowlistConfig {
+            allow: [
+                "numpy",
+                "pandas",
+            ],
             enabled: true,
         },
         match_case_align: AlignmentConfig {
