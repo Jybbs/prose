@@ -60,6 +60,9 @@ Config {
             allow: [],
             enabled: true,
         },
+        no_step_narration: ToggleOnly {
+            enabled: true,
+        },
     },
     target_version: Some(
         PythonVersion {
