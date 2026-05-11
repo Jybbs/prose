@@ -1,5 +1,6 @@
 ---
 source: tests/diagnostics.rs
 expression: render(&diagnostics)
+input_file: tests/fixtures/bare_import_allowlist/aliased_flag.input.py
 ---
 bare-import-allowlist@202..209

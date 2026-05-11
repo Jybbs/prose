@@ -5,6 +5,8 @@
 mod common;
 
 use std::ffi::OsStr;
+use std::io::ErrorKind;
+use std::path::Path;
 
 use prose::config::Config;
 use prose::diagnostics::Diagnostic;
@@ -17,6 +19,20 @@ fn build_pipeline(directory: &str, config: &Config) -> Pipeline {
         "binding_analysis" | "identity" => Pipeline::empty(),
         _ => Pipeline::for_rule(directory, config)
             .unwrap_or_else(|| panic!("no rule registered for fixture directory `{directory}`")),
+    }
+}
+
+fn fixture_config(path: &Path) -> Config {
+    let stem = common::case_stem(path)
+        .strip_suffix(".input")
+        .expect("fixture path ends in .input.py");
+    let sidecar = path.with_file_name(format!("{stem}.config.toml"));
+    match fs_err::read_to_string(&sidecar) {
+        Ok(c) => {
+            Config::from_pyproject_str(&c).unwrap_or_else(|e| panic!("parse sidecar config: {e}"))
+        }
+        Err(e) if e.kind() == ErrorKind::NotFound => Config::default(),
+        Err(e) => panic!("read sidecar: {e}"),
     }
 }
 
@@ -41,13 +57,14 @@ fn fixtures_emit_expected_diagnostics() {
     insta::glob!("fixtures/**/*.input.py", |path| {
         let directory = path
             .parent()
-            .and_then(|p| p.file_name())
+            .and_then(Path::file_name)
             .and_then(OsStr::to_str)
             .expect("fixture path has a parent directory name");
         let case = common::case_stem(path)
             .strip_suffix(".input")
             .expect("fixture path ends in .input.py");
-        let pipeline = build_pipeline(directory, &Config::default());
+        let config = fixture_config(path);
+        let pipeline = build_pipeline(directory, &config);
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
         let (_, diagnostics) = pipeline.run(source).expect("pipeline runs");
 

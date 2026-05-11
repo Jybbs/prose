@@ -88,68 +88,16 @@ mod tests {
     use crate::diagnostics::Severity;
     use crate::test_support::parse;
 
-    fn lint_default(text: &str) -> Vec<Diagnostic> {
+    #[test]
+    fn diagnostic_shape_pins_severity_no_fix_and_message_format() {
         let rule = BareImportAllowlist::from_config(&Config::default());
-        rule.lint(&parse(text))
-    }
-
-    #[test]
-    fn aliased_import_is_flagged_on_the_top_level_segment() {
-        let diagnostics = lint_default("import os as o\n");
-        assert_eq!(diagnostics.len(), 1);
-        assert!(diagnostics[0].message.contains("`os`"));
-    }
-
-    #[test]
-    fn allowlisted_top_level_imports_emit_no_diagnostic() {
-        assert!(lint_default("import numpy\nimport pandas\n").is_empty());
-    }
-
-    #[test]
-    fn diagnostic_carries_lint_severity_and_no_fix() {
-        let diagnostics = lint_default("import os\n");
+        let diagnostics = rule.lint(&parse("import os\n"));
         let only = diagnostics.first().expect("one diagnostic");
+
         assert_eq!(only.severity, Severity::Lint);
         assert!(only.fix.is_none());
-    }
-
-    #[test]
-    fn dotted_path_inherits_top_level_allowlist_membership() {
-        assert!(lint_default("import numpy.linalg\n").is_empty());
-    }
-
-    #[test]
-    fn empty_allowlist_flags_every_bare_import() {
-        let mut config = Config::default();
-        config.rules.bare_import_allowlist.allow.clear();
-        let rule = BareImportAllowlist::from_config(&config);
-
-        let diagnostics = rule.lint(&parse("import numpy\nimport pandas\nimport os\n"));
-
-        assert_eq!(diagnostics.len(), 3);
-    }
-
-    #[test]
-    fn from_import_emits_no_diagnostic_for_a_non_allowlisted_module() {
-        assert!(lint_default("from os import path\n").is_empty());
-    }
-
-    #[test]
-    fn multi_alias_import_flags_each_non_allowlisted_segment() {
-        let text = "import os, sys, numpy\n";
-        let flagged: Vec<&str> = lint_default(text)
-            .iter()
-            .map(|d| &text[d.range])
-            .collect();
-        assert_eq!(flagged, ["os", "sys"]);
-    }
-
-    #[test]
-    fn non_allowlisted_bare_import_is_flagged() {
-        let diagnostics = lint_default("import os\n");
-        assert_eq!(diagnostics.len(), 1);
-        assert!(diagnostics[0].message.contains("`os`"));
-        assert!(diagnostics[0].message.contains("from os import"));
+        assert!(only.message.contains("`os`"));
+        assert!(only.message.contains("from os import"));
     }
 
     #[test]
