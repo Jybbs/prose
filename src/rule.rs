@@ -29,6 +29,7 @@ use crate::rules::loose_constants::LooseConstants;
 use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::multi_line_docstrings::MultiLineDocstrings;
 use crate::rules::no_single_line_docstrings::NoSingleLineDocstrings;
+use crate::rules::no_step_narration::NoStepNarration;
 use crate::rules::singleton_rule::SingletonRule;
 use crate::rules::strip_trailing_commas::StripTrailingCommas;
 use crate::source::Source;
@@ -218,6 +219,7 @@ register_rules! {
     align_equals:               AlignmentConfig        => AlignEquals            => "align consecutive `=` operators",
     singleton_rule:             ToggleOnly             => SingletonRule          => "drop padding from singleton group",
     loose_constants:            LooseConstantsConfig   => LooseConstants         => "consider moving this module-level constant",
+    no_step_narration:          ToggleOnly             => NoStepNarration        => "numbered-step comment found. Consider extracting each step as a named function",
 }
 
 #[cfg(test)]
