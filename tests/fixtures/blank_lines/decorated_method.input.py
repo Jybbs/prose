@@ -1,0 +1,16 @@
+"""
+A class-body method with a leading decorator has its leading edge
+counted from the decorator. The rule normalizes the class-scope
+canonical of 1 blank line above the decorator line.
+"""
+
+
+class Posting:
+    def first(self):
+        return 1
+
+
+
+    @cached_property
+    def second(self):
+        return 2

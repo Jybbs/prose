@@ -1,0 +1,19 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/decorated_def.input.py
+---
+"""
+A module-level def with a leading decorator has its leading edge
+counted from the decorator line. The rule normalizes the blank-line
+count above the decorator.
+"""
+
+
+def first():
+    return 1
+
+
+@decorator
+def second():
+    return 2

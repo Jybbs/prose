@@ -15,7 +15,7 @@
 ***Prose*** formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries and lists, alphabetizes methods and fields within their groups, applies a singleton rule for colon padding, and treats code like prose rather than minified text.
 
 > [!NOTE]
-> ***Prose*** is currently in alpha, meaning the **eight** [auto-fix rules](#rules) below ship in `0.1.x`. The `0.2` cycle expands the surface around them (*structured output formats, suppression directives, rule subsetting, an exit-code matrix*) and brings additional auto-fix and lint-only rules online.
+> ***Prose*** is currently in alpha, meaning the **eight** [auto-fix rules](#-rules) below ship in `0.1.x`. The `0.2` cycle expands the surface around them (*structured output formats, suppression directives, rule subsetting, an exit-code matrix*) and brings additional auto-fix and lint-only rules online.
 
 ---
 
@@ -96,6 +96,7 @@ When two outcomes apply to the same run, the higher number wins. `prose --help` 
 | `align-equals` | Consecutive assignments at the same indentation |
 | `align-imports` | The `import` keyword in `from ... import ...` groups and `as` in `import ... as ...` groups |
 | `alphabetize` | Classes, methods (*grouped dunders → properties → privates → publics*), enum members, Pydantic fields (*required then optional*), function parameters, keyword arguments, and `from` imports |
+| `blank-lines` | Module-level `def` and `class` carry 2 blank lines before them, methods inside a class body carry 1, and a module-level statement after `if __name__ == "__main__":` carries 1 |
 | `collection-layout` | Expands `dict`, `list`, and `set` literals to one entry per line, even when they fit inline |
 | `match-case-align` | Single-expression case bodies |
 | `singleton-rule` | Skips colon padding when only one item exists in the aligned group |
@@ -202,7 +203,7 @@ Docstrings carry two readings inside one triple-quoted region. Description prose
 
 **Alignment rules** are `align-colons`, `align-equals`, `align-imports`, and `match-case-align`. **Toggle-only rules** are `alphabetize`, `singleton-rule`, and `strip-trailing-commas`.
 
-Per-invocation overrides via `--select` and `--ignore` (*see [Install & Usage](#install--usage) above*) take precedence over the configured-enabled set.
+Per-invocation overrides via `--select` and `--ignore` (*see [Install & Usage](#-install--usage) above*) take precedence over the configured-enabled set.
 
 ---
 
@@ -270,7 +271,7 @@ For findings that persist across runs and surface in [Code Scanning](https://doc
     sarif_file: prose.sarif
 ```
 
-CI gates compile against the [exit-code matrix](#exit-codes) above. A non-zero status without `continue-on-error` fails the step.
+CI gates compile against the [exit-code matrix](#-exit-codes) above. A non-zero status without `continue-on-error` fails the step.
 
 ### Editor
 

@@ -1,0 +1,15 @@
+"""
+A module-level chain of `@overload`-decorated defs treats each
+adjacent pair as a regular def-after-def case, normalizing to 2 blank
+lines. The rule does not special-case overloads.
+"""
+
+
+from typing import overload
+
+@overload
+def process(x: int) -> int: ...
+@overload
+def process(x: str) -> str: ...
+def process(x):
+    return x

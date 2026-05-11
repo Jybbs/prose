@@ -1,0 +1,14 @@
+"""
+Two methods inside a class body normalize to 1 blank line between
+them, collapsing extra blanks and expanding missing ones.
+"""
+
+
+class Posting:
+    def first(self):
+        return 1
+
+
+
+    def second(self):
+        return 2

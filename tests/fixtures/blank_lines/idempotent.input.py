@@ -1,0 +1,21 @@
+"""
+A module that already carries canonical blank-line spacing round-trips
+unchanged. Two-blank gaps around module-level defs and a one-blank gap
+between methods both satisfy the rule.
+"""
+
+
+def alpha():
+    return 1
+
+
+class Posting:
+    def first(self):
+        return 1
+
+    def second(self):
+        return 2
+
+
+def beta():
+    return 2

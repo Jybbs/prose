@@ -15,6 +15,9 @@ enabled = false
 [tool.prose.rules.alphabetize]
 enabled = false
 
+[tool.prose.rules.blank-lines]
+enabled = false
+
 [tool.prose.rules.collection-layout]
 enabled = false
 max-atomics-per-line = 3
