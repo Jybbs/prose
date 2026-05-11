@@ -24,6 +24,12 @@ Config {
         strip_trailing_commas: ToggleOnly {
             enabled: false,
         },
+        no_single_line_docstrings: ToggleOnly {
+            enabled: false,
+        },
+        multi_line_docstrings: ToggleOnly {
+            enabled: false,
+        },
         blank_lines: ToggleOnly {
             enabled: false,
         },

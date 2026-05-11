@@ -26,6 +26,12 @@ max-atomics-per-line = 3
 [tool.prose.rules.match-case-align]
 enabled = false
 
+[tool.prose.rules.multi-line-docstrings]
+enabled = false
+
+[tool.prose.rules.no-single-line-docstrings]
+enabled = false
+
 [tool.prose.rules.singleton-rule]
 enabled = false
 
