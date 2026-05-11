@@ -17,15 +17,19 @@ use ruff_source_file::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use thiserror::Error;
 
+use crate::primitives::binding::BindingAnalysis;
 use crate::suppression::SuppressionMap;
 
 /// Owned wrapper around a parsed Python source file.
 ///
 /// Holds the source text, the parsed AST, the token stream, a lazy
 /// line index, a `CommentRanges` index built during parsing, and a
-/// `SuppressionMap` of `# fmt: off` / `# fmt: skip` spans.
+/// `SuppressionMap` of `# fmt: off` / `# fmt: skip` spans, plus a
+/// `BindingAnalysis` table of every name's writes and reads.
 #[derive(Debug)]
 pub struct Source {
+    #[allow(dead_code, reason = "consumer rules #62 and #70 land later in 0.2.0")]
+    binding_analysis: Box<BindingAnalysis>,
     comment_ranges: CommentRanges,
     file: SourceFile,
     parsed: Parsed<ModModule>,
@@ -41,7 +45,9 @@ impl Source {
             &file.to_source_code(),
             &comment_ranges,
         ));
+        let binding_analysis = Box::new(BindingAnalysis::new(parsed.syntax()));
         Ok(Self {
+            binding_analysis,
             comment_ranges,
             file,
             parsed,
@@ -65,6 +71,11 @@ impl Source {
 
     pub fn ast(&self) -> &ModModule {
         self.parsed.syntax()
+    }
+
+    /// Returns the binding-analysis table built during parsing.
+    pub fn binding_analysis(&self) -> &BindingAnalysis {
+        &self.binding_analysis
     }
 
     /// Returns the zero-indexed character column of `offset` on its line.

@@ -14,3 +14,5 @@ pub(crate) mod suppression;
 #[cfg(test)]
 mod test_support;
 mod walker;
+
+pub use primitives::binding::BindingAnalysis;

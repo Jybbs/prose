@@ -15,7 +15,7 @@ use prose::source::Source;
 fn build_pipeline(directory: &str, config: &Config) -> Pipeline {
     match directory {
         "composition" | "suppression" => Pipeline::with_defaults(config),
-        "identity" => Pipeline::empty(),
+        "binding_analysis" | "identity" => Pipeline::empty(),
         _ => Pipeline::for_rule(directory, config)
             .unwrap_or_else(|| panic!("no rule registered for fixture directory `{directory}`")),
     }

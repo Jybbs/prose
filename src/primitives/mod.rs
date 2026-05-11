@@ -1,5 +1,7 @@
 //! Shared primitives used across rule implementations. `aligner`
-//! emits alignment edits for groups sharing a token. `colon_targets`
+//! emits alignment edits for groups sharing a token. `binding`
+//! walks the AST once and records every name's writes and reads for
+//! consumers that ask scope-aware questions. `colon_targets`
 //! constructs alignment members at every `:` context the alignment
 //! and singleton rules consume. `edit` shapes replacement text into
 //! minimal-range edits and folds inline edits into source slices.
@@ -7,6 +9,7 @@
 //! preserving attached comments and inter-section content.
 
 pub(crate) mod aligner;
+pub(crate) mod binding;
 pub(crate) mod colon_targets;
 pub(crate) mod edit;
 pub(crate) mod orderer;
