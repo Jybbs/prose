@@ -28,7 +28,6 @@ use crate::suppression::SuppressionMap;
 /// `BindingAnalysis` table of every name's writes and reads.
 #[derive(Debug)]
 pub struct Source {
-    #[allow(dead_code, reason = "consumer rules #62 and #70 land later in 0.2.0")]
     binding_analysis: Box<BindingAnalysis>,
     comment_ranges: CommentRanges,
     file: SourceFile,

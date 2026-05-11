@@ -17,10 +17,10 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use ruff_python_ast::visitor::{walk_expr, walk_stmt, Visitor};
+use ruff_python_ast::visitor::{walk_arguments, walk_expr, walk_parameters, walk_stmt, Visitor};
 use ruff_python_ast::{
-    Expr, ExprContext, ExprDictComp, ExprGenerator, ExprLambda, ExprListComp, ExprNamed,
-    ExprSetComp, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign,
+    Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed, ExprSetComp,
+    ExprTuple, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign,
     StmtClassDef, StmtFor, StmtFunctionDef, StmtImport, StmtImportFrom, StmtTry, StmtWith,
 };
 use ruff_text_size::{Ranged, TextSize};
@@ -88,8 +88,6 @@ pub struct BindingAnalysis {
     scopes: Vec<Scope>,
 }
 
-const MODULE_SCOPE: ScopeId = ScopeId(0);
-
 #[allow(dead_code, reason = "consumer rules #62 and #70 land later in 0.2.0")]
 impl BindingAnalysis {
     /// Walks `module` once and returns the resulting binding table.
@@ -122,10 +120,11 @@ impl BindingAnalysis {
     /// Returns `true` when `name` has a module-scope write event at
     /// any offset strictly less than `offset`.
     pub(crate) fn is_defined_before(&self, name: &str, offset: TextSize) -> bool {
-        self.scopes[MODULE_SCOPE.0 as usize]
+        self.scopes[0]
             .bindings
             .get(name)
-            .is_some_and(|&id| self.binding(id).write_offsets.iter().any(|&o| o < offset))
+            .and_then(|&id| self.binding(id).write_offsets.first())
+            .is_some_and(|&first| first < offset)
     }
 
     /// Returns the number of read events recorded for `binding`.
@@ -165,7 +164,7 @@ impl Builder {
             self.visit_expr(&decorator.expression);
         }
         if let Some(arguments) = &class.arguments {
-            self.visit_arguments(arguments);
+            walk_arguments(self, arguments);
         }
         self.record_identifier(&class.name, BindingKind::ClassDef);
         let parent = Some(self.current_scope());
@@ -179,9 +178,11 @@ impl Builder {
         generators: &[ruff_python_ast::Comprehension],
         elements: &[&Expr],
     ) {
-        let (first, rest) = generators
-            .split_first()
-            .expect("invariant: comprehension carries at least one generator");
+        let Some((first, rest)) = generators.split_first() else {
+            unreachable!(
+                "invariant: comprehension carries at least one generator (parser guarantee)"
+            );
+        };
         self.visit_expr(&first.iter);
         let parent = Some(self.current_scope());
         self.push_scope(ScopeKind::Comprehension, parent);
@@ -206,12 +207,7 @@ impl Builder {
         for decorator in &function.decorator_list {
             self.visit_expr(&decorator.expression);
         }
-        self.walk_parameter_defaults(&function.parameters);
-        for parameter in function.parameters.iter_source_order() {
-            if let Some(annotation) = parameter.annotation() {
-                self.visit_expr(annotation);
-            }
-        }
+        walk_parameters(self, &function.parameters);
         if let Some(returns) = &function.returns {
             self.visit_expr(returns);
         }
@@ -226,7 +222,7 @@ impl Builder {
 
     fn enter_lambda(&mut self, lambda: &ExprLambda) {
         if let Some(parameters) = &lambda.parameters {
-            self.walk_parameter_defaults(parameters);
+            walk_parameters(self, parameters);
         }
         let parent = Some(self.current_scope());
         self.push_scope(ScopeKind::Function, parent);
@@ -290,32 +286,20 @@ impl Builder {
 
     fn record_target(&mut self, target: &Expr, kind: BindingKind) {
         match target {
-            Expr::Name(name) => {
-                self.record_write(name.id.as_str(), name.range().start(), kind);
-            }
-            Expr::Tuple(tuple) => {
-                for element in &tuple.elts {
-                    self.record_target(element, kind);
-                }
-            }
-            Expr::List(list) => {
-                for element in &list.elts {
+            Expr::Name(name) => self.record_write(name.id.as_str(), name.range().start(), kind),
+            Expr::Tuple(ExprTuple { elts, .. }) | Expr::List(ExprList { elts, .. }) => {
+                for element in elts {
                     self.record_target(element, kind);
                 }
             }
             Expr::Starred(starred) => self.record_target(&starred.value, kind),
-            Expr::Attribute(attribute) => self.visit_expr(&attribute.value),
-            Expr::Subscript(subscript) => {
-                self.visit_expr(&subscript.value);
-                self.visit_expr(&subscript.slice);
-            }
-            _ => {}
+            _ => walk_expr(self, target),
         }
     }
 
     fn record_walrus(&mut self, named: &ExprNamed) {
         self.visit_expr(&named.value);
-        let Expr::Name(name) = &*named.target else {
+        let Some(name) = named.target.as_name_expr() else {
             unreachable!("invariant: walrus target is always Expr::Name (parser guarantee)");
         };
         let scope = self
@@ -367,17 +351,8 @@ impl Builder {
         if let Some(value) = &node.value {
             self.visit_expr(value);
         }
-        if let Expr::Name(_) = &*node.target {
+        if node.target.is_name_expr() {
             self.record_target(&node.target, BindingKind::Assignment);
-        }
-    }
-
-    fn visit_arguments(&mut self, arguments: &ruff_python_ast::Arguments) {
-        for arg in &arguments.args {
-            self.visit_expr(arg);
-        }
-        for keyword in &arguments.keywords {
-            self.visit_expr(&keyword.value);
         }
     }
 
@@ -389,17 +364,16 @@ impl Builder {
     }
 
     fn visit_aug_assign(&mut self, node: &StmtAugAssign) {
-        if let Expr::Name(name) = &*node.target {
+        if let Some(name) = node.target.as_name_expr() {
             self.record_read(name.id.as_str(), name.range().start());
-        }
-        self.visit_expr(&node.value);
-        if let Expr::Name(name) = &*node.target {
+            self.visit_expr(&node.value);
             self.record_write(
                 name.id.as_str(),
                 name.range().start(),
                 BindingKind::AugAssign,
             );
         } else {
+            self.visit_expr(&node.value);
             walk_expr(self, &node.target);
         }
     }
@@ -453,21 +427,13 @@ impl Builder {
         }
         self.visit_body(&node.body);
     }
-
-    fn walk_parameter_defaults(&mut self, parameters: &Parameters) {
-        for parameter in parameters.iter_non_variadic_params() {
-            if let Some(default) = &parameter.default {
-                self.visit_expr(default);
-            }
-        }
-    }
 }
 
 impl<'a> Visitor<'a> for Builder {
     fn visit_expr(&mut self, expr: &'a Expr) {
         match expr {
             Expr::Name(name) => {
-                if matches!(name.ctx, ExprContext::Load) {
+                if name.ctx.is_load() {
                     self.record_read(name.id.as_str(), name.range().start());
                 }
             }
