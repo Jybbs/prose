@@ -1,0 +1,8 @@
+"""
+Dunder names like `__version__`, `__all__`, and `__author__` are
+module-level by convention and pass through the rule untouched.
+"""
+
+__version__ = "0.2.0"
+__all__     = ["public"]
+__author__  = "prose"

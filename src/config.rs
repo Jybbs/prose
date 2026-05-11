@@ -171,6 +171,23 @@ pub enum MaxAlignShiftPolicy {
     Split,
 }
 
+/// Configuration for the `loose_constants` rule.
+#[derive(Debug, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct LooseConstantsConfig {
+    pub allow: Vec<String>,
+    pub enabled: bool,
+}
+
+impl Default for LooseConstantsConfig {
+    fn default() -> Self {
+        Self {
+            allow: Vec::new(),
+            enabled: true,
+        }
+    }
+}
+
 /// Sub-table shape for rules whose only knob is `enabled`.
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]

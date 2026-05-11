@@ -59,12 +59,14 @@ impl Pipeline {
     ///
     /// Per rule, the pipeline calls `apply`, drops edits inside any
     /// `# fmt: off` span via the `SuppressionMap`, derives one
-    /// `Severity::Format` `Diagnostic` per surviving edit, then
-    /// splices the edits into the current text and reparses for the
-    /// next rule. After the rule chain finishes, every `Severity::Lint`
-    /// diagnostic whose line carries a matching `# prose: ignore`
-    /// directive is dropped. An empty pipeline collapses to the
-    /// identity transform and returns no diagnostics.
+    /// `Severity::Format` `Diagnostic` per surviving edit, collects
+    /// the `Severity::Lint` diagnostics `Rule::lint` returned through
+    /// the same fmt-suppression filter, then splices the edits into
+    /// the current text and reparses for the next rule. After the
+    /// rule chain finishes, every `Severity::Lint` diagnostic whose
+    /// line carries a matching `# prose: ignore` directive is
+    /// dropped. An empty pipeline collapses to the identity transform
+    /// and returns no diagnostics.
     ///
     /// # Errors
     ///
@@ -80,6 +82,11 @@ impl Pipeline {
                 if suppression.has_format_suppression() {
                     edits.retain(|edit| !suppression.intersects(edit));
                 }
+                diagnostics.extend(
+                    rule.lint(&source)
+                        .into_iter()
+                        .filter(|d| !suppression.intersects(d.range)),
+                );
                 if edits.is_empty() {
                     return Ok((source, diagnostics));
                 }
@@ -358,6 +365,7 @@ mod tests {
         config.rules.alphabetize.enabled = false;
         config.rules.blank_lines.enabled = false;
         config.rules.collection_layout.enabled = false;
+        config.rules.loose_constants.enabled = false;
         config.rules.match_case_align.enabled = false;
         config.rules.multi_line_docstrings.enabled = false;
         config.rules.no_single_line_docstrings.enabled = false;
@@ -369,13 +377,10 @@ mod tests {
 
     #[test]
     fn with_filters_ignore_subtracts_from_configured_set() {
-        let pipeline = Pipeline::with_filters(
-            &Config::default(),
-            &[],
-            &[RuleId::from("align-equals"), RuleId::from("alphabetize")],
-        );
+        let ignore = [RuleId::from("align-equals"), RuleId::from("alphabetize")];
+        let pipeline = Pipeline::with_filters(&Config::default(), &[], &ignore);
         let slugs = registered_slugs(&pipeline);
-        assert_eq!(slugs.len(), Pipeline::known_ids().len() - 2);
+        assert_eq!(slugs.len(), Pipeline::known_ids().len() - ignore.len());
         assert!(!slugs.contains(&"align-equals"));
         assert!(!slugs.contains(&"alphabetize"));
     }
@@ -399,6 +404,7 @@ mod tests {
         config.rules.alphabetize.enabled = false;
         config.rules.blank_lines.enabled = false;
         config.rules.collection_layout.enabled = false;
+        config.rules.loose_constants.enabled = false;
         config.rules.match_case_align.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;

@@ -56,6 +56,12 @@ Config {
         singleton_rule: ToggleOnly {
             enabled: false,
         },
+        loose_constants: LooseConstantsConfig {
+            allow: [
+                "LOG_LEVEL",
+            ],
+            enabled: false,
+        },
     },
     target_version: Some(
         PythonVersion {

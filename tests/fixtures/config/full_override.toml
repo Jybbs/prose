@@ -23,6 +23,10 @@ enabled = false
 enabled = false
 max-atomics-per-line = 3
 
+[tool.prose.rules.loose-constants]
+allow = ["LOG_LEVEL"]
+enabled = false
+
 [tool.prose.rules.match-case-align]
 enabled = false
 
