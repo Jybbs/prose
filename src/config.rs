@@ -409,6 +409,20 @@ mod tests {
     }
 
     #[test]
+    fn target_version_accepts_unrecognized_minor() {
+        let config = Config::from_pyproject_str("[tool.prose]\ntarget-version = \"3.99\"\n")
+            .expect("parses");
+
+        assert_eq!(
+            config.target_version,
+            Some(PythonVersion {
+                major: 3,
+                minor: 99
+            })
+        );
+    }
+
+    #[test]
     fn target_version_defaults_to_none_when_field_absent() {
         let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
 
@@ -426,11 +440,8 @@ mod tests {
     }
 
     #[test]
-    fn target_version_explicit_value_takes_effect() {
-        let config = Config::from_pyproject_str("[tool.prose]\ntarget-version = \"3.14\"\n")
-            .expect("parses");
-
-        assert_eq!(config.target_version, Some(PythonVersion::PY314));
+    fn target_version_extra_period_returns_toml_error() {
+        assert_toml_error("[tool.prose]\ntarget-version = \"3.14.0\"\n");
     }
 
     #[test]
