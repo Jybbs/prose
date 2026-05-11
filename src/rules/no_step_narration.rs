@@ -3,7 +3,9 @@
 //! decimal-version comments are excluded.
 
 use ruff_diagnostics::Edit;
-use ruff_python_trivia::{is_pragma_comment, CommentRanges};
+use ruff_python_trivia::{
+    is_pragma_comment, is_python_whitespace, CommentRanges, PythonWhitespace,
+};
 
 use crate::config::Config;
 use crate::diagnostics::{Diagnostic, Severity};
@@ -47,18 +49,14 @@ impl Rule for NoStepNarration {
     }
 }
 
-/// `\s+\S` against `rest`, accepting only spaces and tabs.
+/// `\s+\S` against `rest`.
 fn has_space_then_text(rest: &str) -> bool {
-    let trimmed = rest.trim_start_matches(is_space_or_tab);
+    let trimmed = rest.trim_whitespace_start();
     trimmed.len() < rest.len() && !trimmed.is_empty()
 }
 
-fn is_space_or_tab(c: char) -> bool {
-    matches!(c, ' ' | '\t')
-}
-
 /// Returns `true` when `comment` matches the numbered-step shape and
-/// is not a pragma or decimal-version comment.
+/// is not a pragma comment.
 fn is_step_narration(comment: &str) -> bool {
     if is_pragma_comment(comment) {
         return false;
@@ -66,12 +64,11 @@ fn is_step_narration(comment: &str) -> bool {
     let Some(body) = comment.strip_prefix('#') else {
         return false;
     };
-    let body = body.trim_start_matches(is_space_or_tab);
+    let body = body.trim_whitespace_start();
     matches_step_word(body) || matches_numeric_dot(body)
 }
 
-/// Matches the `^\d+\.\s+\S` body, rejecting decimal versions where a
-/// digit follows the dot.
+/// Matches the `^\d+\.\s+\S` body.
 fn matches_numeric_dot(body: &str) -> bool {
     let digits = body.bytes().take_while(u8::is_ascii_digit).count();
     if digits == 0 {
@@ -80,9 +77,6 @@ fn matches_numeric_dot(body: &str) -> bool {
     let Some(after_dot) = body[digits..].strip_prefix('.') else {
         return false;
     };
-    if after_dot.as_bytes().first().is_some_and(u8::is_ascii_digit) {
-        return false;
-    }
     has_space_then_text(after_dot)
 }
 
@@ -94,10 +88,10 @@ fn matches_step_word(body: &str) -> bool {
     else {
         return false;
     };
-    if !after_step.starts_with(is_space_or_tab) {
+    if !after_step.starts_with(is_python_whitespace) {
         return false;
     }
-    let rest = after_step.trim_start_matches(is_space_or_tab);
+    let rest = after_step.trim_whitespace_start();
     let digits = rest.bytes().take_while(u8::is_ascii_digit).count();
     if digits == 0 {
         return false;
