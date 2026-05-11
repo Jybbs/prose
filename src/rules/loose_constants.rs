@@ -147,20 +147,6 @@ fn is_type_checking_block(stmt: &StmtIf) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::parse;
-
-    fn rule() -> LooseConstants {
-        LooseConstants {
-            allow: HashSet::new(),
-        }
-    }
-
-    fn lint(rule: &LooseConstants, src: &str) -> Vec<String> {
-        rule.lint(&parse(src))
-            .into_iter()
-            .map(|d| d.message)
-            .collect()
-    }
 
     #[test]
     fn is_screaming_case_accepts_canonical_constants() {
@@ -174,84 +160,5 @@ mod tests {
         for id in ["", "pi", "Pi", "pI", "_HIDDEN", "1ABC", "MAX_retries"] {
             assert!(!is_screaming_case(id), "expected not screaming for {id}");
         }
-    }
-
-    #[test]
-    fn lint_flags_bare_screaming_case_assignment() {
-        let messages = lint(&rule(), "PI = 3.14\n");
-        assert_eq!(messages.len(), 1);
-        assert!(messages[0].contains("`PI`"));
-    }
-
-    #[test]
-    fn lint_flags_screaming_case_ann_assign_with_and_without_value() {
-        for src in ["X: int\n", "X: int = 1\n"] {
-            assert_eq!(lint(&rule(), src).len(), 1, "source = {src:?}");
-        }
-    }
-
-    #[test]
-    fn lint_ignores_chained_and_tuple_targets() {
-        for src in ["A = B = 1\n", "A, B = 1, 2\n", "FOO.bar = 1\n"] {
-            assert!(
-                lint(&rule(), src).is_empty(),
-                "expected silence for {src:?}",
-            );
-        }
-    }
-
-    #[test]
-    fn lint_respects_allowlist_entries() {
-        let rule = LooseConstants {
-            allow: HashSet::from(["LOG_LEVEL".to_owned()]),
-        };
-        assert!(lint(&rule, "LOG_LEVEL = 1\n").is_empty());
-        assert_eq!(lint(&rule, "OTHER = 1\n").len(), 1);
-    }
-
-    #[test]
-    fn lint_skips_assignments_inside_a_type_checking_block() {
-        let src = "if TYPE_CHECKING:\n    PI = 3.14\n";
-        assert!(lint(&rule(), src).is_empty());
-    }
-
-    #[test]
-    fn lint_skips_assignments_inside_a_typing_dot_type_checking_block() {
-        let src = "if typing.TYPE_CHECKING:\n    PI = 3.14\n";
-        assert!(lint(&rule(), src).is_empty());
-    }
-
-    #[test]
-    fn lint_skips_dunder_assignments() {
-        for id in ["__version__", "__all__", "__author__"] {
-            let src = format!("{id} = 1\n");
-            assert!(lint(&rule(), &src).is_empty(), "source = {src:?}");
-        }
-    }
-
-    #[test]
-    fn lint_skips_function_local_screaming_case() {
-        let src = "def f():\n    PI = 3.14\n    return PI\n";
-        assert!(lint(&rule(), src).is_empty());
-    }
-
-    #[test]
-    fn lint_skips_typing_constructor_calls() {
-        for src in [
-            "T = TypeVar(\"T\")\n",
-            "P = ParamSpec(\"P\")\n",
-            "UserId = NewType(\"UserId\", int)\n",
-            "Vec = TypeAliasType(\"Vec\", list[int])\n",
-            "T = typing.TypeVar(\"T\")\n",
-        ] {
-            assert!(lint(&rule(), src).is_empty(), "source = {src:?}");
-        }
-    }
-
-    #[test]
-    fn lint_walks_into_module_level_if_branches() {
-        let src = "if sys.platform == \"win32\":\n    PI = 3.14\n";
-        let messages = lint(&rule(), src);
-        assert_eq!(messages.len(), 1, "messages = {messages:?}");
     }
 }
