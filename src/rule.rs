@@ -55,7 +55,9 @@ pub(crate) trait Rule: Send + Sync {
     /// Computes the edit list this rule would apply to `source`.
     /// Edits must not overlap after sorting, an invariant the
     /// pipeline's applicator debug-asserts.
-    fn apply(&self, source: &Source) -> Vec<Edit>;
+    fn apply(&self, _source: &Source) -> Vec<Edit> {
+        Vec::new()
+    }
 
     /// Stable, kebab-case identifier matching the rule's
     /// `[tool.prose.rules]` key. Surfaces in `--select`,
