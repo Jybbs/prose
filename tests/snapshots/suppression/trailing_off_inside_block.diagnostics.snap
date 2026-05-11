@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/trailing_off_inside_block.input.py
+---
+align-equals@184..185
+align-equals@192..193
+align-equals@221..222
+align-equals@229..230

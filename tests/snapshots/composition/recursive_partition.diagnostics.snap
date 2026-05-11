@@ -1,0 +1,32 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/recursive_partition.input.py
+---
+align-colons@1022..1022
+align-colons@1080..1080
+align-colons@1118..1118
+align-colons@1159..1159
+align-colons@1196..1196
+align-colons@1272..1272
+align-colons@1309..1309
+align-colons@1350..1350
+align-colons@1434..1434
+align-colons@1463..1463
+align-colons@1490..1490
+align-colons@1601..1601
+align-colons@1621..1621
+align-colons@1673..1673
+align-colons@1702..1702
+align-colons@1765..1765
+align-colons@1812..1812
+align-colons@1851..1851
+align-colons@1883..1883
+align-colons@781..781
+align-colons@803..803
+align-colons@827..827
+align-colons@850..850
+align-colons@967..967
+align-colons@996..996
+alphabetize@775..1882
+collection-layout@769..1447

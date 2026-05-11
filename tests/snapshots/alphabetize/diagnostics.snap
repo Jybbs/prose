@@ -1,5 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
----
-alphabetize@373..677

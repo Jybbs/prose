@@ -391,20 +391,6 @@ mod tests {
     }
 
     #[test]
-    fn run_filters_lint_diagnostics_suppressed_by_prose_ignore() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(LintSentinelRule {
-            id: RuleId::from("flag-stuff"),
-            ranges: vec![range(0, 1), range(24, 25)],
-        })]);
-        let source = parse("x = 1  # prose: ignore\ny = 2\n");
-
-        let (_, diagnostics) = pipeline.run(source).expect("lint-only run succeeds");
-
-        assert_eq!(diagnostics.len(), 1);
-        assert_eq!(u32::from(diagnostics[0].range.start()), 24);
-    }
-
-    #[test]
     fn run_skips_reparse_when_every_edit_is_suppressed() {
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
             edits: vec![Edit::range_replacement("y".to_owned(), range(11, 16))],

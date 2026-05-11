@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/nested_blocks.input.py
+---
+collection-layout@443..523
+collection-layout@629..707

@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/stray_on.input.py
+---
+align-equals@120..121
+align-equals@128..129
+align-equals@159..160
+align-equals@167..168

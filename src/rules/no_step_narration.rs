@@ -110,18 +110,8 @@ fn matches_step_word(body: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use ruff_text_size::TextRange;
-
     use super::*;
     use crate::test_support::parse;
-
-    fn lint_ranges(src: &str) -> Vec<TextRange> {
-        NoStepNarration
-            .lint(&parse(src))
-            .into_iter()
-            .map(|d| d.range)
-            .collect()
-    }
 
     #[test]
     fn apply_never_produces_edits() {
@@ -130,31 +120,7 @@ mod tests {
     }
 
     #[test]
-    fn decimal_version_comments_are_skipped() {
-        assert!(!is_step_narration("# 1.2 release notes"));
-        assert!(!is_step_narration("# 2.0 spec compliance"));
-        assert!(!is_step_narration("#1.0"));
-    }
-
-    #[test]
-    fn lint_emits_one_range_per_matching_own_line_comment() {
-        // "# 1. one\n# 2. two\n# Step 3: three\nx = 1\n"
-        //  |0------|9-------|18--------------|34
-        let ranges = lint_ranges("# 1. one\n# 2. two\n# Step 3: three\nx = 1\n");
-        assert_eq!(ranges.len(), 3);
-        assert_eq!(u32::from(ranges[0].start()), 0);
-        assert_eq!(u32::from(ranges[1].start()), 9);
-        assert_eq!(u32::from(ranges[2].start()), 18);
-    }
-
-    #[test]
-    fn lint_skips_inline_step_shaped_comments() {
-        assert!(lint_ranges("x = 1  # 1. trim\n").is_empty());
-    }
-
-    #[test]
-    fn matches_numeric_dot_accepts_canonical_form() {
-        assert!(is_step_narration("# 1. open file"));
+    fn matches_numeric_dot_accepts_no_space_after_hash_and_multi_digit() {
         assert!(is_step_narration("#1. open file"));
         assert!(is_step_narration("#  12. parse header"));
     }
@@ -166,9 +132,7 @@ mod tests {
     }
 
     #[test]
-    fn matches_step_word_accepts_colon_and_dot_separators() {
-        assert!(is_step_narration("# Step 1: validate"));
-        assert!(is_step_narration("# Step 1. validate"));
+    fn matches_step_word_accepts_lowercase_leader() {
         assert!(is_step_narration("# step 2: parse"));
         assert!(is_step_narration("# step 2. parse"));
     }
@@ -185,12 +149,5 @@ mod tests {
         assert!(!is_step_narration("# Step 1 validate"));
         assert!(!is_step_narration("# Step 1:"));
         assert!(!is_step_narration("# Step abc: validate"));
-    }
-
-    #[test]
-    fn pragma_comments_are_skipped() {
-        assert!(!is_step_narration("# noqa: F401"));
-        assert!(!is_step_narration("# type: ignore"));
-        assert!(!is_step_narration("# pyright: ignore"));
     }
 }

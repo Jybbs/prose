@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/singleton_rule/match_case.input.py
+---
+singleton-rule@174..175

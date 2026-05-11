@@ -1,8 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
----
-align-colons@213..213
-align-colons@241..241
-align-colons@263..263
-align-colons@285..285

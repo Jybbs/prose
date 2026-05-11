@@ -1,0 +1,14 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/match_dispatch.input.py
+---
+alphabetize@467..706
+blank-lines@384..386
+match-case-align@451..451
+match-case-align@544..544
+match-case-align@637..637
+match-case-align@723..729
+singleton-rule@783..784
+strip-trailing-commas@786..787
+strip-trailing-commas@833..834

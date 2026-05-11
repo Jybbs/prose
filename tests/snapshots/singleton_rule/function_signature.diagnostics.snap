@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/singleton_rule/function_signature.input.py
+---
+singleton-rule@426..427
+singleton-rule@479..480
+singleton-rule@496..497
+singleton-rule@550..551
+singleton-rule@565..566
+singleton-rule@583..584

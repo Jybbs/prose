@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_trailing_commas/pos_only_separator.input.py
+---
+strip-trailing-commas@303..304
+strip-trailing-commas@365..366

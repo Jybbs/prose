@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/mixed_groups.input.py
+---
+align-imports@367..368
+align-imports@394..395
+align-imports@435..436

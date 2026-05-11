@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/dict_mixed_keys.input.py
+---
+align-colons@282..282
+align-colons@293..293
+align-colons@308..308
+align-colons@323..323

@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/singleton_rule/dict_literal.input.py
+---
+singleton-rule@366..368
+singleton-rule@460..461
+singleton-rule@471..472

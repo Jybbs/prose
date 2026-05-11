@@ -1,0 +1,17 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/expanded_collection.input.py
+---
+align-colons@541..541
+align-colons@559..559
+align-colons@600..600
+align-colons@615..615
+align-colons@653..653
+align-colons@672..672
+align-colons@721..721
+align-colons@757..757
+align-colons@783..783
+align-colons@819..819
+alphabetize@533..823
+collection-layout@527..762

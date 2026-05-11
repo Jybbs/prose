@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/docstring_args_inline_phrase.input.py
+---
+align-colons@413..413
+align-colons@446..446
+align-colons@474..474

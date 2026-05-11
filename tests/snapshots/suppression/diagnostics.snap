@@ -1,8 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
----
-align-equals@207..208
-align-equals@215..216
-align-equals@295..296
-align-equals@302..303
