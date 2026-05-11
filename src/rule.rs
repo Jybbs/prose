@@ -23,6 +23,8 @@ use crate::rules::alphabetize::Alphabetize;
 use crate::rules::blank_lines::BlankLines;
 use crate::rules::collection_layout::CollectionLayout;
 use crate::rules::match_case_align::MatchCaseAlign;
+use crate::rules::multi_line_docstrings::MultiLineDocstrings;
+use crate::rules::no_single_line_docstrings::NoSingleLineDocstrings;
 use crate::rules::singleton_rule::SingletonRule;
 use crate::rules::strip_trailing_commas::StripTrailingCommas;
 use crate::source::Source;
@@ -192,15 +194,17 @@ macro_rules! register_rules {
 }
 
 register_rules! {
-    collection_layout:     CollectionLayoutConfig => CollectionLayout    => "expand collection to one entry per line",
-    alphabetize:           ToggleOnly             => Alphabetize         => "alphabetize this group",
-    strip_trailing_commas: ToggleOnly             => StripTrailingCommas => "strip trailing comma",
-    blank_lines:           ToggleOnly             => BlankLines          => "normalize blank-line spacing",
-    match_case_align:      AlignmentConfig        => MatchCaseAlign      => "align match-case arrows",
-    align_imports:         AlignmentConfig        => AlignImports        => "align consecutive `import`s",
-    align_colons:          AlignmentConfig        => AlignColons         => "align consecutive `:` separators",
-    align_equals:          AlignmentConfig        => AlignEquals         => "align consecutive `=` operators",
-    singleton_rule:        ToggleOnly             => SingletonRule       => "drop padding from singleton group",
+    collection_layout:          CollectionLayoutConfig => CollectionLayout      => "expand collection to one entry per line",
+    alphabetize:                ToggleOnly             => Alphabetize           => "alphabetize this group",
+    strip_trailing_commas:      ToggleOnly             => StripTrailingCommas   => "strip trailing comma",
+    no_single_line_docstrings:  ToggleOnly             => NoSingleLineDocstrings => "expand single-line docstring to multi-line form",
+    multi_line_docstrings:      ToggleOnly             => MultiLineDocstrings   => "place docstring opener and closer on their own lines",
+    blank_lines:                ToggleOnly             => BlankLines            => "normalize blank-line spacing",
+    match_case_align:           AlignmentConfig        => MatchCaseAlign        => "align match-case arrows",
+    align_imports:              AlignmentConfig        => AlignImports          => "align consecutive `import`s",
+    align_colons:               AlignmentConfig        => AlignColons           => "align consecutive `:` separators",
+    align_equals:               AlignmentConfig        => AlignEquals           => "align consecutive `=` operators",
+    singleton_rule:             ToggleOnly             => SingletonRule         => "drop padding from singleton group",
 }
 
 #[cfg(test)]

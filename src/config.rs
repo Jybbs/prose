@@ -10,6 +10,7 @@
 use std::num::NonZeroUsize;
 use std::path::Path;
 
+use ruff_python_ast::PythonVersion;
 use serde::{de::IntoDeserializer, Deserialize};
 use thiserror::Error;
 
@@ -55,9 +56,9 @@ impl Default for CollectionLayoutConfig {
 ///
 /// `code_line_length` defaults to `Some(88)`. `docstring_line_length`
 /// defaults to `Some(76)`. `docstring_structured_policy` defaults
-/// to `CodeLineLength`. Per-rule settings live under `rules`, where
-/// each rule's sub-table carries `enabled` plus that rule's own
-/// knobs.
+/// to `CodeLineLength`. `target_version` defaults to `None`.
+/// Per-rule settings live under `rules`, where each rule's sub-table
+/// carries `enabled` plus that rule's own knobs.
 #[derive(Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
@@ -65,6 +66,7 @@ pub struct Config {
     pub docstring_line_length: Option<NonZeroUsize>,
     pub docstring_structured_policy: DocstringStructuredPolicy,
     pub rules: RuleConfigs,
+    pub target_version: Option<PythonVersion>,
 }
 
 impl Default for Config {
@@ -74,6 +76,7 @@ impl Default for Config {
             docstring_line_length: NonZeroUsize::new(76),
             docstring_structured_policy: DocstringStructuredPolicy::default(),
             rules: RuleConfigs::default(),
+            target_version: None,
         }
     }
 }
@@ -403,5 +406,46 @@ mod tests {
         let config = Config::load(&nested).expect("loads");
 
         assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    }
+
+    #[test]
+    fn target_version_accepts_unrecognized_minor() {
+        let config = Config::from_pyproject_str("[tool.prose]\ntarget-version = \"3.99\"\n")
+            .expect("parses");
+
+        assert_eq!(
+            config.target_version,
+            Some(PythonVersion {
+                major: 3,
+                minor: 99
+            })
+        );
+    }
+
+    #[test]
+    fn target_version_defaults_to_none_when_field_absent() {
+        let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+
+        assert_eq!(config.target_version, None);
+    }
+
+    #[test]
+    fn target_version_every_variant_round_trips_through_serde() {
+        for version in PythonVersion::iter() {
+            let toml = format!("[tool.prose]\ntarget-version = \"{version}\"\n");
+            let config = Config::from_pyproject_str(&toml).expect("parses");
+
+            assert_eq!(config.target_version, Some(version));
+        }
+    }
+
+    #[test]
+    fn target_version_extra_period_returns_toml_error() {
+        assert_toml_error("[tool.prose]\ntarget-version = \"3.14.0\"\n");
+    }
+
+    #[test]
+    fn target_version_invalid_value_returns_toml_error() {
+        assert_toml_error("[tool.prose]\ntarget-version = \"py310\"\n");
     }
 }

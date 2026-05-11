@@ -1,0 +1,23 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/no_single_line_docstrings/nested_def_docstrings.input.py
+---
+"""
+Nested function defs each carry their own docstring, and the
+rewrite fires at every level independently.
+"""
+
+
+def outer():
+    """
+    Outer docstring.
+    """
+
+    def inner():
+        """
+        Inner docstring.
+        """
+        return 1
+
+    return inner()

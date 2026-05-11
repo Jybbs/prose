@@ -2,6 +2,7 @@
 code-line-length = 100
 docstring-line-length = 60
 docstring-structured-policy = "docstring-line-length"
+target-version = "3.14"
 
 [tool.prose.rules.align-colons]
 enabled = false
@@ -23,6 +24,12 @@ enabled = false
 max-atomics-per-line = 3
 
 [tool.prose.rules.match-case-align]
+enabled = false
+
+[tool.prose.rules.multi-line-docstrings]
+enabled = false
+
+[tool.prose.rules.no-single-line-docstrings]
 enabled = false
 
 [tool.prose.rules.singleton-rule]
