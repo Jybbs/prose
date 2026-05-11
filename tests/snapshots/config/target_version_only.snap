@@ -56,6 +56,10 @@ Config {
         singleton_rule: ToggleOnly {
             enabled: true,
         },
+        loose_constants: LooseConstantsConfig {
+            allow: [],
+            enabled: true,
+        },
     },
     target_version: Some(
         PythonVersion {
