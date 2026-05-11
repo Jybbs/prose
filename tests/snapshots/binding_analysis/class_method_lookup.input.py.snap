@@ -1,0 +1,57 @@
+---
+source: tests/binding_analysis.rs
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/class_method_lookup.input.py
+---
+bindings:
+  - kinds:
+      - Assignment
+    name: x
+    read_offsets:
+      - 263
+    scope: 0
+    write_offsets:
+      - 189
+  - kinds:
+      - ClassDef
+    name: C
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 209
+  - kinds:
+      - Assignment
+    name: x
+    read_offsets: []
+    scope: 1
+    write_offsets:
+      - 216
+  - kinds:
+      - FunctionDef
+    name: get
+    read_offsets: []
+    scope: 1
+    write_offsets:
+      - 237
+  - kinds:
+      - Parameter
+    name: self
+    read_offsets: []
+    scope: 2
+    write_offsets:
+      - 241
+scopes:
+  - bindings:
+      C: 1
+      x: 0
+    kind: Module
+    parent: ~
+  - bindings:
+      get: 3
+      x: 2
+    kind: Class
+    parent: 0
+  - bindings:
+      self: 4
+    kind: Function
+    parent: 1

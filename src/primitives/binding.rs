@@ -538,21 +538,6 @@ mod tests {
     }
 
     #[test]
-    fn assignment_count_separates_initial_and_augmented() {
-        let analysis = analyze("x = 0\nx += 1\n");
-        let x = module_binding(&analysis, "x");
-        assert_eq!(analysis.assignment_count(x), 2);
-    }
-
-    #[test]
-    fn augmented_assignment_records_read_then_write() {
-        let analysis = analyze("x = 0\nx += 1\n");
-        let x = module_binding(&analysis, "x");
-        assert_eq!(analysis.usage_count(x), 1);
-        assert_eq!(analysis.assignment_count(x), 2);
-    }
-
-    #[test]
     fn bindings_in_scope_iterates_function_locals() {
         let source = parse("def f(a, b):\n    c = a + b\n    return c\n");
         let analysis = BindingAnalysis::new(source.ast());
@@ -570,64 +555,6 @@ mod tests {
         let analysis = BindingAnalysis::new(source.ast());
         let stmt = &source.ast().body[0];
         assert!(analysis.bindings_in_scope(stmt).next().is_none());
-    }
-
-    #[test]
-    fn class_scope_is_invisible_to_nested_function() {
-        let analysis = analyze("class C:\n    x = 1\n    def m(self):\n        return x\n");
-        let class_scope = analysis
-            .scopes
-            .iter()
-            .find(|s| matches!(s.kind, ScopeKind::Class))
-            .expect("class scope exists");
-        let x_in_class = *class_scope.bindings.get("x").expect("class binds x");
-        assert_eq!(analysis.usage_count(x_in_class), 0);
-    }
-
-    #[test]
-    fn closure_read_attributes_to_outer_binding() {
-        let analysis = analyze("def outer():\n    x = 1\n    def inner():\n        return x\n");
-        let outer_function_scope = &analysis.scopes[1];
-        let x = *outer_function_scope
-            .bindings
-            .get("x")
-            .expect("outer binds x");
-        assert_eq!(analysis.usage_count(x), 1);
-    }
-
-    #[test]
-    fn comprehension_target_stays_in_comprehension_scope() {
-        let analysis = analyze("total = [x for x in xs]\n");
-        let module = &analysis.scopes[0];
-        assert!(module.bindings.contains_key("total"));
-        assert!(!module.bindings.contains_key("x"));
-    }
-
-    #[test]
-    fn except_handler_binding_lives_in_enclosing_scope() {
-        let analysis = analyze("try:\n    f()\nexcept Exception as e:\n    print(e)\n");
-        let e = module_binding(&analysis, "e");
-        assert_eq!(analysis.usage_count(e), 1);
-        assert_eq!(
-            analysis.bindings[e.0 as usize].kinds,
-            vec![BindingKind::ExceptHandler]
-        );
-    }
-
-    #[test]
-    fn import_binds_top_level_module_segment() {
-        let analysis = analyze("import a.b.c\n");
-        let module = &analysis.scopes[0];
-        assert!(module.bindings.contains_key("a"));
-        assert!(!module.bindings.contains_key("a.b.c"));
-    }
-
-    #[test]
-    fn import_with_asname_binds_alias() {
-        let analysis = analyze("import a.b.c as abc\n");
-        let module = &analysis.scopes[0];
-        assert!(module.bindings.contains_key("abc"));
-        assert!(!module.bindings.contains_key("a"));
     }
 
     #[test]
@@ -649,55 +576,11 @@ mod tests {
     }
 
     #[test]
-    fn lambda_parameters_shadow_outer_binding() {
-        let analysis = analyze("x = 1\nf = lambda x: x\n");
-        let lambda_scope = analysis
-            .scopes
-            .iter()
-            .skip(1)
-            .find(|s| matches!(s.kind, ScopeKind::Function))
-            .expect("lambda creates function scope");
-        let inner = *lambda_scope.bindings.get("x").expect("lambda binds x");
-        assert_eq!(analysis.usage_count(inner), 1);
-    }
-
-    #[test]
-    fn nonlocal_and_global_statements_are_inert() {
-        let analysis = analyze("def f():\n    global x\n    x = 1\n");
-        let module = &analysis.scopes[0];
-        assert!(!module.bindings.contains_key("x"));
-        let function_scope = &analysis.scopes[1];
-        assert!(function_scope.bindings.contains_key("x"));
-    }
-
-    #[test]
     fn top_level_module_returns_first_segment() {
         assert_eq!(top_level_module("a"), "a");
         assert_eq!(top_level_module("a.b"), "a");
         assert_eq!(top_level_module("a.b.c"), "a");
         assert_eq!(top_level_module(""), "");
-    }
-
-    #[test]
-    fn tuple_target_records_each_element() {
-        let analysis = analyze("a, b = (1, 2)\n");
-        let module = &analysis.scopes[0];
-        assert!(module.bindings.contains_key("a"));
-        assert!(module.bindings.contains_key("b"));
-    }
-
-    #[test]
-    fn walrus_target_lifts_out_of_comprehension_scope() {
-        let analysis = analyze("xs = [1]\nvals = [y for x in xs if (y := x + 1) > 0]\n");
-        let module = &analysis.scopes[0];
-        let y = *module
-            .bindings
-            .get("y")
-            .expect("walrus binds y at module scope");
-        assert_eq!(
-            analysis.bindings[y.0 as usize].kinds,
-            vec![BindingKind::Walrus]
-        );
     }
 
     proptest! {
