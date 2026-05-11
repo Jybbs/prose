@@ -1,12 +1,12 @@
 //! Runs the enabled rules against a source file in deterministic order.
 //!
-//! Each rule returns a `Vec<Edit>`. The pipeline sorts and applies the
-//! edits into a fresh buffer, then reparses before handing the new
-//! `Source` to the next rule. Alignment rules run last so earlier
-//! rewrites settle before padding widths are computed.
+//! Each rule returns a `Vec<Edit>` and a `Vec<TextRange>` of lint
+//! ranges. The pipeline sorts and applies the edits into a fresh
+//! buffer, then reparses before handing the new `Source` to the next
+//! rule. Alignment rules run last so earlier rewrites settle before
+//! padding widths are computed.
 
 use ruff_python_parser::ParseError;
-use ruff_text_size::Ranged;
 use thiserror::Error;
 
 use crate::diagnostics::{Diagnostic, Severity};
@@ -54,8 +54,8 @@ impl Pipeline {
     }
 
     /// Runs each registered rule against `source` in order and
-    /// returns the rewritten source paired with one `Diagnostic` per
-    /// surviving edit.
+    /// returns the rewritten source paired with the diagnostics each
+    /// rule emitted.
     ///
     /// Per rule, the pipeline calls `apply`, drops edits inside any
     /// `# fmt: off` span via the `SuppressionMap`, derives one
@@ -92,13 +92,11 @@ impl Pipeline {
                 }
                 let rule_id = rule.id();
                 let message = rule.message();
-                diagnostics.extend(edits.iter().map(|edit| Diagnostic {
-                    fix: Some(edit.clone()),
-                    message: message.to_owned(),
-                    range: edit.range(),
-                    rule: rule_id,
-                    severity: Severity::Format,
-                }));
+                diagnostics.extend(
+                    edits
+                        .iter()
+                        .map(|edit| Diagnostic::format(rule_id, edit.clone(), message.to_owned())),
+                );
                 let new_text = apply_edits(source.text(), edits);
                 debug_assert!(
                     new_text != source.text(),
@@ -142,6 +140,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use ruff_diagnostics::Edit;
+    use ruff_text_size::TextRange;
 
     use super::*;
     use crate::config::Config;
@@ -167,6 +166,36 @@ mod tests {
 
         fn message(&self) -> &'static str {
             "test rule"
+        }
+    }
+
+    /// Test-only lint-only rule that returns the range list supplied
+    /// at construction and never produces edits.
+    struct LintSentinelRule {
+        id: RuleId,
+        ranges: Vec<TextRange>,
+    }
+
+    impl Rule for LintSentinelRule {
+        fn apply(&self, _source: &Source) -> Vec<Edit> {
+            Vec::new()
+        }
+
+        fn id(&self) -> RuleId {
+            self.id
+        }
+
+        fn lint(&self, _source: &Source) -> Vec<Diagnostic> {
+            let rule = self.id;
+            let message = self.message();
+            self.ranges
+                .iter()
+                .map(|&range| Diagnostic::lint(rule, range, message.to_owned()))
+                .collect()
+        }
+
+        fn message(&self) -> &'static str {
+            "lint test rule"
         }
     }
 
@@ -335,6 +364,26 @@ mod tests {
     }
 
     #[test]
+    fn run_emits_lint_diagnostic_without_fix_per_lint_range() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(LintSentinelRule {
+            id: RuleId::from("flag-stuff"),
+            ranges: vec![range(0, 5), range(6, 11)],
+        })]);
+        let source = parse("x = 1\ny = 2\n");
+
+        let (result, diagnostics) = pipeline.run(source).expect("lint-only run succeeds");
+
+        assert_eq!(result.text(), "x = 1\ny = 2\n");
+        assert_eq!(diagnostics.len(), 2);
+        for diagnostic in &diagnostics {
+            assert_eq!(diagnostic.severity, Severity::Lint);
+            assert!(diagnostic.fix.is_none());
+            assert_eq!(diagnostic.rule.as_str(), "flag-stuff");
+            assert_eq!(diagnostic.message, "lint test rule");
+        }
+    }
+
+    #[test]
     fn run_skips_reparse_when_every_edit_is_suppressed() {
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
             edits: vec![Edit::range_replacement("y".to_owned(), range(11, 16))],
@@ -369,6 +418,7 @@ mod tests {
         config.rules.match_case_align.enabled = false;
         config.rules.multi_line_docstrings.enabled = false;
         config.rules.no_single_line_docstrings.enabled = false;
+        config.rules.no_step_narration.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
@@ -406,6 +456,7 @@ mod tests {
         config.rules.collection_layout.enabled = false;
         config.rules.loose_constants.enabled = false;
         config.rules.match_case_align.enabled = false;
+        config.rules.no_step_narration.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
 

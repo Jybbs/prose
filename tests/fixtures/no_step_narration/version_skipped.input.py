@@ -1,0 +1,12 @@
+"""
+A decimal-version-shaped comment carries a digit after the dot, so the
+numeric-dot pattern's whitespace-after-dot requirement excludes it.
+Version annotations never trigger the rule.
+"""
+
+# 1.2 release notes
+# 2.0 spec compliance
+
+
+def process(payload):
+    return payload

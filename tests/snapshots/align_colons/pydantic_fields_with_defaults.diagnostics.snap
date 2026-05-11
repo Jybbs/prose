@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/pydantic_fields_with_defaults.input.py
+---
+align-colons@267..267
+align-colons@295..295
+align-colons@321..321
+align-colons@338..338
+align-colons@359..359

@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/docstring_args_malformed_entry.input.py
+---
+align-colons@371..371
+align-colons@466..466
+align-colons@503..503

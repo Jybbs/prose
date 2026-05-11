@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/match_case_align/simple.input.py
+---
+match-case-align@196..196
+match-case-align@197..206
+match-case-align@246..246
+match-case-align@247..256
+match-case-align@290..290
+match-case-align@291..300

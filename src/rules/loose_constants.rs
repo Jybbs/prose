@@ -13,7 +13,7 @@ use ruff_python_ast::{Expr, ExprName, Stmt, StmtIf};
 use ruff_text_size::Ranged;
 
 use crate::config::Config;
-use crate::diagnostics::{Diagnostic, Severity};
+use crate::diagnostics::Diagnostic;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -57,16 +57,14 @@ struct Walker<'a> {
 
 impl Walker<'_> {
     fn emit(&mut self, stmt: &Stmt, name: &str) {
-        self.diagnostics.push(Diagnostic {
-            fix: None,
-            message: format!(
+        self.diagnostics.push(Diagnostic::lint(
+            self.rule,
+            stmt.range(),
+            format!(
                 "module-level constant `{name}` found. \
                  Consider an enum member, a class field, or a function-local",
             ),
-            range: stmt.range(),
-            rule: self.rule,
-            severity: Severity::Lint,
-        });
+        ));
     }
 }
 

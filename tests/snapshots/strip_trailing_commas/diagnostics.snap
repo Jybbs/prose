@@ -1,5 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
----
-strip-trailing-commas@275..276

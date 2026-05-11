@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/match_case_align/or_pattern.input.py
+---
+match-case-align@289..289
+match-case-align@290..299
+match-case-align@328..328
+match-case-align@329..338
+match-case-align@388..397

@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/basic_block.input.py
+---
+align-equals@207..208
+align-equals@215..216
+align-equals@295..296
+align-equals@302..303

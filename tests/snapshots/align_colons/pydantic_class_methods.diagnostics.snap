@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/pydantic_class_methods.input.py
+---
+align-colons@279..279
+align-colons@298..298
+align-colons@313..313
+align-colons@460..460
+align-colons@485..485

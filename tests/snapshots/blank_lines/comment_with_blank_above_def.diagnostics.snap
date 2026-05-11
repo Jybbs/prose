@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/comment_with_blank_above_def.input.py
+---
+blank-lines@316..321

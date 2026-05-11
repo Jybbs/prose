@@ -13,5 +13,6 @@ pub(crate) mod loose_constants;
 pub(crate) mod match_case_align;
 pub(crate) mod multi_line_docstrings;
 pub(crate) mod no_single_line_docstrings;
+pub(crate) mod no_step_narration;
 pub(crate) mod singleton_rule;
 pub(crate) mod strip_trailing_commas;

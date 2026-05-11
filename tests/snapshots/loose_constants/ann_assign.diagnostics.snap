@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/loose_constants/ann_assign.input.py
+---
+loose-constants@236..242
+loose-constants@243..253

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/shift_limit_split.input.py
+---
+align-imports@405..406

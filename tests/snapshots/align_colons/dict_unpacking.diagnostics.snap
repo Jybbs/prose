@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/dict_unpacking.input.py
+---
+align-colons@332..332
+align-colons@381..381
+align-colons@407..407

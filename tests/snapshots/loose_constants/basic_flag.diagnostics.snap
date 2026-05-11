@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/loose_constants/basic_flag.input.py
+---
+loose-constants@172..181
