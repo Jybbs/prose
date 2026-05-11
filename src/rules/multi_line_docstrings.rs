@@ -51,24 +51,17 @@ impl DocstringHandler for Rewriter<'_> {
         if !body.text.contains('\n') {
             return;
         }
-        let leading_ok = body.text.starts_with('\n') || body.text.starts_with('\r');
+        let leading_ok = body.text.starts_with(['\n', '\r']);
         let trailing_ok = !has_leading_content(body.range.end(), self.source.text());
         if leading_ok && trailing_ok {
             return;
         }
         let indent = indent_prefix(self.source, lit);
         let newline = self.source.newline_str();
-        let mut new_body =
-            String::with_capacity(body.text.len() + (newline.len() + indent.len()) * 2);
-        if !leading_ok {
-            new_body.push_str(newline);
-            new_body.push_str(indent);
-        }
-        new_body.push_str(body.text);
-        if !trailing_ok {
-            new_body.push_str(newline);
-            new_body.push_str(indent);
-        }
+        let pad = format!("{newline}{indent}");
+        let leading = if leading_ok { "" } else { pad.as_str() };
+        let trailing = if trailing_ok { "" } else { pad.as_str() };
+        let new_body = format!("{leading}{}{trailing}", body.text);
         self.edits
             .extend(narrowed_replacement(self.source, body.range, new_body));
     }

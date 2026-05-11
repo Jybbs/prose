@@ -1,13 +1,12 @@
 //! Shared walker for PEP 257 docstring statements, the first
 //! body-statement of the module, each class, and each function that
-//! satisfies `is_docstring_stmt`. Implementors of [`DocstringHandler`]
-//! receive every such docstring literal in source order via the
-//! trait's `walk` method. Implicitly concatenated docstring
-//! expressions are skipped, since their rewrite shape is not defined.
+//! holds a string literal as its first expression statement.
+//! Implementors of [`DocstringHandler`] receive every such docstring
+//! literal in source order via the trait's `walk` method. Implicitly
+//! concatenated docstring expressions are skipped.
 
-use ruff_python_ast::helpers::is_docstring_stmt;
 use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
-use ruff_python_ast::{Stmt, StringFlags, StringLiteral};
+use ruff_python_ast::{ExprStringLiteral, Stmt, StringFlags, StringLiteral};
 use ruff_python_trivia::{has_leading_content, leading_indentation};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
@@ -38,26 +37,24 @@ pub(crate) trait DocstringHandler {
     }
 }
 
-struct Visitor<'a, H: DocstringHandler + ?Sized> {
+struct Visitor<'a, H: DocstringHandler> {
     handler: &'a mut H,
 }
 
-impl<H: DocstringHandler + ?Sized> Visitor<'_, H> {
+impl<H: DocstringHandler> Visitor<'_, H> {
     fn consider(&mut self, body: &[Stmt]) {
         let docstring = body
             .first()
-            .filter(|s| is_docstring_stmt(s))
-            .and_then(|s| s.as_expr_stmt())
+            .and_then(Stmt::as_expr_stmt)
             .and_then(|e| e.value.as_string_literal_expr())
-            .filter(|v| !v.value.is_implicit_concatenated())
-            .and_then(|v| v.value.iter().next());
+            .and_then(ExprStringLiteral::as_single_part_string);
         if let Some(lit) = docstring {
             self.handler.handle(lit);
         }
     }
 }
 
-impl<'a, H: DocstringHandler + ?Sized> StatementVisitor<'a> for Visitor<'_, H> {
+impl<'a, H: DocstringHandler> StatementVisitor<'a> for Visitor<'_, H> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         match stmt {
             Stmt::ClassDef(c) => self.consider(&c.body),
@@ -76,8 +73,7 @@ pub(crate) fn indent_prefix<'a>(source: &'a Source, lit: &StringLiteral) -> &'a 
 
 /// Returns the body slice and source range when `lit` is triple-quoted
 /// and sits at the start of its own line. Returns `None` for
-/// non-triple-quoted literals and for inline `def f(): """..."""`
-/// shapes, where the rewrite shape is not defined.
+/// non-triple-quoted literals and inline `def f(): """..."""` shapes.
 pub(crate) fn triple_quoted_body<'a>(
     source: &'a Source,
     lit: &StringLiteral,
