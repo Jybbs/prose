@@ -51,4 +51,10 @@ Config {
             enabled: false,
         },
     },
+    target_version: Some(
+        PythonVersion {
+            major: 3,
+            minor: 14,
+        },
+    ),
 }
