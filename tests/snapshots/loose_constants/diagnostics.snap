@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+---
+loose-constants@236..242
+loose-constants@243..253
