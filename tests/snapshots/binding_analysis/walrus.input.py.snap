@@ -1,0 +1,39 @@
+---
+source: tests/binding_analysis.rs
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/walrus.input.py
+---
+bindings:
+  - kinds:
+      - FunctionDef
+    name: first_one
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 144
+  - kinds:
+      - Parameter
+    name: items
+    read_offsets:
+      - 179
+    scope: 1
+    write_offsets:
+      - 154
+  - kinds:
+      - Walrus
+    name: n
+    read_offsets:
+      - 208
+    scope: 1
+    write_offsets:
+      - 170
+scopes:
+  - bindings:
+      first_one: 0
+    kind: Module
+    parent: ~
+  - bindings:
+      items: 1
+      n: 2
+    kind: Function
+    parent: 0

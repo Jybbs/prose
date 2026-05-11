@@ -14,7 +14,7 @@ use ruff_python_formatter::{format_module_source, PyFormatOptions};
 fn build_pipeline(directory: &str, config: &Config) -> Pipeline {
     match directory {
         "composition" | "suppression" => Pipeline::with_defaults(config),
-        "identity" => Pipeline::empty(),
+        "binding_analysis" | "identity" => Pipeline::empty(),
         _ => Pipeline::for_rule(directory, config)
             .unwrap_or_else(|| panic!("no rule registered for fixture directory `{directory}`")),
     }
@@ -73,6 +73,9 @@ fn fixtures() {
         let fixture = FixturePath(path);
         let directory = fixture.directory();
         let case = fixture.case();
+        if directory == "binding_analysis" {
+            return;
+        }
 
         let config = fixture.config();
         let pipeline = build_pipeline(directory, &config);
