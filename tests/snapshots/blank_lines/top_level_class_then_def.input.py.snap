@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/top_level_class_then_def.input.py
+---
+"""
+A module-level class followed by a def normalizes to 2 blank lines
+between them, regardless of the source's actual count.
+"""
+
+
+class Posting:
+    title = "x"
+
+
+def helper():
+    return None

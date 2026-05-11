@@ -346,7 +346,7 @@ mod tests {
     fn with_defaults_registers_enabled_rules() {
         let config = Config::default();
         let pipeline = Pipeline::with_defaults(&config);
-        assert_eq!(pipeline.len(), 8);
+        assert_eq!(pipeline.len(), 9);
     }
 
     #[test]
@@ -356,6 +356,7 @@ mod tests {
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.alphabetize.enabled = false;
+        config.rules.blank_lines.enabled = false;
         config.rules.collection_layout.enabled = false;
         config.rules.match_case_align.enabled = false;
         config.rules.singleton_rule.enabled = false;
@@ -372,7 +373,7 @@ mod tests {
             &[RuleId::from("align-equals"), RuleId::from("alphabetize")],
         );
         let slugs = registered_slugs(&pipeline);
-        assert_eq!(slugs.len(), 6);
+        assert_eq!(slugs.len(), 7);
         assert!(!slugs.contains(&"align-equals"));
         assert!(!slugs.contains(&"alphabetize"));
     }
@@ -394,6 +395,7 @@ mod tests {
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.alphabetize.enabled = false;
+        config.rules.blank_lines.enabled = false;
         config.rules.collection_layout.enabled = false;
         config.rules.match_case_align.enabled = false;
         config.rules.singleton_rule.enabled = false;

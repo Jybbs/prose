@@ -24,6 +24,9 @@ Config {
         strip_trailing_commas: ToggleOnly {
             enabled: false,
         },
+        blank_lines: ToggleOnly {
+            enabled: false,
+        },
         match_case_align: AlignmentConfig {
             enabled: false,
             max_shift: 8,

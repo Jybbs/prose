@@ -1,0 +1,13 @@
+"""
+An own-line comment between two statements forms the second
+statement's leading block. The rule normalizes the canonical gap
+above the comment and 1 blank line between the comment and the
+following statement.
+"""
+
+
+def first():
+    return 1
+# describes the second helper
+def second():
+    return 2

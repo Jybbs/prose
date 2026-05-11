@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+---
+blank-lines@238..239
+blank-lines@393..394

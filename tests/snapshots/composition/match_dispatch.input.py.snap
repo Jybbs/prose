@@ -1,6 +1,6 @@
 ---
 source: tests/integration.rs
-expression: "&output"
+expression: output
 input_file: tests/fixtures/composition/match_dispatch.input.py
 ---
 """
@@ -11,6 +11,7 @@ removes the dangling commas the source carries, and the singleton
 rule strips the lone-key dict's pre-`:` padding. The full pipeline
 running twice produces no further change.
 """
+
 
 def dispatch(event):
     match event.kind:

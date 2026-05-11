@@ -20,6 +20,7 @@ use crate::rules::align_colons::AlignColons;
 use crate::rules::align_equals::AlignEquals;
 use crate::rules::align_imports::AlignImports;
 use crate::rules::alphabetize::Alphabetize;
+use crate::rules::blank_lines::BlankLines;
 use crate::rules::collection_layout::CollectionLayout;
 use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::singleton_rule::SingletonRule;
@@ -194,6 +195,7 @@ register_rules! {
     collection_layout:     CollectionLayoutConfig => CollectionLayout    => "expand collection to one entry per line",
     alphabetize:           ToggleOnly             => Alphabetize         => "alphabetize this group",
     strip_trailing_commas: ToggleOnly             => StripTrailingCommas => "strip trailing comma",
+    blank_lines:           ToggleOnly             => BlankLines          => "normalize blank-line spacing",
     match_case_align:      AlignmentConfig        => MatchCaseAlign      => "align match-case arrows",
     align_imports:         AlignmentConfig        => AlignImports        => "align consecutive `import`s",
     align_colons:          AlignmentConfig        => AlignColons         => "align consecutive `:` separators",
