@@ -16,6 +16,10 @@ enabled = false
 [tool.prose.rules.alphabetize]
 enabled = false
 
+[tool.prose.rules.bare-import-allowlist]
+allow = ["scipy", "torch"]
+enabled = false
+
 [tool.prose.rules.blank-lines]
 enabled = false
 

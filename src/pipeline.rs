@@ -412,6 +412,7 @@ mod tests {
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.alphabetize.enabled = false;
+        config.rules.bare_import_allowlist.enabled = false;
         config.rules.blank_lines.enabled = false;
         config.rules.collection_layout.enabled = false;
         config.rules.loose_constants.enabled = false;
@@ -452,6 +453,7 @@ mod tests {
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.alphabetize.enabled = false;
+        config.rules.bare_import_allowlist.enabled = false;
         config.rules.blank_lines.enabled = false;
         config.rules.collection_layout.enabled = false;
         config.rules.loose_constants.enabled = false;

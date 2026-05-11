@@ -1,0 +1,5 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+---
+bare-import-allowlist@202..209

@@ -40,6 +40,12 @@ impl Diagnostic {
     }
 }
 
+impl Ranged for Diagnostic {
+    fn range(&self) -> TextRange {
+        self.range
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Severity {
     Format,
