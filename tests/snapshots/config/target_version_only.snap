@@ -1,60 +1,60 @@
 ---
 source: tests/config_parsing.rs
 expression: config
-input_file: tests/fixtures/config/full_override.toml
+input_file: tests/fixtures/config/target_version_only.toml
 ---
 Config {
     code_line_length: Some(
-        100,
+        88,
     ),
     docstring_line_length: Some(
-        60,
+        76,
     ),
-    docstring_structured_policy: DocstringLineLength,
+    docstring_structured_policy: CodeLineLength,
     rules: RuleConfigs {
         collection_layout: CollectionLayoutConfig {
-            enabled: false,
+            enabled: true,
             max_atomics_per_line: Some(
-                3,
+                8,
             ),
         },
         alphabetize: ToggleOnly {
-            enabled: false,
+            enabled: true,
         },
         strip_trailing_commas: ToggleOnly {
-            enabled: false,
+            enabled: true,
         },
         blank_lines: ToggleOnly {
-            enabled: false,
+            enabled: true,
         },
         match_case_align: AlignmentConfig {
-            enabled: false,
+            enabled: true,
             max_shift: 8,
             max_shift_policy: Split,
         },
         align_imports: AlignmentConfig {
-            enabled: false,
+            enabled: true,
             max_shift: 8,
             max_shift_policy: Split,
         },
         align_colons: AlignmentConfig {
-            enabled: false,
+            enabled: true,
             max_shift: 8,
             max_shift_policy: Split,
         },
         align_equals: AlignmentConfig {
-            enabled: false,
+            enabled: true,
             max_shift: 8,
             max_shift_policy: Split,
         },
         singleton_rule: ToggleOnly {
-            enabled: false,
+            enabled: true,
         },
     },
     target_version: Some(
         PythonVersion {
             major: 3,
-            minor: 14,
+            minor: 10,
         },
     ),
 }
