@@ -1,5 +1,6 @@
 ---
 source: tests/diagnostics.rs
 expression: render(&diagnostics)
+input_file: tests/fixtures/binding_analysis/dunder_private.input.py
 ---
-no-single-line-docstrings@165..178
+

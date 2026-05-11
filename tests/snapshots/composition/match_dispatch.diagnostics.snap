@@ -5,6 +5,7 @@ input_file: tests/fixtures/composition/match_dispatch.input.py
 ---
 alphabetize@467..706
 blank-lines@384..386
+loose-constants@750..793
 match-case-align@451..451
 match-case-align@544..544
 match-case-align@637..637

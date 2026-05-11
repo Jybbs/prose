@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/multi_line_docstrings/opening_inline_body.input.py
+---
+multi-line-docstrings@181..181

@@ -1,6 +1,6 @@
 ---
 source: tests/diagnostics.rs
 expression: render(&diagnostics)
+input_file: tests/fixtures/no_step_narration/fmt_off_block.input.py
 ---
-loose-constants@236..242
-loose-constants@243..253
+
