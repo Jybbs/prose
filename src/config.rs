@@ -10,7 +10,7 @@
 use std::num::NonZeroUsize;
 use std::path::Path;
 
-use regex::Regex;
+use regex_lite::Regex;
 use ruff_python_ast::PythonVersion;
 use serde::{de::IntoDeserializer, Deserialize, Deserializer};
 use thiserror::Error;

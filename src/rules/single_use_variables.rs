@@ -16,7 +16,7 @@
 //!   loop targets, `with`-targets, exception handlers, and nested
 //!   `def`/`class` bindings out of the diagnostic surface.
 
-use regex::Regex;
+use regex_lite::Regex;
 use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
 use ruff_python_ast::Stmt;
 use ruff_text_size::{TextRange, TextSize};
