@@ -423,6 +423,7 @@ mod tests {
         config.rules.no_step_narration.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
+        config.rules.unused_future_annotations.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());
     }
@@ -463,6 +464,7 @@ mod tests {
         config.rules.no_step_narration.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
+        config.rules.unused_future_annotations.enabled = false;
 
         let pipeline = Pipeline::with_filters(&config, &[RuleId::from("align-equals")], &[]);
         assert_eq!(registered_slugs(&pipeline), ["align-equals"]);

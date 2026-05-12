@@ -1,0 +1,20 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/annotation_in_for_body.input.py
+---
+"""
+An `AnnAssign` inside a `for` loop body still flags the file as
+carrying annotations and routes through full binding resolution. The
+`Item` reference resolves to the class above the loop, so trigger 3
+fires and the directive is removed.
+"""
+
+
+
+class Item:
+    pass
+
+
+for x in range(3):
+    y: Item = Item()

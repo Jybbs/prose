@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/unused_future_annotations/directive_with_asname.input.py
+---
+unused-future-annotations@198..243
