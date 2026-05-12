@@ -45,5 +45,4 @@ ruff_python_formatter = { git = "https://github.com/astral-sh/ruff", tag = "0.15
 tempfile              = "3"
 
 [profile.release]
-lto   = "thin"
 strip = "symbols"
