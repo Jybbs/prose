@@ -56,27 +56,11 @@ impl Rule for LegacyUnionSyntax {
     }
 }
 
-#[derive(Copy, Clone)]
-enum TypingForm {
-    Optional,
-    Union,
-}
-
-impl TypingForm {
-    fn from_segments(segments: &[&str]) -> Option<Self> {
-        match segments {
-            ["typing" | "typing_extensions", "Optional"] => Some(Self::Optional),
-            ["typing" | "typing_extensions", "Union"] => Some(Self::Union),
-            _ => None,
-        }
-    }
-}
-
 /// Visits every `Subscript` and emits one diagnostic per match
 /// against `typing.Optional` or `typing.Union`.
 struct Walker<'a> {
     diagnostics: Vec<Diagnostic>,
-    imports: &'a HashMap<&'a str, Vec<&'a str>>,
+    imports: &'a HashMap<&'a str, QualifiedName<'a>>,
     parents: Vec<AnyNodeRef<'a>>,
     rule: RuleId,
     source: &'a Source,
@@ -87,8 +71,10 @@ impl<'a> Walker<'a> {
         let Some(qualified) = self.resolve(&subscript.value) else {
             return;
         };
-        let Some(form) = TypingForm::from_segments(qualified.segments()) else {
-            return;
+        let suffix = match qualified.segments() {
+            ["typing" | "typing_extensions", "Optional"] => " | None",
+            ["typing" | "typing_extensions", "Union"] => "",
+            _ => return,
         };
         let elements: &[Expr] = match subscript.slice.as_ref() {
             Expr::Tuple(tuple) => &tuple.elts,
@@ -99,12 +85,8 @@ impl<'a> Walker<'a> {
             .map(|e| self.source.slice(e))
             .collect::<Vec<_>>()
             .join(" | ");
-        let modern = match form {
-            TypingForm::Optional => format!("{joined} | None"),
-            TypingForm::Union => joined,
-        };
         let legacy = self.source.slice(subscript);
-        let message = format!("`{legacy}` is the legacy form. Use `{modern}`");
+        let message = format!("`{legacy}` is the legacy form. Use `{joined}{suffix}`");
         let parent = *self
             .parents
             .last()
@@ -124,7 +106,7 @@ impl<'a> Walker<'a> {
         let unqualified = UnqualifiedName::from_expr(value)?;
         let (head, tail) = unqualified.segments().split_first()?;
         let base = self.imports.get(head)?;
-        Some(base.iter().copied().chain(tail.iter().copied()).collect())
+        Some(base.clone().extend_members(tail.iter().copied()))
     }
 }
 
@@ -149,8 +131,8 @@ impl<'a> Visitor<'a> for Walker<'a> {
 /// recording the bound name and qualified path for each alias whose
 /// source is `typing` or `typing_extensions`. Imports nested below
 /// module scope are skipped.
-fn collect_typing_aliases(body: &[Stmt]) -> HashMap<&str, Vec<&str>> {
-    let mut imports: HashMap<&str, Vec<&str>> = HashMap::new();
+fn collect_typing_aliases(body: &[Stmt]) -> HashMap<&str, QualifiedName<'_>> {
+    let mut imports = HashMap::new();
     for stmt in body {
         match stmt {
             Stmt::Import(import) => {
@@ -160,7 +142,7 @@ fn collect_typing_aliases(body: &[Stmt]) -> HashMap<&str, Vec<&str>> {
                         continue;
                     }
                     let bound = alias.asname.as_ref().map_or(name, Identifier::as_str);
-                    imports.insert(bound, name.split('.').collect());
+                    imports.insert(bound, QualifiedName::user_defined(name));
                 }
             }
             Stmt::ImportFrom(import) => {
@@ -173,7 +155,11 @@ fn collect_typing_aliases(body: &[Stmt]) -> HashMap<&str, Vec<&str>> {
                 };
                 for alias in &import.names {
                     let bound = alias.asname.as_ref().unwrap_or(&alias.name).as_str();
-                    imports.insert(bound, vec![module.as_str(), alias.name.as_str()]);
+                    imports.insert(
+                        bound,
+                        QualifiedName::user_defined(module.as_str())
+                            .append_member(alias.name.as_str()),
+                    );
                 }
             }
             _ => {}
@@ -202,14 +188,20 @@ mod tests {
     fn collects_aliased_from_import() {
         let source = parse("from typing import Optional as Opt\n");
         let imports = collect_typing_aliases(&source.ast().body);
-        assert_eq!(imports.get("Opt"), Some(&vec!["typing", "Optional"]));
+        assert_eq!(
+            imports.get("Opt").map(QualifiedName::segments),
+            Some(["typing", "Optional"].as_slice()),
+        );
     }
 
     #[test]
     fn collects_aliased_module_import() {
         let source = parse("import typing as t\n");
         let imports = collect_typing_aliases(&source.ast().body);
-        assert_eq!(imports.get("t"), Some(&vec!["typing"]));
+        assert_eq!(
+            imports.get("t").map(QualifiedName::segments),
+            Some(["typing"].as_slice()),
+        );
     }
 
     #[test]
@@ -217,8 +209,8 @@ mod tests {
         let source = parse("from typing_extensions import Union\n");
         let imports = collect_typing_aliases(&source.ast().body);
         assert_eq!(
-            imports.get("Union"),
-            Some(&vec!["typing_extensions", "Union"]),
+            imports.get("Union").map(QualifiedName::segments),
+            Some(["typing_extensions", "Union"].as_slice()),
         );
     }
 
@@ -250,5 +242,11 @@ mod tests {
         assert!(only.fix.is_none());
         assert!(only.message.contains("`Optional[int]`"));
         assert!(only.message.contains("`int | None`"));
+    }
+
+    #[test]
+    fn rejects_non_typing_bare_import() {
+        let source = parse("import os\n");
+        assert!(collect_typing_aliases(&source.ast().body).is_empty());
     }
 }
