@@ -5,3 +5,4 @@ input_file: tests/fixtures/suppression/unmatched_off.input.py
 ---
 align-equals@153..154
 align-equals@161..162
+docstring-wrap@69..134

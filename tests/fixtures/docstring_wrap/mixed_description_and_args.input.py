@@ -1,0 +1,16 @@
+"""
+A docstring with both shapes wraps each region to its own budget. The
+description paragraph wraps at seventy six and the Args section wraps at
+eighty eight, surfacing the two-budget design in a single fixture.
+"""
+
+
+def render(label, count):
+    """
+    A description paragraph above the structured section that runs past the seventy six character description budget needs to wrap at seventy six.
+
+    Args:
+        label: A parameter description that runs past the eighty eight character section budget wraps at eighty eight rather than seventy six because it lives inside Args.
+        count: Number of times to render the label.
+    """
+    return label * count

@@ -27,6 +27,7 @@ use crate::rules::alphabetize::Alphabetize;
 use crate::rules::bare_import_allowlist::BareImportAllowlist;
 use crate::rules::blank_lines::BlankLines;
 use crate::rules::collection_layout::CollectionLayout;
+use crate::rules::docstring_wrap::DocstringWrap;
 use crate::rules::loose_constants::LooseConstants;
 use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::multi_line_docstrings::MultiLineDocstrings;
@@ -221,6 +222,7 @@ register_rules! {
     match_case_align:           AlignmentConfig           => MatchCaseAlign         => "align match-case arrows",
     align_imports:              AlignmentConfig           => AlignImports           => "align consecutive `import`s",
     align_colons:               AlignmentConfig           => AlignColons            => "align consecutive `:` separators",
+    docstring_wrap:             ToggleOnly                => DocstringWrap          => "wrap docstring prose to the configured budget",
     align_equals:               AlignmentConfig           => AlignEquals            => "align consecutive `=` operators",
     singleton_rule:             ToggleOnly                => SingletonRule          => "drop padding from singleton group",
     loose_constants:            LooseConstantsConfig      => LooseConstants         => "consider moving this module-level constant",

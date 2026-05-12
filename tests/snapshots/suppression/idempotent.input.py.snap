@@ -4,8 +4,8 @@ expression: output
 input_file: tests/fixtures/suppression/idempotent.input.py
 ---
 """
-Already-formatted source carrying every directive shape produces
-no further edits on a fresh pipeline run.
+Already-formatted source carrying every directive shape produces no further
+edits on a fresh pipeline run.
 """
 
 x       = 1

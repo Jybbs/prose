@@ -1,6 +1,5 @@
 ---
 source: tests/config_parsing.rs
-assertion_line: 30
 expression: config
 input_file: tests/fixtures/config/target_version_only.toml
 ---
@@ -55,6 +54,9 @@ Config {
             enabled: true,
             max_shift: 8,
             max_shift_policy: Split,
+        },
+        docstring_wrap: ToggleOnly {
+            enabled: true,
         },
         align_equals: AlignmentConfig {
             enabled: true,

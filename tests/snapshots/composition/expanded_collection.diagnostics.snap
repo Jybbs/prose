@@ -15,4 +15,5 @@ align-colons@783..783
 align-colons@819..819
 alphabetize@533..823
 collection-layout@527..762
-loose-constants@517..861
+docstring-wrap@71..493
+loose-constants@518..862

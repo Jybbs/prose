@@ -1,15 +1,15 @@
 ---
 source: tests/integration.rs
-expression: "&output"
+expression: output
 input_file: tests/fixtures/composition/class_essentials.input.py
 ---
 """
-Cross-rule composition on a small class: alphabetize reorders methods
-into the canonical dunder / property / private / public groups,
-alphabetizes annotated fields, and sorts both bare and from-import
-runs at the module top. align_colons and align_equals then settle
-the field-declaration columns. The full pipeline running twice on
-this input produces no further change.
+Cross-rule composition on a small class: alphabetize reorders methods into
+the canonical dunder / property / private / public groups, alphabetizes
+annotated fields, and sorts both bare and from-import runs at the module
+top. align_colons and align_equals then settle the field-declaration
+columns. The full pipeline running twice on this input produces no further
+change.
 """
 
 from collections import Counter

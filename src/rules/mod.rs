@@ -10,6 +10,7 @@ pub(crate) mod alphabetize;
 pub(crate) mod bare_import_allowlist;
 pub(crate) mod blank_lines;
 pub(crate) mod collection_layout;
+pub(crate) mod docstring_wrap;
 pub(crate) mod loose_constants;
 pub(crate) mod match_case_align;
 pub(crate) mod multi_line_docstrings;

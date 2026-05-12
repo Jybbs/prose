@@ -415,6 +415,7 @@ mod tests {
         config.rules.bare_import_allowlist.enabled = false;
         config.rules.blank_lines.enabled = false;
         config.rules.collection_layout.enabled = false;
+        config.rules.docstring_wrap.enabled = false;
         config.rules.loose_constants.enabled = false;
         config.rules.match_case_align.enabled = false;
         config.rules.multi_line_docstrings.enabled = false;
