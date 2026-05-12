@@ -41,7 +41,7 @@ impl SingleUseVariables {
 
 impl Rule for SingleUseVariables {
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(SingleUseVariables))
+        Self::SLUG
     }
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {

@@ -34,7 +34,7 @@ impl Rule for MultiLineDocstrings {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(MultiLineDocstrings))
+        Self::SLUG
     }
 }
 

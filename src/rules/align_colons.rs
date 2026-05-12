@@ -39,7 +39,7 @@ impl Rule for AlignColons {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(AlignColons))
+        Self::SLUG
     }
 }
 

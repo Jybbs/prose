@@ -34,7 +34,7 @@ impl Rule for StripTrailingCommas {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(StripTrailingCommas))
+        Self::SLUG
     }
 }
 

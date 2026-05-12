@@ -1133,7 +1133,6 @@ dependencies = [
  "rayon",
  "regex-lite",
  "ruff_diagnostics",
- "ruff_macros",
  "ruff_python_ast",
  "ruff_python_formatter",
  "ruff_python_parser",

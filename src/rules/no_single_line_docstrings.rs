@@ -35,7 +35,7 @@ impl Rule for NoSingleLineDocstrings {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(NoSingleLineDocstrings))
+        Self::SLUG
     }
 }
 

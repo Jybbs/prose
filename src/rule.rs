@@ -4,8 +4,8 @@
 //! Each concrete rule lives under `crate::rules`. The [`Rule`] trait
 //! and the [`RuleId`] newtype defined here are the canonical handles.
 //! The `register_rules!` macro emits [`KNOWN_IDS`], [`RuleConfigs`],
-//! [`Pipeline::for_rule`], and [`Pipeline::with_defaults`] from a
-//! registry table.
+//! [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
+//! [`Pipeline::with_filters`] from a registry table.
 
 use std::fmt;
 use std::str::FromStr;
@@ -123,17 +123,61 @@ impl FromStr for RuleId {
     }
 }
 
+/// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,
+/// starts and ends with a lowercase ASCII letter or digit, contains
+/// only lowercase ASCII letters, digits, and dashes, and has no `--`
+/// substring.
+const fn is_valid_slug(bytes: &[u8]) -> bool {
+    let mut i = 0;
+    let mut prev_was_dash = true;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b == b'-' {
+            if prev_was_dash {
+                return false;
+            }
+            prev_was_dash = true;
+        } else if matches!(b, b'a'..=b'z' | b'0'..=b'9') {
+            prev_was_dash = false;
+        } else {
+            return false;
+        }
+        i += 1;
+    }
+    !prev_was_dash
+}
+
+/// Byte-wise equality on `&[u8]` usable from const contexts.
+const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut i = 0;
+    while i < a.len() {
+        if a[i] != b[i] {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
+
 /// Generates [`KNOWN_IDS`], [`RuleConfigs`], [`message_for_id`],
 /// [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
-/// [`Pipeline::with_filters`] from a registry table. Each row pairs
-/// the rule's `[tool.prose.rules]` field name with its config
-/// sub-table type, rule struct, and one-line imperative. The
-/// kebab-case slug is derived from the type identifier via
-/// `ruff_macros::kebab_case!`.
+/// [`Pipeline::with_filters`] from a registry table. Each row leads
+/// with the rule's kebab-case slug, then its `[tool.prose.rules]`
+/// field name, config sub-table type, rule struct, and one-line
+/// imperative. The slug is the single source consumed by
+/// `RuleId::from_str`, the `[tool.prose.rules.<slug>]` section name,
+/// the `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
+///
+/// The macro asserts each slug's kebab shape and cross-row uniqueness
+/// at compile time, and emits a `pub(crate) const SLUG: RuleId` on
+/// each rule type so `id()` collapses to `Self::SLUG`.
 macro_rules! register_rules {
-    ($($field:ident: $config:ty => $ty:ident => $msg:literal),* $(,)?) => {
+    ($($slug:literal: $field:ident: $config:ty => $ty:ident => $msg:literal),* $(,)?) => {
         pub(crate) const KNOWN_IDS: &[RuleId] = &[
-            $(RuleId(ruff_macros::kebab_case!($ty))),*
+            $(RuleId($slug)),*
         ];
 
         /// Per-rule configuration parsed from `[tool.prose.rules.<name>]`.
@@ -151,11 +195,39 @@ macro_rules! register_rules {
         // row instead of the macro-emitted derive site.
         $(const _: fn() -> $config = <$config as Default>::default;)*
 
+        // Exposes each rule's slug as an inherent associated const so
+        // the rule's `id()` body collapses to `Self::SLUG`.
+        $(
+            impl $ty {
+                pub(crate) const SLUG: RuleId = RuleId($slug);
+            }
+        )*
+
+        // Asserts each slug is valid kebab-case at compile time.
+        $(const _: () = assert!(is_valid_slug($slug.as_bytes()));)*
+
+        // Asserts cross-row slug uniqueness at compile time.
+        const _: () = {
+            const SLUGS: &[&str] = &[$($slug),*];
+            let mut i = 0;
+            while i < SLUGS.len() {
+                let mut j = i + 1;
+                while j < SLUGS.len() {
+                    assert!(
+                        !slug_bytes_equal(SLUGS[i].as_bytes(), SLUGS[j].as_bytes()),
+                        "duplicate rule slug in register_rules!",
+                    );
+                    j += 1;
+                }
+                i += 1;
+            }
+        };
+
         /// Default backing for [`Rule::message`]. Matches each
         /// registered slug to its registry-supplied imperative.
-        pub(crate) fn message_for_id(id: RuleId) -> &'static str {
+        fn message_for_id(id: RuleId) -> &'static str {
             match id.as_str() {
-                $(ruff_macros::kebab_case!($ty) => $msg,)*
+                $($slug => $msg,)*
                 _ => unreachable!("rule id must be registered"),
             }
         }
@@ -169,7 +241,7 @@ macro_rules! register_rules {
             /// normalized to the canonical kebab form.
             pub fn for_rule(name: &str, config: &Config) -> Option<Self> {
                 let rule: Box<dyn Rule> = match name.replace('_', "-").as_str() {
-                    $(ruff_macros::kebab_case!($ty) => Box::new($ty::from_config(config)),)*
+                    $($slug => Box::new($ty::from_config(config)),)*
                     _ => return None,
                 };
                 Some(Self::from_rules(vec![rule]))
@@ -195,7 +267,7 @@ macro_rules! register_rules {
             ) -> Self {
                 let mut rules: Vec<Box<dyn Rule>> = Vec::new();
                 $({
-                    let id = RuleId(ruff_macros::kebab_case!($ty));
+                    let id = RuleId($slug);
                     let included = if select.is_empty() {
                         config.rules.$field.enabled
                     } else {
@@ -212,26 +284,40 @@ macro_rules! register_rules {
 }
 
 register_rules! {
-    collection_layout:          CollectionLayoutConfig    => CollectionLayout       => "expand collection to one entry per line",
-    alphabetize:                ToggleOnly                => Alphabetize            => "alphabetize this group",
-    strip_trailing_commas:      ToggleOnly                => StripTrailingCommas    => "strip trailing comma",
-    no_single_line_docstrings:  ToggleOnly                => NoSingleLineDocstrings => "expand single-line docstring to multi-line form",
-    multi_line_docstrings:      ToggleOnly                => MultiLineDocstrings    => "place docstring opener and closer on their own lines",
-    blank_lines:                ToggleOnly                => BlankLines             => "normalize blank-line spacing",
-    bare_import_allowlist:      BareImportAllowlistConfig => BareImportAllowlist    => "flag bare import outside allowlist",
-    match_case_align:           AlignmentConfig           => MatchCaseAlign         => "align match-case arrows",
-    align_imports:              AlignmentConfig           => AlignImports           => "align consecutive `import`s",
-    align_colons:               AlignmentConfig           => AlignColons            => "align consecutive `:` separators",
-    align_equals:               AlignmentConfig           => AlignEquals            => "align consecutive `=` operators",
-    singleton_rule:             ToggleOnly                => SingletonRule          => "drop padding from singleton group",
-    loose_constants:            LooseConstantsConfig      => LooseConstants         => "consider moving this module-level constant",
-    no_step_narration:          ToggleOnly                => NoStepNarration        => "numbered-step comment found. Consider extracting each step as a named function",
-    single_use_variables:       SingleUseVariablesConfig  => SingleUseVariables     => "binding is assigned and used once. Consider inlining",
+    "collection-layout":         collection_layout:         CollectionLayoutConfig    => CollectionLayout       => "expand collection to one entry per line",
+    "alphabetize":               alphabetize:               ToggleOnly                => Alphabetize            => "alphabetize this group",
+    "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas    => "strip trailing comma",
+    "no-single-line-docstrings": no_single_line_docstrings: ToggleOnly                => NoSingleLineDocstrings => "expand single-line docstring to multi-line form",
+    "multi-line-docstrings":     multi_line_docstrings:     ToggleOnly                => MultiLineDocstrings    => "place docstring opener and closer on their own lines",
+    "blank-lines":               blank_lines:               ToggleOnly                => BlankLines             => "normalize blank-line spacing",
+    "bare-import-allowlist":     bare_import_allowlist:     BareImportAllowlistConfig => BareImportAllowlist    => "flag bare import outside allowlist",
+    "match-case-align":          match_case_align:          AlignmentConfig           => MatchCaseAlign         => "align match-case arrows",
+    "align-imports":             align_imports:             AlignmentConfig           => AlignImports           => "align consecutive `import`s",
+    "align-colons":              align_colons:              AlignmentConfig           => AlignColons            => "align consecutive `:` separators",
+    "align-equals":              align_equals:              AlignmentConfig           => AlignEquals            => "align consecutive `=` operators",
+    "singleton-rule":            singleton_rule:            ToggleOnly                => SingletonRule          => "drop padding from singleton group",
+    "loose-constants":           loose_constants:           LooseConstantsConfig      => LooseConstants         => "consider moving this module-level constant",
+    "no-step-narration":         no_step_narration:         ToggleOnly                => NoStepNarration        => "numbered-step comment found. Consider extracting each step as a named function",
+    "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables     => "binding is assigned and used once. Consider inlining",
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn is_valid_slug_accepts_canonical_kebab_shapes() {
+        for valid in ["a", "a-b", "abc123", "single-use-variables"] {
+            assert!(is_valid_slug(valid.as_bytes()), "{valid}");
+        }
+    }
+
+    #[test]
+    fn is_valid_slug_rejects_invalid_shapes() {
+        for invalid in ["", "-foo", "foo-", "a--b", "Foo", "abc!"] {
+            assert!(!is_valid_slug(invalid.as_bytes()), "{invalid}");
+        }
+    }
 
     #[test]
     fn rule_id_display_and_debug_print_bare_slug() {
@@ -262,5 +348,12 @@ mod tests {
             let parsed: RuleId = id.to_string().parse().expect("known id parses");
             assert_eq!(parsed, *id);
         }
+    }
+
+    #[test]
+    fn slug_bytes_equal_matches_only_identical_slices() {
+        assert!(slug_bytes_equal(b"foo", b"foo"));
+        assert!(!slug_bytes_equal(b"foo", b"food"));
+        assert!(!slug_bytes_equal(b"foo", b"bar"));
     }
 }

@@ -21,7 +21,7 @@ impl NoStepNarration {
 
 impl Rule for NoStepNarration {
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(NoStepNarration))
+        Self::SLUG
     }
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
