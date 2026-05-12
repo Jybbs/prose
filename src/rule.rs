@@ -16,7 +16,7 @@ use thiserror::Error;
 
 use crate::config::{
     AlignmentConfig, BareImportAllowlistConfig, CollectionLayoutConfig, Config,
-    LooseConstantsConfig, ToggleOnly,
+    LooseConstantsConfig, SingleUseVariablesConfig, ToggleOnly,
 };
 use crate::diagnostics::Diagnostic;
 use crate::pipeline::Pipeline;
@@ -32,6 +32,7 @@ use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::multi_line_docstrings::MultiLineDocstrings;
 use crate::rules::no_single_line_docstrings::NoSingleLineDocstrings;
 use crate::rules::no_step_narration::NoStepNarration;
+use crate::rules::single_use_variables::SingleUseVariables;
 use crate::rules::singleton_rule::SingletonRule;
 use crate::rules::strip_trailing_commas::StripTrailingCommas;
 use crate::source::Source;
@@ -225,6 +226,7 @@ register_rules! {
     singleton_rule:             ToggleOnly                => SingletonRule          => "drop padding from singleton group",
     loose_constants:            LooseConstantsConfig      => LooseConstants         => "consider moving this module-level constant",
     no_step_narration:          ToggleOnly                => NoStepNarration        => "numbered-step comment found. Consider extracting each step as a named function",
+    single_use_variables:       SingleUseVariablesConfig  => SingleUseVariables     => "binding is assigned and used once. Consider inlining",
 }
 
 #[cfg(test)]

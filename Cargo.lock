@@ -1131,6 +1131,7 @@ dependencies = [
  "insta",
  "proptest",
  "rayon",
+ "regex",
  "ruff_diagnostics",
  "ruff_macros",
  "ruff_python_ast",

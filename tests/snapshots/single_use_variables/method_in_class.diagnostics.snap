@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/single_use_variables/method_in_class.input.py
+---
+single-use-variables@239..249

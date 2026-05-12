@@ -1,6 +1,5 @@
 ---
 source: tests/config_parsing.rs
-assertion_line: 30
 expression: config
 input_file: tests/fixtures/config/target_version_only.toml
 ---
@@ -69,6 +68,12 @@ Config {
             enabled: true,
         },
         no_step_narration: ToggleOnly {
+            enabled: true,
+        },
+        single_use_variables: SingleUseVariablesConfig {
+            allow_pattern: Regex(
+                "^_",
+            ),
             enabled: true,
         },
     },
