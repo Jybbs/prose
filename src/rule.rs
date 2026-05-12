@@ -28,6 +28,7 @@ use crate::rules::bare_import_allowlist::BareImportAllowlist;
 use crate::rules::blank_lines::BlankLines;
 use crate::rules::collection_layout::CollectionLayout;
 use crate::rules::docstring_wrap::DocstringWrap;
+use crate::rules::legacy_union_syntax::LegacyUnionSyntax;
 use crate::rules::loose_constants::LooseConstants;
 use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::multi_line_docstrings::MultiLineDocstrings;
@@ -35,6 +36,7 @@ use crate::rules::no_single_line_docstrings::NoSingleLineDocstrings;
 use crate::rules::no_step_narration::NoStepNarration;
 use crate::rules::singleton_rule::SingletonRule;
 use crate::rules::strip_trailing_commas::StripTrailingCommas;
+use crate::rules::unused_future_annotations::UnusedFutureAnnotations;
 use crate::source::Source;
 
 /// Returned when a string fails to match any registered rule slug.
@@ -212,21 +214,23 @@ macro_rules! register_rules {
 }
 
 register_rules! {
-    collection_layout:          CollectionLayoutConfig    => CollectionLayout       => "expand collection to one entry per line",
-    alphabetize:                ToggleOnly                => Alphabetize            => "alphabetize this group",
-    strip_trailing_commas:      ToggleOnly                => StripTrailingCommas    => "strip trailing comma",
-    no_single_line_docstrings:  ToggleOnly                => NoSingleLineDocstrings => "expand single-line docstring to multi-line form",
-    multi_line_docstrings:      ToggleOnly                => MultiLineDocstrings    => "place docstring opener and closer on their own lines",
-    blank_lines:                ToggleOnly                => BlankLines             => "normalize blank-line spacing",
-    bare_import_allowlist:      BareImportAllowlistConfig => BareImportAllowlist    => "flag bare import outside allowlist",
-    match_case_align:           AlignmentConfig           => MatchCaseAlign         => "align match-case arrows",
-    align_imports:              AlignmentConfig           => AlignImports           => "align consecutive `import`s",
-    align_colons:               AlignmentConfig           => AlignColons            => "align consecutive `:` separators",
-    docstring_wrap:             ToggleOnly                => DocstringWrap          => "wrap docstring prose to the configured budget",
-    align_equals:               AlignmentConfig           => AlignEquals            => "align consecutive `=` operators",
-    singleton_rule:             ToggleOnly                => SingletonRule          => "drop padding from singleton group",
-    loose_constants:            LooseConstantsConfig      => LooseConstants         => "consider moving this module-level constant",
-    no_step_narration:          ToggleOnly                => NoStepNarration        => "numbered-step comment found. Consider extracting each step as a named function",
+    collection_layout:          CollectionLayoutConfig    => CollectionLayout         => "expand collection to one entry per line",
+    alphabetize:                ToggleOnly                => Alphabetize              => "alphabetize this group",
+    strip_trailing_commas:      ToggleOnly                => StripTrailingCommas      => "strip trailing comma",
+    no_single_line_docstrings:  ToggleOnly                => NoSingleLineDocstrings   => "expand single-line docstring to multi-line form",
+    multi_line_docstrings:      ToggleOnly                => MultiLineDocstrings      => "place docstring opener and closer on their own lines",
+    unused_future_annotations:  ToggleOnly                => UnusedFutureAnnotations  => "remove unused `from __future__ import annotations`",
+    blank_lines:                ToggleOnly                => BlankLines               => "normalize blank-line spacing",
+    bare_import_allowlist:      BareImportAllowlistConfig => BareImportAllowlist      => "flag bare import outside allowlist",
+    match_case_align:           AlignmentConfig           => MatchCaseAlign           => "align match-case arrows",
+    align_imports:              AlignmentConfig           => AlignImports             => "align consecutive `import`s",
+    align_colons:               AlignmentConfig           => AlignColons              => "align consecutive `:` separators",
+    docstring_wrap:             ToggleOnly                => DocstringWrap            => "wrap docstring prose to the configured budget",
+    align_equals:               AlignmentConfig           => AlignEquals              => "align consecutive `=` operators",
+    singleton_rule:             ToggleOnly                => SingletonRule            => "drop padding from singleton group",
+    loose_constants:            LooseConstantsConfig      => LooseConstants           => "consider moving this module-level constant",
+    no_step_narration:          ToggleOnly                => NoStepNarration          => "numbered-step comment found. Consider extracting each step as a named function",
+    legacy_union_syntax:        ToggleOnly                => LegacyUnionSyntax        => "rewrite legacy `Optional`/`Union` to PEP 604 union syntax",
 }
 
 #[cfg(test)]

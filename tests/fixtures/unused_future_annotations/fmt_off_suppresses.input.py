@@ -1,0 +1,11 @@
+"""
+A `# fmt: off` block keeps the directive in place. The pipeline drops
+edits whose range overlaps a suppressed span, so suppression is
+handled centrally rather than per rule.
+"""
+
+# fmt: off
+from __future__ import annotations
+# fmt: on
+
+x = 1

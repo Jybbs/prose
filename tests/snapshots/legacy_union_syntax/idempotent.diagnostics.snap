@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/legacy_union_syntax/idempotent.input.py
+---
+legacy-union-syntax@195..208
+legacy-union-syntax@230..245
