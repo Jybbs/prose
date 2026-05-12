@@ -8,8 +8,6 @@
 //! reStructuredText markup, Sphinx directives, and Numpydoc style
 //! pass through unwrapped.
 
-use std::num::NonZeroUsize;
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::StringLiteral;
 use ruff_python_trivia::leading_indentation;
@@ -21,7 +19,6 @@ use crate::primitives::edit::narrowed_replacement;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
-/// Google-style section names recognized by the parser.
 const SECTIONS: &[&str] = &[
     "Args",
     "Attributes",
@@ -40,9 +37,14 @@ pub(crate) struct DocstringWrap {
 
 impl DocstringWrap {
     pub(crate) fn from_config(config: &Config) -> Self {
-        let description_width =
-            width_or_panic(config.docstring_line_length, "docstring-line-length");
-        let code_width = width_or_panic(config.code_line_length, "code-line-length");
+        let description_width = config
+            .docstring_line_length
+            .expect("Config::default synthesizes Some(76)")
+            .get();
+        let code_width = config
+            .code_line_length
+            .expect("Config::default synthesizes Some(88)")
+            .get();
         let section_width = match config.docstring_structured_policy {
             DocstringStructuredPolicy::CodeLineLength => code_width,
             DocstringStructuredPolicy::DocstringLineLength => description_width,
@@ -215,7 +217,10 @@ impl Walker<'_> {
 }
 
 fn is_list_marker(trimmed: &str) -> bool {
-    if ["- ", "* ", "+ "].iter().any(|m| trimmed.starts_with(m)) {
+    if trimmed
+        .strip_prefix(['-', '*', '+'])
+        .is_some_and(|rest| rest.starts_with(' '))
+    {
         return true;
     }
     let after_digits = trimmed.trim_start_matches(|c: char| c.is_ascii_digit());
@@ -235,8 +240,7 @@ fn rewrite_body(
     newline: &str,
     rule: &DocstringWrap,
 ) -> Option<String> {
-    let stripped = body.strip_prefix(newline)?;
-    let (content, closer_indent) = stripped.rsplit_once(newline)?;
+    let (content, closer_indent) = body.strip_prefix(newline)?.rsplit_once(newline)?;
 
     let mut walker = Walker {
         body_indent_chars: body_indent.chars().count(),
@@ -260,11 +264,6 @@ fn rewrite_body(
     result.push_str(newline);
     result.push_str(closer_indent);
     Some(result)
-}
-
-fn width_or_panic(opt: Option<NonZeroUsize>, field: &'static str) -> usize {
-    opt.unwrap_or_else(|| panic!("config field `{field}` defaults to Some"))
-        .get()
 }
 
 #[cfg(test)]
@@ -303,8 +302,10 @@ mod tests {
     fn description_wraps_to_default_76_character_budget() {
         let src = "\"\"\"\nThis is a long description line that exceeds the seventy six character docstring budget by a margin.\n\"\"\"\n";
         let out = run(src);
-        let body_lines: Vec<&str> = out.lines().filter(|l| !l.starts_with("\"\"\"")).collect();
-        assert!(body_lines.iter().all(|l| l.chars().count() <= 76));
+        assert!(out
+            .lines()
+            .filter(|l| !l.starts_with("\"\"\""))
+            .all(|l| l.chars().count() <= 76));
     }
 
     #[test]
