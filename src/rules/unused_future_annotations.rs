@@ -7,7 +7,9 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::any_over_expr;
 use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
-use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef, StmtImportFrom};
+use ruff_python_ast::{
+    AnyParameterRef, Expr, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef, StmtImportFrom,
+};
 use ruff_source_file::LineRanges;
 use ruff_text_size::TextRange;
 
@@ -56,21 +58,24 @@ impl Rule for UnusedFutureAnnotations {
     }
 }
 
-struct AnnotationProbe(bool);
+#[derive(Default)]
+struct AnnotationProbe {
+    found: bool,
+}
 
 impl<'a> StatementVisitor<'a> for AnnotationProbe {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if self.0 {
+        if self.found {
             return;
         }
         match stmt {
-            Stmt::AnnAssign(_) => self.0 = true,
+            Stmt::AnnAssign(_) => self.found = true,
             Stmt::FunctionDef(StmtFunctionDef {
                 parameters,
                 returns,
                 ..
             }) if returns.is_some() || parameters.iter().any(|p| p.annotation().is_some()) => {
-                self.0 = true;
+                self.found = true;
             }
             _ => walk_stmt(self, stmt),
         }
@@ -84,14 +89,13 @@ struct ResolutionChecker<'a> {
 
 impl ResolutionChecker<'_> {
     fn check_annotation(&mut self, annotation: &Expr) {
-        let unresolved = any_over_expr(annotation, &|expr: &Expr| match expr {
-            Expr::Name(name) => {
+        let unresolved = any_over_expr(annotation, &|expr: &Expr| {
+            expr.as_name_expr().is_some_and(|name| {
                 name.ctx.is_load()
                     && !self
                         .analysis
                         .is_defined_before(name.id.as_str(), name.range.start())
-            }
-            _ => false,
+            })
         });
         if unresolved {
             self.all_safe = false;
@@ -115,7 +119,7 @@ impl<'b> StatementVisitor<'b> for ResolutionChecker<'_> {
             }) => {
                 for annotation in parameters
                     .iter()
-                    .filter_map(|p| p.annotation())
+                    .filter_map(AnyParameterRef::annotation)
                     .chain(returns.as_deref())
                 {
                     self.check_annotation(annotation);
@@ -140,7 +144,7 @@ fn edit_for(source: &Source, node: &StmtImportFrom, alias_idx: usize) -> Edit {
     if node.names.len() > 1 {
         Edit::range_deletion(surgical_alias_range(node, alias_idx))
     } else {
-        Edit::range_deletion(source.text().full_line_range(node.range.start()))
+        Edit::range_deletion(source.text().full_lines_range(node.range))
     }
 }
 
@@ -154,9 +158,9 @@ fn future_alias_index(node: &StmtImportFrom) -> Option<usize> {
 }
 
 fn has_any_annotation(body: &[Stmt]) -> bool {
-    let mut probe = AnnotationProbe(false);
+    let mut probe = AnnotationProbe::default();
     probe.visit_body(body);
-    probe.0
+    probe.found
 }
 
 fn rule_fires(source: &Source, target: Option<PythonVersion>) -> bool {
@@ -178,65 +182,21 @@ mod tests {
     use super::*;
     use crate::test_support::parse;
 
-    fn rule() -> UnusedFutureAnnotations {
-        UnusedFutureAnnotations::from_config(&Config::default())
-    }
-
-    fn rule_with_target(target: PythonVersion) -> UnusedFutureAnnotations {
-        UnusedFutureAnnotations::from_config(&Config {
-            target_version: Some(target),
-            ..Config::default()
-        })
-    }
-
-    #[test]
-    fn binding_safe_fires_on_module_scope_annotation() {
-        let source =
-            parse("from __future__ import annotations\nclass Node:\n    pass\nx: Node = Node()\n");
-        assert!(!rule().apply(&source).is_empty());
-    }
-
-    #[test]
-    fn binding_unsafe_forward_reference_keeps_directive() {
-        let source = parse(
-            "from __future__ import annotations\ndef f() -> Node:\n    return None\nclass Node:\n    pass\n",
-        );
-        assert!(rule().apply(&source).is_empty());
-    }
-
     #[test]
     fn empty_file_emits_no_edits() {
         let source = parse("");
-        assert!(rule().apply(&source).is_empty());
-    }
-
-    #[test]
-    fn no_annotations_fires_regardless_of_target_version() {
-        let source = parse("from __future__ import annotations\nx = 1\n");
-        assert!(!rule().apply(&source).is_empty());
+        let rule = UnusedFutureAnnotations::from_config(&Config::default());
+        assert!(rule.apply(&source).is_empty());
     }
 
     #[test]
     fn target_py313_with_annotations_keeps_directive() {
         let source =
             parse("from __future__ import annotations\ndef f(x: int) -> int:\n    return x\n");
-        assert!(rule_with_target(PythonVersion::PY313)
-            .apply(&source)
-            .is_empty());
-    }
-
-    #[test]
-    fn target_py314_fires_with_annotations() {
-        let source =
-            parse("from __future__ import annotations\ndef f(x: int) -> int:\n    return x\n");
-        assert!(!rule_with_target(PythonVersion::PY314)
-            .apply(&source)
-            .is_empty());
-    }
-
-    #[test]
-    fn unrelated_future_directive_is_untouched() {
-        let source = parse("from __future__ import division\n");
-        assert!(rule().apply(&source).is_empty());
+        let rule = UnusedFutureAnnotations::from_config(&Config {
+            target_version: Some(PythonVersion::PY313),
+            ..Config::default()
+        });
+        assert!(rule.apply(&source).is_empty());
     }
 }

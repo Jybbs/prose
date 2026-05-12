@@ -1,0 +1,20 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/param_annotation_only.input.py
+---
+"""
+A function annotates its parameter but carries no return annotation.
+The annotation probe still recognizes the directive as load-bearing,
+and the binding-safe `Result` reference allows the directive to be
+removed under trigger 3.
+"""
+
+
+
+class Result:
+    pass
+
+
+def fetch(target: Result):
+    return target
