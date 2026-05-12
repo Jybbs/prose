@@ -1,5 +1,5 @@
 name        : Provision the cargo toolchain with a warm build cache
-description : Install mise tools, which provisions the Rust toolchain pinned in `mise.toml`, restore the Swatinem cargo cache for the given `shared-key`, and set `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` so MSVC wheel builds link with `rust-lld.exe`. Cache write-back is gated by `save-cache` so PR runs read but do not pollute caches. The Windows linker env is a no-op when not building for the MSVC target.
+description : Install mise tools, which provisions the Rust toolchain pinned in `mise.toml`, and restore the Swatinem cargo cache for the given `shared-key`. Cache write-back is gated by `save-cache` so PR runs read but do not pollute caches.
 
 inputs:
   save-cache:
@@ -16,10 +16,6 @@ runs:
   using: composite
 
   steps:
-    - name  : Use `rust-lld` for the Windows MSVC target
-      shell : bash
-      run   : echo "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER=rust-lld.exe" >> "$GITHUB_ENV"
-
     - name : Install mise tools
       uses : jdx/mise-action@1648a7812b9aeae629881980618f079932869151
       with:

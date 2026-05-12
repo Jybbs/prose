@@ -5,7 +5,6 @@
 [tools]
 "aqua:taiki-e/cargo-llvm-cov" = "latest"
 "github:bnjbvr/cargo-machete" = "latest"
-cargo-insta                   = "latest"
 maturin                       = "latest"
 python                        = "3.14"
 rust                          = { version = "stable", components = "llvm-tools-preview" }
@@ -48,6 +47,7 @@ run         = "./.github/scripts/transform_readme.py"
 
 [tasks.review]
 description = "Interactively review pending snapshot diffs"
+tools       = { cargo-insta = "latest" }
 run         = "cargo insta review"
 
 [tasks.test]
