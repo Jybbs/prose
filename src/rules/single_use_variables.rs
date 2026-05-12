@@ -151,14 +151,14 @@ mod tests {
     }
 
     #[test]
-    fn body_uses_scope_modifier_finds_global_in_nested_block() {
-        let source = parse("def f():\n    if cond:\n        global x\n");
+    fn body_uses_scope_modifier_descends_into_nested_function() {
+        let source = parse("def outer():\n    def inner():\n        nonlocal x\n");
         assert!(body_uses_scope_modifier(first_function_body(&source)));
     }
 
     #[test]
-    fn body_uses_scope_modifier_descends_into_nested_function() {
-        let source = parse("def outer():\n    def inner():\n        nonlocal x\n");
+    fn body_uses_scope_modifier_finds_global_in_nested_block() {
+        let source = parse("def f():\n    if cond:\n        global x\n");
         assert!(body_uses_scope_modifier(first_function_body(&source)));
     }
 
