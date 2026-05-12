@@ -72,6 +72,9 @@ Config {
         no_step_narration: ToggleOnly {
             enabled: false,
         },
+        legacy_union_syntax: ToggleOnly {
+            enabled: false,
+        },
     },
     target_version: Some(
         PythonVersion {

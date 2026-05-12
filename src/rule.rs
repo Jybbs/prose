@@ -27,6 +27,7 @@ use crate::rules::alphabetize::Alphabetize;
 use crate::rules::bare_import_allowlist::BareImportAllowlist;
 use crate::rules::blank_lines::BlankLines;
 use crate::rules::collection_layout::CollectionLayout;
+use crate::rules::legacy_union_syntax::LegacyUnionSyntax;
 use crate::rules::loose_constants::LooseConstants;
 use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::multi_line_docstrings::MultiLineDocstrings;
@@ -225,6 +226,7 @@ register_rules! {
     singleton_rule:             ToggleOnly                => SingletonRule          => "drop padding from singleton group",
     loose_constants:            LooseConstantsConfig      => LooseConstants         => "consider moving this module-level constant",
     no_step_narration:          ToggleOnly                => NoStepNarration        => "numbered-step comment found. Consider extracting each step as a named function",
+    legacy_union_syntax:        ToggleOnly                => LegacyUnionSyntax      => "rewrite legacy `Optional`/`Union` to PEP 604 union syntax",
 }
 
 #[cfg(test)]
