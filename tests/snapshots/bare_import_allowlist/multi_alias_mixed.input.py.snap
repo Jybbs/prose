@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_import_allowlist/multi_alias_mixed.input.py
+---
+"""
+A compound `import` flags every segment outside the allowlist while
+leaving the allowlisted ones alone. `os` and `sys` fire, `numpy` is
+preserved, all on the same statement.
+"""
+
+import os, sys, numpy

@@ -35,6 +35,23 @@ impl Default for AlignmentConfig {
     }
 }
 
+/// Configuration for the `bare_import_allowlist` rule.
+#[derive(Debug, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct BareImportAllowlistConfig {
+    pub allow: Vec<String>,
+    pub enabled: bool,
+}
+
+impl Default for BareImportAllowlistConfig {
+    fn default() -> Self {
+        Self {
+            allow: vec!["numpy".to_owned(), "pandas".to_owned()],
+            enabled: true,
+        }
+    }
+}
+
 /// Configuration for the `collection_layout` rule.
 #[derive(Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]

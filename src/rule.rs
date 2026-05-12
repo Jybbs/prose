@@ -15,7 +15,8 @@ use serde::Deserialize;
 use thiserror::Error;
 
 use crate::config::{
-    AlignmentConfig, CollectionLayoutConfig, Config, LooseConstantsConfig, ToggleOnly,
+    AlignmentConfig, BareImportAllowlistConfig, CollectionLayoutConfig, Config,
+    LooseConstantsConfig, ToggleOnly,
 };
 use crate::diagnostics::Diagnostic;
 use crate::pipeline::Pipeline;
@@ -23,6 +24,7 @@ use crate::rules::align_colons::AlignColons;
 use crate::rules::align_equals::AlignEquals;
 use crate::rules::align_imports::AlignImports;
 use crate::rules::alphabetize::Alphabetize;
+use crate::rules::bare_import_allowlist::BareImportAllowlist;
 use crate::rules::blank_lines::BlankLines;
 use crate::rules::collection_layout::CollectionLayout;
 use crate::rules::loose_constants::LooseConstants;
@@ -53,7 +55,9 @@ pub(crate) trait Rule: Send + Sync {
     /// Computes the edit list this rule would apply to `source`.
     /// Edits must not overlap after sorting, an invariant the
     /// pipeline's applicator debug-asserts.
-    fn apply(&self, source: &Source) -> Vec<Edit>;
+    fn apply(&self, _source: &Source) -> Vec<Edit> {
+        Vec::new()
+    }
 
     /// Stable, kebab-case identifier matching the rule's
     /// `[tool.prose.rules]` key. Surfaces in `--select`,
@@ -207,19 +211,20 @@ macro_rules! register_rules {
 }
 
 register_rules! {
-    collection_layout:          CollectionLayoutConfig => CollectionLayout       => "expand collection to one entry per line",
-    alphabetize:                ToggleOnly             => Alphabetize            => "alphabetize this group",
-    strip_trailing_commas:      ToggleOnly             => StripTrailingCommas    => "strip trailing comma",
-    no_single_line_docstrings:  ToggleOnly             => NoSingleLineDocstrings => "expand single-line docstring to multi-line form",
-    multi_line_docstrings:      ToggleOnly             => MultiLineDocstrings    => "place docstring opener and closer on their own lines",
-    blank_lines:                ToggleOnly             => BlankLines             => "normalize blank-line spacing",
-    match_case_align:           AlignmentConfig        => MatchCaseAlign         => "align match-case arrows",
-    align_imports:              AlignmentConfig        => AlignImports           => "align consecutive `import`s",
-    align_colons:               AlignmentConfig        => AlignColons            => "align consecutive `:` separators",
-    align_equals:               AlignmentConfig        => AlignEquals            => "align consecutive `=` operators",
-    singleton_rule:             ToggleOnly             => SingletonRule          => "drop padding from singleton group",
-    loose_constants:            LooseConstantsConfig   => LooseConstants         => "consider moving this module-level constant",
-    no_step_narration:          ToggleOnly             => NoStepNarration        => "numbered-step comment found. Consider extracting each step as a named function",
+    collection_layout:          CollectionLayoutConfig    => CollectionLayout       => "expand collection to one entry per line",
+    alphabetize:                ToggleOnly                => Alphabetize            => "alphabetize this group",
+    strip_trailing_commas:      ToggleOnly                => StripTrailingCommas    => "strip trailing comma",
+    no_single_line_docstrings:  ToggleOnly                => NoSingleLineDocstrings => "expand single-line docstring to multi-line form",
+    multi_line_docstrings:      ToggleOnly                => MultiLineDocstrings    => "place docstring opener and closer on their own lines",
+    blank_lines:                ToggleOnly                => BlankLines             => "normalize blank-line spacing",
+    bare_import_allowlist:      BareImportAllowlistConfig => BareImportAllowlist    => "flag bare import outside allowlist",
+    match_case_align:           AlignmentConfig           => MatchCaseAlign         => "align match-case arrows",
+    align_imports:              AlignmentConfig           => AlignImports           => "align consecutive `import`s",
+    align_colons:               AlignmentConfig           => AlignColons            => "align consecutive `:` separators",
+    align_equals:               AlignmentConfig           => AlignEquals            => "align consecutive `=` operators",
+    singleton_rule:             ToggleOnly                => SingletonRule          => "drop padding from singleton group",
+    loose_constants:            LooseConstantsConfig      => LooseConstants         => "consider moving this module-level constant",
+    no_step_narration:          ToggleOnly                => NoStepNarration        => "numbered-step comment found. Consider extracting each step as a named function",
 }
 
 #[cfg(test)]

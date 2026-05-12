@@ -479,7 +479,7 @@ impl<'a> Visitor<'a> for Builder {
 /// Returns the segment of `dotted` before the first `.`. Matches
 /// Python's `import a.b.c` shape, which binds `a` rather than the
 /// full dotted path.
-fn top_level_module(dotted: &str) -> &str {
+pub(crate) fn top_level_module(dotted: &str) -> &str {
     dotted.split_once('.').map_or(dotted, |(head, _)| head)
 }
 

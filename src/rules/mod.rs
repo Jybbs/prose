@@ -7,6 +7,7 @@ pub(crate) mod align_colons;
 pub(crate) mod align_equals;
 pub(crate) mod align_imports;
 pub(crate) mod alphabetize;
+pub(crate) mod bare_import_allowlist;
 pub(crate) mod blank_lines;
 pub(crate) mod collection_layout;
 pub(crate) mod loose_constants;

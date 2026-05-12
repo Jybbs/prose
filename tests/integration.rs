@@ -3,22 +3,12 @@
 mod common;
 
 use std::ffi::OsStr;
-use std::io::ErrorKind;
 use std::path::Path;
 
 use prose::config::Config;
 use prose::pipeline::Pipeline;
 use prose::source::Source;
 use ruff_python_formatter::{format_module_source, PyFormatOptions};
-
-fn build_pipeline(directory: &str, config: &Config) -> Pipeline {
-    match directory {
-        "composition" | "suppression" => Pipeline::with_defaults(config),
-        "binding_analysis" | "identity" => Pipeline::empty(),
-        _ => Pipeline::for_rule(directory, config)
-            .unwrap_or_else(|| panic!("no rule registered for fixture directory `{directory}`")),
-    }
-}
 
 struct FixturePath<'a>(&'a Path);
 
@@ -30,6 +20,10 @@ impl<'a> FixturePath<'a> {
             .expect("fixture path has a file name")
     }
 
+    fn config(&self) -> Config {
+        common::fixture_config(self.0)
+    }
+
     fn directory(&self) -> &'a str {
         self.0
             .parent()
@@ -38,32 +32,11 @@ impl<'a> FixturePath<'a> {
             .expect("fixture path has a parent directory name")
     }
 
-    fn config(&self) -> Config {
-        self.sidecar_contents()
-            .map(|c| {
-                Config::from_pyproject_str(&c)
-                    .unwrap_or_else(|e| panic!("parse sidecar config: {e}"))
-            })
-            .unwrap_or_default()
-    }
-
     fn harness_options(&self) -> common::HarnessOptions {
-        self.sidecar_contents()
+        common::sidecar_contents(self.0)
             .as_deref()
             .map(common::parse_harness_options)
             .unwrap_or_default()
-    }
-
-    fn sidecar_contents(&self) -> Option<String> {
-        let stem = common::case_stem(self.0)
-            .strip_suffix(".input")
-            .expect("fixture path ends in .input.py");
-        let sidecar = self.0.with_file_name(format!("{stem}.config.toml"));
-        match fs_err::read_to_string(&sidecar) {
-            Ok(c) => Some(c),
-            Err(e) if e.kind() == ErrorKind::NotFound => None,
-            Err(e) => panic!("read sidecar: {e}"),
-        }
     }
 }
 
@@ -78,7 +51,7 @@ fn fixtures() {
         }
 
         let config = fixture.config();
-        let pipeline = build_pipeline(directory, &config);
+        let pipeline = common::build_pipeline(directory, &config);
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
 
         let (formatted, _) = pipeline
@@ -102,7 +75,7 @@ fn fixtures() {
 
         let fresh_source =
             Source::from_path(path).expect("fixture input re-reads for determinism check");
-        let (fresh_formatted, _) = build_pipeline(directory, &config)
+        let (fresh_formatted, _) = common::build_pipeline(directory, &config)
             .run(fresh_source)
             .expect("fresh pipeline run succeeds");
         assert!(

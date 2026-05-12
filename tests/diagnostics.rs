@@ -6,19 +6,8 @@ mod common;
 
 use std::ffi::OsStr;
 
-use prose::config::Config;
 use prose::diagnostics::Diagnostic;
-use prose::pipeline::Pipeline;
 use prose::source::Source;
-
-fn build_pipeline(directory: &str, config: &Config) -> Pipeline {
-    match directory {
-        "composition" | "suppression" => Pipeline::with_defaults(config),
-        "binding_analysis" | "identity" => Pipeline::empty(),
-        _ => Pipeline::for_rule(directory, config)
-            .unwrap_or_else(|| panic!("no rule registered for fixture directory `{directory}`")),
-    }
-}
 
 fn render(diagnostics: &[Diagnostic]) -> String {
     let mut lines: Vec<String> = diagnostics
@@ -41,13 +30,14 @@ fn fixtures_emit_expected_diagnostics() {
     insta::glob!("fixtures/**/*.input.py", |path| {
         let directory = path
             .parent()
-            .and_then(|p| p.file_name())
+            .and_then(Path::file_name)
             .and_then(OsStr::to_str)
             .expect("fixture path has a parent directory name");
         let case = common::case_stem(path)
             .strip_suffix(".input")
             .expect("fixture path ends in .input.py");
-        let pipeline = build_pipeline(directory, &Config::default());
+        let config = common::fixture_config(path);
+        let pipeline = common::build_pipeline(directory, &config);
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
         let (_, diagnostics) = pipeline.run(source).expect("pipeline runs");
 

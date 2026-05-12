@@ -33,6 +33,13 @@ Config {
         blank_lines: ToggleOnly {
             enabled: false,
         },
+        bare_import_allowlist: BareImportAllowlistConfig {
+            allow: [
+                "scipy",
+                "torch",
+            ],
+            enabled: false,
+        },
         match_case_align: AlignmentConfig {
             enabled: false,
             max_shift: 8,
