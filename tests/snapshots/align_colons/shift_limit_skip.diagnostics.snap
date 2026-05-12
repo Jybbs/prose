@@ -1,9 +1,7 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 45
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/shift_limit_skip.input.py
 ---
-align-colons@223..223
-align-colons@244..244
-align-colons@296..296
-align-colons@310..310
+
