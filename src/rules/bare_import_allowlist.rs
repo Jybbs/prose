@@ -52,7 +52,7 @@ struct Visitor<'a> {
     rule: RuleId,
 }
 
-impl<'a> StatementVisitor<'a> for Visitor<'_> {
+impl<'a> StatementVisitor<'a> for Visitor<'a> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         if let Stmt::Import(import) = stmt {
             for alias in &import.names {

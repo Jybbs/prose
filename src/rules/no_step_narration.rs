@@ -2,7 +2,6 @@
 //! (`# 1. text`, `# Step 2: text`, `# step 3. text`). Pragmas and
 //! decimal-version comments are excluded.
 
-use ruff_diagnostics::Edit;
 use ruff_python_trivia::{
     is_pragma_comment, is_python_whitespace, CommentRanges, Cursor, PythonWhitespace,
 };
@@ -21,10 +20,6 @@ impl NoStepNarration {
 }
 
 impl Rule for NoStepNarration {
-    fn apply(&self, _source: &Source) -> Vec<Edit> {
-        Vec::new()
-    }
-
     fn id(&self) -> RuleId {
         RuleId::from(ruff_macros::kebab_case!(NoStepNarration))
     }

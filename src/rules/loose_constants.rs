@@ -5,7 +5,6 @@
 
 use std::collections::HashSet;
 
-use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_dunder;
 use ruff_python_ast::name::UnqualifiedName;
 use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
@@ -30,10 +29,6 @@ impl LooseConstants {
 }
 
 impl Rule for LooseConstants {
-    fn apply(&self, _source: &Source) -> Vec<Edit> {
-        Vec::new()
-    }
-
     fn id(&self) -> RuleId {
         RuleId::from(ruff_macros::kebab_case!(LooseConstants))
     }
