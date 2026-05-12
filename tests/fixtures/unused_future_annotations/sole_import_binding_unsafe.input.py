@@ -1,0 +1,15 @@
+"""
+The annotation on `visit` references `Node` before `Node` is defined at
+module scope. Eager evaluation on Python 3.13 would fail, so the
+directive stays.
+"""
+
+from __future__ import annotations
+
+
+def visit(node: Node) -> Node:
+    return node
+
+
+class Node:
+    pass

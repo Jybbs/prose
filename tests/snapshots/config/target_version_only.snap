@@ -30,6 +30,9 @@ Config {
         multi_line_docstrings: ToggleOnly {
             enabled: true,
         },
+        unused_future_annotations: ToggleOnly {
+            enabled: true,
+        },
         blank_lines: ToggleOnly {
             enabled: true,
         },
