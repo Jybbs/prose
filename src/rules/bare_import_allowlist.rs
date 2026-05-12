@@ -3,12 +3,12 @@
 
 use std::collections::HashSet;
 
-use ruff_diagnostics::Edit;
 use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
 use ruff_python_ast::Stmt;
 
 use crate::config::Config;
 use crate::diagnostics::Diagnostic;
+use crate::primitives::binding::top_level_module;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -31,10 +31,6 @@ impl BareImportAllowlist {
 }
 
 impl Rule for BareImportAllowlist {
-    fn apply(&self, _source: &Source) -> Vec<Edit> {
-        Vec::new()
-    }
-
     fn id(&self) -> RuleId {
         RuleId::from(ruff_macros::kebab_case!(BareImportAllowlist))
     }
@@ -61,10 +57,10 @@ impl<'a> StatementVisitor<'a> for Visitor<'_> {
         if let Stmt::Import(import) = stmt {
             for alias in &import.names {
                 let name = alias.name.as_str();
-                if !self.allow.contains(top_level_segment(name)) {
+                if !self.allow.contains(top_level_module(name)) {
                     self.diagnostics.push(Diagnostic::lint(
                         self.rule,
-                        alias.range,
+                        alias.name.range,
                         format!(
                             "bare import `{name}` outside allowlist. Rewrite as `from {name} import ...` listing only the symbols this module uses",
                         ),
@@ -74,12 +70,6 @@ impl<'a> StatementVisitor<'a> for Visitor<'_> {
         }
         walk_stmt(self, stmt);
     }
-}
-
-/// Returns the substring of `name` preceding the first `.`, or all of
-/// `name` when no `.` is present. `numpy.linalg` resolves to `numpy`.
-fn top_level_segment(name: &str) -> &str {
-    name.split_once('.').map_or(name, |(top, _)| top)
 }
 
 #[cfg(test)]
@@ -98,15 +88,5 @@ mod tests {
         assert!(only.fix.is_none());
         assert!(only.message.contains("`os`"));
         assert!(only.message.contains("from os import"));
-    }
-
-    #[test]
-    fn top_level_segment_returns_input_for_a_non_dotted_name() {
-        assert_eq!(top_level_segment("os"), "os");
-    }
-
-    #[test]
-    fn top_level_segment_returns_prefix_for_a_dotted_name() {
-        assert_eq!(top_level_segment("numpy.linalg"), "numpy");
     }
 }
