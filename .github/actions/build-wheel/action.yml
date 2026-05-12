@@ -1,5 +1,5 @@
 name        : Build wheel
-description : Runs `maturin-action` and uploads the resulting artifact. Caller must check out the repo and rewrite the README before invoking this composite.
+description : Provisions cargo via the shared `provision-cargo` action, runs `maturin-action`, and uploads the resulting artifact. Cache scope is keyed by `name`, so `warm.yml` populating `prose-wheel-<name>` on main pushes warms subsequent PR and tag runs that build the same target. Caller must check out the repo and rewrite the README before invoking this composite.
 
 inputs:
   command:
@@ -18,7 +18,7 @@ inputs:
 
   name:
     default     : sdist
-    description : Tag suffix in the uploaded `wheels-{name}` artifact.
+    description : Tag suffix in the uploaded `wheels-{name}` artifact and the `provision-cargo` shared-key scope.
 
   target:
     default     : ''
@@ -29,9 +29,11 @@ runs:
   using: composite
 
   steps:
-    - name : Restore Cargo cache
-      uses : Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
-      with : { cache-on-failure: 'true' }
+    - name : Provision cargo
+      uses : ./.github/actions/provision-cargo
+      with:
+        save-cache : ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        shared-key : prose-wheel-${{ inputs.name }}
 
     - name : Run maturin
       uses : PyO3/maturin-action@3e2bdf6ba6453a61e649744019b8a2d906c7eb38
