@@ -4,7 +4,6 @@
 
 [tools]
 "aqua:taiki-e/cargo-llvm-cov" = "latest"
-"github:bnjbvr/cargo-machete" = "latest"
 maturin                       = "latest"
 python                        = "3.14"
 rust                          = { version = "stable", components = "llvm-tools-preview" }
@@ -19,6 +18,7 @@ python.uv_venv_auto = "create|source"
 
 [tasks.audit]
 description = "Detect unused dependencies in `Cargo.toml`"
+tools       = { "github:bnjbvr/cargo-machete" = "latest" }
 run         = "cargo machete"
 
 [tasks.build]

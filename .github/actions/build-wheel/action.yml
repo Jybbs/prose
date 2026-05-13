@@ -35,43 +35,13 @@ runs:
         save-cache : ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         shared-key : prose-wheel-${{ inputs.name }}
 
-    - name  : Dump diagnostic env
-      shell : bash
-      run   : |
-        echo "=== pre-maturin env ==="
-        env | sort
-        echo
-        echo "=== rustc --version --verbose ==="
-        rustc --version --verbose || echo "(rustc not on PATH)"
-        echo
-        echo "=== cargo --version --verbose ==="
-        cargo --version --verbose || echo "(cargo not on PATH)"
-        echo
-        echo "=== sccache --version ==="
-        sccache --version 2>/dev/null || echo "(sccache not on PATH yet)"
-        echo
-        echo "=== PATH ==="
-        echo "$PATH" | tr ':' '\n'
-        echo
-        echo "=== cargo config.toml ==="
-        if [ -n "${CARGO_HOME:-}" ] && [ -f "${CARGO_HOME}/config.toml" ]; then
-          cat "${CARGO_HOME}/config.toml"
-        elif [ -f "$HOME/.cargo/config.toml" ]; then
-          cat "$HOME/.cargo/config.toml"
-        else
-          echo "(no cargo config.toml found)"
-        fi
-        echo
-        echo "=== mise env ==="
-        mise env 2>/dev/null || echo "(mise env unavailable)"
-
     - name : Run maturin
       uses : PyO3/maturin-action@3e2bdf6ba6453a61e649744019b8a2d906c7eb38
       with:
         args      : ${{ inputs.args }}
         command   : ${{ inputs.command }}
         manylinux : ${{ inputs.manylinux }}
-        sccache   : ${{ github.ref_type != 'tag' }}
+        sccache   : false
         target    : ${{ inputs.target }}
 
     - name : Upload artifact

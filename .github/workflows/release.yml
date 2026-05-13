@@ -28,8 +28,6 @@ on:
     paths:
       - pyproject.toml
       - Cargo.toml
-      - .github/actions/build-wheel/**
-      - .github/actions/provision-cargo/**
       - .github/workflows/release.yml
 
   push:
