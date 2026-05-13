@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/docstring_wrap/section_continues_at_body_indent.input.py
+---
+docstring-wrap@370..370
+docstring-wrap@73..153

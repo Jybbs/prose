@@ -4,9 +4,8 @@ expression: output
 input_file: tests/fixtures/suppression/yapf_aliases.input.py
 ---
 """
-The yapf: disable / yapf: enable aliases produce the same
-suppressed span as fmt: off / fmt: on, leaving the bracketed
-assignments verbatim.
+The yapf: disable / yapf: enable aliases produce the same suppressed span as
+fmt: off / fmt: on, leaving the bracketed assignments verbatim.
 """
 
 x       = 1

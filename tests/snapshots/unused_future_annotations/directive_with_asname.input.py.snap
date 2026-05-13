@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/directive_with_asname.input.py
+---
+"""
+A `from __future__ import annotations as <name>` directive still
+imports the `annotations` feature regardless of the local binding
+name. The rule fires on the directive, deleting the line.
+"""
+
+
+x = 1

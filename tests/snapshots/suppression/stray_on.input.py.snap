@@ -4,8 +4,8 @@ expression: output
 input_file: tests/fixtures/suppression/stray_on.input.py
 ---
 """
-A bare fmt: on with no preceding fmt: off is a no-op. Every
-assignment in the file is eligible for alignment.
+A bare fmt: on with no preceding fmt: off is a no-op. Every assignment in
+the file is eligible for alignment.
 """
 
 x       = 1

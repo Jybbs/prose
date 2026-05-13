@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/unused_future_annotations/multi_line_parenthesized.input.py
+---
+unused-future-annotations@229..246

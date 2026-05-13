@@ -27,6 +27,9 @@ enabled = false
 enabled = false
 max-atomics-per-line = 3
 
+[tool.prose.rules.legacy-union-syntax]
+enabled = false
+
 [tool.prose.rules.loose-constants]
 allow = ["LOG_LEVEL"]
 enabled = false

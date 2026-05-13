@@ -30,6 +30,9 @@ Config {
         multi_line_docstrings: ToggleOnly {
             enabled: true,
         },
+        unused_future_annotations: ToggleOnly {
+            enabled: true,
+        },
         blank_lines: ToggleOnly {
             enabled: true,
         },
@@ -55,6 +58,9 @@ Config {
             max_shift: 8,
             max_shift_policy: Split,
         },
+        docstring_wrap: ToggleOnly {
+            enabled: true,
+        },
         align_equals: AlignmentConfig {
             enabled: true,
             max_shift: 8,
@@ -68,6 +74,9 @@ Config {
             enabled: true,
         },
         no_step_narration: ToggleOnly {
+            enabled: true,
+        },
+        legacy_union_syntax: ToggleOnly {
             enabled: true,
         },
         single_use_variables: SingleUseVariablesConfig {

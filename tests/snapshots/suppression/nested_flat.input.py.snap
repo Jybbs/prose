@@ -4,9 +4,9 @@ expression: output
 input_file: tests/fixtures/suppression/nested_flat.input.py
 ---
 """
-Two consecutive fmt: off directives flatten, with the first
-fmt: on closing the block. The second fmt: off does not nest, so
-text after the closing fmt: on aligns normally.
+Two consecutive fmt: off directives flatten, with the first fmt: on closing
+the block. The second fmt: off does not nest, so text after the closing fmt:
+on aligns normally.
 """
 
 x       = 1

@@ -134,7 +134,6 @@ impl BindingAnalysis {
 
     /// Returns `true` when `name` has a module-scope write event at
     /// any offset strictly less than `offset`.
-    #[allow(dead_code, reason = "consumer rule #62 lands later in 0.2.0")]
     pub(crate) fn is_defined_before(&self, name: &str, offset: TextSize) -> bool {
         self.scopes[0]
             .bindings

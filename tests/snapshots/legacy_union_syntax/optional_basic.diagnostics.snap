@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/legacy_union_syntax/optional_basic.input.py
+---
+legacy-union-syntax@215..228

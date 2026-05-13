@@ -1,0 +1,71 @@
+# Prose cache warmer · populates main-branch cache scope for wheel builds.
+#
+# Fires on main-branch pushes that touch build-relevant files, mirrors the
+# `release.yml` matrix via `platforms.toml`, runs `cargo build --release`
+# per target, and lets `provision-cargo` save into the `prose-wheel-<name>`
+# shared-key scope. Subsequent PR and tag wheel builds restore from main's
+# scope via GHA's base-branch fallback rule, turning cold matrix builds
+# into warm ones.
+
+name        : 🪻 Warm
+run-name    : 🪻 Warm · ${{ github.head_ref || github.ref_name }}
+permissions : { contents: read }
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Cargo.toml
+      - Cargo.lock
+      - mise.toml
+      - .github/actions/provision-cargo/**
+      - .github/scripts/platforms.toml
+      - .github/workflows/warm.yml
+
+  workflow_dispatch:
+
+concurrency:
+  cancel-in-progress : false
+  group              : ${{ github.workflow }}
+
+jobs:
+  plan:
+    name            : 🗺️ Plan
+    outputs         : { matrix: "${{ steps.matrix.outputs.matrix }}" }
+    runs-on         : ubuntu-latest
+    timeout-minutes : 5
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+
+      - name : Emit build matrix
+        id   : matrix
+        run  : ./.github/scripts/emit-matrix.py
+
+  warm:
+    name            : 🔥 ${{ matrix.name }}
+    needs           : plan
+    runs-on         : ${{ matrix.runner }}
+    timeout-minutes : 20
+
+    strategy:
+      fail-fast : false
+      matrix    : ${{ fromJSON(needs.plan.outputs.matrix) }}
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision cargo
+        uses : ./.github/actions/provision-cargo
+        with:
+          save-cache : true
+          shared-key : prose-wheel-${{ matrix.name }}
+
+      - name : Build release artifacts for ${{ matrix.target }}
+        run  : cargo build --release --locked --target ${{ matrix.target }}

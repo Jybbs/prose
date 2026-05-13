@@ -4,9 +4,9 @@ expression: output
 input_file: tests/fixtures/suppression/trailing_off_inside_block.input.py
 ---
 """
-A trailing fmt: off comment is a normal end-of-line comment, not
-a block-opener. The line carrying it still receives its
-alignment edit, and code after it is not suppressed.
+A trailing fmt: off comment is a normal end-of-line comment, not a block-
+opener. The line carrying it still receives its alignment edit, and code
+after it is not suppressed.
 """
 
 x     = 1

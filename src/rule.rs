@@ -27,6 +27,8 @@ use crate::rules::alphabetize::Alphabetize;
 use crate::rules::bare_import_allowlist::BareImportAllowlist;
 use crate::rules::blank_lines::BlankLines;
 use crate::rules::collection_layout::CollectionLayout;
+use crate::rules::docstring_wrap::DocstringWrap;
+use crate::rules::legacy_union_syntax::LegacyUnionSyntax;
 use crate::rules::loose_constants::LooseConstants;
 use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::multi_line_docstrings::MultiLineDocstrings;
@@ -35,6 +37,7 @@ use crate::rules::no_step_narration::NoStepNarration;
 use crate::rules::single_use_variables::SingleUseVariables;
 use crate::rules::singleton_rule::SingletonRule;
 use crate::rules::strip_trailing_commas::StripTrailingCommas;
+use crate::rules::unused_future_annotations::UnusedFutureAnnotations;
 use crate::source::Source;
 
 /// Returned when a string fails to match any registered rule slug.
@@ -284,21 +287,24 @@ macro_rules! register_rules {
 }
 
 register_rules! {
-    "collection-layout":         collection_layout:         CollectionLayoutConfig    => CollectionLayout       => "expand collection to one entry per line",
-    "alphabetize":               alphabetize:               ToggleOnly                => Alphabetize            => "alphabetize this group",
-    "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas    => "strip trailing comma",
-    "no-single-line-docstrings": no_single_line_docstrings: ToggleOnly                => NoSingleLineDocstrings => "expand single-line docstring to multi-line form",
-    "multi-line-docstrings":     multi_line_docstrings:     ToggleOnly                => MultiLineDocstrings    => "place docstring opener and closer on their own lines",
-    "blank-lines":               blank_lines:               ToggleOnly                => BlankLines             => "normalize blank-line spacing",
-    "bare-import-allowlist":     bare_import_allowlist:     BareImportAllowlistConfig => BareImportAllowlist    => "flag bare import outside allowlist",
-    "match-case-align":          match_case_align:          AlignmentConfig           => MatchCaseAlign         => "align match-case arrows",
-    "align-imports":             align_imports:             AlignmentConfig           => AlignImports           => "align consecutive `import`s",
-    "align-colons":              align_colons:              AlignmentConfig           => AlignColons            => "align consecutive `:` separators",
-    "align-equals":              align_equals:              AlignmentConfig           => AlignEquals            => "align consecutive `=` operators",
-    "singleton-rule":            singleton_rule:            ToggleOnly                => SingletonRule          => "drop padding from singleton group",
-    "loose-constants":           loose_constants:           LooseConstantsConfig      => LooseConstants         => "consider moving this module-level constant",
-    "no-step-narration":         no_step_narration:         ToggleOnly                => NoStepNarration        => "numbered-step comment found. Consider extracting each step as a named function",
-    "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables     => "binding is assigned and used once. Consider inlining",
+    "collection-layout":         collection_layout:         CollectionLayoutConfig    => CollectionLayout         => "expand collection to one entry per line",
+    "alphabetize":               alphabetize:               ToggleOnly                => Alphabetize              => "alphabetize this group",
+    "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas      => "strip trailing comma",
+    "no-single-line-docstrings": no_single_line_docstrings: ToggleOnly                => NoSingleLineDocstrings   => "expand single-line docstring to multi-line form",
+    "multi-line-docstrings":     multi_line_docstrings:     ToggleOnly                => MultiLineDocstrings      => "place docstring opener and closer on their own lines",
+    "unused-future-annotations": unused_future_annotations: ToggleOnly                => UnusedFutureAnnotations  => "remove unused `from __future__ import annotations`",
+    "blank-lines":               blank_lines:               ToggleOnly                => BlankLines               => "normalize blank-line spacing",
+    "bare-import-allowlist":     bare_import_allowlist:     BareImportAllowlistConfig => BareImportAllowlist      => "flag bare import outside allowlist",
+    "match-case-align":          match_case_align:          AlignmentConfig           => MatchCaseAlign           => "align match-case arrows",
+    "align-imports":             align_imports:             AlignmentConfig           => AlignImports             => "align consecutive `import`s",
+    "align-colons":              align_colons:              AlignmentConfig           => AlignColons              => "align consecutive `:` separators",
+    "docstring-wrap":            docstring_wrap:            ToggleOnly                => DocstringWrap            => "wrap docstring prose to the configured budget",
+    "align-equals":              align_equals:              AlignmentConfig           => AlignEquals              => "align consecutive `=` operators",
+    "singleton-rule":            singleton_rule:            ToggleOnly                => SingletonRule            => "drop padding from singleton group",
+    "loose-constants":           loose_constants:           LooseConstantsConfig      => LooseConstants           => "consider moving this module-level constant",
+    "no-step-narration":         no_step_narration:         ToggleOnly                => NoStepNarration          => "numbered-step comment found. Consider extracting each step as a named function",
+    "legacy-union-syntax":       legacy_union_syntax:       ToggleOnly                => LegacyUnionSyntax        => "rewrite legacy `Optional`/`Union` to PEP 604 union syntax",
+    "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables       => "binding is assigned and used once. Consider inlining",
 }
 
 #[cfg(test)]

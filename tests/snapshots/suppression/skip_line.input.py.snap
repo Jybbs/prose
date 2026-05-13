@@ -4,10 +4,9 @@ expression: output
 input_file: tests/fixtures/suppression/skip_line.input.py
 ---
 """
-A trailing fmt: skip pins one line's original spacing. The other
-members of the same alignment group still pad to the group's
-target column, and the assignment run after the skip line aligns
-as a separate group.
+A trailing fmt: skip pins one line's original spacing. The other members
+of the same alignment group still pad to the group's target column, and the
+assignment run after the skip line aligns as a separate group.
 """
 
 x       = 1
