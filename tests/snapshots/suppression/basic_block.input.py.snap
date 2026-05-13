@@ -4,10 +4,9 @@ expression: output
 input_file: tests/fixtures/suppression/basic_block.input.py
 ---
 """
-A fmt: off / fmt: on block sits between two assignment runs that
-the alignment rules would otherwise touch. The block survives
-verbatim while the runs above and below it pad to their group
-widths.
+A fmt: off / fmt: on block sits between two assignment runs that the
+alignment rules would otherwise touch. The block survives verbatim while the
+runs above and below it pad to their group widths.
 """
 
 x       = 1

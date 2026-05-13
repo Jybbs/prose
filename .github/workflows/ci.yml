@@ -33,19 +33,19 @@ jobs:
 
       matrix:
         include:
-          - command    : cargo fmt --all --check
+          - command    : mise run check
             name       : 🪶 Format
             shared-key : prose-fmt
-          - command    : cargo machete
+          - command    : mise run audit
             name       : 🪓 Unused
             shared-key : prose-audit
-          - command    : cargo clippy --all-targets --locked -- -D warnings
+          - command    : mise run lint
             name       : 📎 Clippy
             shared-key : prose-build
-          - command    : cargo build --all-targets --locked
+          - command    : mise run build
             name       : 🗜️ Build
             shared-key : prose-build
-          - command    : cargo test --locked
+          - command    : mise run test
             name       : ⚖️ Test
             shared-key : prose-build
 
@@ -77,7 +77,7 @@ jobs:
           shared-key : prose-coverage
 
       - name : Generate LCOV report
-        run  : cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info
+        run  : mise run coverage
 
       - name : Upload to Codecov
         uses : codecov/codecov-action@3f20e214133d0983f9a10f3d63b0faf9241a3daa

@@ -4,9 +4,9 @@ expression: output
 input_file: tests/fixtures/suppression/multiple_blocks.input.py
 ---
 """
-Two distinct fmt: off / fmt: on blocks remain separate suppressed
-spans rather than fusing into one. Code outside the blocks aligns
-normally while code inside each block stays verbatim.
+Two distinct fmt: off / fmt: on blocks remain separate suppressed spans
+rather than fusing into one. Code outside the blocks aligns normally while
+code inside each block stays verbatim.
 """
 
 x       = 1

@@ -58,6 +58,9 @@ Config {
             max_shift: 8,
             max_shift_policy: Split,
         },
+        docstring_wrap: ToggleOnly {
+            enabled: true,
+        },
         align_equals: AlignmentConfig {
             enabled: false,
             max_shift: 8,

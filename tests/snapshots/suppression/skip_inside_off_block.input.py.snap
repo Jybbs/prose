@@ -4,9 +4,9 @@ expression: output
 input_file: tests/fixtures/suppression/skip_inside_off_block.input.py
 ---
 """
-A fmt: skip line sits inside an active fmt: off block. Every line
-within the block stays verbatim, leaving the assignment runs above
-and below the block to align as separate groups.
+A fmt: skip line sits inside an active fmt: off block. Every line within the
+block stays verbatim, leaving the assignment runs above and below the block
+to align as separate groups.
 """
 
 x       = 1
