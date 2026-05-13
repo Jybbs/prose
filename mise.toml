@@ -23,7 +23,7 @@ run         = "cargo machete"
 
 [tasks.build]
 description = "Build the `prose` binary in debug mode"
-run         = "cargo build"
+run         = "cargo build --all-targets --locked"
 
 [tasks.check]
 description = "Verify Rust source matches `rustfmt` without rewriting"
@@ -33,13 +33,17 @@ run         = "cargo fmt --all --check"
 depends     = ["audit", "check", "lint", "test", "wheel"]
 description = "Full local CI: `audit`, `check`, `lint`, `test`, `wheel`"
 
+[tasks.coverage]
+description = "Generate an LCOV coverage report at `target/lcov.info`"
+run         = "cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info"
+
 [tasks.format]
 description = "Format Rust source with `rustfmt`"
 run         = "cargo fmt --all"
 
 [tasks.lint]
 description = "Run `clippy` with all warnings treated as errors"
-run         = "cargo clippy --all-targets -- -D warnings"
+run         = "cargo clippy --all-targets --locked -- -D warnings"
 
 [tasks.readme]
 description = "Rewrite `README.md` in place to absolute URLs for PyPI"
@@ -52,7 +56,7 @@ run         = "cargo insta review"
 
 [tasks.test]
 description = "Run all tests including `insta` snapshots"
-run         = "cargo test"
+run         = "cargo test --locked"
 
 [tasks.wheel]
 description = "Build the `maturin` wheel into the active virtualenv"
