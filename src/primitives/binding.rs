@@ -88,7 +88,6 @@ pub struct BindingAnalysis {
     scopes: Vec<Scope>,
 }
 
-#[allow(dead_code, reason = "consumer rules #62 and #70 land later in 0.2.0")]
 impl BindingAnalysis {
     /// Walks `module` once and returns the resulting binding table.
     pub(crate) fn new(module: &ModModule) -> Self {
@@ -106,6 +105,17 @@ impl BindingAnalysis {
         self.binding(binding).write_offsets.len()
     }
 
+    /// Returns the recorded write kinds for `binding`, in insertion
+    /// order and without duplicates.
+    pub(crate) fn binding_kinds(&self, binding: BindingId) -> &[BindingKind] {
+        &self.binding(binding).kinds
+    }
+
+    /// Returns the source-text name of `binding`.
+    pub(crate) fn binding_name(&self, binding: BindingId) -> &str {
+        &self.binding(binding).name
+    }
+
     /// Returns the binding ids declared directly inside the local
     /// scope of `stmt`. `stmt` must be a `Stmt::FunctionDef`; any
     /// other statement yields an empty iterator.
@@ -115,6 +125,11 @@ impl BindingAnalysis {
             .copied()
             .into_iter()
             .flat_map(move |s| self.scopes[s.0 as usize].bindings.values().copied())
+    }
+
+    /// Returns the offset of the earliest recorded write of `binding`.
+    pub(crate) fn first_write_offset(&self, binding: BindingId) -> TextSize {
+        self.binding(binding).write_offsets[0]
     }
 
     /// Returns `true` when `name` has a module-scope write event at

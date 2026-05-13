@@ -54,7 +54,7 @@ impl Rule for UnusedFutureAnnotations {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(UnusedFutureAnnotations))
+        Self::SLUG
     }
 }
 

@@ -32,7 +32,7 @@ impl Rule for SingletonRule {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(SingletonRule))
+        Self::SLUG
     }
 }
 

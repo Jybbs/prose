@@ -66,7 +66,7 @@ impl Rule for Alphabetize {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(Alphabetize))
+        Self::SLUG
     }
 }
 

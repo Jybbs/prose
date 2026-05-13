@@ -40,7 +40,7 @@ impl Rule for BlankLines {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(BlankLines))
+        Self::SLUG
     }
 }
 

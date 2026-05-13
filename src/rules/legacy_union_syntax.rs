@@ -30,7 +30,7 @@ impl LegacyUnionSyntax {
 
 impl Rule for LegacyUnionSyntax {
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(LegacyUnionSyntax))
+        Self::SLUG
     }
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {

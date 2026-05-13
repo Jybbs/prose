@@ -10,8 +10,9 @@
 use std::num::NonZeroUsize;
 use std::path::Path;
 
+use regex_lite::Regex;
 use ruff_python_ast::PythonVersion;
-use serde::{de::IntoDeserializer, Deserialize};
+use serde::{de::IntoDeserializer, Deserialize, Deserializer};
 use thiserror::Error;
 
 pub use crate::rule::RuleConfigs;
@@ -205,6 +206,24 @@ impl Default for LooseConstantsConfig {
     }
 }
 
+/// Configuration for the `single_use_variables` rule.
+#[derive(Debug, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct SingleUseVariablesConfig {
+    #[serde(deserialize_with = "deserialize_regex")]
+    pub allow_pattern: Regex,
+    pub enabled: bool,
+}
+
+impl Default for SingleUseVariablesConfig {
+    fn default() -> Self {
+        Self {
+            allow_pattern: Regex::new("^_").expect("`^_` compiles"),
+            enabled: true,
+        }
+    }
+}
+
 /// Sub-table shape for rules whose only knob is `enabled`.
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -216,6 +235,11 @@ impl Default for ToggleOnly {
     fn default() -> Self {
         Self { enabled: true }
     }
+}
+
+fn deserialize_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Regex, D::Error> {
+    let pattern = String::deserialize(deserializer)?;
+    Regex::new(&pattern).map_err(serde::de::Error::custom)
 }
 
 fn parse_prose_section<F>(contents: &str, on_unknown: &mut F) -> Result<Option<Config>, ConfigError>
@@ -440,6 +464,32 @@ mod tests {
         let config = Config::load(&nested).expect("loads");
 
         assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    }
+
+    #[test]
+    fn single_use_variables_explicit_allow_pattern_takes_effect() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.rules.single-use-variables]\nallow-pattern = \"^tmp_\"\n",
+        )
+        .expect("parses");
+
+        assert!(config
+            .rules
+            .single_use_variables
+            .allow_pattern
+            .is_match("tmp_x"));
+        assert!(!config
+            .rules
+            .single_use_variables
+            .allow_pattern
+            .is_match("xtmp_"));
+    }
+
+    #[test]
+    fn single_use_variables_invalid_allow_pattern_returns_toml_error() {
+        assert_toml_error(
+            "[tool.prose.rules.single-use-variables]\nallow-pattern = \"[unclosed\"\n",
+        );
     }
 
     #[test]

@@ -44,7 +44,7 @@ impl Rule for MatchCaseAlign {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(MatchCaseAlign))
+        Self::SLUG
     }
 }
 

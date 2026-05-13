@@ -79,6 +79,12 @@ Config {
         legacy_union_syntax: ToggleOnly {
             enabled: true,
         },
+        single_use_variables: SingleUseVariablesConfig {
+            allow_pattern: Regex(
+                "^_",
+            ),
+            enabled: true,
+        },
     },
     target_version: Some(
         PythonVersion {

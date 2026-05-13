@@ -30,7 +30,7 @@ impl LooseConstants {
 
 impl Rule for LooseConstants {
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(LooseConstants))
+        Self::SLUG
     }
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {

@@ -422,6 +422,7 @@ mod tests {
         config.rules.multi_line_docstrings.enabled = false;
         config.rules.no_single_line_docstrings.enabled = false;
         config.rules.no_step_narration.enabled = false;
+        config.rules.single_use_variables.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
         config.rules.unused_future_annotations.enabled = false;
@@ -463,6 +464,7 @@ mod tests {
         config.rules.loose_constants.enabled = false;
         config.rules.match_case_align.enabled = false;
         config.rules.no_step_narration.enabled = false;
+        config.rules.single_use_variables.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
         config.rules.unused_future_annotations.enabled = false;

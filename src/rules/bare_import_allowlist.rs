@@ -32,7 +32,7 @@ impl BareImportAllowlist {
 
 impl Rule for BareImportAllowlist {
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(BareImportAllowlist))
+        Self::SLUG
     }
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {

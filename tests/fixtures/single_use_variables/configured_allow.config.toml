@@ -1,0 +1,2 @@
+[tool.prose.rules.single-use-variables]
+allow-pattern = "^tmp_"

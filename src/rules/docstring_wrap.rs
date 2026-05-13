@@ -68,7 +68,7 @@ impl Rule for DocstringWrap {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(DocstringWrap))
+        Self::SLUG
     }
 }
 

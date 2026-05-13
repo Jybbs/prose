@@ -44,7 +44,7 @@ impl Rule for AlignImports {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(AlignImports))
+        Self::SLUG
     }
 }
 

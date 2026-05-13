@@ -41,7 +41,7 @@ impl Rule for AlignEquals {
     }
 
     fn id(&self) -> RuleId {
-        RuleId::from(ruff_macros::kebab_case!(AlignEquals))
+        Self::SLUG
     }
 }
 
