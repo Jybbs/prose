@@ -1,0 +1,27 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/union_in_constant.input.py
+---
+"""
+Module-level constants whose RHS dicts overflow the budget and whose
+values carry legacy union syntax.
+
+Rules:
+- collection_layout
+- alphabetize
+- align_colons
+- align_equals
+- legacy_union_syntax
+"""
+
+from typing import Optional, Union
+
+PRIMARY   = {
+    "alpha"      : Optional[str],
+    "beta"       : Union[int, str],
+    "delta_long" : Union[bool, None],
+    "gamma"      : Optional[int]
+}
+SECONDARY = "fallback"

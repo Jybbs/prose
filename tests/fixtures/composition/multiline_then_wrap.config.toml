@@ -1,0 +1,2 @@
+[harness]
+rules = ["multi-line-docstrings", "docstring-wrap"]

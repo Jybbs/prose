@@ -1,0 +1,2 @@
+[harness]
+rules = ["strip-trailing-commas", "match-case-align"]

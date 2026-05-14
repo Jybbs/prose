@@ -1,0 +1,13 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/thematic/function_with_docstring.input.py
+---
+align-colons@621..621
+align-colons@661..661
+align-colons@707..707
+alphabetize@439..466
+blank-lines@426..428
+docstring-wrap@553..553
+docstring-wrap@70..389
+multi-line-docstrings@476..476

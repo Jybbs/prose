@@ -4,8 +4,6 @@
 
 mod common;
 
-use std::ffi::OsStr;
-
 use prose::diagnostics::Diagnostic;
 use prose::source::Source;
 
@@ -28,16 +26,12 @@ fn render(diagnostics: &[Diagnostic]) -> String {
 #[test]
 fn fixtures_emit_expected_diagnostics() {
     insta::glob!("fixtures/**/*.input.py", |path| {
-        let directory = path
-            .parent()
-            .and_then(Path::file_name)
-            .and_then(OsStr::to_str)
-            .expect("fixture path has a parent directory name");
+        let directory = common::directory_name(path);
         let case = common::case_stem(path)
             .strip_suffix(".input")
             .expect("fixture path ends in .input.py");
-        let config = common::fixture_config(path);
-        let pipeline = common::build_pipeline(directory, &config);
+        let (config, harness) = common::fixture_inputs(path);
+        let pipeline = common::build_pipeline(directory, &config, &harness);
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
         let (_, diagnostics) = pipeline.run(source).expect("pipeline runs");
 

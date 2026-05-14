@@ -1,0 +1,17 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 39
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/union_in_constant.input.py
+---
+align-colons@265..265
+align-colons@292..292
+align-colons@327..327
+align-colons@359..359
+align-equals@249..250
+alphabetize@316..373
+collection-layout@253..357
+legacy-union-syntax@275..288
+legacy-union-syntax@309..324
+legacy-union-syntax@345..362
+legacy-union-syntax@383..396

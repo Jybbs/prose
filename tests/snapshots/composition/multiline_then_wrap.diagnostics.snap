@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/multiline_then_wrap.input.py
+---
+docstring-wrap@398..398
+docstring-wrap@71..151
+multi-line-docstrings@253..253

@@ -1,0 +1,17 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/match_long_dicts.input.py
+---
+align-colons@265..265
+align-colons@301..301
+align-colons@331..331
+align-colons@366..366
+align-colons@456..456
+align-colons@494..494
+align-colons@525..525
+align-colons@559..559
+alphabetize@252..562
+collection-layout@234..304
+collection-layout@347..419
+match-case-align@592..605

@@ -1,0 +1,21 @@
+"""
+A class whose methods carry multi-line docstrings with the opener
+and closer on shared lines with the prose, and missing blank lines
+between the methods.
+
+Rules:
+- multi_line_docstrings
+- blank_lines
+- docstring_wrap
+"""
+
+
+class Service:
+    def primary(self):
+        """The primary entry point.
+        Returns the configured default."""
+        return self.default
+    def secondary(self):
+        """The secondary entry point.
+        Returns the alternate fallback."""
+        return self.fallback

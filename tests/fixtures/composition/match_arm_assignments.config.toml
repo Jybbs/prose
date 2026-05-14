@@ -1,0 +1,2 @@
+[harness]
+rules = ["match-case-align", "align-equals"]

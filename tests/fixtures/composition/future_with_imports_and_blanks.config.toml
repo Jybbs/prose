@@ -1,0 +1,2 @@
+[harness]
+rules = ["alphabetize", "unused-future-annotations", "blank-lines", "align-imports"]

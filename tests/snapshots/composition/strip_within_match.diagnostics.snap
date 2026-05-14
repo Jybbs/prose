@@ -1,0 +1,13 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/strip_within_match.input.py
+---
+match-case-align@223..223
+match-case-align@224..237
+match-case-align@273..273
+match-case-align@274..287
+match-case-align@318..318
+match-case-align@319..332
+strip-trailing-commas@252..253
+strip-trailing-commas@303..304

@@ -1,0 +1,12 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/class_field_block.input.py
+---
+align-colons@254..254
+align-colons@289..289
+align-colons@310..310
+align-equals@233..234
+align-equals@267..268
+align-equals@303..304
+alphabetize@215..324

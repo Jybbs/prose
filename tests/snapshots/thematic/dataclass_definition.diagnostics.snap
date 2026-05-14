@@ -1,0 +1,17 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/thematic/dataclass_definition.input.py
+---
+align-colons@476..476
+align-colons@505..505
+align-colons@529..529
+align-colons@555..555
+align-colons@578..578
+align-equals@486..487
+align-equals@516..517
+align-equals@543..544
+align-equals@600..601
+alphabetize@469..595
+docstring-wrap@69..378
+no-single-line-docstrings@631..661

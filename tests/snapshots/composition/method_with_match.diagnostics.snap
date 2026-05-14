@@ -1,0 +1,14 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/method_with_match.input.py
+---
+alphabetize@266..573
+blank-lines@455..456
+blank-lines@514..515
+match-case-align@325..325
+match-case-align@326..343
+match-case-align@374..374
+match-case-align@375..392
+match-case-align@423..423
+match-case-align@424..441

@@ -1,0 +1,13 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/wide_class.input.py
+---
+align-colons@227..227
+align-colons@262..262
+align-colons@283..283
+align-equals@240..241
+align-equals@276..277
+alphabetize@223..450
+blank-lines@341..342
+blank-lines@395..396

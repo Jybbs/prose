@@ -1,0 +1,25 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/full_dict_cycle.input.py
+---
+"""
+A long inline dict whose keys arrive out of order, with a trailing
+comma in the source. The full dict-handling cycle expands the dict,
+sorts the keys, strips the original trailing comma if it survives
+the expansion, and aligns the `:` column across the rows.
+
+Rules:
+- collection_layout
+- alphabetize
+- strip_trailing_commas
+- align_colons
+"""
+
+CONFIG = {
+    "alpha_long"    : 1,
+    "beta_extended" : 22,
+    "delta_id"      : 44,
+    "mango_label"   : 3,
+    "zeta": 6
+}
