@@ -15,7 +15,7 @@
 ***Prose*** formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries and lists, alphabetizes methods and fields within their groups, applies a singleton rule for colon padding, and treats code like prose rather than minified text.
 
 > [!NOTE]
-> ***Prose*** is currently in alpha, meaning the **eight** [auto-fix rules](#-rules) below ship in `0.1.x`. The `0.2` cycle expands the surface around them (*structured output formats, suppression directives, rule subsetting, an exit-code matrix*) and brings additional auto-fix and lint-only rules online.
+> ***Prose*** is still pre-1.0. `0.2.0` lifts the catalog to **eighteen** [rules](#-rules) (*fourteen auto-fix, four lint-only*) and lands the surrounding surface (*structured output formats, suppression directives, rule subsetting, an exit-code matrix*), with additional rules and configuration knobs planned for later releases.
 
 ---
 
@@ -68,7 +68,7 @@ keep_this_block_exactly_as_written = (1,2,3)
 # fmt: on
 ```
 
-`# fmt: skip` on the same line opts out a single statement. Line-level lint suppression via `# prose: ignore[<rule>]` lands alongside the lint rules in `0.2`.
+`# fmt: skip` on the same line opts out a single statement, and `# yapf: disable` / `# yapf: enable` are honored as block-level aliases. Lint diagnostics opt out per line through `# prose: ignore[<rule>]`. A bare `# prose: ignore` suppresses every lint rule on the line, and `# prose: ignore[a, b]` lists several.
 
 ---
 
@@ -90,19 +90,33 @@ When two outcomes apply to the same run, the higher number wins. `prose --help` 
 
 ## 🪶 Rules
 
+Auto-fix rules:
+
 | Rule | Coverage |
 |---|---|
 | `align-colons` | Collection literals, Pydantic / dataclass fields, function signatures, and docstring `Args:` sections |
 | `align-equals` | Consecutive assignments at the same indentation |
 | `align-imports` | The `import` keyword in `from ... import ...` groups and `as` in `import ... as ...` groups |
 | `alphabetize` | Classes, methods (*grouped dunders → properties → privates → publics*), enum members, Pydantic fields (*required then optional*), function parameters, keyword arguments, and `from` imports |
+| `bare-import-allowlist` | Bare `import X` outside a configurable allowlist (*default `numpy`, `pandas`*) |
 | `blank-lines` | Module-level `def` and `class` carry 2 blank lines before them, methods inside a class body carry 1, and a module-level statement after `if __name__ == "__main__":` carries 1 |
 | `collection-layout` | Expands `dict`, `list`, and `set` literals to one entry per line, even when they fit inline |
+| `docstring-wrap` | Wraps docstring description prose to `docstring-line-length` and structured `Args:` / `Returns:` / `Raises:` sections to the budget chosen by `docstring-structured-policy` |
 | `match-case-align` | Single-expression case bodies |
 | `multi-line-docstrings` | Multi-line docstring placement, with opener and closer each on their own line |
 | `no-single-line-docstrings` | Single-line triple-quoted docstrings, expanded into the canonical multi-line shape |
 | `singleton-rule` | Skips colon padding when only one item exists in the aligned group |
 | `strip-trailing-commas` | Multi-line collections and signatures |
+| `unused-future-annotations` | Removes `from __future__ import annotations` when removal is provably safe for the file |
+
+Lint-only rules:
+
+| Rule | Coverage |
+|---|---|
+| `legacy-union-syntax` | `Union[X, Y]` and `Optional[X]` when `target-version` is 3.10 or higher, with the PEP 604 `X \| Y` / `X \| None` shapes as the recommendation |
+| `loose-constants` | Module-level `SCREAMING_CASE` assignments that would read better as an `Enum`, a model field, or a function-local |
+| `no-step-narration` | Own-line numbered-step comments (*`# 1. ...`, `# Step 2: ...`*) that signal extractable functions |
+| `single-use-variables` | Bindings assigned and read exactly once, where inlining the right-hand side carries the same meaning |
 
 ### Example
 
@@ -197,16 +211,19 @@ Per-rule knobs:
 | `max-shift` | positive int | alignment rules | Ceiling on per-line padding, defaulting to `8` |
 | `max-shift-policy` | `"split"` \| `"drop"` \| `"skip"` | alignment rules | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation, `skip` leaves the whole group unaligned, defaulting to `"split"` |
 | `max-atomics-per-line` | positive int | `collection-layout` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap, defaulting to `8` |
+| `allow` | list of module names | `bare-import-allowlist` | Modules whose bare-import form is preserved, defaulting to `["numpy", "pandas"]` |
+| `allow` | list of names | `loose-constants` | Module-level names exempted from the lint, defaulting to `[]` |
+| `allow-pattern` | regex | `single-use-variables` | Binding names exempted from the lint, defaulting to `"^_"` |
 | `code-line-length` | positive int | top-level `[tool.prose]` | Honored by line-length-aware rules, defaulting to `88` |
 | `docstring-line-length` | positive int | top-level `[tool.prose]` | Description-prose budget for `docstring-wrap`, defaulting to `76` |
 | `docstring-structured-policy` | `"code-line-length"` \| `"docstring-line-length"` | top-level `[tool.prose]` | Source budget for structured docstring sections, defaulting to `"code-line-length"` |
 | `target-version` | `"3.X"` version string | top-level `[tool.prose]` | Python runtime the project ships to. Consumed by version-gated rules, defaulting to unset |
 
-Docstrings carry two readings inside one triple-quoted region. Description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Structured sections (*`Args:`, `Returns:`, `Raises:`*) read as code-shaped tables and reuse `code-line-length` (*88 by default*) to match surrounding indentation, though `docstring-structured-policy` switches them to `docstring-line-length` if a project prefers a single narrower budget across the whole docstring. The `docstring-wrap` rule will consume both budgets when it lands later in `0.2`.
+Docstrings carry two readings inside one triple-quoted region. Description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Structured sections (*`Args:`, `Returns:`, `Raises:`*) read as code-shaped tables and reuse `code-line-length` (*88 by default*) to match surrounding indentation, though `docstring-structured-policy` switches them to `docstring-line-length` if a project prefers a single narrower budget across the whole docstring. The `docstring-wrap` rule consumes both budgets.
 
-`target-version` names the Python runtime a project ships to, taking the bare `major.minor` form (*`"3.13"`, `"3.14"`*) used by `mypy`'s `python_version` setting. Rules whose safety depends on the runtime read this field directly, treating an unset value as the cue to skip every version-dependent arm rather than assume a default. The first consumers arrive with the auto-fix wave landing later in `0.2`.
+`target-version` names the Python runtime a project ships to, taking the bare `major.minor` form (*`"3.13"`, `"3.14"`*) used by `mypy`'s `python_version` setting. Rules whose safety depends on the runtime read this field directly, treating an unset value as the cue to skip every version-dependent arm rather than assume a default. `legacy-union-syntax` is the first such consumer, staying quiet on every project that has not opted into a target.
 
-**Alignment rules** are `align-colons`, `align-equals`, `align-imports`, and `match-case-align`. **Toggle-only rules** are `alphabetize`, `blank-lines`, `multi-line-docstrings`, `no-single-line-docstrings`, `singleton-rule`, and `strip-trailing-commas`.
+**Alignment rules** are `align-colons`, `align-equals`, `align-imports`, and `match-case-align`. **Toggle-only rules** carry only the `enabled` knob. They are `alphabetize`, `blank-lines`, `docstring-wrap`, `legacy-union-syntax`, `multi-line-docstrings`, `no-single-line-docstrings`, `no-step-narration`, `singleton-rule`, `strip-trailing-commas`, and `unused-future-annotations`. The remaining rules (`bare-import-allowlist`, `collection-layout`, `loose-constants`, `single-use-variables`) carry rule-specific knobs documented in the table above.
 
 Per-invocation overrides via `--select` and `--ignore` (*see [Install & Usage](#-install--usage) above*) take precedence over the configured-enabled set.
 
