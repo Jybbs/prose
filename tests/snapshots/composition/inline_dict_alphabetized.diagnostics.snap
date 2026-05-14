@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/inline_dict_alphabetized.input.py
+---
+alphabetize@210..253

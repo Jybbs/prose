@@ -1,0 +1,2 @@
+[harness]
+rules = ["no-step-narration", "unused-future-annotations"]

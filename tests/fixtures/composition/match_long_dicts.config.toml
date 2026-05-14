@@ -1,0 +1,2 @@
+[harness]
+rules = ["collection-layout", "alphabetize", "match-case-align", "align-colons"]

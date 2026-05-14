@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/future_among_imports.input.py
+---
+align-imports@230..231
+align-imports@279..280
+unused-future-annotations@217..252

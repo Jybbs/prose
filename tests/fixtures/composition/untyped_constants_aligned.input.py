@@ -1,0 +1,15 @@
+"""
+Untyped module-level constants of varied widths. loose-constants
+flags each as a structural-home candidate and align-equals widens
+the `=` column across the run, so the lint range tracks the
+post-align statement positions.
+
+Rules:
+- align-equals
+- loose-constants
+"""
+
+DEFAULT_TIMEOUT = 30
+MAX_RETRIES = 3
+WINDOW_NAME_PREFIX = "session"
+RATE_LIMIT = 100

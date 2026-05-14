@@ -1,0 +1,26 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/nested_class_fields.input.py
+---
+"""
+A class containing a nested helper class, where each class scope
+carries annotated fields out of order. alphabetize and the alignment
+rules act independently within each scope.
+
+Rules:
+- alphabetize
+- align_colons
+- align_equals
+"""
+
+
+class Order:
+    customer_id : str   = ""
+    placed_on   : str   = ""
+    total       : float = 0.0
+
+    class LineItem:
+        price    : float = 0.0
+        quantity : int   = 1
+        sku      : str   = ""

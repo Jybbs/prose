@@ -3,11 +3,10 @@
 # ============================================================================
 
 [tools]
-"aqua:taiki-e/cargo-llvm-cov" = "latest"
-maturin                       = "latest"
-python                        = "3.14"
-rust                          = { version = "stable", components = "llvm-tools-preview" }
-uv                            = "latest"
+maturin = "latest"
+python  = "3.14"
+rust    = { version = "stable", components = "llvm-tools-preview" }
+uv      = "latest"
 
 [settings]
 python.uv_venv_auto = "create|source"
@@ -35,6 +34,7 @@ description = "Full local CI: `audit`, `check`, `lint`, `test`, `wheel`"
 
 [tasks.coverage]
 description = "Generate an LCOV coverage report at `target/lcov.info`"
+tools       = { "aqua:taiki-e/cargo-llvm-cov" = "latest" }
 run         = "cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info"
 
 [tasks.format]

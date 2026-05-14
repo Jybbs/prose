@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/oneline_then_multiline.input.py
+---
+no-single-line-docstrings@210..234
+no-single-line-docstrings@291..317

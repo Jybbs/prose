@@ -1,0 +1,15 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/thematic/service_class.input.py
+---
+align-colons@414..414
+align-colons@443..443
+align-colons@466..466
+align-equals@420..421
+align-equals@454..455
+alphabetize@402..732
+blank-lines@546..547
+blank-lines@604..605
+blank-lines@672..673
+docstring-wrap@68..321

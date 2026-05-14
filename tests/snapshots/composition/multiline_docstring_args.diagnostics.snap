@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/multiline_docstring_args.input.py
+---
+align-colons@592..592
+align-colons@636..636
+align-colons@685..685
+docstring-wrap@525..525
+docstring-wrap@67..306
+multi-line-docstrings@449..449

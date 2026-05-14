@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/blank_lines_between_classes.input.py
+---
+alphabetize@287..336
+blank-lines@280..281
+blank-lines@302..303
+blank-lines@324..325

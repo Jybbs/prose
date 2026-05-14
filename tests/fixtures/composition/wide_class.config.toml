@@ -1,0 +1,2 @@
+[harness]
+rules = ["alphabetize", "blank-lines", "align-colons", "align-equals"]

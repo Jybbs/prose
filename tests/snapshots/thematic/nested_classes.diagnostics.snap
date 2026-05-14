@@ -1,0 +1,18 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/thematic/nested_classes.input.py
+---
+align-colons@337..337
+align-colons@361..361
+align-colons@381..381
+align-colons@429..429
+align-colons@459..459
+align-colons@480..480
+align-equals@343..344
+align-equals@370..371
+align-equals@480..481
+align-equals@507..508
+alphabetize@326..707
+blank-lines@632..633
+docstring-wrap@68..294

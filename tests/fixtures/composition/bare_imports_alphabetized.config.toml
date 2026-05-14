@@ -1,0 +1,2 @@
+[harness]
+rules = ["alphabetize", "bare-import-allowlist"]

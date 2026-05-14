@@ -1,0 +1,23 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/typed_func_args.input.py
+---
+"""
+Function signature with typed parameters of varying widths and
+default values. The signature's parameter `:` columns and default
+`=` columns each align across the run.
+
+Rules:
+- align_colons
+- align_equals
+"""
+
+
+def configure(
+    host : str = "localhost",
+    port : int = 8080,
+    timeout_seconds : float = 30.0,
+    retries         : int = 3,
+):
+    return (host, port, timeout_seconds, retries)

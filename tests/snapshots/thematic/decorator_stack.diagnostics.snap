@@ -1,0 +1,12 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/thematic/decorator_stack.input.py
+---
+alphabetize@456..740
+bare-import-allowlist@444..453
+blank-lines@689..690
+blank-lines@720..722
+docstring-wrap@621..653
+docstring-wrap@69..402
+multi-line-docstrings@572..661

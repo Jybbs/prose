@@ -8,6 +8,7 @@ use std::path::Path;
 
 use prose::config::Config;
 use prose::pipeline::Pipeline;
+use prose::rule::RuleId;
 use serde::Deserialize;
 use similar::TextDiff;
 
@@ -16,6 +17,7 @@ use similar::TextDiff;
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
 pub(crate) struct HarnessOptions {
+    rules: Vec<RuleId>,
     pub(crate) skip_ruff_coexistence: bool,
 }
 
@@ -25,13 +27,33 @@ struct Sidecar {
     harness: HarnessOptions,
 }
 
-pub(crate) fn build_pipeline(directory: &str, config: &Config) -> Pipeline {
+/// Returns the pipeline that exercises a fixture directory.
+///
+/// `composition` fixtures pin a named subset of rules and the sidecar's
+/// `[harness] rules = [...]` field selects exactly that subset, so the
+/// snapshot reflects only the listed rules. `thematic` and `suppression`
+/// fixtures exercise the full default pipeline. `binding_analysis` and
+/// `identity` run an empty pipeline because their fixtures pin parser
+/// and no-op behavior. Every other directory matches a rule slug and
+/// runs that rule in isolation.
+pub(crate) fn build_pipeline(
+    directory: &str,
+    config: &Config,
+    harness: &HarnessOptions,
+) -> Pipeline {
     match directory {
-        "composition" | "suppression" => Pipeline::with_defaults(config),
+        "composition" => Pipeline::with_filters(config, &harness.rules, &[]),
+        "thematic" | "suppression" => Pipeline::with_defaults(config),
         "binding_analysis" | "identity" => Pipeline::empty(),
         _ => Pipeline::for_rule(directory, config)
             .unwrap_or_else(|| panic!("no rule registered for fixture directory `{directory}`")),
     }
+}
+
+pub(crate) fn case_filename(path: &Path) -> &str {
+    path.file_name()
+        .and_then(OsStr::to_str)
+        .expect("fixture path has a file name")
 }
 
 pub(crate) fn case_stem(path: &Path) -> &str {
@@ -40,12 +62,23 @@ pub(crate) fn case_stem(path: &Path) -> &str {
         .expect("fixture path has a stem")
 }
 
-pub(crate) fn fixture_config(path: &Path) -> Config {
-    sidecar_contents(path)
-        .map(|c| {
-            Config::from_pyproject_str(&c).unwrap_or_else(|e| panic!("parse sidecar config: {e}"))
-        })
-        .unwrap_or_default()
+pub(crate) fn directory_name(path: &Path) -> &str {
+    path.parent()
+        .and_then(Path::file_name)
+        .and_then(OsStr::to_str)
+        .expect("fixture path has a parent directory name")
+}
+
+pub(crate) fn fixture_inputs(path: &Path) -> (Config, HarnessOptions) {
+    let Some(contents) = sidecar_contents(path) else {
+        return Default::default();
+    };
+    let config = Config::from_pyproject_str(&contents)
+        .unwrap_or_else(|e| panic!("parse sidecar config: {e}"));
+    let harness = toml::from_str::<Sidecar>(&contents)
+        .unwrap_or_else(|e| panic!("parse sidecar harness section: {e}"))
+        .harness;
+    (config, harness)
 }
 
 pub(crate) fn in_snapshot_dir(directory: &str, f: impl FnOnce()) {
@@ -58,13 +91,14 @@ pub(crate) fn in_snapshot_dir(directory: &str, f: impl FnOnce()) {
     });
 }
 
-pub(crate) fn parse_harness_options(contents: &str) -> HarnessOptions {
-    toml::from_str::<Sidecar>(contents)
-        .unwrap_or_else(|e| panic!("parse sidecar harness section: {e}"))
-        .harness
+pub(crate) fn unified_diff(expected: &str, actual: &str) -> String {
+    TextDiff::from_lines(expected, actual)
+        .unified_diff()
+        .header("expected", "actual")
+        .to_string()
 }
 
-pub(crate) fn sidecar_contents(path: &Path) -> Option<String> {
+fn sidecar_contents(path: &Path) -> Option<String> {
     let stem = case_stem(path)
         .strip_suffix(".input")
         .expect("fixture path ends in .input.py");
@@ -74,11 +108,4 @@ pub(crate) fn sidecar_contents(path: &Path) -> Option<String> {
         Err(e) if e.kind() == ErrorKind::NotFound => None,
         Err(e) => panic!("read sidecar: {e}"),
     }
-}
-
-pub(crate) fn unified_diff(expected: &str, actual: &str) -> String {
-    TextDiff::from_lines(expected, actual)
-        .unified_diff()
-        .header("expected", "actual")
-        .to_string()
 }

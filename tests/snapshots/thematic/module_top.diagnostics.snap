@@ -1,0 +1,13 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/thematic/module_top.input.py
+---
+align-imports@477..478
+alphabetize@430..466
+bare-import-allowlist@414..416
+bare-import-allowlist@424..432
+bare-import-allowlist@497..506
+blank-lines@512..513
+docstring-wrap@68..370
+unused-future-annotations@387..422

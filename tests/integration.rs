@@ -2,56 +2,21 @@
 
 mod common;
 
-use std::ffi::OsStr;
-use std::path::Path;
-
-use prose::config::Config;
 use prose::pipeline::Pipeline;
 use prose::source::Source;
 use ruff_python_formatter::{format_module_source, PyFormatOptions};
 
-struct FixturePath<'a>(&'a Path);
-
-impl<'a> FixturePath<'a> {
-    fn case(&self) -> &'a str {
-        self.0
-            .file_name()
-            .and_then(OsStr::to_str)
-            .expect("fixture path has a file name")
-    }
-
-    fn config(&self) -> Config {
-        common::fixture_config(self.0)
-    }
-
-    fn directory(&self) -> &'a str {
-        self.0
-            .parent()
-            .and_then(Path::file_name)
-            .and_then(OsStr::to_str)
-            .expect("fixture path has a parent directory name")
-    }
-
-    fn harness_options(&self) -> common::HarnessOptions {
-        common::sidecar_contents(self.0)
-            .as_deref()
-            .map(common::parse_harness_options)
-            .unwrap_or_default()
-    }
-}
-
 #[test]
 fn fixtures() {
     insta::glob!("fixtures/**/*.input.py", |path| {
-        let fixture = FixturePath(path);
-        let directory = fixture.directory();
-        let case = fixture.case();
+        let directory = common::directory_name(path);
+        let case = common::case_filename(path);
         if directory == "binding_analysis" {
             return;
         }
 
-        let config = fixture.config();
-        let pipeline = common::build_pipeline(directory, &config);
+        let (config, harness) = common::fixture_inputs(path);
+        let pipeline = common::build_pipeline(directory, &config, &harness);
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
 
         let (formatted, _) = pipeline
@@ -75,7 +40,7 @@ fn fixtures() {
 
         let fresh_source =
             Source::from_path(path).expect("fixture input re-reads for determinism check");
-        let (fresh_formatted, _) = common::build_pipeline(directory, &config)
+        let (fresh_formatted, _) = common::build_pipeline(directory, &config, &harness)
             .run(fresh_source)
             .expect("fresh pipeline run succeeds");
         assert!(
@@ -89,14 +54,14 @@ fn fixtures() {
 #[test]
 fn pipeline_is_idempotent() {
     insta::glob!("fixtures/**/*.input.py", |path| {
-        let fixture = FixturePath(path);
-        let directory = fixture.directory();
-        let case = fixture.case();
+        let directory = common::directory_name(path);
+        let case = common::case_filename(path);
         if directory == "identity" {
             return;
         }
 
-        let pipeline = Pipeline::with_defaults(&fixture.config());
+        let (config, _) = common::fixture_inputs(path);
+        let pipeline = Pipeline::with_defaults(&config);
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
         let (first, _) = pipeline
             .run(source)
@@ -119,10 +84,13 @@ fn pipeline_is_idempotent() {
 #[test]
 fn prose_is_stable_after_ruff() {
     insta::glob!("fixtures/**/*.input.py", |path| {
-        let fixture = FixturePath(path);
-        let directory = fixture.directory();
-        let case = fixture.case();
-        if directory == "identity" || fixture.harness_options().skip_ruff_coexistence {
+        let directory = common::directory_name(path);
+        let case = common::case_filename(path);
+        if directory == "identity" {
+            return;
+        }
+        let (config, harness) = common::fixture_inputs(path);
+        if harness.skip_ruff_coexistence {
             return;
         }
 
@@ -136,7 +104,7 @@ fn prose_is_stable_after_ruff() {
             })
             .into_code();
 
-        let pipeline = Pipeline::with_defaults(&fixture.config());
+        let pipeline = Pipeline::with_defaults(&config);
         let format = |text: &str| {
             pipeline
                 .run(
@@ -149,10 +117,10 @@ fn prose_is_stable_after_ruff() {
         let one = format(&post_ruff);
         let two = format(one.text());
 
-        if directory == "composition" {
+        if matches!(directory, "composition" | "thematic") {
             assert!(
                 one.text() != post_ruff,
-                "prose was a no-op on `{case}` after ruff — composition fixture should require transformation",
+                "prose was a no-op on `{case}` after ruff — {directory} fixture should require transformation",
             );
         }
         assert!(

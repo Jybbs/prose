@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/method_assignments_aligned.input.py
+---
+align-equals@255..256
+align-equals@385..386
+align-equals@428..429
+alphabetize@226..472
+blank-lines@350..351

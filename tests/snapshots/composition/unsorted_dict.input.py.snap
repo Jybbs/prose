@@ -1,0 +1,21 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/unsorted_dict.input.py
+---
+"""
+A multi-entry dict whose string keys arrive out of order and whose
+last entry carries a trailing comma.
+
+Rules:
+- alphabetize
+- strip_trailing_commas
+- align_colons
+"""
+
+config = {
+    "alpha" : 1,
+    "beta"  : 2,
+    "mango" : 3,
+    "zeta"  : 6
+}

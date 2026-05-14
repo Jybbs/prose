@@ -1,0 +1,27 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/blank_lines_between_classes.input.py
+---
+"""
+Two top-level class definitions arriving out of alphabetical order
+with no blank lines between them. alphabetize reorders the class
+declarations and blank_lines settles the canonical two-blank-line
+cushion between top-level definitions.
+
+Rules:
+- alphabetize
+- blank_lines
+"""
+
+
+class Alpha:
+    pass
+
+
+class Mango:
+    pass
+
+
+class Zebra:
+    pass
