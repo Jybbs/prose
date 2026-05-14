@@ -68,4 +68,4 @@ jobs:
           shared-key : prose-wheel-${{ matrix.name }}
 
       - name : Build release artifacts for ${{ matrix.target }}
-        run  : cargo build --release --locked --target ${{ matrix.target }}
+        run  : mise exec -- cargo build --release --locked --target ${{ matrix.target }}
