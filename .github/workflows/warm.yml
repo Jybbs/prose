@@ -1,12 +1,3 @@
-# Prose cache warmer · populates main-branch cache scope for wheel builds.
-#
-# Fires on main-branch pushes that touch build-relevant files, mirrors the
-# `release.yml` matrix via `platforms.toml`, runs `cargo build --release`
-# per target, and lets `provision-cargo` save into the `prose-wheel-<name>`
-# shared-key scope. Subsequent PR and tag wheel builds restore from main's
-# scope via GHA's base-branch fallback rule, turning cold matrix builds
-# into warm ones.
-
 name        : 🪻 Warm
 run-name    : 🪻 Warm · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
@@ -47,7 +38,42 @@ jobs:
         id   : matrix
         run  : ./.github/scripts/emit-matrix.py
 
-  warm:
+  checks:
+    name    : ${{ matrix.name }}
+    runs-on : ubuntu-latest
+
+    env : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - command    : mise run lint
+            name       : 📎 Clippy
+            shared-key : prose-clippy
+          - command    : mise run build
+            name       : 🗜️ Build
+            shared-key : prose-build
+          - command    : mise run test
+            name       : ⚖️ Test
+            shared-key : prose-test
+          - command    : mise run upload
+            name       : ☂️ Coverage
+            shared-key : prose-coverage
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision cargo
+        uses : ./.github/actions/provision-cargo
+        with : { shared-key: "${{ matrix.shared-key }}" }
+
+      - name : ${{ matrix.command }}
+        run  : ${{ matrix.command }}
+
+  wheels:
     name            : 🔥 ${{ matrix.name }}
     needs           : plan
     runs-on         : ${{ matrix.runner }}
@@ -63,9 +89,7 @@ jobs:
 
       - name : Provision cargo
         uses : ./.github/actions/provision-cargo
-        with:
-          save-cache : true
-          shared-key : prose-wheel-${{ matrix.name }}
+        with : { shared-key: "prose-wheel-${{ matrix.name }}" }
 
       - name : Build release artifacts for ${{ matrix.target }}
         run  : mise exec -- cargo build --release --locked --target ${{ matrix.target }}

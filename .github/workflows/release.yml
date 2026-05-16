@@ -1,24 +1,3 @@
-# Prose release pipeline · tag-driven publish to PyPI via OIDC.
-#
-# Triggers on bare-semver tag push (build + publish) and packaging-relevant PRs
-# (build dry-run only). Builds wheels for Linux x86_64/aarch64, macOS
-# x86_64/aarch64, Windows x86_64, plus an sdist. Trusted publishing means
-# no API tokens are stored in repo or org secrets.
-#
-# The PyPI trusted-publisher contract must exist before the first tag push.
-# Field values, set under Account → Publishing on pypi.org, must match:
-#
-#   PyPI Project Name    prose-formatter
-#   Owner                Jybbs
-#   Repository name      prose
-#   Workflow filename    release.yml
-#   Environment name     release
-#
-# Renaming this file, the `release` environment, the repo, or the owner
-# breaks the trust relationship. Update PyPI before the next tag.
-#
-# https://docs.pypi.org/trusted-publishers/adding-a-publisher/
-
 name        : 🪻 Release
 run-name    : 🪻 Release · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
