@@ -32,8 +32,7 @@ runs:
     - name : Provision cargo
       uses : ./.github/actions/provision-cargo
       with:
-        save-cache : ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        shared-key : prose-wheel-${{ inputs.name }}
+        shared-key: prose-wheel-${{ inputs.name }}
 
     - name : Run maturin
       uses : PyO3/maturin-action@3e2bdf6ba6453a61e649744019b8a2d906c7eb38
