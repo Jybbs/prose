@@ -21,9 +21,7 @@ use crate::source::Source;
 /// region, from the start of the member to the start of the gap. `gap`
 /// is the whitespace range ending immediately before the aligned
 /// token that the rule will rewrite. `line_start` is the offset of
-/// the start of the source line containing the gap, captured at
-/// construction time so [`is_alignment_candidate`] can compare line
-/// identity without re-scanning the source.
+/// the start of the source line containing the gap.
 #[derive(Clone, Copy)]
 pub(crate) struct Member {
     pub gap: TextRange,
@@ -92,10 +90,7 @@ pub(crate) fn emit_group(
 }
 
 /// Returns `true` when `members` form a multi-row group whose
-/// aligned tokens sit on distinct source lines. The two
-/// alignment-vs-collapse rules pivot on this predicate: the
-/// alignment side acts when it is `true`, the collapse side acts
-/// when it is `false`.
+/// aligned tokens sit on distinct source lines.
 pub(crate) fn is_alignment_candidate(members: &[Member]) -> bool {
     members.len() >= 2
         && members
@@ -106,13 +101,12 @@ pub(crate) fn is_alignment_candidate(members: &[Member]) -> bool {
 /// Generalization of [`line_adjacent_groups`] for rules that admit
 /// more than one member shape. The qualifier returns `Option<(K, M)>`
 /// where `K` tags the shape, and a run extends only while the next
-/// member shares both the active key and line-adjacency. A key change
-/// at an otherwise-adjacent boundary closes the active run and starts
-/// a fresh one without losing the boundary statement, which keeps
-/// `align_imports` from mixing `from`-import members with
-/// `import M as A` members in a single group. Walks `body` exactly
-/// once and calls `Source::is_line_adjacent` at most once per
-/// qualifying statement.
+/// member shares the active key, sits line-adjacent to the prior
+/// statement, and the prior statement itself fits on one source line.
+/// A key change at an otherwise-adjacent boundary closes the active
+/// run and starts a fresh one without losing the boundary statement.
+/// Walks `body` exactly once, calling the qualifier and each boundary
+/// predicate at most once per statement.
 pub(crate) fn keyed_line_adjacent_groups<'a, K, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -123,14 +117,16 @@ where
     F: FnMut(&'a Stmt) -> Option<(K, M)>,
 {
     let mut groups: Vec<Vec<M>> = Vec::new();
-    let mut active: Option<(K, TextSize)> = None;
+    let mut active: Option<(K, TextRange)> = None;
     for stmt in body {
         let Some((key, member)) = qualify(stmt) else {
             active = None;
             continue;
         };
-        let extends = active.as_ref().is_some_and(|(active_key, last_end)| {
-            active_key == &key && source.is_line_adjacent(TextRange::new(*last_end, stmt.start()))
+        let extends = active.as_ref().is_some_and(|(active_key, prev)| {
+            active_key == &key
+                && !source.contains_line_break(prev)
+                && source.is_line_adjacent(TextRange::new(prev.end(), stmt.start()))
         });
         if extends {
             groups
@@ -140,19 +136,20 @@ where
         } else {
             groups.push(vec![member]);
         }
-        active = Some((key, stmt.end()));
+        active = Some((key, stmt.range()));
     }
     groups
 }
 
 /// Walks `body`, qualifying each statement through `qualify` and
 /// grouping the qualified members into runs where every consecutive
-/// pair sits on adjacent source lines. A non-qualifying statement, a
-/// comment in the inter-statement gap, or a blank line breaks the
-/// current run. Empty groups (statements that fail qualification with
-/// no qualified neighbors) are skipped. Thin wrapper over
-/// [`keyed_line_adjacent_groups`] for rules whose qualifier produces
-/// only one form, so every member shares an implicit `()` key.
+/// pair sits on adjacent source lines. A multi-line prior statement,
+/// a non-qualifying statement, a comment in the inter-statement gap,
+/// or a blank line breaks the current run. Empty groups (statements
+/// that fail qualification with no qualified neighbors) are skipped.
+/// Thin wrapper over [`keyed_line_adjacent_groups`] for rules whose
+/// qualifier produces only one form, so every member shares an
+/// implicit `()` key.
 pub(crate) fn line_adjacent_groups<'a, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -168,7 +165,6 @@ where
 /// Width is the display width of the line's content from the first
 /// non-whitespace character to the last non-whitespace character
 /// before the gap, leaving the gap free for the rule to rewrite.
-/// Shared by every rule that aligns at a token's line position.
 pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
     let line_start = source.text().line_start(anchor);
     let prefix = source.slice(TextRange::new(line_start, anchor));
@@ -182,10 +178,7 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
 }
 
 /// Builds a `Member` whose anchor is the first token of `kind` within
-/// `search`. Convenience for the dominant rule-side composition,
-/// which finds a keyword or operator token in a tight range and then
-/// builds a line-anchored member from its start. Returns `None` when
-/// the search turns up nothing.
+/// `search`. Returns `None` when the search turns up nothing.
 pub(crate) fn line_anchored_member_at_kind(
     source: &Source,
     search: TextRange,
@@ -212,10 +205,7 @@ where
     F: FnMut(&Token) -> bool,
 {
     let anchor = source.first_token_offset_in_range(search, predicate)?;
-    if source
-        .text()
-        .contains_line_break(TextRange::new(target.start(), anchor))
-    {
+    if source.contains_line_break(TextRange::new(target.start(), anchor)) {
         return None;
     }
     Some(range_anchored_member(source, target, anchor, extra_width))
@@ -223,8 +213,7 @@ where
 
 /// Returns the edit needed to make `range` carry exactly `n` ASCII
 /// spaces, or `None` if it already does. Emits `Edit::range_deletion`
-/// when `n` is zero, because `Edit::range_replacement` rejects empty
-/// content.
+/// when `n` is zero.
 pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) -> Option<Edit> {
     let text = source.slice(range);
     if text.len() == n && text.bytes().all(|b| b == b' ') {
@@ -387,9 +376,8 @@ mod tests {
 
     /// Builds a multi-line Python source where each row is
     /// `x...x{spaces}= 0\n`, returns the source plus one `Member` per
-    /// row pointing at that row's pre-`=` whitespace. The `gap_chars`
-    /// value seeds the existing pre-`=` whitespace so tests can probe
-    /// the "already correct" branch in `emit_with_paddings`.
+    /// row pointing at that row's pre-`=` whitespace. `gap_chars` seeds
+    /// the existing pre-`=` whitespace.
     fn rows(specs: &[(usize, usize)]) -> (Source, Vec<Member>) {
         let mut text = String::new();
         let mut members = Vec::new();
@@ -748,6 +736,16 @@ mod tests {
             groups.iter().map(Vec::len).collect::<Vec<_>>(),
             vec![1, 1, 1],
         );
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_splits_on_multiline_prior_stmt() {
+        let source = parse("x = {\n    'a': 1,\n}\ny = 2\n");
+        let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
+            s.as_assign_stmt().map(|_| ((), ()))
+        });
+
+        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
     }
 
     #[test]
