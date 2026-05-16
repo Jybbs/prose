@@ -26,7 +26,7 @@ jobs:
 
     env:
       CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
-      GITHUB_SHA    : ${{ github.event.pull_request.head.sha || github.sha }}
+      SHA           : ${{ github.event.pull_request.head.sha || github.sha }}
 
     strategy:
       fail-fast: false
