@@ -1,9 +1,10 @@
 """
 Cross-rule composition over a match statement: match_case_align
-collapses single-statement arms onto their pattern lines, alphabetize
-sorts the kwargs inside the dispatched calls, strip_trailing_commas
-removes the dangling commas the source carries, and the singleton
-rule strips the lone-key dict's pre-`:` padding. The full pipeline
+splits the three arms whose collapsed form would exceed 88 columns
+and collapses the under-budget fallback arm, alphabetize sorts the
+kwargs inside the dispatched calls, strip_trailing_commas removes
+the dangling commas the source carries, and the singleton rule
+strips the lone-key dict's pre-`:` padding. The full pipeline
 running twice produces no further change.
 """
 

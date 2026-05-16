@@ -1,23 +1,28 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/thematic/match_dispatch.input.py
 ---
 """
-Cross-rule composition over a match statement: match_case_align collapses
-single-statement arms onto their pattern lines, alphabetize sorts the kwargs
-inside the dispatched calls, strip_trailing_commas removes the dangling
-commas the source carries, and the singleton rule strips the lone-key dict's
-pre-`:` padding. The full pipeline running twice produces no further change.
+Cross-rule composition over a match statement: match_case_align splits
+the three arms whose collapsed form would exceed 88 columns and collapses
+the under-budget fallback arm, alphabetize sorts the kwargs inside the
+dispatched calls, strip_trailing_commas removes the dangling commas the
+source carries, and the singleton rule strips the lone-key dict's pre-`:`
+padding. The full pipeline running twice produces no further change.
 """
 
 
 def dispatch(event):
     match event.kind:
-        case "create" : return Counter(action="create", source=event.src, timestamp=event.ts)
-        case "update" : return Counter(action="update", source=event.src, timestamp=event.ts)
-        case "delete" : return Counter(action="delete", source=event.src, timestamp=event.ts)
-        case _        : return None
+        case "create":
+            return Counter(action="create", source=event.src, timestamp=event.ts)
+        case "update":
+            return Counter(action="update", source=event.src, timestamp=event.ts)
+        case "delete":
+            return Counter(action="delete", source=event.src, timestamp=event.ts)
+        case _: return None
 
 
 SETTINGS = {

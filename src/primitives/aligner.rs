@@ -61,9 +61,10 @@ impl From<&AlignmentConfig> for Settings {
 }
 
 /// Aligns the members of a group, dispatching through `settings.policy`
-/// when the widest padding exceeds `settings.max_shift`. A `Split`
-/// sub-group of size one collapses its gap to one space, or to zero
-/// when `settings.strip_singleton_subgroup` is set.
+/// when the widest padding exceeds `settings.max_shift`. A singleton
+/// group collapses its gap to one space, or to zero when
+/// `settings.strip_singleton_subgroup` is set, matching the
+/// singleton-from-split treatment in `emit_split`.
 pub(crate) fn emit_group(
     source: &Source,
     members: &[Member],
@@ -79,7 +80,12 @@ pub(crate) fn emit_group(
             (mn.min(m.width), mx.max(m.width))
         });
     if max_w - min_w <= settings.max_shift {
-        emit_with_paddings(source, members, max_w, 1, edits);
+        let suffix = if members.len() == 1 && settings.strip_singleton_subgroup {
+            0
+        } else {
+            1
+        };
+        emit_with_paddings(source, members, max_w, suffix, edits);
         return;
     }
     match settings.policy {

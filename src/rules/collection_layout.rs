@@ -15,11 +15,9 @@ use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
-use crate::primitives::edit::narrowed_replacement;
+use crate::primitives::{edit::narrowed_replacement, INDENT_STEP};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
-
-const INDENT_STEP: usize = 4;
 
 pub(crate) struct CollectionLayout {
     code_line_length: usize,
