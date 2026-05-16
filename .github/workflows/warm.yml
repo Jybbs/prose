@@ -42,7 +42,9 @@ jobs:
     name    : ${{ matrix.name }}
     runs-on : ubuntu-latest
 
-    env : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
+    env:
+      CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
+      SHA           : ${{ github.sha }}
 
     strategy:
       fail-fast: false
