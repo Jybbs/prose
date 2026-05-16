@@ -1,0 +1,45 @@
+# Prose release-draft cutter · auto-cuts a GitHub release draft on every
+# release/* PR merge to main. Reads Cargo.toml's [package].version via
+# emit-tag.py, applies the cargo-to-PEP-440 mapping, and runs `gh release
+# create --draft` so the tag string never comes from a hand-typed source.
+# Tag landing is still gated on the maintainer clicking Publish in the
+# GitHub UI, which fires release.yml's tag-push pipeline.
+
+name        : 🪻 Cut draft
+run-name    : 🪻 Cut draft · ${{ github.head_ref || github.ref_name }}
+permissions : { contents: read }
+
+on:
+  pull_request:
+    branches : [main]
+    types    : [closed]
+
+concurrency:
+  cancel-in-progress : false
+  group              : ${{ github.workflow }}
+
+jobs:
+  cut:
+    name            : 📜 Cut draft
+    if              : github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    permissions     : { contents: write }
+    runs-on         : ubuntu-latest
+    timeout-minutes : 5
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with : { ref: main }
+
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+
+      - name : Emit release tag
+        id   : tag
+        run  : ./.github/scripts/emit-tag.py
+
+      - name : Cut GitHub release draft
+        env:
+          GH_TOKEN : ${{ github.token }}
+          VERSION  : ${{ steps.tag.outputs.version }}
+        run  : gh release create "$VERSION" --target main --generate-notes --draft --repo "$GITHUB_REPOSITORY"

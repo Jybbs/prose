@@ -31,8 +31,10 @@ pub(crate) struct Member {
 
 /// Emission knobs shared by every alignment rule.
 ///
-/// `strip_singleton_subgroup` overrides the suffix to `0` for
-/// size-one sub-groups in `emit_split`.
+/// `strip_singleton_subgroup` collapses size-one sub-groups in
+/// `emit_split` to a zero-width gap, except when the singleton is
+/// strictly the widest member of the group, in which case it anchors
+/// every sub-group's padding at `singleton.width + 1`.
 #[derive(Clone, Copy)]
 pub(crate) struct Settings {
     max_shift: usize,
@@ -243,36 +245,26 @@ fn emit_drop(source: &Source, members: &[Member], settings: Settings, edits: &mu
     emit_with_paddings(source, kept, max_w, 1, edits);
 }
 
-/// Partitions greedily, extending the current sub-group while its
-/// widest padding stays under the cap and then starting a new
-/// sub-group. Each contiguous sub-group aligns independently. A
-/// singleton sub-group collapses its gap to one space by default, or
-/// to zero when `settings.strip_singleton_subgroup` is set.
+/// Partitions greedily into sub-groups capped at `settings.max_shift`
+/// spread, each aligning at its own widest member by default. A
+/// singleton collapses its gap to one space, or to zero when
+/// `settings.strip_singleton_subgroup` is set. The strip shortcut
+/// inverts when the singleton is strictly the widest member, wherein
+/// it anchors every sub-group at `singleton.width + 1`.
 fn emit_split(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>) {
-    let mut cursor = 0;
-    while cursor < members.len() {
-        let mut min_w = members[cursor].width;
-        let mut max_w = min_w;
-        let mut end = cursor + 1;
-        while end < members.len() {
-            let w = members[end].width;
-            let new_min = min_w.min(w);
-            let new_max = max_w.max(w);
-            if new_max - new_min > settings.max_shift {
-                break;
-            }
-            min_w = new_min;
-            max_w = new_max;
-            end += 1;
-        }
-        let sub = &members[cursor..end];
-        let suffix = if sub.len() == 1 && settings.strip_singleton_subgroup {
-            0
-        } else {
-            1
+    let subs = partition_by_spread(members, settings.max_shift);
+    let anchor = settings
+        .strip_singleton_subgroup
+        .then(|| widest_singleton_anchor_width(members, &subs))
+        .flatten();
+    for &(start, end, sub_max_w) in &subs {
+        let sub = &members[start..end];
+        let (max_w, suffix) = match (anchor, sub.len()) {
+            (Some(a), _) => (a, 1),
+            (None, 1) if settings.strip_singleton_subgroup => (sub[0].width, 0),
+            (None, _) => (sub_max_w, 1),
         };
         emit_with_paddings(source, sub, max_w, suffix, edits);
-        cursor = end;
     }
 }
 
@@ -293,6 +285,33 @@ fn emit_with_paddings(
     );
 }
 
+/// Returns the half-open `(start, end, max_width)` sub-group ranges
+/// into `members` produced by greedily extending each sub-group while
+/// the running `max_width - min_width` stays at or below `max_shift`.
+fn partition_by_spread(members: &[Member], max_shift: usize) -> Vec<(usize, usize, usize)> {
+    let mut subs = Vec::new();
+    let mut cursor = 0;
+    while cursor < members.len() {
+        let mut min_w = members[cursor].width;
+        let mut max_w = min_w;
+        let mut end = cursor + 1;
+        while end < members.len() {
+            let w = members[end].width;
+            let new_min = min_w.min(w);
+            let new_max = max_w.max(w);
+            if new_max - new_min > max_shift {
+                break;
+            }
+            min_w = new_min;
+            max_w = new_max;
+            end += 1;
+        }
+        subs.push((cursor, end, max_w));
+        cursor = end;
+    }
+    subs
+}
+
 /// Builds a `Member` for a row whose aligned token sits at `anchor`,
 /// with width measured by the display width of `target` plus
 /// `extra_width`. Pass `extra_width = 0` when the LHS is exactly
@@ -311,6 +330,21 @@ fn range_anchored_member(
         line_start: source.text().line_start(anchor),
         width: source.slice(target).width() + extra_width,
     }
+}
+
+/// Returns the width of the strictly-widest member in `members` when
+/// the greedy partition isolates that member as its own sub-group.
+fn widest_singleton_anchor_width(
+    members: &[Member],
+    subs: &[(usize, usize, usize)],
+) -> Option<usize> {
+    let (widest_idx, widest) = members.iter().enumerate().max_by_key(|(_, m)| m.width)?;
+    let w = widest.width;
+    let unique = members.iter().filter(|m| m.width == w).nth(1).is_none();
+    let isolated = subs
+        .iter()
+        .any(|&(s, e, _)| s == widest_idx && e == widest_idx + 1);
+    (unique && isolated).then_some(w)
 }
 
 #[cfg(test)]
@@ -499,6 +533,30 @@ mod tests {
     }
 
     #[test]
+    fn emit_group_split_anchors_at_widest_singleton_when_strip_is_set() {
+        // Widths span 13 → 4, a 9-wide spread that exceeds max_shift=8.
+        // The greedy partition isolates the leading width-13 member as
+        // a singleton. With strip on, the singleton anchors the whole
+        // group at width 13 + 1, so every member's `:` lands at the
+        // same column: 13+1, 4+10, 11+3, 7+7 = 14.
+        let (source, members) = rows(&[(13, 1), (4, 1), (11, 1), (7, 1)]);
+        let mut edits = Vec::new();
+
+        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
+        emit_group(&source, &members, settings, &mut edits);
+
+        // member[0] already carries gap=1 (the target), so no edit emits.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![
+                fill(&members[1], 10),
+                fill(&members[2], 3),
+                fill(&members[3], 7),
+            ],
+        );
+    }
+
+    #[test]
     fn emit_group_split_partitions_into_contiguous_subgroups() {
         let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
         let mut edits = Vec::new();
@@ -520,20 +578,43 @@ mod tests {
     }
 
     #[test]
-    fn emit_group_split_strips_singleton_subgroup_when_flag_is_set() {
-        let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
+    fn emit_group_split_skips_anchor_when_widest_width_ties() {
+        // widths 13, 4, 13 yield spread = 9, exceeding max_shift=8.
+        // Partition isolates each as a singleton. Both 13s share max
+        // width, so no strictly-widest singleton anchor fires, and
+        // strip collapses each gap to zero.
+        let (source, members) = rows(&[(13, 1), (4, 1), (13, 1)]);
         let mut edits = Vec::new();
 
         let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
         emit_group(&source, &members, settings, &mut edits);
 
-        // [15] singleton sub-group collapses to 0 with strip on.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![
+                delete(&members[0]),
+                delete(&members[1]),
+                delete(&members[2]),
+            ],
+        );
+    }
+
+    #[test]
+    fn emit_group_split_strips_singleton_subgroup_when_flag_is_set() {
+        let (source, members) = rows(&[(10, 1), (11, 1), (1, 1), (12, 1), (13, 1)]);
+        let mut edits = Vec::new();
+
+        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
+        emit_group(&source, &members, settings, &mut edits);
+
+        // [1] is a narrow singleton, so strip collapses its gap to 0
+        // while [10, 11] and [12, 13] align within their own max_w.
         assert_eq!(
             sorted_summaries(&edits),
             vec![
                 fill(&members[0], 2),
                 delete(&members[2]),
-                fill(&members[3], 2)
+                fill(&members[3], 2),
             ],
         );
     }
