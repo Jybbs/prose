@@ -1,6 +1,3 @@
-## 🪻 Prose CI
+## 🪻 Prose CI {{ check_mark }}
 
-| Stage | Result |
-|---|---|
-| [🪶 Lint, build, test]({{ commit_url }}) | {{ check_mark }} `{{ check }}` |
-| [☂️ Coverage]({{ codecov_url }}) | {{ coverage_mark }} `{{ coverage }}` |
+Run {{ commit_link }} on `{{ ref }}` {% if check == "success" %}passed{% else %}failed{% endif %}. [Coverage]({{ codecov_url }}) on **Codecov**.

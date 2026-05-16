@@ -4,14 +4,10 @@ permissions : { contents: read }
 
 on:
   pull_request:
-    paths-ignore: &doc-paths
+    paths-ignore:
       - '**.md'
       - LICENSE
       - assets/**
-
-  push:
-    branches     : [main]
-    paths-ignore : *doc-paths
 
   workflow_dispatch:
 
@@ -33,21 +29,24 @@ jobs:
 
       matrix:
         include:
-          - command    : mise run check
+          - cache      : false
+            command    : mise run check
             name       : 🪶 Format
-            shared-key : prose-fmt
-          - command    : mise run audit
+          - cache      : false
+            command    : mise run audit
             name       : 🪓 Unused
-            shared-key : prose-audit
           - command    : mise run lint
             name       : 📎 Clippy
-            shared-key : prose-build
+            shared-key : prose-clippy
           - command    : mise run build
             name       : 🗜️ Build
             shared-key : prose-build
           - command    : mise run test
             name       : ⚖️ Test
-            shared-key : prose-build
+            shared-key : prose-test
+          - command    : mise run coverage
+            name       : ☂️ Coverage
+            shared-key : prose-coverage
 
     steps:
       - name : Check out repository
@@ -56,30 +55,14 @@ jobs:
       - name : Provision cargo
         uses : ./.github/actions/provision-cargo
         with:
-          save-cache : ${{ github.event_name == 'push' }}
+          cache      : ${{ matrix.cache }}
           shared-key : ${{ matrix.shared-key }}
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}
 
-  coverage:
-    name    : ☂️ Coverage
-    runs-on : ubuntu-latest
-
-    steps:
-      - name : Check out repository
-        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - name : Provision cargo
-        uses : ./.github/actions/provision-cargo
-        with:
-          save-cache : ${{ github.event_name == 'push' }}
-          shared-key : prose-coverage
-
-      - name : Generate LCOV report
-        run  : mise run coverage
-
-      - name : Upload to Codecov
+      - name : Upload coverage to Codecov
+        if   : matrix.shared-key == 'prose-coverage'
         uses : codecov/codecov-action@3f20e214133d0983f9a10f3d63b0faf9241a3daa
         with:
           fail_ci_if_error : true
@@ -89,7 +72,7 @@ jobs:
   gate:
     name    : 🗞️ Brief
     if      : always()
-    needs   : [check, coverage]
+    needs   : check
     runs-on : ubuntu-latest
 
     steps:
@@ -101,8 +84,7 @@ jobs:
 
       - name : Summarize and gate
         env:
-          CHECK    : ${{ needs.check.result }}
-          COVERAGE : ${{ needs.coverage.result }}
-          REF      : ${{ github.head_ref || github.ref_name }}
-          SHA      : ${{ github.event.pull_request.head.sha || github.sha }}
+          CHECK : ${{ needs.check.result }}
+          REF   : ${{ github.head_ref || github.ref_name }}
+          SHA   : ${{ github.event.pull_request.head.sha || github.sha }}
         run  : ./.github/scripts/summary.py ci

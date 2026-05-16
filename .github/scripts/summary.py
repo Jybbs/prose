@@ -7,9 +7,8 @@
 Render a Prose step summary and gate the workflow's exit code.
 
 Subcommands:
-    ci       Render the CI gate summary. Reads `CHECK`, `COVERAGE`,
-             `COVERAGE_PERCENT`, plus the GitHub-runner defaults.
-             Exits 0 only when both required jobs succeeded.
+    ci       Render the CI gate summary. Reads `CHECK` plus the
+             GitHub-runner defaults. Exits 0 when `CHECK` is success.
     release  Render the Release gate summary. Reads `BUILD`, `SDIST`,
              `VALIDATE`, `PUBLISH`, plus the GitHub-runner defaults.
              Exits 0 when every required job succeeded. `PUBLISH` is
@@ -28,11 +27,6 @@ from tomllib import loads
 class Summary:
     """
     Render a Prose CI or Release step summary and gate the workflow.
-
-    `__init__` pre-composes every URL and link that's stable for the
-    whole script invocation into `env.globals`. Per-render kwargs in
-    `ci()` and `release()` carry only what genuinely varies: gate
-    inputs, the artifacts glob, and the pre-publish-failure boolean.
     """
 
     def __init__(self):
@@ -52,13 +46,10 @@ class Summary:
         self.env.globals.update(
             codecov_url = f"https://app.codecov.io/gh/{repo}/commit/{sha}",
             commit_link = f"[`{sha[:7]}`]({base}/commit/{sha})",
-            commit_url  = f"{base}/commit/{sha}",
             is_tag      = self.is_tag,
             pypi_url    = f"https://pypi.org/project/prose-formatter/{ref}/",
             ref         = ref,
-            run_url     = f"{base}/actions/runs/{environ['GITHUB_RUN_ID']}",
-            tag_link    = f"[`{ref}`]({base}/releases/tag/{ref})",
-            tree_link   = f"[`{ref}`]({base}/tree/{ref})"
+            tag_link    = f"[`{ref}`]({base}/releases/tag/{ref})"
         )
         self.platforms = loads((here / "platforms.toml").read_text())["platforms"]
 
@@ -73,13 +64,13 @@ class Summary:
         """
         Render the CI gate summary and exit with the matrix verdict.
         """
-        status = {k.lower(): environ[k] for k in ["CHECK", "COVERAGE"]}
-        marks  = {
-            f"{k}_mark": {"success": "✅"}.get(v, "❌")
-            for k, v in status.items()
-        }
-        self._emit("ci-summary.md.j2", **status, **marks)
-        raise SystemExit(any(v != "success" for v in status.values()))
+        check = environ["CHECK"]
+        self._emit(
+            "ci-summary.md.j2",
+            check      = check,
+            check_mark = "✅" if check == "success" else "❌"
+        )
+        raise SystemExit(check != "success")
 
     def release(self):
         """
