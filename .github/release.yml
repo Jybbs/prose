@@ -6,7 +6,11 @@ changelog:
         - 🪜 alignment
         - 🪉 ordering
         - 🪶 formatting
+        - 🧶 lint
         - 🪄 cli
+    - title: 🐞 Bugs
+      labels:
+        - 🐞 bug
     - title: 📰 Docs
       labels:
         - 📰 docs
