@@ -3,6 +3,10 @@ run-name    : 🪻 Draft · ${{ github.ref_name }}
 permissions : { contents: read }
 
 on:
+  push:
+    branches : [main]
+    paths    : ['Cargo.toml']
+
   workflow_dispatch:
 
 concurrency:
@@ -19,7 +23,9 @@ jobs:
     steps:
       - name : Check out repository
         uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with : { ref: main }
+        with:
+          fetch-depth : 2
+          ref         : main
 
       - name : Provision uv
         uses : ./.github/actions/provision-uv
@@ -30,6 +36,7 @@ jobs:
 
       - name : 🌱 Cut draft
         id   : cut
+        if   : github.event_name == 'workflow_dispatch' || steps.tag.outputs.changed == 'true'
         env:
           GH_TOKEN : ${{ github.token }}
           VERSION  : ${{ steps.tag.outputs.version }}

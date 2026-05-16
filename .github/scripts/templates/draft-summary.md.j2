@@ -1,3 +1,7 @@
 ## 🪻 Prose Draft
 
+{% if draft_url -%}
 Cut [*Prose* {{ version }}]({{ draft_url }}) draft from {{ commit_link }}.
+{% else -%}
+No version bump in {{ commit_link }}. Draft not cut.
+{% endif %}

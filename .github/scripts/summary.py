@@ -75,11 +75,11 @@ class Summary:
 
     def draft(self):
         """
-        Render the Draft summary with the cut release-draft URL.
+        Render the Draft summary, either the cut URL or the no-bump no-op.
         """
         self._emit(
             "draft-summary.md.j2",
-            draft_url = environ["DRAFT_URL"],
+            draft_url = environ.get("DRAFT_URL", ""),
             version   = environ["VERSION"]
         )
 
