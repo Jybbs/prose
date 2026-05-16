@@ -1,31 +1,37 @@
-//! Collapses each arm of a `match` statement to one source line of
-//! the form `case PATTERN : EXPR` and aligns the `:` column across
-//! arms whose body is a single collapsible statement on a single
-//! source line. A disqualifying arm (multi-statement body,
-//! compound-statement body, multi-line body, or a comment between
-//! the `:` and the body) breaks alignment into sub-groups on either
-//! side. Each sub-group runs the configured `Split` / `Drop` / `Skip`
-//! policy independently. Singleton sub-groups collapse without
-//! pre-colon padding. Nested matches recurse.
+//! Collapses each `match` arm to a one-line `case PATTERN : EXPR`
+//! and aligns the `:` column across arms whose body is a single
+//! collapsible statement on one source line. A disqualifying arm
+//! (multi-statement body, compound-statement body, multi-line body,
+//! or a comment between the `:` and the body) breaks alignment into
+//! sub-groups on either side. An arm whose collapsed form would
+//! exceed `Config::code_line_length` also disqualifies, and any
+//! such arm that sits on one source line splits so the body lands
+//! on the next line. Nested matches recurse.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_compound_statement;
 use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
 use ruff_python_ast::{MatchCase, Stmt, StmtMatch};
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
-use crate::primitives::{aligner, colon_targets};
+use crate::primitives::{aligner, colon_targets, INDENT_STEP};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
 pub(crate) struct MatchCaseAlign {
+    code_line_length: usize,
     settings: aligner::Settings,
 }
 
 impl MatchCaseAlign {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
+            code_line_length: config
+                .code_line_length
+                .expect("Config::default synthesizes Some(88)")
+                .get(),
             settings: aligner::Settings::from(&config.rules.match_case_align)
                 .with_singleton_subgroup_strip(),
         }
@@ -35,6 +41,7 @@ impl MatchCaseAlign {
 impl Rule for MatchCaseAlign {
     fn apply(&self, source: &Source) -> Vec<Edit> {
         let mut visitor = Visitor {
+            code_line_length: self.code_line_length,
             edits: Vec::new(),
             settings: self.settings,
             source,
@@ -48,7 +55,18 @@ impl Rule for MatchCaseAlign {
     }
 }
 
+/// Outcome of qualifying one `case` arm. `Align` enrolls the arm in
+/// the active alignment sub-group. `Disqualify` breaks the sub-group
+/// without emitting an edit. `Split` breaks the sub-group and emits
+/// an edit pushing the body onto the next source line.
+enum CaseOutcome {
+    Align(aligner::Member, TextRange),
+    Disqualify,
+    Split(Edit),
+}
+
 struct Visitor<'a> {
+    code_line_length: usize,
     edits: Vec<Edit>,
     settings: aligner::Settings,
     source: &'a Source,
@@ -58,9 +76,7 @@ impl Visitor<'_> {
     /// Emits alignment and collapse edits for a sub-group and drains it.
     fn flush_subgroup(&mut self, group: &mut Vec<(aligner::Member, TextRange)>) {
         let (members, ranges): (Vec<aligner::Member>, Vec<TextRange>) = group.drain(..).unzip();
-        if aligner::is_alignment_candidate(&members) {
-            aligner::emit_group(self.source, &members, self.settings, &mut self.edits);
-        }
+        aligner::emit_group(self.source, &members, self.settings, &mut self.edits);
         self.edits.extend(
             ranges
                 .into_iter()
@@ -68,37 +84,75 @@ impl Visitor<'_> {
         );
     }
 
-    /// Emits collapse-and-align edits for one match. Sub-groups
-    /// form at disqualifying-arm boundaries. Each multi-member
-    /// sub-group runs through `aligner::emit_group`, and every
-    /// qualifying arm gets a collapse edit. Singleton sub-groups
-    /// skip alignment.
+    /// Returns `Disqualify` when the `:`-to-body gap already carries
+    /// a line break, otherwise `Split` carrying an edit that pushes
+    /// the body onto the next source line.
+    fn over_budget_outcome(&self, case: &MatchCase, collapse_range: TextRange) -> CaseOutcome {
+        if self.source.contains_line_break(collapse_range) {
+            return CaseOutcome::Disqualify;
+        }
+        let body_indent = self.source.line_indent_width(case.start()) + INDENT_STEP;
+        let replacement = format!("{}{}", self.source.newline_str(), " ".repeat(body_indent));
+        CaseOutcome::Split(Edit::range_replacement(replacement, collapse_range))
+    }
+
+    /// Returns `true` when the canonical
+    /// `[indent]case PATTERN[ if GUARD] : BODY` form for `case` would
+    /// exceed `code_line_length`.
+    fn overflows_budget(&self, case: &MatchCase, body_first: &Stmt) -> bool {
+        let pre_colon_end = case
+            .guard
+            .as_deref()
+            .map_or(case.pattern.end(), Ranged::end);
+        let lhs_width = self
+            .source
+            .slice(TextRange::new(case.start(), pre_colon_end))
+            .width();
+        let body_width = self.source.slice(body_first.range()).width();
+        self.source.column_of(case.start()) + lhs_width + 3 + body_width > self.code_line_length
+    }
+
+    /// Emits collapse-and-align edits for one match by walking each
+    /// case through `qualify_case` and dispatching on its outcome.
     fn process_match(&mut self, m: &StmtMatch) {
         let mut current: Vec<(aligner::Member, TextRange)> = Vec::new();
         for case in &m.cases {
             match self.qualify_case(case) {
-                Some(target) => current.push(target),
-                None => self.flush_subgroup(&mut current),
+                CaseOutcome::Align(member, range) => current.push((member, range)),
+                CaseOutcome::Disqualify => self.flush_subgroup(&mut current),
+                CaseOutcome::Split(edit) => {
+                    self.flush_subgroup(&mut current);
+                    self.edits.push(edit);
+                }
             }
         }
         self.flush_subgroup(&mut current);
     }
 
-    /// Returns the alignment member and the post-colon collapse
-    /// range for a qualifying arm, or `None` when the arm
-    /// disqualifies. The collapse range covers the whitespace span
-    /// between the `:` and the body's first statement.
-    fn qualify_case(&self, case: &MatchCase) -> Option<(aligner::Member, TextRange)> {
+    /// Classifies one arm into the matching `CaseOutcome` variant.
+    /// Disqualifies on multi-statement, compound, or multi-line
+    /// bodies and on a comment in the `:`-to-body gap; defers to
+    /// `over_budget_outcome` when the arm would overflow the
+    /// line-length budget collapsed.
+    fn qualify_case(&self, case: &MatchCase) -> CaseOutcome {
         let [body_first] = case.body.as_slice() else {
-            return None;
+            return CaseOutcome::Disqualify;
         };
         if is_compound_statement(body_first) || self.source.contains_line_break(body_first) {
-            return None;
+            return CaseOutcome::Disqualify;
         }
-        let member = colon_targets::match_case(self.source, case)?;
+        let Some(member) = colon_targets::match_case(self.source, case) else {
+            return CaseOutcome::Disqualify;
+        };
         let collapse_range =
             TextRange::new(member.gap.end() + TextSize::from(1u32), body_first.start());
-        (!self.source.intersects_comment(collapse_range)).then_some((member, collapse_range))
+        if self.source.intersects_comment(collapse_range) {
+            return CaseOutcome::Disqualify;
+        }
+        if self.overflows_budget(case, body_first) {
+            return self.over_budget_outcome(case, collapse_range);
+        }
+        CaseOutcome::Align(member, collapse_range)
     }
 }
 
