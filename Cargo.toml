@@ -8,7 +8,7 @@ name         = "prose"
 readme       = "README.md"
 repository   = "https://github.com/Jybbs/prose"
 rust-version = "1.82"
-version      = "0.2.2"
+version      = "0.2.3"
 
 [dependencies]
 annotate-snippets  = "=0.12.13"
