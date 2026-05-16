@@ -1,9 +1,9 @@
 """
 Class fields whose widths span more than the rule's `max-shift`
 apart trigger the default `split` policy. The greedy partitioner
-produces three contiguous sub-groups, each aligning at its own
-widest member's column. The outlier falls into a singleton
-sub-group whose gap collapses to zero.
+isolates `really_really_long_field` as a singleton sub-group. As
+the strictly widest member, it anchors every other sub-group at
+its column, overriding the cap so all `:`s share one column.
 """
 
 class Packet:

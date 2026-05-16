@@ -6,7 +6,7 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::{Token, TokenKind};
-use ruff_python_ast::Stmt;
+use ruff_python_ast::{AnyParameterRef, Parameters, Stmt};
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -21,9 +21,7 @@ use crate::source::Source;
 /// region, from the start of the member to the start of the gap. `gap`
 /// is the whitespace range ending immediately before the aligned
 /// token that the rule will rewrite. `line_start` is the offset of
-/// the start of the source line containing the gap, captured at
-/// construction time so [`is_alignment_candidate`] can compare line
-/// identity without re-scanning the source.
+/// the start of the source line containing the gap.
 #[derive(Clone, Copy)]
 pub(crate) struct Member {
     pub gap: TextRange,
@@ -33,9 +31,10 @@ pub(crate) struct Member {
 
 /// Emission knobs shared by every alignment rule.
 ///
-/// `strip_singleton_subgroup` overrides the suffix to `0` for
-/// size-one sub-groups in `emit_split`, used by the `:`-anchored
-/// rules.
+/// `strip_singleton_subgroup` collapses size-one sub-groups in
+/// `emit_split` to a zero-width gap, except when the singleton is
+/// strictly the widest member of the group, in which case it anchors
+/// every sub-group's padding at `singleton.width + 1`.
 #[derive(Clone, Copy)]
 pub(crate) struct Settings {
     max_shift: usize,
@@ -97,10 +96,7 @@ pub(crate) fn emit_group(
 }
 
 /// Returns `true` when `members` form a multi-row group whose
-/// aligned tokens sit on distinct source lines. The two
-/// alignment-vs-collapse rules pivot on this predicate: the
-/// alignment side acts when it is `true`, the collapse side acts
-/// when it is `false`.
+/// aligned tokens sit on distinct source lines.
 pub(crate) fn is_alignment_candidate(members: &[Member]) -> bool {
     members.len() >= 2
         && members
@@ -111,13 +107,12 @@ pub(crate) fn is_alignment_candidate(members: &[Member]) -> bool {
 /// Generalization of [`line_adjacent_groups`] for rules that admit
 /// more than one member shape. The qualifier returns `Option<(K, M)>`
 /// where `K` tags the shape, and a run extends only while the next
-/// member shares both the active key and line-adjacency. A key change
-/// at an otherwise-adjacent boundary closes the active run and starts
-/// a fresh one without losing the boundary statement, which keeps
-/// `align_imports` from mixing `from`-import members with
-/// `import M as A` members in a single group. Walks `body` exactly
-/// once and calls `Source::is_line_adjacent` at most once per
-/// qualifying statement.
+/// member shares the active key, sits line-adjacent to the prior
+/// statement, and the prior statement itself fits on one source line.
+/// A key change at an otherwise-adjacent boundary closes the active
+/// run and starts a fresh one without losing the boundary statement.
+/// Walks `body` exactly once, calling the qualifier and each boundary
+/// predicate at most once per statement.
 pub(crate) fn keyed_line_adjacent_groups<'a, K, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -128,14 +123,16 @@ where
     F: FnMut(&'a Stmt) -> Option<(K, M)>,
 {
     let mut groups: Vec<Vec<M>> = Vec::new();
-    let mut active: Option<(K, TextSize)> = None;
+    let mut active: Option<(K, TextRange)> = None;
     for stmt in body {
         let Some((key, member)) = qualify(stmt) else {
             active = None;
             continue;
         };
-        let extends = active.as_ref().is_some_and(|(active_key, last_end)| {
-            active_key == &key && source.is_line_adjacent(TextRange::new(*last_end, stmt.start()))
+        let extends = active.as_ref().is_some_and(|(active_key, prev)| {
+            active_key == &key
+                && !source.contains_line_break(prev)
+                && source.is_line_adjacent(TextRange::new(prev.end(), stmt.start()))
         });
         if extends {
             groups
@@ -145,19 +142,20 @@ where
         } else {
             groups.push(vec![member]);
         }
-        active = Some((key, stmt.end()));
+        active = Some((key, stmt.range()));
     }
     groups
 }
 
 /// Walks `body`, qualifying each statement through `qualify` and
 /// grouping the qualified members into runs where every consecutive
-/// pair sits on adjacent source lines. A non-qualifying statement, a
-/// comment in the inter-statement gap, or a blank line breaks the
-/// current run. Empty groups (statements that fail qualification with
-/// no qualified neighbors) are skipped. Thin wrapper over
-/// [`keyed_line_adjacent_groups`] for rules whose qualifier produces
-/// only one form, so every member shares an implicit `()` key.
+/// pair sits on adjacent source lines. A multi-line prior statement,
+/// a non-qualifying statement, a comment in the inter-statement gap,
+/// or a blank line breaks the current run. Empty groups (statements
+/// that fail qualification with no qualified neighbors) are skipped.
+/// Thin wrapper over [`keyed_line_adjacent_groups`] for rules whose
+/// qualifier produces only one form, so every member shares an
+/// implicit `()` key.
 pub(crate) fn line_adjacent_groups<'a, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -173,7 +171,6 @@ where
 /// Width is the display width of the line's content from the first
 /// non-whitespace character to the last non-whitespace character
 /// before the gap, leaving the gap free for the rule to rewrite.
-/// Shared by every rule that aligns at a token's line position.
 pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
     let line_start = source.text().line_start(anchor);
     let prefix = source.slice(TextRange::new(line_start, anchor));
@@ -187,10 +184,7 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
 }
 
 /// Builds a `Member` whose anchor is the first token of `kind` within
-/// `search`. Convenience for the dominant rule-side composition,
-/// which finds a keyword or operator token in a tight range and then
-/// builds a line-anchored member from its start. Returns `None` when
-/// the search turns up nothing.
+/// `search`. Returns `None` when the search turns up nothing.
 pub(crate) fn line_anchored_member_at_kind(
     source: &Source,
     search: TextRange,
@@ -198,6 +192,22 @@ pub(crate) fn line_anchored_member_at_kind(
 ) -> Option<Member> {
     let anchor = source.first_token_offset_in_range(search, |t| t.kind() == kind)?;
     Some(line_anchored_member(source, anchor))
+}
+
+/// Walks `params` in source order, qualifying each parameter through
+/// `qualify` and returning one group per run of contiguous qualified
+/// parameters. A parameter that fails to qualify breaks the current
+/// run without joining either neighbor. Empty runs are filtered out.
+pub(crate) fn parameter_split_groups<F>(params: &Parameters, qualify: F) -> Vec<Vec<Member>>
+where
+    F: FnMut(AnyParameterRef<'_>) -> Option<Member>,
+{
+    let qualified: Vec<_> = params.iter_source_order().map(qualify).collect();
+    qualified
+        .split(Option::is_none)
+        .filter(|chunk| !chunk.is_empty())
+        .map(|chunk| chunk.iter().copied().flatten().collect())
+        .collect()
 }
 
 /// Builds a `Member` whose anchor is the first token in `search`
@@ -217,10 +227,7 @@ where
     F: FnMut(&Token) -> bool,
 {
     let anchor = source.first_token_offset_in_range(search, predicate)?;
-    if source
-        .text()
-        .contains_line_break(TextRange::new(target.start(), anchor))
-    {
+    if source.contains_line_break(TextRange::new(target.start(), anchor)) {
         return None;
     }
     Some(range_anchored_member(source, target, anchor, extra_width))
@@ -228,8 +235,7 @@ where
 
 /// Returns the edit needed to make `range` carry exactly `n` ASCII
 /// spaces, or `None` if it already does. Emits `Edit::range_deletion`
-/// when `n` is zero, because `Edit::range_replacement` rejects empty
-/// content.
+/// when `n` is zero.
 pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) -> Option<Edit> {
     let text = source.slice(range);
     if text.len() == n && text.bytes().all(|b| b == b' ') {
@@ -261,36 +267,26 @@ fn emit_drop(source: &Source, members: &[Member], settings: Settings, edits: &mu
     emit_with_paddings(source, kept, max_w, 1, edits);
 }
 
-/// Partitions greedily, extending the current sub-group while its
-/// widest padding stays under the cap and then starting a new
-/// sub-group. Each contiguous sub-group aligns independently. A
-/// singleton sub-group collapses its gap to one space by default, or
-/// to zero when `settings.strip_singleton_subgroup` is set.
+/// Partitions greedily into sub-groups capped at `settings.max_shift`
+/// spread, each aligning at its own widest member by default. A
+/// singleton collapses its gap to one space, or to zero when
+/// `settings.strip_singleton_subgroup` is set. The strip shortcut
+/// inverts when the singleton is strictly the widest member, wherein
+/// it anchors every sub-group at `singleton.width + 1`.
 fn emit_split(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>) {
-    let mut cursor = 0;
-    while cursor < members.len() {
-        let mut min_w = members[cursor].width;
-        let mut max_w = min_w;
-        let mut end = cursor + 1;
-        while end < members.len() {
-            let w = members[end].width;
-            let new_min = min_w.min(w);
-            let new_max = max_w.max(w);
-            if new_max - new_min > settings.max_shift {
-                break;
-            }
-            min_w = new_min;
-            max_w = new_max;
-            end += 1;
-        }
-        let sub = &members[cursor..end];
-        let suffix = if sub.len() == 1 && settings.strip_singleton_subgroup {
-            0
-        } else {
-            1
+    let subs = partition_by_spread(members, settings.max_shift);
+    let anchor = settings
+        .strip_singleton_subgroup
+        .then(|| widest_singleton_anchor_width(members, &subs))
+        .flatten();
+    for &(start, end, sub_max_w) in &subs {
+        let sub = &members[start..end];
+        let (max_w, suffix) = match (anchor, sub.len()) {
+            (Some(a), _) => (a, 1),
+            (None, 1) if settings.strip_singleton_subgroup => (sub[0].width, 0),
+            (None, _) => (sub_max_w, 1),
         };
         emit_with_paddings(source, sub, max_w, suffix, edits);
-        cursor = end;
     }
 }
 
@@ -311,6 +307,33 @@ fn emit_with_paddings(
     );
 }
 
+/// Returns the half-open `(start, end, max_width)` sub-group ranges
+/// into `members` produced by greedily extending each sub-group while
+/// the running `max_width - min_width` stays at or below `max_shift`.
+fn partition_by_spread(members: &[Member], max_shift: usize) -> Vec<(usize, usize, usize)> {
+    let mut subs = Vec::new();
+    let mut cursor = 0;
+    while cursor < members.len() {
+        let mut min_w = members[cursor].width;
+        let mut max_w = min_w;
+        let mut end = cursor + 1;
+        while end < members.len() {
+            let w = members[end].width;
+            let new_min = min_w.min(w);
+            let new_max = max_w.max(w);
+            if new_max - new_min > max_shift {
+                break;
+            }
+            min_w = new_min;
+            max_w = new_max;
+            end += 1;
+        }
+        subs.push((cursor, end, max_w));
+        cursor = end;
+    }
+    subs
+}
+
 /// Builds a `Member` for a row whose aligned token sits at `anchor`,
 /// with width measured by the display width of `target` plus
 /// `extra_width`. Pass `extra_width = 0` when the LHS is exactly
@@ -329,6 +352,21 @@ fn range_anchored_member(
         line_start: source.text().line_start(anchor),
         width: source.slice(target).width() + extra_width,
     }
+}
+
+/// Returns the width of the strictly-widest member in `members` when
+/// the greedy partition isolates that member as its own sub-group.
+fn widest_singleton_anchor_width(
+    members: &[Member],
+    subs: &[(usize, usize, usize)],
+) -> Option<usize> {
+    let (widest_idx, widest) = members.iter().enumerate().max_by_key(|(_, m)| m.width)?;
+    let w = widest.width;
+    let unique = members.iter().filter(|m| m.width == w).nth(1).is_none();
+    let isolated = subs
+        .iter()
+        .any(|&(s, e, _)| s == widest_idx && e == widest_idx + 1);
+    (unique && isolated).then_some(w)
 }
 
 #[cfg(test)]
@@ -360,9 +398,8 @@ mod tests {
 
     /// Builds a multi-line Python source where each row is
     /// `x...x{spaces}= 0\n`, returns the source plus one `Member` per
-    /// row pointing at that row's pre-`=` whitespace. The `gap_chars`
-    /// value seeds the existing pre-`=` whitespace so tests can probe
-    /// the "already correct" branch in `emit_with_paddings`.
+    /// row pointing at that row's pre-`=` whitespace. `gap_chars` seeds
+    /// the existing pre-`=` whitespace.
     fn rows(specs: &[(usize, usize)]) -> (Source, Vec<Member>) {
         let mut text = String::new();
         let mut members = Vec::new();
@@ -518,6 +555,30 @@ mod tests {
     }
 
     #[test]
+    fn emit_group_split_anchors_at_widest_singleton_when_strip_is_set() {
+        // Widths span 13 → 4, a 9-wide spread that exceeds max_shift=8.
+        // The greedy partition isolates the leading width-13 member as
+        // a singleton. With strip on, the singleton anchors the whole
+        // group at width 13 + 1, so every member's `:` lands at the
+        // same column: 13+1, 4+10, 11+3, 7+7 = 14.
+        let (source, members) = rows(&[(13, 1), (4, 1), (11, 1), (7, 1)]);
+        let mut edits = Vec::new();
+
+        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
+        emit_group(&source, &members, settings, &mut edits);
+
+        // member[0] already carries gap=1 (the target), so no edit emits.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![
+                fill(&members[1], 10),
+                fill(&members[2], 3),
+                fill(&members[3], 7),
+            ],
+        );
+    }
+
+    #[test]
     fn emit_group_split_partitions_into_contiguous_subgroups() {
         let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
         let mut edits = Vec::new();
@@ -539,20 +600,43 @@ mod tests {
     }
 
     #[test]
-    fn emit_group_split_strips_singleton_subgroup_when_flag_is_set() {
-        let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
+    fn emit_group_split_skips_anchor_when_widest_width_ties() {
+        // widths 13, 4, 13 yield spread = 9, exceeding max_shift=8.
+        // Partition isolates each as a singleton. Both 13s share max
+        // width, so no strictly-widest singleton anchor fires, and
+        // strip collapses each gap to zero.
+        let (source, members) = rows(&[(13, 1), (4, 1), (13, 1)]);
         let mut edits = Vec::new();
 
         let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
         emit_group(&source, &members, settings, &mut edits);
 
-        // [15] singleton sub-group collapses to 0 with strip on.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![
+                delete(&members[0]),
+                delete(&members[1]),
+                delete(&members[2]),
+            ],
+        );
+    }
+
+    #[test]
+    fn emit_group_split_strips_singleton_subgroup_when_flag_is_set() {
+        let (source, members) = rows(&[(10, 1), (11, 1), (1, 1), (12, 1), (13, 1)]);
+        let mut edits = Vec::new();
+
+        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
+        emit_group(&source, &members, settings, &mut edits);
+
+        // [1] is a narrow singleton, so strip collapses its gap to 0
+        // while [10, 11] and [12, 13] align within their own max_w.
         assert_eq!(
             sorted_summaries(&edits),
             vec![
                 fill(&members[0], 2),
                 delete(&members[2]),
-                fill(&members[3], 2)
+                fill(&members[3], 2),
             ],
         );
     }
@@ -674,6 +758,16 @@ mod tests {
             groups.iter().map(Vec::len).collect::<Vec<_>>(),
             vec![1, 1, 1],
         );
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_splits_on_multiline_prior_stmt() {
+        let source = parse("x = {\n    'a': 1,\n}\ny = 2\n");
+        let groups = keyed_line_adjacent_groups(&source, &source.ast().body, |s| {
+            s.as_assign_stmt().map(|_| ((), ()))
+        });
+
+        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
     }
 
     #[test]

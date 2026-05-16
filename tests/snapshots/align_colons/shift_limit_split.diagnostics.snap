@@ -1,9 +1,11 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 39
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/shift_limit_split.input.py
 ---
-align-colons@322..322
-align-colons@343..343
-align-colons@395..395
-align-colons@409..409
+align-colons@351..351
+align-colons@372..372
+align-colons@406..406
+align-colons@424..424
+align-colons@438..438

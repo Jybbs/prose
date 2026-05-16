@@ -257,15 +257,7 @@ fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Mem
 /// contiguous annotated parameters, splitting at every unannotated
 /// parameter.
 fn parameter_groups(source: &Source, params: &Parameters) -> Vec<Vec<aligner::Member>> {
-    let members: Vec<_> = params
-        .iter_source_order()
-        .map(|p| parameter(source, p))
-        .collect();
-    members
-        .split(Option::is_none)
-        .filter(|chunk| !chunk.is_empty())
-        .map(|chunk| chunk.iter().copied().flatten().collect())
-        .collect()
+    aligner::parameter_split_groups(params, |p| parameter(source, p))
 }
 
 #[cfg(test)]

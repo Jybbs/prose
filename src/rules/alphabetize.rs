@@ -653,10 +653,9 @@ where
 }
 
 /// Builds a `Vec<Range<usize>>` of body slots whose statements all
-/// match `predicate`. Adjacent matching statements stay in the same
-/// run regardless of any blank lines between them, so all imports
-/// of the same form collapse into one block at the top of the body.
-/// Non-matching statements break the run. Singleton runs drop.
+/// match `predicate`. Consecutive matching slots collapse into one
+/// run, and a non-matching statement between two matching ones breaks
+/// the run. Singleton runs drop.
 fn statement_run_ranges(
     body: &[Stmt],
     mut predicate: impl FnMut(&Stmt) -> bool,
