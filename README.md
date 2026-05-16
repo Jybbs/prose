@@ -99,7 +99,7 @@ Auto-fix rules:
 | `align-imports` | The `import` keyword in `from ... import ...` groups and `as` in `import ... as ...` groups |
 | `alphabetize` | Classes, methods (*grouped dunders → properties → privates → publics*), enum members, Pydantic fields (*required then optional*), function parameters, keyword arguments, and `from` imports |
 | `bare-import-allowlist` | Bare `import X` outside a configurable allowlist (*default `numpy`, `pandas`*) |
-| `blank-lines` | Module-level `def` and `class` carry 2 blank lines before them, methods inside a class body carry 1, and a module-level statement after `if __name__ == "__main__":` carries 1 |
+| `blank-lines` | Module-level `def` and `class` carry 2 blank lines before them, methods inside a class body carry 1, a module-level statement after `if __name__ == "__main__":` carries 1, and adjacent module-level bare `import` and `from` imports carry 1 between them |
 | `collection-layout` | Expands `dict`, `list`, and `set` literals to one entry per line, even when they fit inline |
 | `docstring-wrap` | Wraps docstring description prose to `docstring-line-length` and structured `Args:` / `Returns:` / `Raises:` sections to the budget chosen by `docstring-structured-policy` |
 | `match-case-align` | Single-expression case bodies |

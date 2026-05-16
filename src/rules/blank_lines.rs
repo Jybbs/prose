@@ -3,9 +3,10 @@
 //! class body carry 1 blank line. A class-scope predecessor that is a
 //! string-literal docstring carries 1 blank line before the next member.
 //! A module-level statement following an `if __name__ == "__main__":`
-//! block carries 1 blank line of separation. Own-line comments between
-//! adjacent statements carry 1 blank line of separation from the
-//! following statement.
+//! block carries 1 blank line of separation. Adjacent module-level bare
+//! `import` and `from` import statements carry 1 blank line between them.
+//! Own-line comments between adjacent statements carry 1 blank line of
+//! separation from the following statement.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_docstring_stmt;
@@ -135,13 +136,14 @@ fn canonical_blanks(prev: &Stmt, curr: &Stmt, scope: BodyScope) -> Option<u32> {
             || matches!((prev, curr), (Stmt::FunctionDef(_), Stmt::FunctionDef(_))))
         .then_some(1),
         BodyScope::Function => None,
-        BodyScope::Module => {
-            if is_main_guard(prev) {
+        BodyScope::Module => match (prev, curr) {
+            _ if is_main_guard(prev) => Some(1),
+            (Stmt::Import(_), Stmt::ImportFrom(_)) | (Stmt::ImportFrom(_), Stmt::Import(_)) => {
                 Some(1)
-            } else {
-                matches!(curr, Stmt::FunctionDef(_) | Stmt::ClassDef(_)).then_some(2)
             }
-        }
+            (_, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) => Some(2),
+            _ => None,
+        },
     }
 }
 
@@ -249,6 +251,38 @@ mod tests {
             canonical_blanks(&body[0], &body[1], BodyScope::Module),
             Some(2)
         );
+    }
+
+    #[test]
+    fn canonical_blanks_module_import_kind_boundary_returns_one() {
+        for src in [
+            "import os\nfrom sys import argv\n",
+            "from sys import argv\nimport os\n",
+        ] {
+            let s = parse(src);
+            let body = &s.ast().body;
+            assert_eq!(
+                canonical_blanks(&body[0], &body[1], BodyScope::Module),
+                Some(1),
+                "src = {src:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_blanks_module_same_kind_import_run_returns_none() {
+        for src in [
+            "import os\nimport sys\n",
+            "from os import path\nfrom sys import argv\n",
+        ] {
+            let s = parse(src);
+            let body = &s.ast().body;
+            assert_eq!(
+                canonical_blanks(&body[0], &body[1], BodyScope::Module),
+                None,
+                "src = {src:?}",
+            );
+        }
     }
 
     #[test]

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/bare_then_from_idempotent.input.py
+---
+
