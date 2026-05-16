@@ -6,7 +6,7 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::{Token, TokenKind};
-use ruff_python_ast::Stmt;
+use ruff_python_ast::{AnyParameterRef, Parameters, Stmt};
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -186,6 +186,22 @@ pub(crate) fn line_anchored_member_at_kind(
 ) -> Option<Member> {
     let anchor = source.first_token_offset_in_range(search, |t| t.kind() == kind)?;
     Some(line_anchored_member(source, anchor))
+}
+
+/// Walks `params` in source order, qualifying each parameter through
+/// `qualify` and returning one group per run of contiguous qualified
+/// parameters. A parameter that fails to qualify breaks the current
+/// run without joining either neighbor. Empty runs are filtered out.
+pub(crate) fn parameter_split_groups<F>(params: &Parameters, qualify: F) -> Vec<Vec<Member>>
+where
+    F: FnMut(AnyParameterRef<'_>) -> Option<Member>,
+{
+    let qualified: Vec<_> = params.iter_source_order().map(qualify).collect();
+    qualified
+        .split(Option::is_none)
+        .filter(|chunk| !chunk.is_empty())
+        .map(|chunk| chunk.iter().copied().flatten().collect())
+        .collect()
 }
 
 /// Builds a `Member` whose anchor is the first token in `search`
