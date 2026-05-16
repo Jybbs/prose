@@ -1,0 +1,53 @@
+name        : 🪻 Draft
+run-name    : 🪻 Draft · ${{ github.ref_name }}
+permissions : { contents: read }
+
+on:
+  push:
+    branches : [main]
+    paths    : ['Cargo.toml']
+
+  workflow_dispatch:
+
+concurrency:
+  cancel-in-progress : false
+  group              : ${{ github.workflow }}
+
+jobs:
+  cut:
+    name            : 🪻 Draft
+    permissions     : { contents: write }
+    runs-on         : ubuntu-latest
+    timeout-minutes : 5
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth : 2
+          ref         : main
+
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+
+      - name : Emit release tag
+        id   : tag
+        run  : ./.github/scripts/emit-tag.py
+
+      - name : 🌱 Cut draft
+        id   : cut
+        if   : github.event_name == 'workflow_dispatch' || steps.tag.outputs.changed == 'true'
+        env:
+          GH_TOKEN : ${{ github.token }}
+          VERSION  : ${{ steps.tag.outputs.version }}
+        run  : |
+          url=$(gh release create "$VERSION" --target main --generate-notes --draft --repo "$GITHUB_REPOSITORY")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name : 🗞️ Brief
+        env:
+          DRAFT_URL : ${{ steps.cut.outputs.url }}
+          REF       : ${{ github.ref_name }}
+          SHA       : ${{ github.sha }}
+          VERSION   : ${{ steps.tag.outputs.version }}
+        run  : ./.github/scripts/summary.py draft

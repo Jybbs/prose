@@ -62,7 +62,7 @@ run         = "cargo test --locked"
 depends     = ["coverage"]
 description = "Generate `target/lcov.info` and upload it to Codecov"
 tools       = { "pipx:codecov-cli" = "latest" }
-run         = "codecovcli upload-process --file target/lcov.info"
+run         = "codecovcli upload-process --file target/lcov.info --sha \"$SHA\""
 
 [tasks.wheel]
 description = "Build the `maturin` wheel into the active virtualenv"
