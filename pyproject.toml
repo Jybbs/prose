@@ -18,12 +18,12 @@ classifiers     = [
     "Topic :: Software Development :: Quality Assurance"
 ]
 description     = "A Python typesetter for the reader."
+dynamic         = ["version"]
 keywords        = ["formatter", "legibility", "linter", "python", "style"]
 license         = { text = "MIT" }
 name            = "prose-formatter"
 readme          = "README.md"
 requires-python = ">=3.10"
-version         = "0.2.0"
 
 [project.urls]
 changelog = "https://github.com/Jybbs/prose/releases"
