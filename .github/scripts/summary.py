@@ -64,13 +64,12 @@ class Summary:
         """
         Render the CI gate summary and exit with the matrix verdict.
         """
-        check = environ["CHECK"]
+        failed = environ["CHECK"] != "success"
         self._emit(
             "ci-summary.md.j2",
-            check      = check,
-            check_mark = "✅" if check == "success" else "❌"
+            check_mark = "❌" if failed else "✅"
         )
-        raise SystemExit(check != "success")
+        raise SystemExit(failed)
 
     def release(self):
         """
