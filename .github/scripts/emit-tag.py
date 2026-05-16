@@ -3,7 +3,7 @@
 # requires-python = ">=3.11"
 # ///
 """
-Emit the release tag for `cut-draft.yml` to consume.
+Emit the release tag for `draft.yml` to consume.
 
 Reads `[package].version` from `Cargo.toml` and writes `version=<tag>`
 to `$GITHUB_OUTPUT`.

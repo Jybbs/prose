@@ -9,12 +9,14 @@ Render a Prose step summary and gate the workflow's exit code.
 Subcommands:
     ci       Render the CI gate summary. Reads `CHECK` plus the
              GitHub-runner defaults. Exits 0 when `CHECK` is success.
+    draft    Render the Draft summary. Reads `DRAFT_URL` and
+             `VERSION`, plus the GitHub-runner defaults.
     release  Render the Release gate summary. Reads `BUILD`, `SDIST`,
              `VALIDATE`, `PUBLISH`, plus the GitHub-runner defaults.
              Exits 0 when every required job succeeded. `PUBLISH` is
              required only on tag runs.
 
-Both subcommands append to `$GITHUB_STEP_SUMMARY`.
+Each subcommand appends to `$GITHUB_STEP_SUMMARY`.
 """
 
 from jinja2  import Environment, FileSystemLoader
@@ -26,7 +28,7 @@ from tomllib import loads
 
 class Summary:
     """
-    Render a Prose CI or Release step summary and gate the workflow.
+    Render a Prose CI, Draft, or Release step summary.
     """
 
     def __init__(self):
@@ -71,6 +73,16 @@ class Summary:
         )
         raise SystemExit(failed)
 
+    def draft(self):
+        """
+        Render the Draft summary with the cut release-draft URL.
+        """
+        self._emit(
+            "draft-summary.md.j2",
+            draft_url = environ["DRAFT_URL"],
+            version   = environ["VERSION"]
+        )
+
     def release(self):
         """
         Render the Release gate summary and exit with the pipeline verdict.
@@ -105,6 +117,6 @@ class Summary:
 
 if __name__ == "__main__":
 
-    if (cmd := argv[1]) not in {"ci", "release"}:
+    if (cmd := argv[1]) not in {"ci", "draft", "release"}:
         raise SystemExit(f"unknown subcommand: {cmd}")
     getattr(Summary(), cmd)()
