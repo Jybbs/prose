@@ -7,10 +7,12 @@ changelog:
         - 🪉 ordering
         - 🪶 formatting
         - 🧶 lint
-        - 🪄 cli
     - title: 🐞 Bugs
       labels:
         - 🐞 bug
+    - title: 🪄 CLI
+      labels:
+        - 🪄 cli
     - title: 📰 Docs
       labels:
         - 📰 docs
