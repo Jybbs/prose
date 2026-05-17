@@ -57,12 +57,6 @@ enum BodyScope {
     Module,
 }
 
-#[derive(Clone, Copy)]
-struct CommentBlock {
-    bottom_end: TextSize,
-    top_line_start: TextSize,
-}
-
 struct Walker<'a> {
     edits: Vec<Edit>,
     source: &'a Source,
@@ -125,12 +119,12 @@ impl Walker<'_> {
         self.push_pair_edits(curr, canonical, block);
     }
 
-    fn push_pair_edits(&mut self, curr: &Stmt, canonical: u32, block: Option<CommentBlock>) {
+    fn push_pair_edits(&mut self, curr: &Stmt, canonical: u32, block: Option<TextRange>) {
         let curr_line_start = self.source.text().line_start(curr.start());
-        let above_line_start = block.map_or(curr_line_start, |b| b.top_line_start);
+        let above_line_start = block.map_or(curr_line_start, |b| b.start());
         self.normalize_above(above_line_start, canonical + 1);
         if let Some(b) = block {
-            self.normalize_below_block(b.bottom_end, curr_line_start);
+            self.normalize_below_block(b.end(), curr_line_start);
         }
     }
 }
@@ -214,14 +208,14 @@ fn is_main_guard(stmt: &Stmt) -> bool {
     ) else {
         return false;
     };
-    left.id == "__name__" && right.value == *"__main__"
+    left.id == "__name__" && right.value.to_str() == "__main__"
 }
 
 /// Returns the contiguous range of own-line comments lying between
 /// `prev_end` and `curr.start()`. `None` when no own-line comment
 /// sits in that gap. End-of-line comments on the predecessor's line
 /// are excluded.
-fn leading_block_of(source: &Source, prev_end: TextSize, curr: &Stmt) -> Option<CommentBlock> {
+fn leading_block_of(source: &Source, prev_end: TextSize, curr: &Stmt) -> Option<TextRange> {
     let text = source.text();
     let mut own_lines = source
         .comment_ranges()
@@ -231,10 +225,7 @@ fn leading_block_of(source: &Source, prev_end: TextSize, curr: &Stmt) -> Option<
         .filter(|r| CommentRanges::is_own_line(r.start(), text));
     let first = own_lines.next()?;
     let last = own_lines.next_back().unwrap_or(first);
-    Some(CommentBlock {
-        top_line_start: text.line_start(first.start()),
-        bottom_end: last.end(),
-    })
+    Some(TextRange::new(text.line_start(first.start()), last.end()))
 }
 
 /// Returns the start of the contiguous ASCII-whitespace run immediately
@@ -379,6 +370,16 @@ mod tests {
     }
 
     #[test]
+    fn canonical_blanks_module_class_after_module_stmt_returns_two() {
+        let s = parse("x = 1\nclass C: pass\n");
+        let body = &s.ast().body;
+        assert_eq!(
+            canonical_blanks(&body[0], &body[1], BodyScope::Module),
+            Some(2)
+        );
+    }
+
+    #[test]
     fn canonical_blanks_module_def_after_module_stmt_returns_two() {
         let s = parse("x = 1\ndef f(): pass\n");
         let body = &s.ast().body;
@@ -503,11 +504,8 @@ mod tests {
         let body = &s.ast().body;
         let block = leading_block_of(&s, body[0].end(), &body[1]).expect("block");
         let comments = s.comment_ranges();
-        assert_eq!(
-            block.top_line_start,
-            s.text().line_start(comments[0].start())
-        );
-        assert_eq!(block.bottom_end, comments[1].end());
+        assert_eq!(block.start(), s.text().line_start(comments[0].start()));
+        assert_eq!(block.end(), comments[1].end());
     }
 
     #[test]
