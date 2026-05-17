@@ -104,13 +104,12 @@ impl<'a> Layouter<'a> {
                     for idx in range {
                         out.push_str(&item_prefix);
                         out.push_str(&texts[idx]);
-                        if idx + 1 < total {
+                        let has_more = idx + 1 < total;
+                        if has_more {
                             out.push(',');
                         }
                         out.push_str(self.newline);
-                        if idx + 1 < total
-                            && self.source.has_blank_line_before(ranges[idx + 1].start())
-                        {
+                        if has_more && self.source.has_blank_line_before(ranges[idx + 1].start()) {
                             out.push_str(self.newline);
                         }
                     }
@@ -204,27 +203,22 @@ impl<'a> Layouter<'a> {
     /// inline form fits, `Some(expand)` when a multi-item `Dict`,
     /// `List`, or `Set`'s rendered width overflows.
     fn replacement_for(&self, expr: &Expr, column: usize, indent: usize) -> Option<String> {
-        if !matches!(
-            expr,
-            Expr::Dict(_) | Expr::List(_) | Expr::Set(_) | Expr::Tuple(_),
-        ) {
+        if !is_layoutable(expr) {
             return None;
         }
         let range = expr.range();
         if self.source.intersects_comment(range) {
             return None;
         }
+        let expandable = requires_expand(expr);
         if self.source.contains_line_break(range) {
             let inline = self.inline_form(expr);
             if column + inline.width() <= self.code_line_length {
                 return Some(inline);
             }
-            if requires_expand(expr) {
-                return Some(self.expand(expr, indent));
-            }
-            return None;
+            return expandable.then(|| self.expand(expr, indent));
         }
-        (requires_expand(expr) && column + self.source.slice(range).width() > self.code_line_length)
+        (expandable && column + self.source.slice(range).width() > self.code_line_length)
             .then(|| self.expand(expr, indent))
     }
 
@@ -360,6 +354,10 @@ impl<'a> Layouter<'a> {
 
 impl<'a> Visitor<'a> for Layouter<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
+        if !is_layoutable(expr) {
+            walk_expr(self, expr);
+            return;
+        }
         let range = expr.range();
         let column = self.source.column_of(range.start());
         let indent = self.source.line_indent_width(range.start());
@@ -423,6 +421,13 @@ fn is_atomic(expr: &Expr) -> bool {
         e.as_unary_op_expr().map(|u| u.operand.as_ref())
     })
     .any(|e| e.is_literal_expr() || is_dotted_name(e))
+}
+
+/// True for the four collection-literal `Expr` variants the rule
+/// considers laying out. `Tuple` joins `Dict`, `List`, and `Set` here
+/// because it's collapse-eligible, even though it never expands.
+fn is_layoutable(expr: &Expr) -> bool {
+    matches!(expr, Expr::Dict(_) | Expr::List(_) | Expr::Set(_) | Expr::Tuple(_))
 }
 
 /// True when `expr` is a multi-item `Dict`, `List`, or `Set`, the
