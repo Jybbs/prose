@@ -1,0 +1,2 @@
+[harness]
+rules = ["alphabetize", "align-colons", "docstring-wrap"]
