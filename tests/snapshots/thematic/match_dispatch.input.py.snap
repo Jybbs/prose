@@ -1,6 +1,5 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/thematic/match_dispatch.input.py
 ---
@@ -15,6 +14,7 @@ padding. The full pipeline running twice produces no further change.
 
 
 def dispatch(event):
+
     match event.kind:
         case "create":
             return Counter(action="create", source=event.src, timestamp=event.ts)

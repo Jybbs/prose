@@ -1,18 +1,23 @@
-//! Normalizes vertical spacing between adjacent statements. Module-level
-//! `def` and `class` carry 2 blank lines before them. Methods inside a
-//! class body carry 1 blank line. A class-scope predecessor that is a
-//! string-literal docstring carries 1 blank line before the next member.
-//! A module-level statement following an `if __name__ == "__main__":`
-//! block carries 1 blank line of separation. Adjacent module-level bare
-//! `import` and `from` import statements carry 1 blank line between them.
-//! Own-line comments between adjacent statements carry 1 blank line of
-//! separation from the following statement.
+//! Normalizes blank-line spacing between adjacent statements at module,
+//! class, and function scopes. Module-level `def` and `class` carry 2
+//! blank lines before them. Module-level bare `import` and `from` import
+//! statements carry 1 blank line at the kind boundary. A module-level
+//! statement following an `if __name__ == "__main__":` block carries 1
+//! blank line. Class-body method-after-method, field-to-method, and
+//! docstring-predecessor pairs each carry 1 blank line. A class header
+//! carries 0 blank lines before a first-member docstring and 1 blank
+//! line before any other first member. A function header carries 1
+//! blank line before its first body statement when that statement is a
+//! compound-body opener (`match`, `if`, `for`, `while`, `with`, `try`).
+//! Own-line comments between adjacent statements carry 1 blank line
+//! above the comment block and 0 blank lines between the block and the
+//! following statement.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_docstring_stmt;
 use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
 use ruff_python_ast::{CmpOp, Expr, Stmt};
-use ruff_python_trivia::{lines_after, lines_before, CommentRanges};
+use ruff_python_trivia::{lines_after, lines_before, BackwardsTokenizer, CommentRanges};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -35,7 +40,7 @@ impl Rule for BlankLines {
             edits: Vec::new(),
             source,
         };
-        walker.pair_count(body, BodyScope::Module);
+        walker.pair_siblings(body, BodyScope::Module);
         walker.visit_body(body);
         walker.edits
     }
@@ -45,7 +50,7 @@ impl Rule for BlankLines {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 enum BodyScope {
     Class,
     Function,
@@ -95,14 +100,29 @@ impl Walker<'_> {
         ));
     }
 
-    fn pair_count(&mut self, body: &[Stmt], scope: BodyScope) {
+    fn pair_in_scope(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
+        self.pair_scope_entry(header, body, scope);
+        self.pair_siblings(body, scope);
+    }
+
+    fn pair_scope_entry(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
+        let Some(first) = body.first() else { return };
+        let prev_end = header_signature_end(self.source, first.start());
+        self.pair_with_end(header, prev_end, first, scope);
+    }
+
+    fn pair_siblings(&mut self, body: &[Stmt], scope: BodyScope) {
         for (prev, curr) in body.iter().zip(body.iter().skip(1)) {
-            let Some(canonical) = canonical_blanks(prev, curr, scope) else {
-                continue;
-            };
-            let block = leading_block_of(self.source, prev.end(), curr);
-            self.push_pair_edits(curr, canonical, block);
+            self.pair_with_end(prev, prev.end(), curr, scope);
         }
+    }
+
+    fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
+        let Some(canonical) = canonical_blanks(prev, curr, scope) else {
+            return;
+        };
+        let block = leading_block_of(self.source, prev_end, curr);
+        self.push_pair_edits(curr, canonical, block);
     }
 
     fn push_pair_edits(&mut self, curr: &Stmt, canonical: u32, block: Option<CommentBlock>) {
@@ -118,8 +138,8 @@ impl Walker<'_> {
 impl<'a> StatementVisitor<'a> for Walker<'a> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         match stmt {
-            Stmt::ClassDef(c) => self.pair_count(&c.body, BodyScope::Class),
-            Stmt::FunctionDef(f) => self.pair_count(&f.body, BodyScope::Function),
+            Stmt::ClassDef(c) => self.pair_in_scope(stmt, &c.body, BodyScope::Class),
+            Stmt::FunctionDef(f) => self.pair_in_scope(stmt, &f.body, BodyScope::Function),
             _ => {}
         }
         walk_stmt(self, stmt);
@@ -127,15 +147,33 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
 }
 
 /// Returns the canonical blank-line count for the pair `(prev, curr)`
-/// at `scope`. `None` means no case applies; the above-block gap is
-/// left alone, but a leading comment block still triggers below-gap
-/// normalization.
+/// at `scope`. `None` means no case applies and the pair is skipped,
+/// leaving any in-gap whitespace and comments untouched. For `Class`
+/// and `Function` scopes, the pair includes the scope-entry transition
+/// wherein `prev` is the enclosing `ClassDef` or `FunctionDef` itself
+/// and `curr` is the first body member.
 fn canonical_blanks(prev: &Stmt, curr: &Stmt, scope: BodyScope) -> Option<u32> {
     match scope {
-        BodyScope::Class => (is_docstring_stmt(prev)
-            || matches!((prev, curr), (Stmt::FunctionDef(_), Stmt::FunctionDef(_))))
-        .then_some(1),
-        BodyScope::Function => None,
+        BodyScope::Class => match (prev, curr) {
+            (Stmt::ClassDef(_), _) => Some(u32::from(!is_docstring_stmt(curr))),
+            (Stmt::FunctionDef(_) | Stmt::AnnAssign(_) | Stmt::Assign(_), Stmt::FunctionDef(_)) => {
+                Some(1)
+            }
+            _ if is_docstring_stmt(prev) => Some(1),
+            _ => None,
+        },
+        BodyScope::Function => match (prev, curr) {
+            (
+                Stmt::FunctionDef(_),
+                Stmt::For(_)
+                | Stmt::If(_)
+                | Stmt::Match(_)
+                | Stmt::Try(_)
+                | Stmt::While(_)
+                | Stmt::With(_),
+            ) => Some(1),
+            _ => None,
+        },
         BodyScope::Module => match (prev, curr) {
             _ if is_main_guard(prev) => Some(1),
             (Stmt::Import(_), Stmt::ImportFrom(_)) | (Stmt::ImportFrom(_), Stmt::Import(_)) => {
@@ -145,6 +183,18 @@ fn canonical_blanks(prev: &Stmt, curr: &Stmt, scope: BodyScope) -> Option<u32> {
             _ => None,
         },
     }
+}
+
+/// Returns the position immediately after the `:` that introduces a
+/// class or function body whose first statement starts at `body_start`.
+/// Scans backward from `body_start` through whitespace and comments,
+/// landing on the first non-trivia token. Falls back to `body_start`
+/// when the scan finds none.
+fn header_signature_end(source: &Source, body_start: TextSize) -> TextSize {
+    BackwardsTokenizer::up_to(body_start, source.text(), source.comment_ranges())
+        .skip_trivia()
+        .next()
+        .map_or(body_start, |t| t.end())
 }
 
 /// True when `stmt` is `if __name__ == "__main__":`.
@@ -211,6 +261,91 @@ mod tests {
             canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class),
             Some(1),
         );
+    }
+
+    #[test]
+    fn canonical_blanks_class_field_to_method_returns_one() {
+        for src in [
+            "class C:\n    x: int = 1\n    def m(self): pass\n",
+            "class C:\n    x = 1\n    def m(self): pass\n",
+        ] {
+            let s = parse(src);
+            let class = s.ast().body[0].as_class_def_stmt().expect("class");
+            assert_eq!(
+                canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class),
+                Some(1),
+                "src = {src:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_blanks_class_header_to_docstring_returns_zero() {
+        let s = parse("class C:\n    '''doc'''\n    pass\n");
+        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        assert_eq!(
+            canonical_blanks(&s.ast().body[0], &class.body[0], BodyScope::Class),
+            Some(0),
+        );
+    }
+
+    #[test]
+    fn canonical_blanks_class_header_to_first_member_returns_one() {
+        for src in [
+            "class C:\n    def m(self): pass\n",
+            "class C:\n    @decorator\n    def m(self): pass\n",
+            "class C:\n    x: int = 1\n",
+            "class C:\n    x = 1\n",
+            "class C:\n    class Inner:\n        pass\n",
+        ] {
+            let s = parse(src);
+            let class = s.ast().body[0].as_class_def_stmt().expect("class");
+            assert_eq!(
+                canonical_blanks(&s.ast().body[0], &class.body[0], BodyScope::Class),
+                Some(1),
+                "src = {src:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_blanks_function_header_to_compound_body_returns_one() {
+        for src in [
+            "def f():\n    for x in y:\n        pass\n",
+            "def f():\n    if x:\n        pass\n",
+            "def f():\n    match x:\n        case _: pass\n",
+            "def f():\n    try:\n        pass\n    except Exception:\n        pass\n",
+            "def f():\n    while x:\n        pass\n",
+            "def f():\n    with x:\n        pass\n",
+            "async def f():\n    async for x in y:\n        pass\n",
+            "async def f():\n    async with x:\n        pass\n",
+        ] {
+            let s = parse(src);
+            let func = s.ast().body[0].as_function_def_stmt().expect("def");
+            assert_eq!(
+                canonical_blanks(&s.ast().body[0], &func.body[0], BodyScope::Function),
+                Some(1),
+                "src = {src:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_blanks_function_header_to_simple_stmt_returns_none() {
+        for src in [
+            "def f():\n    x = 1\n",
+            "def f():\n    return None\n",
+            "def f():\n    '''doc'''\n",
+            "def f():\n    def inner(): pass\n",
+        ] {
+            let s = parse(src);
+            let func = s.ast().body[0].as_function_def_stmt().expect("def");
+            assert_eq!(
+                canonical_blanks(&s.ast().body[0], &func.body[0], BodyScope::Function),
+                None,
+                "src = {src:?}",
+            );
+        }
     }
 
     #[test]
@@ -296,6 +431,46 @@ mod tests {
     }
 
     #[test]
+    fn header_signature_end_handles_multi_line_function_signature() {
+        let s = parse("def f(\n    x,\n    y,\n):\n    pass\n");
+        let func = s.ast().body[0].as_function_def_stmt().expect("def");
+        let end = header_signature_end(&s, func.body[0].start());
+        assert!(s.text()[..end.to_usize()].ends_with("):"));
+    }
+
+    #[test]
+    fn header_signature_end_points_after_colon_in_simple_class() {
+        let s = parse("class C:\n    pass\n");
+        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let end = header_signature_end(&s, class.body[0].start());
+        assert_eq!(&s.text()[..end.to_usize()], "class C:");
+    }
+
+    #[test]
+    fn header_signature_end_points_after_colon_in_simple_function() {
+        let s = parse("def f():\n    pass\n");
+        let func = s.ast().body[0].as_function_def_stmt().expect("def");
+        let end = header_signature_end(&s, func.body[0].start());
+        assert_eq!(&s.text()[..end.to_usize()], "def f():");
+    }
+
+    #[test]
+    fn header_signature_end_skips_eol_comment_on_header_line() {
+        let s = parse("class C:  # eol\n    pass\n");
+        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let end = header_signature_end(&s, class.body[0].start());
+        assert_eq!(&s.text()[..end.to_usize()], "class C:");
+    }
+
+    #[test]
+    fn header_signature_end_skips_own_line_comment_above_body() {
+        let s = parse("class C:\n    # comment\n    pass\n");
+        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let end = header_signature_end(&s, class.body[0].start());
+        assert_eq!(&s.text()[..end.to_usize()], "class C:");
+    }
+
+    #[test]
     fn is_main_guard_accepts_canonical_form() {
         let s = parse(main_guard_src());
         assert!(is_main_guard(&s.ast().body[0]));
@@ -327,7 +502,7 @@ mod tests {
         let s = parse("x = 1\n# a\n# b\ndef f(): pass\n");
         let body = &s.ast().body;
         let block = leading_block_of(&s, body[0].end(), &body[1]).expect("block");
-        let comments: Vec<TextRange> = s.comment_ranges().iter().copied().collect();
+        let comments = s.comment_ranges();
         assert_eq!(
             block.top_line_start,
             s.text().line_start(comments[0].start())
