@@ -1,17 +1,8 @@
 //! Normalizes blank-line spacing between adjacent statements at module,
-//! class, and function scopes. Module-level `def` and `class` carry 2
-//! blank lines before them. Module-level bare `import` and `from` import
-//! statements carry 1 blank line at the kind boundary. A module-level
-//! statement following an `if __name__ == "__main__":` block carries 1
-//! blank line. Class-body method-after-method, field-to-method, and
-//! docstring-predecessor pairs each carry 1 blank line. A class header
-//! carries 0 blank lines before a first-member docstring and 1 blank
-//! line before any other first member. A function header carries 1
-//! blank line before its first body statement when that statement is a
-//! compound-body opener (`match`, `if`, `for`, `while`, `with`, `try`).
-//! Own-line comments between adjacent statements carry 1 blank line
-//! above the comment block and 0 blank lines between the block and the
-//! following statement.
+//! class, and function scopes. The walker pairs each statement with its
+//! predecessor and emits edits to bring the gap to the canonical count
+//! returned by `canonical_blanks`. Own-line comments between adjacent
+//! statements carry 1 blank line on each side.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_docstring_stmt;
@@ -80,8 +71,7 @@ impl Walker<'_> {
     }
 
     /// Places exactly 1 blank line between `block_end` and
-    /// `curr_line_start`. The target gap is 2 line breaks: one to end
-    /// the block's last line and one to form the blank.
+    /// `curr_line_start`.
     fn normalize_below_block(&mut self, block_end: TextSize, curr_line_start: TextSize) {
         let target_newlines: u32 = 2;
         if lines_after(block_end, self.source.text()) == target_newlines {
@@ -95,14 +85,11 @@ impl Walker<'_> {
     }
 
     fn pair_in_scope(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
-        self.pair_scope_entry(header, body, scope);
+        if let Some(first) = body.first() {
+            let prev_end = header_signature_end(self.source, first.start());
+            self.pair_with_end(header, prev_end, first, scope);
+        }
         self.pair_siblings(body, scope);
-    }
-
-    fn pair_scope_entry(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
-        let Some(first) = body.first() else { return };
-        let prev_end = header_signature_end(self.source, first.start());
-        self.pair_with_end(header, prev_end, first, scope);
     }
 
     fn pair_siblings(&mut self, body: &[Stmt], scope: BodyScope) {
@@ -116,12 +103,8 @@ impl Walker<'_> {
             return;
         };
         let block = leading_block_of(self.source, prev_end, curr);
-        self.push_pair_edits(curr, canonical, block);
-    }
-
-    fn push_pair_edits(&mut self, curr: &Stmt, canonical: u32, block: Option<TextRange>) {
         let curr_line_start = self.source.text().line_start(curr.start());
-        let above_line_start = block.map_or(curr_line_start, |b| b.start());
+        let above_line_start = block.map_or(curr_line_start, TextRange::start);
         self.normalize_above(above_line_start, canonical + 1);
         if let Some(b) = block {
             self.normalize_below_block(b.end(), curr_line_start);
@@ -148,34 +131,42 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
 /// and `curr` is the first body member.
 fn canonical_blanks(prev: &Stmt, curr: &Stmt, scope: BodyScope) -> Option<u32> {
     match scope {
-        BodyScope::Class => match (prev, curr) {
-            (Stmt::ClassDef(_), _) => Some(u32::from(!is_docstring_stmt(curr))),
-            (Stmt::FunctionDef(_) | Stmt::AnnAssign(_) | Stmt::Assign(_), Stmt::FunctionDef(_)) => {
-                Some(1)
-            }
-            _ if is_docstring_stmt(prev) => Some(1),
-            _ => None,
-        },
-        BodyScope::Function => match (prev, curr) {
-            (
-                Stmt::FunctionDef(_),
-                Stmt::For(_)
-                | Stmt::If(_)
-                | Stmt::Match(_)
-                | Stmt::Try(_)
-                | Stmt::While(_)
-                | Stmt::With(_),
-            ) => Some(1),
-            _ => None,
-        },
-        BodyScope::Module => match (prev, curr) {
-            _ if is_main_guard(prev) => Some(1),
-            (Stmt::Import(_), Stmt::ImportFrom(_)) | (Stmt::ImportFrom(_), Stmt::Import(_)) => {
-                Some(1)
-            }
-            (_, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) => Some(2),
-            _ => None,
-        },
+        BodyScope::Class => class_scope_blanks(prev, curr),
+        BodyScope::Function => function_scope_blanks(prev, curr),
+        BodyScope::Module => module_scope_blanks(prev, curr),
+    }
+}
+
+/// Class-scope pair dispatch. The class header pairs with its first
+/// body member, with 0 blank lines before a docstring and 1 otherwise.
+/// Class-field → method and method-after-method pairs carry 1. Any
+/// docstring-predecessor pair carries 1.
+fn class_scope_blanks(prev: &Stmt, curr: &Stmt) -> Option<u32> {
+    match (prev, curr) {
+        (Stmt::ClassDef(_), _) => Some(u32::from(!is_docstring_stmt(curr))),
+        (Stmt::FunctionDef(_) | Stmt::AnnAssign(_) | Stmt::Assign(_), Stmt::FunctionDef(_)) => {
+            Some(1)
+        }
+        _ if is_docstring_stmt(prev) => Some(1),
+        _ => None,
+    }
+}
+
+/// Function-scope pair dispatch. The function header carries 1 blank
+/// line before its first body statement when that statement is a
+/// compound-body opener.
+fn function_scope_blanks(prev: &Stmt, curr: &Stmt) -> Option<u32> {
+    match (prev, curr) {
+        (
+            Stmt::FunctionDef(_),
+            Stmt::For(_)
+            | Stmt::If(_)
+            | Stmt::Match(_)
+            | Stmt::Try(_)
+            | Stmt::While(_)
+            | Stmt::With(_),
+        ) => Some(1),
+        _ => None,
     }
 }
 
@@ -226,6 +217,19 @@ fn leading_block_of(source: &Source, prev_end: TextSize, curr: &Stmt) -> Option<
     let first = own_lines.next()?;
     let last = own_lines.next_back().unwrap_or(first);
     Some(TextRange::new(text.line_start(first.start()), last.end()))
+}
+
+/// Module-scope pair dispatch. A statement following an
+/// `if __name__ == "__main__":` block carries 1 blank line. The bare /
+/// `from` import kind boundary carries 1. A top-level `FunctionDef` or
+/// `ClassDef` carries 2 blank lines before it.
+fn module_scope_blanks(prev: &Stmt, curr: &Stmt) -> Option<u32> {
+    match (prev, curr) {
+        _ if is_main_guard(prev) => Some(1),
+        (Stmt::Import(_), Stmt::ImportFrom(_)) | (Stmt::ImportFrom(_), Stmt::Import(_)) => Some(1),
+        (_, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) => Some(2),
+        _ => None,
+    }
 }
 
 /// Returns the start of the contiguous ASCII-whitespace run immediately
