@@ -1,0 +1,15 @@
+# prose: off
+# A file-level prose: off at the top of the source opts every
+# subsequent line out of every rule. The text below survives
+# untouched across passes regardless of how many rules would
+# otherwise fire.
+
+x = 1
+foo = 2
+bar_baz = 3
+
+config = {"z": 1, "a": 2,}
+
+
+def helper(b, a):
+    pass

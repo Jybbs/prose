@@ -1,7 +1,8 @@
 """
-A long Args entry wraps to the eighty eight character section budget rather
-than the narrower description budget, so parameter tables retain the same
-horizontal room code lines carry.
+A long Args entry wraps at the seventy six character docstring budget with
+a hanging indent at the description's start column, so continuation lines
+sit under the description they continue rather than at the parameter-list
+indent.
 """
 
 

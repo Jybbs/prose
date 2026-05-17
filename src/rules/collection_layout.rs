@@ -427,7 +427,10 @@ fn is_atomic(expr: &Expr) -> bool {
 /// considers laying out. `Tuple` joins `Dict`, `List`, and `Set` here
 /// because it's collapse-eligible, even though it never expands.
 fn is_layoutable(expr: &Expr) -> bool {
-    matches!(expr, Expr::Dict(_) | Expr::List(_) | Expr::Set(_) | Expr::Tuple(_))
+    matches!(
+        expr,
+        Expr::Dict(_) | Expr::List(_) | Expr::Set(_) | Expr::Tuple(_)
+    )
 }
 
 /// True when `expr` is a multi-item `Dict`, `List`, or `Set`, the

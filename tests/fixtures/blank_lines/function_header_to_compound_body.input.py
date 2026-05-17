@@ -1,0 +1,51 @@
+"""
+A function header carries 1 blank line of separation before its first
+body statement when that statement is a compound-body opener. The
+cushion applies uniformly to `match`, `if`, `for`, `while`, `with`,
+and `try` openers. Async function bodies that open with `async for` or
+`async with` get the same cushion since `async` collapses into the
+sync variant in the AST.
+"""
+
+
+def with_match(value):
+    match value:
+        case _:
+            return value
+
+
+def with_if(value):
+    if value:
+        return value
+
+
+def with_for(items):
+    for item in items:
+        yield item
+
+
+def with_while(condition):
+    while condition:
+        condition = False
+
+
+def with_with(handle):
+    with handle:
+        return None
+
+
+def with_try(action):
+    try:
+        action()
+    except Exception:
+        pass
+
+
+async def with_async_for(items):
+    async for item in items:
+        yield item
+
+
+async def with_async_with(handle):
+    async with handle:
+        return None

@@ -16,7 +16,9 @@ Rules:
 
 
 class Dispatcher:
+
     def handle_alpha(self, value):
+
         match value:
             case 1 : return "one"
             case 2 : return "two"

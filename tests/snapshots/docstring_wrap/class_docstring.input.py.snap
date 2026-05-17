@@ -4,9 +4,10 @@ expression: output
 input_file: tests/fixtures/docstring_wrap/class_docstring.input.py
 ---
 """
-A class-level docstring with structured sections wraps identically to the
-function-level shape because the walker visits every body holding a string
-literal as its first expression statement.
+A class-level docstring with an Attributes section wraps its entries with
+the same hanging-column shape as a function-level Args entry, since the
+walker visits every body holding a string literal as its first expression
+statement.
 """
 
 
@@ -15,8 +16,8 @@ class Posting:
     Summary line.
 
     Attributes:
-        title: A descriptive title that exceeds the eighty eight character section
-        budget when written out as a single line.
+        title: A descriptive title that exceeds the eighty eight character
+               section budget when written out as a single line.
         salary: Annual salary in USD.
     """
 

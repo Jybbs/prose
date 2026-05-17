@@ -1,0 +1,15 @@
+"""
+A nested parenthesized `BoolOp` breaks the outer run. The inner
+`BoolOp`'s own operands still align when its range spans multiple
+source lines.
+"""
+
+if (
+    foo == 1
+    and (
+        bar == 2
+        or baz_long == 3
+    )
+    and qux == 4
+):
+    pass

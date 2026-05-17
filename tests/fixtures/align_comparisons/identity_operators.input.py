@@ -1,0 +1,16 @@
+"""
+Identity and membership operators participate in the same aligned
+group as arithmetic-style comparisons. The wider `is not` and
+`not in` operators widen the operator column, and every other
+operator's last character lands at the shared right edge.
+"""
+
+if (
+    foo == 1
+    and bar is None
+    and baz is not Empty
+    and qux in items
+    and quux not in others
+    and zorg < 5
+):
+    pass

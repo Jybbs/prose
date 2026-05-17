@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/prose_skip_with_alignment.input.py
+---
+align-equals@278..279
+align-equals@320..321
+docstring-wrap@66..243
+strip-trailing-commas@289..290
+strip-trailing-commas@315..316

@@ -11,6 +11,7 @@ and the method.
 
 
 class Posting:
+
     def first(self):
         return 1
 

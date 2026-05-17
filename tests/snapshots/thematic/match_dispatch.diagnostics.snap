@@ -5,11 +5,12 @@ input_file: tests/fixtures/thematic/match_dispatch.input.py
 ---
 alphabetize@531..770
 blank-lines@448..450
+blank-lines@470..471
 collection-layout@820..852
 docstring-wrap@67..437
-loose-constants@839..876
-match-case-align@516..517
-match-case-align@609..610
-match-case-align@702..703
-match-case-align@787..793
+loose-constants@840..877
+match-case-align@517..518
+match-case-align@610..611
+match-case-align@703..704
+match-case-align@788..794
 strip-trailing-commas@889..890

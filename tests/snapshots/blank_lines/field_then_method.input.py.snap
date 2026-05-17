@@ -11,10 +11,9 @@ so only the inter-method gap normalizes to 1 blank line.
 
 
 class Posting:
+
     field: int = 1
     name: str = "x"
-
-
 
     def m1(self):
         return 1

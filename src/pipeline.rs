@@ -7,6 +7,7 @@
 //! padding widths are computed.
 
 use ruff_python_parser::ParseError;
+use ruff_text_size::Ranged;
 use thiserror::Error;
 
 use crate::diagnostics::{Diagnostic, Severity};
@@ -15,18 +16,12 @@ use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
 /// Ordered sequence of enabled rules, run against each source file.
-///
-/// Use [`Pipeline::with_defaults`] to build one from a loaded
-/// [`crate::config::Config`], [`Pipeline::for_rule`] to register
-/// exactly one rule by name, or [`Pipeline::empty`] for a pipeline
-/// with no rules.
 pub struct Pipeline {
     rules: Vec<Box<dyn Rule>>,
 }
 
 impl Pipeline {
-    /// Constructs a pipeline that performs no rewrites. Useful for
-    /// callers that need a `Pipeline` value but no rules to run.
+    /// Constructs a pipeline that performs no rewrites.
     pub fn empty() -> Self {
         Self { rules: Vec::new() }
     }
@@ -45,9 +40,8 @@ impl Pipeline {
         self.rules.len()
     }
 
-    /// Returns every registered rule's id in a stable order. Useful
-    /// for CLI `--select` / `--ignore` validation and for rule
-    /// listings. Surfaces the same registry that
+    /// Returns every registered rule's id in a stable order.
+    /// Surfaces the same registry that
     /// [`RuleId::from_str`](crate::rule::RuleId) consults.
     pub fn known_ids() -> &'static [RuleId] {
         crate::rule::KNOWN_IDS
@@ -57,30 +51,31 @@ impl Pipeline {
     /// returns the rewritten source paired with the diagnostics each
     /// rule emitted.
     ///
-    /// Per rule, the pipeline calls `apply`, drops edits inside any
-    /// `# fmt: off` span via the `SuppressionMap`, derives one
-    /// `Severity::Format` `Diagnostic` per surviving edit, collects
-    /// the `Severity::Lint` diagnostics `Rule::lint` returned through
-    /// the same fmt-suppression filter, then splices the edits into
-    /// the current text and reparses for the next rule. After the
-    /// rule chain finishes, every `Severity::Lint` diagnostic whose
-    /// line carries a matching `# prose: ignore` directive is
-    /// dropped. An empty pipeline collapses to the identity transform
-    /// and returns no diagnostics.
+    /// File-level `# prose: off` short-circuits to identity. The
+    /// suppression map otherwise filters edits per-rule (off spans
+    /// plus `# prose: skip[<id>]`) and lint diagnostics per-line
+    /// (`# prose: ignore`).
     ///
     /// # Errors
     ///
     /// Returns `PipelineError::Reparse` when a rule's edit list
-    /// produces text that does not re-parse as Python. This surfaces
-    /// rule bugs rather than silently swallowing them.
+    /// produces text that does not re-parse as Python.
     pub fn run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
+        if source.suppression_map().file_is_suppressed() {
+            return Ok((source, Vec::new()));
+        }
         let (source, mut diagnostics) = self.rules.iter().try_fold(
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
                 let mut edits = rule.apply(&source);
                 let suppression = source.suppression_map();
-                if suppression.has_format_suppression() {
-                    edits.retain(|edit| !suppression.intersects(edit));
+                let rule_id = rule.id();
+                if suppression.has_format_suppression() || suppression.has_skip_suppression() {
+                    edits.retain(|edit| {
+                        !suppression.intersects(edit)
+                            && !suppression
+                                .is_format_suppressed_at(source.line_index(edit.start()), rule_id)
+                    });
                 }
                 diagnostics.extend(
                     rule.lint(&source)
@@ -90,7 +85,6 @@ impl Pipeline {
                 if edits.is_empty() {
                     return Ok((source, diagnostics));
                 }
-                let rule_id = rule.id();
                 let message = rule.message();
                 diagnostics.extend(
                     edits
@@ -100,14 +94,13 @@ impl Pipeline {
                 let new_text = apply_edits(source.text(), edits);
                 debug_assert!(
                     new_text != source.text(),
-                    "rule `{}` emitted edits that produced identical text",
-                    rule.id(),
+                    "rule `{rule_id}` emitted edits that produced identical text",
                 );
                 source
                     .reparse(new_text)
                     .map(|src| (src, diagnostics))
                     .map_err(|source| PipelineError::Reparse {
-                        rule: rule.id(),
+                        rule: rule_id,
                         source,
                     })
             },
@@ -116,8 +109,7 @@ impl Pipeline {
         if suppression.has_lint_suppression() {
             diagnostics.retain(|d| {
                 d.severity != Severity::Lint
-                    || !suppression
-                        .is_lint_suppressed_at(source.line_index(d.range.start()), d.rule)
+                    || !suppression.is_lint_suppressed_at(source.line_index(d.start()), d.rule)
             });
         }
         Ok((source, diagnostics))
@@ -146,29 +138,6 @@ mod tests {
     use crate::config::Config;
     use crate::test_support::{assert_send_sync, parse, range};
 
-    /// Test-only rule that records its own id into a shared log and
-    /// returns the edit list supplied at construction time.
-    struct SentinelRule {
-        edits: Vec<Edit>,
-        id: RuleId,
-        log: Arc<Mutex<Vec<&'static str>>>,
-    }
-
-    impl Rule for SentinelRule {
-        fn apply(&self, _source: &Source) -> Vec<Edit> {
-            self.log.lock().expect("log mutex").push(self.id.as_str());
-            self.edits.clone()
-        }
-
-        fn id(&self) -> RuleId {
-            self.id
-        }
-
-        fn message(&self) -> &'static str {
-            "test rule"
-        }
-    }
-
     /// Test-only lint-only rule that returns the range list supplied
     /// at construction and never produces edits.
     struct LintSentinelRule {
@@ -196,6 +165,29 @@ mod tests {
 
         fn message(&self) -> &'static str {
             "lint test rule"
+        }
+    }
+
+    /// Test-only rule that records its own id into a shared log and
+    /// returns the edit list supplied at construction time.
+    struct SentinelRule {
+        edits: Vec<Edit>,
+        id: RuleId,
+        log: Arc<Mutex<Vec<&'static str>>>,
+    }
+
+    impl Rule for SentinelRule {
+        fn apply(&self, _source: &Source) -> Vec<Edit> {
+            self.log.lock().expect("log mutex").push(self.id.as_str());
+            self.edits.clone()
+        }
+
+        fn id(&self) -> RuleId {
+            self.id
+        }
+
+        fn message(&self) -> &'static str {
+            "test rule"
         }
     }
 
@@ -384,6 +376,23 @@ mod tests {
     }
 
     #[test]
+    fn run_short_circuits_when_file_is_suppressed() {
+        let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
+        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
+            edits: vec![Edit::range_replacement("y".to_owned(), range(13, 14))],
+            id: RuleId::from("never-called"),
+            log: log.clone(),
+        })]);
+        let source = parse("# prose: off\nx = 1\n");
+
+        let (result, diagnostics) = pipeline.run(source).expect("short-circuit run");
+
+        assert_eq!(result.text(), "# prose: off\nx = 1\n");
+        assert!(diagnostics.is_empty());
+        assert!(log.lock().unwrap().is_empty());
+    }
+
+    #[test]
     fn run_skips_reparse_when_every_edit_is_suppressed() {
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
             edits: vec![Edit::range_replacement("y".to_owned(), range(11, 16))],
@@ -409,6 +418,7 @@ mod tests {
     fn with_defaults_respects_rule_toggles() {
         let mut config = Config::default();
         config.rules.align_colons.enabled = false;
+        config.rules.align_comparisons.enabled = false;
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.alphabetize.enabled = false;
@@ -422,6 +432,7 @@ mod tests {
         config.rules.multi_line_docstrings.enabled = false;
         config.rules.no_single_line_docstrings.enabled = false;
         config.rules.no_step_narration.enabled = false;
+        config.rules.signature_layout.enabled = false;
         config.rules.single_use_variables.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
@@ -454,6 +465,7 @@ mod tests {
     fn with_filters_select_overrides_disabled_config() {
         let mut config = Config::default();
         config.rules.align_colons.enabled = false;
+        config.rules.align_comparisons.enabled = false;
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.alphabetize.enabled = false;
@@ -464,6 +476,7 @@ mod tests {
         config.rules.loose_constants.enabled = false;
         config.rules.match_case_align.enabled = false;
         config.rules.no_step_narration.enabled = false;
+        config.rules.signature_layout.enabled = false;
         config.rules.single_use_variables.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
