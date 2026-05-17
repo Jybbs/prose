@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_comparisons/with_comments.input.py
 ---
-align-comparisons@162..163
+align-comparisons@237..238

@@ -1,7 +1,7 @@
 """
-Each of the six aligned comparison operators forms its own group
-when mixed inside one chain. Six independent singletons emit no
-edits.
+All six arithmetic comparison operators align in one group with
+right-alignment, so each operator's last character sits in the
+shared column.
 """
 
 if (

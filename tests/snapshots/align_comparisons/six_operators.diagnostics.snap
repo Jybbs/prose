@@ -3,4 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_comparisons/six_operators.input.py
 ---
-
+align-comparisons@161..162
+align-comparisons@191..192
+align-comparisons@220..221

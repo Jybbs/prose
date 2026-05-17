@@ -1,6 +1,7 @@
 """
-A comment between two operands breaks the alignment run, splitting
-them into singletons.
+A comment on its own line between two operands pushes them onto
+non-adjacent source lines, so the line-distance check breaks the
+run regardless of comment content.
 """
 
 if (

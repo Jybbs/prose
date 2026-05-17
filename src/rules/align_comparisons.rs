@@ -1,10 +1,10 @@
-//! Aligns comparison operators (`==`, `!=`, `<`, `<=`, `>`, `>=`)
-//! vertically across the operands of a multi-line `BoolOp`. Operands
-//! qualify when they are single-comparator `ExprCompare`s whose left
-//! side is a `Name`, `Attribute`, or `Subscript`. A non-qualifying or
-//! multi-line operand breaks the run, and operands with different
-//! comparison operators form independent groups. Comparisons inside
-//! list, set, dict, and generator comprehensions are skipped.
+//! Aligns comparison operators vertically across the operands of a
+//! multi-line `BoolOp`. Every `Expr::Compare` operand qualifies
+//! regardless of left-side shape or comparison kind, with chained
+//! compares anchoring on their first operator. Variable-width
+//! operators right-align so each operator's last character sits in
+//! the shared column. A non-comparison operand, a multi-line operand,
+//! or a blank line in the gap breaks the run.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::TokenKind;
@@ -52,13 +52,13 @@ struct Walker<'a> {
 }
 
 impl Walker<'_> {
-    /// Returns `true` when `prev_end` and `next_start` sit on
-    /// consecutive source lines with no intervening comment.
+    /// Returns `true` when `prev_end` and `next_start` sit on directly
+    /// consecutive source lines. Directive comments (`# fmt: off`,
+    /// `# prose: skip[...]`) are handled by the pipeline's
+    /// `SuppressionMap` filter on emitted edits, so the rule itself
+    /// stays comment-agnostic.
     fn is_operand_line_adjacent(&self, prev_end: TextSize, next_start: TextSize) -> bool {
-        let gap = TextRange::new(prev_end, next_start);
-        !self.source.intersects_comment(gap)
-            && self.source.line_index(next_start)
-                == self.source.line_index(prev_end).saturating_add(1)
+        self.source.line_index(next_start) == self.source.line_index(prev_end).saturating_add(1)
     }
 
     fn process_bool_op(&mut self, bool_op: &ExprBoolOp) {
@@ -66,15 +66,14 @@ impl Walker<'_> {
             return;
         }
         let mut groups: Vec<Vec<aligner::Member>> = Vec::new();
-        let mut active: Option<(TokenKind, TextRange)> = None;
+        let mut active: Option<TextRange> = None;
         for operand in &bool_op.values {
-            let Some((kind, member)) = self.qualify(operand) else {
+            let Some(member) = self.qualify(operand) else {
                 active = None;
                 continue;
             };
-            let extends = active.is_some_and(|(prev_kind, prev)| {
-                prev_kind == kind
-                    && !self.source.contains_line_break(prev)
+            let extends = active.is_some_and(|prev| {
+                !self.source.contains_line_break(prev)
                     && self.is_operand_line_adjacent(prev.end(), operand.start())
             });
             if extends {
@@ -85,7 +84,7 @@ impl Walker<'_> {
             } else {
                 groups.push(vec![member]);
             }
-            active = Some((kind, operand.range()));
+            active = Some(operand.range());
         }
         for group in &groups {
             if aligner::is_alignment_candidate(group) {
@@ -94,50 +93,47 @@ impl Walker<'_> {
         }
     }
 
-    fn qualify(&self, operand: &Expr) -> Option<(TokenKind, aligner::Member)> {
+    fn qualify(&self, operand: &Expr) -> Option<aligner::Member> {
         let compare = operand.as_compare_expr()?;
-        let ([op], [comparator]) = (compare.ops.as_ref(), compare.comparators.as_ref()) else {
-            return None;
-        };
-        if !matches!(
-            *compare.left,
-            Expr::Attribute(_) | Expr::Name(_) | Expr::Subscript(_),
-        ) {
-            return None;
-        }
-        let kind = cmp_op_token_kind(*op)?;
+        let op = *compare.ops.first()?;
+        let comparator = compare.comparators.first()?;
+        let kind = cmp_op_anchor_token_kind(op);
+        let op_width = op.as_str().len();
         let member = aligner::line_anchored_member_at_kind(
             self.source,
             TextRange::new(compare.left.end(), comparator.start()),
             kind,
         )?;
-        Some((kind, member))
+        Some(member.with_op_width(op_width))
     }
 }
 
 impl<'a> Visitor<'a> for Walker<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
-        match expr {
-            Expr::BoolOp(bool_op) => self.process_bool_op(bool_op),
-            Expr::DictComp(_) | Expr::Generator(_) | Expr::ListComp(_) | Expr::SetComp(_) => return,
-            _ => {}
+        if let Expr::BoolOp(bool_op) = expr {
+            self.process_bool_op(bool_op);
         }
         walk_expr(self, expr);
     }
 }
 
-/// Maps the `CmpOp` variants this rule aligns to their lexer token
-/// kind. Identity and membership operators return `None`.
-fn cmp_op_token_kind(op: CmpOp) -> Option<TokenKind> {
-    Some(match op {
+/// Maps every `CmpOp` to the lexer token that anchors the operator's
+/// column. Compound operators (`is not`, `not in`) anchor on the first
+/// keyword, so the alignment math always treats the operator as
+/// starting at the returned token.
+fn cmp_op_anchor_token_kind(op: CmpOp) -> TokenKind {
+    match op {
         CmpOp::Eq => TokenKind::EqEqual,
         CmpOp::Gt => TokenKind::Greater,
         CmpOp::GtE => TokenKind::GreaterEqual,
+        CmpOp::In => TokenKind::In,
+        CmpOp::Is => TokenKind::Is,
+        CmpOp::IsNot => TokenKind::Is,
         CmpOp::Lt => TokenKind::Less,
         CmpOp::LtE => TokenKind::LessEqual,
         CmpOp::NotEq => TokenKind::NotEqual,
-        _ => return None,
-    })
+        CmpOp::NotIn => TokenKind::Not,
+    }
 }
 
 #[cfg(test)]
@@ -145,23 +141,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn cmp_op_token_kind_covers_six_aligned_operators() {
+    fn cmp_op_anchor_token_kind_covers_every_variant() {
         for (op, expected) in [
             (CmpOp::Eq, TokenKind::EqEqual),
             (CmpOp::Gt, TokenKind::Greater),
             (CmpOp::GtE, TokenKind::GreaterEqual),
+            (CmpOp::In, TokenKind::In),
+            (CmpOp::Is, TokenKind::Is),
+            (CmpOp::IsNot, TokenKind::Is),
             (CmpOp::Lt, TokenKind::Less),
             (CmpOp::LtE, TokenKind::LessEqual),
             (CmpOp::NotEq, TokenKind::NotEqual),
+            (CmpOp::NotIn, TokenKind::Not),
         ] {
-            assert_eq!(cmp_op_token_kind(op), Some(expected));
-        }
-    }
-
-    #[test]
-    fn cmp_op_token_kind_rejects_identity_and_membership() {
-        for op in [CmpOp::In, CmpOp::Is, CmpOp::IsNot, CmpOp::NotIn] {
-            assert!(cmp_op_token_kind(op).is_none());
+            assert_eq!(cmp_op_anchor_token_kind(op), expected);
         }
     }
 }
