@@ -4,6 +4,7 @@
 //! declared here as they come online.
 
 pub(crate) mod align_colons;
+pub(crate) mod align_comparisons;
 pub(crate) mod align_equals;
 pub(crate) mod align_imports;
 pub(crate) mod alphabetize;
@@ -17,6 +18,7 @@ pub(crate) mod match_case_align;
 pub(crate) mod multi_line_docstrings;
 pub(crate) mod no_single_line_docstrings;
 pub(crate) mod no_step_narration;
+pub(crate) mod signature_layout;
 pub(crate) mod single_use_variables;
 pub(crate) mod singleton_rule;
 pub(crate) mod strip_trailing_commas;

@@ -46,6 +46,10 @@ enabled = false
 [tool.prose.rules.no-step-narration]
 enabled = false
 
+[tool.prose.rules.signature-layout]
+enabled = false
+max-inline-params = false
+
 [tool.prose.rules.single-use-variables]
 allow-pattern = "^tmp_"
 enabled = false

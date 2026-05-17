@@ -21,12 +21,25 @@ use crate::source::Source;
 /// region, from the start of the member to the start of the gap. `gap`
 /// is the whitespace range ending immediately before the aligned
 /// token that the rule will rewrite. `line_start` is the offset of
-/// the start of the source line containing the gap.
+/// the start of the source line containing the gap. `op_width` is the
+/// display width of the aligned operator itself, used to right-align
+/// variable-width operators within a group. Rules with fixed-width
+/// operators leave `op_width` at zero.
 #[derive(Clone, Copy)]
 pub(crate) struct Member {
     pub gap: TextRange,
     pub line_start: TextSize,
+    pub op_width: usize,
     pub width: usize,
+}
+
+impl Member {
+    /// Returns a copy of `self` with `op_width` set to the operator's
+    /// display width, opting the member into right-alignment math.
+    pub(crate) fn with_op_width(mut self, op_width: usize) -> Self {
+        self.op_width = op_width;
+        self
+    }
 }
 
 /// Emission knobs shared by every alignment rule.
@@ -79,13 +92,14 @@ pub(crate) fn emit_group(
         .fold((first.width, first.width), |(mn, mx), m| {
             (mn.min(m.width), mx.max(m.width))
         });
+    let max_op_w = max_op_width(members);
     if max_w - min_w <= settings.max_shift {
         let suffix = if members.len() == 1 && settings.strip_singleton_subgroup {
             0
         } else {
             1
         };
-        emit_with_paddings(source, members, max_w, suffix, edits);
+        emit_with_paddings(source, members, max_w, max_op_w, suffix, edits);
         return;
     }
     match settings.policy {
@@ -179,6 +193,7 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
     Member {
         gap: TextRange::new(gap_start, anchor),
         line_start,
+        op_width: 0,
         width: trimmed_end.trim_whitespace_start().width(),
     }
 }
@@ -264,7 +279,7 @@ fn emit_drop(source: &Source, members: &[Member], settings: Settings, edits: &mu
         return;
     }
     let max_w = kept.last().expect("kept non-empty").width;
-    emit_with_paddings(source, kept, max_w, 1, edits);
+    emit_with_paddings(source, kept, max_w, max_op_width(kept), 1, edits);
 }
 
 /// Partitions greedily into sub-groups capped at `settings.max_shift`
@@ -286,30 +301,42 @@ fn emit_split(source: &Source, members: &[Member], settings: Settings, edits: &m
             (None, 1) if settings.strip_singleton_subgroup => (sub[0].width, 0),
             (None, _) => (sub_max_w, 1),
         };
-        emit_with_paddings(source, sub, max_w, suffix, edits);
+        emit_with_paddings(source, sub, max_w, max_op_width(sub), suffix, edits);
     }
 }
 
-/// Rewrites each member's gap to `suffix_len + (max_w - m.width)`
-/// spaces. Members whose gap already carries that width of ASCII
-/// spaces emit nothing.
+/// Rewrites each member's gap to
+/// `suffix_len + (max_w - m.width) + (max_op_w - m.op_width)` spaces.
+/// The operator-width term right-aligns variable-width operators so
+/// each operator's last character lands in the shared column.
+/// Members whose gap already carries that width of ASCII spaces emit
+/// nothing.
 fn emit_with_paddings(
     source: &Source,
     members: &[Member],
     max_w: usize,
+    max_op_w: usize,
     suffix_len: usize,
     edits: &mut Vec<Edit>,
 ) {
-    edits.extend(
-        members
-            .iter()
-            .filter_map(|m| space_padding_edit(source, m.gap, suffix_len + (max_w - m.width))),
-    );
+    edits.extend(members.iter().filter_map(|m| {
+        space_padding_edit(
+            source,
+            m.gap,
+            suffix_len + (max_w - m.width) + (max_op_w - m.op_width),
+        )
+    }));
 }
 
 /// Returns the half-open `(start, end, max_width)` sub-group ranges
 /// into `members` produced by greedily extending each sub-group while
 /// the running `max_width - min_width` stays at or below `max_shift`.
+/// Returns the widest `op_width` in `members`, or `0` when the slice
+/// is empty.
+fn max_op_width(members: &[Member]) -> usize {
+    members.iter().map(|m| m.op_width).max().unwrap_or(0)
+}
+
 fn partition_by_spread(members: &[Member], max_shift: usize) -> Vec<(usize, usize, usize)> {
     let mut subs = Vec::new();
     let mut cursor = 0;
@@ -350,6 +377,7 @@ fn range_anchored_member(
     Member {
         gap: TextRange::new(target.end(), anchor),
         line_start: source.text().line_start(anchor),
+        op_width: 0,
         width: source.slice(target).width() + extra_width,
     }
 }
@@ -417,6 +445,7 @@ mod tests {
             members.push(Member {
                 gap: TextRange::new(TextSize::new(gap_start), TextSize::new(gap_end)),
                 line_start: TextSize::new(line_start),
+                op_width: 0,
                 width,
             });
         }
@@ -648,7 +677,7 @@ mod tests {
 
         // max_w == m.width → padding = 0, suffix_len = 0 → target_len = 0
         // → must emit deletion (range_replacement rejects empty content).
-        emit_with_paddings(&source, &members, members[0].width, 0, &mut edits);
+        emit_with_paddings(&source, &members, members[0].width, 0, 0, &mut edits);
 
         assert_eq!(edits.len(), 1);
         assert_eq!(
@@ -668,7 +697,7 @@ mod tests {
 
         // max_w == m.width → padding = 0, suffix_len = 1 → target_len = 1.
         // The fabricated gap is one space already, so emit nothing.
-        emit_with_paddings(&source, &members, members[0].width, 1, &mut edits);
+        emit_with_paddings(&source, &members, members[0].width, 0, 1, &mut edits);
 
         assert!(
             edits.is_empty(),
