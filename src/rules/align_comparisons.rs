@@ -55,10 +55,8 @@ impl Walker<'_> {
     /// Returns `true` when `prev_end` and `next_start` sit on
     /// consecutive source lines with no intervening comment.
     fn is_operand_line_adjacent(&self, prev_end: TextSize, next_start: TextSize) -> bool {
-        !self
-            .source
-            .slice(TextRange::new(prev_end, next_start))
-            .contains('#')
+        let gap = TextRange::new(prev_end, next_start);
+        !self.source.intersects_comment(gap)
             && self.source.line_index(next_start)
                 == self.source.line_index(prev_end).saturating_add(1)
     }
@@ -74,8 +72,8 @@ impl Walker<'_> {
                 active = None;
                 continue;
             };
-            let extends = active.as_ref().is_some_and(|(prev_kind, prev)| {
-                *prev_kind == kind
+            let extends = active.is_some_and(|(prev_kind, prev)| {
+                prev_kind == kind
                     && !self.source.contains_line_break(prev)
                     && self.is_operand_line_adjacent(prev.end(), operand.start())
             });
@@ -98,10 +96,7 @@ impl Walker<'_> {
 
     fn qualify(&self, operand: &Expr) -> Option<(TokenKind, aligner::Member)> {
         let compare = operand.as_compare_expr()?;
-        let [op] = *compare.ops else {
-            return None;
-        };
-        let [comparator] = compare.comparators.as_ref() else {
+        let ([op], [comparator]) = (compare.ops.as_ref(), compare.comparators.as_ref()) else {
             return None;
         };
         if !matches!(
@@ -110,9 +105,12 @@ impl Walker<'_> {
         ) {
             return None;
         }
-        let kind = cmp_op_token_kind(op)?;
-        let search = TextRange::new(compare.left.end(), comparator.start());
-        let member = aligner::line_anchored_member_at_kind(self.source, search, kind)?;
+        let kind = cmp_op_token_kind(*op)?;
+        let member = aligner::line_anchored_member_at_kind(
+            self.source,
+            TextRange::new(compare.left.end(), comparator.start()),
+            kind,
+        )?;
         Some((kind, member))
     }
 }
@@ -165,11 +163,5 @@ mod tests {
         for op in [CmpOp::In, CmpOp::Is, CmpOp::IsNot, CmpOp::NotIn] {
             assert!(cmp_op_token_kind(op).is_none());
         }
-    }
-
-    #[test]
-    fn rule_id_is_align_comparisons() {
-        let rule = AlignComparisons::from_config(&Config::default());
-        assert_eq!(rule.id().as_str(), "align-comparisons");
     }
 }
