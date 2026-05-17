@@ -73,7 +73,7 @@ For editors that consume JSON diagnostics directly, `prose check --output-format
 prose check --output-format json --stdin < file.py
 ```
 
-Each record carries `code`, `message`, `filename`, `location`, `end_location`, and (when an auto-fix applies) a structured `fix` object describing the replacement and its applicability. The shape mirrors what Ruff and ESLint publish, so editors with LSP-style diagnostic surfaces map the records onto inline squiggles and the `fix` payload drives quick-fix actions. The `code` field carries the [**`RuleId`**](/primitives/rule-id) slug, so the diagnostic surface can group by rule.
+Each record carries `code`, `message`, `filename`, `location`, `end_location`, and (when an auto-fix applies) a structured `fix` object describing the replacement and its applicability. The shape mirrors what Ruff and ESLint publish, so editors with LSP-style diagnostic surfaces map the records onto inline squiggles and the `fix` payload drives quick-fix actions. The `code` field carries the [[rule-id]] slug, so the diagnostic surface can group by rule.
 
 ::: tip Composes with check-on-CI
 The same JSON output drives editor squiggles and CI annotations. The [**CI Integration**](/guide/ci-integration) chapter covers the GitHub Actions, SARIF, and pre-commit shapes that consume `--output-format json` or its `github` and `sarif` siblings.

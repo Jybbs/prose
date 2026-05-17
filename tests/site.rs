@@ -1,9 +1,9 @@
 //! Coverage checks pairing the docs site at `site/` with the live
 //! rule registry, the primitive surface, and the fixture catalog.
 
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::{fs, path::Path};
 
+use ignore::{types::TypesBuilder, WalkBuilder};
 use prose::pipeline::Pipeline;
 use regex_lite::Regex;
 
@@ -16,40 +16,23 @@ const PRIMITIVE_PAGES: &[&str] = &[
 ];
 
 #[test]
-fn every_registered_rule_has_a_page() {
-    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("site/rules");
-    for id in Pipeline::known_ids() {
-        let page = rules.join(format!("{id}.md"));
-        assert!(
-            page.is_file(),
-            "rule `{id}` registered in `KNOWN_IDS` has no page at `site/rules/{id}.md`"
-        );
-    }
-}
-
-#[test]
-fn every_spec_primitive_has_a_page() {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("site/primitives");
-    for slug in PRIMITIVE_PAGES {
-        let page = dir.join(format!("{slug}.md"));
-        assert!(
-            page.is_file(),
-            "primitive `{slug}` has no page at `site/primitives/{slug}.md`"
-        );
-    }
-}
-
-#[test]
 fn every_fixture_invocation_resolves() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let site = root.join("site");
     let pattern = Regex::new(r#"<Fixture rule="([^"]+)" case="([^"]+)" /?>"#).unwrap();
-    let mut refs = Vec::new();
-    walk_markdown(&site, &mut refs);
-    assert!(!refs.is_empty(), "found no markdown under `site/`");
+    let mut types = TypesBuilder::new();
+    types.add_defaults();
+    types.select("markdown");
+    let types = types.build().unwrap();
 
+    let mut found_any = false;
     let mut missing = Vec::new();
-    for path in &refs {
+    for entry in WalkBuilder::new(&site).types(types).build().flatten() {
+        if !entry.file_type().is_some_and(|t| t.is_file()) {
+            continue;
+        }
+        found_any = true;
+        let path = entry.path();
         let body = fs::read_to_string(path).unwrap();
         for caps in pattern.captures_iter(&body) {
             let rule = caps.get(1).unwrap().as_str();
@@ -70,6 +53,7 @@ fn every_fixture_invocation_resolves() {
             }
         }
     }
+    assert!(found_any, "found no markdown under `site/`");
     assert!(
         missing.is_empty(),
         "`<Fixture>` invocations point at missing fixture or snapshot pairs:\n  {}",
@@ -77,13 +61,36 @@ fn every_fixture_invocation_resolves() {
     );
 }
 
-fn walk_markdown(dir: &Path, out: &mut Vec<PathBuf>) {
-    for entry in fs::read_dir(dir).unwrap().flatten() {
-        let path = entry.path();
-        if path.is_dir() {
-            walk_markdown(&path, out);
-        } else if path.extension().is_some_and(|ext| ext == "md") {
-            out.push(path);
-        }
+#[test]
+fn every_registered_rule_has_a_page() {
+    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("site/rules");
+    for id in Pipeline::known_ids() {
+        let page = rules.join(format!("{id}.md"));
+        assert!(
+            page.is_file(),
+            "rule `{id}` registered in `KNOWN_IDS` has no page at `site/rules/{id}.md`"
+        );
     }
+}
+
+#[test]
+fn every_spec_primitive_has_a_page() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("site/primitives");
+
+    let mut found: Vec<String> = fs::read_dir(&dir)
+        .unwrap()
+        .filter_map(Result::ok)
+        .filter_map(|entry| entry.file_name().to_str().map(String::from))
+        .filter(|name| name.ends_with(".md") && name != "index.md")
+        .map(|name| name.strip_suffix(".md").unwrap().to_string())
+        .collect();
+    found.sort();
+
+    let mut expected: Vec<String> = PRIMITIVE_PAGES.iter().map(|s| s.to_string()).collect();
+    expected.sort();
+
+    assert_eq!(
+        found, expected,
+        "site/primitives/ does not match PRIMITIVE_PAGES"
+    );
 }

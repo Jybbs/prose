@@ -1,5 +1,6 @@
 ---
 category: lint
+related : [unused-future-annotations]
 ---
 
 # legacy-union-syntax
@@ -8,13 +9,22 @@ category: lint
 
 The rule fires only on projects whose `target-version` is 3.10 or higher, where the pipe-union shapes are runtime-supported. Pre-3.10 projects and projects with `target-version` unset stay quiet, since recommending the pipe form on those projects would mislead. The lint is non-rewriting, so the diagnostic surfaces without touching the source.
 
-<VersionedSnippet :versions="['3.10', '3.11', '3.12', '3.13', '3.14']">
-  <template #3.10>The rule fires. <code>Optional[X]</code> reads as `X | None` in the diagnostic message.</template>
-  <template #3.11>The rule fires. Same diagnostic as 3.10.</template>
-  <template #3.12>The rule fires. Same diagnostic as 3.10.</template>
-  <template #3.13>The rule fires. Same diagnostic as 3.10.</template>
-  <template #3.14>The rule fires. Same diagnostic as 3.10, and pairs naturally with the deferred-annotation runtime that <a href="/rules/unused-future-annotations"><strong><code>unused-future-annotations</code></strong></a> reads on the same axis.</template>
-</VersionedSnippet>
+::: tabs key:prose-target-version
+== Python 3.10
+The rule fires. `Optional[X]` reads as `X | None` in the diagnostic message.
+
+== Python 3.11
+The rule fires. Same diagnostic as 3.10.
+
+== Python 3.12
+The rule fires. Same diagnostic as 3.10.
+
+== Python 3.13
+The rule fires. Same diagnostic as 3.10.
+
+== Python 3.14
+The rule fires. Same diagnostic as 3.10, and pairs naturally with the deferred-annotation runtime that [[unused-future-annotations]] reads on the same axis.
+:::
 
 ## Configuration
 
@@ -48,6 +58,6 @@ A `from typing import Optional` followed by `Optional[X]` surfaces the lint, rec
 
 The version-gated surface composes with one other rule on the same `target-version` axis.
 
-- [**`unused-future-annotations`**](/rules/unused-future-annotations) removes `from __future__ import annotations` when removal is provably safe, also reading `target-version` for the gate.
+- [[unused-future-annotations]] removes `from __future__ import annotations` when removal is provably safe, also reading `target-version` for the gate.
 
 For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[legacy-union-syntax]` directive.

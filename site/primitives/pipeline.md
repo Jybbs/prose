@@ -1,12 +1,12 @@
 # Pipeline
 
-*Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order, applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [**`Source`**](/primitives/source) plus a diagnostic list at the end.
+*Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order, applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [[source]] plus a diagnostic list at the end.
 
 <DependencyGraph />
 
 ## Public API
 
-`Pipeline` is fully public in `0.2.x`. A downstream Rust consumer constructs one through one of four entry points, runs it against a [**`Source`**](/primitives/source), and reads the returned text plus diagnostics.
+`Pipeline` is fully public in `0.2.x`. A downstream Rust consumer constructs one through one of four entry points, runs it against a [[source]], and reads the returned text plus diagnostics.
 
 **Constructors.**
 
@@ -58,9 +58,9 @@ The Python wheel exposes the CLI rather than the library, so a Python consumer r
 
 ## Related
 
-- [**`Source`**](/primitives/source) is the value the pipeline reads and re-emits, reparsed between rules so each downstream pass reads a settled AST.
-- [**`RuleId`**](/primitives/rule-id) is the handle each rule registers under, consumed by the pipeline's deterministic ordering and surfaced through `known_ids`.
-- [**`SuppressionMap`**](/primitives/suppression-map) filters the pipeline's emitted edits and lint diagnostics, dropping suppressed entries before they surface to the caller.
-- [**`BindingAnalysis`**](/primitives/binding-analysis) builds once per *Source* and feeds rules whose questions are binding-shaped.
+- [[source]] is the value the pipeline reads and re-emits, reparsed between rules so each downstream pass reads a settled AST.
+- [[rule-id]] is the handle each rule registers under, consumed by the pipeline's deterministic ordering and surfaced through `known_ids`.
+- [[suppression-map]] filters the pipeline's emitted edits and lint diagnostics, dropping suppressed entries before they surface to the caller.
+- [[binding-analysis]] builds once per *Source* and feeds rules whose questions are binding-shaped.
 
 For the rule catalog the pipeline iterates, the [**Rules Overview**](/rules/) page walks every shipped rule by category.

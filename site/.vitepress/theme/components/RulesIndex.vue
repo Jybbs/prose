@@ -1,32 +1,26 @@
 <script setup lang="ts">
+import { CATEGORY_META } from '../../lib/categories'
 import { data as rules } from '../../data/rules.data'
 
-const autoFix = rules.filter(r => r.category === 'auto-fix')
-const lint    = rules.filter(r => r.category === 'lint'    )
+const categories = (['auto-fix', 'lint'] as const).map(slug => ({
+  slug,
+  label: CATEGORY_META[slug].label,
+  rules: rules.filter(r => r.category === slug)
+}))
 </script>
 
 <template>
-  <h2 id="auto-fix">Auto-Fix</h2>
-  <table>
-    <thead>
-      <tr><th>Rule</th></tr>
-    </thead>
-    <tbody>
-      <tr v-for="rule in autoFix" :key="rule.slug">
-        <td><a :href="`/rules/${rule.slug}`"><code>{{ rule.slug }}</code></a></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h2 id="lint">Lint</h2>
-  <table>
-    <thead>
-      <tr><th>Rule</th></tr>
-    </thead>
-    <tbody>
-      <tr v-for="rule in lint" :key="rule.slug">
-        <td><a :href="`/rules/${rule.slug}`"><code>{{ rule.slug }}</code></a></td>
-      </tr>
-    </tbody>
-  </table>
+  <template v-for="cat in categories" :key="cat.slug">
+    <h2 :id="cat.slug">{{ cat.label }}</h2>
+    <table>
+      <thead>
+        <tr><th>Rule</th></tr>
+      </thead>
+      <tbody>
+        <tr v-for="rule in cat.rules" :key="rule.slug">
+          <td><a :href="`/rules/${rule.slug}`"><code>{{ rule.slug }}</code></a></td>
+        </tr>
+      </tbody>
+    </table>
+  </template>
 </template>

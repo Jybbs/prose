@@ -1,5 +1,6 @@
 ---
 category: auto-fix
+related : [legacy-union-syntax]
 ---
 
 # unused-future-annotations
@@ -8,13 +9,22 @@ The `from __future__ import annotations` directive made forward-reference annota
 
 Three branches actually fire the rewrite. The file may carry zero annotations (*the directive is unused outright*). The `target-version` may be 3.14 or higher (*the runtime defers annotation evaluation, so the directive carries no runtime weight*). Or every name appearing in every annotation may resolve to a module-scope binding before its first annotation use (*forward references aren't needed, so the runtime evaluates annotations eagerly without raising*). When none of those branches holds, the import stays in place.
 
-<VersionedSnippet :versions="['3.10', '3.11', '3.12', '3.13', '3.14']">
-  <template #3.10>The version-gated branch stays quiet. Removal fires only if the file has zero annotations or every annotation resolves to a module-scope binding before use.</template>
-  <template #3.11>Same as 3.10.</template>
-  <template #3.12>Same as 3.10.</template>
-  <template #3.13>Same as 3.10.</template>
-  <template #3.14>The version-gated branch fires. PEP 749 lands deferred annotation evaluation, so the directive is redundant for typing-only annotations and the import removes cleanly.</template>
-</VersionedSnippet>
+::: tabs key:prose-target-version
+== Python 3.10
+The version-gated branch stays quiet. Removal fires only if the file has zero annotations or every annotation resolves to a module-scope binding before use.
+
+== Python 3.11
+Same as 3.10.
+
+== Python 3.12
+Same as 3.10.
+
+== Python 3.13
+Same as 3.10.
+
+== Python 3.14
+The version-gated branch fires. PEP 749 lands deferred annotation evaluation, so the directive is redundant for typing-only annotations and the import removes cleanly.
+:::
 
 ## Configuration
 
@@ -48,6 +58,6 @@ A file whose annotations are typing-only loses the `__future__` import when the 
 
 The version-gated surface composes with one other rule on the same `target-version` axis.
 
-- [**`legacy-union-syntax`**](/rules/legacy-union-syntax) lints `Union[X, Y]` and `Optional[X]` on the same `target-version` gate, recommending the PEP 604 `X | Y` shape.
+- [[legacy-union-syntax]] lints `Union[X, Y]` and `Optional[X]` on the same `target-version` gate, recommending the PEP 604 `X | Y` shape.
 
 For the gate semantics, [**`target-version`**](/guide/configuration#top-level-keys) in the Configuration chapter covers how the field is read across version-gated rules.

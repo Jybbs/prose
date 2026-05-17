@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { REPO_URL } from '../../../lib/constants'
+
 interface Action {
   href  : string
   text  : string
@@ -6,9 +8,9 @@ interface Action {
 }
 
 const actions: Action[] = [
-  { href: '/guide/installation',            text: 'Get Started', theme: 'brand' },
-  { href: '/rules/',                        text: 'Rules',       theme: 'alt'   },
-  { href: 'https://github.com/Jybbs/prose', text: 'GitHub',      theme: 'alt'   }
+  { href: '/guide/installation', text: 'Get Started', theme: 'brand' },
+  { href: '/rules/',             text: 'Rules',       theme: 'alt'   },
+  { href: REPO_URL,              text: 'GitHub',      theme: 'alt'   }
 ]
 </script>
 

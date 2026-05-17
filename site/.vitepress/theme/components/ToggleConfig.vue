@@ -1,20 +1,11 @@
+<script setup lang="ts">
+import RuleConfigTable from './RuleConfigTable.vue'
+
+const rows = [
+  { key: 'enabled', type: 'bool', default: 'true', meaning: 'Toggle the rule on or off' }
+]
+</script>
+
 <template>
-  <table>
-    <thead>
-      <tr>
-        <th>Key</th>
-        <th>Type</th>
-        <th>Default</th>
-        <th>Meaning</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>enabled</code></td>
-        <td>bool</td>
-        <td><code>true</code></td>
-        <td>Toggle the rule on or off</td>
-      </tr>
-    </tbody>
-  </table>
+  <RuleConfigTable :rows="rows" />
 </template>

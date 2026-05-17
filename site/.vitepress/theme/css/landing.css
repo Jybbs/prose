@@ -4,8 +4,19 @@
 }
 
 .landing-page {
+  position  : relative;
   max-width : 1120px;
   margin    : 0 auto;
+}
+
+.landing-page::before {
+  content        : "";
+  position       : absolute;
+  inset          : 0;
+  pointer-events : none;
+  z-index        : -1;
+  opacity        : 0.025;
+  background     : url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 .landing-hero {
@@ -101,16 +112,12 @@
 }
 
 .landing-hero-action {
-  display         : inline-flex;
-  align-items     : center;
-  min-height      : 44px;
-  padding         : 0 22px;
-  border          : 1px solid var(--vp-c-divider);
-  border-radius   : 22px;
-  font-size       : 0.95rem;
-  font-weight     : 500;
-  text-decoration : none;
-  transition      : border-color var(--prose-transition-slow), transform var(--prose-transition-slow);
+  min-height    : 44px;
+  padding       : 0 22px;
+  border-radius : var(--prose-radius-pill);
+  font-size     : 0.95rem;
+  font-weight   : 500;
+  transition    : border-color var(--prose-transition-slow), transform var(--prose-transition-slow);
 }
 
 .landing-hero-action:hover {
@@ -141,11 +148,11 @@
   margin-top: 76px;
 }
 
-.landing-kicker {
+.landing-page .landing-kicker {
   margin         : 0;
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.72rem !important;
-  line-height    : 1.3 !important;
+  font-size      : 0.72rem;
+  line-height    : 1.3;
   letter-spacing : 0.14em;
   text-transform : uppercase;
   color          : var(--vp-c-text-3);
@@ -248,72 +255,6 @@
   color       : var(--vp-c-text-3);
 }
 
-.landing-proof-grid {
-  display               : grid;
-  grid-template-columns : minmax(0, 1fr) auto minmax(0, 1fr);
-  gap                   : 24px;
-  align-items           : stretch;
-}
-
-.landing-proof-side {
-  display        : flex;
-  flex-direction : column;
-  min-width      : 0;
-  border         : 1px solid var(--vp-c-divider);
-  border-radius  : var(--prose-radius);
-  background     : var(--vp-c-bg);
-  overflow       : hidden;
-}
-
-.landing-proof-label {
-  display        : flex;
-  align-items    : center;
-  gap            : 8px;
-  padding        : 10px 14px;
-  border-bottom  : 1px solid var(--vp-c-divider);
-  background     : var(--vp-c-bg-soft);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : 0.72rem;
-  letter-spacing : 0.1em;
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
-}
-
-.landing-proof-dot {
-  width         : 8px;
-  height        : 8px;
-  border-radius : 50%;
-}
-
-.landing-proof-dot-before {
-  background: var(--prose-c-cream);
-}
-
-.landing-proof-dot-after {
-  background: var(--vp-c-brand-1);
-}
-
-.landing-proof-code {
-  padding     : 16px 18px;
-  font-size   : 0.85rem;
-  line-height : 1.55;
-  overflow    : auto;
-  flex-grow   : 1;
-}
-
-.landing-proof-code pre {
-  margin     : 0;
-  padding    : 0;
-  background : transparent;
-}
-
-.landing-proof-arrow {
-  display     : grid;
-  place-items : center;
-  font-family : var(--prose-font-display);
-  font-size   : 2.5rem;
-  color       : var(--vp-c-brand-1);
-}
 
 .landing-feature-grid {
   display               : grid;
@@ -321,6 +262,7 @@
   gap                   : 18px;
 }
 
+/* Border, border-radius, and background come from the shared card rule in tokens.css. */
 .landing-feature-card {
   position        : relative;
   display         : block;
@@ -345,7 +287,7 @@
   background    : linear-gradient(90deg, transparent, var(--vp-c-brand-1), transparent);
   opacity       : 0;
   transition    : opacity var(--prose-transition-slow);
-  border-radius : var(--prose-radius) 8px 0 0;
+  border-radius : var(--prose-radius) var(--prose-radius) 0 0;
 }
 
 .landing-feature-card:nth-child(2)::before {
@@ -363,21 +305,7 @@
 .landing-feature-card:hover {
   border-color : var(--vp-c-brand-1);
   transform    : translateY(-2px);
-  box-shadow   : 0 18px 44px -32px rgba(138, 128, 203, 0.55);
-}
-
-.landing-page::before {
-  content        : "";
-  position       : absolute;
-  inset          : 0;
-  pointer-events : none;
-  z-index        : -1;
-  opacity        : 0.025;
-  background     : url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-.landing-page {
-  position: relative;
+  box-shadow   : 0 18px 44px -32px color-mix(in srgb, var(--vp-c-brand-1) 55%, transparent);
 }
 
 .landing-hero-logo {
@@ -386,7 +314,7 @@
 
 .landing-hero-logo:hover {
   transform : translateY(-2px);
-  filter    : drop-shadow(0 8px 24px rgba(138, 128, 203, 0.32));
+  filter    : drop-shadow(0 8px 24px color-mix(in srgb, var(--vp-c-brand-1) 32%, transparent));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -452,14 +380,10 @@
   background    : var(--vp-c-bg-soft);
 }
 
-.landing-rules p {
-  margin         : 0 0 14px;
-  text-align     : center;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : 0.68rem;
-  letter-spacing : 0.14em;
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
+.landing-rules-kicker {
+  margin     : 0 0 14px;
+  text-align : center;
+  font-size  : 0.68rem;
 }
 
 .landing-rules-track {
@@ -524,7 +448,7 @@
 .workflow-step pre {
   margin        : 0;
   padding       : 14px 16px;
-  border-radius : var(--prose-radius-action);
+  border-radius : var(--prose-radius);
   background    : var(--vp-code-block-bg);
   font-family   : var(--vp-font-family-mono);
   font-size     : 0.85rem;
@@ -543,7 +467,7 @@
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
   background   :
-    radial-gradient(600px 260px at 50% 0%, rgba(138, 128, 203, 0.14), transparent),
+    radial-gradient(600px 260px at 50% 0%, color-mix(in srgb, var(--vp-c-brand-1) 14%, transparent), transparent),
     var(--vp-c-bg-soft);
   text-align    : center;
 }
@@ -569,23 +493,16 @@
   background: var(--vp-c-bg);
 }
 
+/* Breakpoint at 960px: landing wide-grid collapse (metaphor + feature + workflow). */
 @media (max-width: 960px) {
   .landing-metaphor-body,
   .landing-feature-grid,
   .landing-workflow-grid {
     grid-template-columns: 1fr;
   }
-
-  .landing-proof-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .landing-proof-arrow {
-    transform : rotate(90deg);
-    font-size : 2rem;
-  }
 }
 
+/* Breakpoint at 640px: smallest-hero margin shrink. */
 @media (max-width: 640px) {
   .landing-section {
     margin-top: 54px;

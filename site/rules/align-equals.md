@@ -1,12 +1,13 @@
 ---
 category: auto-fix
+related : [align-colons, align-imports, match-case-align, singleton-rule]
 ---
 
 # align-equals
 
 A run of consecutive bindings sits at the same indentation, the eye walks down the page, and every `=` sign lands at a **different column**. The reader stops at each line to find where the assignment splits. *Align-equals* gathers those runs into a **single column**, so a stretch of bindings reads as a list of values rather than a stack of expressions.
 
-The rule walks consecutive single-target assignments at the same indentation level, picking up type annotations when present and treating augmented assignments (*`+=`, `|=`*) and walrus operators (*`:=`*) as non-members. The same alignment also runs across consecutive annotated function-parameter default values, so a signature with several `param: type = default` entries aligns its `=` column the same way a stretch of module-level bindings does. A blank line, a comment line, or a non-assignment statement resets the group, leaving each contiguous run aligned in isolation. Once an alignment group lands, [**`singleton-rule`**](/rules/singleton-rule) prunes any one-member residue so a lone binding reads as plain code.
+The rule walks consecutive single-target assignments at the same indentation level, picking up type annotations when present and treating augmented assignments (*`+=`, `|=`*) and walrus operators (*`:=`*) as non-members. The same alignment also runs across consecutive annotated function-parameter default values, so a signature with several `param: type = default` entries aligns its `=` column the same way a stretch of module-level bindings does. A blank line, a comment line, or a non-assignment statement resets the group, leaving each contiguous run aligned in isolation. Once an alignment group lands, [[singleton-rule]] prunes any one-member residue so a lone binding reads as plain code.
 
 ## Configuration
 
@@ -49,6 +50,6 @@ Three consecutive bindings with varying left-hand widths align on the `=` sign. 
 
 ## Related
 
-`=` is one of four separator surfaces the alignment engine runs across. [**`align-colons`**](/rules/align-colons) covers the `:` separator on dictionary literals, dataclass and Pydantic fields, function-signature annotations, and docstring `Args:` blocks. [**`align-imports`**](/rules/align-imports) covers the `import` keyword on `from ... import ...` runs and the `as` keyword on `import ... as ...` runs. [**`match-case-align`**](/rules/match-case-align) covers the post-pattern `:` on single-expression case bodies inside a `match`. The [**`singleton-rule`**](/rules/singleton-rule) governs what happens on `:`-shaped surfaces when an alignment group resolves to a single member.
+`=` is one of four separator surfaces the alignment engine runs across. [[align-colons]] covers the `:` separator on dictionary literals, dataclass and Pydantic fields, function-signature annotations, and docstring `Args:` blocks. [[align-imports]] covers the `import` keyword on `from ... import ...` runs and the `as` keyword on `import ... as ...` runs. [[match-case-align]] covers the post-pattern `:` on single-expression case bodies inside a `match`. The [[singleton-rule]] governs what happens on `:`-shaped surfaces when an alignment group resolves to a single member.
 
 For the underlying motivation, the landing page's [**reading metaphor**](/) frames why aligned columns read better than the minimalist alternative.

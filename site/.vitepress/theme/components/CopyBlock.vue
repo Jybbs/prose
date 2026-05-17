@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref }       from 'vue'
+import { inBrowser } from 'vitepress'
 
 const props = defineProps<{ code: string; lang?: string }>()
 const copied = ref(false)
 
 async function onCopy() {
-  if (typeof navigator === 'undefined' || !navigator.clipboard) return
+  if (!inBrowser || !navigator.clipboard) return
   await navigator.clipboard.writeText(props.code)
   copied.value = true
   setTimeout(() => { copied.value = false }, 1400)

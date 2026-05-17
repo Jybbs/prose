@@ -15,7 +15,7 @@ Every rule reads the source file through one shared value. *Source* bundles the 
 - `text() -> &str` returns the original source text. Every other reader's offsets land in this string.
 - `ast() -> &ModModule` returns the parsed AST root. The wrapping *Source* owns the parse, so the AST is borrow-stable for the value's lifetime.
 - `tokens() -> &Tokens` returns the token stream. Useful when a rule's question is comment-shaped or trivia-shaped rather than AST-shaped.
-- `binding_analysis() -> &BindingAnalysis` returns the per-source [**`BindingAnalysis`**](/primitives/binding-analysis) table, built once during construction.
+- `binding_analysis() -> &BindingAnalysis` returns the per-source [[binding-analysis]] table, built once during construction.
 - `comment_ranges() -> &CommentRanges` returns the comment-range table for trivia walking.
 
 **Trivia helpers.** A handful of methods cover the common "find a position" questions: `column_of`, `line_column`, `line_index`, `line_indent_width`, `newline_str`, `slice`, plus the predicates `contains_line_break`, `has_blank_line_before`, `intersects_comment`, `is_line_adjacent`, and `first_token_offset_in_range`.
@@ -26,7 +26,7 @@ Every rule reads the source file through one shared value. *Source* bundles the 
 
 ## Reuse Pattern
 
-A consumer that wants one rule's edits without the surrounding pipeline machinery reaches for the rule struct through the registry. The standard path is to build a [**`Pipeline`**](/primitives/pipeline) from a `Config`, hand it a *Source*, and read the returned text plus diagnostics. The [**`Pipeline`**](/primitives/pipeline) primitive page covers the `with_defaults`, `with_filters`, and `for_rule` constructors that drive every shape of consumer pipeline.
+A consumer that wants one rule's edits without the surrounding pipeline machinery reaches for the rule struct through the registry. The standard path is to build a [[pipeline]] from a `Config`, hand it a *Source*, and read the returned text plus diagnostics. The [[pipeline]] primitive page covers the `with_defaults`, `with_filters`, and `for_rule` constructors that drive every shape of consumer pipeline.
 
 ## Internal Surface (`0.2.x`)
 
@@ -45,9 +45,9 @@ The Python wheel exposes the binary rather than the library, so a Python consume
 
 ## Related
 
-- [**`Pipeline`**](/primitives/pipeline) runs the rule loop against a *Source*, reparses between rules, returns the final text and diagnostics.
-- [**`BindingAnalysis`**](/primitives/binding-analysis) builds against a *Source* during construction and answers binding-shaped questions about every name in every scope.
-- [**`SuppressionMap`**](/primitives/suppression-map) is built during *Source* construction and consulted by the pipeline at the edit-emission boundary.
-- [**`RuleId`**](/primitives/rule-id) is the handle each rule registers under, consumed by the pipeline's deterministic ordering.
+- [[pipeline]] runs the rule loop against a *Source*, reparses between rules, returns the final text and diagnostics.
+- [[binding-analysis]] builds against a *Source* during construction and answers binding-shaped questions about every name in every scope.
+- [[suppression-map]] is built during *Source* construction and consulted by the pipeline at the edit-emission boundary.
+- [[rule-id]] is the handle each rule registers under, consumed by the pipeline's deterministic ordering.
 
 For the rule catalog that runs against the *Source*, the [**Rules Overview**](/rules/) page walks every shipped rule by category.

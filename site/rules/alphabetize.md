@@ -1,12 +1,13 @@
 ---
 category: auto-fix
+related : [bare-import-allowlist, blank-lines, align-imports, align-colons]
 ---
 
 # alphabetize
 
 A reader who already knows the codebase carries a **mental map** of where things live. When sibling members within a class, an enum, a dataclass, or a function call sit in arrival order, every reader builds a **different map**, which slows each new reader's first read. *Alphabetize* gives everyone the **same landmarks**, with classes ordered alphabetically inside a module, methods ordered inside a class body (*dunders first, then properties, then private, then public*), enum members ordered, dataclass and Pydantic fields ordered (*required before optional*), function parameters with defaults ordered, keyword arguments at call sites ordered, and `from` imports ordered within each block.
 
-The rule fires on siblings whose order does not carry meaning. It leaves alone every surface where ordering is load-bearing (*positional-only parameters before the `/` separator, enum members with explicit integer or string values, tuple-unpacking targets bound to positional results*). Pair with [**`align-imports`**](/rules/align-imports) to align the `import` keyword across the freshly-sorted block, with [**`align-colons`**](/rules/align-colons) to align dataclass-field annotations after the sort, and with [**`blank-lines`**](/rules/blank-lines) for the blank-line discipline around class members.
+The rule fires on siblings whose order does not carry meaning. It leaves alone every surface where ordering is load-bearing (*positional-only parameters before the `/` separator, enum members with explicit integer or string values, tuple-unpacking targets bound to positional results*). Pair with [[align-imports]] to align the `import` keyword across the freshly-sorted block, with [[align-colons]] to align dataclass-field annotations after the sort, and with [[blank-lines]] for the blank-line discipline around class members.
 
 ## Configuration
 
@@ -60,6 +61,6 @@ Classes inside a module sort alphabetically, giving every reader the same first-
 
 ## Related
 
-This rule runs once and downstream rules pick up the sorted shape. On import blocks the sequence reads bottom-up: [**`bare-import-allowlist`**](/rules/bare-import-allowlist) surfaces lint candidates for the bare-versus-from split, this rule sorts, [**`blank-lines`**](/rules/blank-lines) lands the group separators, [**`align-imports`**](/rules/align-imports) aligns the `import` keyword. On class bodies the sort settles field order ahead of [**`align-colons`**](/rules/align-colons), which aligns the `:` separator across the field annotations.
+This rule runs once and downstream rules pick up the sorted shape. On import blocks the sequence reads bottom-up: [[bare-import-allowlist]] surfaces lint candidates for the bare-versus-from split, this rule sorts, [[blank-lines]] lands the group separators, [[align-imports]] aligns the `import` keyword. On class bodies the sort settles field order ahead of [[align-colons]], which aligns the `:` separator across the field annotations.
 
 For the underlying motivation, the landing page's [**reading metaphor**](/) frames why alphabetized siblings let every reader build the same mental map.

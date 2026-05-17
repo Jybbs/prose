@@ -6,10 +6,14 @@ import CategoryChip  from './components/aside/CategoryChip.vue'
 import FixtureToc    from './components/aside/FixtureToc.vue'
 import NotFound      from './components/NotFound.vue'
 import RelatedRules  from './components/aside/RelatedRules.vue'
+import StarBadge     from './components/StarBadge.vue'
 </script>
 
 <template>
   <DefaultTheme.Layout>
+    <template #nav-bar-content-after>
+      <StarBadge />
+    </template>
     <template #doc-before>
       <CategoryChip />
     </template>

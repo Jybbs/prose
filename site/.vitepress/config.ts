@@ -1,17 +1,19 @@
+import fs   from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 import { defineConfig, type DefaultTheme } from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs'
 
-import { discoverRules }    from './lib/rules'
-import { readCargoVersion } from './lib/version'
+import { REPO_URL, SITE_HOSTNAME } from './lib/constants'
+import { repoRoot, rulesDir }      from './lib/paths'
+import { PRIMITIVES }              from './lib/primitives'
+import { ruleLinkPlugin }          from './lib/rule-link'
+import { SHIKI_THEMES }            from './lib/shiki'
+import { readCargoVersion }        from './lib/version'
 
-const here     = path.dirname(fileURLToPath(import.meta.url))
-const repoRoot = path.resolve(here, '../..')
-const rulesDir = path.resolve(here, '../rules')
-const version  = readCargoVersion(repoRoot)
+const repoDir = repoRoot(import.meta.url)
+const version = readCargoVersion(repoDir)
 
 const primLink = (text: string, slug: string): DefaultTheme.SidebarItem =>
   ({ text, link: `/primitives/${slug}` })
@@ -19,9 +21,22 @@ const primLink = (text: string, slug: string): DefaultTheme.SidebarItem =>
 const ruleLink = (slug: string): DefaultTheme.SidebarItem =>
   ({ text: slug, link: `/rules/${slug}` })
 
-const rules   = discoverRules(rulesDir)
-const autoFix = rules.filter(r => r.category === 'auto-fix').map(r => r.slug)
-const lint    = rules.filter(r => r.category === 'lint'    ).map(r => r.slug)
+function sidebarRules(dir: string): { autoFix: string[]; lint: string[] } {
+  const autoFix: string[] = []
+  const lint   : string[] = []
+  for (const file of fs.readdirSync(dir).sort()) {
+    if (!file.endsWith('.md') || file === 'index.md') continue
+    const body  = fs.readFileSync(path.join(dir, file), 'utf8')
+    const front = body.match(/^---\n([\s\S]*?)\n---\n/)?.[1] ?? ''
+    const slug  = file.slice(0, -'.md'.length)
+    if (/^\s*category:\s*lint\s*$/m.test(front)) lint.push(slug)
+    else                                          autoFix.push(slug)
+  }
+  return { autoFix, lint }
+}
+
+const { autoFix, lint } = sidebarRules(rulesDir(import.meta.url))
+const validSlugs        = new Set([...autoFix, ...lint])
 
 export default defineConfig({
   cleanUrls     : true,
@@ -40,12 +55,13 @@ export default defineConfig({
     config     : md => {
       md.use(groupIconMdPlugin)
       md.use(tabsMarkdownPlugin)
+      md.use(ruleLinkPlugin(validSlugs))
     },
     lineNumbers: false,
-    theme      : { light: 'github-light', dark: 'github-dark' }
+    theme      : SHIKI_THEMES
   },
   sitemap       : {
-    hostname: 'https://prose.pages.dev'
+    hostname: SITE_HOSTNAME
   },
   title         : 'Prose',
   titleTemplate : ':title · Prose',
@@ -54,7 +70,7 @@ export default defineConfig({
     pageData.frontmatter.head ??= []
     pageData.frontmatter.head.push([
       'link',
-      { rel: 'canonical', href: `https://prose.pages.dev/${pageData.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '')}` }
+      { rel: 'canonical', href: `${SITE_HOSTNAME}/${pageData.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '')}` }
     ])
   },
   vite          : {
@@ -62,7 +78,7 @@ export default defineConfig({
   },
   themeConfig: {
     editLink   : {
-      pattern: 'https://github.com/Jybbs/prose/edit/main/site/:path',
+      pattern: `${REPO_URL}/edit/main/site/:path`,
       text   : 'Suggest an edit to this page'
     },
     footer     : {
@@ -74,7 +90,7 @@ export default defineConfig({
       { text: 'Guide',       link: '/guide/installation', activeMatch: '/guide/'      },
       { text: 'Rules',       link: '/rules/',             activeMatch: '/rules/'      },
       { text: 'Primitives',  link: '/primitives/source',  activeMatch: '/primitives/' },
-      { text: `v${version}`, link: 'https://github.com/Jybbs/prose/releases' }
+      { text: `v${version}`, link: `${REPO_URL}/releases` }
     ],
     outline    : { level: [2, 3] },
     search     : { provider: 'local' },
@@ -99,19 +115,13 @@ export default defineConfig({
       '/primitives/': [
         {
           text : 'Primitives',
-          items: [
-            primLink('Source',          'source'),
-            primLink('Pipeline',        'pipeline'),
-            primLink('BindingAnalysis', 'binding-analysis'),
-            primLink('SuppressionMap',  'suppression-map'),
-            primLink('RuleId',          'rule-id')
-          ]
+          items: Object.entries(PRIMITIVES).map(([slug, label]) => primLink(label, slug))
         }
       ]
     },
     siteTitle  : 'Prose',
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/Jybbs/prose' }
+      { icon: 'github', link: REPO_URL }
     ]
   }
 })

@@ -1,6 +1,6 @@
 <template>
   <div class="not-found">
-    <p class="not-found-kicker">404</p>
+    <Kicker class="not-found-kicker">404</Kicker>
     <h1 class="not-found-headline">A page <em>misaligned</em>.</h1>
     <p class="not-found-body">
       The page you wanted didn't make it through the proof. Try one of the

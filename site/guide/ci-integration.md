@@ -52,7 +52,7 @@ The GitHub Actions annotation form (`--output-format github`) emits [**workflow 
 CI gates compile against the same exit-code matrix the CLI publishes. The [**Installation**](/guide/installation#exit-codes) chapter carries the canonical interactive table. The common CI shape is a single `prose check` step where a non-zero exit fails the gate.
 
 ::: tip Composes with editor squiggles
-The `--output-format json` path drives editor squiggles, while `--output-format github` and `--output-format sarif` drive CI annotations. All three consume the same diagnostic shape with the [**`RuleId`**](/primitives/rule-id) slug carried inside `code`, so a project's CI gate and its editor surface stay in sync without extra translation.
+The `--output-format json` path drives editor squiggles, while `--output-format github` and `--output-format sarif` drive CI annotations. All three consume the same diagnostic shape with the [[rule-id]] slug carried inside `code`, so a project's CI gate and its editor surface stay in sync without extra translation.
 :::
 
 ## Two-Stage Pipeline in CI

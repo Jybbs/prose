@@ -6,13 +6,13 @@
     </summary>
     <div class="rule-motivation-body">
       <div class="rule-motivation-panel">
-        <p class="rule-motivation-kicker">The Problem</p>
+        <Kicker class="rule-motivation-kicker">The Problem</Kicker>
         <div class="rule-motivation-content">
           <slot name="problem" />
         </div>
       </div>
       <div class="rule-motivation-panel rule-motivation-panel-fix">
-        <p class="rule-motivation-kicker">The Fix</p>
+        <Kicker class="rule-motivation-kicker">The Fix</Kicker>
         <div class="rule-motivation-content">
           <slot name="fix" />
         </div>

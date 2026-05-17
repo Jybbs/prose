@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref }                       from 'vue'
+import { inBrowser, onContentUpdated } from 'vitepress'
 
 import { useIsRulePage } from '../../../lib/route'
 
@@ -12,7 +13,7 @@ const isRulePage = useIsRulePage()
 const anchors    = ref<Anchor[]>([])
 
 function collect() {
-  if (!isRulePage.value || typeof document === 'undefined') {
+  if (!isRulePage.value || !inBrowser) {
     anchors.value = []
     return
   }
@@ -26,7 +27,7 @@ function collect() {
     const disclosure = node.closest('details')
     let id           = disclosure?.id
     if (!id && disclosure) {
-      id        = `fixture-${found.length + 1}`
+      id            = `fixture-${found.length + 1}`
       disclosure.id = id
     }
     if (id) found.push({ href: `#${id}`, title })
@@ -34,15 +35,12 @@ function collect() {
   anchors.value = found
 }
 
-onMounted(() => {
-  collect()
-  setTimeout(collect, 120)
-})
+onContentUpdated(collect)
 </script>
 
 <template>
   <div v-if="anchors.length" class="fixture-toc">
-    <p class="fixture-toc-kicker">Examples</p>
+    <Kicker class="fixture-toc-kicker">Examples</Kicker>
     <ul class="fixture-toc-list">
       <li v-for="anchor in anchors" :key="anchor.href">
         <a :href="anchor.href">{{ anchor.title }}</a>

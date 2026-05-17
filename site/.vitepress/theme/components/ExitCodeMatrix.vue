@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
 interface ExitCode {
   code     : number
   detail   : string[]
@@ -56,33 +54,23 @@ const codes: ExitCode[] = [
     ]
   }
 ]
-
-const active = ref<number | null>(null)
-const toggle = (n: number) => { active.value = active.value === n ? null : n }
 </script>
 
 <template>
   <div class="exit-codes">
-    <div
-      v-for="row in codes"
-      :key="row.code"
-      :class="['exit-code-row', { active: active === row.code }]"
-      role="button"
-      tabindex="0"
-      @click="toggle(row.code)"
-      @keydown.enter="toggle(row.code)"
-      @keydown.space.prevent="toggle(row.code)"
-    >
-      <div class="exit-code-number">{{ row.code }}</div>
-      <div class="exit-code-body">
-        <div class="exit-code-label">{{ row.label }}</div>
-        <p class="exit-code-summary">{{ row.summary }}</p>
-        <div v-if="active === row.code" class="exit-code-detail">
-          <ul>
-            <li v-for="(line, idx) in row.detail" :key="idx">{{ line }}</li>
-          </ul>
+    <details v-for="row in codes" :key="row.code" name="exit-code" class="exit-code-row">
+      <summary class="exit-code-row-summary">
+        <div class="exit-code-number">{{ row.code }}</div>
+        <div class="exit-code-body">
+          <div class="exit-code-label">{{ row.label }}</div>
+          <p class="exit-code-summary">{{ row.summary }}</p>
         </div>
+      </summary>
+      <div class="exit-code-detail">
+        <ul>
+          <li v-for="(line, idx) in row.detail" :key="idx">{{ line }}</li>
+        </ul>
       </div>
-    </div>
+    </details>
   </div>
 </template>

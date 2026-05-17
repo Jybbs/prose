@@ -1,27 +1,26 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vitepress'
+import { PRIMITIVES, type PrimitiveSlug } from '../../lib/primitives'
+import { useCurrentPrimitive }            from '../../lib/route'
 
 interface Node {
-  cx      : number
-  cy      : number
-  label   : string
-  slug    : string
-  width   : number
+  cx    : number
+  cy    : number
+  slug  : PrimitiveSlug
+  width : number
 }
 
 interface Edge {
   d: string
 }
 
-const route = useRoute()
+const currentSlug = useCurrentPrimitive()
 
 const nodes: Node[] = [
-  { slug: 'source',           label: 'Source',          cx: 100, cy: 50,  width: 70  },
-  { slug: 'pipeline',         label: 'Pipeline',        cx: 380, cy: 50,  width: 80  },
-  { slug: 'suppression-map',  label: 'SuppressionMap',  cx: 100, cy: 170, width: 120 },
-  { slug: 'binding-analysis', label: 'BindingAnalysis', cx: 280, cy: 170, width: 130 },
-  { slug: 'rule-id',          label: 'RuleId',          cx: 460, cy: 170, width: 70  }
+  { slug: 'source',           cx: 100, cy: 50,  width: 70  },
+  { slug: 'pipeline',         cx: 380, cy: 50,  width: 80  },
+  { slug: 'suppression-map',  cx: 100, cy: 170, width: 120 },
+  { slug: 'binding-analysis', cx: 280, cy: 170, width: 130 },
+  { slug: 'rule-id',          cx: 460, cy: 170, width: 70  }
 ]
 
 const edges: Edge[] = [
@@ -30,11 +29,6 @@ const edges: Edge[] = [
   { d: 'M120 80 Q220 130, 270 145' },
   { d: 'M390 80 L460 145' }
 ]
-
-const currentSlug = computed(() => {
-  const match = route.path.match(/^\/primitives\/([a-z0-9-]+)(?:\.html)?$/)
-  return match ? match[1] : null
-})
 </script>
 
 <template>
@@ -60,7 +54,7 @@ const currentSlug = computed(() => {
           :x="node.cx"
           :y="node.cy + 4"
           text-anchor="middle"
-        >{{ node.label }}</text>
+        >{{ PRIMITIVES[node.slug] }}</text>
       </g>
     </svg>
   </div>

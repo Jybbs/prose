@@ -1,12 +1,13 @@
 ---
 category: lint
+related : [alphabetize, align-imports, blank-lines]
 ---
 
 # bare-import-allowlist
 
 A handful of packages encourage the namespace-as-import style, where `pandas.DataFrame` and `numpy.linalg.norm` read clearly at every call site because the package name carries genuine information. Most packages don't, and a bare `import requests` followed by `requests.get(...)` four pages later forces the reader to walk back up to the import block. *Bare-import-allowlist* surfaces every off-list bare import as a lint diagnostic, recommending the explicit `from package import name` rewrite, leaving the rewrite itself to a future migration pass that picks up the lint output.
 
-The rule walks every `import` statement in the module, including nested ones inside function bodies, conditional blocks, and class bodies. An entry on the `allow` list preserves the bare form, including its dotted submodules (*`numpy.linalg` inherits the exemption from `numpy`*). When a downstream migration pass acts on the lint output, the rewrite hands off cleanly to the rest of the import surface: [**`alphabetize`**](/rules/alphabetize) sorts the resulting block, [**`align-imports`**](/rules/align-imports) aligns the `import` keyword, and [**`blank-lines`**](/rules/blank-lines) lands the gap between groups. The lint itself is non-rewriting, so the diagnostic surfaces without touching the source.
+The rule walks every `import` statement in the module, including nested ones inside function bodies, conditional blocks, and class bodies. An entry on the `allow` list preserves the bare form, including its dotted submodules (*`numpy.linalg` inherits the exemption from `numpy`*). When a downstream migration pass acts on the lint output, the rewrite hands off cleanly to the rest of the import surface: [[alphabetize]] sorts the resulting block, [[align-imports]] aligns the `import` keyword, and [[blank-lines]] lands the gap between groups. The lint itself is non-rewriting, so the diagnostic surfaces without touching the source.
 
 ## Configuration
 
@@ -41,8 +42,8 @@ Allowlisted packages stay quiet, and everything else surfaces the lint.
 
 The import surface composes with three other rules that each shape a different dimension of the block.
 
-- [**`alphabetize`**](/rules/alphabetize) sorts the imports within each block.
-- [**`align-imports`**](/rules/align-imports) aligns the `import` keyword across `from ... import ...` runs.
-- [**`blank-lines`**](/rules/blank-lines) places the one-blank gap between adjacent bare-import and `from`-import groups.
+- [[alphabetize]] sorts the imports within each block.
+- [[align-imports]] aligns the `import` keyword across `from ... import ...` runs.
+- [[blank-lines]] places the one-blank gap between adjacent bare-import and `from`-import groups.
 
 For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[bare-import-allowlist]` directive.

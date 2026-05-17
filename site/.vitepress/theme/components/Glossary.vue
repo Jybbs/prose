@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
+import { inBrowser } from 'vitepress'
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 
-import { glossary } from '../../lib/glossary'
+import { data as glossary } from '../../data/glossary.data'
 
 const props = defineProps<{ term: string }>()
 
@@ -17,7 +18,7 @@ if (!entry.value) {
 const anchor  = ref<HTMLElement | null>(null)
 const floater = ref<HTMLElement | null>(null)
 const isOpen  = ref(false)
-const timer   = ref<number | null>(null)
+let   timer   : number | null = null
 
 const { floatingStyles } = useFloating(anchor, floater, {
   placement           : 'top',
@@ -26,18 +27,18 @@ const { floatingStyles } = useFloating(anchor, floater, {
 })
 
 function open() {
-  if (timer.value !== null) {
-    clearTimeout(timer.value)
-    timer.value = null
+  if (timer !== null) {
+    clearTimeout(timer)
+    timer = null
   }
   isOpen.value = true
 }
 
 function scheduleClose() {
-  if (timer.value !== null) clearTimeout(timer.value)
-  timer.value = window.setTimeout(() => {
+  if (timer !== null) clearTimeout(timer)
+  timer = window.setTimeout(() => {
     isOpen.value = false
-    timer.value  = null
+    timer        = null
   }, 140)
 }
 
@@ -46,21 +47,11 @@ function toggle() {
   else              open()
 }
 
-function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    isOpen.value = false
-  }
-}
-
-watch(isOpen, value => {
-  if (typeof document === 'undefined') return
-  if (value) document.addEventListener('keydown', onKeydown)
-  else       document.removeEventListener('keydown', onKeydown)
-})
-
-onUnmounted(() => {
-  if (typeof document !== 'undefined') document.removeEventListener('keydown', onKeydown)
-  if (timer.value !== null)            clearTimeout(timer.value)
+watchEffect(onCleanup => {
+  if (!inBrowser || !isOpen.value) return
+  const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') isOpen.value = false }
+  document.addEventListener('keydown', handler)
+  onCleanup(() => document.removeEventListener('keydown', handler))
 })
 </script>
 
@@ -89,7 +80,7 @@ onUnmounted(() => {
     >
       <span class="glossary-tooltip-title">{{ term }}</span>
       <span class="glossary-tooltip-divider" aria-hidden="true" />
-      <span class="glossary-tooltip-body" v-html="entry?.definition" />
+      <span class="glossary-tooltip-body" v-html="entry?.definitionHtml" />
       <a
         v-if="entry?.href"
         :href="entry.href"

@@ -1,6 +1,6 @@
 # SuppressionMap
 
-Every source file in *Prose* gets a one-time scan for suppression directives during [**`Source`**](/primitives/source) construction, and the result lands in a *SuppressionMap*. The map indexes `# fmt: off` / `# fmt: on` block spans, `# fmt: skip` line markers, the `# yapf: disable` / `# yapf: enable` aliases, and `# prose: ignore[...]` per-line lint directives. The [**`Pipeline`**](/primitives/pipeline) consults the map at the edit-emission boundary, dropping suppressed edits and lint diagnostics before they surface to the caller.
+Every source file in *Prose* gets a one-time scan for suppression directives during [[source]] construction, and the result lands in a *SuppressionMap*. The map indexes `# fmt: off` / `# fmt: on` block spans, `# fmt: skip` line markers, the `# yapf: disable` / `# yapf: enable` aliases, and `# prose: ignore[...]` per-line lint directives. The [[pipeline]] consults the map at the edit-emission boundary, dropping suppressed edits and lint diagnostics before they surface to the caller.
 
 <DependencyGraph />
 
@@ -11,7 +11,7 @@ The *SuppressionMap* type itself is `pub(crate)` in `0.2.x`, so neither the type
 A downstream consumer in `0.2.x` interacts with suppression through the user-facing surface:
 
 - Source files declare directives inline (*`# fmt: off`, `# fmt: skip`, `# prose: ignore[<rule>]`*).
-- The [**`Pipeline`**](/primitives/pipeline) consumes the directives during `run`.
+- The [[pipeline]] consumes the directives during `run`.
 - Diagnostics and edits affected by suppression silently drop from the returned vectors.
 
 The type stabilizes toward `1.0`, where the lookup methods open up so consumers can introspect suppression spans for downstream tooling (*IDE highlighting of suppressed ranges, lint-coverage reports, suppression audits*).
@@ -26,11 +26,11 @@ For consumers reading this from within the *prose* crate, the map exposes four p
 - `intersects<R: Ranged>(ranged: R) -> bool` returns true when the given range overlaps any `# fmt: off` block or `# fmt: skip` line.
 - `is_lint_suppressed_at(line: OneIndexed, rule: RuleId) -> bool` returns true when the line carries a `# prose: ignore` directive that names the rule (or a bare directive that widens to every rule).
 
-The [**`Source`**](/primitives/source) accessor `suppression_map(&self) -> &SuppressionMap` is also `pub(crate)`. All five entry points open at `1.0`.
+The [[source]] accessor `suppression_map(&self) -> &SuppressionMap` is also `pub(crate)`. All five entry points open at `1.0`.
 
 ## Reuse Pattern
 
-The map is built once per source and handed across rule boundaries by reference. The [**`Pipeline`**](/primitives/pipeline) is the canonical consumer, applying the filter at the edit-emission boundary so downstream rules and final diagnostics both honor the directives. A consumer reusing the suppression surface in a different formatter would build the same map shape and apply the same filter at their own edit-emission boundary.
+The map is built once per source and handed across rule boundaries by reference. The [[pipeline]] is the canonical consumer, applying the filter at the edit-emission boundary so downstream rules and final diagnostics both honor the directives. A consumer reusing the suppression surface in a different formatter would build the same map shape and apply the same filter at their own edit-emission boundary.
 
 ## Re-Using This Primitive
 
@@ -46,8 +46,8 @@ In `0.2.x` the consumption path is indirect (*through suppressed-diagnostics beh
 ## Related
 
 - The [**Suppression**](/guide/suppression) chapter walks the directives the map indexes, with the syntax for block markers, line markers, and lint directives.
-- [**`Source`**](/primitives/source) owns the map and consults it on behalf of consuming rules.
-- [**`Pipeline`**](/primitives/pipeline) consults the map at the edit-emission boundary, dropping suppressed entries before they surface.
-- [**`RuleId`**](/primitives/rule-id) is the handle that lint directives reference inside the `# prose: ignore[<slug>]` syntax.
+- [[source]] owns the map and consults it on behalf of consuming rules.
+- [[pipeline]] consults the map at the edit-emission boundary, dropping suppressed entries before they surface.
+- [[rule-id]] is the handle that lint directives reference inside the `# prose: ignore[<slug>]` syntax.
 
 For the rule catalog that may emit suppressed diagnostics, the [**Rules Overview**](/rules/) page walks every shipped rule by category.

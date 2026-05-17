@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useCurrentRule } from '../../../lib/route'
+import { CATEGORY_META }   from '../../../lib/categories'
+import { useCurrentRule }  from '../../../lib/route'
 
-const rule  = useCurrentRule()
-const badge = computed(() => rule.value?.category === 'lint' ? '🧶' : '🪜')
-const label = computed(() => rule.value?.category === 'lint' ? 'Lint' : 'Auto-Fix')
+const rule = useCurrentRule()
+const meta = computed(() => rule.value && CATEGORY_META[rule.value.category])
 </script>
 
 <template>
-  <div v-if="rule" :class="['category-chip', `category-chip-${rule.category}`]">
-    <span class="category-chip-badge" aria-hidden="true">{{ badge }}</span>
-    <span class="category-chip-label">{{ label }}</span>
+  <div v-if="rule && meta" :data-category="rule.category" class="category-chip">
+    <span class="category-chip-badge" aria-hidden="true">{{ meta.badge }}</span>
+    <span class="category-chip-label">{{ meta.label }}</span>
   </div>
 </template>

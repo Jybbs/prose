@@ -1,21 +1,28 @@
 import { computed, type ComputedRef } from 'vue'
-import { useRoute } from 'vitepress'
+import { useData } from 'vitepress'
 
-import { data as rules } from '../data/rules.data'
-import type { DiscoveredRule } from './rules'
+import { data as rules, type DiscoveredRule } from '../data/rules.data'
 
-const RULE_PATH_PATTERN = /^\/rules\/([a-z0-9-]+)(?:\.html)?$/
+function slugForPrefix(relativePath: string, prefix: string): string | null {
+  const start = `${prefix}/`
+  if (!relativePath.startsWith(start)) return null
+  const slug = relativePath.slice(start.length).replace(/\.md$/, '')
+  return slug && slug !== 'index' ? slug : null
+}
+
+function useSlug(prefix: string): ComputedRef<string | null> {
+  const { page } = useData()
+  return computed(() => slugForPrefix(page.value.relativePath, prefix))
+}
 
 export function useCurrentRule(): ComputedRef<DiscoveredRule | null> {
-  const route = useRoute()
-  return computed(() => {
-    const match = route.path.match(RULE_PATH_PATTERN)
-    if (!match) return null
-    return rules.find(r => r.slug === match[1]) ?? null
-  })
+  const slug = useSlug('rules')
+  return computed(() => rules.find(r => r.slug === slug.value) ?? null)
 }
 
 export function useIsRulePage(): ComputedRef<boolean> {
-  const route = useRoute()
-  return computed(() => RULE_PATH_PATTERN.test(route.path))
+  const slug = useSlug('rules')
+  return computed(() => slug.value !== null)
 }
+
+export const useCurrentPrimitive = (): ComputedRef<string | null> => useSlug('primitives')

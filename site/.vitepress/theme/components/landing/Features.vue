@@ -38,11 +38,9 @@ const features: Feature[] = [
 
 <template>
   <div class="landing-section landing-menu">
-    <div class="landing-section-heading centered">
-      <p class="landing-kicker">The Surfaces</p>
-      <h2>Three rule families. Eighteen rules.</h2>
+    <SectionHeading kicker="The Surfaces" heading="Three rule families. Eighteen rules." centered>
       <a href="/rules/" class="landing-small-button">All rules</a>
-    </div>
+    </SectionHeading>
     <div class="landing-feature-grid">
       <a v-for="feature in features" :key="feature.title" :href="feature.link" class="landing-feature-card">
         <span class="card-number">— {{ feature.number }}</span>

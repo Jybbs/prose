@@ -36,10 +36,7 @@ const steps: Step[] = [
 
 <template>
   <div class="landing-section landing-quickstart">
-    <div class="landing-section-heading centered">
-      <p class="landing-kicker">The Workflow</p>
-      <h2>Four lines from install to running.</h2>
-    </div>
+    <SectionHeading kicker="The Workflow" heading="Four lines from install to running." centered />
     <div class="landing-workflow-grid">
       <div v-for="step in steps" :key="step.number" class="workflow-step">
         <span class="step-number">— {{ step.number }}</span>

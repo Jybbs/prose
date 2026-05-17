@@ -4,12 +4,13 @@ import path from 'node:path'
 import { codeToHtml }   from 'shiki'
 import { defineLoader } from 'vitepress'
 
-import { repoRoot } from '../lib/paths'
+import { walkFixtures, INPUT_SUFFIX, FIXTURES_DIR, SNAPSHOTS_DIR } from '../lib/fixtures'
+import { repoRoot }     from '../lib/paths'
+import { SHIKI_THEMES } from '../lib/shiki'
 
 const root          = repoRoot(import.meta.url)
-const fixturesRoot  = path.join(root, 'tests/fixtures')
-const snapshotsRoot = path.join(root, 'tests/snapshots')
-const INPUT_SUFFIX  = '.input.py'
+const fixturesRoot  = path.join(root, FIXTURES_DIR)
+const snapshotsRoot = path.join(root, SNAPSHOTS_DIR)
 
 export interface FixtureEntry {
   input      : string
@@ -30,23 +31,17 @@ export default defineLoader({
   ],
   async load(): Promise<FixtureData> {
     const out: FixtureData = {}
-    for (const rule of fs.readdirSync(fixturesRoot).sort()) {
-      const ruleDir = path.join(fixturesRoot, rule)
-      if (!fs.statSync(ruleDir).isDirectory()) continue
-      for (const file of fs.readdirSync(ruleDir).sort()) {
-        if (!file.endsWith(INPUT_SUFFIX)) continue
-        const caseName = file.slice(0, -INPUT_SUFFIX.length)
-        const snapPath = path.join(snapshotsRoot, rule, `${caseName}${INPUT_SUFFIX}.snap`)
-        if (!fs.existsSync(snapPath)) continue
-        const input  = fs.readFileSync(path.join(ruleDir, file), 'utf8')
-        const output = stripInstaHeader(fs.readFileSync(snapPath, 'utf8'))
-        const [inputHtml, outputHtml] = await Promise.all([
-          highlight(input),
-          highlight(output)
-        ])
-        out[rule] ??= {}
-        out[rule][caseName] = { input, inputHtml, output, outputHtml }
-      }
+    for (const { rule, caseName, inputPath } of walkFixtures(root)) {
+      const snapPath = path.join(snapshotsRoot, rule, `${caseName}${INPUT_SUFFIX}.snap`)
+      if (!fs.existsSync(snapPath)) continue
+      const input  = fs.readFileSync(inputPath, 'utf8')
+      const output = stripInstaHeader(fs.readFileSync(snapPath, 'utf8'))
+      const [inputHtml, outputHtml] = await Promise.all([
+        highlight(input),
+        highlight(output)
+      ])
+      out[rule] ??= {}
+      out[rule][caseName] = { input, inputHtml, output, outputHtml }
     }
     return out
   }
@@ -55,7 +50,7 @@ export default defineLoader({
 async function highlight(code: string): Promise<string> {
   return codeToHtml(code, {
     lang  : 'python',
-    themes: { light: 'github-light', dark: 'github-dark' }
+    themes: SHIKI_THEMES
   })
 }
 

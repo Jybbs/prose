@@ -26,7 +26,7 @@ data = {"a": 1, "b": 2, "c": 3}  # fmt: skip
 
 ## Lint Directives
 
-Lint diagnostics (*[**`legacy-union-syntax`**](/rules/legacy-union-syntax), [**`loose-constants`**](/rules/loose-constants), [**`no-step-narration`**](/rules/no-step-narration), [**`single-use-variables`**](/rules/single-use-variables)*) opt out per line through `# prose: ignore[<rule>]`:
+Lint diagnostics (*[[legacy-union-syntax]], [[loose-constants]], [[no-step-narration]], [[single-use-variables]]*) opt out per line through `# prose: ignore[<rule>]`:
 
 ```python
 SCREAMING_CONSTANT = 42  # prose: ignore[loose-constants]
@@ -42,7 +42,7 @@ The directive applies only to the line carrying the comment, so to suppress an e
 
 ## Preserve Source Order
 
-Inside a dictionary literal, a `# prose: keep` comment on the opening `{` line tells [**`alphabetize`**](/rules/alphabetize) to leave the entries in their authored order:
+Inside a dictionary literal, a `# prose: keep` comment on the opening `{` line tells [[alphabetize]] to leave the entries in their authored order:
 
 ```python
 config = {  # prose: keep
@@ -58,4 +58,4 @@ The directive is scoped to that one dict and doesn't suppress any other rule. Us
 
 A single line can carry one block marker, one `# fmt: skip`, and one `# prose: ignore[...]` directive. *Prose* parses each independently, so all three surfaces compose without ordering constraints. A bare `# prose: ignore` (*no bracket list*) widens any same-line `# prose: ignore[<rule>]` so every lint on the line stays silent. Two specific directives on the same line union their rule ids. Malformed directives (*unclosed brackets, misspelled keyword, trailing text after `ignore`*) parse as no-ops, surfacing nothing and rewriting nothing.
 
-For the underlying machinery, the [**`SuppressionMap`**](/primitives/suppression-map) primitive walks every source file once during [**`Source`**](/primitives/source) construction and indexes all four directive shapes. The [**`Pipeline`**](/primitives/pipeline) consults the map at the edit-emission boundary, dropping suppressed entries before they surface.
+For the underlying machinery, the [[suppression-map]] primitive walks every source file once during [[source]] construction and indexes all four directive shapes. The [[pipeline]] consults the map at the edit-emission boundary, dropping suppressed entries before they surface.

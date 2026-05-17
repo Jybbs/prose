@@ -11,10 +11,12 @@
   --prose-c-warm                 : #e8c840;
   --prose-c-warm-deep            : #b58c0a;
   --prose-c-warning              : #e0854a;
+  --prose-c-lint                 : var(--prose-c-warm-deep);
 
   --prose-radius                 : 8px;
   --prose-radius-sm              : 4px;
   --prose-radius-action          : 6px;
+  --prose-radius-chip            : 12px;
   --prose-radius-pill            : 22px;
 
   --prose-transition             : 0.15s ease;
@@ -24,9 +26,8 @@
   --prose-kicker-tracking        : 0.14em;
   --prose-kicker-color           : var(--vp-c-text-3);
 
-  --prose-shadow-card            : 0 12px 32px -16px rgba(0, 0, 0, 0.32);
   --prose-shadow-tooltip         : 0 12px 32px -16px rgba(0, 0, 0, 0.32),
-                            0 0 0 1px color-mix(in srgb, var(--vp-c-brand-1) 12%, transparent);
+                                   0 0 0 1px color-mix(in srgb, var(--vp-c-brand-1) 12%, transparent);
 
   --vp-c-brand-1                 : #8a80cb;
   --vp-c-brand-2                 : #a094d7;
@@ -45,16 +46,12 @@
   --vp-button-brand-hover-border : transparent;
 
   --vp-home-hero-name-color      : transparent;
-  --vp-home-hero-name-background : linear-gradient(120deg, #8a80cb 30%, #c49bdb);
+  --vp-home-hero-name-background : linear-gradient(120deg, var(--vp-c-brand-1) 30%, var(--vp-c-brand-3));
 }
 
 /* ─── Shared patterns: kicker, card, action-pill ─── */
 
-.landing-kicker,
-.related-rules-kicker,
-.rule-motivation-kicker,
-.fixture-toc-kicker,
-.not-found-kicker,
+.kicker,
 .vp-doc .custom-block-title,
 .vp-doc th {
   margin         : 0;
@@ -93,21 +90,29 @@
   background    : var(--vp-c-bg-soft);
 }
 
+/* ─── Pill action shape: shared between small + large variants ─── */
+
+.landing-section-heading.centered a,
+.landing-links a,
+.not-found-links a,
+.landing-hero-action {
+  display         : inline-flex;
+  align-items     : center;
+  border          : 1px solid var(--vp-c-divider);
+  text-decoration : none;
+}
+
 .landing-section-heading.centered a,
 .landing-links a,
 .not-found-links a {
-  display         : inline-flex;
-  align-items     : center;
-  min-height      : 38px;
-  padding         : 0 16px;
-  border          : 1px solid var(--vp-c-divider);
-  border-radius   : var(--prose-radius-action);
-  color           : var(--vp-c-text-1);
-  font-family     : var(--vp-font-family-mono);
-  font-size       : 0.72rem;
-  letter-spacing  : 0.08em;
-  text-transform  : uppercase;
-  text-decoration : none;
+  min-height     : 38px;
+  padding        : 0 16px;
+  border-radius  : var(--prose-radius-action);
+  color          : var(--vp-c-text-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.72rem;
+  letter-spacing : 0.08em;
+  text-transform : uppercase;
 }
 
 .landing-section-heading.centered a:hover,
@@ -136,17 +141,37 @@
   --vp-c-brand-2    : #b88dd2;
   --vp-c-brand-3    : #8a80cb;
   --vp-c-brand-soft : rgba(196, 155, 219, 0.16);
+  --prose-c-lint    : var(--prose-c-warm);
+}
+
+/* ─── Local search modal tinting ─── */
+
+:root {
+  --vp-local-search-bg                     : var(--vp-c-bg);
+  --vp-local-search-result-bg              : var(--vp-c-bg-soft);
+  --vp-local-search-result-border          : var(--vp-c-divider);
+  --vp-local-search-result-selected-bg     : color-mix(in srgb, var(--vp-c-brand-1) 14%, var(--vp-c-bg-soft));
+  --vp-local-search-result-selected-border : var(--vp-c-brand-1);
+  --vp-local-search-highlight-bg           : color-mix(in srgb, var(--vp-c-brand-1) 22%, transparent);
+  --vp-local-search-highlight-text         : var(--vp-c-text-1);
+}
+
+/* ─── Chip shape: shared between star-count, rule-chip, category-chip ─── */
+
+.star-count,
+.rule-chip,
+.category-chip {
+  display     : inline-flex;
+  align-items : center;
+  border      : 1px solid var(--vp-c-divider);
+  background  : var(--vp-c-bg-soft);
 }
 
 .star-count {
-  display        : inline-flex;
-  align-items    : center;
   gap            : 4px;
   margin-left    : 6px;
   padding        : 2px 8px;
-  border         : 1px solid var(--vp-c-divider);
-  border-radius  : 12px;
-  background     : var(--vp-c-bg-soft);
+  border-radius  : var(--prose-radius-chip);
   color          : var(--vp-c-text-2);
   font-family    : var(--vp-font-family-mono);
   font-size      : 0.72rem;
@@ -159,13 +184,9 @@
 }
 
 .rule-chip {
-  display         : inline-flex;
-  align-items     : center;
   gap             : 6px;
   padding         : 2px 10px 2px 6px;
-  border          : 1px solid var(--vp-c-divider);
-  border-radius   : 12px;
-  background      : var(--vp-c-bg-soft);
+  border-radius   : var(--prose-radius-chip);
   color           : var(--vp-c-text-1);
   font-size       : 0.85em;
   line-height     : 1.6;
@@ -192,12 +213,8 @@
   border      : none;
 }
 
-.rule-chip-lint .rule-chip-slug {
-  color: var(--prose-c-warm-deep);
-}
-
-.dark .rule-chip-lint .rule-chip-slug {
-  color: var(--prose-c-warm);
+.rule-chip[data-category="lint"] .rule-chip-slug {
+  color: var(--prose-c-lint);
 }
 
 .rule-motivation {
@@ -205,11 +222,15 @@
   overflow : hidden;
 }
 
-.rule-motivation[open] {
+/* ─── Disclosure primitive: shared <details>-styled widget ─── */
+
+.rule-motivation[open],
+.fixture-disclosure[open] {
   border-color: var(--vp-c-brand-1);
 }
 
-.rule-motivation-summary {
+.rule-motivation-summary,
+.fixture-disclosure-summary {
   display     : flex;
   align-items : center;
   gap         : 12px;
@@ -221,15 +242,18 @@
   transition  : background-color var(--prose-transition);
 }
 
-.rule-motivation-summary::-webkit-details-marker {
+.rule-motivation-summary::-webkit-details-marker,
+.fixture-disclosure-summary::-webkit-details-marker {
   display: none;
 }
 
-.rule-motivation-summary:hover {
+.rule-motivation-summary:hover,
+.fixture-disclosure-summary:hover {
   background: color-mix(in srgb, var(--vp-c-brand-1) 6%, transparent);
 }
 
-.rule-motivation-caret {
+.rule-motivation-caret,
+.fixture-disclosure-caret {
   display     : inline-block;
   flex-shrink : 0;
   width       : 14px;
@@ -237,10 +261,10 @@
   font-size   : 1.1rem;
   color       : var(--vp-c-brand-1);
   transition  : transform var(--prose-transition);
-  transform   : rotate(0deg);
 }
 
-.rule-motivation[open] .rule-motivation-caret {
+.rule-motivation[open] .rule-motivation-caret,
+.fixture-disclosure[open] .fixture-disclosure-caret {
   transform: rotate(90deg);
 }
 
@@ -274,6 +298,7 @@
   margin-bottom: 0;
 }
 
+/* Breakpoint at 760px: compact-reading-column collapse (rule-motivation 2-column body). */
 @media (max-width: 760px) {
   .rule-motivation-body {
     grid-template-columns: 1fr;
@@ -302,8 +327,7 @@
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
-  box-shadow    : 0 12px 32px -16px rgba(0, 0, 0, 0.32),
-                 0 0 0 1px color-mix(in srgb, var(--vp-c-brand-1) 12%, transparent);
+  box-shadow    : var(--prose-shadow-tooltip);
   color         : var(--vp-c-text-1);
   font-size     : 0.85rem;
   line-height   : 1.5;
@@ -352,18 +376,6 @@
 
 .glossary-tooltip-link:hover {
   text-decoration: underline;
-}
-
-/* ─── Local search modal tinting ─── */
-
-:root {
-  --vp-local-search-bg                     : var(--vp-c-bg);
-  --vp-local-search-result-bg              : var(--vp-c-bg-soft);
-  --vp-local-search-result-border          : var(--vp-c-divider);
-  --vp-local-search-result-selected-bg     : color-mix(in srgb, var(--vp-c-brand-1) 14%, var(--vp-c-bg-soft));
-  --vp-local-search-result-selected-border : var(--vp-c-brand-1);
-  --vp-local-search-highlight-bg           : color-mix(in srgb, var(--vp-c-brand-1) 22%, transparent);
-  --vp-local-search-highlight-text         : var(--vp-c-text-1);
 }
 
 /* ─── Custom scrollbar ─── */
@@ -500,14 +512,10 @@
 /* ─── Category chip above each rule page ─── */
 
 .category-chip {
-  display        : inline-flex;
-  align-items    : center;
   gap            : 8px;
   margin-bottom  : 16px;
   padding        : 4px 12px 4px 8px;
-  border         : 1px solid var(--vp-c-divider);
   border-radius  : 14px;
-  background     : var(--vp-c-bg-soft);
   font-family    : var(--vp-font-family-mono);
   font-size      : 0.7rem;
   letter-spacing : 0.1em;
@@ -519,18 +527,14 @@
   font-size: 0.95rem;
 }
 
-.category-chip-auto-fix {
+.category-chip[data-category="auto-fix"] {
   border-color : color-mix(in srgb, var(--vp-c-brand-1) 32%, var(--vp-c-divider));
   color        : var(--vp-c-brand-1);
 }
 
-.category-chip-lint {
-  border-color : color-mix(in srgb, var(--prose-c-warm-deep) 28%, var(--vp-c-divider));
-  color        : var(--prose-c-warm-deep);
-}
-
-.dark .category-chip-lint {
-  color: var(--prose-c-warm);
+.category-chip[data-category="lint"] {
+  border-color : color-mix(in srgb, var(--prose-c-lint) 28%, var(--vp-c-divider));
+  color        : var(--prose-c-lint);
 }
 
 /* ─── Custom 404 ─── */
@@ -793,24 +797,32 @@
 }
 
 .exit-code-row {
-  display               : grid;
-  grid-template-columns : 56px 1fr;
-  align-items           : stretch;
-  cursor                : pointer;
-  border-bottom         : 1px solid var(--vp-c-divider);
-  background            : var(--vp-c-bg);
-  transition            : background-color var(--prose-transition);
+  border-bottom : 1px solid var(--vp-c-divider);
+  background    : var(--vp-c-bg);
+  transition    : background-color var(--prose-transition);
 }
 
 .exit-code-row:last-child {
   border-bottom: none;
 }
 
-.exit-code-row:hover {
+.exit-code-row-summary {
+  display               : grid;
+  grid-template-columns : 56px 1fr;
+  align-items           : stretch;
+  cursor                : pointer;
+  list-style            : none;
+}
+
+.exit-code-row-summary::-webkit-details-marker {
+  display: none;
+}
+
+.exit-code-row-summary:hover {
   background: color-mix(in srgb, var(--vp-c-brand-1) 5%, var(--vp-c-bg));
 }
 
-.exit-code-row.active {
+.exit-code-row[open] {
   background: color-mix(in srgb, var(--vp-c-brand-1) 10%, var(--vp-c-bg-soft));
 }
 
@@ -842,15 +854,14 @@
 }
 
 .exit-code-detail {
-  margin      : 8px 0 0;
-  padding-top : 8px;
-  border-top  : 1px dashed var(--vp-c-divider);
-  font-size   : 0.88rem;
-  color       : var(--vp-c-text-2);
+  padding    : 12px 16px;
+  border-top : 1px dashed var(--vp-c-divider);
+  font-size  : 0.88rem;
+  color      : var(--vp-c-text-2);
 }
 
 .exit-code-detail ul {
-  margin  : 4px 0 0;
+  margin  : 0;
   padding : 0 0 0 1.2rem;
 }
 
@@ -941,6 +952,16 @@ kbd, .kbd {
   font-size           : 0.82em;
   color               : var(--vp-c-text-1);
   line-height         : 1;
+}
+
+.kbd-shortcut {
+  display     : inline-flex;
+  align-items : center;
+  gap         : 4px;
+}
+
+.kbd-shortcut kbd + kbd {
+  margin-left: 0;
 }
 
 /* ─── Dependency graph ─── */

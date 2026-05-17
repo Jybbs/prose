@@ -1,5 +1,6 @@
 ---
 category: lint
+related : [loose-constants, single-use-variables]
 ---
 
 # no-step-narration
@@ -38,7 +39,7 @@ A module-level own-line numbered-step comment surfaces the lint.
 
 The lint-only surface composes with the other lints across the same source.
 
-- [**`loose-constants`**](/rules/loose-constants) lints module-level `SCREAMING_CASE` constants that would read better as a structured shape.
-- [**`single-use-variables`**](/rules/single-use-variables) lints function-local bindings assigned and read exactly once.
+- [[loose-constants]] lints module-level `SCREAMING_CASE` constants that would read better as a structured shape.
+- [[single-use-variables]] lints function-local bindings assigned and read exactly once.
 
 For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[no-step-narration]` directive.
