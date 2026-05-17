@@ -21,6 +21,7 @@ use crate::config::{
 use crate::diagnostics::Diagnostic;
 use crate::pipeline::Pipeline;
 use crate::rules::align_colons::AlignColons;
+use crate::rules::align_comparisons::AlignComparisons;
 use crate::rules::align_equals::AlignEquals;
 use crate::rules::align_imports::AlignImports;
 use crate::rules::alphabetize::Alphabetize;
@@ -307,6 +308,7 @@ register_rules! {
     "align-colons":              align_colons:              AlignmentConfig           => AlignColons              => "align consecutive `:` separators",
     "docstring-wrap":            docstring_wrap:            ToggleOnly                => DocstringWrap            => "wrap docstring prose to the configured budget",
     "align-equals":              align_equals:              AlignmentConfig           => AlignEquals              => "align consecutive `=` operators",
+    "align-comparisons":         align_comparisons:         AlignmentConfig           => AlignComparisons         => "align consecutive comparison operators",
     "singleton-rule":            singleton_rule:            ToggleOnly                => SingletonRule            => "drop padding from singleton group",
     "loose-constants":           loose_constants:           LooseConstantsConfig      => LooseConstants           => "consider moving this module-level constant",
     "no-step-narration":         no_step_narration:         ToggleOnly                => NoStepNarration          => "numbered-step comment found. Consider extracting each step as a named function",
