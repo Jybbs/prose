@@ -1,9 +1,11 @@
 """
-A four-parameter method inside a class body trips the count trigger
-and expands at the method's own indent.
+A class method with `self` and four typed parameters trips the count
+trigger and expands at the class-body indent. Pins the walker
+descending into class bodies the same way it descends into top-level
+defs, with the indent derived from the method's own `def` position.
 """
 
 
 class Renderer:
-    def render(self, target, palette, layout):
-        return (self, target, palette, layout)
+    def render(self, target: int, palette: str, layout: tuple[int, int], spread: float):
+        return (self, target, palette, layout, spread)

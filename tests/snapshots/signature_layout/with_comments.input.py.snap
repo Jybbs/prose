@@ -4,25 +4,29 @@ expression: output
 input_file: tests/fixtures/signature_layout/with_comments.input.py
 ---
 """
-Comments between the opening `(` and closing `)` pin the existing
-shape. Both own-line and trailing-line comments anchor each parameter.
+A comment anywhere between `(` and `)` pins the existing shape,
+overriding both count and length triggers. Each pinned signature
+keeps its comment in place rather than getting rewritten around.
+Both own-line and trailing-line comment placements anchor.
 """
 
 
 def own_line_pin(
-    target,
+    target: int,
     # comment between parameters
-    palette,
-    layout,
-    spread,
+    palette: str,
+    layout: tuple[int, int],
+    spread: float,
+    verbose: bool,
 ):
-    return (target, palette, layout, spread)
+    return (target, palette, layout, spread, verbose)
 
 
 def trailing_line_pin(
-    target,
-    palette,  # trailing on a parameter line
-    layout,
-    spread,
+    target: int,
+    palette: str,  # trailing on a parameter line
+    layout: tuple[int, int],
+    spread: float,
+    verbose: bool,
 ):
-    return (target, palette, layout, spread)
+    return (target, palette, layout, spread, verbose)

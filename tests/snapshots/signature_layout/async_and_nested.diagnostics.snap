@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/signature_layout/async_and_nested.input.py
 ---
-signature-layout@129..157
-signature-layout@81..112
+signature-layout@285..365
+signature-layout@382..447

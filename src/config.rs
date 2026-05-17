@@ -222,7 +222,7 @@ impl Default for SignatureLayoutConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            max_inline_params: NonZeroUsize::new(3),
+            max_inline_params: NonZeroUsize::new(4),
         }
     }
 }

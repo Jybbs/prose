@@ -4,19 +4,23 @@ expression: output
 input_file: tests/fixtures/signature_layout/idempotent.input.py
 ---
 """
-Two signatures already at their canonical shape. An inline form with
-two parameters and an expanded form with four.
+Two signatures already at their canonical shape stay untouched. The
+inline form with two parameters fits both thresholds, and the
+expanded form with five parameters trips the count trigger but
+already lands at the rewrite target. Pins the rule's no-op behavior
+on inputs that match either canonical shape.
 """
 
 
-def already_inline(target, palette):
+def already_inline(target: int, palette: str):
     return (target, palette)
 
 
 def already_expanded(
-    target,
-    palette,
-    layout,
-    spread,
+    target: int,
+    palette: str,
+    layout: tuple[int, int],
+    spread: float,
+    verbose: bool,
 ):
-    return (target, palette, layout, spread)
+    return (target, palette, layout, spread, verbose)

@@ -1,8 +1,10 @@
 """
-Five-parameter signature whose inline form fits the line budget. The
-count trigger is disabled via `max-inline-params = false`.
+A five-parameter signature whose inline form fits the line budget
+stays inline when `max-inline-params = false` disables the count
+trigger entirely. Pins line-length as the sole expansion gate under
+the disabled-count configuration.
 """
 
 
-def render(a, b, c, d, e):
-    return (a, b, c, d, e)
+def render(target: int, palette: str, layout: int, spread: float, verbose: bool):
+    return (target, palette, layout, spread, verbose)

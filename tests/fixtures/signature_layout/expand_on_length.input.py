@@ -1,8 +1,9 @@
 """
-Three-parameter signature whose inline form sits well past 88 columns
-even though the count threshold is satisfied.
+A three-parameter signature whose inline form overflows the default
+`code-line-length` of 88 columns pins the length trigger firing
+alone, with the parameter count comfortably under the cap.
 """
 
 
-def render(left_descriptor_for_layout, right_descriptor_for_layout, palette_descriptor_for_layout):
-    return (left_descriptor_for_layout, right_descriptor_for_layout, palette_descriptor_for_layout)
+def render(left_descriptor: LayoutLayer, right_descriptor: LayoutLayer, palette_descriptor: PaletteSpec):
+    return (left_descriptor, right_descriptor, palette_descriptor)
