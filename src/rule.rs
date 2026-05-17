@@ -16,7 +16,7 @@ use thiserror::Error;
 
 use crate::config::{
     AlignmentConfig, BareImportAllowlistConfig, CollectionLayoutConfig, Config,
-    LooseConstantsConfig, SingleUseVariablesConfig, ToggleOnly,
+    LooseConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
 };
 use crate::diagnostics::Diagnostic;
 use crate::pipeline::Pipeline;
@@ -35,6 +35,7 @@ use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::multi_line_docstrings::MultiLineDocstrings;
 use crate::rules::no_single_line_docstrings::NoSingleLineDocstrings;
 use crate::rules::no_step_narration::NoStepNarration;
+use crate::rules::signature_layout::SignatureLayout;
 use crate::rules::single_use_variables::SingleUseVariables;
 use crate::rules::singleton_rule::SingletonRule;
 use crate::rules::strip_trailing_commas::StripTrailingCommas;
@@ -304,6 +305,7 @@ register_rules! {
     "blank-lines":               blank_lines:               ToggleOnly                => BlankLines               => "normalize blank-line spacing",
     "bare-import-allowlist":     bare_import_allowlist:     BareImportAllowlistConfig => BareImportAllowlist      => "flag bare import outside allowlist",
     "match-case-align":          match_case_align:          AlignmentConfig           => MatchCaseAlign           => "align match-case arrows",
+    "signature-layout":          signature_layout:          SignatureLayoutConfig     => SignatureLayout          => "normalize function signature to one-line or one-per-line shape",
     "align-imports":             align_imports:             AlignmentConfig           => AlignImports             => "align consecutive `import`s",
     "align-colons":              align_colons:              AlignmentConfig           => AlignColons              => "align consecutive `:` separators",
     "docstring-wrap":            docstring_wrap:            ToggleOnly                => DocstringWrap            => "wrap docstring prose to the configured budget",
