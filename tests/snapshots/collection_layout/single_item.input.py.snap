@@ -4,10 +4,14 @@ expression: output
 input_file: tests/fixtures/collection_layout/single_item.input.py
 ---
 """
-Single-item and empty literals keep their original inline form
-regardless of line length. `item_count` returns `Some(0)` or
-`Some(1)` for these cases, both of which short-circuit
-`should_expand` ahead of the `code-line-length` check.
+Single-item and empty literals keep their inline form regardless of
+line length. A multi-line single-item literal collapses to its
+canonical inline form, the spec's `SETTINGS = {"default_action":
+"noop"}` case being the most reduced. Empty literals spread across
+multiple lines collapse to their bare-bracket form. A multi-line
+single-item literal whose inline form overflows stays multi-line
+because the rule's expand path only canonicalizes multi-item
+collections.
 """
 
 only_list  = [42]
@@ -15,3 +19,9 @@ only_dict  = {"solitary": 1}
 only_set   = {42}
 empty_list = []
 empty_dict = {}
+collapsing_one_entry_dict = {"default_action": "noop"}
+collapsing_one_item_list = [42]
+collapsing_empty_dict = {}
+oversized_one_entry_dict = {
+    "extremely_long_configuration_key_for_the_settings_table": "a_descriptive_value"
+}

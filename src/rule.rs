@@ -296,7 +296,7 @@ macro_rules! register_rules {
 }
 
 register_rules! {
-    "collection-layout":         collection_layout:         CollectionLayoutConfig    => CollectionLayout         => "expand collection to one entry per line",
+    "collection-layout":         collection_layout:         CollectionLayoutConfig    => CollectionLayout         => "lay out collection literal against the line budget",
     "alphabetize":               alphabetize:               ToggleOnly                => Alphabetize              => "alphabetize this group",
     "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas      => "strip trailing comma",
     "no-single-line-docstrings": no_single_line_docstrings: ToggleOnly                => NoSingleLineDocstrings   => "expand single-line docstring to multi-line form",

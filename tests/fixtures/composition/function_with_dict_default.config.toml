@@ -1,0 +1,2 @@
+[harness]
+rules = ["collection-layout", "align-colons", "signature-layout"]

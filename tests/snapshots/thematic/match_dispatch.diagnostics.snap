@@ -3,15 +3,14 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/match_dispatch.input.py
 ---
-alphabetize@521..760
-blank-lines@438..440
-blank-lines@460..461
-docstring-wrap@67..393
-loose-constants@830..873
-match-case-align@507..508
-match-case-align@600..601
-match-case-align@693..694
-match-case-align@778..784
-singleton-rule@863..864
-strip-trailing-commas@840..841
-strip-trailing-commas@887..888
+alphabetize@531..770
+blank-lines@448..450
+blank-lines@470..471
+collection-layout@820..852
+docstring-wrap@67..437
+loose-constants@840..877
+match-case-align@517..518
+match-case-align@610..611
+match-case-align@703..704
+match-case-align@788..794
+strip-trailing-commas@889..890
