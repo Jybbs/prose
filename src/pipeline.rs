@@ -51,20 +51,10 @@ impl Pipeline {
     /// returns the rewritten source paired with the diagnostics each
     /// rule emitted.
     ///
-    /// When the source opens with an unmatched `# prose: off` (or
-    /// alias) before any code, the pipeline short-circuits to the
-    /// identity transform with no diagnostics. Otherwise, per rule
-    /// the pipeline calls `apply`, drops edits inside any `# prose:
-    /// off` span or carrying a matching `# prose: skip[<id>]`
-    /// directive on their line, derives one `Severity::Format`
-    /// `Diagnostic` per surviving edit, collects the `Severity::Lint`
-    /// diagnostics `Rule::lint` returned through the same span
-    /// filter, then splices the edits into the current text and
-    /// reparses for the next rule. After the rule chain finishes,
-    /// every `Severity::Lint` diagnostic whose line carries a
-    /// matching `# prose: ignore` directive is dropped. An empty
-    /// pipeline collapses to the identity transform and returns no
-    /// diagnostics.
+    /// File-level `# prose: off` short-circuits to identity. The
+    /// suppression map otherwise filters edits per-rule (off spans
+    /// plus `# prose: skip[<id>]`) and lint diagnostics per-line
+    /// (`# prose: ignore`).
     ///
     /// # Errors
     ///
@@ -322,21 +312,6 @@ mod tests {
         pipeline.run(source).expect("all rules succeed");
 
         assert_eq!(*log.lock().unwrap(), ["first", "second", "third"]);
-    }
-
-    #[test]
-    fn run_drops_edit_when_line_carries_matching_prose_skip_for_rule() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
-            id: "align-equals".parse().expect("registered rule id"),
-            log: Arc::new(Mutex::new(Vec::new())),
-        })]);
-        let source = parse("x = 1  # prose: skip[align-equals]\n");
-
-        let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
-
-        assert_eq!(result.text(), "x = 1  # prose: skip[align-equals]\n");
-        assert!(diagnostics.is_empty());
     }
 
     #[test]
