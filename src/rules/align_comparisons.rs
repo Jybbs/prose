@@ -97,14 +97,12 @@ impl Walker<'_> {
         let compare = operand.as_compare_expr()?;
         let op = *compare.ops.first()?;
         let comparator = compare.comparators.first()?;
-        let kind = cmp_op_anchor_token_kind(op);
-        let op_width = op.as_str().len();
         let member = aligner::line_anchored_member_at_kind(
             self.source,
             TextRange::new(compare.left.end(), comparator.start()),
-            kind,
+            cmp_op_anchor_token_kind(op),
         )?;
-        Some(member.with_op_width(op_width))
+        Some(member.with_op_width(op.as_str().len()))
     }
 }
 
@@ -127,8 +125,7 @@ fn cmp_op_anchor_token_kind(op: CmpOp) -> TokenKind {
         CmpOp::Gt => TokenKind::Greater,
         CmpOp::GtE => TokenKind::GreaterEqual,
         CmpOp::In => TokenKind::In,
-        CmpOp::Is => TokenKind::Is,
-        CmpOp::IsNot => TokenKind::Is,
+        CmpOp::Is | CmpOp::IsNot => TokenKind::Is,
         CmpOp::Lt => TokenKind::Less,
         CmpOp::LtE => TokenKind::LessEqual,
         CmpOp::NotEq => TokenKind::NotEqual,

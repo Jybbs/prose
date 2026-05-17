@@ -92,7 +92,7 @@ pub(crate) fn emit_group(
         .fold((first.width, first.width), |(mn, mx), m| {
             (mn.min(m.width), mx.max(m.width))
         });
-    let max_op_w = members.iter().map(|m| m.op_width).max().unwrap_or(0);
+    let max_op_w = max_op_width(members);
     if max_w - min_w <= settings.max_shift {
         let suffix = if members.len() == 1 && settings.strip_singleton_subgroup {
             0
@@ -279,8 +279,7 @@ fn emit_drop(source: &Source, members: &[Member], settings: Settings, edits: &mu
         return;
     }
     let max_w = kept.last().expect("kept non-empty").width;
-    let max_op_w = kept.iter().map(|m| m.op_width).max().unwrap_or(0);
-    emit_with_paddings(source, kept, max_w, max_op_w, 1, edits);
+    emit_with_paddings(source, kept, max_w, max_op_width(kept), 1, edits);
 }
 
 /// Partitions greedily into sub-groups capped at `settings.max_shift`
@@ -302,8 +301,7 @@ fn emit_split(source: &Source, members: &[Member], settings: Settings, edits: &m
             (None, 1) if settings.strip_singleton_subgroup => (sub[0].width, 0),
             (None, _) => (sub_max_w, 1),
         };
-        let max_op_w = sub.iter().map(|m| m.op_width).max().unwrap_or(0);
-        emit_with_paddings(source, sub, max_w, max_op_w, suffix, edits);
+        emit_with_paddings(source, sub, max_w, max_op_width(sub), suffix, edits);
     }
 }
 
@@ -333,6 +331,12 @@ fn emit_with_paddings(
 /// Returns the half-open `(start, end, max_width)` sub-group ranges
 /// into `members` produced by greedily extending each sub-group while
 /// the running `max_width - min_width` stays at or below `max_shift`.
+/// Returns the widest `op_width` in `members`, or `0` when the slice
+/// is empty.
+fn max_op_width(members: &[Member]) -> usize {
+    members.iter().map(|m| m.op_width).max().unwrap_or(0)
+}
+
 fn partition_by_spread(members: &[Member], max_shift: usize) -> Vec<(usize, usize, usize)> {
     let mut subs = Vec::new();
     let mut cursor = 0;
