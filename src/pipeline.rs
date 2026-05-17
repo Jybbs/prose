@@ -16,18 +16,12 @@ use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
 /// Ordered sequence of enabled rules, run against each source file.
-///
-/// Use [`Pipeline::with_defaults`] to build one from a loaded
-/// [`crate::config::Config`], [`Pipeline::for_rule`] to register
-/// exactly one rule by name, or [`Pipeline::empty`] for a pipeline
-/// with no rules.
 pub struct Pipeline {
     rules: Vec<Box<dyn Rule>>,
 }
 
 impl Pipeline {
-    /// Constructs a pipeline that performs no rewrites. Useful for
-    /// callers that need a `Pipeline` value but no rules to run.
+    /// Constructs a pipeline that performs no rewrites.
     pub fn empty() -> Self {
         Self { rules: Vec::new() }
     }
@@ -46,9 +40,8 @@ impl Pipeline {
         self.rules.len()
     }
 
-    /// Returns every registered rule's id in a stable order. Useful
-    /// for CLI `--select` / `--ignore` validation and for rule
-    /// listings. Surfaces the same registry that
+    /// Returns every registered rule's id in a stable order.
+    /// Surfaces the same registry that
     /// [`RuleId::from_str`](crate::rule::RuleId) consults.
     pub fn known_ids() -> &'static [RuleId] {
         crate::rule::KNOWN_IDS
@@ -76,8 +69,7 @@ impl Pipeline {
     /// # Errors
     ///
     /// Returns `PipelineError::Reparse` when a rule's edit list
-    /// produces text that does not re-parse as Python. This surfaces
-    /// rule bugs rather than silently swallowing them.
+    /// produces text that does not re-parse as Python.
     pub fn run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
         if source.suppression_map().file_is_suppressed() {
             return Ok((source, Vec::new()));
