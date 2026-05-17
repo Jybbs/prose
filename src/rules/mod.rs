@@ -4,6 +4,7 @@
 //! declared here as they come online.
 
 pub(crate) mod align_colons;
+pub(crate) mod align_comparisons;
 pub(crate) mod align_equals;
 pub(crate) mod align_imports;
 pub(crate) mod alphabetize;

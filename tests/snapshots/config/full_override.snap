@@ -70,6 +70,11 @@ Config {
             max_shift: 8,
             max_shift_policy: Split,
         },
+        align_comparisons: AlignmentConfig {
+            enabled: true,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
         singleton_rule: ToggleOnly {
             enabled: false,
         },

@@ -409,6 +409,7 @@ mod tests {
     fn with_defaults_respects_rule_toggles() {
         let mut config = Config::default();
         config.rules.align_colons.enabled = false;
+        config.rules.align_comparisons.enabled = false;
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.alphabetize.enabled = false;
@@ -455,6 +456,7 @@ mod tests {
     fn with_filters_select_overrides_disabled_config() {
         let mut config = Config::default();
         config.rules.align_colons.enabled = false;
+        config.rules.align_comparisons.enabled = false;
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.alphabetize.enabled = false;
