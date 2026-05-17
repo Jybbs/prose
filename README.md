@@ -377,43 +377,34 @@ cd prose
 mise install
 ```
 
-`mise install` provisions:
+`mise install` provisions the base toolchain:
 
 | Tool | Purpose |
 |---|---|
-| `cargo-insta` | Snapshot test review |
 | `maturin` | Rust → Python wheel builder |
 | `python` (3.14) | Python interpreter for wheel builds |
 | `rust` (stable) | Rust toolchain via rustup |
 | `uv` | Python package and venv manager |
 
-### Daily Workflow
+Additional task-scoped tools (*`cargo-insta`, `cargo-machete`, `cargo-llvm-cov`, `codecov-cli`*) install on demand when their owning task first runs, so no second provisioning step is required.
 
-Tasks are defined in `mise.toml` and discoverable via `mise tasks`:
+### Tasks
+
+Tasks live in `mise.toml`. GitHub Actions drives most of them across the CI workflows that gate every push and pull request, so what passes locally with `mise ci` mirrors what runs upstream. The same tasks are available locally for reproducing a failed CI step, accepting snapshot updates after a fixture change, or running an individual check during iteration. List them with `mise tasks`.
 
 | Command | What it does |
 |---|---|
+| `mise audit` | Detect unused dependencies via `cargo machete` |
 | `mise build` | Compile in debug mode |
 | `mise check` | Verify Rust source matches `rustfmt` without rewriting |
-| `mise ci` | Lint + test + wheel (full local sweep) |
+| `mise ci` | Full local sweep: `audit`, `check`, `lint`, `test`, `wheel` |
+| `mise coverage` | Generate an LCOV coverage report at `target/lcov.info` |
 | `mise format` | Format Rust source with `rustfmt` |
 | `mise lint` | Run `clippy` with all warnings as errors |
-| `mise review` | Interactively accept pending snapshot diffs |
+| `mise readme` | Rewrite `README.md` in place to absolute URLs for PyPI |
+| `mise review` | Interactively review pending snapshot diffs |
 | `mise test` | Run all tests including `insta` snapshots |
-| `mise wheel` | Build the wheel and install into `.venv` |
+| `mise upload` | Generate the coverage report and upload it to Codecov |
+| `mise wheel` | Build the `maturin` wheel into the active virtualenv |
 
-### Editor
-
-<details>
-<summary>VSCode</summary>
-
-Install [`rust-analyzer`](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) and [`Even Better TOML`](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml). The `rust-analyzer` extension bundles its own language server, so it works without additional global Rust installs.
-
-Suggested user settings (*apply to any Rust project*):
-
-```json
-"rust-analyzer.check.command": "clippy",
-"rust-analyzer.imports.granularity.group": "module"
-```
-
-</details>
+A common iteration flow on a rule or fixture is to edit, run `mise test`, accept any snapshot diffs with `mise review`, then run `mise ci` before pushing.

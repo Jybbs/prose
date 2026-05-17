@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/docstring_args_rewrap_old_style.input.py
+---
+align-colons@488..488
+align-colons@646..646
+docstring-wrap@551..617
+docstring-wrap@69..322

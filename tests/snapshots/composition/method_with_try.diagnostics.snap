@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/method_with_try.input.py
+---
+alphabetize@224..486
+blank-lines@206..207
+blank-lines@243..244
+blank-lines@351..352
+blank-lines@425..426

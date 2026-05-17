@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/signature_layout/trailing_def_line_comment.input.py
+---
+signature-layout@271..351

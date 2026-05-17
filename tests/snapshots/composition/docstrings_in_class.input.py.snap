@@ -19,6 +19,7 @@ Rules:
 
 
 class Service:
+
     def alpha(self):
         """
         The alpha entry point.

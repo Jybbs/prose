@@ -10,6 +10,7 @@ between them, regardless of the source's actual count.
 
 
 class Posting:
+
     title = "x"
 
 

@@ -1,0 +1,22 @@
+"""
+Class with methods out of alphabetical order, one of which opens its
+body with a `try`/`except` block. Blank lines between methods are
+missing.
+
+Rules:
+- alphabetize
+- blank_lines
+"""
+
+
+class Validator:
+    def validate_zeta(self, value):
+        return value > 0
+    def validate_alpha(self, value):
+        try:
+            int(value)
+        except ValueError:
+            return False
+        return True
+    def validate_beta(self, value):
+        return isinstance(value, str)

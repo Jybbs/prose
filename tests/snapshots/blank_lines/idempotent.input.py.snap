@@ -5,8 +5,11 @@ input_file: tests/fixtures/blank_lines/idempotent.input.py
 ---
 """
 A module that already carries canonical blank-line spacing round-trips
-unchanged. Two-blank gaps around module-level defs and a one-blank gap
-between methods both satisfy the rule.
+unchanged. The fixture covers each canonical pair the rule emits: a
+two-blank gap around module-level defs, a one-blank gap between methods,
+a one-blank cushion between class header and first non-docstring member,
+a zero-blank gap between class header and a first-member docstring, and
+a one-blank gap between a function header and a compound-body opener.
 """
 
 
@@ -15,6 +18,10 @@ def alpha():
 
 
 class Posting:
+    """
+    Class docstring binds to the class header with no blank line.
+    """
+
     def first(self):
         return 1
 
@@ -22,5 +29,16 @@ class Posting:
         return 2
 
 
-def beta():
-    return 2
+class Sized:
+
+    capacity: int = 0
+
+    def grow(self):
+        self.capacity += 1
+
+
+def beta(value):
+
+    match value:
+        case _:
+            return value

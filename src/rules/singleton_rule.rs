@@ -86,11 +86,13 @@ mod tests {
             aligner::Member {
                 gap: TextRange::new(TextSize::new(2), TextSize::new(2)),
                 line_start: TextSize::new(0),
+                op_width: 0,
                 width: 2,
             },
             aligner::Member {
                 gap: TextRange::new(TextSize::new(8), TextSize::new(8)),
                 line_start: TextSize::new(6),
+                op_width: 0,
                 width: 2,
             },
         ];
@@ -102,6 +104,7 @@ mod tests {
         let member = aligner::Member {
             gap: TextRange::new(TextSize::new(0), TextSize::new(0)),
             line_start: TextSize::new(0),
+            op_width: 0,
             width: 0,
         };
         assert!(run_strip(&[member]).is_empty());
@@ -112,6 +115,7 @@ mod tests {
         let member = aligner::Member {
             gap: TextRange::new(TextSize::new(0), TextSize::new(4)),
             line_start: TextSize::new(0),
+            op_width: 0,
             width: 0,
         };
         assert!(run_strip(&[member]).is_empty());
@@ -123,11 +127,13 @@ mod tests {
             aligner::Member {
                 gap: TextRange::new(TextSize::new(3), TextSize::new(5)),
                 line_start: TextSize::new(0),
+                op_width: 0,
                 width: 3,
             },
             aligner::Member {
                 gap: TextRange::new(TextSize::new(8), TextSize::new(10)),
                 line_start: TextSize::new(0),
+                op_width: 0,
                 width: 5,
             },
         ];
@@ -139,6 +145,7 @@ mod tests {
         let member = aligner::Member {
             gap: TextRange::new(TextSize::new(3), TextSize::new(5)),
             line_start: TextSize::new(0),
+            op_width: 0,
             width: 3,
         };
         let edits = run_strip(&[member]);

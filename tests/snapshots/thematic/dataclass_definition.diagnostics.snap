@@ -3,15 +3,17 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/dataclass_definition.input.py
 ---
-align-colons@476..476
-align-colons@505..505
-align-colons@529..529
-align-colons@555..555
-align-colons@578..578
-align-equals@486..487
-align-equals@516..517
-align-equals@543..544
-align-equals@600..601
+align-colons@477..477
+align-colons@506..506
+align-colons@530..530
+align-colons@556..556
+align-colons@579..579
+align-equals@487..488
+align-equals@517..518
+align-equals@544..545
+align-equals@601..602
 alphabetize@469..595
+blank-lines@464..465
+blank-lines@596..597
 docstring-wrap@69..378
 no-single-line-docstrings@631..661
