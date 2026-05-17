@@ -13,7 +13,9 @@ def alpha():
 
 
 class Posting:
-    '''Class docstring binds to the class header with no blank line.'''
+    """
+    Class docstring binds to the class header with no blank line.
+    """
 
     def first(self):
         return 1

@@ -7,7 +7,9 @@ member, per the existing docstring-predecessor canonical.
 
 
 class Bound:
-    """The class docstring sits flush against the header line."""
+    """
+    The class docstring sits flush against the header line.
+    """
 
     def follow_up(self):
         return self
