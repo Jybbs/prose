@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/thematic/align_padded_dict_collapses.input.py
+---
+collection-layout@456..508
+docstring-wrap@58..390

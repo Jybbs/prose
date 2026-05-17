@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/collection_layout/dict_literal.input.py
 ---
-collection-layout@589..669
-collection-layout@692..722
-collection-layout@743..790
+collection-layout@381..461
+collection-layout@484..514
+collection-layout@535..582

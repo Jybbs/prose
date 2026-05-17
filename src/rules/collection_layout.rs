@@ -12,7 +12,7 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_dotted_name;
 use ruff_python_ast::token::parenthesized_range;
 use ruff_python_ast::visitor::{walk_expr, Visitor};
-use ruff_python_ast::{AnyNodeRef, DictItem, Expr};
+use ruff_python_ast::{AnyNodeRef, DictItem, Expr, ExprDict};
 use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
@@ -266,18 +266,10 @@ impl<'a> Layouter<'a> {
     }
 
     /// Serializes `expr` into a child slot of an enclosing expand.
-    /// Dispatches through `replacement_for`, so a multi-line child
-    /// whose inline form fits collapses, a single-line child that
-    /// overflows expands, and anything else passes through as a
-    /// borrowed source slice with explicit parentheses recovered.
-    ///
-    /// `column` is where the expression actually begins on its line.
-    /// `indent` is where its closing bracket should land if it
-    /// expands. They differ for dict values, where the key text sits
-    /// between the line indent and the value's own starting column.
-    /// `parent` is the immediate enclosing collection, used to
-    /// recover any explicit parentheses around `expr` that
-    /// `expr.range()` would otherwise drop.
+    /// Dispatches through `replacement_for`, falling back to a
+    /// paren-recovered source slice when no rewrite applies.
+    /// `column` and `indent` differ for dict values, where the key
+    /// text sits between the line indent and the value's own start.
     fn serialize_expr(
         &self,
         expr: &Expr,
@@ -307,22 +299,7 @@ impl<'a> Layouter<'a> {
     fn write_inline(&self, buf: &mut String, expr: &Expr, parent: AnyNodeRef) {
         let here = AnyNodeRef::from(expr);
         match expr {
-            Expr::Dict(d) => {
-                buf.push('{');
-                for (i, item) in d.iter().enumerate() {
-                    if i > 0 {
-                        buf.push_str(", ");
-                    }
-                    if let Some(key) = &item.key {
-                        self.write_inline(buf, key, here);
-                        buf.push_str(": ");
-                    } else {
-                        buf.push_str("**");
-                    }
-                    self.write_inline(buf, &item.value, here);
-                }
-                buf.push('}');
-            }
+            Expr::Dict(d) => self.write_inline_dict(buf, d, here),
             Expr::List(l) => self.write_inline_seq(buf, Some(('[', ']')), &l.elts, here, false),
             Expr::Set(s) => self.write_inline_seq(buf, Some(('{', '}')), &s.elts, here, false),
             Expr::Tuple(t) => {
@@ -331,6 +308,28 @@ impl<'a> Layouter<'a> {
             }
             _ => buf.push_str(self.slice_with_parens(expr, parent)),
         }
+    }
+
+    /// Writes `d`'s inline serialization into `buf` as `{k: v, ...}`,
+    /// emitting `**v` for `None`-keyed unpacking items. `parent` is
+    /// the dict itself, threaded into each child's `write_inline` for
+    /// paren recovery on non-collection leaves.
+    fn write_inline_dict(&self, buf: &mut String, d: &ExprDict, parent: AnyNodeRef) {
+        buf.push('{');
+        for (i, item) in d.iter().enumerate() {
+            if i > 0 {
+                buf.push_str(", ");
+            }
+            match &item.key {
+                Some(key) => {
+                    self.write_inline(buf, key, parent);
+                    buf.push_str(": ");
+                }
+                None => buf.push_str("**"),
+            }
+            self.write_inline(buf, &item.value, parent);
+        }
+        buf.push('}');
     }
 
     /// Writes `elts` joined by `", "` into `buf`, optionally wrapped

@@ -1,14 +1,10 @@
 """
-Nested collections expand independently. A qualifying child serializes
-through the parent's `expand` when the parent also qualifies. A
-qualifying child inside a non-qualifying parent expands via `walk_expr`
-falling through into the parent's descendants. Each child's
-`code-line-length` check uses its own column, including the key-offset for
-dict values, so tiered structures expand level-by-level only where
-the inline form would overflow. Nesting precedence on collapse runs
-outermost-first: when an outer multi-line literal fits inline its
-inner literals move with it, and when the outer is pinned by its own
-width the inner runs its collapse decision against its own column.
+Nested collections each run their own layout decision at their own
+column position. An outer literal's rewrite drags its inners along,
+whereas a pinned outer leaves each inner to its own pass. Dict-value
+nesting includes the key-text offset in the inner's column, so a
+long key can push its value past the budget even when the outer
+fits.
 """
 
 cascade = [{"name": "alice_wonderland_the_explorer", "role": "administrator", "email": "alice.wonderland@example-company-domain.com"}, {"name": "bob", "role": "user"}]
