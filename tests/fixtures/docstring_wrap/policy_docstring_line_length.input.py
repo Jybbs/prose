@@ -1,16 +1,14 @@
 """
 A `.config.toml` sidecar flips `docstring-structured-policy` to the
-docstring budget so structured sections wrap at seventy six rather
+docstring budget so non-entry section bodies wrap at seventy six rather
 than the default eighty eight.
 """
 
 
-def configure(name, retries):
+def configure():
     """
     Summary line.
 
-    Args:
-        name: A descriptive name that exceeds the seventy six character docstring budget when the policy selects that budget for structured sections.
-        retries: Number of retry attempts.
+    Note:
+        A long note paragraph that exceeds the seventy six character docstring budget when the policy selects that budget for structured-section bodies.
     """
-    return name, retries
