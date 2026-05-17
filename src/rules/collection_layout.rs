@@ -61,6 +61,17 @@ impl Rule for CollectionLayout {
     }
 }
 
+/// Per-item state collected from a dict, list, or set literal:
+/// serialized text, atomicity for layout dispatch, and source range
+/// for blank-line-preservation lookups.
+struct GatheredItems<'src> {
+    atomics: Vec<bool>,
+    close: char,
+    open: char,
+    ranges: Vec<TextRange>,
+    texts: Vec<Cow<'src, str>>,
+}
+
 struct Layouter<'a> {
     code_line_length: usize,
     edits: Vec<Edit>,
@@ -71,7 +82,7 @@ struct Layouter<'a> {
 
 impl<'a> Layouter<'a> {
     /// Builds the expanded form of `expr` as a string, recursively
-    /// expanding any qualifying child collections.
+    /// laying out any qualifying child collections.
     fn expand(&self, expr: &Expr, indent: usize) -> String {
         let item_indent = indent + INDENT_STEP;
         let GatheredItems {
@@ -186,13 +197,12 @@ impl<'a> Layouter<'a> {
         buf
     }
 
-    /// Returns the replacement text the rule wants to emit for
-    /// `expr`, or `None` when the visitor should descend into its
-    /// children. `column` is where `expr` actually begins; `indent`
-    /// is where its closing bracket should land if it expands. `None`
-    /// covers non-collection nodes, comment-pinned literals,
-    /// single-line literals that fit, and multi-line tuples or
-    /// single-item dict/list/set whose inline form does not fit.
+    /// Returns the canonical rewrite for `expr` against the budget at
+    /// `column`, or `None` when the visitor should descend into its
+    /// children. `indent` is where the closing bracket lands if `expr`
+    /// expands. Emits `Some(inline)` when a multi-line literal's
+    /// inline form fits, `Some(expand)` when a multi-item `Dict`,
+    /// `List`, or `Set`'s rendered width overflows.
     fn replacement_for(&self, expr: &Expr, column: usize, indent: usize) -> Option<String> {
         if !matches!(
             expr,
@@ -224,7 +234,7 @@ impl<'a> Layouter<'a> {
     /// the enclosing dict). The value's actual column for the
     /// `code-line-length` check is offset by the key text plus `": "`, so a
     /// long key that pushes its value past the budget correctly
-    /// triggers expansion of the value. When the value does expand,
+    /// triggers a re-layout of the value. When the value does expand,
     /// its closing bracket still lands at `indent`. When the value
     /// passes through borrowed and the source carries an
     /// `align-colons`-shaped gap (`[ ]*: `), the item's source slice
@@ -334,9 +344,8 @@ impl<'a> Layouter<'a> {
         parent: AnyNodeRef,
         trailing_comma: bool,
     ) {
-        if let Some((open, _)) = brackets {
-            buf.push(open);
-        }
+        let (open, close) = brackets.unzip();
+        buf.extend(open);
         for (i, e) in elts.iter().enumerate() {
             if i > 0 {
                 buf.push_str(", ");
@@ -346,9 +355,7 @@ impl<'a> Layouter<'a> {
         if trailing_comma {
             buf.push(',');
         }
-        if let Some((_, close)) = brackets {
-            buf.push(close);
-        }
+        buf.extend(close);
     }
 }
 
@@ -364,17 +371,6 @@ impl<'a> Visitor<'a> for Layouter<'a> {
             None => walk_expr(self, expr),
         }
     }
-}
-
-/// Per-item state collected from a dict, list, or set literal:
-/// serialized text, atomicity for layout dispatch, and source range
-/// for blank-line-preservation lookups.
-struct GatheredItems<'src> {
-    atomics: Vec<bool>,
-    close: char,
-    open: char,
-    ranges: Vec<TextRange>,
-    texts: Vec<Cow<'src, str>>,
 }
 
 /// Describes how a contiguous slice of items should lay out.
