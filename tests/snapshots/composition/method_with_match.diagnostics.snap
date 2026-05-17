@@ -4,11 +4,13 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/method_with_match.input.py
 ---
 alphabetize@266..573
+blank-lines@250..251
+blank-lines@285..286
 blank-lines@455..456
 blank-lines@514..515
-match-case-align@325..325
-match-case-align@326..343
-match-case-align@374..374
-match-case-align@375..392
-match-case-align@423..423
-match-case-align@424..441
+match-case-align@327..327
+match-case-align@328..345
+match-case-align@376..376
+match-case-align@377..394
+match-case-align@425..425
+match-case-align@426..443

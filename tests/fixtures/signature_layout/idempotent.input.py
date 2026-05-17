@@ -1,0 +1,21 @@
+"""
+Two signatures already at their canonical shape stay untouched. The
+inline form with two parameters fits both thresholds, and the
+expanded form with five parameters trips the count trigger but
+already lands at the rewrite target. Pins the rule's no-op behavior
+on inputs that match either canonical shape.
+"""
+
+
+def already_inline(palette: str, target: int):
+    return (palette, target)
+
+
+def already_expanded(
+    layout: tuple[int, int],
+    palette: str,
+    spread: float,
+    target: int,
+    verbose: bool,
+):
+    return (layout, palette, spread, target, verbose)

@@ -1,0 +1,2 @@
+[harness]
+rules = ["alphabetize", "signature-layout", "align-colons", "align-equals"]

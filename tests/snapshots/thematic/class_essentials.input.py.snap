@@ -20,6 +20,7 @@ import sys
 
 
 class Posting:
+
     company     : str   = "TBD"
     description : str   = ""
     salary      : float = 0.0

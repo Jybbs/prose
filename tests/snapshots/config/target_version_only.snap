@@ -48,6 +48,12 @@ Config {
             max_shift: 8,
             max_shift_policy: Split,
         },
+        signature_layout: SignatureLayoutConfig {
+            enabled: true,
+            max_inline_params: Some(
+                4,
+            ),
+        },
         align_imports: AlignmentConfig {
             enabled: true,
             max_shift: 8,
@@ -62,6 +68,11 @@ Config {
             enabled: true,
         },
         align_equals: AlignmentConfig {
+            enabled: true,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
+        align_comparisons: AlignmentConfig {
             enabled: true,
             max_shift: 8,
             max_shift_policy: Split,

@@ -409,6 +409,7 @@ mod tests {
     fn with_defaults_respects_rule_toggles() {
         let mut config = Config::default();
         config.rules.align_colons.enabled = false;
+        config.rules.align_comparisons.enabled = false;
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.alphabetize.enabled = false;
@@ -422,6 +423,7 @@ mod tests {
         config.rules.multi_line_docstrings.enabled = false;
         config.rules.no_single_line_docstrings.enabled = false;
         config.rules.no_step_narration.enabled = false;
+        config.rules.signature_layout.enabled = false;
         config.rules.single_use_variables.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
@@ -454,6 +456,7 @@ mod tests {
     fn with_filters_select_overrides_disabled_config() {
         let mut config = Config::default();
         config.rules.align_colons.enabled = false;
+        config.rules.align_comparisons.enabled = false;
         config.rules.align_equals.enabled = false;
         config.rules.align_imports.enabled = false;
         config.rules.alphabetize.enabled = false;
@@ -464,6 +467,7 @@ mod tests {
         config.rules.loose_constants.enabled = false;
         config.rules.match_case_align.enabled = false;
         config.rules.no_step_narration.enabled = false;
+        config.rules.signature_layout.enabled = false;
         config.rules.single_use_variables.enabled = false;
         config.rules.singleton_rule.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;

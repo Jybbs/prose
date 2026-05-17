@@ -3,12 +3,14 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/service_class.input.py
 ---
-align-colons@414..414
-align-colons@443..443
-align-colons@466..466
-align-equals@420..421
-align-equals@454..455
+align-colons@415..415
+align-colons@444..444
+align-colons@467..467
+align-equals@421..422
+align-equals@455..456
 alphabetize@402..732
+blank-lines@397..398
+blank-lines@480..481
 blank-lines@546..547
 blank-lines@604..605
 blank-lines@672..673
