@@ -60,15 +60,26 @@ prose check --color always path/            # force color, NO_COLOR honored
 prose completions zsh                       # shell completion script
 ```
 
-Source ranges may opt out of formatting via block markers:
+Source ranges opt out of rule application through the `# prose:` directive namespace:
+
+| Directive | Effect |
+|---|---|
+| `# prose: off` / `# prose: on` | Suppress every rule across the span the pair opens |
+| `# prose: skip` | Suppress every format rule on the directive's line |
+| `# prose: skip[<rule>]` | Suppress one named format rule on the directive's line |
+| `# prose: ignore` | Suppress every lint rule on the directive's line |
+| `# prose: ignore[<rule>]` | Suppress one named lint rule on the directive's line |
 
 ```python
-# fmt: off
+# prose: off
 keep_this_block_exactly_as_written = (1,2,3)
-# fmt: on
+# prose: on
+
+inside(1, 2, 3,)  # prose: skip[strip-trailing-commas]
+value: Union[int, str] = compute()  # prose: ignore[legacy-union-syntax]
 ```
 
-`# fmt: skip` on the same line opts out a single statement, and `# yapf: disable` / `# yapf: enable` are honored as block-level aliases. Lint diagnostics opt out per line through `# prose: ignore[<rule>]`. A bare `# prose: ignore` suppresses every lint rule on the line, and `# prose: ignore[a, b]` lists several.
+A `# prose: off` at the top of a file (*with no matching `# prose: on`*) opts the whole file out of every rule. The `# fmt:` directives (`# fmt: off`, `# fmt: on`, `# fmt: skip`) and the `# yapf:` directives (`# yapf: disable`, `# yapf: enable`) are honored as Black-compatibility aliases that map onto their `# prose:` counterparts.
 
 ---
 

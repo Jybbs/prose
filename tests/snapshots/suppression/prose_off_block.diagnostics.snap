@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/prose_off_block.input.py
+---
+align-equals@290..291
+align-equals@298..299
+align-equals@382..383
+align-equals@389..390
+docstring-wrap@72..260

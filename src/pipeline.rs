@@ -7,6 +7,7 @@
 //! padding widths are computed.
 
 use ruff_python_parser::ParseError;
+use ruff_text_size::Ranged;
 use thiserror::Error;
 
 use crate::diagnostics::{Diagnostic, Severity};
@@ -57,16 +58,20 @@ impl Pipeline {
     /// returns the rewritten source paired with the diagnostics each
     /// rule emitted.
     ///
-    /// Per rule, the pipeline calls `apply`, drops edits inside any
-    /// `# fmt: off` span via the `SuppressionMap`, derives one
-    /// `Severity::Format` `Diagnostic` per surviving edit, collects
-    /// the `Severity::Lint` diagnostics `Rule::lint` returned through
-    /// the same fmt-suppression filter, then splices the edits into
-    /// the current text and reparses for the next rule. After the
-    /// rule chain finishes, every `Severity::Lint` diagnostic whose
-    /// line carries a matching `# prose: ignore` directive is
-    /// dropped. An empty pipeline collapses to the identity transform
-    /// and returns no diagnostics.
+    /// When the source opens with an unmatched `# prose: off` (or
+    /// alias) before any code, the pipeline short-circuits to the
+    /// identity transform with no diagnostics. Otherwise, per rule
+    /// the pipeline calls `apply`, drops edits inside any `# prose:
+    /// off` span or carrying a matching `# prose: skip[<id>]`
+    /// directive on their line, derives one `Severity::Format`
+    /// `Diagnostic` per surviving edit, collects the `Severity::Lint`
+    /// diagnostics `Rule::lint` returned through the same span
+    /// filter, then splices the edits into the current text and
+    /// reparses for the next rule. After the rule chain finishes,
+    /// every `Severity::Lint` diagnostic whose line carries a
+    /// matching `# prose: ignore` directive is dropped. An empty
+    /// pipeline collapses to the identity transform and returns no
+    /// diagnostics.
     ///
     /// # Errors
     ///
@@ -74,13 +79,21 @@ impl Pipeline {
     /// produces text that does not re-parse as Python. This surfaces
     /// rule bugs rather than silently swallowing them.
     pub fn run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
+        if source.suppression_map().file_is_suppressed() {
+            return Ok((source, Vec::new()));
+        }
         let (source, mut diagnostics) = self.rules.iter().try_fold(
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
                 let mut edits = rule.apply(&source);
                 let suppression = source.suppression_map();
-                if suppression.has_format_suppression() {
-                    edits.retain(|edit| !suppression.intersects(edit));
+                let rule_id = rule.id();
+                if suppression.has_format_suppression() || suppression.has_skip_suppression() {
+                    edits.retain(|edit| {
+                        !suppression.intersects(edit)
+                            && !suppression
+                                .is_format_suppressed_at(source.line_index(edit.start()), rule_id)
+                    });
                 }
                 diagnostics.extend(
                     rule.lint(&source)
@@ -90,7 +103,6 @@ impl Pipeline {
                 if edits.is_empty() {
                     return Ok((source, diagnostics));
                 }
-                let rule_id = rule.id();
                 let message = rule.message();
                 diagnostics.extend(
                     edits
@@ -101,13 +113,13 @@ impl Pipeline {
                 debug_assert!(
                     new_text != source.text(),
                     "rule `{}` emitted edits that produced identical text",
-                    rule.id(),
+                    rule_id,
                 );
                 source
                     .reparse(new_text)
                     .map(|src| (src, diagnostics))
                     .map_err(|source| PipelineError::Reparse {
-                        rule: rule.id(),
+                        rule: rule_id,
                         source,
                     })
             },
@@ -116,8 +128,7 @@ impl Pipeline {
         if suppression.has_lint_suppression() {
             diagnostics.retain(|d| {
                 d.severity != Severity::Lint
-                    || !suppression
-                        .is_lint_suppressed_at(source.line_index(d.range.start()), d.rule)
+                    || !suppression.is_lint_suppressed_at(source.line_index(d.start()), d.rule)
             });
         }
         Ok((source, diagnostics))

@@ -24,7 +24,9 @@ use crate::suppression::SuppressionMap;
 ///
 /// Holds the source text, the parsed AST, the token stream, a lazy
 /// line index, a `CommentRanges` index built during parsing, and a
-/// `SuppressionMap` of `# fmt: off` / `# fmt: skip` spans, plus a
+/// `SuppressionMap` of `# prose: off` / `# prose: skip` spans (plus
+/// the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]` and
+/// `# prose: ignore[<id>]` per-line directives, plus a
 /// `BindingAnalysis` table of every name's writes and reads.
 #[derive(Debug)]
 pub struct Source {
@@ -40,9 +42,11 @@ impl Source {
         let parsed = parse_module(&text)?;
         let file = SourceFileBuilder::new(name, text).finish();
         let comment_ranges = CommentRanges::from(parsed.tokens());
+        let first_code_offset = parsed.syntax().body.first().map(Ranged::start);
         let suppression = Box::new(SuppressionMap::from_comments(
             &file.to_source_code(),
             &comment_ranges,
+            first_code_offset,
         ));
         let binding_analysis = Box::new(BindingAnalysis::new(parsed.syntax()));
         Ok(Self {

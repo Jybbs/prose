@@ -1,0 +1,14 @@
+"""
+A trailing prose: skip pins one line's original spacing. The other
+members of the same alignment group still pad to the group's
+target column, and the assignment run after the skip line aligns
+as a separate group, mirroring the bare fmt: skip semantics.
+"""
+
+x = 1
+foo = 2
+bar_baz = 3
+short = 4  # prose: skip
+aa = 5
+bbb = 6
+cccc = 7
