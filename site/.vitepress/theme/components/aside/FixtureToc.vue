@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref }                       from 'vue'
+import { ref }                         from 'vue'
 import { inBrowser, onContentUpdated } from 'vitepress'
+
+import Kicker from '../Kicker.vue'
 
 import { useIsRulePage } from '../../../lib/route'
 
@@ -17,7 +19,7 @@ function collect() {
     anchors.value = []
     return
   }
-  const summaries = Array.from(document.querySelectorAll('.fixture-disclosure-summary .fixture-disclosure-title'))
+  const summaries = Array.from(document.querySelectorAll('.disclosure-fixture .disclosure-summary .disclosure-title'))
   const seen      = new Set<string>()
   const found: Anchor[] = []
   for (const node of summaries) {

@@ -1,11 +1,15 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
+import { parse } from 'smol-toml'
+
 export function readCargoVersion(repoRoot: string): string {
-  const body  = fs.readFileSync(path.join(repoRoot, 'Cargo.toml'), 'utf8')
-  const match = body.match(/^\[package\][\s\S]*?^\s*version\s*=\s*"([^"]+)"/m)
-  if (!match) {
-    throw new Error(`Could not find package version in ${repoRoot}/Cargo.toml`)
+  const cargoPath = path.join(repoRoot, 'Cargo.toml')
+  const body      = fs.readFileSync(cargoPath, 'utf8')
+  const parsed    = parse(body) as { package?: { version?: unknown } }
+  const version   = parsed.package?.version
+  if (typeof version !== 'string') {
+    throw new Error(`Could not find package.version in ${cargoPath}`)
   }
-  return match[1]
+  return version
 }

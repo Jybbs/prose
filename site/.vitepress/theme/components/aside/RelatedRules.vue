@@ -2,6 +2,9 @@
 import { computed } from 'vue'
 import { useData }  from 'vitepress'
 
+import Kicker   from '../Kicker.vue'
+import RuleChip from '../RuleChip.vue'
+
 import { useCurrentRule } from '../../../lib/route'
 import { data as rules }  from '../../../data/rules.data'
 

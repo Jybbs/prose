@@ -1,5 +1,7 @@
 import { defineLoader } from 'vitepress'
 
+import { withFallback } from '../lib/with-fallback'
+
 export interface StarsData {
   stars: string
 }
@@ -10,23 +12,18 @@ export { data }
 export default defineLoader({
   watch: [],
   async load(): Promise<StarsData> {
-    const fallback: StarsData = { stars: '0' }
-    if (process.env.PROSE_OFFLINE_DOCS === '1') return fallback
-    try {
+    if (process.env.PROSE_OFFLINE_DOCS === '1') return { stars: '0' }
+    const stars = await withFallback('stars:fetch', async () => {
       const response = await fetch('https://api.github.com/repos/Jybbs/prose', {
         headers: { 'User-Agent': 'prose-docs-build' }
       })
-      if (!response.ok) return fallback
-      const body = await response.json() as { stargazers_count?: number }
+      if (!response.ok) throw new Error(`GitHub API returned ${response.status}`)
+      const body  = await response.json() as { stargazers_count?: number }
       const count = body.stargazers_count ?? 0
-      return { stars: formatStars(count) }
-    } catch {
-      return fallback
-    }
+      return count < 1000
+        ? String(count)
+        : `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k`
+    }, '0')
+    return { stars }
   }
 })
-
-function formatStars(count: number): string {
-  if (count < 1000) return String(count)
-  return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k`
-}

@@ -1,17 +1,7 @@
 <script setup lang="ts">
-import { REPO_URL } from '../../../lib/constants'
+import { data as landing } from '../../../data/landing.data'
 
-interface Action {
-  href  : string
-  text  : string
-  theme : 'brand' | 'alt'
-}
-
-const actions: Action[] = [
-  { href: '/guide/installation', text: 'Get Started', theme: 'brand' },
-  { href: '/rules/',             text: 'Rules',       theme: 'alt'   },
-  { href: REPO_URL,              text: 'GitHub',      theme: 'alt'   }
-]
+const actions = landing.hero.actions
 </script>
 
 <template>

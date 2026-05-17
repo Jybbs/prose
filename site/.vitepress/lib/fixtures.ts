@@ -5,13 +5,13 @@ export const INPUT_SUFFIX   = '.input.py'
 export const FIXTURES_DIR   = 'tests/fixtures'
 export const SNAPSHOTS_DIR  = 'tests/snapshots'
 
-export interface FixtureEntry {
+export interface FixtureWalkEntry {
   caseName  : string
   inputPath : string
   rule      : string
 }
 
-export function* walkFixtures(repoRoot: string): Generator<FixtureEntry> {
+export function* walkFixtures(repoRoot: string): Generator<FixtureWalkEntry> {
   const fixturesRoot = path.join(repoRoot, FIXTURES_DIR)
   for (const rule of fs.readdirSync(fixturesRoot).sort()) {
     const ruleDir = path.join(fixturesRoot, rule)

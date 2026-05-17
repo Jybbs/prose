@@ -2,20 +2,12 @@
 import { computed } from 'vue'
 import { vTooltip } from 'floating-vue'
 
-import { data as glossary } from '../../data/glossary.data'
+import { lookup }            from '../../lib/registry'
+import { data as glossary }  from '../../data/glossary.data'
 
 const props = defineProps<{ slug: string }>()
 
-const entry = computed(() => {
-  const found = glossary.entries[props.slug]
-  if (!found) {
-    throw new Error(
-      `Glossary entry "${props.slug}" not registered. ` +
-      `Available slugs: ${Object.keys(glossary.entries).sort().join(', ')}`
-    )
-  }
-  return found
-})
+const entry = computed(() => lookup(glossary.entries, props.slug, 'Glossary entry'))
 
 const tooltipContent = computed(() => {
   const parts = [

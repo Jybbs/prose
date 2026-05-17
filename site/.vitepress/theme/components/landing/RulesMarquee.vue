@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Kicker from '../Kicker.vue'
+
 import { data as rules } from '../../../data/rules.data'
 
 const slugs = rules.map(r => r.slug)

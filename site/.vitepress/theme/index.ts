@@ -14,9 +14,7 @@ import DependencyGraph     from './components/DependencyGraph.vue'
 import ExitCodeMatrix      from './components/ExitCodeMatrix.vue'
 import Fixture             from './components/Fixture.vue'
 import GlossaryTerm        from './components/GlossaryTerm.vue'
-import Kicker              from './components/Kicker.vue'
 import RuleChip            from './components/RuleChip.vue'
-import RuleConfigTable     from './components/RuleConfigTable.vue'
 import RuleMotivation      from './components/RuleMotivation.vue'
 import RulesIndex          from './components/RulesIndex.vue'
 import SectionHeading      from './components/SectionHeading.vue'
@@ -29,6 +27,7 @@ import LandingRulesMarquee from './components/landing/RulesMarquee.vue'
 import LandingWorkflow     from './components/landing/Workflow.vue'
 
 import './css/tokens.css'
+import './css/globals.css'
 import './css/fixture.css'
 import './css/landing.css'
 
@@ -38,9 +37,7 @@ const COMPONENTS = {
   ExitCodeMatrix,
   Fixture,
   GlossaryTerm,
-  Kicker,
   RuleChip,
-  RuleConfigTable,
   RuleMotivation,
   RulesIndex,
   SectionHeading,

@@ -2,9 +2,10 @@ import { execSync } from 'node:child_process'
 
 import { defineLoader } from 'vitepress'
 
-import { walkFixtures }    from '../lib/fixtures'
-import { repoRoot }        from '../lib/paths'
+import { walkFixtures }     from '../lib/fixtures'
+import { repoRoot }         from '../lib/paths'
 import { readCargoVersion } from '../lib/version'
+import { withFallback }     from '../lib/with-fallback'
 
 const root = repoRoot(import.meta.url)
 
@@ -17,21 +18,18 @@ export interface BuildData {
 declare const data: BuildData
 export { data }
 
-function gitSha(): string {
-  try {
-    return execSync('git rev-parse --short HEAD', { cwd: root }).toString().trim()
-  } catch {
-    return 'unknown'
-  }
-}
-
 export default defineLoader({
   watch: [],
-  load(): BuildData {
+  async load(): Promise<BuildData> {
+    const gitSha = await withFallback(
+      'build:git-sha',
+      () => execSync('git rev-parse --short HEAD', { cwd: root }).toString().trim(),
+      'unknown'
+    )
     return {
       fixtureCount: [...walkFixtures(root)].length,
-      gitSha      : gitSha(),
-      version     : readCargoVersion(root)
+      gitSha,
+      version: readCargoVersion(root)
     }
   }
 })

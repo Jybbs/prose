@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import DefaultTheme from 'vitepress/theme'
 
-import BuildMetadata from './components/BuildMetadata.vue'
+import BuildMetadata from './components/layout/BuildMetadata.vue'
 import CategoryChip  from './components/aside/CategoryChip.vue'
 import FixtureToc    from './components/aside/FixtureToc.vue'
-import NotFound      from './components/NotFound.vue'
+import NotFound      from './components/layout/NotFound.vue'
 import RelatedRules  from './components/aside/RelatedRules.vue'
-import StarBadge     from './components/StarBadge.vue'
+import StarBadge     from './components/layout/StarBadge.vue'
 </script>
 
 <template>

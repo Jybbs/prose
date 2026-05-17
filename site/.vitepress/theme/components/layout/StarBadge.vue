@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { REPO_URL }       from '../../lib/constants'
-import { data as stars }  from '../../data/stars.data'
+import { REPO_URL }      from '../../../lib/constants'
+import { data as stars } from '../../../data/stars.data'
 </script>
 
 <template>

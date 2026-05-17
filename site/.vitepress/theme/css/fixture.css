@@ -1,4 +1,4 @@
-.fixture {
+.fixture-pair {
   position              : relative;
   display               : grid;
   grid-template-columns : 1fr auto 1fr;
@@ -7,14 +7,41 @@
   align-items           : stretch;
 }
 
-.fixture-side {
+.fixture-pair-side {
   position       : relative;
   display        : flex;
   flex-direction : column;
   min-width      : 0;
 }
 
-.fixture-label {
+.fixture-pair-code {
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  overflow      : auto;
+  background    : var(--vp-code-block-bg);
+  padding       : 1.6rem 1rem 0.85rem;
+  font-size     : 0.85em;
+  line-height   : 1.55;
+}
+
+.fixture-pair-code pre {
+  margin     : 0;
+  background : transparent;
+  padding    : 0;
+}
+
+.fixture-pair-arrow {
+  display     : grid;
+  place-items : center;
+  font-family : var(--prose-font-display);
+  font-size   : 1.8rem;
+  font-style  : italic;
+  color       : var(--vp-c-brand-1);
+  padding     : 0 0.25rem;
+}
+
+/* Doc variant: overlay-style label on top-left of code block. */
+.fixture-pair-doc .fixture-pair-label {
   position       : absolute;
   top            : 8px;
   left           : 12px;
@@ -27,98 +54,23 @@
   letter-spacing : 0.12em;
   text-transform : uppercase;
   color          : var(--vp-c-text-3);
-  margin-bottom  : 0;
   z-index        : 1;
 }
 
-.fixture-arrow {
-  display     : grid;
-  place-items : center;
-  font-family : var(--prose-font-display);
-  font-size   : 1.8rem;
-  font-style  : italic;
-  color       : var(--vp-c-brand-1);
-  padding     : 0 0.25rem;
+/* Landing variant: outlined card with a header bar of label + colored dot. */
+.fixture-pair-landing {
+  grid-template-columns : minmax(0, 1fr) auto minmax(0, 1fr);
+  gap                   : 24px;
 }
 
-.fixture-code {
+.fixture-pair-landing .fixture-pair-side {
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
-  overflow      : auto;
-  background    : var(--vp-code-block-bg);
-  padding       : 1.6rem 1rem 0.85rem;
-  font-size     : 0.85em;
-  line-height   : 1.55;
-}
-
-.fixture-code pre,
-.fixture-landing-code pre {
-  margin     : 0;
-  background : transparent;
-  padding    : 0;
-}
-
-/* Breakpoint at 760px: fixture grid (both doc + landing variants) collapses to one column. */
-@media (max-width: 760px) {
-  .fixture {
-    grid-template-columns: 1fr;
-  }
-
-  .fixture-arrow {
-    transform : rotate(90deg);
-    font-size : 1.4rem;
-  }
-
-  .fixture-landing-arrow {
-    transform : rotate(90deg);
-    font-size : 2rem;
-  }
-}
-
-.fixture-disclosure {
-  margin        : 1rem 0;
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg-soft);
+  background    : var(--vp-c-bg);
   overflow      : hidden;
 }
 
-.fixture-disclosure-summary {
-  font-size: 0.95rem;
-}
-
-.fixture-disclosure-title {
-  font-weight : 400;
-  font-size   : 1.05rem;
-}
-
-.fixture-disclosure-body {
-  margin     : 0;
-  padding    : 14px 18px 18px;
-  border-top : 1px solid var(--vp-c-divider);
-  background : var(--vp-c-bg);
-}
-
-/* ─── Landing variant: header-bar labels with colored dots ─── */
-
-.fixture-landing {
-  display               : grid;
-  grid-template-columns : minmax(0, 1fr) auto minmax(0, 1fr);
-  gap                   : 24px;
-  align-items           : stretch;
-}
-
-.fixture-landing-side {
-  display        : flex;
-  flex-direction : column;
-  min-width      : 0;
-  border         : 1px solid var(--vp-c-divider);
-  border-radius  : var(--prose-radius);
-  background     : var(--vp-c-bg);
-  overflow       : hidden;
-}
-
-.fixture-landing-label {
+.fixture-pair-landing .fixture-pair-label {
   display        : flex;
   align-items    : center;
   gap            : 8px;
@@ -126,38 +78,55 @@
   border-bottom  : 1px solid var(--vp-c-divider);
   background     : var(--vp-c-bg-soft);
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.72rem;
-  letter-spacing : 0.1em;
+  font-size      : var(--prose-label-size);
+  letter-spacing : var(--prose-label-tracking);
   text-transform : uppercase;
-  color          : var(--vp-c-text-3);
+  color          : var(--prose-label-color);
 }
 
-.fixture-landing-dot {
+.fixture-pair-dot {
   width         : 8px;
   height        : 8px;
   border-radius : 50%;
 }
 
-.fixture-landing-dot-before {
+.fixture-pair-dot-before {
   background: var(--prose-c-cream);
 }
 
-.fixture-landing-dot-after {
+.fixture-pair-dot-after {
   background: var(--vp-c-brand-1);
 }
 
-.fixture-landing-code {
-  padding     : 16px 18px;
-  font-size   : 0.85rem;
-  line-height : 1.55;
-  overflow    : auto;
-  flex-grow   : 1;
+.fixture-pair-landing .fixture-pair-code {
+  padding   : 16px 18px;
+  font-size : 0.85rem;
+  border    : none;
+  flex-grow : 1;
 }
 
-.fixture-landing-arrow {
-  display     : grid;
-  place-items : center;
-  font-family : var(--prose-font-display);
-  font-size   : 2.5rem;
-  color       : var(--vp-c-brand-1);
+.fixture-pair-landing .fixture-pair-arrow {
+  font-size: 2.5rem;
+  padding  : 0;
+}
+
+/* Breakpoint at 760px: fixture grid (both variants) collapses to one column. */
+@media (max-width: 760px) {
+  .fixture-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .fixture-pair-arrow {
+    transform : rotate(90deg);
+    font-size : 1.4rem;
+  }
+
+  .fixture-pair-landing .fixture-pair-arrow {
+    font-size: 2rem;
+  }
+}
+
+/* Fixture inside a Disclosure: tighten the surrounding gap so the pair sits flush. */
+.disclosure-fixture .fixture-pair {
+  margin: 0;
 }

@@ -1,18 +1,17 @@
-import fs   from 'node:fs'
-import path from 'node:path'
-
-import { defineConfig, type DefaultTheme } from 'vitepress'
+import { defineConfig, type DefaultTheme }       from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
-import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs'
+import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
-import { REPO_URL, SITE_HOSTNAME } from './lib/constants'
-import { glossary }                from './lib/glossary'
-import { glossaryPlugin }          from './lib/glossary-plugin'
-import { repoRoot, rulesDir }      from './lib/paths'
-import { PRIMITIVES }              from './lib/primitives'
-import { ruleLinkPlugin }          from './lib/rule-link'
-import { SHIKI_THEMES }            from './lib/shiki'
-import { readCargoVersion }        from './lib/version'
+import { bodyLinkPlugin }                     from './lib/body-link-plugin'
+import { REPO_URL, SITE_HOSTNAME }             from './lib/constants'
+import { glossary }                            from './lib/glossary'
+import { glossaryPlugin }                      from './lib/glossary-plugin'
+import { repoRoot, rulesDir }                  from './lib/paths'
+import { PRIMITIVES }                          from './lib/primitives'
+import { ruleLinkPlugin }                      from './lib/rule-link'
+import { discoverRuleFiles, splitByCategory }  from './lib/rules-discovery'
+import { SHIKI_THEMES }                        from './lib/shiki'
+import { readCargoVersion }                    from './lib/version'
 
 const repoDir = repoRoot(import.meta.url)
 const version = readCargoVersion(repoDir)
@@ -23,22 +22,9 @@ const primLink = (text: string, slug: string): DefaultTheme.SidebarItem =>
 const ruleLink = (slug: string): DefaultTheme.SidebarItem =>
   ({ text: slug, link: `/rules/${slug}` })
 
-function sidebarRules(dir: string): { autoFix: string[]; lint: string[] } {
-  const autoFix: string[] = []
-  const lint   : string[] = []
-  for (const file of fs.readdirSync(dir).sort()) {
-    if (!file.endsWith('.md') || file === 'index.md') continue
-    const body  = fs.readFileSync(path.join(dir, file), 'utf8')
-    const front = body.match(/^---\n([\s\S]*?)\n---\n/)?.[1] ?? ''
-    const slug  = file.slice(0, -'.md'.length)
-    if (/^\s*category:\s*lint\s*$/m.test(front)) lint.push(slug)
-    else                                          autoFix.push(slug)
-  }
-  return { autoFix, lint }
-}
-
-const { autoFix, lint } = sidebarRules(rulesDir(import.meta.url))
-const validSlugs        = new Set([...autoFix, ...lint])
+const discoveredRules   = discoverRuleFiles(rulesDir(import.meta.url))
+const { autoFix, lint } = splitByCategory(discoveredRules)
+const validSlugs        = new Set(discoveredRules.map(r => r.slug))
 
 const glossaryPhraseToSlug = new Map<string, string>()
 for (const [slug, entry] of Object.entries(glossary)) {
@@ -67,6 +53,7 @@ export default defineConfig({
       md.use(tabsMarkdownPlugin)
       md.use(ruleLinkPlugin(validSlugs))
       md.use(glossaryPlugin(glossaryPhraseToSlug))
+      md.use(bodyLinkPlugin)
     },
     lineNumbers: false,
     theme      : SHIKI_THEMES

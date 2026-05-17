@@ -1,39 +1,7 @@
 <script setup lang="ts">
-interface Feature {
-  body   : string
-  cta    : string
-  icon   : string
-  link   : string
-  number : string
-  title  : string
-}
+import { data as landing } from '../../../data/landing.data'
 
-const features: Feature[] = [
-  {
-    body   : 'Equals signs, colons, the <code>import</code> keyword, and match arrows line up across consecutive lines. The eye drops down the column.',
-    cta    : 'align-equals',
-    icon   : '🪜',
-    link   : '/rules/align-equals',
-    number : '01',
-    title  : 'Alignment'
-  },
-  {
-    body   : 'Dictionaries, lists, and sets expand to one entry per line. Multi-line collections drop their trailing comma. Single-entry contexts skip padding.',
-    cta    : 'collection-layout',
-    icon   : '🪶',
-    link   : '/rules/collection-layout',
-    number : '02',
-    title  : 'Layout'
-  },
-  {
-    body   : 'Legacy union syntax, loose constants, step-narration comments, and single-use bindings surface as lint diagnostics, never rewrites.',
-    cta    : 'single-use-variables',
-    icon   : '🧶',
-    link   : '/rules/single-use-variables',
-    number : '03',
-    title  : 'Lint'
-  }
-]
+const features = landing.features
 </script>
 
 <template>
@@ -46,7 +14,7 @@ const features: Feature[] = [
         <span class="card-number">— {{ feature.number }}</span>
         <span class="card-icon">{{ feature.icon }}</span>
         <h3>{{ feature.title }}</h3>
-        <p v-html="feature.body" />
+        <p v-html="feature.bodyHtml" />
         <span class="card-link">{{ feature.cta }} →</span>
       </a>
     </div>

@@ -1,17 +1,13 @@
 <script setup lang="ts">
-import { CATEGORY_META }   from '../../lib/categories'
-import { data as rules }   from '../../data/rules.data'
+import { CATEGORY_META } from '../../lib/categories'
+import { lookup }        from '../../lib/registry'
+import { data as rules } from '../../data/rules.data'
 
 const props = defineProps<{ slug: string }>()
 
-const entry = rules.find(r => r.slug === props.slug)
-if (!entry) {
-  throw new Error(
-    `Rule "${props.slug}" not registered. ` +
-    `Available rules: ${rules.map(r => r.slug).sort().join(', ')}`
-  )
-}
-const meta = CATEGORY_META[entry.category]
+const byKey = Object.fromEntries(rules.map(r => [r.slug, r]))
+const entry = lookup(byKey, props.slug, 'Rule')
+const meta  = CATEGORY_META[entry.category]
 </script>
 
 <template>

@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import Kicker from '../Kicker.vue'
+</script>
+
 <template>
   <div class="not-found">
     <Kicker class="not-found-kicker">404</Kicker>
