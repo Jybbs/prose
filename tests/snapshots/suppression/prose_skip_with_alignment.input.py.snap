@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/suppression/prose_skip_with_alignment.input.py
+---
+"""
+prose: skip[<rule>] opts one line out of one format rule while leaving every
+other format rule's edits in place on the same line. Here strip-trailing-
+commas is skipped on the last assignment, but align-equals still composes
+the `=` column across all three lines.
+"""
+
+short       = func(1, 2)
+longer_name = func(3, 4)
+ccc         = func(5, 6,)  # prose: skip[strip-trailing-commas]

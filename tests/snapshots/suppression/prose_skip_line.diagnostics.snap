@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/prose_skip_line.input.py
+---
+align-equals@264..265
+align-equals@272..273
+align-equals@316..317
+align-equals@324..325
+docstring-wrap@70..232

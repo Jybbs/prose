@@ -1,0 +1,9 @@
+"""
+prose: ignore[<rule>] suppresses one named lint diagnostic on its
+line while leaving diagnostics for the same rule on unrelated lines
+in place. The format-side rewrites for every line still apply.
+"""
+
+DEFAULT_LIMIT = 50
+RETRY_INTERVAL = 30  # prose: ignore[loose-constants]
+PAGE_SIZE = 25

@@ -1,8 +1,4 @@
 //! Source-text wrapper bundling parsed AST, token stream, and line index.
-//!
-//! Every rule reads through `Source`. The text is owned rather than
-//! borrowed, so `Source` carries no lifetime parameter and can move
-//! across thread boundaries without lifetime gymnastics.
 
 use std::path::Path;
 use std::str::FromStr;
@@ -24,7 +20,9 @@ use crate::suppression::SuppressionMap;
 ///
 /// Holds the source text, the parsed AST, the token stream, a lazy
 /// line index, a `CommentRanges` index built during parsing, and a
-/// `SuppressionMap` of `# fmt: off` / `# fmt: skip` spans, plus a
+/// `SuppressionMap` of `# prose: off` / `# prose: skip` spans (plus
+/// the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]` and
+/// `# prose: ignore[<id>]` per-line directives, plus a
 /// `BindingAnalysis` table of every name's writes and reads.
 #[derive(Debug)]
 pub struct Source {
@@ -40,9 +38,11 @@ impl Source {
         let parsed = parse_module(&text)?;
         let file = SourceFileBuilder::new(name, text).finish();
         let comment_ranges = CommentRanges::from(parsed.tokens());
+        let first_code_offset = parsed.syntax().body.first().map(Ranged::start);
         let suppression = Box::new(SuppressionMap::from_comments(
             &file.to_source_code(),
             &comment_ranges,
+            first_code_offset,
         ));
         let binding_analysis = Box::new(BindingAnalysis::new(parsed.syntax()));
         Ok(Self {
@@ -60,8 +60,6 @@ impl Source {
     ///
     /// Returns `SourceError::Io` if the read fails and `SourceError::Parse`
     /// if the bytes are read successfully but do not form a valid module.
-    /// The underlying `std::io::Error` from `fs_err` carries the path in
-    /// its `Display`, so no additional wrapping is needed.
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, SourceError> {
         let path = path.as_ref();
         let text = fs_err::read_to_string(path)?;
@@ -93,13 +91,17 @@ impl Source {
         self.file.source_text().contains_line_break(ranged.range())
     }
 
+    /// Returns the source name. For `from_path` inputs this is
+    /// `path.display().to_string()`, for `from_str` inputs the
+    /// synthetic placeholder `<source>`.
+    pub fn filename(&self) -> &str {
+        self.file.name()
+    }
+
     /// Returns the start offset of the first token in `range` for
     /// which `predicate` is true. Callers that need the full `&Token`
     /// (kind, range, flags) should chain
-    /// `tokens().in_range(range).iter().find(...)` directly. This
-    /// helper exists for the dominant case of "find a kind, take its
-    /// start offset," which every alignment-rule member constructor
-    /// reduces to.
+    /// `tokens().in_range(range).iter().find(...)` directly.
     pub fn first_token_offset_in_range<F>(
         &self,
         range: TextRange,
@@ -119,13 +121,6 @@ impl Source {
     /// source ahead of `offset` from the preceding non-whitespace.
     pub fn has_blank_line_before(&self, offset: TextSize) -> bool {
         lines_before(offset, self.text()) >= 2
-    }
-
-    /// Returns the source name. For `from_path` inputs this is
-    /// `path.display().to_string()`, for `from_str` inputs the
-    /// synthetic placeholder `<source>`.
-    pub fn filename(&self) -> &str {
-        self.file.name()
     }
 
     /// Returns `true` when at least one comment lies within `ranged`.
@@ -172,9 +167,7 @@ impl Source {
 
     /// Reparses with replacement source text, preserving the original name.
     ///
-    /// The pipeline calls this after each rule applies its edit list, so the
-    /// next rule sees a freshly-parsed AST whose ranges point into the new
-    /// buffer. Diagnostic labels keep the original path or `<source>` placeholder.
+    /// Diagnostic labels keep the original path or `<source>` placeholder.
     ///
     /// # Errors
     ///
@@ -185,10 +178,8 @@ impl Source {
 
     /// Returns the byte slice spanned by anything `Ranged`.
     ///
-    /// Accepts a raw `TextRange` or any AST node, since every node in
-    /// `ruff_python_ast` implements `Ranged`. The returned `&str` is
-    /// guaranteed to fall on `char` boundaries because the parser only
-    /// emits ranges aligned to source token boundaries.
+    /// Accepts a raw `TextRange` or any AST node. The returned `&str`
+    /// is guaranteed to fall on `char` boundaries.
     pub fn slice<R: Ranged>(&self, ranged: R) -> &str {
         self.file.slice(ranged.range())
     }
@@ -203,10 +194,6 @@ impl Source {
     }
 
     /// Borrows the token stream produced during parsing.
-    ///
-    /// Rules that need whitespace-aware context (alignment, padding,
-    /// trailing-comma stripping) re-lex through this stream because
-    /// Ruff's AST is not whitespace-preserving.
     pub fn tokens(&self) -> &Tokens {
         self.parsed.tokens()
     }
@@ -215,8 +202,7 @@ impl Source {
 /// Parses Python source from an in-memory string.
 ///
 /// The resulting `Source` carries the synthetic name `<source>` for
-/// diagnostics. Callers can invoke this through `Source::from_str(text)`
-/// (with `std::str::FromStr` in scope) or via `text.parse::<Source>()`.
+/// diagnostics.
 impl FromStr for Source {
     type Err = ParseError;
 
