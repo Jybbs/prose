@@ -3,7 +3,9 @@
 # ============================================================================
 
 [tools]
+bun     = "latest"
 maturin = "latest"
+node    = "lts"
 python  = "3.14"
 rust    = { version = "stable", components = "llvm-tools-preview" }
 uv      = "latest"
@@ -49,10 +51,18 @@ run         = "cargo clippy --all-targets --locked -- -D warnings"
 description = "Rewrite `README.md` in place to absolute URLs for PyPI"
 run         = "./.github/scripts/transform_readme.py"
 
+[tasks.render]
+description = "Produce the static docs bundle at `site/.vitepress/dist`"
+run         = "bun run docs:build"
+
 [tasks.review]
 description = "Interactively review pending snapshot diffs"
 tools       = { cargo-insta = "latest" }
 run         = "cargo insta review"
+
+[tasks.site]
+description = "Run the VitePress dev server against `site/`"
+run         = "bun run docs:dev"
 
 [tasks.test]
 description = "Run all tests including `insta` snapshots"
