@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/docstring_wrap/entry_verbatim_preserved.input.py
+---
+docstring-wrap@538..592
+docstring-wrap@75..220

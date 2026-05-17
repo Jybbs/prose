@@ -2,9 +2,12 @@
 //! Description prose wraps to `docstring_line_length`. Structured
 //! sections (`Args:`, `Attributes:`, `Examples:`, `Note:`, `Raises:`,
 //! `Returns:`, `Warning:`, `Yields:`) wrap to the budget that
-//! `docstring_structured_policy` selects. Verbatim regions (triple-
-//! backtick fences, blocks indented one step beyond the body, list
-//! items and their continuations) pass through unchanged.
+//! `docstring_structured_policy` selects. Entry-carrying sections
+//! (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`) wrap
+//! `name: description` entries to `docstring_line_length` with a
+//! hanging indent at the description's start column. Verbatim regions
+//! (triple-backtick fences, blocks indented one step beyond the body,
+//! list items and their continuations) pass through unchanged.
 //! reStructuredText markup, Sphinx directives, and Numpydoc style
 //! pass through unwrapped.
 
@@ -19,15 +22,15 @@ use crate::primitives::edit::narrowed_replacement;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
-const SECTIONS: &[&str] = &[
-    "Args",
-    "Attributes",
-    "Examples",
-    "Note",
-    "Raises",
-    "Returns",
-    "Warning",
-    "Yields",
+const SECTIONS: &[(&str, bool)] = &[
+    ("Args", true),
+    ("Attributes", true),
+    ("Examples", false),
+    ("Note", false),
+    ("Raises", true),
+    ("Returns", true),
+    ("Warning", false),
+    ("Yields", true),
 ];
 
 pub(crate) struct DocstringWrap {
@@ -72,10 +75,18 @@ impl Rule for DocstringWrap {
     }
 }
 
+#[derive(Default)]
+struct Paragraph {
+    initial_indent: String,
+    lines: Vec<String>,
+    subsequent_indent: String,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Region {
     Description,
     Section,
+    SectionEntry,
 }
 
 struct Rewriter<'a> {
@@ -104,22 +115,24 @@ impl DocstringHandler for Rewriter<'_> {
 
 struct Walker<'a> {
     body_indent_chars: usize,
+    entry_hanging_col: usize,
     in_fence: bool,
     list_indent: Option<usize>,
     newline: &'a str,
     out: String,
-    paragraph: Vec<String>,
-    paragraph_indent: String,
+    paragraph: Paragraph,
     region: Region,
     rule: &'a DocstringWrap,
+    section_allows_entries: bool,
 }
 
 impl Walker<'_> {
-    fn buffer(&mut self, indent: &str, line: &str) {
-        if self.paragraph.is_empty() {
-            self.paragraph_indent = indent.to_owned();
+    fn buffer_description(&mut self, indent: &str, line: &str) {
+        if self.paragraph.lines.is_empty() {
+            self.paragraph.initial_indent = indent.to_owned();
+            self.paragraph.subsequent_indent = indent.to_owned();
         }
-        self.paragraph.push(line.to_owned());
+        self.paragraph.lines.push(line.to_owned());
     }
 
     fn consume(&mut self, line: &str) {
@@ -142,7 +155,6 @@ impl Walker<'_> {
         if trimmed.is_empty() {
             self.flush_paragraph();
             self.list_indent = None;
-            self.region = Region::Description;
             self.out.push_str(self.newline);
             return;
         }
@@ -162,16 +174,29 @@ impl Walker<'_> {
             return;
         }
 
-        if indent_chars == self.body_indent_chars && is_section_heading(trimmed) {
+        if indent_chars == self.body_indent_chars {
+            if let Some(allows_entries) = section_heading(trimmed) {
+                self.flush_paragraph();
+                self.region = Region::Section;
+                self.section_allows_entries = allows_entries;
+                self.emit_verbatim(line);
+                return;
+            }
+        }
+
+        let text = trimmed.trim_end();
+        if self.region == Region::SectionEntry {
+            if self.is_entry_continuation(indent_chars, text) {
+                self.paragraph.lines.push(text.to_owned());
+                return;
+            }
             self.flush_paragraph();
-            self.region = Region::Section;
-            self.emit_verbatim(line);
-            return;
         }
 
         let prose_indent = match self.region {
             Region::Description => self.body_indent_chars,
             Region::Section => self.body_indent_chars + 4,
+            Region::SectionEntry => unreachable!("entries handled above"),
         };
         if indent_chars > prose_indent {
             self.flush_paragraph();
@@ -184,10 +209,18 @@ impl Walker<'_> {
             self.region = Region::Description;
         }
 
-        let text = trimmed.trim_end();
         match self.region {
-            Region::Description => self.buffer(indent_str, text),
-            Region::Section => self.emit_wrapped(indent_str, text, self.rule.section_width),
+            Region::Description => self.buffer_description(indent_str, text),
+            Region::Section => {
+                if self.section_allows_entries {
+                    if let Some(desc_col) = entry_description_col(text) {
+                        self.start_entry(indent_str, indent_chars, text, desc_col);
+                        return;
+                    }
+                }
+                self.emit_wrapped(indent_str, indent_str, text, self.rule.section_width);
+            }
+            Region::SectionEntry => unreachable!("entries handled above"),
         }
     }
 
@@ -196,24 +229,58 @@ impl Walker<'_> {
         self.out.push_str(self.newline);
     }
 
-    fn emit_wrapped(&mut self, indent: &str, text: &str, width: usize) {
+    fn emit_wrapped(&mut self, initial: &str, subsequent: &str, text: &str, width: usize) {
         let opts = Options::new(width)
             .break_words(false)
-            .initial_indent(indent)
-            .subsequent_indent(indent);
+            .initial_indent(initial)
+            .subsequent_indent(subsequent);
         for piece in textwrap::wrap(text, opts) {
             self.emit_verbatim(&piece);
         }
     }
 
     fn flush_paragraph(&mut self) {
-        if self.paragraph.is_empty() {
-            return;
+        if !self.paragraph.lines.is_empty() {
+            let para = std::mem::take(&mut self.paragraph);
+            let text = para.lines.join(" ");
+            self.emit_wrapped(
+                &para.initial_indent,
+                &para.subsequent_indent,
+                &text,
+                self.rule.description_width,
+            );
         }
-        let text = std::mem::take(&mut self.paragraph).join(" ");
-        let indent = std::mem::take(&mut self.paragraph_indent);
-        self.emit_wrapped(&indent, &text, self.rule.description_width);
+        if self.region == Region::SectionEntry {
+            self.region = Region::Section;
+        }
     }
+
+    fn is_entry_continuation(&self, indent_chars: usize, trimmed: &str) -> bool {
+        indent_chars == self.entry_hanging_col
+            || (indent_chars == self.body_indent_chars + 4
+                && entry_description_col(trimmed).is_none())
+    }
+
+    fn start_entry(&mut self, indent_str: &str, indent_chars: usize, text: &str, desc_col: usize) {
+        let hanging_col = indent_chars + desc_col;
+        self.paragraph.initial_indent = indent_str.to_owned();
+        self.paragraph.subsequent_indent = " ".repeat(hanging_col);
+        self.paragraph.lines.push(text.to_owned());
+        self.region = Region::SectionEntry;
+        self.entry_hanging_col = hanging_col;
+    }
+}
+
+fn entry_description_col(trimmed: &str) -> Option<usize> {
+    let mut chars = trimmed.char_indices();
+    chars.next().filter(|(_, c)| is_name_char(*c))?;
+    let (name_end, _) = chars.find(|(_, c)| !(is_name_char(*c) || *c == '.'))?;
+    let post_colon = trimmed[name_end..]
+        .trim_start_matches([' ', '\t'])
+        .strip_prefix(':')?
+        .strip_prefix([' ', '\t'])?
+        .trim_start_matches([' ', '\t']);
+    (!post_colon.is_empty()).then(|| trimmed[..trimmed.len() - post_colon.len()].chars().count())
 }
 
 fn is_list_marker(trimmed: &str) -> bool {
@@ -227,11 +294,8 @@ fn is_list_marker(trimmed: &str) -> bool {
     after_digits.len() < trimmed.len() && after_digits.starts_with(". ")
 }
 
-fn is_section_heading(trimmed: &str) -> bool {
-    SECTIONS
-        .iter()
-        .find_map(|name| trimmed.strip_prefix(name))
-        .is_some_and(|rest| rest.starts_with(':'))
+fn is_name_char(c: char) -> bool {
+    c.is_ascii_alphanumeric() || c == '_'
 }
 
 fn rewrite_body(
@@ -244,14 +308,15 @@ fn rewrite_body(
 
     let mut walker = Walker {
         body_indent_chars: body_indent.chars().count(),
+        entry_hanging_col: 0,
         in_fence: false,
         list_indent: None,
         newline,
         out: String::with_capacity(content.len()),
-        paragraph: Vec::new(),
-        paragraph_indent: String::new(),
+        paragraph: Paragraph::default(),
         region: Region::Description,
         rule,
+        section_allows_entries: false,
     };
     for line in content.split(newline) {
         walker.consume(line);
@@ -264,6 +329,15 @@ fn rewrite_body(
     result.push_str(newline);
     result.push_str(closer_indent);
     Some(result)
+}
+
+fn section_heading(trimmed: &str) -> Option<bool> {
+    SECTIONS.iter().find_map(|(name, allows_entries)| {
+        trimmed
+            .strip_prefix(name)
+            .is_some_and(|rest| rest.starts_with(':'))
+            .then_some(*allows_entries)
+    })
 }
 
 #[cfg(test)]
@@ -309,6 +383,22 @@ mod tests {
     }
 
     #[test]
+    fn entry_description_col_rejects_lines_without_name_colon_shape() {
+        assert!(entry_description_col("just prose with no colon").is_none());
+        assert!(entry_description_col("name:no_space_after_colon").is_none());
+        assert!(entry_description_col(": no name before colon").is_none());
+        assert!(entry_description_col("name: ").is_none());
+        assert!(entry_description_col("123: digits-only name").is_some());
+    }
+
+    #[test]
+    fn entry_description_col_returns_char_column_of_description_start() {
+        assert_eq!(entry_description_col("name: desc"), Some(6));
+        assert_eq!(entry_description_col("name : desc"), Some(7));
+        assert_eq!(entry_description_col("dotted.name: desc"), Some(13));
+    }
+
+    #[test]
     fn fenced_code_block_passes_through_verbatim() {
         let src =
             "\"\"\"\nSummary.\n\n```python\nx = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12\n```\n\"\"\"\n";
@@ -328,22 +418,6 @@ mod tests {
     }
 
     #[test]
-    fn is_section_heading_matches_recognized_names_with_colon() {
-        for name in SECTIONS {
-            assert!(
-                is_section_heading(&format!("{name}:")),
-                "{name}: should match"
-            );
-        }
-        assert!(is_section_heading("Returns: int"));
-        assert!(!is_section_heading("Args :"));
-        assert!(!is_section_heading("args:"));
-        assert!(!is_section_heading("Argz:"));
-        assert!(!is_section_heading("Args"));
-        assert!(!is_section_heading("Arguments:"));
-    }
-
-    #[test]
     fn list_items_and_their_continuations_are_left_alone() {
         let src = "\"\"\"\nA list:\n\n- first item here that runs on with extra words and more padding text\n  continuation indented under the first item\n- second item\n\"\"\"\n";
         assert_eq!(run(src), src);
@@ -356,12 +430,40 @@ mod tests {
     }
 
     #[test]
-    fn section_body_wraps_to_section_budget_under_default_policy() {
-        let src = "\"\"\"\nSummary.\n\nArgs:\n    foo: a very long parameter description that should wrap at eighty eight characters because it lives inside a structured section.\n\"\"\"\n";
+    fn section_body_entry_wraps_at_hanging_column_under_default_policy() {
+        let src = "\"\"\"\nSummary.\n\nArgs:\n    foo: a very long parameter description that should wrap at seventy six characters because it lives inside an entry-carrying section.\n\"\"\"\n";
         let out = run(src);
         for line in out.lines() {
-            assert!(line.chars().count() <= 88, "line over 88: {line:?}");
+            assert!(line.chars().count() <= 76, "line over 76: {line:?}");
         }
+    }
+
+    #[test]
+    fn section_heading_returns_entry_flag_per_section() {
+        assert_eq!(section_heading("Args:"), Some(true));
+        assert_eq!(section_heading("Attributes:"), Some(true));
+        assert_eq!(section_heading("Examples:"), Some(false));
+        assert_eq!(section_heading("Note:"), Some(false));
+        assert_eq!(section_heading("Raises:"), Some(true));
+        assert_eq!(section_heading("Returns:"), Some(true));
+        assert_eq!(section_heading("Warning:"), Some(false));
+        assert_eq!(section_heading("Yields:"), Some(true));
+    }
+
+    #[test]
+    fn section_heading_matches_recognized_names_with_colon() {
+        for (name, _) in SECTIONS {
+            assert!(
+                section_heading(&format!("{name}:")).is_some(),
+                "{name}: should match"
+            );
+        }
+        assert!(section_heading("Returns: int").is_some());
+        assert!(section_heading("Args :").is_none());
+        assert!(section_heading("args:").is_none());
+        assert!(section_heading("Argz:").is_none());
+        assert!(section_heading("Args").is_none());
+        assert!(section_heading("Arguments:").is_none());
     }
 
     #[test]
