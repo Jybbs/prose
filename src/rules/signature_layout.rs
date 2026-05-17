@@ -1,18 +1,13 @@
-//! Normalizes function-signature layout to a binary shape. A signature
-//! whose canonical inline form fits under `Config::code_line_length`
-//! and whose parameter count fits under `max_inline_params` collapses
-//! to one line. A signature that trips either threshold expands to
-//! one parameter per line with a trailing comma, opening paren at the
-//! end of the `def` line, and closing paren returning to the `def`'s
-//! own indent. A comment anywhere between `(` and `)` pins the
-//! existing shape.
+//! Normalizes function signatures to a binary shape, one line or one
+//! parameter per line, gated by `code_line_length` and
+//! `max_inline_params`. Comments inside `()` pin the existing shape.
 
 use std::num::NonZeroUsize;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
 use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::{Parameters, Stmt, StmtFunctionDef};
+use ruff_python_ast::{ParameterWithDefault, Parameters, Stmt, StmtFunctionDef};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -69,9 +64,7 @@ struct Layout<'a> {
 }
 
 impl Layout<'_> {
-    /// Builds the canonical expanded text starting at `(` and running
-    /// through `:`, with each parameter on its own line at one indent
-    /// step beyond `indent` and the closing `)` at `indent`.
+    /// Builds the canonical expanded text spanning `(` through `:`.
     fn build_expanded(&self, fd: &StmtFunctionDef, indent: usize) -> String {
         let prefix = " ".repeat(indent + INDENT_STEP);
         let mut out = String::from("(");
@@ -88,26 +81,27 @@ impl Layout<'_> {
         out
     }
 
-    /// Builds the canonical inline text starting at `(` and running
-    /// through `:`, joining parameters with `, ` separators.
+    /// Builds the canonical inline text spanning `(` through `:`.
     fn build_inline(&self, fd: &StmtFunctionDef) -> String {
-        let parts: Vec<&str> = self.signature_parts(&fd.parameters).collect();
-        let mut out = format!("({})", parts.join(", "));
+        let mut out = format!(
+            "({})",
+            self.signature_parts(&fd.parameters)
+                .collect::<Vec<_>>()
+                .join(", "),
+        );
         self.push_return_and_colon(&mut out, fd);
         out
     }
 
-    /// Emits one expand or collapse edit for `fd` when its current
-    /// shape diverges from the canonical form implied by the parameter
-    /// count, the spread already in source, and the `code_line_length`
-    /// / `max_inline_params` thresholds.
+    /// Emits one expand or collapse edit when `fd`'s signature
+    /// diverges from the canonical inline-or-expanded form.
     fn process_def(&mut self, fd: &StmtFunctionDef) {
         let params = &fd.parameters;
-        let pin = TextRange::new(
-            params.range().start() + TextSize::from(1u32),
-            params.range().end() - TextSize::from(1u32),
-        );
-        if self.source.intersects_comment(pin) {
+        let one = TextSize::from(1u32);
+        if self
+            .source
+            .intersects_comment(params.range().add_start(one).sub_end(one))
+        {
             return;
         }
         let replacement_range = self.replacement_range(fd);
@@ -170,30 +164,23 @@ impl Layout<'_> {
             .as_deref()
             .map(|va| self.source.slice(va.range()))
             .or((!params.kwonlyargs.is_empty()).then_some("*"));
-        params
-            .posonlyargs
-            .iter()
-            .map(move |p| self.source.slice(p.range()))
+        let kwarg = params
+            .kwarg
+            .as_deref()
+            .map(|kw| self.source.slice(kw.range()));
+        self.slice_params(&params.posonlyargs)
             .chain(posonly_sep)
-            .chain(
-                params
-                    .args
-                    .iter()
-                    .map(move |p| self.source.slice(p.range())),
-            )
+            .chain(self.slice_params(&params.args))
             .chain(star)
-            .chain(
-                params
-                    .kwonlyargs
-                    .iter()
-                    .map(move |p| self.source.slice(p.range())),
-            )
-            .chain(
-                params
-                    .kwarg
-                    .as_deref()
-                    .map(|kw| self.source.slice(kw.range())),
-            )
+            .chain(self.slice_params(&params.kwonlyargs))
+            .chain(kwarg)
+    }
+
+    fn slice_params<'p>(
+        &'p self,
+        params: &'p [ParameterWithDefault],
+    ) -> impl Iterator<Item = &'p str> + 'p {
+        params.iter().map(move |p| self.source.slice(p.range()))
     }
 }
 

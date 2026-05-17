@@ -1,0 +1,9 @@
+"""
+A four-parameter method inside a class body trips the count trigger
+and expands at the method's own indent.
+"""
+
+
+class Renderer:
+    def render(self, target, palette, layout):
+        return (self, target, palette, layout)

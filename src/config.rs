@@ -540,6 +540,11 @@ mod tests {
     }
 
     #[test]
+    fn max_inline_params_zero_returns_toml_error() {
+        assert_toml_error("[tool.prose.rules.signature-layout]\nmax-inline-params = 0\n");
+    }
+
+    #[test]
     fn single_use_variables_explicit_allow_pattern_takes_effect() {
         let config = Config::from_pyproject_str(
             "[tool.prose.rules.single-use-variables]\nallow-pattern = \"^tmp_\"\n",
