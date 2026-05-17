@@ -9,7 +9,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use ruff_python_trivia::{CommentLinePosition, CommentRanges, SuppressionKind};
+use ruff_python_trivia::{CommentLinePosition, CommentRanges, PythonWhitespace, SuppressionKind};
 use ruff_source_file::{LineRanges, OneIndexed, SourceCode};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
@@ -190,7 +190,10 @@ impl Default for RuleEntry {
 /// Strips the leading `prose:` marker from `after_hash` and returns
 /// the trimmed body. Returns `None` for any other shape.
 fn after_prose_prefix(after_hash: &str) -> Option<&str> {
-    after_hash.trim().strip_prefix("prose:").map(str::trim)
+    after_hash
+        .trim_whitespace()
+        .strip_prefix("prose:")
+        .map(str::trim_whitespace)
 }
 
 /// Classifies `comment` against the three format-suppression
@@ -250,7 +253,7 @@ fn parse_bracketed_rule_list(body: &str) -> Option<HashSet<RuleId>> {
         body.strip_prefix('[')?
             .strip_suffix(']')?
             .split(',')
-            .filter_map(|part| part.trim().parse::<RuleId>().ok())
+            .filter_map(|part| part.trim_whitespace().parse::<RuleId>().ok())
             .collect(),
     )
 }
@@ -261,7 +264,7 @@ fn parse_bracketed_rule_list(body: &str) -> Option<HashSet<RuleId>> {
 /// fallback.
 fn parse_prose_format(after_hash: &str) -> Option<FormatDirective> {
     let body = after_prose_prefix(after_hash)?;
-    if let Some(rest) = body.strip_prefix("skip").map(str::trim) {
+    if let Some(rest) = body.strip_prefix("skip").map(str::trim_whitespace) {
         if rest.is_empty() {
             return Some(FormatDirective::Kind(SuppressionKind::Skip));
         }
@@ -281,7 +284,7 @@ fn parse_prose_format(after_hash: &str) -> Option<FormatDirective> {
 fn parse_prose_ignore(after_hash: &str) -> Option<RuleEntry> {
     let body = after_prose_prefix(after_hash)?
         .strip_prefix("ignore")?
-        .trim();
+        .trim_whitespace();
     if body.is_empty() {
         return Some(RuleEntry::All);
     }

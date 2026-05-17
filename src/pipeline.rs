@@ -94,8 +94,7 @@ impl Pipeline {
                 let new_text = apply_edits(source.text(), edits);
                 debug_assert!(
                     new_text != source.text(),
-                    "rule `{}` emitted edits that produced identical text",
-                    rule_id,
+                    "rule `{rule_id}` emitted edits that produced identical text",
                 );
                 source
                     .reparse(new_text)
