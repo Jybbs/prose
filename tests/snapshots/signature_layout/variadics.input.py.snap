@@ -1,0 +1,21 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/variadics.input.py
+---
+"""
+A signature that mixes positional parameters with `*args` and
+`**kwargs`. Each variadic slot counts as one parameter for the count
+trigger.
+"""
+
+
+def dispatch(
+    target,
+    palette,
+    *args,
+    layout,
+    spread=None,
+    **kwargs,
+):
+    return (target, palette, layout, spread, args, kwargs)

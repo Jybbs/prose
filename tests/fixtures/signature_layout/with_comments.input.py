@@ -1,0 +1,23 @@
+"""
+Comments between the opening `(` and closing `)` pin the existing
+shape. Both own-line and trailing-line comments anchor each parameter.
+"""
+
+
+def own_line_pin(
+    target,
+    # comment between parameters
+    palette,
+    layout,
+    spread,
+):
+    return (target, palette, layout, spread)
+
+
+def trailing_line_pin(
+    target,
+    palette,  # trailing on a parameter line
+    layout,
+    spread,
+):
+    return (target, palette, layout, spread)

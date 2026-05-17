@@ -1,0 +1,8 @@
+"""
+Generic-syntax type parameters sit between the function name and the
+opening `(`. The return annotation references the type parameter.
+"""
+
+
+def render[T](target: T, palette: T, layout: T, spread: T) -> tuple[T, T]:
+    return (target, palette)

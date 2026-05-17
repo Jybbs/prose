@@ -1,0 +1,25 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/async_and_nested.input.py
+---
+"""
+Async definitions and nested definitions both qualify.
+"""
+
+
+async def outer(
+    target,
+    palette,
+    layout,
+    spread,
+):
+    def inner(
+        host,
+        port,
+        retries,
+        timeout,
+    ):
+        return (host, port, retries, timeout)
+
+    return await inner(target, palette, layout, spread)

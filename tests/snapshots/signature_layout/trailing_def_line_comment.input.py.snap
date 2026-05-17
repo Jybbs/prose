@@ -1,0 +1,18 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/trailing_def_line_comment.input.py
+---
+"""
+Four-parameter signature with a trailing comment on the `def` line
+after `:`.
+"""
+
+
+def render(
+    target,
+    palette,
+    layout,
+    spread,
+):  # entry point
+    return (target, palette, layout, spread)

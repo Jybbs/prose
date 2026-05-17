@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/signature_layout/no_trailing_comma.input.py
+---
+signature-layout@138..138

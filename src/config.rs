@@ -206,6 +206,27 @@ impl Default for LooseConstantsConfig {
     }
 }
 
+/// Configuration for the `signature_layout` rule.
+///
+/// `max_inline_params` caps the count threshold. A positive integer
+/// enforces the cap. `false` disables the count trigger.
+#[derive(Debug, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct SignatureLayoutConfig {
+    pub enabled: bool,
+    #[serde(deserialize_with = "deserialize_max_inline_params")]
+    pub max_inline_params: Option<NonZeroUsize>,
+}
+
+impl Default for SignatureLayoutConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_inline_params: NonZeroUsize::new(3),
+        }
+    }
+}
+
 /// Configuration for the `single_use_variables` rule.
 #[derive(Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -234,6 +255,25 @@ pub struct ToggleOnly {
 impl Default for ToggleOnly {
     fn default() -> Self {
         Self { enabled: true }
+    }
+}
+
+fn deserialize_max_inline_params<'de, D>(deserializer: D) -> Result<Option<NonZeroUsize>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Value {
+        Cap(NonZeroUsize),
+        Off(bool),
+    }
+    match Value::deserialize(deserializer)? {
+        Value::Cap(n) => Ok(Some(n)),
+        Value::Off(false) => Ok(None),
+        Value::Off(true) => Err(serde::de::Error::custom(
+            "`max-inline-params` accepts a positive integer or `false`, not `true`",
+        )),
     }
 }
 
@@ -464,6 +504,39 @@ mod tests {
         let config = Config::load(&nested).expect("loads");
 
         assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    }
+
+    #[test]
+    fn max_inline_params_explicit_integer_takes_effect() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.rules.signature-layout]\nmax-inline-params = 5\n",
+        )
+        .expect("parses");
+
+        assert_eq!(
+            config.rules.signature_layout.max_inline_params,
+            NonZeroUsize::new(5),
+        );
+    }
+
+    #[test]
+    fn max_inline_params_false_disables_count_trigger() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.rules.signature-layout]\nmax-inline-params = false\n",
+        )
+        .expect("parses");
+
+        assert!(config.rules.signature_layout.max_inline_params.is_none());
+    }
+
+    #[test]
+    fn max_inline_params_string_value_returns_toml_error() {
+        assert_toml_error("[tool.prose.rules.signature-layout]\nmax-inline-params = \"off\"\n");
+    }
+
+    #[test]
+    fn max_inline_params_true_returns_toml_error() {
+        assert_toml_error("[tool.prose.rules.signature-layout]\nmax-inline-params = true\n");
     }
 
     #[test]

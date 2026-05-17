@@ -1,0 +1,20 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/decorated.input.py
+---
+"""
+A `@cache` decorator above the `def` and a four-parameter signature.
+"""
+
+from functools import cache
+
+
+@cache
+def render(
+    target,
+    palette,
+    layout,
+    spread,
+):
+    return (target, palette, layout, spread)

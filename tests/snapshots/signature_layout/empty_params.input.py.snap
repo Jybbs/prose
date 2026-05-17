@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/empty_params.input.py
+---
+"""
+An empty parameter list.
+"""
+
+
+def render():
+    return 1

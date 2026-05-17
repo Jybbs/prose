@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/count_trigger_off.input.py
+---
+"""
+Five-parameter signature whose inline form fits the line budget. The
+count trigger is disabled via `max-inline-params = false`.
+"""
+
+
+def render(a, b, c, d, e):
+    return (a, b, c, d, e)

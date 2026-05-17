@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/return_annotation.input.py
+---
+"""
+A single annotated parameter on its own line, with a return
+annotation.
+"""
+
+
+def render(target: int) -> int:
+    return target

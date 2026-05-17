@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/signature_layout/parameter_shapes.input.py
+---
+signature-layout@118..160

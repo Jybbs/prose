@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/collapse.input.py
+---
+"""
+Multi-line signature whose two parameters fit inline under both
+thresholds.
+"""
+
+
+def render(target, palette):
+    return (target, palette)
