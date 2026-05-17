@@ -6,6 +6,8 @@ import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-i
 import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs'
 
 import { REPO_URL, SITE_HOSTNAME } from './lib/constants'
+import { glossary }                from './lib/glossary'
+import { glossaryPlugin }          from './lib/glossary-plugin'
 import { repoRoot, rulesDir }      from './lib/paths'
 import { PRIMITIVES }              from './lib/primitives'
 import { ruleLinkPlugin }          from './lib/rule-link'
@@ -38,6 +40,14 @@ function sidebarRules(dir: string): { autoFix: string[]; lint: string[] } {
 const { autoFix, lint } = sidebarRules(rulesDir(import.meta.url))
 const validSlugs        = new Set([...autoFix, ...lint])
 
+const glossaryPhraseToSlug = new Map<string, string>()
+for (const [slug, entry] of Object.entries(glossary)) {
+  glossaryPhraseToSlug.set(slug, slug)
+  for (const alias of entry.aliases ?? []) {
+    glossaryPhraseToSlug.set(alias, slug)
+  }
+}
+
 export default defineConfig({
   cleanUrls     : true,
   description   : 'A Python typesetter for the reader.',
@@ -56,6 +66,7 @@ export default defineConfig({
       md.use(groupIconMdPlugin)
       md.use(tabsMarkdownPlugin)
       md.use(ruleLinkPlugin(validSlugs))
+      md.use(glossaryPlugin(glossaryPhraseToSlug))
     },
     lineNumbers: false,
     theme      : SHIKI_THEMES
