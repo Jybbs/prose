@@ -15,10 +15,10 @@ from functools import cache
 
 @cache
 def render(
-    target: int,
-    palette: str,
     layout: tuple[int, int],
+    palette: str,
     spread: float,
+    target: int,
     verbose: bool,
 ):
-    return (target, palette, layout, spread, verbose)
+    return (layout, palette, spread, target, verbose)

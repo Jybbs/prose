@@ -11,5 +11,5 @@ the disabled-count configuration.
 """
 
 
-def render(target: int, palette: str, layout: int, spread: float, verbose: bool):
-    return (target, palette, layout, spread, verbose)
+def render(layout: int, palette: str, spread: float, target: int, verbose: bool):
+    return (layout, palette, spread, target, verbose)

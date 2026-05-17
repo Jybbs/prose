@@ -7,5 +7,5 @@ defs, with the indent derived from the method's own `def` position.
 
 
 class Renderer:
-    def render(self, target: int, palette: str, layout: tuple[int, int], spread: float):
-        return (self, target, palette, layout, spread)
+    def render(self, layout: tuple[int, int], palette: str, spread: float, target: int):
+        return (self, layout, palette, spread, target)

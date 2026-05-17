@@ -9,5 +9,5 @@ from functools import cache
 
 
 @cache
-def render(target: int, palette: str, layout: tuple[int, int], spread: float, verbose: bool):
-    return (target, palette, layout, spread, verbose)
+def render(layout: tuple[int, int], palette: str, spread: float, target: int, verbose: bool):
+    return (layout, palette, spread, target, verbose)

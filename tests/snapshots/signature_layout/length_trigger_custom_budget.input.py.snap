@@ -13,7 +13,7 @@ configured threshold rather than a hard-coded one.
 
 def render(
     left: LayoutLayer,
-    right: LayoutLayer,
     palette: PaletteSpec,
+    right: LayoutLayer,
 ):
-    return (left, right, palette)
+    return (left, palette, right)

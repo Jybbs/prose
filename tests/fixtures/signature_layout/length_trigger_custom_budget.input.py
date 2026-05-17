@@ -6,5 +6,5 @@ configured threshold rather than a hard-coded one.
 """
 
 
-def render(left: LayoutLayer, right: LayoutLayer, palette: PaletteSpec):
-    return (left, right, palette)
+def render(left: LayoutLayer, palette: PaletteSpec, right: LayoutLayer):
+    return (left, palette, right)

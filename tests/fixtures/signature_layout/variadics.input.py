@@ -6,5 +6,5 @@ parameter for the count trigger.
 """
 
 
-def dispatch(target: int, palette: str, *args: int, layout: tuple[int, int], spread: float = 0.0, **kwargs: object):
-    return (target, palette, layout, spread, args, kwargs)
+def dispatch(palette: str, target: int, *args: int, layout: tuple[int, int], spread: float = 0.0, **kwargs: object):
+    return (palette, target, layout, spread, args, kwargs)

@@ -11,5 +11,5 @@ expansion.
 """
 
 
-def render(target: int, palette: str):
-    return (target, palette)
+def render(palette: str, target: int):
+    return (palette, target)

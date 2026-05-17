@@ -5,5 +5,5 @@ alone, with the parameter count comfortably under the cap.
 """
 
 
-def render(left_descriptor: LayoutLayer, right_descriptor: LayoutLayer, palette_descriptor: PaletteSpec):
-    return (left_descriptor, right_descriptor, palette_descriptor)
+def render(left_descriptor: LayoutLayer, palette_descriptor: PaletteSpec, right_descriptor: LayoutLayer):
+    return (left_descriptor, palette_descriptor, right_descriptor)

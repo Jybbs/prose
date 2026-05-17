@@ -7,7 +7,7 @@ expansion.
 
 
 def render(
-    target: int,
     palette: str,
+    target: int,
 ):
-    return (target, palette)
+    return (palette, target)

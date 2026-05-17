@@ -12,10 +12,10 @@ descends recursively rather than stopping at the outer body.
 
 
 async def outer(
-    target: int,
-    palette: str,
     layout: tuple[int, int],
+    palette: str,
     spread: float,
+    target: int,
     verbose: bool,
 ):
     def inner(
