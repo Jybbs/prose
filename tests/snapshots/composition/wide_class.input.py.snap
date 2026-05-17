@@ -16,9 +16,11 @@ Rules:
 
 
 class Service:
+
     host        : str   = "localhost"
     retry_count : int   = 3
     timeout     : float = 30.0
+
     def _cleanup(self):
         return None
 

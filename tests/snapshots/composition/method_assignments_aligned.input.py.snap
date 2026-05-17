@@ -16,6 +16,7 @@ Rules:
 
 
 class Builder:
+
     def configure(self):
         host    = "localhost"
         port_id = 8080

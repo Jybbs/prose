@@ -17,11 +17,13 @@ from dataclasses import dataclass
 
 @dataclass
 class JobPosting:
+
     company     : str   = "TBD"
     description : str   = ""
     posted_on   : str   = ""
     salary_band : float = 0.0
     title       : str   = "Untitled"
+
     def summary(self):
         """
         Return a short summary string.

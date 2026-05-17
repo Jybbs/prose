@@ -3,4 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/methods_in_class.input.py
 ---
+blank-lines@148..149
 blank-lines@186..190

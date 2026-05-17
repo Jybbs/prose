@@ -3,5 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/methods_with_comment.input.py
 ---
+blank-lines@174..175
 blank-lines@212..216
 blank-lines@249..250

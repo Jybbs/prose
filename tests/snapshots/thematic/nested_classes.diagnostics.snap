@@ -3,16 +3,20 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/nested_classes.input.py
 ---
-align-colons@337..337
-align-colons@361..361
-align-colons@381..381
-align-colons@429..429
-align-colons@459..459
-align-colons@480..480
-align-equals@343..344
-align-equals@370..371
-align-equals@480..481
-align-equals@507..508
+align-colons@338..338
+align-colons@362..362
+align-colons@382..382
+align-colons@431..431
+align-colons@461..461
+align-colons@482..482
+align-equals@344..345
+align-equals@371..372
+align-equals@482..483
+align-equals@509..510
 alphabetize@326..707
+blank-lines@321..322
+blank-lines@415..416
+blank-lines@490..491
+blank-lines@564..565
 blank-lines@632..633
 docstring-wrap@68..294
