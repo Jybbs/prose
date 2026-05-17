@@ -15,44 +15,6 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::rule::RuleId;
 
-/// One line's parsed `# prose: ignore` or `# prose: skip[<id>]`
-/// directive.
-#[derive(Debug)]
-enum RuleEntry {
-    /// Bare `# prose: ignore`. Suppresses every rule on the line.
-    All,
-    /// `# prose: ignore[<id>[, <id>...]]` or `# prose: skip[<id>[,
-    /// <id>...]]`. Unknown ids are dropped.
-    Specific(HashSet<RuleId>),
-}
-
-impl RuleEntry {
-    /// Returns `true` when `self` suppresses `rule`. `All` matches
-    /// every id, `Specific` matches only listed ids.
-    fn matches(&self, rule: RuleId) -> bool {
-        match self {
-            Self::All => true,
-            Self::Specific(rules) => rules.contains(&rule),
-        }
-    }
-
-    /// Folds `incoming` into `self`. `All` widens any prior `Specific`,
-    /// and a second `Specific` unions its ids into the first.
-    fn merge(&mut self, incoming: Self) {
-        match (&mut *self, incoming) {
-            (Self::All, _) => {}
-            (slot @ Self::Specific(_), Self::All) => *slot = Self::All,
-            (Self::Specific(rules), Self::Specific(more)) => rules.extend(more),
-        }
-    }
-}
-
-impl Default for RuleEntry {
-    fn default() -> Self {
-        Self::Specific(HashSet::new())
-    }
-}
-
 /// Sorted byte-range list for format-suppression spans paired with two
 /// per-line `OneIndexed` maps. `lints` carries `# prose: ignore` per-line
 /// lint directives, `skips` carries `# prose: skip[<id>]` per-rule format
@@ -185,6 +147,44 @@ impl SuppressionMap {
 enum FormatDirective {
     Kind(SuppressionKind),
     SkipRules(HashSet<RuleId>),
+}
+
+/// One line's parsed `# prose: ignore` or `# prose: skip[<id>]`
+/// directive.
+#[derive(Debug)]
+enum RuleEntry {
+    /// Bare `# prose: ignore`. Suppresses every rule on the line.
+    All,
+    /// `# prose: ignore[<id>[, <id>...]]` or `# prose: skip[<id>[,
+    /// <id>...]]`. Unknown ids are dropped.
+    Specific(HashSet<RuleId>),
+}
+
+impl RuleEntry {
+    /// Returns `true` when `self` suppresses `rule`. `All` matches
+    /// every id, `Specific` matches only listed ids.
+    fn matches(&self, rule: RuleId) -> bool {
+        match self {
+            Self::All => true,
+            Self::Specific(rules) => rules.contains(&rule),
+        }
+    }
+
+    /// Folds `incoming` into `self`. `All` widens any prior `Specific`,
+    /// and a second `Specific` unions its ids into the first.
+    fn merge(&mut self, incoming: Self) {
+        match (&mut *self, incoming) {
+            (Self::All, _) => {}
+            (slot @ Self::Specific(_), Self::All) => *slot = Self::All,
+            (Self::Specific(rules), Self::Specific(more)) => rules.extend(more),
+        }
+    }
+}
+
+impl Default for RuleEntry {
+    fn default() -> Self {
+        Self::Specific(HashSet::new())
+    }
 }
 
 /// Strips the leading `prose:` marker from `after_hash` and returns
@@ -545,6 +545,14 @@ mod tests {
         let map = source.suppression_map();
         assert!(map.has_lint_suppression());
         assert!(map.is_lint_suppressed_at(line(0), align_equals()));
+    }
+
+    #[test]
+    fn trailing_prose_off_does_not_open_a_format_span() {
+        let source = parse("x = 1  # prose: off\ny = 2\n");
+        let map = source.suppression_map();
+        assert!(!map.has_format_suppression());
+        assert!(!map.file_is_suppressed());
     }
 
     #[test]

@@ -157,29 +157,6 @@ mod tests {
     use crate::config::Config;
     use crate::test_support::{assert_send_sync, parse, range};
 
-    /// Test-only rule that records its own id into a shared log and
-    /// returns the edit list supplied at construction time.
-    struct SentinelRule {
-        edits: Vec<Edit>,
-        id: RuleId,
-        log: Arc<Mutex<Vec<&'static str>>>,
-    }
-
-    impl Rule for SentinelRule {
-        fn apply(&self, _source: &Source) -> Vec<Edit> {
-            self.log.lock().expect("log mutex").push(self.id.as_str());
-            self.edits.clone()
-        }
-
-        fn id(&self) -> RuleId {
-            self.id
-        }
-
-        fn message(&self) -> &'static str {
-            "test rule"
-        }
-    }
-
     /// Test-only lint-only rule that returns the range list supplied
     /// at construction and never produces edits.
     struct LintSentinelRule {
@@ -207,6 +184,29 @@ mod tests {
 
         fn message(&self) -> &'static str {
             "lint test rule"
+        }
+    }
+
+    /// Test-only rule that records its own id into a shared log and
+    /// returns the edit list supplied at construction time.
+    struct SentinelRule {
+        edits: Vec<Edit>,
+        id: RuleId,
+        log: Arc<Mutex<Vec<&'static str>>>,
+    }
+
+    impl Rule for SentinelRule {
+        fn apply(&self, _source: &Source) -> Vec<Edit> {
+            self.log.lock().expect("log mutex").push(self.id.as_str());
+            self.edits.clone()
+        }
+
+        fn id(&self) -> RuleId {
+            self.id
+        }
+
+        fn message(&self) -> &'static str {
+            "test rule"
         }
     }
 
@@ -333,6 +333,21 @@ mod tests {
     }
 
     #[test]
+    fn run_drops_edit_when_line_carries_matching_prose_skip_for_rule() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
+            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+            id: "align-equals".parse().expect("registered rule id"),
+            log: Arc::new(Mutex::new(Vec::new())),
+        })]);
+        let source = parse("x = 1  # prose: skip[align-equals]\n");
+
+        let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
+
+        assert_eq!(result.text(), "x = 1  # prose: skip[align-equals]\n");
+        assert!(diagnostics.is_empty());
+    }
+
+    #[test]
     fn run_drops_edits_whose_range_overlaps_a_suppressed_span() {
         // Source: "# fmt: off\nx = 1\n# fmt: on\nz = 9\n"
         //         |0--------|11----|17--------|27----|33
@@ -392,6 +407,23 @@ mod tests {
             assert_eq!(diagnostic.rule.as_str(), "flag-stuff");
             assert_eq!(diagnostic.message, "lint test rule");
         }
+    }
+
+    #[test]
+    fn run_short_circuits_when_file_is_suppressed() {
+        let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
+        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
+            edits: vec![Edit::range_replacement("y".to_owned(), range(13, 14))],
+            id: RuleId::from("never-called"),
+            log: log.clone(),
+        })]);
+        let source = parse("# prose: off\nx = 1\n");
+
+        let (result, diagnostics) = pipeline.run(source).expect("short-circuit run");
+
+        assert_eq!(result.text(), "# prose: off\nx = 1\n");
+        assert!(diagnostics.is_empty());
+        assert!(log.lock().unwrap().is_empty());
     }
 
     #[test]

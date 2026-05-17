@@ -97,6 +97,13 @@ impl Source {
         self.file.source_text().contains_line_break(ranged.range())
     }
 
+    /// Returns the source name. For `from_path` inputs this is
+    /// `path.display().to_string()`, for `from_str` inputs the
+    /// synthetic placeholder `<source>`.
+    pub fn filename(&self) -> &str {
+        self.file.name()
+    }
+
     /// Returns the start offset of the first token in `range` for
     /// which `predicate` is true. Callers that need the full `&Token`
     /// (kind, range, flags) should chain
@@ -123,13 +130,6 @@ impl Source {
     /// source ahead of `offset` from the preceding non-whitespace.
     pub fn has_blank_line_before(&self, offset: TextSize) -> bool {
         lines_before(offset, self.text()) >= 2
-    }
-
-    /// Returns the source name. For `from_path` inputs this is
-    /// `path.display().to_string()`, for `from_str` inputs the
-    /// synthetic placeholder `<source>`.
-    pub fn filename(&self) -> &str {
-        self.file.name()
     }
 
     /// Returns `true` when at least one comment lies within `ranged`.
