@@ -1,12 +1,18 @@
 """
-An already-canonically-expanded collection produces no edit on a
-second pass. Multi-line input always takes the expansion path, but
-when the canonical output matches the input verbatim the rule emits
-no `Edit::range_replacement` at all.
+A canonical-inline collection and a canonical-multi-line collection
+both produce no edit. Inline canonicality holds when the literal
+already fits at its column. Multi-line canonicality holds when the
+assembled inline form overflows the budget so the rule keeps the
+expanded shape.
 """
 
-config = {
+canonical_inline = {"alpha": 1, "beta": 2, "gamma": 3}
+canonical_multi_line = {
     "alpha": 1,
     "beta": 2,
-    "gamma": 3
+    "gamma": 3,
+    "delta": 4,
+    "epsilon": 5,
+    "zeta": 6,
+    "eta": 7
 }

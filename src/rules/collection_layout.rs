@@ -1,6 +1,8 @@
-//! Expands multi-item `dict`, `list`, and `set` literals when the
-//! inline form would overflow `Config::code_line_length`.
-//! Comprehensions, tuple literals, and any literal whose source range
+//! Lays out `dict`, `list`, `set`, and `tuple` literals against the
+//! `Config::code_line_length` budget. Multi-line literals whose
+//! assembled inline form fits collapse back to a single line.
+//! Single-line literals whose inline form overflows expand to one
+//! entry per line. Comprehensions and any literal whose source range
 //! contains a comment are out of scope.
 
 use std::borrow::Cow;
@@ -43,7 +45,7 @@ impl CollectionLayout {
 
 impl Rule for CollectionLayout {
     fn apply(&self, source: &Source) -> Vec<Edit> {
-        let mut visitor = Expander {
+        let mut visitor = Layouter {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             max_atomics_per_line: self.max_atomics_per_line,
@@ -59,7 +61,7 @@ impl Rule for CollectionLayout {
     }
 }
 
-struct Expander<'a> {
+struct Layouter<'a> {
     code_line_length: usize,
     edits: Vec<Edit>,
     max_atomics_per_line: usize,
@@ -67,7 +69,7 @@ struct Expander<'a> {
     source: &'a Source,
 }
 
-impl<'a> Expander<'a> {
+impl<'a> Layouter<'a> {
     /// Builds the expanded form of `expr` as a string, recursively
     /// expanding any qualifying child collections.
     fn expand(&self, expr: &Expr, indent: usize) -> String {
@@ -127,8 +129,8 @@ impl<'a> Expander<'a> {
     /// atomicity, and per-item source range for the collection at
     /// `expr`. The text is produced via `serialize_expr` /
     /// `serialize_dict_item` at `indent`, so nested qualifying
-    /// children are already recursively expanded in the returned
-    /// strings. Items that need no expansion pass through as
+    /// children are already recursively laid out in the returned
+    /// strings. Items that need no rewrite pass through as
     /// `Cow::Borrowed` of their source slice.
     fn gather_items(&self, expr: &Expr, indent: usize) -> GatheredItems<'a> {
         let parent = AnyNodeRef::from(expr);
@@ -153,7 +155,7 @@ impl<'a> Expander<'a> {
         let (open, close, elts) = match expr {
             Expr::List(l) => ('[', ']', &l.elts),
             Expr::Set(s) => ('{', '}', &s.elts),
-            _ => unreachable!("gather_items called on non-collection expr"),
+            _ => unreachable!("gather_items called on non-expandable expr"),
         };
         let (texts, (atomics, ranges)): (Vec<_>, (Vec<_>, Vec<_>)) = elts
             .iter()
@@ -171,6 +173,49 @@ impl<'a> Expander<'a> {
             ranges,
             texts,
         }
+    }
+
+    /// Builds the canonical inline form of `expr`, recursively
+    /// inlining any nested collection literal. Non-collection leaves
+    /// pass through as their source slice, with explicit parentheses
+    /// recovered against the enclosing `parent` so precedence-bearing
+    /// parens (`(-a) ** 2`) survive the collapse.
+    fn inline_form(&self, expr: &Expr) -> String {
+        let mut buf = String::new();
+        self.write_inline(&mut buf, expr, AnyNodeRef::from(expr));
+        buf
+    }
+
+    /// Returns the replacement text the rule wants to emit for
+    /// `expr`, or `None` when the visitor should descend into its
+    /// children. `column` is where `expr` actually begins; `indent`
+    /// is where its closing bracket should land if it expands. `None`
+    /// covers non-collection nodes, comment-pinned literals,
+    /// single-line literals that fit, and multi-line tuples or
+    /// single-item dict/list/set whose inline form does not fit.
+    fn replacement_for(&self, expr: &Expr, column: usize, indent: usize) -> Option<String> {
+        if !matches!(
+            expr,
+            Expr::Dict(_) | Expr::List(_) | Expr::Set(_) | Expr::Tuple(_),
+        ) {
+            return None;
+        }
+        let range = expr.range();
+        if self.source.intersects_comment(range) {
+            return None;
+        }
+        if self.source.contains_line_break(range) {
+            let inline = self.inline_form(expr);
+            if column + inline.width() <= self.code_line_length {
+                return Some(inline);
+            }
+            if requires_expand(expr) {
+                return Some(self.expand(expr, indent));
+            }
+            return None;
+        }
+        (requires_expand(expr) && column + self.source.slice(range).width() > self.code_line_length)
+            .then(|| self.expand(expr, indent))
     }
 
     /// Serializes a dict item as `key: value` or `**value`.
@@ -210,18 +255,19 @@ impl<'a> Expander<'a> {
         }
     }
 
-    /// Serializes `expr` into the expanded output. Returns
-    /// `Cow::Borrowed` of the source slice (with explicit parentheses
-    /// recovered) when `expr` needs no expansion, `Cow::Owned` when
-    /// `expr` itself expands.
+    /// Serializes `expr` into a child slot of an enclosing expand.
+    /// Dispatches through `replacement_for`, so a multi-line child
+    /// whose inline form fits collapses, a single-line child that
+    /// overflows expands, and anything else passes through as a
+    /// borrowed source slice with explicit parentheses recovered.
     ///
-    /// `column` is where the expression actually begins on its line
-    /// (used for the `code-line-length` overflow check). `indent` is where
-    /// its closing bracket should land if it expands. They differ for
-    /// dict values, where the key text sits between the line indent
-    /// and the value's own starting column. `parent` is the immediate
-    /// enclosing collection, used to recover any explicit parentheses
-    /// around `expr` that `expr.range()` would otherwise drop.
+    /// `column` is where the expression actually begins on its line.
+    /// `indent` is where its closing bracket should land if it
+    /// expands. They differ for dict values, where the key text sits
+    /// between the line indent and the value's own starting column.
+    /// `parent` is the immediate enclosing collection, used to
+    /// recover any explicit parentheses around `expr` that
+    /// `expr.range()` would otherwise drop.
     fn serialize_expr(
         &self,
         expr: &Expr,
@@ -229,45 +275,94 @@ impl<'a> Expander<'a> {
         column: usize,
         indent: usize,
     ) -> Cow<'a, str> {
-        if self.should_expand(expr, column) {
-            return Cow::Owned(self.expand(expr, indent));
+        match self.replacement_for(expr, column, indent) {
+            Some(text) => Cow::Owned(text),
+            None => Cow::Borrowed(self.slice_with_parens(expr, parent)),
         }
-        let range = parenthesized_range(expr.into(), parent, self.source.tokens())
-            .unwrap_or_else(|| expr.range());
-        Cow::Borrowed(self.source.slice(range))
     }
 
-    /// Returns `true` when `expr` is a qualifying collection whose
-    /// inline form would overflow the `code-line-length` budget at `column`.
-    /// Multi-line input always returns `true`. Single-line input
-    /// returns `true` only when `column + inline_length >
-    /// code_line_length`.
-    fn should_expand(&self, expr: &Expr, column: usize) -> bool {
-        let multi_item = match expr {
-            Expr::Dict(d) => d.len() > 1,
-            Expr::List(l) => l.len() > 1,
-            Expr::Set(s) => s.len() > 1,
-            _ => return false,
-        };
-        let range = expr.range();
-        multi_item
-            && !self.source.intersects_comment(range)
-            && (self.source.contains_line_break(range)
-                || column + self.source.slice(range).width() > self.code_line_length)
+    /// Returns the source slice covering `expr`, with explicit parens
+    /// recovered against `parent` so precedence-bearing parens like
+    /// `(-a) ** 2` survive a borrow.
+    fn slice_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> &'a str {
+        let range = parenthesized_range(expr.into(), parent, self.source.tokens())
+            .unwrap_or_else(|| expr.range());
+        self.source.slice(range)
+    }
+
+    /// Appends the inline serialization of `expr` to `buf`. Recursive
+    /// helper backing `inline_form`. `parent` is the immediate
+    /// enclosing AST node, used for `parenthesized_range` recovery on
+    /// non-collection leaves.
+    fn write_inline(&self, buf: &mut String, expr: &Expr, parent: AnyNodeRef) {
+        let here = AnyNodeRef::from(expr);
+        match expr {
+            Expr::Dict(d) => {
+                buf.push('{');
+                for (i, item) in d.iter().enumerate() {
+                    if i > 0 {
+                        buf.push_str(", ");
+                    }
+                    if let Some(key) = &item.key {
+                        self.write_inline(buf, key, here);
+                        buf.push_str(": ");
+                    } else {
+                        buf.push_str("**");
+                    }
+                    self.write_inline(buf, &item.value, here);
+                }
+                buf.push('}');
+            }
+            Expr::List(l) => self.write_inline_seq(buf, Some(('[', ']')), &l.elts, here, false),
+            Expr::Set(s) => self.write_inline_seq(buf, Some(('{', '}')), &s.elts, here, false),
+            Expr::Tuple(t) => {
+                let brackets = t.parenthesized.then_some(('(', ')'));
+                self.write_inline_seq(buf, brackets, &t.elts, here, t.elts.len() == 1);
+            }
+            _ => buf.push_str(self.slice_with_parens(expr, parent)),
+        }
+    }
+
+    /// Writes `elts` joined by `", "` into `buf`, optionally wrapped
+    /// in a bracket pair and optionally followed by a trailing comma.
+    /// The trailing comma carries the 1-tuple `(x,)` case.
+    fn write_inline_seq(
+        &self,
+        buf: &mut String,
+        brackets: Option<(char, char)>,
+        elts: &[Expr],
+        parent: AnyNodeRef,
+        trailing_comma: bool,
+    ) {
+        if let Some((open, _)) = brackets {
+            buf.push(open);
+        }
+        for (i, e) in elts.iter().enumerate() {
+            if i > 0 {
+                buf.push_str(", ");
+            }
+            self.write_inline(buf, e, parent);
+        }
+        if trailing_comma {
+            buf.push(',');
+        }
+        if let Some((_, close)) = brackets {
+            buf.push(close);
+        }
     }
 }
 
-impl<'a> Visitor<'a> for Expander<'a> {
+impl<'a> Visitor<'a> for Layouter<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
         let range = expr.range();
-        if !self.should_expand(expr, self.source.column_of(range.start())) {
-            walk_expr(self, expr);
-            return;
-        }
+        let column = self.source.column_of(range.start());
         let indent = self.source.line_indent_width(range.start());
-        let replacement = self.expand(expr, indent);
-        self.edits
-            .extend(narrowed_replacement(self.source, range, replacement));
+        match self.replacement_for(expr, column, indent) {
+            Some(text) => self
+                .edits
+                .extend(narrowed_replacement(self.source, range, text)),
+            None => walk_expr(self, expr),
+        }
     }
 }
 
@@ -333,6 +428,18 @@ fn is_atomic(expr: &Expr) -> bool {
         e.as_unary_op_expr().map(|u| u.operand.as_ref())
     })
     .any(|e| e.is_literal_expr() || is_dotted_name(e))
+}
+
+/// True when `expr` is a multi-item `Dict`, `List`, or `Set`, the
+/// shape the expand path canonicalizes. Tuples and single-item
+/// collections collapse only, never expand.
+fn requires_expand(expr: &Expr) -> bool {
+    match expr {
+        Expr::Dict(d) => d.len() > 1,
+        Expr::List(l) => l.len() > 1,
+        Expr::Set(s) => s.len() > 1,
+        _ => false,
+    }
 }
 
 /// Partitions `atomics` into segments. Every contiguous run of

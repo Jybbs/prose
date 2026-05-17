@@ -3,4 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/collection_layout/set_literal.input.py
 ---
-collection-layout@412..496
+collection-layout@490..574
+collection-layout@594..634

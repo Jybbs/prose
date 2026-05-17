@@ -3,4 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/collection_layout/parenthesized_children.input.py
 ---
-collection-layout@316..409
+collection-layout@334..427
+collection-layout@449..482

@@ -6,9 +6,16 @@ dict's other entries. Starred expressions in list and set elts slice
 through the `Expr::Starred` range verbatim. They are non-atomic, so
 a spread in the middle of a list splits its surrounding atomics into
 two independent runs that each flow on their own, and a set made
-entirely of spreads goes one entry per line.
+entirely of spreads goes one entry per line. A multi-line dict with
+a `**` spread whose inline form fits collapses back to one line and
+the spread renders inline as `**value`.
 """
 
 dict_unpack = {"alpha": 1, **extra_config, "beta": 2, "gamma": 3, "delta": 4, "epsilon": 5, "zeta": 6}
 list_unpack = [1, 2, 3, *middle_range, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200]
 set_unpack = {*alpha_set, *beta_set, *gamma_set, *delta_set, *epsilon_set, *zeta_set, *eta_set}
+collapsing_dict_unpack = {
+    "alpha": 1,
+    **extra_config,
+    "beta": 2
+}
