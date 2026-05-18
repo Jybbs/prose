@@ -11,7 +11,7 @@ The rule fires on module, class, and function single-line docstrings. The body c
 
 ## Configuration
 
-<ToggleConfig />
+<RuleConfigTable preset="toggle" />
 
 ## The Canonical Case
 

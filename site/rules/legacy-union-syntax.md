@@ -28,7 +28,7 @@ The rule fires. Same diagnostic as 3.10, and pairs naturally with the deferred-a
 
 ## Configuration
 
-<ToggleConfig />
+<RuleConfigTable preset="toggle" />
 
 The `target-version` field from the top-level [**Configuration**](/guide/configuration#top-level-keys) gates the lint per project.
 

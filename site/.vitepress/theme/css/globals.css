@@ -9,7 +9,7 @@
   font-size      : var(--prose-kicker-size);
   letter-spacing : var(--prose-kicker-tracking);
   text-transform : uppercase;
-  color          : var(--prose-kicker-color);
+  color          : var(--vp-c-text-3);
 }
 
 .kicker[data-variant="rule"]::before {
@@ -39,6 +39,7 @@
   letter-spacing: 0.18em;
 }
 
+.dep-graph,
 .disclosure,
 .landing-feature-card,
 .related-rules,
@@ -136,7 +137,7 @@
 
 .rule-chip:hover {
   border-color : var(--vp-c-brand-1);
-  background   : color-mix(in srgb, var(--vp-c-brand-1) 8%, var(--vp-c-bg-soft));
+  background   : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-interact), var(--vp-c-bg-soft));
 }
 
 .rule-chip-badge {
@@ -372,7 +373,7 @@
   position      : relative;
   padding-left  : 14px;
   border-radius : 0 6px 6px 0;
-  background    : color-mix(in srgb, var(--vp-c-brand-1) 8%, transparent);
+  background    : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-interact), transparent);
   font-weight   : 600;
   color         : var(--vp-c-brand-1);
 }
@@ -408,7 +409,7 @@
 }
 
 .vp-doc .custom-block.tip {
-  border-color: color-mix(in srgb, var(--vp-c-brand-1) 32%, var(--vp-c-divider));
+  border-color: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-strong), var(--vp-c-divider));
 }
 
 .vp-doc .custom-block.tip::before {
@@ -491,7 +492,7 @@
 }
 
 .category-chip[data-category="auto-fix"] {
-  border-color : color-mix(in srgb, var(--vp-c-brand-1) 32%, var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-strong), var(--vp-c-divider));
   color        : var(--vp-c-brand-1);
 }
 
@@ -673,7 +674,7 @@
 }
 
 .vp-doc tbody tr:hover {
-  background: color-mix(in srgb, var(--vp-c-brand-1) 5%, transparent);
+  background: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-faint), transparent);
 }
 
 /* ─── Domain-tagged dropcap ─── */
@@ -784,7 +785,7 @@
 }
 
 .exit-code-row-summary:hover {
-  background: color-mix(in srgb, var(--vp-c-brand-1) 5%, var(--vp-c-bg));
+  background: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-faint), var(--vp-c-bg));
 }
 
 .exit-code-row[open] {
@@ -865,12 +866,9 @@
 /* ─── Dependency graph ─── */
 
 .dep-graph {
-  margin        : 1.5rem 0;
-  padding       : 18px;
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg-soft);
-  text-align    : center;
+  margin     : 1.5rem 0;
+  padding    : 18px;
+  text-align : center;
 }
 
 .dep-graph svg {

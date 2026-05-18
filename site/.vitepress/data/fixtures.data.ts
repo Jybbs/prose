@@ -4,9 +4,10 @@ import path from 'node:path'
 import { codeToHtml }   from 'shiki'
 import { defineLoader } from 'vitepress'
 
+import { SHIKI_THEMES } from '../lib/constants'
 import { FIXTURES_DIR, INPUT_SUFFIX, SNAPSHOTS_DIR, walkFixtures } from '../lib/fixtures'
 import { repoRoot }     from '../lib/paths'
-import { SHIKI_THEMES } from '../lib/shiki'
+import type { Registry } from '../lib/types'
 
 const root          = repoRoot(import.meta.url)
 const fixturesRoot  = path.join(root, FIXTURES_DIR)
@@ -19,7 +20,7 @@ export interface FixtureEntry {
   outputHtml : string
 }
 
-export type FixtureData = Record<string, Record<string, FixtureEntry>>
+export type FixtureData = Registry<Registry<FixtureEntry>>
 
 declare const data: FixtureData
 export { data }

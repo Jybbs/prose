@@ -11,7 +11,7 @@ The rule fires on every multi-line docstring across module, class, and function 
 
 ## Configuration
 
-<ToggleConfig />
+<RuleConfigTable preset="toggle" />
 
 ## The Canonical Case
 

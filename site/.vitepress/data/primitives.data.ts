@@ -1,17 +1,23 @@
 import { createContentLoader } from 'vitepress'
 
-import { PRIMITIVES, type PrimitiveSlug } from '../lib/primitives'
+import { PRIMITIVES, type PrimitiveSlug } from '../lib/registries'
+import type { Registry }                  from '../lib/types'
 
 export interface DiscoveredPrimitive {
   display : string
   slug    : PrimitiveSlug
 }
 
-declare const data: DiscoveredPrimitive[]
+export interface PrimitivesData {
+  bySlug : Registry<DiscoveredPrimitive>
+  list   : readonly DiscoveredPrimitive[]
+}
+
+declare const data: PrimitivesData
 export { data }
 
 export default createContentLoader('primitives/*.md', {
-  transform(pages): DiscoveredPrimitive[] {
+  transform(pages): PrimitivesData {
     const known     = new Set(Object.keys(PRIMITIVES))
     const found     = new Set<string>()
     const collected = pages
@@ -27,8 +33,10 @@ export default createContentLoader('primitives/*.md', {
     if (missing.length > 0) {
       throw new Error(`PRIMITIVES registry has no matching page: [${missing.join(', ')}]`)
     }
-    return Object.entries(PRIMITIVES)
-      .map(([slug, display]) => ({ display, slug: slug as PrimitiveSlug }))
+    const list = Object.entries(PRIMITIVES)
+      .map(([slug, display]): DiscoveredPrimitive => ({ display, slug: slug as PrimitiveSlug }))
       .sort((a, b) => a.slug.localeCompare(b.slug))
+    const bySlug: Registry<DiscoveredPrimitive> = Object.fromEntries(list.map(p => [p.slug, p]))
+    return { bySlug, list }
   }
 })

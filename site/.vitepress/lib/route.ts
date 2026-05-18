@@ -18,12 +18,12 @@ function useSlug(prefix: string): ComputedRef<string | null> {
 
 export function useCurrentPrimitive(): ComputedRef<DiscoveredPrimitive | null> {
   const slug = useSlug('primitives')
-  return computed(() => primitives.find(p => p.slug === slug.value) ?? null)
+  return computed(() => (slug.value && primitives.bySlug[slug.value]) ?? null)
 }
 
 export function useCurrentRule(): ComputedRef<DiscoveredRule | null> {
   const slug = useSlug('rules')
-  return computed(() => rules.find(r => r.slug === slug.value) ?? null)
+  return computed(() => (slug.value && rules.bySlug[slug.value]) ?? null)
 }
 
 export function useIsRulePage(): ComputedRef<boolean> {

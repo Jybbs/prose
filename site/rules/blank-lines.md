@@ -11,7 +11,7 @@ Module-level `def` and `class` carry two blank lines before them, methods inside
 
 ## Configuration
 
-<ToggleConfig />
+<RuleConfigTable preset="toggle" />
 
 ## The Canonical Case
 

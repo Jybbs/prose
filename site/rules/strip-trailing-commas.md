@@ -11,7 +11,7 @@ The rule walks every bracketed container (*dictionaries, lists, sets, function s
 
 ## Configuration
 
-<ToggleConfig />
+<RuleConfigTable preset="toggle" />
 
 ## The Canonical Case
 

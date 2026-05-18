@@ -11,7 +11,7 @@ The rule reads `docstring-line-length` for the description budget, `code-line-le
 
 ## Configuration
 
-<ToggleConfig />
+<RuleConfigTable preset="toggle" />
 
 Description and structured budgets come from the top-level [**Configuration**](/guide/configuration#top-level-keys) keys: `docstring-line-length` (*default 76*), `code-line-length` (*default 88*), and `docstring-structured-policy` (*defaulting to `"code-line-length"`*) drive the column targets.
 

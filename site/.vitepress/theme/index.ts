@@ -9,16 +9,15 @@ import 'floating-vue/dist/style.css'
 import 'virtual:group-icons.css'
 
 import Layout              from './Layout.vue'
-import AlignmentConfig     from './components/AlignmentConfig.vue'
 import DependencyGraph     from './components/DependencyGraph.vue'
 import ExitCodeMatrix      from './components/ExitCodeMatrix.vue'
 import Fixture             from './components/Fixture.vue'
 import GlossaryTerm        from './components/GlossaryTerm.vue'
 import RuleChip            from './components/RuleChip.vue'
+import RuleConfigTable     from './components/RuleConfigTable.vue'
 import RuleMotivation      from './components/RuleMotivation.vue'
 import RulesIndex          from './components/RulesIndex.vue'
 import SectionHeading      from './components/SectionHeading.vue'
-import ToggleConfig        from './components/ToggleConfig.vue'
 import LandingCta          from './components/landing/Cta.vue'
 import LandingFeatures     from './components/landing/Features.vue'
 import LandingHero         from './components/landing/Hero.vue'
@@ -32,16 +31,15 @@ import './css/fixture.css'
 import './css/landing.css'
 
 const COMPONENTS = {
-  AlignmentConfig,
   DependencyGraph,
   ExitCodeMatrix,
   Fixture,
   GlossaryTerm,
   RuleChip,
+  RuleConfigTable,
   RuleMotivation,
   RulesIndex,
   SectionHeading,
-  ToggleConfig,
 
   LandingCta,
   LandingFeatures,

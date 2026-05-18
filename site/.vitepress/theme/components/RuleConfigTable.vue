@@ -1,12 +1,12 @@
 <script setup lang="ts">
-export interface Row {
-  default : string
-  key     : string
-  meaning : string
-  type    : string
-}
+import { RULE_CONFIG_PRESETS, type Row, type RuleConfigPreset } from '../../lib/rule-config-presets'
 
-defineProps<{ rows: Row[] }>()
+const props = defineProps<{
+  preset?: RuleConfigPreset
+  rows  ?: Row[]
+}>()
+
+const resolved = props.rows ?? (props.preset ? RULE_CONFIG_PRESETS[props.preset] : [])
 </script>
 
 <template>
@@ -20,7 +20,7 @@ defineProps<{ rows: Row[] }>()
       </tr>
     </thead>
     <tbody>
-      <tr v-for="row in rows" :key="row.key">
+      <tr v-for="row in resolved" :key="row.key">
         <td><code>{{ row.key }}</code></td>
         <td v-html="row.type" />
         <td><code>{{ row.default }}</code></td>

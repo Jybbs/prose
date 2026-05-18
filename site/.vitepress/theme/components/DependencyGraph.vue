@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import { DEP_GRAPH_EDGES, DEP_GRAPH_NODES } from '../../lib/dependency-graph'
-import { PRIMITIVES }                       from '../../lib/primitives'
+import { PRIMITIVES }                       from '../../lib/registries'
 import { useCurrentPrimitive }              from '../../lib/route'
 
 const current     = useCurrentPrimitive()

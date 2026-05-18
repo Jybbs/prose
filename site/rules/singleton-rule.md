@@ -11,7 +11,7 @@ The rule operates on the four `:`-shaped contexts that [[align-colons]] covers (
 
 ## Configuration
 
-<ToggleConfig />
+<RuleConfigTable preset="toggle" />
 
 ## The Canonical Case
 

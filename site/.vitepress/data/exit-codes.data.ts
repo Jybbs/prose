@@ -1,6 +1,7 @@
 import { createMarkdownRenderer, defineLoader } from 'vitepress'
 
-import { siteDir } from '../lib/paths'
+import { siteDir }            from '../lib/paths'
+import { renderInlineField }  from '../lib/render-markdown'
 
 const root = siteDir(import.meta.url)
 
@@ -74,9 +75,6 @@ export default defineLoader({
   watch: [],
   async load(): Promise<readonly ExitCode[]> {
     const md = await createMarkdownRenderer(root)
-    return SOURCES.map(({ detail, ...rest }) => ({
-      ...rest,
-      detailHtml: detail.map(line => md.renderInline(line))
-    }))
+    return renderInlineField(md, SOURCES, 'detail')
   }
 })

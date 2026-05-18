@@ -3,7 +3,7 @@ import Kicker from '../Kicker.vue'
 
 import { data as rules } from '../../../data/rules.data'
 
-const slugs = rules.map(r => r.slug)
+const slugs = rules.list.map(r => r.slug)
 </script>
 
 <template>

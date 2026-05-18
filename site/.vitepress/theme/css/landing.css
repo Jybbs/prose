@@ -319,7 +319,7 @@
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-label-size);
   letter-spacing : var(--prose-label-tracking);
-  color          : var(--prose-label-color);
+  color          : var(--vp-c-text-3);
 }
 
 .card-icon {
@@ -398,7 +398,7 @@
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-label-size);
   letter-spacing : var(--prose-label-tracking);
-  color          : var(--prose-label-color);
+  color          : var(--vp-c-text-3);
 }
 
 .workflow-step h3 {
@@ -437,7 +437,7 @@
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
   background   :
-    radial-gradient(600px 260px at 50% 0%, color-mix(in srgb, var(--vp-c-brand-1) 14%, transparent), transparent),
+    radial-gradient(600px 260px at 50% 0%, color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-medium), transparent), transparent),
     var(--vp-c-bg-soft);
   text-align    : center;
 }

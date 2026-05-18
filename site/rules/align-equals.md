@@ -11,7 +11,7 @@ The rule walks consecutive single-target assignments at the same indentation lev
 
 ## Configuration
 
-<AlignmentConfig />
+<RuleConfigTable preset="alignment" />
 
 <RuleMotivation>
   <template #problem>

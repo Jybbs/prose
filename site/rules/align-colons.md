@@ -11,7 +11,7 @@ The rule walks each context independently, treating a group as the consecutive m
 
 ## Configuration
 
-<AlignmentConfig />
+<RuleConfigTable preset="alignment" />
 
 ## The Canonical Case
 

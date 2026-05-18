@@ -1,6 +1,6 @@
 import type MarkdownIt from 'markdown-it'
 
-import { PRIMITIVES } from './primitives'
+import { PRIMITIVES } from './registries'
 
 export function ruleLinkPlugin(validRuleSlugs: Set<string>) {
   return function plugin(md: MarkdownIt) {

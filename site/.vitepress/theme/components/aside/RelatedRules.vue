@@ -16,10 +16,10 @@ const related = computed(() => {
   const slugs = frontmatter.value.related as string[] | undefined
   if (slugs?.length) {
     return slugs
-      .map(slug => rules.find(r => r.slug === slug))
+      .map(slug => rules.bySlug[slug])
       .filter((r): r is NonNullable<typeof r> => r !== undefined)
   }
-  return rules
+  return rules.list
     .filter(r => r.slug !== current.value!.slug && r.category === current.value!.category)
     .slice(0, 5)
 })

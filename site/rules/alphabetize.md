@@ -11,7 +11,7 @@ The rule fires on siblings whose order does not carry meaning. It leaves alone e
 
 ## Configuration
 
-<ToggleConfig />
+<RuleConfigTable preset="toggle" />
 
 The ordering itself follows fixed per-construct conventions without per-project knobs. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. Imports sort alphabetically within each block.
 

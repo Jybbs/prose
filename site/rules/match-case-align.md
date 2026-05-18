@@ -11,7 +11,7 @@ The rule fires only on runs of single-expression cases at the same indentation. 
 
 ## Configuration
 
-<AlignmentConfig />
+<RuleConfigTable preset="alignment" />
 
 ## The Canonical Case
 

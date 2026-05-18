@@ -28,11 +28,14 @@
   --prose-transition             : 0.15s ease;
   --prose-transition-slow        : 0.2s ease;
 
-  --prose-kicker-color           : var(--vp-c-text-3);
+  --prose-tint-faint             : 5%;
+  --prose-tint-interact          : 8%;
+  --prose-tint-medium            : 14%;
+  --prose-tint-strong            : 32%;
+
   --prose-kicker-size            : 0.72rem;
   --prose-kicker-tracking        : 0.14em;
 
-  --prose-label-color            : var(--vp-c-text-3);
   --prose-label-size             : 0.72rem;
   --prose-label-tracking         : 0.1em;
 
@@ -41,15 +44,15 @@
   --vp-c-brand-3                 : #c49bdb;
   --vp-c-brand-soft              : rgba(138, 128, 203, 0.14);
 
-  --vp-c-tip-1                   : #8a80cb;
-  --vp-c-tip-2                   : #c49bdb;
-  --vp-c-tip-3                   : #c49bdb;
+  --vp-c-tip-1                   : var(--vp-c-brand-1);
+  --vp-c-tip-2                   : var(--vp-c-brand-3);
+  --vp-c-tip-3                   : var(--vp-c-brand-3);
   --vp-c-tip-soft                : rgba(196, 155, 219, 0.14);
 
   --vp-button-brand-active-bg    : #7d72c1;
-  --vp-button-brand-bg           : #8a80cb;
+  --vp-button-brand-bg           : var(--vp-c-brand-1);
   --vp-button-brand-border       : transparent;
-  --vp-button-brand-hover-bg     : #a094d7;
+  --vp-button-brand-hover-bg     : var(--vp-c-brand-2);
   --vp-button-brand-hover-border : transparent;
 
   --vp-home-hero-name-background : linear-gradient(120deg, var(--vp-c-brand-1) 30%, var(--vp-c-brand-3));
@@ -72,6 +75,6 @@
   --vp-local-search-highlight-text         : var(--vp-c-text-1);
   --vp-local-search-result-bg              : var(--vp-c-bg-soft);
   --vp-local-search-result-border          : var(--vp-c-divider);
-  --vp-local-search-result-selected-bg     : color-mix(in srgb, var(--vp-c-brand-1) 14%, var(--vp-c-bg-soft));
+  --vp-local-search-result-selected-bg     : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-medium), var(--vp-c-bg-soft));
   --vp-local-search-result-selected-border : var(--vp-c-brand-1);
 }

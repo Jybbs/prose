@@ -2,16 +2,15 @@ import { defineConfig, type DefaultTheme }       from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
-import { bodyLinkPlugin }                      from './lib/body-link-plugin'
-import { REPO_URL, SITE_HOSTNAME }             from './lib/constants'
-import { glossary }                            from './lib/glossary'
-import { glossaryPlugin }                      from './lib/glossary-plugin'
-import { repoRoot, rulesDir }                  from './lib/paths'
-import { PRIMITIVES }                          from './lib/primitives'
-import { ruleLinkPlugin }                      from './lib/rule-link'
-import { discoverRuleFiles, splitByCategory }  from './lib/rules-discovery'
-import { SHIKI_THEMES }                        from './lib/shiki'
-import { readCargoVersion }                    from './lib/version'
+import { bodyLinkPlugin }                          from './lib/body-link-plugin'
+import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME }   from './lib/constants'
+import { glossary }                                from './lib/glossary'
+import { glossaryPlugin }                          from './lib/glossary-plugin'
+import { repoRoot, rulesDir }                      from './lib/paths'
+import { PRIMITIVES }                              from './lib/registries'
+import { ruleLinkPlugin }                          from './lib/rule-link'
+import { discoverRuleSlugs, splitByCategory }      from './lib/rules-discovery'
+import { readCargoVersion }                        from './lib/version'
 
 const repoDir = repoRoot(import.meta.url)
 const version = readCargoVersion(repoDir)
@@ -22,7 +21,7 @@ const primLink = (text: string, slug: string): DefaultTheme.SidebarItem =>
 const ruleLink = (slug: string): DefaultTheme.SidebarItem =>
   ({ link: `/rules/${slug}`, text: slug })
 
-const discoveredRules   = discoverRuleFiles(rulesDir(import.meta.url))
+const discoveredRules   = discoverRuleSlugs(rulesDir(import.meta.url))
 const { autoFix, lint } = splitByCategory(discoveredRules)
 const validSlugs        = new Set(discoveredRules.map(r => r.slug))
 

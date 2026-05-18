@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { CATEGORY_META } from '../../lib/categories'
+import { CATEGORY_META } from '../../lib/registries'
 import { data as rules } from '../../data/rules.data'
 
 const categories = (['auto-fix', 'lint'] as const).map(slug => ({
   label: CATEGORY_META[slug].label,
-  rules: rules.filter(r => r.category === slug),
+  rules: rules.list.filter(r => r.category === slug),
   slug
 }))
 </script>

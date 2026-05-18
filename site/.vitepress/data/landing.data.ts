@@ -1,7 +1,8 @@
 import { createMarkdownRenderer, defineLoader } from 'vitepress'
 
-import { REPO_URL } from '../lib/constants'
-import { siteDir }  from '../lib/paths'
+import { REPO_URL }           from '../lib/constants'
+import { siteDir }            from '../lib/paths'
+import { renderInlineField }  from '../lib/render-markdown'
 
 const root = siteDir(import.meta.url)
 
@@ -131,15 +132,9 @@ export default defineLoader({
     const md = await createMarkdownRenderer(root)
     return {
       cta     : { links: CTA_LINKS },
-      features: FEATURE_SOURCES.map(({ body, ...rest }) => ({
-        ...rest,
-        bodyHtml: md.renderInline(body)
-      })),
+      features: renderInlineField(md, FEATURE_SOURCES, 'body'),
       hero    : { actions: ACTIONS },
-      workflow: STEP_SOURCES.map(({ body, ...rest }) => ({
-        ...rest,
-        bodyHtml: md.renderInline(body)
-      }))
+      workflow: renderInlineField(md, STEP_SOURCES, 'body')
     }
   }
 })

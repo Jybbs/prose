@@ -28,7 +28,7 @@ The version-gated branch fires. PEP 749 lands deferred annotation evaluation, so
 
 ## Configuration
 
-<ToggleConfig />
+<RuleConfigTable preset="toggle" />
 
 The `target-version` field from the top-level [**Configuration**](/guide/configuration#top-level-keys) gates the rewrite per project.
 

@@ -11,7 +11,7 @@ Two shapes are recognized: the bare numeric-dot form `# N. text` and the `Step`-
 
 ## Configuration
 
-<ToggleConfig />
+<RuleConfigTable preset="toggle" />
 
 ## The Canonical Case
 

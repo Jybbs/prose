@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { data as rules } from '../../data/rules.data'
-import { CATEGORY_META } from '../../lib/categories'
+import { CATEGORY_META } from '../../lib/registries'
 import { lookup }        from '../../lib/registry'
 
 const props = defineProps<{ slug: string }>()
 
-const byKey = Object.fromEntries(rules.map(r => [r.slug, r]))
-const entry = lookup(byKey, props.slug, 'Rule')
+const entry = lookup(rules.bySlug, props.slug, 'Rule')
 const meta  = CATEGORY_META[entry.category]
 </script>
 

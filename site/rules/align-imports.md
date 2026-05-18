@@ -11,7 +11,7 @@ The rule reads each block as the run of consecutive imports at the same indentat
 
 ## Configuration
 
-<AlignmentConfig />
+<RuleConfigTable preset="alignment" />
 
 ## The Canonical Case
 

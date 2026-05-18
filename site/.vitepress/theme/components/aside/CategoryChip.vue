@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CATEGORY_META }   from '../../../lib/categories'
+import { CATEGORY_META }   from '../../../lib/registries'
 import { useCurrentRule }  from '../../../lib/route'
 
 const rule = useCurrentRule()

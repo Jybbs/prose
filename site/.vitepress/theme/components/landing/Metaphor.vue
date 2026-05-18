@@ -1,6 +1,14 @@
+<script setup lang="ts">
+import LandingSection from './LandingSection.vue'
+</script>
+
 <template>
-  <div class="landing-section landing-metaphor">
-    <SectionHeading centered heading="Code, read like <em>prose</em>." kicker="The Idea" />
+  <LandingSection
+    centered
+    heading="Code, read like <em>prose</em>."
+    kicker="The Idea"
+    variant="metaphor"
+  >
     <div class="landing-metaphor-body">
       <div class="landing-metaphor-copy">
         <p>
@@ -22,5 +30,5 @@
         <p>2. an opinionated formatter that lays Python out so a reader can read it.</p>
       </div>
     </div>
-  </div>
+  </LandingSection>
 </template>

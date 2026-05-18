@@ -81,7 +81,7 @@
   font-size      : var(--prose-label-size);
   letter-spacing : var(--prose-label-tracking);
   text-transform : uppercase;
-  color          : var(--prose-label-color);
+  color          : var(--vp-c-text-3);
 }
 
 .fixture-pair-dot {

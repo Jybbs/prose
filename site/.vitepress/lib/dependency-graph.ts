@@ -1,4 +1,4 @@
-import { PRIMITIVES, type PrimitiveSlug } from './primitives'
+import { PRIMITIVES, type PrimitiveSlug } from './registries'
 
 export interface DepGraphNode {
   cx    : number
