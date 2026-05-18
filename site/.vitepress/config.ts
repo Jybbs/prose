@@ -1,33 +1,24 @@
 import postcssCustomMedia                         from 'postcss-custom-media'
-import { defineConfig, type DefaultTheme }        from 'vitepress'
+import { defineConfig }                            from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
 import { buildPhraseToSlug, glossary }            from './lib/glossary/glossary'
 import { glossaryPlugin }                         from './lib/glossary/plugin'
 import { bodyLinkPlugin }                         from './lib/markdown/body-link-plugin'
-import { discoverRuleSlugs, splitByCategory }     from './lib/rules/discovery'
+import { discoverRuleSlugs }                      from './lib/rules/discovery'
 import { ruleLinkPlugin }                         from './lib/rules/link-plugin'
+import { buildSidebar }                           from './lib/sidebar'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME }  from './lib/shared/constants'
 import { buildPageTimestamps }                    from './lib/shared/page-timestamps'
 import { repoRoot, rulesDir }                     from './lib/shared/paths'
-import { PRIMITIVES }                             from './lib/shared/registries'
 import { readCargoVersion }                       from './lib/shared/version'
 
-const repoDir        = repoRoot(import.meta.url)
-const version        = readCargoVersion(repoDir)
-const pageTimestamps = buildPageTimestamps(repoDir)
-
-const primLink = (text: string, slug: string): DefaultTheme.SidebarItem =>
-  ({ link: `/primitives/${slug}`, text })
-
-const ruleLink = (slug: string): DefaultTheme.SidebarItem =>
-  ({ link: `/rules/${slug}`, text: slug })
-
-const discoveredRules   = discoverRuleSlugs(rulesDir(import.meta.url))
-const { autoFix, lint } = splitByCategory(discoveredRules)
-const validSlugs        = new Set(discoveredRules.map(r => r.slug))
-
+const repoDir          = repoRoot(import.meta.url)
+const version          = readCargoVersion(repoDir)
+const pageTimestamps   = buildPageTimestamps(repoDir)
+const discoveredRules  = discoverRuleSlugs(rulesDir(import.meta.url))
+const validSlugs       = new Set(discoveredRules.map(r => r.slug))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 
 export default defineConfig({
@@ -69,31 +60,7 @@ export default defineConfig({
     ],
     outline    : { level: [2, 3] },
     search     : { provider: 'local' },
-    sidebar    : {
-      '/guide/': [
-        {
-          items: [
-            { link: '/guide/installation',       text: 'Installation'       },
-            { link: '/guide/configuration',      text: 'Configuration'      },
-            { link: '/guide/suppression',        text: 'Suppression'        },
-            { link: '/guide/editor-integration', text: 'Editor Integration' },
-            { link: '/guide/ci-integration',     text: 'CI Integration'     }
-          ],
-          text : 'Guide'
-        }
-      ],
-      '/primitives/': [
-        {
-          items: Object.entries(PRIMITIVES).map(([slug, label]) => primLink(label, slug)),
-          text : 'Primitives'
-        }
-      ],
-      '/rules/': [
-        { items: [{ link: '/rules/', text: 'Overview' }], text: 'Rules'    },
-        { items: autoFix.map(ruleLink),                   text: 'Auto-Fix' },
-        { items: lint.map(ruleLink),                      text: 'Lint'     }
-      ]
-    },
+    sidebar    : buildSidebar(discoveredRules),
     siteTitle  : 'Prose',
     socialLinks: [
       { icon: 'github', link: REPO_URL }

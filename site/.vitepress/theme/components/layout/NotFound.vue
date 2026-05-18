@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import './not-found.css'
+import Kicker  from '../base/Kicker.vue'
+import LinkRow from '../base/LinkRow.vue'
 
-import Kicker from '../base/Kicker.vue'
+const links = [
+  { href: '/',                    text: 'Home'         },
+  { href: '/guide/installation',  text: 'Installation' },
+  { href: '/rules/',              text: 'Rules'        },
+  { href: '/primitives/source',   text: 'Primitives'   }
+]
 </script>
 
 <template>
@@ -12,11 +18,6 @@ import Kicker from '../base/Kicker.vue'
       The page you wanted didn't make it through the proof. Try one of the
       surfaces below, or jump back to the catalog and pick another rule.
     </p>
-    <div class="not-found-links">
-      <a href="/">Home</a>
-      <a href="/guide/installation">Installation</a>
-      <a href="/rules/">Rules</a>
-      <a href="/primitives/source">Primitives</a>
-    </div>
+    <LinkRow :items="links" variant="not-found-links" />
   </div>
 </template>

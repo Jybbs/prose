@@ -31,8 +31,6 @@
 }
 
 .fixture-pair-arrow {
-  display     : grid;
-  place-items : center;
   font-family : var(--prose-font-display);
   font-size   : 1.8rem;
   font-style  : italic;
@@ -48,8 +46,8 @@
   padding        : 2px 8px;
   background     : var(--vp-c-bg);
   border         : 1px solid var(--vp-c-divider);
-  border-radius  : 10px;
-  font-size      : 0.62rem;
+  border-radius  : var(--prose-radius-chip);
+  font-size      : var(--prose-text-meta);
   font-weight    : 600;
   letter-spacing : 0.12em;
   text-transform : uppercase;
@@ -100,7 +98,7 @@
 
 .fixture-pair-landing .fixture-pair-code {
   padding   : 16px 18px;
-  font-size : 0.85rem;
+  font-size : var(--prose-text-sm);
   border    : none;
   flex-grow : 1;
 }

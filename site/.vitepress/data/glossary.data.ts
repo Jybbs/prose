@@ -2,13 +2,9 @@ import { defineLoader } from 'vitepress'
 
 import { glossary }    from '../lib/glossary/glossary'
 import { getRenderer } from '../lib/markdown/renderer'
-import { siteDir }     from '../lib/shared/paths'
-
-const root = siteDir(import.meta.url)
 
 export interface RenderedGlossaryEntry {
-  definitionHtml : string
-  href          ?: string
+  tooltipHtml : string
 }
 
 export interface GlossaryData {
@@ -21,14 +17,20 @@ export { data }
 export default defineLoader({
   watch: [],
   async load(): Promise<GlossaryData> {
-    const md      = await getRenderer(root)
+    const md      = await getRenderer()
     const entries : Record<string, RenderedGlossaryEntry> = {}
 
     for (const [slug, entry] of Object.entries(glossary)) {
-      entries[slug] = {
-        definitionHtml: md.renderInline(entry.definition),
-        href          : entry.href
+      const definitionHtml = md.renderInline(entry.definition)
+      const parts          = [
+        `<div class="glossary-tooltip-title">${md.utils.escapeHtml(slug)}</div>`,
+        `<div class="glossary-tooltip-divider" aria-hidden="true"></div>`,
+        `<div class="glossary-tooltip-body">${definitionHtml}</div>`
+      ]
+      if (entry.href) {
+        parts.push(`<a href="${md.utils.escapeHtml(entry.href)}" class="glossary-tooltip-link">Read more →</a>`)
       }
+      entries[slug] = { tooltipHtml: parts.join('') }
     }
 
     return { entries }

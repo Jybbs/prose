@@ -33,29 +33,31 @@ import './styles/markdown-headings.css'
 import './styles/primitives.css'
 import './styles/vitepress-chrome.css'
 
-const COMPONENTS = {
-  DependencyGraph,
-  ExitCodeMatrix,
-  Fixture,
-  GlossaryTerm,
-  RuleChip,
-  RuleConfigTable,
-  RuleMotivation,
-  RulesIndex
-}
-
-function registerComponents(app: App) {
-  for (const [name, component] of Object.entries(COMPONENTS)) {
-    app.component(name, component)
-  }
-}
+import './components/aside/category-chip.css'
+import './components/aside/fixture-toc.css'
+import './components/aside/related-rules.css'
+import './components/base/disclosure.css'
+import './components/exit-codes/exit-code-matrix.css'
+import './components/fixtures/fixture.css'
+import './components/glossary/glossary.css'
+import './components/landing/landing.css'
+import './components/layout/build-metadata.css'
+import './components/layout/not-found.css'
+import './components/primitives/dependency-graph.css'
 
 export default {
   extends: DefaultTheme,
   Layout,
   enhanceApp({ app }) {
     enhanceAppWithTabs(app)
-    registerComponents(app)
+    app.component('DependencyGraph', DependencyGraph)
+    app.component('ExitCodeMatrix',  ExitCodeMatrix)
+    app.component('Fixture',         Fixture)
+    app.component('GlossaryTerm',    GlossaryTerm)
+    app.component('RuleChip',        RuleChip)
+    app.component('RuleConfigTable', RuleConfigTable)
+    app.component('RuleMotivation',  RuleMotivation)
+    app.component('RulesIndex',      RulesIndex)
     app.use(FloatingVue, {
       themes: {
         glossary: {

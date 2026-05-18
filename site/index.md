@@ -11,16 +11,15 @@ import LandingFeatures     from './.vitepress/theme/components/landing/Features.
 import LandingHero         from './.vitepress/theme/components/landing/Hero.vue'
 import LandingMetaphor     from './.vitepress/theme/components/landing/Metaphor.vue'
 import LandingRulesMarquee from './.vitepress/theme/components/landing/RulesMarquee.vue'
-import SectionHeading      from './.vitepress/theme/components/landing/SectionHeading.vue'
+import LandingSection      from './.vitepress/theme/components/landing/LandingSection.vue'
 import LandingWorkflow     from './.vitepress/theme/components/landing/Workflow.vue'
 </script>
 
 <section class="landing-page" aria-label="prose overview">
   <LandingHero />
-  <section class="landing-section landing-proof">
-    <SectionHeading kicker="The Proof" heading="One file, before and after." centered />
+  <LandingSection variant="proof" kicker="The Proof" heading="One file, before and after." centered>
     <Fixture rule="thematic" case="dataclass_definition" variant="landing" />
-  </section>
+  </LandingSection>
   <LandingMetaphor />
   <LandingFeatures />
   <LandingRulesMarquee />

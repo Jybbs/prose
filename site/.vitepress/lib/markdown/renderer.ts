@@ -1,9 +1,11 @@
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
+import { siteDir } from '../shared/paths'
+
 let cachedRenderer: Promise<MarkdownRenderer> | null = null
 
-export function getRenderer(siteRoot: string): Promise<MarkdownRenderer> {
-  if (cachedRenderer === null) cachedRenderer = createMarkdownRenderer(siteRoot)
+export function getRenderer(): Promise<MarkdownRenderer> {
+  if (cachedRenderer === null) cachedRenderer = createMarkdownRenderer(siteDir(import.meta.url))
   return cachedRenderer
 }
 

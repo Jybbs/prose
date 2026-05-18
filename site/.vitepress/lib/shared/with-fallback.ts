@@ -7,7 +7,25 @@ export async function withFallback<T>(
     return await fn()
   }
   catch (err) {
-    console.warn(`[data:${label}] external call failed, using fallback:`, err instanceof Error ? err.message : err)
+    warnFallback(label, err)
     return fallback
   }
+}
+
+export function withFallbackSync<T>(
+  label    : string,
+  fn       : () => T,
+  fallback : T
+): T {
+  try {
+    return fn()
+  }
+  catch (err) {
+    warnFallback(label, err)
+    return fallback
+  }
+}
+
+function warnFallback(label: string, err: unknown): void {
+  console.warn(`[data:${label}] external call failed, using fallback:`, err instanceof Error ? err.message : err)
 }

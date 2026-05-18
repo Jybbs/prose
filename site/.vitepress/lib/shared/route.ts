@@ -21,11 +21,6 @@ export function useCurrentRule(): ComputedRef<DiscoveredRule | null> {
   return computed(() => (slug.value && rules.bySlug[slug.value]) ?? null)
 }
 
-export function useIsRulePage(): ComputedRef<boolean> {
-  const slug = useSlug('rules')
-  return computed(() => slug.value !== null)
-}
-
 function useSlug(prefix: string): ComputedRef<string | null> {
   const { page } = useData()
   return computed(() => slugForPrefix(page.value.relativePath, prefix))

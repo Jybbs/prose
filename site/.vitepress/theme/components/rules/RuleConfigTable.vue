@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { RULE_CONFIG_PRESETS, type Row, type RuleConfigPreset } from '../../../lib/rules/config-presets'
+import { data as configs } from '../../../data/rule-configs.data'
+import type { RuleConfigPreset } from '../../../lib/rules/config-presets'
 
 const props = defineProps<{
-  preset?: RuleConfigPreset
-  rows  ?: Row[]
+  preset: RuleConfigPreset
 }>()
 
-const resolved = props.rows ?? (props.preset ? RULE_CONFIG_PRESETS[props.preset] : [])
+const rows = configs[props.preset]
 </script>
 
 <template>
@@ -20,11 +20,11 @@ const resolved = props.rows ?? (props.preset ? RULE_CONFIG_PRESETS[props.preset]
       </tr>
     </thead>
     <tbody>
-      <tr v-for="row in resolved" :key="row.key">
+      <tr v-for="row in rows" :key="row.key">
         <td><code>{{ row.key }}</code></td>
-        <td v-html="row.type" />
+        <td v-html="row.typeHtml" />
         <td><code>{{ row.default }}</code></td>
-        <td v-html="row.meaning" />
+        <td v-html="row.meaningHtml" />
       </tr>
     </tbody>
   </table>

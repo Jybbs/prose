@@ -1,15 +1,10 @@
 .related-rules {
   margin  : 20px 0 0;
-  padding : 14px 16px;
+  padding : var(--prose-pad-card);
 }
 
 .related-rules-list {
-  display        : flex;
-  flex-direction : column;
-  gap            : 6px;
-  margin         : 0;
-  padding        : 0;
-  list-style     : none;
+  gap : 6px;
 }
 
 .related-rules-list li {

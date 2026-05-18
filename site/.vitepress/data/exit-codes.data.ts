@@ -1,9 +1,6 @@
 import { defineLoader } from 'vitepress'
 
 import { getRenderer, renderInlineField } from '../lib/markdown/renderer'
-import { siteDir }                        from '../lib/shared/paths'
-
-const root = siteDir(import.meta.url)
 
 export interface ExitCode {
   code        : number
@@ -74,7 +71,7 @@ const SOURCES: readonly ExitCodeSource[] = [
 export default defineLoader({
   watch: [],
   async load(): Promise<readonly ExitCode[]> {
-    const md = await getRenderer(root)
+    const md = await getRenderer()
     return renderInlineField(md, SOURCES, 'detail')
   }
 })

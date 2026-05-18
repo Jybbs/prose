@@ -32,13 +32,11 @@
 }
 
 .exit-code-row[open] {
-  background: color-mix(in srgb, var(--vp-c-brand-1) 10%, var(--vp-c-bg-soft));
+  background: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-interact), var(--vp-c-bg-soft));
 }
 
 .exit-code-number {
-  display      : grid;
-  place-items  : center;
-  font-family  : Georgia, "Times New Roman", serif;
+  font-family  : var(--prose-font-display);
   font-size    : 1.4rem;
   font-style   : italic;
   font-weight  : 700;

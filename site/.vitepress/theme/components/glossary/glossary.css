@@ -16,10 +16,10 @@
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
-  box-shadow    : var(--prose-shadow-elevated),
-                  0 0 0 1px color-mix(in srgb, var(--vp-c-brand-1) 12%, transparent);
+  box-shadow    : 0 12px 32px -16px rgba(0, 0, 0, 0.32),
+                  0 0 0 1px color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-medium), transparent);
   color         : var(--vp-c-text-1);
-  font-size     : 0.85rem;
+  font-size     : var(--prose-text-sm);
   line-height   : 1.5;
 }
 
@@ -30,7 +30,7 @@
 
 .glossary-tooltip-title {
   margin      : 0;
-  font-size   : 0.95rem;
+  font-size   : var(--prose-text-md);
   font-weight : 700;
   color       : var(--vp-c-brand-1);
   white-space : nowrap;
@@ -58,7 +58,7 @@
   display         : inline-block;
   margin-top      : 8px;
   font-family     : var(--vp-font-family-mono);
-  font-size       : 0.72rem;
+  font-size       : var(--prose-label-size);
   letter-spacing  : 0.06em;
   text-transform  : uppercase;
   color           : var(--vp-c-brand-1);

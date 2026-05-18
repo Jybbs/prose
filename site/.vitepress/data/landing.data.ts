@@ -2,9 +2,6 @@ import { defineLoader } from 'vitepress'
 
 import { getRenderer, renderInlineField } from '../lib/markdown/renderer'
 import { REPO_URL }                       from '../lib/shared/constants'
-import { siteDir }                        from '../lib/shared/paths'
-
-const root = siteDir(import.meta.url)
 
 export interface Action {
   href  : string
@@ -129,7 +126,7 @@ const STEP_SOURCES: readonly StepSource[] = [
 export default defineLoader({
   watch: [],
   async load(): Promise<LandingData> {
-    const md = await getRenderer(root)
+    const md = await getRenderer()
     return {
       cta     : { links: CTA_LINKS },
       features: renderInlineField(md, FEATURE_SOURCES, 'body'),

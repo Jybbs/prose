@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import './disclosure.css'
-
 defineProps<{
+  id      ?: string
   open    ?: boolean
   variant ?: 'fixture' | 'motivation'
 }>()
 </script>
 
 <template>
-  <details :class="['disclosure', `disclosure-${variant ?? 'fixture'}`]" :open="open">
+  <details :id="id" :class="['disclosure', `disclosure-${variant ?? 'fixture'}`]" :open="open">
     <summary class="disclosure-summary">
       <span class="disclosure-caret" aria-hidden="true">›</span>
       <span class="disclosure-title"><slot name="title" /></span>

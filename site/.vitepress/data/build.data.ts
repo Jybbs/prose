@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 
 import { defineLoader } from 'vitepress'
 
@@ -23,7 +23,7 @@ export default defineLoader({
   async load(): Promise<BuildData> {
     const gitSha = await withFallback(
       'build:git-sha',
-      () => execSync('git rev-parse --short HEAD', { cwd: root }).toString().trim(),
+      () => execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
       'unknown'
     )
     return {

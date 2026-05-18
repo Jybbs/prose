@@ -63,7 +63,7 @@
 .vp-doc .dropcap::first-letter {
   float       : left;
   margin      : 0.1em 0.18em 0 0;
-  font-family : Georgia, "Times New Roman", serif;
+  font-family : var(--prose-font-display);
   font-size   : 3.4em;
   font-weight : 700;
   font-style  : italic;

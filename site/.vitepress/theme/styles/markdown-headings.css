@@ -53,7 +53,7 @@
 .vp-doc h3 .header-anchor,
 .vp-doc h4 .header-anchor {
   margin-left     : 0.4rem;
-  font-family     : Georgia, "Times New Roman", serif;
+  font-family     : var(--prose-font-display);
   font-style      : italic;
   font-size       : 0.8em;
   color           : var(--vp-c-brand-1);

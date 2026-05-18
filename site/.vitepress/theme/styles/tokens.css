@@ -11,7 +11,6 @@
   --prose-c-cream                : #d4a574;
   --prose-c-error                : #e8876f;
   --prose-c-lint                 : var(--prose-c-warm-deep);
-  --prose-c-magenta              : #c886b1;
   --prose-c-secondary            : #8cc5a3;
   --prose-c-warm                 : #e8c840;
   --prose-c-warm-deep            : #b58c0a;
@@ -24,12 +23,8 @@
   --prose-domain-ordering        : #4a1a3e;
 
   --prose-radius                 : 8px;
-  --prose-radius-action          : 6px;
   --prose-radius-chip            : 12px;
-  --prose-radius-pill            : 22px;
   --prose-radius-sm              : 4px;
-
-  --prose-shadow-elevated        : 0 12px 32px -16px rgba(0, 0, 0, 0.32);
 
   --prose-focus-ring             : 2px solid var(--vp-c-brand-1);
 
@@ -46,6 +41,13 @@
 
   --prose-label-size             : 0.72rem;
   --prose-label-tracking         : 0.1em;
+
+  --prose-text-meta              : 0.62rem;
+  --prose-text-sm                : 0.85rem;
+  --prose-text-md                : 0.95rem;
+
+  --prose-pad-card               : 14px 16px;
+  --prose-pad-card-snug          : 10px 14px;
 
   --vp-c-brand-1                 : #8a80cb;
   --vp-c-brand-2                 : #a094d7;
@@ -79,7 +81,7 @@
 
 :root {
   --vp-local-search-bg                     : var(--vp-c-bg);
-  --vp-local-search-highlight-bg           : color-mix(in srgb, var(--vp-c-brand-1) 22%, transparent);
+  --vp-local-search-highlight-bg           : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-medium), transparent);
   --vp-local-search-highlight-text         : var(--vp-c-text-1);
   --vp-local-search-result-bg              : var(--vp-c-bg-soft);
   --vp-local-search-result-border          : var(--vp-c-divider);

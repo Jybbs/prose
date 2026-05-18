@@ -66,10 +66,10 @@
 .not-found-links a {
   min-height     : 38px;
   padding        : 0 16px;
-  border-radius  : var(--prose-radius-action);
+  border-radius  : 6px;
   color          : var(--vp-c-text-1);
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.72rem;
+  font-size      : var(--prose-label-size);
   letter-spacing : 0.08em;
   text-transform : uppercase;
 }
@@ -112,7 +112,7 @@
   border-radius  : var(--prose-radius-chip);
   color          : var(--vp-c-text-2);
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.72rem;
+  font-size      : var(--prose-label-size);
   letter-spacing : 0.04em;
   line-height    : 1;
 }
@@ -153,4 +153,24 @@ a.rule-chip {
 
 .rule-chip[data-category="lint"] .rule-chip-slug {
   color: var(--prose-c-lint);
+}
+
+/* ─── Stack list: reset + flex-column shared between aside lists ─── */
+
+.fixture-toc-list,
+.related-rules-list {
+  display        : flex;
+  flex-direction : column;
+  margin         : 0;
+  padding        : 0;
+  list-style     : none;
+}
+
+/* ─── Centered grid cell: circle / square containers with a single child ─── */
+
+.card-icon,
+.exit-code-number,
+.fixture-pair-arrow {
+  display     : grid;
+  place-items : center;
 }

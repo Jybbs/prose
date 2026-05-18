@@ -116,8 +116,8 @@
 .landing-hero-action {
   min-height    : 44px;
   padding       : 0 22px;
-  border-radius : var(--prose-radius-pill);
-  font-size     : 0.95rem;
+  border-radius : 22px;
+  font-size     : var(--prose-text-md);
   font-weight   : 500;
   transition    : border-color var(--prose-transition-slow), transform var(--prose-transition-slow);
 }
@@ -220,13 +220,13 @@
 .landing-definition {
   padding       : 22px;
   border-left   : 2px solid var(--vp-c-brand-1);
-  border-radius : 0 8px 8px 0;
+  border-radius : 0 var(--prose-radius) var(--prose-radius) 0;
   background    : var(--vp-c-bg-soft);
 }
 
 .landing-definition p {
   margin    : 8px 0 0;
-  font-size : 0.95rem;
+  font-size : var(--prose-text-md);
 }
 
 .definition-word {
@@ -302,7 +302,7 @@ a.landing-feature-card {
 
 .landing-hero-logo:hover {
   transform : translateY(-2px);
-  filter    : drop-shadow(0 8px 24px color-mix(in srgb, var(--vp-c-brand-1) 32%, transparent));
+  filter    : drop-shadow(0 8px 24px color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-strong), transparent));
 }
 
 .landing-feature-card h3 {
@@ -317,7 +317,7 @@ a.landing-feature-card {
 
 .landing-feature-card p {
   margin      : 0;
-  font-size   : 0.95rem;
+  font-size   : var(--prose-text-md);
   line-height : 1.6;
   color       : var(--vp-c-text-2);
 }
@@ -334,8 +334,6 @@ a.landing-feature-card {
   position      : absolute;
   top           : 22px;
   right         : 22px;
-  display       : grid;
-  place-items   : center;
   width         : 56px;
   height        : 56px;
   border        : 1px solid var(--vp-c-divider);
@@ -424,16 +422,16 @@ a.landing-feature-card {
 
 .workflow-step p {
   margin    : 0 0 14px;
-  font-size : 0.95rem;
+  font-size : var(--prose-text-md);
 }
 
 .workflow-step pre {
   margin        : 0;
-  padding       : 14px 16px;
+  padding       : var(--prose-pad-card);
   border-radius : var(--prose-radius);
   background    : var(--vp-code-block-bg);
   font-family   : var(--vp-font-family-mono);
-  font-size     : 0.85rem;
+  font-size     : var(--prose-text-sm);
   overflow      : auto;
 }
 

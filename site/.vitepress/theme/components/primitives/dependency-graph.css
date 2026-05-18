@@ -16,7 +16,7 @@
 }
 
 .dep-graph-node.active {
-  fill         : color-mix(in srgb, var(--vp-c-brand-1) 18%, var(--vp-c-bg));
+  fill         : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-medium), var(--vp-c-bg));
   stroke       : var(--vp-c-brand-1);
   stroke-width : 2;
 }

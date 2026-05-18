@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import './build-metadata.css'
-
 import { useData }  from 'vitepress'
 import { computed } from 'vue'
 

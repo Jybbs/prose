@@ -31,7 +31,7 @@
 }
 
 .disclosure-summary:hover {
-  background: color-mix(in srgb, var(--vp-c-brand-1) 6%, transparent);
+  background: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-interact), transparent);
 }
 
 .disclosure-caret {
@@ -68,7 +68,7 @@
 }
 
 .rule-motivation-panel-fix {
-  background: color-mix(in srgb, var(--vp-c-brand-1) 4%, var(--vp-c-bg));
+  background: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-faint), var(--vp-c-bg));
 }
 
 .rule-motivation-content :first-child {

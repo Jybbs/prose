@@ -1,4 +1,4 @@
-import { PRIMITIVES, type PrimitiveSlug } from '../shared/registries'
+import { assertCoversPrimitives, type PrimitiveSlug } from '../shared/registries'
 
 export interface DepGraphNode {
   cx    : number
@@ -26,13 +26,4 @@ export const DEP_GRAPH_EDGES: readonly DepGraphEdge[] = [
   { d: 'M390 80 L460 145' }
 ]
 
-const NODE_SLUGS    = new Set(DEP_GRAPH_NODES.map(n => n.slug))
-const MISSING_NODES = Object.keys(PRIMITIVES).filter(slug => !NODE_SLUGS.has(slug as PrimitiveSlug))
-const EXTRA_NODES   = [...NODE_SLUGS].filter(slug => !(slug in PRIMITIVES))
-
-if (MISSING_NODES.length > 0 || EXTRA_NODES.length > 0) {
-  throw new Error(
-    `dep-graph nodes out of sync with PRIMITIVES. ` +
-    `missing: [${MISSING_NODES.join(', ')}], extra: [${EXTRA_NODES.join(', ')}]`
-  )
-}
+assertCoversPrimitives(DEP_GRAPH_NODES.map(n => n.slug), 'dep-graph nodes')

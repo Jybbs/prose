@@ -1,19 +1,14 @@
 .fixture-toc {
   margin        : 18px 0;
-  padding       : 14px 16px;
+  padding       : var(--prose-pad-card);
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
 }
 
 .fixture-toc-list {
-  display        : flex;
-  flex-direction : column;
-  gap            : 4px;
-  margin         : 0;
-  padding        : 0;
-  list-style     : none;
-  font-size      : 0.85rem;
+  gap       : 4px;
+  font-size : var(--prose-text-sm);
 }
 
 .fixture-toc-list a {

@@ -5,9 +5,8 @@ import { getSingletonHighlighter } from 'shiki'
 import { defineLoader }            from 'vitepress'
 
 import { FIXTURES_DIR, INPUT_SUFFIX, SNAPSHOTS_DIR, walkFixtures } from '../lib/fixtures/walker'
-import { SHIKI_THEMES }  from '../lib/shared/constants'
-import { repoRoot }      from '../lib/shared/paths'
-import type { Registry } from '../lib/shared/types'
+import { SHIKI_THEMES } from '../lib/shared/constants'
+import { repoRoot }     from '../lib/shared/paths'
 
 const root          = repoRoot(import.meta.url)
 const fixturesRoot  = path.join(root, FIXTURES_DIR)
@@ -20,7 +19,7 @@ export interface FixtureEntry {
   outputHtml : string
 }
 
-export type FixtureData = Registry<Registry<FixtureEntry>>
+export type FixtureData = Record<string, Record<string, FixtureEntry>>
 
 declare const data: FixtureData
 export { data }

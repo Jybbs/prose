@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import './dependency-graph.css'
-
 import { computed } from 'vue'
 
 import { DEP_GRAPH_EDGES, DEP_GRAPH_NODES } from '../../../lib/primitives/dependency-graph'

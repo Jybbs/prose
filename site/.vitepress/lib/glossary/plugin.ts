@@ -1,7 +1,10 @@
 import type MarkdownIt from 'markdown-it'
-import type Token       from 'markdown-it/lib/token.mjs'
+
+import { walkBodyInlines } from '../markdown/walk'
 
 const ESCAPE_REGEX = /[.*+?^${}()|[\]\\]/g
+
+type Token = MarkdownIt.Token
 
 export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>) {
   if (phraseToSlug.size === 0) {
@@ -17,15 +20,9 @@ export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>) {
   return function plugin(md: MarkdownIt) {
     md.core.ruler.after('inline', 'glossary-decorate', state => {
       const seen: Set<string> = (state.env.seenGlossarySlugs ??= new Set())
-
-      for (let i = 0; i < state.tokens.length; i++) {
-        const block = state.tokens[i]
-        if (block.type !== 'inline' || !block.children) continue
-        const prev = state.tokens[i - 1]
-        if (prev?.type.startsWith('heading_')) continue
-
-        block.children = decorateChildren(block.children, pattern, phraseToSlug, seen, state.Token)
-      }
+      walkBodyInlines(state, block => {
+        block.children = decorateChildren(block.children!, pattern, phraseToSlug, seen, state.Token)
+      })
     })
 
     md.renderer.rules.glossary_term = (tokens, idx) => {
@@ -42,7 +39,7 @@ function decorateChildren(
   pattern     : RegExp,
   phraseToSlug: ReadonlyMap<string, string>,
   seen        : Set<string>,
-  TokenCtor   : new (type: string, tag: string, nesting: number) => Token
+  TokenCtor   : new (type: string, tag: string, nesting: MarkdownIt.Token.Nesting) => Token
 ): Token[] {
   const out: Token[] = []
   let   inLink       = 0
@@ -73,7 +70,7 @@ function decorateText(
   pattern     : RegExp,
   phraseToSlug: ReadonlyMap<string, string>,
   seen        : Set<string>,
-  TokenCtor   : new (type: string, tag: string, nesting: number) => Token,
+  TokenCtor   : new (type: string, tag: string, nesting: MarkdownIt.Token.Nesting) => Token,
   level       : number
 ): Token[] {
   pattern.lastIndex = 0

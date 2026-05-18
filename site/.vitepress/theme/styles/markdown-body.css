@@ -34,14 +34,14 @@
 }
 
 .vp-doc th {
-  padding        : 10px 14px;
+  padding        : var(--prose-pad-card-snug);
   background     : var(--vp-c-bg-soft);
   border-bottom  : 1px solid var(--vp-c-divider);
-  letter-spacing : 0.1em;
+  letter-spacing : var(--prose-label-tracking);
 }
 
 .vp-doc td {
-  padding       : 10px 14px;
+  padding       : var(--prose-pad-card-snug);
   border-bottom : 1px solid var(--vp-c-divider);
 }
 
