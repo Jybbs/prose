@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import './build-metadata.css'
+
 import { useData }  from 'vitepress'
+import { computed } from 'vue'
 
 import { data as build } from '../../../data/build.data'
 import { data as rules } from '../../../data/rules.data'

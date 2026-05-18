@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SectionHeading from '../SectionHeading.vue'
+import SectionHeading from './SectionHeading.vue'
 
 defineProps<{
   centered ?: boolean

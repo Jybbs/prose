@@ -1,7 +1,7 @@
 import { createContentLoader } from 'vitepress'
 
-import { PRIMITIVES, type PrimitiveSlug } from '../lib/registries'
-import type { Registry }                  from '../lib/types'
+import { PRIMITIVES, type PrimitiveSlug } from '../lib/shared/registries'
+import type { Registry }                  from '../lib/shared/types'
 
 export interface DiscoveredPrimitive {
   display : string

@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { glossary }     from '../lib/glossary'
-import { siteDir }      from '../lib/paths'
-import { getRenderer }  from '../lib/render-markdown'
+import { glossary }    from '../lib/glossary/glossary'
+import { getRenderer } from '../lib/markdown/renderer'
+import { siteDir }     from '../lib/shared/paths'
 
 const root = siteDir(import.meta.url)
 

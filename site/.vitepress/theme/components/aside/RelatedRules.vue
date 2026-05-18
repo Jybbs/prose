@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useData }  from 'vitepress'
+import './related-rules.css'
 
-import Kicker   from '../Kicker.vue'
-import RuleChip from '../RuleChip.vue'
+import { useData }  from 'vitepress'
+import { computed } from 'vue'
+
+import Kicker   from '../base/Kicker.vue'
+import RuleChip from '../rules/RuleChip.vue'
 
 import { data as rules }  from '../../../data/rules.data'
-import { useCurrentRule } from '../../../lib/route'
+import { useCurrentRule } from '../../../lib/shared/route'
 
 const current        = useCurrentRule()
 const { frontmatter } = useData()

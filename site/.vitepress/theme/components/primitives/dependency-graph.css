@@ -1,0 +1,35 @@
+.dep-graph {
+  margin     : 1.5rem 0;
+  padding    : 18px;
+  text-align : center;
+}
+
+.dep-graph svg {
+  max-width : 100%;
+  height    : auto;
+}
+
+.dep-graph-node {
+  fill         : var(--vp-c-bg);
+  stroke       : var(--vp-c-divider);
+  stroke-width : 1;
+}
+
+.dep-graph-node.active {
+  fill         : color-mix(in srgb, var(--vp-c-brand-1) 18%, var(--vp-c-bg));
+  stroke       : var(--vp-c-brand-1);
+  stroke-width : 2;
+}
+
+.dep-graph-label {
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.78rem;
+  fill        : var(--vp-c-text-1);
+}
+
+.dep-graph-edge {
+  fill         : none;
+  stroke       : var(--vp-c-divider);
+  stroke-width : 1.5;
+  marker-end   : url(#arrow);
+}

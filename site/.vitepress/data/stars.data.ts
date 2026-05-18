@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { withFallback } from '../lib/with-fallback'
+import { withFallback } from '../lib/shared/with-fallback'
 
 export interface StarsData {
   stars: string

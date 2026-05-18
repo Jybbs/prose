@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import './category-chip.css'
+
 import { computed } from 'vue'
 
-import { CATEGORY_META }   from '../../../lib/registries'
-import { useCurrentRule }  from '../../../lib/route'
+import { CATEGORY_META }   from '../../../lib/shared/registries'
+import { useCurrentRule }  from '../../../lib/shared/route'
 
 const rule = useCurrentRule()
 const meta = computed(() => rule.value && CATEGORY_META[rule.value.category])

@@ -1,0 +1,58 @@
+/* ─── Body-link hover underline (opt-in via markdown-it body-link plugin) ─── */
+
+.vp-doc a.body-link {
+  position        : relative;
+  text-decoration : none;
+}
+
+.vp-doc a.body-link::after {
+  content    : "";
+  position   : absolute;
+  bottom     : -1px;
+  right      : 0;
+  width      : 0;
+  height     : 1px;
+  background : var(--vp-c-brand-1);
+  transition : width var(--prose-transition-slow);
+}
+
+.vp-doc a.body-link:hover::after {
+  width : 100%;
+  left  : 0;
+  right : auto;
+}
+
+/* ─── Table polish ─── */
+
+.vp-doc table {
+  margin-top      : 1.5rem;
+  border-collapse : separate;
+  border-spacing  : 0;
+  border          : 1px solid var(--vp-c-divider);
+  border-radius   : var(--prose-radius);
+  overflow        : hidden;
+}
+
+.vp-doc th {
+  padding        : 10px 14px;
+  background     : var(--vp-c-bg-soft);
+  border-bottom  : 1px solid var(--vp-c-divider);
+  letter-spacing : 0.1em;
+}
+
+.vp-doc td {
+  padding       : 10px 14px;
+  border-bottom : 1px solid var(--vp-c-divider);
+}
+
+.vp-doc tr:last-child td {
+  border-bottom: none;
+}
+
+.vp-doc tbody tr {
+  transition: background-color var(--prose-transition);
+}
+
+.vp-doc tbody tr:hover {
+  background: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-faint), transparent);
+}

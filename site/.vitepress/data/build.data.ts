@@ -2,10 +2,10 @@ import { execSync } from 'node:child_process'
 
 import { defineLoader } from 'vitepress'
 
-import { walkFixtures }     from '../lib/fixtures'
-import { repoRoot }         from '../lib/paths'
-import { readCargoVersion } from '../lib/version'
-import { withFallback }     from '../lib/with-fallback'
+import { walkFixtures }     from '../lib/fixtures/walker'
+import { repoRoot }         from '../lib/shared/paths'
+import { readCargoVersion } from '../lib/shared/version'
+import { withFallback }     from '../lib/shared/with-fallback'
 
 const root = repoRoot(import.meta.url)
 

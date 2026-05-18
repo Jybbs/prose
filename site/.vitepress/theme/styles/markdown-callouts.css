@@ -1,0 +1,72 @@
+/* ─── Callout-block restyling ─── */
+
+.vp-doc .custom-block {
+  position : relative;
+  margin   : 1.5rem 0;
+  padding  : 16px 18px 16px 22px;
+  overflow : hidden;
+}
+
+.vp-doc .custom-block::before {
+  content  : "";
+  position : absolute;
+  top      : 0;
+  left     : 0;
+  width    : 3px;
+  height   : 100%;
+}
+
+.vp-doc .custom-block.tip {
+  border-color: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-strong), var(--vp-c-divider));
+}
+
+.vp-doc .custom-block.tip::before {
+  background: var(--vp-c-brand-1);
+}
+
+.vp-doc .custom-block.warning::before {
+  background: var(--prose-c-warning);
+}
+
+.vp-doc .custom-block.danger::before {
+  background: var(--prose-c-error);
+}
+
+.vp-doc .custom-block.info::before {
+  background: var(--prose-c-accent);
+}
+
+/* ─── Domain-tagged Aside callouts ─── */
+
+.vp-doc .custom-block.tip.domain-alignment::before {
+  background: var(--prose-domain-alignment);
+}
+
+.vp-doc .custom-block.tip.domain-engine::before {
+  background: var(--prose-domain-engine);
+}
+
+.vp-doc .custom-block.tip.domain-formatting::before {
+  background: var(--prose-domain-formatting);
+}
+
+.vp-doc .custom-block.tip.domain-lint::before {
+  background: var(--prose-domain-lint);
+}
+
+.vp-doc .custom-block.tip.domain-ordering::before {
+  background: var(--prose-domain-ordering);
+}
+
+/* ─── Domain-tagged dropcap ─── */
+
+.vp-doc .dropcap::first-letter {
+  float       : left;
+  margin      : 0.1em 0.18em 0 0;
+  font-family : Georgia, "Times New Roman", serif;
+  font-size   : 3.4em;
+  font-weight : 700;
+  font-style  : italic;
+  line-height : 0.92;
+  color       : var(--vp-c-brand-1);
+}

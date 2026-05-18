@@ -1,7 +1,7 @@
 import { defineLoader } from 'vitepress'
 
-import { siteDir }                        from '../lib/paths'
-import { getRenderer, renderInlineField } from '../lib/render-markdown'
+import { getRenderer, renderInlineField } from '../lib/markdown/renderer'
+import { siteDir }                        from '../lib/shared/paths'
 
 const root = siteDir(import.meta.url)
 

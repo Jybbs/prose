@@ -1,9 +1,9 @@
 import { defineLoader } from 'vitepress'
 
-import { rulesDir }              from '../lib/paths'
-import { discoverRuleSlugs }     from '../lib/rules-discovery'
-import type { DiscoveredRule }   from '../lib/rules-discovery'
-import type { Registry }         from '../lib/types'
+import { discoverRuleSlugs }   from '../lib/rules/discovery'
+import type { DiscoveredRule } from '../lib/rules/discovery'
+import { rulesDir }            from '../lib/shared/paths'
+import type { Registry }       from '../lib/shared/types'
 
 export type { DiscoveredRule }
 

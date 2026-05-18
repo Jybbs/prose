@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { data as codes } from '../../data/exit-codes.data'
+import './exit-code-matrix.css'
+
+import { data as codes } from '../../../data/exit-codes.data'
 </script>
 
 <template>

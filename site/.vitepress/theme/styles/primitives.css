@@ -1,0 +1,156 @@
+/* ─── Shared patterns: kicker, card, action-pill ─── */
+
+.kicker,
+.vp-doc .custom-block-title,
+.vp-doc th {
+  margin         : 0;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-kicker-size);
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+}
+
+.kicker[data-variant="rule"]::before {
+  content        : "";
+  display        : inline-block;
+  width          : 24px;
+  height         : 1px;
+  margin-right   : 10px;
+  vertical-align : middle;
+  background     : currentColor;
+}
+
+.fixture-toc-kicker,
+.related-rules-kicker,
+.rule-motivation-kicker,
+.vp-doc .custom-block-title {
+  margin-bottom: 8px;
+}
+
+.vp-doc .custom-block-title,
+.vp-doc th {
+  font-weight : 700;
+  color       : var(--vp-c-text-2);
+}
+
+.not-found-kicker {
+  letter-spacing: 0.18em;
+}
+
+.dep-graph,
+.disclosure,
+.landing-feature-card,
+.related-rules,
+.vp-doc .custom-block,
+.workflow-step {
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg-soft);
+}
+
+/* ─── Pill action shape: shared between small + large variants ─── */
+
+.landing-hero-action,
+.landing-links a,
+.landing-section-heading.centered a,
+.not-found-links a {
+  display         : inline-flex;
+  align-items     : center;
+  border          : 1px solid var(--vp-c-divider);
+  text-decoration : none;
+}
+
+.landing-links a,
+.landing-section-heading.centered a,
+.not-found-links a {
+  min-height     : 38px;
+  padding        : 0 16px;
+  border-radius  : var(--prose-radius-action);
+  color          : var(--vp-c-text-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.72rem;
+  letter-spacing : 0.08em;
+  text-transform : uppercase;
+}
+
+.landing-links a:hover,
+.landing-section-heading.centered a:hover,
+.not-found-links a:hover {
+  border-color : var(--vp-c-brand-1);
+  color        : var(--vp-c-brand-1);
+}
+
+.definition-word,
+.disclosure-title,
+.glossary-tooltip-title,
+.landing-feature-card h3,
+.landing-hero-tagline,
+.landing-rules-track a,
+.landing-section h2,
+.not-found-headline,
+.workflow-step h3 {
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+}
+
+/* ─── Chip shape: shared between star-count, rule-chip, category-chip ─── */
+
+.category-chip,
+.rule-chip,
+.star-count {
+  display     : inline-flex;
+  align-items : center;
+  border      : 1px solid var(--vp-c-divider);
+  background  : var(--vp-c-bg-soft);
+}
+
+.star-count {
+  gap            : 4px;
+  margin-left    : 6px;
+  padding        : 2px 8px;
+  border-radius  : var(--prose-radius-chip);
+  color          : var(--vp-c-text-2);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.72rem;
+  letter-spacing : 0.04em;
+  line-height    : 1;
+}
+
+.star-count .star-glyph {
+  color: var(--vp-c-brand-1);
+}
+
+a.rule-chip {
+  gap             : 6px;
+  padding         : 2px 10px 2px 6px;
+  border-radius   : var(--prose-radius-chip);
+  color           : var(--vp-c-text-1);
+  font-size       : 0.78rem;
+  line-height     : 1.6;
+  text-decoration : none;
+  transition      : border-color var(--prose-transition), background-color var(--prose-transition);
+  vertical-align  : baseline;
+}
+
+.rule-chip:hover {
+  border-color : var(--vp-c-brand-1);
+  background   : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-interact), var(--vp-c-bg-soft));
+}
+
+.rule-chip-badge {
+  font-size: 0.9rem;
+}
+
+.rule-chip-slug {
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.78rem;
+  color       : var(--vp-c-brand-1);
+  background  : transparent;
+  padding     : 0;
+  border      : none;
+}
+
+.rule-chip[data-category="lint"] .rule-chip-slug {
+  color: var(--prose-c-lint);
+}

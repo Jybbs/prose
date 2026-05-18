@@ -1,0 +1,87 @@
+.disclosure {
+  overflow: hidden;
+}
+
+.disclosure-motivation {
+  margin: 1.5rem 0 2rem;
+}
+
+.disclosure-fixture {
+  margin: 1rem 0;
+}
+
+.disclosure[open] {
+  border-color: var(--vp-c-brand-1);
+}
+
+.disclosure-summary {
+  display     : flex;
+  align-items : center;
+  gap         : 12px;
+  padding     : 14px 18px;
+  cursor      : pointer;
+  user-select : none;
+  list-style  : none;
+  color       : var(--vp-c-text-1);
+  transition  : background-color var(--prose-transition);
+}
+
+.disclosure-summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure-summary:hover {
+  background: color-mix(in srgb, var(--vp-c-brand-1) 6%, transparent);
+}
+
+.disclosure-caret {
+  display     : inline-block;
+  flex-shrink : 0;
+  width       : 14px;
+  font-family : var(--vp-font-family-mono);
+  font-size   : 1.1rem;
+  color       : var(--vp-c-brand-1);
+  transition  : transform var(--prose-transition);
+}
+
+.disclosure[open] .disclosure-caret {
+  transform: rotate(90deg);
+}
+
+.disclosure-title {
+  font-size: 1.1rem;
+}
+
+/* Motivation variant: two-panel grid body with The Problem / The Fix split. */
+.disclosure-motivation .disclosure-body {
+  display               : grid;
+  grid-template-columns : 1fr 1fr;
+  gap                   : 1px;
+  padding               : 0;
+  background            : var(--vp-c-divider);
+  border-top            : 1px solid var(--vp-c-divider);
+}
+
+.rule-motivation-panel {
+  padding    : 18px 20px;
+  background : var(--vp-c-bg);
+}
+
+.rule-motivation-panel-fix {
+  background: color-mix(in srgb, var(--vp-c-brand-1) 4%, var(--vp-c-bg));
+}
+
+.rule-motivation-content :first-child {
+  margin-top: 0;
+}
+
+.rule-motivation-content :last-child {
+  margin-bottom: 0;
+}
+
+/* Motivation body's two columns collapse to one on tablet. */
+@media (--prose-bp-tablet) {
+  .disclosure-motivation .disclosure-body {
+    grid-template-columns: 1fr;
+  }
+}

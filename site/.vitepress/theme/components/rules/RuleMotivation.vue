@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Disclosure from './Disclosure.vue'
-import Kicker     from './Kicker.vue'
+import Disclosure from '../base/Disclosure.vue'
+import Kicker     from '../base/Kicker.vue'
 </script>
 
 <template>

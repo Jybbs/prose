@@ -1,0 +1,26 @@
+.fixture-toc {
+  margin        : 18px 0;
+  padding       : 14px 16px;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg);
+}
+
+.fixture-toc-list {
+  display        : flex;
+  flex-direction : column;
+  gap            : 4px;
+  margin         : 0;
+  padding        : 0;
+  list-style     : none;
+  font-size      : 0.85rem;
+}
+
+.fixture-toc-list a {
+  text-decoration : none;
+  color           : var(--vp-c-text-2);
+}
+
+.fixture-toc-list a:hover {
+  color: var(--vp-c-brand-1);
+}

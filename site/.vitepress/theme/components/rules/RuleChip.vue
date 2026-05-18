@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { data as rules } from '../../data/rules.data'
-import { CATEGORY_META } from '../../lib/registries'
-import { lookup }        from '../../lib/registry'
+import { data as rules } from '../../../data/rules.data'
+import { CATEGORY_META } from '../../../lib/shared/registries'
+import { lookup }        from '../../../lib/shared/registry'
 
 const props = defineProps<{ slug: string }>()
 

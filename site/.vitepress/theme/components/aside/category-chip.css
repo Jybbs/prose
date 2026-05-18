@@ -1,0 +1,25 @@
+.category-chip {
+  gap            : 8px;
+  margin-bottom  : 16px;
+  padding        : 4px 12px 4px 8px;
+  border-radius  : 14px;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.7rem;
+  letter-spacing : 0.1em;
+  text-transform : uppercase;
+  color          : var(--vp-c-text-2);
+}
+
+.category-chip-badge {
+  font-size: 0.95rem;
+}
+
+.category-chip[data-category="auto-fix"] {
+  border-color : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-strong), var(--vp-c-divider));
+  color        : var(--vp-c-brand-1);
+}
+
+.category-chip[data-category="lint"] {
+  border-color : color-mix(in srgb, var(--prose-c-lint) 28%, var(--vp-c-divider));
+  color        : var(--prose-c-lint);
+}

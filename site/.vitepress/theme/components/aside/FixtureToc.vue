@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref }                         from 'vue'
+import './fixture-toc.css'
+
 import { inBrowser, onContentUpdated } from 'vitepress'
+import { ref }                         from 'vue'
 
-import Kicker from '../Kicker.vue'
+import Kicker from '../base/Kicker.vue'
 
-import { useIsRulePage } from '../../../lib/route'
+import { useIsRulePage } from '../../../lib/shared/route'
 
 interface Anchor {
   href : string

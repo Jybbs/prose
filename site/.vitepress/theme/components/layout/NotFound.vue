@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import Kicker from '../Kicker.vue'
+import './not-found.css'
+
+import Kicker from '../base/Kicker.vue'
 </script>
 
 <template>

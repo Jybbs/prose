@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import Disclosure  from './Disclosure.vue'
+import Disclosure  from '../base/Disclosure.vue'
 import FixturePair from './FixturePair.vue'
 
-import { data as fixtures } from '../../data/fixtures.data'
-import { lookup }           from '../../lib/registry'
+import { data as fixtures } from '../../../data/fixtures.data'
+import { lookup }           from '../../../lib/shared/registry'
 
 const props = defineProps<{
   case    : string

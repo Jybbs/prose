@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import RuleChip from './RuleChip.vue'
 
-import { CATEGORY_META } from '../../lib/registries'
-import { data as rules } from '../../data/rules.data'
+import { data as rules } from '../../../data/rules.data'
+import { CATEGORY_META } from '../../../lib/shared/registries'
 
 const categories = (['auto-fix', 'lint'] as const).map(slug => ({
   label: CATEGORY_META[slug].label,

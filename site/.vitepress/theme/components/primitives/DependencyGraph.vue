@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import './dependency-graph.css'
+
 import { computed } from 'vue'
 
-import { DEP_GRAPH_EDGES, DEP_GRAPH_NODES } from '../../lib/dependency-graph'
-import { PRIMITIVES }                       from '../../lib/registries'
-import { useCurrentPrimitive }              from '../../lib/route'
+import { DEP_GRAPH_EDGES, DEP_GRAPH_NODES } from '../../../lib/primitives/dependency-graph'
+import { PRIMITIVES }                       from '../../../lib/shared/registries'
+import { useCurrentPrimitive }              from '../../../lib/shared/route'
 
 const current     = useCurrentPrimitive()
 const currentSlug = computed(() => current.value?.slug ?? null)

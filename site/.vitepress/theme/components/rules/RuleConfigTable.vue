@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RULE_CONFIG_PRESETS, type Row, type RuleConfigPreset } from '../../lib/rule-config-presets'
+import { RULE_CONFIG_PRESETS, type Row, type RuleConfigPreset } from '../../../lib/rules/config-presets'
 
 const props = defineProps<{
   preset?: RuleConfigPreset

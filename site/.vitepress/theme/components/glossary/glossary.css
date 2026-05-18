@@ -1,0 +1,70 @@
+.glossary-anchor {
+  cursor                : help;
+  text-decoration       : underline dotted var(--vp-c-brand-1) 1px;
+  text-underline-offset : 3px;
+  outline               : none;
+}
+
+.glossary-anchor:focus-visible {
+  text-decoration-style: solid;
+}
+
+.v-popper--theme-glossary .v-popper__inner {
+  max-width     : 22rem;
+  min-width     : 14rem;
+  padding       : 12px 16px;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg);
+  box-shadow    : var(--prose-shadow-elevated),
+                  0 0 0 1px color-mix(in srgb, var(--vp-c-brand-1) 12%, transparent);
+  color         : var(--vp-c-text-1);
+  font-size     : 0.85rem;
+  line-height   : 1.5;
+}
+
+.v-popper--theme-glossary .v-popper__arrow-inner,
+.v-popper--theme-glossary .v-popper__arrow-outer {
+  border-color: var(--vp-c-divider);
+}
+
+.glossary-tooltip-title {
+  margin      : 0;
+  font-size   : 0.95rem;
+  font-weight : 700;
+  color       : var(--vp-c-brand-1);
+  white-space : nowrap;
+}
+
+.glossary-tooltip-divider {
+  margin-block       : 6px;
+  border-block-start : 1px solid var(--vp-c-divider);
+  height             : 0;
+}
+
+.glossary-tooltip-body {
+  color: var(--vp-c-text-2);
+}
+
+.glossary-tooltip-body code {
+  font-size     : 0.95em;
+  padding       : 1px 4px;
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-c-bg-soft);
+  color         : var(--vp-c-text-1);
+}
+
+.glossary-tooltip-link {
+  display         : inline-block;
+  margin-top      : 8px;
+  font-family     : var(--vp-font-family-mono);
+  font-size       : 0.72rem;
+  letter-spacing  : 0.06em;
+  text-transform  : uppercase;
+  color           : var(--vp-c-brand-1);
+  text-decoration : none;
+}
+
+.glossary-tooltip-link:hover {
+  text-decoration: underline;
+}

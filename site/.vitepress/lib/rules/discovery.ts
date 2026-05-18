@@ -3,7 +3,7 @@ import path   from 'node:path'
 
 import matter from 'gray-matter'
 
-import type { RuleCategory } from './registries'
+import type { RuleCategory } from '../shared/registries'
 
 export interface DiscoveredRule {
   category : RuleCategory

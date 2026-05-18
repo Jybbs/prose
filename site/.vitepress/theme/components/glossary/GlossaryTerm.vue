@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { vTooltip } from 'floating-vue'
+import './glossary.css'
 
-import { data as glossary } from '../../data/glossary.data'
-import { lookup }           from '../../lib/registry'
+import { vTooltip } from 'floating-vue'
+import { computed } from 'vue'
+
+import { data as glossary } from '../../../data/glossary.data'
+import { lookup }           from '../../../lib/shared/registry'
 
 const props = defineProps<{ slug: string }>()
 

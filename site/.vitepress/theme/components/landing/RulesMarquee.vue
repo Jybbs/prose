@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Kicker from '../Kicker.vue'
+import Kicker from '../base/Kicker.vue'
 
 import { data as rules } from '../../../data/rules.data'
 
