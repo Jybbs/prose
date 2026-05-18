@@ -1,6 +1,6 @@
 ---
 category: lint
-related : [single-use-variables, no-step-narration]
+related : [no-step-narration, single-use-variables]
 ---
 
 # loose-constants

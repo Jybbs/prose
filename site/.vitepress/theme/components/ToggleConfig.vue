@@ -2,7 +2,7 @@
 import RuleConfigTable from './RuleConfigTable.vue'
 
 const rows = [
-  { key: 'enabled', type: 'bool', default: 'true', meaning: 'Toggle the rule on or off' }
+  { default: 'true', key: 'enabled', meaning: 'Toggle the rule on or off', type: 'bool' }
 ]
 </script>
 

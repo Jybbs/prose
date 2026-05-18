@@ -1,6 +1,6 @@
 ---
 category: auto-fix
-related : [multi-line-docstrings, docstring-wrap]
+related : [docstring-wrap, multi-line-docstrings]
 ---
 
 # no-single-line-docstrings

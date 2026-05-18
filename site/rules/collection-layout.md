@@ -1,6 +1,6 @@
 ---
 category: auto-fix
-related : [align-colons, alphabetize, strip-trailing-commas, singleton-rule]
+related : [align-colons, alphabetize, singleton-rule, strip-trailing-commas]
 ---
 
 # collection-layout

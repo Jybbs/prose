@@ -1,9 +1,9 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-export const INPUT_SUFFIX   = '.input.py'
-export const FIXTURES_DIR   = 'tests/fixtures'
-export const SNAPSHOTS_DIR  = 'tests/snapshots'
+export const FIXTURES_DIR  = 'tests/fixtures'
+export const INPUT_SUFFIX  = '.input.py'
+export const SNAPSHOTS_DIR = 'tests/snapshots'
 
 export interface FixtureWalkEntry {
   caseName  : string

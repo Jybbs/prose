@@ -22,9 +22,9 @@
   background     : currentColor;
 }
 
+.fixture-toc-kicker,
 .related-rules-kicker,
 .rule-motivation-kicker,
-.fixture-toc-kicker,
 .vp-doc .custom-block-title {
   margin-bottom: 8px;
 }
@@ -39,11 +39,11 @@
   letter-spacing: 0.18em;
 }
 
-.related-rules,
 .disclosure,
-.workflow-step,
 .landing-feature-card,
-.vp-doc .custom-block {
+.related-rules,
+.vp-doc .custom-block,
+.workflow-step {
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg-soft);
@@ -51,18 +51,18 @@
 
 /* ─── Pill action shape: shared between small + large variants ─── */
 
-.landing-section-heading.centered a,
+.landing-hero-action,
 .landing-links a,
-.not-found-links a,
-.landing-hero-action {
+.landing-section-heading.centered a,
+.not-found-links a {
   display         : inline-flex;
   align-items     : center;
   border          : 1px solid var(--vp-c-divider);
   text-decoration : none;
 }
 
-.landing-section-heading.centered a,
 .landing-links a,
+.landing-section-heading.centered a,
 .not-found-links a {
   min-height     : 38px;
   padding        : 0 16px;
@@ -74,8 +74,8 @@
   text-transform : uppercase;
 }
 
-.landing-section-heading.centered a:hover,
 .landing-links a:hover,
+.landing-section-heading.centered a:hover,
 .not-found-links a:hover {
   border-color : var(--vp-c-brand-1);
   color        : var(--vp-c-brand-1);
@@ -97,9 +97,9 @@
 
 /* ─── Chip shape: shared between star-count, rule-chip, category-chip ─── */
 
-.star-count,
+.category-chip,
 .rule-chip,
-.category-chip {
+.star-count {
   display     : inline-flex;
   align-items : center;
   border      : 1px solid var(--vp-c-divider);
@@ -347,17 +347,17 @@
 /* ─── Reduced-motion: suppress hover transforms, caret-rotation animation, and the marquee ─── */
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-hero-logo,
-  .landing-hero-action,
+  .disclosure-caret,
   .landing-feature-card,
   .landing-feature-card::before,
-  .disclosure-caret {
+  .landing-hero-action,
+  .landing-hero-logo {
     transition: none;
   }
 
-  .landing-hero-logo:hover,
+  .landing-feature-card:hover,
   .landing-hero-action:hover,
-  .landing-feature-card:hover {
+  .landing-hero-logo:hover {
     transform: none;
   }
 
@@ -604,12 +604,12 @@
   text-decoration : none;
 }
 
-.vp-doc h2:hover .header-anchor,
-.vp-doc h3:hover .header-anchor,
-.vp-doc h4:hover .header-anchor,
 .vp-doc h2 .header-anchor:focus,
+.vp-doc h2:hover .header-anchor,
 .vp-doc h3 .header-anchor:focus,
-.vp-doc h4 .header-anchor:focus {
+.vp-doc h3:hover .header-anchor,
+.vp-doc h4 .header-anchor:focus,
+.vp-doc h4:hover .header-anchor {
   opacity: 0.7;
 }
 
@@ -622,23 +622,23 @@
 /* ─── Domain-tagged Aside callouts ─── */
 
 .vp-doc .custom-block.tip.domain-alignment::before {
-  background: #4a2511;
-}
-
-.vp-doc .custom-block.tip.domain-ordering::before {
-  background: #4a1a3e;
-}
-
-.vp-doc .custom-block.tip.domain-formatting::before {
-  background: #e8e856;
-}
-
-.vp-doc .custom-block.tip.domain-lint::before {
-  background: #4a3a08;
+  background: var(--prose-domain-alignment);
 }
 
 .vp-doc .custom-block.tip.domain-engine::before {
-  background: #4a1418;
+  background: var(--prose-domain-engine);
+}
+
+.vp-doc .custom-block.tip.domain-formatting::before {
+  background: var(--prose-domain-formatting);
+}
+
+.vp-doc .custom-block.tip.domain-lint::before {
+  background: var(--prose-domain-lint);
+}
+
+.vp-doc .custom-block.tip.domain-ordering::before {
+  background: var(--prose-domain-ordering);
 }
 
 /* ─── Table polish ─── */

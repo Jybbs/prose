@@ -4,7 +4,7 @@ import path from 'node:path'
 import { codeToHtml }   from 'shiki'
 import { defineLoader } from 'vitepress'
 
-import { walkFixtures, INPUT_SUFFIX, FIXTURES_DIR, SNAPSHOTS_DIR } from '../lib/fixtures'
+import { FIXTURES_DIR, INPUT_SUFFIX, SNAPSHOTS_DIR, walkFixtures } from '../lib/fixtures'
 import { repoRoot }     from '../lib/paths'
 import { SHIKI_THEMES } from '../lib/shiki'
 

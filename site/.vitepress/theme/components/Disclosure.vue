@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineProps<{
   open    ?: boolean
-  variant ?: 'motivation' | 'fixture'
+  variant ?: 'fixture' | 'motivation'
 }>()
 </script>
 

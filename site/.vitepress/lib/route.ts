@@ -16,14 +16,14 @@ function useSlug(prefix: string): ComputedRef<string | null> {
   return computed(() => slugForPrefix(page.value.relativePath, prefix))
 }
 
-export function useCurrentRule(): ComputedRef<DiscoveredRule | null> {
-  const slug = useSlug('rules')
-  return computed(() => rules.find(r => r.slug === slug.value) ?? null)
-}
-
 export function useCurrentPrimitive(): ComputedRef<DiscoveredPrimitive | null> {
   const slug = useSlug('primitives')
   return computed(() => primitives.find(p => p.slug === slug.value) ?? null)
+}
+
+export function useCurrentRule(): ComputedRef<DiscoveredRule | null> {
+  const slug = useSlug('rules')
+  return computed(() => rules.find(r => r.slug === slug.value) ?? null)
 }
 
 export function useIsRulePage(): ComputedRef<boolean> {

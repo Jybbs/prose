@@ -1,6 +1,6 @@
 ---
 category: auto-fix
-related : [bare-import-allowlist, blank-lines, align-imports, align-colons]
+related : [align-colons, align-imports, bare-import-allowlist, blank-lines]
 ---
 
 # alphabetize

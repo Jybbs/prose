@@ -28,7 +28,7 @@ export default createContentLoader('primitives/*.md', {
       throw new Error(`PRIMITIVES registry has no matching page: [${missing.join(', ')}]`)
     }
     return Object.entries(PRIMITIVES)
-      .map(([slug, display]) => ({ slug: slug as PrimitiveSlug, display }))
+      .map(([slug, display]) => ({ display, slug: slug as PrimitiveSlug }))
       .sort((a, b) => a.slug.localeCompare(b.slug))
   }
 })

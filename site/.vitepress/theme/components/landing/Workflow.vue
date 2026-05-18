@@ -6,7 +6,7 @@ const steps = landing.workflow
 
 <template>
   <div class="landing-section landing-quickstart">
-    <SectionHeading kicker="The Workflow" heading="Four lines from install to running." centered />
+    <SectionHeading centered heading="Four lines from install to running." kicker="The Workflow" />
     <div class="landing-workflow-grid">
       <div v-for="step in steps" :key="step.number" class="workflow-step">
         <span class="step-number">— {{ step.number }}</span>

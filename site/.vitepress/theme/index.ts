@@ -67,14 +67,14 @@ export default {
       themes: {
         glossary: {
           $extend         : 'tooltip',
-          placement       : 'top',
-          triggers        : ['hover', 'focus'],
+          'arrow-padding' : 8,
           autoHide        : true,
-          delay           : { show: 100, hide: 140 },
-          html            : true,
+          delay           : { hide: 140, show: 100 },
           handleResize    : true,
+          html            : true,
           instantMove     : true,
-          'arrow-padding' : 8
+          placement       : 'top',
+          triggers        : ['focus', 'hover']
         }
       }
     })

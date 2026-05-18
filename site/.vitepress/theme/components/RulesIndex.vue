@@ -3,9 +3,9 @@ import { CATEGORY_META } from '../../lib/categories'
 import { data as rules } from '../../data/rules.data'
 
 const categories = (['auto-fix', 'lint'] as const).map(slug => ({
-  slug,
   label: CATEGORY_META[slug].label,
-  rules: rules.filter(r => r.category === slug)
+  rules: rules.filter(r => r.category === slug),
+  slug
 }))
 </script>
 

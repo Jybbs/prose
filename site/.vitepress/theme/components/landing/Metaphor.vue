@@ -1,6 +1,6 @@
 <template>
   <div class="landing-section landing-metaphor">
-    <SectionHeading kicker="The Idea" heading="Code, read like <em>prose</em>." centered />
+    <SectionHeading centered heading="Code, read like <em>prose</em>." kicker="The Idea" />
     <div class="landing-metaphor-body">
       <div class="landing-metaphor-copy">
         <p>

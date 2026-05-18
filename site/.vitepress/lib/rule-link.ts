@@ -11,7 +11,7 @@ export function ruleLinkPlugin(validRuleSlugs: Set<string>) {
       const slug = state.src.slice(state.pos + 2, end)
       if (!/^[a-z][a-z0-9-]*$/.test(slug)) return false
 
-      let kind: 'rule' | 'primitive'
+      let kind: 'primitive' | 'rule'
       if (validRuleSlugs.has(slug)) kind = 'rule'
       else if (slug in PRIMITIVES)  kind = 'primitive'
       else {

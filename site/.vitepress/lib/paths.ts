@@ -12,10 +12,10 @@ export function repoRoot(metaUrl: string): string {
   return dir
 }
 
-export function siteDir(metaUrl: string): string {
-  return path.join(repoRoot(metaUrl), 'site')
-}
-
 export function rulesDir(metaUrl: string): string {
   return path.join(siteDir(metaUrl), 'rules')
+}
+
+export function siteDir(metaUrl: string): string {
+  return path.join(repoRoot(metaUrl), 'site')
 }

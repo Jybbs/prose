@@ -44,8 +44,8 @@ export { data }
 
 const ACTIONS: readonly Action[] = [
   { href: '/guide/installation', text: 'Get Started', theme: 'brand' },
-  { href: '/rules/',             text: 'Rules',       theme: 'alt'   },
-  { href: REPO_URL,              text: 'GitHub',      theme: 'alt'   }
+  { href: REPO_URL,              text: 'GitHub',      theme: 'alt'   },
+  { href: '/rules/',             text: 'Rules',       theme: 'alt'   }
 ]
 
 const CTA_LINKS: readonly Link[] = [

@@ -314,8 +314,8 @@
   color       : var(--vp-c-text-2);
 }
 
-.card-number,
-.card-link {
+.card-link,
+.card-number {
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-label-size);
   letter-spacing : var(--prose-label-tracking);

@@ -12,11 +12,11 @@ export interface DepGraphEdge {
 }
 
 export const DEP_GRAPH_NODES: readonly DepGraphNode[] = [
-  { slug: 'source',           cx: 100, cy: 50,  width: 70  },
-  { slug: 'pipeline',         cx: 380, cy: 50,  width: 80  },
-  { slug: 'suppression-map',  cx: 100, cy: 170, width: 120 },
-  { slug: 'binding-analysis', cx: 280, cy: 170, width: 130 },
-  { slug: 'rule-id',          cx: 460, cy: 170, width: 70  }
+  { cx: 280, cy: 170, slug: 'binding-analysis', width: 130 },
+  { cx: 380, cy: 50,  slug: 'pipeline',         width: 80  },
+  { cx: 460, cy: 170, slug: 'rule-id',          width: 70  },
+  { cx: 100, cy: 50,  slug: 'source',           width: 70  },
+  { cx: 100, cy: 170, slug: 'suppression-map',  width: 120 }
 ]
 
 export const DEP_GRAPH_EDGES: readonly DepGraphEdge[] = [

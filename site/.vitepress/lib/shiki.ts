@@ -1,1 +1,1 @@
-export const SHIKI_THEMES = { light: 'github-light', dark: 'github-dark' } as const
+export const SHIKI_THEMES = { dark: 'github-dark', light: 'github-light' } as const

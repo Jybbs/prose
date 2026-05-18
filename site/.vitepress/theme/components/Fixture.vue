@@ -2,8 +2,8 @@
 import Disclosure  from './Disclosure.vue'
 import FixturePair from './FixturePair.vue'
 
-import { lookup }           from '../../lib/registry'
 import { data as fixtures } from '../../data/fixtures.data'
+import { lookup }           from '../../lib/registry'
 
 const props = defineProps<{
   case    : string
@@ -20,11 +20,11 @@ const entry = lookup(rule, props.case, `Fixture case under "${props.rule}"`)
 <template>
   <FixturePair
     v-if="!title"
-    :variant="variant"
     :input-html="entry.inputHtml"
     :output-html="entry.outputHtml"
+    :variant="variant"
   />
-  <Disclosure v-else variant="fixture" :open="open">
+  <Disclosure v-else :open="open" variant="fixture">
     <template #title>{{ title }}</template>
     <FixturePair
       :input-html="entry.inputHtml"

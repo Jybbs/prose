@@ -18,7 +18,7 @@ export default defineLoader({
   watch: [`${rulesDir(import.meta.url)}/*.md`],
   load(): DiscoveredRule[] {
     return discoverRuleFiles(rulesDir(import.meta.url))
-      .map(({ slug, category }) => ({ slug, category }))
+      .map(({ category, slug }) => ({ category, slug }))
       .sort((a, b) => a.slug.localeCompare(b.slug))
   }
 })

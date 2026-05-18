@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { useData }  from 'vitepress'
 
-import { data as rules } from '../../../data/rules.data'
 import { data as build } from '../../../data/build.data'
+import { data as rules } from '../../../data/rules.data'
 
 const { page } = useData()
 

@@ -6,7 +6,7 @@ const features = landing.features
 
 <template>
   <div class="landing-section landing-menu">
-    <SectionHeading kicker="The Surfaces" heading="Three rule families. Eighteen rules." centered>
+    <SectionHeading centered heading="Three rule families. Eighteen rules." kicker="The Surfaces">
       <a href="/rules/" class="landing-small-button">All rules</a>
     </SectionHeading>
     <div class="landing-feature-grid">

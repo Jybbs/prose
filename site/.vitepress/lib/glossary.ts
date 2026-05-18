@@ -50,16 +50,16 @@ export const glossary: Record<string, GlossaryEntry> = {
     href      : '/guide/ci-integration'
   },
 
-  'Ruff': {
-    aliases   : ['ruff'],
-    definition: 'Astral\'s Python linter and formatter. `prose` is designed to compose downstream of `ruff format`, leaving token-level normalization to `ruff` and layout-level legibility to `prose`.',
-    href      : '/guide/installation#two-stage-pipeline'
-  },
-
   'Pipeline': {
     aliases   : ['pipeline'],
     definition: 'Orchestrates the rule loop against a `Source`, reparses between rules, and returns the final source plus diagnostics.',
     href      : '/primitives/pipeline'
+  },
+
+  'Ruff': {
+    aliases   : ['ruff'],
+    definition: 'Astral\'s Python linter and formatter. `prose` is designed to compose downstream of `ruff format`, leaving token-level normalization to `ruff` and layout-level legibility to `prose`.',
+    href      : '/guide/installation#two-stage-pipeline'
   },
 
   'RuleId': {

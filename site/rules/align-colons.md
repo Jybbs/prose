@@ -1,6 +1,6 @@
 ---
 category: auto-fix
-related : [align-equals, align-imports, match-case-align, singleton-rule, collection-layout, alphabetize]
+related : [align-equals, align-imports, alphabetize, collection-layout, match-case-align, singleton-rule]
 ---
 
 # align-colons
