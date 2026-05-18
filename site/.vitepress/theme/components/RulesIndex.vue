@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import RuleChip from './RuleChip.vue'
+
 import { CATEGORY_META } from '../../lib/registries'
 import { data as rules } from '../../data/rules.data'
 
@@ -18,7 +20,7 @@ const categories = (['auto-fix', 'lint'] as const).map(slug => ({
       </thead>
       <tbody>
         <tr v-for="rule in cat.rules" :key="rule.slug">
-          <td><a :href="`/rules/${rule.slug}`"><code>{{ rule.slug }}</code></a></td>
+          <td><RuleChip :slug="rule.slug" /></td>
         </tr>
       </tbody>
     </table>

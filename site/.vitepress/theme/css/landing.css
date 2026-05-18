@@ -19,6 +19,8 @@
   background     : url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* ─── Hero ─── */
+
 .landing-hero {
   position       : relative;
   display        : flex;
@@ -144,6 +146,8 @@
   color        : var(--vp-c-brand-1);
 }
 
+/* ─── Section base: shared layout and typography for every landing section ─── */
+
 .landing-section {
   margin-top: 76px;
 }
@@ -191,6 +195,8 @@
   margin-top: 18px;
 }
 
+/* ─── Metaphor and definition ─── */
+
 .landing-metaphor {
   padding-top : 72px;
   border-top  : 1px solid var(--vp-c-divider);
@@ -236,6 +242,8 @@
 }
 
 
+/* ─── Feature grid ─── */
+
 .landing-feature-grid {
   display               : grid;
   grid-template-columns : repeat(3, minmax(0, 1fr));
@@ -243,14 +251,14 @@
 }
 
 /* Border, border-radius, and background come from the shared card rule in tokens.css. */
-.landing-feature-card {
+a.landing-feature-card {
   position        : relative;
   display         : block;
   min-width       : 0;
   min-height      : 260px;
   padding         : 28px;
   color           : var(--vp-c-text-1);
-  text-decoration : none !important;
+  text-decoration : none;
   transition     :
     border-color var(--prose-transition-slow),
     transform    var(--prose-transition-slow),
@@ -342,6 +350,8 @@
   color      : var(--vp-c-brand-1);
 }
 
+/* ─── Rules carousel ─── */
+
 .landing-rules {
   position      : relative;
   width         : 100vw;
@@ -383,6 +393,8 @@
     transform: translateX(-50%);
   }
 }
+
+/* ─── Workflow grid ─── */
 
 .landing-workflow-grid {
   display               : grid;
@@ -431,6 +443,8 @@
   color      : var(--vp-c-text-1);
 }
 
+/* ─── CTA ─── */
+
 .landing-cta {
   margin-top    : 76px;
   padding       : 64px 28px;
@@ -463,8 +477,10 @@
   background: var(--vp-c-bg);
 }
 
-/* Breakpoint at 960px: landing wide-grid collapse (metaphor + feature + workflow). */
-@media (max-width: 960px) {
+/* Landing wide-grid collapse (metaphor + feature + workflow) on desktop. */
+/* ─── Responsive ─── */
+
+@media (--prose-bp-desktop) {
   .landing-metaphor-body,
   .landing-feature-grid,
   .landing-workflow-grid {
@@ -472,8 +488,8 @@
   }
 }
 
-/* Breakpoint at 640px: smallest-hero margin shrink. */
-@media (max-width: 640px) {
+/* Smallest-hero margin shrink on mobile. */
+@media (--prose-bp-mobile) {
   .landing-section {
     margin-top: 54px;
   }

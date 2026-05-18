@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import '../css/fixture.css'
+
 defineProps<{
   inputHtml  : string
   outputHtml : string

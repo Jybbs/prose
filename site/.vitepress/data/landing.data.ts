@@ -1,8 +1,8 @@
-import { createMarkdownRenderer, defineLoader } from 'vitepress'
+import { defineLoader } from 'vitepress'
 
-import { REPO_URL }           from '../lib/constants'
-import { siteDir }            from '../lib/paths'
-import { renderInlineField }  from '../lib/render-markdown'
+import { REPO_URL }                       from '../lib/constants'
+import { siteDir }                        from '../lib/paths'
+import { getRenderer, renderInlineField } from '../lib/render-markdown'
 
 const root = siteDir(import.meta.url)
 
@@ -129,7 +129,7 @@ const STEP_SOURCES: readonly StepSource[] = [
 export default defineLoader({
   watch: [],
   async load(): Promise<LandingData> {
-    const md = await createMarkdownRenderer(root)
+    const md = await getRenderer(root)
     return {
       cta     : { links: CTA_LINKS },
       features: renderInlineField(md, FEATURE_SOURCES, 'body'),

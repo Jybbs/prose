@@ -1,7 +1,11 @@
+@custom-media --prose-bp-mobile  (max-width: 640px);
+@custom-media --prose-bp-tablet  (max-width: 760px);
+@custom-media --prose-bp-desktop (max-width: 960px);
+
 :root {
-  --prose-font-display           : 'Fraunces', Georgia, "Times New Roman", serif;
-  --vp-font-family-base          : 'Lora', Georgia, "Times New Roman", serif;
-  --vp-font-family-mono          : 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --prose-font-display           : 'Fraunces Variable', Georgia, "Times New Roman", serif;
+  --vp-font-family-base          : 'Lora Variable', Georgia, "Times New Roman", serif;
+  --vp-font-family-mono          : 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --prose-c-accent               : #7db3e0;
   --prose-c-cream                : #d4a574;
@@ -24,6 +28,10 @@
   --prose-radius-chip            : 12px;
   --prose-radius-pill            : 22px;
   --prose-radius-sm              : 4px;
+
+  --prose-shadow-elevated        : 0 12px 32px -16px rgba(0, 0, 0, 0.32);
+
+  --prose-focus-ring             : 2px solid var(--vp-c-brand-1);
 
   --prose-transition             : 0.15s ease;
   --prose-transition-slow        : 0.2s ease;

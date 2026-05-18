@@ -1,7 +1,7 @@
-import { createMarkdownRenderer, defineLoader } from 'vitepress'
+import { defineLoader } from 'vitepress'
 
-import { siteDir }            from '../lib/paths'
-import { renderInlineField }  from '../lib/render-markdown'
+import { siteDir }                        from '../lib/paths'
+import { getRenderer, renderInlineField } from '../lib/render-markdown'
 
 const root = siteDir(import.meta.url)
 
@@ -74,7 +74,7 @@ const SOURCES: readonly ExitCodeSource[] = [
 export default defineLoader({
   watch: [],
   async load(): Promise<readonly ExitCode[]> {
-    const md = await createMarkdownRenderer(root)
+    const md = await getRenderer(root)
     return renderInlineField(md, SOURCES, 'detail')
   }
 })

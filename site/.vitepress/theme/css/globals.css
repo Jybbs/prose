@@ -1,4 +1,11 @@
 
+/* ─── Focus ring: universal :focus-visible fallback ─── */
+
+:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 2px;
+}
+
 /* ─── Shared patterns: kicker, card, action-pill ─── */
 
 .kicker,
@@ -123,14 +130,14 @@
   color: var(--vp-c-brand-1);
 }
 
-.rule-chip {
+a.rule-chip {
   gap             : 6px;
   padding         : 2px 10px 2px 6px;
   border-radius   : var(--prose-radius-chip);
   color           : var(--vp-c-text-1);
   font-size       : 0.78rem;
   line-height     : 1.6;
-  text-decoration : none !important;
+  text-decoration : none;
   transition      : border-color var(--prose-transition), background-color var(--prose-transition);
   vertical-align  : baseline;
 }
@@ -240,8 +247,8 @@
   margin-bottom: 0;
 }
 
-/* Breakpoint at 760px: motivation body's two columns collapse to one. */
-@media (max-width: 760px) {
+/* Motivation body's two columns collapse to one on tablet. */
+@media (--prose-bp-tablet) {
   .disclosure-motivation .disclosure-body {
     grid-template-columns: 1fr;
   }
@@ -267,7 +274,7 @@
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
-  box-shadow    : 0 12px 32px -16px rgba(0, 0, 0, 0.32),
+  box-shadow    : var(--prose-shadow-elevated),
                   0 0 0 1px color-mix(in srgb, var(--vp-c-brand-1) 12%, transparent);
   color         : var(--vp-c-text-1);
   font-size     : 0.85rem;

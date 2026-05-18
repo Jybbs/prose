@@ -1,19 +1,22 @@
 import { defineConfig, type DefaultTheme }       from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
+import postcssCustomMedia                         from 'postcss-custom-media'
 
 import { bodyLinkPlugin }                          from './lib/body-link-plugin'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME }   from './lib/constants'
-import { glossary }                                from './lib/glossary'
+import { buildPhraseToSlug, glossary }             from './lib/glossary'
 import { glossaryPlugin }                          from './lib/glossary-plugin'
+import { buildPageTimestamps }                     from './lib/page-timestamps'
 import { repoRoot, rulesDir }                      from './lib/paths'
 import { PRIMITIVES }                              from './lib/registries'
 import { ruleLinkPlugin }                          from './lib/rule-link'
 import { discoverRuleSlugs, splitByCategory }      from './lib/rules-discovery'
 import { readCargoVersion }                        from './lib/version'
 
-const repoDir = repoRoot(import.meta.url)
-const version = readCargoVersion(repoDir)
+const repoDir        = repoRoot(import.meta.url)
+const version        = readCargoVersion(repoDir)
+const pageTimestamps = buildPageTimestamps(repoDir)
 
 const primLink = (text: string, slug: string): DefaultTheme.SidebarItem =>
   ({ link: `/primitives/${slug}`, text })
@@ -25,27 +28,15 @@ const discoveredRules   = discoverRuleSlugs(rulesDir(import.meta.url))
 const { autoFix, lint } = splitByCategory(discoveredRules)
 const validSlugs        = new Set(discoveredRules.map(r => r.slug))
 
-const glossaryPhraseToSlug = new Map<string, string>()
-for (const [slug, entry] of Object.entries(glossary)) {
-  glossaryPhraseToSlug.set(slug, slug)
-  for (const alias of entry.aliases ?? []) {
-    glossaryPhraseToSlug.set(alias, slug)
-  }
-}
+const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 
 export default defineConfig({
   cleanUrls     : true,
   description   : 'A Python typesetter for the reader.',
   head          : [
-    ['link', { href: '/favicon.svg',                 rel: 'icon',        type: 'image/svg+xml' }],
-    ['link', { href: 'https://fonts.googleapis.com', rel: 'preconnect'                          }],
-    ['link', { crossorigin: '', href: 'https://fonts.gstatic.com', rel: 'preconnect'            }],
-    ['link', {
-      href: 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap',
-      rel : 'stylesheet'
-    }]
+    ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }]
   ],
-  lastUpdated   : true,
+  lastUpdated   : false,
   markdown      : {
     config     : md => {
       md.use(groupIconMdPlugin)
@@ -117,8 +108,11 @@ export default defineConfig({
       'link',
       { href: `${SITE_HOSTNAME}/${pageData.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '')}`, rel: 'canonical' }
     ])
+    const ts = pageTimestamps.get(pageData.relativePath)
+    if (ts) pageData.lastUpdated = ts
   },
   vite          : {
+    css    : { postcss: { plugins: [postcssCustomMedia()] } },
     plugins: [groupIconVitePlugin() as never]
   }
 })

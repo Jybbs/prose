@@ -1,8 +1,8 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { codeToHtml }   from 'shiki'
-import { defineLoader } from 'vitepress'
+import { getSingletonHighlighter } from 'shiki'
+import { defineLoader }            from 'vitepress'
 
 import { SHIKI_THEMES } from '../lib/constants'
 import { FIXTURES_DIR, INPUT_SUFFIX, SNAPSHOTS_DIR, walkFixtures } from '../lib/fixtures'
@@ -48,8 +48,14 @@ export default defineLoader({
   }
 })
 
+const highlighter = getSingletonHighlighter({
+  langs : ['python'],
+  themes: Object.values(SHIKI_THEMES)
+})
+
 async function highlight(code: string): Promise<string> {
-  return codeToHtml(code, {
+  const h = await highlighter
+  return h.codeToHtml(code, {
     lang  : 'python',
     themes: SHIKI_THEMES
   })

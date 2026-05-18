@@ -1,4 +1,11 @@
-import type { MarkdownRenderer } from 'vitepress'
+import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
+
+let cachedRenderer: Promise<MarkdownRenderer> | null = null
+
+export function getRenderer(siteRoot: string): Promise<MarkdownRenderer> {
+  if (cachedRenderer === null) cachedRenderer = createMarkdownRenderer(siteRoot)
+  return cachedRenderer
+}
 
 type HtmlKey<K extends string> = `${K}Html`
 

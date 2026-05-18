@@ -110,8 +110,8 @@
   padding  : 0;
 }
 
-/* Breakpoint at 760px: fixture grid (both variants) collapses to one column. */
-@media (max-width: 760px) {
+/* Fixture grid (both variants) collapses to one column on tablet. */
+@media (--prose-bp-tablet) {
   .fixture-pair {
     grid-template-columns: 1fr;
   }

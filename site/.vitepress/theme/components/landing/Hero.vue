@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import '../../css/landing.css'
+
 import { data as landing } from '../../../data/landing.data'
 
 const actions = landing.hero.actions
