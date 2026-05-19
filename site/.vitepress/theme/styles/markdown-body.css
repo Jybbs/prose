@@ -1,4 +1,7 @@
-/* ─── Body-link hover underline (opt-in via markdown-it body-link plugin) ─── */
+.vp-doc p em,
+.vp-doc li em {
+  color: var(--prose-c-celadon);
+}
 
 .vp-doc a.body-link {
   position        : relative;
@@ -21,8 +24,6 @@
   left  : 0;
   right : auto;
 }
-
-/* ─── Table polish ─── */
 
 .vp-doc table {
   margin-top      : 1.5rem;

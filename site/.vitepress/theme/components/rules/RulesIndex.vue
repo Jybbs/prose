@@ -7,15 +7,13 @@ import { data as rules } from '../../../data/rules.data'
 <template>
   <template v-for="cat in rules.byCategory" :key="cat.category">
     <h2 :id="cat.category">{{ cat.label }}</h2>
-    <table>
-      <thead>
-        <tr><th>Rule</th></tr>
-      </thead>
-      <tbody>
-        <tr v-for="rule in cat.rules" :key="rule.slug">
-          <td><RuleChip :slug="rule.slug" /></td>
-        </tr>
-      </tbody>
-    </table>
+    <template v-for="dom in cat.byDomain" :key="dom.domain">
+      <h3 :id="dom.domain">{{ dom.label }}</h3>
+      <ul class="rules-index-list">
+        <li v-for="rule in dom.rules" :key="rule.slug">
+          <RuleChip :slug="rule.slug" />
+        </li>
+      </ul>
+    </template>
   </template>
 </template>

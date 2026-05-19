@@ -1,11 +1,13 @@
 ---
-category: lint
-related : [unused-future-annotations]
+category : lint
+domain   : lint
+caption  : "`Union[A, B]` and `Optional[T]` patterns that should read as modern `A | B` and `T | None`"
+related  : [unused-future-annotations]
 ---
 
 # legacy-union-syntax
 
-`Union[X, Y]` and `Optional[X]` come from the `typing` module, were the canonical union shapes for years, and still read clearly today. On Python 3.10 and later, the PEP 604 pipe-union shapes (*`X | Y`, `X | None`*) read more directly and consume one fewer import, which over the course of a large codebase adds up to genuinely clearer type signatures. *Legacy-union-syntax* surfaces the legacy form as a lint, leaving the rewrite to a future migration pass that picks up the lint output.
+`Union[X, Y]` and `Optional[X]` come from the `typing` module, were the canonical union shapes for years, and still read clearly today. On Python 3.10 and later, the PEP 604 pipe-union shapes (*`X | Y`, `X | None`*) read more directly and consume one fewer import, which over the course of a large codebase adds up to genuinely clearer type signatures. `legacy-union-syntax` surfaces the legacy form as a lint, leaving the rewrite to a future migration pass that picks up the lint output.
 
 The rule fires only on projects whose `target-version` is 3.10 or higher, where the pipe-union shapes are runtime-supported. Pre-3.10 projects and projects with `target-version` unset stay quiet, since recommending the pipe form on those projects would mislead. The lint is non-rewriting, so the diagnostic surfaces without touching the source.
 
@@ -56,8 +58,6 @@ A `from typing import Optional` followed by `Optional[X]` surfaces the lint, rec
 
 ## Related
 
-The version-gated surface composes with one other rule on the same `target-version` axis.
-
-- [[unused-future-annotations]] removes `from __future__ import annotations` when removal is provably safe, also reading `target-version` for the gate.
+<RelatedRulesInline />
 
 For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[legacy-union-syntax]` directive.

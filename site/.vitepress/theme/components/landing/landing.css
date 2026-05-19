@@ -4,98 +4,35 @@
 }
 
 .landing-page {
-  position  : relative;
   max-width : 1120px;
   margin    : 0 auto;
 }
 
-.landing-page::before {
-  content        : "";
-  position       : absolute;
-  inset          : 0;
-  pointer-events : none;
-  z-index        : -1;
-  opacity        : 0.025;
-  background     : url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* ─── Hero ─── */
-
 .landing-hero {
-  position       : relative;
   display        : flex;
   flex-direction : column;
   align-items    : center;
-  gap            : 22px;
   padding        : 88px 24px 56px;
   text-align     : center;
-  overflow       : hidden;
-}
-
-.landing-hero-backdrop {
-  position       : absolute;
-  inset          : 0;
-  z-index        : 0;
-  pointer-events : none;
-  overflow       : hidden;
-}
-
-.landing-hero-orb {
-  position      : absolute;
-  width         : 520px;
-  height        : 520px;
-  border-radius : 50%;
-  filter        : blur(96px);
-  opacity       : 0.32;
-  background    : radial-gradient(circle, var(--orb-color, var(--vp-c-brand-1)), transparent 60%);
-}
-
-.landing-hero-orb-1 {
-  top  : -180px;
-  left : -120px;
-}
-
-.landing-hero-orb-2 {
-  top         : -120px;
-  right       : -160px;
-  --orb-color : var(--prose-c-whiskey);
-}
-
-.landing-hero-orb-3 {
-  bottom      : -260px;
-  left        : 50%;
-  transform   : translateX(-50%);
-  opacity     : 0.22;
-  --orb-color : var(--prose-c-celadon);
-}
-
-.dark .landing-hero-orb {
-  opacity: 0.22;
-}
-
-.landing-hero > :not(.landing-hero-backdrop) {
-  position : relative;
-  z-index  : 1;
 }
 
 .landing-hero-wordmark {
   margin     : 0;
-  padding    : 0;
-  border     : none;
   text-align : center;
 }
 
 .landing-hero-wordmark img {
   width  : min(640px, 72vw);
   height : auto;
+  display: block;
 }
 
 .landing-hero-tagline {
-  margin      : 0;
+  margin      : 0 0 32px;
   max-width   : 36ch;
   font-size   : 1.35rem;
   font-weight : 300;
-  color       : var(--vp-c-text-2);
+  color       : var(--prose-c-whiskey);
 }
 
 .landing-hero-actions {
@@ -143,8 +80,6 @@
   border-color : var(--vp-c-brand-1);
   color        : var(--vp-c-brand-1);
 }
-
-/* ─── Section base: shared layout and typography for every landing section ─── */
 
 .landing-section {
   margin-top: 76px;
@@ -194,8 +129,6 @@
   margin-top: 18px;
 }
 
-/* ─── Metaphor and definition ─── */
-
 .landing-metaphor {
   padding-top : 72px;
   border-top  : 1px solid var(--vp-c-divider);
@@ -241,15 +174,12 @@
 }
 
 
-/* ─── Feature grid ─── */
-
 .landing-feature-grid {
   display               : grid;
   grid-template-columns : repeat(3, minmax(0, 1fr));
   gap                   : 18px;
 }
 
-/* Border, border-radius, and background come from the shared card rule in tokens.css. */
 a.landing-feature-card {
   position        : relative;
   display         : block;
@@ -333,52 +263,6 @@ a.landing-feature-card {
   color      : var(--vp-c-brand-1);
 }
 
-/* ─── Rules carousel ─── */
-
-.landing-rules {
-  position      : relative;
-  width         : 100vw;
-  margin        : 76px calc(50% - 50vw) 0;
-  padding       : 28px 0;
-  overflow      : hidden;
-  border-top    : 1px solid var(--vp-c-divider);
-  border-bottom : 1px solid var(--vp-c-divider);
-  background    : var(--vp-c-bg-soft);
-}
-
-.landing-rules-kicker {
-  margin     : 0 0 14px;
-  text-align : center;
-  font-size  : 0.68rem;
-}
-
-.landing-rules-track {
-  display   : flex;
-  gap       : 42px;
-  width     : max-content;
-  animation : landing-scroll 60s linear infinite;
-}
-
-.landing-rules-track a {
-  white-space     : nowrap;
-  font-size       : 1.55rem;
-  font-weight     : 300;
-  color           : var(--vp-c-text-2);
-  text-decoration : none;
-}
-
-.landing-rules-track a:hover {
-  color: var(--vp-c-brand-1);
-}
-
-@keyframes landing-scroll {
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-/* ─── Workflow grid ─── */
-
 .landing-workflow-grid {
   display               : grid;
   grid-template-columns : repeat(2, minmax(0, 1fr));
@@ -426,8 +310,6 @@ a.landing-feature-card {
   color      : var(--vp-c-text-1);
 }
 
-/* ─── CTA ─── */
-
 .landing-cta {
   margin-top    : 76px;
   padding       : 64px 28px;
@@ -460,9 +342,6 @@ a.landing-feature-card {
   background: var(--vp-c-bg);
 }
 
-/* Landing wide-grid collapse (metaphor + feature + workflow) on desktop. */
-/* ─── Responsive ─── */
-
 @media (--prose-bp-desktop) {
   .landing-metaphor-body,
   .landing-feature-grid,
@@ -471,7 +350,6 @@ a.landing-feature-card {
   }
 }
 
-/* Smallest-hero margin shrink on mobile. */
 @media (--prose-bp-mobile) {
   .landing-section {
     margin-top: 54px;

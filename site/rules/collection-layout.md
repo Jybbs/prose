@@ -1,11 +1,13 @@
 ---
-category: auto-fix
-related : [align-colons, alphabetize, singleton-rule, strip-trailing-commas]
+category : auto-fix
+domain   : formatting
+caption  : "one-entry-per-line layout for list, tuple, dict, and set literals past a threshold"
+related  : [align-colons, alphabetize, singleton-rule, strip-trailing-commas]
 ---
 
 # collection-layout
 
-A dictionary, list, or set with five non-trivial entries on one line reads as a **single chunky token**, and the reader's eye flicks across to find the entry it wants. The same data on five separate lines reads as a **column of entries**, each one a unit. *Collection-layout* expands multi-entry collections to the one-per-line shape whenever the entries cross the atomicity threshold, and it leaves short single-line collections alone when each entry is already small enough to skim.
+A dictionary, list, or set with five non-trivial entries on one line reads as a **single chunky token**, and the reader's eye flicks across to find the entry it wants. The same data on five separate lines reads as a **column of entries**, each one a unit. `collection-layout` expands multi-entry collections to the one-per-line shape whenever the entries cross the atomicity threshold, and it leaves short single-line collections alone when each entry is already small enough to skim.
 
 The rule fires on dictionary, list, set, and tuple literals. A literal expands when any entry is non-atomic (*a function call, a nested collection, a computed expression*) or when the entry count exceeds `max-atomics-per-line`. Single-line collections of atomic literals (*ints, floats, strings, single-name identifiers*) inside the cap stay on one line. Pair with [[align-colons]] for the dict-key alignment after the expansion, with [[alphabetize]] for sibling sorting where ordering doesn't matter, and with [[strip-trailing-commas]] for the trailing-comma sweep on the multi-line form.
 
@@ -40,9 +42,4 @@ A dict literal with non-atomic entries expands to one entry per line, and the re
 
 ## Related
 
-The layout pass feeds several downstream rules that shape the expanded multi-line form.
-
-- [[align-colons]] aligns the post-key `:` separator across the expanded entries.
-- [[alphabetize]] sorts sibling entries when ordering doesn't carry meaning.
-- [[strip-trailing-commas]] removes the trailing comma from the multi-line form.
-- [[singleton-rule]] drops the colon padding when an expanded dict resolves to a single entry.
+<RelatedRulesInline />

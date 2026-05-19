@@ -1,0 +1,11 @@
+[data-domain="alignment"]  { --domain-color: var(--prose-c-domain-alignment);  }
+[data-domain="ordering"]   { --domain-color: var(--prose-c-domain-ordering);   }
+[data-domain="formatting"] { --domain-color: var(--prose-c-domain-formatting); }
+[data-domain="docs"]       { --domain-color: var(--prose-c-domain-docs);       }
+[data-domain="lint"]       { --domain-color: var(--prose-c-domain-lint);       }
+
+[data-category="auto-fix"] { --category-accent: var(--vp-c-brand-1);    }
+[data-category="lint"]     { --category-accent: var(--prose-c-apricot); }
+
+[data-side="before"] { --side-color: var(--prose-c-whiskey); }
+[data-side="after"]  { --side-color: var(--prose-c-celadon); }

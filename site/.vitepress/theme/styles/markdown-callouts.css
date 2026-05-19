@@ -1,5 +1,3 @@
-/* ─── Callout-block restyling ─── */
-
 .vp-doc .custom-block {
   position : relative;
   margin   : 1.5rem 0;
@@ -36,8 +34,6 @@
   background: var(--prose-c-accent);
 }
 
-/* ─── Domain-tagged Aside callouts ─── */
-
 .vp-doc .custom-block.tip.domain-alignment::before {
   background: var(--prose-domain-alignment);
 }
@@ -57,8 +53,6 @@
 .vp-doc .custom-block.tip.domain-ordering::before {
   background: var(--prose-domain-ordering);
 }
-
-/* ─── Domain-tagged dropcap ─── */
 
 .vp-doc .dropcap::first-letter {
   float       : left;

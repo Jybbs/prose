@@ -11,13 +11,19 @@
   --prose-c-celadon              : #8cc5a3;
   --prose-c-chambray             : #7db3e0;
   --prose-c-eureka               : #e8c840;
+  --prose-c-heath                : #c08597;
   --prose-c-whiskey              : #d4a574;
 
   --prose-c-accent               : var(--prose-c-chambray);
   --prose-c-error                : var(--prose-c-apricot);
-  --prose-c-lint                 : var(--prose-c-whiskey);
   --prose-c-secondary            : var(--prose-c-celadon);
   --prose-c-warning              : var(--prose-c-eureka);
+
+  --prose-c-domain-alignment     : var(--prose-c-eureka);
+  --prose-c-domain-ordering      : var(--prose-c-chambray);
+  --prose-c-domain-formatting    : var(--prose-c-heath);
+  --prose-c-domain-docs          : var(--prose-c-whiskey);
+  --prose-c-domain-lint          : var(--prose-c-apricot);
 
   --prose-domain-alignment       : #4a2511;
   --prose-domain-engine          : #4a1418;
@@ -26,7 +32,6 @@
   --prose-domain-ordering        : #4a1a3e;
 
   --prose-radius                 : 8px;
-  --prose-radius-chip            : 12px;
   --prose-radius-sm              : 4px;
 
   --prose-focus-ring             : 2px solid var(--vp-c-brand-1);
@@ -86,8 +91,6 @@
 .dark .shiki {
   background-color: var(--shiki-dark-bg) !important;
 }
-
-/* ─── Local search modal tinting ─── */
 
 :root {
   --vp-local-search-bg                     : var(--vp-c-bg);

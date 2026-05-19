@@ -2,10 +2,10 @@
 import DefaultTheme from 'vitepress/theme'
 
 import BuildMetadata from './components/layout/BuildMetadata.vue'
-import CategoryChip  from './components/aside/CategoryChip.vue'
 import FixtureToc    from './components/aside/FixtureToc.vue'
 import NotFound      from './components/layout/NotFound.vue'
 import RelatedRules  from './components/aside/RelatedRules.vue'
+import RuleChrome    from './components/aside/RuleChrome.vue'
 import StarBadge     from './components/layout/StarBadge.vue'
 </script>
 
@@ -15,7 +15,7 @@ import StarBadge     from './components/layout/StarBadge.vue'
       <StarBadge />
     </template>
     <template #doc-before>
-      <CategoryChip />
+      <RuleChrome />
     </template>
     <template #aside-top>
       <FixtureToc />

@@ -1,11 +1,7 @@
-/* ─── Focus ring: universal :focus-visible fallback ─── */
-
 :focus-visible {
   outline        : var(--prose-focus-ring);
   outline-offset : 2px;
 }
-
-/* ─── Custom scrollbar ─── */
 
 ::-webkit-scrollbar {
   width  : 8px;
@@ -30,20 +26,16 @@
   scrollbar-color : var(--vp-c-divider) transparent;
 }
 
-/* ─── Reduced-motion: suppress hover transforms, caret-rotation animation, and the marquee ─── */
-
 @media (prefers-reduced-motion: reduce) {
   .disclosure-caret,
   .landing-feature-card,
   .landing-feature-card::before,
-  .landing-hero-action,
-  .landing-hero-logo {
+  .landing-hero-action {
     transition: none;
   }
 
   .landing-feature-card:hover,
-  .landing-hero-action:hover,
-  .landing-hero-logo:hover {
+  .landing-hero-action:hover {
     transform: none;
   }
 

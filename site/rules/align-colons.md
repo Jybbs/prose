@@ -1,11 +1,13 @@
 ---
-category: auto-fix
-related : [align-equals, align-imports, alphabetize, collection-layout, match-case-align, singleton-rule]
+category : auto-fix
+domain   : alignment
+caption  : "`:` separator on dict literals, dataclass and Pydantic fields, function-signature annotations, and docstring `Args:` blocks"
+related  : [align-equals, align-imports, alphabetize, collection-layout, match-case-align, singleton-rule]
 ---
 
 # align-colons
 
-The `:` separator appears in **four contexts** where columns of values sit beside columns of names, and in each one the reader's eye wants a tidy table rather than a ragged margin. *Align-colons* gathers those contexts into a single shared alignment surface, so dictionary keys, dataclass and Pydantic fields, function-signature parameter annotations, and docstring `Args:` blocks all read as parallel two-column entries. Single-expression `match` arms live in a separate dispatch table owned by [[match-case-align]].
+The `:` separator appears in **four contexts** where columns of values sit beside columns of names, and in each one the reader's eye wants a tidy table rather than a ragged margin. `align-colons` gathers those contexts into a single shared alignment surface, so dictionary keys, dataclass and Pydantic fields, function-signature parameter annotations, and docstring `Args:` blocks all read as parallel two-column entries. Single-expression `match` arms live in a separate dispatch table owned by [[match-case-align]].
 
 The rule walks each context independently, treating a group as the consecutive members sharing the same indentation level and parent shape. A blank line, a comment, or a non-member statement resets the group. Alignment honors the [[singleton-rule]] so that one-member contexts skip padding altogether, leaving a one-key dict reading as plain code instead of a one-row table.
 
@@ -33,6 +35,4 @@ A dictionary literal with three entries of differing key lengths aligns on the `
 
 ## Related
 
-`:` is one of four separator surfaces the alignment engine runs across. [[align-equals]] covers the `=` sign on consecutive assignments. [[align-imports]] covers the `import` keyword on `from ... import ...` runs. [[match-case-align]] covers the post-pattern `:` on single-expression case bodies inside a `match`. The [[singleton-rule]] drops the padding when a `:`-shaped group collapses to one member, so a one-key dict reads as plain code.
-
-Upstream of this rule, [[collection-layout]] decides whether a dict literal spans one line or many, and [[alphabetize]] settles dataclass-field order before the alignment fires.
+<RelatedRulesInline />

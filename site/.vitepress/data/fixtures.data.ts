@@ -13,10 +13,11 @@ const fixturesRoot  = path.join(root, FIXTURES_DIR)
 const snapshotsRoot = path.join(root, SNAPSHOTS_DIR)
 
 export interface FixtureEntry {
-  input      : string
-  inputHtml  : string
-  output     : string
-  outputHtml : string
+  changesSource : boolean
+  input         : string
+  inputHtml     : string
+  output        : string
+  outputHtml    : string
 }
 
 export type FixtureData = Record<string, Record<string, FixtureEntry>>
@@ -42,7 +43,13 @@ export default defineLoader({
         highlight(output)
       ])
       out[rule] ??= {}
-      out[rule][caseName] = { input, inputHtml, output, outputHtml }
+      out[rule][caseName] = {
+        changesSource: input !== output,
+        input,
+        inputHtml,
+        output,
+        outputHtml
+      }
     }
     return out
   }

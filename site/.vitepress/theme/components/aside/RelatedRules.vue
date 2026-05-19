@@ -1,23 +1,19 @@
 <script setup lang="ts">
-import { useData }  from 'vitepress'
 import { computed } from 'vue'
 
 import Kicker   from '../base/Kicker.vue'
 import RuleChip from '../rules/RuleChip.vue'
 
 import { data as rules }  from '../../../data/rules.data'
+import { lookup }         from '../../../lib/shared/lookup'
 import { useCurrentRule } from '../../../lib/shared/route'
 
-const current        = useCurrentRule()
-const { frontmatter } = useData()
+const current = useCurrentRule()
 
 const related = computed(() => {
   if (!current.value) return []
-  const slugs = frontmatter.value.related as string[] | undefined
-  if (slugs?.length) {
-    return slugs
-      .map(slug => rules.bySlug[slug])
-      .filter((r): r is NonNullable<typeof r> => r !== undefined)
+  if (current.value.related.length) {
+    return current.value.related.map(slug => lookup(rules.bySlug, slug, 'Related rule'))
   }
   return rules.list
     .filter(r => r.slug !== current.value!.slug && r.category === current.value!.category)

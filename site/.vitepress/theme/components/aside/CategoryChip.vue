@@ -8,11 +8,12 @@ import { useCurrentRule } from '../../../lib/shared/route'
 
 const rule = useCurrentRule()
 const meta = computed(() => rule.value && CATEGORY_META[rule.value.category])
+const href = computed(() => rule.value && `/rules/#${rule.value.category}`)
 </script>
 
 <template>
-  <Chip v-if="rule && meta" variant="category-chip" :category="rule.category">
-    <span class="category-chip-badge" aria-hidden="true">{{ meta.badge }}</span>
+  <Chip v-if="rule && meta" variant="category-chip" :category="rule.category" :href="href">
+    <span class="category-chip-badge" aria-hidden="true">{{ meta.initial }}</span>
     <span class="category-chip-label">{{ meta.label }}</span>
   </Chip>
 </template>

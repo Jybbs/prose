@@ -1,25 +1,11 @@
-.category-chip {
-  gap            : 8px;
-  margin-bottom  : 16px;
-  padding        : 4px 12px 4px 8px;
-  border-radius  : var(--prose-radius-chip);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-label-size);
-  letter-spacing : var(--prose-label-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-2);
-}
-
 .category-chip-badge {
-  font-size: var(--prose-text-md);
-}
-
-.category-chip[data-category="auto-fix"] {
-  border-color : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-strong), var(--vp-c-divider));
-  color        : var(--vp-c-brand-1);
-}
-
-.category-chip[data-category="lint"] {
-  border-color : color-mix(in srgb, var(--prose-c-lint) var(--prose-tint-strong), var(--vp-c-divider));
-  color        : var(--prose-c-lint);
+  font-family             : var(--prose-font-display);
+  font-style              : italic;
+  font-size               : 1.4rem;
+  font-weight             : 500;
+  font-variation-settings : 'opsz' 14;
+  line-height             : 1;
+  text-transform          : none;
+  letter-spacing          : 0;
+  color                   : var(--category-accent);
 }

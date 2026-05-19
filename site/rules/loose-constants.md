@@ -1,11 +1,13 @@
 ---
-category: lint
-related : [no-step-narration, single-use-variables]
+category : lint
+domain   : lint
+caption  : "module-level constants that aren't `UPPER_SNAKE_CASE`"
+related  : [no-step-narration, single-use-variables]
 ---
 
 # loose-constants
 
-Module-level `SCREAMING_CASE` constants tend to accumulate at the top of a file, and what starts as one or two related names grows into a cluster that would read better as an `Enum`, a model field, or a function-local. *Loose-constants* surfaces every module-level `SCREAMING_CASE` assignment as a lint candidate, leaving the refactor to a future migration pass that picks up the lint output.
+Module-level `SCREAMING_CASE` constants tend to accumulate at the top of a file, and what starts as one or two related names grows into a cluster that would read better as an `Enum`, a model field, or a function-local. `loose-constants` surfaces every module-level `SCREAMING_CASE` assignment as a lint candidate, leaving the refactor to a future migration pass that picks up the lint output.
 
 The rule fires on bare module-level `SCREAMING_CASE = literal` assignments. Names on the configurable `allow` list stay quiet. Dunder-style names (*`__version__`, `__all__`*) are recognized as runtime sentinels rather than configuration. Typing constructs from the standard library (*`TypeVar`, `ParamSpec`, `NewType`, `TypeAliasType`*) and any binding declared inside an `if TYPE_CHECKING:` block also stay quiet, since both carry their own semantics distinct from runtime configuration. The lint is non-rewriting, so the diagnostic surfaces without touching the source.
 
@@ -42,9 +44,6 @@ A bare `SCREAMING_CASE = literal` at module level surfaces the lint, recommendin
 
 ## Related
 
-The lint-only surface composes with the other lints across the same source.
-
-- [[single-use-variables]] lints function-local bindings assigned and read exactly once.
-- [[no-step-narration]] lints numbered-step comments that signal extractable functions.
+<RelatedRulesInline />
 
 For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[loose-constants]` directive.

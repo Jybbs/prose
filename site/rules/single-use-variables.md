@@ -1,11 +1,13 @@
 ---
-category: lint
-related : [loose-constants, no-step-narration]
+category : lint
+domain   : lint
+caption  : "single-use local bindings that could inline cleanly"
+related  : [loose-constants, no-step-narration]
 ---
 
 # single-use-variables
 
-A binding that's assigned once and read once usually exists because the author wanted a name for the expression, and the name reads better than the expression at the call site. Sometimes that's a real win, and sometimes the binding is just standing in for inlining the right-hand side. *Single-use-variables* surfaces bindings assigned and read exactly once, leaving the inline-or-keep decision to a future refactor pass that picks up the lint output.
+A binding that's assigned once and read once usually exists because the author wanted a name for the expression, and the name reads better than the expression at the call site. Sometimes that's a real win, and sometimes the binding is just standing in for inlining the right-hand side. `single-use-variables` surfaces bindings assigned and read exactly once, leaving the inline-or-keep decision to a future refactor pass that picks up the lint output.
 
 The rule consumes the per-`Source` [[binding-analysis]] table to count writes and reads per binding. Bindings matching the `allow-pattern` regex (*defaulting to `^_`, which exempts intentionally-unused names*) stay quiet. Augmented assignments count as both a write and a read, so a binding they target isn't single-use. Loop variables, comprehension targets, and function parameters are introduced implicitly and stay outside the rule's reach. The lint is non-rewriting, so the diagnostic surfaces without touching the source.
 
@@ -42,9 +44,6 @@ A binding assigned and read exactly once surfaces the lint, recommending inlinin
 
 ## Related
 
-The binding-shaped lint composes with two other surfaces that consume the same analysis.
-
-- [[binding-analysis]] is the per-`Source` table this rule reads, where every write and read of every name in every scope is indexed once and queried by consuming rules.
-- [[loose-constants]] lints the module-level equivalent (`SCREAMING_CASE = literal` assignments that would read better as a structured shape).
+<RelatedRulesInline />
 
 For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[single-use-variables]` directive.

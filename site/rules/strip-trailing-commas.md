@@ -1,11 +1,13 @@
 ---
-category: auto-fix
-related : [collection-layout, align-colons]
+category : auto-fix
+domain   : formatting
+caption  : "trailing commas inside single-line collections"
+related  : [collection-layout, align-colons]
 ---
 
 # strip-trailing-commas
 
-A trailing comma on the last entry of a multi-line collection adds a small **visual hiccup** at every block boundary without earning its keep. Each entry already has its own line, so a new entry adds a new line of its own, which leaves the trailing comma on the previous last entry with no diff-stability win to bring. *Strip-trailing-commas* removes the trailing comma from any bracketed container that carries one, and it leaves tuples alone because Python uses the trailing comma to disambiguate single-element tuples from parenthesized expressions.
+A trailing comma on the last entry of a multi-line collection adds a small **visual hiccup** at every block boundary without earning its keep. Each entry already has its own line, so a new entry adds a new line of its own, which leaves the trailing comma on the previous last entry with no diff-stability win to bring. `strip-trailing-commas` removes the trailing comma from any bracketed container that carries one, and it leaves tuples alone because Python uses the trailing comma to disambiguate single-element tuples from parenthesized expressions.
 
 The rule walks every bracketed container (*dictionaries, lists, sets, function signatures, function calls, class bases, parenthesized argument lists*) and strips the comma after the last entry when one is present. Whether the container spans one line or many doesn't affect the strip itself, since single-line atomic collections happen not to carry trailing commas in idiomatic Python and the rule rarely fires on them. Pair with [[collection-layout]] for the multi-line expansion that brings the trailing comma into reach in the first place.
 
@@ -37,9 +39,6 @@ A multi-line dict literal loses its trailing comma after the strip.
 
 ## Related
 
-The strip composes with two other rules that each shape the multi-line form.
+<RelatedRulesInline />
 
-- [[collection-layout]] expands single-line collections into the multi-line shape this rule then strips.
-- [[align-colons]] aligns the post-key `:` separator on the expanded form, before the strip.
-
-For per-line opt-outs (*projects that prefer the trailing comma for diff stability even on multi-line forms*), [**`Suppression`**](/guide/suppression) covers the `# fmt: off` / `# fmt: on` block markers.
+For per-line opt-outs *(projects that prefer the trailing comma for diff stability even on multi-line forms)*, [**Suppression**](/guide/suppression) covers the `# fmt: off` / `# fmt: on` block markers.

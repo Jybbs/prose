@@ -3,10 +3,13 @@ import path   from 'node:path'
 
 import matter from 'gray-matter'
 
-import type { RuleCategory } from '../shared/registries'
+import { DOMAIN_META, type RuleCategory, type RuleDomain } from '../shared/registries'
 
 export interface DiscoveredRule {
+  caption  : string
   category : RuleCategory
+  domain   : RuleDomain
+  related  : readonly string[]
   slug     : string
 }
 
@@ -27,8 +30,20 @@ export function discoverRuleSlugs(rulesDirectory: string): DiscoveredRule[] {
     if (category !== 'auto-fix' && category !== 'lint') {
       throw new Error(`Rule "${slug}" has invalid or missing category: ${JSON.stringify(category)}`)
     }
-    out.push({ category, slug })
-    if (Array.isArray(fm.related)) related.push({ refs: fm.related, slug })
+    const domain = fm.domain
+    if (typeof domain !== 'string' || !(domain in DOMAIN_META)) {
+      throw new Error(`Rule "${slug}" has invalid or missing domain: ${JSON.stringify(domain)}`)
+    }
+    if ((category === 'lint') !== (domain === 'lint')) {
+      throw new Error(`Rule "${slug}" mismatched category/domain (${category}/${domain}), because the lint domain pairs exclusively with the lint category`)
+    }
+    const caption = fm.caption
+    if (typeof caption !== 'string' || caption.trim() === '') {
+      throw new Error(`Rule "${slug}" has invalid or missing caption: ${JSON.stringify(caption)}`)
+    }
+    const relatedSlugs = Array.isArray(fm.related) ? fm.related as string[] : []
+    out.push({ caption, category, domain: domain as RuleDomain, related: relatedSlugs, slug })
+    if (relatedSlugs.length > 0) related.push({ refs: relatedSlugs, slug })
   }
 
   const known = new Set(out.map(r => r.slug))

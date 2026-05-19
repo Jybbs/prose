@@ -1,11 +1,13 @@
 ---
-category: auto-fix
-related : [legacy-union-syntax]
+category : auto-fix
+domain   : formatting
+caption  : "`from __future__ import annotations` lines that no longer carry their weight on the target Python version"
+related  : [legacy-union-syntax]
 ---
 
 # unused-future-annotations
 
-The `from __future__ import annotations` directive made forward-reference annotations possible on Python versions where the runtime evaluated annotations eagerly. PEP 749 lands deferred annotation evaluation in Python **3.14** by default whenever the file's annotations are typing-only, and the import becomes redundant. *Unused-future-annotations* removes the import when removal is provably safe for the file.
+The `from __future__ import annotations` directive made forward-reference annotations possible on Python versions where the runtime evaluated annotations eagerly. PEP 749 lands deferred annotation evaluation in Python **3.14** by default whenever the file's annotations are typing-only, and the import becomes redundant. `unused-future-annotations` removes the import when removal is provably safe for the file.
 
 Three branches actually fire the rewrite. The file may carry zero annotations (*the directive is unused outright*). The `target-version` may be 3.14 or higher (*the runtime defers annotation evaluation, so the directive carries no runtime weight*). Or every name appearing in every annotation may resolve to a module-scope binding before its first annotation use (*forward references aren't needed, so the runtime evaluates annotations eagerly without raising*). When none of those branches holds, the import stays in place.
 
@@ -56,8 +58,6 @@ A file whose annotations are typing-only loses the `__future__` import when the 
 
 ## Related
 
-The version-gated surface composes with one other rule on the same `target-version` axis.
-
-- [[legacy-union-syntax]] lints `Union[X, Y]` and `Optional[X]` on the same `target-version` gate, recommending the PEP 604 `X | Y` shape.
+<RelatedRulesInline />
 
 For the gate semantics, [**`target-version`**](/guide/configuration#top-level-keys) in the Configuration chapter covers how the field is read across version-gated rules.

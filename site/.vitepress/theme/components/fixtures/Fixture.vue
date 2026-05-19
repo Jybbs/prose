@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import Disclosure  from '../base/Disclosure.vue'
-import FixturePair from './FixturePair.vue'
+import Disclosure    from '../base/Disclosure.vue'
+import FixturePair   from './FixturePair.vue'
+import FixtureToggle from './FixtureToggle.vue'
 
 import { data as fixtures }   from '../../../data/fixtures.data'
+import type { FixtureTab }    from '../../../lib/shared/fixture-tab'
 import { registerFixture }    from '../../../lib/shared/fixture-toc'
 import { lookup }             from '../../../lib/shared/lookup'
 
@@ -16,9 +18,11 @@ const props = defineProps<{
   variant?: 'doc' | 'landing'
 }>()
 
-const rule  = lookup(fixtures, props.rule, 'Fixture rule')
-const entry = lookup(rule, props.case, `Fixture case under "${props.rule}"`)
-const id    = computed(() => `fixture-${props.rule}-${props.case}`)
+const rule       = lookup(fixtures, props.rule, 'Fixture rule')
+const entry      = lookup(rule, props.case, `Fixture case under "${props.rule}"`)
+const id         = computed(() => `fixture-${props.rule}-${props.case}`)
+const activeTab  = ref<FixtureTab>('after')
+const showToggle = computed(() => props.variant !== 'landing' && entry.changesSource)
 
 let unregister: (() => void) | null = null
 onMounted(() => {
@@ -30,15 +34,25 @@ onUnmounted(() => unregister?.())
 </script>
 
 <template>
-  <FixturePair
-    v-if="!title"
-    :input-html="entry.inputHtml"
-    :output-html="entry.outputHtml"
-    :variant="variant"
-  />
-  <Disclosure v-else :id="id" :open="open" variant="fixture">
-    <template #title>{{ title }}</template>
+  <div v-if="!title" class="fixture">
+    <header v-if="showToggle" class="fixture-bar">
+      <FixtureToggle v-model="activeTab" />
+    </header>
     <FixturePair
+      :active-tab="activeTab"
+      :input-html="entry.inputHtml"
+      :output-html="entry.outputHtml"
+      :variant="variant"
+    />
+  </div>
+
+  <Disclosure v-else :id="id" :open="open">
+    <template #title>{{ title }}</template>
+    <template v-if="showToggle" #actions>
+      <FixtureToggle v-model="activeTab" />
+    </template>
+    <FixturePair
+      :active-tab="activeTab"
       :input-html="entry.inputHtml"
       :output-html="entry.outputHtml"
     />

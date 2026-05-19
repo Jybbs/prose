@@ -1,0 +1,17 @@
+.domain-chip {
+  text-decoration : none;
+  transition      :
+    border-color      var(--prose-transition),
+    border-left-width var(--prose-transition),
+    padding-left      var(--prose-transition);
+}
+
+a.domain-chip:hover {
+  border-color      : var(--domain-color);
+  border-left-width : 3px;
+  padding-left      : 9px;
+}
+
+.domain-chip-badge {
+  font-size: var(--prose-text-md);
+}

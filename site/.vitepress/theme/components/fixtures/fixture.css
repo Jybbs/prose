@@ -1,67 +1,45 @@
-.fixture-pair {
-  position              : relative;
-  display               : grid;
-  grid-template-columns : 1fr auto 1fr;
-  gap                   : 0.75rem;
-  margin                : 1.25rem 0;
-  align-items           : stretch;
+.fixture {
+  margin : 1.25rem 0;
 }
 
-.fixture-pair-side {
-  position       : relative;
-  display        : flex;
-  flex-direction : column;
-  min-width      : 0;
+.fixture-bar {
+  display         : flex;
+  justify-content : flex-end;
+  padding         : 0 0 8px;
 }
 
-.fixture-pair-code {
-  min-width     : 0;
+.fixture-toggle {
+  display       : inline-flex;
+  padding       : 2px;
   border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  overflow      : auto;
-  background    : var(--vp-code-block-bg);
-  padding       : 1.6rem 1rem 0.85rem;
-  font-size     : 0.85em;
-  line-height   : 1.55;
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-c-bg);
 }
 
-.fixture-pair-code pre {
-  margin     : 0;
-  background : transparent;
-  padding    : 0;
+.fixture-toggle-pill {
+  padding         : 3px 12px;
+  border          : none;
+  border-radius   : calc(var(--prose-radius-sm) - 1px);
+  background      : transparent;
+  font-family     : var(--vp-font-family-mono);
+  font-size       : var(--prose-text-meta);
+  letter-spacing  : 0.08em;
+  text-transform  : uppercase;
+  color           : var(--vp-c-text-3);
+  cursor          : pointer;
+  transition      : background var(--prose-transition), color var(--prose-transition);
 }
 
-.fixture-pair-arrow {
-  font-family : var(--prose-font-display);
-  font-size   : 1.8rem;
-  font-style  : italic;
-  color       : var(--vp-c-brand-1);
-  padding     : 0 0.25rem;
+.fixture-toggle-pill:hover {
+  color: var(--vp-c-text-1);
 }
 
-/* Doc variant: overlay-style label on top-left of code block. */
-.fixture-pair-doc .fixture-pair-label {
-  position       : absolute;
-  top            : 8px;
-  left           : 12px;
-  padding        : 2px 8px;
-  background     : var(--vp-c-bg);
-  border         : 1px solid var(--vp-c-divider);
-  border-radius  : var(--prose-radius-chip);
-  font-size      : var(--prose-text-meta);
-  font-weight    : 600;
-  letter-spacing : 0.12em;
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
-  z-index        : 1;
+.fixture-toggle-pill[aria-selected="true"] {
+  background : color-mix(in srgb, var(--side-color) 20%, var(--vp-c-bg));
+  color      : var(--side-color);
 }
 
-/* Landing variant: outlined card with a header bar of label + colored dot. */
-.fixture-pair-landing {
-  grid-template-columns : minmax(0, 1fr) auto minmax(0, 1fr);
-  gap                   : 24px;
-}
-
+.fixture-pair-doc,
 .fixture-pair-landing .fixture-pair-side {
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
@@ -69,63 +47,20 @@
   overflow      : hidden;
 }
 
-.fixture-pair-landing .fixture-pair-label {
-  display        : flex;
-  align-items    : center;
-  gap            : 8px;
-  padding        : 10px 14px;
-  border-bottom  : 1px solid color-mix(in srgb, var(--vp-c-divider) 40%, transparent);
-  background     : color-mix(in srgb, white 4%, var(--vp-code-block-bg));
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-label-size);
-  letter-spacing : var(--prose-label-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
-}
-
-.fixture-pair-dot {
-  width         : 8px;
-  height        : 8px;
-  border-radius : 50%;
-}
-
-.fixture-pair-dot-before {
-  background: var(--prose-c-whiskey);
-}
-
-.fixture-pair-dot-after {
-  background: var(--prose-c-celadon);
-}
-
+.fixture-pair-panel,
 .fixture-pair-landing .fixture-pair-code {
-  padding   : 16px 18px;
-  font-size : var(--prose-text-sm);
-  border    : none;
-  flex-grow : 1;
+  font-size   : 0.8em;
+  line-height : 1.55;
+  overflow    : auto;
 }
 
-.fixture-pair-landing .fixture-pair-arrow {
-  font-size: 2.5rem;
-  padding  : 0;
+.fixture-pair-panel {
+  padding : 18px 22px;
 }
 
-/* Fixture grid (both variants) collapses to one column on tablet. */
-@media (--prose-bp-tablet) {
-  .fixture-pair {
-    grid-template-columns: 1fr;
-  }
-
-  .fixture-pair-arrow {
-    transform : rotate(90deg);
-    font-size : 1.4rem;
-  }
-
-  .fixture-pair-landing .fixture-pair-arrow {
-    font-size: 2rem;
-  }
-}
-
-/* Fixture inside a Disclosure: tighten the surrounding gap so the pair sits flush. */
-.disclosure-fixture .fixture-pair {
-  margin: 0;
+.fixture-pair-panel pre,
+.fixture-pair-landing .fixture-pair-code pre {
+  margin     : 0;
+  background : transparent;
+  padding    : 0;
 }
