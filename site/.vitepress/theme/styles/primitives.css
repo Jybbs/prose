@@ -91,7 +91,12 @@
 .not-found-headline,
 .workflow-step h3 {
   font-family : var(--prose-font-display);
-  font-style  : italic;
+}
+
+.landing-hero-tagline,
+.landing-section h2 em,
+.not-found-headline {
+  font-style : italic;
 }
 
 /* ─── Chip shape: shared between star-count, rule-chip, category-chip ─── */

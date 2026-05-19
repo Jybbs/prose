@@ -27,7 +27,8 @@ export { data }
 export default defineLoader({
   watch: [
     `${fixturesRoot}/**/*${INPUT_SUFFIX}`,
-    `${snapshotsRoot}/**/*${INPUT_SUFFIX}.snap`
+    `${snapshotsRoot}/**/*${INPUT_SUFFIX}.snap`,
+    path.join(import.meta.dirname, '../lib/shared/constants.ts')
   ],
   async load(): Promise<FixtureData> {
     const out: FixtureData = {}

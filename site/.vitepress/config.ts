@@ -47,10 +47,6 @@ export default defineConfig({
       pattern: `${REPO_URL}/edit/main/site/:path`,
       text   : 'Suggest an edit to this page'
     },
-    footer     : {
-      copyright: '© Jybbs',
-      message  : 'Released under the MIT License.'
-    },
     logo       : { alt: 'prose', src: '/logo.svg' },
     nav        : [
       { activeMatch: '/guide/',      link: '/guide/installation',  text: 'Guide'       },

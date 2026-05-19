@@ -7,14 +7,17 @@
   --vp-font-family-base          : 'Lora Variable', Georgia, "Times New Roman", serif;
   --vp-font-family-mono          : 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --prose-c-accent               : #7db3e0;
-  --prose-c-cream                : #d4a574;
-  --prose-c-error                : #e8876f;
-  --prose-c-lint                 : var(--prose-c-warm-deep);
-  --prose-c-secondary            : #8cc5a3;
-  --prose-c-warm                 : #e8c840;
-  --prose-c-warm-deep            : #b58c0a;
-  --prose-c-warning              : #e0854a;
+  --prose-c-apricot              : #e8876f;
+  --prose-c-celadon              : #8cc5a3;
+  --prose-c-chambray             : #7db3e0;
+  --prose-c-eureka               : #e8c840;
+  --prose-c-whiskey              : #d4a574;
+
+  --prose-c-accent               : var(--prose-c-chambray);
+  --prose-c-error                : var(--prose-c-apricot);
+  --prose-c-lint                 : var(--prose-c-whiskey);
+  --prose-c-secondary            : var(--prose-c-celadon);
+  --prose-c-warning              : var(--prose-c-eureka);
 
   --prose-domain-alignment       : #4a2511;
   --prose-domain-engine          : #4a1418;
@@ -49,15 +52,19 @@
   --prose-pad-card               : 14px 16px;
   --prose-pad-card-snug          : 10px 14px;
 
-  --vp-c-brand-1                 : #8a80cb;
-  --vp-c-brand-2                 : #a094d7;
-  --vp-c-brand-3                 : #c49bdb;
-  --vp-c-brand-soft              : rgba(138, 128, 203, 0.14);
+  --prose-c-ube                  : #8a80cb;
+  --prose-c-ube-mid              : #a094d7;
+  --prose-c-ube-pale             : #b6abe0;
+
+  --vp-c-brand-1                 : var(--prose-c-ube);
+  --vp-c-brand-2                 : var(--prose-c-ube-mid);
+  --vp-c-brand-3                 : var(--prose-c-ube-pale);
+  --vp-c-brand-soft              : color-mix(in srgb, var(--prose-c-ube) 14%, transparent);
 
   --vp-c-tip-1                   : var(--vp-c-brand-1);
   --vp-c-tip-2                   : var(--vp-c-brand-3);
   --vp-c-tip-3                   : var(--vp-c-brand-3);
-  --vp-c-tip-soft                : rgba(196, 155, 219, 0.14);
+  --vp-c-tip-soft                : var(--vp-c-brand-soft);
 
   --vp-button-brand-active-bg    : #7d72c1;
   --vp-button-brand-bg           : var(--vp-c-brand-1);
@@ -65,16 +72,19 @@
   --vp-button-brand-hover-bg     : var(--vp-c-brand-2);
   --vp-button-brand-hover-border : transparent;
 
-  --vp-home-hero-name-background : linear-gradient(120deg, var(--vp-c-brand-1) 30%, var(--vp-c-brand-3));
-  --vp-home-hero-name-color      : transparent;
+  --vp-code-block-bg             : #22272e;
 }
 
 .dark {
-  --prose-c-lint    : var(--prose-c-warm);
-  --vp-c-brand-1    : #c49bdb;
-  --vp-c-brand-2    : #b88dd2;
-  --vp-c-brand-3    : #8a80cb;
-  --vp-c-brand-soft : rgba(196, 155, 219, 0.16);
+  --vp-c-brand-1     : var(--prose-c-ube-pale);
+  --vp-c-brand-2     : var(--prose-c-ube-mid);
+  --vp-c-brand-3     : var(--prose-c-ube);
+  --vp-c-brand-soft  : color-mix(in srgb, var(--prose-c-ube-pale) 16%, transparent);
+  --vp-code-block-bg : #24292e;
+}
+
+.dark .shiki {
+  background-color: var(--shiki-dark-bg) !important;
 }
 
 /* ─── Local search modal tinting ─── */

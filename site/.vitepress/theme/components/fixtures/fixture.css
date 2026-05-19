@@ -15,6 +15,7 @@
 }
 
 .fixture-pair-code {
+  min-width     : 0;
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
   overflow      : auto;
@@ -64,7 +65,7 @@
 .fixture-pair-landing .fixture-pair-side {
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg);
+  background    : var(--vp-code-block-bg);
   overflow      : hidden;
 }
 
@@ -73,8 +74,8 @@
   align-items    : center;
   gap            : 8px;
   padding        : 10px 14px;
-  border-bottom  : 1px solid var(--vp-c-divider);
-  background     : var(--vp-c-bg-soft);
+  border-bottom  : 1px solid color-mix(in srgb, var(--vp-c-divider) 40%, transparent);
+  background     : color-mix(in srgb, white 4%, var(--vp-code-block-bg));
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-label-size);
   letter-spacing : var(--prose-label-tracking);
@@ -89,11 +90,11 @@
 }
 
 .fixture-pair-dot-before {
-  background: var(--prose-c-cream);
+  background: var(--prose-c-whiskey);
 }
 
 .fixture-pair-dot-after {
-  background: var(--vp-c-brand-1);
+  background: var(--prose-c-celadon);
 }
 
 .fixture-pair-landing .fixture-pair-code {

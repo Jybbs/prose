@@ -21,8 +21,9 @@ const actionItems = computed(() =>
       <div class="landing-hero-orb landing-hero-orb-2" />
       <div class="landing-hero-orb landing-hero-orb-3" />
     </div>
-    <img class="landing-hero-logo" src="/logo.svg" alt="prose" width="160" height="160" />
-    <h1 class="landing-hero-name">Prose</h1>
+    <h1 class="landing-hero-wordmark">
+      <img src="/title.svg" alt="Prose" width="640" height="236" />
+    </h1>
     <p class="landing-hero-tagline">A Python typesetter for the reader.</p>
     <LinkRow :items="actionItems" variant="landing-hero-actions" />
   </div>

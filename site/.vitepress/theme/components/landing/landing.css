@@ -47,26 +47,26 @@
   border-radius : 50%;
   filter        : blur(96px);
   opacity       : 0.32;
+  background    : radial-gradient(circle, var(--orb-color, var(--vp-c-brand-1)), transparent 60%);
 }
 
 .landing-hero-orb-1 {
-  top        : -180px;
-  left       : -120px;
-  background : radial-gradient(circle, var(--vp-c-brand-3), transparent 60%);
+  top  : -180px;
+  left : -120px;
 }
 
 .landing-hero-orb-2 {
-  top        : -120px;
-  right      : -160px;
-  background : radial-gradient(circle, var(--vp-c-brand-1), transparent 60%);
+  top         : -120px;
+  right       : -160px;
+  --orb-color : var(--prose-c-whiskey);
 }
 
 .landing-hero-orb-3 {
-  bottom     : -260px;
-  left       : 50%;
-  transform  : translateX(-50%);
-  background : radial-gradient(circle, var(--vp-c-brand-2), transparent 60%);
-  opacity    : 0.22;
+  bottom      : -260px;
+  left        : 50%;
+  transform   : translateX(-50%);
+  opacity     : 0.22;
+  --orb-color : var(--prose-c-celadon);
 }
 
 .dark .landing-hero-orb {
@@ -78,23 +78,16 @@
   z-index  : 1;
 }
 
-.landing-hero-logo {
-  width  : min(160px, 36vw);
-  height : auto;
+.landing-hero-wordmark {
+  margin     : 0;
+  padding    : 0;
+  border     : none;
+  text-align : center;
 }
 
-.landing-hero-name {
-  margin          : 0;
-  padding         : 0;
-  border          : none;
-  font-size       : clamp(3.2rem, 7vw, 5.2rem);
-  font-weight     : 700;
-  line-height     : 0.95;
-  letter-spacing  : -0.02em;
-  background      : linear-gradient(120deg, var(--vp-c-brand-1) 30%, var(--vp-c-brand-3));
-  -webkit-background-clip: text;
-  background-clip : text;
-  color           : transparent;
+.landing-hero-wordmark img {
+  width  : min(640px, 72vw);
+  height : auto;
 }
 
 .landing-hero-tagline {
@@ -127,13 +120,18 @@
 }
 
 .landing-hero-action-brand {
-  border-color : transparent;
-  background   : var(--vp-c-brand-1);
+  border-color : var(--vp-button-brand-border);
+  background   : var(--vp-button-brand-bg);
   color        : var(--vp-c-bg);
 }
 
 .landing-hero-action-brand:hover {
-  background: var(--vp-c-brand-2);
+  border-color : var(--vp-button-brand-hover-border);
+  background   : var(--vp-button-brand-hover-bg);
+}
+
+.landing-hero-action-brand:active {
+  background: var(--vp-button-brand-active-bg);
 }
 
 .landing-hero-action-alt {
@@ -156,16 +154,17 @@
   margin         : 12px 0 0;
   padding-bottom : 0;
   border-bottom  : none;
-  font-size      : clamp(2.5rem, 5vw, 4rem);
-  font-weight    : 300;
-  line-height    : 1;
+  font-size      : clamp(2rem, 3.6vw, 2.8rem);
+  font-weight    : 500;
+  line-height    : 1.1;
   letter-spacing : 0;
-  color          : var(--vp-c-brand-1);
+  color          : var(--vp-c-text-1);
+  font-variation-settings: 'opsz' 144;
+  text-wrap      : balance;
 }
 
 .landing-section h2 em {
-  font-weight : 300;
-  color       : inherit;
+  color: var(--prose-c-celadon);
 }
 
 .landing-section p {
@@ -272,19 +271,14 @@ a.landing-feature-card {
   left          : 0;
   right         : 0;
   height        : 3px;
-  background    : linear-gradient(90deg, transparent, var(--vp-c-brand-1), transparent);
+  background    : linear-gradient(90deg, transparent, var(--card-accent, var(--vp-c-brand-1)), transparent);
   opacity       : 0;
   transition    : opacity var(--prose-transition-slow);
   border-radius : var(--prose-radius) var(--prose-radius) 0 0;
 }
 
-.landing-feature-card:nth-child(2)::before {
-  background: linear-gradient(90deg, transparent, var(--prose-c-secondary), transparent);
-}
-
-.landing-feature-card:nth-child(3)::before {
-  background: linear-gradient(90deg, transparent, var(--prose-c-warm), transparent);
-}
+.landing-feature-card:nth-child(2)::before { --card-accent: var(--prose-c-celadon); }
+.landing-feature-card:nth-child(3)::before { --card-accent: var(--prose-c-whiskey); }
 
 .landing-feature-card:hover::before {
   opacity: 1;
@@ -294,15 +288,6 @@ a.landing-feature-card {
   border-color : var(--vp-c-brand-1);
   transform    : translateY(-2px);
   box-shadow   : 0 18px 44px -32px color-mix(in srgb, var(--vp-c-brand-1) 55%, transparent);
-}
-
-.landing-hero-logo {
-  transition: filter 0.25s ease, transform 0.25s ease;
-}
-
-.landing-hero-logo:hover {
-  transform : translateY(-2px);
-  filter    : drop-shadow(0 8px 24px color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-strong), transparent));
 }
 
 .landing-feature-card h3 {
