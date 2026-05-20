@@ -1,17 +1,16 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 39
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/match_dispatch.input.py
 ---
-alphabetize@521..760
-blank-lines@438..440
-docstring-wrap@67..393
-loose-constants@829..872
-match-case-align@506..507
-match-case-align@599..600
-match-case-align@692..693
-match-case-align@777..783
-singleton-rule@862..863
-strip-trailing-commas@840..841
-strip-trailing-commas@887..888
+alphabetize@531..770
+blank-lines@448..450
+blank-lines@470..471
+collection-layout@820..852
+docstring-wrap@67..437
+loose-constants@840..877
+match-case-align@517..518
+match-case-align@610..611
+match-case-align@703..704
+match-case-align@788..794
+strip-trailing-commas@889..890

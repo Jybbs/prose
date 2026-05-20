@@ -4,7 +4,14 @@ the 88-character budget. A set whose inline form would overflow the
 budget expands. Inside the expanded form, a run of atomic items flows
 across as few balanced lines as fit under the `code-line-length` budget and
 the `max_atomics_per_line` cap (default 8) at the item-indent column.
+A multi-line set whose assembled inline form fits collapses back to
+one line.
 """
 
 short_set = {"read", "write", "execute"}
 long_set = {"read", "write", "execute", "delete", "admin", "owner", "moderator", "guest", "root"}
+collapsing_set = {
+    "read",
+    "write",
+    "execute"
+}

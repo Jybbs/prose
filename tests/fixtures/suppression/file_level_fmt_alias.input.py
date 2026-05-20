@@ -1,0 +1,14 @@
+# fmt: off
+# A file-level fmt: off at the top of the source is treated
+# identically to prose: off at the top, opting every subsequent
+# line out of every rule.
+
+x = 1
+foo = 2
+bar_baz = 3
+
+config = {"z": 1, "a": 2,}
+
+
+def helper(b, a):
+    pass

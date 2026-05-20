@@ -15,6 +15,7 @@ Rules:
 
 
 class Service:
+
     def primary(self):
         """
         The primary entry point. Returns the configured default.

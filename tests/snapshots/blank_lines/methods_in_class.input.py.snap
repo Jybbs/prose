@@ -10,6 +10,7 @@ them, collapsing extra blanks and expanding missing ones.
 
 
 class Posting:
+
     def first(self):
         return 1
 

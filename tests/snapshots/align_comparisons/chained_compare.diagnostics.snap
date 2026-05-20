@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_comparisons/chained_compare.input.py
+---
+align-comparisons@150..151
+align-comparisons@165..166

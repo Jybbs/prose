@@ -1,0 +1,15 @@
+"""
+A Raises entry naming an exception type wraps the description at the
+docstring budget with a hanging indent at the description's start column,
+keeping the exception name flush at the parameter-list indent.
+"""
+
+
+def parse():
+    """
+    Summary line.
+
+    Raises:
+        ValueError: When the input bytes do not form a valid token sequence and the parser cannot recover a structured representation from the surrounding context.
+        IOError: When the underlying stream is closed before the parser reaches a terminating token.
+    """

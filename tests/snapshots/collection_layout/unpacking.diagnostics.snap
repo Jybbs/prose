@@ -3,6 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/collection_layout/unpacking.input.py
 ---
-collection-layout@537..623
-collection-layout@640..725
-collection-layout@741..821
+collection-layout@668..754
+collection-layout@771..856
+collection-layout@872..952
+collection-layout@980..1031

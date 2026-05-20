@@ -3,7 +3,9 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/collection_layout/nested.input.py
 ---
-collection-layout@461..616
-collection-layout@633..774
-collection-layout@800..885
-collection-layout@915..1009
+collection-layout@1112..1149
+collection-layout@359..514
+collection-layout@531..672
+collection-layout@698..783
+collection-layout@813..907
+collection-layout@940..988

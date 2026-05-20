@@ -16,11 +16,12 @@ use thiserror::Error;
 
 use crate::config::{
     AlignmentConfig, BareImportAllowlistConfig, CollectionLayoutConfig, Config,
-    LooseConstantsConfig, SingleUseVariablesConfig, ToggleOnly,
+    LooseConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
 };
 use crate::diagnostics::Diagnostic;
 use crate::pipeline::Pipeline;
 use crate::rules::align_colons::AlignColons;
+use crate::rules::align_comparisons::AlignComparisons;
 use crate::rules::align_equals::AlignEquals;
 use crate::rules::align_imports::AlignImports;
 use crate::rules::alphabetize::Alphabetize;
@@ -34,6 +35,7 @@ use crate::rules::match_case_align::MatchCaseAlign;
 use crate::rules::multi_line_docstrings::MultiLineDocstrings;
 use crate::rules::no_single_line_docstrings::NoSingleLineDocstrings;
 use crate::rules::no_step_narration::NoStepNarration;
+use crate::rules::signature_layout::SignatureLayout;
 use crate::rules::single_use_variables::SingleUseVariables;
 use crate::rules::singleton_rule::SingletonRule;
 use crate::rules::strip_trailing_commas::StripTrailingCommas;
@@ -294,7 +296,7 @@ macro_rules! register_rules {
 }
 
 register_rules! {
-    "collection-layout":         collection_layout:         CollectionLayoutConfig    => CollectionLayout         => "expand collection to one entry per line",
+    "collection-layout":         collection_layout:         CollectionLayoutConfig    => CollectionLayout         => "lay out collection literal against the line budget",
     "alphabetize":               alphabetize:               ToggleOnly                => Alphabetize              => "alphabetize this group",
     "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas      => "strip trailing comma",
     "no-single-line-docstrings": no_single_line_docstrings: ToggleOnly                => NoSingleLineDocstrings   => "expand single-line docstring to multi-line form",
@@ -303,10 +305,12 @@ register_rules! {
     "blank-lines":               blank_lines:               ToggleOnly                => BlankLines               => "normalize blank-line spacing",
     "bare-import-allowlist":     bare_import_allowlist:     BareImportAllowlistConfig => BareImportAllowlist      => "flag bare import outside allowlist",
     "match-case-align":          match_case_align:          AlignmentConfig           => MatchCaseAlign           => "align match-case arrows",
+    "signature-layout":          signature_layout:          SignatureLayoutConfig     => SignatureLayout          => "normalize function signature to one-line or one-per-line shape",
     "align-imports":             align_imports:             AlignmentConfig           => AlignImports             => "align consecutive `import`s",
     "align-colons":              align_colons:              AlignmentConfig           => AlignColons              => "align consecutive `:` separators",
     "docstring-wrap":            docstring_wrap:            ToggleOnly                => DocstringWrap            => "wrap docstring prose to the configured budget",
     "align-equals":              align_equals:              AlignmentConfig           => AlignEquals              => "align consecutive `=` operators",
+    "align-comparisons":         align_comparisons:         AlignmentConfig           => AlignComparisons         => "align consecutive comparison operators",
     "singleton-rule":            singleton_rule:            ToggleOnly                => SingletonRule            => "drop padding from singleton group",
     "loose-constants":           loose_constants:           LooseConstantsConfig      => LooseConstants           => "consider moving this module-level constant",
     "no-step-narration":         no_step_narration:         ToggleOnly                => NoStepNarration          => "numbered-step comment found. Consider extracting each step as a named function",
