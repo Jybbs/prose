@@ -60,3 +60,15 @@
   letter-spacing : 0.06em;
   text-transform : uppercase;
 }
+
+
+.vp-code-group .tabs label {
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-sm);
+  letter-spacing : 0.02em;
+  text-transform : none;
+}
+
+.vp-code-group .tabs label::before {
+  margin-right: 6px;
+}

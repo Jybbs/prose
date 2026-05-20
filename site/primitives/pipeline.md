@@ -63,4 +63,4 @@ The Python wheel exposes the CLI rather than the library, so a Python consumer r
 - [[suppression-map]] filters the pipeline's emitted edits and lint diagnostics, dropping suppressed entries before they surface to the caller.
 - [[binding-analysis]] builds once per *Source* and feeds rules whose questions are binding-shaped.
 
-For the rule catalog the pipeline iterates, the [**Rules Overview**](/rules/) page walks every shipped rule by category.
+For the rule catalog the pipeline iterates, the [**Rules Overview**](/rules/) page walks every shipped rule by category, and the [**Pipeline Order**](/reference/pipeline-order) reference renders the canonical run order with the rationale per rule.

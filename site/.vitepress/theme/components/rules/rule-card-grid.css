@@ -1,0 +1,52 @@
+.rule-card-grid {
+  display              : grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap                  : 14px;
+  margin               : 24px 0 0;
+}
+
+@media (max-width: 720px) {
+  .rule-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rule-card {
+  display         : flex;
+  flex-direction  : column;
+  gap             : 8px;
+  padding         : 16px 22px 14px 18px;
+  border          : 1px solid var(--vp-c-divider);
+  border-left     : 2px solid var(--category-accent);
+  text-decoration : none;
+  color           : var(--vp-c-text-1);
+  transition      :
+    border-top-color    var(--prose-transition),
+    border-right-color  var(--prose-transition),
+    border-bottom-color var(--prose-transition);
+}
+
+.rule-card:hover {
+  border-top-color    : var(--category-accent);
+  border-right-color  : var(--category-accent);
+  border-bottom-color : var(--category-accent);
+}
+
+.rule-card-slug {
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-md);
+  color       : var(--domain-color);
+}
+
+.rule-card-caption {
+  margin      : 0;
+  font-size   : 0.92rem;
+  line-height : 1.55;
+  color       : var(--vp-c-text-2);
+}
+
+.rule-card-grid-empty {
+  color     : var(--vp-c-text-3);
+  font-size : var(--prose-text-sm);
+  margin    : 24px 0 0;
+}

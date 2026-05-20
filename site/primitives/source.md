@@ -8,7 +8,7 @@ Every rule reads the source file through one shared value. *Source* bundles the 
 
 `Source` is fully public in `0.2.x`. A downstream Rust consumer can construct one, walk the AST, query offsets, and reparse after mutating the text.
 
-**Construction.** Source is built from disk through [**`from_path`**](https://github.com/Jybbs/prose), which reads the file, parses it as Python, and returns the wrapped value. The parser is `ruff_python_parser` at the pinned crate tag, so a downstream that already depends on the same `ruff_*` workspace sees an AST whose types match its own.
+**Construction.** Source is built from disk through `from_path`, which reads the file, parses it as Python, and returns the wrapped value. The parser is `ruff_python_parser` at the pinned crate tag, so a downstream that already depends on the same `ruff_*` workspace sees an AST whose types match its own.
 
 **Readers.**
 

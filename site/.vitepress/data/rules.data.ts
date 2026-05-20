@@ -2,15 +2,20 @@ import { defineLoader } from 'vitepress'
 
 import { discoverRuleSlugs }   from '../lib/rules/discovery'
 import type { DiscoveredRule } from '../lib/rules/discovery'
+import { getRenderer }         from '../lib/markdown/renderer'
 import { rulesDir }            from '../lib/shared/paths'
 import { CATEGORY_META, DOMAIN_META, type RuleCategory, type RuleDomain } from '../lib/shared/registries'
 
 export type { DiscoveredRule }
 
+export interface RenderedRule extends DiscoveredRule {
+  captionHtml : string
+}
+
 export interface RuleDomainGroup {
   domain : RuleDomain
   label  : string
-  rules  : readonly DiscoveredRule[]
+  rules  : readonly RenderedRule[]
 }
 
 export interface RuleCategoryGroup {
@@ -21,8 +26,8 @@ export interface RuleCategoryGroup {
 
 export interface RulesData {
   byCategory : readonly RuleCategoryGroup[]
-  bySlug     : Record<string, DiscoveredRule>
-  list       : readonly DiscoveredRule[]
+  bySlug     : Record<string, RenderedRule>
+  list       : readonly RenderedRule[]
 }
 
 const rulesDirectory = rulesDir(import.meta.url)
@@ -33,8 +38,12 @@ export { data }
 export default defineLoader({
   watch: [`${rulesDirectory}/*.md`],
   async load(): Promise<RulesData> {
-    const list       = discoverRuleSlugs(rulesDirectory)
-    const bySlug     = Object.fromEntries(list.map(r => [r.slug, r])) as Record<string, DiscoveredRule>
+    const md         = await getRenderer()
+    const list       = discoverRuleSlugs(rulesDirectory).map(r => ({
+      ...r,
+      captionHtml: md.renderInline(r.caption)
+    }))
+    const bySlug     = Object.fromEntries(list.map(r => [r.slug, r])) as Record<string, RenderedRule>
     const byCategory = (['auto-fix', 'lint'] as const).map(category => {
       const rulesInCategory = list.filter(r => r.category === category)
       const byDomain = (Object.keys(DOMAIN_META) as RuleDomain[])

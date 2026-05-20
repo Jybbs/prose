@@ -1,13 +1,6 @@
 import { defineLoader } from 'vitepress'
 
 import { getRenderer, renderInlineField } from '../lib/markdown/renderer'
-import { REPO_URL }                       from '../lib/shared/constants'
-
-export interface Action {
-  href  : string
-  text  : string
-  theme : 'brand' | 'alt'
-}
 
 export interface Link {
   href : string
@@ -33,33 +26,29 @@ export interface Step {
 export interface LandingData {
   cta      : { links: readonly Link[] }
   features : readonly Feature[]
-  hero     : { actions: readonly Action[] }
   workflow : readonly Step[]
 }
 
 declare const data: LandingData
 export { data }
 
-const ACTIONS: readonly Action[] = [
-  { href: '/guide/installation', text: 'Get Started', theme: 'brand' },
-  { href: REPO_URL,              text: 'GitHub',      theme: 'alt'   },
-  { href: '/rules/',             text: 'Rules',       theme: 'alt'   }
-]
-
 const CTA_LINKS: readonly Link[] = [
-  { href: '/guide/configuration', text: 'Configuration' },
-  { href: '/guide/installation',  text: 'Installation'  },
-  { href: '/primitives/source',   text: 'Primitives'    },
-  { href: '/rules/',              text: 'Rules catalog' }
+  { href: '/guide/installation',      text: 'Installation'  },
+  { href: '/primitives/source',       text: 'Primitives'    },
+  { href: '/reference/configuration', text: 'Configuration' },
+  { href: '/rules/',                  text: 'Rules catalog' }
 ]
 
-interface FeatureSource {
+interface Numbered {
   body   : string
-  cta    : string
-  icon   : string
-  link   : string
   number : string
   title  : string
+}
+
+interface FeatureSource extends Numbered {
+  cta  : string
+  icon : string
+  link : string
 }
 
 const FEATURE_SOURCES: readonly FeatureSource[] = [
@@ -89,11 +78,8 @@ const FEATURE_SOURCES: readonly FeatureSource[] = [
   }
 ]
 
-interface StepSource {
-  body   : string
-  code   : string
-  number : string
-  title  : string
+interface StepSource extends Numbered {
+  code : string
 }
 
 const STEP_SOURCES: readonly StepSource[] = [
@@ -130,7 +116,6 @@ export default defineLoader({
     return {
       cta     : { links: CTA_LINKS },
       features: renderInlineField(md, FEATURE_SOURCES, 'body'),
-      hero    : { actions: ACTIONS },
       workflow: renderInlineField(md, STEP_SOURCES, 'body')
     }
   }

@@ -14,7 +14,7 @@ import LandingSection from './LandingSection.vue'
         <p>
           Code is read far more often than it is written. A reader's eye moves
           down a page and across adjacent lines looking for parallels, patterns,
-          and <em>shape</em>. When every <code>=</code> sits at a different
+          and <em>shape</em>. When every assignment sits at a different
           column and every collection is compressed onto one line, that shape
           disappears, forcing the eye to slow down.
         </p>

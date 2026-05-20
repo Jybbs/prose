@@ -1,6 +1,10 @@
 # Configuration
 
-*Prose* loads the nearest `[tool.prose]` table found by walking upward from the working directory. With no configuration, every rule runs at its default, and a project that doesn't write a `[tool.prose]` table gets the canonical *Prose* shape automatically. To tune a rule, write its sub-table inside `pyproject.toml`:
+*Prose* loads the nearest `[tool.prose]` table found by walking upward from the working directory. The table is the canonical look-up surface for every project-wide knob *Prose* exposes. With no configuration, every rule runs at its default, in that a project that doesn't write a `[tool.prose]` table gets the canonical *Prose* shape automatically.
+
+`target-version` carries the bare `major.minor` form *(`"3.13"`, `"3.14"`)* used by `mypy`'s `python_version` setting, with rules whose safety depends on the runtime reading the field directly. The docstring-budget duality *(`code-line-length` for structured `Args:` / `Returns:` / `Raises:` sections, `docstring-line-length` for description prose)* lets a project keep code-shaped tables wide while keeping description prose at a comfortable reading measure, and `docstring-structured-policy` collapses both to a single budget when a project prefers a uniform width.
+
+To tune a rule, write its sub-table inside `pyproject.toml`:
 
 ```toml
 [tool.prose]
@@ -46,13 +50,19 @@ Each rule's sub-table sits at `[tool.prose.rules.<rule>]`. Every rule accepts `e
 
 ## Rule Categories
 
-The eighteen rules sit in three configuration buckets.
+The **eighteen** rules sit in three configuration buckets, with each bucket carrying a distinct knob shape.
 
-**Alignment rules** carry `max-shift` and `max-shift-policy`, since each one resolves a column-alignment question that may exceed the per-line budget. They are [[align-colons]], [[align-equals]], [[align-imports]], and [[match-case-align]].
+### Alignment Rules
 
-**Toggle-only rules** carry only `enabled`. They are [[alphabetize]], [[blank-lines]], [[docstring-wrap]], [[legacy-union-syntax]], [[multi-line-docstrings]], [[no-single-line-docstrings]], [[no-step-narration]], [[singleton-rule]], [[strip-trailing-commas]], and [[unused-future-annotations]].
+Carry `max-shift` and `max-shift-policy`, because each one resolves a column-alignment question that may exceed the per-line budget. They are [[align-colons]], [[align-equals]], [[align-imports]], and [[match-case-align]].
 
-**Rule-specific knobs** appear on the four rules whose behavior depends on a project-specific list, with allowlists, regexes, or per-line budgets. They are [[bare-import-allowlist]], [[collection-layout]], [[loose-constants]], and [[single-use-variables]].
+### Toggle-Only Rules
+
+Carry only `enabled`. They are [[alphabetize]], [[blank-lines]], [[docstring-wrap]], [[legacy-union-syntax]], [[multi-line-docstrings]], [[no-single-line-docstrings]], [[no-step-narration]], [[singleton-rule]], [[strip-trailing-commas]], and [[unused-future-annotations]].
+
+### Rule-Specific Knobs
+
+Appear on the four rules whose behavior depends on a project-specific list, with allowlists, regexes, or per-line budgets. They are [[bare-import-allowlist]], [[collection-layout]], [[loose-constants]], and [[single-use-variables]].
 
 ## Docstring Budgets
 
@@ -60,4 +70,4 @@ Docstrings carry two readings inside one triple-quoted region. Description prose
 
 ## Subset by Invocation
 
-Per-invocation overrides via `--select` and `--ignore` take precedence over the configured-enabled set. See the [**Installation**](/guide/installation#subset-the-active-rules) chapter for the CLI surface, and the [**Suppression**](/guide/suppression) chapter for per-line opt-outs.
+Per-invocation overrides via `--select` and `--ignore` take precedence over the configured-enabled set. See the [**Quick Start**](/guide/quick-start#subset-the-active-rules) chapter for the CLI surface, the [**CLI Reference**](/reference/cli) for the full flag list, and the [**Suppression**](/guide/suppression) chapter for per-line opt-outs.

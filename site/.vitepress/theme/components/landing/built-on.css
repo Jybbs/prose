@@ -1,0 +1,76 @@
+.built-on-grid {
+  display              : grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap                  : 18px;
+  margin-top           : 32px;
+}
+
+@media (max-width: 900px) {
+  .built-on-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .built-on-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.built-on-card {
+  position        : relative;
+  display         : flex;
+  flex-direction  : column;
+  gap             : 10px;
+  padding         : 20px 22px 18px;
+  border          : 1px solid var(--vp-c-divider);
+  border-left     : 2px solid var(--vp-c-brand-1);
+  background      : var(--vp-c-bg-soft);
+  text-decoration : none;
+  color           : var(--vp-c-text-1);
+  transition      :
+    border-top-color    var(--prose-transition),
+    border-right-color  var(--prose-transition),
+    border-bottom-color var(--prose-transition);
+}
+
+.built-on-card:hover {
+  border-top-color    : var(--vp-c-brand-1);
+  border-right-color  : var(--vp-c-brand-1);
+  border-bottom-color : var(--vp-c-brand-1);
+}
+
+.built-on-icon {
+  width  : 32px;
+  height : 32px;
+}
+
+.built-on-name {
+  margin      : 0;
+  font-family : var(--vp-font-family-base);
+  font-size   : 1.1rem;
+  font-weight : 500;
+  color       : var(--vp-c-text-1);
+}
+
+.built-on-role {
+  margin      : 0;
+  font-family : var(--vp-font-family-base);
+  font-size   : var(--prose-text-sm);
+  line-height : 1.5;
+  color       : var(--vp-c-text-2);
+}
+
+.built-on-arrow {
+  position    : absolute;
+  top         : 18px;
+  right       : 20px;
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.9rem;
+  color       : var(--vp-c-text-3);
+  transition  : color var(--prose-transition);
+}
+
+.built-on-card:hover .built-on-arrow {
+  color: var(--vp-c-brand-1);
+}

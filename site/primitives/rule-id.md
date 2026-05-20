@@ -64,4 +64,4 @@ prose = { git = "https://github.com/Jybbs/prose", tag = "0.2.3" }
 - [[source]] carries diagnostics that reference rules by *RuleId*, so structured output formats (JSON, SARIF, GitHub annotations) all route by slug.
 - [[suppression-map]] parses *RuleId* values out of `# prose: ignore[<slug>]` directives.
 
-For the CLI surface that takes *RuleId* lists, the [**Installation**](/guide/installation#subset-the-active-rules) chapter covers the `--select` / `--ignore` arguments. For the rule catalog itself, the [**Rules Overview**](/rules/) page walks every registered slug by category.
+For the CLI surface that takes *RuleId* lists, the [**Installation**](/guide/quick-start#subset-the-active-rules) chapter covers the `--select` / `--ignore` arguments. For the rule catalog itself, the [**Rules Overview**](/rules/) page walks every registered slug by category.

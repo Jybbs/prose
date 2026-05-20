@@ -32,7 +32,7 @@ The version-gated branch fires. PEP 749 lands deferred annotation evaluation, so
 
 <RuleConfigTable preset="toggle" />
 
-The `target-version` field from the top-level [**Configuration**](/guide/configuration#top-level-keys) gates the rewrite per project.
+The `target-version` field from the top-level [**Configuration**](/reference/configuration#top-level-keys) gates the rewrite per project.
 
 ## The Canonical Case
 
@@ -60,4 +60,4 @@ A file whose annotations are typing-only loses the `__future__` import when the 
 
 <RelatedRulesInline />
 
-For the gate semantics, [**`target-version`**](/guide/configuration#top-level-keys) in the Configuration chapter covers how the field is read across version-gated rules.
+For the gate semantics, [**`target-version`**](/reference/configuration#top-level-keys) in the Configuration chapter covers how the field is read across version-gated rules.

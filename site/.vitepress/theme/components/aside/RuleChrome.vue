@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import CategoryChip from './CategoryChip.vue'
-import DomainChip   from './DomainChip.vue'
+import TaxonomyChip from './TaxonomyChip.vue'
 </script>
 
 <template>
   <div class="rule-chrome">
-    <CategoryChip />
-    <DomainChip />
+    <TaxonomyChip axis="category" />
+    <TaxonomyChip axis="domain" />
   </div>
 </template>
 

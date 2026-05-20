@@ -1,0 +1,108 @@
+.typing-demo {
+  position              : relative;
+  display               : grid;
+  grid-template-columns : minmax(0, 1fr) minmax(0, 1.3fr);
+  gap                   : 18px;
+  margin                : 0 auto;
+  max-width             : 1120px;
+}
+
+.typing-demo-panel {
+  display        : flex;
+  flex-direction : column;
+  min-width      : 0;
+  border         : 1px solid var(--vp-c-divider);
+  border-radius  : var(--prose-radius);
+  background     : var(--vp-code-block-bg);
+  overflow       : hidden;
+}
+
+.typing-demo-label {
+  padding        : 10px 14px;
+  border-bottom  : 1px solid color-mix(in srgb, var(--vp-c-divider) 40%, transparent);
+  background     : color-mix(in srgb, white 4%, var(--vp-code-block-bg));
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-label-size);
+  letter-spacing : var(--prose-label-tracking);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+}
+
+.typing-demo-config-code,
+.typing-demo-python-code {
+  flex-grow   : 1;
+  margin      : 0;
+  padding     : 18px 22px;
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.78rem;
+  line-height : 1.6;
+  overflow    : auto;
+}
+
+.typing-demo-config-code {
+  color       : var(--vp-c-text-1);
+  white-space : pre;
+}
+
+.typing-demo-config-prelude {
+  color: var(--vp-c-text-3);
+}
+
+.typing-demo-config-editing {
+  color      : var(--vp-c-text-1);
+  transition : color var(--prose-transition);
+}
+
+.typing-demo-python-code :deep(pre) {
+  margin     : 0;
+  padding    : 0;
+  background : transparent;
+}
+
+.typing-demo-caret {
+  display          : inline-block;
+  width            : 0.5em;
+  height           : 1.05em;
+  margin-left      : 1px;
+  vertical-align   : text-bottom;
+  background       : var(--prose-c-whiskey);
+  animation        : typing-demo-caret-blink 1s steps(2) infinite;
+}
+
+@keyframes typing-demo-caret-blink {
+  50% { opacity: 0; }
+}
+
+.typing-demo-replay {
+  position      : absolute;
+  top           : 12px;
+  right         : 12px;
+  padding       : 6px 14px;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-c-bg);
+  color         : var(--vp-c-text-2);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--prose-label-size);
+  letter-spacing: var(--prose-label-tracking);
+  text-transform: uppercase;
+  cursor        : pointer;
+  transition    : border-color var(--prose-transition), color var(--prose-transition);
+}
+
+.typing-demo-replay:hover {
+  border-color : var(--vp-c-brand-1);
+  color        : var(--vp-c-brand-1);
+}
+
+@media (--prose-bp-desktop) {
+  .typing-demo {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-demo-caret {
+    animation: none;
+  }
+}

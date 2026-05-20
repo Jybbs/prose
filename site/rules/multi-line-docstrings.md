@@ -31,4 +31,4 @@ A docstring whose opener shares a line with the first body sentence drops the bo
 
 <RelatedRulesInline />
 
-For the docstring budgets that govern wrapping, the [**Configuration**](/guide/configuration#docstring-budgets) chapter covers the description and structured line lengths.
+For the docstring budgets that govern wrapping, the [**Configuration**](/reference/configuration#docstring-budgets) chapter covers the description and structured line lengths.

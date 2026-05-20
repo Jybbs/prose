@@ -35,4 +35,4 @@ A module-level single-line docstring expands to the multi-line form, with the op
 
 <RelatedRulesInline />
 
-For the docstring budgets that govern wrapping, the [**Configuration**](/guide/configuration#docstring-budgets) chapter covers the description and structured line lengths.
+For the docstring budgets that govern wrapping, the [**Configuration**](/reference/configuration#docstring-budgets) chapter covers the description and structured line lengths.

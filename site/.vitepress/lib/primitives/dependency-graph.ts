@@ -26,4 +26,4 @@ export const DEP_GRAPH_EDGES: readonly DepGraphEdge[] = [
   { d: 'M390 80 L460 145' }
 ]
 
-assertCoversPrimitives(DEP_GRAPH_NODES.map(n => n.slug), 'dep-graph nodes')
+assertCoversPrimitives(DEP_GRAPH_NODES.map(n => n.slug), 'dep-graph nodes', 'subset')

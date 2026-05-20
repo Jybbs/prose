@@ -4,7 +4,12 @@ import { glossary }    from '../lib/glossary/glossary'
 import { getRenderer } from '../lib/markdown/renderer'
 
 export interface RenderedGlossaryEntry {
-  tooltipHtml : string
+  aliases        : readonly string[]
+  definitionHtml : string
+  href          ?: string
+  initial        : string
+  slug           : string
+  tooltipHtml    : string
 }
 
 export interface GlossaryData {
@@ -30,9 +35,24 @@ export default defineLoader({
       if (entry.href) {
         parts.push(`<a href="${md.utils.escapeHtml(entry.href)}" class="glossary-tooltip-link">Read more →</a>`)
       }
-      entries[slug] = { tooltipHtml: parts.join('') }
+      entries[slug] = {
+        aliases     : entry.aliases ?? [],
+        definitionHtml,
+        href        : entry.href,
+        initial     : firstLetter(slug),
+        slug,
+        tooltipHtml : parts.join('')
+      }
     }
 
     return { entries }
   }
 })
+
+function firstLetter(slug: string): string {
+  for (const ch of slug) {
+    const upper = ch.toUpperCase()
+    if (upper >= 'A' && upper <= 'Z') return upper
+  }
+  return '#'
+}

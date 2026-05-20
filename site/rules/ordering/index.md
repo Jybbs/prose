@@ -1,0 +1,7 @@
+# Ordering Rules
+
+The ordering rules reorder sibling AST nodes by a deterministic key while preserving attached comments and inter-section gaps. The shared machinery lives in the [[orderer]] primitive, with each rule supplying the classifier closure that names the sort key. A pinning shape lets specific items *(class docstrings, module-level imports above a divider comment)* stay in their authored slot while the rest of the siblings redistribute.
+
+<RuleCardGrid domain="ordering" />
+
+For the comment-attachment semantics and the `gap_override` machinery, see the [[orderer]] primitive page. The `# prose: keep` directive *(documented in [**Suppression Directives**](/reference/suppression-directives))* opts a dict literal out of [[alphabetize]] when the entry order carries meaning the rule can't infer.

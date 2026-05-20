@@ -46,27 +46,21 @@
   background    : var(--vp-c-bg-soft);
 }
 
-.landing-hero-action,
 .landing-links a,
 .landing-section-heading.centered a,
 .not-found-links a {
   display         : inline-flex;
   align-items     : center;
+  min-height      : 38px;
+  padding         : 0 16px;
   border          : 1px solid var(--vp-c-divider);
+  border-radius   : 6px;
+  color           : var(--vp-c-text-1);
+  font-family     : var(--vp-font-family-mono);
+  font-size       : var(--prose-label-size);
+  letter-spacing  : 0.08em;
+  text-transform  : uppercase;
   text-decoration : none;
-}
-
-.landing-links a,
-.landing-section-heading.centered a,
-.not-found-links a {
-  min-height     : 38px;
-  padding        : 0 16px;
-  border-radius  : 6px;
-  color          : var(--vp-c-text-1);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-label-size);
-  letter-spacing : 0.08em;
-  text-transform : uppercase;
 }
 
 .landing-links a:hover,

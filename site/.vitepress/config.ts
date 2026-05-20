@@ -8,10 +8,11 @@ import { glossaryPlugin }                         from './lib/glossary/plugin'
 import { bodyLinkPlugin }                         from './lib/markdown/body-link-plugin'
 import { discoverRuleSlugs }                      from './lib/rules/discovery'
 import { ruleLinkPlugin }                         from './lib/rules/link-plugin'
-import { buildSidebar }                           from './lib/sidebar'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME }  from './lib/shared/constants'
 import { buildPageTimestamps }                    from './lib/shared/page-timestamps'
 import { repoRoot, rulesDir }                     from './lib/shared/paths'
+import { buildSidebar }                           from './lib/shared/sidebar'
+import { TOOL_SEEDS }                             from './lib/shared/tools'
 import { readCargoVersion }                       from './lib/shared/version'
 
 const repoDir          = repoRoot(import.meta.url)
@@ -29,36 +30,38 @@ export default defineConfig({
   ],
   lastUpdated   : false,
   markdown      : {
-    config     : md => {
+    config      : md => {
       md.use(groupIconMdPlugin)
       md.use(tabsMarkdownPlugin)
       md.use(ruleLinkPlugin(validSlugs))
       md.use(glossaryPlugin(glossaryPhraseToSlug))
       md.use(bodyLinkPlugin)
     },
-    lineNumbers: false,
-    theme      : SHIKI_THEMES
+    lineNumbers : false,
+    theme       : SHIKI_THEMES
   },
   sitemap       : {
     hostname: SITE_HOSTNAME
   },
   themeConfig   : {
-    editLink   : {
-      pattern: `${REPO_URL}/edit/main/site/:path`,
-      text   : 'Suggest an edit to this page'
+    editLink    : {
+      pattern : `${REPO_URL}/edit/main/site/:path`,
+      text    : 'Suggest an edit to this page'
     },
-    logo       : { alt: 'prose', src: '/logo.svg' },
-    nav        : [
-      { activeMatch: '/guide/',      link: '/guide/installation',  text: 'Guide'       },
-      { activeMatch: '/primitives/', link: '/primitives/source',   text: 'Primitives'  },
-      { activeMatch: '/rules/',      link: '/rules/',              text: 'Rules'       },
-      {                              link: `${REPO_URL}/releases`, text: `v${version}` }
+    logo        : { alt: 'prose', src: '/logo.svg' },
+    nav         : [
+      { activeMatch: '/guide/',        link: '/guide/installation', text: 'Guide'        },
+      { activeMatch: '/reference/',    link: '/reference/cli',      text: 'Reference'    },
+      { activeMatch: '/integrations/', link: '/integrations/ruff',  text: 'Integrations' },
+      { activeMatch: '/rules/',        link: '/rules/',             text: 'Rules'        },
+      { activeMatch: '/primitives/',   link: '/primitives/',        text: 'Primitives'   },
+      {                                link: `${REPO_URL}/releases`, text: `v${version}` }
     ],
-    outline    : { level: [2, 3] },
-    search     : { provider: 'local' },
-    sidebar    : buildSidebar(discoveredRules),
-    siteTitle  : 'Prose',
-    socialLinks: [
+    outline     : { level: [2, 3] },
+    search      : { provider: 'local' },
+    sidebar     : buildSidebar(discoveredRules),
+    siteTitle   : 'Prose',
+    socialLinks : [
       { icon: 'github', link: REPO_URL }
     ]
   },
@@ -75,7 +78,12 @@ export default defineConfig({
     if (ts) pageData.lastUpdated = ts
   },
   vite          : {
-    css    : { postcss: { plugins: [postcssCustomMedia()] } },
-    plugins: [groupIconVitePlugin() as never]
+    css     : { postcss: { plugins: [postcssCustomMedia()] } },
+    plugins : [groupIconVitePlugin({
+      customIcon: {
+        ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),
+        gha: TOOL_SEEDS.github.icon
+      }
+    }) as never]
   }
 })

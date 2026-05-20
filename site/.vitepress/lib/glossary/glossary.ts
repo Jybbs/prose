@@ -24,12 +24,12 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   '--ignore': {
     definition: 'CLI flag that disables the named rules for a single invocation. Repeatable. Pairs with `--select` to scope a run.',
-    href      : '/guide/installation#subset-the-active-rules'
+    href      : '/guide/quick-start#subset-the-active-rules'
   },
 
   '--select': {
     definition: 'CLI flag that restricts a run to the named rules. Repeatable. Pairs with `--ignore` to subtract from the active set.',
-    href      : '/guide/installation#subset-the-active-rules'
+    href      : '/guide/quick-start#subset-the-active-rules'
   },
 
   'AST': {
@@ -47,7 +47,7 @@ export const glossary: Record<string, GlossaryEntry> = {
   'Diagnostic': {
     aliases   : ['diagnostic', 'diagnostics', 'lint diagnostic'],
     definition: 'Structured report a rule emits when it detects a pattern. Carries severity (`AutoFix` rewrites source under `prose format`; `Lint` only surfaces).',
-    href      : '/guide/ci-integration'
+    href      : '/integrations/github-actions'
   },
 
   'Pipeline': {
@@ -59,7 +59,7 @@ export const glossary: Record<string, GlossaryEntry> = {
   'Ruff': {
     aliases   : ['ruff'],
     definition: 'Astral\'s Python linter and formatter. `prose` is designed to compose downstream of `ruff format`, leaving token-level normalization to `ruff` and layout-level legibility to `prose`.',
-    href      : '/guide/installation#two-stage-pipeline'
+    href      : '/guide/two-stage-pipeline'
   },
 
   'RuleId': {
@@ -98,7 +98,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'code-line-length': {
     definition: 'Top-level config key for the line budget consumed by code-shaped rules. Defaults to **88**.',
-    href      : '/guide/configuration#top-level-keys'
+    href      : '/reference/configuration#top-level-keys'
   },
 
   'docstring': {
@@ -109,7 +109,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'docstring-line-length': {
     definition: 'Top-level config key for the description-prose budget inside docstrings. Defaults to **76**.',
-    href      : '/guide/configuration#top-level-keys'
+    href      : '/reference/configuration#top-level-keys'
   },
 
   'lint': {
@@ -119,12 +119,12 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'max-shift': {
     definition: 'Per-alignment-rule config key capping per-line padding. Defaults to **8**. Groups whose widest member exceeds the cap fall back to `max-shift-policy`.',
-    href      : '/guide/configuration#per-rule-knobs'
+    href      : '/reference/configuration#per-rule-knobs'
   },
 
   'max-shift-policy': {
     definition: 'How an alignment group overflowing `max-shift` resolves. `split` partitions the group, `drop` excludes the widest members, `skip` leaves the whole group unaligned.',
-    href      : '/guide/configuration#per-rule-knobs'
+    href      : '/reference/configuration#per-rule-knobs'
   },
 
   'ruff_python_parser': {
@@ -140,7 +140,7 @@ export const glossary: Record<string, GlossaryEntry> = {
   'target-version': {
     aliases   : ['target version'],
     definition: 'Top-level config key naming the Python runtime the project ships to. Consumed by version-gated rules. Unset means no version-dependent rewrites fire.',
-    href      : '/guide/configuration#top-level-keys'
+    href      : '/reference/configuration#top-level-keys'
   }
 }
 

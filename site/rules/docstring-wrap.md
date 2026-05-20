@@ -15,7 +15,7 @@ The rule reads `docstring-line-length` for the description budget, `code-line-le
 
 <RuleConfigTable preset="toggle" />
 
-Description and structured budgets come from the top-level [**Configuration**](/guide/configuration#top-level-keys) keys: `docstring-line-length` (*default 76*), `code-line-length` (*default 88*), and `docstring-structured-policy` (*defaulting to `"code-line-length"`*) drive the column targets.
+Description and structured budgets come from the top-level [**Configuration**](/reference/configuration#top-level-keys) keys: `docstring-line-length` (*default 76*), `code-line-length` (*default 88*), and `docstring-structured-policy` (*defaulting to `"code-line-length"`*) drive the column targets.
 
 ## The Canonical Case
 
@@ -47,4 +47,4 @@ Description prose wraps to `docstring-line-length`, with the existing paragraph 
 
 <RelatedRulesInline />
 
-For the budget semantics, the [**Docstring Budgets**](/guide/configuration#docstring-budgets) section of the Configuration chapter covers how the description and structured budgets interact.
+For the budget semantics, the [**Docstring Budgets**](/reference/configuration#docstring-budgets) section of the Configuration chapter covers how the description and structured budgets interact.

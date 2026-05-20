@@ -32,7 +32,7 @@ The rule fires. Same diagnostic as 3.10, and pairs naturally with the deferred-a
 
 <RuleConfigTable preset="toggle" />
 
-The `target-version` field from the top-level [**Configuration**](/guide/configuration#top-level-keys) gates the lint per project.
+The `target-version` field from the top-level [**Configuration**](/reference/configuration#top-level-keys) gates the lint per project.
 
 ## The Canonical Case
 
