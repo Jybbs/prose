@@ -1,7 +1,7 @@
 ---
 category : auto-fix
 domain   : ordering
-caption  : "alphabetizes import siblings, dict-key blocks, and dataclass field runs"
+caption  : "*Prose* alphabetizes import siblings, dict-key blocks, and dataclass field runs."
 related  : [align-colons, align-imports, bare-import-allowlist, blank-lines]
 ---
 
@@ -27,9 +27,9 @@ Classes inside a module sort alphabetically, giving every reader the same first-
 
 <Fixture rule="alphabetize" case="class_with_branched_body" title="Methods Follow the Dunders → Properties → Private → Public Rhythm" />
 
-<Fixture rule="alphabetize" case="dataclass" title="Dataclass Fields Sort, Required Before Optional" />
+<Fixture rule="alphabetize" case="dataclass" title="Dataclass Fields Sort, Required before Optional" />
 
-<Fixture rule="alphabetize" case="from_imports" title="`from` Imports Sort Alphabetically Inside Their Block" />
+<Fixture rule="alphabetize" case="from_imports" title="`from` Imports Sort Alphabetically inside Their Block" />
 
 <Fixture rule="alphabetize" case="bare_imports" title="Bare Imports Sort Alphabetically Too" />
 
@@ -43,9 +43,9 @@ Classes inside a module sort alphabetically, giving every reader the same first-
 
 <Fixture rule="alphabetize" case="kwargs" title="Keyword Arguments at Call Sites Sort" />
 
-<Fixture rule="alphabetize" case="params" title="Function Parameters With Defaults Sort" />
+<Fixture rule="alphabetize" case="params" title="Function Parameters with Defaults Sort" />
 
-<Fixture rule="alphabetize" case="pydantic" title="Pydantic Fields Sort, Required Before Optional" />
+<Fixture rule="alphabetize" case="pydantic" title="Pydantic Fields Sort, Required before Optional" />
 
 <Fixture rule="alphabetize" case="namedtuple" title="`namedtuple` Fields Sort" />
 
@@ -59,7 +59,7 @@ Classes inside a module sort alphabetically, giving every reader the same first-
 
 <Fixture rule="alphabetize" case="dict_keys" title="Dictionary Keys Sort When Keys Are String Literals" />
 
-<Fixture rule="alphabetize" case="framework_decorators" title="Decorated Functions Sort Together Inside Framework Groups" />
+<Fixture rule="alphabetize" case="framework_decorators" title="Decorated Functions Sort Together inside Framework Groups" />
 
 ## Related
 

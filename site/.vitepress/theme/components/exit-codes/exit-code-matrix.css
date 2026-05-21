@@ -1,73 +1,177 @@
-.exit-codes {
-  margin        : 1.5rem 0;
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  overflow      : hidden;
-}
+.exit-code-entry[data-exit-code="0"],
+.exit-code-index-row[data-exit-code="0"] { --code-accent: var(--prose-c-celadon);  }
+.exit-code-entry[data-exit-code="1"],
+.exit-code-index-row[data-exit-code="1"] { --code-accent: var(--prose-c-chambray); }
+.exit-code-entry[data-exit-code="2"],
+.exit-code-index-row[data-exit-code="2"] { --code-accent: var(--prose-c-eureka);   }
+.exit-code-entry[data-exit-code="3"],
+.exit-code-index-row[data-exit-code="3"] { --code-accent: var(--prose-c-apricot);  }
+.exit-code-entry[data-exit-code="4"],
+.exit-code-index-row[data-exit-code="4"] { --code-accent: var(--prose-c-heath);    }
 
-.exit-code-row {
-  border-bottom : 1px solid var(--vp-c-divider);
-  background    : var(--vp-c-bg);
-  transition    : background-color var(--prose-transition);
-}
-
-.exit-code-row:last-child {
-  border-bottom: none;
-}
-
-.exit-code-row-summary {
+.exit-codes-spread {
   display               : grid;
-  grid-template-columns : 56px 1fr;
-  align-items           : stretch;
+  grid-template-columns : 280px 1fr;
+  gap                   : 24px;
+  align-items           : start;
+  margin                : 1.5rem 0;
+}
+
+.exit-codes-index {
+  display        : flex;
+  flex-direction : column;
+  gap            : 4px;
+  padding        : 4px 18px 4px 4px;
+  border-right   : 1px solid var(--vp-c-divider);
+}
+
+.exit-code-index-row {
+  display               : grid;
+  grid-template-columns : 24px auto 1fr 10px;
+  align-items           : baseline;
+  gap                   : 14px;
+  padding               : 12px 12px;
+  border                : none;
+  background            : transparent;
+  text-align            : left;
   cursor                : pointer;
-  list-style            : none;
+  color                 : var(--vp-c-text-2);
+  transition            :
+    background var(--prose-transition),
+    color      var(--prose-transition);
 }
 
-.exit-code-row-summary::-webkit-details-marker {
-  display: none;
+.exit-code-index-row:hover {
+  background : color-mix(in srgb, var(--code-accent) 6%, transparent);
+  color      : var(--vp-c-text-1);
 }
 
-.exit-code-row-summary:hover {
-  background: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-faint), var(--vp-c-bg));
+.exit-code-index-row.active {
+  background : color-mix(in srgb, var(--code-accent) 12%, transparent);
+  color      : var(--vp-c-text-1);
 }
 
-.exit-code-row[open] {
-  background: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-interact), var(--vp-c-bg-soft));
+.exit-code-index-num {
+  font-family           : var(--vp-font-family-mono);
+  font-feature-settings : 'tnum' 1, 'lnum' 1;
+  font-size             : 1rem;
+  text-align            : right;
+  color                 : var(--code-accent);
 }
 
-.exit-code-number {
-  font-family  : var(--prose-font-display);
-  font-size    : 1.4rem;
-  font-style   : italic;
-  font-weight  : 700;
-  color        : var(--vp-c-brand-1);
-  background   : var(--vp-c-bg-soft);
-  border-right : 1px solid var(--vp-c-divider);
+.exit-code-index-label {
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-size   : 0.95rem;
 }
 
-.exit-code-body {
-  padding: 12px 16px;
+.exit-code-index-leader {
+  align-self    : end;
+  display       : block;
+  margin        : 0 4px 4px;
+  border-bottom : 1px dotted color-mix(in srgb, var(--vp-c-text-3) 50%, transparent);
 }
 
-.exit-code-label {
-  font-weight : 600;
+.exit-code-index-mark {
+  align-self : center;
+  display    : block;
+  width      : 8px;
+  height     : 8px;
+  background : var(--code-accent);
+}
+
+.exit-code-entry {
+  padding-left : 18px;
+  border-left  : 2px solid var(--code-accent);
+}
+
+.exit-code-entry-head {
+  display       : flex;
+  align-items   : center;
+  gap           : 14px;
+  margin-bottom : 18px;
+}
+
+.exit-code-entry-numeral {
+  font-family           : var(--vp-font-family-mono);
+  font-feature-settings : 'tnum' 1, 'lnum' 1;
+  font-size             : 2.6rem;
+  font-weight           : 500;
+  line-height           : 1;
+  color                 : var(--code-accent);
+}
+
+.exit-code-entry-label {
+  font-family : var(--prose-font-display);
+  font-weight : 500;
+  font-size   : 1.5rem;
+  line-height : 1;
   color       : var(--vp-c-text-1);
 }
 
-.exit-code-summary {
-  margin    : 4px 0 0;
-  font-size : 0.92rem;
-  color     : var(--vp-c-text-2);
+.exit-code-entry-summary {
+  margin      : 0 0 16px;
+  max-width   : 60ch;
+  font-family : var(--vp-font-family-base);
+  font-size   : 0.95rem;
+  line-height : 1.55;
+  color       : var(--vp-c-text-2);
 }
 
-.exit-code-detail {
-  padding    : 12px 16px;
-  border-top : 1px dashed var(--vp-c-divider);
-  font-size  : 0.88rem;
-  color      : var(--vp-c-text-2);
+.vp-doc .exit-code-entry-details,
+.exit-code-entry-details {
+  list-style : none;
+  margin     : 0;
+  padding    : 0;
 }
 
-.exit-code-detail ul {
-  margin  : 0;
-  padding : 0 0 0 1.2rem;
+.vp-doc .exit-code-entry-details > li,
+.exit-code-entry-details > li {
+  position     : relative;
+  margin       : 8px 0;
+  padding-left : 18px;
+  list-style   : none;
+  font-family  : var(--vp-font-family-base);
+  font-size    : 0.84rem;
+  line-height  : 1.55;
+  color        : var(--vp-c-text-2);
+}
+
+.exit-code-entry-details > li::before {
+  content   : "◆";
+  position  : absolute;
+  left      : 0;
+  top       : 0.45em;
+  font-size : 0.6em;
+  color     : var(--code-accent);
+}
+
+.exit-code-entry-details > li::marker {
+  content : "";
+}
+
+.exit-code-entry-summary :where(code),
+.exit-code-entry-details :where(code) {
+  padding       : 2px 6px;
+  border-radius : 4px;
+  background    : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--vp-code-font-size);
+  color         : var(--vp-c-text-1);
+}
+
+@media (max-width: 760px) {
+  .exit-codes-spread {
+    grid-template-columns : 1fr;
+    gap                   : 24px;
+  }
+  .exit-codes-index {
+    padding-right : 0;
+    border-right  : none;
+    border-bottom : 1px solid var(--vp-c-divider);
+    padding-bottom: 16px;
+  }
+  .exit-code-entry {
+    padding-left : 16px;
+  }
 }

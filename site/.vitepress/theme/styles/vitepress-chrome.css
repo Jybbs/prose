@@ -1,22 +1,20 @@
 .VPSidebarItem.is-active > .item .link {
-  position      : relative;
-  padding-left  : 14px;
-  border-radius : 0 6px 6px 0;
-  background    : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-interact), transparent);
-  font-weight   : 600;
-  color         : var(--vp-c-brand-1);
+  position     : relative;
+  padding-left : 14px;
+  background   : transparent;
+  font-weight  : 600;
+  color        : var(--vp-c-text-1);
 }
 
 .VPSidebarItem.is-active > .item .link::before {
   content       : "";
   position      : absolute;
-  top           : 50%;
+  top           : 6px;
+  bottom        : 6px;
   left          : 0;
-  width         : 3px;
-  height        : 70%;
-  border-radius : 0 2px 2px 0;
-  background    : var(--vp-c-brand-1);
-  transform     : translateY(-50%);
+  width         : 2px;
+  border-radius : 2px;
+  background    : var(--domain-color, var(--vp-c-brand-1));
 }
 
 .version-selector {
@@ -71,4 +69,24 @@
 
 .vp-code-group .tabs label::before {
   margin-right: 6px;
+}
+
+.vp-doc div[class*='language-'] > span.lang {
+  position       : absolute;
+  top            : auto;
+  bottom         : 6px;
+  right          : 10px;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.62rem;
+  letter-spacing : 0.06em;
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+  opacity        : 0.55;
+  transition     : opacity var(--prose-transition);
+}
+
+.vp-doc div[class*='language-']:hover > span.lang,
+.vp-doc div[class*='language-']:hover > button.copy + span.lang,
+.vp-doc div[class*='language-'] > button.copy:focus + span.lang {
+  opacity : 0.85;
 }

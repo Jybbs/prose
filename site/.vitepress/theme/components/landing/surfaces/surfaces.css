@@ -1,0 +1,53 @@
+.surfaces-carousel {
+  --surfaces-card-width : 360px;
+  --surfaces-gap        : 18px;
+  position    : relative;
+  width       : 100vw;
+  margin      : 8px calc(50% - 50vw) 0;
+  padding     : 32px 0 8px;
+  overflow    : hidden;
+  cursor      : grab;
+  touch-action: pan-y;
+  -webkit-mask-image : linear-gradient(90deg, transparent 0%, black 5%, black 95%, transparent 100%);
+          mask-image : linear-gradient(90deg, transparent 0%, black 5%, black 95%, transparent 100%);
+}
+
+.surfaces-carousel.is-dragging {
+  cursor : grabbing;
+}
+
+.surfaces-carousel-track {
+  display    : flex;
+  align-items: stretch;
+  gap        : var(--surfaces-gap);
+  width      : max-content;
+  padding    : 0 32px;
+  will-change: transform;
+}
+
+.surfaces-carousel-track > .surface-card {
+  flex : 0 0 var(--surfaces-card-width);
+}
+
+@media (max-width: 960px) {
+  .surfaces-carousel {
+    --surfaces-card-width : 300px;
+    --surfaces-gap        : 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .surfaces-carousel {
+    --surfaces-card-width : 260px;
+    --surfaces-gap        : 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .surfaces-carousel {
+    cursor : grab;
+  }
+  .surfaces-carousel.is-dragging {
+    cursor : grabbing;
+  }
+}

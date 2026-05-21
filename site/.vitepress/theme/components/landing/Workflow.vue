@@ -1,25 +1,42 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import LandingSection from './LandingSection.vue'
 
 import { data as landing } from '../../../data/landing.data'
 
-const steps = landing.workflow
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI']
+
+const chapters = computed(() =>
+  landing.workflow.map((s, i) => ({ ...s, roman: ROMAN[i] ?? s.number }))
+)
 </script>
 
 <template>
   <LandingSection
     centered
-    heading="Four lines from install to running."
+    heading="<em>Open</em> with these few lines."
     kicker="The Workflow"
     variant="quickstart"
   >
-    <div class="landing-workflow-grid">
-      <div v-for="step in steps" :key="step.number" class="workflow-step">
-        <span class="step-number">— {{ step.number }}</span>
-        <h3>{{ step.title }}</h3>
-        <p v-html="step.bodyHtml" />
-        <pre><code>{{ step.code }}</code></pre>
-      </div>
-    </div>
+    <article class="landing-workflow">
+      <section
+        v-for="(chapter, idx) in chapters"
+        :key="chapter.number"
+        class="landing-workflow-section"
+        :class="{ 'landing-workflow-section-last': idx === chapters.length - 1 }"
+      >
+        <aside class="landing-workflow-gutter" aria-hidden="true">
+          <span class="landing-workflow-roman">{{ chapter.roman }}</span>
+          <span class="landing-workflow-dot" />
+          <span class="landing-workflow-folio">step {{ chapter.number }}</span>
+        </aside>
+        <div class="landing-workflow-body">
+          <h3 class="landing-workflow-title">{{ chapter.title }}</h3>
+          <p class="landing-workflow-prose" v-html="chapter.bodyHtml" />
+          <pre class="landing-workflow-code"><code>{{ chapter.code }}</code></pre>
+        </div>
+      </section>
+    </article>
   </LandingSection>
 </template>

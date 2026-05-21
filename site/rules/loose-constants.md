@@ -1,7 +1,7 @@
 ---
 category : lint
 domain   : lint
-caption  : "module-level constants that aren't `UPPER_SNAKE_CASE`"
+caption  : "*Prose* surfaces module-level constants that aren't `UPPER_SNAKE_CASE`."
 related  : [no-step-narration, single-use-variables]
 ---
 
@@ -30,7 +30,7 @@ A bare `SCREAMING_CASE = literal` at module level surfaces the lint, recommendin
 
 <Fixture rule="loose_constants" case="configured_allow" title="Names on the Configured Allow List Stay Quiet" />
 
-<Fixture rule="loose_constants" case="dunder_skipped" title="Dunder Names Like `__all__` Are Recognized as Runtime Sentinels" />
+<Fixture rule="loose_constants" case="dunder_skipped" title="Dunder Names like `__all__` Are Recognized as Runtime Sentinels" />
 
 <Fixture rule="loose_constants" case="ann_assign" title="Annotated Constants Are Flagged the Same Way" />
 

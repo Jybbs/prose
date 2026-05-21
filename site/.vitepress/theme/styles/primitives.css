@@ -10,13 +10,13 @@
 }
 
 .kicker[data-variant="rule"]::before {
-  content        : "";
-  display        : inline-block;
-  width          : 24px;
-  height         : 1px;
-  margin-right   : 10px;
-  vertical-align : middle;
-  background     : currentColor;
+  content      : "— ";
+  margin-right : 4px;
+}
+
+.kicker[data-variant="rule"]::after {
+  content     : " —";
+  margin-left : 4px;
 }
 
 .fixture-toc-kicker,
@@ -37,7 +37,6 @@
 
 .dep-graph,
 .disclosure,
-.landing-feature-card,
 .related-rules,
 .vp-doc .custom-block,
 .workflow-step {
@@ -73,9 +72,7 @@
 .definition-word,
 .disclosure-title,
 .glossary-tooltip-title,
-.landing-feature-card h3,
 .landing-hero-tagline,
-.landing-rules-track a,
 .landing-section h2,
 .not-found-headline,
 .workflow-step h3 {
@@ -117,7 +114,6 @@
   list-style     : none;
 }
 
-.card-icon,
 .exit-code-number,
 .fixture-pair-arrow {
   display     : grid;

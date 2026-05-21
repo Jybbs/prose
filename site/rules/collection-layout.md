@@ -1,7 +1,7 @@
 ---
 category : auto-fix
 domain   : formatting
-caption  : "one-entry-per-line layout for list, tuple, dict, and set literals past a threshold"
+caption  : "*Prose* splits list, tuple, dict, and set literals into one-entry-per-line layout once they cross a threshold."
 related  : [align-colons, alphabetize, singleton-rule, strip-trailing-commas]
 ---
 
@@ -30,7 +30,7 @@ A dict literal with non-atomic entries expands to one entry per line, and the re
 
 <Fixture rule="collection_layout" case="list_literal" title="Lists Follow the Same Expansion Threshold as Dicts" />
 
-<Fixture rule="collection_layout" case="atomic_kinds" title="Atomic Entries Inside the Cap Stay on One Line" />
+<Fixture rule="collection_layout" case="atomic_kinds" title="Atomic Entries inside the Cap Stay on One Line" />
 
 <Fixture rule="collection_layout" case="nested" title="Nested Collections Expand Level by Level Independently" />
 

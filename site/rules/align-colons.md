@@ -1,7 +1,7 @@
 ---
 category : auto-fix
 domain   : alignment
-caption  : "`:` separator on dict literals, dataclass and Pydantic fields, function-signature annotations, and docstring `Args:` blocks"
+caption  : "*Prose* aligns the `:` separator across dict literals, dataclass and Pydantic fields, function-signature annotations, and docstring `Args:` blocks."
 related  : [align-equals, align-imports, alphabetize, collection-layout, match-case-align, singleton-rule]
 ---
 
@@ -23,7 +23,7 @@ A dictionary literal with three entries of differing key lengths aligns on the `
 
 ## More Examples
 
-<Fixture rule="align_colons" case="function_signature" title="Function-Signature Annotations Align Inside the Parameter List" />
+<Fixture rule="align_colons" case="function_signature" title="Function-Signature Annotations Align inside the Parameter List" />
 
 <Fixture rule="align_colons" case="docstring_args_inline_phrase" title="Docstring Args Blocks Align the Parameter-Name Column" />
 

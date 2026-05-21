@@ -11,7 +11,7 @@
   }
 }
 
-.rule-card {
+.vp-doc .rule-card {
   display         : flex;
   flex-direction  : column;
   gap             : 8px;
@@ -26,19 +26,19 @@
     border-bottom-color var(--prose-transition);
 }
 
-.rule-card:hover {
+.vp-doc .rule-card:hover {
   border-top-color    : var(--category-accent);
   border-right-color  : var(--category-accent);
   border-bottom-color : var(--category-accent);
 }
 
-.rule-card-slug {
+.vp-doc .rule-card-slug {
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-md);
   color       : var(--domain-color);
 }
 
-.rule-card-caption {
+.vp-doc .rule-card-caption {
   margin      : 0;
   font-size   : 0.92rem;
   line-height : 1.55;

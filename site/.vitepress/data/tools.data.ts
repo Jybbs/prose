@@ -46,10 +46,24 @@ function loadPack(pack: string): IconPack {
   return data
 }
 
+const CUSTOM_ICONS: Record<string, ToolIcon> = {
+  mise: {
+    body    : '<text x="12" y="17.5" font-family="Georgia, \'Times New Roman\', serif" font-style="italic" font-weight="500" font-size="20" text-anchor="middle" fill="currentColor">m</text>',
+    viewBox : '0 0 24 24'
+  }
+}
+
 function loadIcon(spec: string): ToolIcon {
   const [pack, name] = spec.split(':')
-  const data         = loadPack(pack)
-  const entry        = data.icons[name]
+  if (pack === 'custom') {
+    const custom = CUSTOM_ICONS[name]
+    if (custom === undefined) {
+      throw new Error(`tools.data: custom icon "${name}" not registered`)
+    }
+    return custom
+  }
+  const data  = loadPack(pack)
+  const entry = data.icons[name]
   if (entry === undefined) {
     throw new Error(`tools.data: icon "${spec}" not found in @iconify-json/${pack}`)
   }

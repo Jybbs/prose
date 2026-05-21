@@ -1,0 +1,172 @@
+.rules-plate {
+  display   : grid;
+  gap       : 18px;
+  isolation : isolate;
+}
+
+.rules-cluster {
+  position      : relative;
+  padding       : 28px 32px;
+  border        : 1px solid color-mix(in srgb, var(--domain-color) 25%, var(--vp-c-divider));
+  border-radius : var(--prose-radius);
+  background    : color-mix(in srgb, var(--domain-color) 6%, var(--vp-c-bg));
+}
+
+.rules-cluster:has(.specimen:hover),
+.rules-cluster:focus-within {
+  z-index : 10;
+}
+
+.rules-cluster-head {
+  display       : flex;
+  align-items   : center;
+  gap           : 18px;
+  margin-bottom : 18px;
+}
+
+.rules-cluster-emoji {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 64px;
+  height          : 64px;
+  border          : 1px solid color-mix(in srgb, var(--domain-color) 35%, var(--vp-c-divider));
+  border-radius   : 50%;
+  background      : var(--vp-c-bg);
+  font-size       : 1.8rem;
+  line-height     : 1;
+}
+
+.vp-doc .rules-cluster-name,
+.rules-cluster-name {
+  margin      : 0;
+  padding     : 0;
+  border      : none;
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 500;
+  font-size   : 1.8rem;
+  line-height : 1;
+  color       : var(--domain-color);
+}
+
+.vp-doc .rules-cluster-specimens,
+.rules-cluster-specimens {
+  display    : flex;
+  flex-wrap  : wrap;
+  gap        : 12px;
+  list-style : none;
+  margin     : 0;
+  padding    : 0;
+  isolation  : isolate;
+}
+
+.vp-doc .rules-cluster-specimens > li,
+.rules-cluster-specimens > li {
+  position     : relative;
+  margin       : 0;
+  padding-left : 0;
+  list-style   : none;
+}
+
+.vp-doc .rules-cluster-specimens > li::before,
+.vp-doc .rules-cluster-specimens > li::marker {
+  content : none;
+}
+
+.vp-doc a.specimen,
+a.specimen {
+  position             : relative;
+  display              : inline-flex;
+  align-items          : baseline;
+  padding              : 8px 14px;
+  border               : 1px solid color-mix(in srgb, var(--domain-color) 30%, transparent);
+  border-radius        : var(--prose-radius);
+  background           : var(--vp-c-bg);
+  text-decoration-line : none;
+  color                : var(--vp-c-text-1);
+  font-family          : var(--vp-font-family-mono);
+  font-size            : 0.82rem;
+  transition           :
+    border-color var(--prose-transition),
+    transform    var(--prose-transition);
+}
+
+.vp-doc a.specimen:hover,
+.vp-doc a.specimen:focus-visible,
+a.specimen:hover,
+a.specimen:focus-visible {
+  border-color         : var(--domain-color);
+  text-decoration-line : none;
+  transform            : translateY(-1px);
+}
+
+.rules-cluster-specimens > li:hover,
+.rules-cluster-specimens > li:focus-within {
+  z-index : 20;
+}
+
+.specimen-slug {
+  color : var(--domain-color);
+}
+
+.specimen-callout {
+  position         : absolute;
+  top              : calc(100% + 10px);
+  left             : 0;
+  width            : 300px;
+  padding          : 14px 16px 16px;
+  border           : 1px solid color-mix(in srgb, var(--domain-color) 55%, var(--vp-c-divider));
+  border-top       : 3px solid var(--domain-color);
+  border-radius    : var(--prose-radius);
+  background       : var(--vp-c-bg);
+  box-shadow       : 0 12px 28px -10px color-mix(in srgb, var(--domain-color) 45%, transparent);
+  text-align       : left;
+  pointer-events   : none;
+  opacity          : 0;
+  transform        : translateY(-4px);
+  transform-origin : top left;
+  transition       :
+    opacity   140ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rules-cluster-specimens > li:hover .specimen-callout,
+.rules-cluster-specimens > li:focus-within .specimen-callout {
+  opacity   : 1;
+  transform : translateY(0);
+}
+
+.specimen-callout-slug {
+  display       : inline-block;
+  margin-bottom : 10px;
+  padding       : 2px 8px;
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--domain-color) var(--prose-tint-faint), transparent);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : 0.88rem;
+  color         : var(--domain-color);
+}
+
+.specimen-callout-body {
+  display     : block;
+  font-family : var(--vp-font-family-base);
+  font-style  : italic;
+  font-size   : 0.88rem;
+  line-height : 1.55;
+  color       : var(--vp-c-text-2);
+}
+
+.specimen-callout-body :is(code, kbd) {
+  padding       : 1px 6px;
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--domain-color) var(--prose-tint-faint), transparent);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : 0.82em;
+  color         : var(--domain-color);
+}
+
+.specimen-callout-body em {
+  font-style : italic;
+  color      : var(--vp-c-text-1);
+}

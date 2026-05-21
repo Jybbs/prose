@@ -1,7 +1,7 @@
 ---
 category : lint
 domain   : lint
-caption  : "`Union[A, B]` and `Optional[T]` patterns that should read as modern `A | B` and `T | None`"
+caption  : "*Prose* surfaces `Union[A, B]` and `Optional[T]` patterns that should read as modern `A | B` and `T | None`."
 related  : [unused-future-annotations]
 ---
 
@@ -44,7 +44,7 @@ A `from typing import Optional` followed by `Optional[X]` surfaces the lint, rec
 
 <Fixture rule="legacy_union_syntax" case="modern_pipe_preserved" title="Already-Modern Pipe-Union Syntax Stays Clean" />
 
-<Fixture rule="legacy_union_syntax" case="nested_subscript" title="Nested Subscripts Inside `Union` Are Recognized" />
+<Fixture rule="legacy_union_syntax" case="nested_subscript" title="Nested Subscripts inside `Union` Are Recognized" />
 
 <Fixture rule="legacy_union_syntax" case="aliased_import" title="Aliased Imports of `typing.Optional` Are Flagged Too" />
 
@@ -52,7 +52,7 @@ A `from typing import Optional` followed by `Optional[X]` surfaces the lint, rec
 
 <Fixture rule="legacy_union_syntax" case="parens_extended_range" title="Parenthesized Union Expressions Are Recognized" />
 
-<Fixture rule="legacy_union_syntax" case="typing_list_not_flagged" title="Non-Union `typing` Imports Like `List` Stay Quiet" />
+<Fixture rule="legacy_union_syntax" case="typing_list_not_flagged" title="Non-Union `typing` Imports like `List` Stay Quiet" />
 
 <Fixture rule="legacy_union_syntax" case="idempotent" title="Pipe-Union Source Is Left Alone" />
 

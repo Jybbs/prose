@@ -1,7 +1,7 @@
 ---
 category : auto-fix
 domain   : alignment
-caption  : "post-pattern `:` on single-expression case bodies inside a `match` statement"
+caption  : "*Prose* aligns the post-pattern `:` across single-expression case bodies inside a `match` statement."
 related  : [align-colons, align-equals, align-imports, singleton-rule]
 ---
 
@@ -31,9 +31,9 @@ A `match` whose arms each return a literal aligns on the post-pattern `:` separa
 
 <Fixture rule="match_case_align" case="nested_match" title="Nested Matches Align Independently" />
 
-<Fixture rule="match_case_align" case="comment_between_cases" title="Comments Between Cases Reset the Run" />
+<Fixture rule="match_case_align" case="comment_between_cases" title="Comments between Cases Reset the Run" />
 
-<Fixture rule="match_case_align" case="budget_gate" title="A Widest Pattern Past `max-shift` Gates the Group" />
+<Fixture rule="match_case_align" case="budget_gate" title="A Widest Pattern past `max-shift` Gates the Group" />
 
 ## Related
 

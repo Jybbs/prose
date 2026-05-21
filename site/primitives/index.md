@@ -2,6 +2,8 @@
 
 *Prose* is built from a small set of shared primitives that each carry a single responsibility. A rule reads source through [[source]], walks the AST through one of the shared walkers, emits [[edit]] lists, and surfaces diagnostics through the [[pipeline]]. Every rule in the catalog is built from these eleven named pieces, meaning a new rule lands as a thin walker plus the per-rule decision rather than a from-scratch implementation. The reuse economy is what makes adding a rule cheap, wherein the math, the comment-attachment, and the conflict discipline live once and downstream rules consume them.
 
+<PrimitivesComposition />
+
 ## The Surface
 
 **Public primitives** *(reachable from a downstream Rust consumer in `0.2.x`)*

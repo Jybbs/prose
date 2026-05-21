@@ -33,7 +33,7 @@ const SOURCES: readonly ExitCodeSource[] = [
     code   : 1,
     detail : [
       '`prose check` returns this when one or more auto-fix rules would emit edits.',
-      '`prose format` suppresses this code (returns 0) when the rewrite succeeds, since the changes were applied rather than left pending.',
+      '`prose format` returns 0 once the rewrite lands.',
       'Every auto-fix rule contributes here.'
     ],
     label  : 'Format would change',

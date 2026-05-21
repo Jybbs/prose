@@ -1,7 +1,9 @@
 import type { DefaultTheme } from 'vitepress'
 
-import { splitByCategory, type DiscoveredRule }                          from '../rules/discovery'
-import { DOMAIN_META, PRIMITIVES, PUBLIC_PRIMITIVES, type PrimitiveSlug } from './registries'
+import { type DiscoveredRule }                                                          from '../rules/discovery'
+import { DOMAIN_META, PRIMITIVES, PUBLIC_PRIMITIVES, type PrimitiveSlug, type RuleDomain } from './registries'
+
+const FAMILY_ORDER: readonly RuleDomain[] = ['alignment', 'ordering', 'formatting', 'docs', 'lint']
 
 const primLink = (text: string, slug: string): DefaultTheme.SidebarItem =>
   ({ link: `/primitives/${slug}`, text })
@@ -50,7 +52,13 @@ const INTEGRATIONS_SIDEBAR: DefaultTheme.SidebarItem[] = [
 ]
 
 export function buildSidebar(rules: readonly DiscoveredRule[]): DefaultTheme.Sidebar {
-  const { autoFix, lint } = splitByCategory(rules)
+  const familySections: DefaultTheme.SidebarItem[] = FAMILY_ORDER.map(family => ({
+    link : `/rules/${family}/`,
+    text : DOMAIN_META[family].label,
+    items: rules
+      .filter(r => r.domain === family)
+      .map(r => ruleLink(r.slug))
+  }))
   return {
     '/guide/'        : GUIDE_SIDEBAR,
     '/reference/'    : REFERENCE_SIDEBAR,
@@ -76,21 +84,7 @@ export function buildSidebar(rules: readonly DiscoveredRule[]): DefaultTheme.Sid
         ],
         text : 'Rules'
       },
-      {
-        items: [
-          { link: '/rules/auto-fix/', text: 'Auto-Fix' },
-          { link: '/rules/lint/',     text: 'Lint'     }
-        ],
-        text : 'By Category'
-      },
-      {
-        items: Object.entries(DOMAIN_META)
-          .filter(([slug]) => slug !== 'lint')
-          .map(([slug, meta]) => ({ link: `/rules/${slug}/`, text: meta.label })),
-        text : 'By Domain'
-      },
-      { items: autoFix.map(ruleLink), text: 'Auto-Fix Rules' },
-      { items: lint.map(ruleLink),    text: 'Lint Rules'     }
+      ...familySections
     ]
   }
 }

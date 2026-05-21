@@ -42,6 +42,12 @@ export const TOOL_SEEDS = {
     name : 'maturin',
     role : 'Rust to Python wheel build'
   },
+  mise: {
+    href : 'https://mise.jdx.dev/',
+    icon : 'custom:mise',
+    name : 'mise',
+    role : 'Tool versions and tasks'
+  },
   neovim: {
     href : 'https://neovim.io/',
     icon : 'logos:neovim',
@@ -86,9 +92,15 @@ export const TOOL_SEEDS = {
   },
   uv: {
     href : 'https://docs.astral.sh/uv/',
-    icon : 'simple-icons:astral',
+    icon : 'simple-icons:uv',
     name : 'uv',
     role : 'Canonical install path'
+  },
+  vitepress: {
+    href : 'https://vitepress.dev/',
+    icon : 'simple-icons:vitepress',
+    name : 'VitePress',
+    role : 'Docs site framework'
   },
   vscode: {
     href : 'https://code.visualstudio.com/',

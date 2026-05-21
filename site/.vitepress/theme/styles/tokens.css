@@ -77,6 +77,8 @@
   --vp-button-brand-hover-border : transparent;
 
   --vp-code-block-bg             : #22272e;
+  --vp-code-font-size            : 0.82rem;
+  --vp-code-line-height          : 1.6;
 }
 
 .dark {

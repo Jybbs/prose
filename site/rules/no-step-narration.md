@@ -1,7 +1,7 @@
 ---
 category : lint
 domain   : lint
-caption  : "comments that narrate the next line"
+caption  : "*Prose* surfaces comments that narrate the next line."
 related  : [loose-constants, single-use-variables]
 ---
 

@@ -21,11 +21,11 @@ A handful of Ruff's `pycodestyle` codes flag whitespace patterns that *Prose*'s 
 ```toml
 [lint]
 extend-ignore = [
-  "COM812",     # lint re-adds trailing commas that strip-trailing-commas removes
-  "E203",       # whitespace before `:`, produced by align-colons
-  "E221",       # multiple spaces before `=`, produced by align-equals
-  "E272",       # multiple spaces before `import` / `as`, produced by align-imports
-  "E501"        # line length, occasionally exceeded by alignment padding
+  "COM812",  # trailing commas
+  "E203",    # space before `:`
+  "E221",    # space before `=`
+  "E272",    # space before `import` / `as`
+  "E501",    # line length
 ]
 
 [format]

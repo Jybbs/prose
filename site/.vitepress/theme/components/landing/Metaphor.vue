@@ -9,8 +9,26 @@ import LandingSection from './LandingSection.vue'
     kicker="The Idea"
     variant="metaphor"
   >
-    <div class="landing-metaphor-body">
-      <div class="landing-metaphor-copy">
+    <aside class="landing-definition">
+      <p class="landing-definition-kicker">— Reference · prose —</p>
+      <header class="landing-definition-head">
+        <h3 class="landing-definition-word">prose</h3>
+        <span class="landing-definition-pron">/prōz/</span>
+        <span class="landing-definition-leader" aria-hidden="true" />
+        <span class="landing-definition-pos">n.</span>
+      </header>
+      <ol class="landing-definition-list">
+        <li>
+          <span class="landing-definition-num">1</span>
+          <span class="landing-definition-body">written language in its ordinary form, without metrical structure.</span>
+        </li>
+        <li>
+          <span class="landing-definition-num">2</span>
+          <span class="landing-definition-body">an opinionated formatter that lays Python out so a reader can read it.</span>
+        </li>
+      </ol>
+      <hr class="landing-definition-rule" aria-hidden="true" />
+      <div class="landing-definition-copy">
         <p>
           Code is read far more often than it is written. A reader's eye moves
           down a page and across adjacent lines looking for parallels, patterns,
@@ -24,11 +42,6 @@ import LandingSection from './LandingSection.vue'
           groupings give every reader the same landmarks.
         </p>
       </div>
-      <div class="landing-definition">
-        <div class="definition-word">prose <span>/prōz/</span></div>
-        <p>1. written language in its ordinary form, without metrical structure.</p>
-        <p>2. an opinionated formatter that lays Python out so a reader can read it.</p>
-      </div>
-    </div>
+    </aside>
   </LandingSection>
 </template>

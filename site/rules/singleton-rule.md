@@ -1,7 +1,7 @@
 ---
 category : auto-fix
 domain   : formatting
-caption  : "alignment groups that resolve to a single member"
+caption  : "*Prose* strips padding from alignment groups that resolve to a single member."
 related  : [align-colons, align-equals, align-imports, match-case-align]
 ---
 
@@ -31,7 +31,7 @@ A one-key dict literal drops its pre-`:` padding, reading as a plain key-value p
 
 <Fixture rule="singleton_rule" case="method_self_and_kwarg" title="The `self` Receiver Doesn't Count Toward the Group Size" />
 
-<Fixture rule="singleton_rule" case="mixed_singleton_and_group" title="Singleton and Multi-Member Groups Compose Inside One File" />
+<Fixture rule="singleton_rule" case="mixed_singleton_and_group" title="Singleton and Multi-Member Groups Compose inside One File" />
 
 <Fixture rule="singleton_rule" case="multiline_signature" title="Multi-Line Singleton Signatures Drop the Padding Too" />
 

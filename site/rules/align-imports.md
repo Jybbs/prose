@@ -1,7 +1,7 @@
 ---
 category : auto-fix
 domain   : alignment
-caption  : "`import` keyword on `from … import …` runs and the `as` keyword on `import … as …` runs"
+caption  : "*Prose* aligns the `import` keyword across `from … import …` runs and the `as` keyword across `import … as …` runs."
 related  : [align-colons, align-equals, alphabetize, bare-import-allowlist, blank-lines, match-case-align]
 ---
 
@@ -23,13 +23,13 @@ A run of `from ... import ...` statements lines up on the `import` keyword, so t
 
 ## More Examples
 
-<Fixture rule="align_imports" case="aliased_imports" title="Bare Imports With Aliases Align on the `as` Keyword" />
+<Fixture rule="align_imports" case="aliased_imports" title="Bare Imports with Aliases Align on the `as` Keyword" />
 
 <Fixture rule="align_imports" case="breakers" title="Non-Import Statements Reset the Alignment Run" />
 
-<Fixture rule="align_imports" case="comment_breaks" title="Comment Lines Reset the Run, Like Blank Lines" />
+<Fixture rule="align_imports" case="comment_breaks" title="Comment Lines Reset the Run, like Blank Lines" />
 
-<Fixture rule="align_imports" case="aliased_shift_limit_split" title="A Widest Member Past `max-shift` Splits the Group" />
+<Fixture rule="align_imports" case="aliased_shift_limit_split" title="A Widest Member past `max-shift` Splits the Group" />
 
 <Fixture rule="align_imports" case="aliased_shift_limit_drop" title="The `drop` Policy Excludes the Widest Members" />
 

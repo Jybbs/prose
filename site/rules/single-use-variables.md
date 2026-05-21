@@ -1,7 +1,7 @@
 ---
 category : lint
 domain   : lint
-caption  : "single-use local bindings that could inline cleanly"
+caption  : "*Prose* surfaces single-use local bindings that could inline cleanly."
 related  : [loose-constants, no-step-narration]
 ---
 
@@ -34,7 +34,7 @@ A binding assigned and read exactly once surfaces the lint, recommending inlinin
 
 <Fixture rule="single_use_variables" case="augmented_skipped" title="Augmented Assignments Count as Both Write and Read" />
 
-<Fixture rule="single_use_variables" case="comprehension_target_skipped" title="Comprehension Targets Stay Outside the Rule's Reach" />
+<Fixture rule="single_use_variables" case="comprehension_target_skipped" title="Comprehension Targets Stay outside the Rule's Reach" />
 
 <Fixture rule="single_use_variables" case="global_function_skipped" title="Global-Scope Function Bindings Aren't Single-Use" />
 

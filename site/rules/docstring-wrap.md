@@ -1,7 +1,7 @@
 ---
 category : auto-fix
 domain   : docs
-caption  : "multi-line docstring body wrapping at the configured measure"
+caption  : "*Prose* wraps multi-line docstring bodies at the configured measure."
 related  : [multi-line-docstrings, no-single-line-docstrings]
 ---
 
@@ -29,11 +29,11 @@ Description prose wraps to `docstring-line-length`, with the existing paragraph 
 
 <Fixture rule="docstring_wrap" case="mixed_description_and_args" title="Mixed Description + Args Apply Both Budgets in Sequence" />
 
-<Fixture rule="docstring_wrap" case="code_block_fenced" title="Fenced Code Blocks Inside the Description Are Preserved" />
+<Fixture rule="docstring_wrap" case="code_block_fenced" title="Fenced Code Blocks inside the Description Are Preserved" />
 
 <Fixture rule="docstring_wrap" case="code_block_indented" title="Indented Code Blocks Are Preserved Too" />
 
-<Fixture rule="docstring_wrap" case="list_preserved" title="Bulleted Lists Inside the Description Are Preserved" />
+<Fixture rule="docstring_wrap" case="list_preserved" title="Bulleted Lists inside the Description Are Preserved" />
 
 <Fixture rule="docstring_wrap" case="class_docstring" title="Class Docstrings Wrap the Same Way as Function Docstrings" />
 

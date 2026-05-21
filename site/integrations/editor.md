@@ -6,62 +6,7 @@
 
 Each editor wires the binary differently, wherein the shape is identical at every site, invoking `prose format ${file}` after every save.
 
-::: code-group
-
-```json [vscode]
-{
-  "emeraldwalk.runonsave": {
-    "commands": [
-      {
-        "match": "\\.py$",
-        "cmd"  : "prose format ${file}"
-      }
-    ]
-  }
-}
-```
-
-```vim [neovim]
-autocmd BufWritePost *.py silent! !prose format %
-```
-
-```text [jetbrains]
-File type        : Python
-Scope            : Project Files
-Program          : prose
-Arguments        : format $FilePath$
-Working directory: $ProjectFileDir$
-```
-
-```python [sublime]
-# Install: SublimeOnSaveBuild
-# Add to <Project>.sublime-project:
-{
-  "build_systems": [{
-    "name"        : "prose",
-    "shell_cmd"   : "prose format \"$file\"",
-    "selector"    : "source.python",
-    "working_dir" : "$file_path"
-  }]
-}
-```
-
-```lisp [emacs]
-;; Add to ~/.emacs.d/init.el
-(add-hook 'after-save-hook
-  (lambda ()
-    (when (eq major-mode 'python-mode)
-      (call-process "prose" nil nil nil "format" buffer-file-name))))
-```
-
-```toml [helix]
-[[editor.formatter]]
-languages = ["python"]
-command   = "prose"
-args      = ["format", "-"]
-```
-
-:::
+<EditorRunOnSave />
 
 The [**`emeraldwalk.RunOnSave`**](https://marketplace.visualstudio.com/items?itemName=emeraldwalk.RunOnSave) extension watches for save events and invokes the command on every match. For Neovim, `silent!` suppresses the shell-out prompt and any non-zero exit from blocking subsequent autocommands. The PyCharm *File Watchers* plugin invokes the binary on every save, replacing the buffer's content with the formatted output.
 

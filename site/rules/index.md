@@ -4,7 +4,7 @@
 
 Every rule respects the [**suppression directives**](/guide/suppression) and the [**`enabled`**](/reference/configuration#per-rule-knobs) knob, which lets a project disable any rule without re-shaping the rest of the pipeline.
 
-<RulesIndex />
+<RulesPlate />
 
 ## Subsetting
 

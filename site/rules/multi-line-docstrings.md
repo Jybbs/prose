@@ -1,7 +1,7 @@
 ---
 category : auto-fix
 domain   : docs
-caption  : "promotion of single-line docstrings to multi-line shape"
+caption  : "*Prose* promotes single-line docstrings to the multi-line shape."
 related  : [docstring-wrap, no-single-line-docstrings]
 ---
 

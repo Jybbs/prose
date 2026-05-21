@@ -1,7 +1,7 @@
 ---
 category : auto-fix
 domain   : formatting
-caption  : "canonical blank-line counts between thematically adjacent statements"
+caption  : "*Prose* normalizes blank-line counts to canonical values between thematically adjacent statements."
 related  : [alphabetize, align-imports, bare-import-allowlist]
 ---
 
@@ -23,9 +23,9 @@ Two blank lines precede every module-level `def` and `class`, giving the reader'
 
 ## More Examples
 
-<Fixture rule="blank_lines" case="bare_then_from_insert" title="One Blank Lands Between Adjacent Bare and `from` Import Groups" />
+<Fixture rule="blank_lines" case="bare_then_from_insert" title="One Blank Lands between Adjacent Bare and `from` Import Groups" />
 
-<Fixture rule="blank_lines" case="class_with_docstring" title="The First Method After a Class Docstring Tightens Up" />
+<Fixture rule="blank_lines" case="class_with_docstring" title="The First Method after a Class Docstring Tightens Up" />
 
 <Fixture rule="blank_lines" case="bare_then_from_collapse" title="Excess Blanks Collapse to the Canonical Single Blank" />
 
@@ -33,11 +33,11 @@ Two blank lines precede every module-level `def` and `class`, giving the reader'
 
 <Fixture rule="blank_lines" case="comment_with_blank_above_def" title="Comments Attached to a `def` Keep Their Blank-Above" />
 
-<Fixture rule="blank_lines" case="methods_in_class" title="Methods Inside a Class Body Carry One Blank Between Them" />
+<Fixture rule="blank_lines" case="methods_in_class" title="Methods inside a Class Body Carry One Blank between Them" />
 
-<Fixture rule="blank_lines" case="decorated_def" title="Decorators Travel With Their `def`, Not Above the Blank Run" />
+<Fixture rule="blank_lines" case="decorated_def" title="Decorators Travel with Their `def`, Not above the Blank Run" />
 
-<Fixture rule="blank_lines" case="main_guard" title="The `__main__` Guard Carries One Blank Above Its Sibling" />
+<Fixture rule="blank_lines" case="main_guard" title="The `__main__` Guard Carries One Blank above Its Sibling" />
 
 <Fixture rule="blank_lines" case="bare_then_from_idempotent" title="Already-Conforming Source Is Left Alone" />
 

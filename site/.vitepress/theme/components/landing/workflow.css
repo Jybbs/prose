@@ -1,0 +1,119 @@
+.landing-workflow {
+  --wf-accent : var(--prose-c-celadon);
+
+  display       : flex;
+  flex-direction: column;
+  margin        : 24px 0 0;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg);
+  overflow      : hidden;
+}
+
+.landing-workflow-section {
+  display              : grid;
+  grid-template-columns: 96px 1fr;
+  gap                  : 32px;
+  padding              : 28px 32px 30px;
+  border-bottom        : 1px dashed color-mix(in srgb, var(--wf-accent) 24%, var(--vp-c-divider));
+}
+
+.landing-workflow-section-last {
+  border-bottom : none;
+}
+
+.landing-workflow-gutter {
+  position       : sticky;
+  top            : 96px;
+  align-self     : start;
+  display        : flex;
+  flex-direction : column;
+  align-items    : flex-end;
+  gap            : 8px;
+  padding-right  : 14px;
+  border-right   : 1px solid color-mix(in srgb, var(--wf-accent) 28%, var(--vp-c-divider));
+  text-align     : right;
+}
+
+.landing-workflow-roman {
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 500;
+  font-size   : 2.8rem;
+  line-height : 0.9;
+  color       : color-mix(in srgb, var(--wf-accent) 70%, var(--vp-c-text-1));
+}
+
+.landing-workflow-dot {
+  display       : block;
+  width         : 5px;
+  height        : 5px;
+  border-radius : 50%;
+  background    : var(--wf-accent);
+}
+
+.landing-workflow-folio {
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-kicker-size);
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+}
+
+.landing-workflow-body {
+  min-width : 0;
+}
+
+.landing-workflow-title {
+  margin      : 0 0 12px;
+  padding     : 0;
+  border      : none;
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 500;
+  font-size   : 1.8rem;
+  line-height : 1.15;
+  color       : var(--vp-c-text-1);
+}
+
+.landing-workflow-prose {
+  margin      : 0 0 18px;
+  max-width   : 64ch;
+  font-family : var(--vp-font-family-base);
+  font-size   : 1.05rem;
+  line-height : 1.65;
+  color       : var(--vp-c-text-2);
+}
+
+.landing-workflow-prose :is(code, em) {
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.85em;
+  font-style  : normal;
+  color       : var(--vp-c-text-1);
+}
+
+.landing-workflow-code {
+  margin       : 0;
+  padding      : 12px 14px;
+  border-radius: var(--prose-radius-sm);
+  background   : var(--vp-code-block-bg);
+  font-family  : var(--vp-font-family-mono);
+  font-size    : 0.76rem;
+  line-height  : 1.55;
+  color        : var(--vp-c-text-1);
+  overflow     : auto;
+}
+
+@media (max-width: 720px) {
+  .landing-workflow-section {
+    grid-template-columns: 64px 1fr;
+    gap                  : 18px;
+    padding              : 22px 22px 24px;
+  }
+  .landing-workflow-roman {
+    font-size : 2.2rem;
+  }
+  .landing-workflow-gutter {
+    position : static;
+  }
+}

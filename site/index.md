@@ -6,24 +6,24 @@ aside: false
 ---
 
 <script setup lang="ts">
-import LandingCta          from './.vitepress/theme/components/landing/Cta.vue'
-import LandingFeatures     from './.vitepress/theme/components/landing/Features.vue'
-import LandingHero         from './.vitepress/theme/components/landing/Hero.vue'
-import LandingMetaphor     from './.vitepress/theme/components/landing/Metaphor.vue'
-import LandingRulesMarquee from './.vitepress/theme/components/landing/RulesMarquee.vue'
-import LandingSection      from './.vitepress/theme/components/landing/LandingSection.vue'
-import LandingTypingDemo   from './.vitepress/theme/components/landing/TypingDemo.vue'
-import LandingWorkflow     from './.vitepress/theme/components/landing/Workflow.vue'
+import LandingBuiltOn    from './.vitepress/theme/components/landing/BuiltOn.vue'
+import LandingCta        from './.vitepress/theme/components/landing/Cta.vue'
+import LandingHero       from './.vitepress/theme/components/landing/Hero.vue'
+import LandingMetaphor   from './.vitepress/theme/components/landing/Metaphor.vue'
+import LandingSection    from './.vitepress/theme/components/landing/LandingSection.vue'
+import LandingSurfaces   from './.vitepress/theme/components/landing/surfaces/Surfaces.vue'
+import LandingTypingDemo from './.vitepress/theme/components/landing/TypingDemo.vue'
+import LandingWorkflow   from './.vitepress/theme/components/landing/Workflow.vue'
 </script>
 
 <section class="landing-page" aria-label="prose overview">
   <LandingHero />
-  <LandingSection variant="proof" kicker="The Proof" heading="Cramped input. Composed output." centered>
+  <LandingSection variant="proof" kicker="The Proof" heading="From <strong>cramped</strong> to <em>composed</em>." centered>
     <LandingTypingDemo />
   </LandingSection>
   <LandingMetaphor />
-  <LandingFeatures />
-  <LandingRulesMarquee />
+  <LandingSurfaces />
   <LandingWorkflow />
+  <LandingBuiltOn />
   <LandingCta />
 </section>

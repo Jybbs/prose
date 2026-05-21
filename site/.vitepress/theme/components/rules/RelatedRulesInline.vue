@@ -29,7 +29,7 @@ const items = computed(() => {
       <p class="related-card-caption" v-html="r.captionHtml"></p>
       <footer class="related-card-meta">
         <TaxonomyChip axis="category" :value="r.category" :linked="false" />
-        <TaxonomyChip axis="domain"   :value="r.domain"   :linked="false" />
+        <TaxonomyChip v-if="r.domain !== 'lint'" axis="domain" :value="r.domain" :linked="false" />
       </footer>
     </a>
   </div>

@@ -1,19 +1,11 @@
 import { defineLoader } from 'vitepress'
 
 import { getRenderer, renderInlineField } from '../lib/markdown/renderer'
+import type { RuleDomain }                from '../lib/shared/registries'
 
 export interface Link {
   href : string
   text : string
-}
-
-export interface Feature {
-  bodyHtml : string
-  cta      : string
-  icon     : string
-  link     : string
-  number   : string
-  title    : string
 }
 
 export interface Step {
@@ -23,9 +15,16 @@ export interface Step {
   title    : string
 }
 
+export interface Surface {
+  bodyHtml : string
+  domain   : RuleDomain
+  icon     : string
+  number   : string
+}
+
 export interface LandingData {
   cta      : { links: readonly Link[] }
-  features : readonly Feature[]
+  surfaces : readonly Surface[]
   workflow : readonly Step[]
 }
 
@@ -39,47 +38,51 @@ const CTA_LINKS: readonly Link[] = [
   { href: '/rules/',                  text: 'Rules catalog' }
 ]
 
-interface Numbered {
+interface SurfaceSource {
   body   : string
+  domain : RuleDomain
+  icon   : string
   number : string
-  title  : string
 }
 
-interface FeatureSource extends Numbered {
-  cta  : string
-  icon : string
-  link : string
-}
-
-const FEATURE_SOURCES: readonly FeatureSource[] = [
+const SURFACE_SOURCES: readonly SurfaceSource[] = [
   {
     body   : 'Equals signs, colons, the `import` keyword, and match arrows line up across consecutive lines. The eye drops down the column.',
-    cta    : 'align-equals',
+    domain : 'alignment',
     icon   : '🪜',
-    link   : '/rules/align-equals',
-    number : '01',
-    title  : 'Alignment'
+    number : '01'
   },
   {
-    body   : 'Dictionaries, lists, and sets expand to one entry per line. Multi-line collections drop their trailing comma. Single-entry contexts skip padding.',
-    cta    : 'collection-layout',
+    body   : 'Sibling entries sort into a predictable order. Imports, dictionary keys, and set members read top-to-bottom by name, so a reader looking for an entry already knows where it sits.',
+    domain : 'ordering',
+    icon   : '🪉',
+    number : '02'
+  },
+  {
+    body   : 'Dictionaries, lists, and sets expand to one entry per line. Multi-line collections drop their trailing comma, blank lines snap to canonical counts, and singletons collapse to their natural form.',
+    domain : 'formatting',
     icon   : '🪶',
-    link   : '/rules/collection-layout',
-    number : '02',
-    title  : 'Layout'
+    number : '03'
   },
   {
-    body   : 'Legacy union syntax, loose constants, step-narration comments, and single-use bindings surface as lint diagnostics, never rewrites.',
-    cta    : 'single-use-variables',
+    body   : 'Docstrings join the same legibility discipline as code. Wrap to the project line length, keep single-line shapes single-line, multi-line shapes multi-line, and quote style consistent throughout.',
+    domain : 'docs',
+    icon   : '📰',
+    number : '04'
+  },
+  {
+    body   : 'Legacy union syntax, loose constants, step-narration comments, bare-import patterns, and single-use bindings surface as diagnostics. The formatter never rewrites these, because the fix belongs to the reader.',
+    domain : 'lint',
     icon   : '🧶',
-    link   : '/rules/single-use-variables',
-    number : '03',
-    title  : 'Lint'
+    number : '05'
   }
 ]
 
-interface StepSource extends Numbered {
-  code : string
+interface StepSource {
+  body   : string
+  code   : string
+  number : string
+  title  : string
 }
 
 const STEP_SOURCES: readonly StepSource[] = [
@@ -115,7 +118,7 @@ export default defineLoader({
     const md = await getRenderer()
     return {
       cta     : { links: CTA_LINKS },
-      features: renderInlineField(md, FEATURE_SOURCES, 'body'),
+      surfaces: renderInlineField(md, SURFACE_SOURCES, 'body'),
       workflow: renderInlineField(md, STEP_SOURCES, 'body')
     }
   }

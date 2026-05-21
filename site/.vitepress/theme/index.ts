@@ -29,8 +29,12 @@ import RelatedRulesInline from './components/rules/RelatedRulesInline.vue'
 import RuleCardGrid       from './components/rules/RuleCardGrid.vue'
 import RuleChip           from './components/rules/RuleChip.vue'
 import RuleConfigTable    from './components/rules/RuleConfigTable.vue'
-import RulesIndex         from './components/rules/RulesIndex.vue'
-import Tool               from './components/base/Tool.vue'
+import EditorRunOnSave       from './components/integrations/EditorRunOnSave.vue'
+import PrimitivesComposition from './components/primitives/PrimitivesComposition.vue'
+import PyPIReleases          from './components/base/PyPIReleases.vue'
+import RulesIndex            from './components/rules/RulesIndex.vue'
+import RulesPlate            from './components/rules/RulesPlate.vue'
+import Tool                  from './components/base/Tool.vue'
 
 import './styles/tokens.css'
 import './styles/accents.css'
@@ -46,6 +50,7 @@ import './components/aside/domain-chip.css'
 import './components/aside/fixture-toc.css'
 import './components/aside/related-rules.css'
 import './components/base/chips.css'
+import './components/base/pypi-releases.css'
 import './components/base/disclosure.css'
 import './components/exit-codes/exit-code-matrix.css'
 import './components/fixtures/fixture.css'
@@ -53,15 +58,25 @@ import './components/fixtures/fixture-landing.css'
 import './components/glossary/glossary-index.css'
 import './components/glossary/glossary.css'
 import './components/landing/built-on.css'
-import './components/landing/carousel.css'
+import './components/landing/cta.css'
+import './components/landing/hero.css'
 import './components/landing/landing.css'
+import './components/landing/metaphor.css'
+import './components/landing/surfaces/surface-card-base.css'
+import './components/landing/surfaces/surfaces.css'
 import './components/landing/typing-demo.css'
+import './components/landing/workflow.css'
 import './components/layout/build-metadata.css'
 import './components/layout/not-found.css'
+import './components/integrations/editor-run-on-save.css'
+import './components/iterations/the-page/the-page-iterations.css'
+import './components/iterations/the-stack/the-stack-iterations.css'
 import './components/primitives/dependency-graph.css'
+import './components/primitives/primitives-composition.css'
 import './components/rules/related-rules-inline.css'
 import './components/rules/rule-card-grid.css'
 import './components/rules/rules-index.css'
+import './components/rules/rules-plate.css'
 
 export default {
   extends: DefaultTheme,
@@ -80,8 +95,12 @@ export default {
     app.component('RuleCardGrid',       RuleCardGrid)
     app.component('RuleChip',           RuleChip)
     app.component('RuleConfigTable',    RuleConfigTable)
-    app.component('RulesIndex',         RulesIndex)
-    app.component('Tool',               Tool)
+    app.component('EditorRunOnSave',       EditorRunOnSave)
+    app.component('PrimitivesComposition', PrimitivesComposition)
+    app.component('PyPIReleases',          PyPIReleases)
+    app.component('RulesIndex',            RulesIndex)
+    app.component('RulesPlate',            RulesPlate)
+    app.component('Tool',                  Tool)
     app.use(FloatingVue, {
       themes: {
         glossary: {

@@ -1,7 +1,7 @@
 ---
 category : lint
 domain   : lint
-caption  : "bare `from module import *` patterns outside the configured allowlist"
+caption  : "*Prose* surfaces bare `from module import *` patterns sitting outside the configured allowlist."
 related  : [alphabetize, align-imports, blank-lines]
 ---
 

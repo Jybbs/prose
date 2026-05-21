@@ -1,7 +1,7 @@
 ---
 category : auto-fix
 domain   : docs
-caption  : "single-line docstrings rewritten to multi-line form"
+caption  : "*Prose* rewrites single-line docstrings into the multi-line form."
 related  : [docstring-wrap, multi-line-docstrings]
 ---
 
@@ -25,7 +25,7 @@ A module-level single-line docstring expands to the multi-line form, with the op
 
 <Fixture rule="no_single_line_docstrings" case="class_docstring" title="Class Docstrings Expand the Same Way" />
 
-<Fixture rule="no_single_line_docstrings" case="method_docstring" title="Method Docstrings Expand Inside the Class Body" />
+<Fixture rule="no_single_line_docstrings" case="method_docstring" title="Method Docstrings Expand inside the Class Body" />
 
 <Fixture rule="no_single_line_docstrings" case="nested_def_docstrings" title="Nested Function Docstrings Expand at Each Scope" />
 

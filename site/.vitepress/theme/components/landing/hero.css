@@ -1,0 +1,16 @@
+.landing-hero {
+  display         : flex;
+  justify-content : center;
+  padding         : 88px 24px 32px;
+}
+
+.landing-hero-wordmark {
+  margin : 0;
+  width  : min(640px, 72vw);
+}
+
+.landing-hero-wordmark img {
+  display : block;
+  width   : 100%;
+  height  : auto;
+}

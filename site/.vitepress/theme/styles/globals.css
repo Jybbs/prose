@@ -28,18 +28,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .disclosure-caret,
-  .landing-feature-card,
-  .landing-feature-card::before,
   .landing-hero-action {
-    transition: none;
+    transition : none;
   }
 
-  .landing-feature-card:hover,
   .landing-hero-action:hover {
-    transform: none;
-  }
-
-  .landing-rules-track {
-    animation: none;
+    transform : none;
   }
 }

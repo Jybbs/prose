@@ -1,0 +1,147 @@
+.surface-card {
+  position        : relative;
+  isolation       : isolate;
+  display         : flex;
+  flex-direction  : column;
+  min-width       : 0;
+  min-height      : 320px;
+  padding         : 28px;
+  border          : 1px solid var(--vp-c-divider);
+  border-radius   : var(--prose-radius);
+  background      : var(--vp-c-bg-soft);
+  color           : var(--vp-c-text-1);
+  transition      :
+    border-color var(--prose-transition-slow),
+    transform    var(--prose-transition-slow),
+    box-shadow   var(--prose-transition-slow);
+}
+
+.surface-card > *:not(.surface-card-cover-link):not(.surface-card-icon) {
+  position : relative;
+  z-index  : 1;
+}
+
+.surface-card-cover-link {
+  position      : absolute;
+  inset         : 0;
+  z-index       : 0;
+  border-radius : var(--prose-radius);
+  text-indent   : -9999px;
+  overflow      : hidden;
+}
+
+.surface-card-cover-link:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 2px;
+}
+
+.surface-card-chips a {
+  position : relative;
+  z-index  : 2;
+}
+
+.surface-card::after {
+  content       : "";
+  position      : absolute;
+  inset         : 0;
+  background    : radial-gradient(
+    420px circle at var(--spotlight-x) var(--spotlight-y),
+    color-mix(in oklab, var(--domain-color) 14%, transparent) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index       : 0;
+  border-radius : var(--prose-radius);
+}
+
+.surface-card::before {
+  content       : "";
+  position      : absolute;
+  top           : 0;
+  left          : 0;
+  right         : 0;
+  height        : 3px;
+  background    : linear-gradient(90deg, transparent, var(--domain-color), transparent);
+  opacity       : 0;
+  transition    : opacity var(--prose-transition-slow);
+  border-radius : var(--prose-radius) var(--prose-radius) 0 0;
+  z-index       : 2;
+}
+
+.surface-card[data-active="true"]::before,
+.surface-card:focus-within::before {
+  opacity : 1;
+}
+
+.surface-card[data-active="true"],
+.surface-card:focus-within {
+  border-color : var(--domain-color);
+  transform    : translateY(-2px);
+  box-shadow   : 0 18px 44px -32px color-mix(in srgb, var(--domain-color) 55%, transparent);
+}
+
+.surface-card-number {
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-label-size);
+  letter-spacing : var(--prose-label-tracking);
+  color          : var(--vp-c-text-3);
+}
+
+.surface-card-icon {
+  position        : absolute;
+  top             : 22px;
+  right           : 22px;
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 56px;
+  height          : 56px;
+  border          : 1px solid var(--vp-c-divider);
+  border-radius   : 50%;
+  background      : var(--vp-c-bg);
+  font-size       : 1.55rem;
+  line-height     : 1;
+  z-index         : 2;
+}
+
+.surface-card-label {
+  margin      : 42px 0 12px;
+  padding     : 0;
+  border      : none;
+  font-family : var(--prose-font-display);
+  font-weight : 500;
+  font-size   : 2rem;
+  line-height : 1.05;
+  color       : var(--vp-c-text-1);
+}
+
+.surface-card-blurb {
+  margin      : 0;
+  font-family : var(--vp-font-family-base);
+  font-size   : var(--prose-text-md);
+  line-height : 1.6;
+  color       : var(--vp-c-text-2);
+}
+
+.surface-card-blurb :where(code) {
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.9em;
+}
+
+.surface-card-chips {
+  position    : relative;
+  margin-top  : auto;
+  padding-top : 18px;
+  min-height  : 52px;
+}
+
+.surface-card-chips::before {
+  content    : "";
+  position   : absolute;
+  top        : 0;
+  left       : 0;
+  right      : 0;
+  height     : 1px;
+  background : var(--vp-c-divider);
+  opacity    : 0.65;
+}
