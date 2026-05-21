@@ -8,6 +8,7 @@
 }
 
 .typing-demo-panel {
+  position       : relative;
   display        : flex;
   flex-direction : column;
   min-width      : 0;
@@ -18,14 +19,16 @@
 }
 
 .typing-demo-label {
-  padding        : 10px 14px;
-  border-bottom  : 1px solid color-mix(in srgb, var(--vp-c-divider) 40%, transparent);
-  background     : color-mix(in srgb, white 4%, var(--vp-code-block-bg));
+  position       : absolute;
+  bottom         : 6px;
+  right          : 10px;
   font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-label-size);
-  letter-spacing : var(--prose-label-tracking);
+  font-size      : 0.62rem;
+  letter-spacing : 0.06em;
   text-transform : uppercase;
   color          : var(--vp-c-text-3);
+  opacity        : 0.55;
+  pointer-events : none;
 }
 
 .typing-demo-config-code,

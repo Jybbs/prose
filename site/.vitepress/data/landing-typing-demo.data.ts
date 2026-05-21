@@ -49,8 +49,8 @@ export default defineLoader({
     }
 
     const highlighter = await getSingletonHighlighter({
-      langs : ['python'],
-      themes: Object.values(SHIKI_THEMES)
+      langs  : ['python'],
+      themes : Object.values(SHIKI_THEMES)
     })
 
     const machine = createMagicMoveMachine(code =>
@@ -71,13 +71,11 @@ export default defineLoader({
 })
 
 function proseBinary(root: string): string {
-  const release = path.join(root, 'target/release/prose')
-  const debug   = path.join(root, 'target/debug/prose')
-  if (fs.existsSync(release)) return release
-  if (fs.existsSync(debug))   return debug
-  throw new Error(
-    'prose binary not found at target/{release,debug}/prose. Run `cargo build` first.'
-  )
+  const found = ['target/release/prose', 'target/debug/prose']
+    .map(p => path.join(root, p))
+    .find(fs.existsSync)
+  if (found) return found
+  throw new Error('prose binary not found at target/{release,debug}/prose. Run `cargo build` first.')
 }
 
 function runProse(bin: string, source: string, select: string, configToml?: string): string {

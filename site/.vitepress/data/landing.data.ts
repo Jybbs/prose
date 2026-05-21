@@ -38,12 +38,7 @@ const CTA_LINKS: readonly Link[] = [
   { href: '/rules/',                  text: 'Rules catalog' }
 ]
 
-interface SurfaceSource {
-  body   : string
-  family : RuleFamily
-  icon   : string
-  number : string
-}
+type SurfaceSource = Omit<Surface, 'bodyHtml'> & { body: string }
 
 const SURFACE_SOURCES: readonly SurfaceSource[] = [
   {
@@ -78,12 +73,7 @@ const SURFACE_SOURCES: readonly SurfaceSource[] = [
   }
 ]
 
-interface StepSource {
-  body   : string
-  code   : string
-  number : string
-  title  : string
-}
+type StepSource = Omit<Step, 'bodyHtml'> & { body: string }
 
 const STEP_SOURCES: readonly StepSource[] = [
   {
@@ -117,9 +107,9 @@ export default defineLoader({
   async load(): Promise<LandingData> {
     const md = await getRenderer()
     return {
-      cta     : { links: CTA_LINKS },
-      surfaces: renderInlineField(md, SURFACE_SOURCES, 'body'),
-      workflow: renderInlineField(md, STEP_SOURCES, 'body')
+      cta      : { links: CTA_LINKS },
+      surfaces : renderInlineField(md, SURFACE_SOURCES, 'body'),
+      workflow : renderInlineField(md, STEP_SOURCES, 'body')
     }
   }
 })

@@ -6,7 +6,7 @@
   margin         : 24px 0 0;
   border         : 1px solid var(--vp-c-divider);
   border-radius  : var(--prose-radius);
-  background     : var(--vp-c-bg);
+  background     : var(--vp-c-bg-soft);
 }
 
 .landing-workflow-section {

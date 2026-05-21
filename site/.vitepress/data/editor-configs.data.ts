@@ -26,53 +26,49 @@ interface EditorConfigSource {
 const SOURCES: readonly EditorConfigSource[] = [
   {
     caption  : 'after-save-hook',
-    language : 'lisp',
-    name     : 'Emacs',
-    slug     : 'emacs',
-    target   : 'init.el',
     code     : `;; Add to ~/.emacs.d/init.el
 (add-hook 'after-save-hook
   (lambda ()
     (when (eq major-mode 'python-mode)
-      (call-process "prose" nil nil nil "format" buffer-file-name))))`
+      (call-process "prose" nil nil nil "format" buffer-file-name))))`,
+    language : 'lisp',
+    name     : 'Emacs',
+    slug     : 'emacs',
+    target   : 'init.el'
   },
   {
     caption  : 'editor.formatter',
-    language : 'toml',
-    name     : 'Helix',
-    slug     : 'helix',
-    target   : 'languages.toml',
     code     : `[[editor.formatter]]
 languages = ["python"]
 command   = "prose"
-args      = ["format", "-"]`
+args      = ["format", "-"]`,
+    language : 'toml',
+    name     : 'Helix',
+    slug     : 'helix',
+    target   : 'languages.toml'
   },
   {
     caption  : 'File Watchers',
-    language : 'text',
-    name     : 'JetBrains',
-    slug     : 'jetbrains',
-    target   : 'Watcher dialog',
     code     : `File type        : Python
 Scope            : Project Files
 Program          : prose
 Arguments        : format $FilePath$
-Working directory: $ProjectFileDir$`
+Working directory: $ProjectFileDir$`,
+    language : 'text',
+    name     : 'JetBrains',
+    slug     : 'jetbrains',
+    target   : 'Watcher dialog'
   },
   {
     caption  : 'autocmd BufWritePost',
+    code     : `autocmd BufWritePost *.py silent! !prose format %`,
     language : 'vim',
     name     : 'Neovim',
     slug     : 'neovim',
-    target   : 'init.vim',
-    code     : `autocmd BufWritePost *.py silent! !prose format %`
+    target   : 'init.vim'
   },
   {
     caption  : 'SublimeOnSaveBuild',
-    language : 'python',
-    name     : 'Sublime Text',
-    slug     : 'sublime',
-    target   : '<Project>.sublime-project',
     code     : `# Install: SublimeOnSaveBuild
 # Add to <Project>.sublime-project:
 {
@@ -82,14 +78,14 @@ Working directory: $ProjectFileDir$`
     "selector"    : "source.python",
     "working_dir" : "$file_path"
   }]
-}`
+}`,
+    language : 'python',
+    name     : 'Sublime Text',
+    slug     : 'sublime',
+    target   : '<Project>.sublime-project'
   },
   {
     caption  : 'emeraldwalk.runonsave',
-    language : 'json',
-    name     : 'VS Code',
-    slug     : 'vscode',
-    target   : 'settings.json',
     code     : `{
   "emeraldwalk.runonsave": {
     "commands": [
@@ -99,7 +95,11 @@ Working directory: $ProjectFileDir$`
       }
     ]
   }
-}`
+}`,
+    language : 'json',
+    name     : 'VS Code',
+    slug     : 'vscode',
+    target   : 'settings.json'
   }
 ]
 

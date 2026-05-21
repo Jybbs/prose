@@ -40,6 +40,8 @@ export const PRIMITIVES = {
 
 export type PrimitiveSlug = keyof typeof PRIMITIVES
 
+export const PRIMITIVE_SLUGS = Object.keys(PRIMITIVES) as readonly PrimitiveSlug[]
+
 export const PUBLIC_PRIMITIVES: readonly PrimitiveSlug[] = ['pipeline', 'rule-id', 'source']
 
 export type PrimitiveCoverage = 'exact' | 'subset'

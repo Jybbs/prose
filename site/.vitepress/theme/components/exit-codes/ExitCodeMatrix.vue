@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
 import { data as codes } from '../../../data/exit-codes.data'
+import { useTabSelect }  from '../../../lib/shared/use-tab-select'
 
-const selected = ref(codes[0]?.code ?? 0)
-const selectedRow = computed(() => codes.find(c => c.code === selected.value) ?? codes[0])
+const { active: selectedRow, selected } = useTabSelect(codes, c => c.code)
 </script>
 
 <template>

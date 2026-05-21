@@ -20,8 +20,8 @@ export const LAYER_META: Record<PrimitiveLayer, { kicker: string, label: string 
 
 export const PRIMITIVE_ENTRIES: readonly PrimitiveEntry[] = [
   {
-    consumedBy : ['align-equals', 'align-colons', 'align-imports', 'match-case-align'],
-    consumes   : ['source', 'edit'],
+    consumedBy : ['align-colons', 'align-equals', 'align-imports', 'match-case-align'],
+    consumes   : ['edit', 'source'],
     layer      : 'orchestration',
     slug       : 'aligner',
     summary    : 'Computes padding widths and emits the alignment edits every alignment rule consumes.',
@@ -37,7 +37,7 @@ export const PRIMITIVE_ENTRIES: readonly PrimitiveEntry[] = [
   },
   {
     consumedBy : ['align-colons', 'singleton-rule'],
-    consumes   : ['source', 'aligner'],
+    consumes   : ['aligner', 'source'],
     layer      : 'analysis',
     slug       : 'colon-targets',
     summary    : 'Walks the five `:` contexts in Python and emits alignment members for each.',
@@ -45,14 +45,14 @@ export const PRIMITIVE_ENTRIES: readonly PrimitiveEntry[] = [
   },
   {
     consumedBy : ['docstring-wrap', 'multi-line-docstrings', 'no-single-line-docstrings'],
-    consumes   : ['source', 'edit'],
+    consumes   : ['edit', 'source'],
     layer      : 'analysis',
     slug       : 'docstring',
     summary    : 'PEP 257 walker reaching every module, class, and function docstring in source order.',
     tagline    : 'PEP 257 docstring walker'
   },
   {
-    consumedBy : ['pipeline', 'aligner', 'orderer', 'docstring'],
+    consumedBy : ['aligner', 'docstring', 'orderer', 'pipeline'],
     consumes   : ['source'],
     layer      : 'base',
     slug       : 'edit',
@@ -61,7 +61,7 @@ export const PRIMITIVE_ENTRIES: readonly PrimitiveEntry[] = [
   },
   {
     consumedBy : ['alphabetize'],
-    consumes   : ['source', 'edit'],
+    consumes   : ['edit', 'source'],
     layer      : 'orchestration',
     slug       : 'orderer',
     summary    : 'Reorders sibling AST nodes by a classifier while preserving attached comments.',
@@ -69,7 +69,7 @@ export const PRIMITIVE_ENTRIES: readonly PrimitiveEntry[] = [
   },
   {
     consumedBy : ['cli'],
-    consumes   : ['source', 'rule-id', 'edit', 'suppression-map'],
+    consumes   : ['edit', 'rule-id', 'source', 'suppression-map'],
     layer      : 'orchestration',
     slug       : 'pipeline',
     summary    : 'Runs registered rules in deterministic order, reparses between rules, returns the final source.',
@@ -84,7 +84,7 @@ export const PRIMITIVE_ENTRIES: readonly PrimitiveEntry[] = [
     tagline    : 'canonical rule slug'
   },
   {
-    consumedBy : ['pipeline', 'aligner', 'orderer', 'binding-analysis', 'suppression-map', 'colon-targets', 'docstring', 'walker', 'edit'],
+    consumedBy : ['aligner', 'binding-analysis', 'colon-targets', 'docstring', 'edit', 'orderer', 'pipeline', 'suppression-map', 'walker'],
     consumes   : [],
     layer      : 'base',
     slug       : 'source',
@@ -93,7 +93,7 @@ export const PRIMITIVE_ENTRIES: readonly PrimitiveEntry[] = [
   },
   {
     consumedBy : ['pipeline'],
-    consumes   : ['source', 'rule-id'],
+    consumes   : ['rule-id', 'source'],
     layer      : 'analysis',
     slug       : 'suppression-map',
     summary    : 'Per-source index of `# fmt: off` / `# fmt: skip` / `# prose: ignore[...]` directives.',
@@ -109,10 +109,9 @@ export const PRIMITIVE_ENTRIES: readonly PrimitiveEntry[] = [
   }
 ]
 
-export function displayName(slug: PrimitiveSlug): string {
-  return PRIMITIVES[slug]
-}
-
-export function entriesByLayer(layer: PrimitiveLayer): readonly PrimitiveEntry[] {
-  return PRIMITIVE_ENTRIES.filter(e => e.layer === layer)
-}
+export const ENTRIES_BY_LAYER: Record<PrimitiveLayer, readonly PrimitiveEntry[]> =
+  Object.fromEntries(
+    (Object.keys(LAYER_META) as PrimitiveLayer[]).map(l =>
+      [l, PRIMITIVE_ENTRIES.filter(e => e.layer === l)]
+    )
+  ) as Record<PrimitiveLayer, readonly PrimitiveEntry[]>

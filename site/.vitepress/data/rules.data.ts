@@ -26,6 +26,7 @@ export interface RuleCategoryGroup {
 
 export interface RulesData {
   byCategory : readonly RuleCategoryGroup[]
+  byFamily   : Record<RuleFamily, readonly RenderedRule[]>
   bySlug     : Record<string, RenderedRule>
   list       : readonly RenderedRule[]
 }
@@ -44,21 +45,25 @@ export default defineLoader({
       captionHtml: md.renderInline(r.caption)
     }))
     const bySlug     = Object.fromEntries(list.map(r => [r.slug, r])) as Record<string, RenderedRule>
+    const families   = Object.keys(FAMILY_META) as RuleFamily[]
+    const byFamily   = Object.fromEntries(
+      families.map(family => [family, [] as RenderedRule[]])
+    ) as Record<RuleFamily, RenderedRule[]>
+    for (const r of list) byFamily[r.family].push(r)
     const byCategory = (['auto-fix', 'lint'] as const).map(category => {
       const rulesInCategory = list.filter(r => r.category === category)
-      const byFamily = (Object.keys(FAMILY_META) as RuleFamily[])
-        .filter(family => rulesInCategory.some(r => r.family === family))
-        .map(family => ({
-          family,
-          label : FAMILY_META[family].label,
-          rules : rulesInCategory.filter(r => r.family === family)
-        }))
       return {
-        byFamily,
+        byFamily : families
+          .filter(family => rulesInCategory.some(r => r.family === family))
+          .map(family => ({
+            family,
+            label : FAMILY_META[family].label,
+            rules : rulesInCategory.filter(r => r.family === family)
+          })),
         category,
-        label: CATEGORY_META[category].label
+        label    : CATEGORY_META[category].label
       }
     })
-    return { byCategory, bySlug, list }
+    return { byCategory, byFamily, bySlug, list }
   }
 })

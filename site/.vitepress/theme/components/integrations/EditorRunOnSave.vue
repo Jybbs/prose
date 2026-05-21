@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
 import Tool from '../base/Tool.vue'
 
 import { data as editors } from '../../../data/editor-configs.data'
+import { useTabSelect }    from '../../../lib/shared/use-tab-select'
 
-const activeSlug = ref(editors[0].slug)
-
-const active = computed(() =>
-  editors.find(e => e.slug === activeSlug.value) ?? editors[0]
-)
+const { active, selected: activeSlug } = useTabSelect(editors, e => e.slug)
 </script>
 
 <template>

@@ -4,11 +4,10 @@ import { computed } from 'vue'
 import LandingSection from './LandingSection.vue'
 
 import { data as landing } from '../../../data/landing.data'
-
-const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI']
+import { toRoman }         from '../../../lib/shared/numerals'
 
 const chapters = computed(() =>
-  landing.workflow.map((s, i) => ({ ...s, roman: ROMAN[i] ?? s.number }))
+  landing.workflow.map((s, i) => ({ ...s, roman: toRoman(i + 1) }))
 )
 </script>
 

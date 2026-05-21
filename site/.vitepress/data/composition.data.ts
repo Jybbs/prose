@@ -23,10 +23,12 @@ interface CompositionToml {
 const compositionDir = path.join(repoRoot(import.meta.url), 'tests/fixtures/composition')
 
 const LOWERCASE_IN_TITLE = new Set([
-  'a', 'an', 'the',
-  'and', 'but', 'or', 'nor', 'so', 'yet',
-  'as', 'at', 'by', 'for', 'from', 'in', 'into', 'of', 'on', 'onto', 'to', 'with',
-  'among', 'inside', 'over', 'under', 'upon', 'via', 'within'
+  'a',     'among',  'an',    'and',  'as',
+  'at',    'but',    'by',    'for',  'from',
+  'in',    'inside', 'into',  'nor',  'of',
+  'on',    'onto',   'or',    'over', 'so',
+  'the',   'to',     'under', 'upon', 'via',
+  'with',  'within', 'yet'
 ])
 
 function toTitleCase(slug: string): string {

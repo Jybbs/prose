@@ -5,16 +5,6 @@ import { data as primitives, type DiscoveredPrimitive } from '../../data/primiti
 import { data as rules,      type RenderedRule }        from '../../data/rules.data'
 import { FAMILY_META, type RuleFamily }                 from './registries'
 
-export function useCurrentPrimitive(): ComputedRef<DiscoveredPrimitive | null> {
-  const slug = useSlug('primitives')
-  return computed(() => (slug.value && primitives.bySlug[slug.value]) ?? null)
-}
-
-export function useCurrentRule(): ComputedRef<RenderedRule | null> {
-  const slug = useSlug('rules')
-  return computed(() => (slug.value && rules.bySlug[slug.value]) ?? null)
-}
-
 export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
   const { page } = useData()
   return computed(() => {
@@ -26,6 +16,17 @@ export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
     const family = ruleSlug.split('/')[0]
     return family in FAMILY_META ? family as RuleFamily : null
   })
+}
+
+export const useCurrentPrimitive = (): ComputedRef<DiscoveredPrimitive | null> =>
+  useCurrentEntry('primitives', primitives.bySlug)
+
+export const useCurrentRule = (): ComputedRef<RenderedRule | null> =>
+  useCurrentEntry('rules', rules.bySlug)
+
+function useCurrentEntry<T>(prefix: string, bySlug: Record<string, T>): ComputedRef<T | null> {
+  const slug = useSlug(prefix)
+  return computed(() => (slug.value && bySlug[slug.value]) ?? null)
 }
 
 function useSlug(prefix: string): ComputedRef<string | null> {

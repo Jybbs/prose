@@ -1,5 +1,7 @@
 import { defineLoader } from 'vitepress'
 
+import { withFallback } from '../lib/shared/with-fallback'
+
 export interface PyPIRelease {
   date    : string
   url     : string
@@ -21,62 +23,39 @@ interface PyPIPayload {
 const PACKAGE  = 'prose-formatter'
 const ENDPOINT = `https://pypi.org/pypi/${PACKAGE}/json`
 
-const FALLBACK: readonly PyPIRelease[] = [
-  { date : '2026-04-09', url : `https://pypi.org/project/${PACKAGE}/0.2.0/`, version : '0.2.0' },
-  { date : '2026-01-14', url : `https://pypi.org/project/${PACKAGE}/0.1.0/`, version : '0.1.0' }
-]
-
-function compareDesc(a: PyPIRelease, b: PyPIRelease): number {
-  if (a.date !== b.date) return b.date.localeCompare(a.date)
-  return compareSemverDesc(b.version, a.version)
+function projectUrl(version: string): string {
+  return `https://pypi.org/project/${PACKAGE}/${version}/`
 }
 
-function compareSemverDesc(a: string, b: string): number {
-  const pa = a.split('.').map(n => Number.parseInt(n, 10))
-  const pb = b.split('.').map(n => Number.parseInt(n, 10))
-  const len = Math.max(pa.length, pb.length)
-  for (let i = 0; i < len; i++) {
-    const da = pa[i] ?? 0
-    const db = pb[i] ?? 0
-    if (da !== db) return da - db
-  }
-  return 0
+const FALLBACK: readonly PyPIRelease[] = (
+  [['0.2.0', '2026-04-09'], ['0.1.0', '2026-01-14']] as const
+).map(([version, date]) => ({ date, url: projectUrl(version), version }))
+
+function compareDesc(a: PyPIRelease, b: PyPIRelease): number {
+  return b.date.localeCompare(a.date)
+      || b.version.localeCompare(a.version, undefined, { numeric: true })
 }
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso.slice(0, 10)
-  const y = d.getUTCFullYear()
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(d.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return Number.isNaN(d.getTime()) ? iso.slice(0, 10) : d.toISOString().slice(0, 10)
 }
 
 export default defineLoader({
   watch: [],
   async load(): Promise<readonly PyPIRelease[]> {
-    try {
+    return withFallback('pypi-releases:fetch', async () => {
       const response = await fetch(ENDPOINT, { headers: { Accept: 'application/json' } })
-      if (!response.ok) {
-        console.warn(`[data:pypi-releases:fetch] PyPI returned ${response.status}, using fallback`)
-        return FALLBACK
-      }
+      if (!response.ok) throw new Error(`PyPI returned ${response.status}`)
       const payload = await response.json() as PyPIPayload
-      const entries: PyPIRelease[] = []
-      for (const [version, files] of Object.entries(payload.releases)) {
-        if (!files || files.length === 0) continue
-        const live = files.find(f => !f.yanked) ?? files[0]
-        entries.push({
-          date    : formatDate(live.upload_time),
-          url     : `https://pypi.org/project/${PACKAGE}/${version}/`,
-          version
+      const entries = Object.entries(payload.releases)
+        .filter(([, files]) => files && files.length > 0)
+        .map(([version, files]) => {
+          const live = files.find(f => !f.yanked) ?? files[0]
+          return { date: formatDate(live.upload_time), url: projectUrl(version), version }
         })
-      }
-      entries.sort(compareDesc)
+        .sort(compareDesc)
       return entries.length > 0 ? entries : FALLBACK
-    } catch (error) {
-      console.warn('[data:pypi-releases:fetch] external call failed, using fallback', error)
-      return FALLBACK
-    }
+    }, FALLBACK)
   }
 })

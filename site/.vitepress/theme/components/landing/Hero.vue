@@ -1,18 +1,28 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref }      from 'vue'
 
-const STAMP_PER_COL  = 240
-const ROW_STRIDE_PX  = 200
-const ROT_STEP       = 67
-const LETTERS        = ['r', 'o', 's', 'e'] as const
+import { useElementMeasure }  from '../../../lib/shared/use-element-measure'
 
-const layerRef = ref<HTMLElement | null>(null)
+const ROT_STEP      = 67
+const ROW_STRIDE_PX = 200
+const STAMP_PER_COL = 240
+
+const PERMUTATIONS: readonly (readonly string[])[] = [
+  ['r','o','s','e'], ['r','o','e','s'], ['r','s','o','e'], ['r','s','e','o'],
+  ['r','e','o','s'], ['r','e','s','o'], ['o','r','s','e'], ['o','r','e','s'],
+  ['o','s','r','e'], ['o','s','e','r'], ['o','e','r','s'], ['o','e','s','r'],
+  ['s','r','o','e'], ['s','r','e','o'], ['s','o','r','e'], ['s','o','e','r'],
+  ['s','e','r','o'], ['s','e','o','r'], ['e','r','o','s'], ['e','r','s','o'],
+  ['e','o','r','s'], ['e','o','s','r'], ['e','s','r','o'], ['e','s','o','r']
+]
+
+const CORNER_SIGNS: readonly [number, number][] = [[1, -1], [1, 1], [-1, 1], [-1, -1]]
+
 const cols     = ref(6)
+const layerRef = ref<HTMLElement | null>(null)
 const rows     = ref(4)
 
-let bodyObserver: ResizeObserver | null = null
-
-function measure() {
+function measure(): void {
   const el = layerRef.value
   if (!el) return
   cols.value = Math.max(3, Math.round(el.clientWidth / STAMP_PER_COL))
@@ -30,18 +40,23 @@ function measure() {
   }
 }
 
-onMounted(() => {
-  if (typeof window === 'undefined' || !layerRef.value) return
-  bodyObserver = new ResizeObserver(measure)
-  bodyObserver.observe(document.body)
-  requestAnimationFrame(measure)
-  if ('fonts' in document) document.fonts.ready.then(() => requestAnimationFrame(measure))
-})
+useElementMeasure(measure, () => document.body)
 
-onBeforeUnmount(() => bodyObserver?.disconnect())
+interface BigStamp {
+  kind   : 'big'
+  rotate : number
+  x      : number
+  y      : number
+}
 
-interface BigStamp   { kind : 'big'  ; rotate : number; x : number; y : number }
-interface SmallStamp { kind : 'small'; letter : string; rotate : number; x : number; y : number }
+interface SmallStamp {
+  kind   : 'small'
+  letter : string
+  rotate : number
+  x      : number
+  y      : number
+}
+
 type Stamp = BigStamp | SmallStamp
 
 function rotate(idx: number): number {
@@ -62,21 +77,11 @@ const stamps = computed<readonly Stamp[]>(() => {
       const o        = 0.36
       const dx       = (100 / c) * o
       const dy       = ROW_STRIDE_PX * o
-      const corners: [number, number][] = [
-        [xC + dx, yC - dy],
-        [xC + dx, yC + dy],
-        [xC - dx, yC + dy],
-        [xC - dx, yC - dy]
-      ]
       const cellSeed = ((r * 2654435761) ^ (cIdx * 40503)) >>> 0
-      const shuffled = [...LETTERS]
-      for (let k = shuffled.length - 1; k > 0; k--) {
-        const j = (((cellSeed >>> (k * 3)) ^ ((cellSeed * (k + 1)) >>> 0)) >>> 0) % (k + 1)
-        ;[shuffled[k], shuffled[j]] = [shuffled[j], shuffled[k]]
-      }
+      const shuffled = PERMUTATIONS[cellSeed % PERMUTATIONS.length]
       for (let i = 0; i < 4; i++) {
-        const [x, y] = corners[i]
-        out.push({ kind: 'small', letter: shuffled[i], rotate: rotate(idx), x, y })
+        const [sx, sy] = CORNER_SIGNS[i]
+        out.push({ kind: 'small', letter: shuffled[i], rotate: rotate(idx), x: xC + sx * dx, y: yC + sy * dy })
         idx++
       }
     }
@@ -95,18 +100,18 @@ const stamps = computed<readonly Stamp[]>(() => {
           alt=""
           class="landing-hero-watermark landing-hero-watermark-big"
           :style="{
+            '--rot' : `${s.rotate}deg`,
             left    : `${s.x}%`,
-            top     : `${s.y}px`,
-            '--rot' : `${s.rotate}deg`
+            top     : `${s.y}px`
           }"
         />
         <span
           v-else
           class="landing-hero-watermark landing-hero-watermark-small"
           :style="{
+            '--rot' : `${s.rotate}deg`,
             left    : `${s.x}%`,
-            top     : `${s.y}px`,
-            '--rot' : `${s.rotate}deg`
+            top     : `${s.y}px`
           }"
         >{{ s.letter }}</span>
       </template>

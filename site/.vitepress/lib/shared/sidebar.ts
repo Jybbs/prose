@@ -1,11 +1,11 @@
 import type { DefaultTheme } from 'vitepress'
 
-import { type DiscoveredRule }                                                          from '../rules/discovery'
-import { FAMILY_META, PRIMITIVES, PUBLIC_PRIMITIVES, type PrimitiveSlug, type RuleFamily } from './registries'
+import { type DiscoveredRule }                                                        from '../rules/discovery'
+import { FAMILY_META, PRIMITIVES, PRIMITIVE_SLUGS, PUBLIC_PRIMITIVES, type RuleFamily } from './registries'
 
 const FAMILY_ORDER: readonly RuleFamily[] = ['alignment', 'ordering', 'formatting', 'docs', 'lint']
 
-const primLink = (text: string, slug: string): DefaultTheme.SidebarItem =>
+const primLink = (slug: string, text: string): DefaultTheme.SidebarItem =>
   ({ link: `/primitives/${slug}`, text })
 
 const ruleLink = (slug: string): DefaultTheme.SidebarItem =>
@@ -54,31 +54,31 @@ const INTEGRATIONS_SIDEBAR: DefaultTheme.SidebarItem[] = [
 export function buildSidebar(rules: readonly DiscoveredRule[]): DefaultTheme.Sidebar {
   const familySections: DefaultTheme.SidebarItem[] = FAMILY_ORDER.map(family => ({
     collapsed : false,
-    link      : `/rules/${family}/`,
-    text      : FAMILY_META[family].label,
     items     : rules
       .filter(r => r.family === family)
-      .map(r => ruleLink(r.slug))
+      .map(r => ruleLink(r.slug)),
+    link      : `/rules/${family}/`,
+    text      : FAMILY_META[family].label
   }))
   return {
     '/guide/'        : GUIDE_SIDEBAR,
-    '/reference/'    : REFERENCE_SIDEBAR,
     '/integrations/' : INTEGRATIONS_SIDEBAR,
     '/primitives/'   : [
       { items: [{ link: '/primitives/', text: 'Overview' }], text: 'Primitives' },
       {
         collapsed : false,
-        items     : PUBLIC_PRIMITIVES.map(slug => primLink(PRIMITIVES[slug], slug)),
+        items     : PUBLIC_PRIMITIVES.map(slug => primLink(slug, PRIMITIVES[slug])),
         text      : 'Public Surface'
       },
       {
         collapsed : false,
-        items     : (Object.keys(PRIMITIVES) as PrimitiveSlug[])
+        items     : PRIMITIVE_SLUGS
           .filter(slug => !PUBLIC_PRIMITIVES.includes(slug))
-          .map(slug => primLink(PRIMITIVES[slug], slug)),
+          .map(slug => primLink(slug, PRIMITIVES[slug])),
         text      : 'Crate Internal'
       }
     ],
+    '/reference/'    : REFERENCE_SIDEBAR,
     '/rules/'        : [
       {
         items: [

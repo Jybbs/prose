@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import type { PrimitiveSlug }                                          from '../../../lib/shared/registries'
-import { PRIMITIVES }                                                  from '../../../lib/shared/registries'
-import { LAYER_META, PRIMITIVE_ENTRIES, displayName, entriesByLayer }  from './primitives-composition-data'
+import type { PrimitiveSlug }                                from '../../../lib/shared/registries'
+import { PRIMITIVES }                                        from '../../../lib/shared/registries'
+import { ENTRIES_BY_LAYER, LAYER_META, PRIMITIVE_ENTRIES }   from './primitives-composition-data'
 
 const props = defineProps<{
   initialFocus ?: PrimitiveSlug
@@ -12,9 +12,9 @@ const props = defineProps<{
 const hovered = ref<PrimitiveSlug | null>(props.initialFocus ?? null)
 
 const layers = computed(() => [
-  { kicker: LAYER_META.analysis.kicker,      label: LAYER_META.analysis.label,      entries: entriesByLayer('analysis')      },
-  { kicker: LAYER_META.orchestration.kicker, label: LAYER_META.orchestration.label, entries: entriesByLayer('orchestration') },
-  { kicker: LAYER_META.base.kicker,          label: LAYER_META.base.label,          entries: entriesByLayer('base')          }
+  { entries: ENTRIES_BY_LAYER.analysis,      kicker: LAYER_META.analysis.kicker,      label: LAYER_META.analysis.label      },
+  { entries: ENTRIES_BY_LAYER.orchestration, kicker: LAYER_META.orchestration.kicker, label: LAYER_META.orchestration.label },
+  { entries: ENTRIES_BY_LAYER.base,          kicker: LAYER_META.base.kicker,          label: LAYER_META.base.label          }
 ])
 
 const consumesByHovered = computed<Set<string>>(() => {
@@ -60,12 +60,12 @@ function isDim(slug: string): boolean {
           @focusout="hovered = props.initialFocus ?? null"
         >
           <a class="primitives-composition-cell-link" :href="`/primitives/${entry.slug}`">
-            <span class="primitives-composition-cell-name">{{ displayName(entry.slug) }}</span>
+            <span class="primitives-composition-cell-name">{{ PRIMITIVES[entry.slug] }}</span>
             <span class="primitives-composition-cell-tagline">{{ entry.tagline }}</span>
           </a>
           <ul v-if="entry.consumes.length > 0" class="primitives-composition-cell-consumes" aria-label="Consumes">
             <li v-for="dep in entry.consumes" :key="dep">
-              <template v-if="isPrimitive(dep)">{{ displayName(dep) }}</template>
+              <template v-if="isPrimitive(dep)">{{ PRIMITIVES[dep] }}</template>
               <template v-else>{{ dep }}</template>
             </li>
           </ul>

@@ -119,10 +119,16 @@
 }
 
 .VPDocAsideOutline .outline-title,
-.VPSidebarItem.level-0 > .item > .text {
+.VPSidebarItem.level-0 > .item > .text,
+.VPSidebarItem.level-0 > .item > .link > .text {
   font-family : var(--prose-font-display);
   font-style  : italic;
   font-weight : 500;
+}
+
+.VPSidebarItem.level-0 > .item > .text,
+.VPSidebarItem.level-0 > .item > .link > .text {
+  font-size : 1rem;
 }
 
 div[class*='language-'] {

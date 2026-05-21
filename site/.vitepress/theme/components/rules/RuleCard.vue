@@ -1,28 +1,15 @@
 <script setup lang="ts">
-import { CATEGORY_META, FAMILY_META } from '../../../lib/shared/registries'
 import type { RenderedRule }          from '../../../data/rules.data'
+import { toRoman }                    from '../../../lib/shared/numerals'
+import { CATEGORY_META, FAMILY_META } from '../../../lib/shared/registries'
 
-const props = defineProps<{
+defineProps<{
   index : number
   rule  : RenderedRule
 }>()
 
 function toTitle(slug: string): string {
   return slug.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('-')
-}
-
-function toRoman(n: number): string {
-  const map: Array<[number, string]> = [
-    [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
-    [100,  'C'], [90,  'XC'], [50,  'L'], [40,  'XL'],
-    [10,   'X'], [9,   'IX'], [5,   'V'], [4,   'IV'],
-    [1,    'I']
-  ]
-  let out = ''
-  for (const [v, s] of map) {
-    while (n >= v) { out += s; n -= v }
-  }
-  return out
 }
 </script>
 

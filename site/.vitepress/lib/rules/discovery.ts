@@ -56,13 +56,3 @@ export function discoverRuleSlugs(rulesDirectory: string): DiscoveredRule[] {
   cache.set(rulesDirectory, out)
   return out
 }
-
-export function splitByCategory(rules: readonly DiscoveredRule[]): { autoFix: string[]; lint: string[] } {
-  const autoFix: string[] = []
-  const lint   : string[] = []
-  for (const r of rules) {
-    if (r.category === 'lint') lint.push(r.slug)
-    else                       autoFix.push(r.slug)
-  }
-  return { autoFix, lint }
-}

@@ -16,12 +16,12 @@ const meta     = computed(() => FAMILY_META[props.family])
 const category = computed(() => props.family === 'lint' ? 'lint' : 'auto-fix')
 const href     = computed(() => `/rules/${props.family}/`)
 
+const active         = ref(false)
+const chipSpotlightX = ref(50)
+const chipSpotlightY = ref(50)
 const chipsRef       = ref<HTMLElement | null>(null)
 const spotlightX     = ref(50)
 const spotlightY     = ref(50)
-const chipSpotlightX = ref(50)
-const chipSpotlightY = ref(50)
-const active         = ref(false)
 
 function clamp(value: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, value))
@@ -51,10 +51,10 @@ function onLeave() { active.value = false }
     :data-category="category"
     :data-active="active"
     :style="{
-      '--spotlight-x'      : `${spotlightX}%`,
-      '--spotlight-y'      : `${spotlightY}%`,
       '--chip-spotlight-x' : `${chipSpotlightX}%`,
-      '--chip-spotlight-y' : `${chipSpotlightY}%`
+      '--chip-spotlight-y' : `${chipSpotlightY}%`,
+      '--spotlight-x'      : `${spotlightX}%`,
+      '--spotlight-y'      : `${spotlightY}%`
     }"
     @pointermove="onPointerMove"
     @pointerenter="onEnter"

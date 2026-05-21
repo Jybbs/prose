@@ -3,38 +3,21 @@ import { computed, ref } from 'vue'
 
 import { data as releases } from '../../../data/pypi-releases.data'
 
-interface Release {
-  date    : string
-  url     : string
-  version : string
-}
+const MONTH_FMT = new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'UTC' })
 
 const current = releases[0]
-const extras  = computed(() => releases.slice(1))
+const extras  = releases.slice(1)
 const open    = ref(false)
 
 function monthLabel(date: string): string {
-  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-  const m      = Number.parseInt(date.split('-')[1], 10) - 1
-  return months[m] ?? '—'
-}
-function yearOf(date: string): string {
-  return date.slice(2, 4)
-}
-function fullYearOf(date: string): string {
-  return date.slice(0, 4)
+  const d = new Date(date)
+  return Number.isNaN(d.getTime()) ? '—' : MONTH_FMT.format(d).toUpperCase()
 }
 
-const groupedByYear = computed(() => {
-  const groups: { year: string; items: Release[] }[] = []
-  for (const r of extras.value) {
-    const y    = fullYearOf(r.date)
-    const last = groups[groups.length - 1]
-    if (last && last.year === y) last.items.push(r as Release)
-    else groups.push({ year: y, items: [r as Release] })
-  }
-  return groups
-})
+const groupedByYear = computed(() =>
+  Array.from(Map.groupBy(extras, r => r.date.slice(0, 4)),
+             ([year, items]) => ({ items, year }))
+)
 </script>
 
 <template>
@@ -52,7 +35,7 @@ const groupedByYear = computed(() => {
             <span class="landing-cta-stamp-edge" aria-hidden="true"></span>
             <span class="landing-cta-stamp-month">{{ monthLabel(current.date) }}</span>
             <span class="landing-cta-stamp-version">{{ current.version }}</span>
-            <span class="landing-cta-stamp-year">'{{ yearOf(current.date) }}</span>
+            <span class="landing-cta-stamp-year">'{{ current.date.slice(2, 4) }}</span>
           </a>
         </div>
 

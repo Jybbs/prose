@@ -5,13 +5,13 @@ import { data as landing } from '../../../data/landing.data'
 import { data as rules }   from '../../../data/rules.data'
 import { FAMILY_META }     from '../../../lib/shared/registries'
 
-const clusters = computed(() => {
-  const allGroups = rules.byCategory.flatMap(c => c.byFamily)
-  return landing.surfaces.map(s => {
-    const group = allGroups.find(g => g.family === s.family)
-    return { ...s, label: FAMILY_META[s.family].label, rules: group?.rules ?? [] }
-  })
-})
+const clusters = computed(() =>
+  landing.surfaces.map(s => ({
+    ...s,
+    label : FAMILY_META[s.family].label,
+    rules : rules.byFamily[s.family] ?? []
+  }))
+)
 </script>
 
 <template>
