@@ -13,7 +13,10 @@ import { canonicalUrl }                           from './lib/shared/canonical-u
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME }  from './lib/shared/constants'
 import { buildPageTimestamps }                    from './lib/shared/page-timestamps'
 import { repoRoot, rulesDir }                     from './lib/shared/paths'
+import { PRIMITIVES }                             from './lib/shared/registries'
+import type { PrimitiveSlug }                     from './lib/shared/registries'
 import { buildSidebar }                           from './lib/shared/sidebar'
+import { toTitleCase }                            from './lib/shared/title-case'
 import { TOOL_SEEDS }                             from './lib/shared/tools'
 import { readCargoVersion }                       from './lib/shared/version'
 
@@ -28,7 +31,11 @@ export default defineConfig({
   cleanUrls     : true,
   description   : 'A Python typesetter for the reader.',
   head          : [
-    ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }]
+    ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }],
+    ['meta', { content: '#dfbc97',                 name:     'theme-color'   }],
+    ['meta', { content: 'summary_large_image',     name:     'twitter:card'  }],
+    ['meta', { content: 'website',                 property: 'og:type'       }],
+    ['meta', { content: 'Prose',                   property: 'og:site_name'  }]
   ],
   lastUpdated   : false,
   markdown      : {
@@ -70,6 +77,16 @@ export default defineConfig({
   },
   title         : 'Prose',
   titleTemplate : ':title · Prose',
+  transformHead({ pageData }) {
+    const description = pageData.frontmatter.description ?? pageData.frontmatter.caption ?? 'A Python typesetter for the reader.'
+    const title       = pageData.frontmatter.name ?? pageData.title ?? 'Prose'
+    return [
+      ['meta', { content: `${title} · Prose`, property: 'og:title'            }],
+      ['meta', { content: description,        property: 'og:description'      }],
+      ['meta', { content: `${title} · Prose`, name:     'twitter:title'       }],
+      ['meta', { content: description,        name:     'twitter:description' }]
+    ]
+  },
   transformPageData(pageData) {
     pageData.frontmatter ||= {}
     pageData.frontmatter.head ??= []
@@ -79,6 +96,14 @@ export default defineConfig({
     ])
     const ts = pageTimestamps.get(pageData.relativePath)
     if (ts) pageData.lastUpdated = ts
+    if (pageData.relativePath.startsWith('rules/') && !pageData.relativePath.endsWith('index.md')) {
+      const slug = pageData.relativePath.replace(/^rules\/|\.md$/g, '')
+      pageData.frontmatter.name ??= toTitleCase(slug, '-')
+    }
+    if (pageData.relativePath.startsWith('primitives/') && !pageData.relativePath.endsWith('index.md')) {
+      const slug = pageData.relativePath.replace(/^primitives\/|\.md$/g, '')
+      pageData.frontmatter.name ??= PRIMITIVES[slug as PrimitiveSlug]
+    }
   },
   vite          : {
     css     : { postcss: { plugins: [postcssCustomMedia()] } },

@@ -3,13 +3,10 @@ export async function withFallback<T>(
   fn       : () => T | Promise<T>,
   fallback : T
 ): Promise<T> {
-  try {
-    return await fn()
-  }
-  catch (err) {
+  return Promise.try(fn).catch(err => {
     warnFallback(label, err)
     return fallback
-  }
+  })
 }
 
 export function withFallbackSync<T>(
@@ -27,5 +24,5 @@ export function withFallbackSync<T>(
 }
 
 function warnFallback(label: string, err: unknown): void {
-  console.warn(`[data:${label}] external call failed, using fallback:`, err instanceof Error ? err.message : err)
+  console.warn(`[data:${label}] external call failed, using fallback:`, Error.isError(err) ? err.message : err)
 }

@@ -21,6 +21,7 @@
   font-size   : clamp(2.6rem, 6vw, 4rem);
   line-height : 1.05;
   color       : var(--vp-c-text-1);
+  text-wrap   : balance;
 }
 
 .not-found-headline strong {

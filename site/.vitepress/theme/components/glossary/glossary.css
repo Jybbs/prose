@@ -72,7 +72,7 @@
   margin-top      : 8px;
   font-family     : var(--vp-font-family-mono);
   font-size       : var(--prose-label-size);
-  letter-spacing  : 0.06em;
+  letter-spacing  : var(--prose-meta-tracking);
   text-transform  : uppercase;
   color           : var(--prose-c-celadon);
   text-decoration : none;

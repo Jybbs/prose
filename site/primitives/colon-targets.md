@@ -1,6 +1,6 @@
 # ColonTargets
 
-<PrimitivesComposition :initial-focus="'colon-targets'" />
+<PrimitiveLayout primitive="colon-targets">
 
 *ColonTargets* constructs alignment members at every `:` context the alignment and singleton rules consume. **Five** distinct contexts in the Python grammar carry a colon worth aligning, and the walker that finds them is identical across rules, so the walker lives once in *ColonTargets* and each consuming rule supplies a receiver that handles the discovered members.
 
@@ -50,10 +50,14 @@ Within each context, *ColonTargets* groups members by **same-indentation contigu
 
 Adding a colon-shaped rule is shaped as *"implement `ColonEmitter`, override the contexts the rule cares about, call `walk(source)` from inside the rule's `apply` method"*. The five-context walker, the same-indentation grouping, and the per-context member construction all carry through without re-implementation.
 
-## Related
+<template #related>
 
 - [[aligner]] is the math the produced `Member` lists feed into
 - [[align-colons]] aligns multi-item groups across every context
 - [[singleton-rule]] strips padding from singleton groups
 - [[match-case-align]] owns the match-arm context exclusively
 - [[source]] is the input the walker reads against
+
+</template>
+
+</PrimitiveLayout>

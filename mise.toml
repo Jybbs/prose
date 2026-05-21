@@ -47,13 +47,13 @@ run         = "cargo fmt --all"
 description = "Run `clippy` with all warnings treated as errors"
 run         = "cargo clippy --all-targets --locked -- -D warnings"
 
+[tasks.press]
+description = "Produce the static docs bundle at `site/.vitepress/dist`"
+run         = "bunx vitepress build site"
+
 [tasks.readme]
 description = "Rewrite `README.md` in place to absolute URLs for PyPI"
 run         = "./.github/scripts/transform_readme.py"
-
-[tasks.site-build]
-description = "Produce the static docs bundle at `site/.vitepress/dist`"
-run         = "bunx vitepress build site"
 
 [tasks.review]
 description = "Interactively review pending snapshot diffs"

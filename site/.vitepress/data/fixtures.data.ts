@@ -1,5 +1,6 @@
-import fs   from 'node:fs'
-import path from 'node:path'
+import fs                 from 'node:fs/promises'
+import { existsSync }     from 'node:fs'
+import path               from 'node:path'
 
 import matter                      from 'gray-matter'
 import { getSingletonHighlighter } from 'shiki'
@@ -33,25 +34,18 @@ export default defineLoader({
     path.join(import.meta.dirname, '../lib/shared/constants.ts')
   ],
   async load(): Promise<FixtureData> {
-    const out: FixtureData = {}
-    for (const { rule, caseName, inputPath } of walkFixtures(root)) {
+    const entries = [...walkFixtures(root)].filter(({ rule, caseName }) =>
+      existsSync(path.join(snapshotsRoot, rule, `${caseName}${INPUT_SUFFIX}.snap`))
+    )
+    const rows = await Promise.all(entries.map(async ({ rule, caseName, inputPath }) => {
       const snapPath = path.join(snapshotsRoot, rule, `${caseName}${INPUT_SUFFIX}.snap`)
-      if (!fs.existsSync(snapPath)) continue
-      const input  = fs.readFileSync(inputPath, 'utf8')
-      const output = matter(fs.readFileSync(snapPath, 'utf8')).content.replace(/\s+$/, '\n')
-      const [inputHtml, outputHtml] = await Promise.all([
-        highlight(input),
-        highlight(output)
-      ])
-      out[rule] ??= {}
-      out[rule][caseName] = {
-        changesSource: input !== output,
-        input,
-        inputHtml,
-        output,
-        outputHtml
-      }
-    }
+      const [inputRaw, snapRaw]      = await Promise.all([fs.readFile(inputPath, 'utf8'), fs.readFile(snapPath, 'utf8')])
+      const output                   = matter(snapRaw).content.replace(/\s+$/, '\n')
+      const [inputHtml, outputHtml]  = await Promise.all([highlight(inputRaw), highlight(output)])
+      return { caseName, entry: { changesSource: inputRaw !== output, input: inputRaw, inputHtml, output, outputHtml }, rule }
+    }))
+    const out: FixtureData = {}
+    for (const { caseName, entry, rule } of rows) (out[rule] ??= {})[caseName] = entry
     return out
   }
 })

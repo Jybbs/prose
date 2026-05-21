@@ -34,16 +34,11 @@ interface IconPack {
   width  ?: number
 }
 
-const repoDir    = repoRoot(import.meta.url)
-const PACK_CACHE = new Map<string, IconPack>()
+const repoDir = repoRoot(import.meta.url)
 
-function loadPack(pack: string): IconPack {
-  const cached = PACK_CACHE.get(pack)
-  if (cached !== undefined) return cached
+const loadPack = (pack: string): IconPack => {
   const file = path.join(repoDir, 'node_modules', `@iconify-json/${pack}/icons.json`)
-  const data = JSON.parse(fs.readFileSync(file, 'utf8')) as IconPack
-  PACK_CACHE.set(pack, data)
-  return data
+  return JSON.parse(fs.readFileSync(file, 'utf8')) as IconPack
 }
 
 function loadLocalSvg(relative: string, viewBox: string): ToolIcon {

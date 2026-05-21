@@ -1,8 +1,8 @@
 # BindingAnalysis
 
-*BindingAnalysis* walks the module once during [[source]] construction and records, for every name introduced or shadowed in a lexical scope, the offsets of every write and read. Several rules read from this table to ask binding-shaped questions, and the single-walk-per-source guarantee is what makes adding new binding-aware rules cheap.
+<PrimitiveLayout primitive="binding-analysis">
 
-<PrimitivesComposition :initial-focus="'binding-analysis'" />
+*BindingAnalysis* walks the module once during [[source]] construction and records, for every name introduced or shadowed in a lexical scope, the offsets of every write and read. Several rules read from this table to ask binding-shaped questions, and the single-walk-per-source guarantee is what makes adding new binding-aware rules cheap.
 
 ## Public Surface
 
@@ -51,7 +51,7 @@ prose = { git = "https://github.com/Jybbs/prose", tag = "0.2.3" }
 
 In `0.2.x` the consumption path is indirect (*through diagnostics emitted by binding-aware rules*) rather than direct method calls. At `1.0` the readers open up.
 
-## Related
+<template #related>
 
 - [[source]] is the input the analysis builds against, with every binding's offset landing inside the source's text.
 - [[single-use-variables]] is the canonical consumer.
@@ -59,3 +59,7 @@ In `0.2.x` the consumption path is indirect (*through diagnostics emitted by bin
 - [[rule-id]] is the handle each rule registers under in the pipeline's ordering.
 
 For the underlying rules catalog, the [**Rules Overview**](/rules/) page walks every shipped rule that may eventually read from the table.
+
+</template>
+
+</PrimitiveLayout>

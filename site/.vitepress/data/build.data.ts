@@ -27,7 +27,7 @@ export default defineLoader({
       'unknown'
     )
     return {
-      fixtureCount: [...walkFixtures(root)].length,
+      fixtureCount: Iterator.from(walkFixtures(root)).reduce(n => n + 1, 0),
       gitSha,
       version: readCargoVersion(root)
     }

@@ -10,8 +10,12 @@ import { toTitleCase }         from '../lib/shared/title-case'
 export type { DiscoveredRule }
 
 export interface RenderedRule extends DiscoveredRule {
-  captionHtml : string
-  name        : string
+  captionHtml   : string
+  categoryBadge : string
+  categoryLabel : string
+  familyBadge   : string
+  familyLabel   : string
+  name          : string
 }
 
 export interface RuleFamilyGroup {
@@ -44,8 +48,12 @@ export default defineLoader({
     const md         = await getRenderer()
     const list       = discoverRuleSlugs(rulesDirectory).map(r => ({
       ...r,
-      captionHtml: md.renderInline(`*Prose* ${r.caption}`),
-      name       : toTitleCase(r.slug, '-')
+      captionHtml   : md.renderInline(`*Prose* ${r.caption}`),
+      categoryBadge : CATEGORY_META[r.category].badge,
+      categoryLabel : CATEGORY_META[r.category].label,
+      familyBadge   : FAMILY_META[r.family].badge,
+      familyLabel   : FAMILY_META[r.family].label,
+      name          : toTitleCase(r.slug, '-')
     }))
     const bySlug     = Object.fromEntries(list.map(r => [r.slug, r])) as Record<string, RenderedRule>
     const families   = Object.keys(FAMILY_META) as RuleFamily[]

@@ -1,6 +1,6 @@
 # Docstring
 
-<PrimitivesComposition :initial-focus="'docstring'" />
+<PrimitiveLayout primitive="docstring">
 
 *Docstring* is the walker that reaches every PEP 257 docstring in a module. The first body statement of the module, each class, and each function may carry a string literal as a docstring, and the walker hands every such literal to a consumer in source order. Three rules ([[docstring-wrap]], [[multi-line-docstrings]], [[no-single-line-docstrings]]) consume the same walk, so the AST traversal lives once in *Docstring* and each rule supplies a handler that decides what to emit per docstring.
 
@@ -53,10 +53,14 @@ A rule implementing `DocstringHandler` carries the accumulator state and pushes 
 
 Adding a docstring-shaped rule is shaped as *"implement `DocstringHandler`, decide per-docstring what edits to emit, call `walk(source)` from inside `apply`"*. The PEP 257 detection, the nested-scope traversal, and the implicitly-concatenated skip all carry through without re-implementation.
 
-## Related
+<template #related>
 
 - [[docstring-wrap]] wraps description prose and structured sections to their budgets
 - [[multi-line-docstrings]] enforces own-line quote placement
 - [[no-single-line-docstrings]] expands single-line shapes
 - [[edit]] is the output shape rules emit per docstring
 - [[source]] is the input the walker reads against
+
+</template>
+
+</PrimitiveLayout>

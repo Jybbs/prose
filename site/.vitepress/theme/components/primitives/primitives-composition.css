@@ -62,9 +62,9 @@
   border         : 1px solid var(--vp-c-divider);
   border-radius  : var(--prose-radius);
   background     : var(--vp-c-bg-soft);
-  transition     : opacity 160ms cubic-bezier(0.4, 0, 0.2, 1),
-                   border-color 160ms cubic-bezier(0.4, 0, 0.2, 1),
-                   background 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition     : opacity 160ms var(--prose-ease-emphasized),
+                   border-color 160ms var(--prose-ease-emphasized),
+                   background 160ms var(--prose-ease-emphasized);
 }
 
 .vp-doc .primitives-composition-cell::before,
@@ -90,7 +90,7 @@
 .primitives-composition-cell-tagline {
   font-family : var(--vp-font-family-base);
   font-style  : italic;
-  font-size   : 0.82rem;
+  font-size   : var(--prose-text-code);
   color       : var(--vp-c-text-2);
 }
 

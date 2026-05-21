@@ -6,7 +6,7 @@
   margin               : 24px 0 0;
 }
 
-@media (max-width: 720px) {
+@media (--prose-bp-card-stack) {
   .rule-card-grid,
   .related-rules-inline {
     grid-template-columns: 1fr;
@@ -60,14 +60,14 @@
 }
 
 .rule-card-circle-category + .rule-card-circle-family {
-  margin-left : -10px;
+  margin-inline-start : -10px;
 }
 
 .rule-card-folio {
   flex           : 0 0 auto;
   min-width      : 2.4ch;
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.78rem;
+  font-size      : var(--prose-text-xs);
   letter-spacing : 0.08em;
   text-transform : uppercase;
   color          : var(--family-color);
@@ -134,12 +134,12 @@
 
 .vp-doc .rule-card-caption,
 .rule-card-caption {
-  margin       : 0;
-  padding-left : 0;
-  font-family  : var(--vp-font-family-base);
-  font-size    : 0.93rem;
-  line-height  : 1.55;
-  color        : var(--vp-c-text-2);
+  margin               : 0;
+  padding-inline-start : 0;
+  font-family          : var(--vp-font-family-base);
+  font-size            : 0.93rem;
+  line-height          : 1.55;
+  color                : var(--vp-c-text-2);
 }
 
 .rule-card-caption em {

@@ -88,7 +88,7 @@
   flex             : 1;
   min-height       : 0;
   align-self       : stretch;
-  margin-left      : -10px;
+  margin-inline-start : -10px;
   width            : calc(100% + 10px);
   overflow-y       : auto;
   overflow-x       : hidden;
@@ -110,7 +110,7 @@
 
 .landing-cta-scroll > * {
   direction    : ltr;
-  padding-left : 14px;
+  padding-inline-start : 14px;
 }
 
 .landing-cta-ledger {
@@ -253,7 +253,7 @@
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg);
   font-family   : var(--vp-font-family-mono);
-  font-size     : 0.82rem;
+  font-size     : var(--prose-text-code);
   color         : var(--vp-c-text-1);
 }
 
@@ -296,7 +296,7 @@
   transform : translateX(3px);
 }
 
-@media (max-width: 720px) {
+@media (--prose-bp-card-stack) {
   .landing-cta {
     grid-template-columns : 1fr;
   }

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
 
-import Disclosure    from '../base/Disclosure.vue'
 import FixturePair   from './FixturePair.vue'
 import FixtureToggle from './FixtureToggle.vue'
 
@@ -9,6 +8,8 @@ import { data as fixtures } from '../../../data/fixtures.data'
 import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
 import { useFixtureToc }    from '../../../lib/composables/fixture-toc'
 import { lookup }           from '../../../lib/shared/lookup'
+
+const Disclosure = defineAsyncComponent(() => import('../base/Disclosure.vue'))
 
 const props = defineProps<{
   case    : string
@@ -24,16 +25,11 @@ const id         = computed(() => `fixture-${props.rule}-${props.case}`)
 const activeTab  = ref<FixtureTab>('after')
 const showToggle = computed(() => props.variant !== 'landing' && entry.changesSource)
 
-const fixtureToc          = useFixtureToc()
+const fixtureToc = useFixtureToc()
 let unregister: (() => void) | null = null
 onMounted(() => {
   if (props.title) {
-    const e = { id: id.value, rule: props.rule, title: props.title }
-    fixtureToc.value.push(e)
-    unregister = () => {
-      const idx = fixtureToc.value.indexOf(e)
-      if (idx >= 0) fixtureToc.value.splice(idx, 1)
-    }
+    unregister = fixtureToc.register({ id: id.value, rule: props.rule, title: props.title })
   }
 })
 onUnmounted(() => unregister?.())

@@ -51,8 +51,7 @@
   display      : block;
   align-items  : center;
   max-width    : 720px;
-  margin-right : auto;
-  margin-left  : auto;
+  margin-inline : auto;
   text-align   : center;
 }
 

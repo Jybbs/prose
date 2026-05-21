@@ -16,7 +16,7 @@
 
 .pipeline-order-position {
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.78rem;
+  font-size      : var(--prose-text-xs);
   color          : var(--vp-c-text-3);
   letter-spacing : var(--prose-label-tracking);
 }
@@ -34,13 +34,13 @@
   cursor         : help;
 }
 
-@media (max-width: 720px) {
+@media (--prose-bp-card-stack) {
   .pipeline-order-row {
     grid-template-columns : auto 1fr;
     grid-template-rows    : auto auto;
   }
   .pipeline-order-imperative {
-    grid-column  : 1 / -1;
-    padding-left : 38px;
+    grid-column          : 1 / -1;
+    padding-inline-start : 38px;
   }
 }

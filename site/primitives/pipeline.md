@@ -1,8 +1,8 @@
 # Pipeline
 
-*Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order, applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [[source]] plus a diagnostic list at the end.
+<PrimitiveLayout primitive="pipeline">
 
-<PrimitivesComposition :initial-focus="'pipeline'" />
+*Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order, applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [[source]] plus a diagnostic list at the end.
 
 ## Public Surface
 
@@ -54,7 +54,7 @@ prose = { git = "https://github.com/Jybbs/prose", tag = "0.2.3" }
 
 The Python wheel exposes the CLI rather than the library, so a Python consumer reaches the same pipeline indirectly through the binary.
 
-## Related
+<template #related>
 
 - [[source]] is the value the pipeline reads and re-emits, reparsed between rules so each downstream pass reads a settled AST.
 - [[rule-id]] is the handle each rule registers under, consumed by the pipeline's deterministic ordering and surfaced through `known_ids`.
@@ -62,3 +62,7 @@ The Python wheel exposes the CLI rather than the library, so a Python consumer r
 - [[binding-analysis]] builds once per *Source* and feeds rules whose questions are binding-shaped.
 
 For the rule catalog the pipeline iterates, the [**Rules Overview**](/rules/) page walks every shipped rule by category, and the [**Pipeline Order**](/reference/pipeline-order) reference renders the canonical run order with the rationale per rule.
+
+</template>
+
+</PrimitiveLayout>

@@ -1,3 +1,15 @@
+@property --spotlight-x {
+  syntax        : '<percentage>';
+  initial-value : 50%;
+  inherits      : false;
+}
+
+@property --spotlight-y {
+  syntax        : '<percentage>';
+  initial-value : 50%;
+  inherits      : false;
+}
+
 .surface-card {
   position        : relative;
   isolation       : isolate;
@@ -16,7 +28,7 @@
     box-shadow   var(--prose-transition-slow);
 }
 
-.surface-card > *:not(.surface-card-cover-link):not(.surface-card-icon) {
+.surface-card > *:not(.surface-card-cover-link, .surface-card-icon) {
   position : relative;
   z-index  : 1;
 }
@@ -122,6 +134,7 @@
   font-size   : 2rem;
   line-height : 1.05;
   color       : var(--vp-c-text-1);
+  text-wrap   : balance;
 }
 
 .surface-card-blurb {
@@ -153,4 +166,85 @@
   height     : 1px;
   background : var(--vp-c-divider);
   opacity    : 0.65;
+}
+
+.tab-index {
+  display        : flex;
+  flex-direction : column;
+  gap            : 12px;
+}
+
+.tab-row {
+  display        : flex;
+  align-items    : center;
+  gap            : 16px;
+  border-bottom  : 1px solid color-mix(in srgb, var(--vp-c-text-3) 22%, transparent);
+  padding-bottom : 6px;
+}
+
+.tab {
+  position             : relative;
+  padding              : 2px 0;
+  font-family          : var(--vp-font-family-mono);
+  font-size            : 0.72rem;
+  letter-spacing       : 0.06em;
+  text-decoration-line : none;
+  color                : var(--vp-c-text-3);
+  transition           : color 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab::after {
+  content         : "";
+  position        : absolute;
+  left            : 0;
+  right           : 0;
+  bottom          : -7px;
+  height          : 2px;
+  background      : var(--family-color);
+  border-radius   : 2px;
+  transform       : scaleX(0);
+  transform-origin: center;
+  transition      : transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab:hover,
+.tab:focus-visible,
+.tab.active {
+  color : var(--family-color);
+}
+
+.tab:hover::after,
+.tab:focus-visible::after,
+.tab.active::after {
+  transform : scaleX(1);
+}
+
+.tab-label {
+  min-height : 1.2em;
+}
+
+.tab-label-link {
+  font-family          : var(--vp-font-family-mono);
+  font-size            : 0.85rem;
+  color                : var(--vp-c-text-1);
+  text-decoration-line : none;
+  transition           : color 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-label-link:hover,
+.tab-label-link:focus-visible {
+  color : var(--family-color);
+}
+
+.tab-swap-enter-active,
+.tab-swap-leave-active {
+  transition :
+    opacity   180ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tab-swap-enter-from { opacity: 0; transform: translateY(2px); }
+.tab-swap-leave-to   { opacity: 0; transform: translateY(-2px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tab, .tab::after { transition: none; }
 }

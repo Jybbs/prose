@@ -51,12 +51,10 @@ export function assertCoversPrimitives(
   label    : string,
   coverage : PrimitiveCoverage = 'exact'
 ): void {
-  const knownSet = new Set(Object.keys(PRIMITIVES))
+  const knownSet = new Set<string>(Object.keys(PRIMITIVES))
   const foundSet = new Set(found)
-  const extra    = [...foundSet].filter(s => !knownSet.has(s))
-  const missing  = coverage === 'exact'
-    ? [...knownSet].filter(s => !foundSet.has(s))
-    : []
+  const extra    = [...foundSet.difference(knownSet)]
+  const missing  = coverage === 'exact' ? [...knownSet.difference(foundSet)] : []
   if (missing.length > 0 || extra.length > 0) {
     throw new Error(
       `${label} out of sync with PRIMITIVES. missing: [${missing.join(', ')}], extra: [${extra.join(', ')}]`

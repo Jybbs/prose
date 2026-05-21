@@ -36,8 +36,8 @@
   position      : sticky;
   top           : 96px;
   align-self    : start;
-  padding-right : 14px;
-  text-align    : right;
+  padding-inline-end : 14px;
+  text-align         : right;
 }
 
 .landing-workflow-roman {
@@ -70,7 +70,7 @@
   font-weight      : 500;
   font-size        : 1.4rem;
   line-height      : 1;
-  letter-spacing   : 0.06em;
+  letter-spacing   : var(--prose-meta-tracking);
   color            : color-mix(in srgb, var(--wf-accent) 70%, var(--vp-c-text-1));
   writing-mode     : vertical-rl;
   transform        : rotate(180deg);
@@ -110,7 +110,7 @@
   overflow      : auto;
 }
 
-@media (max-width: 720px) {
+@media (--prose-bp-card-stack) {
   .landing-workflow-section {
     grid-template-columns : 64px 1fr;
     gap                   : 18px;

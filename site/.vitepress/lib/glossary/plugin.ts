@@ -2,8 +2,6 @@ import type MarkdownIt from 'markdown-it'
 
 import { walkBodyInlines } from '../markdown/walk'
 
-const ESCAPE_REGEX = /[.*+?^${}()|[\]\\]/g
-
 type Token = MarkdownIt.Token
 
 export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>) {
@@ -13,7 +11,7 @@ export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>) {
 
   const phrases  = [...phraseToSlug.keys()].sort((a, b) => b.length - a.length)
   const pattern  = new RegExp(
-    `(?<![A-Za-z0-9_-])(${phrases.map(p => p.replace(ESCAPE_REGEX, '\\$&')).join('|')})(?![A-Za-z0-9_-])`,
+    `(?<![A-Za-z0-9_-])(${phrases.map(p => RegExp.escape(p)).join('|')})(?![A-Za-z0-9_-])`,
     'g'
   )
 

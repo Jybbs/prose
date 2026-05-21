@@ -51,13 +51,13 @@
   display    : block;
   margin-top : 4px;
   color      : var(--vp-c-text-3);
-  font-size  : 0.78rem;
+  font-size  : var(--prose-text-xs);
 }
 
 .glossary-aliases code {
   background : transparent;
   padding    : 0;
-  font-size  : 0.78rem;
+  font-size  : var(--prose-text-xs);
   color      : var(--vp-c-text-3);
 }
 
@@ -68,7 +68,7 @@
   font-size   : var(--prose-text-md);
 }
 
-@media (max-width: 720px) {
+@media (--prose-bp-card-stack) {
   .glossary-entries {
     grid-template-columns: 1fr;
     row-gap              : 18px;

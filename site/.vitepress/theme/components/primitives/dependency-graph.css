@@ -26,7 +26,7 @@
 
 .dep-graph-label {
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.78rem;
+  font-size   : var(--prose-text-xs);
   fill        : var(--vp-c-text-1);
 }
 

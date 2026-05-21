@@ -1,5 +1,5 @@
-import type { Theme } from 'vitepress'
-import DefaultTheme   from 'vitepress/theme'
+import type { Component, Theme } from 'vitepress'
+import DefaultTheme              from 'vitepress/theme'
 
 import FloatingVue            from 'floating-vue'
 import { enhanceAppWithTabs } from 'vitepress-plugin-tabs/client'
@@ -15,25 +15,7 @@ import '@fontsource-variable/jetbrains-mono/wght-italic.css'
 import '@fontsource-variable/lora'
 import '@fontsource-variable/lora/wght-italic.css'
 
-import Layout                from './Layout.vue'
-import BuiltOn               from './components/landing/BuiltOn.vue'
-import CompositionGrid       from './components/rules/CompositionGrid.vue'
-import DependencyGraph       from './components/primitives/DependencyGraph.vue'
-import EditorRunOnSave       from './components/integrations/EditorRunOnSave.vue'
-import ExitCodeMatrix        from './components/exit-codes/ExitCodeMatrix.vue'
-import Fixture               from './components/fixtures/Fixture.vue'
-import GlossaryIndex         from './components/glossary/GlossaryIndex.vue'
-import GlossaryTerm          from './components/glossary/GlossaryTerm.vue'
-import PipelineOrder         from './components/rules/PipelineOrder.vue'
-import PrimitivesComposition from './components/primitives/PrimitivesComposition.vue'
-import RelatedRulesInline    from './components/rules/RelatedRulesInline.vue'
-import RuleCardGrid          from './components/rules/RuleCardGrid.vue'
-import RuleChip              from './components/rules/RuleChip.vue'
-import RuleConfigTable       from './components/rules/RuleConfigTable.vue'
-import RuleLayout            from './components/rules/RuleLayout.vue'
-import RulesIndex            from './components/rules/RulesIndex.vue'
-import RulesPlate            from './components/rules/RulesPlate.vue'
-import Tool                  from './components/base/Tool.vue'
+import Layout from './Layout.vue'
 
 import './styles/tokens.css'
 import './styles/accents.css'
@@ -64,7 +46,6 @@ import './components/landing/hero.css'
 import './components/landing/landing.css'
 import './components/landing/metaphor.css'
 import './components/landing/surfaces/surface-card-base.css'
-import './components/landing/surfaces/surface-card-tab-index.css'
 import './components/landing/surfaces/surfaces.css'
 import './components/landing/typing-demo.css'
 import './components/landing/workflow.css'
@@ -79,29 +60,23 @@ import './components/rules/rule-card-grid.css'
 import './components/rules/rules-index.css'
 import './components/rules/rules-plate.css'
 
+const modules = import.meta.glob<{ default: Component }>(
+  ['./components/{exit-codes,fixtures,glossary,integrations,primitives,rules}/*.vue', './components/base/Tool.vue'],
+  { eager: true }
+)
+const components = Object.fromEntries(
+  Object.entries(modules)
+    .map(([p, mod]) => [p.split('/').pop()!.replace(/\.vue$/, ''), mod.default])
+)
+
 export default {
   extends: DefaultTheme,
   Layout,
   enhanceApp({ app }) {
     enhanceAppWithTabs(app)
-    app.component('BuiltOn',               BuiltOn)
-    app.component('CompositionGrid',       CompositionGrid)
-    app.component('DependencyGraph',       DependencyGraph)
-    app.component('EditorRunOnSave',       EditorRunOnSave)
-    app.component('ExitCodeMatrix',        ExitCodeMatrix)
-    app.component('Fixture',               Fixture)
-    app.component('GlossaryIndex',         GlossaryIndex)
-    app.component('GlossaryTerm',          GlossaryTerm)
-    app.component('PipelineOrder',         PipelineOrder)
-    app.component('PrimitivesComposition', PrimitivesComposition)
-    app.component('RelatedRulesInline',    RelatedRulesInline)
-    app.component('RuleCardGrid',          RuleCardGrid)
-    app.component('RuleChip',              RuleChip)
-    app.component('RuleConfigTable',       RuleConfigTable)
-    app.component('RuleLayout',            RuleLayout)
-    app.component('RulesIndex',            RulesIndex)
-    app.component('RulesPlate',            RulesPlate)
-    app.component('Tool',                  Tool)
+    for (const [name, component] of Object.entries(components).sort()) {
+      app.component(name, component)
+    }
     app.use(FloatingVue, {
       themes: {
         glossary: {

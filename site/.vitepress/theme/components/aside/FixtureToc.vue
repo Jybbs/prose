@@ -11,8 +11,7 @@ const fixtureToc  = useFixtureToc()
 
 const anchors = computed(() => {
   if (currentRule.value === null) return []
-  return fixtureToc.value
-    .filter(e => e.rule === currentRule.value!.slug)
+  return fixtureToc.get(currentRule.value.slug)
     .map(e => ({ href: `#${e.id}`, title: e.title }))
 })
 </script>

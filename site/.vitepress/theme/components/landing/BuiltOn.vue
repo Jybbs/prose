@@ -2,6 +2,7 @@
 import LandingSection      from './LandingSection.vue'
 
 import { data as tools }   from '../../../data/tools.data'
+import { externalAttrs }   from '../../../lib/shared/links'
 import { lookup }          from '../../../lib/shared/lookup'
 
 interface Credit {
@@ -37,8 +38,7 @@ const entries = credits.map(({ role, slug }) => ({
         :key="entry.slug"
         class="built-on-card"
         :href="entry.tool.href"
-        target="_blank"
-        rel="noopener"
+        v-bind="externalAttrs(entry.tool.href)"
       >
         <span class="built-on-medallion">
           <svg

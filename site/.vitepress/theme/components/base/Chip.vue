@@ -8,7 +8,7 @@ const props = defineProps<{
   family   ?: string
   href     ?: string
   title    ?: string
-  variant   : 'category-chip' | 'family-chip' | 'rule-chip' | 'star-count'
+  variant   : 'category-chip' | 'family-chip' | 'rule-chip' | 'rule-chip pipeline-order-undocumented' | 'star-count'
 }>()
 
 const tag       = computed(() => (props.href ? 'a' : 'div'))

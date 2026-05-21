@@ -1,8 +1,8 @@
 # RuleId
 
-A rule needs a stable handle. The CLI's `--select` and `--ignore` flags parse names, `pyproject.toml`'s `[tool.prose.rules.<name>]` sub-tables key into names, suppression directives reference names inside `# prose: ignore[<name>]`, and diagnostic output routes by name. *RuleId* is the single canonical handle: a newtype wrapping a kebab-case slug (*`"align-equals"`, `"single-use-variables"`*) with equality, hashing, parsing, and the registry lookup that the [[pipeline]] drives off.
+<PrimitiveLayout primitive="rule-id">
 
-<PrimitivesComposition :initial-focus="'rule-id'" />
+A rule needs a stable handle. The CLI's `--select` and `--ignore` flags parse names, `pyproject.toml`'s `[tool.prose.rules.<name>]` sub-tables key into names, suppression directives reference names inside `# prose: ignore[<name>]`, and diagnostic output routes by name. *RuleId* is the single canonical handle: a newtype wrapping a kebab-case slug (*`"align-equals"`, `"single-use-variables"`*) with equality, hashing, parsing, and the registry lookup that the [[pipeline]] drives off.
 
 ## Public Surface
 
@@ -56,10 +56,14 @@ A downstream Rust crate consumes *prose* through a Git dependency pinned to a re
 prose = { git = "https://github.com/Jybbs/prose", tag = "0.2.3" }
 ```
 
-## Related
+<template #related>
 
 - [[pipeline]] iterates rules by *RuleId* in the registry's pinned order, and exposes `known_ids()` for consumers that need the full list.
 - [[source]] carries diagnostics that reference rules by *RuleId*, so structured output formats (JSON, SARIF, GitHub annotations) all route by slug.
 - [[suppression-map]] parses *RuleId* values out of `# prose: ignore[<slug>]` directives.
 
 For the CLI surface that takes *RuleId* lists, the [**Installation**](/guide/quick-start#subset-the-active-rules) chapter covers the `--select` / `--ignore` arguments. For the rule catalog itself, the [**Rules Overview**](/rules/) page walks every registered slug by category.
+
+</template>
+
+</PrimitiveLayout>

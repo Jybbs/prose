@@ -79,8 +79,8 @@
 }
 
 .exit-code-entry {
-  padding-left : 18px;
-  border-left  : 2px solid var(--code-accent);
+  padding-inline-start : 18px;
+  border-left          : 2px solid var(--code-accent);
 }
 
 .exit-code-entry-head {
@@ -125,9 +125,9 @@
 
 .vp-doc .exit-code-entry-details > li,
 .exit-code-entry-details > li {
-  position     : relative;
-  margin       : 8px 0;
-  padding-left : 18px;
+  position             : relative;
+  margin               : 8px 0;
+  padding-inline-start : 18px;
   list-style   : none;
   font-family  : var(--vp-font-family-base);
   font-size    : 0.84rem;
@@ -161,12 +161,12 @@
     gap                   : 24px;
   }
   .exit-codes-index {
-    padding-right  : 0;
-    border-right   : none;
-    border-bottom  : 1px solid var(--vp-c-divider);
-    padding-bottom : 16px;
+    padding-inline-end : 0;
+    border-right       : none;
+    border-bottom      : 1px solid var(--vp-c-divider);
+    padding-bottom     : 16px;
   }
   .exit-code-entry {
-    padding-left : 16px;
+    padding-inline-start : 16px;
   }
 }

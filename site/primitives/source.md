@@ -1,8 +1,8 @@
 # Source
 
-Every rule reads the source file through one shared value. *Source* bundles the original text, the parsed AST, the token stream, the line index, and the comment-range table into a single owned value that the pipeline hands across rule boundaries. Because the text is owned rather than borrowed, *Source* carries no lifetime parameter and can move across thread boundaries, which lets the path-mode CLI parallelize across files without lifetime gymnastics.
+<PrimitiveLayout primitive="source">
 
-<PrimitivesComposition :initial-focus="'source'" />
+Every rule reads the source file through one shared value. *Source* bundles the original text, the parsed AST, the token stream, the line index, and the comment-range table into a single owned value that the pipeline hands across rule boundaries. Because the text is owned rather than borrowed, *Source* carries no lifetime parameter and can move across thread boundaries, which lets the path-mode CLI parallelize across files without lifetime gymnastics.
 
 ## Public Surface
 
@@ -41,7 +41,7 @@ prose = { git = "https://github.com/Jybbs/prose", tag = "0.2.3" }
 
 The Python wheel exposes the binary rather than the library, so a Python consumer drives the same *Source* indirectly through the CLI surface that the [**Installation**](/guide/installation) chapter walks.
 
-## Related
+<template #related>
 
 - [[pipeline]] runs the rule loop against a *Source*, reparses between rules, returns the final text and diagnostics.
 - [[binding-analysis]] builds against a *Source* during construction and answers binding-shaped questions about every name in every scope.
@@ -49,3 +49,7 @@ The Python wheel exposes the binary rather than the library, so a Python consume
 - [[rule-id]] is the handle each rule registers under, consumed by the pipeline's deterministic ordering.
 
 For the rule catalog that runs against the *Source*, the [**Rules Overview**](/rules/) page walks every shipped rule by category.
+
+</template>
+
+</PrimitiveLayout>

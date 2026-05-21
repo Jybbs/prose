@@ -7,10 +7,46 @@ import { FAMILY_META, type RuleFamily }                 from '../shared/registri
 
 const CURRENT_RULE_KEY: InjectionKey<ComputedRef<RenderedRule | null>> = Symbol('currentRule')
 
+export interface CurrentSlugs {
+  primitive : ComputedRef<string | null>
+  rule      : ComputedRef<string | null>
+}
+
+const SLUGS_KEY: InjectionKey<CurrentSlugs> = Symbol('currentSlugs')
+
+export function provideCurrentSlugs(): CurrentSlugs {
+  const { page } = useData()
+  const slugFor  = (prefix: string) => computed(() => {
+    const start = `${prefix}/`
+    const rel   = page.value.relativePath
+    if (!rel.startsWith(start)) return null
+    const slug = rel.slice(start.length).replace(/\.md$/, '')
+    return slug && slug !== 'index' ? slug : null
+  })
+  const slugs = { primitive: slugFor('primitives'), rule: slugFor('rules') }
+  provide(SLUGS_KEY, slugs)
+  return slugs
+}
+
+function useSlugs(): CurrentSlugs {
+  const injected = inject(SLUGS_KEY, null)
+  if (injected !== null) return injected
+  const { page } = useData()
+  const slugFor  = (prefix: string) => computed(() => {
+    const start = `${prefix}/`
+    const rel   = page.value.relativePath
+    if (!rel.startsWith(start)) return null
+    const slug = rel.slice(start.length).replace(/\.md$/, '')
+    return slug && slug !== 'index' ? slug : null
+  })
+  return { primitive: slugFor('primitives'), rule: slugFor('rules') }
+}
+
 export function provideCurrentRule(): ComputedRef<RenderedRule | null> {
-  const rule = useCurrentEntry('rules', rules.bySlug)
-  provide(CURRENT_RULE_KEY, rule)
-  return rule
+  const { rule } = useSlugs()
+  const entry    = computed(() => (rule.value && rules.bySlug[rule.value]) ?? null)
+  provide(CURRENT_RULE_KEY, entry)
+  return entry
 }
 
 export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
@@ -26,25 +62,14 @@ export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
   })
 }
 
-export const useCurrentPrimitive = (): ComputedRef<DiscoveredPrimitive | null> =>
-  useCurrentEntry('primitives', primitives.bySlug)
+export function useCurrentPrimitive(): ComputedRef<DiscoveredPrimitive | null> {
+  const { primitive } = useSlugs()
+  return computed(() => (primitive.value && primitives.bySlug[primitive.value]) ?? null)
+}
 
 export function useCurrentRule(): ComputedRef<RenderedRule | null> {
-  return inject(CURRENT_RULE_KEY) ?? useCurrentEntry('rules', rules.bySlug)
-}
-
-function useCurrentEntry<T>(prefix: string, bySlug: Record<string, T>): ComputedRef<T | null> {
-  const slug = useSlug(prefix)
-  return computed(() => (slug.value && bySlug[slug.value]) ?? null)
-}
-
-function useSlug(prefix: string): ComputedRef<string | null> {
-  const { page } = useData()
-  return computed(() => {
-    const start = `${prefix}/`
-    const rel   = page.value.relativePath
-    if (!rel.startsWith(start)) return null
-    const slug = rel.slice(start.length).replace(/\.md$/, '')
-    return slug && slug !== 'index' ? slug : null
-  })
+  const injected = inject(CURRENT_RULE_KEY, null)
+  if (injected !== null) return injected
+  const { rule } = useSlugs()
+  return computed(() => (rule.value && rules.bySlug[rule.value]) ?? null)
 }

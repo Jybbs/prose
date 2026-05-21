@@ -1,19 +1,23 @@
-import fs   from 'node:fs'
+import fs   from 'node:fs/promises'
 import path from 'node:path'
 
 import { defineLoader } from 'vitepress'
 
-import { discoverRuleSlugs }              from '../lib/rules/discovery'
-import { repoRoot, rulesDir }             from '../lib/shared/paths'
-import type { RuleCategory, RuleFamily }  from '../lib/shared/registries'
+import { discoverRuleSlugs }                                       from '../lib/rules/discovery'
+import { repoRoot, rulesDir }                                      from '../lib/shared/paths'
+import { CATEGORY_META, FAMILY_META, type RuleCategory, type RuleFamily } from '../lib/shared/registries'
 
 export interface PipelineRule {
-  category   : RuleCategory | null
-  documented : boolean
-  family     : RuleFamily | null
-  imperative : string
-  position   : number
-  slug       : string
+  category      : RuleCategory | null
+  categoryBadge : string | null
+  categoryLabel : string | null
+  documented    : boolean
+  family        : RuleFamily | null
+  familyBadge   : string | null
+  familyLabel   : string | null
+  imperative    : string
+  position      : number
+  slug          : string
 }
 
 export interface PipelineData {
@@ -33,7 +37,7 @@ export { data }
 export default defineLoader({
   watch: [ruleSource, `${rulesDirectory}/*.md`],
   async load(): Promise<PipelineData> {
-    const text  = fs.readFileSync(ruleSource, 'utf8')
+    const text  = await fs.readFile(ruleSource, 'utf8')
     const block = REGISTER_BLOCK.exec(text)
     if (block === null) {
       throw new Error(`pipeline.data: register_rules! block not found in ${ruleSource}`)
@@ -47,11 +51,15 @@ export default defineLoader({
       const imperative = match[2]
       const entry      = discovered.get(slug)
       rules.push({
-        category   : entry?.category ?? null,
-        documented : entry !== undefined,
-        family     : entry?.family ?? null,
+        category      : entry?.category ?? null,
+        categoryBadge : entry ? CATEGORY_META[entry.category].badge : null,
+        categoryLabel : entry ? CATEGORY_META[entry.category].label : null,
+        documented    : entry !== undefined,
+        family        : entry?.family ?? null,
+        familyBadge   : entry ? FAMILY_META[entry.family].badge : null,
+        familyLabel   : entry ? FAMILY_META[entry.family].label : null,
         imperative,
-        position   : rules.length + 1,
+        position      : rules.length + 1,
         slug
       })
     }

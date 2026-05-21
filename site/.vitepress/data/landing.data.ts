@@ -3,11 +3,6 @@ import { defineLoader } from 'vitepress'
 import { getRenderer, renderInlineField } from '../lib/markdown/renderer'
 import type { RuleFamily }                from '../lib/shared/registries'
 
-export interface Link {
-  href : string
-  text : string
-}
-
 export interface Step {
   bodyHtml : string
   code     : string
@@ -23,20 +18,12 @@ export interface Surface {
 }
 
 export interface LandingData {
-  cta      : { links: readonly Link[] }
   surfaces : readonly Surface[]
   workflow : readonly Step[]
 }
 
 declare const data: LandingData
 export { data }
-
-const CTA_LINKS: readonly Link[] = [
-  { href: '/guide/installation',      text: 'Installation'  },
-  { href: '/primitives/source',       text: 'Primitives'    },
-  { href: '/reference/configuration', text: 'Configuration' },
-  { href: '/rules/',                  text: 'Rules catalog' }
-]
 
 type SurfaceSource = Omit<Surface, 'bodyHtml'> & { body: string }
 
@@ -107,7 +94,6 @@ export default defineLoader({
   async load(): Promise<LandingData> {
     const md = await getRenderer()
     return {
-      cta      : { links: CTA_LINKS },
       surfaces : renderInlineField(md, SURFACE_SOURCES, 'body'),
       workflow : renderInlineField(md, STEP_SOURCES, 'body')
     }

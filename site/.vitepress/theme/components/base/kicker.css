@@ -10,13 +10,13 @@
 }
 
 .kicker[data-variant="rule"]::before {
-  content      : "— ";
-  margin-right : 4px;
+  content           : "— ";
+  margin-inline-end : 4px;
 }
 
 .kicker[data-variant="rule"]::after {
-  content     : " —";
-  margin-left : 4px;
+  content             : " —";
+  margin-inline-start : 4px;
 }
 
 .fixture-toc-kicker,

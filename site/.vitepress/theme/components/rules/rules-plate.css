@@ -56,6 +56,7 @@ a.rules-cluster-head:hover {
   font-size   : 1.8rem;
   line-height : 1;
   color       : var(--family-color);
+  text-wrap   : balance;
 }
 
 .vp-doc .rules-cluster-specimens,
@@ -71,10 +72,10 @@ a.rules-cluster-head:hover {
 
 .vp-doc .rules-cluster-specimens > li,
 .rules-cluster-specimens > li {
-  position     : relative;
-  margin       : 0;
-  padding-left : 0;
-  list-style   : none;
+  position             : relative;
+  margin               : 0;
+  padding-inline-start : 0;
+  list-style           : none;
 }
 
 .vp-doc .rules-cluster-specimens > li::before,
@@ -94,7 +95,7 @@ a.specimen {
   text-decoration-line : none;
   color                : var(--vp-c-text-1);
   font-family          : var(--vp-font-family-mono);
-  font-size            : 0.82rem;
+  font-size            : var(--prose-text-code);
   transition           :
     border-color var(--prose-transition),
     transform    var(--prose-transition);
@@ -135,8 +136,8 @@ a.specimen:focus-visible {
   transform        : translateY(-4px);
   transform-origin : top left;
   transition       :
-    opacity   140ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 140ms cubic-bezier(0.4, 0, 0.2, 1);
+    opacity   140ms var(--prose-ease-emphasized),
+    transform 140ms var(--prose-ease-emphasized);
 }
 
 .rules-cluster-specimens > li:hover .specimen-callout,

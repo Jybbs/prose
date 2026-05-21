@@ -1,6 +1,6 @@
 # Edit
 
-<PrimitivesComposition :initial-focus="'edit'" />
+<PrimitiveLayout primitive="edit">
 
 *Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Edit>` method returns a list of replacement spans, the pipeline splices them into a fresh buffer between rules, and the rewritten source feeds the next rule. *Prose* re-exports the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the shape matches what Ruff and other Astral-stack consumers expect.
 
@@ -52,9 +52,13 @@ For rules that compute multiple edits per logical change *(an alignment rule tha
 
 Every rule reaches for `Edit` to express a rewrite. The [[aligner]] primitive emits `Edit` lists for padding rewrites. The [[orderer]] primitive composes through `apply_inline_edits` when rendering reordered blocks. The [[docstring]] walker hands ranges to rules that emit `Edit` against docstring bodies.
 
-## Related
+<template #related>
 
 - [[pipeline]] is the consumer that applies edit lists between rules
 - [[aligner]], [[orderer]], and [[docstring]] all produce `Edit` lists
 - [[source]] is the input every edit's range names a span inside
 - [[suppression-map]] filters edits at the emission boundary before the pipeline applies them
+
+</template>
+
+</PrimitiveLayout>

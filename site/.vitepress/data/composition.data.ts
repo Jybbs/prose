@@ -1,4 +1,4 @@
-import fs   from 'node:fs'
+import fs   from 'node:fs/promises'
 import path from 'node:path'
 
 import { parse }        from 'smol-toml'
@@ -29,17 +29,16 @@ export { data }
 export default defineLoader({
   watch: [`${compositionDir}/*.config.toml`],
   async load(): Promise<CompositionData> {
-    const cases: CompositionCase[] = []
-    for (const file of fs.readdirSync(compositionDir).sort()) {
-      if (!file.endsWith('.config.toml')) continue
+    const files = (await fs.readdir(compositionDir)).filter(f => f.endsWith('.config.toml')).sort()
+    const cases = await Promise.all(files.map(async file => {
       const caseName = path.basename(file, '.config.toml')
-      const parsed   = parse(fs.readFileSync(path.join(compositionDir, file), 'utf8')) as unknown as CompositionToml
-      cases.push({
+      const parsed   = parse(await fs.readFile(path.join(compositionDir, file), 'utf8')) as unknown as CompositionToml
+      return {
         case  : caseName,
         rules : parsed.harness.rules,
         title : toTitleCase(caseName)
-      })
-    }
+      }
+    }))
     return { cases }
   }
 })

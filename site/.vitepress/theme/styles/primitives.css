@@ -54,3 +54,16 @@
   border-radius : 4px;
   background    : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
 }
+
+div[class*='language-'] > span.lang,
+.typing-demo-label {
+  position       : absolute;
+  bottom         : 6px;
+  right          : 10px;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.62rem;
+  letter-spacing : var(--prose-meta-tracking);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+  opacity        : 0.55;
+}

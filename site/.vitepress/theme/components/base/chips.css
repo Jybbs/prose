@@ -21,7 +21,7 @@ a.category-chip:hover,
 a.family-chip:hover,
 a.rule-chip:hover {
   border-left-width : 3px;
-  padding-left      : var(--prose-chip-pad-left-hover, 7px);
+  padding-left      : 7px;
 }
 
 a.category-chip:hover { border-color : var(--category-accent); padding-left : 9px; }
@@ -53,7 +53,7 @@ a.rule-chip {
   gap            : 8px;
   padding        : 3px 10px 3px 8px;
   color          : var(--vp-c-text-1);
-  font-size      : 0.78rem;
+  font-size      : var(--prose-text-xs);
   line-height    : 1.6;
   vertical-align : baseline;
 }
@@ -64,7 +64,7 @@ a.rule-chip {
 
 .rule-chip-slug {
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.78rem;
+  font-size   : var(--prose-text-xs);
   color       : var(--family-color);
 }
 

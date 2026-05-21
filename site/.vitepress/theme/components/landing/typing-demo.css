@@ -19,15 +19,6 @@
 }
 
 .typing-demo-label {
-  position       : absolute;
-  bottom         : 6px;
-  right          : 10px;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : 0.62rem;
-  letter-spacing : 0.06em;
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
-  opacity        : 0.55;
   pointer-events : none;
 }
 
@@ -37,7 +28,7 @@
   margin      : 0;
   padding     : 18px 22px;
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.78rem;
+  font-size   : var(--prose-text-xs);
   line-height : 1.6;
   overflow    : auto;
 }
@@ -66,7 +57,7 @@
   display          : inline-block;
   width            : 0.5em;
   height           : 1.05em;
-  margin-left      : 1px;
+  margin-inline-start : 1px;
   vertical-align   : text-bottom;
   background       : var(--prose-c-whiskey);
   animation        : typing-demo-caret-blink 1s steps(2) infinite;

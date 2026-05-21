@@ -26,7 +26,7 @@
   text-align            : left;
   cursor                : pointer;
   font-family           : var(--vp-font-family-mono);
-  font-size             : 0.78rem;
+  font-size             : var(--prose-text-xs);
   color                 : var(--vp-c-text-2);
   transition            : background var(--prose-transition);
 }
@@ -149,6 +149,6 @@
 
 .editor-deck-face-body code,
 .editor-deck-face-body pre {
-  font-size   : 0.82rem;
+  font-size   : var(--prose-text-code);
   line-height : 1.5;
 }

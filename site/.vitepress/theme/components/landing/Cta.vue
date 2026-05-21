@@ -2,20 +2,14 @@
 import { computed, ref } from 'vue'
 
 import { data as releases } from '../../../data/pypi-releases.data'
-
-const MONTH_FMT = new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'UTC' })
+import { externalAttrs }    from '../../../lib/shared/links'
 
 const current = releases[0]
 const extras  = releases.slice(1)
 const open    = ref(false)
 
-function monthLabel(date: string): string {
-  const d = new Date(date)
-  return Number.isNaN(d.getTime()) ? '—' : MONTH_FMT.format(d).toUpperCase()
-}
-
 const groupedByYear = computed(() =>
-  Array.from(Map.groupBy(extras, r => r.date.slice(0, 4)),
+  Array.from(Map.groupBy(extras, r => r.year),
              ([year, items]) => ({ items, year }))
 )
 </script>
@@ -27,15 +21,14 @@ const groupedByYear = computed(() =>
         <div v-if="!open" key="stamp" class="landing-cta-face">
           <a
             :href="current.url"
-            target="_blank"
-            rel="noopener"
+            v-bind="externalAttrs(current.url)"
             class="landing-cta-stamp"
-            :aria-label="`Current release ${current.version}, ${monthLabel(current.date)} ${current.date.slice(0, 4)}`"
+            :aria-label="`Current release ${current.version}, ${current.month} ${current.year}`"
           >
             <span class="landing-cta-stamp-edge" aria-hidden="true"></span>
-            <span class="landing-cta-stamp-month">{{ monthLabel(current.date) }}</span>
+            <span class="landing-cta-stamp-month">{{ current.month }}</span>
             <span class="landing-cta-stamp-version">{{ current.version }}</span>
-            <span class="landing-cta-stamp-year">'{{ current.date.slice(2, 4) }}</span>
+            <span class="landing-cta-stamp-year">'{{ current.yearShort }}</span>
           </a>
         </div>
 
@@ -45,10 +38,10 @@ const groupedByYear = computed(() =>
               <p class="landing-cta-year">{{ group.year }}</p>
               <ol class="landing-cta-ledger">
                 <li v-for="r in group.items" :key="r.version" class="landing-cta-ledger-row">
-                  <a :href="r.url" target="_blank" rel="noopener">
+                  <a :href="r.url" v-bind="externalAttrs(r.url)">
                     <span class="landing-cta-ledger-version">{{ r.version }}</span>
                     <span class="landing-cta-ledger-leader" aria-hidden="true"></span>
-                    <span class="landing-cta-ledger-month">{{ monthLabel(r.date) }}</span>
+                    <span class="landing-cta-ledger-month">{{ r.month }}</span>
                   </a>
                 </li>
               </ol>

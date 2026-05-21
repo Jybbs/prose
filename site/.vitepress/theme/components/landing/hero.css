@@ -80,7 +80,7 @@
   height  : auto;
 }
 
-@media (max-width: 720px) {
+@media (--prose-bp-card-stack) {
   .landing-hero-watermark-big {
     width : 80px;
   }

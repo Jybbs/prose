@@ -1,6 +1,6 @@
 # Aligner
 
-<PrimitivesComposition :initial-focus="'aligner'" />
+<PrimitiveLayout primitive="aligner">
 
 *Aligner* computes padding widths and emits the alignment edits that every alignment rule consumes. Four rules ([[align-equals]], [[align-colons]], [[align-imports]], [[match-case-align]]) share the same column-resolution math, so the math lives once in *Aligner* and each rule supplies a member list plus a knob-set rather than re-implementing the resolution from scratch.
 
@@ -43,9 +43,13 @@ Each alignment rule walks the AST, collects `Vec<Member>` per group, and calls `
 
 Adding a new alignment rule is shaped as *"write the walker that produces `Vec<Member>` groups, then call `emit_group`"*. The padding math, the policy fallbacks, the singleton handling, and the right-alignment hook all carry through without re-implementation.
 
-## Related
+<template #related>
 
 - [[align-equals]], [[align-colons]], [[align-imports]], and [[match-case-align]] are the four consumers
 - [[colon-targets]] constructs `Member` lists from every `:` context, consumed by [[align-colons]] and [[singleton-rule]]
 - [[edit]] is the output shape `emit_group` returns
 - [[source]] is the input every alignment walker reads against
+
+</template>
+
+</PrimitiveLayout>

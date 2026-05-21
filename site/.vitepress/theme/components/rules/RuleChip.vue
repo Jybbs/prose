@@ -3,23 +3,23 @@ import Chip from '../base/Chip.vue'
 
 import { data as rules } from '../../../data/rules.data'
 import { lookup }        from '../../../lib/shared/lookup'
-import { FAMILY_META }   from '../../../lib/shared/registries'
 
-const props = defineProps<{ slug: string }>()
+const props = defineProps<{ slug: string; undocumented ?: boolean; familyBadge ?: string }>()
 
-const entry = lookup(rules.bySlug, props.slug, 'Rule')
-const meta  = FAMILY_META[entry.family]
+const entry = props.undocumented ? null : lookup(rules.bySlug, props.slug, 'Rule')
+const badge = entry?.familyBadge ?? props.familyBadge ?? '·'
+const label = entry?.familyLabel?.toLowerCase() ?? 'undocumented'
 </script>
 
 <template>
   <Chip
-    variant="rule-chip"
-    :href="`/rules/${slug}`"
-    :category="entry.category"
-    :family="entry.family"
-    :title="`${slug} (${meta.label.toLowerCase()})`"
+    :variant="undocumented ? 'rule-chip pipeline-order-undocumented' : 'rule-chip'"
+    :href="undocumented ? undefined : `/rules/${slug}`"
+    :category="entry?.category"
+    :family="entry?.family"
+    :title="`${slug} (${label})`"
   >
-    <span class="rule-chip-badge" aria-hidden="true">{{ meta.badge }}</span>
+    <span class="rule-chip-badge" aria-hidden="true">{{ badge }}</span>
     <span class="rule-chip-slug">{{ slug }}</span>
   </Chip>
 </template>

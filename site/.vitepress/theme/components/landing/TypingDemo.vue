@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { useIntersectionObserver, useMediaQuery }        from '@vueuse/core'
-import { ShikiMagicMovePrecompiled }                     from 'shiki-magic-move/vue'
-import { computed, onMounted, onUnmounted, ref, watch }  from 'vue'
+import { useIntersectionObserver, useMediaQuery, useTimeoutFn }  from '@vueuse/core'
+import { ShikiMagicMovePrecompiled }                             from 'shiki-magic-move/vue'
+import { computed, onMounted, ref, useTemplateRef, watch }       from 'vue'
 
-import { data } from '../../../data/landing-typing-demo.data'
-import type { LandingTypingDemoEditEntry } from '../../../data/landing-typing-demo.data'
+import { data }                                                from '../../../data/landing-typing-demo.data'
+import { applyCompletedEdits, EMPTY_SEGMENTS, segmentsForEdit } from '../../../lib/markdown/typing-demo-buffer'
+import type { BufferSegments }                                  from '../../../lib/markdown/typing-demo-buffer'
 
 const BACKSPACE_MS_PER_CHAR      = 5
 const EDIT_BACKSPACE_MS_PER_CHAR = 70
@@ -37,7 +38,7 @@ const pythonStateIndex = ref(0)
 
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 const inView        = ref(false)
-const rootRef       = ref<HTMLElement | null>(null)
+const rootRef       = useTemplateRef<HTMLElement>('root')
 
 const typedBlocks = computed(() =>
   data.entries
@@ -52,76 +53,18 @@ const inProgressBlock = computed(() => {
   return entry.block.slice(0, charProgress.value)
 })
 
-function applyCompletedEdits(base: string): string {
-  let text = base
-  for (let i = 0; i < entryIndex.value; i++) {
-    const e = data.entries[i]
-    if (e.kind !== 'edit') continue
-    const idx = text.indexOf(e.anchor + e.from)
-    if (idx === -1) continue
-    const valueStart = idx + e.anchor.length
-    text = text.slice(0, valueStart) + e.to + text.slice(valueStart + e.from.length)
-  }
-  return text
-}
-
-const bakedBufferText = computed(() => applyCompletedEdits(data.prelude + typedBlocks.value))
-
-interface BufferSegments {
-  after             : string
-  before            : string
-  editing           : string
-  editingLineAfter  : string
-  editingLineBefore : string
-}
-
-const emptySegments: BufferSegments = {
-  after             : '',
-  before            : '',
-  editing           : '',
-  editingLineAfter  : '',
-  editingLineBefore : ''
-}
+const bakedBufferText = computed(() => applyCompletedEdits(data.prelude + typedBlocks.value, data.entries, entryIndex.value))
 
 const bufferSegments = computed<BufferSegments>(() => {
   const entry = data.entries[entryIndex.value]
   if (!entry || entry.kind !== 'edit') {
-    return { ...emptySegments, before: bakedBufferText.value }
+    return { ...EMPTY_SEGMENTS, before: bakedBufferText.value }
   }
   if (phase.value === 'backspacing' || phase.value === 'holdAfterErased' || phase.value === 'starting') {
-    return { ...emptySegments, before: bakedBufferText.value }
+    return { ...EMPTY_SEGMENTS, before: bakedBufferText.value }
   }
-  return segmentsForEdit(entry, bakedBufferText.value)
+  return segmentsForEdit(entry, bakedBufferText.value, phase.value, editProgress.value)
 })
-
-function segmentsForEdit(entry: LandingTypingDemoEditEntry, text: string): BufferSegments {
-  const anchorIdx = text.indexOf(entry.anchor + entry.from)
-  if (anchorIdx === -1) return { ...emptySegments, before: text }
-  const valueStart = anchorIdx + entry.anchor.length
-  const valueEnd   = valueStart + entry.from.length
-  const fullBefore = text.slice(0, valueStart)
-  const fullAfter  = text.slice(valueEnd)
-
-  const lastNewline       = fullBefore.lastIndexOf('\n')
-  const before            = lastNewline === -1 ? '' : fullBefore.slice(0, lastNewline + 1)
-  const editingLineBefore = lastNewline === -1 ? fullBefore : fullBefore.slice(lastNewline + 1)
-
-  const firstNewline      = fullAfter.indexOf('\n')
-  const editingLineAfter  = firstNewline === -1 ? fullAfter : fullAfter.slice(0, firstNewline)
-  const after             = firstNewline === -1 ? '' : fullAfter.slice(firstNewline)
-
-  let editing: string
-  if (phase.value === 'editTraveling') {
-    editing = entry.from
-  } else if (phase.value === 'editBackspacing') {
-    editing = entry.from.slice(0, entry.from.length - editProgress.value)
-  } else if (phase.value === 'editTyping') {
-    editing = entry.to.slice(0, editProgress.value)
-  } else {
-    editing = entry.to
-  }
-  return { after, before, editing, editingLineAfter, editingLineBefore }
-}
 
 const caretLocation = computed<CaretLocation>(() => {
   switch (phase.value) {
@@ -141,20 +84,23 @@ const caretLocation = computed<CaretLocation>(() => {
   }
 })
 
-let timer:           ReturnType<typeof setTimeout> | null = null
-let pendingCallback: (() => void)                  | null = null
+let pendingCallback: (() => void) | null = null
+let pendingInterval = 0
+
+const { start, stop, isPending } = useTimeoutFn(() => {
+  const fn = pendingCallback
+  pendingCallback = null
+  fn?.()
+}, () => pendingInterval, { immediate: false })
 
 function schedule(fn: () => void, ms: number): void {
-  if (timer !== null) clearTimeout(timer)
   pendingCallback = fn
+  pendingInterval = ms
   if (!inView.value || reducedMotion.value) {
-    timer = null
+    stop()
     return
   }
-  timer = setTimeout(() => {
-    pendingCallback = null
-    fn()
-  }, ms)
+  start()
 }
 
 function runCurrentEntry(): void {
@@ -291,7 +237,7 @@ function freezeAtEnd(): void {
 }
 
 function replay(): void {
-  if (timer !== null) clearTimeout(timer)
+  stop()
   entryIndex.value       = 0
   charProgress.value     = 0
   editProgress.value     = 0
@@ -311,12 +257,9 @@ useIntersectionObserver(
 watch(inView, (visible) => {
   if (reducedMotion.value) return
   if (visible) {
-    if (pendingCallback !== null && timer === null) {
-      schedule(pendingCallback, 200)
-    }
-  } else if (timer !== null) {
-    clearTimeout(timer)
-    timer = null
+    if (pendingCallback !== null && !isPending.value) start()
+  } else {
+    stop()
   }
 })
 
@@ -324,14 +267,10 @@ onMounted(() => {
   if (reducedMotion.value) freezeAtEnd()
   else schedule(restart, 600)
 })
-
-onUnmounted(() => {
-  if (timer !== null) clearTimeout(timer)
-})
 </script>
 
 <template>
-  <div ref="rootRef" class="typing-demo">
+  <div ref="root" class="typing-demo">
     <section class="typing-demo-panel typing-demo-config" aria-label="prose config">
       <header class="typing-demo-label">pyproject.toml</header>
       <pre class="typing-demo-config-code"><code><span class="typing-demo-config-prelude">{{ bufferSegments.before }}</span><span class="typing-demo-config-editing">{{ bufferSegments.editingLineBefore }}</span><span class="typing-demo-config-editing">{{ bufferSegments.editing }}<span v-if="caretLocation === 'editing'" class="typing-demo-caret" aria-hidden="true" /></span><span class="typing-demo-config-editing">{{ bufferSegments.editingLineAfter }}</span><span class="typing-demo-config-prelude">{{ bufferSegments.after }}</span><span class="typing-demo-config-current">{{ inProgressBlock }}<span v-if="caretLocation === 'bottom'" class="typing-demo-caret" aria-hidden="true" /></span></code></pre>

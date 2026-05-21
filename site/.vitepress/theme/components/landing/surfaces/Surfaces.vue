@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { useMediaQuery, useRafFn } from '@vueuse/core'
-import { computed, ref }           from 'vue'
+import { useElementBounding, useEventListener, useMediaQuery, useRafFn, useResizeObserver } from '@vueuse/core'
+import { computed, onMounted, ref, useTemplateRef }                                         from 'vue'
 
 import LandingSection from '../LandingSection.vue'
 
 import { data as landing }     from '../../../../data/landing.data'
 import { data as rules }       from '../../../../data/rules.data'
-import { useElementMeasure }   from '../../../../lib/composables/use-element-measure'
 
-import SurfaceCardTabIndex from './SurfaceCardTabIndex.vue'
+import SurfaceCardBase from './SurfaceCardBase.vue'
 
 const surfaceCards = computed(() =>
   landing.surfaces.map(s => ({ ...s, rules: rules.byFamily[s.family] ?? [] }))
@@ -20,15 +19,17 @@ const heading = computed(() =>
   `<strong>${surfaceCards.value.length}</strong> rule families. <em>${ruleCount.value}</em> rules.`
 )
 
-const offset   = ref(0)
-const trackRef = ref<HTMLElement | null>(null)
+const offset      = ref(0)
+const trackRef    = useTemplateRef<HTMLElement>('track')
+const viewportRef = useTemplateRef<HTMLElement>('viewport')
 
 const BASE_SPEED_PX_PER_SEC = 32
 const EDGE_MARGIN_PX        = 32
 const MAGNET_GAIN           = 4
 const MAX_PULL_PX_PER_SEC   = BASE_SPEED_PX_PER_SEC * 8
 
-const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+const reducedMotion                    = useMediaQuery('(prefers-reduced-motion: reduce)')
+const { left: vpLeft, right: vpRight } = useElementBounding(viewportRef)
 
 let halfWidth = 0
 let velocity  = BASE_SPEED_PX_PER_SEC
@@ -63,17 +64,14 @@ useRafFn(({ delta }) => {
 
 function onPointerMove(event: PointerEvent) {
   const node = (event.target as HTMLElement).closest('.surface-card') as HTMLElement | null
-  if (!node || !trackRef.value) {
+  if (!node) {
     velocity = 0
     return
   }
-  const viewport = trackRef.value.parentElement
-  if (!viewport) return
 
   const cardRect = node.getBoundingClientRect()
-  const vpRect   = viewport.getBoundingClientRect()
-  const leftGap  = cardRect.left  - vpRect.left  - EDGE_MARGIN_PX
-  const rightGap = vpRect.right   - cardRect.right - EDGE_MARGIN_PX
+  const leftGap  = cardRect.left  - vpLeft.value  - EDGE_MARGIN_PX
+  const rightGap = vpRight.value  - cardRect.right - EDGE_MARGIN_PX
 
   let v = 0
   if (leftGap < 0) {
@@ -93,7 +91,12 @@ const trackStyle = computed(() => ({
   transform: `translate3d(${-offset.value}px, 0, 0)`
 }))
 
-useElementMeasure(measure, trackRef)
+useResizeObserver(trackRef, measure)
+useEventListener('resize', measure)
+onMounted(async () => {
+  if ('fonts' in document) await document.fonts.ready
+  measure()
+})
 </script>
 
 <template>
@@ -107,18 +110,19 @@ useElementMeasure(measure, trackRef)
       <a href="/rules/" class="landing-small-button">All rules</a>
     </template>
     <div
+      ref="viewport"
       class="surfaces-carousel"
       aria-label="Rule family carousel"
       @pointermove="onPointerMove"
       @pointerleave="onPointerLeave"
     >
       <div
-        ref="trackRef"
+        ref="track"
         class="surfaces-carousel-track"
         :style="trackStyle"
       >
         <template v-for="copy in 2" :key="copy">
-          <SurfaceCardTabIndex
+          <SurfaceCardBase
             v-for="card in surfaceCards"
             :key="`${copy}-${card.family}`"
             :body-html="card.bodyHtml"

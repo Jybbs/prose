@@ -23,17 +23,15 @@ function syncGroup(item: HTMLElement, target: boolean): void {
 }
 
 function eachCollapsibleGroup(root: ParentNode, fn: (group: HTMLElement) => void): void {
-  root.querySelectorAll<HTMLElement>('.VPSidebarItem.level-0.collapsible').forEach(fn)
+  Iterator.from(root.querySelectorAll<HTMLElement>('.VPSidebarItem.level-0.collapsible')).forEach(fn)
 }
 
 function restoreAll(root: ParentNode, state: Record<string, boolean>): void {
-  eachCollapsibleGroup(root, group => {
-    if (isActiveGroup(group)) {
-      syncGroup(group, false)
-      return
-    }
-    if (state[keyFor(group) ?? ''] === true) syncGroup(group, true)
-  })
+  Iterator.from(root.querySelectorAll<HTMLElement>('.VPSidebarItem.level-0.collapsible'))
+    .forEach(g => {
+      if (isActiveGroup(g))                      syncGroup(g, false)
+      else if (state[keyFor(g) ?? ''] === true)  syncGroup(g, true)
+    })
 }
 
 function persistFromDom(root: ParentNode, state: Ref<Record<string, boolean>>): void {

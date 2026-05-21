@@ -1,8 +1,8 @@
 # SuppressionMap
 
-Every source file in *Prose* gets a one-time scan for suppression directives during [[source]] construction, and the result lands in a *SuppressionMap*. The map indexes `# fmt: off` / `# fmt: on` block spans, `# fmt: skip` line markers, the `# yapf: disable` / `# yapf: enable` aliases, and `# prose: ignore[...]` per-line lint directives. The [[pipeline]] consults the map at the edit-emission boundary, dropping suppressed edits and lint diagnostics before they surface to the caller.
+<PrimitiveLayout primitive="suppression-map">
 
-<PrimitivesComposition :initial-focus="'suppression-map'" />
+Every source file in *Prose* gets a one-time scan for suppression directives during [[source]] construction, and the result lands in a *SuppressionMap*. The map indexes `# fmt: off` / `# fmt: on` block spans, `# fmt: skip` line markers, the `# yapf: disable` / `# yapf: enable` aliases, and `# prose: ignore[...]` per-line lint directives. The [[pipeline]] consults the map at the edit-emission boundary, dropping suppressed edits and lint diagnostics before they surface to the caller.
 
 ## Public Surface
 
@@ -41,7 +41,7 @@ prose = { git = "https://github.com/Jybbs/prose", tag = "0.2.3" }
 
 In `0.2.x` the consumption path is indirect (*through suppressed-diagnostics behavior of [**`Pipeline::run`**](/primitives/pipeline)*) rather than direct method calls. The user-facing surface lives entirely in the source-file directives that the [**Suppression**](/guide/suppression) chapter covers.
 
-## Related
+<template #related>
 
 - The [**Suppression**](/guide/suppression) chapter walks the directives the map indexes, with the syntax for block markers, line markers, and lint directives.
 - [[source]] owns the map and consults it on behalf of consuming rules.
@@ -49,3 +49,7 @@ In `0.2.x` the consumption path is indirect (*through suppressed-diagnostics beh
 - [[rule-id]] is the handle that lint directives reference inside the `# prose: ignore[<slug>]` syntax.
 
 For the rule catalog that may emit suppressed diagnostics, the [**Rules Overview**](/rules/) page walks every shipped rule by category.
+
+</template>
+
+</PrimitiveLayout>

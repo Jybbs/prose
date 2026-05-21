@@ -50,5 +50,5 @@ export default defineLoader({
 })
 
 function firstLetter(slug: string): string {
-  return slug.match(/[A-Za-z]/)?.[0].toUpperCase() ?? '#'
+  return Iterator.from(slug).find(ch => /[A-Za-z]/.test(ch))?.toUpperCase() ?? '#'
 }

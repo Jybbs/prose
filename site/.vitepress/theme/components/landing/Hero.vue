@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref }      from 'vue'
-
-import { useElementMeasure }  from '../../../lib/composables/use-element-measure'
+import { useElementBounding }       from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
 
 const ROT_STEP      = 67
 const ROW_STRIDE_PX = 200
 const STAMP_PER_COL = 240
+const TERMINUS_GAP  = 40
 
 const PERMUTATIONS: readonly (readonly string[])[] = [
   ['r','o','s','e'], ['r','o','e','s'], ['r','s','o','e'], ['r','s','e','o'],
@@ -18,29 +18,26 @@ const PERMUTATIONS: readonly (readonly string[])[] = [
 
 const CORNER_SIGNS: readonly [number, number][] = [[1, -1], [1, 1], [-1, 1], [-1, -1]]
 
-const cols     = ref(6)
-const layerRef = ref<HTMLElement | null>(null)
-const rows     = ref(4)
+const heroRef  = useTemplateRef<HTMLElement>('hero')
+const layerRef = useTemplateRef<HTMLElement>('layer')
 
-function measure(): void {
-  const el = layerRef.value
-  if (!el) return
-  cols.value = Math.max(3, Math.round(el.clientWidth / STAMP_PER_COL))
-  const terminus = document.querySelector('.surfaces-carousel') as HTMLElement | null
-  const parent   = el.offsetParent as HTMLElement | null
-  if (terminus && parent) {
-    const terminusY = terminus.getBoundingClientRect().top + window.scrollY
-    const parentY   = parent.getBoundingClientRect().top   + window.scrollY
-    const h         = terminusY - parentY - 40
-    if (h > 0) {
-      el.style.minHeight = '0'
-      el.style.height    = `${h}px`
-      rows.value         = Math.max(3, Math.ceil(h / ROW_STRIDE_PX) + 1)
-    }
-  }
-}
+const { top:   heroTop }     = useElementBounding(heroRef)
+const { width: layerWidth }  = useElementBounding(layerRef)
+const { top:   terminusTop } = useElementBounding(() =>
+  typeof document === 'undefined' ? null : document.querySelector<HTMLElement>('.surfaces-carousel')
+)
 
-useElementMeasure(measure, () => document.body)
+const layerHeight = computed(() => {
+  const h = terminusTop.value - heroTop.value - TERMINUS_GAP
+  return h > 0 ? h : null
+})
+
+const layerStyle = computed(() =>
+  layerHeight.value !== null ? { height: `${layerHeight.value}px`, minHeight: '0' } : undefined
+)
+
+const cols = computed(() => Math.max(3, Math.round(layerWidth.value / STAMP_PER_COL)))
+const rows = computed(() => Math.max(3, Math.ceil((layerHeight.value ?? 0) / ROW_STRIDE_PX) + 1))
 
 interface BigStamp {
   kind   : 'big'
@@ -91,8 +88,8 @@ const stamps = computed<readonly Stamp[]>(() => {
 </script>
 
 <template>
-  <div class="landing-hero">
-    <div ref="layerRef" class="landing-hero-watermarks" aria-hidden="true">
+  <div ref="hero" class="landing-hero">
+    <div ref="layer" class="landing-hero-watermarks" :style="layerStyle" aria-hidden="true">
       <template v-for="(s, i) in stamps" :key="i">
         <img
           v-if="s.kind === 'big'"
