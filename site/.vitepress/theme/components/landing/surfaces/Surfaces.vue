@@ -6,7 +6,7 @@ import LandingSection from '../LandingSection.vue'
 
 import { data as landing }     from '../../../../data/landing.data'
 import { data as rules }       from '../../../../data/rules.data'
-import { useElementMeasure }   from '../../../../lib/shared/use-element-measure'
+import { useElementMeasure }   from '../../../../lib/composables/use-element-measure'
 
 import SurfaceCardTabIndex from './SurfaceCardTabIndex.vue'
 

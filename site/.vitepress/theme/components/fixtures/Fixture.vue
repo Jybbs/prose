@@ -7,7 +7,7 @@ import FixtureToggle from './FixtureToggle.vue'
 
 import { data as fixtures }   from '../../../data/fixtures.data'
 import type { FixtureTab }    from '../../../lib/shared/fixture-tab'
-import { registerFixture }    from '../../../lib/shared/fixture-toc'
+import { registerFixture }    from '../../../lib/composables/fixture-toc'
 import { lookup }             from '../../../lib/shared/lookup'
 
 const props = defineProps<{

@@ -1,4 +1,4 @@
-import { assertCoversPrimitives, type PrimitiveSlug } from '../shared/registries'
+import { assertCoversPrimitives, type PrimitiveSlug } from '../../../lib/shared/registries'
 
 export interface DepGraphNode {
   cx    : number

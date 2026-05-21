@@ -2,7 +2,7 @@
 import Tool from '../base/Tool.vue'
 
 import { data as editors } from '../../../data/editor-configs.data'
-import { useTabSelect }    from '../../../lib/shared/use-tab-select'
+import { useTabSelect }    from '../../../lib/composables/use-tab-select'
 
 const { active, selected: activeSlug } = useTabSelect(editors, e => e.slug)
 </script>

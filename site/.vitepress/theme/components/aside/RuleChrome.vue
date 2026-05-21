@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useCurrentRule } from '../../../lib/shared/route'
+import { useCurrentRule } from '../../../lib/composables/route'
 
 import TaxonomyChip from './TaxonomyChip.vue'
 

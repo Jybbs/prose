@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref }      from 'vue'
 
-import { useElementMeasure }  from '../../../lib/shared/use-element-measure'
+import { useElementMeasure }  from '../../../lib/composables/use-element-measure'
 
 const ROT_STEP      = 67
 const ROW_STRIDE_PX = 200

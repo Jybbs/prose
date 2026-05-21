@@ -5,7 +5,7 @@ import RuleCard from './RuleCard.vue'
 
 import { data as rules }  from '../../../data/rules.data'
 import { lookup }         from '../../../lib/shared/lookup'
-import { useCurrentRule } from '../../../lib/shared/route'
+import { useCurrentRule } from '../../../lib/composables/route'
 
 const current = useCurrentRule()
 

@@ -3,8 +3,8 @@ import { computed } from 'vue'
 
 import Kicker from '../base/Kicker.vue'
 
-import { fixtureTocFor }   from '../../../lib/shared/fixture-toc'
-import { useCurrentRule }  from '../../../lib/shared/route'
+import { fixtureTocFor }   from '../../../lib/composables/fixture-toc'
+import { useCurrentRule }  from '../../../lib/composables/route'
 
 const currentRule = useCurrentRule()
 

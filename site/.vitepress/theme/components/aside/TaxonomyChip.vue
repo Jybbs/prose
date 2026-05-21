@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import Chip from '../base/Chip.vue'
 
 import { CATEGORY_META, FAMILY_META, type RuleCategory, type RuleFamily } from '../../../lib/shared/registries'
-import { useCurrentRule }                                                  from '../../../lib/shared/route'
+import { useCurrentRule }                                                  from '../../../lib/composables/route'
 
 const props = withDefaults(defineProps<{
   axis    : 'category' | 'family'

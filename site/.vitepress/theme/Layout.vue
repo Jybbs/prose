@@ -2,8 +2,8 @@
 import DefaultTheme        from 'vitepress/theme'
 import { watchEffect }     from 'vue'
 
-import { useCurrentFamily }   from '../lib/shared/route'
-import { useSidebarCollapse } from '../lib/shared/sidebar-collapse'
+import { useCurrentFamily }   from '../lib/composables/route'
+import { useSidebarCollapse } from '../lib/composables/sidebar-collapse'
 
 import BuildMetadata from './components/layout/BuildMetadata.vue'
 import FixtureToc    from './components/aside/FixtureToc.vue'

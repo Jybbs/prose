@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { data as codes } from '../../../data/exit-codes.data'
-import { useTabSelect }  from '../../../lib/shared/use-tab-select'
+import { useTabSelect }  from '../../../lib/composables/use-tab-select'
 
 const { active: selectedRow, selected } = useTabSelect(codes, c => c.code)
 </script>
