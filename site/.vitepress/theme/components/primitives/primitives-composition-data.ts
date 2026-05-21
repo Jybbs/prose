@@ -18,7 +18,7 @@ export const LAYER_META: Record<PrimitiveLayer, { kicker: string, label: string 
   orchestration : { kicker: 'L2 · orchestration', label: 'Orchestration'      }
 }
 
-export const PRIMITIVE_ENTRIES: readonly PrimitiveEntry[] = [
+export const PRIMITIVE_ENTRIES = [
   {
     consumedBy : ['align-colons', 'align-equals', 'align-imports', 'match-case-align'],
     consumes   : ['edit', 'source'],
@@ -107,11 +107,7 @@ export const PRIMITIVE_ENTRIES: readonly PrimitiveEntry[] = [
     summary    : 'Ignore-aware filesystem walker yielding every `.py` / `.pyi` / `.pyw` file under given paths.',
     tagline    : 'ignore-aware path walker'
   }
-]
+] as const satisfies readonly PrimitiveEntry[]
 
-export const ENTRIES_BY_LAYER: Record<PrimitiveLayer, readonly PrimitiveEntry[]> =
-  Object.fromEntries(
-    (Object.keys(LAYER_META) as PrimitiveLayer[]).map(l =>
-      [l, PRIMITIVE_ENTRIES.filter(e => e.layer === l)]
-    )
-  ) as Record<PrimitiveLayer, readonly PrimitiveEntry[]>
+export const ENTRIES_BY_LAYER = Object.groupBy(PRIMITIVE_ENTRIES, e => e.layer) as
+  Record<PrimitiveLayer, readonly PrimitiveEntry[]>

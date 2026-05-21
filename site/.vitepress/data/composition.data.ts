@@ -4,7 +4,8 @@ import path from 'node:path'
 import { parse }        from 'smol-toml'
 import { defineLoader } from 'vitepress'
 
-import { repoRoot } from '../lib/shared/paths'
+import { repoRoot }     from '../lib/shared/paths'
+import { toTitleCase }  from '../lib/shared/title-case'
 
 export interface CompositionCase {
   case  : string
@@ -21,28 +22,6 @@ interface CompositionToml {
 }
 
 const compositionDir = path.join(repoRoot(import.meta.url), 'tests/fixtures/composition')
-
-const LOWERCASE_IN_TITLE = new Set([
-  'a',     'among',  'an',    'and',  'as',
-  'at',    'but',    'by',    'for',  'from',
-  'in',    'inside', 'into',  'nor',  'of',
-  'on',    'onto',   'or',    'over', 'so',
-  'the',   'to',     'under', 'upon', 'via',
-  'with',  'within', 'yet'
-])
-
-function toTitleCase(slug: string): string {
-  const words = slug.split('_')
-  return words
-    .map((word, i) => {
-      const lower = word.toLowerCase()
-      if (i !== 0 && i !== words.length - 1 && LOWERCASE_IN_TITLE.has(lower)) {
-        return lower
-      }
-      return lower.charAt(0).toUpperCase() + lower.slice(1)
-    })
-    .join(' ')
-}
 
 declare const data: CompositionData
 export { data }

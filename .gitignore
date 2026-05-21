@@ -22,4 +22,4 @@ __pycache__/
 node_modules/
 site/.vitepress/cache/
 site/.vitepress/dist/
-*.timestamp-*.mjs
+**/*.timestamp-*.mjs

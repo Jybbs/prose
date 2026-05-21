@@ -10,7 +10,7 @@ import LandingSection from './LandingSection.vue'
     variant="metaphor"
   >
     <aside class="landing-definition">
-      <p class="landing-definition-kicker">— a definition —</p>
+      <p class="landing-definition-kicker kicker">— a definition —</p>
       <header class="landing-definition-head">
         <h3 class="landing-definition-word">prose</h3>
         <span class="landing-definition-pron">/prōz/</span>
@@ -37,7 +37,7 @@ import LandingSection from './LandingSection.vue'
           disappears, forcing the eye to slow down.
         </p>
         <p>
-          <em>Prose</em> restores it. Aligned columns let the eye skim,
+          <em><span class="prose-mark">Prose</span></em> restores it. Aligned columns let the eye skim,
           one-per-line collections make each entry a unit, and alphabetized
           groupings give every reader the same landmarks.
         </p>

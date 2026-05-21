@@ -13,9 +13,12 @@ export interface FixtureWalkEntry {
 
 export function* walkFixtures(repoRoot: string): Generator<FixtureWalkEntry> {
   const fixturesRoot = path.join(repoRoot, FIXTURES_DIR)
-  for (const rule of fs.readdirSync(fixturesRoot).sort()) {
+  const ruleDirs     = fs.readdirSync(fixturesRoot, { withFileTypes: true })
+    .filter(d => d.isDirectory())
+    .map(d => d.name)
+    .sort()
+  for (const rule of ruleDirs) {
     const ruleDir = path.join(fixturesRoot, rule)
-    if (!fs.statSync(ruleDir).isDirectory()) continue
     for (const file of fs.readdirSync(ruleDir).sort()) {
       if (!file.endsWith(INPUT_SUFFIX)) continue
       yield {

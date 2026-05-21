@@ -25,16 +25,20 @@
   pointer-events : none;
 }
 
-.surface-card-cover-link {
-  position      : absolute;
-  inset         : 0;
-  z-index       : 0;
-  border-radius : var(--prose-radius);
-  text-indent   : -9999px;
-  overflow      : hidden;
+.surface-card-cover-link,
+.vp-doc .rule-card-cover,
+.rule-card-cover {
+  position             : absolute;
+  inset                : 0;
+  z-index              : 0;
+  border-radius        : var(--prose-radius);
+  text-indent          : -9999px;
+  overflow             : hidden;
+  text-decoration-line : none;
 }
 
-.surface-card-cover-link:focus-visible {
+.surface-card-cover-link:focus-visible,
+.rule-card-cover:focus-visible {
   outline        : var(--prose-focus-ring);
   outline-offset : 2px;
 }
@@ -82,7 +86,7 @@
 .surface-card:focus-within {
   border-color : var(--family-color);
   transform    : translateY(-2px);
-  box-shadow   : 0 18px 44px -32px color-mix(in srgb, var(--family-color) 55%, transparent);
+  box-shadow   : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) 55%, transparent);
 }
 
 .surface-card-number {

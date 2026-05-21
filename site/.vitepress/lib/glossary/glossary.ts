@@ -62,7 +62,7 @@ export const glossary: Record<string, GlossaryEntry> = {
   },
 
   'RuleId': {
-    aliases   : ['rule id', 'rule-id', 'rule IDs'],
+    aliases   : ['rule id', 'rule IDs'],
     definition: 'A `RuleId` is the canonical kebab-case slug identifying each registered rule across CLI flags, config tables, suppression directives, and diagnostic output.',
     href      : '/primitives/rule-id'
   },

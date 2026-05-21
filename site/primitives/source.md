@@ -4,7 +4,7 @@ Every rule reads the source file through one shared value. *Source* bundles the 
 
 <PrimitivesComposition :initial-focus="'source'" />
 
-## Public API
+## Public Surface
 
 `Source` is fully public in `0.2.x`. A downstream Rust consumer can construct one, walk the AST, query offsets, and reparse after mutating the text.
 
@@ -24,15 +24,13 @@ Every rule reads the source file through one shared value. *Source* bundles the 
 
 **Errors.** `SourceError` is `pub` and distinguishes IO failures from parse failures, so a caller can surface "could not read" and "could not parse" with the precision the user expects.
 
-## Reuse Pattern
-
-A consumer that wants one rule's edits without the surrounding pipeline machinery reaches for the rule struct through the registry. The standard path is to build a [[pipeline]] from a `Config`, hand it a *Source*, and read the returned text plus diagnostics. The [[pipeline]] primitive page covers the `with_defaults`, `with_filters`, and `for_rule` constructors that drive every shape of consumer pipeline.
-
-## Internal Surface (`0.2.x`)
+## Internal Surface
 
 `suppression_map() -> &SuppressionMap` is `pub(crate)` today, so the in-process *SuppressionMap* type is only reachable from within the crate. Consumers needing to consult suppression state pass through [**`Pipeline::run`**](/primitives/pipeline), which already filters emitted edits and diagnostics. The trait `Rule` that concrete rules implement is `pub(crate)` for the same reason. Both surfaces stabilize toward `1.0`.
 
 ## Re-Using This Primitive
+
+A consumer that wants one rule's edits without the surrounding pipeline machinery reaches for the rule struct through the registry. The standard path is to build a [[pipeline]] from a `Config`, hand it a *Source*, and read the returned text plus diagnostics. The [[pipeline]] primitive page covers the `with_defaults`, `with_filters`, and `for_rule` constructors that drive every shape of consumer pipeline.
 
 A downstream Rust crate consumes *prose* the same way it consumes the `ruff_*` workspace, through a Git dependency pinned to a release tag:
 

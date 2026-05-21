@@ -5,7 +5,7 @@
 *Docstring* is the walker that reaches every PEP 257 docstring in a module. The first body statement of the module, each class, and each function may carry a string literal as a docstring, and the walker hands every such literal to a consumer in source order. Three rules ([[docstring-wrap]], [[multi-line-docstrings]], [[no-single-line-docstrings]]) consume the same walk, so the AST traversal lives once in *Docstring* and each rule supplies a handler that decides what to emit per docstring.
 
 
-## Public Surface (`0.2.x`)
+## Public Surface
 
 *Docstring* lives at `src/primitives/docstring.rs` and is `pub(crate)`. The downstream-visible consequence is the rewrites the docstring rules emit through the diagnostic stream.
 
@@ -49,7 +49,7 @@ The shape-helper `DocstringBody { range, text }` carries the body slice between 
 
 A rule implementing `DocstringHandler` carries the accumulator state and pushes edits or diagnostics from each `handle` call. After `walk(source)` returns, the accumulator carries the full result, and the rule's `apply` method returns the `Vec<Edit>` from that accumulator.
 
-## Reuse Pattern
+## Re-Using This Primitive
 
 Adding a docstring-shaped rule is shaped as *"implement `DocstringHandler`, decide per-docstring what edits to emit, call `walk(source)` from inside `apply`"*. The PEP 257 detection, the nested-scope traversal, and the implicitly-concatenated skip all carry through without re-implementation.
 

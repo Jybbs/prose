@@ -16,6 +16,7 @@
   margin                  : 12px 0 0;
   padding-bottom          : 0;
   border-bottom           : none;
+  font-family             : var(--prose-font-display);
   font-size               : clamp(2rem, 3.6vw, 2.8rem);
   font-weight             : 500;
   line-height             : 1.1;
@@ -26,7 +27,8 @@
 }
 
 .landing-section h2 em {
-  color : var(--prose-c-celadon);
+  font-style : italic;
+  color      : var(--prose-c-celadon);
 }
 
 .landing-section h2 strong {
@@ -47,6 +49,7 @@
 
 .landing-section-heading.centered {
   display      : block;
+  align-items  : center;
   max-width    : 720px;
   margin-right : auto;
   margin-left  : auto;

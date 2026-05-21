@@ -42,7 +42,7 @@ function isDim(slug: string): boolean {
   <div class="primitives-composition">
     <div v-for="layer in layers" :key="layer.label" class="primitives-composition-row">
       <div class="primitives-composition-row-label">
-        <span class="primitives-composition-row-kicker">{{ layer.kicker }}</span>
+        <span class="primitives-composition-row-kicker kicker">{{ layer.kicker }}</span>
         <span class="primitives-composition-row-name">{{ layer.label }}</span>
       </div>
       <ul class="primitives-composition-row-cells">

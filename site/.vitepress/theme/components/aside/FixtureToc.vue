@@ -3,17 +3,17 @@ import { computed } from 'vue'
 
 import Kicker from '../base/Kicker.vue'
 
-import { fixtureTocFor }   from '../../../lib/composables/fixture-toc'
+import { useFixtureToc }   from '../../../lib/composables/fixture-toc'
 import { useCurrentRule }  from '../../../lib/composables/route'
 
 const currentRule = useCurrentRule()
+const fixtureToc  = useFixtureToc()
 
 const anchors = computed(() => {
   if (currentRule.value === null) return []
-  return fixtureTocFor(currentRule.value.slug).map(e => ({
-    href : `#${e.id}`,
-    title: e.title
-  }))
+  return fixtureToc.value
+    .filter(e => e.rule === currentRule.value!.slug)
+    .map(e => ({ href: `#${e.id}`, title: e.title }))
 })
 </script>
 

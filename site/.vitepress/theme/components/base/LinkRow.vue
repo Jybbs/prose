@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { externalAttrs } from '../../../lib/shared/links'
+
 export interface LinkRowItem {
   className ?: string
   href       : string
@@ -9,10 +11,6 @@ defineProps<{
   items   : readonly LinkRowItem[]
   variant : string
 }>()
-
-function isExternal(href: string): boolean {
-  return href.startsWith('http')
-}
 </script>
 
 <template>
@@ -22,8 +20,7 @@ function isExternal(href: string): boolean {
       :key="item.href"
       :href="item.href"
       :class="item.className"
-      :target="isExternal(item.href) ? '_blank' : undefined"
-      :rel="isExternal(item.href) ? 'noopener' : undefined"
+      v-bind="externalAttrs(item.href)"
     >{{ item.text }}</a>
   </div>
 </template>

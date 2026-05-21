@@ -5,7 +5,7 @@
 *Aligner* computes padding widths and emits the alignment edits that every alignment rule consumes. Four rules ([[align-equals]], [[align-colons]], [[align-imports]], [[match-case-align]]) share the same column-resolution math, so the math lives once in *Aligner* and each rule supplies a member list plus a knob-set rather than re-implementing the resolution from scratch.
 
 
-## Public Surface (`0.2.x`)
+## Public Surface
 
 *Aligner* lives at `src/primitives/aligner.rs` and is `pub(crate)`, so the type is reachable from inside the *prose* crate but not from a downstream Rust caller in `0.2.x`. The downstream-visible consequence is the diagnostic stream the alignment rules emit, with the resolved column landing in the `Edit` each rule produces.
 
@@ -39,7 +39,7 @@ Variable-width operators opt in to right-alignment by setting `op_width`, shifti
 
 Each alignment rule walks the AST, collects `Vec<Member>` per group, and calls `emit_group(source, &members, settings)`. The walker shapes are rule-specific *(consecutive assignments, dict items, `import` keywords, match-arm patterns)*, because the per-rule definition of *"what counts as a group"* varies. The math afterward is shared.
 
-## Reuse Pattern
+## Re-Using This Primitive
 
 Adding a new alignment rule is shaped as *"write the walker that produces `Vec<Member>` groups, then call `emit_group`"*. The padding math, the policy fallbacks, the singleton handling, and the right-alignment hook all carry through without re-implementation.
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useIntersectionObserver }                       from '@vueuse/core'
+import { useIntersectionObserver, useMediaQuery }        from '@vueuse/core'
 import { ShikiMagicMovePrecompiled }                     from 'shiki-magic-move/vue'
 import { computed, onMounted, onUnmounted, ref, watch }  from 'vue'
 
@@ -35,7 +35,7 @@ const entryIndex       = ref(0)
 const phase            = ref<Phase>('starting')
 const pythonStateIndex = ref(0)
 
-const reducedMotion = ref(false)
+const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 const inView        = ref(false)
 const rootRef       = ref<HTMLElement | null>(null)
 
@@ -321,7 +321,6 @@ watch(inView, (visible) => {
 })
 
 onMounted(() => {
-  reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   if (reducedMotion.value) freezeAtEnd()
   else schedule(restart, 600)
 })

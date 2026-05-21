@@ -26,7 +26,7 @@ const { active, selected: activeSlug } = useTabSelect(editors, e => e.slug)
         <span class="editor-deck-spine-target">{{ editor.target }}</span>
       </button>
     </div>
-    <div class="editor-deck-face">
+    <div class="editor-deck-face" aria-live="polite">
       <div class="editor-deck-face-head">
         <span class="editor-deck-face-mark" aria-hidden="true"><Tool :slug="active.slug" bare /></span>
         <h3 class="editor-deck-face-name">{{ active.name }}</h3>

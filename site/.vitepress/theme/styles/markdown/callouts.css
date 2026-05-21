@@ -53,14 +53,3 @@
 .vp-doc .custom-block.tip.family-ordering::before {
   background: var(--prose-family-ordering);
 }
-
-.vp-doc .dropcap::first-letter {
-  float       : left;
-  margin      : 0.1em 0.18em 0 0;
-  font-family : var(--prose-font-display);
-  font-size   : 3.4em;
-  font-weight : 700;
-  font-style  : italic;
-  line-height : 0.92;
-  color       : var(--vp-c-brand-1);
-}

@@ -64,14 +64,14 @@ const groupedByYear = computed(() =>
         :aria-label="open ? 'Back to current release' : 'Show previous releases'"
         @click="open = !open"
       >
-        <span class="landing-cta-toggle-glyph" aria-hidden="true">{{ open ? '←' : '+' }}</span>
+        {{ open ? '←' : '+' }}
       </button>
     </aside>
 
     <div class="landing-cta-body">
-      <p class="landing-cta-kicker">Read on</p>
+      <p class="landing-cta-kicker kicker">Read on</p>
       <p class="landing-cta-lede">
-        Take <em>Prose</em> to your own pages and make the next save <em>legible</em>.
+        Take <em><span class="prose-mark">Prose</span></em> to your own pages and make the next save <em>legible</em>.
       </p>
       <div class="landing-cta-cmd" aria-label="Install command">
         <span class="landing-cta-prompt" aria-hidden="true">$</span>

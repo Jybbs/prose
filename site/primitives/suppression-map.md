@@ -4,7 +4,7 @@ Every source file in *Prose* gets a one-time scan for suppression directives dur
 
 <PrimitivesComposition :initial-focus="'suppression-map'" />
 
-## Public Surface (`0.2.x`)
+## Public Surface
 
 The *SuppressionMap* type itself is `pub(crate)` in `0.2.x`, so neither the type nor its methods are reachable from a downstream Rust consumer. The suppression behavior is reachable indirectly through [**`Pipeline::run`**](/primitives/pipeline), which already filters emitted edits and lint diagnostics against the map.
 
@@ -28,11 +28,9 @@ For consumers reading this from within the *prose* crate, the map exposes four p
 
 The [[source]] accessor `suppression_map(&self) -> &SuppressionMap` is also `pub(crate)`. All five entry points open at `1.0`.
 
-## Reuse Pattern
+## Re-Using This Primitive
 
 The map is built once per source and handed across rule boundaries by reference. The [[pipeline]] is the canonical consumer, applying the filter at the edit-emission boundary so downstream rules and final diagnostics both honor the directives. A consumer reusing the suppression surface in a different formatter would build the same map shape and apply the same filter at their own edit-emission boundary.
-
-## Re-Using This Primitive
 
 A downstream Rust crate consumes *prose* through a Git dependency pinned to a release tag:
 

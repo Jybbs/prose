@@ -28,7 +28,7 @@
   font-family           : var(--vp-font-family-mono);
   font-size             : 0.78rem;
   color                 : var(--vp-c-text-2);
-  transition            : background 240ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition            : background var(--prose-transition);
 }
 
 .editor-deck-spine:last-child {

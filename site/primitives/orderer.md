@@ -5,7 +5,7 @@
 *Orderer* reorders sibling AST nodes by a classifier closure while preserving attached comments and the interstitial text between adjacent items. [[alphabetize]] is the canonical consumer, but the primitive is shape-agnostic. Any rule that wants to permute siblings *(class-body members, dict items, `import` lines)* by some key reaches for the same machinery rather than re-implementing comment-attachment and gap-handling.
 
 
-## Public Surface (`0.2.x`)
+## Public Surface
 
 *Orderer* lives at `src/primitives/orderer.rs` and is `pub(crate)`. The downstream-visible consequence is the rewrite [[alphabetize]] emits, with the reordered text landing in the `Edit` the rule produces.
 
@@ -46,7 +46,7 @@ A rule reaches for *Orderer* in three steps:
 
 The pattern handles partial reorders cleanly. Items with `classify -> None` pin in their slot, items with `Some(key)` redistribute through the remaining slots in key order.
 
-## Reuse Pattern
+## Re-Using This Primitive
 
 Adding an ordering rule is shaped as *"decide what's a sibling, decide the classify function, decide whether some items pin"*. [[alphabetize]] is the canonical case where the classify function is the entry's name, every item participates, and `gap_override` substitutes `\n` or `\n\n` based on the per-context blank-line discipline.
 

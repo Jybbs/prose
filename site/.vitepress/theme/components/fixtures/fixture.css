@@ -39,27 +39,21 @@
   color      : var(--side-color);
 }
 
-.fixture-pair-doc,
-.fixture-pair-landing .fixture-pair-side {
+.fixture-pair-doc {
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
   background    : var(--vp-code-block-bg);
   overflow      : hidden;
 }
 
-.fixture-pair-panel,
-.fixture-pair-landing .fixture-pair-code {
+.fixture-pair-panel {
+  padding     : 18px 22px;
   font-size   : 0.8em;
   line-height : 1.55;
   overflow    : auto;
 }
 
-.fixture-pair-panel {
-  padding : 18px 22px;
-}
-
-.fixture-pair-panel pre,
-.fixture-pair-landing .fixture-pair-code pre {
+.fixture-pair-panel pre {
   margin     : 0;
   background : transparent;
   padding    : 0;

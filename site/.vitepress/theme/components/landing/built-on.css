@@ -43,9 +43,9 @@
   background      : color-mix(in srgb, var(--stack-accent) 5%, var(--vp-c-bg));
   color           : color-mix(in srgb, var(--stack-accent) 68%, var(--vp-c-text-1));
   transition      :
-    background   var(--prose-transition-slow),
-    border-color var(--prose-transition-slow),
-    color        var(--prose-transition-slow);
+    background   var(--prose-transition-card),
+    border-color var(--prose-transition-card),
+    color        var(--prose-transition-card);
 }
 
 .built-on-logo {
@@ -70,12 +70,8 @@
 }
 
 .built-on-role {
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size);
-  letter-spacing : var(--prose-kicker-tracking);
-  text-transform : uppercase;
-  line-height    : 1;
-  color          : color-mix(in srgb, var(--stack-accent) 56%, var(--vp-c-text-3));
+  line-height : 1;
+  color       : color-mix(in srgb, var(--stack-accent) 56%, var(--vp-c-text-3));
 }
 
 @media (max-width: 820px) {

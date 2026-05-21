@@ -17,7 +17,7 @@
   border-top    : 3px solid var(--prose-c-celadon);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
-  box-shadow    : 0 12px 28px -10px color-mix(in srgb, var(--prose-c-celadon) 45%, transparent);
+  box-shadow    : var(--prose-shadow-lift) color-mix(in srgb, var(--prose-c-celadon) 45%, transparent);
   color         : var(--vp-c-text-1);
   font-size     : var(--prose-text-sm);
   line-height   : 1.5;
@@ -63,11 +63,8 @@
 }
 
 .glossary-tooltip-body code {
-  font-size     : 0.95em;
-  padding       : 1px 4px;
-  border-radius : var(--prose-radius-sm);
-  background    : var(--vp-c-bg-soft);
-  color         : var(--vp-c-text-1);
+  font-size : 0.95em;
+  color     : var(--vp-c-text-1);
 }
 
 .glossary-tooltip-link {

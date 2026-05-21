@@ -30,7 +30,7 @@
   grid-template-columns : 24px auto 1fr 10px;
   align-items           : baseline;
   gap                   : 14px;
-  padding               : 12px 12px;
+  padding               : 12px;
   border                : none;
   background            : transparent;
   text-align            : left;
@@ -66,10 +66,8 @@
 }
 
 .exit-code-index-leader {
-  align-self    : end;
-  display       : block;
-  margin        : 0 4px 4px;
-  border-bottom : 1px dotted color-mix(in srgb, var(--vp-c-text-3) 50%, transparent);
+  display : block;
+  margin  : 0 4px 4px;
 }
 
 .exit-code-index-mark {
@@ -152,15 +150,12 @@
 
 .exit-code-entry-summary :where(code),
 .exit-code-entry-details :where(code) {
-  padding       : 2px 6px;
-  border-radius : 4px;
-  background    : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
-  font-family   : var(--vp-font-family-mono);
-  font-size     : var(--vp-code-font-size);
-  color         : var(--vp-c-text-1);
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--vp-code-font-size);
+  color       : var(--vp-c-text-1);
 }
 
-@media (max-width: 760px) {
+@media (--prose-bp-tablet) {
   .exit-codes-spread {
     grid-template-columns : 1fr;
     gap                   : 24px;

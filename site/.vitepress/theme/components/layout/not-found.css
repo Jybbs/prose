@@ -9,6 +9,10 @@
   text-align     : center;
 }
 
+.not-found-kicker {
+  letter-spacing: 0.18em;
+}
+
 .not-found-headline {
   margin      : 0;
   padding     : 0;
@@ -47,4 +51,24 @@
   gap             : 10px;
   justify-content : center;
   margin-top      : 12px;
+}
+
+.not-found-links a {
+  display         : inline-flex;
+  align-items     : center;
+  min-height      : 38px;
+  padding         : 0 16px;
+  border          : 1px solid var(--vp-c-divider);
+  border-radius   : var(--prose-radius-sm);
+  color           : var(--vp-c-text-1);
+  font-family     : var(--vp-font-family-mono);
+  font-size       : var(--prose-label-size);
+  letter-spacing  : 0.08em;
+  text-transform  : uppercase;
+  text-decoration : none;
+}
+
+.not-found-links a:hover {
+  border-color : var(--vp-c-brand-1);
+  color        : var(--vp-c-brand-1);
 }

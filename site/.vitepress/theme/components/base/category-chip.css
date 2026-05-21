@@ -1,17 +1,3 @@
-.category-chip {
-  text-decoration : none;
-  transition      :
-    border-color      var(--prose-transition),
-    border-left-width var(--prose-transition),
-    padding-left      var(--prose-transition);
-}
-
-a.category-chip:hover {
-  border-color      : var(--category-accent);
-  border-left-width : 3px;
-  padding-left      : 9px;
-}
-
 .category-chip-badge {
   font-family             : var(--prose-font-display);
   font-style              : italic;

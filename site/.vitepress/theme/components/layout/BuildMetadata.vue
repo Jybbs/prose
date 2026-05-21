@@ -2,15 +2,13 @@
 import { useData }  from 'vitepress'
 import { computed } from 'vue'
 
-import { data as build } from '../../../data/build.data'
-import { data as rules } from '../../../data/rules.data'
+import { data as build }    from '../../../data/build.data'
+import { data as rules }    from '../../../data/rules.data'
+import { formatPageDate }   from '../../../lib/shared/format-page-date'
 
 const { page } = useData()
 
-const lastUpdated = computed(() => {
-  const ts = page.value.lastUpdated
-  return ts ? new Date(ts).toISOString().slice(0, 10) : ''
-})
+const lastUpdated = computed(() => formatPageDate(page.value.lastUpdated))
 
 interface Item {
   code   ?: boolean

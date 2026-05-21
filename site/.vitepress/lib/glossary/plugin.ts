@@ -8,7 +8,7 @@ type Token = MarkdownIt.Token
 
 export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>) {
   if (phraseToSlug.size === 0) {
-    return (_md: MarkdownIt): void => {}
+    throw new Error('glossaryPlugin received an empty phrase map')
   }
 
   const phrases  = [...phraseToSlug.keys()].sort((a, b) => b.length - a.length)
@@ -20,8 +20,8 @@ export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>) {
   return function plugin(md: MarkdownIt) {
     md.core.ruler.after('inline', 'glossary-decorate', state => {
       const seen: Set<string> = (state.env.seenGlossarySlugs ??= new Set())
-      walkBodyInlines(state, block => {
-        block.children = decorateChildren(block.children!, pattern, phraseToSlug, seen, state.Token)
+      walkBodyInlines(state, (block, children) => {
+        block.children = decorateChildren(children, pattern, phraseToSlug, seen, state.Token)
       })
     })
 

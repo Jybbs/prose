@@ -4,7 +4,7 @@
 
 <PrimitivesComposition :initial-focus="'pipeline'" />
 
-## Public API
+## Public Surface
 
 `Pipeline` is fully public in `0.2.x`. A downstream Rust consumer constructs one through one of four entry points, runs it against a [[source]], and reads the returned text plus diagnostics.
 
@@ -23,7 +23,11 @@
 
 Rule order is deterministic. The registry pins it explicitly through a single `register_rules!` macro invocation in `src/rule.rs`, and the pipeline runs rules in that order without parallelism inside one *Source*. Cross-source parallelism (*two files at once*) is the path-mode CLI's job, owned by the walker above the pipeline rather than inside it.
 
-## Reuse Pattern
+## Internal Surface
+
+`Pipeline::from_rules` is `pub(crate)`, so a downstream cannot register a hand-rolled rule list in `0.2.x`. The `Rule` trait that concrete rules implement is also `pub(crate)`. Both surfaces stabilize toward `1.0`, where consumers will be able to compose custom rule sets and implement project-specific rules against a stable trait.
+
+## Re-Using This Primitive
 
 The canonical shape for a downstream Rust consumer is:
 
@@ -40,12 +44,6 @@ println!("{}", formatted.text());
 ```
 
 For a single-rule isolation, `Pipeline::for_rule("align-equals", &config)` returns a pipeline that runs only `align-equals` against the source.
-
-## Internal Surface (`0.2.x`)
-
-`Pipeline::from_rules` is `pub(crate)`, so a downstream cannot register a hand-rolled rule list in `0.2.x`. The `Rule` trait that concrete rules implement is also `pub(crate)`. Both surfaces stabilize toward `1.0`, where consumers will be able to compose custom rule sets and implement project-specific rules against a stable trait.
-
-## Re-Using This Primitive
 
 A downstream Rust crate consumes *prose* through a Git dependency pinned to a release tag:
 

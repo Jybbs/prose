@@ -5,7 +5,7 @@
 *Walker* is the recursive path-discovery helper the `check` and `format` subcommands consume. Given a list of path arguments, it yields every Python source file *(`.py`, `.pyi`, `.pyw`)* under those paths, honoring `.gitignore`, `.ignore`, and the user's global ignore file. The walker wraps the [**`ignore`**](https://docs.rs/ignore/) crate's `WalkBuilder`, picking up the same gitignore semantics that Ripgrep, fd, and other tree-walking tools share.
 
 
-## Public Surface (`0.2.x`)
+## Public Surface
 
 *Walker* lives at `src/walker.rs` and is `pub(crate)`. The downstream-visible consequence is the set of files `prose check` and `prose format` operate on, with the walk shape settled before any [[source]] construction or [[pipeline]] run.
 
@@ -43,7 +43,7 @@ The path-mode CLI parallelizes across the yielded file list via [**`rayon`**](ht
 
 Setting `RAYON_NUM_THREADS=1` forces single-threaded execution, which is the right shape when debugging a rule against a specific file or stepping through the [[pipeline]] in a debugger.
 
-## Reuse Pattern
+## Re-Using This Primitive
 
 The walker is consumed by the CLI's path-mode entry point. A downstream Rust consumer integrating *prose* through `Pipeline::run` typically holds its own file-discovery logic *(matching the consumer's existing conventions)* and constructs [[source]] values directly from each path, bypassing the walker.
 

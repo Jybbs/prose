@@ -4,7 +4,7 @@
 
 <PrimitivesComposition :initial-focus="'binding-analysis'" />
 
-## Public Surface (`0.2.x`)
+## Public Surface
 
 The *BindingAnalysis* type itself is `pub` and re-exported at the crate root as `prose::BindingAnalysis`, so a downstream consumer can hold a reference to one through [**`Source::binding_analysis`**](/primitives/source). The accessor methods on the type are `pub(crate)` today, so the in-process API is reachable from within the *prose* crate but not from a downstream Rust caller.
 
@@ -38,11 +38,9 @@ The supporting types `BindingId`, `ScopeId`, `BindingKind`, `ScopeKind`, `Bindin
 
 `BindingAnalysis::new(module: &ModModule)` runs the resolution pass once. The pass walks the AST in source order, tracks every introduction and shadow per lexical scope, and indexes writes and reads by offset. The result is owned by the enclosing [[source]] and handed to consuming rules as `&BindingAnalysis`.
 
-## Reuse Pattern
+## Re-Using This Primitive
 
 [[single-use-variables]] is the first rule to consume the table, counting writes and reads per binding to surface candidates for inlining. Future rules with binding-shaped questions (*unused imports, shadowing detection, ahead-of-use references, dead-store analysis*) reach for the same primitive without re-walking. The single-walk-per-source guarantee is what makes adding new binding-shaped rules cheap.
-
-## Re-Using This Primitive
 
 A downstream Rust crate consumes *prose* through a Git dependency pinned to a release tag:
 

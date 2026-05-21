@@ -23,7 +23,7 @@ const { active: selectedRow, selected } = useTabSelect(codes, c => c.code)
         <span class="exit-code-index-mark" aria-hidden="true" />
       </button>
     </nav>
-    <article class="exit-code-entry" :data-exit-code="selectedRow.code">
+    <article class="exit-code-entry" :data-exit-code="selectedRow.code" aria-live="polite">
       <header class="exit-code-entry-head">
         <span class="exit-code-entry-numeral" aria-hidden="true">{{ selectedRow.code }}</span>
         <span class="exit-code-entry-label">{{ selectedRow.label }}</span>

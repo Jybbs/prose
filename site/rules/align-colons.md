@@ -1,27 +1,26 @@
 ---
 category : auto-fix
 family   : alignment
-caption  : "*Prose* aligns the `:` separator across dict literals, dataclass and Pydantic fields, function-signature annotations, and docstring `Args:` blocks."
+caption  : "aligns the `:` separator across dict literals, dataclass and Pydantic fields, function-signature annotations, and docstring `Args:` blocks."
 related  : [align-equals, align-imports, alphabetize, collection-layout, match-case-align, singleton-rule]
+layout   : doc
 ---
 
 # align-colons
+
+<RuleLayout rule="align_colons" canonical="dict_literal">
 
 The `:` separator appears in **four contexts** where columns of values sit beside columns of names, and in each one the reader's eye wants a tidy table rather than a ragged margin. `align-colons` gathers those contexts into a single shared alignment surface, so dictionary keys, dataclass and Pydantic fields, function-signature parameter annotations, and docstring `Args:` blocks all read as parallel two-column entries. Single-expression `match` arms live in a separate dispatch table owned by [[match-case-align]].
 
 The rule walks each context independently, treating a group as the consecutive members sharing the same indentation level and parent shape. A blank line, a comment, or a non-member statement resets the group. Alignment honors the [[singleton-rule]] so that one-member contexts skip padding altogether, leaving a one-key dict reading as plain code instead of a one-row table.
 
-## Configuration
-
-<RuleConfigTable preset="alignment" />
-
-## The Canonical Case
+<template #canonical-lead>
 
 A dictionary literal with three entries of differing key lengths aligns on the `:` separator, and the reader reads keys and values as separate columns.
 
-<Fixture rule="align_colons" case="dict_literal" />
+</template>
 
-## More Examples
+<template #more-examples>
 
 <Fixture rule="align_colons" case="function_signature" title="Function-Signature Annotations Align inside the Parameter List" />
 
@@ -33,6 +32,6 @@ A dictionary literal with three entries of differing key lengths aligns on the `
 
 <Fixture rule="align_colons" case="dict_unpacking" title="Unpacking Entries Break the Alignment Run" />
 
-## Related
+</template>
 
-<RelatedRulesInline />
+</RuleLayout>

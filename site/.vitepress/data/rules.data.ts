@@ -5,11 +5,13 @@ import { discoverRuleSlugs }   from '../lib/rules/discovery'
 import type { DiscoveredRule } from '../lib/rules/discovery'
 import { rulesDir }            from '../lib/shared/paths'
 import { CATEGORY_META, FAMILY_META, type RuleCategory, type RuleFamily } from '../lib/shared/registries'
+import { toTitleCase }         from '../lib/shared/title-case'
 
 export type { DiscoveredRule }
 
 export interface RenderedRule extends DiscoveredRule {
   captionHtml : string
+  name        : string
 }
 
 export interface RuleFamilyGroup {
@@ -42,23 +44,23 @@ export default defineLoader({
     const md         = await getRenderer()
     const list       = discoverRuleSlugs(rulesDirectory).map(r => ({
       ...r,
-      captionHtml: md.renderInline(r.caption)
+      captionHtml: md.renderInline(`*Prose* ${r.caption}`),
+      name       : toTitleCase(r.slug, '-')
     }))
     const bySlug     = Object.fromEntries(list.map(r => [r.slug, r])) as Record<string, RenderedRule>
     const families   = Object.keys(FAMILY_META) as RuleFamily[]
-    const byFamily   = Object.fromEntries(
-      families.map(family => [family, [] as RenderedRule[]])
-    ) as Record<RuleFamily, RenderedRule[]>
-    for (const r of list) byFamily[r.family].push(r)
+    const byFamily   = Object.groupBy(list, r => r.family) as Record<RuleFamily, readonly RenderedRule[]>
+    for (const family of families) byFamily[family] ??= []
     const byCategory = (['auto-fix', 'lint'] as const).map(category => {
       const rulesInCategory = list.filter(r => r.category === category)
+      const grouped         = Object.groupBy(rulesInCategory, r => r.family) as Partial<Record<RuleFamily, readonly RenderedRule[]>>
       return {
         byFamily : families
-          .filter(family => rulesInCategory.some(r => r.family === family))
+          .filter(family => grouped[family]?.length)
           .map(family => ({
             family,
             label : FAMILY_META[family].label,
-            rules : rulesInCategory.filter(r => r.family === family)
+            rules : grouped[family]!
           })),
         category,
         label    : CATEGORY_META[category].label

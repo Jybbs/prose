@@ -6,13 +6,7 @@ import { data as glossary, type RenderedGlossaryEntry } from '../../../data/glos
 const grouped = computed<[string, RenderedGlossaryEntry[]][]>(() => {
   const entries = Object.values(glossary.entries).sort((a, b) =>
     a.slug.localeCompare(b.slug, 'en', { sensitivity: 'base' }))
-  const map = new Map<string, RenderedGlossaryEntry[]>()
-  for (const entry of entries) {
-    const bucket = map.get(entry.initial) ?? []
-    bucket.push(entry)
-    map.set(entry.initial, bucket)
-  }
-  return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
+  return [...Map.groupBy(entries, e => e.initial).entries()].sort(([a], [b]) => a.localeCompare(b))
 })
 </script>
 

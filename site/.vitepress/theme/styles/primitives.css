@@ -1,28 +1,7 @@
-.kicker,
-.vp-doc .custom-block-title,
-.vp-doc th {
-  margin         : 0;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size);
-  letter-spacing : var(--prose-kicker-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
-}
-
-.kicker[data-variant="rule"]::before {
-  content      : "— ";
-  margin-right : 4px;
-}
-
-.kicker[data-variant="rule"]::after {
-  content     : " —";
-  margin-left : 4px;
-}
-
-.fixture-toc-kicker,
-.related-rules-kicker,
-.vp-doc .custom-block-title {
-  margin-bottom: 8px;
+.vp-doc .custom-block {
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg-soft);
 }
 
 .vp-doc .custom-block-title,
@@ -31,77 +10,14 @@
   color       : var(--vp-c-text-2);
 }
 
-.not-found-kicker {
-  letter-spacing: 0.18em;
-}
-
-.dep-graph,
-.disclosure,
-.related-rules,
-.vp-doc .custom-block,
-.workflow-step {
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg-soft);
-}
-
-.landing-links a,
-.landing-section-heading.centered a,
-.not-found-links a {
-  display         : inline-flex;
-  align-items     : center;
-  min-height      : 38px;
-  padding         : 0 16px;
-  border          : 1px solid var(--vp-c-divider);
-  border-radius   : 6px;
-  color           : var(--vp-c-text-1);
-  font-family     : var(--vp-font-family-mono);
-  font-size       : var(--prose-label-size);
-  letter-spacing  : 0.08em;
-  text-transform  : uppercase;
-  text-decoration : none;
-}
-
-.landing-links a:hover,
-.landing-section-heading.centered a:hover,
-.not-found-links a:hover {
-  border-color : var(--vp-c-brand-1);
-  color        : var(--vp-c-brand-1);
-}
-
-.definition-word,
 .disclosure-title,
 .glossary-tooltip-title,
-.landing-hero-tagline,
-.landing-section h2,
-.not-found-headline,
-.workflow-step h3 {
+.not-found-headline {
   font-family : var(--prose-font-display);
 }
 
-.landing-hero-tagline,
-.landing-section h2 em,
 .not-found-headline {
   font-style : italic;
-}
-
-.star-count {
-  display        : inline-flex;
-  align-items    : center;
-  gap            : 4px;
-  margin-left    : 6px;
-  padding        : 2px 8px;
-  border         : 1px solid var(--vp-c-divider);
-  border-radius  : 0;
-  color          : var(--vp-c-text-2);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-label-size);
-  letter-spacing : 0.04em;
-  line-height    : 1;
-}
-
-.star-count .star-glyph {
-  color: var(--vp-c-brand-1);
 }
 
 .fixture-toc-list,
@@ -120,6 +36,21 @@
   place-items : center;
 }
 
-.prose-mark {
-  color : var(--prose-c-ube);
+.landing-definition-leader,
+.landing-cta-ledger-leader,
+.exit-code-index-leader {
+  align-self    : end;
+  border-bottom : 1px dotted color-mix(in srgb, var(--vp-c-text-3) 50%, transparent);
+  height        : 0;
+  margin-block  : 0;
+}
+
+.exit-code-entry-summary :where(code),
+.exit-code-entry-details :where(code),
+.glossary-tooltip-body code,
+.rule-card-caption :where(code),
+.specimen-callout-body :is(code, kbd) {
+  padding       : 2px 6px;
+  border-radius : 4px;
+  background    : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
 }

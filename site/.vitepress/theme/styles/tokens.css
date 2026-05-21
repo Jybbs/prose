@@ -35,8 +35,11 @@
 
   --prose-focus-ring             : 2px solid var(--vp-c-brand-1);
 
+  --prose-shadow-lift            : 0 12px 28px -10px;
+
   --prose-transition             : 0.15s ease;
   --prose-transition-slow        : 0.2s ease;
+  --prose-transition-card        : var(--prose-transition-slow);
 
   --prose-tint-faint             : 5%;
   --prose-tint-interact          : 8%;

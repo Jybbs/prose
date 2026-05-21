@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import DefaultTheme        from 'vitepress/theme'
-import { watchEffect }     from 'vue'
+import DefaultTheme from 'vitepress/theme'
 
-import { useCurrentFamily }   from '../lib/composables/route'
-import { useSidebarCollapse } from '../lib/composables/sidebar-collapse'
+import { provideFixtureToc }   from '../lib/composables/fixture-toc'
+import { provideCurrentRule }  from '../lib/composables/route'
+import { useFamilyBodyAttr }   from '../lib/composables/use-family-body-attr'
+import { useSidebarCollapse }  from '../lib/composables/sidebar-collapse'
 
 import BuildMetadata from './components/layout/BuildMetadata.vue'
 import FixtureToc    from './components/aside/FixtureToc.vue'
@@ -12,14 +13,10 @@ import RelatedRules  from './components/aside/RelatedRules.vue'
 import RuleChrome    from './components/aside/RuleChrome.vue'
 import StarBadge     from './components/layout/StarBadge.vue'
 
-const family = useCurrentFamily()
+provideCurrentRule()
+provideFixtureToc()
+useFamilyBodyAttr()
 useSidebarCollapse()
-
-watchEffect(() => {
-  if (typeof document === 'undefined') return
-  if (family.value) document.body.setAttribute('data-family', family.value)
-  else              document.body.removeAttribute('data-family')
-})
 </script>
 
 <template>

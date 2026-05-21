@@ -13,12 +13,7 @@
 }
 
 .landing-definition-kicker {
-  margin         : 0 0 16px;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size);
-  letter-spacing : var(--prose-kicker-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
+  margin : 0 0 16px;
 }
 
 .landing-definition-head {
@@ -46,10 +41,9 @@
 }
 
 .landing-definition-leader {
-  flex          : 1;
-  border-bottom : 1px dotted var(--vp-c-text-3);
-  margin        : 0 6px 0.35em;
-  opacity       : 0.5;
+  flex    : 1;
+  margin  : 0 6px 0.35em;
+  opacity : 0.5;
 }
 
 .landing-definition-pos {

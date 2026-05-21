@@ -36,11 +36,6 @@ function compareDesc(a: PyPIRelease, b: PyPIRelease): number {
       || b.version.localeCompare(a.version, undefined, { numeric: true })
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? iso.slice(0, 10) : d.toISOString().slice(0, 10)
-}
-
 export default defineLoader({
   watch: [],
   async load(): Promise<readonly PyPIRelease[]> {
@@ -52,7 +47,7 @@ export default defineLoader({
         .filter(([, files]) => files && files.length > 0)
         .map(([version, files]) => {
           const live = files.find(f => !f.yanked) ?? files[0]
-          return { date: formatDate(live.upload_time), url: projectUrl(version), version }
+          return { date: live.upload_time.slice(0, 10), url: projectUrl(version), version }
         })
         .sort(compareDesc)
       return entries.length > 0 ? entries : FALLBACK

@@ -1,6 +1,9 @@
 .related-rules {
-  margin  : 20px 0 0;
-  padding : var(--prose-pad-card);
+  margin        : 20px 0 0;
+  padding       : var(--prose-pad-card);
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg-soft);
 }
 
 .related-rules-list {

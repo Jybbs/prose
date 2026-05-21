@@ -1,17 +1,3 @@
-.family-chip {
-  text-decoration : none;
-  transition      :
-    border-color      var(--prose-transition),
-    border-left-width var(--prose-transition),
-    padding-left      var(--prose-transition);
-}
-
-a.family-chip:hover {
-  border-color      : var(--family-color);
-  border-left-width : 3px;
-  padding-left      : 9px;
-}
-
 .family-chip-badge {
   font-size: var(--prose-text-md);
 }

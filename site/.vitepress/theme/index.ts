@@ -1,6 +1,5 @@
 import type { Theme } from 'vitepress'
 import DefaultTheme   from 'vitepress/theme'
-import type { App }   from 'vue'
 
 import FloatingVue            from 'floating-vue'
 import { enhanceAppWithTabs } from 'vitepress-plugin-tabs/client'
@@ -31,6 +30,7 @@ import RelatedRulesInline    from './components/rules/RelatedRulesInline.vue'
 import RuleCardGrid          from './components/rules/RuleCardGrid.vue'
 import RuleChip              from './components/rules/RuleChip.vue'
 import RuleConfigTable       from './components/rules/RuleConfigTable.vue'
+import RuleLayout            from './components/rules/RuleLayout.vue'
 import RulesIndex            from './components/rules/RulesIndex.vue'
 import RulesPlate            from './components/rules/RulesPlate.vue'
 import Tool                  from './components/base/Tool.vue'
@@ -42,6 +42,7 @@ import './styles/markdown/body.css'
 import './styles/markdown/callouts.css'
 import './styles/markdown/headings.css'
 import './styles/primitives.css'
+import './styles/prose-mark.css'
 import './styles/vitepress-chrome.css'
 
 import './components/aside/fixture-toc.css'
@@ -50,6 +51,7 @@ import './components/base/category-chip.css'
 import './components/base/chips.css'
 import './components/base/disclosure.css'
 import './components/base/family-chip.css'
+import './components/base/kicker.css'
 import './components/exit-codes/exit-code-matrix.css'
 import './components/fixtures/fixture-landing.css'
 import './components/fixtures/fixture.css'
@@ -62,31 +64,26 @@ import './components/landing/hero.css'
 import './components/landing/landing.css'
 import './components/landing/metaphor.css'
 import './components/landing/surfaces/surface-card-base.css'
+import './components/landing/surfaces/surface-card-tab-index.css'
 import './components/landing/surfaces/surfaces.css'
 import './components/landing/typing-demo.css'
 import './components/landing/workflow.css'
 import './components/layout/build-metadata.css'
 import './components/layout/not-found.css'
+import './components/layout/star-badge.css'
 import './components/primitives/dependency-graph.css'
 import './components/primitives/primitives-composition.css'
+import './components/rules/pipeline-order.css'
 import './components/rules/related-rules-inline.css'
 import './components/rules/rule-card-grid.css'
 import './components/rules/rules-index.css'
 import './components/rules/rules-plate.css'
 
-import { applyProseMarks } from './wrap-prose-marks'
-
 export default {
   extends: DefaultTheme,
   Layout,
-  enhanceApp({ app, router }) {
+  enhanceApp({ app }) {
     enhanceAppWithTabs(app)
-    if (typeof window !== 'undefined') {
-      router.onAfterRouteChange = () => {
-        requestAnimationFrame(applyProseMarks)
-      }
-      requestAnimationFrame(applyProseMarks)
-    }
     app.component('BuiltOn',               BuiltOn)
     app.component('CompositionGrid',       CompositionGrid)
     app.component('DependencyGraph',       DependencyGraph)
@@ -101,6 +98,7 @@ export default {
     app.component('RuleCardGrid',          RuleCardGrid)
     app.component('RuleChip',              RuleChip)
     app.component('RuleConfigTable',       RuleConfigTable)
+    app.component('RuleLayout',            RuleLayout)
     app.component('RulesIndex',            RulesIndex)
     app.component('RulesPlate',            RulesPlate)
     app.component('Tool',                  Tool)

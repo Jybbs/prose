@@ -6,8 +6,10 @@ import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 import { buildPhraseToSlug, glossary }            from './lib/glossary/glossary'
 import { glossaryPlugin }                         from './lib/glossary/plugin'
 import { bodyLinkPlugin }                         from './lib/markdown/body-link-plugin'
+import { proseMarkPlugin }                        from './lib/markdown/prose-mark-plugin'
 import { discoverRuleSlugs }                      from './lib/rules/discovery'
 import { ruleLinkPlugin }                         from './lib/rules/link-plugin'
+import { canonicalUrl }                           from './lib/shared/canonical-url'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME }  from './lib/shared/constants'
 import { buildPageTimestamps }                    from './lib/shared/page-timestamps'
 import { repoRoot, rulesDir }                     from './lib/shared/paths'
@@ -35,6 +37,7 @@ export default defineConfig({
       md.use(tabsMarkdownPlugin)
       md.use(ruleLinkPlugin(validSlugs))
       md.use(glossaryPlugin(glossaryPhraseToSlug))
+      md.use(proseMarkPlugin)
       md.use(bodyLinkPlugin)
     },
     lineNumbers : false,
@@ -72,7 +75,7 @@ export default defineConfig({
     pageData.frontmatter.head ??= []
     pageData.frontmatter.head.push([
       'link',
-      { href: `${SITE_HOSTNAME}/${pageData.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '')}`, rel: 'canonical' }
+      { href: canonicalUrl(pageData.relativePath), rel: 'canonical' }
     ])
     const ts = pageTimestamps.get(pageData.relativePath)
     if (ts) pageData.lastUpdated = ts

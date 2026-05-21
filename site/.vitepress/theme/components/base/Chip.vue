@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { externalAttrs } from '../../../lib/shared/links'
+
 const props = defineProps<{
   category ?: string
   family   ?: string
@@ -9,8 +11,8 @@ const props = defineProps<{
   variant   : 'category-chip' | 'family-chip' | 'rule-chip' | 'star-count'
 }>()
 
-const isExternal = computed(() => props.href?.startsWith('http') ?? false)
-const tag        = computed(() => (props.href ? 'a' : 'div'))
+const tag       = computed(() => (props.href ? 'a' : 'div'))
+const linkAttrs = computed(() => externalAttrs(props.href))
 </script>
 
 <template>
@@ -20,8 +22,7 @@ const tag        = computed(() => (props.href ? 'a' : 'div'))
     :title="title"
     :data-category="category"
     :data-family="family"
-    :target="isExternal ? '_blank' : undefined"
-    :rel="isExternal ? 'noopener' : undefined"
     :class="variant"
+    v-bind="linkAttrs"
   ><slot /></component>
 </template>

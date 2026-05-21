@@ -14,10 +14,6 @@ const surfaceCards = computed(() =>
   landing.surfaces.map(s => ({ ...s, rules: rules.byFamily[s.family] ?? [] }))
 )
 
-const doubled = computed(() =>
-  [false, true].flatMap(dup => surfaceCards.value.map(c => ({ ...c, dup })))
-)
-
 const ruleCount = computed(() => rules.list.length)
 
 const heading = computed(() =>
@@ -34,9 +30,8 @@ const MAX_PULL_PX_PER_SEC   = BASE_SPEED_PX_PER_SEC * 8
 
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
-let halfWidth     = 0
-let lastFrameTime = 0
-let velocity      = BASE_SPEED_PX_PER_SEC
+let halfWidth = 0
+let velocity  = BASE_SPEED_PX_PER_SEC
 
 function measure() {
   const track = trackRef.value
@@ -60,14 +55,9 @@ function wrap(value: number): number {
   return ((value % halfWidth) + halfWidth) % halfWidth
 }
 
-useRafFn(() => {
-  const now = performance.now()
-  if (lastFrameTime === 0) lastFrameTime = now
-  const dt = (now - lastFrameTime) / 1000
-  lastFrameTime = now
-
+useRafFn(({ delta }) => {
   if (halfWidth > 0 && !reducedMotion.value) {
-    offset.value = wrap(offset.value + velocity * dt)
+    offset.value = wrap(offset.value + velocity * delta / 1000)
   }
 }, { immediate: true })
 
@@ -127,17 +117,19 @@ useElementMeasure(measure, trackRef)
         class="surfaces-carousel-track"
         :style="trackStyle"
       >
-        <SurfaceCardTabIndex
-          v-for="(card, idx) in doubled"
-          :key="`${idx}-${card.family}`"
-          :body-html="card.bodyHtml"
-          :family="card.family"
-          :icon="card.icon"
-          :number="card.number"
-          :rules="card.rules"
-          :aria-hidden="card.dup ? 'true' : undefined"
-          :tabindex="card.dup ? -1 : undefined"
-        />
+        <template v-for="copy in 2" :key="copy">
+          <SurfaceCardTabIndex
+            v-for="card in surfaceCards"
+            :key="`${copy}-${card.family}`"
+            :body-html="card.bodyHtml"
+            :family="card.family"
+            :icon="card.icon"
+            :number="card.number"
+            :rules="card.rules"
+            :aria-hidden="copy === 2 ? 'true' : undefined"
+            :tabindex="copy === 2 ? -1 : undefined"
+          />
+        </template>
       </div>
     </div>
   </LandingSection>

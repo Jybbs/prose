@@ -4,7 +4,7 @@ A rule needs a stable handle. The CLI's `--select` and `--ignore` flags parse na
 
 <PrimitivesComposition :initial-focus="'rule-id'" />
 
-## Public API
+## Public Surface
 
 `RuleId` is fully public in `0.2.x`. A downstream Rust consumer constructs *RuleId* values, parses them from CLI or config input, prints them, and uses them as `HashMap` keys.
 
@@ -31,7 +31,7 @@ Each concrete rule lives under `prose::rules` (a `pub(crate)` module today). The
 
 `Pipeline::known_ids() -> &'static [RuleId]` is the public entry point that exposes the canonical-order list to downstream consumers.
 
-## Reuse Pattern
+## Re-Using This Primitive
 
 A downstream Rust consumer that builds a custom pipeline imports *RuleId*, parses user input into the type, and hands the resulting slices to `Pipeline::with_filters`:
 
@@ -48,8 +48,6 @@ let pipeline = Pipeline::with_filters(&config, &select, &[]);
 ```
 
 The `From<&'static str>` path is reserved for compile-time slug literals (the registry macro). Runtime parsing always goes through `FromStr`, which gates on the registered-slug list and so prevents typos from leaking past the parse boundary.
-
-## Re-Using This Primitive
 
 A downstream Rust crate consumes *prose* through a Git dependency pinned to a release tag:
 

@@ -9,11 +9,24 @@
   display        : flex;
   flex-direction : column;
   min-width      : 0;
+  border         : 1px solid var(--vp-c-divider);
+  border-radius  : var(--prose-radius);
+  background     : var(--vp-code-block-bg);
+  overflow       : hidden;
 }
 
 .fixture-pair-landing .fixture-pair-code {
-  flex-grow : 1;
-  padding   : 16px 18px;
+  flex-grow   : 1;
+  padding     : 16px 18px;
+  font-size   : 0.8em;
+  line-height : 1.55;
+  overflow    : auto;
+}
+
+.fixture-pair-landing .fixture-pair-code pre {
+  margin     : 0;
+  background : transparent;
+  padding    : 0;
 }
 
 .fixture-pair-landing .fixture-pair-label {

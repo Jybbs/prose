@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { useElementHover, useMouseInElement } from '@vueuse/core'
+import { computed, ref }                      from 'vue'
 
-import type { RenderedRule }              from '../../../../data/rules.data'
-import { FAMILY_META, type RuleFamily }   from '../../../../lib/shared/registries'
+import type { RenderedRule }            from '../../../../data/rules.data'
+import { FAMILY_META, type RuleFamily } from '../../../../lib/shared/registries'
 
 const props = defineProps<{
   bodyHtml : string
@@ -16,36 +17,23 @@ const meta     = computed(() => FAMILY_META[props.family])
 const category = computed(() => props.family === 'lint' ? 'lint' : 'auto-fix')
 const href     = computed(() => `/rules/${props.family}/`)
 
-const active         = ref(false)
-const chipSpotlightX = ref(50)
-const chipSpotlightY = ref(50)
-const chipsRef       = ref<HTMLElement | null>(null)
-const spotlightX     = ref(50)
-const spotlightY     = ref(50)
+const rootRef  = ref<HTMLElement | null>(null)
+const chipsRef = ref<HTMLElement | null>(null)
 
-function clamp(value: number, lo: number, hi: number): number {
-  return Math.max(lo, Math.min(hi, value))
-}
+const active = useElementHover(rootRef)
 
-function onPointerMove(event: PointerEvent) {
-  const el   = event.currentTarget as HTMLElement
-  const rect = el.getBoundingClientRect()
-  spotlightX.value = ((event.clientX - rect.left) / rect.width)  * 100
-  spotlightY.value = ((event.clientY - rect.top)  / rect.height) * 100
+const { elementX: rx, elementY: ry, elementWidth: rw, elementHeight: rh } = useMouseInElement(rootRef)
+const { elementX: cx, elementY: cy, elementWidth: cw, elementHeight: ch } = useMouseInElement(chipsRef)
 
-  if (chipsRef.value !== null) {
-    const cr = chipsRef.value.getBoundingClientRect()
-    chipSpotlightX.value = clamp(((event.clientX - cr.left) / cr.width)  * 100, 0, 100)
-    chipSpotlightY.value = clamp(((event.clientY - cr.top)  / cr.height) * 100, 0, 100)
-  }
-}
-
-function onEnter() { active.value = true  }
-function onLeave() { active.value = false }
+const spotlightX     = computed(() => rw.value ? (rx.value / rw.value) * 100 : 50)
+const spotlightY     = computed(() => rh.value ? (ry.value / rh.value) * 100 : 50)
+const chipSpotlightX = computed(() => cw.value ? Math.max(0, Math.min(100, (cx.value / cw.value) * 100)) : 50)
+const chipSpotlightY = computed(() => ch.value ? Math.max(0, Math.min(100, (cy.value / ch.value) * 100)) : 50)
 </script>
 
 <template>
   <div
+    ref="rootRef"
     class="surface-card"
     :data-family="family"
     :data-category="category"
@@ -56,9 +44,6 @@ function onLeave() { active.value = false }
       '--spotlight-x'      : `${spotlightX}%`,
       '--spotlight-y'      : `${spotlightY}%`
     }"
-    @pointermove="onPointerMove"
-    @pointerenter="onEnter"
-    @pointerleave="onLeave"
   >
     <a
       class="surface-card-cover-link"

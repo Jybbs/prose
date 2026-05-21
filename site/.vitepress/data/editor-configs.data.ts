@@ -1,6 +1,6 @@
-import { createMarkdownRenderer, defineLoader } from 'vitepress'
+import { defineLoader } from 'vitepress'
 
-import { siteDir } from '../lib/shared/paths'
+import { getRenderer } from '../lib/markdown/renderer'
 
 export interface EditorConfig {
   caption  : string
@@ -106,7 +106,7 @@ Working directory: $ProjectFileDir$`,
 export default defineLoader({
   watch: [],
   async load(): Promise<readonly EditorConfig[]> {
-    const md = await createMarkdownRenderer(siteDir(import.meta.url))
+    const md = await getRenderer()
     return SOURCES.map(src => ({
       caption  : src.caption,
       codeHtml : md.render(`\`\`\`${src.language}\n${src.code}\n\`\`\``),

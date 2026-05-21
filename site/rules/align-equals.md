@@ -1,27 +1,26 @@
 ---
 category : auto-fix
 family   : alignment
-caption  : "*Prose* aligns the `=` separator across consecutive single-target assignments and annotated function-parameter defaults."
+caption  : "aligns the `=` separator across consecutive single-target assignments and annotated function-parameter defaults."
 related  : [align-colons, align-imports, match-case-align, singleton-rule]
+layout   : doc
 ---
 
 # align-equals
+
+<RuleLayout rule="align_equals" canonical="basic">
 
 A run of consecutive bindings sits at the same indentation, the eye walks down the page, and every `=` sign lands at a **different column**. The reader stops at each line to find where the assignment splits. `align-equals` gathers those runs into a **single column**, so a stretch of bindings reads as a list of values rather than a stack of expressions.
 
 The rule walks consecutive single-target assignments at the same indentation level, picking up type annotations when present and treating augmented assignments (*`+=`, `|=`*) and walrus operators (*`:=`*) as non-members. The same alignment also runs across consecutive annotated function-parameter default values, so a signature with several `param: type = default` entries aligns its `=` column the same way a stretch of module-level bindings does. A blank line, a comment line, or a non-assignment statement resets the group, leaving each contiguous run aligned in isolation. Once an alignment group lands, [[singleton-rule]] prunes any one-member residue so a lone binding reads as plain code.
 
-## Configuration
-
-<RuleConfigTable preset="alignment" />
-
-## The Canonical Case
+<template #canonical-lead>
 
 Three consecutive bindings with varying left-hand widths align on the `=` sign. The eye drops down the column of equals signs and reads the right-hand sides as a parallel list.
 
-<Fixture rule="align_equals" case="basic" />
+</template>
 
-## More Examples
+<template #more-examples>
 
 <Fixture rule="align_equals" case="blank_line" title="Blank Lines Reset the Group" />
 
@@ -41,6 +40,6 @@ Three consecutive bindings with varying left-hand widths align on the `=` sign. 
 
 <Fixture rule="align_equals" case="idempotent" title="Already-Aligned Source Is Left Alone" />
 
-## Related
+</template>
 
-<RelatedRulesInline />
+</RuleLayout>

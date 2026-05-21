@@ -1,27 +1,26 @@
 ---
 category : auto-fix
 family   : formatting
-caption  : "*Prose* normalizes blank-line counts to canonical values between thematically adjacent statements."
+caption  : "normalizes blank-line counts to canonical values between thematically adjacent statements."
 related  : [alphabetize, align-imports, bare-import-allowlist]
+layout   : doc
 ---
 
 # blank-lines
+
+<RuleLayout rule="blank_lines" canonical="compound_then_def">
 
 Blank lines carry rhythm. They tell the reader where one unit ends and the next begins, and a consistent rhythm across a file lets the reader skim by section without parsing each statement. `blank-lines` normalizes the discipline around module-level definitions, class members, and the `if __name__ == "__main__":` guard, so every file in the project reads with the same cadence.
 
 Module-level `def` and `class` carry two blank lines before them, methods inside a class body carry one, a module-level statement after `if __name__ == "__main__":` carries one, and adjacent bare-import and `from`-import groups carry one between them. Inside function bodies the rule leaves blank-line discipline alone, since the in-body rhythm remains a per-author choice. The import surface sits downstream of [[alphabetize]] (*which orders the entries first*) and [[bare-import-allowlist]] (*which decides which packages keep the bare form*), then this rule lands the blank-line separators between groups, and [[align-imports]] closes the sequence by aligning the `import` keyword.
 
-## Configuration
-
-<RuleConfigTable preset="toggle" />
-
-## The Canonical Case
+<template #canonical-lead>
 
 Two blank lines precede every module-level `def` and `class`, giving the reader's eye an anchor between top-level units.
 
-<Fixture rule="blank_lines" case="compound_then_def" />
+</template>
 
-## More Examples
+<template #more-examples>
 
 <Fixture rule="blank_lines" case="bare_then_from_insert" title="One Blank Lands between Adjacent Bare and `from` Import Groups" />
 
@@ -41,6 +40,6 @@ Two blank lines precede every module-level `def` and `class`, giving the reader'
 
 <Fixture rule="blank_lines" case="bare_then_from_idempotent" title="Already-Conforming Source Is Left Alone" />
 
-## Related
+</template>
 
-<RelatedRulesInline />
+</RuleLayout>

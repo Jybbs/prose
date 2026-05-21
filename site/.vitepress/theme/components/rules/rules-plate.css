@@ -128,7 +128,7 @@ a.specimen:focus-visible {
   border-top       : 3px solid var(--family-color);
   border-radius    : var(--prose-radius);
   background       : var(--vp-c-bg);
-  box-shadow       : 0 12px 28px -10px color-mix(in srgb, var(--family-color) 45%, transparent);
+  box-shadow       : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) 45%, transparent);
   text-align       : left;
   pointer-events   : none;
   opacity          : 0;
@@ -166,12 +166,9 @@ a.specimen:focus-visible {
 }
 
 .specimen-callout-body :is(code, kbd) {
-  padding       : 1px 6px;
-  border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--family-color) var(--prose-tint-faint), transparent);
-  font-family   : var(--vp-font-family-mono);
-  font-size     : 0.82em;
-  color         : var(--family-color);
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.82em;
+  color       : var(--family-color);
 }
 
 .specimen-callout-body em {

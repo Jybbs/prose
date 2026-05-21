@@ -36,7 +36,7 @@ export default defineLoader({
     path.join(root, 'target/debug/prose')
   ],
   async load(): Promise<LandingTypingDemoData> {
-    const bin = proseBinary(root)
+    const bin = proseBinary()
 
     const states: string[] = [SOURCE]
     for (let i = 0; i < RULES.length; i++) {
@@ -70,7 +70,7 @@ export default defineLoader({
   }
 })
 
-function proseBinary(root: string): string {
+function proseBinary(): string {
   const found = ['target/release/prose', 'target/debug/prose']
     .map(p => path.join(root, p))
     .find(fs.existsSync)

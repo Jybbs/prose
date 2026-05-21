@@ -23,14 +23,14 @@
   flex : 0 0 var(--surfaces-card-width);
 }
 
-@media (max-width: 960px) {
+@media (--prose-bp-desktop) {
   .surfaces-carousel {
     --surfaces-card-width : 300px;
     --surfaces-gap        : 14px;
   }
 }
 
-@media (max-width: 640px) {
+@media (--prose-bp-mobile) {
   .surfaces-carousel {
     --surfaces-card-width : 260px;
     --surfaces-gap        : 12px;

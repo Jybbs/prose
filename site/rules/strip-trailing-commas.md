@@ -1,27 +1,26 @@
 ---
 category : auto-fix
 family   : formatting
-caption  : "*Prose* removes trailing commas from inside single-line collections."
+caption  : "removes trailing commas from inside single-line collections."
 related  : [collection-layout, align-colons]
+layout   : doc
 ---
 
 # strip-trailing-commas
+
+<RuleLayout rule="strip_trailing_commas" canonical="dict_literal">
 
 A trailing comma on the last entry of a multi-line collection adds a small **visual hiccup** at every block boundary without earning its keep. Each entry already has its own line, so a new entry adds a new line of its own, which leaves the trailing comma on the previous last entry with no diff-stability win to bring. `strip-trailing-commas` removes the trailing comma from any bracketed container that carries one, and it leaves tuples alone because Python uses the trailing comma to disambiguate single-element tuples from parenthesized expressions.
 
 The rule walks every bracketed container (*dictionaries, lists, sets, function signatures, function calls, class bases, parenthesized argument lists*) and strips the comma after the last entry when one is present. Whether the container spans one line or many doesn't affect the strip itself, since single-line atomic collections happen not to carry trailing commas in idiomatic Python and the rule rarely fires on them. Pair with [[collection-layout]] for the multi-line expansion that brings the trailing comma into reach in the first place.
 
-## Configuration
-
-<RuleConfigTable preset="toggle" />
-
-## The Canonical Case
+<template #canonical-lead>
 
 A multi-line dict literal loses its trailing comma after the strip.
 
-<Fixture rule="strip_trailing_commas" case="dict_literal" />
+</template>
 
-## More Examples
+<template #more-examples>
 
 <Fixture rule="strip_trailing_commas" case="function_signature" title="Function Signatures Drop the Trailing Comma on the Final Arg" />
 
@@ -37,8 +36,12 @@ A multi-line dict literal loses its trailing comma after the strip.
 
 <Fixture rule="strip_trailing_commas" case="idempotent" title="Already-Stripped Source Is Left Alone" />
 
-## Related
+</template>
 
-<RelatedRulesInline />
+<template #related-after>
 
 For per-line opt-outs *(projects that prefer the trailing comma for diff stability even on multi-line forms)*, [**Suppression**](/guide/suppression) covers the `# fmt: off` / `# fmt: on` block markers.
+
+</template>
+
+</RuleLayout>

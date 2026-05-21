@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { inject, provide, ref, type InjectionKey, type Ref } from 'vue'
 
 export interface FixtureTocEntry {
   id    : string
@@ -6,16 +6,14 @@ export interface FixtureTocEntry {
   title : string
 }
 
-const entries = reactive<FixtureTocEntry[]>([])
+const FIXTURE_TOC_KEY: InjectionKey<Ref<FixtureTocEntry[]>> = Symbol('fixtureToc')
 
-export function registerFixture(entry: FixtureTocEntry): () => void {
-  entries.push(entry)
-  return () => {
-    const idx = entries.indexOf(entry)
-    if (idx >= 0) entries.splice(idx, 1)
-  }
+export function provideFixtureToc(): Ref<FixtureTocEntry[]> {
+  const entries = ref<FixtureTocEntry[]>([])
+  provide(FIXTURE_TOC_KEY, entries)
+  return entries
 }
 
-export function fixtureTocFor(rule: string): readonly FixtureTocEntry[] {
-  return entries.filter(e => e.rule === rule)
+export function useFixtureToc(): Ref<FixtureTocEntry[]> {
+  return inject(FIXTURE_TOC_KEY) ?? ref([])
 }

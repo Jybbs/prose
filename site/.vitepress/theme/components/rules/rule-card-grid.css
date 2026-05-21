@@ -47,22 +47,6 @@
   transform    : translateY(-1px);
 }
 
-.vp-doc .rule-card-cover,
-.rule-card-cover {
-  position             : absolute;
-  inset                : 0;
-  z-index              : 0;
-  border-radius        : var(--prose-radius);
-  text-indent          : -9999px;
-  overflow             : hidden;
-  text-decoration-line : none;
-}
-
-.rule-card-cover:focus-visible {
-  outline        : var(--prose-focus-ring);
-  outline-offset : 2px;
-}
-
 .rule-card > *:not(.rule-card-cover) {
   position       : relative;
   z-index        : 1;
@@ -140,13 +124,11 @@
   color  : var(--family-color);
 }
 
-.rule-card-circle-category:hover {
-  background : color-mix(in srgb, var(--category-accent) 12%, var(--vp-c-bg));
-  transform  : scale(1.06);
-}
+.rule-card-circle-category { --hover-accent : var(--category-accent); }
+.rule-card-circle-family   { --hover-accent : var(--family-color);    }
 
-.rule-card-circle-family:hover {
-  background : color-mix(in srgb, var(--family-color) 12%, var(--vp-c-bg));
+.rule-card-circle:hover {
+  background : color-mix(in srgb, var(--hover-accent) 12%, var(--vp-c-bg));
   transform  : scale(1.06);
 }
 
@@ -166,12 +148,9 @@
 }
 
 .rule-card-caption :where(code) {
-  font-family   : var(--vp-font-family-mono);
-  font-size     : 0.84em;
-  padding       : 1px 6px;
-  border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--family-color) var(--prose-tint-faint), transparent);
-  color         : var(--family-color);
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.84em;
+  color       : var(--family-color);
 }
 
 .rule-card-grid-empty {

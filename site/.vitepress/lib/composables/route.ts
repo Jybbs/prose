@@ -1,9 +1,17 @@
-import { useData }                    from 'vitepress'
-import { computed, type ComputedRef } from 'vue'
+import { useData }                                                  from 'vitepress'
+import { computed, inject, provide, type ComputedRef, type InjectionKey } from 'vue'
 
 import { data as primitives, type DiscoveredPrimitive } from '../../data/primitives.data'
 import { data as rules,      type RenderedRule }        from '../../data/rules.data'
 import { FAMILY_META, type RuleFamily }                 from '../shared/registries'
+
+const CURRENT_RULE_KEY: InjectionKey<ComputedRef<RenderedRule | null>> = Symbol('currentRule')
+
+export function provideCurrentRule(): ComputedRef<RenderedRule | null> {
+  const rule = useCurrentEntry('rules', rules.bySlug)
+  provide(CURRENT_RULE_KEY, rule)
+  return rule
+}
 
 export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
   const { page } = useData()
@@ -21,8 +29,9 @@ export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
 export const useCurrentPrimitive = (): ComputedRef<DiscoveredPrimitive | null> =>
   useCurrentEntry('primitives', primitives.bySlug)
 
-export const useCurrentRule = (): ComputedRef<RenderedRule | null> =>
-  useCurrentEntry('rules', rules.bySlug)
+export function useCurrentRule(): ComputedRef<RenderedRule | null> {
+  return inject(CURRENT_RULE_KEY) ?? useCurrentEntry('rules', rules.bySlug)
+}
 
 function useCurrentEntry<T>(prefix: string, bySlug: Record<string, T>): ComputedRef<T | null> {
   const slug = useSlug(prefix)

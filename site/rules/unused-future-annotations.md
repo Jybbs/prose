@@ -1,11 +1,14 @@
 ---
 category : auto-fix
 family   : formatting
-caption  : "*Prose* removes `from __future__ import annotations` lines that no longer carry their weight on the target Python version."
+caption  : "removes `from __future__ import annotations` lines that no longer carry their weight on the target Python version."
 related  : [legacy-union-syntax]
+layout   : doc
 ---
 
 # unused-future-annotations
+
+<RuleLayout rule="unused_future_annotations" canonical="binding_safe_target_py313">
 
 The `from __future__ import annotations` directive made forward-reference annotations possible on Python versions where the runtime evaluated annotations eagerly. PEP 749 lands deferred annotation evaluation in Python **3.14** by default whenever the file's annotations are typing-only, and the import becomes redundant. `unused-future-annotations` removes the import when removal is provably safe for the file.
 
@@ -28,19 +31,21 @@ Same as 3.10.
 The version-gated branch fires. PEP 749 lands deferred annotation evaluation, so the directive is redundant for typing-only annotations and the import removes cleanly.
 :::
 
-## Configuration
+<template #configuration>
 
-<RuleConfigTable preset="toggle" />
+<RuleConfigTable />
 
 The `target-version` field from the top-level [**Configuration**](/reference/configuration#top-level-keys) gates the rewrite per project.
 
-## The Canonical Case
+</template>
+
+<template #canonical-lead>
 
 A file whose annotations are typing-only loses the `__future__` import when the target version allows safe removal.
 
-<Fixture rule="unused_future_annotations" case="binding_safe_target_py313" />
+</template>
 
-## More Examples
+<template #more-examples>
 
 <Fixture rule="unused_future_annotations" case="among_others_no_annotations" title="The Import Removes Cleanly from a Mixed Import Block" />
 
@@ -56,8 +61,12 @@ A file whose annotations are typing-only loses the `__future__` import when the 
 
 <Fixture rule="unused_future_annotations" case="fmt_off_suppresses" title="A `# fmt: off` Block Suppresses the Rewrite" />
 
-## Related
+</template>
 
-<RelatedRulesInline />
+<template #related-after>
 
 For the gate semantics, [**`target-version`**](/reference/configuration#top-level-keys) in the Configuration chapter covers how the field is read across version-gated rules.
+
+</template>
+
+</RuleLayout>

@@ -5,7 +5,7 @@
 *ColonTargets* constructs alignment members at every `:` context the alignment and singleton rules consume. **Five** distinct contexts in the Python grammar carry a colon worth aligning, and the walker that finds them is identical across rules, so the walker lives once in *ColonTargets* and each consuming rule supplies a receiver that handles the discovered members.
 
 
-## Public Surface (`0.2.x`)
+## Public Surface
 
 *ColonTargets* lives at `src/primitives/colon_targets.rs` and is `pub(crate)`. Two consumers use it today: [[align-colons]] *(which aligns multi-item groups in every context)* and [[singleton-rule]] *(which strips pre-colon padding from groups that have no column to align to)*. The downstream-visible consequence is the rewrites both rules emit through the diagnostic stream.
 
@@ -46,7 +46,7 @@ A rule implementing `ColonEmitter` carries a single accumulator *(typically `Vec
 
 Within each context, *ColonTargets* groups members by **same-indentation contiguous lines**. A blank line, a comment-only line, or a change in indentation breaks the group. Each group is handed to the receiver as one `&[Member]` slice, so the consumer aligns within the group without seeing cross-group state.
 
-## Reuse Pattern
+## Re-Using This Primitive
 
 Adding a colon-shaped rule is shaped as *"implement `ColonEmitter`, override the contexts the rule cares about, call `walk(source)` from inside the rule's `apply` method"*. The five-context walker, the same-indentation grouping, and the per-context member construction all carry through without re-implementation.
 

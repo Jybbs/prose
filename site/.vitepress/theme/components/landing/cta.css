@@ -147,10 +147,7 @@
 }
 
 .landing-cta-ledger-leader {
-  align-self    : end;
-  border-bottom : 1px dotted color-mix(in srgb, var(--vp-c-text-3) 50%, transparent);
-  margin        : 0 2px 0.4em;
-  height        : 0;
+  margin : 0 2px 0.4em;
 }
 
 .landing-cta-ledger-month {
@@ -193,6 +190,7 @@
   color                : var(--stamp-ink);
   cursor               : pointer;
   font-family          : var(--vp-font-family-mono);
+  font-size            : 0.95rem;
   line-height          : 1;
   transition           : background var(--prose-transition), border-color var(--prose-transition), transform var(--prose-transition);
   z-index              : 5;
@@ -201,12 +199,6 @@
   background   : color-mix(in srgb, var(--stamp-accent) 22%, var(--vp-c-bg));
   border-color : color-mix(in srgb, var(--stamp-accent) 55%, var(--panel-edge));
   transform    : scale(1.06);
-}
-
-.landing-cta-toggle-glyph {
-  display     : inline-block;
-  font-size   : 0.95rem;
-  line-height : 1;
 }
 
 .landing-cta-swap-enter-active,
@@ -232,13 +224,8 @@
 }
 
 .landing-cta-kicker {
-  grid-column    : 1 / 3;
-  margin         : 0 0 4px;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size);
-  letter-spacing : var(--prose-kicker-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
+  grid-column : 1 / 3;
+  margin      : 0 0 4px;
 }
 
 .landing-cta-lede {

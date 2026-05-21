@@ -1,6 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
+import matter                      from 'gray-matter'
 import { getSingletonHighlighter } from 'shiki'
 import { defineLoader }            from 'vitepress'
 
@@ -37,7 +38,7 @@ export default defineLoader({
       const snapPath = path.join(snapshotsRoot, rule, `${caseName}${INPUT_SUFFIX}.snap`)
       if (!fs.existsSync(snapPath)) continue
       const input  = fs.readFileSync(inputPath, 'utf8')
-      const output = stripInstaHeader(fs.readFileSync(snapPath, 'utf8'))
+      const output = matter(fs.readFileSync(snapPath, 'utf8')).content.replace(/\s+$/, '\n')
       const [inputHtml, outputHtml] = await Promise.all([
         highlight(input),
         highlight(output)
@@ -68,8 +69,3 @@ async function highlight(code: string): Promise<string> {
   })
 }
 
-function stripInstaHeader(snap: string): string {
-  return snap
-    .replace(/^---\n[\s\S]*?\n---\n+/, '')
-    .replace(/\s+$/, '\n')
-}

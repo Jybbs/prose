@@ -1,26 +1,8 @@
-import { nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
-import { useRoute }                                    from 'vitepress'
+import { useEventListener, useSessionStorage } from '@vueuse/core'
+import { nextTick, onMounted, ref, watch, type Ref } from 'vue'
+import { useRoute } from 'vitepress'
 
 const STORAGE_KEY = 'prose:sidebar:collapsed'
-
-function loadState(): Record<string, boolean> {
-  if (typeof sessionStorage === 'undefined') return {}
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) as Record<string, boolean> : {}
-  } catch {
-    return {}
-  }
-}
-
-function saveState(state: Record<string, boolean>): void {
-  if (typeof sessionStorage === 'undefined') return
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // sessionStorage quota or unavailable: collapsed state will not persist, which is acceptable.
-  }
-}
 
 function keyFor(item: HTMLElement): string | null {
   const text = item.querySelector<HTMLElement>(':scope > .item .text')?.textContent?.trim()
@@ -54,8 +36,8 @@ function restoreAll(root: ParentNode, state: Record<string, boolean>): void {
   })
 }
 
-function persistFromDom(root: ParentNode): void {
-  const prior = loadState()
+function persistFromDom(root: ParentNode, state: Ref<Record<string, boolean>>): void {
+  const prior = state.value
   const next  : Record<string, boolean> = {}
   eachCollapsibleGroup(root, group => {
     const key = keyFor(group)
@@ -66,50 +48,33 @@ function persistFromDom(root: ParentNode): void {
     }
     if (group.classList.contains('collapsed')) next[key] = true
   })
-  saveState(next)
+  state.value = next
 }
 
 export function useSidebarCollapse(): void {
   if (typeof window === 'undefined') return
 
+  const state      = useSessionStorage<Record<string, boolean>>(STORAGE_KEY, {})
   const route      = useRoute()
-  let   attachedTo : HTMLElement | null = null
+  const sidebarRef = ref<HTMLElement | null>(null)
 
-  const onSidebarClick   = (): void => { void nextTick(() => attachedTo && persistFromDom(attachedTo)) }
-  const onSidebarKeydown = (event: KeyboardEvent): void => {
+  useEventListener(sidebarRef, 'click',   () => {
+    void nextTick(() => sidebarRef.value && persistFromDom(sidebarRef.value, state))
+  })
+  useEventListener(sidebarRef, 'keydown', (event: KeyboardEvent) => {
     if (event.key !== ' ' && event.key !== 'Spacebar') return
     const target = event.target as HTMLElement | null
     const caret  = target?.closest<HTMLElement>('.VPSidebarItem.collapsible > .item > .caret')
     if (!caret) return
     event.preventDefault()
     caret.click()
-  }
+  }, true)
 
   const wire = (): void => {
-    const sidebar = document.querySelector<HTMLElement>('.VPSidebar')
-    if (!sidebar || sidebar === attachedTo) {
-      if (sidebar) restoreAll(sidebar, loadState())
-      return
-    }
-    if (attachedTo) {
-      attachedTo.removeEventListener('click',   onSidebarClick)
-      attachedTo.removeEventListener('keydown', onSidebarKeydown, true)
-    }
-    sidebar.addEventListener('click',   onSidebarClick)
-    sidebar.addEventListener('keydown', onSidebarKeydown, true)
-    attachedTo = sidebar
-    restoreAll(sidebar, loadState())
+    sidebarRef.value = document.querySelector<HTMLElement>('.VPSidebar')
+    if (sidebarRef.value) restoreAll(sidebarRef.value, state.value)
   }
 
   onMounted(() => { void nextTick(wire) })
-
   watch(() => route.path, () => { void nextTick(wire) })
-
-  onBeforeUnmount(() => {
-    if (attachedTo) {
-      attachedTo.removeEventListener('click',   onSidebarClick)
-      attachedTo.removeEventListener('keydown', onSidebarKeydown, true)
-      attachedTo = null
-    }
-  })
 }

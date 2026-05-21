@@ -1,27 +1,26 @@
 ---
 category : auto-fix
 family   : alignment
-caption  : "*Prose* aligns the `import` keyword across `from … import …` runs and the `as` keyword across `import … as …` runs."
+caption  : "aligns the `import` keyword across `from … import …` runs and the `as` keyword across `import … as …` runs."
 related  : [align-colons, align-equals, alphabetize, bare-import-allowlist, blank-lines, match-case-align]
+layout   : doc
 ---
 
 # align-imports
+
+<RuleLayout rule="align_imports" canonical="from_imports">
 
 An import block carries two kinds of structure that the reader's eye wants to follow as columns. The module column says where a thing comes from, and the name column says what's pulled in. When the two columns float at varying widths, every line reads as a fresh sentence rather than a row in a table. `align-imports` gathers consecutive `from ... import ...` statements (or consecutive `import ... as ...` statements) into a shared column for the `import` (or `as`) keyword, leaving the module column flush left and the name column flush right.
 
 The rule reads each block as the run of consecutive imports at the same indentation. A blank line, a comment, or a non-import statement resets the run. Pair with [[alphabetize]] to sort entries within each block before alignment, with [[blank-lines]] to separate import groups by category, and with [[bare-import-allowlist]] to canonicalize bare-versus-from before the alignment pass.
 
-## Configuration
-
-<RuleConfigTable preset="alignment" />
-
-## The Canonical Case
+<template #canonical-lead>
 
 A run of `from ... import ...` statements lines up on the `import` keyword, so the module column flushes left and the name column flushes right.
 
-<Fixture rule="align_imports" case="from_imports" />
+</template>
 
-## More Examples
+<template #more-examples>
 
 <Fixture rule="align_imports" case="aliased_imports" title="Bare Imports with Aliases Align on the `as` Keyword" />
 
@@ -37,6 +36,6 @@ A run of `from ... import ...` statements lines up on the `import` keyword, so t
 
 <Fixture rule="align_imports" case="idempotent" title="Already-Aligned Imports Are Left Alone" />
 
-## Related
+</template>
 
-<RelatedRulesInline />
+</RuleLayout>

@@ -1,17 +1,20 @@
 ---
 category : lint
 family   : lint
-caption  : "*Prose* surfaces bare `from module import *` patterns sitting outside the configured allowlist."
+caption  : "surfaces bare `from module import *` patterns sitting outside the configured allowlist."
 related  : [alphabetize, align-imports, blank-lines]
+layout   : doc
 ---
 
 # bare-import-allowlist
+
+<RuleLayout rule="bare_import_allowlist" canonical="allowlisted_preserved">
 
 A handful of packages encourage the namespace-as-import style, where `pandas.DataFrame` and `numpy.linalg.norm` read clearly at every call site because the package name carries genuine information. Most packages don't, and a bare `import requests` followed by `requests.get(...)` four pages later forces the reader to walk back up to the import block. `bare-import-allowlist` surfaces every off-list bare import as a lint diagnostic, recommending the explicit `from package import name` rewrite, leaving the rewrite itself to a future migration pass that picks up the lint output.
 
 The rule walks every `import` statement in the module, including nested ones inside function bodies, conditional blocks, and class bodies. An entry on the `allow` list preserves the bare form, including its dotted submodules (*`numpy.linalg` inherits the exemption from `numpy`*). When a downstream migration pass acts on the lint output, the rewrite hands off cleanly to the rest of the import surface: [[alphabetize]] sorts the resulting block, [[align-imports]] aligns the `import` keyword, and [[blank-lines]] lands the gap between groups. The lint itself is non-rewriting, so the diagnostic surfaces without touching the source.
 
-## Configuration
+<template #configuration>
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
@@ -20,13 +23,15 @@ The rule walks every `import` statement in the module, including nested ones ins
 
 The `allow` list holds bare package names, where any dotted submodule of an allowlisted package inherits the exemption.
 
-## The Canonical Case
+</template>
+
+<template #canonical-lead>
 
 Allowlisted packages stay quiet, and everything else surfaces the lint.
 
-<Fixture rule="bare_import_allowlist" case="allowlisted_preserved" />
+</template>
 
-## More Examples
+<template #more-examples>
 
 <Fixture rule="bare_import_allowlist" case="custom_allowlist" title="A Custom Allowlist Replaces the Default" />
 
@@ -40,8 +45,12 @@ Allowlisted packages stay quiet, and everything else surfaces the lint.
 
 <Fixture rule="bare_import_allowlist" case="idempotent" title="Already-Conforming Imports Surface Nothing" />
 
-## Related
+</template>
 
-<RelatedRulesInline />
+<template #related-after>
 
 For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[bare-import-allowlist]` directive.
+
+</template>
+
+</RuleLayout>

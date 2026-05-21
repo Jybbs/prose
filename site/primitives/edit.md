@@ -5,7 +5,7 @@
 *Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Edit>` method returns a list of replacement spans, the pipeline splices them into a fresh buffer between rules, and the rewritten source feeds the next rule. *Prose* re-exports the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the shape matches what Ruff and other Astral-stack consumers expect.
 
 
-## Public Surface (`0.2.x`)
+## Public Surface
 
 `Edit` itself is `pub` *(re-exported from `ruff_diagnostics`)*, and the `Diagnostic` type a rule emits through the pipeline carries an `Option<Edit>` in its `fix` field, visible in every [**output format**](/reference/output-formats) the CLI emits *(json, github, sarif)*. A downstream consumer reading the json output sees the edit's range and content in the `fix.edits[]` array.
 
@@ -48,7 +48,7 @@ A rule emits `Vec<Edit>` from its `apply(&Source)` method. Each edit's range nam
 
 For rules that compute multiple edits per logical change *(an alignment rule that pads several rows in one group)*, each edit is emitted independently. The pipeline sorts them at apply time.
 
-## Reuse Pattern
+## Re-Using This Primitive
 
 Every rule reaches for `Edit` to express a rewrite. The [[aligner]] primitive emits `Edit` lists for padding rewrites. The [[orderer]] primitive composes through `apply_inline_edits` when rendering reordered blocks. The [[docstring]] walker hands ranges to rules that emit `Edit` against docstring bodies.
 

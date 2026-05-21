@@ -30,14 +30,6 @@
   padding-top    : 4px;
 }
 
-.primitives-composition-row-kicker {
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size);
-  letter-spacing : var(--prose-kicker-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
-}
-
 .primitives-composition-row-name {
   font-family : var(--prose-font-display);
   font-style  : italic;

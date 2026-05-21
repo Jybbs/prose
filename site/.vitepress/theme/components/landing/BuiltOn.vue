@@ -11,10 +11,10 @@ interface Credit {
 
 const credits: readonly Credit[] = [
   { role: 'CI',             slug: 'github' },
-  { role: 'Tool versions',  slug: 'mise'   },
-  { role: 'Upstream pass',  slug: 'ruff'   },
   { role: 'Implementation', slug: 'rust'   },
-  { role: 'Install path',   slug: 'uv'     }
+  { role: 'Install path',   slug: 'uv'     },
+  { role: 'Tool versions',  slug: 'mise'   },
+  { role: 'Upstream pass',  slug: 'ruff'   }
 ]
 
 const entries = credits.map(({ role, slug }) => ({
@@ -49,7 +49,7 @@ const entries = credits.map(({ role, slug }) => ({
           />
         </span>
         <span class="built-on-name">{{ entry.tool.name }}</span>
-        <span class="built-on-role">{{ entry.role }}</span>
+        <span class="built-on-role kicker">{{ entry.role }}</span>
       </a>
     </div>
   </LandingSection>
