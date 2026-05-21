@@ -3,7 +3,7 @@ import { computed, type ComputedRef } from 'vue'
 
 import { data as primitives, type DiscoveredPrimitive } from '../../data/primitives.data'
 import { data as rules,      type RenderedRule }        from '../../data/rules.data'
-import { FAMILY_META, type RuleFamily }                 from './registries'
+import { FAMILY_META, type RuleFamily }                 from '../shared/registries'
 
 export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
   const { page } = useData()
