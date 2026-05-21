@@ -3,7 +3,7 @@ import { computed, type ComputedRef } from 'vue'
 
 import { data as primitives, type DiscoveredPrimitive } from '../../data/primitives.data'
 import { data as rules,      type RenderedRule }        from '../../data/rules.data'
-import { DOMAIN_META, type RuleDomain }                 from './registries'
+import { FAMILY_META, type RuleFamily }                 from './registries'
 
 export function useCurrentPrimitive(): ComputedRef<DiscoveredPrimitive | null> {
   const slug = useSlug('primitives')
@@ -15,16 +15,16 @@ export function useCurrentRule(): ComputedRef<RenderedRule | null> {
   return computed(() => (slug.value && rules.bySlug[slug.value]) ?? null)
 }
 
-export function useCurrentDomain(): ComputedRef<RuleDomain | null> {
+export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
   const { page } = useData()
   return computed(() => {
     const rel = page.value.relativePath
     if (!rel.startsWith('rules/')) return null
     const ruleSlug = rel.slice('rules/'.length).replace(/\.md$/, '')
     const ruleHit  = rules.bySlug[ruleSlug]
-    if (ruleHit) return ruleHit.domain
+    if (ruleHit) return ruleHit.family
     const family = ruleSlug.split('/')[0]
-    return family in DOMAIN_META ? family as RuleDomain : null
+    return family in FAMILY_META ? family as RuleFamily : null
   })
 }
 

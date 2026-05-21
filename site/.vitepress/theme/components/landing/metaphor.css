@@ -9,7 +9,7 @@
   padding       : 32px 40px 36px;
   border        : 1px solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg);
+  background    : var(--vp-c-bg-soft);
 }
 
 .landing-definition-kicker {
@@ -36,7 +36,7 @@
   font-weight : 500;
   font-size   : 2.2rem;
   line-height : 1;
-  color       : var(--vp-c-text-1);
+  color       : var(--prose-c-ube);
 }
 
 .landing-definition-pron {

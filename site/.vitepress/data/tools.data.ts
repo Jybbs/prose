@@ -46,11 +46,20 @@ function loadPack(pack: string): IconPack {
   return data
 }
 
+function loadLocalSvg(relative: string, viewBox: string): ToolIcon {
+  const file = path.join(repoDir, 'site', '.vitepress', 'assets', relative)
+  const raw  = fs.readFileSync(file, 'utf8')
+  const body = raw
+    .replace(/<\?xml[^?]*\?>/g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<svg[^>]*>/, '')
+    .replace(/<\/svg>\s*$/, '')
+    .trim()
+  return { body: `<g fill="currentColor">${body}</g>`, viewBox }
+}
+
 const CUSTOM_ICONS: Record<string, ToolIcon> = {
-  mise: {
-    body    : '<text x="12" y="17.5" font-family="Georgia, \'Times New Roman\', serif" font-style="italic" font-weight="500" font-size="20" text-anchor="middle" fill="currentColor">m</text>',
-    viewBox : '0 0 24 24'
-  }
+  mise: loadLocalSvg('mise-logo.svg', '50 35 205 230')
 }
 
 function loadIcon(spec: string): ToolIcon {

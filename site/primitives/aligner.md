@@ -1,6 +1,6 @@
 # Aligner
 
-<DependencyGraph />
+<PrimitivesComposition :initial-focus="'aligner'" />
 
 *Aligner* computes padding widths and emits the alignment edits that every alignment rule consumes. Four rules ([[align-equals]], [[align-colons]], [[align-imports]], [[match-case-align]]) share the same column-resolution math, so the math lives once in *Aligner* and each rule supplies a member list plus a knob-set rather than re-implementing the resolution from scratch.
 

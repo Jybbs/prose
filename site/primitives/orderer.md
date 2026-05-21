@@ -1,6 +1,6 @@
 # Orderer
 
-<DependencyGraph />
+<PrimitivesComposition :initial-focus="'orderer'" />
 
 *Orderer* reorders sibling AST nodes by a classifier closure while preserving attached comments and the interstitial text between adjacent items. [[alphabetize]] is the canonical consumer, but the primitive is shape-agnostic. Any rule that wants to permute siblings *(class-body members, dict items, `import` lines)* by some key reaches for the same machinery rather than re-implementing comment-attachment and gap-handling.
 

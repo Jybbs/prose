@@ -2,13 +2,13 @@
 import { computed, ref }     from 'vue'
 
 import type { RenderedRule } from '../../../../data/rules.data'
-import type { RuleDomain }   from '../../../../lib/shared/registries'
+import type { RuleFamily }   from '../../../../lib/shared/registries'
 
 import SurfaceCardBase       from './SurfaceCardBase.vue'
 
 const props = defineProps<{
   bodyHtml : string
-  domain   : RuleDomain
+  family   : RuleFamily
   icon     : string
   number   : string
   rules    : readonly RenderedRule[]
@@ -23,7 +23,7 @@ const activeRule = computed(() => props.rules[activeIdx.value])
   <SurfaceCardBase
     class="surface-card-tab-index"
     :body-html="bodyHtml"
-    :domain="domain"
+    :family="family"
     :icon="icon"
     :number="number"
     :rules="rules"
@@ -92,7 +92,7 @@ const activeRule = computed(() => props.rules[activeIdx.value])
   right           : 0;
   bottom          : -7px;
   height          : 2px;
-  background      : var(--domain-color);
+  background      : var(--family-color);
   border-radius   : 2px;
   transform       : scaleX(0);
   transform-origin: center;
@@ -102,7 +102,7 @@ const activeRule = computed(() => props.rules[activeIdx.value])
 .tab:hover,
 .tab:focus-visible,
 .tab.active {
-  color : var(--domain-color);
+  color : var(--family-color);
 }
 
 .tab:hover::after,
@@ -125,7 +125,7 @@ const activeRule = computed(() => props.rules[activeIdx.value])
 
 .tab-label-link:hover,
 .tab-label-link:focus-visible {
-  color : var(--domain-color);
+  color : var(--family-color);
 }
 
 .tab-swap-enter-active,

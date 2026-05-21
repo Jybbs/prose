@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : docs
+family   : docs
 caption  : "*Prose* wraps multi-line docstring bodies at the configured measure."
 related  : [multi-line-docstrings, no-single-line-docstrings]
 ---

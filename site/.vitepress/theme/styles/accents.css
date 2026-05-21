@@ -1,8 +1,8 @@
-[data-domain="alignment"]  { --domain-color: var(--prose-c-domain-alignment);  }
-[data-domain="ordering"]   { --domain-color: var(--prose-c-domain-ordering);   }
-[data-domain="formatting"] { --domain-color: var(--prose-c-domain-formatting); }
-[data-domain="docs"]       { --domain-color: var(--prose-c-domain-docs);       }
-[data-domain="lint"]       { --domain-color: var(--prose-c-domain-lint);       }
+[data-family="alignment"]  { --family-color: var(--prose-c-family-alignment);  }
+[data-family="docs"]       { --family-color: var(--prose-c-family-docs);       }
+[data-family="formatting"] { --family-color: var(--prose-c-family-formatting); }
+[data-family="lint"]       { --family-color: var(--prose-c-family-lint);       }
+[data-family="ordering"]   { --family-color: var(--prose-c-family-ordering);   }
 
 [data-category="auto-fix"] { --category-accent: var(--vp-c-brand-1);    }
 [data-category="lint"]     { --category-accent: var(--prose-c-apricot); }

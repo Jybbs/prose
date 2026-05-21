@@ -119,3 +119,7 @@
   display     : grid;
   place-items : center;
 }
+
+.prose-mark {
+  color : var(--prose-c-ube);
+}

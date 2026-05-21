@@ -1,6 +1,6 @@
 ---
 category : lint
-domain   : lint
+family   : lint
 caption  : "*Prose* surfaces single-use local bindings that could inline cleanly."
 related  : [loose-constants, no-step-narration]
 ---

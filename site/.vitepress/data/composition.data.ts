@@ -22,6 +22,26 @@ interface CompositionToml {
 
 const compositionDir = path.join(repoRoot(import.meta.url), 'tests/fixtures/composition')
 
+const LOWERCASE_IN_TITLE = new Set([
+  'a', 'an', 'the',
+  'and', 'but', 'or', 'nor', 'so', 'yet',
+  'as', 'at', 'by', 'for', 'from', 'in', 'into', 'of', 'on', 'onto', 'to', 'with',
+  'among', 'inside', 'over', 'under', 'upon', 'via', 'within'
+])
+
+function toTitleCase(slug: string): string {
+  const words = slug.split('_')
+  return words
+    .map((word, i) => {
+      const lower = word.toLowerCase()
+      if (i !== 0 && i !== words.length - 1 && LOWERCASE_IN_TITLE.has(lower)) {
+        return lower
+      }
+      return lower.charAt(0).toUpperCase() + lower.slice(1)
+    })
+    .join(' ')
+}
+
 declare const data: CompositionData
 export { data }
 
@@ -36,7 +56,7 @@ export default defineLoader({
       cases.push({
         case  : caseName,
         rules : parsed.harness.rules,
-        title : caseName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+        title : toTitleCase(caseName)
       })
     }
     return { cases }

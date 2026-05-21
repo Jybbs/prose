@@ -3,7 +3,7 @@ import Chip     from '../base/Chip.vue'
 import RuleChip from './RuleChip.vue'
 
 import { data as pipeline } from '../../../data/pipeline.data'
-import { DOMAIN_META, type RuleDomain } from '../../../lib/shared/registries'
+import { FAMILY_META, type RuleFamily } from '../../../lib/shared/registries'
 </script>
 
 <template>
@@ -16,7 +16,7 @@ import { DOMAIN_META, type RuleDomain } from '../../../lib/shared/registries'
         class="rule-chip pipeline-order-undocumented"
         :title="`${rule.slug} (undocumented)`"
       >
-        <span class="rule-chip-badge" aria-hidden="true">{{ rule.domain ? DOMAIN_META[rule.domain as RuleDomain].badge : '·' }}</span>
+        <span class="rule-chip-badge" aria-hidden="true">{{ rule.family ? FAMILY_META[rule.family as RuleFamily].badge : '·' }}</span>
         <span class="rule-chip-slug">{{ rule.slug }}</span>
       </span>
       <span class="pipeline-order-imperative">{{ rule.imperative }}</span>
@@ -34,11 +34,11 @@ import { DOMAIN_META, type RuleDomain } from '../../../lib/shared/registries'
 }
 
 .pipeline-order-row {
-  display       : grid;
-  grid-template-columns: auto auto 1fr;
-  align-items   : baseline;
-  gap           : 14px;
-  margin        : 0;
+  display               : grid;
+  grid-template-columns : auto auto 1fr;
+  align-items           : baseline;
+  gap                   : 14px;
+  margin                : 0;
 }
 
 .pipeline-order-position {
@@ -56,19 +56,19 @@ import { DOMAIN_META, type RuleDomain } from '../../../lib/shared/registries'
 }
 
 .pipeline-order-undocumented {
-  --domain-color : var(--vp-c-text-3);
+  --family-color : var(--vp-c-text-3);
   color          : var(--vp-c-text-3);
   cursor         : help;
 }
 
 @media (max-width: 720px) {
   .pipeline-order-row {
-    grid-template-columns: auto 1fr;
-    grid-template-rows   : auto auto;
+    grid-template-columns : auto 1fr;
+    grid-template-rows    : auto auto;
   }
   .pipeline-order-imperative {
-    grid-column: 1 / -1;
-    padding-left: 38px;
+    grid-column  : 1 / -1;
+    padding-left : 38px;
   }
 }
 </style>

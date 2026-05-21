@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import Tool from '../base/Tool.vue'
+
 import { data as editors } from '../../../data/editor-configs.data'
 
 const activeSlug = ref(editors[0].slug)
@@ -24,6 +26,7 @@ const active = computed(() =>
         @click="activeSlug = editor.slug"
       >
         <span class="editor-deck-spine-num">{{ String(idx + 1).padStart(2, '0') }}</span>
+        <span class="editor-deck-spine-mark" aria-hidden="true"><Tool :slug="editor.slug" bare /></span>
         <span class="editor-deck-spine-name">{{ editor.name }}</span>
         <span class="editor-deck-spine-target">{{ editor.target }}</span>
       </button>
@@ -31,11 +34,9 @@ const active = computed(() =>
     <div class="editor-deck-face">
       <div class="editor-deck-face-head">
         <span class="editor-deck-face-mark" aria-hidden="true"><Tool :slug="active.slug" bare /></span>
-        <div class="editor-deck-face-titles">
-          <h3 class="editor-deck-face-name">{{ active.name }}</h3>
-          <span class="editor-deck-face-caption">{{ active.target }}</span>
-        </div>
+        <h3 class="editor-deck-face-name">{{ active.name }}</h3>
       </div>
+      <span class="editor-deck-face-caption">{{ active.target }}</span>
       <div :key="active.slug" class="editor-deck-face-body" v-html="active.codeHtml" />
     </div>
   </div>

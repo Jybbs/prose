@@ -1,6 +1,6 @@
 ---
 category : lint
-domain   : lint
+family   : lint
 caption  : "*Prose* surfaces `Union[A, B]` and `Optional[T]` patterns that should read as modern `A | B` and `T | None`."
 related  : [unused-future-annotations]
 ---

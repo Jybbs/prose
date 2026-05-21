@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : ordering
+family   : ordering
 caption  : "*Prose* alphabetizes import siblings, dict-key blocks, and dataclass field runs."
 related  : [align-colons, align-imports, bare-import-allowlist, blank-lines]
 ---

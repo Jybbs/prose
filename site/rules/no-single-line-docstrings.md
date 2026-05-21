@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : docs
+family   : docs
 caption  : "*Prose* rewrites single-line docstrings into the multi-line form."
 related  : [docstring-wrap, multi-line-docstrings]
 ---

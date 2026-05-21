@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : alignment
+family   : alignment
 caption  : "*Prose* aligns the post-pattern `:` across single-expression case bodies inside a `match` statement."
 related  : [align-colons, align-equals, align-imports, singleton-rule]
 ---

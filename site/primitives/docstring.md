@@ -1,6 +1,6 @@
 # Docstring
 
-<DependencyGraph />
+<PrimitivesComposition :initial-focus="'docstring'" />
 
 *Docstring* is the walker that reaches every PEP 257 docstring in a module. The first body statement of the module, each class, and each function may carry a string literal as a docstring, and the walker hands every such literal to a consumer in source order. Three rules ([[docstring-wrap]], [[multi-line-docstrings]], [[no-single-line-docstrings]]) consume the same walk, so the AST traversal lives once in *Docstring* and each rule supplies a handler that decides what to emit per docstring.
 

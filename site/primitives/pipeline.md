@@ -2,7 +2,7 @@
 
 *Pipeline* is the value `prose format` and `prose check` resolve into. It carries the registered rules in their canonical order, applies each rule's edits to a fresh buffer, reparses between rules so every downstream pass reads a settled AST, and emits the final [[source]] plus a diagnostic list at the end.
 
-<DependencyGraph />
+<PrimitivesComposition :initial-focus="'pipeline'" />
 
 ## Public API
 

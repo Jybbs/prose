@@ -2,7 +2,7 @@
 
 Every source file in *Prose* gets a one-time scan for suppression directives during [[source]] construction, and the result lands in a *SuppressionMap*. The map indexes `# fmt: off` / `# fmt: on` block spans, `# fmt: skip` line markers, the `# yapf: disable` / `# yapf: enable` aliases, and `# prose: ignore[...]` per-line lint directives. The [[pipeline]] consults the map at the edit-emission boundary, dropping suppressed edits and lint diagnostics before they surface to the caller.
 
-<DependencyGraph />
+<PrimitivesComposition :initial-focus="'suppression-map'" />
 
 ## Public Surface (`0.2.x`)
 

@@ -2,19 +2,19 @@
 import { computed, ref } from 'vue'
 
 import type { RenderedRule }              from '../../../../data/rules.data'
-import { DOMAIN_META, type RuleDomain }   from '../../../../lib/shared/registries'
+import { FAMILY_META, type RuleFamily }   from '../../../../lib/shared/registries'
 
 const props = defineProps<{
   bodyHtml : string
-  domain   : RuleDomain
+  family   : RuleFamily
   icon     : string
   number   : string
   rules    : readonly RenderedRule[]
 }>()
 
-const meta     = computed(() => DOMAIN_META[props.domain])
-const category = computed(() => props.domain === 'lint' ? 'lint' : 'auto-fix')
-const href     = computed(() => `/rules/${props.domain}/`)
+const meta     = computed(() => FAMILY_META[props.family])
+const category = computed(() => props.family === 'lint' ? 'lint' : 'auto-fix')
+const href     = computed(() => `/rules/${props.family}/`)
 
 const chipsRef       = ref<HTMLElement | null>(null)
 const spotlightX     = ref(50)
@@ -47,7 +47,7 @@ function onLeave() { active.value = false }
 <template>
   <div
     class="surface-card"
-    :data-domain="domain"
+    :data-family="family"
     :data-category="category"
     :data-active="active"
     :style="{

@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : docs
+family   : docs
 caption  : "*Prose* promotes single-line docstrings to the multi-line shape."
 related  : [docstring-wrap, no-single-line-docstrings]
 ---

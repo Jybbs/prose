@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : formatting
+family   : formatting
 caption  : "*Prose* strips padding from alignment groups that resolve to a single member."
 related  : [align-colons, align-equals, align-imports, match-case-align]
 ---

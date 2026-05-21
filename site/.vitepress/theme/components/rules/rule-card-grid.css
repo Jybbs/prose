@@ -1,48 +1,177 @@
-.rule-card-grid {
+.rule-card-grid,
+.related-rules-inline {
   display              : grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap                  : 14px;
+  gap                  : 16px;
   margin               : 24px 0 0;
 }
 
 @media (max-width: 720px) {
-  .rule-card-grid {
+  .rule-card-grid,
+  .related-rules-inline {
     grid-template-columns: 1fr;
   }
 }
 
-.vp-doc .rule-card {
-  display         : flex;
-  flex-direction  : column;
-  gap             : 8px;
-  padding         : 16px 22px 14px 18px;
-  border          : 1px solid var(--vp-c-divider);
-  border-left     : 2px solid var(--category-accent);
-  text-decoration : none;
-  color           : var(--vp-c-text-1);
-  transition      :
-    border-top-color    var(--prose-transition),
-    border-right-color  var(--prose-transition),
-    border-bottom-color var(--prose-transition);
+.vp-doc .rule-card,
+.rule-card {
+  position       : relative;
+  isolation      : isolate;
+  display        : flex;
+  flex-direction : column;
+  gap            : 10px;
+  padding        : 18px 20px 18px;
+  border         : 1px solid color-mix(in srgb, var(--family-color) 22%, var(--vp-c-divider));
+  border-radius  : var(--prose-radius);
+  background     : color-mix(in srgb, var(--family-color) 4%, var(--vp-c-bg));
+  color          : var(--vp-c-text-1);
+  transition     :
+    border-color var(--prose-transition-slow),
+    transform    var(--prose-transition-slow);
 }
 
-.vp-doc .rule-card:hover {
-  border-top-color    : var(--category-accent);
-  border-right-color  : var(--category-accent);
-  border-bottom-color : var(--category-accent);
+.vp-doc .rule-card::before,
+.rule-card::before {
+  content    : "";
+  position   : absolute;
+  top        : 0;
+  left       : 18px;
+  right      : 18px;
+  height     : 1px;
+  background : color-mix(in srgb, var(--family-color) 55%, transparent);
 }
 
-.vp-doc .rule-card-slug {
-  font-family : var(--vp-font-family-mono);
-  font-size   : var(--prose-text-md);
-  color       : var(--domain-color);
+.vp-doc .rule-card:hover,
+.rule-card:hover {
+  border-color : var(--family-color);
+  transform    : translateY(-1px);
 }
 
-.vp-doc .rule-card-caption {
+.vp-doc .rule-card-cover,
+.rule-card-cover {
+  position             : absolute;
+  inset                : 0;
+  z-index              : 0;
+  border-radius        : var(--prose-radius);
+  text-indent          : -9999px;
+  overflow             : hidden;
+  text-decoration-line : none;
+}
+
+.rule-card-cover:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 2px;
+}
+
+.rule-card > *:not(.rule-card-cover) {
+  position       : relative;
+  z-index        : 1;
+  pointer-events : none;
+}
+
+.rule-card-header {
+  display     : flex;
+  align-items : center;
+  gap         : 12px;
+}
+
+.rule-card-circle-category + .rule-card-circle-family {
+  margin-left : -10px;
+}
+
+.rule-card-folio {
+  flex           : 0 0 auto;
+  min-width      : 2.4ch;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.78rem;
+  letter-spacing : 0.08em;
+  text-transform : uppercase;
+  color          : var(--family-color);
+}
+
+.vp-doc .rule-card-name,
+.rule-card-name {
+  flex        : 1 1 auto;
   margin      : 0;
-  font-size   : 0.92rem;
-  line-height : 1.55;
-  color       : var(--vp-c-text-2);
+  padding     : 0;
+  border      : none;
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 500;
+  font-size   : 1.35rem;
+  line-height : 1.15;
+  color       : var(--vp-c-text-1);
+}
+
+.vp-doc .rule-card-circle,
+.rule-card-circle {
+  flex                 : 0 0 auto;
+  display              : inline-flex;
+  align-items          : center;
+  justify-content      : center;
+  width                : 32px;
+  height               : 32px;
+  border-radius        : 50%;
+  background           : var(--vp-c-bg);
+  font-family          : var(--vp-font-family-mono);
+  font-size            : 0.92rem;
+  line-height          : 1;
+  pointer-events       : auto;
+  z-index              : 2;
+  text-decoration-line : none;
+  transition           :
+    background var(--prose-transition-slow),
+    transform  var(--prose-transition-slow);
+}
+
+.vp-doc .rule-card-circle-category,
+.rule-card-circle-category {
+  border      : 1px solid color-mix(in srgb, var(--category-accent) 55%, var(--vp-c-divider));
+  color       : var(--category-accent);
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 500;
+  font-size   : 1.05rem;
+}
+
+.vp-doc .rule-card-circle-family,
+.rule-card-circle-family {
+  border : 1px solid color-mix(in srgb, var(--family-color) 45%, var(--vp-c-divider));
+  color  : var(--family-color);
+}
+
+.rule-card-circle-category:hover {
+  background : color-mix(in srgb, var(--category-accent) 12%, var(--vp-c-bg));
+  transform  : scale(1.06);
+}
+
+.rule-card-circle-family:hover {
+  background : color-mix(in srgb, var(--family-color) 12%, var(--vp-c-bg));
+  transform  : scale(1.06);
+}
+
+.vp-doc .rule-card-caption,
+.rule-card-caption {
+  margin       : 0;
+  padding-left : 0;
+  font-family  : var(--vp-font-family-base);
+  font-size    : 0.93rem;
+  line-height  : 1.55;
+  color        : var(--vp-c-text-2);
+}
+
+.rule-card-caption em {
+  font-style : italic;
+  color      : var(--vp-c-text-1);
+}
+
+.rule-card-caption :where(code) {
+  font-family   : var(--vp-font-family-mono);
+  font-size     : 0.84em;
+  padding       : 1px 6px;
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--family-color) var(--prose-tint-faint), transparent);
+  color         : var(--family-color);
 }
 
 .rule-card-grid-empty {

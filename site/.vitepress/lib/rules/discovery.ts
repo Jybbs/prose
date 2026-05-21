@@ -3,12 +3,12 @@ import path   from 'node:path'
 
 import matter from 'gray-matter'
 
-import { DOMAIN_META, type RuleCategory, type RuleDomain } from '../shared/registries'
+import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
 
 export interface DiscoveredRule {
   caption  : string
   category : RuleCategory
-  domain   : RuleDomain
+  family   : RuleFamily
   related  : readonly string[]
   slug     : string
 }
@@ -30,19 +30,19 @@ export function discoverRuleSlugs(rulesDirectory: string): DiscoveredRule[] {
     if (category !== 'auto-fix' && category !== 'lint') {
       throw new Error(`Rule "${slug}" has invalid or missing category: ${JSON.stringify(category)}`)
     }
-    const domain = fm.domain
-    if (typeof domain !== 'string' || !(domain in DOMAIN_META)) {
-      throw new Error(`Rule "${slug}" has invalid or missing domain: ${JSON.stringify(domain)}`)
+    const family = fm.family
+    if (typeof family !== 'string' || !(family in FAMILY_META)) {
+      throw new Error(`Rule "${slug}" has invalid or missing family: ${JSON.stringify(family)}`)
     }
-    if ((category === 'lint') !== (domain === 'lint')) {
-      throw new Error(`Rule "${slug}" mismatched category/domain (${category}/${domain}), because the lint domain pairs exclusively with the lint category`)
+    if ((category === 'lint') !== (family === 'lint')) {
+      throw new Error(`Rule "${slug}" mismatched category/family (${category}/${family}), because the lint family pairs exclusively with the lint category`)
     }
     const caption = fm.caption
     if (typeof caption !== 'string' || caption.trim() === '') {
       throw new Error(`Rule "${slug}" has invalid or missing caption: ${JSON.stringify(caption)}`)
     }
     const relatedSlugs = Array.isArray(fm.related) ? fm.related as string[] : []
-    out.push({ caption, category, domain: domain as RuleDomain, related: relatedSlugs, slug })
+    out.push({ caption, category, family: family as RuleFamily, related: relatedSlugs, slug })
     if (relatedSlugs.length > 0) related.push({ refs: relatedSlugs, slug })
   }
 

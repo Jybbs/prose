@@ -1,6 +1,6 @@
 ---
 category : lint
-domain   : lint
+family   : lint
 caption  : "*Prose* surfaces module-level constants that aren't `UPPER_SNAKE_CASE`."
 related  : [no-step-narration, single-use-variables]
 ---

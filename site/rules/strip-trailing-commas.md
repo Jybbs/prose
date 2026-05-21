@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : formatting
+family   : formatting
 caption  : "*Prose* removes trailing commas from inside single-line collections."
 related  : [collection-layout, align-colons]
 ---

@@ -3,14 +3,14 @@ import path from 'node:path'
 
 import { defineLoader } from 'vitepress'
 
-import { discoverRuleSlugs } from '../lib/rules/discovery'
-import type { RuleCategory, RuleDomain } from '../lib/shared/registries'
-import { repoRoot, rulesDir }  from '../lib/shared/paths'
+import { discoverRuleSlugs }              from '../lib/rules/discovery'
+import { repoRoot, rulesDir }             from '../lib/shared/paths'
+import type { RuleCategory, RuleFamily }  from '../lib/shared/registries'
 
 export interface PipelineRule {
   category   : RuleCategory | null
   documented : boolean
-  domain     : RuleDomain | null
+  family     : RuleFamily | null
   imperative : string
   position   : number
   slug       : string
@@ -49,7 +49,7 @@ export default defineLoader({
       rules.push({
         category   : entry?.category ?? null,
         documented : entry !== undefined,
-        domain     : entry?.domain ?? null,
+        family     : entry?.family ?? null,
         imperative,
         position   : rules.length + 1,
         slug

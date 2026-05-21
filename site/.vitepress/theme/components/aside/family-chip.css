@@ -1,4 +1,4 @@
-.domain-chip {
+.family-chip {
   text-decoration : none;
   transition      :
     border-color      var(--prose-transition),
@@ -6,12 +6,12 @@
     padding-left      var(--prose-transition);
 }
 
-a.domain-chip:hover {
-  border-color      : var(--domain-color);
+a.family-chip:hover {
+  border-color      : var(--family-color);
   border-left-width : 3px;
   padding-left      : 9px;
 }
 
-.domain-chip-badge {
+.family-chip-badge {
   font-size: var(--prose-text-md);
 }

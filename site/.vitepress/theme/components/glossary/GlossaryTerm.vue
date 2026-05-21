@@ -12,12 +12,12 @@ const entry = lookup(glossary.entries, props.slug, 'Glossary entry')
 <template>
   <span
     v-tooltip="{
-      content: entry.tooltipHtml,
-      html: true,
-      theme: 'glossary',
-      delay: { show: 80, hide: 240 },
-      popperTriggers: ['hover'],
-      popperHideTriggers: ['hover']
+      content            : entry.tooltipHtml,
+      delay              : { hide: 240, show: 80 },
+      html               : true,
+      popperHideTriggers : ['hover'],
+      popperTriggers     : ['hover'],
+      theme              : 'glossary'
     }"
     class="glossary-anchor"
     tabindex="0"

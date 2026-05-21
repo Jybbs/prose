@@ -1,9 +1,9 @@
 import type { DefaultTheme } from 'vitepress'
 
 import { type DiscoveredRule }                                                          from '../rules/discovery'
-import { DOMAIN_META, PRIMITIVES, PUBLIC_PRIMITIVES, type PrimitiveSlug, type RuleDomain } from './registries'
+import { FAMILY_META, PRIMITIVES, PUBLIC_PRIMITIVES, type PrimitiveSlug, type RuleFamily } from './registries'
 
-const FAMILY_ORDER: readonly RuleDomain[] = ['alignment', 'ordering', 'formatting', 'docs', 'lint']
+const FAMILY_ORDER: readonly RuleFamily[] = ['alignment', 'ordering', 'formatting', 'docs', 'lint']
 
 const primLink = (text: string, slug: string): DefaultTheme.SidebarItem =>
   ({ link: `/primitives/${slug}`, text })
@@ -53,10 +53,11 @@ const INTEGRATIONS_SIDEBAR: DefaultTheme.SidebarItem[] = [
 
 export function buildSidebar(rules: readonly DiscoveredRule[]): DefaultTheme.Sidebar {
   const familySections: DefaultTheme.SidebarItem[] = FAMILY_ORDER.map(family => ({
-    link : `/rules/${family}/`,
-    text : DOMAIN_META[family].label,
-    items: rules
-      .filter(r => r.domain === family)
+    collapsed : false,
+    link      : `/rules/${family}/`,
+    text      : FAMILY_META[family].label,
+    items     : rules
+      .filter(r => r.family === family)
       .map(r => ruleLink(r.slug))
   }))
   return {
@@ -66,14 +67,16 @@ export function buildSidebar(rules: readonly DiscoveredRule[]): DefaultTheme.Sid
     '/primitives/'   : [
       { items: [{ link: '/primitives/', text: 'Overview' }], text: 'Primitives' },
       {
-        items: PUBLIC_PRIMITIVES.map(slug => primLink(PRIMITIVES[slug], slug)),
-        text : 'Public Surface'
+        collapsed : false,
+        items     : PUBLIC_PRIMITIVES.map(slug => primLink(PRIMITIVES[slug], slug)),
+        text      : 'Public Surface'
       },
       {
-        items: (Object.keys(PRIMITIVES) as PrimitiveSlug[])
+        collapsed : false,
+        items     : (Object.keys(PRIMITIVES) as PrimitiveSlug[])
           .filter(slug => !PUBLIC_PRIMITIVES.includes(slug))
           .map(slug => primLink(PRIMITIVES[slug], slug)),
-        text : 'Crate Internal'
+        text      : 'Crate Internal'
       }
     ],
     '/rules/'        : [

@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : alignment
+family   : alignment
 caption  : "*Prose* aligns the `=` separator across consecutive single-target assignments and annotated function-parameter defaults."
 related  : [align-colons, align-imports, match-case-align, singleton-rule]
 ---

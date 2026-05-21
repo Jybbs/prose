@@ -1,6 +1,6 @@
 # Walker
 
-<DependencyGraph />
+<PrimitivesComposition :initial-focus="'walker'" />
 
 *Walker* is the recursive path-discovery helper the `check` and `format` subcommands consume. Given a list of path arguments, it yields every Python source file *(`.py`, `.pyi`, `.pyw`)* under those paths, honoring `.gitignore`, `.ignore`, and the user's global ignore file. The walker wraps the [**`ignore`**](https://docs.rs/ignore/) crate's `WalkBuilder`, picking up the same gitignore semantics that Ripgrep, fd, and other tree-walking tools share.
 

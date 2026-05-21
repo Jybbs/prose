@@ -1,6 +1,6 @@
 # Edit
 
-<DependencyGraph />
+<PrimitivesComposition :initial-focus="'edit'" />
 
 *Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Edit>` method returns a list of replacement spans, the pipeline splices them into a fresh buffer between rules, and the rewritten source feeds the next rule. *Prose* re-exports the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the shape matches what Ruff and other Astral-stack consumers expect.
 

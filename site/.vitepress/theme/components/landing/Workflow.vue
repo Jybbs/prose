@@ -27,9 +27,7 @@ const chapters = computed(() =>
         :class="{ 'landing-workflow-section-last': idx === chapters.length - 1 }"
       >
         <aside class="landing-workflow-gutter" aria-hidden="true">
-          <span class="landing-workflow-roman">{{ chapter.roman }}</span>
-          <span class="landing-workflow-dot" />
-          <span class="landing-workflow-folio">step {{ chapter.number }}</span>
+          <span class="landing-workflow-roman">{{ chapter.roman }}.</span>
         </aside>
         <div class="landing-workflow-body">
           <h3 class="landing-workflow-title">{{ chapter.title }}</h3>

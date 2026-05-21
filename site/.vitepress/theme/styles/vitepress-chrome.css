@@ -14,7 +14,54 @@
   left          : 0;
   width         : 2px;
   border-radius : 2px;
-  background    : var(--domain-color, var(--vp-c-brand-1));
+  background    : var(--family-color, var(--vp-c-brand-1));
+}
+
+.VPSidebarItem.level-0.collapsible > .item > .caret > .caret-icon {
+  display : none;
+}
+
+.VPSidebarItem.level-0.collapsible > .item > .caret {
+  position : relative;
+  width    : 20px;
+  height   : 24px;
+  opacity  : 0.55;
+}
+
+.VPSidebarItem.level-0.collapsible > .item > .caret::before,
+.VPSidebarItem.level-0.collapsible > .item > .caret::after {
+  content       : "";
+  position      : absolute;
+  top           : 50%;
+  left          : 50%;
+  width         : 9px;
+  height        : 1px;
+  background    : currentColor;
+  border-radius : 1px;
+  transform     : translate(-50%, -50%);
+}
+
+.VPSidebarItem.level-0.collapsible.collapsed > .item > .caret::after {
+  transform : translate(-50%, -50%) rotate(90deg);
+}
+
+.VPSidebarItem.level-0.collapsible > .item > .caret:hover,
+.VPSidebarItem.level-0.collapsible > .item > .caret:focus-visible {
+  opacity : 1;
+  color   : var(--family-color, var(--vp-c-brand-1));
+}
+
+.VPSidebarItem.level-0.collapsible > .item > .caret:focus-visible {
+  outline        : 1px solid var(--family-color, var(--vp-c-brand-1));
+  outline-offset : 2px;
+  border-radius  : 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .VPSidebarItem.level-0.collapsible > .item > .caret::before,
+  .VPSidebarItem.level-0.collapsible > .item > .caret::after {
+    transition : transform var(--prose-transition), background var(--prose-transition);
+  }
 }
 
 .version-selector {
@@ -71,7 +118,18 @@
   margin-right: 6px;
 }
 
-.vp-doc div[class*='language-'] > span.lang {
+.VPDocAsideOutline .outline-title,
+.VPSidebarItem.level-0 > .item > .text {
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 500;
+}
+
+div[class*='language-'] {
+  position : relative;
+}
+
+div[class*='language-'] > span.lang {
   position       : absolute;
   top            : auto;
   bottom         : 6px;
@@ -85,8 +143,8 @@
   transition     : opacity var(--prose-transition);
 }
 
-.vp-doc div[class*='language-']:hover > span.lang,
-.vp-doc div[class*='language-']:hover > button.copy + span.lang,
-.vp-doc div[class*='language-'] > button.copy:focus + span.lang {
+div[class*='language-']:hover > span.lang,
+div[class*='language-']:hover > button.copy + span.lang,
+div[class*='language-'] > button.copy:focus + span.lang {
   opacity : 0.85;
 }

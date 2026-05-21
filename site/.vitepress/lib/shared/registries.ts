@@ -1,12 +1,12 @@
 export type RuleCategory = 'auto-fix' | 'lint'
-export type RuleDomain   = 'alignment' | 'ordering' | 'formatting' | 'docs' | 'lint'
+export type RuleFamily   = 'alignment' | 'ordering' | 'formatting' | 'docs' | 'lint'
 
 export interface CategoryMeta {
   badge : 'A' | 'L'
   label : string
 }
 
-export interface DomainMeta {
+export interface FamilyMeta {
   badge : string
   label : string
 }
@@ -16,7 +16,7 @@ export const CATEGORY_META: Record<RuleCategory, CategoryMeta> = {
   'lint'     : { badge: 'L', label: 'Lint'     }
 }
 
-export const DOMAIN_META: Record<RuleDomain, DomainMeta> = {
+export const FAMILY_META: Record<RuleFamily, FamilyMeta> = {
   alignment  : { badge: '🪜', label: 'Alignment'  },
   docs       : { badge: '📰', label: 'Docs'       },
   formatting : { badge: '🪶', label: 'Formatting' },

@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : alignment
+family   : alignment
 caption  : "*Prose* aligns the `:` separator across dict literals, dataclass and Pydantic fields, function-signature annotations, and docstring `Args:` blocks."
 related  : [align-equals, align-imports, alphabetize, collection-layout, match-case-align, singleton-rule]
 ---

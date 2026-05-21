@@ -1,15 +1,15 @@
 .rules-plate {
   display   : grid;
-  gap       : 18px;
+  gap       : 14px;
   isolation : isolate;
 }
 
 .rules-cluster {
   position      : relative;
-  padding       : 28px 32px;
-  border        : 1px solid color-mix(in srgb, var(--domain-color) 25%, var(--vp-c-divider));
+  padding       : 22px 32px;
+  border        : 1px solid color-mix(in srgb, var(--family-color) 25%, var(--vp-c-divider));
   border-radius : var(--prose-radius);
-  background    : color-mix(in srgb, var(--domain-color) 6%, var(--vp-c-bg));
+  background    : color-mix(in srgb, var(--family-color) 6%, var(--vp-c-bg));
 }
 
 .rules-cluster:has(.specimen:hover),
@@ -17,11 +17,19 @@
   z-index : 10;
 }
 
-.rules-cluster-head {
-  display       : flex;
-  align-items   : center;
-  gap           : 18px;
-  margin-bottom : 18px;
+.vp-doc a.rules-cluster-head,
+a.rules-cluster-head {
+  display              : flex;
+  align-items          : center;
+  gap                  : 18px;
+  margin-bottom        : 14px;
+  text-decoration-line : none;
+  color                : inherit;
+}
+
+.vp-doc a.rules-cluster-head:hover,
+a.rules-cluster-head:hover {
+  text-decoration-line : none;
 }
 
 .rules-cluster-emoji {
@@ -30,7 +38,7 @@
   justify-content : center;
   width           : 64px;
   height          : 64px;
-  border          : 1px solid color-mix(in srgb, var(--domain-color) 35%, var(--vp-c-divider));
+  border          : 1px solid color-mix(in srgb, var(--family-color) 35%, var(--vp-c-divider));
   border-radius   : 50%;
   background      : var(--vp-c-bg);
   font-size       : 1.8rem;
@@ -47,14 +55,14 @@
   font-weight : 500;
   font-size   : 1.8rem;
   line-height : 1;
-  color       : var(--domain-color);
+  color       : var(--family-color);
 }
 
 .vp-doc .rules-cluster-specimens,
 .rules-cluster-specimens {
   display    : flex;
   flex-wrap  : wrap;
-  gap        : 12px;
+  gap        : 10px;
   list-style : none;
   margin     : 0;
   padding    : 0;
@@ -80,7 +88,7 @@ a.specimen {
   display              : inline-flex;
   align-items          : baseline;
   padding              : 8px 14px;
-  border               : 1px solid color-mix(in srgb, var(--domain-color) 30%, transparent);
+  border               : 1px solid color-mix(in srgb, var(--family-color) 30%, transparent);
   border-radius        : var(--prose-radius);
   background           : var(--vp-c-bg);
   text-decoration-line : none;
@@ -96,7 +104,7 @@ a.specimen {
 .vp-doc a.specimen:focus-visible,
 a.specimen:hover,
 a.specimen:focus-visible {
-  border-color         : var(--domain-color);
+  border-color         : var(--family-color);
   text-decoration-line : none;
   transform            : translateY(-1px);
 }
@@ -107,7 +115,7 @@ a.specimen:focus-visible {
 }
 
 .specimen-slug {
-  color : var(--domain-color);
+  color : var(--family-color);
 }
 
 .specimen-callout {
@@ -116,11 +124,11 @@ a.specimen:focus-visible {
   left             : 0;
   width            : 300px;
   padding          : 14px 16px 16px;
-  border           : 1px solid color-mix(in srgb, var(--domain-color) 55%, var(--vp-c-divider));
-  border-top       : 3px solid var(--domain-color);
+  border           : 1px solid color-mix(in srgb, var(--family-color) 55%, var(--vp-c-divider));
+  border-top       : 3px solid var(--family-color);
   border-radius    : var(--prose-radius);
   background       : var(--vp-c-bg);
-  box-shadow       : 0 12px 28px -10px color-mix(in srgb, var(--domain-color) 45%, transparent);
+  box-shadow       : 0 12px 28px -10px color-mix(in srgb, var(--family-color) 45%, transparent);
   text-align       : left;
   pointer-events   : none;
   opacity          : 0;
@@ -142,10 +150,10 @@ a.specimen:focus-visible {
   margin-bottom : 10px;
   padding       : 2px 8px;
   border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--domain-color) var(--prose-tint-faint), transparent);
+  background    : color-mix(in srgb, var(--family-color) var(--prose-tint-faint), transparent);
   font-family   : var(--vp-font-family-mono);
   font-size     : 0.88rem;
-  color         : var(--domain-color);
+  color         : var(--family-color);
 }
 
 .specimen-callout-body {
@@ -160,10 +168,10 @@ a.specimen:focus-visible {
 .specimen-callout-body :is(code, kbd) {
   padding       : 1px 6px;
   border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--domain-color) var(--prose-tint-faint), transparent);
+  background    : color-mix(in srgb, var(--family-color) var(--prose-tint-faint), transparent);
   font-family   : var(--vp-font-family-mono);
   font-size     : 0.82em;
-  color         : var(--domain-color);
+  color         : var(--family-color);
 }
 
 .specimen-callout-body em {

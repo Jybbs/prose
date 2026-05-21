@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : formatting
+family   : formatting
 caption  : "*Prose* normalizes blank-line counts to canonical values between thematically adjacent statements."
 related  : [alphabetize, align-imports, bare-import-allowlist]
 ---

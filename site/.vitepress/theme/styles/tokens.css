@@ -18,17 +18,17 @@
   --prose-c-error                : var(--prose-c-apricot);
   --prose-c-warning              : var(--prose-c-eureka);
 
-  --prose-c-domain-alignment     : var(--prose-c-eureka);
-  --prose-c-domain-ordering      : var(--prose-c-chambray);
-  --prose-c-domain-formatting    : var(--prose-c-heath);
-  --prose-c-domain-docs          : var(--prose-c-whiskey);
-  --prose-c-domain-lint          : var(--prose-c-apricot);
+  --prose-c-family-alignment     : var(--prose-c-eureka);
+  --prose-c-family-docs          : var(--prose-c-whiskey);
+  --prose-c-family-formatting    : var(--prose-c-heath);
+  --prose-c-family-lint          : var(--prose-c-apricot);
+  --prose-c-family-ordering      : var(--prose-c-chambray);
 
-  --prose-domain-alignment       : #4a2511;
-  --prose-domain-engine          : #4a1418;
-  --prose-domain-formatting      : #e8e856;
-  --prose-domain-lint            : #4a3a08;
-  --prose-domain-ordering        : #4a1a3e;
+  --prose-family-alignment       : #4a2511;
+  --prose-family-engine          : #4a1418;
+  --prose-family-formatting      : #e8e856;
+  --prose-family-lint            : #4a3a08;
+  --prose-family-ordering        : #4a1a3e;
 
   --prose-radius                 : 8px;
   --prose-radius-sm              : 4px;
@@ -76,7 +76,7 @@
   --vp-button-brand-hover-bg     : var(--vp-c-brand-2);
   --vp-button-brand-hover-border : transparent;
 
-  --vp-code-block-bg             : #22272e;
+  --vp-code-block-bg             : #f6f8fa;
   --vp-code-font-size            : 0.82rem;
   --vp-code-line-height          : 1.6;
 }
@@ -86,11 +86,18 @@
   --vp-c-brand-2     : var(--prose-c-ube-mid);
   --vp-c-brand-3     : var(--prose-c-ube);
   --vp-c-brand-soft  : color-mix(in srgb, var(--prose-c-ube-pale) 16%, transparent);
+  --vp-c-bg-soft     : #17171b;
   --vp-code-block-bg : #24292e;
 }
 
-.dark .shiki {
+.dark .shiki,
+.dark .shiki-magic-move-container {
   background-color: var(--shiki-dark-bg) !important;
+}
+
+.dark .shiki span,
+.dark .shiki-magic-move-container span {
+  color : var(--shiki-dark) !important;
 }
 
 :root {

@@ -34,24 +34,24 @@
   background: var(--prose-c-accent);
 }
 
-.vp-doc .custom-block.tip.domain-alignment::before {
-  background: var(--prose-domain-alignment);
+.vp-doc .custom-block.tip.family-alignment::before {
+  background: var(--prose-family-alignment);
 }
 
-.vp-doc .custom-block.tip.domain-engine::before {
-  background: var(--prose-domain-engine);
+.vp-doc .custom-block.tip.family-engine::before {
+  background: var(--prose-family-engine);
 }
 
-.vp-doc .custom-block.tip.domain-formatting::before {
-  background: var(--prose-domain-formatting);
+.vp-doc .custom-block.tip.family-formatting::before {
+  background: var(--prose-family-formatting);
 }
 
-.vp-doc .custom-block.tip.domain-lint::before {
-  background: var(--prose-domain-lint);
+.vp-doc .custom-block.tip.family-lint::before {
+  background: var(--prose-family-lint);
 }
 
-.vp-doc .custom-block.tip.domain-ordering::before {
-  background: var(--prose-domain-ordering);
+.vp-doc .custom-block.tip.family-ordering::before {
+  background: var(--prose-family-ordering);
 }
 
 .vp-doc .dropcap::first-letter {

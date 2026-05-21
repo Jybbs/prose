@@ -3,21 +3,21 @@ import { computed } from 'vue'
 
 import Chip from '../base/Chip.vue'
 
-import { CATEGORY_META, DOMAIN_META, type RuleCategory, type RuleDomain } from '../../../lib/shared/registries'
+import { CATEGORY_META, FAMILY_META, type RuleCategory, type RuleFamily } from '../../../lib/shared/registries'
 import { useCurrentRule }                                                  from '../../../lib/shared/route'
 
 const props = withDefaults(defineProps<{
-  axis    : 'category' | 'domain'
+  axis    : 'category' | 'family'
   linked ?: boolean
-  value  ?: RuleCategory | RuleDomain
+  value  ?: RuleCategory | RuleFamily
 }>(), { linked: true })
 
-const REGISTRY = { category: CATEGORY_META, domain: DOMAIN_META } as const
+const REGISTRY = { category: CATEGORY_META, family: FAMILY_META } as const
 
 const rule    = useCurrentRule()
 const value   = computed(() => props.value ?? rule.value?.[props.axis] ?? null)
 const meta    = computed(() => value.value ? REGISTRY[props.axis][value.value as never] as { badge: string; label: string } : null)
-const variant = computed(() => `${props.axis}-chip` as 'category-chip' | 'domain-chip')
+const variant = computed(() => `${props.axis}-chip` as 'category-chip' | 'family-chip')
 const href    = computed(() => props.linked && value.value ? `/rules/${value.value}/` : undefined)
 </script>
 

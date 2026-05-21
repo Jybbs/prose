@@ -2,7 +2,8 @@
 import DefaultTheme        from 'vitepress/theme'
 import { watchEffect }     from 'vue'
 
-import { useCurrentDomain } from '../lib/shared/route'
+import { useCurrentFamily }   from '../lib/shared/route'
+import { useSidebarCollapse } from '../lib/shared/sidebar-collapse'
 
 import BuildMetadata from './components/layout/BuildMetadata.vue'
 import FixtureToc    from './components/aside/FixtureToc.vue'
@@ -11,12 +12,13 @@ import RelatedRules  from './components/aside/RelatedRules.vue'
 import RuleChrome    from './components/aside/RuleChrome.vue'
 import StarBadge     from './components/layout/StarBadge.vue'
 
-const domain = useCurrentDomain()
+const family = useCurrentFamily()
+useSidebarCollapse()
 
 watchEffect(() => {
   if (typeof document === 'undefined') return
-  if (domain.value) document.body.setAttribute('data-domain', domain.value)
-  else              document.body.removeAttribute('data-domain')
+  if (family.value) document.body.setAttribute('data-family', family.value)
+  else              document.body.removeAttribute('data-family')
 })
 </script>
 

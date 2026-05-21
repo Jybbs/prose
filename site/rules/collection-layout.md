@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : formatting
+family   : formatting
 caption  : "*Prose* splits list, tuple, dict, and set literals into one-entry-per-line layout once they cross a threshold."
 related  : [align-colons, alphabetize, singleton-rule, strip-trailing-commas]
 ---

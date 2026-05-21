@@ -21,6 +21,10 @@
   z-index  : 1;
 }
 
+.surface-card > *:not(.surface-card-cover-link) {
+  pointer-events : none;
+}
+
 .surface-card-cover-link {
   position      : absolute;
   inset         : 0;
@@ -36,22 +40,23 @@
 }
 
 .surface-card-chips a {
-  position : relative;
-  z-index  : 2;
+  position       : relative;
+  z-index        : 2;
+  pointer-events : auto;
 }
 
 .surface-card::after {
-  content       : "";
-  position      : absolute;
-  inset         : 0;
-  background    : radial-gradient(
+  content        : "";
+  position       : absolute;
+  inset          : 0;
+  background     : radial-gradient(
     420px circle at var(--spotlight-x) var(--spotlight-y),
-    color-mix(in oklab, var(--domain-color) 14%, transparent) 0%,
+    color-mix(in oklab, var(--family-color) 14%, transparent) 0%,
     transparent 60%
   );
-  pointer-events: none;
-  z-index       : 0;
-  border-radius : var(--prose-radius);
+  pointer-events : none;
+  z-index        : 0;
+  border-radius  : var(--prose-radius);
 }
 
 .surface-card::before {
@@ -61,7 +66,7 @@
   left          : 0;
   right         : 0;
   height        : 3px;
-  background    : linear-gradient(90deg, transparent, var(--domain-color), transparent);
+  background    : linear-gradient(90deg, transparent, var(--family-color), transparent);
   opacity       : 0;
   transition    : opacity var(--prose-transition-slow);
   border-radius : var(--prose-radius) var(--prose-radius) 0 0;
@@ -75,9 +80,9 @@
 
 .surface-card[data-active="true"],
 .surface-card:focus-within {
-  border-color : var(--domain-color);
+  border-color : var(--family-color);
   transform    : translateY(-2px);
-  box-shadow   : 0 18px 44px -32px color-mix(in srgb, var(--domain-color) 55%, transparent);
+  box-shadow   : 0 18px 44px -32px color-mix(in srgb, var(--family-color) 55%, transparent);
 }
 
 .surface-card-number {

@@ -74,20 +74,20 @@
 }
 
 .typing-demo-replay {
-  position      : absolute;
-  top           : 12px;
-  right         : 12px;
-  padding       : 6px 14px;
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius-sm);
-  background    : var(--vp-c-bg);
-  color         : var(--vp-c-text-2);
-  font-family   : var(--vp-font-family-mono);
-  font-size     : var(--prose-label-size);
-  letter-spacing: var(--prose-label-tracking);
-  text-transform: uppercase;
-  cursor        : pointer;
-  transition    : border-color var(--prose-transition), color var(--prose-transition);
+  position       : absolute;
+  top            : 12px;
+  right          : 12px;
+  padding        : 6px 14px;
+  border         : 1px solid var(--vp-c-divider);
+  border-radius  : var(--prose-radius-sm);
+  background     : var(--vp-c-bg);
+  color          : var(--vp-c-text-2);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-label-size);
+  letter-spacing : var(--prose-label-tracking);
+  text-transform : uppercase;
+  cursor         : pointer;
+  transition     : border-color var(--prose-transition), color var(--prose-transition);
 }
 
 .typing-demo-replay:hover {
@@ -97,7 +97,7 @@
 
 @media (--prose-bp-desktop) {
   .typing-demo {
-    grid-template-columns: 1fr;
+    grid-template-columns : 1fr;
   }
 }
 

@@ -20,7 +20,7 @@ export const TOOL_SEEDS = {
   },
   github: {
     href : 'https://github.com/features/actions',
-    icon : 'logos:github-actions',
+    icon : 'simple-icons:githubactions',
     name : 'GitHub Actions',
     role : 'CI integration target'
   },
@@ -80,7 +80,7 @@ export const TOOL_SEEDS = {
   },
   rust: {
     href : 'https://www.rust-lang.org/',
-    icon : 'logos:rust',
+    icon : 'simple-icons:rust',
     name : 'Rust',
     role : 'Implementation language'
   },

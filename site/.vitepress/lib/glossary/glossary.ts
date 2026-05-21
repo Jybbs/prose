@@ -46,8 +46,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'Diagnostic': {
     aliases   : ['diagnostic', 'diagnostics', 'lint diagnostic'],
-    definition: 'A `Diagnostic` is the structured report a rule emits when it detects a pattern. It carries a severity, wherein `AutoFix` rewrites source under `prose format` and `Lint` only surfaces.',
-    href      : '/integrations/github-actions'
+    definition: 'A `Diagnostic` is the structured report a rule emits when it detects a pattern. It carries a severity, wherein `AutoFix` rewrites source under `prose format` and `Lint` only surfaces.'
   },
 
   'Pipeline': {
@@ -59,7 +58,7 @@ export const glossary: Record<string, GlossaryEntry> = {
   'Ruff': {
     aliases   : ['ruff'],
     definition: 'Ruff is Astral\'s Python linter and formatter. *Prose* is designed to compose downstream of `ruff format`, leaving token-level normalization to `ruff` and layout-level legibility to *Prose*.',
-    href      : '/guide/two-stage-pipeline'
+    href      : '/integrations/ruff'
   },
 
   'RuleId': {
@@ -81,12 +80,14 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'alignment group': {
     aliases   : ['alignment groups', 'group', 'singleton group', 'singleton groups'],
-    definition: 'An alignment group is a run of consecutive members at the same indentation that share an alignment target. Blank lines, comment lines, and non-member statements reset the run, so each contiguous group resolves independently.'
+    definition: 'An alignment group is a run of consecutive members at the same indentation that share an alignment target. Blank lines, comment lines, and non-member statements reset the run, so each contiguous group resolves independently.',
+    href      : '/primitives/aligner'
   },
 
   'annotation': {
     aliases   : ['annotations', 'type annotation', 'type annotations'],
-    definition: 'An annotation is a `name: Type` declaration on a function parameter, return value, or variable. Type checkers and version-gated rules like `legacy-union-syntax` and `unused-future-annotations` read it.'
+    definition: 'An annotation is a `name: Type` declaration on a function parameter, return value, or variable. Type checkers and version-gated rules like `legacy-union-syntax` and `unused-future-annotations` read it.',
+    href      : 'https://docs.python.org/3/glossary.html#term-annotation'
   },
 
   'applicability': {
@@ -111,30 +112,33 @@ export const glossary: Record<string, GlossaryEntry> = {
     href      : '/rules/blank-lines'
   },
 
-  'comprehension': {
-    aliases   : ['comprehensions', 'list comprehension', 'dict comprehension', 'set comprehension'],
-    definition: 'A comprehension is one of Python\'s `[x for x in xs]`, `{k: v for ...}`, or `{x for ...}` literal forms that build a list, dict, or set inline. `collection-layout` keeps them on one line when they fit, and their bound targets sit outside `single-use-variables`.'
-  },
-
   'code-line-length': {
     definition: '`code-line-length` is the top-level config key for the line budget consumed by code-shaped rules. It defaults to **88**.',
     href      : '/reference/configuration#top-level-keys'
   },
 
+  'comprehension': {
+    aliases   : ['comprehensions', 'list comprehension', 'dict comprehension', 'set comprehension'],
+    definition: 'A comprehension is one of Python\'s `[x for x in xs]`, `{k: v for ...}`, or `{x for ...}` literal forms that build a list, dict, or set inline. `collection-layout` keeps them on one line when they fit, and their bound targets sit outside `single-use-variables`.',
+    href      : 'https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions'
+  },
+
   'dataclass': {
     aliases   : ['dataclasses', 'dataclass field', 'dataclass fields'],
-    definition: 'A dataclass is a class decorated with `@dataclass` whose body lists typed field declarations. `alphabetize` reorders the fields (required before optional), `align-colons` aligns their annotation colons, and `align-equals` aligns their default-value `=` signs.'
+    definition: 'A dataclass is a class decorated with `@dataclass` whose body lists typed field declarations. `alphabetize` reorders the fields (required before optional), `align-colons` aligns their annotation colons, and `align-equals` aligns their default-value `=` signs.',
+    href      : 'https://docs.python.org/3/library/dataclasses.html'
   },
 
   'decorator': {
     aliases   : ['decorators', 'decorated function', 'decorated functions'],
-    definition: 'A decorator is an `@name` prefix attached to a function or class definition that wraps it at definition time. `alphabetize` sorts decorated functions together inside framework-decorator groups, and `blank-lines` keeps each decorator attached to its `def`.'
+    definition: 'A decorator is an `@name` prefix attached to a function or class definition that wraps it at definition time. `alphabetize` sorts decorated functions together inside framework-decorator groups, and `blank-lines` keeps each decorator attached to its `def`.',
+    href      : 'https://docs.python.org/3/glossary.html#term-decorator'
   },
 
   'docstring': {
     aliases   : ['docstrings', 'triple-quoted docstring'],
     definition: 'A docstring is a triple-quoted string literal placed as the first statement in a module, class, or function. *Prose* rewraps multi-line bodies under `docstring-wrap` and gates single-line shapes under `no-single-line-docstrings`.',
-    href      : '/rules/docstring-wrap'
+    href      : '/primitives/docstring'
   },
 
   'docstring-line-length': {
@@ -149,12 +153,14 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'enum': {
     aliases   : ['Enum', 'enums', 'enum member', 'enum members'],
-    definition: 'An enum is a subclass of `enum.Enum` whose body lists named constants. `alphabetize` sorts the members, except when they carry explicit integer or string values that encode ordering.'
+    definition: 'An enum is a subclass of `enum.Enum` whose body lists named constants. `alphabetize` sorts the members, except when they carry explicit integer or string values that encode ordering.',
+    href      : 'https://docs.python.org/3/library/enum.html'
   },
 
   'f-string': {
     aliases   : ['f-strings'],
-    definition: 'An f-string is a Python string literal prefixed `f"..."` that interpolates expressions inside `{}` placeholders. The `docstring` walker skips f-string and other concatenated forms, so only plain triple-quoted string literals count as docstrings.'
+    definition: 'An f-string is a Python string literal prefixed `f"..."` that interpolates expressions inside `{}` placeholders. The `docstring` walker skips f-string and other concatenated forms, so only plain triple-quoted string literals count as docstrings.',
+    href      : 'https://docs.python.org/3/reference/lexical_analysis.html#f-strings'
   },
 
   'fixture': {
@@ -195,6 +201,12 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'Lint is the rule category whose diagnostics surface as `Severity::Lint` without rewriting source. *Prose* always inspects them, but never modifies the source.'
   },
 
+  'match': {
+    aliases   : ['match statement', 'match-arm', 'match arms', 'match-case'],
+    definition: 'A match is Python\'s structural-pattern-matching statement (PEP 634). Each `case Pattern: body` arm pairs a pattern with a body, and `match-case-align` shares a column for the post-pattern `:` separator across consecutive single-expression arms.',
+    href      : '/rules/match-case-align'
+  },
+
   'max-shift': {
     definition: '`max-shift` is the per-alignment-rule config key capping per-line padding. It defaults to **8**, and groups whose widest member exceeds the cap fall back to `max-shift-policy`.',
     href      : '/reference/configuration#per-rule-knobs'
@@ -203,12 +215,6 @@ export const glossary: Record<string, GlossaryEntry> = {
   'max-shift-policy': {
     definition: '`max-shift-policy` decides how an alignment group overflowing `max-shift` resolves. `split` partitions the group, `drop` excludes the widest members, and `skip` leaves the whole group unaligned.',
     href      : '/reference/configuration#per-rule-knobs'
-  },
-
-  'match': {
-    aliases   : ['match statement', 'match-arm', 'match arms', 'match-case'],
-    definition: 'A match is Python\'s structural-pattern-matching statement (PEP 634). Each `case Pattern: body` arm pairs a pattern with a body, and `match-case-align` shares a column for the post-pattern `:` separator across consecutive single-expression arms.',
-    href      : '/rules/match-case-align'
   },
 
   'module-level': {
@@ -242,7 +248,8 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'Pydantic': {
     aliases   : ['pydantic', 'Pydantic field', 'Pydantic fields'],
-    definition: 'Pydantic is a widely used data-validation library whose models declare typed fields in the class body. `alphabetize` sorts those fields with required before optional, and `align-colons` aligns the annotation colons across the field block.'
+    definition: 'Pydantic is a widely used data-validation library whose models declare typed fields in the class body. `alphabetize` sorts those fields with required before optional, and `align-colons` aligns the annotation colons across the field block.',
+    href      : 'https://docs.pydantic.dev/'
   },
 
   'reparse': {
@@ -274,8 +281,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'stdin mode': {
     aliases   : ['--stdin', 'stdin'],
-    definition: 'Stdin mode is the CLI shape that reads a single source from standard input and writes to standard output. It bypasses the filesystem walker entirely, so editors and pipelines drive *Prose* without touching disk.',
-    href      : '/reference/cli'
+    definition: 'Stdin mode is the CLI shape that reads a single source from standard input and writes to standard output. It bypasses the filesystem walker entirely, so editors and pipelines drive *Prose* without touching disk.'
   },
 
   'structured section': {
@@ -292,12 +298,14 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'TYPE_CHECKING': {
     aliases   : ['typing.TYPE_CHECKING', 'if TYPE_CHECKING'],
-    definition: '`TYPE_CHECKING` is a `typing` flag that is `False` at runtime and `True` to type checkers, used inside `if TYPE_CHECKING:` blocks to guard import-only-for-typing code. `loose-constants` exempts bindings declared inside the block.'
+    definition: '`TYPE_CHECKING` is a `typing` flag that is `False` at runtime and `True` to type checkers, used inside `if TYPE_CHECKING:` blocks to guard import-only-for-typing code. `loose-constants` exempts bindings declared inside the block.',
+    href      : 'https://docs.python.org/3/library/typing.html#typing.TYPE_CHECKING'
   },
 
   'TypedDict': {
     aliases   : ['typeddict'],
-    definition: 'A `TypedDict` is a `typing.TypedDict` subclass declaring a dict\'s key-to-value-type contract. `alphabetize` sorts its fields the same way it sorts `dataclass` and Pydantic fields.'
+    definition: 'A `TypedDict` is a `typing.TypedDict` subclass declaring a dict\'s key-to-value-type contract. `alphabetize` sorts its fields the same way it sorts `dataclass` and Pydantic fields.',
+    href      : 'https://docs.python.org/3/library/typing.html#typing.TypedDict'
   },
 
   'walrus operator': {

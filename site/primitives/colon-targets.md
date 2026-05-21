@@ -1,6 +1,6 @@
 # ColonTargets
 
-<DependencyGraph />
+<PrimitivesComposition :initial-focus="'colon-targets'" />
 
 *ColonTargets* constructs alignment members at every `:` context the alignment and singleton rules consume. **Five** distinct contexts in the Python grammar carry a colon worth aligning, and the walker that finds them is identical across rules, so the walker lives once in *ColonTargets* and each consuming rule supplies a receiver that handles the discovered members.
 

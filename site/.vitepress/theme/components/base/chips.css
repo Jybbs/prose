@@ -1,5 +1,5 @@
 .category-chip,
-.domain-chip,
+.family-chip,
 .rule-chip {
   display       : inline-flex;
   align-items   : center;
@@ -11,13 +11,13 @@
   border-left: 2px solid var(--category-accent);
 }
 
-.domain-chip,
+.family-chip,
 .rule-chip {
-  border-left: 2px solid var(--domain-color);
+  border-left: 2px solid var(--family-color);
 }
 
 .category-chip,
-.domain-chip {
+.family-chip {
   gap            : 10px;
   padding        : 6px 14px 6px 10px;
   color          : var(--vp-c-text-1);
@@ -42,7 +42,7 @@ a.rule-chip {
 }
 
 .rule-chip:hover {
-  border-color      : var(--domain-color);
+  border-color      : var(--family-color);
   border-left-width : 3px;
   padding-left      : 7px;
 }
@@ -54,5 +54,5 @@ a.rule-chip {
 .rule-chip-slug {
   font-family : var(--vp-font-family-mono);
   font-size   : 0.78rem;
-  color       : var(--domain-color);
+  color       : var(--family-color);
 }

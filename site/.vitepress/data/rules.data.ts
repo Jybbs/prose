@@ -1,10 +1,10 @@
 import { defineLoader } from 'vitepress'
 
+import { getRenderer }         from '../lib/markdown/renderer'
 import { discoverRuleSlugs }   from '../lib/rules/discovery'
 import type { DiscoveredRule } from '../lib/rules/discovery'
-import { getRenderer }         from '../lib/markdown/renderer'
 import { rulesDir }            from '../lib/shared/paths'
-import { CATEGORY_META, DOMAIN_META, type RuleCategory, type RuleDomain } from '../lib/shared/registries'
+import { CATEGORY_META, FAMILY_META, type RuleCategory, type RuleFamily } from '../lib/shared/registries'
 
 export type { DiscoveredRule }
 
@@ -12,14 +12,14 @@ export interface RenderedRule extends DiscoveredRule {
   captionHtml : string
 }
 
-export interface RuleDomainGroup {
-  domain : RuleDomain
+export interface RuleFamilyGroup {
+  family : RuleFamily
   label  : string
   rules  : readonly RenderedRule[]
 }
 
 export interface RuleCategoryGroup {
-  byDomain : readonly RuleDomainGroup[]
+  byFamily : readonly RuleFamilyGroup[]
   category : RuleCategory
   label    : string
 }
@@ -46,15 +46,15 @@ export default defineLoader({
     const bySlug     = Object.fromEntries(list.map(r => [r.slug, r])) as Record<string, RenderedRule>
     const byCategory = (['auto-fix', 'lint'] as const).map(category => {
       const rulesInCategory = list.filter(r => r.category === category)
-      const byDomain = (Object.keys(DOMAIN_META) as RuleDomain[])
-        .filter(domain => rulesInCategory.some(r => r.domain === domain))
-        .map(domain => ({
-          domain,
-          label : DOMAIN_META[domain].label,
-          rules : rulesInCategory.filter(r => r.domain === domain)
+      const byFamily = (Object.keys(FAMILY_META) as RuleFamily[])
+        .filter(family => rulesInCategory.some(r => r.family === family))
+        .map(family => ({
+          family,
+          label : FAMILY_META[family].label,
+          rules : rulesInCategory.filter(r => r.family === family)
         }))
       return {
-        byDomain,
+        byFamily,
         category,
         label: CATEGORY_META[category].label
       }

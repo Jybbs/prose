@@ -5,12 +5,12 @@ import LandingSection from './LandingSection.vue'
 <template>
   <LandingSection
     centered
-    heading="Code, read like <em>prose</em>."
+    heading="Code, made <em>legible</em>."
     kicker="The Idea"
     variant="metaphor"
   >
     <aside class="landing-definition">
-      <p class="landing-definition-kicker">— Reference · prose —</p>
+      <p class="landing-definition-kicker">— a definition —</p>
       <header class="landing-definition-head">
         <h3 class="landing-definition-word">prose</h3>
         <span class="landing-definition-pron">/prōz/</span>

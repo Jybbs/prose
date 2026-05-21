@@ -2,7 +2,7 @@
 
 Every rule reads the source file through one shared value. *Source* bundles the original text, the parsed AST, the token stream, the line index, and the comment-range table into a single owned value that the pipeline hands across rule boundaries. Because the text is owned rather than borrowed, *Source* carries no lifetime parameter and can move across thread boundaries, which lets the path-mode CLI parallelize across files without lifetime gymnastics.
 
-<DependencyGraph />
+<PrimitivesComposition :initial-focus="'source'" />
 
 ## Public API
 

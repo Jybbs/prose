@@ -22,8 +22,8 @@ const PACKAGE  = 'prose-formatter'
 const ENDPOINT = `https://pypi.org/pypi/${PACKAGE}/json`
 
 const FALLBACK: readonly PyPIRelease[] = [
-  { version : '0.2.0', date : '2026-04-09', url : `https://pypi.org/project/${PACKAGE}/0.2.0/` },
-  { version : '0.1.0', date : '2026-01-14', url : `https://pypi.org/project/${PACKAGE}/0.1.0/` }
+  { date : '2026-04-09', url : `https://pypi.org/project/${PACKAGE}/0.2.0/`, version : '0.2.0' },
+  { date : '2026-01-14', url : `https://pypi.org/project/${PACKAGE}/0.1.0/`, version : '0.1.0' }
 ]
 
 function compareDesc(a: PyPIRelease, b: PyPIRelease): number {
@@ -67,9 +67,9 @@ export default defineLoader({
         if (!files || files.length === 0) continue
         const live = files.find(f => !f.yanked) ?? files[0]
         entries.push({
-          version,
           date    : formatDate(live.upload_time),
-          url     : `https://pypi.org/project/${PACKAGE}/${version}/`
+          url     : `https://pypi.org/project/${PACKAGE}/${version}/`,
+          version
         })
       }
       entries.sort(compareDesc)

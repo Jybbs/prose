@@ -6,13 +6,13 @@ import { useCurrentRule } from '../../../lib/shared/route'
 import TaxonomyChip from './TaxonomyChip.vue'
 
 const rule         = useCurrentRule()
-const showDomain   = computed(() => rule.value !== null && rule.value.domain !== 'lint')
+const showFamily   = computed(() => rule.value !== null && rule.value.family !== 'lint')
 </script>
 
 <template>
   <div class="rule-chrome">
     <TaxonomyChip axis="category" />
-    <TaxonomyChip v-if="showDomain" axis="domain" />
+    <TaxonomyChip v-if="showFamily" axis="family" />
   </div>
 </template>
 

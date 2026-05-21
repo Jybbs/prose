@@ -1,6 +1,6 @@
 ---
 category : lint
-domain   : lint
+family   : lint
 caption  : "*Prose* surfaces comments that narrate the next line."
 related  : [loose-constants, single-use-variables]
 ---

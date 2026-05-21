@@ -9,7 +9,7 @@ import type { KeyedTokensInfo }                      from 'shiki-magic-move/type
 import { defineLoader }                              from 'vitepress'
 
 import { ENTRIES, PRELUDE, RULES, SOURCE }                                                 from './landing-typing-demo.fixtures'
-import type { LandingTypingDemoEditEntry, LandingTypingDemoEntry, LandingTypingDemoAppendEntry } from './landing-typing-demo.fixtures'
+import type { LandingTypingDemoAppendEntry, LandingTypingDemoEditEntry, LandingTypingDemoEntry } from './landing-typing-demo.fixtures'
 import { SHIKI_THEMES }                                                                    from '../lib/shared/constants'
 import { repoRoot }                                                                        from '../lib/shared/paths'
 

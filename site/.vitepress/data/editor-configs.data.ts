@@ -25,60 +25,6 @@ interface EditorConfigSource {
 
 const SOURCES: readonly EditorConfigSource[] = [
   {
-    caption  : 'emeraldwalk.runonsave',
-    language : 'json',
-    name     : 'VS Code',
-    slug     : 'vscode',
-    target   : 'settings.json',
-    code     : `{
-  "emeraldwalk.runonsave": {
-    "commands": [
-      {
-        "match": "\\\\.py$",
-        "cmd"  : "prose format \${file}"
-      }
-    ]
-  }
-}`
-  },
-  {
-    caption  : 'autocmd BufWritePost',
-    language : 'vim',
-    name     : 'Neovim',
-    slug     : 'neovim',
-    target   : 'init.vim',
-    code     : `autocmd BufWritePost *.py silent! !prose format %`
-  },
-  {
-    caption  : 'File Watchers',
-    language : 'text',
-    name     : 'JetBrains',
-    slug     : 'jetbrains',
-    target   : 'Watcher dialog',
-    code     : `File type        : Python
-Scope            : Project Files
-Program          : prose
-Arguments        : format $FilePath$
-Working directory: $ProjectFileDir$`
-  },
-  {
-    caption  : 'SublimeOnSaveBuild',
-    language : 'python',
-    name     : 'Sublime Text',
-    slug     : 'sublime',
-    target   : '<Project>.sublime-project',
-    code     : `# Install: SublimeOnSaveBuild
-# Add to <Project>.sublime-project:
-{
-  "build_systems": [{
-    "name"        : "prose",
-    "shell_cmd"   : "prose format \\"$file\\"",
-    "selector"    : "source.python",
-    "working_dir" : "$file_path"
-  }]
-}`
-  },
-  {
     caption  : 'after-save-hook',
     language : 'lisp',
     name     : 'Emacs',
@@ -100,6 +46,60 @@ Working directory: $ProjectFileDir$`
 languages = ["python"]
 command   = "prose"
 args      = ["format", "-"]`
+  },
+  {
+    caption  : 'File Watchers',
+    language : 'text',
+    name     : 'JetBrains',
+    slug     : 'jetbrains',
+    target   : 'Watcher dialog',
+    code     : `File type        : Python
+Scope            : Project Files
+Program          : prose
+Arguments        : format $FilePath$
+Working directory: $ProjectFileDir$`
+  },
+  {
+    caption  : 'autocmd BufWritePost',
+    language : 'vim',
+    name     : 'Neovim',
+    slug     : 'neovim',
+    target   : 'init.vim',
+    code     : `autocmd BufWritePost *.py silent! !prose format %`
+  },
+  {
+    caption  : 'SublimeOnSaveBuild',
+    language : 'python',
+    name     : 'Sublime Text',
+    slug     : 'sublime',
+    target   : '<Project>.sublime-project',
+    code     : `# Install: SublimeOnSaveBuild
+# Add to <Project>.sublime-project:
+{
+  "build_systems": [{
+    "name"        : "prose",
+    "shell_cmd"   : "prose format \\"$file\\"",
+    "selector"    : "source.python",
+    "working_dir" : "$file_path"
+  }]
+}`
+  },
+  {
+    caption  : 'emeraldwalk.runonsave',
+    language : 'json',
+    name     : 'VS Code',
+    slug     : 'vscode',
+    target   : 'settings.json',
+    code     : `{
+  "emeraldwalk.runonsave": {
+    "commands": [
+      {
+        "match": "\\\\.py$",
+        "cmd"  : "prose format \${file}"
+      }
+    ]
+  }
+}`
   }
 ]
 

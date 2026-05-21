@@ -1,6 +1,6 @@
 ---
 category : auto-fix
-domain   : alignment
+family   : alignment
 caption  : "*Prose* aligns the `import` keyword across `from … import …` runs and the `as` keyword across `import … as …` runs."
 related  : [align-colons, align-equals, alphabetize, bare-import-allowlist, blank-lines, match-case-align]
 ---

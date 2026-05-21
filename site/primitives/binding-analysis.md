@@ -2,7 +2,7 @@
 
 *BindingAnalysis* walks the module once during [[source]] construction and records, for every name introduced or shadowed in a lexical scope, the offsets of every write and read. Several rules read from this table to ask binding-shaped questions, and the single-walk-per-source guarantee is what makes adding new binding-aware rules cheap.
 
-<DependencyGraph />
+<PrimitivesComposition :initial-focus="'binding-analysis'" />
 
 ## Public Surface (`0.2.x`)
 
