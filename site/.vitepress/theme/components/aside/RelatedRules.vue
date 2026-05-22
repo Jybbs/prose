@@ -5,8 +5,8 @@ import Kicker   from '../base/Kicker.vue'
 import RuleChip from '../rules/RuleChip.vue'
 
 import { data as rules }  from '../../../data/rules.data'
-import { lookup }         from '../../../lib/shared/lookup'
 import { useCurrentRule } from '../../../lib/composables/route'
+import { lookup }         from '../../../lib/shared/lookup'
 
 const current = useCurrentRule()
 

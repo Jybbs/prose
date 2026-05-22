@@ -5,7 +5,8 @@ import type { RuleFamily }                from '../lib/shared/registries'
 
 export interface Step {
   bodyHtml : string
-  code     : string
+  codeHtml : string
+  language : string
   number   : string
   title    : string
 }
@@ -60,32 +61,36 @@ const SURFACE_SOURCES: readonly SurfaceSource[] = [
   }
 ]
 
-type StepSource = Omit<Step, 'bodyHtml'> & { body: string }
+type StepSource = Omit<Step, 'bodyHtml' | 'codeHtml'> & { body: string; code: string }
 
 const STEP_SOURCES: readonly StepSource[] = [
   {
-    body   : 'Fetch the wheel and expose the `prose` binary.',
-    code   : 'uv tool install prose-formatter',
-    number : '01',
-    title  : 'Install'
+    body     : 'Fetch the wheel and expose the `prose` binary.',
+    code     : 'uv tool install prose-formatter',
+    language : 'bash',
+    number   : '01',
+    title    : 'Install'
   },
   {
-    body   : 'Drop a `[tool.prose]` table into `pyproject.toml`. The defaults already work.',
-    code   : '[tool.prose]\ntarget-version = "3.13"',
-    number : '02',
-    title  : 'Configure'
+    body     : 'Drop a `[tool.prose]` table into `pyproject.toml`. The defaults already work.',
+    code     : '[tool.prose]\ntarget-version = "3.13"',
+    language : 'toml',
+    number   : '02',
+    title    : 'Configure'
   },
   {
-    body   : 'Rewrite in place, or check without writing.',
-    code   : 'prose format path/\nprose check path/',
-    number : '03',
-    title  : 'Run'
+    body     : 'Rewrite in place, or check without writing.',
+    code     : 'prose format path/\nprose check path/',
+    language : 'bash',
+    number   : '03',
+    title    : 'Run'
   },
   {
-    body   : 'Pair with Ruff as the token-level upstream pass.',
-    code   : 'ruff format && prose format',
-    number : '04',
-    title  : 'Compose'
+    body     : 'Pair with Ruff as the token-level upstream pass.',
+    code     : 'ruff format && prose format',
+    language : 'bash',
+    number   : '04',
+    title    : 'Compose'
   }
 ]
 
@@ -95,7 +100,13 @@ export default defineLoader({
     const md = await getRenderer()
     return {
       surfaces : renderInlineField(md, SURFACE_SOURCES, 'body'),
-      workflow : renderInlineField(md, STEP_SOURCES, 'body')
+      workflow : STEP_SOURCES.map(src => ({
+        bodyHtml : md.renderInline(src.body),
+        codeHtml : md.render(`\`\`\`${src.language}\n${src.code}\n\`\`\``),
+        language : src.language,
+        number   : src.number,
+        title    : src.title
+      }))
     }
   }
 })

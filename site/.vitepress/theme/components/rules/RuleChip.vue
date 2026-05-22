@@ -4,7 +4,11 @@ import Chip from '../base/Chip.vue'
 import { data as rules } from '../../../data/rules.data'
 import { lookup }        from '../../../lib/shared/lookup'
 
-const props = defineProps<{ slug: string; undocumented ?: boolean; familyBadge ?: string }>()
+const props = defineProps<{
+  familyBadge   ?: string
+  slug           : string
+  undocumented  ?: boolean
+}>()
 
 const entry = props.undocumented ? null : lookup(rules.bySlug, props.slug, 'Rule')
 const badge = entry?.familyBadge ?? props.familyBadge ?? '·'

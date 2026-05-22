@@ -61,6 +61,12 @@
   font-weight : 500;
 }
 
+.disclosure-title code {
+  font-family : var(--vp-font-family-mono);
+  font-size   : 1em;
+  color       : var(--prose-c-ube);
+}
+
 .disclosure-actions {
   display     : inline-flex;
   align-items : center;

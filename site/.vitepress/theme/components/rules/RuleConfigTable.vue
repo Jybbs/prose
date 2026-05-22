@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { data as configs }      from '../../../data/rule-configs.data'
+import { data as configs }       from '../../../data/rule-configs.data'
+import { useCurrentRule }        from '../../../lib/composables/route'
 import type { RuleConfigPreset } from '../../../lib/rules/config-presets'
-import { useCurrentRule }       from '../../../lib/composables/route'
 
 const current = useCurrentRule()
 

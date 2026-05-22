@@ -22,7 +22,7 @@
   --prose-c-warning              : var(--prose-c-eureka);
 
   --prose-c-family-alignment     : var(--prose-c-eureka);
-  --prose-c-family-docs          : var(--prose-c-whiskey);
+  --prose-c-family-docs          : var(--prose-c-celadon);
   --prose-c-family-formatting    : var(--prose-c-heath);
   --prose-c-family-lint          : var(--prose-c-apricot);
   --prose-c-family-ordering      : var(--prose-c-chambray);
@@ -39,6 +39,7 @@
   --prose-focus-ring             : 2px solid var(--vp-c-brand-1);
 
   --prose-shadow-lift            : 0 12px 28px -10px;
+  --prose-shadow-tooltip         : 0 8px 24px rgba(0, 0, 0, 0.28);
 
   --prose-transition             : 0.15s ease;
   --prose-transition-slow        : 0.2s ease;

@@ -41,10 +41,10 @@ const REFERENCE_SIDEBAR: DefaultTheme.SidebarItem[] = [
 const INTEGRATIONS_SIDEBAR: DefaultTheme.SidebarItem[] = [
   {
     items: [
-      { link: '/integrations/ruff',              text: 'Ruff'              },
       { link: '/integrations/editor',            text: 'Editor'            },
       { link: '/integrations/github-actions',    text: 'GitHub Actions'    },
       { link: '/integrations/pre-commit',        text: 'Pre-Commit'        },
+      { link: '/integrations/ruff',              text: 'Ruff'              },
       { link: '/integrations/shell-completions', text: 'Shell Completions' }
     ],
     text : 'Integrations'
@@ -53,12 +53,11 @@ const INTEGRATIONS_SIDEBAR: DefaultTheme.SidebarItem[] = [
 
 export function buildSidebar(rules: readonly DiscoveredRule[]): DefaultTheme.Sidebar {
   const familySections: DefaultTheme.SidebarItem[] = FAMILY_ORDER.map(family => ({
-    collapsed : false,
-    items     : rules
+    items : rules
       .filter(r => r.family === family)
       .map(r => ruleLink(r.slug)),
-    link      : `/rules/${family}/`,
-    text      : FAMILY_META[family].label
+    link  : `/rules/${family}/`,
+    text  : FAMILY_META[family].label
   }))
   return {
     '/guide/'        : GUIDE_SIDEBAR,
@@ -66,16 +65,14 @@ export function buildSidebar(rules: readonly DiscoveredRule[]): DefaultTheme.Sid
     '/primitives/'   : [
       { items: [{ link: '/primitives/', text: 'Overview' }], text: 'Primitives' },
       {
-        collapsed : false,
-        items     : PUBLIC_PRIMITIVES.map(slug => primLink(slug, PRIMITIVES[slug])),
-        text      : 'Public Surface'
+        items : PUBLIC_PRIMITIVES.map(slug => primLink(slug, PRIMITIVES[slug])),
+        text  : 'Public Surface'
       },
       {
-        collapsed : false,
-        items     : PRIMITIVE_SLUGS
+        items : PRIMITIVE_SLUGS
           .filter(slug => !PUBLIC_PRIMITIVES.includes(slug))
           .map(slug => primLink(slug, PRIMITIVES[slug])),
-        text      : 'Crate Internal'
+        text  : 'Crate Internal'
       }
     ],
     '/reference/'    : REFERENCE_SIDEBAR,

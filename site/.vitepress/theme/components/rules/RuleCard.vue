@@ -7,10 +7,6 @@ defineProps<{
   index : number
   rule  : RenderedRule
 }>()
-
-function toTitle(slug: string): string {
-  return slug.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('-')
-}
 </script>
 
 <template>
@@ -22,11 +18,11 @@ function toTitle(slug: string): string {
     <a
       class="rule-card-cover"
       :href="`/rules/${rule.slug}`"
-      :aria-label="toTitle(rule.slug)"
+      :aria-label="rule.name"
     />
     <header class="rule-card-header">
       <span class="rule-card-folio" aria-hidden="true">{{ toRoman(index + 1) }}</span>
-      <h3 class="rule-card-name">{{ toTitle(rule.slug) }}</h3>
+      <h3 class="rule-card-name">{{ rule.name }}</h3>
       <a
         class="rule-card-circle rule-card-circle-category"
         :href="`/rules/${rule.category}/`"

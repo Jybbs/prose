@@ -20,7 +20,6 @@
   font-style : italic;
 }
 
-.fixture-toc-list,
 .related-rules-list,
 .rules-index-list {
   display        : flex;
@@ -55,7 +54,18 @@
   background    : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
 }
 
-div[class*='language-'] > span.lang,
+.v-popper--theme-glossary .v-popper__inner,
+.specimen-callout {
+  border        : 2px solid color-mix(in srgb, var(--tooltip-accent) 55%, var(--vp-c-divider));
+  border-top    : 3px solid var(--tooltip-accent);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg);
+  box-shadow    : var(--prose-shadow-tooltip);
+}
+
+.v-popper--theme-glossary { --tooltip-accent : var(--prose-c-celadon); }
+.specimen-callout         { --tooltip-accent : var(--family-color);    }
+
 .typing-demo-label {
   position       : absolute;
   bottom         : 6px;

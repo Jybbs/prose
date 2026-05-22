@@ -10,17 +10,13 @@
 }
 
 .v-popper--theme-glossary .v-popper__inner {
-  max-width     : 22rem;
-  min-width     : 14rem;
-  padding       : 12px 16px;
-  border        : 1px solid color-mix(in srgb, var(--prose-c-celadon) 55%, var(--vp-c-divider));
-  border-top    : 3px solid var(--prose-c-celadon);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg);
-  box-shadow    : var(--prose-shadow-lift) color-mix(in srgb, var(--prose-c-celadon) 45%, transparent);
-  color         : var(--vp-c-text-1);
-  font-size     : var(--prose-text-sm);
-  line-height   : 1.5;
+  max-width   : 22rem;
+  min-width   : 14rem;
+  padding     : 12px 16px;
+  outline     : none;
+  color       : var(--vp-c-text-1);
+  font-size   : var(--prose-text-sm);
+  line-height : 1.5;
 }
 
 .v-popper--theme-glossary .v-popper__wrapper {
@@ -38,9 +34,12 @@
   transform : translateY(0);
 }
 
-.v-popper--theme-glossary .v-popper__arrow-inner,
 .v-popper--theme-glossary .v-popper__arrow-outer {
-  border-color: var(--vp-c-divider);
+  border-color : color-mix(in srgb, var(--tooltip-accent) 55%, var(--vp-c-divider));
+}
+
+.v-popper--theme-glossary .v-popper__arrow-inner {
+  border-color : var(--vp-c-bg);
 }
 
 .glossary-tooltip-title {
@@ -68,16 +67,21 @@
 }
 
 .glossary-tooltip-link {
-  display         : inline-block;
-  margin-top      : 8px;
+  display         : block;
+  margin          : 12px -16px -12px;
+  padding         : 6px 16px;
+  border-radius   : 0 0 calc(var(--prose-radius) - 2px) calc(var(--prose-radius) - 2px);
+  background      : color-mix(in srgb, var(--tooltip-accent) 55%, var(--vp-c-divider));
   font-family     : var(--vp-font-family-mono);
   font-size       : var(--prose-label-size);
   letter-spacing  : var(--prose-meta-tracking);
+  text-align      : center;
   text-transform  : uppercase;
-  color           : var(--prose-c-celadon);
+  color           : var(--vp-c-text-1);
   text-decoration : none;
+  transition      : background var(--prose-transition);
 }
 
 .glossary-tooltip-link:hover {
-  text-decoration: underline;
+  background : color-mix(in srgb, var(--tooltip-accent) 75%, var(--vp-c-divider));
 }

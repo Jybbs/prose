@@ -1,0 +1,52 @@
+.specimen-callout {
+  position         : absolute;
+  top              : calc(100% + 10px);
+  left             : 0;
+  width            : 300px;
+  padding          : 12px 16px;
+  font-family      : var(--vp-font-family-base);
+  font-size        : var(--prose-text-sm);
+  line-height      : 1.5;
+  color            : var(--vp-c-text-1);
+  text-align       : left;
+  pointer-events   : none;
+  opacity          : 0;
+  transform        : translateY(-4px);
+  transform-origin : top left;
+  transition       :
+    opacity   140ms var(--prose-ease-emphasized),
+    transform 140ms var(--prose-ease-emphasized);
+}
+
+.rules-cluster-specimens > li:hover .specimen-callout,
+.rules-cluster-specimens > li:focus-within .specimen-callout {
+  opacity   : 1;
+  transform : translateY(0);
+}
+
+.specimen-callout-slug {
+  display       : block;
+  margin        : 0 0 6px;
+  padding       : 0 0 6px;
+  border-bottom : 1px solid var(--vp-c-divider);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--prose-text-md);
+  font-weight   : 700;
+  color         : var(--family-color);
+}
+
+.specimen-callout-body {
+  display    : block;
+  font-style : italic;
+  color      : var(--vp-c-text-2);
+}
+
+.specimen-callout-body :is(code, kbd) {
+  font-size : 0.95em;
+  color     : var(--vp-c-text-1);
+}
+
+.specimen-callout-body em {
+  font-style : italic;
+  color      : var(--vp-c-text-1);
+}

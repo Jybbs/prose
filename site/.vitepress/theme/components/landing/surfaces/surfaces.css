@@ -23,6 +23,20 @@
   flex : 0 0 var(--surfaces-card-width);
 }
 
+.surfaces-carousel-static {
+  -webkit-mask-image : none;
+          mask-image : none;
+}
+
+.surfaces-carousel-static .surfaces-carousel-track {
+  justify-content : center;
+  width           : 100%;
+}
+
+.surfaces-carousel-static .surfaces-carousel-track > [aria-hidden="true"] {
+  display : none;
+}
+
 @media (--prose-bp-desktop) {
   .surfaces-carousel {
     --surfaces-card-width : 300px;

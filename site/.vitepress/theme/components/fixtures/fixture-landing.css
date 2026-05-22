@@ -16,17 +16,14 @@
 }
 
 .fixture-pair-landing .fixture-pair-code {
-  flex-grow   : 1;
-  padding     : 16px 18px;
-  font-size   : 0.8em;
-  line-height : 1.55;
-  overflow    : auto;
+  flex-grow : 1;
+  min-width : 0;
 }
 
-.fixture-pair-landing .fixture-pair-code pre {
-  margin     : 0;
-  background : transparent;
-  padding    : 0;
+.fixture-pair-landing .fixture-pair-code > div[class*='language-'] {
+  margin        : 0;
+  border-radius : 0;
+  background    : transparent;
 }
 
 .fixture-pair-landing .fixture-pair-label {

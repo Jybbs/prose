@@ -14,23 +14,7 @@ export interface CurrentSlugs {
 
 const SLUGS_KEY: InjectionKey<CurrentSlugs> = Symbol('currentSlugs')
 
-export function provideCurrentSlugs(): CurrentSlugs {
-  const { page } = useData()
-  const slugFor  = (prefix: string) => computed(() => {
-    const start = `${prefix}/`
-    const rel   = page.value.relativePath
-    if (!rel.startsWith(start)) return null
-    const slug = rel.slice(start.length).replace(/\.md$/, '')
-    return slug && slug !== 'index' ? slug : null
-  })
-  const slugs = { primitive: slugFor('primitives'), rule: slugFor('rules') }
-  provide(SLUGS_KEY, slugs)
-  return slugs
-}
-
-function useSlugs(): CurrentSlugs {
-  const injected = inject(SLUGS_KEY, null)
-  if (injected !== null) return injected
+function buildSlugs(): CurrentSlugs {
   const { page } = useData()
   const slugFor  = (prefix: string) => computed(() => {
     const start = `${prefix}/`
@@ -40,6 +24,16 @@ function useSlugs(): CurrentSlugs {
     return slug && slug !== 'index' ? slug : null
   })
   return { primitive: slugFor('primitives'), rule: slugFor('rules') }
+}
+
+export function provideCurrentSlugs(): CurrentSlugs {
+  const slugs = buildSlugs()
+  provide(SLUGS_KEY, slugs)
+  return slugs
+}
+
+function useSlugs(): CurrentSlugs {
+  return inject(SLUGS_KEY, null) ?? buildSlugs()
 }
 
 export function provideCurrentRule(): ComputedRef<RenderedRule | null> {

@@ -31,7 +31,7 @@ const chapters = computed(() =>
         <div class="landing-workflow-body">
           <h3 class="landing-workflow-title">{{ chapter.title }}</h3>
           <p class="landing-workflow-prose" v-html="chapter.bodyHtml" />
-          <pre class="landing-workflow-code"><code>{{ chapter.code }}</code></pre>
+          <div class="landing-workflow-code" v-html="chapter.codeHtml" />
         </div>
       </section>
     </article>

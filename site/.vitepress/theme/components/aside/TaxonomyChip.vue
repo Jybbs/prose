@@ -16,7 +16,7 @@ const REGISTRY = { category: CATEGORY_META, family: FAMILY_META } as const
 
 const rule    = useCurrentRule()
 const value   = computed(() => props.value ?? rule.value?.[props.axis] ?? null)
-const meta    = computed(() => value.value ? REGISTRY[props.axis][value.value as never] as { badge: string; label: string } : null)
+const meta    = computed(() => value.value ? REGISTRY[props.axis][value.value as never] : null)
 const variant = computed(() => `${props.axis}-chip` as 'category-chip' | 'family-chip')
 const href    = computed(() => props.linked && value.value ? `/rules/${value.value}/` : undefined)
 </script>

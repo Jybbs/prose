@@ -13,6 +13,7 @@ const EDIT_TRAVEL_MS             = 520
 const HOLD_AFTER_ERASED_MS       = 1200
 const HOLD_AFTER_TYPED_MS        = 3500
 const HOLD_BETWEEN_EDITS_MS      = 1800
+const MAGIC_MOVE_MS              = 600
 const PAUSE_AFTER_ADD_MS         = 1800
 const TYPE_MS_PER_CHAR           = 22
 
@@ -243,7 +244,7 @@ function replay(): void {
   editProgress.value     = 0
   pythonStateIndex.value = 0
   phase.value            = 'reducedMotion'
-  schedule(freezeAtEnd, 600)
+  schedule(freezeAtEnd, MAGIC_MOVE_MS)
 }
 
 useIntersectionObserver(
@@ -265,7 +266,7 @@ watch(inView, (visible) => {
 
 onMounted(() => {
   if (reducedMotion.value) freezeAtEnd()
-  else schedule(restart, 600)
+  else schedule(restart, MAGIC_MOVE_MS)
 })
 </script>
 
@@ -282,7 +283,7 @@ onMounted(() => {
         :steps   = "data.pythonStateSteps"
         :step    = "pythonStateIndex"
         :animate = "!reducedMotion"
-        :options = "{ duration: 600, stagger: 3 }"
+        :options = "{ duration: MAGIC_MOVE_MS, stagger: 3 }"
       />
     </section>
     <button

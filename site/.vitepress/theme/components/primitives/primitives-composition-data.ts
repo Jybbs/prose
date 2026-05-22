@@ -12,7 +12,7 @@ export interface PrimitiveEntry {
   tagline    : string
 }
 
-export const LAYER_META: Record<PrimitiveLayer, { kicker: string, label: string }> = {
+export const LAYER_META: Record<PrimitiveLayer, { kicker: string; label: string }> = {
   analysis      : { kicker: 'L3 · analysis',      label: 'Analysis & walkers' },
   base          : { kicker: 'L1 · base',          label: 'Base values'        },
   orchestration : { kicker: 'L2 · orchestration', label: 'Orchestration'      }

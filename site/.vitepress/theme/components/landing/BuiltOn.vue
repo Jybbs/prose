@@ -7,7 +7,7 @@ import { lookup }          from '../../../lib/shared/lookup'
 
 interface Credit {
   role : string
-  slug : 'rust' | 'ruff' | 'uv' | 'mise' | 'github'
+  slug : 'github' | 'mise' | 'ruff' | 'rust' | 'uv'
 }
 
 const credits: readonly Credit[] = [

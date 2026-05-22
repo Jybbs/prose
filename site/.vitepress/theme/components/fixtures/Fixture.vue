@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 
 import FixturePair   from './FixturePair.vue'
 import FixtureToggle from './FixtureToggle.vue'
 
 import { data as fixtures } from '../../../data/fixtures.data'
 import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
-import { useFixtureToc }    from '../../../lib/composables/fixture-toc'
+import { inlineCodeHtml }   from '../../../lib/shared/inline-code'
 import { lookup }           from '../../../lib/shared/lookup'
 
 const Disclosure = defineAsyncComponent(() => import('../base/Disclosure.vue'))
 
 const props = defineProps<{
-  case    : string
-  open   ?: true
-  rule    : string
-  title  ?: string
-  variant?: 'doc' | 'landing'
+  case     : string
+  open    ?: true
+  rule     : string
+  title   ?: string
+  variant ?: 'doc' | 'landing'
 }>()
 
 const rule       = lookup(fixtures, props.rule, 'Fixture rule')
@@ -24,15 +24,7 @@ const entry      = lookup(rule, props.case, `Fixture case under "${props.rule}"`
 const id         = computed(() => `fixture-${props.rule}-${props.case}`)
 const activeTab  = ref<FixtureTab>('after')
 const showToggle = computed(() => props.variant !== 'landing' && entry.changesSource)
-
-const fixtureToc = useFixtureToc()
-let unregister: (() => void) | null = null
-onMounted(() => {
-  if (props.title) {
-    unregister = fixtureToc.register({ id: id.value, rule: props.rule, title: props.title })
-  }
-})
-onUnmounted(() => unregister?.())
+const titleHtml  = computed(() => props.title ? inlineCodeHtml(props.title) : '')
 </script>
 
 <template>
@@ -42,7 +34,7 @@ onUnmounted(() => unregister?.())
     :id="title ? id : undefined"
     :open="title ? open : undefined"
   >
-    <template v-if="title" #title>{{ title }}</template>
+    <template v-if="title" #title><span v-html="titleHtml" /></template>
     <template v-if="title && showToggle" #actions>
       <FixtureToggle v-model="activeTab" />
     </template>

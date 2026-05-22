@@ -17,55 +17,13 @@
   background    : var(--family-color, var(--vp-c-brand-1));
 }
 
-.VPSidebarItem.level-0.collapsible > .item > .caret > .caret-icon {
-  display : none;
-}
-
-.VPSidebarItem.level-0.collapsible > .item > .caret {
-  position : relative;
-  width    : 20px;
-  height   : 24px;
-  opacity  : 0.55;
-}
-
-.VPSidebarItem.level-0.collapsible > .item > .caret::before,
-.VPSidebarItem.level-0.collapsible > .item > .caret::after {
-  content       : "";
-  position      : absolute;
-  top           : 50%;
-  left          : 50%;
-  width         : 9px;
-  height        : 1px;
-  background    : currentColor;
-  border-radius : 1px;
-  transform     : translate(-50%, -50%);
-}
-
-.VPSidebarItem.level-0.collapsible.collapsed > .item > .caret::after {
-  transform : translate(-50%, -50%) rotate(90deg);
-}
-
-.VPSidebarItem.level-0.collapsible > .item > .caret:hover,
-.VPSidebarItem.level-0.collapsible > .item > .caret:focus-visible {
-  opacity : 1;
-  color   : var(--family-color, var(--vp-c-brand-1));
-}
-
-.VPSidebarItem.level-0.collapsible > .item > .caret:focus-visible {
-  outline        : 1px solid var(--family-color, var(--vp-c-brand-1));
-  outline-offset : 2px;
-  border-radius  : 3px;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .VPSidebarItem.level-0.collapsible > .item > .caret::before,
-  .VPSidebarItem.level-0.collapsible > .item > .caret::after {
-    transition : transform var(--prose-transition), background var(--prose-transition);
-  }
-}
-
 .VPDoc .VPDocFooter {
   margin-top: 32px;
+}
+
+.vp-doc table {
+  display : table;
+  width   : 100%;
 }
 
 .VPDoc .VPLastUpdated,
@@ -105,13 +63,86 @@ div[class*='language-'] {
   position : relative;
 }
 
-div[class*='language-'] > span.lang {
-  top        : auto;
-  transition : opacity var(--prose-transition);
+:is(.vp-doc, body) div[class*='language-'] pre {
+  margin  : 0;
+  padding : 14px 16px;
 }
 
-div[class*='language-']:hover > span.lang,
-div[class*='language-']:hover > button.copy + span.lang,
-div[class*='language-'] > button.copy:focus + span.lang {
-  opacity : 0.85;
+:is(.vp-doc, body) div[class*='language-'] code {
+  padding     : 0;
+  font-size   : var(--prose-text-code);
+  line-height : 1.55;
+}
+
+:is(.vp-doc, body) div[class*='language-'] > span.lang {
+  position       : absolute;
+  top            : auto;
+  right          : 10px;
+  bottom         : 6px;
+  z-index        : 2;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.62rem;
+  font-weight    : 500;
+  letter-spacing : 0.08em;
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+  opacity        : 0.7;
+  user-select    : none;
+  transition     : opacity var(--prose-transition);
+}
+
+:is(.vp-doc, body) div[class*='language-']:hover > span.lang,
+:is(.vp-doc, body) div[class*='language-']:hover > button.copy + span.lang,
+:is(.vp-doc, body) div[class*='language-'] > button.copy:focus + span.lang {
+  opacity    : 0;
+  transition : opacity 0.5s ease;
+}
+
+:is(.vp-doc, body) div[class*='language-'] > button.copy,
+.landing-cta-cmd > button.copy {
+  direction              : ltr;
+  position               : absolute;
+  top                    : 8px;
+  right                  : 8px;
+  z-index                : 3;
+  width                  : 28px;
+  height                 : 28px;
+  border                 : 1px solid var(--vp-code-copy-code-border-color);
+  border-radius          : var(--prose-radius-sm);
+  background-color       : var(--vp-code-copy-code-bg);
+  background-image       : var(--vp-icon-copy);
+  background-position    : 50%;
+  background-repeat      : no-repeat;
+  background-size        : 14px;
+  opacity                : 0;
+  cursor                 : pointer;
+  transition             : border-color .25s, background-color .25s, opacity .25s;
+}
+
+:is(.vp-doc, body) div[class*='language-']:hover > button.copy,
+:is(.vp-doc, body) div[class*='language-'] > button.copy:focus,
+.landing-cta-cmd:hover > button.copy,
+.landing-cta-cmd > button.copy:focus {
+  opacity : 1;
+}
+
+:is(.vp-doc, body) div[class*='language-'] > button.copy:hover,
+.landing-cta-cmd > button.copy:hover {
+  border-color     : var(--vp-code-copy-code-hover-border-color);
+  background-color : var(--vp-code-copy-code-hover-bg);
+}
+
+:is(.vp-doc, body) div[class*='language-'] > button.copy.copied,
+:is(.vp-doc, body) div[class*='language-'] > button.copy:hover.copied,
+.landing-cta-cmd > button.copy.copied,
+.landing-cta-cmd > button.copy:hover.copied {
+  border-color     : var(--vp-code-copy-code-hover-border-color);
+  background-color : var(--vp-code-copy-code-hover-bg);
+  background-image : var(--vp-icon-copied);
+  opacity          : 1;
+}
+
+:is(.vp-doc, body) div[class*='language-'] > button.copy.copied::before,
+:is(.vp-doc, body) div[class*='language-'] > button.copy:hover.copied::before {
+  content : none;
 }

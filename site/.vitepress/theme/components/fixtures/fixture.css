@@ -46,15 +46,8 @@
   overflow      : hidden;
 }
 
-.fixture-pair-panel {
-  padding     : 18px 22px;
-  font-size   : 0.8em;
-  line-height : 1.55;
-  overflow    : auto;
-}
-
-.fixture-pair-panel pre {
-  margin     : 0;
-  background : transparent;
-  padding    : 0;
+.vp-doc .fixture-pair-doc .fixture-pair-panel > div[class*='language-'] {
+  margin        : 0;
+  border-radius : 0;
+  background    : transparent;
 }

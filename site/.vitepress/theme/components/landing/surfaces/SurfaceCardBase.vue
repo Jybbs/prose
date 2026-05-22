@@ -21,11 +21,14 @@ const rootRef = useTemplateRef<HTMLElement>('root')
 
 const active = useElementHover(rootRef)
 
+const SPOTLIGHT_FALLBACK_PCT = 50
+const SPOTLIGHT_PCT_SCALE    = 100
+
 const { elementX: rx, elementY: ry } = useMouseInElement(rootRef)
 const { width: rw, height: rh }      = useElementSize(rootRef)
 
-const spotlightX = computed(() => rw.value ? (rx.value / rw.value) * 100 : 50)
-const spotlightY = computed(() => rh.value ? (ry.value / rh.value) * 100 : 50)
+const spotlightX = computed(() => rw.value ? (rx.value / rw.value) * SPOTLIGHT_PCT_SCALE : SPOTLIGHT_FALLBACK_PCT)
+const spotlightY = computed(() => rh.value ? (ry.value / rh.value) * SPOTLIGHT_PCT_SCALE : SPOTLIGHT_FALLBACK_PCT)
 
 const hoveredIdx = ref<number | null>(null)
 const activeIdx  = computed(() => hoveredIdx.value ?? 0)

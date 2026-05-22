@@ -6,7 +6,7 @@
 
 .rules-cluster {
   position      : relative;
-  padding       : 22px 32px;
+  padding       : 18px 24px;
   border        : 1px solid color-mix(in srgb, var(--family-color) 25%, var(--vp-c-divider));
   border-radius : var(--prose-radius);
   background    : color-mix(in srgb, var(--family-color) 6%, var(--vp-c-bg));
@@ -21,8 +21,8 @@
 a.rules-cluster-head {
   display              : flex;
   align-items          : center;
-  gap                  : 18px;
-  margin-bottom        : 14px;
+  gap                  : 14px;
+  margin-bottom        : 12px;
   text-decoration-line : none;
   color                : inherit;
 }
@@ -36,12 +36,12 @@ a.rules-cluster-head:hover {
   display         : inline-flex;
   align-items     : center;
   justify-content : center;
-  width           : 64px;
-  height          : 64px;
+  width           : 48px;
+  height          : 48px;
   border          : 1px solid color-mix(in srgb, var(--family-color) 35%, var(--vp-c-divider));
   border-radius   : 50%;
   background      : var(--vp-c-bg);
-  font-size       : 1.8rem;
+  font-size       : 1.4rem;
   line-height     : 1;
 }
 
@@ -53,7 +53,7 @@ a.rules-cluster-head:hover {
   font-family : var(--prose-font-display);
   font-style  : italic;
   font-weight : 500;
-  font-size   : 1.8rem;
+  font-size   : 1.55rem;
   line-height : 1;
   color       : var(--family-color);
   text-wrap   : balance;
@@ -63,7 +63,7 @@ a.rules-cluster-head:hover {
 .rules-cluster-specimens {
   display    : flex;
   flex-wrap  : wrap;
-  gap        : 10px;
+  gap        : 8px;
   list-style : none;
   margin     : 0;
   padding    : 0;
@@ -88,14 +88,14 @@ a.specimen {
   position             : relative;
   display              : inline-flex;
   align-items          : baseline;
-  padding              : 8px 14px;
+  padding              : 4px 9px;
   border               : 1px solid color-mix(in srgb, var(--family-color) 30%, transparent);
   border-radius        : var(--prose-radius);
   background           : var(--vp-c-bg);
   text-decoration-line : none;
   color                : var(--vp-c-text-1);
   font-family          : var(--vp-font-family-mono);
-  font-size            : var(--prose-text-code);
+  font-size            : 0.72rem;
   transition           :
     border-color var(--prose-transition),
     transform    var(--prose-transition);
@@ -119,60 +119,3 @@ a.specimen:focus-visible {
   color : var(--family-color);
 }
 
-.specimen-callout {
-  position         : absolute;
-  top              : calc(100% + 10px);
-  left             : 0;
-  width            : 300px;
-  padding          : 14px 16px 16px;
-  border           : 1px solid color-mix(in srgb, var(--family-color) 55%, var(--vp-c-divider));
-  border-top       : 3px solid var(--family-color);
-  border-radius    : var(--prose-radius);
-  background       : var(--vp-c-bg);
-  box-shadow       : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) 45%, transparent);
-  text-align       : left;
-  pointer-events   : none;
-  opacity          : 0;
-  transform        : translateY(-4px);
-  transform-origin : top left;
-  transition       :
-    opacity   140ms var(--prose-ease-emphasized),
-    transform 140ms var(--prose-ease-emphasized);
-}
-
-.rules-cluster-specimens > li:hover .specimen-callout,
-.rules-cluster-specimens > li:focus-within .specimen-callout {
-  opacity   : 1;
-  transform : translateY(0);
-}
-
-.specimen-callout-slug {
-  display       : inline-block;
-  margin-bottom : 10px;
-  padding       : 2px 8px;
-  border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--family-color) var(--prose-tint-faint), transparent);
-  font-family   : var(--vp-font-family-mono);
-  font-size     : 0.88rem;
-  color         : var(--family-color);
-}
-
-.specimen-callout-body {
-  display     : block;
-  font-family : var(--vp-font-family-base);
-  font-style  : italic;
-  font-size   : 0.88rem;
-  line-height : 1.55;
-  color       : var(--vp-c-text-2);
-}
-
-.specimen-callout-body :is(code, kbd) {
-  font-family : var(--vp-font-family-mono);
-  font-size   : 0.82em;
-  color       : var(--family-color);
-}
-
-.specimen-callout-body em {
-  font-style : italic;
-  color      : var(--vp-c-text-1);
-}

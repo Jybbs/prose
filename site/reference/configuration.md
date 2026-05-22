@@ -50,7 +50,7 @@ Each rule's sub-table sits at `[tool.prose.rules.<rule>]`. Every rule accepts `e
 
 ## Rule Categories
 
-The **eighteen** rules sit in three configuration buckets, with each bucket carrying a distinct knob shape.
+The **twenty** rules sit in three configuration buckets, with each bucket carrying a distinct knob shape.
 
 ### Alignment Rules
 

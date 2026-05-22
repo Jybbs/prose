@@ -9,7 +9,6 @@ export interface RenderedGlossaryEntry {
   href          ?: string
   initial        : string
   slug           : string
-  tooltipHtml    : string
 }
 
 export interface GlossaryData {
@@ -26,22 +25,12 @@ export default defineLoader({
     const entries : Record<string, RenderedGlossaryEntry> = {}
 
     for (const [slug, entry] of Object.entries(glossary)) {
-      const definitionHtml = md.renderInline(entry.definition)
-      const parts          = [
-        `<div class="glossary-tooltip-title">${md.utils.escapeHtml(slug)}</div>`,
-        `<div class="glossary-tooltip-divider" aria-hidden="true"></div>`,
-        `<div class="glossary-tooltip-body">${definitionHtml}</div>`
-      ]
-      if (entry.href) {
-        parts.push(`<a href="${md.utils.escapeHtml(entry.href)}" class="glossary-tooltip-link">Read more →</a>`)
-      }
       entries[slug] = {
-        aliases     : entry.aliases ?? [],
-        definitionHtml,
-        href        : entry.href,
-        initial     : firstLetter(slug),
-        slug,
-        tooltipHtml : parts.join('')
+        aliases        : entry.aliases ?? [],
+        definitionHtml : md.renderInline(entry.definition),
+        href           : entry.href,
+        initial        : firstLetter(slug),
+        slug
       }
     }
 

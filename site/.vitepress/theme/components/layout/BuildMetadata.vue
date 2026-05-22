@@ -17,10 +17,10 @@ interface Item {
 }
 
 const items = computed((): Item[] => [
-  { label: 'Version',                  value: build.version },
-  { label: 'Commit',  code: true,      value: build.gitSha },
-  { label: 'Rules',                    value: rules.list.length },
-  { label: 'Fixtures',                 value: build.fixtureCount },
+  {             label: 'Version',  value: build.version       },
+  { code: true, label: 'Commit',   value: build.gitSha        },
+  {             label: 'Rules',    value: rules.list.length   },
+  {             label: 'Fixtures', value: build.fixtureCount  },
   ...(lastUpdated.value ? [{ label: 'Updated', value: lastUpdated.value }] : [])
 ])
 </script>

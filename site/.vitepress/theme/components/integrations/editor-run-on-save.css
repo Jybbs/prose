@@ -91,24 +91,26 @@
 }
 
 .editor-deck-face {
-  padding       : 18px 28px 22px;
+  padding       : 14px 22px 18px;
   border        : 1px solid var(--vp-c-divider);
   border-radius : 0 0 var(--prose-radius) var(--prose-radius);
   background    : var(--vp-c-bg);
 }
 
 .editor-deck-face-head {
-  display     : flex;
-  align-items : center;
-  gap         : 16px;
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  gap             : 12px;
+  margin-bottom   : 10px;
 }
 
 .editor-deck-face-mark {
   display         : inline-flex;
   align-items     : center;
   justify-content : center;
-  width           : 48px;
-  height          : 48px;
+  width           : 28px;
+  height          : 28px;
   border          : 1px solid var(--vp-c-divider);
   border-radius   : 50%;
   background      : var(--vp-c-bg);
@@ -116,8 +118,8 @@
 }
 
 .editor-deck-face-mark :deep(.tool-mark-icon) {
-  width          : 24px;
-  height         : 24px;
+  width          : 16px;
+  height         : 16px;
   margin-right   : 0;
   vertical-align : 0;
 }
@@ -129,26 +131,11 @@
   font-family : var(--prose-font-display);
   font-style  : italic;
   font-weight : 500;
-  font-size   : 1.55rem;
+  font-size   : 1.25rem;
   color       : var(--vp-c-text-1);
   line-height : 1.1;
 }
 
-.editor-deck-face-caption {
-  display        : block;
-  margin         : 4px 0 10px 64px;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : 0.74rem;
-  letter-spacing : 0.04em;
-  color          : var(--vp-c-text-3);
-}
-
 .editor-deck-face-body > div[class*='language-'] {
   margin : 0;
-}
-
-.editor-deck-face-body code,
-.editor-deck-face-body pre {
-  font-size   : var(--prose-text-code);
-  line-height : 1.5;
 }

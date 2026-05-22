@@ -106,6 +106,18 @@ export default defineConfig({
     }
   },
   vite          : {
+    build   : {
+      chunkSizeWarningLimit : 4000,
+      rollupOptions         : {
+        output: {
+          manualChunks(id) {
+            if (id.includes('/shiki-magic-move/')) return 'shiki-magic-move'
+            if (id.includes('/floating-vue/'))     return 'floating-vue'
+            if (id.includes('/@vueuse/'))          return 'vueuse'
+          }
+        }
+      }
+    },
     css     : { postcss: { plugins: [postcssCustomMedia()] } },
     plugins : [groupIconVitePlugin({
       customIcon: {

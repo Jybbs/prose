@@ -6,14 +6,19 @@ aside: false
 ---
 
 <script setup lang="ts">
-import LandingBuiltOn    from './.vitepress/theme/components/landing/BuiltOn.vue'
-import LandingCta        from './.vitepress/theme/components/landing/Cta.vue'
-import LandingHero       from './.vitepress/theme/components/landing/Hero.vue'
-import LandingMetaphor   from './.vitepress/theme/components/landing/Metaphor.vue'
-import LandingSection    from './.vitepress/theme/components/landing/LandingSection.vue'
-import LandingSurfaces   from './.vitepress/theme/components/landing/surfaces/Surfaces.vue'
-import LandingTypingDemo from './.vitepress/theme/components/landing/TypingDemo.vue'
-import LandingWorkflow   from './.vitepress/theme/components/landing/Workflow.vue'
+import { defineAsyncComponent } from 'vue'
+
+import LandingBuiltOn  from './.vitepress/theme/components/landing/BuiltOn.vue'
+import LandingCta      from './.vitepress/theme/components/landing/Cta.vue'
+import LandingHero     from './.vitepress/theme/components/landing/Hero.vue'
+import LandingMetaphor from './.vitepress/theme/components/landing/Metaphor.vue'
+import LandingSection  from './.vitepress/theme/components/landing/LandingSection.vue'
+import LandingSurfaces from './.vitepress/theme/components/landing/surfaces/Surfaces.vue'
+import LandingWorkflow from './.vitepress/theme/components/landing/Workflow.vue'
+
+const LandingTypingDemo = defineAsyncComponent(() =>
+  import('./.vitepress/theme/components/landing/TypingDemo.vue')
+)
 </script>
 
 <section class="landing-page" aria-label="prose overview">

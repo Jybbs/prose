@@ -13,3 +13,9 @@
 .related-rules-list li {
   margin: 0;
 }
+
+.related-rules-list a.rule-chip {
+  display    : flex;
+  width      : 100%;
+  word-break : break-word;
+}
