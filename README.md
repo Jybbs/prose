@@ -4,7 +4,7 @@
 [![Rust](assets/badges/rust.svg)![1.82+](https://img.shields.io/badge/1.82+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
 [![Python](assets/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
 [![Coverage](assets/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
-[![Documentation](assets/badges/docs.svg)![prose.fyi](https://img.shields.io/badge/prose.fyi-8a80cb?style=for-the-badge)](https://prose.fyi/)
+[![Documentation](assets/badges/docs.svg)![Docs](https://img.shields.io/badge/Docs-8a80cb?style=for-the-badge)](https://prose.fyi/)
 
 </div>
 
