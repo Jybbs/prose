@@ -32,7 +32,7 @@
   margin      : 0;
   max-width   : 64ch;
   font-family : var(--vp-font-family-base);
-  font-size   : 0.95rem;
+  font-size   : var(--prose-text-md);
   line-height : 1.6;
   color       : var(--vp-c-text-2);
 }

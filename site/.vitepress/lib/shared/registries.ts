@@ -1,12 +1,12 @@
 export type RuleCategory = 'auto-fix' | 'lint'
-export type RuleFamily   = 'alignment' | 'ordering' | 'formatting' | 'docs' | 'lint'
+export type RuleFamily   = 'alignment' | 'docs' | 'formatting' | 'lint' | 'ordering'
 
-export interface CategoryMeta {
+interface CategoryMeta {
   badge : 'A' | 'L'
   label : string
 }
 
-export interface FamilyMeta {
+interface FamilyMeta {
   badge : string
   label : string
 }
@@ -23,6 +23,8 @@ export const FAMILY_META: Record<RuleFamily, FamilyMeta> = {
   lint       : { badge: '🧶', label: 'Lint'       },
   ordering   : { badge: '🪉', label: 'Ordering'   }
 }
+
+export const FAMILY_ORDER: readonly RuleFamily[] = ['alignment', 'ordering', 'formatting', 'docs', 'lint']
 
 export const PRIMITIVES = {
   'aligner'          : 'Aligner',
@@ -44,7 +46,7 @@ export const PRIMITIVE_SLUGS = Object.keys(PRIMITIVES) as readonly PrimitiveSlug
 
 export const PUBLIC_PRIMITIVES: readonly PrimitiveSlug[] = ['pipeline', 'rule-id', 'source']
 
-export type PrimitiveCoverage = 'exact' | 'subset'
+type PrimitiveCoverage = 'exact' | 'subset'
 
 export function assertCoversPrimitives(
   found    : Iterable<string>,

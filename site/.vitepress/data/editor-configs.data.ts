@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer } from '../lib/markdown/renderer'
+import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
 
-export interface EditorConfig {
+interface EditorConfig {
   caption  : string
   codeHtml : string
   language : string
@@ -26,12 +26,17 @@ interface EditorConfigSource {
 const SOURCES: readonly EditorConfigSource[] = [
   {
     caption  : 'after-save-hook',
-    code     : `;; Add to ~/.emacs.d/init.el
+    code     : `(defun prose-format-on-save ()
+  (when (derived-mode-p 'python-mode)
+    (call-process "prose" nil nil nil
+                  "format" buffer-file-name)
+    (revert-buffer :ignore-auto
+                   :noconfirm
+                   :preserve-modes)))
+
 (add-hook 'after-save-hook
-  (lambda ()
-    (when (eq major-mode 'python-mode)
-      (call-process "prose" nil nil nil "format" buffer-file-name))))`,
-    language : 'lisp',
+          #'prose-format-on-save)`,
+    language : 'elisp',
     name     : 'Emacs',
     slug     : 'emacs',
     target   : 'init.el'
@@ -49,11 +54,11 @@ args      = ["format", "-"]`,
   },
   {
     caption  : 'File Watchers',
-    code     : `File type        : Python
-Scope            : Project Files
-Program          : prose
-Arguments        : format $FilePath$
-Working directory: $ProjectFileDir$`,
+    code     : `File type         : Python
+Scope             : Project Files
+Program           : prose
+Arguments         : format $FilePath$
+Working directory : $ProjectFileDir$`,
     language : 'text',
     name     : 'JetBrains',
     slug     : 'jetbrains',
@@ -70,7 +75,6 @@ Working directory: $ProjectFileDir$`,
   {
     caption  : 'SublimeOnSaveBuild',
     code     : `# Install: SublimeOnSaveBuild
-# Add to <Project>.sublime-project:
 {
   "build_systems": [{
     "name"        : "prose",
@@ -90,8 +94,8 @@ Working directory: $ProjectFileDir$`,
   "emeraldwalk.runonsave": {
     "commands": [
       {
-        "match": "\\\\.py$",
-        "cmd"  : "prose format \${file}"
+        "match" : "\\\\.py$",
+        "cmd"   : "prose format \${file}"
       }
     ]
   }
@@ -109,7 +113,7 @@ export default defineLoader({
     const md = await getRenderer()
     return SOURCES.map(src => ({
       caption  : src.caption,
-      codeHtml : md.render(`\`\`\`${src.language}\n${src.code}\n\`\`\``),
+      codeHtml : renderFencedHtml(md, src.code, src.language),
       language : src.language,
       name     : src.name,
       slug     : src.slug,

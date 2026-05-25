@@ -14,6 +14,8 @@ A single-line docstring (*opener, body, and closer all on one line*) reads as a 
 
 The rule fires on module, class, and function single-line docstrings. The body content is preserved verbatim across the expansion, and the resulting multi-line form passes immediately to [[multi-line-docstrings]] for the opener-and-closer placement and to [[docstring-wrap]] for the line-budget wrap.
 
+The walker [[docstring]] reads against the PEP 257 definition, so f-string forms *(`f"""..."""`)* and concatenated string forms never qualify as docstrings and the rule skips them. Raw-prefixed *(`r"""`)* and byte-prefixed *(`b"""`)* single-line docstrings expand the same way as plain triple-quoted forms, with the prefix preserved verbatim on the opener. An empty single-line docstring *(`""""""`)* expands to a multi-line shape with a blank line between the opener and the closer. The PEP 257 summary-line convention is out of scope for this rule, leaving the body content's shape to authors and downstream conventions.
+
 <template #canonical-lead>
 
 A module-level single-line docstring expands to the multi-line form, with the opener and closer landing on their own lines.

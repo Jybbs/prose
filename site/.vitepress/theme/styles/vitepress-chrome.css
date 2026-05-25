@@ -47,8 +47,8 @@
 }
 
 .VPDocAsideOutline .outline-title,
-.VPSidebarItem.level-0 > .item > .text,
-.VPSidebarItem.level-0 > .item > .link > .text {
+.VPSidebarItem.level-0 > .item > .link > .text,
+.VPSidebarItem.level-0 > .item > .text {
   font-family : var(--prose-font-display);
   font-style  : italic;
   font-weight : 500;
@@ -61,6 +61,10 @@
 
 div[class*='language-'] {
   position : relative;
+}
+
+:is(.vp-doc, body) div[class*='language-'] {
+  margin : 24px 0;
 }
 
 :is(.vp-doc, body) div[class*='language-'] pre {
@@ -81,9 +85,9 @@ div[class*='language-'] {
   bottom         : 6px;
   z-index        : 2;
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.62rem;
+  font-size      : var(--prose-kicker-size-sm);
   font-weight    : 500;
-  letter-spacing : 0.08em;
+  letter-spacing : var(--prose-label-tracking-loose);
   text-transform : uppercase;
   color          : var(--vp-c-text-3);
   opacity        : 0.7;
@@ -145,4 +149,27 @@ div[class*='language-'] {
 :is(.vp-doc, body) div[class*='language-'] > button.copy.copied::before,
 :is(.vp-doc, body) div[class*='language-'] > button.copy:hover.copied::before {
   content : none;
+}
+
+:is(.vp-doc, body) div[class*='language-']::after {
+  content          : "";
+  position         : absolute;
+  left             : 12px;
+  right            : 12px;
+  bottom           : 8px;
+  height           : 1px;
+  background       : color-mix(in srgb, var(--prose-c-celadon) 85%, var(--vp-c-text-1));
+  transform        : scaleX(0);
+  transform-origin : right center;
+  opacity          : 0;
+  pointer-events   : none;
+  z-index          : 2;
+  transition       :
+    transform 380ms var(--prose-ease-emphasized),
+    opacity   180ms var(--prose-ease-emphasized) 80ms;
+}
+
+:is(.vp-doc, body) div[class*='language-']:has(> button.copy.copied)::after {
+  transform : scaleX(1);
+  opacity   : 1;
 }

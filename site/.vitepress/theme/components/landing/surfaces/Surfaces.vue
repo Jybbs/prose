@@ -7,8 +7,8 @@ import LandingSection from '../LandingSection.vue'
 import { data as landing } from '../../../../data/landing.data'
 import { data as rules }   from '../../../../data/rules.data'
 
-import { useCarouselMeasurement } from '../../../../lib/composables/use-carousel-measurement'
-import { useCarouselVelocity }    from '../../../../lib/composables/use-carousel-velocity'
+import { useCarouselMeasurement } from './use-carousel-measurement'
+import { useCarouselVelocity }    from './use-carousel-velocity'
 
 import SurfaceCardBase from './SurfaceCardBase.vue'
 

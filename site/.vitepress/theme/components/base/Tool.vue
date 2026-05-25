@@ -38,28 +38,3 @@ const entry = computed(() => lookup(tools.entries, props.slug, 'Tool'))
     />
   </a>
 </template>
-
-<style scoped>
-.tool-mark {
-  text-decoration : none;
-}
-
-.tool-mark:hover > code {
-  color : var(--prose-c-celadon);
-}
-
-.tool-mark .tool-mark-icon {
-  display        : inline-block;
-  width          : 0.78em;
-  height         : 0.78em;
-  margin-right   : 3px;
-  vertical-align : -0.08em;
-}
-
-.tool-bare .tool-mark-icon {
-  margin-right   : 0;
-  width          : 1em;
-  height         : 1em;
-  vertical-align : -0.18em;
-}
-</style>

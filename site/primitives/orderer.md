@@ -9,25 +9,31 @@
 
 *Orderer* lives at `src/primitives/orderer.rs` and is `pub(crate)`. The downstream-visible consequence is the rewrite [[alphabetize]] emits, with the reordered text landing in the `Edit` the rule produces.
 
-The internal API stabilizes toward `1.0` where consumer-implemented ordering rules become reachable.
+The shape settles at `1.0`, where a downstream can register its own ordering rule against the same entry points.
 
 ## Internal Surface
 
-Three composable entry points cover every reorder shape.
+Composable entry points cover every reorder shape, layered so a rule reaches for the highest-level one that fits.
+
+### `reorder_text(source, items, span, classify, render)`
+
+The high-level wrapper that covers the common case, computing `blocks` via `block_range`, rendering each item, sorting with `permute_full`, and assembling the result in one call. Returns `Cow::Borrowed(source.slice(span))` when no permutation is needed and every render is borrowed, so a no-op rule pays no allocation. Most ordering rules should reach for this entry point first and drop to the lower-level helpers only when the inspection or rendering shape needs it.
 
 ### `permute_full(order, items, classify)`
 
-Sorts the full `items` slice. `classify(&T) -> Option<K>` returns `Some(key)` for items participating in the sort and `None` for items that pin to their source slot. Returns `true` when the resulting order differs from source order, signaling the caller to emit an edit.
+Sorts the full `items` slice into a new ordering written into `order`. `classify(&T) -> Option<K>` returns `Some(key)` for items participating in the sort and `None` for items that pin to their source slot. Returns `true` when the resulting order differs from source order, signaling the caller to emit an edit. Reach for this when the rule needs to inspect the new order before assembling, or when the render step depends on the sort result.
 
 ### `permute_in_place(order, items, range, classify)`
 
-The sub-slice variant for partitioned reorders *(class bodies with a docstring pinned at the top, then alphabetize the rest)*.
+The sub-slice variant for partitioned reorders, where part of the slice is held fixed and the rest reorders. *(A class body where the leading docstring pins at the top and the remaining methods alphabetize is the canonical example.)*
 
 ### `assemble_blocks(source, blocks, rendered, order, gap_override)`
 
-Splices the reordered children into a final string. `blocks` is the source-extent of each item *(via `block_range`)*, `rendered` is each item's text, `order` is the new arrangement, and `gap_override` lets a caller substitute the source gap between adjacent items when the reorder needs custom interstitial text.
+Splices the reordered children into a final string the rule can emit as a single `Edit`. `blocks` is the source-extent of each item *(via `block_range`)*, `rendered` is each item's text, `order` is the new arrangement, and `gap_override` lets a caller substitute the gap between adjacent items in the **new** order *(the override's index parameter is the post-sort slot, not the source slot)*. Reach for this directly when a rule has already permuted and rendered through some other path.
 
-The shape-agnostic `block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line.
+### Block-Geometry Helpers
+
+`block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line. `outer` clamps the leading-comment scan's lower bound and the trailing-line scan's upper bound to a parent extent. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, used to size the outer `Edit` that replaces the reordered region.
 
 ## How Comment Attachment Works
 
@@ -37,24 +43,26 @@ The interstitial text between adjacent items *(blank lines, sectioning comments)
 
 ## Build Pattern
 
-A rule reaches for *Orderer* in three steps:
+A rule computes its `blocks` and per-item `rendered` text, then hands both to `reorder_text` along with a `classify` closure. `reorder_text` sorts, assembles, and short-circuits to `Cow::Borrowed(source.slice(span))` when no permutation is needed and every render is borrowed, so a no-op rule pays no allocation.
 
-1. Compute `Vec<TextRange>` of `blocks` via `block_range` for each item
-2. Render each item's text *(`Cow::Borrowed(slice)` when unchanged or `Cow::Owned(...)` when the item itself rewrites)*
-3. Compute the new `order` via `permute_full` or `permute_in_place` against a classifier
-4. Call `assemble_blocks(source, &blocks, &rendered, &order, gap_override)` to produce the final string
+Reaching for `permute_full` and `assemble_blocks` directly is the manual path, useful when the rule needs to inspect the new order before assembling or render against a partially-permuted slice:
 
-The pattern handles partial reorders cleanly. Items with `classify -> None` pin in their slot, items with `Some(key)` redistribute through the remaining slots in key order.
+1. Compute `Vec<TextRange>` of `blocks` via `block_range` for each item.
+2. Render each item's text *(`Cow::Borrowed(slice)` when unchanged or `Cow::Owned(...)` when the item itself rewrites)*.
+3. Compute the new `order` via `permute_full` or `permute_in_place` against a classifier.
+4. Call `assemble_blocks(source, &blocks, &rendered, &order, gap_override)` to produce the final string.
+
+The pattern handles partial reorders cleanly, with items returning `classify -> None` pinning in their slot while items returning `Some(key)` redistribute through the remaining slots in key order.
 
 ## Re-Using This Primitive
 
-Adding an ordering rule is shaped as *"decide what's a sibling, decide the classify function, decide whether some items pin"*. [[alphabetize]] is the canonical case where the classify function is the entry's name, every item participates, and `gap_override` substitutes `\n` or `\n\n` based on the per-context blank-line discipline.
+Three decisions define an ordering rule: what counts as a sibling, how `classify` keys each sibling, and which items pin. [[alphabetize]] is the canonical case where `classify` returns the entry's name, every item participates, and `gap_override` substitutes `\n` or `\n\n` based on the per-context blank-line discipline.
 
 <template #related>
 
-- [[alphabetize]] is the canonical consumer
-- [[edit]] is the output shape the assembled string folds into
-- [[source]] is the input the block-range math reads against
+- [[alphabetize]] is the canonical consumer.
+- [[aligner]] composes line-adjacency grouping differently *(by `Member` widths rather than source-range block extents)*, so a rule whose math is padding-shaped rather than reorder-shaped reaches for that primitive instead.
+- [[edit]] is the output shape the assembled string folds into.
 
 </template>
 

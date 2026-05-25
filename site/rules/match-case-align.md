@@ -14,6 +14,14 @@ A `match` whose case bodies all collapse to a single expression reads naturally 
 
 The rule fires only on runs of single-expression cases at the same indentation. A multi-statement case body, a comment between cases, or a nested `match` breaks the run and leaves the surrounding cases aligned in isolation. Pair with [[singleton-rule]] to skip padding on one-arm matches and with [[align-colons]] to align separators inside dict-returning case bodies.
 
+<template #configuration>
+
+<RuleConfigTable />
+
+`max-shift` caps the per-line padding the alignment can introduce. When a `match`'s widest pattern would push the post-pattern `:` column past the cap, `max-shift-policy` decides the fallback shape *(the `budget_gate` fixture above shows the default `"split"` behavior)*. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the `"drop"` and `"skip"` policies.
+
+</template>
+
 <template #canonical-lead>
 
 A `match` whose arms each return a literal aligns on the post-pattern `:` separator.

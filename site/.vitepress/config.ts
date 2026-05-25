@@ -3,19 +3,20 @@ import { defineConfig }                            from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
-import { buildPhraseToSlug, glossary }            from './lib/glossary/glossary'
+import { buildPhraseToSlug }                      from './lib/glossary/glossary'
+import { glossary }                               from './lib/glossary/glossary-data'
 import { glossaryPlugin }                         from './lib/glossary/plugin'
 import { bodyLinkPlugin }                         from './lib/markdown/body-link-plugin'
 import { proseMarkPlugin }                        from './lib/markdown/prose-mark-plugin'
 import { discoverRuleSlugs }                      from './lib/rules/discovery'
 import { ruleLinkPlugin }                         from './lib/rules/link-plugin'
-import { canonicalUrl }                           from './lib/shared/canonical-url'
+import { canonicalUrl }                           from './lib/config/canonical-url'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME }  from './lib/shared/constants'
-import { buildPageTimestamps }                    from './lib/shared/page-timestamps'
+import { buildPageTimestamps }                    from './lib/config/page-timestamps'
 import { repoRoot, rulesDir }                     from './lib/shared/paths'
 import { PRIMITIVES }                             from './lib/shared/registries'
 import type { PrimitiveSlug }                     from './lib/shared/registries'
-import { buildSidebar }                           from './lib/shared/sidebar'
+import { buildSidebar }                           from './lib/config/sidebar'
 import { toTitleCase }                            from './lib/shared/title-case'
 import { TOOL_SEEDS }                             from './lib/shared/tools'
 import { readCargoVersion }                       from './lib/shared/version'
@@ -60,9 +61,9 @@ export default defineConfig({
     },
     logo        : { alt: 'prose', src: '/logo.svg' },
     nav         : [
-      { activeMatch: '/guide/',        link: '/guide/installation', text: 'Guide'        },
-      { activeMatch: '/reference/',    link: '/reference/cli',      text: 'Reference'    },
-      { activeMatch: '/integrations/', link: '/integrations/ruff',  text: 'Integrations' },
+      { activeMatch: '/usage/',        link: '/usage/',             text: 'Usage'        },
+      { activeMatch: '/reference/',    link: '/reference/',         text: 'Reference'    },
+      { activeMatch: '/integrations/', link: '/integrations/',      text: 'Integrations' },
       { activeMatch: '/rules/',        link: '/rules/',             text: 'Rules'        },
       { activeMatch: '/primitives/',   link: '/primitives/',        text: 'Primitives'   },
       {                                link: `${REPO_URL}/releases`, text: `v${version}` }

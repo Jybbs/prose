@@ -5,7 +5,7 @@ export const FIXTURES_DIR  = 'tests/fixtures'
 export const INPUT_SUFFIX  = '.input.py'
 export const SNAPSHOTS_DIR = 'tests/snapshots'
 
-export interface FixtureWalkEntry {
+interface FixtureWalkEntry {
   caseName  : string
   inputPath : string
   rule      : string

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import PrimitivesComposition from './PrimitivesComposition.vue'
+import DocHeading            from '../base/DocHeading.vue'
 
 defineProps<{ primitive: string }>()
 </script>
@@ -8,9 +9,6 @@ defineProps<{ primitive: string }>()
   <PrimitivesComposition :initial-focus="primitive" />
   <slot name="lead" />
   <slot />
-  <h2 id="related" tabindex="-1">
-    Related
-    <a class="header-anchor" href="#related" aria-label="Permalink to &quot;Related&quot;">&ZeroWidthSpace;</a>
-  </h2>
+  <DocHeading id="related" title="Related" />
   <slot name="related" />
 </template>

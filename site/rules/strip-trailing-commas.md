@@ -14,6 +14,14 @@ A trailing comma on the last entry of a multi-line collection adds a small **vis
 
 The rule walks every bracketed container (*dictionaries, lists, sets, function signatures, function calls, class bases, parenthesized argument lists*) and strips the comma after the last entry when one is present. Whether the container spans one line or many doesn't affect the strip itself, since single-line atomic collections happen not to carry trailing commas in idiomatic Python and the rule rarely fires on them. Pair with [[collection-layout]] for the multi-line expansion that brings the trailing comma into reach in the first place.
 
+<template #configuration>
+
+<RuleConfigTable />
+
+The strip is unconditional within the contexts named above, so the rule carries `enabled` as its only knob. Tuple literals are exempt by construction because Python uses the trailing comma to disambiguate single-element tuples from parenthesized expressions, leaving no project-level switch to flip on the tuple carve-out.
+
+</template>
+
 <template #canonical-lead>
 
 A multi-line dict literal loses its trailing comma after the strip.
@@ -40,7 +48,7 @@ A multi-line dict literal loses its trailing comma after the strip.
 
 <template #related-after>
 
-For per-line opt-outs *(projects that prefer the trailing comma for diff stability even on multi-line forms)*, [**Suppression**](/guide/suppression) covers the `# fmt: off` / `# fmt: on` block markers.
+For per-line opt-outs *(projects that prefer the trailing comma for diff stability even on multi-line forms)*, [**Suppression**](/usage/suppression) covers the `# fmt: off` / `# fmt: on` block markers.
 
 </template>
 

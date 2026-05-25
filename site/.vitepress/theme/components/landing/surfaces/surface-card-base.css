@@ -182,6 +182,13 @@
   padding-bottom : 6px;
 }
 
+.tab,
+.tab-label-link,
+.tab-swap-enter-active,
+.tab-swap-leave-active {
+  --tab-easing : 220ms var(--prose-ease-emphasized);
+}
+
 .tab {
   position             : relative;
   padding              : 2px 0;
@@ -190,21 +197,21 @@
   letter-spacing       : 0.06em;
   text-decoration-line : none;
   color                : var(--vp-c-text-3);
-  transition           : color 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition           : color var(--tab-easing);
 }
 
 .tab::after {
-  content         : "";
-  position        : absolute;
-  left            : 0;
-  right           : 0;
-  bottom          : -7px;
-  height          : 2px;
-  background      : var(--family-color);
-  border-radius   : 2px;
-  transform       : scaleX(0);
-  transform-origin: center;
-  transition      : transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  content          : "";
+  position         : absolute;
+  left             : 0;
+  right            : 0;
+  bottom           : -7px;
+  height           : 2px;
+  background       : var(--family-color);
+  border-radius    : 2px;
+  transform        : scaleX(0);
+  transform-origin : center;
+  transition       : transform var(--tab-easing);
 }
 
 .tab:hover,
@@ -225,10 +232,10 @@
 
 .tab-label-link {
   font-family          : var(--vp-font-family-mono);
-  font-size            : 0.85rem;
+  font-size            : var(--prose-text-sm);
   color                : var(--vp-c-text-1);
   text-decoration-line : none;
-  transition           : color 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition           : color var(--tab-easing);
 }
 
 .tab-label-link:hover,
@@ -240,11 +247,7 @@
 .tab-swap-leave-active {
   transition :
     opacity   180ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform var(--tab-easing);
 }
 .tab-swap-enter-from { opacity: 0; transform: translateY(2px); }
 .tab-swap-leave-to   { opacity: 0; transform: translateY(-2px); }
-
-@media (prefers-reduced-motion: reduce) {
-  .tab, .tab::after { transition: none; }
-}

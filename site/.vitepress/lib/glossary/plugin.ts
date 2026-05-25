@@ -1,25 +1,34 @@
 import type MarkdownIt from 'markdown-it'
 
-import { walkBodyInlines } from '../markdown/walk'
+import { replaceTextTokens } from '../markdown/token-split'
+import { walkBodyInlines }   from '../markdown/walk'
 
-type Token = MarkdownIt.Token
-
-export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>) {
+export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>): (md: MarkdownIt) => void {
   if (phraseToSlug.size === 0) {
     throw new Error('glossaryPlugin received an empty phrase map')
   }
 
-  const phrases  = [...phraseToSlug.keys()].sort((a, b) => b.length - a.length)
-  const pattern  = new RegExp(
+  const phrases = [...phraseToSlug.keys()].sort((a, b) => b.length - a.length)
+  const pattern = new RegExp(
     `(?<![A-Za-z0-9_-])(${phrases.map(p => RegExp.escape(p)).join('|')})(?![A-Za-z0-9_-])`,
     'g'
   )
 
-  return function plugin(md: MarkdownIt) {
+  return function plugin(md: MarkdownIt): void {
     md.core.ruler.after('inline', 'glossary-decorate', state => {
       const seen: Set<string> = (state.env.seenGlossarySlugs ??= new Set())
       walkBodyInlines(state, (block, children) => {
-        block.children = decorateChildren(children, pattern, phraseToSlug, seen, state.Token)
+        block.children = replaceTextTokens(children, state.Token, pattern, (match, child) => {
+          const phrase = match[1]
+          const slug   = phraseToSlug.get(phrase)!
+          if (seen.has(slug)) return null
+          seen.add(slug)
+          const term   = new state.Token('glossary_term', '', 0)
+          term.content = phrase
+          term.meta    = { slug }
+          term.level   = child.level
+          return [term]
+        }, { skipInsideLinks: true })
       })
     })
 
@@ -30,86 +39,4 @@ export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>) {
       return `<GlossaryTerm slug="${md.utils.escapeHtml(slug)}">${md.utils.escapeHtml(display)}</GlossaryTerm>`
     }
   }
-}
-
-function decorateChildren(
-  children    : Token[],
-  pattern     : RegExp,
-  phraseToSlug: ReadonlyMap<string, string>,
-  seen        : Set<string>,
-  TokenCtor   : new (type: string, tag: string, nesting: MarkdownIt.Token.Nesting) => Token
-): Token[] {
-  const out: Token[] = []
-  let   inLink       = 0
-
-  for (const child of children) {
-    if (child.type === 'link_open')  inLink++
-    if (child.type === 'link_close') inLink--
-
-    if (child.type !== 'text' || inLink > 0) {
-      out.push(child)
-      continue
-    }
-
-    const replaced = decorateText(child.content, pattern, phraseToSlug, seen, TokenCtor, child.level)
-    if (replaced.length === 1 && replaced[0].type === 'text' && replaced[0].content === child.content) {
-      out.push(child)
-    }
-    else {
-      out.push(...replaced)
-    }
-  }
-
-  return out
-}
-
-function decorateText(
-  text        : string,
-  pattern     : RegExp,
-  phraseToSlug: ReadonlyMap<string, string>,
-  seen        : Set<string>,
-  TokenCtor   : new (type: string, tag: string, nesting: MarkdownIt.Token.Nesting) => Token,
-  level       : number
-): Token[] {
-  pattern.lastIndex = 0
-  const out: Token[] = []
-  let   cursor       = 0
-  let   match: RegExpExecArray | null
-
-  while ((match = pattern.exec(text)) !== null) {
-    const phrase = match[1]
-    const slug   = phraseToSlug.get(phrase)!
-    if (seen.has(slug)) continue
-
-    if (match.index > cursor) {
-      const leading     = new TokenCtor('text', '', 0)
-      leading.content   = text.slice(cursor, match.index)
-      leading.level     = level
-      out.push(leading)
-    }
-
-    const term     = new TokenCtor('glossary_term', '', 0)
-    term.content   = phrase
-    term.meta      = { slug }
-    term.level     = level
-    out.push(term)
-    seen.add(slug)
-    cursor = match.index + phrase.length
-  }
-
-  if (out.length === 0) {
-    const verbatim   = new TokenCtor('text', '', 0)
-    verbatim.content = text
-    verbatim.level   = level
-    return [verbatim]
-  }
-
-  if (cursor < text.length) {
-    const trailing   = new TokenCtor('text', '', 0)
-    trailing.content = text.slice(cursor)
-    trailing.level   = level
-    out.push(trailing)
-  }
-
-  return out
 }

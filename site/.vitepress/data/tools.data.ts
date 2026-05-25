@@ -6,19 +6,19 @@ import { defineLoader } from 'vitepress'
 import { repoRoot }                  from '../lib/shared/paths'
 import { TOOL_SEEDS, type ToolSlug } from '../lib/shared/tools'
 
-export interface ToolIcon {
+interface ToolIcon {
   body    : string
   viewBox : string
 }
 
-export interface ToolEntry {
+interface ToolEntry {
   href : string
   icon : ToolIcon
   name : string
   role : string
 }
 
-export interface ToolsData {
+interface ToolsData {
   entries : Record<ToolSlug, ToolEntry>
 }
 

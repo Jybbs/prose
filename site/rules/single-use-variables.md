@@ -51,7 +51,7 @@ A binding assigned and read exactly once surfaces the lint, recommending inlinin
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[single-use-variables]` directive.
+For per-line opt-outs, the [**Suppression**](/usage/suppression#lint-directives) chapter covers the `# prose: ignore[single-use-variables]` directive.
 
 </template>
 

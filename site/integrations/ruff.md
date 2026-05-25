@@ -1,22 +1,22 @@
 # Ruff
 
-<Tool slug="ruff" /> is the canonical first pass in *Prose*'s [**two-stage pipeline**](/guide/two-stage-pipeline). This page covers the Ruff-specific configuration that keeps the two tools from fighting each other.
+<Tool slug="ruff" /> is the token-level formatter most commonly paired with *Prose*. *Prose* doesn't need Ruff to run, in that it produces a settled layout from any well-formed Python source, though pairing the two cleanly takes the small Ruff configuration laid out below.
 
-## The Canonical Sequence
+## Recommended Ordering
 
 ```bash
 ruff format && prose format
 ```
 
 ::: warning Order Matters
-Running *Prose* first is incorrect. *Prose*'s alignment math depends on already-settled line breaks, in that an upstream re-wrap will undo per-line layout decisions and force a third pass.
+When both tools run on the same file, run Ruff first. *Prose*'s alignment math reads the line breaks already on the file, so a later Ruff re-wrap will undo per-line layout decisions and force a third pass.
 :::
 
-A second run of `ruff format` against *Prose*'s output is a no-op, because the alignment padding *Prose* introduces lives within the lines Ruff already settled, leaving Ruff with nothing to re-wrap. The two-tool sequence is idempotent at the pair level, meaning a developer can re-run the canonical command after a manual edit without expecting either tool to thrash.
+A second run of `ruff format` against *Prose*'s output is a no-op, because the alignment padding *Prose* introduces lives within the lines Ruff already settled, leaving Ruff with nothing to re-wrap. The pairing is idempotent end-to-end, meaning a developer can re-run `ruff format && prose format` after a manual edit without expecting either tool to thrash.
 
 ## Ruff Configuration
 
-A handful of Ruff's `pycodestyle` codes flag whitespace patterns that *Prose*'s alignment rules deliberately introduce, so a clean two-tool run needs `extend-ignore` to silence them on the Ruff side. Copy this block into the project's `ruff.toml` *(or under `[tool.ruff]` in `pyproject.toml`)*:
+A handful of Ruff's `pycodestyle` codes flag whitespace patterns that *Prose*'s alignment rules deliberately introduce, so a clean pairing needs `extend-ignore` to silence them on the Ruff side. Copy this block into the project's `ruff.toml` *(or under `[tool.ruff]` in `pyproject.toml`)*:
 
 ```toml
 [lint]
@@ -45,7 +45,7 @@ The conflict table:
 
 ## In CI
 
-The pipeline compiles into CI as two sequential check steps, with the exit codes gating the workflow. The <Tool slug="github" /> integration page covers the workflow shape end-to-end:
+The pairing compiles into CI as two sequential check steps, with the exit codes gating the workflow. The <Tool slug="github" /> integration page covers the workflow shape end-to-end:
 
 ```yaml
 - run: uv tool install ruff
@@ -68,4 +68,4 @@ The [**Editor**](/integrations/editor) integration page covers the per-editor wi
 
 ## Other Token-Level Formatters
 
-Black and autopep8 pair with *Prose* through the same two-stage shape, with Black requiring `--skip-magic-trailing-comma` so it doesn't re-expand collections that [[collection-layout]] is responsible for. The conflict table above transfers directly, because Black, autopep8, and Ruff all consume `pycodestyle`'s codes.
+Black and autopep8 pair with *Prose* through the same shape, with Black requiring `--skip-magic-trailing-comma` so it doesn't re-expand collections that [[collection-layout]] is responsible for. The conflict table above transfers directly, because Black, autopep8, and Ruff all consume `pycodestyle`'s codes.

@@ -53,16 +53,20 @@
   --prose-tint-strong            : 32%;
 
   --prose-kicker-size            : 0.72rem;
+  --prose-kicker-size-sm         : 0.62rem;
   --prose-kicker-tracking        : 0.14em;
 
   --prose-label-size             : 0.72rem;
   --prose-label-tracking         : 0.1em;
+  --prose-label-tracking-loose   : 0.08em;
 
   --prose-meta-tracking          : 0.06em;
+  --prose-folio-tracking         : 0.04em;
+  --prose-display-tracking-wide  : 0.18em;
 
   --prose-text-meta              : 0.62rem;
   --prose-text-xs                : 0.78rem;
-  --prose-text-code              : 0.82rem;
+  --prose-text-code              : 0.78rem;
   --prose-text-sm                : 0.85rem;
   --prose-text-md                : 0.95rem;
 
@@ -70,8 +74,11 @@
   --prose-pad-card-snug          : 10px 14px;
 
   --prose-c-ube                  : #8a80cb;
-  --prose-c-ube-mid              : #a094d7;
-  --prose-c-ube-pale             : #b6abe0;
+  --prose-c-ube-mid              : color-mix(in oklch, var(--prose-c-ube), white 18%);
+  --prose-c-ube-pale             : color-mix(in oklch, var(--prose-c-ube), white 36%);
+  --prose-c-ube-deep             : color-mix(in oklch, var(--prose-c-ube), black 22%);
+
+  --prose-link-hover             : var(--prose-c-ube-deep);
 
   --vp-c-brand-1                 : var(--prose-c-ube);
   --vp-c-brand-2                 : var(--prose-c-ube-mid);
@@ -101,6 +108,7 @@
   --vp-c-brand-soft  : color-mix(in srgb, var(--prose-c-ube-pale) 16%, transparent);
   --vp-c-bg-soft     : #17171b;
   --vp-code-block-bg : #24292e;
+  --prose-link-hover : var(--prose-c-ube);
 }
 
 .dark .shiki,

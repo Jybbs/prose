@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import RelatedRulesInline from './RelatedRulesInline.vue'
-import RuleConfigTable    from './RuleConfigTable.vue'
-import Fixture            from '../fixtures/Fixture.vue'
+import RuleCardList    from './RuleCardList.vue'
+import RuleConfigTable from './RuleConfigTable.vue'
+import DocHeading      from '../base/DocHeading.vue'
+import Fixture         from '../fixtures/Fixture.vue'
 
 defineProps<{
   canonical : string
@@ -12,31 +13,19 @@ defineProps<{
 <template>
   <slot />
 
-  <h2 id="configuration" tabindex="-1">
-    Configuration
-    <a class="header-anchor" href="#configuration" aria-label="Permalink to &quot;Configuration&quot;">&ZeroWidthSpace;</a>
-  </h2>
+  <DocHeading id="configuration" title="Configuration" />
   <slot name="configuration">
     <RuleConfigTable />
   </slot>
 
-  <h2 id="the-canonical-case" tabindex="-1">
-    The Canonical Case
-    <a class="header-anchor" href="#the-canonical-case" aria-label="Permalink to &quot;The Canonical Case&quot;">&ZeroWidthSpace;</a>
-  </h2>
+  <DocHeading id="the-canonical-case" title="The Canonical Case" />
   <slot name="canonical-lead" />
   <Fixture :rule="rule" :case="canonical" />
 
-  <h2 id="more-examples" tabindex="-1">
-    More Examples
-    <a class="header-anchor" href="#more-examples" aria-label="Permalink to &quot;More Examples&quot;">&ZeroWidthSpace;</a>
-  </h2>
+  <DocHeading id="more-examples" title="More Examples" />
   <slot name="more-examples" />
 
-  <h2 id="related" tabindex="-1">
-    Related
-    <a class="header-anchor" href="#related" aria-label="Permalink to &quot;Related&quot;">&ZeroWidthSpace;</a>
-  </h2>
-  <RelatedRulesInline />
+  <DocHeading id="related" title="Related" />
+  <RuleCardList related />
   <slot name="related-after" />
 </template>

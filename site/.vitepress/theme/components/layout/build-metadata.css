@@ -9,7 +9,7 @@
   align-items    : center;
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-label-size);
-  letter-spacing : 0.04em;
+  letter-spacing : var(--prose-folio-tracking);
   color          : var(--vp-c-text-3);
 }
 

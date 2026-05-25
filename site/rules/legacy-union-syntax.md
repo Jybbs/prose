@@ -65,7 +65,7 @@ A `from typing import Optional` followed by `Optional[X]` surfaces the lint, rec
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[legacy-union-syntax]` directive.
+For per-line opt-outs, the [**Suppression**](/usage/suppression#lint-directives) chapter covers the `# prose: ignore[legacy-union-syntax]` directive.
 
 </template>
 

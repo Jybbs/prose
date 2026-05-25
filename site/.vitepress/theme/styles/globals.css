@@ -27,12 +27,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .disclosure-caret,
-  .landing-hero-action {
-    transition : none;
-  }
-
-  .landing-hero-action:hover {
-    transform : none;
+  *, *::before, *::after {
+    transition-duration       : 0.001ms !important;
+    animation-duration        : 0.001ms !important;
+    animation-iteration-count : 1       !important;
+    scroll-behavior           : auto    !important;
   }
 }

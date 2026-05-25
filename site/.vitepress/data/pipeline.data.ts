@@ -7,7 +7,7 @@ import { discoverRuleSlugs }                                       from '../lib/
 import { repoRoot, rulesDir }                                      from '../lib/shared/paths'
 import { CATEGORY_META, FAMILY_META, type RuleCategory, type RuleFamily } from '../lib/shared/registries'
 
-export interface PipelineRule {
+interface PipelineRule {
   category      : RuleCategory | null
   categoryBadge : string | null
   categoryLabel : string | null
@@ -20,7 +20,7 @@ export interface PipelineRule {
   slug          : string
 }
 
-export interface PipelineData {
+interface PipelineData {
   rules : readonly PipelineRule[]
 }
 

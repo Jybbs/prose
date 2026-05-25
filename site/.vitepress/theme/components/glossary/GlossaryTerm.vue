@@ -32,8 +32,8 @@ const showLink = computed(() => {
   <span
     v-tooltip="{
       content            : tooltipHtml,
-      delay              : { hide: 320, show: 80 },
       html               : true,
+      noAutoFocus        : true,
       popperHideTriggers : ['hover'],
       popperTriggers     : ['hover'],
       theme              : 'glossary'

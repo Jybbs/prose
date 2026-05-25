@@ -1,8 +1,8 @@
 .fixture-pair-landing {
-  display              : grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap                  : 24px;
-  align-items          : stretch;
+  display               : grid;
+  grid-template-columns : minmax(0, 1fr) auto minmax(0, 1fr);
+  gap                   : 24px;
+  align-items           : stretch;
 }
 
 .fixture-pair-landing .fixture-pair-side {
@@ -57,11 +57,11 @@
 
 @media (--prose-bp-tablet) {
   .fixture-pair-landing {
-    grid-template-columns: 1fr;
+    grid-template-columns : 1fr;
   }
 
   .fixture-pair-landing .fixture-pair-arrow {
-    transform : rotate(90deg);
-    font-size : 2rem;
+    transform  : rotate(90deg);
+    font-size  : 2rem;
   }
 }

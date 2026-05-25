@@ -49,7 +49,7 @@ Allowlisted packages stay quiet, and everything else surfaces the lint.
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[bare-import-allowlist]` directive.
+For per-line opt-outs, the [**Suppression**](/usage/suppression#lint-directives) chapter covers the `# prose: ignore[bare-import-allowlist]` directive.
 
 </template>
 

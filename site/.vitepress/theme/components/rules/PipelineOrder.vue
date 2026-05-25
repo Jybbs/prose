@@ -1,19 +1,38 @@
 <script setup lang="ts">
-import RuleChip from './RuleChip.vue'
-
 import { data as pipeline } from '../../../data/pipeline.data'
+import { data as rules }    from '../../../data/rules.data'
+import { formatFolio }      from '../../../lib/shared/numerals'
+
+import MiddleEllipsis from '../base/MiddleEllipsis.vue'
 </script>
 
 <template>
-  <ol class="pipeline-order-list">
-    <li v-for="rule in pipeline.rules" :key="rule.slug" class="pipeline-order-row">
-      <span class="pipeline-order-position">{{ String(rule.position).padStart(2, '0') }}</span>
-      <RuleChip
-        :slug="rule.slug"
-        :undocumented="!rule.documented"
-        :family-badge="rule.familyBadge ?? undefined"
-      />
-      <span class="pipeline-order-imperative">{{ rule.imperative }}</span>
-    </li>
-  </ol>
+  <section class="pipeline-order" aria-label="Pipeline order">
+    <header class="pipeline-order-masthead">
+      <span class="kicker pipeline-order-edition">
+        {{ pipeline.rules.length }} passes &middot; <code>src/rule.rs</code>
+      </span>
+    </header>
+    <ol class="pipeline-order-columns">
+      <li
+        v-for="rule in pipeline.rules"
+        :key="rule.slug"
+        class="pipeline-order-entry"
+        :data-family="rule.family"
+      >
+        <RuleTooltipPopper :rule="rule.documented ? rules.bySlug[rule.slug] : null">
+          <a
+            class="pipeline-order-link"
+            :href="rule.documented ? `/rules/${rule.slug}` : undefined"
+            :title="`${rule.slug}${rule.family ? ` (${rule.family})` : ''}`"
+          >
+            <span class="folio">№ {{ formatFolio(rule.position) }}</span>
+            <MiddleEllipsis class="pipeline-order-name" :text="rule.slug" :tail="2" />
+            <span class="pipeline-order-leader" aria-hidden="true"></span>
+            <span class="pipeline-order-glyph" aria-hidden="true">{{ rule.familyBadge ?? '·' }}</span>
+          </a>
+        </RuleTooltipPopper>
+      </li>
+    </ol>
+  </section>
 </template>

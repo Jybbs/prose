@@ -1,17 +1,12 @@
 # Suppression Directives
 
-Five directive shapes opt code out of *Prose*'s rewrites or lints at three scopes *(file, block, line)*. The conceptual narrative for when to reach for suppression lives in the [**Suppression**](/guide/suppression) guide chapter. This page is the lookup table.
+Directive shapes opt code out of *Prose*'s rewrites or lints at the file, block, line, and dict-literal scopes. The conceptual narrative for when to reach for suppression lives in the [**Suppression**](/usage/suppression) guide chapter. This page is the canonical index.
 
-## Directive Table
+Any other directive shape *(`# noqa`, `# pylint: disable`, the wider Python-tooling pragma surface)* is invisible to *Prose*. The walker treats them as ordinary comments and the rules ignore them, so they coexist with the directives below without further wiring.
 
-| Directive | Scope | Effect |
-|---|---|---|
-| `# fmt: off` / `# fmt: on` | Block | Every auto-fix rule honors the markers, so a hand-tuned region survives the formatter pass intact |
-| `# yapf: disable` / `# yapf: enable` | Block | Aliases for `# fmt: off` / `# fmt: on`. Recognized to ease migration from yapf |
-| `# fmt: skip` | Line | Auto-fix rules skip the line carrying the directive |
-| `# prose: ignore` | Line | All lint rules skip the line. Pairs with `[<rule_id>]` to narrow |
-| `# prose: ignore[<rule>, <rule>]` | Line | Listed lint rules skip the line |
-| `# prose: keep` | Block *(dict literal)* | [[alphabetize]] leaves the dict entries in their authored order |
+## Directives
+
+<DirectiveAnatomy />
 
 ## Block Markers
 
@@ -23,15 +18,30 @@ keep_this_block_exactly_as_written = (1,2,3)
 # fmt: on
 ```
 
-`# yapf: disable` and `# yapf: enable` are recognized as block-level equivalents for projects migrating from yapf.
+`# prose: off` and `# prose: on` are recognized identically, sharing the same span machinery, so a project can pick whichever prefix reads better in its codebase. `# yapf: disable` and `# yapf: enable` are recognized as block-level equivalents for projects migrating from yapf.
 
 ## Line Markers
 
-`# fmt: skip` applies to the line carrying the directive only:
+Line-level directives split by severity. Rewrite suppression takes the `skip` family, lint suppression takes the `ignore` family, and the two are independent so a line can carry one of each.
+
+### Rewrite Suppression
+
+`# fmt: skip` *(equivalent to `# prose: skip`)* suppresses every auto-fix rewrite on the line:
 
 ```python
 data = {"a": 1, "b": 2, "c": 3}  # fmt: skip
 ```
+
+`# prose: skip` and its bracketed variants narrow to listed rules:
+
+```python
+foo = 1  # prose: skip[align-equals]
+bar = 2  # prose: skip[align-equals, strip-trailing-commas]
+```
+
+A bare `# fmt: skip` or `# prose: skip` widens to every rewrite rule on the line. A bracketed list scopes to the named rules, with unknown rule slugs dropped silently and two bracketed directives on the same line unioning their rule sets.
+
+### Lint Suppression
 
 `# prose: ignore` and its bracketed variants suppress lint diagnostics on the same line:
 
@@ -59,11 +69,23 @@ The directive scopes to that one dict literal and doesn't affect any other rule.
 
 ## Composition
 
-A single line can carry one block marker, one `# fmt: skip`, and one `# prose: ignore[...]` directive. *Prose* parses each independently, so all three surfaces compose without ordering constraints. A bare `# prose: ignore` *(no bracket list)* widens any same-line `# prose: ignore[<rule>]` so every lint on the line stays silent. Two specific bracketed directives on the same line union their rule ids. Malformed directives *(unclosed brackets, misspelled keyword, trailing text after `ignore`)* parse as no-ops, surfacing nothing and rewriting nothing.
+A single line can carry one block marker, one `# fmt: skip` *(or its `# prose: skip` aliases)*, and one `# prose: ignore[...]` directive. *Prose* parses each independently, so all surfaces compose without ordering constraints. A bare `# prose: ignore` *(no bracket list)* widens any same-line `# prose: ignore[<rule>]` so every lint on the line stays silent, and the same widening applies between bare `# prose: skip` and bracketed `# prose: skip[<rule>]` for rewrites. Two specific bracketed directives of the same family on the same line union their rule slugs:
+
+```python
+# fmt: off
+data = build()  # prose: ignore[loose-constants]  # prose: ignore[single-use-variables]
+# fmt: on
+```
+
+The same line carries the block marker pair *(opening and closing on the surrounding lines)*, plus two bracketed line directives whose rule lists merge into `{loose-constants, single-use-variables}`. A bare `# prose: ignore` anywhere on the line would override both into a widen-to-every-rule.
+
+::: warning Malformed Directives No-Op
+A malformed directive *(unclosed brackets, misspelled keyword, trailing text after `ignore`)* parses as a no-op, surfacing nothing and rewriting nothing.
+:::
 
 ## File-Level Suppression
 
-A file-level `# prose: off` directive on a comment line near the top of the file suppresses every *Prose* rewrite for the entire file. The pipeline detects the directive in the [[suppression-map]] built during [[source]] construction and short-circuits to identity before any rule fires.
+`# prose: off` on a standalone comment line *(not trailing a statement)* opens a suppression span starting at that line. When no matching `# prose: on` follows, the span runs to EOF, suppressing every *Prose* rewrite below the marker. Placed at the top of the file, the directive consequently covers every line in the file:
 
 ```python
 # prose: off
@@ -72,10 +94,10 @@ A file-level `# prose: off` directive on a comment line near the top of the file
 def messy(): pass
 ```
 
-The file-level directive is the broadest suppression scope. For region-bounded suppression, use the block markers above.
+A trailing `# prose: off` on a statement line *(such as `x = 1  # prose: off`)* is ignored, in that the directive must sit on a comment line of its own to register as a span opener. The file-level form is the broadest suppression scope, and for region-bounded suppression the block markers above are the right reach.
 
 ## Composition with `--select` / `--ignore`
 
 Per-line and block directives compose against the active rule set. `--select align-equals` narrows the pipeline to one rule, and `# prose: ignore[align-equals]` still suppresses that rule on its line. `--ignore loose-constants` drops a rule from the active set, and a line carrying `# prose: ignore[loose-constants]` is a no-op since the rule is already not firing.
 
-For the per-rule `enabled` knob, see the [**Configuration**](/reference/configuration) reference. For the conceptual narrative on when to reach for suppression, see the [**Suppression**](/guide/suppression) guide chapter.
+For the per-rule `enabled` knob, see the [**Configuration**](/reference/configuration) reference. For the conceptual narrative on when to reach for suppression, see the [**Suppression**](/usage/suppression) guide chapter.

@@ -9,7 +9,7 @@ import { withFallback }     from '../lib/shared/with-fallback'
 
 const root = repoRoot(import.meta.url)
 
-export interface BuildData {
+interface BuildData {
   fixtureCount: number
   gitSha      : string
   version     : string

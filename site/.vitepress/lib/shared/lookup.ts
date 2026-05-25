@@ -1,16 +1,12 @@
 export function lookup<T>(
-  registry : Record<string, T> | ReadonlyMap<string, T>,
+  registry : Record<string, T>,
   key      : string,
   label    : string
 ): T {
-  const isMap = registry instanceof Map
-  const value = isMap ? registry.get(key) : (registry as Record<string, T>)[key]
+  const value = registry[key]
   if (value === undefined) {
-    const available = isMap
-      ? [...registry.keys()].sort()
-      : Object.keys(registry).sort()
     throw new Error(
-      `${label} "${key}" not registered. Available: ${available.join(', ')}`
+      `${label} "${key}" not registered. Available: ${Object.keys(registry).sort().join(', ')}`
     )
   }
   return value

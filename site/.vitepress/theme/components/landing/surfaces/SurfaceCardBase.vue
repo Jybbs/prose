@@ -3,6 +3,7 @@ import { useElementHover, useElementSize, useMouseInElement } from '@vueuse/core
 import { computed, ref, useTemplateRef }                      from 'vue'
 
 import type { RenderedRule }            from '../../../../data/rules.data'
+import { formatFolio }                  from '../../../../lib/shared/numerals'
 import { FAMILY_META, type RuleFamily } from '../../../../lib/shared/registries'
 
 const props = defineProps<{
@@ -69,7 +70,7 @@ const activeRule = computed(() => props.rules[activeIdx.value])
             @mouseenter="hoveredIdx = idx"
             @focus="hoveredIdx = idx"
           >
-            {{ String(idx + 1).padStart(2, '0') }}
+            {{ formatFolio(idx + 1) }}
           </a>
         </div>
         <div class="tab-label" aria-live="polite">

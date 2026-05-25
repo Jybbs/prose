@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { useEventListener }     from '@vueuse/core'
+import { computed, onMounted, ref } from 'vue'
 
-import FixturePair   from './FixturePair.vue'
-import FixtureToggle from './FixtureToggle.vue'
+import FixturePairDoc     from './FixturePairDoc.vue'
+import FixturePairLanding from './FixturePairLanding.vue'
+import FixtureToggle      from './FixtureToggle.vue'
 
 import { data as fixtures } from '../../../data/fixtures.data'
+import { data as rules }    from '../../../data/rules.data'
 import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
-import { inlineCodeHtml }   from '../../../lib/shared/inline-code'
 import { lookup }           from '../../../lib/shared/lookup'
-
-const Disclosure = defineAsyncComponent(() => import('../base/Disclosure.vue'))
 
 const props = defineProps<{
   case     : string
@@ -24,28 +24,85 @@ const entry      = lookup(rule, props.case, `Fixture case under "${props.rule}"`
 const id         = computed(() => `fixture-${props.rule}-${props.case}`)
 const activeTab  = ref<FixtureTab>('after')
 const showToggle = computed(() => props.variant !== 'landing' && entry.changesSource)
-const titleHtml  = computed(() => props.title ? inlineCodeHtml(props.title) : '')
+const titleHtml  = computed(() => props.title ? props.title.replace(/`([^`]+)`/g, '<code>$1</code>') : '')
+
+const ruleData = computed(() => rules.bySlug[props.rule.replaceAll('_', '-')] ?? null)
+const family   = computed(() => ruleData.value?.family ?? null)
+
+const isOpen = ref<boolean>(props.open === true)
+
+function toggle(): void {
+  isOpen.value = !isOpen.value
+}
+
+function syncWithHash(): void {
+  if (window.location.hash === `#${id.value}`) {
+    isOpen.value = true
+  }
+}
+
+onMounted(syncWithHash)
+useEventListener('hashchange', syncWithHash)
 </script>
 
 <template>
-  <component
-    :is="title ? Disclosure : 'div'"
-    :class="title ? undefined : 'fixture'"
-    :id="title ? id : undefined"
-    :open="title ? open : undefined"
+  <section
+    v-if="title"
+    :id="id"
+    class="fixture-card"
+    :class="{ 'is-open': isOpen }"
+    :data-family="family"
+    :data-edits="entry.changesSource"
   >
-    <template v-if="title" #title><span v-html="titleHtml" /></template>
-    <template v-if="title && showToggle" #actions>
-      <FixtureToggle v-model="activeTab" />
-    </template>
-    <header v-if="!title && showToggle" class="fixture-bar">
+    <div class="fixture-card-summary-row">
+      <button
+        type="button"
+        class="fixture-card-summary"
+        :aria-expanded="isOpen"
+        :aria-controls="`${id}-body`"
+        @click="toggle"
+      >
+        <span class="fixture-card-num" aria-hidden="true" />
+        <span class="fixture-card-title" v-html="titleHtml" />
+      </button>
+      <div
+        class="fixture-card-actions"
+        :class="{ 'is-active': isOpen }"
+      >
+        <FixtureToggle v-if="showToggle" v-model="activeTab" />
+      </div>
+    </div>
+    <div
+      :id="`${id}-body`"
+      class="fixture-card-body"
+      role="region"
+    >
+      <div class="fixture-card-body-inner">
+        <div v-if="isOpen" class="fixture-card-body-content">
+          <FixturePairDoc
+            :active-tab="activeTab"
+            :input-html="entry.inputHtml"
+            :output-html="entry.outputHtml"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div v-else class="fixture">
+    <header v-if="showToggle" class="fixture-bar">
       <FixtureToggle v-model="activeTab" />
     </header>
-    <FixturePair
+    <FixturePairLanding
+      v-if="variant === 'landing'"
+      :input-html="entry.inputHtml"
+      :output-html="entry.outputHtml"
+    />
+    <FixturePairDoc
+      v-else
       :active-tab="activeTab"
       :input-html="entry.inputHtml"
       :output-html="entry.outputHtml"
-      :variant="title ? undefined : variant"
     />
-  </component>
+  </div>
 </template>

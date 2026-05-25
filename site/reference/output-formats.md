@@ -1,8 +1,12 @@
 # Output Formats
 
-`--output-format` selects the diagnostic shape *Prose* emits, with **four** formats covering the common consumers. `text` is the human-readable default, rendering rustc-style snippets with carets and fix suggestions. `json` emits Ruff-shaped NDJSON for editor plugins and tooling, wherein the record shape mirrors what LSP-style diagnostic surfaces already consume. `github` emits workflow commands that <Tool slug="github" /> renders as inline annotations. `sarif` emits a [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) run document for upload into [**GitHub Code Scanning**](https://docs.github.com/en/code-security/code-scanning), persisting findings across runs in the repository's Security tab.
+`--output-format` selects the diagnostic shape *Prose* emits, with named formats covering the common consumers. `text` is the human-readable default, rendering rustc-style snippets with carets and fix suggestions. `json` emits Ruff-shaped NDJSON for editor plugins and tooling, wherein the record shape mirrors what LSP-style diagnostic surfaces already consume. `github` emits workflow commands that <Tool slug="github" /> renders as inline annotations. `sarif` emits a [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) run document for upload into [**GitHub Code Scanning**](https://docs.github.com/en/code-security/code-scanning), persisting findings across runs in the repository's Security tab.
 
-The format selection is per-invocation. `text` is the default. `--diff` requires `text` *(the diff is the text-format presentation)*, with any other pairing surfacing exit code 4 at parse time.
+The format selection is per-invocation. `text` is the default. All formats write diagnostics to stdout, and operational errors *(parse failures, IO errors, config errors)* go to stderr with an `error:` prefix, so a CI pipeline can split the two streams without inspecting exit codes.
+
+::: warning Diff Mode Is Text-Only
+`--diff` requires `text` *(the diff is the text-format presentation)*. Any other pairing surfaces exit code `4` at parse time.
+:::
 
 ## `text`
 
@@ -57,8 +61,44 @@ Fields:
 | `end_location` | `{ row, column }` | One-indexed end position |
 | `message` | string | The rule's imperative |
 | `fix` | object \| null | `null` for lint-only diagnostics, otherwise `{ applicability, edits }` |
+| `fix.applicability` | `"safe"` \| `"unsafe"` \| `"display"` | Confidence the edits preserve runtime semantics |
+| `fix.edits` | array of `{ content, location, end_location }` | Replacement spans the editor or CI can apply |
 
-Each entry in `fix.edits` carries `{ content, location, end_location }`. `applicability` is `"safe"` for every auto-fix *Prose* emits at the current release, matching the Ruff-shared scale wherein `safe` means the rewrite preserves runtime semantics and editors can apply the fix automatically. The `unsafe` and `display` levels exist in the schema for forward compatibility with rules whose rewrites might change observable behavior, but no shipped *Prose* rule emits at those levels today.
+`applicability` is `"safe"` for every auto-fix *Prose* emits at the current release, matching the Ruff-shared scale wherein `safe` means the rewrite preserves runtime semantics and editors can apply the fix automatically. The `unsafe` and `display` levels exist in the schema for forward compatibility with rules whose rewrites might change observable behavior, with no shipped *Prose* rule emitting at those levels today.
+
+An auto-fix that touches several lines emits one diagnostic with one entry per line in `fix.edits`. The `align-equals` example padding three consecutive assignments surfaces as:
+
+```json
+{
+  "code"         : "align-equals",
+  "filename"     : "src/configure.py",
+  "location"     : { "row": 12, "column": 5 },
+  "end_location" : { "row": 14, "column": 24 },
+  "message"      : "align consecutive `=` operators",
+  "fix"          : {
+    "applicability" : "safe",
+    "edits"         : [
+      {
+        "content"      : "    timeout      = 30",
+        "location"     : { "row": 12, "column": 1 },
+        "end_location" : { "row": 12, "column": 16 }
+      },
+      {
+        "content"      : "    retries      = 5",
+        "location"     : { "row": 13, "column": 1 },
+        "end_location" : { "row": 13, "column": 16 }
+      },
+      {
+        "content"      : "    backoff_base = 1.5",
+        "location"     : { "row": 14, "column": 1 },
+        "end_location" : { "row": 14, "column": 24 }
+      }
+    ]
+  }
+}
+```
+
+Editors apply the edits in array order, and *Prose* guarantees the spans don't overlap, leaving the application order-independent within one diagnostic.
 
 The [**Editor**](/integrations/editor) integration page covers wiring this format into VSCode, Neovim, and the other editors that consume Ruff-shaped diagnostics.
 
@@ -76,7 +116,7 @@ The [**GitHub Actions**](/integrations/github-actions) integration page covers t
 
 ## `sarif`
 
-A single [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) document representing the whole invocation as one `runs[0]` entry. Per-diagnostic `results[]` entries carry the rule slug as `ruleId`, the source position as a `physicalLocation`, and *(when the rule auto-fixes)* the replacement as a `fixes[]` entry with an `artifactChanges[]` payload.
+A single [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) document representing the whole invocation as one `runs[0]` entry. Per-diagnostic `results[]` entries carry the rule slug as `ruleId`, the source position as a `physicalLocation`, and *(when the rule auto-fixes)* the replacement as a `fixes[]` entry with an `artifactChanges[]` payload. The full document is deep enough that an inline sample fights legibility more than it helps, with the canonical schema linked above.
 
 Upload the SARIF file through GitHub's CodeQL action to surface findings in the repository's Security tab:
 

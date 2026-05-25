@@ -23,13 +23,11 @@ const clusters = computed(() =>
       </a>
       <ul class="rules-cluster-specimens">
         <li v-for="rule in cluster.rules" :key="rule.slug">
-          <a class="specimen" :href="`/rules/${rule.slug}`">
-            <span class="specimen-slug">{{ rule.slug }}</span>
-            <span class="specimen-callout" role="tooltip">
-              <span class="specimen-callout-slug">{{ rule.slug }}</span>
-              <span class="specimen-callout-body" v-html="rule.captionHtml" />
-            </span>
-          </a>
+          <RuleTooltipPopper :rule="rule">
+            <a class="specimen" :href="`/rules/${rule.slug}`">
+              <span class="specimen-slug">{{ rule.slug }}</span>
+            </a>
+          </RuleTooltipPopper>
         </li>
       </ul>
     </section>

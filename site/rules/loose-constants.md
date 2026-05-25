@@ -51,7 +51,7 @@ A bare `SCREAMING_CASE = literal` at module level surfaces the lint, recommendin
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/guide/suppression#lint-directives) chapter covers the `# prose: ignore[loose-constants]` directive.
+For per-line opt-outs, the [**Suppression**](/usage/suppression#lint-directives) chapter covers the `# prose: ignore[loose-constants]` directive.
 
 </template>
 

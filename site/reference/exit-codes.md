@@ -1,6 +1,10 @@
 # Exit Codes
 
-Every `prose check` and `prose format` invocation resolves into one of **five** exit codes that CI gates compile against. The codes are mutually exclusive at run time, in that when two outcomes apply, the higher number wins. A `format` run that auto-fixes a rule's diagnostics returns `0` once the rewrite lands *(the diagnostic was applied, not left pending)*, whereas a `check` run on the same source returns `1`. Parse failures on a single file surface as exit code `3` for that file, leaving the rest of the walked tree to settle independently, meaning one broken module never aborts the whole run.
+Every `prose check` and `prose format` invocation resolves into a discrete exit code that CI gates compile against. The codes are mutually exclusive at run time, in that when two outcomes apply, the higher number wins. A `format` run that auto-fixes a rule's diagnostics returns `0` once the rewrite lands *(the diagnostic was applied, not left pending)*, whereas a `check` run on the same source returns `1`.
+
+::: info Per-File Failures Stay Local
+Parse failures on a single file surface as exit code `3` for that file, leaving the rest of the walked tree to settle independently.
+:::
 
 <ExitCodeMatrix />
 
@@ -17,7 +21,7 @@ The [**GitHub Actions**](/integrations/github-actions) integration page covers t
 
 ## Composition with Ruff
 
-In the [**two-stage pipeline**](/guide/two-stage-pipeline), each tool returns its own exit code from its own invocation, and a non-zero from either step fails the gate without further wiring. The codes don't compose into a combined status, so the failure surface tells the developer which pass surfaced the diagnostic.
+When *Prose* is [**paired with Ruff**](/integrations/ruff), each tool returns its own exit code from its own invocation, and a non-zero from either step fails the gate without further wiring. The codes don't compose into a combined status, so the failure surface tells the developer which pass surfaced the diagnostic. When both passes fail the same workflow run, each step surfaces its own exit code in its own log group, in that the gate fails at the first non-zero step under the default sequential-step shape, whereas an `if: always()` clause on the *Prose* step lets both pass and exit codes surface side-by-side for a workflow that would rather see every failure at once.
 
 ## Help Output
 

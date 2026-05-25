@@ -85,29 +85,9 @@ a.rules-cluster-head:hover {
 
 .vp-doc a.specimen,
 a.specimen {
-  position             : relative;
-  display              : inline-flex;
-  align-items          : baseline;
-  padding              : 4px 9px;
-  border               : 1px solid color-mix(in srgb, var(--family-color) 30%, transparent);
-  border-radius        : var(--prose-radius);
-  background           : var(--vp-c-bg);
-  text-decoration-line : none;
-  color                : var(--vp-c-text-1);
-  font-family          : var(--vp-font-family-mono);
-  font-size            : 0.72rem;
-  transition           :
-    border-color var(--prose-transition),
-    transform    var(--prose-transition);
-}
-
-.vp-doc a.specimen:hover,
-.vp-doc a.specimen:focus-visible,
-a.specimen:hover,
-a.specimen:focus-visible {
-  border-color         : var(--family-color);
-  text-decoration-line : none;
-  transform            : translateY(-1px);
+  position : relative;
+  padding  : 4px 9px;
+  color    : var(--vp-c-text-1);
 }
 
 .rules-cluster-specimens > li:hover,

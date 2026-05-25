@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderInlineField } from '../lib/markdown/renderer'
+import { getRenderer, renderFencedHtml, renderInlineField } from '../lib/markdown/renderer'
 import type { RuleFamily }                from '../lib/shared/registries'
 
 export interface Step {
@@ -18,7 +18,7 @@ export interface Surface {
   number   : string
 }
 
-export interface LandingData {
+interface LandingData {
   surfaces : readonly Surface[]
   workflow : readonly Step[]
 }
@@ -86,7 +86,7 @@ const STEP_SOURCES: readonly StepSource[] = [
     title    : 'Run'
   },
   {
-    body     : 'Pair with Ruff as the token-level upstream pass.',
+    body     : 'Optionally pair with Ruff for the token-level surface *Prose* doesn\'t touch.',
     code     : 'ruff format && prose format',
     language : 'bash',
     number   : '04',
@@ -102,7 +102,7 @@ export default defineLoader({
       surfaces : renderInlineField(md, SURFACE_SOURCES, 'body'),
       workflow : STEP_SOURCES.map(src => ({
         bodyHtml : md.renderInline(src.body),
-        codeHtml : md.render(`\`\`\`${src.language}\n${src.code}\n\`\`\``),
+        codeHtml : renderFencedHtml(md, src.code, src.language),
         language : src.language,
         number   : src.number,
         title    : src.title

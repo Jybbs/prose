@@ -38,16 +38,16 @@
 }
 
 .landing-cta-ledger-row a {
-  display              : grid;
-  grid-template-columns: auto minmax(12px, 1fr) auto;
-  align-items          : baseline;
-  gap                  : 6px;
-  padding              : 4px 8px;
-  border-radius        : var(--prose-radius-sm);
-  text-decoration-line : none;
-  color                : var(--vp-c-text-1);
-  font-family          : var(--vp-font-family-mono);
-  transition           : background var(--prose-transition), color var(--prose-transition);
+  display               : grid;
+  grid-template-columns : auto minmax(12px, 1fr) auto;
+  align-items           : baseline;
+  gap                   : 6px;
+  padding               : 4px 8px;
+  border-radius         : var(--prose-radius-sm);
+  text-decoration-line  : none;
+  color                 : var(--vp-c-text-1);
+  font-family           : var(--vp-font-family-mono);
+  transition            : background var(--prose-transition), color var(--prose-transition);
 }
 .landing-cta-ledger-row a:hover {
   background : color-mix(in srgb, var(--stamp-accent) 14%, var(--vp-c-bg));
@@ -82,8 +82,8 @@
   padding        : 4px 8px 2px;
   background     : var(--panel-bg);
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.62rem;
-  letter-spacing : 0.18em;
+  font-size      : var(--prose-kicker-size-sm);
+  letter-spacing : var(--prose-display-tracking-wide);
   text-transform : uppercase;
   color          : var(--prose-c-ube);
   z-index        : 1;

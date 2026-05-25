@@ -1,9 +1,10 @@
 import type MarkdownIt from 'markdown-it'
 
-import { PRIMITIVES } from '../shared/registries'
+import { walkBodyInlines } from '../markdown/walk'
+import { PRIMITIVES }      from '../shared/registries'
 
-export function ruleLinkPlugin(validRuleSlugs: Set<string>) {
-  return function plugin(md: MarkdownIt) {
+export function ruleLinkPlugin(validRuleSlugs: Set<string>): (md: MarkdownIt) => void {
+  return function plugin(md: MarkdownIt): void {
     md.inline.ruler.before('link', 'doc-link', (state, silent) => {
       if (state.src.slice(state.pos, state.pos + 2) !== '[[') return false
       const end = state.src.indexOf(']]', state.pos + 2)
@@ -27,11 +28,25 @@ export function ruleLinkPlugin(validRuleSlugs: Set<string>) {
       return true
     })
 
+    md.core.ruler.after('inline', 'doc-link-code', state => {
+      walkBodyInlines(state, (_block, children) => {
+        for (const child of children) {
+          if (child.type !== 'code_inline')       continue
+          if (!validRuleSlugs.has(child.content)) continue
+          child.type = 'doc_link'
+          child.tag  = ''
+          child.meta = { kind: 'rule' }
+        }
+      })
+    })
+
     md.renderer.rules.doc_link = (tokens, idx) => {
-      const slug    = tokens[idx].content
-      const kind    = tokens[idx].meta?.kind === 'primitive' ? 'primitives' : 'rules'
-      const display = kind === 'primitives' ? PRIMITIVES[slug as keyof typeof PRIMITIVES] : slug
-      return `<a href="/${kind}/${slug}"><strong><code>${display}</code></strong></a>`
+      const slug = tokens[idx].content
+      if (tokens[idx].meta?.kind === 'rule') {
+        return `<InlineRuleLink slug="${slug}" />`
+      }
+      const display = PRIMITIVES[slug as keyof typeof PRIMITIVES]
+      return `<a class="body-link" href="/primitives/${slug}"><strong><code>${display}</code></strong></a>`
     }
   }
 }

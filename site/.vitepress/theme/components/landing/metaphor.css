@@ -37,7 +37,7 @@
 
 .landing-definition-pron {
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.85rem;
+  font-size   : var(--prose-text-sm);
   color       : var(--vp-c-text-3);
 }
 
@@ -84,7 +84,7 @@
 .landing-definition-body {
   font-family : var(--vp-font-family-base);
   font-style  : italic;
-  font-size   : 0.95rem;
+  font-size   : var(--prose-text-md);
   line-height : 1.55;
   color       : var(--vp-c-text-2);
 }

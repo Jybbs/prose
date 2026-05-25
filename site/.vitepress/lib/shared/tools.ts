@@ -1,4 +1,4 @@
-export interface ToolSeed {
+interface ToolSeed {
   href : string
   icon : string
   name : string
@@ -6,17 +6,35 @@ export interface ToolSeed {
 }
 
 export const TOOL_SEEDS = {
+  bash: {
+    href : 'https://www.gnu.org/software/bash/',
+    icon : 'logos:bash-icon',
+    name : 'Bash',
+    role : 'Shell completion target'
+  },
   clap: {
     href : 'https://docs.rs/clap/',
     icon : 'logos:rust',
     name : 'clap',
     role : 'CLI parsing'
   },
+  elvish: {
+    href : 'https://elv.sh/',
+    icon : 'logos:terminal',
+    name : 'Elvish',
+    role : 'Shell completion target'
+  },
   emacs: {
     href : 'https://www.gnu.org/software/emacs/',
     icon : 'logos:emacs',
     name : 'Emacs',
     role : 'Editor integration target'
+  },
+  fish: {
+    href : 'https://fishshell.com/',
+    icon : 'simple-icons:fishshell',
+    name : 'Fish',
+    role : 'Shell completion target'
   },
   github: {
     href : 'https://github.com/features/actions',
@@ -54,6 +72,12 @@ export const TOOL_SEEDS = {
     name : 'Neovim',
     role : 'Editor integration target'
   },
+  powershell: {
+    href : 'https://learn.microsoft.com/powershell/',
+    icon : 'simple-icons:powershell',
+    name : 'PowerShell',
+    role : 'Shell completion target'
+  },
   precommit: {
     href : 'https://pre-commit.com/',
     icon : 'simple-icons:precommit',
@@ -76,7 +100,7 @@ export const TOOL_SEEDS = {
     href : 'https://docs.astral.sh/ruff/',
     icon : 'simple-icons:ruff',
     name : 'Ruff',
-    role : 'Token-level upstream pass'
+    role : 'Parser & AST'
   },
   rust: {
     href : 'https://www.rust-lang.org/',
@@ -107,6 +131,12 @@ export const TOOL_SEEDS = {
     icon : 'logos:visual-studio-code',
     name : 'VS Code',
     role : 'Editor integration target'
+  },
+  zsh: {
+    href : 'https://www.zsh.org/',
+    icon : 'logos:zsh',
+    name : 'Zsh',
+    role : 'Shell completion target'
   }
 } as const satisfies Record<string, ToolSeed>
 

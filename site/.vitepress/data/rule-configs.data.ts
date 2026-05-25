@@ -3,14 +3,14 @@ import { defineLoader } from 'vitepress'
 import { getRenderer, renderInlineField } from '../lib/markdown/renderer'
 import { RULE_CONFIG_PRESETS, type RuleConfigPreset } from '../lib/rules/config-presets'
 
-export interface RuleConfigRow {
+interface RuleConfigRow {
   default     : string
   key         : string
   meaningHtml : string
   typeHtml    : string
 }
 
-export type RuleConfigData = Record<RuleConfigPreset, readonly RuleConfigRow[]>
+type RuleConfigData = Record<RuleConfigPreset, readonly RuleConfigRow[]>
 
 declare const data: RuleConfigData
 export { data }

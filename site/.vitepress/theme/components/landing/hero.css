@@ -58,9 +58,9 @@
 
 @supports (animation-timeline: view()) {
   .landing-hero-watermark {
-    animation         : watermark-align linear both;
-    animation-timeline: view();
-    animation-range   : cover 15% cover 55%;
+    animation          : watermark-align linear both;
+    animation-timeline : view();
+    animation-range    : cover 15% cover 55%;
   }
   @keyframes watermark-align {
     to { --rot: 0deg; }

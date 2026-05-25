@@ -3,10 +3,17 @@
   text-decoration       : underline dotted var(--prose-c-celadon) 1px;
   text-underline-offset : 3px;
   outline               : none;
+  background            : linear-gradient(var(--prose-c-celadon), var(--prose-c-celadon)) no-repeat left bottom / 0% 1px;
+  transition            : background-size var(--prose-transition-slow);
+}
+
+.glossary-anchor:hover {
+  text-decoration : none;
+  background-size : 100% 1px;
 }
 
 .glossary-anchor:focus-visible {
-  text-decoration-style: solid;
+  text-decoration-style : solid;
 }
 
 .v-popper--theme-glossary .v-popper__inner {
@@ -19,19 +26,13 @@
   line-height : 1.5;
 }
 
+.v-popper--theme-glossary,
+.v-popper--theme-glossary * {
+  outline : none !important;
+}
+
 .v-popper--theme-glossary .v-popper__wrapper {
-  transform-origin : center top;
-  transition       : opacity 120ms ease-out, transform 120ms ease-out;
-}
-
-.v-popper--theme-glossary.v-popper__popper--hidden .v-popper__wrapper {
-  opacity   : 0;
-  transform : translateY(-4px);
-}
-
-.v-popper--theme-glossary.v-popper__popper--shown .v-popper__wrapper {
-  opacity   : 1;
-  transform : translateY(0);
+  transition : opacity 120ms ease-out, transform 120ms ease-out;
 }
 
 .v-popper--theme-glossary .v-popper__arrow-outer {

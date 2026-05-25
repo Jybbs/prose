@@ -33,7 +33,7 @@ const { copy, copied } = useClipboard({ source: installCmd, copiedDuring: 2000 }
     <div class="landing-cta-body">
       <p class="landing-cta-kicker kicker">Read on</p>
       <p class="landing-cta-lede">
-        Take <em><span class="prose-mark">Prose</span></em> to your own pages and make the next save <em>legible</em>.
+        Bring <em><span class="prose-mark">Prose</span></em> to your own pages and make the next save <em>legible</em>.
       </p>
       <div class="landing-cta-cmd" aria-label="Install command">
         <span class="landing-cta-prompt" aria-hidden="true">$</span>
@@ -47,7 +47,7 @@ const { copy, copied } = useClipboard({ source: installCmd, copiedDuring: 2000 }
           @click="copy()"
         ></button>
       </div>
-      <a class="landing-cta-primary" href="/guide/quick-start">
+      <a class="landing-cta-primary" href="/usage/quick-start">
         <span>Quick start</span>
         <span class="landing-cta-arrow" aria-hidden="true">→</span>
       </a>

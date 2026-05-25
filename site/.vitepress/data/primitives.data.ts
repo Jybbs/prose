@@ -7,7 +7,7 @@ export interface DiscoveredPrimitive {
   slug    : PrimitiveSlug
 }
 
-export interface PrimitivesData {
+interface PrimitivesData {
   bySlug : Record<string, DiscoveredPrimitive>
   list   : readonly DiscoveredPrimitive[]
 }

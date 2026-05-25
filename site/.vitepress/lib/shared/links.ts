@@ -2,6 +2,6 @@ export function externalAttrs(href: string | undefined): { rel?: 'noopener'; tar
   return isExternal(href) ? { rel: 'noopener', target: '_blank' } : {}
 }
 
-export function isExternal(href: string | undefined): boolean {
+function isExternal(href: string | undefined): boolean {
   return href?.startsWith('http') ?? false
 }

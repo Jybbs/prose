@@ -4,7 +4,7 @@ import { getRenderer }         from '../lib/markdown/renderer'
 import { discoverRuleSlugs }   from '../lib/rules/discovery'
 import type { DiscoveredRule } from '../lib/rules/discovery'
 import { rulesDir }            from '../lib/shared/paths'
-import { CATEGORY_META, FAMILY_META, type RuleCategory, type RuleFamily } from '../lib/shared/registries'
+import { CATEGORY_META, FAMILY_META, FAMILY_ORDER, type RuleCategory, type RuleFamily } from '../lib/shared/registries'
 import { toTitleCase }         from '../lib/shared/title-case'
 
 export type { DiscoveredRule }
@@ -18,19 +18,19 @@ export interface RenderedRule extends DiscoveredRule {
   name          : string
 }
 
-export interface RuleFamilyGroup {
+interface RuleFamilyGroup {
   family : RuleFamily
   label  : string
   rules  : readonly RenderedRule[]
 }
 
-export interface RuleCategoryGroup {
+interface RuleCategoryGroup {
   byFamily : readonly RuleFamilyGroup[]
   category : RuleCategory
   label    : string
 }
 
-export interface RulesData {
+interface RulesData {
   byCategory : readonly RuleCategoryGroup[]
   byFamily   : Record<RuleFamily, readonly RenderedRule[]>
   bySlug     : Record<string, RenderedRule>
@@ -56,14 +56,13 @@ export default defineLoader({
       name          : toTitleCase(r.slug, '-')
     }))
     const bySlug     = Object.fromEntries(list.map(r => [r.slug, r])) as Record<string, RenderedRule>
-    const families   = Object.keys(FAMILY_META) as RuleFamily[]
     const byFamily   = Object.groupBy(list, r => r.family) as Record<RuleFamily, readonly RenderedRule[]>
-    for (const family of families) byFamily[family] ??= []
+    for (const family of FAMILY_ORDER) byFamily[family] ??= []
     const byCategory = (['auto-fix', 'lint'] as const).map(category => {
       const rulesInCategory = list.filter(r => r.category === category)
       const grouped         = Object.groupBy(rulesInCategory, r => r.family) as Partial<Record<RuleFamily, readonly RenderedRule[]>>
       return {
-        byFamily : families
+        byFamily : FAMILY_ORDER
           .filter(family => grouped[family]?.length)
           .map(family => ({
             family,

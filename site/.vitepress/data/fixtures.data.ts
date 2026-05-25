@@ -6,14 +6,14 @@ import matter             from 'gray-matter'
 import { defineLoader }   from 'vitepress'
 
 import { FIXTURES_DIR, INPUT_SUFFIX, SNAPSHOTS_DIR, walkFixtures } from '../lib/fixtures/walker'
-import { getRenderer }    from '../lib/markdown/renderer'
+import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
 import { repoRoot }       from '../lib/shared/paths'
 
 const root          = repoRoot(import.meta.url)
 const fixturesRoot  = path.join(root, FIXTURES_DIR)
 const snapshotsRoot = path.join(root, SNAPSHOTS_DIR)
 
-export interface FixtureEntry {
+interface FixtureEntry {
   changesSource : boolean
   input         : string
   inputHtml     : string
@@ -21,7 +21,7 @@ export interface FixtureEntry {
   outputHtml    : string
 }
 
-export type FixtureData = Record<string, Record<string, FixtureEntry>>
+type FixtureData = Record<string, Record<string, FixtureEntry>>
 
 declare const data: FixtureData
 export { data }
@@ -33,7 +33,6 @@ export default defineLoader({
   ],
   async load(): Promise<FixtureData> {
     const md      = await getRenderer()
-    const fence   = (code: string) => md.render(`\`\`\`python\n${code}\n\`\`\``)
     const entries = [...walkFixtures(root)].filter(({ rule, caseName }) =>
       existsSync(path.join(snapshotsRoot, rule, `${caseName}${INPUT_SUFFIX}.snap`))
     )
@@ -41,7 +40,7 @@ export default defineLoader({
       const snapPath            = path.join(snapshotsRoot, rule, `${caseName}${INPUT_SUFFIX}.snap`)
       const [inputRaw, snapRaw] = await Promise.all([fs.readFile(inputPath, 'utf8'), fs.readFile(snapPath, 'utf8')])
       const output              = matter(snapRaw).content.replace(/\s+$/, '\n')
-      return { caseName, entry: { changesSource: inputRaw !== output, input: inputRaw, inputHtml: fence(inputRaw), output, outputHtml: fence(output) }, rule }
+      return { caseName, entry: { changesSource: inputRaw !== output, input: inputRaw, inputHtml: renderFencedHtml(md, inputRaw, 'python'), output, outputHtml: renderFencedHtml(md, output, 'python') }, rule }
     }))
     const out: FixtureData = {}
     for (const { caseName, entry, rule } of rows) (out[rule] ??= {})[caseName] = entry

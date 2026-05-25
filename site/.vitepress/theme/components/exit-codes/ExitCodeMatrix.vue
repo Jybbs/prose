@@ -15,7 +15,8 @@ const { active: selectedRow, selected } = useTabSelect(codes, c => c.code)
         :class="{ active: row.code === selected }"
         class="exit-code-index-row"
         type="button"
-        @click="selected = row.code"
+        @focus="selected = row.code"
+        @mouseenter="selected = row.code"
       >
         <span class="exit-code-index-num">{{ row.code }}</span>
         <span class="exit-code-index-label">{{ row.label }}</span>

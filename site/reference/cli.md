@@ -1,6 +1,6 @@
 # CLI
 
-The `prose` binary exposes **three** subcommands, wherein each one resolves a distinct workflow shape. `format` rewrites Python files in place, `check` reports violations without modifying anything, and `completions` emits a shell-completion script. `format` and `check` share the same path-handling, stdin, rule-filtering, and output-format surface, so a CI step that runs `prose check` and a developer that runs `prose format` see the same flag set with the same precedence.
+The `prose` binary's subcommands each resolve a distinct workflow shape. `format` rewrites Python files in place, `check` reports violations without modifying anything, and `completions` emits a shell-completion script. `format` and `check` share the same path-handling, stdin, rule-filtering, and output-format surface, so a CI step that runs `prose check` and a developer that runs `prose format` see the same flag set with the same precedence.
 
 ## Synopsis
 
@@ -32,9 +32,24 @@ prose format --stdin < module.py
 prose format --select align-equals,align-colons src/
 ```
 
+`--diff` emits a standard unified diff with three lines of context, suitable for piping into `patch`, `delta`, or any other diff-reading tool:
+
+```diff
+--- src/example.py
++++ src/example.py
+@@ -1,5 +1,5 @@
+ def configure():
+-    timeout = 30
+-    retries = 5
+-    backoff_base = 1.5
++    timeout      = 30
++    retries      = 5
++    backoff_base = 1.5
+```
+
 ## `prose check`
 
-Reports violations without modifying source. Returns the canonical [**Exit Codes**](/reference/exit-codes) matrix so CI gates pick up `1` *(format would change)* or `2` *(lint violation)* alongside the pass / parse / config codes.
+Reports violations without modifying source. Returns the canonical [**Exit Codes**](/reference/exit-codes) matrix so CI gates pick up `1` *(format would change)* or `2` *(lint violation)* alongside the pass / parse / config codes. The flag table matches `prose format`'s above, omitting `--diff` because no rewrite is being staged for preview:
 
 | Flag | Type | Default | Description |
 |---|---|---|---|
@@ -81,6 +96,14 @@ The [**Shell Completions**](/integrations/shell-completions) integration page co
 
 ## Precedence
 
-`--select` and `--ignore` compose against the configured-enabled set as **select minus ignore**. With no `--select`, every configured-enabled rule runs except those listed in `--ignore`. With a `--select` set, only the listed rules run, then `--ignore` subtracts. A `--select` value that names a configured-disabled rule re-enables it for that one invocation. The [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` knob.
+`--select` and `--ignore` compose against the configured-enabled set as **select minus ignore**. With no `--select`, every configured-enabled rule runs except those listed in `--ignore`. With a `--select` set, only the listed rules run, then `--ignore` subtracts. A `--select` value that names a configured-disabled rule re-enables it for that one invocation, which is useful when debugging the effect of a rule that the project has globally turned off:
 
-The [**Quick Start**](/guide/quick-start) chapter walks through the most common invocations, and the [**Pipeline Order**](/reference/pipeline-order) reference covers the deterministic order rules fire in.
+```bash
+prose check --select align-equals src/
+```
+
+This runs `align-equals` against `src/` even when `[tool.prose.rules.align-equals]` has `enabled = false`. The [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` knob.
+
+CLI flags are per-invocation only. None of the flags above *(including `--output-format`, `--color`, `--diff`, `--select`, `--ignore`)* can be set in `[tool.prose]`. The configuration file carries semantic knobs *(line lengths, per-rule toggles, rule-specific inputs)*, and the CLI carries invocation knobs *(input source, output shape, color)*.
+
+The [**Quick Start**](/usage/quick-start) chapter walks through the most common invocations, and the [**Pipeline Order**](/reference/pipeline-order) reference covers the deterministic order rules fire in.

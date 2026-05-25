@@ -1,18 +1,22 @@
 <script setup lang="ts">
-import DefaultTheme from 'vitepress/theme'
+import DefaultTheme    from 'vitepress/theme'
+import { watchEffect } from 'vue'
 
-import { provideCurrentRule, provideCurrentSlugs } from '../lib/composables/route'
-import { useFamilyBodyAttr }                       from '../lib/composables/use-family-body-attr'
+import { provideCurrentRule, useCurrentFamily } from '../lib/composables/route'
 
-import BuildMetadata from './components/layout/BuildMetadata.vue'
-import NotFound      from './components/layout/NotFound.vue'
-import RelatedRules  from './components/aside/RelatedRules.vue'
-import RuleChrome    from './components/aside/RuleChrome.vue'
-import StarBadge     from './components/layout/StarBadge.vue'
+import BuildMetadata      from './components/layout/BuildMetadata.vue'
+import GlossaryFolioIndex from './components/glossary/GlossaryFolioIndex.vue'
+import NotFound           from './components/layout/NotFound.vue'
+import RuleChrome         from './components/rules/RuleChrome.vue'
+import StarBadge          from './components/layout/StarBadge.vue'
 
-provideCurrentSlugs()
 provideCurrentRule()
-useFamilyBodyAttr()
+const family = useCurrentFamily()
+watchEffect(() => {
+  if (typeof document === 'undefined') return
+  if (family.value) document.body.setAttribute('data-family', family.value)
+  else              document.body.removeAttribute('data-family')
+})
 </script>
 
 <template>
@@ -24,7 +28,7 @@ useFamilyBodyAttr()
       <RuleChrome />
     </template>
     <template #aside-outline-after>
-      <RelatedRules />
+      <GlossaryFolioIndex />
     </template>
     <template #layout-bottom>
       <BuildMetadata />

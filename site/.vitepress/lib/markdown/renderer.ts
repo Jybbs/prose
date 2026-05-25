@@ -14,6 +14,10 @@ type HtmlKey<K extends string> = `${K}Html`
 type Rendered<T, K extends string & keyof T> =
   Omit<T, K> & { [P in HtmlKey<K>]: T[K] extends readonly string[] ? string[] : string }
 
+export function renderFencedHtml(md: MarkdownRenderer, code: string, language: string): string {
+  return md.render(`\`\`\`${language}\n${code}\n\`\`\``)
+}
+
 export function renderInlineField<T extends object, K extends string & keyof T>(
   md    : MarkdownRenderer,
   items : readonly T[],

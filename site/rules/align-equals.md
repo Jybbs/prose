@@ -14,6 +14,14 @@ A run of consecutive bindings sits at the same indentation, the eye walks down t
 
 The rule walks consecutive single-target assignments at the same indentation level, picking up type annotations when present and treating augmented assignments (*`+=`, `|=`*) and walrus operators (*`:=`*) as non-members. The same alignment also runs across consecutive annotated function-parameter default values, so a signature with several `param: type = default` entries aligns its `=` column the same way a stretch of module-level bindings does. A blank line, a comment line, or a non-assignment statement resets the group, leaving each contiguous run aligned in isolation. Once an alignment group lands, [[singleton-rule]] prunes any one-member residue so a lone binding reads as plain code.
 
+<template #configuration>
+
+<RuleConfigTable />
+
+`max-shift` caps the per-line padding the alignment can introduce. When a group's widest member would force more padding than the cap allows, `max-shift-policy` decides the fallback shape *(the `shift_limit_split` fixture above shows the default `"split"` behavior, with `"drop"` and `"skip"` covered in the [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference)*.
+
+</template>
+
 <template #canonical-lead>
 
 Three consecutive bindings with varying left-hand widths align on the `=` sign. The eye drops down the column of equals signs and reads the right-hand sides as a parallel list.

@@ -15,7 +15,7 @@ const credits: readonly Credit[] = [
   { role: 'Implementation', slug: 'rust'   },
   { role: 'Install path',   slug: 'uv'     },
   { role: 'Tool versions',  slug: 'mise'   },
-  { role: 'Upstream pass',  slug: 'ruff'   }
+  { role: 'Parser & AST',   slug: 'ruff'   }
 ]
 
 const entries = credits.map(({ role, slug }) => ({

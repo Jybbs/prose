@@ -50,3 +50,30 @@
     --surfaces-gap        : 12px;
   }
 }
+
+.landing-small-button {
+  display              : inline-flex;
+  align-items          : center;
+  padding              : 4px 12px;
+  border               : 1px solid var(--vp-c-divider);
+  border-radius        : var(--prose-radius-sm);
+  background           : var(--vp-c-bg-soft);
+  color                : var(--vp-c-text-2);
+  font-family          : var(--vp-font-family-mono);
+  font-size            : var(--prose-kicker-size);
+  letter-spacing       : var(--prose-kicker-tracking);
+  text-transform       : uppercase;
+  text-decoration-line : none;
+  transition           :
+    background   var(--prose-transition),
+    border-color var(--prose-transition),
+    color        var(--prose-transition);
+}
+
+.landing-small-button:hover,
+.landing-small-button:focus-visible {
+  background           : var(--vp-c-bg);
+  border-color         : var(--vp-c-brand-1);
+  color                : var(--vp-c-brand-1);
+  text-decoration-line : none;
+}

@@ -10,9 +10,17 @@ layout   : doc
 
 <RuleLayout rule="align_colons" canonical="dict_literal">
 
-The `:` separator appears in **four contexts** where columns of values sit beside columns of names, and in each one the reader's eye wants a tidy table rather than a ragged margin. `align-colons` gathers those contexts into a single shared alignment surface, so dictionary keys, dataclass and Pydantic fields, function-signature parameter annotations, and docstring `Args:` blocks all read as parallel two-column entries. Single-expression `match` arms live in a separate dispatch table owned by [[match-case-align]].
+The `:` separator appears across the contexts below, wherein columns of values sit beside columns of names and the reader's eye wants a tidy table rather than a ragged margin. `align-colons` gathers those contexts into a single shared alignment surface, so dictionary keys, dataclass and Pydantic fields, function-signature parameter annotations, and docstring `Args:` blocks all read as parallel two-column entries. Single-expression `match` arms live in a separate dispatch table owned by [[match-case-align]].
 
 The rule walks each context independently, treating a group as the consecutive members sharing the same indentation level and parent shape. A blank line, a comment, or a non-member statement resets the group. Alignment honors the [[singleton-rule]] so that one-member contexts skip padding altogether, leaving a one-key dict reading as plain code instead of a one-row table.
+
+<template #configuration>
+
+<RuleConfigTable />
+
+`max-shift` caps the per-line padding the alignment can introduce. When a group's widest member would push the column past the cap, `max-shift-policy` decides the fallback shape *(`"split"` partitions the group, `"drop"` excludes the widest members from the padding calculation, `"skip"` leaves the whole group unaligned)*. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the full semantics.
+
+</template>
 
 <template #canonical-lead>
 

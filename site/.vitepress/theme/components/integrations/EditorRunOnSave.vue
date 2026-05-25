@@ -3,35 +3,47 @@ import Tool from '../base/Tool.vue'
 
 import { data as editors } from '../../../data/editor-configs.data'
 import { useTabSelect }    from '../../../lib/composables/use-tab-select'
+import { formatFolio }     from '../../../lib/shared/numerals'
 
-const { active, selected: activeSlug } = useTabSelect(editors, e => e.slug)
+const { selected: activeSlug } = useTabSelect(editors, e => e.slug)
 </script>
 
 <template>
-  <div class="editor-deck">
-    <div class="editor-deck-spines" role="tablist">
-      <button
-        v-for="(editor, idx) in editors"
+  <div class="editor-card">
+    <aside class="editor-card-index">
+      <span class="kicker editor-card-edition">Editors &middot; {{ formatFolio(editors.length) }}</span>
+      <ul class="editor-card-list" role="tablist">
+        <li v-for="(editor, i) in editors" :key="editor.slug">
+          <button
+            type="button"
+            role="tab"
+            class="editor-card-row"
+            :class="{ 'is-active' : editor.slug === activeSlug }"
+            :aria-selected="editor.slug === activeSlug"
+            @click="activeSlug = editor.slug"
+          >
+            <span class="folio">№ {{ formatFolio(i + 1) }}</span>
+            <span class="editor-card-row-mark" aria-hidden="true"><Tool :slug="editor.slug" bare /></span>
+            <em class="editor-card-row-name">{{ editor.name }}</em>
+            <span class="editor-card-row-leader" aria-hidden="true"></span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <div class="editor-card-faces" aria-live="polite">
+      <section
+        v-for="editor in editors"
         :key="editor.slug"
-        type="button"
-        role="tab"
-        class="editor-deck-spine"
-        :class="{ 'is-active': editor.slug === activeSlug }"
-        :aria-selected="editor.slug === activeSlug"
-        @click="activeSlug = editor.slug"
+        v-show="editor.slug === activeSlug"
+        class="editor-card-face"
       >
-        <span class="editor-deck-spine-num">{{ String(idx + 1).padStart(2, '0') }}</span>
-        <span class="editor-deck-spine-mark" aria-hidden="true"><Tool :slug="editor.slug" bare /></span>
-        <span class="editor-deck-spine-name">{{ editor.name }}</span>
-        <span class="editor-deck-spine-target">{{ editor.target }}</span>
-      </button>
-    </div>
-    <div class="editor-deck-face" aria-live="polite">
-      <div class="editor-deck-face-head">
-        <span class="editor-deck-face-mark" aria-hidden="true"><Tool :slug="active.slug" bare /></span>
-        <h3 class="editor-deck-face-name">{{ active.name }}</h3>
-      </div>
-      <div :key="active.slug" class="editor-deck-face-body" v-html="active.codeHtml" />
+        <header class="editor-card-face-head">
+          <span class="kicker">{{ editor.caption }}</span>
+          <span class="editor-card-face-target">{{ editor.target }}</span>
+        </header>
+        <div class="editor-card-face-code" v-html="editor.codeHtml" />
+      </section>
     </div>
   </div>
 </template>

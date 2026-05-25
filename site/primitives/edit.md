@@ -9,16 +9,18 @@
 
 `Edit` itself is `pub` *(re-exported from `ruff_diagnostics`)*, and the `Diagnostic` type a rule emits through the pipeline carries an `Option<Edit>` in its `fix` field, visible in every [**output format**](/reference/output-formats) the CLI emits *(json, github, sarif)*. A downstream consumer reading the json output sees the edit's range and content in the `fix.edits[]` array.
 
-The edit-shaping helpers *(`apply_edits`, `apply_inline_edits`, `narrow_edit`)* live at `src/primitives/edit.rs` and are `pub(crate)`. They stabilize toward `1.0` where consumer-implemented rules become reachable.
+The edit-shaping helpers *(`apply_edits`, `apply_inline_edits`, `narrow_edit`)* live at `src/primitives/edit.rs` and are `pub(crate)`. The helpers move to `pub` at `1.0` alongside the `Rule` trait, so a downstream rule can splice edits into source the same way the bundled rules do.
 
 ## The Shape
 
 Each `Edit` carries:
 
-- A `range: TextRange` covering the source span the edit replaces
+- A `range: TextRange` covering the source span the edit replaces. `TextRange` is byte-indexed *(through `ruff_text_size`)*, so offsets count UTF-8 bytes rather than Unicode scalars or display columns.
 - A `content: Option<String>` carrying the replacement text *(or `None` for a pure deletion)*
 
 A zero-length range with non-empty content is an insertion. A non-empty range with empty content is a deletion. A non-empty range with non-empty content is a substitution. The three shapes compose, so a rule rewriting one logical change as several local edits emits each as its own `Edit` without coordinating.
+
+Edits span newlines freely, so a rule rewriting a multi-line construct emits one `Edit` whose `range` covers the whole construct and whose `content` carries the rewritten body. Line-ending style in `content` follows the rule's emission, and the pipeline does not normalize, so a rule on a CRLF source should emit CRLF in any newline it inserts. The [[source]] primitive exposes `newline_str()` for the per-file convention.
 
 ## Internal Surface
 
@@ -26,7 +28,7 @@ Three helpers at `src/primitives/edit.rs` cover the common shaping needs.
 
 ### `apply_edits(text, edits) -> String`
 
-Splices a sorted edit list into a source string, serving as the [[pipeline]]'s transform between rules. Linear in source length regardless of edit count, in that the function walks the list once. Debug builds assert the sorted edits are non-overlapping, a rule-authoring invariant.
+Splices a sorted edit list into a source string, serving as the [[pipeline]]'s transform between rules. Linear in source length regardless of edit count, since the function walks the list once. Debug builds assert the sorted edits are non-overlapping, a rule-authoring invariant.
 
 ### `apply_inline_edits(source, range, edits) -> Cow<'src, str>`
 
@@ -38,15 +40,15 @@ Trims a candidate replacement to its minimal divergent range against the source.
 
 ## Conflict Discipline
 
-The [[pipeline]] applies each rule's edits sequentially, reparsing between rules so the next rule reads against a settled AST. Two rules emitting edits to overlapping ranges within the same pass would conflict, but the pipeline structure prevents this, in that each rule sees the rewritten source from previous rules and the second rule's edits land against the first rule's output rather than against the original.
+The [[pipeline]] applies each rule's edits sequentially, reparsing between rules so the next rule reads against a settled AST. Two rules emitting edits to overlapping ranges within the same pass would conflict, but the pipeline structure prevents this, because each rule sees the rewritten source from previous rules and the second rule's edits land against the first rule's output rather than against the original.
 
-Within one rule, debug assertions catch overlapping edits at `apply_edits` time. Release builds skip the assertion, leaving overlapping edits to silently corrupt the spliced output, so the debug-build check is the load-bearing gate authors rely on. A rule that produces overlapping edits is a rule-authoring bug, caught early via the debug assertion and never expected to ship.
+Within one rule, debug assertions catch overlapping edits at `apply_edits` time. Release builds skip the assertion, which means overlapping edits in release silently produce wrong output, so the debug-build check is the load-bearing gate authors rely on. Test every new rule under debug builds against fixture sources that exercise the rule's edge cases before shipping, since an overlap that escapes the test suite will mis-format real user code. A rule that produces overlapping edits is a rule-authoring bug, caught early via the debug assertion and never expected to ship.
 
 ## Build Pattern
 
-A rule emits `Vec<Edit>` from its `apply(&Source)` method. Each edit's range names the source span to rewrite, with the content carrying the replacement. The pipeline handles sorting, splicing, and reparsing.
+A rule emits `Vec<Edit>` from its `apply(&Source)` method, with each edit's range naming the source span to rewrite and its content carrying the replacement. The pipeline handles sorting, splicing, and reparsing on the rule's behalf.
 
-For rules that compute multiple edits per logical change *(an alignment rule that pads several rows in one group)*, each edit is emitted independently. The pipeline sorts them at apply time.
+For rules that compute multiple edits per logical change *(an alignment rule that pads several rows in one group)*, each edit is emitted independently and the pipeline sorts them at apply time.
 
 ## Re-Using This Primitive
 
@@ -54,10 +56,10 @@ Every rule reaches for `Edit` to express a rewrite. The [[aligner]] primitive em
 
 <template #related>
 
-- [[pipeline]] is the consumer that applies edit lists between rules
-- [[aligner]], [[orderer]], and [[docstring]] all produce `Edit` lists
-- [[source]] is the input every edit's range names a span inside
-- [[suppression-map]] filters edits at the emission boundary before the pipeline applies them
+- [[pipeline]] is the consumer that applies edit lists between rules.
+- [[aligner]], [[orderer]], and [[docstring]] all produce `Edit` lists.
+- [[binding-analysis]] answers the offset-and-scope questions binding-aware rules consult before shaping their edits.
+- [[suppression-map]] filters edits at the emission boundary before the pipeline applies them.
 
 </template>
 

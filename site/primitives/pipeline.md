@@ -6,22 +6,50 @@
 
 ## Public Surface
 
-`Pipeline` is fully public in `0.2.x`. A downstream Rust consumer constructs one through one of four entry points, runs it against a [[source]], and reads the returned text plus diagnostics.
+`Pipeline` is fully public in `0.2.x`, so a downstream Rust consumer constructs one through the entry points below, runs it against a [[source]], and reads the returned text plus diagnostics. `Pipeline` is `Send + Sync`, which means a single instance can be shared across `rayon` workers via `Arc` and the same instance can drive many `run` calls in sequence, because `run` takes `&self` and consumes only the `Source` passed in.
 
-**Constructors.**
+### Constructors
 
-- `Pipeline::empty() -> Self` returns a pipeline with no rules registered. Useful for tests or callers building a custom rule set.
-- `Pipeline::with_defaults(config: &Config) -> Self` builds the canonical pipeline from every rule whose `enabled` flag is set in the project's `[tool.prose]` table. The `prose format` and `prose check` paths both reach for this.
-- `Pipeline::with_filters(config: &Config, select: &[RuleId], ignore: &[RuleId]) -> Self` applies the CLI's `--select` and `--ignore` semantics. A non-empty `select` replaces the configured-enabled set, whereas an empty `select` falls back to it, after which `ignore` subtracts from the base to yield `select - ignore`.
-- `Pipeline::for_rule(name: &str, config: &Config) -> Option<Self>` builds a single-rule pipeline, useful for diagnostic isolation and for `prose check --select <rule>` exact-rule paths. Returns `None` for an unrecognized slug.
+1. `Pipeline::empty() -> Self` returns a pipeline with no rules registered, for tests or callers building a custom rule set.
+2. `Pipeline::with_defaults(config: &Config) -> Self` builds the canonical pipeline from every rule whose `enabled` flag is set in `[tool.prose]`. The `prose format` and `prose check` paths both reach for this.
+3. `Pipeline::with_filters(config: &Config, select: &[RuleId], ignore: &[RuleId]) -> Self` applies the CLI's `--select` and `--ignore` semantics. A non-empty `select` replaces the configured-enabled set, an empty `select` falls back to it, and `ignore` subtracts from the base to yield `select - ignore`.
+4. `Pipeline::for_rule(name: &str, config: &Config) -> Option<Self>` builds a single-rule pipeline for diagnostic isolation and `prose check --select <rule>` exact-rule paths. Returns `None` for an unrecognized slug.
 
-**Enumeration.** `Pipeline::known_ids() -> &'static [RuleId]` exposes the full registered-rule list in canonical order, with the same shape the CLI's `--help` consumes. Consumers driving custom UIs over the catalog read from this.
+### Enumeration
 
-**Execution.** `run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError>` walks the registered rules in order, applies each rule's edits, reparses, hands the new *Source* to the next rule, and returns the final text plus every diagnostic emitted. `PipelineError` is `pub` and captures the parse-failure case when an intermediate reparse fails.
+`Pipeline::known_ids() -> &'static [RuleId]` exposes the full registered-rule list in canonical order, with the same shape the CLI's `--help` consumes. Consumers driving custom UIs over the catalog read from this.
+
+### Execution
+
+`run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError>` walks the registered rules in their canonical order. Each rule applies its edits, the pipeline reparses, and the new *Source* feeds the next rule, with the final text and every emitted diagnostic returned to the caller. Suppression is applied transparently inside `run`, with every `# fmt: off` block, `# fmt: skip` marker, and `# prose: ignore[<rule>]` directive consulted at the edit-emission boundary so suppressed edits and lint diagnostics never reach the returned vector.
+
+`Diagnostic` carries the per-finding payload returned in the `Vec`:
+
+```rust
+pub struct Diagnostic {
+    pub fix      : Option<Edit>,   // the rewrite, or `None` for lint-only findings
+    pub message  : String,         // human-readable explanation of the finding
+    pub range    : TextRange,      // source span the finding points at
+    pub rule     : RuleId,         // slug of the rule that emitted the finding
+    pub severity : Severity,       // `Format` for auto-fix, `Lint` for report-only
+}
+```
+
+`Severity::Format` carries a `Some(fix)` payload the pipeline applies, whereas `Severity::Lint` carries `fix: None` and reports a finding the user has to resolve themselves. Consumers building structured output formats *(JSON, SARIF, GitHub annotations)* route by `rule` to associate findings with the originating slug.
+
+`PipelineError` is `pub` and carries one variant:
+
+```rust
+pub enum PipelineError {
+    Reparse { rule: RuleId, source: ParseError },
+}
+```
+
+The variant captures the rule whose output failed to reparse plus the underlying `ParseError`. A `Reparse` error means a rule produced syntactically invalid Python, which is a rule-authoring bug, not a consumer-recoverable condition. The intermediate `Source` is dropped, leaving no partial output for the caller to inspect.
 
 ## Determinism
 
-Rule order is deterministic. The registry pins it explicitly through a single `register_rules!` macro invocation in `src/rule.rs`, and the pipeline runs rules in that order without parallelism inside one *Source*. Cross-source parallelism (*two files at once*) is the path-mode CLI's job, owned by the walker above the pipeline rather than inside it.
+Rule order is fixed and the same every run, so a given source plus configuration always produces the same output. The registry pins the order explicitly through a single `register_rules!` macro invocation in `src/rule.rs`, and the pipeline runs rules in that order without parallelism inside one *Source*. Cross-source parallelism *(two files at once)* is the path-mode CLI's job, owned by the walker above the pipeline rather than inside it.
 
 ## Internal Surface
 
@@ -45,14 +73,7 @@ println!("{}", formatted.text());
 
 For a single-rule isolation, `Pipeline::for_rule("align-equals", &config)` returns a pipeline that runs only `align-equals` against the source.
 
-A downstream Rust crate consumes *prose* through a Git dependency pinned to a release tag:
-
-```toml
-[dependencies]
-prose = { git = "https://github.com/Jybbs/prose", tag = "0.2.3" }
-```
-
-The Python wheel exposes the CLI rather than the library, so a Python consumer reaches the same pipeline indirectly through the binary.
+The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page. The Python wheel exposes the CLI rather than the library, so a Python consumer reaches the same pipeline indirectly through the binary.
 
 <template #related>
 
@@ -61,7 +82,7 @@ The Python wheel exposes the CLI rather than the library, so a Python consumer r
 - [[suppression-map]] filters the pipeline's emitted edits and lint diagnostics, dropping suppressed entries before they surface to the caller.
 - [[binding-analysis]] builds once per *Source* and feeds rules whose questions are binding-shaped.
 
-For the rule catalog the pipeline iterates, the [**Rules Overview**](/rules/) page walks every shipped rule by category, and the [**Pipeline Order**](/reference/pipeline-order) reference renders the canonical run order with the rationale per rule.
+For the rule catalog the pipeline iterates, the [**Rules**](/rules/) page walks every shipped rule by category, and the [**Pipeline Order**](/reference/pipeline-order) reference renders the canonical run order with the rationale per rule.
 
 </template>
 

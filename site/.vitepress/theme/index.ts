@@ -23,28 +23,36 @@ import './styles/globals.css'
 import './styles/markdown/body.css'
 import './styles/markdown/callouts.css'
 import './styles/markdown/headings.css'
+import './styles/markdown/pull-quote.css'
+import './styles/popper-base.css'
 import './styles/primitives.css'
 import './styles/prose-mark.css'
 import './styles/vitepress-chrome.css'
 
-import './components/aside/related-rules.css'
 import './components/base/category-chip.css'
 import './components/base/chips.css'
-import './components/base/disclosure.css'
 import './components/base/family-chip.css'
+import './components/base/folio.css'
 import './components/base/kicker.css'
+import './components/base/middle-ellipsis.css'
+import './components/base/tool.css'
 import './components/exit-codes/exit-code-matrix.css'
+import './components/fixtures/fixture-card.css'
 import './components/fixtures/fixture-landing.css'
 import './components/fixtures/fixture.css'
-import './components/glossary/glossary-index.css'
+import './components/glossary/glossary-folio-index.css'
+import './components/glossary/glossary-folio-pane.css'
 import './components/glossary/glossary.css'
+import './components/reference/az-index.css'
 import './components/integrations/editor-run-on-save.css'
+import './components/integrations/integration-card-grid.css'
+import './components/integrations/shell-completions.css'
 import './components/landing/built-on.css'
-import './components/landing/cta-body.css'
 import './components/landing/cta-ledger.css'
 import './components/landing/cta-stamp.css'
 import './components/landing/cta.css'
 import './components/landing/hero.css'
+import './components/landing/landing-section.css'
 import './components/landing/landing.css'
 import './components/landing/metaphor.css'
 import './components/landing/surfaces/surface-card-base.css'
@@ -55,17 +63,22 @@ import './components/landing/workflow.css'
 import './components/layout/build-metadata.css'
 import './components/layout/not-found.css'
 import './components/layout/star-badge.css'
-import './components/primitives/dependency-graph.css'
+import './components/primitives/primitives-composition-detail.css'
+import './components/primitives/primitives-composition-grid.css'
 import './components/primitives/primitives-composition.css'
+import './components/rules/composition-cards.css'
 import './components/rules/pipeline-order.css'
-import './components/rules/related-rules-inline.css'
 import './components/rules/rule-card-grid.css'
-import './components/rules/rules-index.css'
 import './components/rules/rules-plate.css'
 import './components/rules/specimen-callout.css'
+import './components/suppression/directive-anatomy.css'
+import './components/suppression/scope-specimen.css'
 
 const modules = import.meta.glob<{ default: Component }>(
-  ['./components/{exit-codes,fixtures,glossary,integrations,primitives,rules}/*.vue', './components/base/Tool.vue'],
+  [
+    './components/{exit-codes,fixtures,glossary,integrations,primitives,reference,rules,suppression}/*.vue',
+    './components/base/Tool.vue'
+  ],
   { eager: true }
 )
 const components = Object.fromEntries(
@@ -91,7 +104,19 @@ export default {
           handleResize    : true,
           html            : true,
           instantMove     : true,
+          noAutoFocus     : true,
           placement       : 'top',
+          triggers        : ['focus', 'hover']
+        },
+        'rule-card': {
+          $extend         : 'tooltip',
+          'arrow-padding' : 14,
+          autoHide        : true,
+          delay           : { hide: 120, show: 80 },
+          handleResize    : true,
+          instantMove     : true,
+          noAutoFocus     : true,
+          placement       : 'bottom-start',
           triggers        : ['focus', 'hover']
         }
       }

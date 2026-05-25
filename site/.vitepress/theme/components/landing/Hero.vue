@@ -114,7 +114,7 @@ const stamps = computed<readonly Stamp[]>(() => {
       </template>
     </div>
     <h1 class="landing-hero-wordmark">
-      <img src="/title-with-tagline.svg" alt="Prose — A Python typesetter for the reader." />
+      <img src="/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." />
     </h1>
   </div>
 </template>

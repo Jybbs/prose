@@ -14,6 +14,8 @@ A multi-line docstring whose opener or closer shares a line with the body reads 
 
 The rule fires on every multi-line docstring across module, class, and function scopes. Single-line docstrings (*opener, body, and closer all on one line*) are left alone for [[no-single-line-docstrings]] to handle. Pair with [[docstring-wrap]] for the description-prose wrap that runs after this rule canonicalizes the opener and closer.
 
+The walker [[docstring]] reads against the PEP 257 definition, so f-string docstrings *(`f"""..."""`)* and concatenated string forms are excluded by construction. Raw-prefixed *(`r"""`)* and byte-prefixed *(`b"""`)* literals canonicalize the same way as plain triple-quoted forms, with the prefix preserved verbatim on the opener. An empty docstring *(`""""""`)* lands as an empty multi-line shape, leaving the opener and closer on their own lines with a blank line between them.
+
 <template #canonical-lead>
 
 A docstring whose opener shares a line with the first body sentence drops the body to a new line beneath the opener.

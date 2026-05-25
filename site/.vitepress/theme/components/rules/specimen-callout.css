@@ -1,52 +1,57 @@
-.specimen-callout {
-  position         : absolute;
-  top              : calc(100% + 10px);
-  left             : 0;
-  width            : 300px;
-  padding          : 12px 16px;
-  font-family      : var(--vp-font-family-base);
-  font-size        : var(--prose-text-sm);
-  line-height      : 1.5;
-  color            : var(--vp-c-text-1);
-  text-align       : left;
-  pointer-events   : none;
-  opacity          : 0;
-  transform        : translateY(-4px);
-  transform-origin : top left;
-  transition       :
+.v-popper--theme-rule-card .v-popper__inner {
+  padding    : 0;
+  background : transparent;
+  border     : none;
+  outline    : none;
+  box-shadow : none;
+}
+
+.v-popper--theme-rule-card {
+  --rule-card-popper-border : color-mix(in srgb, var(--family-color) 55%, var(--vp-c-divider));
+}
+
+.v-popper--theme-rule-card .v-popper__arrow-outer {
+  border-color : var(--rule-card-popper-border);
+}
+
+.v-popper--theme-rule-card .v-popper__arrow-inner {
+  border-color : var(--vp-c-bg);
+}
+
+.v-popper--theme-rule-card .v-popper__wrapper {
+  transition :
     opacity   140ms var(--prose-ease-emphasized),
     transform 140ms var(--prose-ease-emphasized);
 }
 
-.rules-cluster-specimens > li:hover .specimen-callout,
-.rules-cluster-specimens > li:focus-within .specimen-callout {
-  opacity   : 1;
-  transform : translateY(0);
+.v-popper--theme-rule-card .rule-card {
+  grid-template-columns : auto auto auto;
+  width                 : max-content;
+  max-width             : min(calc(100vw - 32px), 600px);
+  height                : auto;
+  min-height            : 64px;
+  padding               : 12px 16px;
+  border                : 2px solid var(--rule-card-popper-border);
+  border-top            : 3px solid var(--family-color);
+  border-radius         : var(--prose-radius);
+  background            : var(--vp-c-bg);
+  box-shadow            : var(--prose-shadow-tooltip);
 }
 
-.specimen-callout-slug {
-  display       : block;
-  margin        : 0 0 6px;
-  padding       : 0 0 6px;
-  border-bottom : 1px solid var(--vp-c-divider);
-  font-family   : var(--vp-font-family-mono);
-  font-size     : var(--prose-text-md);
-  font-weight   : 700;
-  color         : var(--family-color);
+.v-popper--theme-rule-card,
+.v-popper--theme-rule-card * {
+  outline : none !important;
 }
 
-.specimen-callout-body {
-  display    : block;
-  font-style : italic;
-  color      : var(--vp-c-text-2);
+.v-popper--theme-rule-card .rule-card-caption {
+  display            : block;
+  -webkit-line-clamp : none;
+  overflow           : visible;
+  max-width          : var(--rule-card-caption-width);
+  text-wrap          : balance;
+  overflow-wrap      : anywhere;
 }
 
-.specimen-callout-body :is(code, kbd) {
-  font-size : 0.95em;
-  color     : var(--vp-c-text-1);
-}
-
-.specimen-callout-body em {
-  font-style : italic;
-  color      : var(--vp-c-text-1);
+.v-popper--theme-rule-card .rule-card-caption :where(code) {
+  white-space : normal;
 }

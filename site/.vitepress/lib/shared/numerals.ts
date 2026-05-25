@@ -1,3 +1,7 @@
+export function formatFolio(n: number, width = 2): string {
+  return String(n).padStart(width, '0')
+}
+
 export function toRoman(n: number): string {
   const map: Array<[number, string]> = [
     [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],

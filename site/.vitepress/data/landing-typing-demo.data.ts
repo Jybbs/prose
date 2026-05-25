@@ -8,8 +8,8 @@ import { codeToKeyedTokens, createMagicMoveMachine } from 'shiki-magic-move/core
 import type { KeyedTokensInfo }                      from 'shiki-magic-move/types'
 import { defineLoader }                              from 'vitepress'
 
-import { ENTRIES, PRELUDE, RULES, SOURCE }                                                 from './landing-typing-demo.fixtures'
-import type { LandingTypingDemoAppendEntry, LandingTypingDemoEditEntry, LandingTypingDemoEntry } from './landing-typing-demo.fixtures'
+import { ENTRIES, PRELUDE, RULES, SOURCE }                                                       from '../theme/components/landing/typing-demo-fixtures'
+import type { LandingTypingDemoAppendEntry, LandingTypingDemoEditEntry, LandingTypingDemoEntry } from '../theme/components/landing/typing-demo-fixtures'
 import { SHIKI_THEMES }                                                                    from '../lib/shared/constants'
 import { repoRoot }                                                                        from '../lib/shared/paths'
 
@@ -19,7 +19,7 @@ export type {
   LandingTypingDemoEntry
 }
 
-export interface LandingTypingDemoData {
+interface LandingTypingDemoData {
   entries          : readonly LandingTypingDemoEntry[]
   prelude          : string
   pythonStateSteps : readonly KeyedTokensInfo[]

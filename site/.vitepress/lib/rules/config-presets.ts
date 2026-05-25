@@ -1,6 +1,6 @@
 export type RuleConfigPreset = 'alignment' | 'toggle'
 
-export interface RuleConfigRowSource {
+interface RuleConfigRowSource {
   default : string
   key     : string
   meaning : string

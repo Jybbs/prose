@@ -4,11 +4,13 @@ import { computed } from 'vue'
 
 import { data as build }    from '../../../data/build.data'
 import { data as rules }    from '../../../data/rules.data'
-import { formatPageDate }   from '../../../lib/shared/format-page-date'
 
 const { page } = useData()
 
-const lastUpdated = computed(() => formatPageDate(page.value.lastUpdated))
+const lastUpdated = computed(() => {
+  const ts = page.value.lastUpdated
+  return ts ? new Date(ts).toLocaleDateString('en-CA', { timeZone: 'UTC' }) : ''
+})
 
 interface Item {
   code   ?: boolean

@@ -14,6 +14,17 @@ A function signature reads as either a one-line declaration or a stacked column 
 
 The rule expands a signature when its inline form overflows the configured `code-line-length`, or when its parameter count exceeds `max-inline-params`. Otherwise the signature collapses to a single line. A comment inside the parameter list pins the existing shape, because moving the parameters would orphan the comment from its anchor. The expanded form lays each parameter on its own line, indented one step past the `def`, with the closing `)` flush left and the return annotation trailing on the same line.
 
+<template #configuration>
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `enabled` | bool | `true` | Toggle the rule on or off |
+| `max-inline-params` | positive int \| `false` | `4` | Cap on the parameter count an inline signature can carry. Setting `false` disables the count trigger and leaves only the line-length budget |
+
+The line-length budget comes from the top-level [`code-line-length`](/reference/configuration#top-level-keys) key *(default `88`)*, which the rule reads directly. Setting `max-inline-params` to `false` makes the rule expand purely on line length, leaving inline-but-long signatures untouched when they fit the budget regardless of parameter count.
+
+</template>
+
 <template #canonical-lead>
 
 A five-parameter signature whose inline form fits the line budget pins the count trigger firing alone. The rule expands solely on the parameter count exceeding `max-inline-params`.

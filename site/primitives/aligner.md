@@ -7,48 +7,80 @@
 
 ## Public Surface
 
-*Aligner* lives at `src/primitives/aligner.rs` and is `pub(crate)`, so the type is reachable from inside the *prose* crate but not from a downstream Rust caller in `0.2.x`. The downstream-visible consequence is the diagnostic stream the alignment rules emit, with the resolved column landing in the `Edit` each rule produces.
+*Aligner* lives at `src/primitives/aligner.rs` and is `pub(crate)`, so the type is reachable from inside the *Prose* crate but not from a downstream Rust caller in `0.2.x`. The downstream-visible consequence is the diagnostic stream the alignment rules emit, with the resolved column landing in the `Edit` each rule produces.
 
 A downstream consumer in `0.2.x` can:
 
 - Observe aligned source after running `prose format` or `prose check`
 - See the resolved padding in the diagnostic `fix` payload of any alignment rule
 
-A downstream consumer in `0.2.x` cannot directly construct a `Member`, drive `emit_group`, or read `Settings`. The internal API stabilizes toward `1.0` where consumer-implemented alignment rules become reachable.
+A downstream consumer in `0.2.x` cannot directly construct a `Member`, drive `emit_group`, or read `Settings`. The `1.0` line opens the surface so a downstream can ship its own alignment rule against the same math.
 
 ## Internal Surface
 
-The two types every consumer touches:
+The types every consumer touches:
 
-- `Member { gap: TextRange, line_start: TextSize, op_width: usize, width: usize }` describes one row in an alignment group. `width` is the display-column width of the row's left-hand-side region from member start to gap start. `gap` is the whitespace range immediately before the aligned token, rewritten into padding. `op_width` is the display width of variable-width operators *(`==`, `!=`, `<=`)* that opt into right-alignment.
-- `Settings { max_shift, policy, strip_singleton_subgroup }` carries the rule's `[tool.prose.rules.<rule>]` knobs. `From<&AlignmentConfig>` builds the canonical settings, and `with_singleton_subgroup_strip` flips the singleton-collapse behavior on.
+1. `Member { gap: TextRange, line_start: TextSize, op_width: usize, width: usize }` describes one row in an alignment group. `gap` is the whitespace range immediately before the aligned token, rewritten into padding. `line_start` is the offset of the source-line start, used by `is_alignment_candidate` to confirm each member sits on its own line. `op_width` is the display width of variable-width operators *(`==`, `!=`, `<=`)* opting into right-alignment. `width` is the display-column width from member start to gap start, which is what the math compares to find the target column.
+2. `Settings { max_shift, policy, strip_singleton_subgroup }` carries the rule's `[tool.prose.rules.<rule>]` knobs. `From<&AlignmentConfig>` builds the canonical settings, and `with_singleton_subgroup_strip` flips the singleton-collapse behavior on.
 
-The entry point `emit_group(source, members, settings) -> Vec<Edit>` resolves the target column across `members`, falls back through `policy` *(`split` / `drop` / `skip`)* when the widest member exceeds `max_shift`, and emits one edit per row that needs padding. A singleton group collapses its gap to one space, or to zero when `settings.strip_singleton_subgroup` is set.
+The entry point `emit_group(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>)` resolves the target column across `members`, falls back through `policy` *(`split` / `drop` / `skip`)* when the widest member exceeds `max_shift`, and pushes one `Edit` per row that needs padding into the caller's accumulator. A singleton group collapses its gap to one space, or to zero when `settings.strip_singleton_subgroup` is set.
+
+### Supporting Helpers
+
+A consuming rule rarely hand-builds the walker from raw AST traversal, since `aligner.rs` exposes a set of `pub(crate)` helpers covering the common shapes a new alignment rule needs:
+
+1. `line_adjacent_groups(items, member_of)` partitions `items` into runs of line-adjacent siblings via `Source::is_line_adjacent`, then maps each item through `member_of`. Single-member runs drop out.
+2. `keyed_line_adjacent_groups(items, key_of, member_of)` is the same shape with a per-item key that further partitions adjacent items into sub-groups by key.
+3. `parameter_split_groups(params, qualify)` walks a `Parameters` node and splits at the first parameter that does not qualify, used by rules over annotated function signatures.
+4. `line_anchored_member(source, anchor)` builds a `Member` whose `gap` starts at `anchor` and whose `width` measures the leading display column on the line.
+5. `line_anchored_member_at_kind(source, line, kind)` finds the first token of `kind` on `line` and anchors a `Member` at its end.
+6. `range_anchored_member_single_line(source, range, anchor_of)` builds a `Member` whose `width` is the display-column width of `range`'s slice, for left-hand sides that are sub-ranges of one line.
+7. `space_padding_edit(source, range, n)` produces a `Some(Edit)` replacing `range` with `n` spaces, or `None` when the current contents already match.
+8. `is_alignment_candidate(members)` returns `true` when the group has at least two members and every member sits on a distinct line.
 
 ## How the Math Resolves
 
-Aligners always carry a **one-space buffer** between content and the aligned token. The target column for a group is `max(member.width) + 1`. Every row whose existing column falls short of the target gets an `Edit` replacing its `gap` range with the right number of spaces. Rows already at the target stay unchanged.
+Aligners always carry a **one-space buffer** between content and the aligned token. The target column for a group is `max(member.width) + 1`, so every row whose existing column falls short of the target gets an `Edit` replacing its `gap` range with the right number of spaces, and rows already at the target stay unchanged without an edit.
 
 When the widest member exceeds `max_shift`, the policy decides what happens next.
 
-The `split` policy partitions the group into sub-groups of contiguous rows where the within-group widest is under `max_shift`, resolving each sub-group independently. The `drop` policy excludes the widest members from the padding calculation, leaving the group aligned to the widest non-overflow row. The `skip` policy leaves the whole group unaligned, in that no edits emit at all.
+The `split` policy partitions the group into sub-groups of contiguous rows where the within-group widest is under `max_shift`, resolving each sub-group independently. The `drop` policy excludes the widest members from the padding calculation, leaving the group aligned to the widest non-overflow row. The `skip` policy leaves the whole group unaligned, with no edits emitted at all.
 
 Variable-width operators opt in to right-alignment by setting `op_width`, shifting each row's padding inward by `max(op_width) - row.op_width`. The hook is reserved for future comparison-alignment work *(no shipped rule consumes it at the current release)*, but the infrastructure is in place so that adding a comparison-alignment rule lands as a walker plus a knob set, not a from-scratch implementation.
 
 ## Build Pattern
 
-Each alignment rule walks the AST, collects `Vec<Member>` per group, and calls `emit_group(source, &members, settings)`. The walker shapes are rule-specific *(consecutive assignments, dict items, `import` keywords, match-arm patterns)*, because the per-rule definition of *"what counts as a group"* varies. The math afterward is shared.
+Each alignment rule walks the AST, collects `Vec<Member>` per group, and calls `emit_group` once per group against a shared `Vec<Edit>` accumulator. The walker shapes are rule-specific *(consecutive assignments, dict items, `import` keywords, match-arm patterns)*, because the per-rule definition of *"what counts as a group"* varies, but the math afterward is shared across every alignment rule.
+
+A rule's `apply` method takes the canonical shape:
+
+```rust
+fn apply(&self, source: &Source) -> Vec<Edit> {
+    let settings = Settings::from(&self.config);
+    let mut edits = Vec::new();
+    for group in line_adjacent_groups(&items, |item| member_for(source, item)) {
+        if is_alignment_candidate(&group) {
+            emit_group(source, &group, settings, &mut edits);
+        }
+    }
+    edits
+}
+```
+
+`line_adjacent_groups` handles the grouping for the common contiguous-statements shape, with the per-item `member_for` constructor folding through `line_anchored_member` or `line_anchored_member_at_kind` depending on whether the gap anchors at a known offset or at a specific token. `is_alignment_candidate` keeps single-member groups from emitting trivial edits before `emit_group` is even called. `emit_group` itself pushes its per-row edits into the shared accumulator, so the rule never has to thread a returned `Vec<Edit>` per group.
+
+When the alignment context is `:`-shaped *(dict items, class fields, annotated parameters, docstring args, match arms)*, the walker lives in [[colon-targets]] instead. A new colon-shaped rule implements `ColonEmitter`'s `handle` and `dict`/`match_arms` overrides, calls `walk(source)`, and forwards each yielded `&[Member]` slice to `emit_group`.
 
 ## Re-Using This Primitive
 
-Adding a new alignment rule is shaped as *"write the walker that produces `Vec<Member>` groups, then call `emit_group`"*. The padding math, the policy fallbacks, the singleton handling, and the right-alignment hook all carry through without re-implementation.
+Writing a new alignment rule comes down to two steps: build the walker that yields `Vec<Member>` groups, then call `emit_group` per group. The padding math, the policy fallbacks, the singleton handling, and the right-alignment hook all carry through, leaving the rule to focus on its own grouping logic.
 
 <template #related>
 
-- [[align-equals]], [[align-colons]], [[align-imports]], and [[match-case-align]] are the four consumers
-- [[colon-targets]] constructs `Member` lists from every `:` context, consumed by [[align-colons]] and [[singleton-rule]]
-- [[edit]] is the output shape `emit_group` returns
-- [[source]] is the input every alignment walker reads against
+- [[align-equals]], [[align-colons]], [[align-imports]], and [[match-case-align]] are the consumers.
+- [[colon-targets]] constructs `Member` lists from every `:` context, consumed by [[align-colons]] and [[singleton-rule]].
+- [[edit]] is the shape `emit_group` pushes into the caller's accumulator.
+- [[orderer]] composes line-adjacency grouping differently *(by source-range block extents rather than `Member` widths)*, so a rule whose math is reorder-shaped rather than padding-shaped reaches for that primitive instead.
 
 </template>
 

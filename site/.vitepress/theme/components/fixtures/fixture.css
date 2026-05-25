@@ -23,7 +23,7 @@
   background      : transparent;
   font-family     : var(--vp-font-family-mono);
   font-size       : var(--prose-text-meta);
-  letter-spacing  : 0.08em;
+  letter-spacing  : var(--prose-label-tracking-loose);
   text-transform  : uppercase;
   color           : var(--vp-c-text-3);
   cursor          : pointer;

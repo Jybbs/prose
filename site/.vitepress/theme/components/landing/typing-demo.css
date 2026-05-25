@@ -54,13 +54,13 @@
 }
 
 .typing-demo-caret {
-  display          : inline-block;
-  width            : 0.5em;
-  height           : 1.05em;
+  display             : inline-block;
+  width               : 0.5em;
+  height              : 1.05em;
   margin-inline-start : 1px;
-  vertical-align   : text-bottom;
-  background       : var(--prose-c-whiskey);
-  animation        : typing-demo-caret-blink 1s steps(2) infinite;
+  vertical-align      : text-bottom;
+  background          : var(--prose-c-whiskey);
+  animation           : typing-demo-caret-blink 1s steps(2) infinite;
 }
 
 @keyframes typing-demo-caret-blink {
@@ -95,8 +95,3 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .typing-demo-caret {
-    animation: none;
-  }
-}

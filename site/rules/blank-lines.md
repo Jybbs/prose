@@ -14,6 +14,14 @@ Blank lines carry rhythm. They tell the reader where one unit ends and the next 
 
 Module-level `def` and `class` carry two blank lines before them, methods inside a class body carry one, a module-level statement after `if __name__ == "__main__":` carries one, and adjacent bare-import and `from`-import groups carry one between them. Inside function bodies the rule leaves blank-line discipline alone, since the in-body rhythm remains a per-author choice. The import surface sits downstream of [[alphabetize]] (*which orders the entries first*) and [[bare-import-allowlist]] (*which decides which packages keep the bare form*), then this rule lands the blank-line separators between groups, and [[align-imports]] closes the sequence by aligning the `import` keyword.
 
+<template #configuration>
+
+<RuleConfigTable />
+
+The canonical blank-line counts are hard-coded to PEP 8's `2`-between-top-level and `1`-between-methods cadence, so the rule carries `enabled` as its only knob. Projects that want a different cadence can disable the rule and let their editor's blank-line conventions stand.
+
+</template>
+
 <template #canonical-lead>
 
 Two blank lines precede every module-level `def` and `class`, giving the reader's eye an anchor between top-level units.

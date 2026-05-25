@@ -2,7 +2,7 @@ import { defineLoader } from 'vitepress'
 
 import { getRenderer, renderInlineField } from '../lib/markdown/renderer'
 
-export interface ExitCode {
+interface ExitCode {
   code        : number
   detailHtml  : readonly string[]
   label       : string
@@ -43,7 +43,7 @@ const SOURCES: readonly ExitCodeSource[] = [
     code   : 2,
     detail : [
       'Surfaces under both `prose check` and `prose format`.',
-      'The four shipped lints contribute: `legacy-union-syntax`, `loose-constants`, `no-step-narration`, `single-use-variables`.'
+      'The shipped lints contribute: `legacy-union-syntax`, `loose-constants`, `no-step-narration`, `single-use-variables`.'
     ],
     label  : 'Lint violation',
     summary: 'At least one lint-only diagnostic surfaced.'
@@ -52,7 +52,7 @@ const SOURCES: readonly ExitCodeSource[] = [
     code   : 3,
     detail : [
       'Surfaces under both subcommands when `ruff_python_parser` fails on the source.',
-      'The pipeline does not run; no other diagnostics fire.'
+      'The pipeline does not run, leaving no other diagnostics to fire.'
     ],
     label  : 'Parse error',
     summary: 'Input could not be parsed as Python.'
