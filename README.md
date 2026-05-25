@@ -1,6 +1,5 @@
 <div align="center">
-<img src="site/public/title.svg" alt="Prose" width="800">
-<h3><em>A Python typesetter for the reader</em></h3>
+<img src="site/public/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." width="800">
 
 [![Rust](assets/badges/rust.svg)![1.82+](https://img.shields.io/badge/1.82+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
 [![Python](assets/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
