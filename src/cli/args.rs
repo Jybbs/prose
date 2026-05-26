@@ -26,14 +26,16 @@ pub(crate) struct CheckArgs {
     #[arg(long, value_enum, default_value_t)]
     pub(crate) output_format: OutputFormat,
 
-    /// One or more files or directories to check. Omit when using `--stdin`.
+    /// Files or directories to check, or `-` to read source from
+    /// stdin. Omit when using `--stdin`.
     #[arg(conflicts_with = "stdin", value_name = "PATH")]
     pub(crate) paths: Vec<PathBuf>,
 
     #[command(flatten)]
     pub(crate) rules: RuleFilter,
 
-    /// Read source from stdin instead of the filesystem.
+    /// Read source from stdin instead of the filesystem. Equivalent
+    /// to passing `-` as the sole path.
     #[arg(long)]
     pub(crate) stdin: bool,
 }
@@ -81,14 +83,16 @@ pub(crate) struct FormatArgs {
     #[arg(long, value_enum, default_value_t)]
     pub(crate) output_format: OutputFormat,
 
-    /// One or more files or directories to format. Omit when using `--stdin`.
+    /// Files or directories to format, or `-` to read source from
+    /// stdin. Omit when using `--stdin`.
     #[arg(conflicts_with = "stdin", value_name = "PATH")]
     pub(crate) paths: Vec<PathBuf>,
 
     #[command(flatten)]
     pub(crate) rules: RuleFilter,
 
-    /// Read source from stdin instead of the filesystem.
+    /// Read source from stdin instead of the filesystem. Equivalent
+    /// to passing `-` as the sole path.
     #[arg(long)]
     pub(crate) stdin: bool,
 }
@@ -120,6 +124,28 @@ pub(crate) struct RuleFilter {
     /// configured-enabled set.
     #[arg(long, value_delimiter = ',', value_name = "RULES", value_parser = rule_id_parser())]
     pub(crate) select: Vec<RuleId>,
+}
+
+/// Resolves a `-` positional into stdin mode, surfacing a clap
+/// error when `-` appears alongside other paths.
+pub(crate) fn normalize_stdin_dash(cli: &mut Cli) -> Option<clap::Error> {
+    let (paths, stdin) = match &mut cli.command {
+        Command::Check(args) => (&mut args.paths, &mut args.stdin),
+        Command::Completions { .. } => return None,
+        Command::Format(args) => (&mut args.paths, &mut args.stdin),
+    };
+    if !paths.iter().any(|p| p.as_os_str() == "-") {
+        return None;
+    }
+    if paths.len() > 1 {
+        return Some(Cli::command().error(
+            ErrorKind::ArgumentConflict,
+            "`-` cannot appear alongside other paths",
+        ));
+    }
+    paths.clear();
+    *stdin = true;
+    None
 }
 
 /// Prints a clap parse failure and resolves the exit code.
@@ -205,6 +231,15 @@ mod tests {
     }
 
     #[test]
+    fn check_dash_routes_to_stdin() {
+        let mut cli = Cli::try_parse_from(["prose", "check", "-"]).expect("parses");
+        assert!(normalize_stdin_dash(&mut cli).is_none());
+        let args = check_command(cli);
+        assert!(args.paths.is_empty());
+        assert!(args.stdin);
+    }
+
+    #[test]
     fn check_parses_with_no_input_source() {
         let cli = Cli::try_parse_from(["prose", "check"]).expect("parses");
         let args = check_command(cli);
@@ -261,6 +296,19 @@ mod tests {
         let args = check_command(cli);
         assert!(args.paths.is_empty());
         assert!(args.stdin);
+    }
+
+    #[test]
+    fn check_rejects_dash_alongside_other_paths() {
+        let mut cli = Cli::try_parse_from(["prose", "check", "-", "a.py"]).expect("parses");
+        let err = normalize_stdin_dash(&mut cli).expect("dash + path surfaces error");
+        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
+    }
+
+    #[test]
+    fn check_rejects_dash_with_stdin_flag() {
+        let err = Cli::try_parse_from(["prose", "check", "-", "--stdin"]).unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
     }
 
     #[test]
@@ -386,6 +434,15 @@ mod tests {
     }
 
     #[test]
+    fn format_dash_routes_to_stdin() {
+        let mut cli = Cli::try_parse_from(["prose", "format", "-"]).expect("parses");
+        assert!(normalize_stdin_dash(&mut cli).is_none());
+        let args = format_command(cli);
+        assert!(args.paths.is_empty());
+        assert!(args.stdin);
+    }
+
+    #[test]
     fn format_parses_with_diff_and_paths() {
         let cli = Cli::try_parse_from(["prose", "format", "--diff", "a.py"]).expect("parses");
         let args = format_command(cli);
@@ -419,6 +476,19 @@ mod tests {
     }
 
     #[test]
+    fn format_rejects_dash_alongside_other_paths() {
+        let mut cli = Cli::try_parse_from(["prose", "format", "-", "a.py"]).expect("parses");
+        let err = normalize_stdin_dash(&mut cli).expect("dash + path surfaces error");
+        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
+    }
+
+    #[test]
+    fn format_rejects_dash_with_stdin_flag() {
+        let err = Cli::try_parse_from(["prose", "format", "-", "--stdin"]).unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
+    }
+
+    #[test]
     fn format_rejects_diff_with_output_format_github() {
         let cli = Cli::try_parse_from(["prose", "format", "--diff", "--output-format", "github"])
             .expect("parses");
@@ -440,5 +510,20 @@ mod tests {
     fn format_rejects_paths_with_stdin() {
         let err = Cli::try_parse_from(["prose", "format", "--stdin", "a.py"]).unwrap_err();
         assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
+    }
+
+    #[test]
+    fn normalize_stdin_dash_is_noop_for_completions() {
+        let mut cli = Cli::try_parse_from(["prose", "completions", "bash"]).expect("parses");
+        assert!(normalize_stdin_dash(&mut cli).is_none());
+    }
+
+    #[test]
+    fn normalize_stdin_dash_leaves_dashless_paths_untouched() {
+        let mut cli = Cli::try_parse_from(["prose", "check", "a.py", "b/"]).expect("parses");
+        assert!(normalize_stdin_dash(&mut cli).is_none());
+        let args = check_command(cli);
+        assert_eq!(args.paths, [PathBuf::from("a.py"), PathBuf::from("b/")]);
+        assert!(!args.stdin);
     }
 }
