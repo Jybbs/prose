@@ -1,22 +1,24 @@
-name        : 🪁 Deploy
-run-name    : 🪁 Deploy · ${{ github.head_ref || github.ref_name }}
+name        : 🪻 Deploy
+run-name    : 🪻 Deploy · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
 
 on:
   pull_request:
     paths:
-      - 'site/**'
+      - .github/workflows/deploy.yml
+      - .nvmrc
       - bun.lock
       - package.json
-      - .nvmrc
+      - 'site/**'
 
   push:
     branches: [main]
     paths:
-      - 'site/**'
+      - .github/workflows/deploy.yml
+      - .nvmrc
       - bun.lock
       - package.json
-      - .nvmrc
+      - 'site/**'
 
 concurrency:
   cancel-in-progress : ${{ github.event_name == 'pull_request' }}
