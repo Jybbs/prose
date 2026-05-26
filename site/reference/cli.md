@@ -21,7 +21,7 @@ Rewrites Python files to conform to the *Prose* style. Returns exit code 0 once 
 | `--stdin` | bool | off | Read source from stdin and write the rewritten source to stdout |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules, replacing the configured-enabled set |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, subtracting from whichever set would otherwise have run |
-| `PATH...` | one or more paths | required when not `--stdin` | Files or directories to format |
+| `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to format, or `-` to read source from stdin |
 
 Exit codes: `0` clean / rewrites applied, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*.
 
@@ -29,6 +29,7 @@ Exit codes: `0` clean / rewrites applied, `3` parse error, `4` config error *(se
 prose format src/
 prose format --diff src/
 prose format --stdin < module.py
+prose format - < module.py
 prose format --select align-equals,align-colons src/
 ```
 
@@ -57,7 +58,7 @@ Reports violations without modifying source. Returns the canonical [**Exit Codes
 | `--stdin` | bool | off | Read source from stdin instead of the filesystem |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules |
-| `PATH...` | one or more paths | required when not `--stdin` | Files or directories to check |
+| `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to check, or `-` to read source from stdin |
 
 Exit codes: `0` clean, `1` format diagnostics pending, `2` lint diagnostics surfaced, `3` parse error, `4` config error.
 
@@ -66,6 +67,7 @@ prose check .
 prose check --output-format github .
 prose check --output-format sarif . > prose.sarif
 prose check --stdin < module.py
+prose check - < module.py
 ```
 
 ## `prose completions`
@@ -92,7 +94,7 @@ The [**Shell Completions**](/integrations/shell-completions) integration page co
 
 ## Mutual Exclusion
 
-`--stdin` and `PATH...` are mutually exclusive on both `format` and `check`. A run that passes both fails at clap-parse time with exit code 4. `--diff` is mutually exclusive with any non-text `--output-format`, since the diff is itself the text-format presentation.
+`--stdin` and `PATH...` are mutually exclusive on both `format` and `check`. A run that passes both fails at clap-parse time with exit code 4. The `-` positional alias for stdin obeys the same restrictions, in that `prose check - --stdin` and `prose format - a.py` both fail at parse time. `--diff` is mutually exclusive with any non-text `--output-format`, since the diff is itself the text-format presentation.
 
 ## Precedence
 

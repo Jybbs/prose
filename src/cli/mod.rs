@@ -3,9 +3,9 @@
 //! Exposes three subcommands: `check` reports violations without
 //! modifying files, `format` rewrites in place (or prints a unified
 //! diff with `--diff`), and `completions` emits a shell-completion
-//! script. `check` and `format` accept positional paths and a
-//! `--stdin` flag for pipeline use, mutually exclusive via clap's
-//! `conflicts_with`.
+//! script. `check` and `format` accept positional paths, a `-`
+//! positional alias for stdin, and a `--stdin` flag, all mutually
+//! exclusive.
 //!
 //! Path mode parallelizes across files via `rayon`. Set
 //! `RAYON_NUM_THREADS=1` to force single-threaded execution when
@@ -28,7 +28,9 @@ mod args;
 mod exit_status;
 mod runner;
 
-use args::{report_clap_error, validate_diff_format_combination, Cli, Command};
+use args::{
+    normalize_stdin_dash, report_clap_error, validate_diff_format_combination, Cli, Command,
+};
 use exit_status::ExitStatus;
 
 pub(super) fn log_error_chain(err: &anyhow::Error) {
@@ -39,10 +41,13 @@ pub(super) fn log_error_chain(err: &anyhow::Error) {
 }
 
 pub fn run() -> ExitCode {
-    let cli = match Cli::try_parse() {
+    let mut cli = match Cli::try_parse() {
         Ok(cli) => cli,
         Err(err) => return report_clap_error(err),
     };
+    if let Some(err) = normalize_stdin_dash(&mut cli) {
+        return report_clap_error(err);
+    }
     if let Some(err) = validate_diff_format_combination(&cli) {
         return report_clap_error(err);
     }
