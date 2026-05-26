@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 #MISE description="Produce the static docs bundle at `site/.vitepress/dist`"
 
+bun install --frozen-lockfile
 bunx vitepress build site
