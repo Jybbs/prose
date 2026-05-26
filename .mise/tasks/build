@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Build the `prose` binary in debug mode"
+
+cargo build --all-targets --locked

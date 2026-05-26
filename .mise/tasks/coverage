@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Generate an LCOV coverage report at `target/lcov.info`"
+#MISE tools={"aqua:taiki-e/cargo-llvm-cov" = "latest"}
+
+cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info

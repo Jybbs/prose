@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Detect unused dependencies in `Cargo.toml`"
+#MISE tools={"github:bnjbvr/cargo-machete" = "latest"}
+
+cargo machete

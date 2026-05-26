@@ -9,6 +9,9 @@ Render a Prose step summary and gate the workflow's exit code.
 Subcommands:
     ci       Render the CI gate summary. Reads `CHECK` plus the
              GitHub-runner defaults. Exits 0 when `CHECK` is success.
+    deploy   Render the Deploy gate summary. Reads `DEPLOY` and `URL`
+             plus the GitHub-runner defaults. Exits 0 when `DEPLOY` is
+             success.
     draft    Render the Draft summary. Reads `DRAFT_URL` and
              `VERSION`, plus the GitHub-runner defaults.
     release  Render the Release gate summary. Reads `BUILD`, `SDIST`,
@@ -73,6 +76,18 @@ class Summary:
         )
         raise SystemExit(failed)
 
+    def deploy(self):
+        """
+        Render the Deploy gate summary and exit with the deploy verdict.
+        """
+        failed = environ["DEPLOY"] != "success"
+        self._emit(
+            "deploy-summary.md.j2",
+            check_mark = "❌" if failed else "✅",
+            url        = environ.get("URL", "")
+        )
+        raise SystemExit(failed)
+
     def draft(self):
         """
         Render the Draft summary, either the cut URL or the no-bump no-op.
@@ -117,6 +132,6 @@ class Summary:
 
 if __name__ == "__main__":
 
-    if (cmd := argv[1]) not in {"ci", "draft", "release"}:
+    if (cmd := argv[1]) not in {"ci", "deploy", "draft", "release"}:
         raise SystemExit(f"unknown subcommand: {cmd}")
     getattr(Summary(), cmd)()

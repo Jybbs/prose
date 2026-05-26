@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Interactively review pending snapshot diffs"
+#MISE tools={cargo-insta = "latest"}
+
+cargo insta review

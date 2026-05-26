@@ -1,5 +1,5 @@
 name        : Build wheel
-description : Provisions cargo via the shared `provision-cargo` action, runs `maturin-action`, and uploads the resulting artifact. Cache scope is keyed by `name`, so `warm.yml` populating `prose-wheel-<name>` on main pushes warms subsequent PR and tag runs that build the same target. Caller must check out the repo and rewrite the README before invoking this composite.
+description : Provisions Cargo via the shared `provision-cargo` action, runs `maturin-action`, and uploads the resulting artifact. Cache scope is keyed by `name`, so `warm.yml` populating `prose-wheel-<name>` on main pushes warms subsequent PR and tag runs that build the same target. Caller must check out the repo and rewrite the README before invoking this composite.
 
 inputs:
   command:
@@ -29,7 +29,7 @@ runs:
   using: composite
 
   steps:
-    - name : Provision cargo
+    - name : Provision Cargo
       uses : ./.github/actions/provision-cargo
       with:
         shared-key: prose-wheel-${{ inputs.name }}

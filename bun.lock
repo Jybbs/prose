@@ -4,18 +4,15 @@
   "workspaces": {
     "": {
       "name": "prose",
-      "dependencies": {
-        "shiki-magic-move": "^1.3.2",
-      },
       "devDependencies": {
         "@fontsource-variable/fraunces": "^5.2.9",
         "@fontsource-variable/jetbrains-mono": "^5.2.8",
         "@fontsource-variable/lora": "^5.2.8",
         "@vueuse/core": "^14.3.0",
-        "ap-style-title-case": "^2.0.0",
         "floating-vue": "^5.2.2",
         "gray-matter": "^4.0.3",
         "postcss-custom-media": "^12.0.1",
+        "shiki-magic-move": "^1.3.2",
         "smol-toml": "^1.6.1",
         "vitepress": "^1.6.0",
         "vitepress-plugin-group-icons": "^1.7.5",
@@ -273,8 +270,6 @@
     "@vueuse/shared": ["@vueuse/shared@14.3.0", "", { "peerDependencies": { "vue": "^3.5.0" } }, "sha512-bZpge9eSXwa4ToSiqJ7j6KRwhAsneMFoSz3LMWKQDkqimm3D/tbFlrklrs/IOqC8tEcYmXQZJ6N0UrjhBirVCg=="],
 
     "algoliasearch": ["algoliasearch@5.52.1", "", { "dependencies": { "@algolia/abtesting": "1.18.1", "@algolia/client-abtesting": "5.52.1", "@algolia/client-analytics": "5.52.1", "@algolia/client-common": "5.52.1", "@algolia/client-insights": "5.52.1", "@algolia/client-personalization": "5.52.1", "@algolia/client-query-suggestions": "5.52.1", "@algolia/client-search": "5.52.1", "@algolia/ingestion": "1.52.1", "@algolia/monitoring": "1.52.1", "@algolia/recommend": "5.52.1", "@algolia/requester-browser-xhr": "5.52.1", "@algolia/requester-fetch": "5.52.1", "@algolia/requester-node-http": "5.52.1" } }, "sha512-fHA8+kXTbjagw3jkLiaS7KKrH8qe2DyOsiUhGlN4cdT77PEsfqXZl7ewDk1hsg+pJnPlnE50XtLxjR91iJOpmg=="],
-
-    "ap-style-title-case": ["ap-style-title-case@2.0.0", "", {}, "sha512-8vCoCer8ZTXjvCK+JQLU0YW0EWI+70lyP9Q33mafLG0VRT7UY1BHoDq7WzaQYwzh9t+eG94tEJuVHrEDcRP1Fg=="],
 
     "argparse": ["argparse@1.0.10", "", { "dependencies": { "sprintf-js": "~1.0.2" } }, "sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg=="],
 

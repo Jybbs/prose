@@ -37,6 +37,12 @@ jobs:
             command    : mise run check
             name       : 🪶 Format
           - cache      : false
+            command    : mise run lockfile
+            name       : 🪵 Lockfile
+          - cache      : false
+            command    : ./.github/scripts/audit-parity.py
+            name       : 🪷 Parity
+          - cache      : false
             command    : mise run audit
             name       : 🪓 Unused
           - command    : mise run lint
@@ -56,7 +62,7 @@ jobs:
       - name : Check out repository
         uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name : Provision cargo
+      - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
         with:
           cache      : ${{ matrix.cache }}

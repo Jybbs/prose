@@ -1,0 +1,21 @@
+name        : Provision bun with a warm dep cache
+description : Restore `~/.bun/install/cache` and `node_modules` keyed off `bun.lock` so subsequent `bun install --frozen-lockfile` invocations skip the resolve and link work. Assumes bun is already on PATH from an earlier `provision-cargo` or `jdx/mise-action` step.
+
+inputs:
+  cache-dependency-glob:
+    default     : bun.lock
+    description : Files whose hash keys the bun deps cache. Empty disables the cache.
+    required    : false
+
+runs:
+  using: composite
+
+  steps:
+    - name : Restore bun cache
+      if   : ${{ inputs.cache-dependency-glob != '' }}
+      uses : actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+      with:
+        key  : bun-deps-${{ runner.os }}-${{ hashFiles(inputs.cache-dependency-glob) }}
+        path : |
+          ~/.bun/install/cache
+          node_modules

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+#MISE description="Full local CI sweep"
+#MISE depends=["audit", "check", "lint", "lockfile", "test", "wheel"]
