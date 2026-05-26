@@ -15,6 +15,30 @@ use unicode_width::UnicodeWidthStr;
 use crate::config::{AlignmentConfig, MaxAlignShiftPolicy};
 use crate::source::Source;
 
+/// Bundles the `edits` accumulator, `settings`, and borrowed `source`
+/// shared by every alignment-rule visitor.
+pub(crate) struct AlignWalker<'a> {
+    pub edits: Vec<Edit>,
+    pub settings: Settings,
+    pub source: &'a Source,
+}
+
+impl<'a> AlignWalker<'a> {
+    /// Builds a walker with an empty `edits` accumulator.
+    pub(crate) fn new(source: &'a Source, settings: Settings) -> Self {
+        Self {
+            edits: Vec::new(),
+            settings,
+            source,
+        }
+    }
+
+    /// Emits alignment edits for `members`.
+    pub(crate) fn emit_group(&mut self, members: &[Member]) {
+        emit_group(self.source, members, self.settings, &mut self.edits);
+    }
+}
+
 /// One row in an alignment group.
 ///
 /// `width` is the display-column width of the row's left-hand-side
