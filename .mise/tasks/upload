@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#MISE description="Generate `target/lcov.info` and upload it to Codecov"
+#MISE depends=["coverage"]
+#MISE tools={"pipx:codecov-cli" = "latest"}
+
+codecovcli upload-process --file target/lcov.info --sha "$SHA"

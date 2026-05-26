@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Run `clippy` with all warnings treated as errors"
+
+cargo clippy --all-targets --locked -- -D warnings

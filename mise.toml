@@ -1,79 +1,11 @@
-# ============================================================================
-# Project tool environment
-# ============================================================================
+[settings]
+idiomatic_version_file_enable_tools = ["node"]
+python.uv_venv_auto                 = "create|source"
+task.source_freshness_hash_contents = true
 
 [tools]
 bun     = "latest"
 maturin = "latest"
-node    = "lts"
 python  = "3.14"
 rust    = { version = "stable", components = "llvm-tools-preview" }
 uv      = "latest"
-
-[settings]
-python.uv_venv_auto = "create|source"
-
-# ============================================================================
-# Tasks
-# ============================================================================
-
-[tasks.audit]
-description = "Detect unused dependencies in `Cargo.toml`"
-tools       = { "github:bnjbvr/cargo-machete" = "latest" }
-run         = "cargo machete"
-
-[tasks.build]
-description = "Build the `prose` binary in debug mode"
-run         = "cargo build --all-targets --locked"
-
-[tasks.check]
-description = "Verify Rust source matches `rustfmt` without rewriting"
-run         = "cargo fmt --all --check"
-
-[tasks.ci]
-depends     = ["audit", "check", "lint", "test", "wheel"]
-description = "Full local CI: `audit`, `check`, `lint`, `test`, `wheel`"
-
-[tasks.coverage]
-description = "Generate an LCOV coverage report at `target/lcov.info`"
-tools       = { "aqua:taiki-e/cargo-llvm-cov" = "latest" }
-run         = "cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info"
-
-[tasks.format]
-description = "Format Rust source with `rustfmt`"
-run         = "cargo fmt --all"
-
-[tasks.lint]
-description = "Run `clippy` with all warnings treated as errors"
-run         = "cargo clippy --all-targets --locked -- -D warnings"
-
-[tasks.press]
-description = "Produce the static docs bundle at `site/.vitepress/dist`"
-run         = "bunx vitepress build site"
-
-[tasks.readme]
-description = "Rewrite `README.md` in place to absolute URLs for PyPI"
-run         = "./.github/scripts/transform_readme.py"
-
-[tasks.review]
-description = "Interactively review pending snapshot diffs"
-tools       = { cargo-insta = "latest" }
-run         = "cargo insta review"
-
-[tasks.site]
-description = "Run the VitePress dev server against `site/`"
-run         = "bunx vitepress dev site"
-
-[tasks.test]
-description = "Run all tests including `insta` snapshots"
-run         = "cargo test --locked"
-
-[tasks.upload]
-depends     = ["coverage"]
-description = "Generate `target/lcov.info` and upload it to Codecov"
-tools       = { "pipx:codecov-cli" = "latest" }
-run         = "codecovcli upload-process --file target/lcov.info --sha \"$SHA\""
-
-[tasks.wheel]
-description = "Build the `maturin` wheel into the active virtualenv"
-run         = "maturin develop"

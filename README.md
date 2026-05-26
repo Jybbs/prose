@@ -397,11 +397,12 @@ Tasks live in `mise.toml`. GitHub Actions drives most of them across the CI work
 | `mise audit` | Detect unused dependencies via `cargo machete` |
 | `mise build` | Compile in debug mode |
 | `mise check` | Verify Rust source matches `rustfmt` without rewriting |
-| `mise ci` | Full local sweep: `audit`, `check`, `lint`, `test`, `wheel` |
+| `mise ci` | Full local sweep across every gate |
 | `mise coverage` | Generate an LCOV coverage report at `target/lcov.info` |
 | `mise format` | Format Rust source with `rustfmt` |
 | `mise lint` | Run `clippy` with all warnings as errors |
-| `mise readme` | Rewrite `README.md` in place to absolute URLs for PyPI |
+| `mise lockfile` | Verify `bun.lock`, `Cargo.lock`, and `uv.lock` are in sync with their manifests |
+| `mise relock` | Re-resolve every lockfile against its manifest |
 | `mise review` | Interactively review pending snapshot diffs |
 | `mise test` | Run all tests including `insta` snapshots |
 | `mise upload` | Generate the coverage report and upload it to Codecov |

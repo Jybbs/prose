@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Produce the static docs bundle at `site/.vitepress/dist`"
+
+bunx vitepress build site

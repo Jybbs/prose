@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Verify Rust source matches `rustfmt` without rewriting"
+
+cargo fmt --all --check

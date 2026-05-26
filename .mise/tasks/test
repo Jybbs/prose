@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Run all tests including `insta` snapshots"
+
+cargo test --locked

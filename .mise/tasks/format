@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Format Rust source with `rustfmt`"
+
+cargo fmt --all
