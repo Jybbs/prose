@@ -35,12 +35,10 @@ impl AlignEquals {
 impl Rule for AlignEquals {
     fn apply(&self, source: &Source) -> Vec<Edit> {
         let mut visitor = Visitor {
-            edits: Vec::new(),
-            settings: self.settings,
-            source,
+            walker: aligner::AlignWalker::new(source, self.settings),
         };
         visitor.visit_body(&source.ast().body);
-        visitor.edits
+        visitor.walker.edits
     }
 
     fn id(&self) -> RuleId {
@@ -49,9 +47,7 @@ impl Rule for AlignEquals {
 }
 
 struct Visitor<'a> {
-    edits: Vec<Edit>,
-    settings: aligner::Settings,
-    source: &'a Source,
+    walker: aligner::AlignWalker<'a>,
 }
 
 impl Visitor<'_> {
@@ -59,7 +55,7 @@ impl Visitor<'_> {
     /// the search range running from `target.end()` to `value_start`.
     fn equal_member(&self, target: TextRange, value_start: TextSize) -> Option<aligner::Member> {
         aligner::range_anchored_member_single_line(
-            self.source,
+            self.walker.source,
             target,
             TextRange::new(target.end(), value_start),
             |t| t.kind() == TokenKind::Equal,
@@ -68,8 +64,9 @@ impl Visitor<'_> {
     }
 
     fn process_body(&mut self, body: &[Stmt]) {
-        for members in aligner::line_adjacent_groups(self.source, body, |s| self.qualify(s)) {
-            aligner::emit_group(self.source, &members, self.settings, &mut self.edits);
+        for members in aligner::line_adjacent_groups(self.walker.source, body, |s| self.qualify(s))
+        {
+            self.walker.emit_group(&members);
         }
     }
 
@@ -79,7 +76,7 @@ impl Visitor<'_> {
     fn process_parameters(&mut self, params: &Parameters) {
         for members in aligner::parameter_split_groups(params, |p| self.qualify_parameter(p)) {
             if aligner::is_alignment_candidate(&members) {
-                aligner::emit_group(self.source, &members, self.settings, &mut self.edits);
+                self.walker.emit_group(&members);
             }
         }
     }
@@ -109,7 +106,7 @@ impl Visitor<'_> {
             Stmt::AugAssign(a) => {
                 let target_range = a.target.range();
                 aligner::range_anchored_member_single_line(
-                    self.source,
+                    self.walker.source,
                     target_range,
                     TextRange::new(target_range.end(), a.value.start()),
                     |t| t.kind().as_augmented_assign_operator().is_some(),
