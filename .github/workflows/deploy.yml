@@ -55,7 +55,7 @@ jobs:
         with:
           accountId : ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           apiToken  : ${{ secrets.CLOUDFLARE_TOKEN }}
-          command   : pages deploy site/.vitepress/dist --project-name=prose-4e1 --branch=${{ github.head_ref || github.ref_name }}
+          command   : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ github.head_ref || github.ref_name }}
 
   gate:
     name    : 🗞️ Brief
