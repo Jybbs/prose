@@ -1,0 +1,72 @@
+name        : 🪁 Deploy
+run-name    : 🪁 Deploy · ${{ github.head_ref || github.ref_name }}
+permissions : { contents: read }
+
+on:
+  pull_request:
+    paths:
+      - 'site/**'
+      - bun.lock
+      - package.json
+      - .nvmrc
+
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - bun.lock
+      - package.json
+      - .nvmrc
+
+concurrency:
+  cancel-in-progress : ${{ github.event_name == 'pull_request' }}
+  group              : ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+
+jobs:
+  deploy:
+    name        : 🪁 Deploy
+    outputs     : { url: "${{ steps.publish.outputs.deployment-url }}" }
+    permissions : { contents: read, deployments: write }
+    runs-on     : ubuntu-latest
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision mise
+        uses : jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+        with:
+          cache      : true
+          cache_save : false
+
+      - name : Build the site
+        run  : mise run press
+
+      - name : Deploy to Cloudflare Pages
+        id   : publish
+        uses : cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
+        with:
+          accountId : ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken  : ${{ secrets.CLOUDFLARE_TOKEN }}
+          command   : pages deploy site/.vitepress/dist --project-name=prose-4e1 --branch=${{ github.head_ref || github.ref_name }}
+
+  gate:
+    name    : 🗞️ Brief
+    if      : always()
+    needs   : deploy
+    runs-on : ubuntu-latest
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+
+      - name : Summarize and gate
+        env:
+          DEPLOY : ${{ needs.deploy.result }}
+          REF    : ${{ github.head_ref || github.ref_name }}
+          SHA    : ${{ github.event.pull_request.head.sha || github.sha }}
+          URL    : ${{ needs.deploy.outputs.url }}
+        run  : ./.github/scripts/summary.py deploy
