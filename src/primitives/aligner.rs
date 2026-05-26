@@ -1,8 +1,8 @@
 //! Computes padding widths and emits alignment edits for rules that
-//! align a shared token across a group of lines. `emit_group` is the
-//! entry point. Per-rule knobs travel through `Settings`. Aligned
-//! rows always carry a one-space buffer between content and the
-//! aligned token.
+//! align a shared token across a group of lines. Each rule wraps an
+//! `AlignWalker` whose `emit_group` method drives the math. Per-rule
+//! knobs travel through `Settings`. Aligned rows always carry a
+//! one-space buffer between content and the aligned token.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::{Token, TokenKind};
@@ -33,7 +33,6 @@ impl<'a> AlignWalker<'a> {
         }
     }
 
-    /// Emits alignment edits for `members`.
     pub(crate) fn emit_group(&mut self, members: &[Member]) {
         emit_group(self.source, members, self.settings, &mut self.edits);
     }
@@ -94,42 +93,6 @@ impl From<&AlignmentConfig> for Settings {
             policy: c.max_shift_policy,
             strip_singleton_subgroup: false,
         }
-    }
-}
-
-/// Aligns the members of a group, dispatching through `settings.policy`
-/// when the widest padding exceeds `settings.max_shift`. A singleton
-/// group collapses its gap to one space, or to zero when
-/// `settings.strip_singleton_subgroup` is set, matching the
-/// singleton-from-split treatment in `emit_split`.
-pub(crate) fn emit_group(
-    source: &Source,
-    members: &[Member],
-    settings: Settings,
-    edits: &mut Vec<Edit>,
-) {
-    let Some(first) = members.first() else {
-        return;
-    };
-    let (min_w, max_w) = members
-        .iter()
-        .fold((first.width, first.width), |(mn, mx), m| {
-            (mn.min(m.width), mx.max(m.width))
-        });
-    let max_op_w = max_op_width(members);
-    if max_w - min_w <= settings.max_shift {
-        let suffix = if members.len() == 1 && settings.strip_singleton_subgroup {
-            0
-        } else {
-            1
-        };
-        emit_with_paddings(source, members, max_w, max_op_w, suffix, edits);
-        return;
-    }
-    match settings.policy {
-        MaxAlignShiftPolicy::Drop => emit_drop(source, members, settings, edits),
-        MaxAlignShiftPolicy::Skip => {}
-        MaxAlignShiftPolicy::Split => emit_split(source, members, settings, edits),
     }
 }
 
@@ -304,6 +267,37 @@ fn emit_drop(source: &Source, members: &[Member], settings: Settings, edits: &mu
     }
     let max_w = kept.last().expect("kept non-empty").width;
     emit_with_paddings(source, kept, max_w, max_op_width(kept), 1, edits);
+}
+
+/// Aligns the members of a group, dispatching through `settings.policy`
+/// when the widest padding exceeds `settings.max_shift`. A singleton
+/// group collapses its gap to one space, or to zero when
+/// `settings.strip_singleton_subgroup` is set, matching the
+/// singleton-from-split treatment in `emit_split`.
+fn emit_group(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>) {
+    let Some(first) = members.first() else {
+        return;
+    };
+    let (min_w, max_w) = members
+        .iter()
+        .fold((first.width, first.width), |(mn, mx), m| {
+            (mn.min(m.width), mx.max(m.width))
+        });
+    let max_op_w = max_op_width(members);
+    if max_w - min_w <= settings.max_shift {
+        let suffix = if members.len() == 1 && settings.strip_singleton_subgroup {
+            0
+        } else {
+            1
+        };
+        emit_with_paddings(source, members, max_w, max_op_w, suffix, edits);
+        return;
+    }
+    match settings.policy {
+        MaxAlignShiftPolicy::Drop => emit_drop(source, members, settings, edits),
+        MaxAlignShiftPolicy::Skip => {}
+        MaxAlignShiftPolicy::Split => emit_split(source, members, settings, edits),
+    }
 }
 
 /// Partitions greedily into sub-groups capped at `settings.max_shift`

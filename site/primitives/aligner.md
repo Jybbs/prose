@@ -2,7 +2,7 @@
 
 <PrimitiveLayout primitive="aligner">
 
-*Aligner* computes padding widths and emits the alignment edits that every alignment rule consumes. Four rules ([[align-equals]], [[align-colons]], [[align-imports]], [[match-case-align]]) share the same column-resolution math, so the math lives once in *Aligner* and each rule supplies a member list plus a knob-set rather than re-implementing the resolution from scratch.
+*Aligner* computes padding widths and emits the alignment edits that every alignment rule consumes. The shipped consumers ([[align-colons]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[match-case-align]]) share the same column-resolution math, so the math lives once in *Aligner* and each rule supplies a member list plus a knob-set rather than re-implementing the resolution from scratch.
 
 
 ## Public Surface
@@ -89,7 +89,7 @@ Writing a new alignment rule comes down to wrapping an `AlignWalker` in a visito
 
 <template #related>
 
-- [[align-equals]], [[align-colons]], [[align-imports]], and [[match-case-align]] are the consumers.
+- [[align-colons]], [[align-comparisons]], [[align-equals]], [[align-imports]], and [[match-case-align]] are the consumers.
 - [[colon-targets]] constructs `Member` lists from every `:` context, consumed by [[align-colons]] and [[singleton-rule]].
 - [[edit]] is the shape `emit_group` pushes into the caller's accumulator.
 - [[orderer]] composes line-adjacency grouping differently *(by source-range block extents rather than `Member` widths)*, so a rule whose math is reorder-shaped rather than padding-shaped reaches for that primitive instead.
