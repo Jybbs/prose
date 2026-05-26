@@ -1,19 +1,11 @@
 //! Coverage checks pairing the docs site at `site/` with the live
 //! rule registry, the primitive surface, and the fixture catalog.
 
-use std::{fs, path::Path};
+use std::{collections::BTreeSet, fs, path::Path};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
 use prose::pipeline::Pipeline;
 use regex_lite::Regex;
-
-const PRIMITIVE_PAGES: &[&str] = &[
-    "binding-analysis",
-    "pipeline",
-    "rule-id",
-    "source",
-    "suppression-map",
-];
 
 #[test]
 fn every_fixture_invocation_resolves() {
@@ -74,23 +66,21 @@ fn every_registered_rule_has_a_page() {
 }
 
 #[test]
-fn every_spec_primitive_has_a_page() {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("site/primitives");
+fn every_registered_primitive_has_a_page() {
+    let root       = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let registries = fs::read_to_string(root.join("site/.vitepress/lib/shared/registries.ts")).unwrap();
+    let block      = registries
+        .split_once("PRIMITIVES = {").unwrap().1
+        .split_once("} as const").unwrap().0;
 
-    let mut found: Vec<String> = fs::read_dir(&dir)
-        .unwrap()
-        .filter_map(Result::ok)
-        .filter_map(|entry| entry.file_name().to_str().map(String::from))
-        .filter(|name| name.ends_with(".md") && name != "index.md")
-        .map(|name| name.strip_suffix(".md").unwrap().to_string())
+    let expected: BTreeSet<String> = Regex::new(r#"['"]([a-z-]+)['"]\s*:"#).unwrap()
+        .captures_iter(block).map(|c| c[1].to_string()).collect();
+
+    let found: BTreeSet<String> = fs::read_dir(root.join("site/primitives")).unwrap()
+        .flatten()
+        .filter_map(|e| Some(e.file_name().into_string().ok()?.strip_suffix(".md")?.to_owned()))
+        .filter(|n| n != "index")
         .collect();
-    found.sort();
 
-    let mut expected: Vec<String> = PRIMITIVE_PAGES.iter().map(|s| s.to_string()).collect();
-    expected.sort();
-
-    assert_eq!(
-        found, expected,
-        "site/primitives/ does not match PRIMITIVE_PAGES"
-    );
+    assert_eq!(found, expected, "site/primitives/ != PRIMITIVES registry");
 }
