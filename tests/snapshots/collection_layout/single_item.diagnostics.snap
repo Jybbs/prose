@@ -3,6 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/collection_layout/single_item.input.py
 ---
-collection-layout@602..632
-collection-layout@662..670
-collection-layout@697..698
+collection-layout@628..658
+collection-layout@688..696
+collection-layout@723..724
+collection-layout@817..817

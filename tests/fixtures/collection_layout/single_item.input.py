@@ -3,10 +3,10 @@ Single-item and empty literals keep their inline form regardless of
 line length. A multi-line single-item literal collapses to its
 canonical inline form, the spec's `SETTINGS = {"default_action":
 "noop"}` case being the most reduced. Empty literals spread across
-multiple lines collapse to their bare-bracket form. A multi-line
-single-item literal whose inline form overflows stays multi-line
-because the rule's expand path only canonicalizes multi-item
-collections.
+multiple lines collapse to their bare-bracket form. A single-entry
+dict whose entry overflows at the item-indent column breaks at `:`
+and hangs the value at `item_indent + INDENT_STEP`. Single-item
+lists and sets stay multi-line.
 """
 
 only_list  = [42]
@@ -23,5 +23,5 @@ collapsing_one_item_list = [
 collapsing_empty_dict = {
 }
 oversized_one_entry_dict = {
-    "extremely_long_configuration_key_for_the_settings_table": "a_descriptive_value"
+    "extremely_long_configuration_key_for_the_settings_table": "a_descriptive_value_long_enough_to_force_hang_shape"
 }
