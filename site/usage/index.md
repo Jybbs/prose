@@ -36,7 +36,7 @@ The invocation shapes below cover almost every run, with an additional shape for
 
 **Read source from stdin and write to stdout.** The shape an editor save reaches for, with the [**Editor**](/integrations/editor) integration covering the LSP and save-hook paths.
 
-<aside class="pq-aside"><code>prose format --stdin</code></aside>
+<aside class="pq-aside"><code>prose format -</code></aside>
 
 </div>
 
