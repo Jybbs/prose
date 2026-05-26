@@ -40,6 +40,7 @@ prose format path/                          # rewrite files in place
 prose check path/                           # exit non-zero on violations
 prose format --diff path/                   # show the diff without writing
 prose check --stdin < file.py               # read from stdin
+prose format - < file.py                    # `-` reads from stdin too
 ```
 
 Subset the active rules with `--select` and `--ignore`:
@@ -309,6 +310,8 @@ CI gates compile against the [exit-code matrix](#-exit-codes) above. A non-zero 
 ### Editor
 
 Any editor that supports run-on-save (*VSCode's `runOnSave`, Vim's `autocmd BufWritePost`, JetBrains File Watchers*) can shell out to `prose format <file>`. For editors that consume structured diagnostics, `prose check --output-format json --stdin` emits one [Ruff-shaped](https://docs.astral.sh/ruff/configuration/#output-format) record per line.
+
+Both subcommands accept a `-` positional in place of `--stdin`, so `prose format - < file.py` and `prose check - < file.py` read source from stdin without naming the flag. The dash is the conventional shape for run-on-save hooks and pre-commit pipelines.
 
 ### Pre-Commit
 
