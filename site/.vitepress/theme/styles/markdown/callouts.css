@@ -1,0 +1,55 @@
+.vp-doc .custom-block {
+  position : relative;
+  margin   : 1.5rem 0;
+  padding  : 16px 18px 16px 22px;
+  overflow : hidden;
+}
+
+.vp-doc .custom-block::before {
+  content  : "";
+  position : absolute;
+  top      : 0;
+  left     : 0;
+  width    : 3px;
+  height   : 100%;
+}
+
+.vp-doc .custom-block.tip {
+  border-color: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-strong), var(--vp-c-divider));
+}
+
+.vp-doc .custom-block.tip::before {
+  background: var(--vp-c-brand-1);
+}
+
+.vp-doc .custom-block.warning::before {
+  background: var(--prose-c-warning);
+}
+
+.vp-doc .custom-block.danger::before {
+  background: var(--prose-c-error);
+}
+
+.vp-doc .custom-block.info::before {
+  background: var(--prose-c-accent);
+}
+
+.vp-doc .custom-block.tip.family-alignment::before {
+  background: var(--prose-family-alignment);
+}
+
+.vp-doc .custom-block.tip.family-engine::before {
+  background: var(--prose-family-engine);
+}
+
+.vp-doc .custom-block.tip.family-formatting::before {
+  background: var(--prose-family-formatting);
+}
+
+.vp-doc .custom-block.tip.family-lint::before {
+  background: var(--prose-family-lint);
+}
+
+.vp-doc .custom-block.tip.family-ordering::before {
+  background: var(--prose-family-ordering);
+}

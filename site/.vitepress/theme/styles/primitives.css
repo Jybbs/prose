@@ -1,0 +1,65 @@
+.vp-doc .custom-block {
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg-soft);
+}
+
+.vp-doc .custom-block-title,
+.vp-doc th {
+  font-weight : 700;
+  color       : var(--vp-c-text-2);
+}
+
+.glossary-tooltip-title,
+.not-found-headline {
+  font-family : var(--prose-font-display);
+}
+
+.not-found-headline {
+  font-style : italic;
+}
+
+.fixture-pair-arrow {
+  display     : grid;
+  place-items : center;
+}
+
+.landing-definition-leader,
+.landing-cta-ledger-leader,
+.exit-code-index-leader {
+  align-self    : end;
+  border-bottom : 1px dotted color-mix(in srgb, var(--vp-c-text-3) 50%, transparent);
+  height        : 0;
+  margin-block  : 0;
+}
+
+.exit-code-entry-summary :where(code),
+.exit-code-entry-details :where(code),
+.glossary-tooltip-body code,
+.rule-card-caption :where(code) {
+  padding       : 2px 6px;
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
+}
+
+.v-popper--theme-glossary .v-popper__inner {
+  border        : 2px solid color-mix(in srgb, var(--tooltip-accent) 55%, var(--vp-c-divider));
+  border-top    : 3px solid var(--tooltip-accent);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg);
+  box-shadow    : var(--prose-shadow-tooltip);
+}
+
+.v-popper--theme-glossary { --tooltip-accent : var(--prose-c-celadon); }
+
+.typing-demo-label {
+  position       : absolute;
+  bottom         : 6px;
+  right          : 10px;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-kicker-size-sm);
+  letter-spacing : var(--prose-meta-tracking);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+  opacity        : 0.55;
+}

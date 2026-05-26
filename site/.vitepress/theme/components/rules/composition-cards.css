@@ -1,0 +1,80 @@
+/* Composition-specific add-ons over the shared .fixture-card chrome.
+   Each row carries a folio number in place of a caret, a top-to-bottom
+   gradient rail through every rule's family color in pipeline order,
+   and a row of specimen-style rule chips inside the open body that
+   echo the rule chips on the Rules page. */
+
+.vp-doc .composition-cards-list,
+.composition-cards-list {
+  list-style     : none;
+  margin         : 0;
+  padding        : 0;
+  display        : flex;
+  flex-direction : column;
+  gap            : 8px;
+}
+
+.composition-cards-list .fixture-card:hover {
+  border-color : transparent;
+  background   :
+    linear-gradient(var(--vp-c-bg-soft), var(--vp-c-bg-soft)) padding-box,
+    var(--rail-paint) border-box;
+}
+
+.composition-cards-list .fixture-card.is-open:hover {
+  background :
+    linear-gradient(var(--vp-c-bg), var(--vp-c-bg)) padding-box,
+    var(--rail-paint) border-box;
+}
+
+.vp-doc .composition-cards-list > li,
+.composition-cards-list > li {
+  margin               : 0;
+  padding-inline-start : 0;
+  list-style           : none;
+}
+
+.vp-doc .composition-cards-list > li + li {
+  margin-top : 0;
+}
+
+.vp-doc .composition-cards-rule-bar,
+.composition-cards-rule-bar {
+  display    : flex;
+  flex-wrap  : wrap;
+  gap        : 6px;
+  list-style : none;
+  margin     : 0 0 10px;
+  padding    : 0;
+  isolation  : isolate;
+}
+
+.vp-doc .composition-cards-rule-bar > li,
+.composition-cards-rule-bar > li {
+  position             : relative;
+  margin               : 0;
+  padding-inline-start : 0;
+  list-style           : none;
+}
+
+.vp-doc .composition-cards-rule-bar > li + li {
+  margin-top : 0;
+}
+
+.vp-doc a.composition-cards-rule-chip,
+.composition-cards-rule-chip {
+  gap         : 6px;
+  padding     : 3px 9px;
+  line-height : 1.2;
+  color       : var(--vp-c-text-2);
+}
+
+.composition-cards-rule-num {
+  font-variant-numeric : tabular-nums;
+  font-size            : 0.6rem;
+  color                : var(--vp-c-text-3);
+}
+
+.composition-cards-rule-slug {
+  color : var(--family-color, var(--vp-c-text-1));
+}

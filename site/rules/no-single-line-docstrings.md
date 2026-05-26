@@ -1,0 +1,43 @@
+---
+category : auto-fix
+family   : docs
+caption  : "rewrites single-line docstrings into the multi-line form."
+related  : [docstring-wrap, multi-line-docstrings]
+layout   : doc
+---
+
+# no-single-line-docstrings
+
+<RuleLayout rule="no_single_line_docstrings" canonical="module_docstring">
+
+A single-line docstring (*opener, body, and closer all on one line*) reads as a kind of inline comment, and many downstream tools (*Sphinx, IDE preview surfaces, doctest, PEP 257-aware linters*) treat it inconsistently with its multi-line sibling. `no-single-line-docstrings` expands every single-line triple-quoted docstring into the canonical multi-line shape, so a project's documentation surface presents one consistent structure across every documented unit.
+
+The rule fires on module, class, and function single-line docstrings. The body content is preserved verbatim across the expansion, and the resulting multi-line form passes immediately to [[multi-line-docstrings]] for the opener-and-closer placement and to [[docstring-wrap]] for the line-budget wrap.
+
+The walker [[docstring]] reads against the PEP 257 definition, so f-string forms *(`f"""..."""`)* and concatenated string forms never qualify as docstrings and the rule skips them. Raw-prefixed *(`r"""`)* and byte-prefixed *(`b"""`)* single-line docstrings expand the same way as plain triple-quoted forms, with the prefix preserved verbatim on the opener. An empty single-line docstring *(`""""""`)* expands to a multi-line shape with a blank line between the opener and the closer. The PEP 257 summary-line convention is out of scope for this rule, leaving the body content's shape to authors and downstream conventions.
+
+<template #canonical-lead>
+
+A module-level single-line docstring expands to the multi-line form, with the opener and closer landing on their own lines.
+
+</template>
+
+<template #more-examples>
+
+<Fixture rule="no_single_line_docstrings" case="class_docstring" title="Class Docstrings Expand the Same Way" />
+
+<Fixture rule="no_single_line_docstrings" case="method_docstring" title="Method Docstrings Expand inside the Class Body" />
+
+<Fixture rule="no_single_line_docstrings" case="nested_def_docstrings" title="Nested Function Docstrings Expand at Each Scope" />
+
+<Fixture rule="no_single_line_docstrings" case="single_to_multi" title="The Body Content Is Preserved Verbatim Across the Expansion" />
+
+</template>
+
+<template #related-after>
+
+For the docstring budgets that govern wrapping, the [**Configuration**](/reference/configuration#docstring-budgets) chapter covers the description and structured line lengths.
+
+</template>
+
+</RuleLayout>

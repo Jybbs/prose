@@ -1,0 +1,18 @@
+.star-count {
+  display             : inline-flex;
+  align-items         : center;
+  gap                 : 4px;
+  margin-inline-start : 6px;
+  padding             : 2px 8px;
+  border              : 1px solid var(--vp-c-divider);
+  border-radius       : 0;
+  color               : var(--vp-c-text-2);
+  font-family         : var(--vp-font-family-mono);
+  font-size           : var(--prose-label-size);
+  letter-spacing      : var(--prose-folio-tracking);
+  line-height         : 1;
+}
+
+.star-count .star-glyph {
+  color: var(--vp-c-brand-1);
+}

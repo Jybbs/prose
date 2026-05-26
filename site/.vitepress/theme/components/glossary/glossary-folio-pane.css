@@ -1,0 +1,219 @@
+.glossary-folio-stage:not([data-family]) {
+  --family-color : var(--prose-c-ube);
+}
+
+.glossary-folio-pane {
+  position      : relative;
+  margin        : 24px 0 0;
+  padding       : 16px 28px 18px 32px;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg);
+  min-width     : 0;
+}
+
+.glossary-folio-pane::before {
+  content       : '';
+  position      : absolute;
+  inset         : 0 auto 0 0;
+  width         : 3px;
+  background    : var(--family-color);
+  border-radius : var(--prose-radius) 0 0 var(--prose-radius);
+}
+
+.glossary-folio-head {
+  display                 : flex;
+  align-items             : center;
+  justify-content         : space-between;
+  gap                     : 12px;
+  margin                  : -16px -28px 18px -32px;
+  padding                 : 6px;
+  background              : var(--vp-c-bg-soft);
+  border-bottom           : 1px solid var(--vp-c-divider);
+  border-top-left-radius  : calc(var(--prose-radius) - 1px);
+  border-top-right-radius : calc(var(--prose-radius) - 1px);
+  min-height              : 36px;
+}
+
+.glossary-folio-folio {
+  display        : flex;
+  align-items    : center;
+  gap            : 10px;
+  height         : 24px;
+  margin         : 0;
+  padding-left   : 6px;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-kicker-size);
+  line-height    : 24px;
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+}
+
+.glossary-folio-folio > span,
+.glossary-folio-folio > .glossary-folio-chip {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  height          : 24px;
+  line-height     : 1;
+}
+
+.glossary-folio-steps {
+  display     : inline-flex;
+  align-items : center;
+  gap         : 6px;
+  height      : 24px;
+  flex-shrink : 0;
+}
+
+.glossary-folio-chip {
+  gap              : 6px;
+  padding          : 0 8px 0 6px;
+  border           : 1px solid color-mix(in srgb, var(--family-color) 38%, var(--vp-c-divider));
+  border-radius    : var(--prose-radius-sm);
+  background       : color-mix(in srgb, var(--family-color) 12%, var(--vp-c-bg));
+  color            : color-mix(in srgb, var(--family-color) 80%, var(--vp-c-text-1));
+}
+
+.glossary-folio-badge {
+  font-size : var(--prose-text-md);
+  filter    : saturate(1.05);
+  transform : translateY(-1px);
+}
+
+.glossary-folio-folio-family {
+  letter-spacing : var(--prose-kicker-tracking);
+}
+
+.glossary-folio-folio-sep {
+  color : var(--vp-c-divider);
+}
+
+.vp-doc .glossary-folio-headword,
+.glossary-folio-headword {
+  position    : relative;
+  margin      : 0 0 14px;
+  padding-top : 0;
+  border-top  : none;
+  font-family : var(--prose-font-display);
+  font-weight : 500;
+  font-size   : 1.7rem;
+  line-height : 1.15;
+  color       : var(--vp-c-text-1);
+}
+
+.vp-doc .glossary-folio-folio {
+  margin : 0;
+}
+
+.vp-doc .glossary-folio-aliases {
+  margin-top : 0;
+}
+
+.glossary-folio-headword a,
+.glossary-folio-headword > span {
+  position        : relative;
+  display         : inline-block;
+  text-decoration : none;
+  color           : inherit;
+}
+
+.glossary-folio-headword a::after,
+.glossary-folio-headword > span::after {
+  content    : '';
+  position   : absolute;
+  left       : 0;
+  right      : 0;
+  bottom     : -2px;
+  height     : 1px;
+  background : color-mix(in srgb, var(--family-color) 55%, transparent);
+  transform  : translateY(4px);
+  opacity    : 0;
+  transition : transform var(--prose-transition), opacity var(--prose-transition);
+}
+
+.glossary-folio-headword a:hover::after,
+.glossary-folio-headword > span:hover::after {
+  transform : translateY(0);
+  opacity   : 1;
+}
+
+.glossary-folio-aliases {
+  display        : flex;
+  align-items    : center;
+  flex-wrap      : wrap;
+  row-gap        : 6px;
+  column-gap     : 8px;
+  margin         : 0 0 22px;
+  padding-bottom : 18px;
+  border-bottom  : 1px solid var(--vp-c-divider);
+}
+
+.glossary-folio-aliases-label {
+  margin-right   : 8px;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-label-size);
+  letter-spacing : var(--prose-label-tracking);
+  text-transform : uppercase;
+  color          : var(--prose-c-ube);
+}
+
+.vp-doc code.glossary-folio-aliases-chip,
+code.glossary-folio-aliases-chip {
+  display        : inline-flex;
+  align-items    : center;
+  padding        : 4px 10px;
+  border         : none;
+  border-radius  : var(--prose-radius-sm);
+  background     : var(--vp-c-bg-alt);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-meta);
+  line-height    : 1.3;
+  letter-spacing : var(--prose-meta-tracking);
+  vertical-align : baseline;
+  color          : var(--vp-c-text-2);
+}
+
+.glossary-folio-body {
+  font-family : var(--vp-font-family-base);
+  font-size   : var(--prose-text-md);
+  line-height : 1.55;
+  color       : var(--vp-c-text-1);
+}
+
+.glossary-folio-body :deep(code) {
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.84em;
+  color       : color-mix(in srgb, var(--family-color) 60%, var(--vp-c-text-1));
+}
+
+.glossary-folio-step {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 24px;
+  height          : 24px;
+  padding         : 0;
+  border          : 1px solid var(--vp-c-divider);
+  border-radius   : var(--prose-radius-sm);
+  background      : var(--vp-c-bg);
+  font-family     : var(--vp-font-family-mono);
+  font-size       : 1rem;
+  font-weight     : 400;
+  line-height     : 1;
+  color           : var(--vp-c-text-3);
+  cursor          : pointer;
+  transition      : border-color var(--prose-transition), color var(--prose-transition);
+}
+
+.glossary-folio-step > span {
+  display     : block;
+  line-height : 1;
+  transform   : translateY(-0.5px);
+}
+
+.glossary-folio-step:hover {
+  border-color : color-mix(in srgb, var(--family-color) 55%, var(--vp-c-divider));
+  color        : var(--vp-c-text-1);
+}

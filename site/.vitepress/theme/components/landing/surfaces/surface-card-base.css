@@ -1,0 +1,253 @@
+@property --spotlight-x {
+  syntax        : '<percentage>';
+  initial-value : 50%;
+  inherits      : false;
+}
+
+@property --spotlight-y {
+  syntax        : '<percentage>';
+  initial-value : 50%;
+  inherits      : false;
+}
+
+.surface-card {
+  position        : relative;
+  isolation       : isolate;
+  display         : flex;
+  flex-direction  : column;
+  min-width       : 0;
+  min-height      : 320px;
+  padding         : 28px;
+  border          : 1px solid var(--vp-c-divider);
+  border-radius   : var(--prose-radius);
+  background      : var(--vp-c-bg-soft);
+  color           : var(--vp-c-text-1);
+  transition      :
+    border-color var(--prose-transition-slow),
+    transform    var(--prose-transition-slow),
+    box-shadow   var(--prose-transition-slow);
+}
+
+.surface-card > *:not(.surface-card-cover-link, .surface-card-icon) {
+  position : relative;
+  z-index  : 1;
+}
+
+.surface-card > *:not(.surface-card-cover-link) {
+  pointer-events : none;
+}
+
+.surface-card-cover-link,
+.vp-doc .rule-card-cover,
+.rule-card-cover {
+  position             : absolute;
+  inset                : 0;
+  z-index              : 0;
+  border-radius        : var(--prose-radius);
+  text-indent          : -9999px;
+  overflow             : hidden;
+  text-decoration-line : none;
+}
+
+.surface-card-cover-link:focus-visible,
+.rule-card-cover:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 2px;
+}
+
+.surface-card-chips a {
+  position       : relative;
+  z-index        : 2;
+  pointer-events : auto;
+}
+
+.surface-card::after {
+  content        : "";
+  position       : absolute;
+  inset          : 0;
+  background     : radial-gradient(
+    420px circle at var(--spotlight-x) var(--spotlight-y),
+    color-mix(in oklab, var(--family-color) 14%, transparent) 0%,
+    transparent 60%
+  );
+  pointer-events : none;
+  z-index        : 0;
+  border-radius  : var(--prose-radius);
+}
+
+.surface-card::before {
+  content       : "";
+  position      : absolute;
+  top           : 0;
+  left          : 0;
+  right         : 0;
+  height        : 3px;
+  background    : linear-gradient(90deg, transparent, var(--family-color), transparent);
+  opacity       : 0;
+  transition    : opacity var(--prose-transition-slow);
+  border-radius : var(--prose-radius) var(--prose-radius) 0 0;
+  z-index       : 2;
+}
+
+.surface-card[data-active="true"]::before,
+.surface-card:focus-within::before {
+  opacity : 1;
+}
+
+.surface-card[data-active="true"],
+.surface-card:focus-within {
+  border-color : var(--family-color);
+  transform    : translateY(-2px);
+  box-shadow   : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) 55%, transparent);
+}
+
+.surface-card-number {
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-label-size);
+  letter-spacing : var(--prose-label-tracking);
+  color          : var(--vp-c-text-3);
+}
+
+.surface-card-icon {
+  position        : absolute;
+  top             : 22px;
+  right           : 22px;
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 56px;
+  height          : 56px;
+  border          : 1px solid var(--vp-c-divider);
+  border-radius   : 50%;
+  background      : var(--vp-c-bg);
+  font-size       : 1.55rem;
+  line-height     : 1;
+  z-index         : 2;
+}
+
+.surface-card-label {
+  margin      : 42px 0 12px;
+  padding     : 0;
+  border      : none;
+  font-family : var(--prose-font-display);
+  font-weight : 500;
+  font-size   : 2rem;
+  line-height : 1.05;
+  color       : var(--vp-c-text-1);
+  text-wrap   : balance;
+}
+
+.surface-card-blurb {
+  margin      : 0;
+  font-family : var(--vp-font-family-base);
+  font-size   : var(--prose-text-md);
+  line-height : 1.6;
+  color       : var(--vp-c-text-2);
+}
+
+.surface-card-blurb :where(code) {
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.9em;
+}
+
+.surface-card-chips {
+  position    : relative;
+  margin-top  : auto;
+  padding-top : 18px;
+  min-height  : 52px;
+}
+
+.surface-card-chips::before {
+  content    : "";
+  position   : absolute;
+  top        : 0;
+  left       : 0;
+  right      : 0;
+  height     : 1px;
+  background : var(--vp-c-divider);
+  opacity    : 0.65;
+}
+
+.tab-index {
+  display        : flex;
+  flex-direction : column;
+  gap            : 12px;
+}
+
+.tab-row {
+  display        : flex;
+  align-items    : center;
+  gap            : 16px;
+  border-bottom  : 1px solid color-mix(in srgb, var(--vp-c-text-3) 22%, transparent);
+  padding-bottom : 6px;
+}
+
+.tab,
+.tab-label-link,
+.tab-swap-enter-active,
+.tab-swap-leave-active {
+  --tab-easing : 220ms var(--prose-ease-emphasized);
+}
+
+.tab {
+  position             : relative;
+  padding              : 2px 0;
+  font-family          : var(--vp-font-family-mono);
+  font-size            : 0.72rem;
+  letter-spacing       : 0.06em;
+  text-decoration-line : none;
+  color                : var(--vp-c-text-3);
+  transition           : color var(--tab-easing);
+}
+
+.tab::after {
+  content          : "";
+  position         : absolute;
+  left             : 0;
+  right            : 0;
+  bottom           : -7px;
+  height           : 2px;
+  background       : var(--family-color);
+  border-radius    : 2px;
+  transform        : scaleX(0);
+  transform-origin : center;
+  transition       : transform var(--tab-easing);
+}
+
+.tab:hover,
+.tab:focus-visible,
+.tab.active {
+  color : var(--family-color);
+}
+
+.tab:hover::after,
+.tab:focus-visible::after,
+.tab.active::after {
+  transform : scaleX(1);
+}
+
+.tab-label {
+  min-height : 1.2em;
+}
+
+.tab-label-link {
+  font-family          : var(--vp-font-family-mono);
+  font-size            : var(--prose-text-sm);
+  color                : var(--vp-c-text-1);
+  text-decoration-line : none;
+  transition           : color var(--tab-easing);
+}
+
+.tab-label-link:hover,
+.tab-label-link:focus-visible {
+  color : var(--family-color);
+}
+
+.tab-swap-enter-active,
+.tab-swap-leave-active {
+  transition :
+    opacity   180ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform var(--tab-easing);
+}
+.tab-swap-enter-from { opacity: 0; transform: translateY(2px); }
+.tab-swap-leave-to   { opacity: 0; transform: translateY(-2px); }

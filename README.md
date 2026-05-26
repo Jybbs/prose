@@ -1,10 +1,10 @@
 <div align="center">
-<img src="assets/brand/title.svg" alt="Prose" width="800">
-<h3><em>A Python typesetter for the reader</em></h3>
+<img src="site/public/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." width="800">
 
 [![Rust](assets/badges/rust.svg)![1.82+](https://img.shields.io/badge/1.82+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
 [![Python](assets/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
 [![Coverage](assets/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
+[![Documentation](assets/badges/docs.svg)![Docs](https://img.shields.io/badge/Docs-8a80cb?style=for-the-badge)](https://prose.fyi/)
 
 </div>
 
@@ -242,14 +242,14 @@ Per-invocation overrides via `--select` and `--ignore` (*see [Install & Usage](#
 
 ## 🗺️ Composition
 
-***Prose*** runs as the second pass in a **two-stage pipeline**. The first pass owns tokens (*line wrapping, quote normalization, indentation, blank-line discipline*) and the second pass owns layout (*alignment, alphabetization, the singleton rule, one-entry-per-line collections, trailing-comma stripping*). [Ruff](https://docs.astral.sh/ruff/) is the canonical first pass, in that `ruff format` matches the token-level scope and its lint config shares the `pyproject.toml` root with `[tool.prose]`.
+***Prose*** runs cleanly against any well-formed Python source, owning the layout pass (*alignment, alphabetization, the singleton rule, one-entry-per-line collections, trailing-comma stripping*). When a project also runs a token-level formatter (*line wrapping, quote normalization, indentation, blank-line discipline*), the two compose well wherein the token pass runs first and ***Prose*** runs second. [Ruff](https://docs.astral.sh/ruff/) is the most common pairing, in that `ruff format` matches the token-level scope and its lint config shares the `pyproject.toml` root with `[tool.prose]`.
 
 ```bash
 ruff format && prose format
 ```
 
 > [!IMPORTANT]
-> Running ***Prose*** first is incorrect, because ***Prose***'s alignment math depends on already-settled line breaks and an upstream re-wrap will undo per-line layout decisions, forcing a third pass.
+> When both tools are in the toolchain, run Ruff first, because ***Prose***'s alignment math reads the line breaks already on the file and a later Ruff re-wrap will undo per-line layout decisions, forcing a third pass.
 
 ### Ruff Configuration
 

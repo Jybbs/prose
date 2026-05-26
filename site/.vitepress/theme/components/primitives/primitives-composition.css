@@ -1,0 +1,22 @@
+.primitives-composition {
+  --pc-base          : var(--prose-c-celadon);
+  --pc-orchestration : var(--prose-c-whiskey);
+  --pc-analysis      : var(--prose-c-ube);
+
+  margin        : 1.5rem 0;
+  padding       : 12px 14px;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg);
+}
+
+.primitives-composition [data-layer="base"]          { --pc-layer : var(--pc-base);          }
+.primitives-composition [data-layer="orchestration"] { --pc-layer : var(--pc-orchestration); }
+.primitives-composition [data-layer="analysis"]      { --pc-layer : var(--pc-analysis);      }
+.primitives-composition [data-layer="empty"]         { --pc-layer : var(--vp-c-divider);     }
+
+.vp-doc .primitives-composition a,
+.primitives-composition a {
+  font-weight    : inherit;
+  text-decoration: none;
+}

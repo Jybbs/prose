@@ -1,0 +1,11 @@
+.category-chip-badge {
+  font-family             : var(--prose-font-display);
+  font-style              : italic;
+  font-size               : 1.4rem;
+  font-weight             : 500;
+  font-variation-settings : 'opsz' 14;
+  line-height             : 1;
+  text-transform          : none;
+  letter-spacing          : 0;
+  color                   : var(--category-accent);
+}

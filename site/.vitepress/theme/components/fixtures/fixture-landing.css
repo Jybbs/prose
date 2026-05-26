@@ -1,0 +1,67 @@
+.fixture-pair-landing {
+  display               : grid;
+  grid-template-columns : minmax(0, 1fr) auto minmax(0, 1fr);
+  gap                   : 24px;
+  align-items           : stretch;
+}
+
+.fixture-pair-landing .fixture-pair-side {
+  display        : flex;
+  flex-direction : column;
+  min-width      : 0;
+  border         : 1px solid var(--vp-c-divider);
+  border-radius  : var(--prose-radius);
+  background     : var(--vp-code-block-bg);
+  overflow       : hidden;
+}
+
+.fixture-pair-landing .fixture-pair-code {
+  flex-grow : 1;
+  min-width : 0;
+}
+
+.fixture-pair-landing .fixture-pair-code > div[class*='language-'] {
+  margin        : 0;
+  border-radius : 0;
+  background    : transparent;
+}
+
+.fixture-pair-landing .fixture-pair-label {
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  gap             : 8px;
+  padding         : 10px 14px;
+  border-bottom   : 1px solid color-mix(in srgb, var(--vp-c-divider) 40%, transparent);
+  background      : color-mix(in srgb, white 4%, var(--vp-code-block-bg));
+  font-family     : var(--vp-font-family-mono);
+  font-size       : var(--prose-label-size);
+  letter-spacing  : var(--prose-label-tracking);
+  text-transform  : uppercase;
+  color           : var(--side-color);
+}
+
+.fixture-pair-landing .fixture-pair-arrow {
+  font-family : var(--prose-font-display);
+  font-size   : 2.5rem;
+  font-style  : italic;
+  color       : var(--vp-c-brand-1);
+}
+
+.fixture-pair-dot {
+  width         : 8px;
+  height        : 8px;
+  border-radius : 50%;
+  background    : var(--side-color);
+}
+
+@media (--prose-bp-tablet) {
+  .fixture-pair-landing {
+    grid-template-columns : 1fr;
+  }
+
+  .fixture-pair-landing .fixture-pair-arrow {
+    transform  : rotate(90deg);
+    font-size  : 2rem;
+  }
+}

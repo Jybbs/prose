@@ -1,0 +1,88 @@
+.glossary-anchor {
+  cursor                : help;
+  text-decoration       : underline dotted var(--prose-c-celadon) 1px;
+  text-underline-offset : 3px;
+  outline               : none;
+  background            : linear-gradient(var(--prose-c-celadon), var(--prose-c-celadon)) no-repeat left bottom / 0% 1px;
+  transition            : background-size var(--prose-transition-slow);
+}
+
+.glossary-anchor:hover {
+  text-decoration : none;
+  background-size : 100% 1px;
+}
+
+.glossary-anchor:focus-visible {
+  text-decoration-style : solid;
+}
+
+.v-popper--theme-glossary .v-popper__inner {
+  max-width   : 22rem;
+  min-width   : 14rem;
+  padding     : 12px 16px;
+  outline     : none;
+  color       : var(--vp-c-text-1);
+  font-size   : var(--prose-text-sm);
+  line-height : 1.5;
+}
+
+.v-popper--theme-glossary,
+.v-popper--theme-glossary * {
+  outline : none !important;
+}
+
+.v-popper--theme-glossary .v-popper__wrapper {
+  transition : opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.v-popper--theme-glossary .v-popper__arrow-outer {
+  border-color : color-mix(in srgb, var(--tooltip-accent) 55%, var(--vp-c-divider));
+}
+
+.v-popper--theme-glossary .v-popper__arrow-inner {
+  border-color : var(--vp-c-bg);
+}
+
+.glossary-tooltip-title {
+  margin      : 0;
+  font-size   : var(--prose-text-md);
+  font-weight : 700;
+  color       : var(--prose-c-celadon);
+  white-space : nowrap;
+}
+
+.glossary-tooltip-divider {
+  margin-block       : 6px;
+  border-block-start : 1px solid var(--vp-c-divider);
+  height             : 0;
+}
+
+.glossary-tooltip-body {
+  font-style : italic;
+  color      : var(--vp-c-text-2);
+}
+
+.glossary-tooltip-body code {
+  font-size : 0.95em;
+  color     : var(--vp-c-text-1);
+}
+
+.glossary-tooltip-link {
+  display         : block;
+  margin          : 12px -16px -12px;
+  padding         : 6px 16px;
+  border-radius   : 0 0 calc(var(--prose-radius) - 2px) calc(var(--prose-radius) - 2px);
+  background      : color-mix(in srgb, var(--tooltip-accent) 55%, var(--vp-c-divider));
+  font-family     : var(--vp-font-family-mono);
+  font-size       : var(--prose-label-size);
+  letter-spacing  : var(--prose-meta-tracking);
+  text-align      : center;
+  text-transform  : uppercase;
+  color           : var(--vp-c-text-1);
+  text-decoration : none;
+  transition      : background var(--prose-transition);
+}
+
+.glossary-tooltip-link:hover {
+  background : color-mix(in srgb, var(--tooltip-accent) 75%, var(--vp-c-divider));
+}

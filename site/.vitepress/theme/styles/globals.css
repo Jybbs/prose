@@ -1,0 +1,36 @@
+:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 2px;
+}
+
+::-webkit-scrollbar {
+  width  : 8px;
+  height : 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color : var(--vp-c-divider);
+  border-radius    : var(--prose-radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--vp-c-brand-1);
+}
+
+* {
+  scrollbar-width : thin;
+  scrollbar-color : var(--vp-c-divider) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration       : 0.001ms !important;
+    animation-duration        : 0.001ms !important;
+    animation-iteration-count : 1       !important;
+    scroll-behavior           : auto    !important;
+  }
+}

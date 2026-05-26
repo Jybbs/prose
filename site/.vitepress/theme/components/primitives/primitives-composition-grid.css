@@ -1,0 +1,127 @@
+.primitives-composition-grid {
+  display        : flex;
+  flex-direction : column;
+  gap            : 8px;
+}
+
+.primitives-composition-band {
+  display        : flex;
+  flex-direction : column;
+  gap            : 5px;
+  padding        : 4px 0;
+}
+
+.primitives-composition-band-head {
+  display     : flex;
+  align-items : center;
+  gap         : 9px;
+  padding     : 2px 4px 4px;
+}
+
+.primitives-composition-band-badge {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 26px;
+  height          : 26px;
+  border-radius   : 50%;
+  background      : var(--pc-layer);
+  flex-shrink     : 0;
+}
+
+.primitives-composition-band-numeral {
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 500;
+  font-size   : 0.92rem;
+  line-height : 1;
+  color       : var(--vp-c-bg);
+  user-select : none;
+}
+
+.primitives-composition-band-name {
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+  color          : color-mix(in srgb, var(--pc-layer) 75%, var(--vp-c-text-2));
+  flex-shrink    : 0;
+}
+
+.primitives-composition-band-rule {
+  flex-grow  : 1;
+  height     : 1px;
+  background : color-mix(in srgb, var(--pc-layer) 30%, var(--vp-c-divider));
+}
+
+.vp-doc .primitives-composition-band-cells,
+.primitives-composition-band-cells {
+  display           : grid;
+  grid-auto-columns : minmax(0, 1fr);
+  grid-auto-flow    : column;
+  gap               : 5px;
+  list-style        : none;
+  margin            : 0;
+  padding           : 0;
+}
+
+.vp-doc .primitives-composition-tile,
+.primitives-composition-tile {
+  margin        : 0;
+  padding       : 0;
+  list-style    : none;
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--pc-layer) 7%, var(--vp-c-bg));
+  transition    : background 180ms var(--prose-ease-emphasized),
+                 opacity    180ms var(--prose-ease-emphasized);
+}
+
+.vp-doc .primitives-composition-tile::before,
+.vp-doc .primitives-composition-tile::marker {
+  content : none;
+}
+
+.vp-doc .primitives-composition-tile-link,
+.primitives-composition-tile-link {
+  display              : flex;
+  align-items          : center;
+  justify-content      : center;
+  padding              : 5px 7px;
+  min-height           : 30px;
+  text-align           : center;
+  text-decoration-line : none;
+  color                : var(--vp-c-text-1);
+}
+
+.primitives-composition-tile-name {
+  font-family : var(--prose-font-display);
+  font-size   : var(--prose-text-sm);
+  line-height : 1.15;
+  color       : var(--vp-c-text-1);
+}
+
+.vp-doc .primitives-composition-tile-active,
+.primitives-composition-tile-active {
+  background     : var(--pc-layer);
+  outline        : 2px solid color-mix(in srgb, var(--pc-layer) 55%, var(--vp-c-text-1));
+  outline-offset : 1px;
+  position       : relative;
+  z-index        : 1;
+}
+
+.vp-doc .primitives-composition-tile-active .primitives-composition-tile-link,
+.vp-doc .primitives-composition-tile-active .primitives-composition-tile-name,
+.primitives-composition-tile-active .primitives-composition-tile-link,
+.primitives-composition-tile-active .primitives-composition-tile-name {
+  color : var(--vp-c-bg);
+}
+
+.vp-doc .primitives-composition-tile-related,
+.primitives-composition-tile-related {
+  background : color-mix(in srgb, var(--pc-layer) 28%, var(--vp-c-bg));
+}
+
+.vp-doc .primitives-composition-tile-mute,
+.primitives-composition-tile-mute {
+  opacity : 0.35;
+}

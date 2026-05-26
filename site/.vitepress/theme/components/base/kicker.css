@@ -1,0 +1,24 @@
+.kicker,
+.vp-doc .custom-block-title,
+.vp-doc th {
+  margin         : 0;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-kicker-size);
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+}
+
+.kicker[data-variant="rule"]::before {
+  content           : "— ";
+  margin-inline-end : 4px;
+}
+
+.kicker[data-variant="rule"]::after {
+  content             : " —";
+  margin-inline-start : 4px;
+}
+
+.vp-doc .custom-block-title {
+  margin-bottom: 8px;
+}

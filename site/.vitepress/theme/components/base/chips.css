@@ -1,0 +1,107 @@
+.category-chip,
+.family-chip,
+.rule-chip {
+  display       : inline-flex;
+  align-items   : center;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : 0;
+}
+
+.category-chip,
+.family-chip,
+a.rule-chip {
+  text-decoration : none;
+  transition      :
+    border-color      var(--prose-transition),
+    border-left-width var(--prose-transition),
+    padding-left      var(--prose-transition);
+}
+
+a.category-chip:hover,
+a.family-chip:hover,
+a.rule-chip:hover {
+  border-left-width : 3px;
+  padding-left      : 7px;
+}
+
+a.category-chip:hover { border-color : var(--category-accent); padding-left : 9px; }
+a.family-chip:hover,
+a.rule-chip:hover     { border-color : var(--family-color); }
+a.family-chip:hover   { padding-left : 9px; }
+
+.category-chip {
+  border-left: 2px solid var(--category-accent);
+}
+
+.family-chip,
+.rule-chip {
+  border-left: 2px solid var(--family-color);
+}
+
+.category-chip,
+.family-chip {
+  gap            : 10px;
+  padding        : 6px 14px 6px 10px;
+  color          : var(--vp-c-text-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-label-size);
+  letter-spacing : var(--prose-label-tracking);
+  text-transform : uppercase;
+}
+
+a.rule-chip {
+  gap            : 8px;
+  padding        : 3px 10px 3px 8px;
+  color          : var(--vp-c-text-1);
+  font-size      : var(--prose-text-xs);
+  line-height    : 1.6;
+  vertical-align : baseline;
+}
+
+.rule-chip-badge {
+  font-size: 0.9rem;
+}
+
+.rule-chip-slug {
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-xs);
+  color       : var(--family-color);
+}
+
+.vp-doc a.specimen,
+.vp-doc a.composition-cards-rule-chip,
+a.specimen,
+a.composition-cards-rule-chip {
+  display              : inline-flex;
+  align-items          : baseline;
+  border               : 1px solid color-mix(in srgb, var(--family-color, var(--vp-c-divider)) 30%, transparent);
+  border-radius        : var(--prose-radius);
+  background           : var(--vp-c-bg);
+  text-decoration-line : none;
+  font-family          : var(--vp-font-family-mono);
+  font-size            : 0.72rem;
+  transition           :
+    border-color var(--prose-transition),
+    transform    var(--prose-transition);
+}
+
+.vp-doc a.specimen:hover,
+.vp-doc a.specimen:focus-visible,
+.vp-doc a.composition-cards-rule-chip:hover,
+.vp-doc a.composition-cards-rule-chip:focus-visible,
+a.specimen:hover,
+a.specimen:focus-visible,
+a.composition-cards-rule-chip:hover,
+a.composition-cards-rule-chip:focus-visible {
+  border-color         : var(--family-color, var(--vp-c-brand-1));
+  text-decoration-line : none;
+  transform            : translateY(-1px);
+}
+
+.rule-chrome {
+  display       : flex;
+  flex-wrap     : wrap;
+  align-items   : center;
+  gap           : 10px;
+  margin-bottom : 12px;
+}

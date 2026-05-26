@@ -1,0 +1,84 @@
+.landing-workflow-body {
+  display               : grid;
+  grid-template-columns : auto minmax(0, 1fr);
+  column-gap            : 24px;
+  row-gap               : 14px;
+  align-items           : center;
+  min-width             : 0;
+}
+
+.landing-workflow-title {
+  grid-column    : 1;
+  grid-row       : 1 / 3;
+  margin         : 0;
+  padding        : 0;
+  border         : none;
+  font-family    : var(--prose-font-display);
+  font-style     : italic;
+  font-weight    : 500;
+  font-size      : 1.4rem;
+  line-height    : 1;
+  letter-spacing : var(--prose-meta-tracking);
+  color          : color-mix(in srgb, var(--wf-accent) 70%, var(--vp-c-text-1));
+  writing-mode   : vertical-rl;
+  transform      : rotate(180deg);
+  text-align     : center;
+  align-self     : center;
+}
+
+.landing-workflow-prose {
+  grid-column : 2;
+  grid-row    : 1;
+  margin      : 0;
+  max-width   : 64ch;
+  font-family : var(--vp-font-family-base);
+  font-size   : var(--prose-text-md);
+  line-height : 1.6;
+  color       : var(--vp-c-text-2);
+}
+
+.landing-workflow-prose :is(code, em) {
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.85em;
+  font-style  : normal;
+  color       : var(--vp-c-text-1);
+}
+
+.landing-workflow-code {
+  grid-column : 2;
+  grid-row    : 2;
+  min-width   : 0;
+  align-self  : start;
+}
+
+.landing-workflow-code > div[class*='language-'] {
+  margin        : 0;
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-code-block-bg);
+  overflow      : hidden;
+}
+
+@media (--prose-bp-card-stack) {
+  .landing-workflow-body {
+    grid-template-columns : 1fr;
+    column-gap            : 0;
+  }
+  .landing-workflow-title {
+    grid-column    : 1;
+    grid-row       : 1;
+    writing-mode   : horizontal-tb;
+    transform      : none;
+    text-align     : left;
+    font-size      : 1.3rem;
+    letter-spacing : 0;
+    color          : var(--vp-c-text-1);
+  }
+  .landing-workflow-prose {
+    grid-column : 1;
+    grid-row    : 2;
+  }
+  .landing-workflow-code {
+    grid-column : 1;
+    grid-row    : 3;
+  }
+}

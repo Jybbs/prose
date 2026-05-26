@@ -1,0 +1,206 @@
+.directive-anatomy [data-role="comment"]   { --part-color : var(--vp-c-text-3); }
+.directive-anatomy [data-role="namespace"] { --part-color : color-mix(in srgb, var(--prose-c-ube)     65%, var(--vp-c-text-1)); }
+.directive-anatomy [data-role="action"]    { --part-color : color-mix(in srgb, var(--prose-c-apricot) 70%, var(--vp-c-text-1)); }
+.directive-anatomy [data-role="payload"]   { --part-color : color-mix(in srgb, var(--prose-c-celadon) 70%, var(--vp-c-text-1)); }
+
+.directive-anatomy {
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  overflow      : hidden;
+  background    : color-mix(in srgb, var(--vp-c-bg-alt) 30%, var(--vp-c-bg));
+}
+
+.directive-anatomy-index {
+  display              : flex;
+  flex-direction       : column;
+  gap                  : 20px;
+  padding              : 18px 20px 22px;
+}
+
+.directive-anatomy-band {
+  display              : flex;
+  flex-direction       : column;
+  gap                  : 8px;
+}
+
+.directive-anatomy-band-head {
+  display     : flex;
+  align-items : center;
+  gap         : 9px;
+  padding     : 0 2px;
+}
+
+.directive-anatomy-band-badge,
+.scope-specimen-legend-pip {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  border-radius   : 50%;
+  color           : var(--vp-c-bg);
+  font-family     : var(--prose-font-display);
+  font-style      : italic;
+  font-weight     : 500;
+}
+
+.directive-anatomy-band-badge {
+  width       : 22px;
+  height      : 22px;
+  flex-shrink : 0;
+  background  : color-mix(in srgb, var(--scope-tint) 80%, var(--vp-c-bg));
+  font-size   : 0.92rem;
+  line-height : 1;
+}
+
+.directive-anatomy-band-name {
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+  color          : color-mix(in srgb, var(--scope-tint) 75%, var(--vp-c-text-2));
+  flex-shrink    : 0;
+}
+
+.directive-anatomy-band-rule {
+  flex-grow  : 1;
+  height     : 1px;
+  background : color-mix(in srgb, var(--scope-tint) 30%, var(--vp-c-divider));
+}
+
+.directive-anatomy-band-cells {
+  display   : flex;
+  flex-wrap : wrap;
+  gap       : 6px;
+}
+
+.directive-anatomy-thumb {
+  display       : inline-flex;
+  align-items   : center;
+  padding       : 2px 9px 3px;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : 3px;
+  background    : var(--vp-c-bg);
+  cursor        : pointer;
+  transition    : border-color var(--prose-transition),
+                  background var(--prose-transition);
+}
+
+.directive-anatomy-thumb-form {
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.72rem;
+  line-height : 1.5;
+  background  : transparent;
+  padding     : 0;
+  border      : none;
+  color       : var(--vp-c-text-2);
+}
+
+.directive-anatomy-thumb[data-active="true"] {
+  border-color : color-mix(in srgb, var(--scope-tint) 60%, var(--vp-c-divider));
+  background   : color-mix(in srgb, var(--scope-tint) 10%, var(--vp-c-bg));
+}
+
+.directive-anatomy-thumb[data-active="true"] .directive-anatomy-thumb-form {
+  color : var(--vp-c-text-1);
+}
+
+.directive-anatomy-plate {
+  padding               : 18px 32px 22px;
+  display               : grid;
+  grid-template-columns : 1fr;
+  gap                   : 14px;
+  position              : relative;
+  border-top            : 2px solid color-mix(in srgb, var(--scope-tint) 60%, var(--vp-c-divider));
+  background-image      : radial-gradient(
+    ellipse at 50% 100%,
+    color-mix(in srgb, var(--scope-tint) 10%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.directive-anatomy-specimen {
+  display     : flex;
+  flex-wrap   : wrap;
+  align-items : flex-start;
+  gap         : 0;
+  padding     : 0;
+}
+
+.directive-anatomy-part-col {
+  display        : grid;
+  grid-template-rows : auto 28px auto;
+  align-items    : start;
+  justify-items  : center;
+  text-align     : center;
+  padding        : 0 6px;
+}
+
+.directive-anatomy-part {
+  font-family : var(--vp-font-family-mono);
+  font-size   : clamp(1.35rem, 2.3vw, 2rem);
+  line-height : 1.15;
+  background  : transparent;
+  padding     : 0;
+  border      : none;
+  color       : var(--part-color, var(--vp-c-text-1));
+  white-space : pre;
+}
+
+.directive-anatomy-part-col[data-role="action"] .directive-anatomy-part { font-weight : 600; }
+
+.directive-anatomy-tick {
+  display : block;
+  width   : 1px;
+  height  : 24px;
+  margin  : 2px 0;
+  background : color-mix(in srgb, var(--part-color, var(--vp-c-text-3)) 50%, var(--vp-c-divider));
+}
+
+.directive-anatomy-label {
+  font-family    : var(--prose-font-display);
+  font-style     : italic;
+  font-size      : 0.92rem;
+  color          : color-mix(in srgb, var(--part-color, var(--vp-c-text-2)) 75%, var(--vp-c-text-2));
+}
+
+.directive-anatomy-info {
+  display        : flex;
+  flex-direction : column;
+  gap            : 4px;
+}
+
+.directive-anatomy-effect {
+  margin      : 0;
+  max-width   : 72ch;
+  font-family : var(--vp-font-family-base);
+  font-style  : italic;
+  font-size   : 0.98rem;
+  line-height : 1.55;
+  color       : var(--vp-c-text-2);
+}
+
+.directive-anatomy-effect code {
+  font-style : normal;
+}
+
+.vp-doc .directive-anatomy-pre,
+.directive-anatomy-pre {
+  margin        : 0;
+  padding       : 12px 14px;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-c-bg);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--prose-text-code);
+  line-height   : 1.55;
+  color         : var(--vp-c-text-2);
+  overflow-x    : auto;
+}
+
+.directive-anatomy-line {
+  display     : block;
+  white-space : pre;
+}
+
+.directive-anatomy-line[data-line-kind="directive"] { color : color-mix(in srgb, var(--prose-c-apricot) 75%, var(--vp-c-text-1)); font-weight : 500; }
+.directive-anatomy-line[data-line-kind="comment"]   { color : var(--vp-c-text-3); }
+.directive-anatomy-line[data-line-kind="code"]      { color : var(--vp-c-text-1); }
