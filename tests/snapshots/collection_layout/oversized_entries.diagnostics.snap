@@ -3,7 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/collection_layout/oversized_entries.input.py
 ---
-collection-layout@427..427
-collection-layout@569..569
-collection-layout@698..793
-collection-layout@933..1041
+collection-layout@442..442
+collection-layout@584..584
+collection-layout@713..808
+collection-layout@948..1056

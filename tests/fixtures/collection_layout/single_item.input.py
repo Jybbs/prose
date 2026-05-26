@@ -1,12 +1,12 @@
 """
-Single-item and empty literals keep their inline form regardless of
-line length. A multi-line single-item literal collapses to its
-canonical inline form, the spec's `SETTINGS = {"default_action":
-"noop"}` case being the most reduced. Empty literals spread across
-multiple lines collapse to their bare-bracket form. A single-entry
-dict whose entry overflows at the item-indent column breaks at `:`
-and hangs the value at `item_indent + INDENT_STEP`. Single-item
-lists and sets stay multi-line.
+Single-item literals collapse to inline when their inline form
+fits. The spec's `SETTINGS = {"default_action": "noop"}` case is
+the most reduced. Empty literals spread across multiple lines
+collapse to their bare-bracket form. A single-entry dict whose
+entry overflows at its item-indent column breaks at `:` and hangs
+the value at `item_indent + INDENT_STEP`, since any non-empty dict
+qualifies as an expand target. Single-item lists and sets fall
+outside expand-eligibility and so never enter the hang shape.
 """
 
 only_list  = [42]
