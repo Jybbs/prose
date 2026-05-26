@@ -35,11 +35,16 @@ jobs:
       - name : Check out repository
         uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name : Provision mise
-        uses : jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - name : Provision Cargo
+        uses : ./.github/actions/provision-cargo
         with:
-          cache      : true
-          cache_save : false
+          shared-key : prose-deploy
+
+      - name : Provision bun
+        uses : ./.github/actions/provision-bun
+
+      - name : Build the Prose binary
+        run  : mise run build
 
       - name : Build the site
         run  : mise run press
