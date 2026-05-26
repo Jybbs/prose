@@ -36,10 +36,11 @@ uv tool install prose-formatter
 The binary exposes `format`, `check`, and `completions`:
 
 ```bash
-prose format path/                          # rewrite files in place
-prose check path/                           # exit non-zero on violations
-prose format --diff path/                   # show the diff without writing
-prose check --stdin < file.py               # read from stdin
+prose format path/             # rewrite files in place
+prose check path/              # exit non-zero on violations
+prose format --diff path/      # show the diff without writing
+prose check --stdin < file.py  # read from stdin
+prose format - < file.py       # `-` reads from stdin too
 ```
 
 ---
@@ -48,18 +49,18 @@ prose check --stdin < file.py               # read from stdin
 
 The full edition lives at [prose.fyi](https://prose.fyi/):
 
-- The [rule catalog](https://prose.fyi/rules/) walks every rule with before/after fixtures and per-knob configuration.
-- The [configuration reference](https://prose.fyi/reference/configuration) lists every `[tool.prose]` key and per-rule sub-table.
-- The [exit-code matrix](https://prose.fyi/reference/exit-codes) is the contract CI gates and pre-commit hooks compile against.
-- [Suppression directives](https://prose.fyi/usage/suppression) cover `# prose: off`, `# prose: skip`, and the rest of the directive surface.
-- [Composition with Ruff](https://prose.fyi/integrations/ruff) pairs the token-level formatter with `prose format`.
-- [Editor, pre-commit, and CI integrations](https://prose.fyi/integrations/) wire *Prose* into the development loop.
+- The [**rule catalog**](https://prose.fyi/rules/) walks every rule with before/after fixtures and per-knob configuration.
+- The [**configuration reference**](https://prose.fyi/reference/configuration) lists every `[tool.prose]` key and per-rule sub-table.
+- The [**exit-code matrix**](https://prose.fyi/reference/exit-codes) is the contract CI gates and pre-commit hooks compile against.
+- [**Suppression directives**](https://prose.fyi/usage/suppression) cover `# prose: off`, `# prose: skip`, and the rest of the directive surface.
+- [**Composition with Ruff**](https://prose.fyi/integrations/ruff) pairs the token-level formatter with `prose format`.
+- [**Editor, pre-commit, and CI integrations**](https://prose.fyi/integrations/) wire *Prose* into the development loop.
 
 ---
 
 ## 🗜️ Development
 
-*Prose* is a Rust crate that ships as a Python wheel through [maturin](https://www.maturin.rs/), with [mise](https://mise.jdx.dev) managing the Rust toolchain, Python interpreter, and every supporting CLI through a single `mise.toml`. After installing mise and [activating it in your shell](https://mise.jdx.dev/installing-mise.html), three commands provision the rest:
+*Prose* is a Rust crate that ships as a Python wheel through [**maturin**](https://www.maturin.rs/), with [**mise**](https://mise.jdx.dev) managing the Rust toolchain, Python interpreter, and every supporting CLI through a single `mise.toml`. After installing mise and [**activating it in your shell**](https://mise.jdx.dev/installing-mise.html), three commands provision the rest:
 
 ```bash
 git clone https://github.com/Jybbs/prose.git
@@ -69,4 +70,4 @@ mise install
 
 `mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions.
 
-For the architecture, the [primitive surface](https://prose.fyi/primitives/) walks every public type (*`Source`, `Pipeline`, `BindingAnalysis`, `SuppressionMap`, `RuleId`, `Edit`*), and the [pipeline order](https://prose.fyi/reference/pipeline-order) explains how each rule reads a settled AST between reparses.
+For the architecture, the [**primitive surface**](https://prose.fyi/primitives/) walks every public type (*`Source`, `Pipeline`, `BindingAnalysis`, `SuppressionMap`, `RuleId`, `Edit`*), and the [**pipeline order**](https://prose.fyi/reference/pipeline-order) explains how each rule reads a settled AST between reparses.

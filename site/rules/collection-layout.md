@@ -14,6 +14,8 @@ A dictionary, list, or set with five non-trivial entries on one line reads as a 
 
 The rule fires on dictionary, list, set, and tuple literals. A literal expands when any entry is non-atomic (*a function call, a nested collection, a computed expression*) or when the entry count exceeds `max-atomics-per-line`. Single-line collections of atomic literals (*ints, floats, strings, single-name identifiers*) inside the cap stay on one line. Pair with [[align-colons]] for the dict-key alignment after the expansion, with [[alphabetize]] for sibling sorting where ordering doesn't matter, and with [[strip-trailing-commas]] for the trailing-comma sweep on the multi-line form.
 
+A dict entry whose `key: value` width overflows the budget at the item-indent column breaks at `:` and hangs the value at `item_indent + INDENT_STEP`. The hang applies per-row, so a multi-item dict hangs only the rows that need it. A single-entry dict whose entry overflows enters the expand path and applies the same break. Tuples, lists, and sets stay out of the hang shape because their elements carry no `:` separator.
+
 <template #configuration>
 
 | Key | Type | Default | Meaning |
@@ -42,6 +44,8 @@ A dict literal with non-atomic entries expands to one entry per line, and the re
 <Fixture rule="collection_layout" case="matrix" title="A Matrix Literal Expands Each Row Independently" />
 
 <Fixture rule="collection_layout" case="comprehensions" title="Comprehensions Stay on One Line When They Fit" />
+
+<Fixture rule="collection_layout" case="oversized_entries" title="An Oversized Dict Entry Hangs Its Value at the Post-Colon Column" />
 
 <Fixture rule="collection_layout" case="idempotent" title="Already-Expanded Source Is Left Alone" />
 

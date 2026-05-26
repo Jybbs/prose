@@ -22,6 +22,8 @@ Each record carries `code`, `message`, `filename`, `location`, `end_location`, a
 
 Stdin mode reads the buffer contents the editor passes in, which is the right path for diagnostics on an unsaved buffer. Run-on-save rewriting, by contrast, operates on the file already on disk, because the rewriter writes back to that file directly. The two paths are independent, in that a project can wire one, both, or neither.
 
+Both subcommands accept a `-` positional in place of `--stdin`, so `prose format - < file.py` and `prose check - < file.py` read source from stdin without naming the flag. The dash is the conventional shape for run-on-save hooks and pre-commit pipelines.
+
 ::: tip Composes With CI Annotations
 The same JSON output drives editor squiggles and CI annotations. The [**GitHub Actions**](/integrations/github-actions) integration page covers the workflow-command and SARIF shapes that consume `--output-format json` or its `github` and `sarif` siblings.
 :::

@@ -42,12 +42,10 @@ impl Rule for MatchCaseAlign {
     fn apply(&self, source: &Source) -> Vec<Edit> {
         let mut visitor = Visitor {
             code_line_length: self.code_line_length,
-            edits: Vec::new(),
-            settings: self.settings,
-            source,
+            walker: aligner::AlignWalker::new(source, self.settings),
         };
         visitor.visit_body(&source.ast().body);
-        visitor.edits
+        visitor.walker.edits
     }
 
     fn id(&self) -> RuleId {
@@ -67,20 +65,18 @@ enum CaseOutcome {
 
 struct Visitor<'a> {
     code_line_length: usize,
-    edits: Vec<Edit>,
-    settings: aligner::Settings,
-    source: &'a Source,
+    walker: aligner::AlignWalker<'a>,
 }
 
 impl Visitor<'_> {
     /// Emits alignment and collapse edits for a sub-group and drains it.
     fn flush_subgroup(&mut self, group: &mut Vec<(aligner::Member, TextRange)>) {
         let (members, ranges): (Vec<aligner::Member>, Vec<TextRange>) = group.drain(..).unzip();
-        aligner::emit_group(self.source, &members, self.settings, &mut self.edits);
-        self.edits.extend(
+        self.walker.emit_group(&members);
+        self.walker.edits.extend(
             ranges
                 .into_iter()
-                .filter_map(|r| aligner::space_padding_edit(self.source, r, 1)),
+                .filter_map(|r| aligner::space_padding_edit(self.walker.source, r, 1)),
         );
     }
 
@@ -88,11 +84,15 @@ impl Visitor<'_> {
     /// a line break, otherwise `Split` carrying an edit that pushes
     /// the body onto the next source line.
     fn over_budget_outcome(&self, case: &MatchCase, collapse_range: TextRange) -> CaseOutcome {
-        if self.source.contains_line_break(collapse_range) {
+        if self.walker.source.contains_line_break(collapse_range) {
             return CaseOutcome::Disqualify;
         }
-        let body_indent = self.source.line_indent_width(case.start()) + INDENT_STEP;
-        let replacement = format!("{}{}", self.source.newline_str(), " ".repeat(body_indent));
+        let body_indent = self.walker.source.line_indent_width(case.start()) + INDENT_STEP;
+        let replacement = format!(
+            "{}{}",
+            self.walker.source.newline_str(),
+            " ".repeat(body_indent),
+        );
         CaseOutcome::Split(Edit::range_replacement(replacement, collapse_range))
     }
 
@@ -105,11 +105,13 @@ impl Visitor<'_> {
             .as_deref()
             .map_or(case.pattern.end(), Ranged::end);
         let lhs_width = self
+            .walker
             .source
             .slice(TextRange::new(case.start(), pre_colon_end))
             .width();
-        let body_width = self.source.slice(body_first.range()).width();
-        self.source.column_of(case.start()) + lhs_width + 3 + body_width > self.code_line_length
+        let body_width = self.walker.source.slice(body_first.range()).width();
+        self.walker.source.column_of(case.start()) + lhs_width + 3 + body_width
+            > self.code_line_length
     }
 
     /// Emits collapse-and-align edits for one match by walking each
@@ -122,7 +124,7 @@ impl Visitor<'_> {
                 CaseOutcome::Disqualify => self.flush_subgroup(&mut current),
                 CaseOutcome::Split(edit) => {
                     self.flush_subgroup(&mut current);
-                    self.edits.push(edit);
+                    self.walker.edits.push(edit);
                 }
             }
         }
@@ -131,22 +133,22 @@ impl Visitor<'_> {
 
     /// Classifies one arm into the matching `CaseOutcome` variant.
     /// Disqualifies on multi-statement, compound, or multi-line
-    /// bodies and on a comment in the `:`-to-body gap; defers to
+    /// bodies and on a comment in the `:`-to-body gap, deferring to
     /// `over_budget_outcome` when the arm would overflow the
     /// line-length budget collapsed.
     fn qualify_case(&self, case: &MatchCase) -> CaseOutcome {
         let [body_first] = case.body.as_slice() else {
             return CaseOutcome::Disqualify;
         };
-        if is_compound_statement(body_first) || self.source.contains_line_break(body_first) {
+        if is_compound_statement(body_first) || self.walker.source.contains_line_break(body_first) {
             return CaseOutcome::Disqualify;
         }
-        let Some(member) = colon_targets::match_case(self.source, case) else {
+        let Some(member) = colon_targets::match_case(self.walker.source, case) else {
             return CaseOutcome::Disqualify;
         };
         let collapse_range =
             TextRange::new(member.gap.end() + TextSize::from(1u32), body_first.start());
-        if self.source.intersects_comment(collapse_range) {
+        if self.walker.source.intersects_comment(collapse_range) {
             return CaseOutcome::Disqualify;
         }
         if self.overflows_budget(case, body_first) {

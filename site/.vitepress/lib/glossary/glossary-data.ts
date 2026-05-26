@@ -281,7 +281,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'stdin mode': {
     aliases   : ['--stdin', 'stdin'],
-    definition: 'Stdin mode is the CLI shape that reads a single source from standard input and writes to standard output. It bypasses the filesystem walker entirely, so editors and pipelines drive *Prose* without touching disk.'
+    definition: 'Stdin mode is the CLI shape that reads a single source from standard input and writes to standard output, triggered by either the `--stdin` flag or a `-` positional path. It bypasses the filesystem walker entirely, so editors and pipelines drive *Prose* without touching disk.'
   },
 
   'structured section': {
