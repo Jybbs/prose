@@ -25,6 +25,24 @@ fn check_clean_fixture_exits_zero() {
 }
 
 #[test]
+fn check_dash_clean_exits_zero() {
+    prose()
+        .args(["check", "-"])
+        .write_stdin("x = 1\n")
+        .assert()
+        .success();
+}
+
+#[test]
+fn check_dash_unaligned_exits_format_change() {
+    prose()
+        .args(["check", "-"])
+        .write_stdin("ab = 1\nx = 2\n")
+        .assert()
+        .code(1);
+}
+
+#[test]
 fn check_stdin_clean_exits_zero() {
     prose()
         .args(["check", "--stdin"])
@@ -75,6 +93,8 @@ fn completions_bash_exits_zero() {
 fn config_errors_exit_four() {
     let cases: &[&[&str]] = &[
         &["check", "--stdin", "."],
+        &["check", "-", "--stdin"],
+        &["check", "-", "a.py"],
         &["--not-a-flag"],
         &["check", "--select", "not-a-rule", "."],
         &["format", "--diff", "--output-format", "json", "."],
@@ -82,6 +102,16 @@ fn config_errors_exit_four() {
     for args in cases {
         prose().args(*args).assert().code(4);
     }
+}
+
+#[test]
+fn format_dash_writes_rewrite_to_stdout() {
+    prose()
+        .args(["format", "-"])
+        .write_stdin("x = 1\n")
+        .assert()
+        .success()
+        .stdout("x = 1\n");
 }
 
 #[test]
