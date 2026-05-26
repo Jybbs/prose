@@ -2,34 +2,36 @@
 
 use std::io::{self, Write};
 
+use ruff_source_file::SourceFile;
+
 use crate::diagnostics::{Diagnostic, Emitter, Run};
-use crate::source::Source;
 
 pub(crate) struct Github;
 
 impl Emitter for Github {
     fn emit(&self, writer: &mut dyn Write, runs: &[Run<'_>]) -> io::Result<()> {
-        for (source, diagnostics) in runs {
+        for (file, diagnostics) in runs {
             for diag in *diagnostics {
-                emit_one(writer, source, diag)?;
+                emit_one(writer, file, diag)?;
             }
         }
         Ok(())
     }
 }
 
-fn emit_one(writer: &mut dyn Write, source: &Source, diag: &Diagnostic) -> io::Result<()> {
+fn emit_one(writer: &mut dyn Write, file: &SourceFile, diag: &Diagnostic) -> io::Result<()> {
     debug_assert!(
         !diag.message.contains(['%', '\r', '\n']),
         "rule message must not carry workflow-command escape characters",
     );
-    let start = source.line_column(diag.range.start());
-    let end = source.line_column(diag.range.end());
-    let file = source.filename();
+    let code = file.to_source_code();
+    let start = code.line_column(diag.range.start());
+    let end = code.line_column(diag.range.end());
+    let name = file.name();
     let message = diag.message.as_str();
     write!(
         writer,
-        "::warning file={file},line={l},col={c}",
+        "::warning file={name},line={l},col={c}",
         l = start.line,
         c = start.column,
     )?;
@@ -52,6 +54,7 @@ mod tests {
     use super::*;
     use crate::diagnostics::Severity;
     use crate::rule::RuleId;
+    use crate::source::Source;
 
     fn diag(range: TextRange) -> Diagnostic {
         Diagnostic {
@@ -69,7 +72,10 @@ mod tests {
         let diag = diag(TextRange::new(0.into(), 1.into()));
         let mut buf = Vec::<u8>::new();
         Github
-            .emit(&mut buf, &[(&source, std::slice::from_ref(&diag))])
+            .emit(
+                &mut buf,
+                &[(source.source_file(), std::slice::from_ref(&diag))],
+            )
             .expect("emits");
         assert_eq!(
             String::from_utf8(buf).expect("utf-8"),
@@ -83,7 +89,10 @@ mod tests {
         let diag = diag(TextRange::new(0.into(), 11.into()));
         let mut buf = Vec::<u8>::new();
         Github
-            .emit(&mut buf, &[(&source, std::slice::from_ref(&diag))])
+            .emit(
+                &mut buf,
+                &[(source.source_file(), std::slice::from_ref(&diag))],
+            )
             .expect("emits");
         assert_eq!(
             String::from_utf8(buf).expect("utf-8"),

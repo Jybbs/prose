@@ -17,6 +17,7 @@ Rewrites Python files to conform to the *Prose* style. Returns exit code 0 once 
 | Flag | Type | Default | Description |
 |---|---|---|---|
 | `--diff` | bool | off | Show a unified diff on stdout instead of writing changes |
+| `--no-cache` | bool | off | Bypass the user-level [**cache**](/reference/cache) for this invocation |
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. `--diff` requires `text` |
 | `--stdin` | bool | off | Read source from stdin and write the rewritten source to stdout |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules, replacing the configured-enabled set |
@@ -53,6 +54,7 @@ Reports violations without modifying source. Returns the canonical [**Exit Codes
 
 | Flag | Type | Default | Description |
 |---|---|---|---|
+| `--no-cache` | bool | off | Bypass the user-level [**cache**](/reference/cache) for this invocation |
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. See [**Output Formats**](/reference/output-formats) for the per-format record layout |
 | `--stdin` | bool | off | Read source from stdin instead of the filesystem |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules |
@@ -67,6 +69,16 @@ prose check --output-format github .
 prose check --output-format sarif . > prose.sarif
 prose check --stdin < module.py
 ```
+
+## `prose cache clean`
+
+Removes every entry from the user-level cache and prints the freed bytes plus the cleared entry count. The [**Cache**](/reference/cache) reference covers the cache's location, key shape, and `[tool.prose.cache]` configuration.
+
+```bash
+prose cache clean
+```
+
+Returns exit code 0 on success. The IO-error exit code applies on permission or filesystem failures.
 
 ## `prose completions`
 

@@ -27,6 +27,11 @@ export const glossary: Record<string, GlossaryEntry> = {
     href      : '/usage/quick-start#subset-the-active-rules'
   },
 
+  '--no-cache': {
+    definition: '`--no-cache` is a CLI flag that bypasses the user-level cache for a single invocation of `prose check` or `prose format`. The flag overrides the configured `[tool.prose.cache] enabled` value.',
+    href      : '/reference/cache#no-cache'
+  },
+
   '--select': {
     definition: '`--select` is a CLI flag that restricts a run to the named rules. The flag is repeatable, and pairs with `--ignore` to subtract from the active set.',
     href      : '/usage/quick-start#subset-the-active-rules'
@@ -42,6 +47,11 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases   : ['binding analysis', 'binding map', 'name bindings', 'binding', 'bindings'],
     definition: '`BindingAnalysis` is a per-`Source` table indexing every write and read of every name in every lexical scope. The `single-use-variables` rule consumes it.',
     href      : '/primitives/binding-analysis'
+  },
+
+  'BLAKE3': {
+    definition: 'BLAKE3 is the cryptographic hash function *Prose* uses to derive [[Cache]] keys. The key digests the source bytes, the canonical TOML serialization of the active configuration, and the *Prose* version, so any meaningful change to any input produces a different key.',
+    href      : '/reference/cache#key-shape'
   },
 
   'Diagnostic': {
@@ -110,6 +120,12 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases   : ['blank-line', 'blank lines', 'blank-lines'],
     definition: 'A blank line is an empty line separating logical units. *Prose* enforces blank-line counts between module-level definitions, class members, and import groups per the `blank-lines` rule.',
     href      : '/rules/blank-lines'
+  },
+
+  'cache': {
+    aliases   : ['Cache', 'cached', 'caching'],
+    definition: 'The user-level on-disk cache *Prose* keeps for repeat `prose check` and `prose format` runs. Keyed by [[BLAKE3]] over `(source ++ config ++ prose_version)`, capped by the LRU eviction the `[tool.prose.cache] max-size-mib` knob configures, bypassable per invocation with `--no-cache`, and clearable with `prose cache clean`.',
+    href      : '/reference/cache'
   },
 
   'code-line-length': {

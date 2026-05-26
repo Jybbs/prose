@@ -28,7 +28,7 @@ mod args;
 mod exit_status;
 mod runner;
 
-use args::{report_clap_error, validate_diff_format_combination, Cli, Command};
+use args::{report_clap_error, validate_diff_format_combination, CacheAction, Cli, Command};
 use exit_status::ExitStatus;
 
 pub(super) fn log_error_chain(err: &anyhow::Error) {
@@ -48,6 +48,9 @@ pub fn run() -> ExitCode {
     }
     let stdout = stdout_with_color(cli.color);
     let result = match cli.command {
+        Command::Cache {
+            action: CacheAction::Clean,
+        } => runner::cache_clean(stdout),
         Command::Check(args) => runner::check_with_io(args, io::stdin(), stdout),
         Command::Completions { shell } => {
             generate(shell, &mut Cli::command(), "prose", &mut io::stdout());

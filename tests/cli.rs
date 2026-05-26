@@ -19,9 +19,56 @@ fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
 }
 
 #[test]
+fn cache_clean_subcommand_exits_zero_and_reports_count() {
+    let cache_home = tempdir().expect("tempdir");
+    let assert = prose()
+        .args(["cache", "clean"])
+        .env("XDG_CACHE_HOME", cache_home.path())
+        .assert()
+        .success();
+    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    assert!(out.starts_with("removed "), "stdout was {out:?}");
+    assert!(out.contains("entries"));
+    assert!(out.contains("bytes"));
+}
+
+#[test]
+fn cache_hit_produces_identical_diagnostics_to_miss() {
+    let cache_home = tempdir().expect("tempdir");
+    let (_dir, path) = fixture("ab.py", "ab = 1\nx = 2\n");
+    let miss = prose()
+        .args(["check", "--output-format", "json"])
+        .arg(&path)
+        .env("XDG_CACHE_HOME", cache_home.path())
+        .assert()
+        .code(1);
+    let miss_stdout = miss.get_output().stdout.clone();
+
+    let hit = prose()
+        .args(["check", "--output-format", "json"])
+        .arg(&path)
+        .env("XDG_CACHE_HOME", cache_home.path())
+        .assert()
+        .code(1);
+    let hit_stdout = hit.get_output().stdout.clone();
+
+    assert_eq!(miss_stdout, hit_stdout);
+}
+
+#[test]
 fn check_clean_fixture_exits_zero() {
     let (_dir, path) = fixture("clean.py", "x = 1\n");
     prose().arg("check").arg(&path).assert().success();
+}
+
+#[test]
+fn check_no_cache_flag_runs_clean() {
+    let (_dir, path) = fixture("clean.py", "x = 1\n");
+    prose()
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .success();
 }
 
 #[test]
@@ -87,13 +134,35 @@ fn config_errors_exit_four() {
 #[test]
 fn format_diff_renders_diff_and_leaves_file_unchanged() {
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
-    prose()
+    let assert = prose()
         .args(["format", "--diff"])
         .arg(&path)
         .assert()
         .code(1);
+    let stdout = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    assert!(stdout.contains("@@"), "diff missing hunks: {stdout:?}");
+    assert!(
+        stdout.contains("-x = 2"),
+        "diff missing before line: {stdout:?}"
+    );
+    assert!(
+        stdout.contains("+x  = 2"),
+        "diff missing after line: {stdout:?}"
+    );
     let after = std::fs::read_to_string(&path).expect("reads");
     assert_eq!(after, "ab = 1\nx = 2\n");
+}
+
+#[test]
+fn format_no_cache_flag_rewrites_when_needed() {
+    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    prose()
+        .args(["format", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .success();
+    let after = std::fs::read_to_string(&path).expect("reads");
+    assert_ne!(after, "ab = 1\nx = 2\n");
 }
 
 #[test]

@@ -4,6 +4,10 @@ expression: config
 input_file: tests/fixtures/config/full_override.toml
 ---
 Config {
+    cache: CacheConfig {
+        enabled: false,
+        max_size_mib: 250,
+    },
     code_line_length: Some(
         100,
     ),

@@ -42,6 +42,10 @@ The [**Rules**](/rules/) page enumerates every rule the binary ships, with one p
 
 Path-mode runs parallelize across files via [**`rayon`**](https://docs.rs/rayon/), with one rule pipeline per worker thread, leaving large repos to settle in wall-clock time proportional to the slowest file rather than the file count. Setting `RAYON_NUM_THREADS=1` forces single-threaded execution, which is the shape to reach for when debugging a rule whose diagnostic output reads as confusing under parallel emission. Stdin mode is single-threaded by construction, because the input is one file and there's nothing to parallelize across.
 
+## Cache
+
+`prose check` and `prose format` hit a user-level [**cache**](/reference/cache) on by default. Bypass for one invocation with `--no-cache`, tune the size cap under `[tool.prose.cache]`, or clear with `prose cache clean`.
+
 ## Where to Go Next
 
 The [**Ruff**](/integrations/ruff) integration page covers pairing *Prose* with Ruff for projects that run both. The [**Suppression**](/usage/suppression) chapter covers per-line and block-level opt-outs. The [**Exit Codes**](/reference/exit-codes) reference is the source-of-truth for CI gating.

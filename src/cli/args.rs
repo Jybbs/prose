@@ -22,6 +22,10 @@ Exit codes:
 
 #[derive(Debug, Default, clap::Args)]
 pub(crate) struct CheckArgs {
+    /// Bypass the user-level cache for this invocation.
+    #[arg(long)]
+    pub(crate) no_cache: bool,
+
     /// Output format for diagnostics.
     #[arg(long, value_enum, default_value_t)]
     pub(crate) output_format: OutputFormat,
@@ -58,6 +62,12 @@ pub(crate) struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum Command {
+    /// Manage the user-level cache.
+    Cache {
+        #[command(subcommand)]
+        action: CacheAction,
+    },
+
     /// Check files for formatting violations without rewriting.
     Check(CheckArgs),
 
@@ -71,11 +81,21 @@ pub(crate) enum Command {
     Format(FormatArgs),
 }
 
+#[derive(Debug, Subcommand)]
+pub(crate) enum CacheAction {
+    /// Clear every cached entry and report the freed bytes.
+    Clean,
+}
+
 #[derive(Debug, Default, clap::Args)]
 pub(crate) struct FormatArgs {
     /// Show a unified diff instead of writing changes.
     #[arg(long)]
     pub(crate) diff: bool,
+
+    /// Bypass the user-level cache for this invocation.
+    #[arg(long)]
+    pub(crate) no_cache: bool,
 
     /// Output format for diagnostics.
     #[arg(long, value_enum, default_value_t)]

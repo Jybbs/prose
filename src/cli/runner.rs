@@ -5,21 +5,54 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 use rayon::iter::{ParallelBridge, ParallelIterator};
+use ruff_source_file::{SourceFile, SourceFileBuilder};
 
 use super::args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter};
 use super::exit_status::ExitStatus;
 use super::log_error_chain;
+use crate::cache::{Cache, CacheEntry, CacheKey};
 use crate::config::Config;
 use crate::diagnostics::{Diagnostic, Emitter, Github, Json, Run, Sarif, Text};
 use crate::pipeline::Pipeline;
 use crate::rule::RuleId;
-use crate::source::{Source, SourceError};
+use crate::source::Source;
 use crate::walker;
 
 /// One file's contribution to the run.
 enum FileOutcome {
+    Done {
+        diagnostics: Vec<Diagnostic>,
+        file: SourceFile,
+        formatted_text: Option<String>,
+        original_text: String,
+    },
     Failed(ExitStatus),
-    Parsed(Source, Vec<Diagnostic>),
+}
+
+/// Per-run context shared across every path the walker yields.
+struct RunContext<'a> {
+    cache: Option<&'a Cache>,
+    config_toml: String,
+    pipeline: &'a Pipeline,
+}
+
+pub(crate) fn cache_clean<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
+    match Cache::open().and_then(|c| c.clean()) {
+        Ok(report) => {
+            writeln!(
+                stdout,
+                "removed {entries} entries ({bytes} bytes)",
+                entries = report.entries,
+                bytes = report.bytes,
+            )
+            .context("writing stdout")?;
+            Ok(ExitStatus::Clean)
+        }
+        Err(err) => {
+            eprintln!("error: {err}");
+            Ok(ExitStatus::ConfigError)
+        }
+    }
 }
 
 pub(crate) fn check_with_io<R: Read, W: Write>(
@@ -27,16 +60,22 @@ pub(crate) fn check_with_io<R: Read, W: Write>(
     stdin: R,
     mut stdout: W,
 ) -> anyhow::Result<ExitStatus> {
-    let pipeline = match load_pipeline_or_status(&args.rules) {
-        Ok(p) => p,
+    let (config, pipeline) = match load_or_status(&args.rules) {
+        Ok(pair) => pair,
         Err(s) => return Ok(s),
     };
+    let cache = open_cache(&config, args.no_cache);
+    let ctx = RunContext {
+        cache: cache.as_ref(),
+        config_toml: toml::to_string(&config).unwrap_or_default(),
+        pipeline: &pipeline,
+    };
     let outcomes: Vec<FileOutcome> = if args.stdin {
-        vec![process_stdin(stdin, &pipeline).1]
+        vec![process_stdin(stdin, ctx.pipeline)]
     } else {
         walker::walk(&args.paths)
             .par_bridge()
-            .map(|entry| entry.map_or_else(walk_error, |path| process_path(&path, &pipeline)))
+            .map(|entry| entry.map_or_else(walk_error, |path| process_path(&path, &ctx)))
             .collect()
     };
     emit_outcomes(&outcomes, args.output_format, &mut stdout)?;
@@ -48,31 +87,45 @@ pub(crate) fn format_with_io<R: Read, W: Write>(
     stdin: R,
     mut stdout: W,
 ) -> anyhow::Result<ExitStatus> {
-    let pipeline = match load_pipeline_or_status(&args.rules) {
-        Ok(p) => p,
+    let (config, pipeline) = match load_or_status(&args.rules) {
+        Ok(pair) => pair,
         Err(s) => return Ok(s),
     };
+    let cache = open_cache(&config, args.no_cache);
+    let ctx = RunContext {
+        cache: cache.as_ref(),
+        config_toml: toml::to_string(&config).unwrap_or_default(),
+        pipeline: &pipeline,
+    };
     if args.stdin {
-        return format_stdin(stdin, args.diff, args.output_format, &pipeline, &mut stdout);
+        return format_stdin(
+            stdin,
+            args.diff,
+            args.output_format,
+            ctx.pipeline,
+            &mut stdout,
+        );
     }
     if args.diff {
-        format_paths_diff(&args.paths, &pipeline, &mut stdout)
+        format_paths_diff(&args.paths, &ctx, &mut stdout)
     } else {
-        format_paths_rewrite(&args.paths, args.output_format, &pipeline, &mut stdout)
+        format_paths_rewrite(&args.paths, args.output_format, &ctx, &mut stdout)
     }
 }
 
 fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
-    let (formatted, diagnostics) = match outcome {
-        FileOutcome::Parsed(f, d) if !d.is_empty() => (f, d),
-        other => return other,
+    let FileOutcome::Done {
+        formatted_text: Some(text),
+        ..
+    } = &outcome
+    else {
+        return outcome;
     };
-    fs_err::write(path, formatted.text())
-        .inspect_err(|e| eprintln!("error: {e}"))
-        .map_or_else(
-            |_| FileOutcome::Failed(ExitStatus::ConfigError),
-            |()| FileOutcome::Parsed(formatted, diagnostics),
-        )
+    if let Err(e) = fs_err::write(path, text) {
+        eprintln!("error: {e}");
+        return FileOutcome::Failed(ExitStatus::ConfigError);
+    }
+    outcome
 }
 
 fn emit_outcomes<W: Write>(
@@ -83,8 +136,10 @@ fn emit_outcomes<W: Write>(
     let view: Vec<Run<'_>> = outcomes
         .iter()
         .filter_map(|o| match o {
+            FileOutcome::Done {
+                file, diagnostics, ..
+            } => Some((file, diagnostics.as_slice())),
             FileOutcome::Failed(_) => None,
-            FileOutcome::Parsed(s, d) => Some((s, d.as_slice())),
         })
         .collect();
     match format {
@@ -99,48 +154,38 @@ fn emit_outcomes<W: Write>(
 
 fn format_paths_diff<W: Write>(
     paths: &[PathBuf],
-    pipeline: &Pipeline,
+    ctx: &RunContext<'_>,
     stdout: &mut W,
 ) -> anyhow::Result<ExitStatus> {
-    let entries: Vec<(Option<(PathBuf, String)>, FileOutcome)> = walker::walk(paths)
+    let outcomes: Vec<FileOutcome> = walker::walk(paths)
         .par_bridge()
-        .map(|entry| {
-            entry.map_or_else(
-                |e| (None, walk_error(e)),
-                |path| {
-                    let (original, outcome) = process_path_with_original(&path, pipeline);
-                    (Some((path, original)), outcome)
-                },
-            )
-        })
-        .collect();
-    let outcomes: Vec<FileOutcome> = entries
-        .into_iter()
-        .map(|(meta, outcome)| -> anyhow::Result<FileOutcome> {
-            if let (Some((path, original)), FileOutcome::Parsed(formatted, diags)) =
-                (&meta, &outcome)
-            {
-                if !diags.is_empty() {
-                    write_diff(stdout, path.display(), original, formatted.text())?;
-                }
-            }
-            Ok(outcome)
-        })
-        .collect::<anyhow::Result<_>>()?;
+        .map(|entry| entry.map_or_else(walk_error, |path| process_path(&path, ctx)))
+        .collect::<Vec<_>>();
+    for outcome in &outcomes {
+        if let FileOutcome::Done {
+            file,
+            formatted_text: Some(formatted),
+            original_text,
+            ..
+        } = outcome
+        {
+            write_diff(stdout, file.name(), original_text, formatted)?;
+        }
+    }
     Ok(status_from_outcomes(&outcomes, false))
 }
 
 fn format_paths_rewrite<W: Write>(
     paths: &[PathBuf],
     format: OutputFormat,
-    pipeline: &Pipeline,
+    ctx: &RunContext<'_>,
     stdout: &mut W,
 ) -> anyhow::Result<ExitStatus> {
     let outcomes: Vec<FileOutcome> = walker::walk(paths)
         .par_bridge()
         .map(|entry| {
             entry.map_or_else(walk_error, |path| {
-                apply_rewrite(&path, process_path(&path, pipeline))
+                apply_rewrite(&path, process_path(&path, ctx))
             })
         })
         .collect();
@@ -157,105 +202,172 @@ fn format_stdin<R: Read, W: Write>(
     pipeline: &Pipeline,
     writer: &mut W,
 ) -> anyhow::Result<ExitStatus> {
-    let (original, outcome) = process_stdin(stdin, pipeline);
-    let (formatted, diagnostics) = match outcome {
-        FileOutcome::Failed(s) => return Ok(s),
-        FileOutcome::Parsed(s, d) => (s, d),
-    };
-
-    if diff && !diagnostics.is_empty() {
-        write_diff(writer, "<stdin>", &original, formatted.text())?;
-    } else if !diff && format.is_text() {
-        writer
-            .write_all(formatted.text().as_bytes())
-            .context("writing stdout")?;
-    }
-    let outcomes = vec![FileOutcome::Parsed(formatted, diagnostics)];
-    if !diff && !format.is_text() {
-        emit_outcomes(&outcomes, format, writer)?;
+    let outcomes = vec![process_stdin(stdin, pipeline)];
+    if let FileOutcome::Done {
+        file,
+        formatted_text,
+        original_text,
+        ..
+    } = &outcomes[0]
+    {
+        if diff {
+            if let Some(formatted) = formatted_text {
+                write_diff(writer, "<stdin>", original_text, formatted)?;
+            }
+        } else if format.is_text() {
+            let to_write = formatted_text.as_deref().unwrap_or(file.source_text());
+            writer
+                .write_all(to_write.as_bytes())
+                .context("writing stdout")?;
+        } else {
+            emit_outcomes(&outcomes, format, writer)?;
+        }
     }
     Ok(status_from_outcomes(&outcomes, !diff))
 }
 
-fn load_pipeline(select: &[RuleId], ignore: &[RuleId]) -> anyhow::Result<Pipeline> {
+fn load_config_and_pipeline(
+    select: &[RuleId],
+    ignore: &[RuleId],
+) -> anyhow::Result<(Config, Pipeline)> {
     let cwd = std::env::current_dir().context("reading current working directory")?;
     let config = Config::load(&cwd).context("loading [tool.prose] config")?;
-    Ok(Pipeline::with_filters(&config, select, ignore))
+    let pipeline = Pipeline::with_filters(&config, select, ignore);
+    Ok((config, pipeline))
 }
 
-fn load_pipeline_or_status(filter: &RuleFilter) -> Result<Pipeline, ExitStatus> {
-    load_pipeline(&filter.select, &filter.ignore)
+fn load_or_status(filter: &RuleFilter) -> Result<(Config, Pipeline), ExitStatus> {
+    load_config_and_pipeline(&filter.select, &filter.ignore)
         .inspect_err(log_error_chain)
         .map_err(|_| ExitStatus::ConfigError)
 }
 
-fn process_path(path: &Path, pipeline: &Pipeline) -> FileOutcome {
-    match read_source_or_status(path) {
-        Ok(source) => run_pipeline(source, pipeline),
-        Err(s) => FileOutcome::Failed(s),
+fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
+    if no_cache || !config.cache.enabled {
+        return None;
     }
+    Cache::open()
+        .map(|c| c.with_max_size_mib(config.cache.max_size_mib))
+        .inspect_err(|e| eprintln!("warning: cache disabled: {e}"))
+        .ok()
 }
 
-fn process_path_with_original(path: &Path, pipeline: &Pipeline) -> (String, FileOutcome) {
-    match read_source_or_status(path) {
-        Ok(source) => {
-            let original = source.text().to_owned();
-            (original, run_pipeline(source, pipeline))
+fn process_path(path: &Path, ctx: &RunContext<'_>) -> FileOutcome {
+    let bytes = match fs_err::read(path) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("error: {e}");
+            return FileOutcome::Failed(ExitStatus::ConfigError);
         }
-        Err(s) => (String::new(), FileOutcome::Failed(s)),
+    };
+    let cached = ctx
+        .cache
+        .map(|c| (c, CacheKey::compute(&bytes, &ctx.config_toml)));
+    if let Some((c, k)) = &cached {
+        if let Some(entry) = c.lookup(k) {
+            if let Some(outcome) = rehydrate(path, &bytes, entry) {
+                return outcome;
+            }
+        }
     }
+    let text = match String::from_utf8(bytes) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("error: {} is not valid UTF-8: {e}", path.display());
+            return FileOutcome::Failed(ExitStatus::ConfigError);
+        }
+    };
+    let source = match Source::build(text.clone(), path.display().to_string()) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("error: parse error in `{}`: {e}", path.display());
+            return FileOutcome::Failed(ExitStatus::ParseError);
+        }
+    };
+    let outcome = run_pipeline(source, ctx.pipeline, text);
+    if let (
+        Some((c, k)),
+        FileOutcome::Done {
+            diagnostics,
+            formatted_text,
+            ..
+        },
+    ) = (&cached, &outcome)
+    {
+        c.insert(
+            k,
+            &CacheEntry {
+                diagnostics: diagnostics.clone(),
+                formatted_source: formatted_text.clone(),
+            },
+        );
+    }
+    outcome
 }
 
-fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline) -> (String, FileOutcome) {
+fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline) -> FileOutcome {
     let Ok(text) =
         io::read_to_string(stdin).inspect_err(|e| eprintln!("error: reading stdin: {e}"))
     else {
-        return (String::new(), FileOutcome::Failed(ExitStatus::ConfigError));
+        return FileOutcome::Failed(ExitStatus::ConfigError);
     };
-    let outcome = text
-        .parse::<Source>()
+    text.parse::<Source>()
         .inspect_err(|e| eprintln!("error: parse error in stdin: {e}"))
         .map_or_else(
             |_| FileOutcome::Failed(ExitStatus::ParseError),
-            |source| run_pipeline(source, pipeline),
-        );
-    (text, outcome)
+            |source| {
+                let original = source.text().to_owned();
+                run_pipeline(source, pipeline, original)
+            },
+        )
 }
 
-fn read_source_or_status(path: &Path) -> Result<Source, ExitStatus> {
-    Source::from_path(path).map_err(|e| match e {
-        SourceError::Io(io_err) => {
-            eprintln!("error: {io_err}");
-            ExitStatus::ConfigError
-        }
-        SourceError::Parse(parse_err) => {
-            eprintln!("error: parse error in `{}`: {parse_err}", path.display());
-            ExitStatus::ParseError
-        }
+fn rehydrate(path: &Path, original_bytes: &[u8], entry: CacheEntry) -> Option<FileOutcome> {
+    let original_text = std::str::from_utf8(original_bytes).ok()?.to_owned();
+    let name = path.display().to_string();
+    let display_text = entry
+        .formatted_source
+        .clone()
+        .unwrap_or_else(|| original_text.clone());
+    let file = SourceFileBuilder::new(name, display_text).finish();
+    Some(FileOutcome::Done {
+        diagnostics: entry.diagnostics,
+        file,
+        formatted_text: entry.formatted_source,
+        original_text,
     })
 }
 
-fn run_pipeline(source: Source, pipeline: &Pipeline) -> FileOutcome {
-    pipeline
-        .run(source)
-        .inspect_err(|e| eprintln!("error: {e}"))
-        .map_or_else(
-            |_| FileOutcome::Failed(ExitStatus::ConfigError),
-            |(s, d)| FileOutcome::Parsed(s, d),
-        )
+fn run_pipeline(source: Source, pipeline: &Pipeline, original_text: String) -> FileOutcome {
+    match pipeline.run(source) {
+        Ok((formatted, diagnostics)) => {
+            let formatted_text =
+                (formatted.text() != original_text).then(|| formatted.text().to_owned());
+            FileOutcome::Done {
+                diagnostics,
+                file: formatted.source_file().clone(),
+                formatted_text,
+                original_text,
+            }
+        }
+        Err(e) => {
+            eprintln!("error: {e}");
+            FileOutcome::Failed(ExitStatus::ConfigError)
+        }
+    }
 }
 
 fn status_from_outcomes(outcomes: &[FileOutcome], demote_format_change: bool) -> ExitStatus {
     outcomes
         .iter()
         .map(|outcome| match outcome {
-            FileOutcome::Failed(s) => *s,
-            FileOutcome::Parsed(_, diags) => diags
+            FileOutcome::Done { diagnostics, .. } => diagnostics
                 .iter()
                 .map(|d| ExitStatus::from(d.severity))
                 .filter(|s| !demote_format_change || *s != ExitStatus::FormatChange)
                 .max()
                 .unwrap_or_default(),
+            FileOutcome::Failed(s) => *s,
         })
         .max()
         .unwrap_or_default()
@@ -295,6 +407,7 @@ mod tests {
 
     fn check_args(paths: Vec<PathBuf>, stdin: bool) -> CheckArgs {
         CheckArgs {
+            no_cache: true,
             paths,
             stdin,
             ..Default::default()
@@ -335,9 +448,20 @@ mod tests {
     fn format_args(paths: Vec<PathBuf>, stdin: bool, diff: bool) -> FormatArgs {
         FormatArgs {
             diff,
+            no_cache: true,
             paths,
             stdin,
             ..Default::default()
+        }
+    }
+
+    fn outcome_with(source: Source, diagnostics: Vec<Diagnostic>) -> FileOutcome {
+        let original_text = source.text().to_owned();
+        FileOutcome::Done {
+            diagnostics,
+            file: source.source_file().clone(),
+            formatted_text: None,
+            original_text,
         }
     }
 
@@ -362,7 +486,7 @@ mod tests {
         let source = "x = 1\n".parse::<Source>().expect("parses");
         let range = TextRange::new(0.into(), 1.into());
         let outcomes = vec![
-            FileOutcome::Parsed(
+            outcome_with(
                 source,
                 vec![diagnostic(Severity::Format, range, "synthetic-format")],
             ),
@@ -382,7 +506,7 @@ mod tests {
             diagnostic(Severity::Format, range, "synthetic-format"),
             diagnostic(Severity::Lint, range, "synthetic-lint"),
         ];
-        let outcomes = vec![FileOutcome::Parsed(source, diagnostics)];
+        let outcomes = vec![outcome_with(source, diagnostics)];
 
         let status = status_from_outcomes(&outcomes, false);
 
@@ -397,7 +521,7 @@ mod tests {
             TextRange::new(0.into(), 1.into()),
             "synthetic-lint",
         )];
-        let outcomes = vec![FileOutcome::Parsed(source, diagnostics)];
+        let outcomes = vec![outcome_with(source, diagnostics)];
 
         let status = status_from_outcomes(&outcomes, false);
 
@@ -467,7 +591,7 @@ mod tests {
             TextRange::new(0.into(), 1.into()),
             "synthetic-format",
         )];
-        let outcomes = vec![FileOutcome::Parsed(source, diags)];
+        let outcomes = vec![outcome_with(source, diags)];
         let result = emit_outcomes(&outcomes, OutputFormat::Json, &mut FailingWriter);
         assert!(result.is_err());
     }
@@ -475,7 +599,7 @@ mod tests {
     #[test]
     fn emit_outcomes_renders_each_output_format() {
         let source = "x = 1\n".parse::<Source>().expect("parses");
-        let outcomes = vec![FileOutcome::Parsed(source, Vec::new())];
+        let outcomes = vec![outcome_with(source, Vec::new())];
         for format in [
             OutputFormat::Github,
             OutputFormat::Json,
@@ -665,13 +789,16 @@ mod tests {
     }
 
     #[test]
-    fn process_path_with_original_returns_empty_string_on_io_error() {
-        let pipeline =
-            crate::pipeline::Pipeline::with_filters(&crate::config::Config::default(), &[], &[]);
+    fn process_path_returns_config_error_on_missing_file() {
         let tmp = TempDir::new().expect("tempdir");
-        let nonexistent = tmp.path().join("does_not_exist.py");
-        let (original, outcome) = process_path_with_original(&nonexistent, &pipeline);
-        assert_eq!(original, "");
+        let config = Config::default();
+        let pipeline = Pipeline::with_filters(&config, &[], &[]);
+        let ctx = RunContext {
+            cache: None,
+            config_toml: String::new(),
+            pipeline: &pipeline,
+        };
+        let outcome = process_path(&tmp.path().join("does_not_exist.py"), &ctx);
         assert!(matches!(
             outcome,
             FileOutcome::Failed(ExitStatus::ConfigError),
@@ -679,16 +806,9 @@ mod tests {
     }
 
     #[test]
-    fn read_source_or_status_returns_config_error_on_missing_file() {
-        let tmp = TempDir::new().expect("tempdir");
-        let result = read_source_or_status(&tmp.path().join("missing.py"));
-        assert!(matches!(result, Err(ExitStatus::ConfigError)));
-    }
-
-    #[test]
     fn status_from_outcomes_demotes_format_change_when_demoted() {
         let source = "x = 1\n".parse::<Source>().expect("parses");
-        let outcomes = vec![FileOutcome::Parsed(
+        let outcomes = vec![outcome_with(
             source,
             vec![diagnostic(
                 Severity::Format,

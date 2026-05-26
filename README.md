@@ -1,7 +1,7 @@
 <div align="center">
 <img src="site/public/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." width="800">
 
-[![Rust](assets/badges/rust.svg)![1.82+](https://img.shields.io/badge/1.82+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
+[![Rust](assets/badges/rust.svg)![1.95+](https://img.shields.io/badge/1.95+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
 [![Python](assets/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
 [![Coverage](assets/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
 [![Documentation](assets/badges/docs.svg)![Docs](https://img.shields.io/badge/Docs-8a80cb?style=for-the-badge)](https://prose.fyi/)
@@ -237,6 +237,28 @@ Docstrings carry two readings inside one triple-quoted region. Description prose
 **Alignment rules** are `align-colons`, `align-equals`, `align-imports`, and `match-case-align`. **Toggle-only rules** carry only the `enabled` knob. They are `alphabetize`, `blank-lines`, `docstring-wrap`, `legacy-union-syntax`, `multi-line-docstrings`, `no-single-line-docstrings`, `no-step-narration`, `singleton-rule`, `strip-trailing-commas`, and `unused-future-annotations`. The remaining rules (`bare-import-allowlist`, `collection-layout`, `loose-constants`, `single-use-variables`) carry rule-specific knobs documented in the table above.
 
 Per-invocation overrides via `--select` and `--ignore` (*see [Install & Usage](#-install--usage) above*) take precedence over the configured-enabled set.
+
+---
+
+## 🪺 Cache
+
+***Prose*** caches per-file pipeline output keyed on the source bytes, the active configuration, and the *Prose* version, so a repeat `prose check` or `prose format` against an unchanged file collapses to a stat plus a hash plus a deserialize. The cache lives at the user level, with the path resolving per platform:
+
+| Platform | Path |
+|---|---|
+| Linux | `$XDG_CACHE_HOME/prose` *(default `~/.cache/prose`)* |
+| macOS | `~/Library/Caches/prose` |
+| Windows | `%LOCALAPPDATA%\prose\cache` |
+
+The cache is enabled by default and grows up to **100 MiB** before LRU eviction kicks in on the next insert. Override either knob under `[tool.prose.cache]`:
+
+```toml
+[tool.prose.cache]
+enabled      = true
+max-size-mib = 250
+```
+
+Bypass for a single invocation with `--no-cache` on either subcommand, and clear the cache with `prose cache clean`, which prints the freed byte count and the cleared entry count.
 
 ---
 
