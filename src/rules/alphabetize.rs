@@ -240,10 +240,11 @@ impl<'src> AstVisitor<'src> for RhsAnalyzer<'src> {
 /// Builds a `Vec<Range<usize>>` of body slots that form unified import
 /// blocks. An import block is the run of consecutive `import` and
 /// `from`-import statements at the same indent, separated by at most
-/// one blank line. A non-import statement, a comment-only gap, or a
-/// gap spanning two or more blank lines ends the block. Singleton
-/// runs drop. Shared with `align_imports`, so the two rules see the
-/// same notion of "import block".
+/// one blank line. A non-import statement or a gap spanning two or
+/// more blank lines ends the block. Comments between adjacent imports
+/// flow through without breaking the block. Singleton runs drop.
+/// Shared with `align_imports`, so the two rules see the same notion
+/// of "import block".
 pub(crate) fn import_block_ranges(source: &Source, body: &[Stmt]) -> Vec<Range<usize>> {
     let is_import = |s: &Stmt| s.is_import_stmt() || s.is_import_from_stmt();
     chunk_runs(body, |a, b| {
@@ -620,22 +621,24 @@ fn rewrite_body<'src>(
     }
     let mut import_run_slots: Vec<usize> = Vec::new();
     for block in import_block_ranges(source, body) {
-        for sub in same_kind_sub_runs(body, block.clone(), Stmt::is_import_from_stmt) {
-            permute_in_place(&mut order, body, sub.clone(), |s| {
+        for Range { start, end } in
+            same_kind_sub_runs(body, block.clone(), Stmt::is_import_from_stmt)
+        {
+            permute_in_place(&mut order, body, start..end, |s| {
                 let i = s.as_import_from_stmt()?;
                 Some((i.level, i.module.as_deref().unwrap_or_default()))
             });
-            import_run_slots.extend(sub.start..sub.end - 1);
+            import_run_slots.extend(start..end - 1);
         }
-        for sub in same_kind_sub_runs(body, block, Stmt::is_import_stmt) {
-            permute_in_place(&mut order, body, sub.clone(), |s| {
+        for Range { start, end } in same_kind_sub_runs(body, block, Stmt::is_import_stmt) {
+            permute_in_place(&mut order, body, start..end, |s| {
                 s.as_import_stmt()?
                     .names
                     .iter()
                     .map(|a| a.name.as_str())
                     .min()
             });
-            import_run_slots.extend(sub.start..sub.end - 1);
+            import_run_slots.extend(start..end - 1);
         }
     }
     if scope == BodyScope::Module {

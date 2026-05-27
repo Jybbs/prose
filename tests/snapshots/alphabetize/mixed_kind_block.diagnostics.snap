@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/mixed_kind_block.input.py
 ---
-alphabetize@212..288
+alphabetize@169..245

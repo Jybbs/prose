@@ -114,7 +114,7 @@ pub(crate) fn is_alignment_candidate(members: &[Member]) -> bool {
 /// run and starts a fresh one without losing the boundary statement.
 /// Walks `body` exactly once, calling the qualifier and each boundary
 /// predicate at most once per statement.
-pub(crate) fn keyed_line_adjacent_groups<'a, K, M, F>(
+fn keyed_line_adjacent_groups<'a, K, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
     mut qualify: F,

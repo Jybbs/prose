@@ -82,28 +82,27 @@ impl Visitor<'_> {
     /// sit in the block without contributing to or receiving
     /// alignment.
     fn qualify(&self, stmt: &Stmt) -> Option<aligner::Member> {
-        if self.walker.source.contains_line_break(stmt.range()) {
+        let source = self.walker.source;
+        if source.contains_line_break(stmt.range()) {
             return None;
         }
-        if let Some(s) = stmt.as_import_from_stmt() {
-            let member = aligner::line_anchored_member_at_kind(
-                self.walker.source,
-                s.range,
-                TokenKind::Import,
-            )?;
-            return Some(member.with_op_width("import".len()));
-        }
-        let s = stmt.as_import_stmt()?;
-        let [alias] = s.names.as_slice() else {
-            return None;
+        let (range, kind, op_width) = match stmt {
+            Stmt::Import(s) => {
+                let [alias] = s.names.as_slice() else {
+                    return None;
+                };
+                let asname = alias.asname.as_ref()?;
+                (
+                    TextRange::new(alias.name.end(), asname.start()),
+                    TokenKind::As,
+                    "as".len(),
+                )
+            }
+            Stmt::ImportFrom(s) => (s.range, TokenKind::Import, "import".len()),
+            _ => unreachable!("qualify is only called on statements inside an import block"),
         };
-        let asname = alias.asname.as_ref()?;
-        let member = aligner::line_anchored_member_at_kind(
-            self.walker.source,
-            TextRange::new(alias.name.end(), asname.start()),
-            TokenKind::As,
-        )?;
-        Some(member.with_op_width("as".len()))
+        aligner::line_anchored_member_at_kind(source, range, kind)
+            .map(|m| m.with_op_width(op_width))
     }
 }
 
