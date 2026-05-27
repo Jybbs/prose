@@ -108,7 +108,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'blank line': {
     aliases   : ['blank-line', 'blank lines', 'blank-lines'],
-    definition: 'A blank line is an empty line separating logical units. *Prose* enforces blank-line counts between module-level definitions, class members, and import groups per the `blank-lines` rule, and binds an own-line comment block tight against the following statement so the comment reads as the statement\'s description rather than as a detached divider.',
+    definition: 'A blank line is an empty line separating logical units. *Prose* enforces blank-line counts between module-level definitions, class members, and import groups per the `blank-lines` rule, and binds description-shaped own-line comment blocks tight against the following statement while leaving banner-shaped blocks separated by 1 blank line below.',
     href      : '/rules/blank-lines'
   },
 
@@ -192,7 +192,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'leading comment block': {
     aliases   : ['own-line comment', 'own-line comments', 'leading comment', 'leading comments', 'own-line comment block'],
-    definition: 'A leading comment block is a run of own-line `#` comments sitting directly above a statement, read as a description of the statement it precedes. `blank-lines` binds the block tight against the following statement with the canonical above-gap measured from the topmost comment, and the orderer primitive\'s `block_range` carries the block with its item when reordering siblings.',
+    definition: 'A leading comment block is a run of own-line `#` comments sitting directly above a statement. `blank-lines` binds description-shaped blocks tight against the following statement and keeps 1 blank line below banner-shaped blocks *(any line of which is a decorative rule of `=`, `-`, `*`, `_`, `#`, or `~`)*, with the canonical above-gap measured from the topmost comment either way. The orderer primitive\'s `block_range` carries the block with its item when reordering siblings.',
     href      : '/rules/blank-lines'
   },
 
