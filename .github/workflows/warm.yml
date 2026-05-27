@@ -42,7 +42,7 @@ jobs:
         run  : ./.github/scripts/emit-matrix.py
 
   bun:
-    name    : 🍞 Bun
+    name    : 🥐 Bun
     runs-on : ubuntu-latest
 
     steps:
@@ -51,12 +51,12 @@ jobs:
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
-        with : { cache: 'false' }
+        with : { cache: false }
 
       - name : Provision bun
         uses : ./.github/actions/provision-bun
 
-      - name : Install bun dependencies
+      - name : bun install --frozen-lockfile
         run  : bun install --frozen-lockfile
 
   checks:
