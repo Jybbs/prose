@@ -11,7 +11,7 @@ use serde_sarif::sarif::{
     Sarif as SarifDoc, ToolComponent,
 };
 
-use crate::diagnostics::{Diagnostic, Emitter, Run};
+use crate::diagnostics::{line_columns, Diagnostic, Emitter, Run};
 use crate::rule::RuleId;
 
 pub(crate) struct Sarif;
@@ -51,9 +51,7 @@ fn region(start: LineColumn, end: LineColumn) -> Region {
 }
 
 fn sarif_fix(file: &SourceFile, edit: &Edit) -> Fix {
-    let code = file.to_source_code();
-    let start = code.line_column(edit.range().start());
-    let end = code.line_column(edit.range().end());
+    let (start, end) = line_columns(file, edit.range());
     let inserted = ArtifactContent::builder()
         .text(edit.content().unwrap_or_default())
         .build();
@@ -69,9 +67,7 @@ fn sarif_fix(file: &SourceFile, edit: &Edit) -> Fix {
 }
 
 fn sarif_result(file: &SourceFile, diag: &Diagnostic) -> SarifResult {
-    let code = file.to_source_code();
-    let start = code.line_column(diag.range.start());
-    let end = code.line_column(diag.range.end());
+    let (start, end) = line_columns(file, diag.range);
     let builder = SarifResult::builder()
         .rule_id(diag.rule.as_str())
         .level(ResultLevel::Warning)

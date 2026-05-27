@@ -27,24 +27,18 @@ pub(crate) fn compact<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
         Ok(c) => c,
         Err(s) => return Ok(s),
     };
-    let cache = match Cache::open() {
+    let cache = match open_or_status() {
         Ok(c) => c.with_max_size_mib(config.cache.max_size_mib),
-        Err(e) => {
-            eprintln!("error: {e}");
-            return Ok(ExitStatus::ConfigError);
-        }
+        Err(s) => return Ok(s),
     };
     write_report(stdout, cache.compact())?;
     Ok(ExitStatus::Clean)
 }
 
 pub(crate) fn info<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
-    let cache = match Cache::open() {
+    let cache = match open_or_status() {
         Ok(c) => c,
-        Err(e) => {
-            eprintln!("error: {e}");
-            return Ok(ExitStatus::ConfigError);
-        }
+        Err(s) => return Ok(s),
     };
     let info = cache.info();
     writeln!(stdout, "path: {}", info.path.display()).context("writing stdout")?;
@@ -57,6 +51,13 @@ pub(crate) fn info<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
         writeln!(stdout, "newest: {}", relative_age(t)).context("writing stdout")?;
     }
     Ok(ExitStatus::Clean)
+}
+
+fn open_or_status() -> Result<Cache, ExitStatus> {
+    Cache::open().map_err(|e| {
+        eprintln!("error: {e}");
+        ExitStatus::ConfigError
+    })
 }
 
 fn relative_age(t: SystemTime) -> String {

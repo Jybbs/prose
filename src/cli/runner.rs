@@ -42,6 +42,16 @@ struct RunSetup {
     pipeline: Pipeline,
 }
 
+impl RunSetup {
+    fn context(&self) -> RunContext<'_> {
+        RunContext {
+            cache: self.cache.as_ref(),
+            config_toml: &self.config_toml,
+            pipeline: &self.pipeline,
+        }
+    }
+}
+
 pub(crate) fn check_with_io<R: Read, W: Write>(
     args: CheckArgs,
     verbose: bool,
@@ -52,11 +62,7 @@ pub(crate) fn check_with_io<R: Read, W: Write>(
         Ok(s) => s,
         Err(s) => return Ok(s),
     };
-    let ctx = RunContext {
-        cache: setup.cache.as_ref(),
-        config_toml: &setup.config_toml,
-        pipeline: &setup.pipeline,
-    };
+    let ctx = setup.context();
     let outcomes = if args.stdin {
         vec![process_stdin(stdin, ctx.pipeline)]
     } else {
@@ -79,11 +85,7 @@ pub(crate) fn format_with_io<R: Read, W: Write>(
         Ok(s) => s,
         Err(s) => return Ok(s),
     };
-    let ctx = RunContext {
-        cache: setup.cache.as_ref(),
-        config_toml: &setup.config_toml,
-        pipeline: &setup.pipeline,
-    };
+    let ctx = setup.context();
     if args.stdin {
         return format_stdin(
             stdin,
@@ -249,12 +251,12 @@ fn process_path(path: &Path, ctx: &RunContext<'_>) -> FileOutcome {
     let cached = ctx
         .cache
         .map(|c| (c, CacheKey::compute(&bytes, ctx.config_toml)));
-    if let Some((c, k)) = &cached {
-        if let Some(entry) = c.lookup(k) {
-            if let Some(outcome) = rehydrate(path, &bytes, entry) {
-                return outcome;
-            }
-        }
+    if let Some(outcome) = cached
+        .as_ref()
+        .and_then(|(c, k)| c.lookup(k))
+        .and_then(|entry| rehydrate(path, &bytes, entry))
+    {
+        return outcome;
     }
     let text = match String::from_utf8(bytes) {
         Ok(t) => t,
@@ -263,14 +265,14 @@ fn process_path(path: &Path, ctx: &RunContext<'_>) -> FileOutcome {
             return FileOutcome::Failed(ExitStatus::ConfigError);
         }
     };
-    let source = match Source::build(text.clone(), path.display().to_string()) {
+    let source = match Source::build(text, path.display().to_string()) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("error: parse error in `{}`: {e}", path.display());
             return FileOutcome::Failed(ExitStatus::ParseError);
         }
     };
-    let outcome = run_pipeline(source, ctx.pipeline, text);
+    let outcome = run_pipeline(source, ctx.pipeline);
     if let (
         Some((c, k)),
         FileOutcome::Done {
@@ -311,10 +313,7 @@ fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline) -> FileOutcome {
         .inspect_err(|e| eprintln!("error: parse error in stdin: {e}"))
         .map_or_else(
             |_| FileOutcome::Failed(ExitStatus::ParseError),
-            |source| {
-                let original = source.text().to_owned();
-                run_pipeline(source, pipeline, original)
-            },
+            |source| run_pipeline(source, pipeline),
         )
 }
 
@@ -357,7 +356,8 @@ fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, write
     );
 }
 
-fn run_pipeline(source: Source, pipeline: &Pipeline, original_text: String) -> FileOutcome {
+fn run_pipeline(source: Source, pipeline: &Pipeline) -> FileOutcome {
+    let original_text = source.text().to_owned();
     match pipeline.run(source) {
         Ok((formatted, diagnostics)) => {
             let formatted_text =

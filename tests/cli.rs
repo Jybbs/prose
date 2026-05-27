@@ -104,6 +104,28 @@ fn check_no_cache_flag_runs_clean() {
 }
 
 #[test]
+fn check_respects_cache_disabled_in_pyproject() {
+    let project = tempdir().expect("tempdir");
+    let cache_dir = tempdir().expect("cache");
+    std::fs::write(
+        project.path().join("pyproject.toml"),
+        "[tool.prose.cache]\nenabled = false\n",
+    )
+    .expect("writes pyproject");
+    let py = project.path().join("clean.py");
+    std::fs::write(&py, "x = 1\n").expect("writes");
+    let assert = prose()
+        .args(["--verbose", "check"])
+        .arg(&py)
+        .current_dir(project.path())
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(err.contains("cache: bypassed"), "stderr was {err:?}");
+}
+
+#[test]
 fn check_dash_clean_exits_zero() {
     prose()
         .args(["check", "-"])

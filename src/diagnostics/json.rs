@@ -7,7 +7,7 @@ use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 use ruff_text_size::Ranged;
 use serde::Serialize;
 
-use crate::diagnostics::{Diagnostic, Emitter, Run};
+use crate::diagnostics::{line_columns, Diagnostic, Emitter, Run};
 
 pub(crate) struct Json;
 
@@ -36,13 +36,13 @@ struct JsonDiagnostic<'a> {
 
 impl<'a> JsonDiagnostic<'a> {
     fn new(file: &'a SourceFile, diag: &'a Diagnostic) -> Self {
-        let code = file.to_source_code();
+        let (start, end) = line_columns(file, diag.range);
         Self {
             code: diag.rule.as_str(),
-            end_location: code.line_column(diag.range.end()).into(),
+            end_location: end.into(),
             filename: file.name(),
             fix: diag.fix.as_ref().map(|edit| JsonFix::new(file, edit)),
-            location: code.line_column(diag.range.start()).into(),
+            location: start.into(),
             message: &diag.message,
         }
     }
@@ -57,11 +57,11 @@ struct JsonEdit<'a> {
 
 impl<'a> JsonEdit<'a> {
     fn new(file: &'a SourceFile, edit: &'a Edit) -> Self {
-        let code = file.to_source_code();
+        let (start, end) = line_columns(file, edit.range());
         Self {
             content: edit.content().unwrap_or_default(),
-            end_location: code.line_column(edit.range().end()).into(),
-            location: code.line_column(edit.range().start()).into(),
+            end_location: end.into(),
+            location: start.into(),
         }
     }
 }

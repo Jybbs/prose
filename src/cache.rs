@@ -24,7 +24,6 @@ use tempfile::NamedTempFile;
 use crate::diagnostics::Diagnostic;
 
 const CACHE_FORMAT_VERSION: &str = "1";
-const SUBDIR: &str = "prose";
 
 /// User-level on-disk cache.
 #[derive(Debug)]
@@ -241,7 +240,7 @@ pub struct CleanReport {
 fn cache_root() -> Option<PathBuf> {
     std::env::var_os("PROSE_CACHE_DIR")
         .map(PathBuf::from)
-        .or_else(|| dirs::cache_dir().map(|d| d.join(SUBDIR)))
+        .or_else(|| dirs::cache_dir().map(|d| d.join("prose")))
 }
 
 fn is_entry_file(path: &Path) -> bool {
@@ -370,8 +369,10 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(20));
         cache.insert(&key_new, &entry(Some("b = 2\n")));
 
-        let mut tightened = cache_in(&tmp, 0);
-        tightened.root = cache.root.clone();
+        let tightened = Cache {
+            max_size_bytes: 0,
+            root: cache.root.clone(),
+        };
         let report = tightened.compact();
 
         assert!(report.entries >= 1);

@@ -4,7 +4,7 @@ use std::io::{self, Write};
 
 use ruff_source_file::SourceFile;
 
-use crate::diagnostics::{Diagnostic, Emitter, Run};
+use crate::diagnostics::{line_columns, Diagnostic, Emitter, Run};
 
 pub(crate) struct Github;
 
@@ -24,9 +24,7 @@ fn emit_one(writer: &mut dyn Write, file: &SourceFile, diag: &Diagnostic) -> io:
         !diag.message.contains(['%', '\r', '\n']),
         "rule message must not carry workflow-command escape characters",
     );
-    let code = file.to_source_code();
-    let start = code.line_column(diag.range.start());
-    let end = code.line_column(diag.range.end());
+    let (start, end) = line_columns(file, diag.range);
     let name = file.name();
     let message = diag.message.as_str();
     write!(
