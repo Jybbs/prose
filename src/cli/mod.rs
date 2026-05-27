@@ -25,6 +25,7 @@ use clap::{ColorChoice, CommandFactory, Parser};
 use clap_complete::generate;
 
 mod args;
+mod cache;
 mod exit_status;
 mod runner;
 
@@ -56,9 +57,9 @@ pub fn run() -> ExitCode {
     let verbose = cli.verbose;
     let result = match cli.command {
         Command::Cache { action } => match action {
-            CacheAction::Clean => runner::cache_clean(stdout),
-            CacheAction::Compact => runner::cache_compact(stdout),
-            CacheAction::Info => runner::cache_info(stdout),
+            CacheAction::Clean => cache::clean(stdout),
+            CacheAction::Compact => cache::compact(stdout),
+            CacheAction::Info => cache::info(stdout),
         },
         Command::Check(args) => runner::check_with_io(args, verbose, io::stdin(), stdout),
         Command::Completions { shell } => {
