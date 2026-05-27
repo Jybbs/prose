@@ -11,6 +11,7 @@ import { proseMarkPlugin }                        from './lib/markdown/prose-mar
 import { discoverRuleSlugs }                      from './lib/rules/discovery'
 import { ruleLinkPlugin }                         from './lib/rules/link-plugin'
 import { canonicalUrl }                           from './lib/config/canonical-url'
+import { ogImageUrl }                             from './lib/config/og-url'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME }  from './lib/shared/constants'
 import { buildPageTimestamps }                    from './lib/config/page-timestamps'
 import { repoRoot, rulesDir }                     from './lib/shared/paths'
@@ -78,14 +79,27 @@ export default defineConfig({
   },
   title         : 'Prose',
   titleTemplate : ':title · Prose',
+  async buildEnd(siteConfig) {
+    const { buildOgCards } = await import('./lib/og/build')
+    await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
+  },
   transformHead({ pageData }) {
+    const isLanding   = pageData.relativePath === 'index.md'
     const description = pageData.frontmatter.description ?? pageData.frontmatter.caption ?? 'A Python typesetter for the reader.'
     const title       = pageData.frontmatter.name ?? pageData.title ?? 'Prose'
+    const ogImage     = ogImageUrl(pageData.relativePath)
+    const ogTitle     = isLanding ? 'Prose'                                       : `${title} · Prose`
+    const ogAlt       = isLanding ? 'Prose, a Python typesetter for the reader.'  : `${title} card`
     return [
-      ['meta', { content: `${title} · Prose`, property: 'og:title'            }],
-      ['meta', { content: description,        property: 'og:description'      }],
-      ['meta', { content: `${title} · Prose`, name:     'twitter:title'       }],
-      ['meta', { content: description,        name:     'twitter:description' }]
+      ['meta', { content: ogTitle,     property: 'og:title'        }],
+      ['meta', { content: description, property: 'og:description'  }],
+      ['meta', { content: 'en_US',     property: 'og:locale'       }],
+      ['meta', { content: ogImage,     property: 'og:image'        }],
+      ['meta', { content: '1200',      property: 'og:image:width'  }],
+      ['meta', { content: '630',       property: 'og:image:height' }],
+      ['meta', { content: 'image/png', property: 'og:image:type'   }],
+      ['meta', { content: ogAlt,       property: 'og:image:alt'    }],
+      ['meta', { content: ogImage,     name:     'twitter:image'   }]
     ]
   },
   transformPageData(pageData) {
