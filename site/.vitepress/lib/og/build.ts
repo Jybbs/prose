@@ -1,12 +1,16 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { readCargoVersion }     from '../shared/version'
-import { loadBrandAssets }      from './assets'
-import { enumeratePages }       from './pages'
-import { renderPage }           from './render'
+import { readCargoVersion } from '../shared/version'
+import { loadBrandAssets }  from './assets'
+import { enumeratePages }   from './pages'
+import { renderPage }       from './render'
 
-export async function buildOgCards(srcDir: string, pages: readonly string[], outDir: string): Promise<void> {
+export async function buildOgCards(
+  srcDir : string,
+  pages  : readonly string[],
+  outDir : string
+): Promise<void> {
   const repo    = path.dirname(srcDir)
   const brand   = loadBrandAssets(srcDir, repo)
   const version = readCargoVersion(repo)

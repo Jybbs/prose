@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTimeoutFn } from '@vueuse/core'
+import { useTimeoutFn }  from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import { data as TOKENS }                                                    from '../../../data/tokens.data'

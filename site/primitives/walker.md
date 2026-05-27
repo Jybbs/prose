@@ -1,3 +1,7 @@
+---
+stability: internal
+---
+
 # Walker
 
 <PrimitiveLayout primitive="walker">

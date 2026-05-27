@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { data as tools }    from '../../../data/tools.data'
-import { lookup }            from '../../../lib/shared/lookup'
+import { data as tools } from '../../../data/tools.data'
+import { lookup }        from '../../../lib/shared/lookup'
 
 const props = defineProps<{
   bare ?: boolean

@@ -34,9 +34,9 @@ export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>): (md: 
 
     md.renderer.rules.glossary_term = (tokens, idx) => {
       const t       = tokens[idx]
-      const slug    = t.meta?.slug as string
-      const display = t.content
-      return `<GlossaryTerm slug="${md.utils.escapeHtml(slug)}">${md.utils.escapeHtml(display)}</GlossaryTerm>`
+      const slug    = md.utils.escapeHtml(t.meta?.slug as string)
+      const display = md.utils.escapeHtml(t.content)
+      return `<GlossaryTerm slug="${slug}">${display}</GlossaryTerm>`
     }
   }
 }

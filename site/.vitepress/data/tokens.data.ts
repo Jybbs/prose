@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer }            from '../lib/markdown/renderer'
-import { SOURCES, stripPrefix }   from '../lib/tokens/tokens'
-import type { Domain, Token }     from '../lib/tokens/tokens'
+import { getRenderer }          from '../lib/markdown/renderer'
+import { SOURCES, stripPrefix } from '../lib/tokens/tokens'
+import type { Domain, Token }   from '../lib/tokens/tokens'
 
 declare const data: readonly Token[]
 export { data }

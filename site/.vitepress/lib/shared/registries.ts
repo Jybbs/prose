@@ -1,5 +1,6 @@
-export type RuleCategory = 'auto-fix' | 'lint'
-export type RuleFamily   = 'alignment' | 'docs' | 'formatting' | 'lint' | 'ordering'
+export type RuleCategory   = 'auto-fix' | 'lint'
+export type RuleFamily     = 'alignment' | 'docs' | 'formatting' | 'lint' | 'ordering'
+export type GlossaryFamily = RuleFamily | 'engine'
 
 interface CategoryMeta {
   badge : 'A' | 'L'
@@ -7,8 +8,10 @@ interface CategoryMeta {
 }
 
 interface FamilyMeta {
-  badge : string
-  label : string
+  badge  : string
+  color  : string
+  label  : string
+  warmth : 'cool' | 'warm'
 }
 
 export const CATEGORY_META: Record<RuleCategory, CategoryMeta> = {
@@ -17,49 +20,22 @@ export const CATEGORY_META: Record<RuleCategory, CategoryMeta> = {
 }
 
 export const FAMILY_META: Record<RuleFamily, FamilyMeta> = {
-  alignment  : { badge: '🪜', label: 'Alignment'  },
-  docs       : { badge: '📰', label: 'Docs'       },
-  formatting : { badge: '🪶', label: 'Formatting' },
-  lint       : { badge: '🧶', label: 'Lint'       },
-  ordering   : { badge: '🪉', label: 'Ordering'   }
+  alignment  : { badge: '🪜', color: '#e8c840', label: 'Alignment',  warmth: 'warm' },
+  docs       : { badge: '📰', color: '#8cc5a3', label: 'Docs',       warmth: 'cool' },
+  formatting : { badge: '🪶', color: '#c08597', label: 'Formatting', warmth: 'warm' },
+  lint       : { badge: '🧶', color: '#e8876f', label: 'Lint',       warmth: 'warm' },
+  ordering   : { badge: '🪉', color: '#7db3e0', label: 'Ordering',   warmth: 'cool' }
 }
 
-export const FAMILY_ORDER: readonly RuleFamily[] = ['alignment', 'ordering', 'formatting', 'docs', 'lint']
-
-export const PRIMITIVES = {
-  'aligner'          : 'Aligner',
-  'binding-analysis' : 'BindingAnalysis',
-  'colon-targets'    : 'ColonTargets',
-  'docstring'        : 'Docstring',
-  'edit'             : 'Edit',
-  'orderer'          : 'Orderer',
-  'pipeline'         : 'Pipeline',
-  'rule-id'          : 'RuleId',
-  'source'           : 'Source',
-  'suppression-map'  : 'SuppressionMap',
-  'walker'           : 'Walker'
-} as const satisfies Record<string, string>
-
-export type PrimitiveSlug = keyof typeof PRIMITIVES
-
-export const PRIMITIVE_SLUGS = Object.keys(PRIMITIVES) as readonly PrimitiveSlug[]
-
-export const PUBLIC_PRIMITIVES: readonly PrimitiveSlug[] = ['pipeline', 'rule-id', 'source']
-
-type PrimitiveCoverage = 'exact' | 'subset'
-
-export function assertCoversPrimitives(
-  found    : Iterable<string>,
-  label    : string,
-  coverage : PrimitiveCoverage = 'exact'
-): void {
-  const knownSet = new Set<string>(Object.keys(PRIMITIVES))
-  const foundSet = new Set(found)
-  const extra    = [...foundSet.difference(knownSet)]
-  const missing  = coverage === 'exact' ? [...knownSet.difference(foundSet)] : []
-  if (missing.length > 0 || extra.length > 0) {
-    throw new Error(
-      `${label} out of sync with PRIMITIVES. missing: [${missing.join(', ')}], extra: [${extra.join(', ')}]`
-    )
-  }
+export const GLOSSARY_FAMILY_META: Record<GlossaryFamily, FamilyMeta> = {
+  ...FAMILY_META,
+  engine: { badge: '🦉', color: '#8a80cb', label: 'Engine', warmth: 'cool' }
 }
+
+export const FAMILY_ORDER: readonly RuleFamily[] = [
+  'alignment', 'ordering', 'formatting', 'docs', 'lint'
+]
+
+export type PrimitiveSlug =
+  | 'aligner' | 'binding-analysis' | 'colon-targets' | 'docstring' | 'edit' | 'orderer'
+  | 'pipeline' | 'rule-id' | 'source' | 'suppression-map' | 'walker'

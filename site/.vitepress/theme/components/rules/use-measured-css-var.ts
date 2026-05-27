@@ -1,4 +1,4 @@
-import { useResizeObserver } from '@vueuse/core'
+import { useResizeObserver }                            from '@vueuse/core'
 import { onMounted, watch, type Ref, type WatchSource } from 'vue'
 
 interface UseMeasuredCssVarOptions {

@@ -1,5 +1,5 @@
-import fs   from 'node:fs'
-import path from 'node:path'
+import fs                from 'node:fs'
+import path              from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export function repoRoot(metaUrl: string): string {
@@ -10,6 +10,10 @@ export function repoRoot(metaUrl: string): string {
     dir = parent
   }
   return dir
+}
+
+export function primitivesDir(metaUrl: string): string {
+  return path.join(siteDir(metaUrl), 'primitives')
 }
 
 export function rulesDir(metaUrl: string): string {

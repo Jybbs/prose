@@ -1,30 +1,23 @@
-import { createContentLoader } from 'vitepress'
+import { defineLoader } from 'vitepress'
 
-import { PRIMITIVES, assertCoversPrimitives, type PrimitiveSlug } from '../lib/shared/registries'
-
-export interface DiscoveredPrimitive {
-  display : string
-  slug    : PrimitiveSlug
-}
+import { discoverPrimitives, type DiscoveredPrimitive } from '../lib/primitives/discovery'
+import { primitivesDir }                                from '../lib/shared/paths'
 
 interface PrimitivesData {
   bySlug : Record<string, DiscoveredPrimitive>
   list   : readonly DiscoveredPrimitive[]
 }
 
+const dir = primitivesDir(import.meta.url)
+
 declare const data: PrimitivesData
 export { data }
 
-export default createContentLoader('primitives/*.md', {
-  transform(pages): PrimitivesData {
-    const collected = pages
-      .filter(p => !p.url.endsWith('/primitives/'))
-      .map(p => p.url.replace(/^\/primitives\/|\/$/g, ''))
-    assertCoversPrimitives(collected, 'primitive pages')
-    const list = Object.entries(PRIMITIVES)
-      .map(([slug, display]): DiscoveredPrimitive => ({ display, slug: slug as PrimitiveSlug }))
-      .sort((a, b) => a.slug.localeCompare(b.slug))
-    const bySlug: Record<string, DiscoveredPrimitive> = Object.fromEntries(list.map(p => [p.slug, p]))
+export default defineLoader({
+  watch: [`${dir}/*.md`],
+  load(): PrimitivesData {
+    const list   = discoverPrimitives(dir).slice().sort((a, b) => a.slug.localeCompare(b.slug))
+    const bySlug = Object.fromEntries(list.map(p => [p.slug as string, p]))
     return { bySlug, list }
   }
 })

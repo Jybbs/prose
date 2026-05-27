@@ -1,4 +1,4 @@
-import { useTimeoutFn } from '@vueuse/core'
+import { useTimeoutFn }    from '@vueuse/core'
 import { watch, type Ref } from 'vue'
 
 import type { LandingTypingDemoEntry } from './typing-demo-fixtures'
@@ -127,9 +127,11 @@ export function useTypingStateMachine(
       refs.editProgress.value++
       if (refs.editProgress.value === entry.to.length) {
         refs.pythonStateIndex.value = refs.entryIndex.value + 1
-        const isLast                = refs.entryIndex.value === entries.length - 1
-        refs.phase.value            = isLast ? 'holdAfterTyped' : 'holdBetweenEdits'
-        schedule(isLast ? startBackspacing : advanceEntry, isLast ? HOLD_AFTER_TYPED_MS : HOLD_BETWEEN_EDITS_MS)
+        const isLast     = refs.entryIndex.value === entries.length - 1
+        const nextAction = isLast ? startBackspacing : advanceEntry
+        const holdMs     = isLast ? HOLD_AFTER_TYPED_MS : HOLD_BETWEEN_EDITS_MS
+        refs.phase.value = isLast ? 'holdAfterTyped' : 'holdBetweenEdits'
+        schedule(nextAction, holdMs)
       } else {
         schedule(tickEditType, TYPE_MS_PER_CHAR)
       }

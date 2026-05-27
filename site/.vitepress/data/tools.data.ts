@@ -84,7 +84,9 @@ export default defineLoader({
   async load(): Promise<ToolsData> {
     return {
       entries: Object.fromEntries(
-        Object.entries(TOOL_SEEDS).map(([slug, seed]) => [slug, { ...seed, icon: loadIcon(seed.icon) }])
+        Object.entries(TOOL_SEEDS).map(([slug, seed]) =>
+          [slug, { ...seed, icon: loadIcon(seed.icon) }]
+        )
       ) as Record<ToolSlug, ToolEntry>
     }
   }

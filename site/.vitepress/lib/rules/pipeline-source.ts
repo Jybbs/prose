@@ -20,8 +20,12 @@ export function parsePipeline(metaUrl: string): readonly PipelineEntry[] {
   const ruleSource = ruleSourcePath(metaUrl)
   const text       = fs.readFileSync(ruleSource, 'utf8')
   const block      = REGISTER_BLOCK.exec(text)
-  if (block === null) throw new Error(`parsePipeline: register_rules! block not found in ${ruleSource}`)
+  if (block === null) {
+    throw new Error(`parsePipeline: register_rules! block not found in ${ruleSource}`)
+  }
   const matches = block[1].split('\n').map(line => RULE_LINE.exec(line)).filter(m => m !== null)
-  if (matches.length === 0) throw new Error(`parsePipeline: register_rules! parsed zero rules from ${ruleSource}`)
+  if (matches.length === 0) {
+    throw new Error(`parsePipeline: register_rules! parsed zero rules from ${ruleSource}`)
+  }
   return matches.map((match, i) => ({ imperative: match[2], position: i + 1, slug: match[1] }))
 }

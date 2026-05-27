@@ -10,7 +10,8 @@ export function toTitleCase(slug: string, separator = '_'): string {
   const words = slug.split(separator)
   return words.map((word, i) => {
     const lower = word.toLowerCase()
-    if (i !== 0 && i !== words.length - 1 && word.length <= 4 && SMALL_WORDS.has(lower)) return lower
+    const isInterior = i !== 0 && i !== words.length - 1
+    if (isInterior && word.length <= 4 && SMALL_WORDS.has(lower)) return lower
     return word.charAt(0).toUpperCase() + word.slice(1)
   }).join(' ')
 }

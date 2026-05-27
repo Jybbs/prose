@@ -1,11 +1,11 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { repoRoot, siteDir }    from '../shared/paths'
-import { readCargoVersion }     from '../shared/version'
-import { loadBrandAssets }      from './assets'
-import { enumeratePages }       from './pages'
-import { renderPage }           from './render'
+import { repoRoot, siteDir } from '../shared/paths'
+import { readCargoVersion }  from '../shared/version'
+import { loadBrandAssets }   from './assets'
+import { enumeratePages }    from './pages'
+import { renderPage }        from './render'
 
 const PROBES: readonly string[] = [
   'rules/align-equals.md',

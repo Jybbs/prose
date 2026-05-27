@@ -1,3 +1,7 @@
+---
+stability: internal
+---
+
 # Aligner
 
 <PrimitiveLayout primitive="aligner">

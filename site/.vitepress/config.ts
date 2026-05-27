@@ -1,33 +1,34 @@
 import postcssCustomMedia                         from 'postcss-custom-media'
-import { defineConfig }                            from 'vitepress'
+import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
-import { buildPhraseToSlug }                      from './lib/glossary/glossary'
-import { glossary }                               from './lib/glossary/glossary-data'
-import { glossaryPlugin }                         from './lib/glossary/plugin'
-import { bodyLinkPlugin }                         from './lib/markdown/body-link-plugin'
-import { proseMarkPlugin }                        from './lib/markdown/prose-mark-plugin'
-import { discoverRuleSlugs }                      from './lib/rules/discovery'
-import { ruleLinkPlugin }                         from './lib/rules/link-plugin'
-import { canonicalUrl }                           from './lib/config/canonical-url'
-import { ogImageUrl }                             from './lib/config/og-url'
-import { CARD_HEIGHT, CARD_WIDTH }                from './lib/og/template'
+import { buildPhraseToSlug }                 from './lib/glossary/glossary'
+import { glossary }                          from './lib/glossary/entries'
+import { glossaryPlugin }                    from './lib/glossary/plugin'
+import { bodyLinkPlugin }                    from './lib/markdown/body-link-plugin'
+import { proseMarkPlugin }                   from './lib/markdown/prose-mark-plugin'
+import { discoverPrimitives }                from './lib/primitives/discovery'
+import { discoverRuleSlugs }                 from './lib/rules/discovery'
+import { ruleLinkPlugin }                    from './lib/rules/link-plugin'
+import { canonicalUrl }                      from './lib/config/canonical-url'
+import { ogImageUrl }                        from './lib/config/og-url'
+import { CARD_HEIGHT, CARD_WIDTH }           from './lib/og/template'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME, SITE_TAGLINE } from './lib/shared/constants'
-import { buildPageTimestamps }                    from './lib/config/page-timestamps'
-import { repoRoot, rulesDir }                     from './lib/shared/paths'
-import { PRIMITIVES }                             from './lib/shared/registries'
-import type { PrimitiveSlug }                     from './lib/shared/registries'
-import { buildSidebar }                           from './lib/config/sidebar'
-import { toTitleCase }                            from './lib/shared/title-case'
-import { TOOL_SEEDS }                             from './lib/shared/tools'
-import { readCargoVersion }                       from './lib/shared/version'
+import { buildPageTimestamps }               from './lib/config/page-timestamps'
+import { primitivesDir, repoRoot, rulesDir } from './lib/shared/paths'
+import { buildSidebar }                      from './lib/config/sidebar'
+import { toTitleCase }                       from './lib/shared/title-case'
+import { TOOL_SEEDS }                        from './lib/shared/tools'
+import { readCargoVersion }                  from './lib/shared/version'
 
-const repoDir          = repoRoot(import.meta.url)
-const version          = readCargoVersion(repoDir)
-const pageTimestamps   = buildPageTimestamps(repoDir)
-const discoveredRules  = discoverRuleSlugs(rulesDir(import.meta.url))
-const validSlugs       = new Set(discoveredRules.map(r => r.slug))
+const repoDir              = repoRoot(import.meta.url)
+const version              = readCargoVersion(repoDir)
+const pageTimestamps       = buildPageTimestamps(repoDir)
+const discoveredRules      = discoverRuleSlugs(rulesDir(import.meta.url))
+const discoveredPrimitives = discoverPrimitives(primitivesDir(import.meta.url))
+const primitiveNames       = new Map(discoveredPrimitives.map(p => [p.slug as string, p.name]))
+const validSlugs           = new Set(discoveredRules.map(r => r.slug))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 
 export default defineConfig({
@@ -45,7 +46,7 @@ export default defineConfig({
     config      : md => {
       md.use(groupIconMdPlugin)
       md.use(tabsMarkdownPlugin)
-      md.use(ruleLinkPlugin(validSlugs))
+      md.use(ruleLinkPlugin(validSlugs, primitiveNames))
       md.use(glossaryPlugin(glossaryPhraseToSlug))
       md.use(proseMarkPlugin)
       md.use(bodyLinkPlugin)
@@ -72,7 +73,7 @@ export default defineConfig({
     ],
     outline     : { level: [2, 3] },
     search      : { provider: 'local' },
-    sidebar     : buildSidebar(discoveredRules),
+    sidebar     : buildSidebar(discoveredRules, discoveredPrimitives),
     siteTitle   : 'Prose',
     socialLinks : [
       { icon: 'github', link: REPO_URL }
@@ -121,7 +122,7 @@ export default defineConfig({
     }
     if (pageData.relativePath.startsWith('primitives/') && !pageData.relativePath.endsWith('index.md')) {
       const slug = pageData.relativePath.replace(/^primitives\/|\.md$/g, '')
-      pageData.frontmatter.name ??= PRIMITIVES[slug as PrimitiveSlug]
+      pageData.frontmatter.name ??= primitiveNames.get(slug)
     }
   },
   vite          : {

@@ -3,11 +3,12 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
-import { ogImagePath }                                                  from '../config/og-url'
-import { type DiscoveredRule, discoverRuleSlugs }                       from '../rules/discovery'
-import { parsePipeline }                                               from '../rules/pipeline-source'
-import { FAMILY_META, PRIMITIVES, PUBLIC_PRIMITIVES, type PrimitiveSlug, type RuleCategory, type RuleFamily } from '../shared/registries'
-import { toTitleCase }                                                  from '../shared/title-case'
+import { ogImagePath }                                     from '../config/og-url'
+import { type DiscoveredPrimitive, discoverPrimitives }    from '../primitives/discovery'
+import { type DiscoveredRule, discoverRuleSlugs }          from '../rules/discovery'
+import { parsePipeline }                                   from '../rules/pipeline-source'
+import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
+import { toTitleCase }                                     from '../shared/title-case'
 
 const KINDS = ['integrations', 'primitives', 'reference', 'rules', 'usage'] as const
 export type OgKind = typeof KINDS[number]
@@ -26,31 +27,41 @@ export interface OgPage {
 }
 
 export function enumeratePages(srcDir: string, pages: readonly string[]): readonly OgPage[] {
-  const rulesIndex   = new Map(discoverRuleSlugs(path.join(srcDir, 'rules')).map(r => [r.slug, r]))
-  const pipeline     = parsePipeline(import.meta.url)
-  const pipelinePos  = new Map(pipeline.map(r => [r.slug, r.position]))
-  const out: OgPage[] = []
+  const rules           = discoverRuleSlugs(path.join(srcDir, 'rules'))
+  const rulesIndex      = new Map(rules.map(r => [r.slug, r]))
+  const primitives      = discoverPrimitives(path.join(srcDir, 'primitives'))
+  const primitivesIndex = new Map(primitives.map(p => [p.slug as string, p]))
+  const pipeline        = parsePipeline(import.meta.url)
+  const pipelinePos     = new Map(pipeline.map(r => [r.slug, r.position]))
+  const out: OgPage[]   = []
   for (const rel of pages) {
     if (rel === 'index.md') continue
     const kind = chapterKind(rel)
     if (kind === null) continue
-    out.push(buildPage(rel, kind, rulesIndex, pipeline.length, pipelinePos, srcDir))
+    out.push(buildPage(rel, kind, rulesIndex, primitivesIndex, pipeline.length, pipelinePos, srcDir))
   }
   return out
 }
 
 function buildPage(
-  rel           : string,
-  kind          : OgKind,
-  rulesIndex    : ReadonlyMap<string, DiscoveredRule>,
-  pipelineTotal : number,
-  pipelinePos   : ReadonlyMap<string, number>,
-  srcDir        : string
+  rel             : string,
+  kind            : OgKind,
+  rulesIndex      : ReadonlyMap<string, DiscoveredRule>,
+  primitivesIndex : ReadonlyMap<string, DiscoveredPrimitive>,
+  pipelineTotal   : number,
+  pipelinePos     : ReadonlyMap<string, number>,
+  srcDir          : string
 ): OgPage {
   const slug       = pageSlug(rel)
   const outputPath = ogImagePath(rel)
   if (rel.endsWith('/index.md')) {
-    return { breadcrumb: [toTitleCase(kind, '-')], kind, outputPath, slug, title: indexTitle(rel, kind) }
+    return {
+      breadcrumb : [toTitleCase(kind, '-')],
+      kind,
+      outputPath,
+      slug,
+      title      : indexTitle(rel, kind)
+    }
   }
   if (kind === 'rules' && rulesIndex.has(slug)) {
     const rule     = rulesIndex.get(slug)!
@@ -68,15 +79,14 @@ function buildPage(
     }
   }
   if (kind === 'primitives') {
-    const primitiveSlug = slug as PrimitiveSlug
-    const stability     = PUBLIC_PRIMITIVES.includes(primitiveSlug) ? 'public' : 'internal'
+    const primitive = primitivesIndex.get(slug)
     return {
       breadcrumb : [toTitleCase(kind, '-')],
       kind,
       outputPath,
-      primitive  : { stability },
+      primitive  : { stability: primitive?.stability ?? 'internal' },
       slug,
-      title      : PRIMITIVES[primitiveSlug] ?? toTitleCase(slug, '-')
+      title      : primitive?.name ?? toTitleCase(slug, '-')
     }
   }
   return {

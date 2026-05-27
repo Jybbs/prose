@@ -1,9 +1,10 @@
 import { defineLoader } from 'vitepress'
 
-import { discoverRuleSlugs }                                       from '../lib/rules/discovery'
-import { parsePipeline, ruleSourcePath }                           from '../lib/rules/pipeline-source'
-import { rulesDir }                                                from '../lib/shared/paths'
-import { CATEGORY_META, FAMILY_META, type RuleCategory, type RuleFamily } from '../lib/shared/registries'
+import { discoverRuleSlugs }             from '../lib/rules/discovery'
+import { parsePipeline, ruleSourcePath } from '../lib/rules/pipeline-source'
+import { rulesDir }                      from '../lib/shared/paths'
+import { CATEGORY_META, FAMILY_META }    from '../lib/shared/registries'
+import type { RuleCategory, RuleFamily } from '../lib/shared/registries'
 
 interface PipelineRule {
   category      : RuleCategory | null
