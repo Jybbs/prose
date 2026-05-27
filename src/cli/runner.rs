@@ -2,6 +2,7 @@
 
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 use anyhow::Context;
 use rayon::iter::{ParallelBridge, ParallelIterator};
@@ -21,6 +22,7 @@ use crate::walker;
 /// One file's contribution to the run.
 enum FileOutcome {
     Done {
+        cached: bool,
         diagnostics: Vec<Diagnostic>,
         file: SourceFile,
         formatted_text: Option<String>,
@@ -55,8 +57,57 @@ pub(crate) fn cache_clean<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus>
     }
 }
 
+pub(crate) fn cache_compact<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
+    let cwd = std::env::current_dir().context("reading current working directory")?;
+    let config = match Config::load(&cwd).context("loading [tool.prose] config") {
+        Ok(c) => c,
+        Err(e) => {
+            log_error_chain(&e);
+            return Ok(ExitStatus::ConfigError);
+        }
+    };
+    let cache = match Cache::open() {
+        Ok(c) => c.with_max_size_mib(config.cache.max_size_mib),
+        Err(e) => {
+            eprintln!("error: {e}");
+            return Ok(ExitStatus::ConfigError);
+        }
+    };
+    let report = cache.compact();
+    writeln!(
+        stdout,
+        "removed {entries} entries ({bytes} bytes)",
+        entries = report.entries,
+        bytes = report.bytes,
+    )
+    .context("writing stdout")?;
+    Ok(ExitStatus::Clean)
+}
+
+pub(crate) fn cache_info<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
+    let cache = match Cache::open() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("error: {e}");
+            return Ok(ExitStatus::ConfigError);
+        }
+    };
+    let info = cache.info();
+    writeln!(stdout, "path: {}", info.path.display()).context("writing stdout")?;
+    writeln!(stdout, "entries: {}", info.entries).context("writing stdout")?;
+    writeln!(stdout, "bytes: {}", info.bytes).context("writing stdout")?;
+    if let Some(t) = info.oldest_mtime {
+        writeln!(stdout, "oldest: {}", relative_age(t)).context("writing stdout")?;
+    }
+    if let Some(t) = info.newest_mtime {
+        writeln!(stdout, "newest: {}", relative_age(t)).context("writing stdout")?;
+    }
+    Ok(ExitStatus::Clean)
+}
+
 pub(crate) fn check_with_io<R: Read, W: Write>(
     args: CheckArgs,
+    verbose: bool,
     stdin: R,
     mut stdout: W,
 ) -> anyhow::Result<ExitStatus> {
@@ -65,25 +116,27 @@ pub(crate) fn check_with_io<R: Read, W: Write>(
         Err(s) => return Ok(s),
     };
     let cache = open_cache(&config, args.no_cache);
+    let cache_enabled = cache.is_some();
     let ctx = RunContext {
         cache: cache.as_ref(),
         config_toml: toml::to_string(&config).unwrap_or_default(),
         pipeline: &pipeline,
     };
-    let outcomes: Vec<FileOutcome> = if args.stdin {
+    let outcomes = if args.stdin {
         vec![process_stdin(stdin, ctx.pipeline)]
     } else {
-        walker::walk(&args.paths)
-            .par_bridge()
-            .map(|entry| entry.map_or_else(walk_error, |path| process_path(&path, &ctx)))
-            .collect()
+        process_paths(&args.paths, |path| process_path(path, &ctx))
     };
     emit_outcomes(&outcomes, args.output_format, &mut stdout)?;
+    if verbose {
+        report_verbose(&outcomes, cache_enabled, &mut io::stderr());
+    }
     Ok(status_from_outcomes(&outcomes, false))
 }
 
 pub(crate) fn format_with_io<R: Read, W: Write>(
     args: FormatArgs,
+    verbose: bool,
     stdin: R,
     mut stdout: W,
 ) -> anyhow::Result<ExitStatus> {
@@ -107,9 +160,9 @@ pub(crate) fn format_with_io<R: Read, W: Write>(
         );
     }
     if args.diff {
-        format_paths_diff(&args.paths, &ctx, &mut stdout)
+        format_paths_diff(&args.paths, &ctx, verbose, &mut stdout)
     } else {
-        format_paths_rewrite(&args.paths, args.output_format, &ctx, &mut stdout)
+        format_paths_rewrite(&args.paths, args.output_format, &ctx, verbose, &mut stdout)
     }
 }
 
@@ -155,12 +208,10 @@ fn emit_outcomes<W: Write>(
 fn format_paths_diff<W: Write>(
     paths: &[PathBuf],
     ctx: &RunContext<'_>,
+    verbose: bool,
     stdout: &mut W,
 ) -> anyhow::Result<ExitStatus> {
-    let outcomes: Vec<FileOutcome> = walker::walk(paths)
-        .par_bridge()
-        .map(|entry| entry.map_or_else(walk_error, |path| process_path(&path, ctx)))
-        .collect::<Vec<_>>();
+    let outcomes = process_paths(paths, |path| process_path(path, ctx));
     for outcome in &outcomes {
         if let FileOutcome::Done {
             file,
@@ -172,6 +223,9 @@ fn format_paths_diff<W: Write>(
             write_diff(stdout, file.name(), original_text, formatted)?;
         }
     }
+    if verbose {
+        report_verbose(&outcomes, ctx.cache.is_some(), &mut io::stderr());
+    }
     Ok(status_from_outcomes(&outcomes, false))
 }
 
@@ -179,18 +233,15 @@ fn format_paths_rewrite<W: Write>(
     paths: &[PathBuf],
     format: OutputFormat,
     ctx: &RunContext<'_>,
+    verbose: bool,
     stdout: &mut W,
 ) -> anyhow::Result<ExitStatus> {
-    let outcomes: Vec<FileOutcome> = walker::walk(paths)
-        .par_bridge()
-        .map(|entry| {
-            entry.map_or_else(walk_error, |path| {
-                apply_rewrite(&path, process_path(&path, ctx))
-            })
-        })
-        .collect();
+    let outcomes = process_paths(paths, |path| apply_rewrite(path, process_path(path, ctx)));
     if !format.is_text() {
         emit_outcomes(&outcomes, format, stdout)?;
+    }
+    if verbose {
+        report_verbose(&outcomes, ctx.cache.is_some(), &mut io::stderr());
     }
     Ok(status_from_outcomes(&outcomes, true))
 }
@@ -305,6 +356,16 @@ fn process_path(path: &Path, ctx: &RunContext<'_>) -> FileOutcome {
     outcome
 }
 
+fn process_paths<F>(paths: &[PathBuf], handle: F) -> Vec<FileOutcome>
+where
+    F: Fn(&Path) -> FileOutcome + Send + Sync,
+{
+    walker::walk(paths)
+        .par_bridge()
+        .map(|entry| entry.map_or_else(walk_error, |path| handle(&path)))
+        .collect()
+}
+
 fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline) -> FileOutcome {
     let Ok(text) =
         io::read_to_string(stdin).inspect_err(|e| eprintln!("error: reading stdin: {e}"))
@@ -327,15 +388,56 @@ fn rehydrate(path: &Path, original_bytes: &[u8], entry: CacheEntry) -> Option<Fi
     let name = path.display().to_string();
     let display_text = entry
         .formatted_source
-        .clone()
-        .unwrap_or_else(|| original_text.clone());
+        .as_deref()
+        .unwrap_or(&original_text)
+        .to_owned();
     let file = SourceFileBuilder::new(name, display_text).finish();
     Some(FileOutcome::Done {
+        cached: true,
         diagnostics: entry.diagnostics,
         file,
         formatted_text: entry.formatted_source,
         original_text,
     })
+}
+
+fn relative_age(t: SystemTime) -> String {
+    let Ok(d) = SystemTime::now().duration_since(t) else {
+        return "in the future".to_owned();
+    };
+    let secs = d.as_secs();
+    if secs < 60 {
+        format!("{secs}s ago")
+    } else if secs < 3600 {
+        format!("{}m ago", secs / 60)
+    } else if secs < 86400 {
+        format!("{}h ago", secs / 3600)
+    } else {
+        format!("{}d ago", secs / 86400)
+    }
+}
+
+fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, writer: &mut W) {
+    if !cache_enabled {
+        let _ = writeln!(writer, "cache: bypassed");
+        return;
+    }
+    let mut hits = 0_usize;
+    let mut misses = 0_usize;
+    for outcome in outcomes {
+        if let FileOutcome::Done { cached, .. } = outcome {
+            if *cached {
+                hits += 1;
+            } else {
+                misses += 1;
+            }
+        }
+    }
+    let _ = writeln!(
+        writer,
+        "cache: {hits} hits, {misses} misses, {total} files",
+        total = hits + misses,
+    );
 }
 
 fn run_pipeline(source: Source, pipeline: &Pipeline, original_text: String) -> FileOutcome {
@@ -344,6 +446,7 @@ fn run_pipeline(source: Source, pipeline: &Pipeline, original_text: String) -> F
             let formatted_text =
                 (formatted.text() != original_text).then(|| formatted.text().to_owned());
             FileOutcome::Done {
+                cached: false,
                 diagnostics,
                 file: formatted.source_file().clone(),
                 formatted_text,
@@ -458,6 +561,7 @@ mod tests {
     fn outcome_with(source: Source, diagnostics: Vec<Diagnostic>) -> FileOutcome {
         let original_text = source.text().to_owned();
         FileOutcome::Done {
+            cached: false,
             diagnostics,
             file: source.source_file().clone(),
             formatted_text: None,
@@ -473,6 +577,7 @@ mod tests {
 
         let status = check_with_io(
             check_args(vec![tmp.path().to_path_buf()], false),
+            false,
             io::empty(),
             Vec::<u8>::new(),
         )
@@ -536,6 +641,7 @@ mod tests {
 
         let status = check_with_io(
             check_args(vec![tmp.path().to_path_buf()], false),
+            false,
             io::empty(),
             Vec::<u8>::new(),
         )
@@ -547,15 +653,20 @@ mod tests {
     #[test]
     fn check_stdin_returns_clean_when_pipeline_is_empty() {
         let stdin = Cursor::new(b"x = 1\n".to_vec());
-        let status = check_with_io(check_args(Vec::new(), true), stdin, Vec::<u8>::new())
+        let status = check_with_io(check_args(Vec::new(), true), false, stdin, Vec::<u8>::new())
             .expect("runs successfully");
         assert_eq!(status, ExitStatus::Clean);
     }
 
     #[test]
     fn check_stdin_with_read_failure_returns_config_error() {
-        let status = check_with_io(check_args(Vec::new(), true), ErrorReader, Vec::<u8>::new())
-            .expect("runs without anyhow");
+        let status = check_with_io(
+            check_args(Vec::new(), true),
+            false,
+            ErrorReader,
+            Vec::<u8>::new(),
+        )
+        .expect("runs without anyhow");
         assert_eq!(status, ExitStatus::ConfigError);
     }
 
@@ -567,6 +678,7 @@ mod tests {
 
         let status = check_with_io(
             check_args(vec![tmp.path().to_path_buf()], false),
+            false,
             io::empty(),
             Vec::<u8>::new(),
         )
@@ -578,7 +690,7 @@ mod tests {
     #[test]
     fn check_unparseable_stdin_returns_parse_error() {
         let stdin = Cursor::new(b"def foo(".to_vec());
-        let status = check_with_io(check_args(Vec::new(), true), stdin, Vec::<u8>::new())
+        let status = check_with_io(check_args(Vec::new(), true), false, stdin, Vec::<u8>::new())
             .expect("runs without anyhow");
         assert_eq!(status, ExitStatus::ParseError);
     }
@@ -619,6 +731,7 @@ mod tests {
 
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, true),
+            false,
             io::empty(),
             Vec::<u8>::new(),
         )
@@ -634,6 +747,7 @@ mod tests {
 
         let status = format_with_io(
             format_args(vec![missing], false, true),
+            false,
             io::empty(),
             Vec::<u8>::new(),
         )
@@ -650,6 +764,7 @@ mod tests {
 
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, true),
+            false,
             io::empty(),
             Vec::<u8>::new(),
         )
@@ -666,6 +781,7 @@ mod tests {
 
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, false),
+            false,
             io::empty(),
             Vec::<u8>::new(),
         )
@@ -685,7 +801,8 @@ mod tests {
         let mut args = format_args(vec![tmp.path().to_path_buf()], false, false);
         args.output_format = OutputFormat::Json;
         let mut stdout = Vec::new();
-        let status = format_with_io(args, io::empty(), &mut stdout).expect("runs successfully");
+        let status =
+            format_with_io(args, false, io::empty(), &mut stdout).expect("runs successfully");
 
         assert_eq!(status, ExitStatus::Clean);
         assert!(!stdout.is_empty());
@@ -695,8 +812,13 @@ mod tests {
     fn format_stdin_diff_writes_unified_hunks() {
         let stdin = Cursor::new(b"alpha = 1\nb = 22\n".to_vec());
         let mut stdout = Vec::new();
-        let status = format_with_io(format_args(Vec::new(), true, true), stdin, &mut stdout)
-            .expect("runs successfully");
+        let status = format_with_io(
+            format_args(Vec::new(), true, true),
+            false,
+            stdin,
+            &mut stdout,
+        )
+        .expect("runs successfully");
         assert_eq!(status, ExitStatus::FormatChange);
         let out = String::from_utf8(stdout).expect("utf-8");
         assert!(out.contains("@@"));
@@ -708,7 +830,7 @@ mod tests {
         let mut stdout = Vec::new();
         let mut args = format_args(Vec::new(), true, false);
         args.output_format = OutputFormat::Json;
-        let status = format_with_io(args, stdin, &mut stdout).expect("runs successfully");
+        let status = format_with_io(args, false, stdin, &mut stdout).expect("runs successfully");
         assert_eq!(status, ExitStatus::Clean);
         assert!(!stdout.is_empty());
     }
@@ -717,8 +839,13 @@ mod tests {
     fn format_stdin_prints_input_verbatim_when_pipeline_is_empty() {
         let stdin = Cursor::new(b"x = 1\n".to_vec());
         let mut stdout = Vec::new();
-        let status = format_with_io(format_args(Vec::new(), true, false), stdin, &mut stdout)
-            .expect("runs successfully");
+        let status = format_with_io(
+            format_args(Vec::new(), true, false),
+            false,
+            stdin,
+            &mut stdout,
+        )
+        .expect("runs successfully");
         assert_eq!(status, ExitStatus::Clean);
         assert_eq!(stdout, b"x = 1\n");
     }
@@ -728,6 +855,7 @@ mod tests {
         let mut stdout = Vec::new();
         let status = format_with_io(
             format_args(Vec::new(), true, false),
+            false,
             ErrorReader,
             &mut stdout,
         )
@@ -743,6 +871,7 @@ mod tests {
 
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, false),
+            false,
             io::empty(),
             Vec::<u8>::new(),
         )
@@ -759,6 +888,7 @@ mod tests {
 
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, false),
+            false,
             io::empty(),
             Vec::<u8>::new(),
         )
@@ -780,6 +910,7 @@ mod tests {
 
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, false),
+            false,
             io::empty(),
             Vec::<u8>::new(),
         )
@@ -803,6 +934,46 @@ mod tests {
             outcome,
             FileOutcome::Failed(ExitStatus::ConfigError),
         ));
+    }
+
+    #[test]
+    fn relative_age_renders_seconds_minutes_hours_days() {
+        let now = SystemTime::now();
+        assert!(relative_age(now - std::time::Duration::from_secs(5)).ends_with("s ago"));
+        assert!(relative_age(now - std::time::Duration::from_secs(120)).ends_with("m ago"));
+        assert!(relative_age(now - std::time::Duration::from_secs(7200)).ends_with("h ago"));
+        assert!(relative_age(now - std::time::Duration::from_secs(172_800)).ends_with("d ago"));
+    }
+
+    #[test]
+    fn report_verbose_prints_bypassed_when_cache_disabled() {
+        let mut buf = Vec::new();
+        report_verbose(&[], false, &mut buf);
+        assert_eq!(String::from_utf8(buf).expect("utf-8"), "cache: bypassed\n");
+    }
+
+    #[test]
+    fn report_verbose_prints_hit_and_miss_counts() {
+        let make = |cached: bool| {
+            let source: Source = "x = 1\n".parse().expect("parses");
+            let mut o = outcome_with(source, Vec::new());
+            if let FileOutcome::Done { cached: c, .. } = &mut o {
+                *c = cached;
+            }
+            o
+        };
+        let outcomes = vec![
+            make(true),
+            make(true),
+            make(false),
+            FileOutcome::Failed(ExitStatus::Clean),
+        ];
+        let mut buf = Vec::new();
+        report_verbose(&outcomes, true, &mut buf);
+        assert_eq!(
+            String::from_utf8(buf).expect("utf-8"),
+            "cache: 2 hits, 1 misses, 3 files\n",
+        );
     }
 
     #[test]

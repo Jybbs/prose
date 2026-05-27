@@ -47,16 +47,19 @@ pub fn run() -> ExitCode {
         return report_clap_error(err);
     }
     let stdout = stdout_with_color(cli.color);
+    let verbose = cli.verbose;
     let result = match cli.command {
-        Command::Cache {
-            action: CacheAction::Clean,
-        } => runner::cache_clean(stdout),
-        Command::Check(args) => runner::check_with_io(args, io::stdin(), stdout),
+        Command::Cache { action } => match action {
+            CacheAction::Clean => runner::cache_clean(stdout),
+            CacheAction::Compact => runner::cache_compact(stdout),
+            CacheAction::Info => runner::cache_info(stdout),
+        },
+        Command::Check(args) => runner::check_with_io(args, verbose, io::stdin(), stdout),
         Command::Completions { shell } => {
             generate(shell, &mut Cli::command(), "prose", &mut io::stdout());
             Ok(ExitStatus::Clean)
         }
-        Command::Format(args) => runner::format_with_io(args, io::stdin(), stdout),
+        Command::Format(args) => runner::format_with_io(args, verbose, io::stdin(), stdout),
     };
     finalize(result).into()
 }

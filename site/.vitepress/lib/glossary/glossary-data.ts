@@ -37,6 +37,11 @@ export const glossary: Record<string, GlossaryEntry> = {
     href      : '/usage/quick-start#subset-the-active-rules'
   },
 
+  '--verbose': {
+    definition: '`--verbose` is a global CLI flag that prints a one-line cache hit/miss summary to stderr at the end of each `prose check` or `prose format` run. The flag writes `cache: bypassed` when the cache is disabled via `--no-cache` or `[tool.prose.cache] enabled = false`.',
+    href      : '/reference/cache#hit-miss-telemetry'
+  },
+
   'AST': {
     aliases   : ['abstract syntax tree'],
     definition: 'An AST is the parsed-program tree produced by `ruff_python_parser`. *Prose* bundles it inside `Source` and reparses it between rules so each rule reads against the post-rewrite tree.',

@@ -7,10 +7,6 @@ use std::path::PathBuf;
 use assert_cmd::Command;
 use tempfile::{tempdir, TempDir};
 
-fn prose() -> Command {
-    Command::cargo_bin("prose").expect("prose binary")
-}
-
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
     let dir = tempdir().expect("tempdir");
     let path = dir.path().join(name);
@@ -18,12 +14,16 @@ fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
     (dir, path)
 }
 
+fn prose() -> Command {
+    Command::cargo_bin("prose").expect("prose binary")
+}
+
 #[test]
 fn cache_clean_subcommand_exits_zero_and_reports_count() {
-    let cache_home = tempdir().expect("tempdir");
+    let cache_dir = tempdir().expect("tempdir");
     let assert = prose()
         .args(["cache", "clean"])
-        .env("XDG_CACHE_HOME", cache_home.path())
+        .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .success();
     let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
@@ -33,13 +33,25 @@ fn cache_clean_subcommand_exits_zero_and_reports_count() {
 }
 
 #[test]
+fn cache_compact_subcommand_exits_zero_and_reports_count() {
+    let cache_dir = tempdir().expect("tempdir");
+    let assert = prose()
+        .args(["cache", "compact"])
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    assert!(out.starts_with("removed "), "stdout was {out:?}");
+}
+
+#[test]
 fn cache_hit_produces_identical_diagnostics_to_miss() {
-    let cache_home = tempdir().expect("tempdir");
+    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("ab.py", "ab = 1\nx = 2\n");
     let miss = prose()
         .args(["check", "--output-format", "json"])
         .arg(&path)
-        .env("XDG_CACHE_HOME", cache_home.path())
+        .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .code(1);
     let miss_stdout = miss.get_output().stdout.clone();
@@ -47,7 +59,7 @@ fn cache_hit_produces_identical_diagnostics_to_miss() {
     let hit = prose()
         .args(["check", "--output-format", "json"])
         .arg(&path)
-        .env("XDG_CACHE_HOME", cache_home.path())
+        .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .code(1);
     let hit_stdout = hit.get_output().stdout.clone();
@@ -56,9 +68,29 @@ fn cache_hit_produces_identical_diagnostics_to_miss() {
 }
 
 #[test]
+fn cache_info_subcommand_prints_path_and_counts() {
+    let cache_dir = tempdir().expect("tempdir");
+    let assert = prose()
+        .args(["cache", "info"])
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    assert!(out.contains("path:"), "stdout was {out:?}");
+    assert!(out.contains("entries: 0"));
+    assert!(out.contains("bytes: 0"));
+}
+
+#[test]
 fn check_clean_fixture_exits_zero() {
+    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("clean.py", "x = 1\n");
-    prose().arg("check").arg(&path).assert().success();
+    prose()
+        .arg("check")
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
 }
 
 #[test]
@@ -91,8 +123,14 @@ fn check_stdin_unaligned_exits_format_change() {
 
 #[test]
 fn check_unaligned_fixture_exits_format_change() {
+    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
-    prose().arg("check").arg(&path).assert().code(1);
+    prose()
+        .arg("check")
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .code(1);
 }
 
 #[test]
@@ -103,11 +141,13 @@ fn check_unparseable_fixture_exits_parse_error() {
 
 #[test]
 fn color_arms_exit_zero() {
+    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("clean.py", "x = 1\n");
     for arm in ["always", "never"] {
         prose()
             .args(["--color", arm, "check"])
             .arg(&path)
+            .env("PROSE_CACHE_DIR", cache_dir.path())
             .assert()
             .success();
     }
@@ -133,10 +173,12 @@ fn config_errors_exit_four() {
 
 #[test]
 fn format_diff_renders_diff_and_leaves_file_unchanged() {
+    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     let assert = prose()
         .args(["format", "--diff"])
         .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .code(1);
     let stdout = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
@@ -167,9 +209,20 @@ fn format_no_cache_flag_rewrites_when_needed() {
 
 #[test]
 fn format_unaligned_rewrites_and_re_check_is_clean() {
+    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
-    prose().arg("format").arg(&path).assert().success();
-    prose().arg("check").arg(&path).assert().success();
+    prose()
+        .arg("format")
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+    prose()
+        .arg("check")
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
 }
 
 #[test]
@@ -180,6 +233,33 @@ fn help_exits_clean() {
 #[test]
 fn no_args_prints_help_and_exits_clean() {
     prose().assert().success();
+}
+
+#[test]
+fn verbose_flag_prints_cache_telemetry_to_stderr() {
+    let cache_dir = tempdir().expect("tempdir");
+    let (_dir, path) = fixture("clean.py", "x = 1\n");
+    let assert = prose()
+        .args(["--verbose", "check"])
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(err.contains("cache:"), "stderr was {err:?}");
+    assert!(err.contains("files"));
+}
+
+#[test]
+fn verbose_flag_with_no_cache_reports_bypassed() {
+    let (_dir, path) = fixture("clean.py", "x = 1\n");
+    let assert = prose()
+        .args(["--verbose", "check", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .success();
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(err.contains("cache: bypassed"), "stderr was {err:?}");
 }
 
 #[test]

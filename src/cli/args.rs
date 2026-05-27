@@ -58,6 +58,10 @@ pub(crate) struct Cli {
 
     #[command(subcommand)]
     pub(crate) command: Command,
+
+    /// Print extra diagnostic information to stderr.
+    #[arg(long, global = true)]
+    pub(crate) verbose: bool,
 }
 
 #[derive(Debug, Subcommand)]
@@ -85,6 +89,12 @@ pub(crate) enum Command {
 pub(crate) enum CacheAction {
     /// Clear every cached entry and report the freed bytes.
     Clean,
+
+    /// Evict oldest entries until the configured size cap is met.
+    Compact,
+
+    /// Print the cache directory, entry count, byte total, and mtimes.
+    Info,
 }
 
 #[derive(Debug, Default, clap::Args)]
