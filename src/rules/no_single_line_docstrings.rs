@@ -7,11 +7,10 @@
 //! here on every already-multi-line docstring.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::StringLiteral;
 use ruff_python_trivia::PythonWhitespace;
 
 use crate::config::Config;
-use crate::primitives::docstring::{indent_prefix, triple_quoted_body, DocstringHandler};
+use crate::primitives::docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body};
 use crate::primitives::edit::narrowed_replacement;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
@@ -26,41 +25,24 @@ impl NoSingleLineDocstrings {
 
 impl Rule for NoSingleLineDocstrings {
     fn apply(&self, source: &Source) -> Vec<Edit> {
-        let mut rewriter = Rewriter {
-            edits: Vec::new(),
-            source,
-        };
-        rewriter.walk(source);
-        rewriter.edits
+        rewrite_docstrings(source, |source, lit, edits| {
+            let Some(body) = triple_quoted_body(source, lit).filter(|b| !b.text.contains('\n'))
+            else {
+                return;
+            };
+            let trimmed = body.text.trim_whitespace();
+            if trimmed.is_empty() {
+                return;
+            }
+            let indent = indent_prefix(source, lit);
+            let newline = source.newline_str();
+            let candidate = format!("{newline}{indent}{trimmed}{newline}{indent}");
+            edits.extend(narrowed_replacement(source, body.range, candidate));
+        })
     }
 
     fn id(&self) -> RuleId {
         Self::SLUG
-    }
-}
-
-struct Rewriter<'a> {
-    edits: Vec<Edit>,
-    source: &'a Source,
-}
-
-impl DocstringHandler for Rewriter<'_> {
-    fn handle(&mut self, lit: &StringLiteral) {
-        let Some(body) = triple_quoted_body(self.source, lit) else {
-            return;
-        };
-        if body.text.contains('\n') {
-            return;
-        }
-        let trimmed = body.text.trim_whitespace();
-        if trimmed.is_empty() {
-            return;
-        }
-        let indent = indent_prefix(self.source, lit);
-        let newline = self.source.newline_str();
-        let candidate = format!("{newline}{indent}{trimmed}{newline}{indent}");
-        self.edits
-            .extend(narrowed_replacement(self.source, body.range, candidate));
     }
 }
 
