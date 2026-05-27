@@ -112,11 +112,7 @@ impl Walker<'_> {
         let above_line_start = block.map_or(curr_line_start, TextRange::start);
         self.normalize_above(above_line_start, canonical + 1);
         if let Some(b) = block {
-            let below_target = if is_banner_block(self.source, b) {
-                2
-            } else {
-                1
-            };
+            let below_target = 1 + u32::from(is_banner_block(self.source, b));
             self.normalize_below_block(b.end(), curr_line_start, below_target);
         }
     }
@@ -192,9 +188,7 @@ fn header_signature_end(source: &Source, body_start: TextSize) -> TextSize {
         .map_or(body_start, |t| t.end())
 }
 
-/// True when any line in the comment block is a decorative rule line,
-/// meaning the block reads as a section divider rather than a
-/// description of the following statement.
+/// True when any line in the comment block is a decorative rule line.
 fn is_banner_block(source: &Source, block: TextRange) -> bool {
     source.slice(block).lines().any(is_rule_line)
 }
@@ -220,19 +214,16 @@ fn is_main_guard(stmt: &Stmt) -> bool {
 }
 
 /// True when `line` is a comment whose body, after stripping the
-/// leading `#` and surrounding whitespace, is 5 or more characters of
-/// one repeating non-alphanumeric character.
+/// leading `#` and surrounding whitespace, consists of 5 or more
+/// identical non-alphanumeric characters.
 fn is_rule_line(line: &str) -> bool {
     let stripped = line
-        .trim_start_matches(|c: char| c.is_ascii_whitespace())
+        .trim_start()
         .strip_prefix('#')
-        .map(|s| s.trim_matches(|c: char| c.is_ascii_whitespace()))
+        .map(str::trim)
         .unwrap_or("");
-    let mut chars = stripped.chars();
-    let Some(first) = chars.next() else {
-        return false;
-    };
-    stripped.len() >= 5 && !first.is_ascii_alphanumeric() && chars.all(|c| c == first)
+    let bytes = stripped.as_bytes();
+    bytes.len() >= 5 && !bytes[0].is_ascii_alphanumeric() && bytes.iter().all(|&b| b == bytes[0])
 }
 
 /// Returns the contiguous range of own-line comments lying between
