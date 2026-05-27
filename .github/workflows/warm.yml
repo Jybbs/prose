@@ -41,24 +41,6 @@ jobs:
         id   : matrix
         run  : ./.github/scripts/emit-matrix.py
 
-  bun:
-    name    : 🥐 Bun
-    runs-on : ubuntu-latest
-
-    steps:
-      - name : Check out repository
-        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - name : Provision Cargo
-        uses : ./.github/actions/provision-cargo
-        with : { cache: false }
-
-      - name : Provision bun
-        uses : ./.github/actions/provision-bun
-
-      - name : bun install --frozen-lockfile
-        run  : bun install --frozen-lockfile
-
   checks:
     name    : ${{ matrix.name }}
     runs-on : ubuntu-latest
@@ -72,6 +54,10 @@ jobs:
 
       matrix:
         include:
+          - bun-lock   : bun.lock
+            cache      : false
+            command    : mise run bake
+            name       : 🥐 Bun
           - command    : mise run lint
             name       : 📎 Clippy
             shared-key : prose-clippy
@@ -91,7 +77,13 @@ jobs:
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
-        with : { shared-key: "${{ matrix.shared-key }}" }
+        with:
+          cache      : ${{ matrix.cache }}
+          shared-key : ${{ matrix.shared-key }}
+
+      - name : Provision bun
+        uses : ./.github/actions/provision-bun
+        with : { cache-dependency-glob: "${{ matrix.bun-lock }}" }
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}
