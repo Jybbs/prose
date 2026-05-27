@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/module_assigns_module_local_attr.input.py
 ---
-alphabetize@240..286
+alphabetize@238..284

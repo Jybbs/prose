@@ -201,6 +201,7 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
     }
 }
 
+#[derive(Default)]
 struct RhsAnalyzer<'src> {
     access_roots: Vec<&'src str>,
     deps: Vec<&'src str>,
@@ -279,6 +280,21 @@ fn assign_run_target(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
         }
         _ => None,
     }
+}
+
+/// Returns the slot ranges of consecutive items whose pairwise
+/// neighbors satisfy `adjacent`. Singleton runs drop.
+fn chunk_runs<T>(items: &[T], mut adjacent: impl FnMut(&T, &T) -> bool) -> Vec<Range<usize>> {
+    let mut start = 0;
+    items
+        .chunk_by(|a, b| adjacent(a, b))
+        .filter_map(|chunk| {
+            let end = start + chunk.len();
+            let range = (chunk.len() >= 2).then_some(start..end);
+            start = end;
+            range
+        })
+        .collect()
 }
 
 /// True when a class body has at least two `Stmt::AnnAssign` field
@@ -436,34 +452,26 @@ fn method_group(f: &StmtFunctionDef) -> u8 {
 }
 
 /// Returns the paragraph-adjacent runs of `Assign` and `AnnAssign`
-/// statements in `body`. A blank line *(two or more newlines in the
-/// gap)* breaks the run. Trailing comments on assign lines do not
+/// statements in `body`. A blank line (two or more newlines in the
+/// gap) breaks the run. Trailing comments on assign lines do not
 /// break the run on their own.
 fn module_assign_run_ranges(source: &Source, body: &[Stmt]) -> Vec<Range<usize>> {
     let is_assign = |s: &Stmt| s.is_assign_stmt() || s.is_ann_assign_stmt();
-    let mut start = 0;
-    body.chunk_by(|a, b| {
+    chunk_runs(body, |a, b| {
         is_assign(a) && is_assign(b) && {
             let gap = TextRange::new(a.end(), b.range().start());
             source.slice(gap).matches('\n').count() <= 1
         }
     })
-    .filter_map(|chunk| {
-        let end = start + chunk.len();
-        let range = (chunk.len() >= 2).then_some(start..end);
-        start = end;
-        range
-    })
-    .collect()
 }
 
 /// Returns a per-run tier-and-name lookup keyed by each statement's
 /// start offset, or `None` when the run cannot reorder. The run skips
 /// when any item has a non-`Name` target, duplicates an earlier
-/// target, carries a side-effecting RHS shape (*`Call`, `Await`,
+/// target, carries a side-effecting RHS shape (`Call`, `Await`,
 /// `Yield`, `YieldFrom`, or an `Attribute` / `Subscript` whose root
 /// names neither a run target nor a module-local binding written
-/// before the run*), or when the intra-run dependency graph carries a
+/// before the run), or when the intra-run dependency graph carries a
 /// cycle. The composite `(tier, name)` key combines a Kahn-style
 /// topological tier with the binding's name.
 fn module_assign_tier_keys<'src>(
@@ -491,11 +499,7 @@ fn module_assign_tier_keys<'src>(
     let dep_sets: Vec<HashSet<usize>> = extracted
         .iter()
         .map(|&(_, value)| -> Option<HashSet<usize>> {
-            let mut analyzer = RhsAnalyzer {
-                access_roots: Vec::new(),
-                deps: Vec::new(),
-                tainted: false,
-            };
+            let mut analyzer = RhsAnalyzer::default();
             if let Some(rhs) = value {
                 analyzer.visit_expr(rhs);
             }
@@ -750,8 +754,8 @@ fn rewrite_stmt<'src>(
 
 /// Returns the leftmost `Name` identifier of an `Attribute` or
 /// `Subscript` access chain. `None` when the chain bottoms out at any
-/// other expression shape (*a parenthesized binary, a literal, a
-/// `Call` return*).
+/// other expression shape (a parenthesized binary, a literal, a
+/// `Call` return).
 fn root_name(expr: &Expr) -> Option<&str> {
     let mut current = expr;
     loop {
@@ -823,15 +827,7 @@ fn statement_run_ranges(
     body: &[Stmt],
     mut predicate: impl FnMut(&Stmt) -> bool,
 ) -> Vec<Range<usize>> {
-    let mut start = 0;
-    body.chunk_by(|a, b| predicate(a) && predicate(b))
-        .filter_map(|chunk| {
-            let end = start + chunk.len();
-            let range = (chunk.len() >= 2).then_some(start..end);
-            start = end;
-            range
-        })
-        .collect()
+    chunk_runs(body, |a, b| predicate(a) && predicate(b))
 }
 
 /// Assigns each binding a Kahn-style topological tier from its
@@ -1000,20 +996,13 @@ mod tests {
     }
 
     #[test]
-    fn tier_levels_returns_none_on_self_loop() {
-        let deps = vec![HashSet::from([0])];
-        assert_eq!(tier_levels(&deps), None);
-    }
-
-    #[test]
-    fn tier_levels_returns_none_on_three_node_cycle() {
-        let deps = vec![HashSet::from([1]), HashSet::from([2]), HashSet::from([0])];
-        assert_eq!(tier_levels(&deps), None);
-    }
-
-    #[test]
-    fn tier_levels_returns_none_on_two_node_cycle() {
-        let deps = vec![HashSet::from([1]), HashSet::from([0])];
-        assert_eq!(tier_levels(&deps), None);
+    fn tier_levels_returns_none_on_cycles() {
+        for deps in [
+            vec![HashSet::from([0])],
+            vec![HashSet::from([1]), HashSet::from([0])],
+            vec![HashSet::from([1]), HashSet::from([2]), HashSet::from([0])],
+        ] {
+            assert_eq!(tier_levels(&deps), None, "deps = {deps:?}");
+        }
     }
 }
