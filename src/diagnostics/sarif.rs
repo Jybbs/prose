@@ -3,7 +3,7 @@
 use std::io::{self, Write};
 
 use ruff_diagnostics::Edit;
-use ruff_source_file::LineColumn;
+use ruff_source_file::{LineColumn, SourceFile};
 use ruff_text_size::Ranged;
 use serde_sarif::sarif::{
     ArtifactChange, ArtifactContent, ArtifactLocation, Fix, Location, PhysicalLocation, Region,
@@ -11,9 +11,8 @@ use serde_sarif::sarif::{
     Sarif as SarifDoc, ToolComponent,
 };
 
-use crate::diagnostics::{Diagnostic, Emitter, Run};
+use crate::diagnostics::{line_columns, Diagnostic, Emitter, Run};
 use crate::rule::RuleId;
-use crate::source::Source;
 
 pub(crate) struct Sarif;
 
@@ -28,8 +27,8 @@ impl Emitter for Sarif {
     }
 }
 
-fn artifact_location(source: &Source) -> ArtifactLocation {
-    ArtifactLocation::builder().uri(source.filename()).build()
+fn artifact_location(file: &SourceFile) -> ArtifactLocation {
+    ArtifactLocation::builder().uri(file.name()).build()
 }
 
 fn collect_rule_ids(runs: &[Run<'_>]) -> Vec<RuleId> {
@@ -51,15 +50,14 @@ fn region(start: LineColumn, end: LineColumn) -> Region {
         .build()
 }
 
-fn sarif_fix(source: &Source, edit: &Edit) -> Fix {
-    let start = source.line_column(edit.range().start());
-    let end = source.line_column(edit.range().end());
+fn sarif_fix(file: &SourceFile, edit: &Edit) -> Fix {
+    let (start, end) = line_columns(file, edit.range());
     let inserted = ArtifactContent::builder()
         .text(edit.content().unwrap_or_default())
         .build();
     Fix::builder()
         .artifact_changes(vec![ArtifactChange::builder()
-            .artifact_location(artifact_location(source))
+            .artifact_location(artifact_location(file))
             .replacements(vec![Replacement::builder()
                 .deleted_region(region(start, end))
                 .inserted_content(inserted)
@@ -68,9 +66,8 @@ fn sarif_fix(source: &Source, edit: &Edit) -> Fix {
         .build()
 }
 
-fn sarif_result(source: &Source, diag: &Diagnostic) -> SarifResult {
-    let start = source.line_column(diag.range.start());
-    let end = source.line_column(diag.range.end());
+fn sarif_result(file: &SourceFile, diag: &Diagnostic) -> SarifResult {
+    let (start, end) = line_columns(file, diag.range);
     let builder = SarifResult::builder()
         .rule_id(diag.rule.as_str())
         .level(ResultLevel::Warning)
@@ -78,13 +75,13 @@ fn sarif_result(source: &Source, diag: &Diagnostic) -> SarifResult {
         .locations(vec![Location::builder()
             .physical_location(
                 PhysicalLocation::builder()
-                    .artifact_location(artifact_location(source))
+                    .artifact_location(artifact_location(file))
                     .region(region(start, end))
                     .build(),
             )
             .build()]);
     match &diag.fix {
-        Some(edit) => builder.fixes(vec![sarif_fix(source, edit)]).build(),
+        Some(edit) => builder.fixes(vec![sarif_fix(file, edit)]).build(),
         None => builder.build(),
     }
 }
@@ -96,10 +93,8 @@ fn sarif_run(runs: &[Run<'_>]) -> SarifRun {
         .collect();
     let results: Vec<SarifResult> = runs
         .iter()
-        .flat_map(|(source, diagnostics)| {
-            diagnostics
-                .iter()
-                .map(move |diag| sarif_result(source, diag))
+        .flat_map(|(file, diagnostics)| {
+            diagnostics.iter().map(move |diag| sarif_result(file, diag))
         })
         .collect();
     SarifRun::builder()
@@ -122,6 +117,7 @@ mod tests {
 
     use super::*;
     use crate::diagnostics::Severity;
+    use crate::source::Source;
 
     fn diag() -> Diagnostic {
         let range = TextRange::new(0.into(), 1.into());
@@ -140,7 +136,10 @@ mod tests {
         let diag = diag();
         let mut buf = Vec::<u8>::new();
         Sarif
-            .emit(&mut buf, &[(&source, std::slice::from_ref(&diag))])
+            .emit(
+                &mut buf,
+                &[(source.source_file(), std::slice::from_ref(&diag))],
+            )
             .expect("emits");
         let v: Value = serde_json::from_slice(&buf).expect("parses as JSON");
         assert_eq!(v["version"], "2.1.0");
@@ -165,7 +164,10 @@ mod tests {
         let diag = diag();
         let mut buf = Vec::<u8>::new();
         Sarif
-            .emit(&mut buf, &[(&source, std::slice::from_ref(&diag))])
+            .emit(
+                &mut buf,
+                &[(source.source_file(), std::slice::from_ref(&diag))],
+            )
             .expect("emits");
         let v: Value = serde_json::from_slice(&buf).expect("parses");
         let fix = &v["runs"][0]["results"][0]["fixes"][0];
@@ -189,7 +191,10 @@ mod tests {
         };
         let mut buf = Vec::<u8>::new();
         Sarif
-            .emit(&mut buf, &[(&source, std::slice::from_ref(&diag))])
+            .emit(
+                &mut buf,
+                &[(source.source_file(), std::slice::from_ref(&diag))],
+            )
             .expect("emits");
         let v: Value = serde_json::from_slice(&buf).expect("parses");
         assert!(v["runs"][0]["results"][0]["fixes"].is_null());
@@ -200,7 +205,9 @@ mod tests {
         let source: Source = "x = 1\n".parse().expect("parses");
         let diags = vec![diag(), diag()];
         let mut buf = Vec::<u8>::new();
-        Sarif.emit(&mut buf, &[(&source, &diags)]).expect("emits");
+        Sarif
+            .emit(&mut buf, &[(source.source_file(), &diags)])
+            .expect("emits");
         let v: Value = serde_json::from_slice(&buf).expect("parses");
         let rules = v["runs"][0]["tool"]["driver"]["rules"]
             .as_array()

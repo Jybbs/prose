@@ -42,6 +42,21 @@ The top-level `[tool.prose]` table carries settings that span multiple rules.
 With no value set, every version-dependent arm skips rather than assume a default, leaving [[legacy-union-syntax]] and [[unused-future-annotations]] quiet on every project that has not opted into a target.
 :::
 
+## Cache
+
+The `[tool.prose.cache]` sub-table tunes the user-level [**cache**](/reference/cache) that *Prose* keeps for repeat runs. Both keys default to the canonical shape, so a project that does not write the sub-table gets the cache at its full size.
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `enabled` | bool | `true` | Toggle the cache globally |
+| `max-size-mib` | positive int | `100` | LRU eviction cap on the cache directory |
+
+```toml
+[tool.prose.cache]
+enabled      = true
+max-size-mib = 250
+```
+
 ## Per-Rule Knobs
 
 Each rule's sub-table sits at `[tool.prose.rules.<rule>]`. Every rule accepts `enabled` (*defaulting to `true`*), and a handful carry rule-specific knobs. The table below mixes two kinds of row, with the *Where* column resolving the difference. Generic knobs *(`enabled`, `max-shift`, `max-shift-policy`)* apply to every rule in their column's named category. Rule-specific knobs sit at the named rule's sub-table only, even when two rules happen to spell their knob the same way *(the two `allow` rows are distinct, scoped to different rules and reading different inputs)*.

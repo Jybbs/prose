@@ -17,6 +17,7 @@ Rewrites Python files to conform to the *Prose* style. Returns exit code 0 once 
 | Flag | Type | Default | Description |
 |---|---|---|---|
 | `--diff` | bool | off | Show a unified diff on stdout instead of writing changes |
+| `--no-cache` | bool | off | Bypass the user-level [**cache**](/reference/cache) for this invocation |
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. `--diff` requires `text` |
 | `--stdin` | bool | off | Read source from stdin and write the rewritten source to stdout |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules, replacing the configured-enabled set |
@@ -54,6 +55,7 @@ Reports violations without modifying source. Returns the canonical [**Exit Codes
 
 | Flag | Type | Default | Description |
 |---|---|---|---|
+| `--no-cache` | bool | off | Bypass the user-level [**cache**](/reference/cache) for this invocation |
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. See [**Output Formats**](/reference/output-formats) for the per-format record layout |
 | `--stdin` | bool | off | Read source from stdin instead of the filesystem |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules |
@@ -70,6 +72,32 @@ prose check --stdin < module.py
 prose check - < module.py
 ```
 
+## `prose cache clean`
+
+Removes every entry from the user-level cache and prints the freed bytes plus the cleared entry count. The [**Cache**](/reference/cache) reference covers the cache's location, key shape, and `[tool.prose.cache]` configuration.
+
+```bash
+prose cache clean
+```
+
+Returns exit code 0 on success. The IO-error exit code applies on permission or filesystem failures.
+
+## `prose cache compact`
+
+Runs the LRU eviction pass against the cache, reducing it to the configured `[tool.prose.cache] max-size-mib` cap and reporting the bytes and entry count it removed. Useful after lowering the cap, since eviction otherwise runs only on insert.
+
+```bash
+prose cache compact
+```
+
+## `prose cache info`
+
+Prints the cache directory's resolved path, total entry count, total byte size, and the oldest and newest entry mtimes as relative ages. Useful for verifying that `PROSE_CACHE_DIR` resolved where expected, or that the cache is being populated by recent runs.
+
+```bash
+prose cache info
+```
+
 ## `prose completions`
 
 Prints a shell-completion script to stdout.
@@ -84,13 +112,16 @@ prose completions zsh > "${fpath[1]}/_prose"
 
 The [**Shell Completions**](/integrations/shell-completions) integration page covers the install path for each shell.
 
-## Global Flag
+## Global Flags
 
 | Flag | Type | Default | Description |
 |---|---|---|---|
 | `--color` | `always` \| `auto` \| `never` | `auto` | Colored output preference, applied to every subcommand |
+| `--verbose` | bool | off | Print a one-line cache hit/miss summary to stderr at the end of each `check` or `format` run |
 
 `--color auto` honors the [**`NO_COLOR`**](https://no-color.org/) environment variable and the terminal's TTY status. `--color always` forces ANSI sequences even when stdout is not a TTY *(useful for piping to `less -R`)*. `--color never` strips ANSI sequences unconditionally.
+
+`--verbose` writes one line of cache telemetry to stderr: `cache: N hits, M misses, T files`, or `cache: bypassed` when the cache is disabled. The [**Cache**](/reference/cache#hit-miss-telemetry) page covers the shape.
 
 ## Mutual Exclusion
 

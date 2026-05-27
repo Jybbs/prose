@@ -11,7 +11,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use ruff_diagnostics::Edit;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::config::{
@@ -135,6 +135,12 @@ impl FromStr for RuleId {
     }
 }
 
+impl Serialize for RuleId {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.0)
+    }
+}
+
 /// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,
 /// starts and ends with a lowercase ASCII letter or digit, contains
 /// only lowercase ASCII letters, digits, and dashes, and has no `--`
@@ -197,7 +203,7 @@ macro_rules! register_rules {
         /// Each field is a sub-table whose `enabled` key (defaulting
         /// to `true`) toggles the rule and whose remaining keys carry
         /// that rule's knobs.
-        #[derive(Debug, Default, Deserialize)]
+        #[derive(Debug, Default, Deserialize, Serialize)]
         #[serde(default, rename_all = "kebab-case")]
         pub struct RuleConfigs {
             $(pub $field: $config,)*

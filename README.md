@@ -1,7 +1,7 @@
 <div align="center">
 <img src="site/public/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." width="800">
 
-[![Rust](site/public/badges/rust.svg)![1.82+](https://img.shields.io/badge/1.82+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
+[![Rust](site/public/badges/rust.svg)![1.95+](https://img.shields.io/badge/1.95+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
 [![Python](site/public/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
 [![Coverage](site/public/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
 [![Documentation](site/public/badges/docs.svg)![Docs](https://img.shields.io/badge/Docs-8a80cb?style=for-the-badge)](https://prose.fyi/)
@@ -33,7 +33,7 @@ The trade-offs minimalist formatters were built to avoid (*wider diffs, more ver
 uv tool install prose-formatter
 ```
 
-The binary exposes `format`, `check`, and `completions`:
+The binary exposes `format`, `check`, `cache`, and `completions`:
 
 ```bash
 prose format path/             # rewrite files in place
@@ -51,6 +51,7 @@ The full edition lives at [prose.fyi](https://prose.fyi/):
 
 - The [**rule catalog**](https://prose.fyi/rules/) walks every rule with before/after fixtures and per-knob configuration.
 - The [**configuration reference**](https://prose.fyi/reference/configuration) lists every `[tool.prose]` key and per-rule sub-table.
+- The [**cache reference**](https://prose.fyi/reference/cache) covers the cache directory, `--no-cache`, the `[tool.prose.cache]` table, and the `prose cache` subcommands.
 - The [**exit-code matrix**](https://prose.fyi/reference/exit-codes) is the contract CI gates and pre-commit hooks compile against.
 - [**Suppression directives**](https://prose.fyi/usage/suppression) cover `# prose: off`, `# prose: skip`, and the rest of the directive surface.
 - [**Composition with Ruff**](https://prose.fyi/integrations/ruff) pairs the token-level formatter with `prose format`.

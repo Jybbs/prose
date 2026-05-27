@@ -38,14 +38,18 @@ export const DOMAIN_META: Record<Domain, DomainMeta> = {
 
 export const SOURCES: Record<Domain, readonly TokenSource[]> = {
   'cli-flag': [
-    { key: '--color',         href: '/reference/cli#global-flag',  blurb: 'Color-output mode for human-readable output.' },
-    { key: '--diff',          href: '/reference/cli#prose-format', blurb: 'Print a unified diff without rewriting the source.' },
-    { key: '--ignore <slug>', href: '/reference/cli#precedence',   blurb: 'Subtract the listed rule from the active set.' },
-    { key: '--output-format', href: '/reference/cli#prose-format', blurb: 'Pick the diagnostic shape (`text` / `json` / `github` / `sarif`).' },
-    { key: '--select <slug>', href: '/reference/cli#precedence',   blurb: 'Restrict the run to the listed rule.' },
-    { key: '--stdin',         href: '/reference/cli#prose-format', blurb: 'Read source from stdin, write the rewrite to stdout.' }
+    { key: '--color',         href: '/reference/cli#global-flag',          blurb: 'Color-output mode for human-readable output.' },
+    { key: '--diff',          href: '/reference/cli#prose-format',         blurb: 'Print a unified diff without rewriting the source.' },
+    { key: '--ignore <slug>', href: '/reference/cli#precedence',           blurb: 'Subtract the listed rule from the active set.' },
+    { key: '--no-cache',      href: '/reference/cache',                    blurb: 'Bypass the user-level cache for the single invocation.' },
+    { key: '--output-format', href: '/reference/cli#prose-format',         blurb: 'Pick the diagnostic shape (`text` / `json` / `github` / `sarif`).' },
+    { key: '--select <slug>', href: '/reference/cli#precedence',           blurb: 'Restrict the run to the listed rule.' },
+    { key: '--stdin',         href: '/reference/cli#prose-format',         blurb: 'Read source from stdin, write the rewrite to stdout.' },
+    { key: '--verbose',       href: '/reference/cache#hit-miss-telemetry', blurb: 'Print a one-line cache summary to stderr at the end of the run.' }
   ],
   'config-key': [
+    { key: 'cache.enabled',               href: '/reference/cache#configuration',             blurb: 'Toggle the user-level cache globally.' },
+    { key: 'cache.max-size-mib',          href: '/reference/cache#configuration',             blurb: 'LRU eviction cap on the cache directory.' },
     { key: 'code-line-length',            href: '/reference/configuration#top-level-keys',    blurb: 'Maximum column budget for code lines.' },
     { key: 'docstring-line-length',       href: '/reference/configuration#docstring-budgets', blurb: 'Maximum column budget for docstring prose.' },
     { key: 'docstring-structured-policy', href: '/reference/configuration#docstring-budgets', blurb: 'Budget policy for docstring structured sections.' },
@@ -68,9 +72,12 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'text',   href: '/reference/output-formats#text',   blurb: 'Default human-readable output.' }
   ],
   'subcommand': [
-    { key: 'prose check',       href: '/reference/cli#prose-check',       blurb: 'Verify without rewriting, resolving to a non-zero exit code when any rewrite pends.' },
-    { key: 'prose completions', href: '/reference/cli#prose-completions', blurb: 'Emit shell-completion scripts for the active shell.' },
-    { key: 'prose format',      href: '/reference/cli#prose-format',      blurb: 'Apply every pending rewrite in place.' }
+    { key: 'prose cache clean',   href: '/reference/cache#prose-cache-clean',   blurb: 'Clear every cached entry and report the freed bytes.' },
+    { key: 'prose cache compact', href: '/reference/cache#prose-cache-compact', blurb: 'Evict oldest entries until the configured size cap is met.' },
+    { key: 'prose cache info',    href: '/reference/cache#prose-cache-info',    blurb: 'Print cache path, entry count, byte total, and mtimes.' },
+    { key: 'prose check',         href: '/reference/cli#prose-check',           blurb: 'Verify without rewriting, resolving to a non-zero exit code when any rewrite pends.' },
+    { key: 'prose completions',   href: '/reference/cli#prose-completions',     blurb: 'Emit shell-completion scripts for the active shell.' },
+    { key: 'prose format',        href: '/reference/cli#prose-format',          blurb: 'Apply every pending rewrite in place.' }
   ],
   'suppression': [
     { key: '# yapf: disable',         href: '/reference/suppression-directives#block-markers',                   blurb: 'Yapf alias for `# fmt: off`.' },
