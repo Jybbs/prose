@@ -3,9 +3,9 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/docstring_args_wrap_after_colon_align.input.py
 ---
-align-colons@1015..1015
-align-colons@706..706
-align-colons@870..870
-alphabetize@587..621
-docstring-wrap@62..493
-docstring-wrap@761..1118
+align-colons@629..629
+align-colons@774..774
+align-colons@910..910
+alphabetize@507..1053
+docstring-wrap@62..372
+docstring-wrap@679..1022

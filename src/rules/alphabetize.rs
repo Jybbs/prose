@@ -29,6 +29,7 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::config::Config;
+use crate::primitives::docstring::{entry_carrying_sections, rewrite_docstrings};
 use crate::primitives::edit::{apply_inline_edits, narrowed_replacement};
 use crate::primitives::orderer::{
     assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
@@ -36,11 +37,15 @@ use crate::primitives::orderer::{
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
-pub(crate) struct Alphabetize;
+pub(crate) struct Alphabetize {
+    docstring_entries: bool,
+}
 
 impl Alphabetize {
-    pub(crate) fn from_config(_: &Config) -> Self {
-        Self
+    pub(crate) fn from_config(config: &Config) -> Self {
+        Self {
+            docstring_entries: config.rules.alphabetize.docstring_entries,
+        }
     }
 }
 
@@ -50,7 +55,11 @@ impl Rule for Alphabetize {
         if body.is_empty() {
             return Vec::new();
         }
-        let leaf_edits = collect_leaf_edits(source);
+        let mut leaf_edits = collect_leaf_edits(source);
+        if self.docstring_entries {
+            leaf_edits.extend(collect_docstring_entry_edits(source));
+            leaf_edits.sort_unstable();
+        }
         let (body_text, body_span) = rewrite_body(
             source,
             body,
@@ -320,6 +329,35 @@ fn classify_param(p: &ParameterWithDefault) -> Option<(u8, &str)> {
         return None;
     }
     Some((u8::from(p.default.is_some()), name))
+}
+
+/// Walks every docstring in `source` and emits one edit per
+/// entry-carrying Google-style section whose `name: description`
+/// entries are out of alphabetical order. Each edit replaces the
+/// section's entries-span with the reordered text. Returns an empty
+/// list when no docstring carries a sortable section.
+fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
+    rewrite_docstrings(source, |source, lit, edits| {
+        for entries in entry_carrying_sections(source, lit) {
+            let cow = reorder_text(
+                source,
+                &entries,
+                |entry| Some(entry.name),
+                |_, slice| Cow::Borrowed(slice),
+            );
+            let Cow::Owned(text) = cow else {
+                continue;
+            };
+            let [first, .., last] = entries.as_slice() else {
+                unreachable!("reorder_text returns Owned only for >= 2 entries");
+            };
+            edits.extend(narrowed_replacement(
+                source,
+                first.range.cover(last.range),
+                text,
+            ));
+        }
+    })
 }
 
 /// Walks the AST collecting every leaf-level sort edit. Each emitted
@@ -884,6 +922,36 @@ mod tests {
             .map(|s| assign_run_target(s).map(|(name, _)| name))
             .collect();
         assert_eq!(targets, vec![Some("X"), None, Some("y"), Some("z"), None]);
+    }
+
+    #[test]
+    fn apply_skips_docstring_entry_reorder_when_config_disables_it() {
+        let src = indoc! {"
+            def f():
+                \"\"\"Summary.
+
+                Args:
+                    bar: two
+                    alpha: one
+                \"\"\"
+                pass
+        "};
+        let mut config = Config::default();
+        config.rules.alphabetize.docstring_entries = false;
+        let rule = Alphabetize::from_config(&config);
+        let source = parse(src);
+        let edits = rule.apply(&source);
+        let text = crate::primitives::edit::apply_edits(source.text(), edits);
+        let args_section_end = text.find("\"\"\"\n    pass").expect("closer follows args");
+        let args_section = &text[..args_section_end];
+        let bar_pos = args_section.find("bar: two").expect("bar still present");
+        let alpha_pos = args_section
+            .find("alpha: one")
+            .expect("alpha still present");
+        assert!(
+            bar_pos < alpha_pos,
+            "docstring entries should keep source order when docstring-entries is off",
+        );
     }
 
     #[test]
