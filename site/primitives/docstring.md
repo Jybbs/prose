@@ -2,7 +2,7 @@
 
 <PrimitiveLayout primitive="docstring">
 
-*Docstring* is the walker that reaches every PEP 257 docstring in a module. The first body statement of the module, each class, and each function may carry a string literal as a docstring, and the walker hands every such literal to a consumer in source order. Three rules ([[docstring-wrap]], [[multi-line-docstrings]], [[no-single-line-docstrings]]) consume the same walk, so the AST traversal lives once in *Docstring* and each rule supplies a handler that decides what to emit per docstring.
+*Docstring* is the walker that reaches every PEP 257 docstring in a module. The first body statement of the module, each class, and each function may carry a string literal as a docstring, and the walker hands every such literal to a consumer in source order. Three rules ([[docstring-wrap]], [[multi-line-docstrings]], [[no-single-line-docstrings]]) consume the same walk, so the AST traversal lives once in *Docstring* and each rule supplies a closure that decides what to emit per docstring.
 
 
 ## Public Surface
@@ -24,7 +24,17 @@ The walker recurses through nested classes and functions, so a module with deepl
 
 ## Internal Surface
 
-The receiver trait carries one required method, with `walk` provided:
+A docstring rule reaches the walker through the closure-based helper:
+
+```rust
+pub(crate) fn rewrite_docstrings<F>(source: &Source, f: F) -> Vec<Edit>
+where
+    F: FnMut(&Source, &StringLiteral, &mut Vec<Edit>),
+```
+
+`rewrite_docstrings` drives the walk across `source` and threads each discovered docstring through `f`, which receives the source, the literal, and the running edit buffer. The closure pushes whatever edits the rule needs per docstring, and the helper returns the accumulated `Vec<Edit>`.
+
+The underlying receiver trait stays in place for any future non-closure consumer:
 
 ```rust
 pub(crate) trait DocstringHandler {
@@ -34,7 +44,7 @@ pub(crate) trait DocstringHandler {
 }
 ```
 
-`handle` is the required per-docstring callback, invoked for each discovered literal in source order. `walk(source)` is the provided driver across `source`'s module body and every nested scope, and a consuming rule never overrides it.
+`handle` is the per-docstring callback invoked for each discovered literal in source order. `walk(source)` is the provided driver across `source`'s module body and every nested scope, and a consuming type never overrides it. `rewrite_docstrings` itself composes against this trait through a private collector.
 
 Two `pub(crate)` helpers reach for the docstring body:
 
@@ -53,36 +63,25 @@ Two `pub(crate)` helpers reach for the docstring body:
 
 ## Build Pattern
 
-A rule implementing `DocstringHandler` carries the accumulator state and pushes edits or diagnostics from each `handle` call. After `walk(source)` returns, the accumulator carries the full result, and the rule's `apply` method returns the `Vec<Edit>` from that accumulator. The canonical shape:
+A rule calls `rewrite_docstrings` from its `apply` method and supplies a closure that decides what to emit per docstring:
 
 ```rust
-struct MyRule<'src> {
-    source : &'src Source,
-    edits  : Vec<Edit>,
-}
-
-impl<'src> DocstringHandler for MyRule<'src> {
-    fn handle(&mut self, lit: &StringLiteral) {
-        if let Some(edit) = self.consider(lit) {
-            self.edits.push(edit);
-        }
-    }
-}
-
-impl Rule for MyRuleConfig {
+impl Rule for MyRule {
     fn apply(&self, source: &Source) -> Vec<Edit> {
-        let mut visitor = MyRule { source, edits: Vec::new() };
-        visitor.walk(source);
-        visitor.edits
+        rewrite_docstrings(source, |source, lit, edits| {
+            if let Some(edit) = consider(source, lit) {
+                edits.push(edit);
+            }
+        })
     }
 }
 ```
 
-`consider` is the rule-specific per-docstring decision, returning `Some(edit)` when the literal needs rewriting and `None` otherwise, and the accumulator pattern carries through every consuming rule without variation.
+`consider` is the rule-specific per-docstring decision, returning `Some(edit)` when the literal needs rewriting and `None` otherwise. Rule-specific configuration closes over `self` inside the closure, so a rule with line budgets, allow-patterns, or other knobs reaches them directly without needing a separate accumulator struct.
 
 ## Re-Using This Primitive
 
-A new docstring rule implements `DocstringHandler::handle`, deciding per docstring what edits to emit, and calls `walk(source)` from inside `apply`. The PEP 257 detection, the nested-scope traversal, and the implicitly-concatenated skip come for free.
+A new docstring rule's `apply` body is a single `rewrite_docstrings` call carrying the per-docstring decision as a closure. The PEP 257 detection, the nested-scope traversal, and the implicitly-concatenated skip come for free. A consumer that needs richer state across the walk can implement `DocstringHandler` directly and call `walk(source)` from inside `apply`.
 
 <template #related>
 

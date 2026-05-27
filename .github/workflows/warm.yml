@@ -10,6 +10,9 @@ on:
       - Cargo.toml
       - Cargo.lock
       - mise.toml
+      - package.json
+      - bun.lock
+      - .github/actions/provision-bun/**
       - .github/actions/provision-cargo/**
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
@@ -51,6 +54,10 @@ jobs:
 
       matrix:
         include:
+          - bun-lock   : bun.lock
+            cache      : false
+            command    : mise run bake
+            name       : 🥐 Bun
           - command    : mise run lint
             name       : 📎 Clippy
             shared-key : prose-clippy
@@ -70,7 +77,13 @@ jobs:
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
-        with : { shared-key: "${{ matrix.shared-key }}" }
+        with:
+          cache      : ${{ matrix.cache }}
+          shared-key : ${{ matrix.shared-key }}
+
+      - name : Provision bun
+        uses : ./.github/actions/provision-bun
+        with : { cache-dependency-glob: "${{ matrix.bun-lock }}" }
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}

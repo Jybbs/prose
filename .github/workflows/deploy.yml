@@ -37,8 +37,7 @@ jobs:
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
-        with:
-          shared-key : prose-deploy
+        with : { shared-key: prose-build }
 
       - name : Provision bun
         uses : ./.github/actions/provision-bun
@@ -55,7 +54,7 @@ jobs:
         with:
           accountId : ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           apiToken  : ${{ secrets.CLOUDFLARE_TOKEN }}
-          command   : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ github.head_ref || github.ref_name }}
+          command   : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ github.head_ref || github.ref_name }} --commit-dirty=true
 
   gate:
     name    : 🗞️ Brief

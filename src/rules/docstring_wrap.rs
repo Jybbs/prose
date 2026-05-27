@@ -15,12 +15,11 @@ use std::sync::LazyLock;
 
 use regex_lite::Regex;
 use ruff_diagnostics::Edit;
-use ruff_python_ast::StringLiteral;
 use ruff_python_trivia::leading_indentation;
 use textwrap::Options;
 
 use crate::config::{Config, DocstringStructuredPolicy};
-use crate::primitives::docstring::{indent_prefix, triple_quoted_body, DocstringHandler};
+use crate::primitives::docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body};
 use crate::primitives::edit::narrowed_replacement;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
@@ -66,13 +65,18 @@ impl DocstringWrap {
 
 impl Rule for DocstringWrap {
     fn apply(&self, source: &Source) -> Vec<Edit> {
-        let mut rewriter = Rewriter {
-            edits: Vec::new(),
-            rule: self,
-            source,
-        };
-        rewriter.walk(source);
-        rewriter.edits
+        rewrite_docstrings(source, |source, lit, edits| {
+            let Some(body) = triple_quoted_body(source, lit).filter(|b| b.text.contains('\n'))
+            else {
+                return;
+            };
+            let indent = indent_prefix(source, lit);
+            let newline = source.newline_str();
+            let Some(rewritten) = rewrite_body(body.text, indent, newline, self) else {
+                return;
+            };
+            edits.extend(narrowed_replacement(source, body.range, rewritten));
+        })
     }
 
     fn id(&self) -> RuleId {
@@ -92,30 +96,6 @@ enum Region {
     Description,
     Section,
     SectionEntry(usize),
-}
-
-struct Rewriter<'a> {
-    edits: Vec<Edit>,
-    rule: &'a DocstringWrap,
-    source: &'a Source,
-}
-
-impl DocstringHandler for Rewriter<'_> {
-    fn handle(&mut self, lit: &StringLiteral) {
-        let Some(body) = triple_quoted_body(self.source, lit) else {
-            return;
-        };
-        if !body.text.contains('\n') {
-            return;
-        }
-        let indent = indent_prefix(self.source, lit);
-        let newline = self.source.newline_str();
-        let Some(rewritten) = rewrite_body(body.text, indent, newline, self.rule) else {
-            return;
-        };
-        self.edits
-            .extend(narrowed_replacement(self.source, body.range, rewritten));
-    }
 }
 
 struct Walker<'a> {
