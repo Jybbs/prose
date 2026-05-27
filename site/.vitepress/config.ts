@@ -91,16 +91,19 @@ export default defineConfig({
     const ogImage     = ogImageUrl(pageData.relativePath)
     const ogTitle     = isLanding ? 'Prose'                                       : `${title} · Prose`
     const ogAlt       = isLanding ? 'Prose, a Python typesetter for the reader.'  : `${title} card`
+    const ogUrl       = canonicalUrl(pageData.relativePath)
     return [
-      ['meta', { content: ogTitle,             property: 'og:title'        }],
-      ['meta', { content: description,         property: 'og:description'  }],
-      ['meta', { content: 'en_US',             property: 'og:locale'       }],
-      ['meta', { content: ogImage,             property: 'og:image'        }],
-      ['meta', { content: String(CARD_WIDTH),  property: 'og:image:width'  }],
-      ['meta', { content: String(CARD_HEIGHT), property: 'og:image:height' }],
-      ['meta', { content: 'image/png',         property: 'og:image:type'   }],
-      ['meta', { content: ogAlt,               property: 'og:image:alt'    }],
-      ['meta', { content: ogImage,             name:     'twitter:image'   }]
+      ['meta', { content: ogTitle,             property: 'og:title'           }],
+      ['meta', { content: description,         property: 'og:description'     }],
+      ['meta', { content: ogUrl,               property: 'og:url'             }],
+      ['meta', { content: 'en_US',             property: 'og:locale'          }],
+      ['meta', { content: ogImage,             property: 'og:image'           }],
+      ['meta', { content: String(CARD_WIDTH),  property: 'og:image:width'     }],
+      ['meta', { content: String(CARD_HEIGHT), property: 'og:image:height'    }],
+      ['meta', { content: 'image/png',         property: 'og:image:type'      }],
+      ['meta', { content: ogAlt,               property: 'og:image:alt'       }],
+      ['meta', { content: ogImage,             name:     'twitter:image'      }],
+      ['meta', { content: ogAlt,               name:     'twitter:image:alt'  }]
     ]
   },
   transformPageData(pageData) {
