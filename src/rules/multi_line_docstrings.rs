@@ -6,11 +6,10 @@
 //! and pass through this rule untouched.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::StringLiteral;
 use ruff_python_trivia::has_leading_content;
 
 use crate::config::Config;
-use crate::primitives::docstring::{indent_prefix, triple_quoted_body, DocstringHandler};
+use crate::primitives::docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body};
 use crate::primitives::edit::narrowed_replacement;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
@@ -25,45 +24,26 @@ impl MultiLineDocstrings {
 
 impl Rule for MultiLineDocstrings {
     fn apply(&self, source: &Source) -> Vec<Edit> {
-        let mut rewriter = Rewriter {
-            edits: Vec::new(),
-            source,
-        };
-        rewriter.walk(source);
-        rewriter.edits
+        rewrite_docstrings(source, |source, lit, edits| {
+            let Some(body) = triple_quoted_body(source, lit).filter(|b| b.text.contains('\n'))
+            else {
+                return;
+            };
+            let leading_ok = body.text.starts_with(['\n', '\r']);
+            let trailing_ok = !has_leading_content(body.range.end(), source.text());
+            if leading_ok && trailing_ok {
+                return;
+            }
+            let pad = format!("{}{}", source.newline_str(), indent_prefix(source, lit));
+            let leading = if leading_ok { "" } else { pad.as_str() };
+            let trailing = if trailing_ok { "" } else { pad.as_str() };
+            let new_body = format!("{leading}{}{trailing}", body.text);
+            edits.extend(narrowed_replacement(source, body.range, new_body));
+        })
     }
 
     fn id(&self) -> RuleId {
         Self::SLUG
-    }
-}
-
-struct Rewriter<'a> {
-    edits: Vec<Edit>,
-    source: &'a Source,
-}
-
-impl DocstringHandler for Rewriter<'_> {
-    fn handle(&mut self, lit: &StringLiteral) {
-        let Some(body) = triple_quoted_body(self.source, lit) else {
-            return;
-        };
-        if !body.text.contains('\n') {
-            return;
-        }
-        let leading_ok = body.text.starts_with(['\n', '\r']);
-        let trailing_ok = !has_leading_content(body.range.end(), self.source.text());
-        if leading_ok && trailing_ok {
-            return;
-        }
-        let indent = indent_prefix(self.source, lit);
-        let newline = self.source.newline_str();
-        let pad = format!("{newline}{indent}");
-        let leading = if leading_ok { "" } else { pad.as_str() };
-        let trailing = if trailing_ok { "" } else { pad.as_str() };
-        let new_body = format!("{leading}{}{trailing}", body.text);
-        self.edits
-            .extend(narrowed_replacement(self.source, body.range, new_body));
     }
 }
 
