@@ -29,6 +29,7 @@ export const FAMILY_ORDER: readonly RuleFamily[] = ['alignment', 'ordering', 'fo
 export const PRIMITIVES = {
   'aligner'          : 'Aligner',
   'binding-analysis' : 'BindingAnalysis',
+  'cache'            : 'Cache',
   'colon-targets'    : 'ColonTargets',
   'docstring'        : 'Docstring',
   'edit'             : 'Edit',

@@ -20,7 +20,7 @@ Resolution chains through `PROSE_CACHE_DIR` → `XDG_CACHE_HOME/prose` → the p
 
 ## Key Shape
 
-The cache key is the **BLAKE3** digest of `(source_bytes ++ config_toml ++ prose_version ++ cache_format_version)`. Four inputs feed the hash:
+The cache key is the **BLAKE3** digest of `(source_bytes ++ config_toml ++ prose_version ++ cache_format_version)`. The inputs:
 
 - the source bytes of the file under formatting
 - the canonical TOML serialization of the active `Config`, so a semantically-equivalent re-shuffling of the user's `pyproject.toml` produces the same key
@@ -37,7 +37,7 @@ Inserts write to a `<key>.<pid>.tmp` sidecar then `rename` onto the final path, 
 
 ## Configuration
 
-Two knobs sit under `[tool.prose.cache]`:
+The knobs under `[tool.prose.cache]`:
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
@@ -94,7 +94,7 @@ newest: 5m ago
 
 ## Hit-Miss Telemetry
 
-The global `--verbose` flag prints a one-line cache summary to stderr at the end of each `prose check` or `prose format` run, so users can verify the cache is actually providing value:
+The global `--verbose` flag prints a one-line cache summary to stderr at the end of each `prose check` or `prose format` run:
 
 ```bash
 $ prose --verbose check src/

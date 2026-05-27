@@ -46,6 +46,14 @@ const SOURCES: readonly PrimitiveEntrySource[] = [
     tagline    : 'name binding index'
   },
   {
+    consumedBy : ['cli'],
+    consumes   : ['source'],
+    layer      : 'analysis',
+    slug       : 'cache',
+    summary    : 'User-level on-disk cache keyed on `(source ++ config ++ version)`, collapsing repeat runs to a stat plus a hash plus a deserialize.',
+    tagline    : 'content-addressed result cache'
+  },
+  {
     consumedBy : ['align-colons', 'singleton-rule'],
     consumes   : ['aligner', 'source'],
     layer      : 'analysis',

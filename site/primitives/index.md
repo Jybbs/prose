@@ -28,6 +28,7 @@ Reachable from a downstream Rust consumer in `0.2.x`:
 6. [[edit]] · the `Edit { range, content }` shape every rule emits and the *Pipeline* applies
 7. [[docstring]] · PEP 257 docstring walker, consumed by [[docstring-wrap]], [[multi-line-docstrings]], [[no-single-line-docstrings]]
 8. [[walker]] · ignore-aware filesystem walker, consumed by the path-mode CLI
+9. [[cache]] · user-level content-addressed cache, consumed by `prose check` and `prose format` to skip the pipeline on unchanged source
 
 ## Reading Order
 
