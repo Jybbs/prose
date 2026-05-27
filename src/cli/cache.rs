@@ -6,20 +6,13 @@ use std::time::SystemTime;
 use anyhow::Context;
 
 use super::exit_status::ExitStatus;
-use super::log_error_chain;
-use crate::cache::Cache;
-use crate::config::Config;
+use super::load_config_or_status;
+use crate::cache::{Cache, CleanReport};
 
-pub(crate) fn clean<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
+pub(crate) fn clean<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
     match Cache::open().and_then(|c| c.clean()) {
         Ok(report) => {
-            writeln!(
-                stdout,
-                "removed {entries} entries ({bytes} bytes)",
-                entries = report.entries,
-                bytes = report.bytes,
-            )
-            .context("writing stdout")?;
+            write_report(stdout, report)?;
             Ok(ExitStatus::Clean)
         }
         Err(err) => {
@@ -29,14 +22,10 @@ pub(crate) fn clean<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
     }
 }
 
-pub(crate) fn compact<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
-    let cwd = std::env::current_dir().context("reading current working directory")?;
-    let config = match Config::load(&cwd).context("loading [tool.prose] config") {
+pub(crate) fn compact<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
+    let config = match load_config_or_status() {
         Ok(c) => c,
-        Err(e) => {
-            log_error_chain(&e);
-            return Ok(ExitStatus::ConfigError);
-        }
+        Err(s) => return Ok(s),
     };
     let cache = match Cache::open() {
         Ok(c) => c.with_max_size_mib(config.cache.max_size_mib),
@@ -45,14 +34,7 @@ pub(crate) fn compact<W: Write>(mut stdout: W) -> anyhow::Result<ExitStatus> {
             return Ok(ExitStatus::ConfigError);
         }
     };
-    let report = cache.compact();
-    writeln!(
-        stdout,
-        "removed {entries} entries ({bytes} bytes)",
-        entries = report.entries,
-        bytes = report.bytes,
-    )
-    .context("writing stdout")?;
+    write_report(stdout, cache.compact())?;
     Ok(ExitStatus::Clean)
 }
 
@@ -81,16 +63,23 @@ fn relative_age(t: SystemTime) -> String {
     let Ok(d) = SystemTime::now().duration_since(t) else {
         return "in the future".to_owned();
     };
-    let secs = d.as_secs();
-    if secs < 60 {
-        format!("{secs}s ago")
-    } else if secs < 3600 {
-        format!("{}m ago", secs / 60)
-    } else if secs < 86400 {
-        format!("{}h ago", secs / 3600)
-    } else {
-        format!("{}d ago", secs / 86400)
-    }
+    let (n, unit) = match d.as_secs() {
+        s @ 0..60 => (s, "s"),
+        s @ 60..3600 => (s / 60, "m"),
+        s @ 3600..86400 => (s / 3600, "h"),
+        s => (s / 86400, "d"),
+    };
+    format!("{n}{unit} ago")
+}
+
+fn write_report<W: Write>(mut stdout: W, report: CleanReport) -> anyhow::Result<()> {
+    writeln!(
+        stdout,
+        "removed {entries} entries ({bytes} bytes)",
+        entries = report.entries,
+        bytes = report.bytes,
+    )
+    .context("writing stdout")
 }
 
 #[cfg(test)]

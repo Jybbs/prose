@@ -9,12 +9,10 @@ use ruff_source_file::{SourceFile, SourceFileBuilder};
 
 use super::args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter};
 use super::exit_status::ExitStatus;
-use super::log_error_chain;
 use crate::cache::{Cache, CacheEntry, CacheKey};
 use crate::config::Config;
 use crate::diagnostics::{Diagnostic, Emitter, Github, Json, Run, Sarif, Text};
 use crate::pipeline::Pipeline;
-use crate::rule::RuleId;
 use crate::source::Source;
 use crate::walker;
 
@@ -33,8 +31,15 @@ enum FileOutcome {
 /// Per-run context shared across every path the walker yields.
 struct RunContext<'a> {
     cache: Option<&'a Cache>,
-    config_toml: String,
+    config_toml: &'a str,
     pipeline: &'a Pipeline,
+}
+
+/// Owned setup that backs [`RunContext`]'s borrows.
+struct RunSetup {
+    cache: Option<Cache>,
+    config_toml: String,
+    pipeline: Pipeline,
 }
 
 pub(crate) fn check_with_io<R: Read, W: Write>(
@@ -43,15 +48,14 @@ pub(crate) fn check_with_io<R: Read, W: Write>(
     stdin: R,
     mut stdout: W,
 ) -> anyhow::Result<ExitStatus> {
-    let (config, pipeline) = match load_or_status(&args.rules) {
-        Ok(pair) => pair,
+    let setup = match build_run(&args.rules, args.no_cache) {
+        Ok(s) => s,
         Err(s) => return Ok(s),
     };
-    let cache = open_cache(&config, args.no_cache);
     let ctx = RunContext {
-        cache: cache.as_ref(),
-        config_toml: toml::to_string(&config).unwrap_or_default(),
-        pipeline: &pipeline,
+        cache: setup.cache.as_ref(),
+        config_toml: &setup.config_toml,
+        pipeline: &setup.pipeline,
     };
     let outcomes = if args.stdin {
         vec![process_stdin(stdin, ctx.pipeline)]
@@ -71,15 +75,14 @@ pub(crate) fn format_with_io<R: Read, W: Write>(
     stdin: R,
     mut stdout: W,
 ) -> anyhow::Result<ExitStatus> {
-    let (config, pipeline) = match load_or_status(&args.rules) {
-        Ok(pair) => pair,
+    let setup = match build_run(&args.rules, args.no_cache) {
+        Ok(s) => s,
         Err(s) => return Ok(s),
     };
-    let cache = open_cache(&config, args.no_cache);
     let ctx = RunContext {
-        cache: cache.as_ref(),
-        config_toml: toml::to_string(&config).unwrap_or_default(),
-        pipeline: &pipeline,
+        cache: setup.cache.as_ref(),
+        config_toml: &setup.config_toml,
+        pipeline: &setup.pipeline,
     };
     if args.stdin {
         return format_stdin(
@@ -110,6 +113,17 @@ fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
         return FileOutcome::Failed(ExitStatus::ConfigError);
     }
     outcome
+}
+
+fn build_run(rules: &RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> {
+    let (config, pipeline) = load_or_status(rules)?;
+    let cache = open_cache(&config, no_cache);
+    let config_toml = toml::to_string(&config).unwrap_or_default();
+    Ok(RunSetup {
+        cache,
+        config_toml,
+        pipeline,
+    })
 }
 
 fn emit_outcomes<W: Write>(
@@ -184,13 +198,13 @@ fn format_stdin<R: Read, W: Write>(
     pipeline: &Pipeline,
     writer: &mut W,
 ) -> anyhow::Result<ExitStatus> {
-    let outcomes = vec![process_stdin(stdin, pipeline)];
+    let outcome = process_stdin(stdin, pipeline);
     if let FileOutcome::Done {
         file,
         formatted_text,
         original_text,
         ..
-    } = &outcomes[0]
+    } = &outcome
     {
         if diff {
             if let Some(formatted) = formatted_text {
@@ -202,26 +216,16 @@ fn format_stdin<R: Read, W: Write>(
                 .write_all(to_write.as_bytes())
                 .context("writing stdout")?;
         } else {
-            emit_outcomes(&outcomes, format, writer)?;
+            emit_outcomes(std::slice::from_ref(&outcome), format, writer)?;
         }
     }
-    Ok(status_from_outcomes(&outcomes, !diff))
-}
-
-fn load_config_and_pipeline(
-    select: &[RuleId],
-    ignore: &[RuleId],
-) -> anyhow::Result<(Config, Pipeline)> {
-    let cwd = std::env::current_dir().context("reading current working directory")?;
-    let config = Config::load(&cwd).context("loading [tool.prose] config")?;
-    let pipeline = Pipeline::with_filters(&config, select, ignore);
-    Ok((config, pipeline))
+    Ok(status_from_outcomes(std::slice::from_ref(&outcome), !diff))
 }
 
 fn load_or_status(filter: &RuleFilter) -> Result<(Config, Pipeline), ExitStatus> {
-    load_config_and_pipeline(&filter.select, &filter.ignore)
-        .inspect_err(log_error_chain)
-        .map_err(|_| ExitStatus::ConfigError)
+    let config = super::load_config_or_status()?;
+    let pipeline = Pipeline::with_filters(&config, &filter.select, &filter.ignore);
+    Ok((config, pipeline))
 }
 
 fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
@@ -244,7 +248,7 @@ fn process_path(path: &Path, ctx: &RunContext<'_>) -> FileOutcome {
     };
     let cached = ctx
         .cache
-        .map(|c| (c, CacheKey::compute(&bytes, &ctx.config_toml)));
+        .map(|c| (c, CacheKey::compute(&bytes, ctx.config_toml)));
     if let Some((c, k)) = &cached {
         if let Some(entry) = c.lookup(k) {
             if let Some(outcome) = rehydrate(path, &bytes, entry) {
@@ -420,6 +424,7 @@ mod tests {
 
     use super::*;
     use crate::diagnostics::Severity;
+    use crate::rule::RuleId;
 
     fn check_args(paths: Vec<PathBuf>, stdin: bool) -> CheckArgs {
         CheckArgs {
@@ -839,7 +844,7 @@ mod tests {
         let pipeline = Pipeline::with_filters(&config, &[], &[]);
         let ctx = RunContext {
             cache: None,
-            config_toml: String::new(),
+            config_toml: "",
             pipeline: &pipeline,
         };
         let outcome = process_path(&tmp.path().join("does_not_exist.py"), &ctx);

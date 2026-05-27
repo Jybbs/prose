@@ -16,7 +16,7 @@ The cache lives at the user level, with the path resolving per platform:
 
 Each cache entry is one file under that directory, named by the 64-character lowercase hex form of the entry's key. The layout is flat and inspectable with `ls`, and the on-disk format is bincode for compact size and fast deserialize.
 
-Resolution chains through `PROSE_CACHE_DIR` → `XDG_CACHE_HOME/prose` → the platform default. `PROSE_CACHE_DIR` is taken as-is with no subdirectory appended, so a CI runner or test harness pins the cache to a known path independent of the runner's HOME layout. `XDG_CACHE_HOME` is honored on every platform *(not only Linux, where `dirs::cache_dir()` already reads it)*, so a macOS developer who exports the XDG variable for cross-platform consistency gets it respected.
+Resolution chains through `PROSE_CACHE_DIR` → the platform default. `PROSE_CACHE_DIR` is taken as-is with no subdirectory appended, so a CI runner or test harness pins the cache to a known path independent of the runner's HOME layout. The platform default flows through the [`dirs`](https://docs.rs/dirs) crate, which already honors `XDG_CACHE_HOME` on Linux.
 
 ## Key Shape
 
@@ -33,7 +33,7 @@ Two workspaces editing identical files under matching configuration share a cach
 
 LRU eviction runs on every insert. The pass collects every entry's last-access mtime, sorts ascending, and removes entries until the directory total falls back under the configured cap *(default 100 MiB)*. The pass is best-effort and never blocks the insert, with permission failures and concurrent-eviction races logged to stderr as warnings.
 
-Inserts write to a `<key>.<pid>.tmp` sidecar then `rename` onto the final path, so the rename's POSIX atomicity guarantees a concurrent reader never observes a partial entry. The sidecar is cleaned up on rename failure, and `prose cache clean` sweeps any orphaned `.tmp` files alongside cache entries.
+Inserts write to a `.tmp`-suffixed sibling then `rename` onto the final path, so the rename's POSIX atomicity guarantees a concurrent reader never observes a partial entry. The sibling is cleaned up on drop when the rename fails, and `prose cache clean` sweeps any orphaned `.tmp` files alongside cache entries.
 
 ## Configuration
 

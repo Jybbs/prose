@@ -28,11 +28,11 @@ The canonical TOML serialization runs through `toml::to_string`, so a semantical
 
 ## Atomic Writes
 
-`Cache::insert` writes the bincode payload to a `<key>.<pid>.tmp` sidecar and renames it onto the final `<key>` path, so the rename's POSIX atomicity guarantees a concurrent reader never observes a partial entry. The sidecar is cleaned up on rename failure, and `Cache::info` filters `.tmp` files out of its directory walk via `path.extension().is_none()`.
+`Cache::insert` writes the bincode payload to a `tempfile`-managed sibling with a `.tmp` suffix and renames it onto the final `<key>` path, so the rename's POSIX atomicity guarantees a concurrent reader never observes a partial entry. The sibling is cleaned up on drop when the rename fails, and `Cache::info` filters `.tmp` files out of its directory walk via `path.extension().is_none()`.
 
 ## Path Resolution
 
-Resolution chains through `PROSE_CACHE_DIR` → `XDG_CACHE_HOME/prose` → `dirs::cache_dir().join("prose")`. `PROSE_CACHE_DIR` is taken as-is with no subdirectory appended, so a CI runner or test harness pins the cache to a known path independent of the runner's HOME layout. `XDG_CACHE_HOME` is honored on every platform rather than only on Linux.
+Resolution chains through `PROSE_CACHE_DIR` → `dirs::cache_dir().join("prose")`. `PROSE_CACHE_DIR` is taken as-is with no subdirectory appended, so a CI runner or test harness pins the cache to a known path independent of the runner's HOME layout. The `dirs` crate already honors `XDG_CACHE_HOME` on Linux, so the Linux default still respects the XDG variable when set.
 
 ## Re-Using This Primitive
 

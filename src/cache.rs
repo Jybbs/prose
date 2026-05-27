@@ -5,19 +5,21 @@
 //! private `CACHE_FORMAT_VERSION` that bumps independently when the
 //! on-disk entry shape changes. Entries live one file per key under
 //! the platform's cache directory, with the path resolving through
-//! `PROSE_CACHE_DIR` → `XDG_CACHE_HOME/prose` → `dirs::cache_dir()`.
-//! Inserts write to a `<key>.<pid>.tmp` sibling then `rename` onto the
-//! final path, so a concurrent reader never observes a partial entry.
-//! LRU eviction by mtime caps the directory at the configured size on
-//! every insert.
+//! `PROSE_CACHE_DIR` → `dirs::cache_dir()`. Inserts write to a
+//! temporary sibling then `rename` onto the final path, so a
+//! concurrent reader never observes a partial entry. LRU eviction by
+//! mtime caps the directory at the configured size on every insert.
 
+use std::fs::Metadata;
+use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
-use bincode::config::standard as bincode_config;
-use bincode::serde::{decode_from_slice, encode_to_vec};
+use bincode::config::standard;
+use bincode::serde::{decode_from_std_read, encode_into_std_write};
+use fs_err::DirEntry;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
+use tempfile::NamedTempFile;
 
 use crate::diagnostics::Diagnostic;
 
@@ -35,15 +37,20 @@ impl Cache {
     /// Opens or creates the cache directory with an unbounded size cap.
     ///
     /// Resolves the path through `PROSE_CACHE_DIR` →
-    /// `XDG_CACHE_HOME/prose` → `dirs::cache_dir().join("prose")`.
+    /// `dirs::cache_dir().join("prose")`.
     ///
     /// # Errors
     ///
-    /// Returns `CacheError::NoCacheDir` when no override is set and the
-    /// platform exposes no cache directory, and `CacheError::Io` when
-    /// the directory cannot be created.
-    pub fn open() -> Result<Self, CacheError> {
-        let root = cache_root().ok_or(CacheError::NoCacheDir)?;
+    /// Returns `io::ErrorKind::NotFound` when no override is set and
+    /// the platform exposes no cache directory, or any underlying IO
+    /// error encountered while creating the directory.
+    pub fn open() -> std::io::Result<Self> {
+        let root = cache_root().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "no platform cache directory is available",
+            )
+        })?;
         fs_err::create_dir_all(&root)?;
         Ok(Self {
             max_size_bytes: u64::MAX,
@@ -58,46 +65,33 @@ impl Cache {
         self
     }
 
-    fn evict(&self) -> CleanReport {
-        let mut report = CleanReport::default();
-        let Ok(read) = fs_err::read_dir(&self.root) else {
-            return report;
-        };
-        let mut files: Vec<(SystemTime, u64, PathBuf)> = read
+    fn entries(&self) -> impl Iterator<Item = (DirEntry, Metadata)> {
+        fs_err::read_dir(&self.root)
+            .into_iter()
+            .flatten()
             .filter_map(|e| {
                 let e = e.ok()?;
-                let path = e.path();
-                if !is_entry_file(&path) {
+                if !is_entry_file(&e.path()) {
                     return None;
                 }
                 let m = e.metadata().ok()?;
-                let mtime = m.modified().unwrap_or(SystemTime::UNIX_EPOCH);
-                Some((mtime, m.len(), path))
+                Some((e, m))
             })
-            .collect();
-        let mut total: u64 = files.iter().map(|(_, bytes, _)| *bytes).sum();
-        if total <= self.max_size_bytes {
-            return report;
-        }
-        files.sort_by_key(|(mtime, _, _)| *mtime);
-        for (_, bytes, path) in files {
-            if total <= self.max_size_bytes {
-                break;
-            }
-            match fs_err::remove_file(&path) {
-                Ok(()) => {
-                    total = total.saturating_sub(bytes);
-                    report.bytes += bytes;
-                    report.entries += 1;
-                }
-                Err(e) => eprintln!("warning: cache eviction: {e}"),
-            }
-        }
-        report
     }
 
     fn path_for(&self, key: &CacheKey) -> PathBuf {
-        self.root.join(key.hex())
+        self.root.join(key.0.to_hex().as_str())
+    }
+
+    fn try_insert(&self, key: &CacheKey, value: &CacheEntry) -> std::io::Result<()> {
+        let mut tmp = NamedTempFile::with_suffix_in(".tmp", &self.root)?;
+        {
+            let mut buf = BufWriter::new(tmp.as_file_mut());
+            encode_into_std_write(value, &mut buf, standard()).map_err(std::io::Error::other)?;
+            buf.flush()?;
+        }
+        tmp.persist(self.path_for(key)).map_err(|e| e.error)?;
+        Ok(())
     }
 
     /// Removes every file in the cache directory and returns the
@@ -106,8 +100,9 @@ impl Cache {
     ///
     /// # Errors
     ///
-    /// Returns `CacheError::Io` if the cache directory cannot be read.
-    pub fn clean(&self) -> Result<CleanReport, CacheError> {
+    /// Returns the underlying IO error if the cache directory cannot
+    /// be read.
+    pub fn clean(&self) -> std::io::Result<CleanReport> {
         let mut report = CleanReport::default();
         for entry in fs_err::read_dir(&self.root)? {
             let entry = entry?;
@@ -123,68 +118,68 @@ impl Cache {
     /// Runs the LRU eviction pass to honor the configured size cap and
     /// returns what it removed.
     pub fn compact(&self) -> CleanReport {
-        self.evict()
+        let mut report = CleanReport::default();
+        let mut files: Vec<(SystemTime, u64, DirEntry)> = self
+            .entries()
+            .map(|(e, m)| (m.modified().unwrap_or(SystemTime::UNIX_EPOCH), m.len(), e))
+            .collect();
+        let mut total: u64 = files.iter().map(|(_, bytes, _)| *bytes).sum();
+        if total <= self.max_size_bytes {
+            return report;
+        }
+        files.sort_by_key(|(mtime, _, _)| *mtime);
+        for (_, bytes, entry) in files {
+            if total <= self.max_size_bytes {
+                break;
+            }
+            match fs_err::remove_file(entry.path()) {
+                Ok(()) => {
+                    total = total.saturating_sub(bytes);
+                    report.bytes += bytes;
+                    report.entries += 1;
+                }
+                Err(e) => eprintln!("warning: cache eviction: {e}"),
+            }
+        }
+        report
     }
 
     /// Reports the cache directory's path, entry count, and byte total,
     /// plus the oldest and newest entry mtimes when any entry exists.
     pub fn info(&self) -> CacheInfo {
-        let init = CacheInfo {
-            bytes: 0,
-            entries: 0,
-            newest_mtime: None,
-            oldest_mtime: None,
-            path: self.root.clone(),
-        };
-        let Ok(read) = fs_err::read_dir(&self.root) else {
-            return init;
-        };
-        read.flatten()
-            .filter(|e| is_entry_file(&e.path()))
-            .filter_map(|e| {
-                let m = e.metadata().ok()?;
-                Some((m.len(), m.modified().ok()))
-            })
-            .fold(init, |mut acc, (len, mtime)| {
+        self.entries().fold(
+            CacheInfo {
+                path: self.root.clone(),
+                ..Default::default()
+            },
+            |mut acc, (_, m)| {
                 acc.entries += 1;
-                acc.bytes += len;
-                if let Some(t) = mtime {
+                acc.bytes += m.len();
+                if let Ok(t) = m.modified() {
                     acc.oldest_mtime = Some(acc.oldest_mtime.map_or(t, |o| o.min(t)));
                     acc.newest_mtime = Some(acc.newest_mtime.map_or(t, |n| n.max(t)));
                 }
                 acc
-            })
+            },
+        )
     }
 
     /// Atomically writes `value` for `key` via a temporary sidecar and
-    /// `rename`, then runs best-effort LRU eviction. Encode, write,
-    /// and rename failures drop the insert silently and remove any
-    /// orphan sidecar.
+    /// `rename`, then runs best-effort LRU eviction. Any encode, write,
+    /// or rename failure drops the insert silently and lets the
+    /// tempfile clean itself up on drop.
     pub fn insert(&self, key: &CacheKey, value: &CacheEntry) {
-        let Ok(bytes) = encode_to_vec(value, bincode_config()) else {
-            return;
-        };
-        let hex = key.hex();
-        let tmp_path = self.root.join(format!("{hex}.{}.tmp", std::process::id()));
-        if fs_err::write(&tmp_path, bytes).is_err() {
-            return;
-        }
-        if fs_err::rename(&tmp_path, self.root.join(&hex)).is_err() {
-            let _ = fs_err::remove_file(&tmp_path);
-            return;
-        }
-        let _ = self.evict();
+        let _ = self.try_insert(key, value);
+        let _ = self.compact();
     }
 
     /// Returns the entry stored at `key` if present and well-formed,
     /// bumping the entry's mtime.
     pub fn lookup(&self, key: &CacheKey) -> Option<CacheEntry> {
-        let path = self.path_for(key);
-        let bytes = fs_err::read(&path).ok()?;
-        let (entry, _): (CacheEntry, _) = decode_from_slice(&bytes, bincode_config()).ok()?;
-        if let Ok(file) = std::fs::File::open(&path) {
-            let _ = file.set_modified(SystemTime::now());
-        }
+        let file = fs_err::File::open(self.path_for(key)).ok()?;
+        let entry: CacheEntry =
+            decode_from_std_read(&mut BufReader::new(&file), standard()).ok()?;
+        let _ = file.set_modified(SystemTime::now());
         Some(entry)
     }
 }
@@ -196,17 +191,8 @@ pub struct CacheEntry {
     pub formatted_source: Option<String>,
 }
 
-/// Failure modes surfaced when opening or cleaning the cache.
-#[derive(Debug, Error)]
-pub enum CacheError {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-    #[error("no platform cache directory is available")]
-    NoCacheDir,
-}
-
 /// Snapshot of the cache directory's contents at one point in time.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct CacheInfo {
     pub bytes: u64,
     pub entries: usize,
@@ -243,11 +229,6 @@ impl CacheKey {
         hasher.update(format_version.as_bytes());
         Self(hasher.finalize())
     }
-
-    /// Returns the 64-character lowercase hex form of the digest.
-    pub fn hex(&self) -> String {
-        self.0.to_hex().to_string()
-    }
 }
 
 /// Outcome of a `Cache::clean` or `Cache::compact` call.
@@ -260,7 +241,6 @@ pub struct CleanReport {
 fn cache_root() -> Option<PathBuf> {
     std::env::var_os("PROSE_CACHE_DIR")
         .map(PathBuf::from)
-        .or_else(|| std::env::var_os("XDG_CACHE_HOME").map(|p| PathBuf::from(p).join(SUBDIR)))
         .or_else(|| dirs::cache_dir().map(|d| d.join(SUBDIR)))
 }
 
@@ -344,7 +324,7 @@ mod tests {
     #[test]
     fn cache_key_hex_renders_64_lowercase_chars() {
         let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
-        let hex = key.hex();
+        let hex = key.0.to_hex();
         assert_eq!(hex.len(), 64);
         assert!(hex
             .chars()
@@ -410,18 +390,6 @@ mod tests {
     }
 
     #[test]
-    fn evict_drops_oldest_entries_when_above_cap() {
-        let tmp = TempDir::new().expect("tempdir");
-        let cache = cache_in(&tmp, 0);
-        let key_old = CacheKey::compute(b"x = 1\n", CONFIG_A);
-        let key_new = CacheKey::compute(b"y = 2\n", CONFIG_A);
-        cache.insert(&key_old, &entry(Some("a = 1\n")));
-        std::thread::sleep(std::time::Duration::from_millis(20));
-        cache.insert(&key_new, &entry(Some("b = 2\n")));
-        assert!(cache.lookup(&key_old).is_none());
-    }
-
-    #[test]
     fn info_counts_entries_and_byte_total() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
@@ -459,6 +427,18 @@ mod tests {
         let info = cache.info();
         assert_eq!(info.entries, 0);
         assert_eq!(info.bytes, 0);
+    }
+
+    #[test]
+    fn insert_evicts_oldest_when_above_cap() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 0);
+        let key_old = CacheKey::compute(b"x = 1\n", CONFIG_A);
+        let key_new = CacheKey::compute(b"y = 2\n", CONFIG_A);
+        cache.insert(&key_old, &entry(Some("a = 1\n")));
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        cache.insert(&key_new, &entry(Some("b = 2\n")));
+        assert!(cache.lookup(&key_old).is_none());
     }
 
     #[test]
