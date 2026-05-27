@@ -5,6 +5,7 @@
 //! literal in source order via the trait's `walk` method. Implicitly
 //! concatenated docstring expressions are skipped.
 
+use ruff_diagnostics::Edit;
 use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
 use ruff_python_ast::{ExprStringLiteral, Stmt, StringFlags, StringLiteral};
 use ruff_python_trivia::{has_leading_content, leading_indentation};
@@ -69,6 +70,37 @@ impl<'a, H: DocstringHandler> StatementVisitor<'a> for Visitor<'_, H> {
 /// preserving the source's mix of tabs and spaces verbatim.
 pub(crate) fn indent_prefix<'a>(source: &'a Source, lit: &StringLiteral) -> &'a str {
     leading_indentation(source.text().line_str(lit.start()))
+}
+
+/// Walks every docstring in `source` and collects the edits produced
+/// by `f` against each. The closure receives `source`, the docstring
+/// literal, and the running edit buffer. Returns the accumulated edits.
+pub(crate) fn rewrite_docstrings<F>(source: &Source, f: F) -> Vec<Edit>
+where
+    F: FnMut(&Source, &StringLiteral, &mut Vec<Edit>),
+{
+    struct Collector<'a, F> {
+        edits: Vec<Edit>,
+        f: F,
+        source: &'a Source,
+    }
+
+    impl<F> DocstringHandler for Collector<'_, F>
+    where
+        F: FnMut(&Source, &StringLiteral, &mut Vec<Edit>),
+    {
+        fn handle(&mut self, lit: &StringLiteral) {
+            (self.f)(self.source, lit, &mut self.edits);
+        }
+    }
+
+    let mut collector = Collector {
+        edits: Vec::new(),
+        f,
+        source,
+    };
+    collector.walk(source);
+    collector.edits
 }
 
 /// Returns the body slice and source range when `lit` is triple-quoted
@@ -159,6 +191,16 @@ mod tests {
     fn returns_empty_for_module_with_no_docstrings() {
         let s = parse("x = 1\ndef f():\n    return 1\n");
         assert!(Probe::run(&s).is_empty());
+    }
+
+    #[test]
+    fn rewrite_docstrings_collects_edits_pushed_by_closure_per_docstring() {
+        let s = parse("\"\"\"M\"\"\"\ndef f():\n    \"\"\"f\"\"\"\n    pass\n");
+        let edits = rewrite_docstrings(&s, |_, lit, edits| {
+            edits.push(Edit::range_deletion(lit.range()));
+        });
+        assert_eq!(edits.len(), 2);
+        assert!(edits.windows(2).all(|w| w[0].start() < w[1].start()));
     }
 
     #[test]
