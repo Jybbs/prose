@@ -77,12 +77,23 @@ struct EntryWalker<'src> {
     body_indent_chars: usize,
     in_fence: bool,
     list_indent: Option<usize>,
-    open_entry: Option<OpenEntry<'src>>,
+    open_entry: Option<SectionEntry<'src>>,
     open_section: Option<Vec<SectionEntry<'src>>>,
     sections: Vec<Vec<SectionEntry<'src>>>,
 }
 
 impl<'src> EntryWalker<'src> {
+    fn new(body_indent_chars: usize) -> Self {
+        Self {
+            body_indent_chars,
+            in_fence: false,
+            list_indent: None,
+            open_entry: None,
+            open_section: None,
+            sections: Vec::new(),
+        }
+    }
+
     fn consume(&mut self, line: Line<'src>) {
         let line_start = line.start();
         let line_end = line.end();
@@ -130,10 +141,9 @@ impl<'src> EntryWalker<'src> {
         }
         if indent_chars == self.body_indent_chars + 4 && entry_description_col(trimmed).is_some() {
             self.finish_entry();
-            self.open_entry = Some(OpenEntry {
-                end: line_end,
+            self.open_entry = Some(SectionEntry {
                 name: entry_name(trimmed),
-                start: line_start,
+                range: TextRange::new(line_start, line_end),
             });
             return;
         }
@@ -142,7 +152,7 @@ impl<'src> EntryWalker<'src> {
 
     fn extend_open_entry(&mut self, line_end: TextSize) {
         if let Some(entry) = self.open_entry.as_mut() {
-            entry.end = line_end;
+            entry.range = TextRange::new(entry.range.start(), line_end);
         }
     }
 
@@ -150,30 +160,18 @@ impl<'src> EntryWalker<'src> {
         let Some(entry) = self.open_entry.take() else {
             return;
         };
-        let entries = self
-            .open_section
+        self.open_section
             .as_mut()
-            .expect("open_entry only set while open_section is Some");
-        entries.push(SectionEntry {
-            name: entry.name,
-            range: TextRange::new(entry.start, entry.end),
-        });
+            .expect("open_entry only set while open_section is Some")
+            .push(entry);
     }
 
     fn finish_section(&mut self) {
         self.finish_entry();
-        if let Some(entries) = self.open_section.take() {
-            if !entries.is_empty() {
-                self.sections.push(entries);
-            }
+        if let Some(entries) = self.open_section.take().filter(|e| !e.is_empty()) {
+            self.sections.push(entries);
         }
     }
-}
-
-struct OpenEntry<'a> {
-    end: TextSize,
-    name: &'a str,
-    start: TextSize,
 }
 
 struct Visitor<'a, H: DocstringHandler> {
@@ -219,14 +217,7 @@ pub(crate) fn entry_carrying_sections<'src>(
     let Some(body) = triple_quoted_body(source, lit).filter(|b| b.text.contains('\n')) else {
         return Vec::new();
     };
-    let mut walker = EntryWalker {
-        body_indent_chars: indent_prefix(source, lit).chars().count(),
-        in_fence: false,
-        list_indent: None,
-        open_entry: None,
-        open_section: None,
-        sections: Vec::new(),
-    };
+    let mut walker = EntryWalker::new(indent_prefix(source, lit).chars().count());
     for line in UniversalNewlineIterator::with_offset(body.text, body.range.start()) {
         walker.consume(line);
     }

@@ -14,6 +14,7 @@ enabled = false
 enabled = false
 
 [tool.prose.rules.alphabetize]
+docstring-entries = false
 enabled = false
 
 [tool.prose.rules.bare-import-allowlist]

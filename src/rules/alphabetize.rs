@@ -349,7 +349,7 @@ fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
                 continue;
             };
             let [first, .., last] = entries.as_slice() else {
-                unreachable!("reorder_text returns Owned only for >= 2 entries");
+                unreachable!("Cow::Owned implies entries.len() >= 2");
             };
             edits.extend(narrowed_replacement(
                 source,
@@ -913,18 +913,6 @@ mod tests {
     }
 
     #[test]
-    fn assign_run_target_unwraps_both_assign_kinds_and_filters_non_names() {
-        let s = parse("X = 1\nself.x = 1\ny: int = 2\nz: int\n(a, b) = (1, 2)\n");
-        let targets: Vec<Option<&str>> = s
-            .ast()
-            .body
-            .iter()
-            .map(|s| assign_run_target(s).map(|(name, _)| name))
-            .collect();
-        assert_eq!(targets, vec![Some("X"), None, Some("y"), Some("z"), None]);
-    }
-
-    #[test]
     fn apply_skips_docstring_entry_reorder_when_config_disables_it() {
         let src = indoc! {"
             def f():
@@ -952,6 +940,18 @@ mod tests {
             bar_pos < alpha_pos,
             "docstring entries should keep source order when docstring-entries is off",
         );
+    }
+
+    #[test]
+    fn assign_run_target_unwraps_both_assign_kinds_and_filters_non_names() {
+        let s = parse("X = 1\nself.x = 1\ny: int = 2\nz: int\n(a, b) = (1, 2)\n");
+        let targets: Vec<Option<&str>> = s
+            .ast()
+            .body
+            .iter()
+            .map(|s| assign_run_target(s).map(|(name, _)| name))
+            .collect();
+        assert_eq!(targets, vec![Some("X"), None, Some("y"), Some("z"), None]);
     }
 
     #[test]

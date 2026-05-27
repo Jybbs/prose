@@ -19,7 +19,7 @@ Config {
             ),
         },
         alphabetize: AlphabetizeConfig {
-            docstring_entries: true,
+            docstring_entries: false,
             enabled: false,
         },
         strip_trailing_commas: ToggleOnly {
