@@ -246,12 +246,15 @@ fn leading_block_of(source: &Source, prev_end: TextSize, curr: &Stmt) -> Option<
 /// Module-scope pair dispatch. A statement following an
 /// `if __name__ == "__main__":` block carries 1 blank line. The bare /
 /// `from` import kind boundary carries 1. A top-level `FunctionDef` or
-/// `ClassDef` carries 2 blank lines before it.
+/// `ClassDef` carries 2 blank lines before it. An `Assign` or
+/// `AnnAssign` following a top-level `FunctionDef` or `ClassDef`
+/// carries 2.
 fn module_scope_blanks(prev: &Stmt, curr: &Stmt) -> Option<u32> {
     match (prev, curr) {
         _ if is_main_guard(prev) => Some(1),
         (Stmt::Import(_), Stmt::ImportFrom(_)) | (Stmt::ImportFrom(_), Stmt::Import(_)) => Some(1),
         (_, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) => Some(2),
+        (Stmt::FunctionDef(_) | Stmt::ClassDef(_), Stmt::Assign(_) | Stmt::AnnAssign(_)) => Some(2),
         _ => None,
     }
 }
@@ -395,6 +398,24 @@ mod tests {
             canonical_blanks(&body[0], &body[1], BodyScope::Module),
             Some(1)
         );
+    }
+
+    #[test]
+    fn canonical_blanks_module_assignment_after_def_or_class_returns_two() {
+        for src in [
+            "class C: pass\nPORT = 8080\n",
+            "class C: pass\nPORT: int = 8080\n",
+            "def f(): pass\nPORT = 8080\n",
+            "def f(): pass\nPORT: int = 8080\n",
+        ] {
+            let s = parse(src);
+            let body = &s.ast().body;
+            assert_eq!(
+                canonical_blanks(&body[0], &body[1], BodyScope::Module),
+                Some(2),
+                "src = {src:?}",
+            );
+        }
     }
 
     #[test]
