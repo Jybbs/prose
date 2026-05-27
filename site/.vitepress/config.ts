@@ -12,7 +12,8 @@ import { discoverRuleSlugs }                      from './lib/rules/discovery'
 import { ruleLinkPlugin }                         from './lib/rules/link-plugin'
 import { canonicalUrl }                           from './lib/config/canonical-url'
 import { ogImageUrl }                             from './lib/config/og-url'
-import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME }  from './lib/shared/constants'
+import { CARD_HEIGHT, CARD_WIDTH }                from './lib/og/template'
+import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME, SITE_TAGLINE } from './lib/shared/constants'
 import { buildPageTimestamps }                    from './lib/config/page-timestamps'
 import { repoRoot, rulesDir }                     from './lib/shared/paths'
 import { PRIMITIVES }                             from './lib/shared/registries'
@@ -31,7 +32,7 @@ const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 
 export default defineConfig({
   cleanUrls     : true,
-  description   : 'A Python typesetter for the reader.',
+  description   : SITE_TAGLINE,
   head          : [
     ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }],
     ['meta', { content: '#dfbc97',                 name:     'theme-color'   }],
@@ -85,21 +86,21 @@ export default defineConfig({
   },
   transformHead({ pageData }) {
     const isLanding   = pageData.relativePath === 'index.md'
-    const description = pageData.frontmatter.description ?? pageData.frontmatter.caption ?? 'A Python typesetter for the reader.'
+    const description = pageData.frontmatter.description ?? pageData.frontmatter.caption ?? SITE_TAGLINE
     const title       = pageData.frontmatter.name ?? pageData.title ?? 'Prose'
     const ogImage     = ogImageUrl(pageData.relativePath)
     const ogTitle     = isLanding ? 'Prose'                                       : `${title} · Prose`
     const ogAlt       = isLanding ? 'Prose, a Python typesetter for the reader.'  : `${title} card`
     return [
-      ['meta', { content: ogTitle,     property: 'og:title'        }],
-      ['meta', { content: description, property: 'og:description'  }],
-      ['meta', { content: 'en_US',     property: 'og:locale'       }],
-      ['meta', { content: ogImage,     property: 'og:image'        }],
-      ['meta', { content: '1200',      property: 'og:image:width'  }],
-      ['meta', { content: '630',       property: 'og:image:height' }],
-      ['meta', { content: 'image/png', property: 'og:image:type'   }],
-      ['meta', { content: ogAlt,       property: 'og:image:alt'    }],
-      ['meta', { content: ogImage,     name:     'twitter:image'   }]
+      ['meta', { content: ogTitle,             property: 'og:title'        }],
+      ['meta', { content: description,         property: 'og:description'  }],
+      ['meta', { content: 'en_US',             property: 'og:locale'       }],
+      ['meta', { content: ogImage,             property: 'og:image'        }],
+      ['meta', { content: String(CARD_WIDTH),  property: 'og:image:width'  }],
+      ['meta', { content: String(CARD_HEIGHT), property: 'og:image:height' }],
+      ['meta', { content: 'image/png',         property: 'og:image:type'   }],
+      ['meta', { content: ogAlt,               property: 'og:image:alt'    }],
+      ['meta', { content: ogImage,             name:     'twitter:image'   }]
     ]
   },
   transformPageData(pageData) {

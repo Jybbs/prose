@@ -3,8 +3,9 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
+import { ogImagePath }                                                  from '../config/og-url'
 import { type DiscoveredRule, discoverRuleSlugs }                       from '../rules/discovery'
-import { parsePipeline }                                                from '../rules/pipeline-source'
+import { parsePipeline, type PipelineEntry }                            from '../rules/pipeline-source'
 import { FAMILY_META, PRIMITIVES, PUBLIC_PRIMITIVES, type PrimitiveSlug, type RuleCategory, type RuleFamily } from '../shared/registries'
 import { toTitleCase }                                                  from '../shared/title-case'
 
@@ -23,8 +24,6 @@ export interface OgPage {
   slug       : string
   title      : string
 }
-
-type PipelineEntry = { position: number; slug: string }
 
 export function enumeratePages(srcDir: string, pages: readonly string[]): readonly OgPage[] {
   const rulesIndex   = new Map(discoverRuleSlugs(path.join(srcDir, 'rules')).map(r => [r.slug, r]))
@@ -49,7 +48,7 @@ function buildPage(
   srcDir      : string
 ): OgPage {
   const slug       = pageSlug(rel)
-  const outputPath = path.posix.join('og', rel.replace(/\.md$/, '.png'))
+  const outputPath = ogImagePath(rel)
   if (rel.endsWith('/index.md')) {
     return { breadcrumb: [toTitleCase(kind, '-')], kind, outputPath, slug, title: indexTitle(rel, kind) }
   }
@@ -96,7 +95,7 @@ function chapterKind(rel: string): OgKind | null {
 function indexTitle(rel: string, kind: OgKind): string {
   if (rel === `${kind}/index.md`) return toTitleCase(kind, '-')
   const parts = rel.split('/')
-  const tail  = parts[parts.length - 2]
+  const tail  = parts.at(-2)!
   return toTitleCase(tail, '-')
 }
 
@@ -109,8 +108,8 @@ function pageSlug(rel: string): string {
 function pageTitle(srcDir: string, rel: string): string {
   const body  = fs.readFileSync(path.join(srcDir, rel), 'utf8')
   const fm    = matter(body)
-  const named = fm.data.name
-  if (typeof named === 'string' && named.trim() !== '') return named.trim()
+  const named = typeof fm.data.name === 'string' ? fm.data.name.trim() : ''
+  if (named) return named
   const h1 = fm.content.match(/^#\s+(.+?)\s*$/m)?.[1]
   if (h1) return h1
   return toTitleCase(pageSlug(rel), '-')

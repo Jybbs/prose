@@ -5,8 +5,7 @@ import { repoRoot, siteDir }    from '../shared/paths'
 import { readCargoVersion }     from '../shared/version'
 import { loadBrandAssets }      from './assets'
 import { enumeratePages }       from './pages'
-import { renderCard }           from './render'
-import { buildCard }            from './template'
+import { renderPage }           from './render'
 
 const PROBES: readonly string[] = [
   'rules/align-equals.md',
@@ -24,13 +23,13 @@ const PROBES: readonly string[] = [
 const outDir = process.argv[2] ?? path.join(repoRoot(import.meta.url), 'og-previews')
 
 async function main(): Promise<void> {
-  const srcDir = siteDir(import.meta.url)
-  const repo   = repoRoot(import.meta.url)
-  const { fonts, glyph, wordmark } = loadBrandAssets(srcDir, repo)
+  const srcDir  = siteDir(import.meta.url)
+  const repo    = repoRoot(import.meta.url)
+  const brand   = loadBrandAssets(srcDir, repo)
   const version = readCargoVersion(repo)
   fs.mkdirSync(outDir, { recursive: true })
   for (const page of enumeratePages(srcDir, PROBES)) {
-    const png  = await renderCard(buildCard(page, version, wordmark, glyph), fonts)
+    const png  = await renderPage(page, brand, version)
     const dest = path.join(outDir, `${page.slug}.png`)
     fs.writeFileSync(dest, png)
     console.log(`Wrote ${dest} (${png.length} bytes)`)

@@ -2,6 +2,9 @@ import { CATEGORY_META, type RuleFamily } from '../shared/registries'
 
 import type { OgKind, OgPage } from './pages'
 
+export const CARD_HEIGHT = 630
+export const CARD_WIDTH  = 1200
+
 export interface JsxNode {
   props : Record<string, unknown>
   type  : string
@@ -58,7 +61,7 @@ function watermarkLayer(glyph: string): JsxNode {
   return {
     type  : 'div',
     props : {
-      style    : { display: 'flex', left: (1200 - size) / 2, opacity: 0.012, position: 'absolute', top: (630 - size) / 2 },
+      style    : { display: 'flex', left: (CARD_WIDTH - size) / 2, opacity: 0.012, position: 'absolute', top: (CARD_HEIGHT - size) / 2 },
       children : { type: 'img', props: { height: size, src: glyph, width: size } }
     }
   }
@@ -68,7 +71,7 @@ function buildKicker(page: OgPage): string {
   const parts = page.breadcrumb.map(s => s.toUpperCase())
   if (page.category) {
     const tail = CATEGORY_META[page.category].label.toUpperCase()
-    if (parts[parts.length - 1] !== tail) parts.push(tail)
+    if (parts.at(-1) !== tail) parts.push(tail)
   }
   return `— ${parts.join(' · ')} —`
 }

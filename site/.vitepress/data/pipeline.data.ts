@@ -1,10 +1,8 @@
-import path from 'node:path'
-
 import { defineLoader } from 'vitepress'
 
 import { discoverRuleSlugs }                                       from '../lib/rules/discovery'
-import { parsePipeline }                                            from '../lib/rules/pipeline-source'
-import { repoRoot, rulesDir }                                      from '../lib/shared/paths'
+import { parsePipeline, ruleSourcePath }                           from '../lib/rules/pipeline-source'
+import { rulesDir }                                                from '../lib/shared/paths'
 import { CATEGORY_META, FAMILY_META, type RuleCategory, type RuleFamily } from '../lib/shared/registries'
 
 interface PipelineRule {
@@ -24,8 +22,7 @@ interface PipelineData {
   rules : readonly PipelineRule[]
 }
 
-const repoDir        = repoRoot(import.meta.url)
-const ruleSource     = path.join(repoDir, 'src', 'rule.rs')
+const ruleSource     = ruleSourcePath(import.meta.url)
 const rulesDirectory = rulesDir(import.meta.url)
 
 declare const data: PipelineData

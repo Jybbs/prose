@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import type { Font } from 'satori'
 
-interface BrandAssets {
+export interface BrandAssets {
   fonts    : Font[]
   glyph    : string
   wordmark : string
