@@ -33,7 +33,7 @@ export function loadBrandAssets(srcDir: string, repo: string): BrandAssets {
 }
 
 function fontFile(face: Omit<Font, 'data'>): string {
-  const id = face.name.toLowerCase().replace(' ', '-')
+  const id = face.name.toLowerCase().replaceAll(' ', '-')
   return `${id}/files/${id}-latin-${face.weight}-${face.style}.woff`
 }
 

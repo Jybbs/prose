@@ -5,7 +5,7 @@ import matter from 'gray-matter'
 
 import { ogImagePath }                                                  from '../config/og-url'
 import { type DiscoveredRule, discoverRuleSlugs }                       from '../rules/discovery'
-import { parsePipeline, type PipelineEntry }                            from '../rules/pipeline-source'
+import { parsePipeline }                                               from '../rules/pipeline-source'
 import { FAMILY_META, PRIMITIVES, PUBLIC_PRIMITIVES, type PrimitiveSlug, type RuleCategory, type RuleFamily } from '../shared/registries'
 import { toTitleCase }                                                  from '../shared/title-case'
 
@@ -34,18 +34,18 @@ export function enumeratePages(srcDir: string, pages: readonly string[]): readon
     if (rel === 'index.md') continue
     const kind = chapterKind(rel)
     if (kind === null) continue
-    out.push(buildPage(rel, kind, rulesIndex, pipeline, pipelinePos, srcDir))
+    out.push(buildPage(rel, kind, rulesIndex, pipeline.length, pipelinePos, srcDir))
   }
   return out
 }
 
 function buildPage(
-  rel         : string,
-  kind        : OgKind,
-  rulesIndex  : ReadonlyMap<string, DiscoveredRule>,
-  pipeline    : readonly PipelineEntry[],
-  pipelinePos : ReadonlyMap<string, number>,
-  srcDir      : string
+  rel           : string,
+  kind          : OgKind,
+  rulesIndex    : ReadonlyMap<string, DiscoveredRule>,
+  pipelineTotal : number,
+  pipelinePos   : ReadonlyMap<string, number>,
+  srcDir        : string
 ): OgPage {
   const slug       = pageSlug(rel)
   const outputPath = ogImagePath(rel)
@@ -62,20 +62,21 @@ function buildPage(
       family     : rule.family,
       kind,
       outputPath,
-      pipeline   : position !== undefined ? { position, total: pipeline.length } : undefined,
+      pipeline   : position !== undefined ? { position, total: pipelineTotal } : undefined,
       slug,
       title      : toTitleCase(slug, '-')
     }
   }
   if (kind === 'primitives') {
-    const stability = PUBLIC_PRIMITIVES.includes(slug as PrimitiveSlug) ? 'public' : 'internal'
+    const primitiveSlug = slug as PrimitiveSlug
+    const stability     = PUBLIC_PRIMITIVES.includes(primitiveSlug) ? 'public' : 'internal'
     return {
       breadcrumb : [toTitleCase(kind, '-')],
       kind,
       outputPath,
       primitive  : { stability },
       slug,
-      title      : PRIMITIVES[slug as PrimitiveSlug] ?? toTitleCase(slug, '-')
+      title      : PRIMITIVES[primitiveSlug] ?? toTitleCase(slug, '-')
     }
   }
   return {
@@ -101,8 +102,7 @@ function indexTitle(rel: string, kind: OgKind): string {
 
 function pageSlug(rel: string): string {
   const trimmed = rel.replace(/\.md$/, '').replace(/\/index$/, '')
-  const tail    = trimmed.split('/').pop() ?? trimmed
-  return tail || 'index'
+  return trimmed.split('/').pop() || 'index'
 }
 
 function pageTitle(srcDir: string, rel: string): string {

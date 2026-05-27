@@ -1,7 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { repoRoot }             from '../shared/paths'
+import { repoRoot, siteDir }    from '../shared/paths'
 import { readCargoVersion }     from '../shared/version'
 import { loadBrandAssets }      from './assets'
 import { enumeratePages }       from './pages'
@@ -21,7 +21,7 @@ const PROBES: readonly string[] = [
 ]
 
 const repo   = repoRoot(import.meta.url)
-const srcDir = path.join(repo, 'site')
+const srcDir = siteDir(import.meta.url)
 const outDir = process.argv[2] ?? path.join(repo, 'og-previews')
 
 async function main(): Promise<void> {

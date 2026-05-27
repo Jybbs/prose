@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import { repoRoot } from '../shared/paths'
 
-export interface PipelineEntry {
+interface PipelineEntry {
   imperative : string
   position   : number
   slug       : string
@@ -21,12 +21,7 @@ export function parsePipeline(metaUrl: string): readonly PipelineEntry[] {
   const text       = fs.readFileSync(ruleSource, 'utf8')
   const block      = REGISTER_BLOCK.exec(text)
   if (block === null) throw new Error(`parsePipeline: register_rules! block not found in ${ruleSource}`)
-  const out: PipelineEntry[] = []
-  for (const line of block[1].split('\n')) {
-    const match = RULE_LINE.exec(line)
-    if (match === null) continue
-    out.push({ imperative: match[2], position: out.length + 1, slug: match[1] })
-  }
-  if (out.length === 0) throw new Error(`parsePipeline: register_rules! parsed zero rules from ${ruleSource}`)
-  return out
+  const matches = block[1].split('\n').map(line => RULE_LINE.exec(line)).filter(m => m !== null)
+  if (matches.length === 0) throw new Error(`parsePipeline: register_rules! parsed zero rules from ${ruleSource}`)
+  return matches.map((match, i) => ({ imperative: match[2], position: i + 1, slug: match[1] }))
 }

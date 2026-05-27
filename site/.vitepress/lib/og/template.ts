@@ -5,7 +5,7 @@ import type { OgKind, OgPage } from './pages'
 export const CARD_HEIGHT = 630
 export const CARD_WIDTH  = 1200
 
-export interface JsxNode {
+interface JsxNode {
   props : Record<string, unknown>
   type  : string
 }
