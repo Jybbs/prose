@@ -38,6 +38,8 @@ Classes inside a module sort alphabetically, giving every reader the same first-
 
 <Fixture rule="alphabetize" case="module_assigns_call_skip" title="Module-Level Runs Skip When the RHS Could Have Side Effects" />
 
+<Fixture rule="alphabetize" case="module_assigns_around_block" title="Module-Level Runs Reorder Around `# fmt: off` Blocks" />
+
 <Fixture rule="alphabetize" case="from_imports" title="`from` Imports Sort Alphabetically inside Their Block" />
 
 <Fixture rule="alphabetize" case="bare_imports" title="Bare Imports Sort Alphabetically Too" />

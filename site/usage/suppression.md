@@ -29,6 +29,8 @@ weights = [[0.7, 0.1, 0.1, 0.1],
 # fmt: on
 ```
 
+The bracket bounds its own scope. Rules outside the markers continue to fire on every sibling, so [[alphabetize]]'s module-level branch reorders the assigns above and below the bracket while the bracketed region stays untouched. The directive confines suppression to the region between `# fmt: off` and `# fmt: on` rather than disabling formatting for the surrounding lines.
+
 ### Tagging a Line
 
 Line-level directives split by severity, because rewrites and lints want different escape hatches.
