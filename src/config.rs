@@ -39,7 +39,7 @@ impl Default for AlignmentConfig {
 /// Configuration for the `alphabetize` rule. `docstring_entries`
 /// gates the Google-style entry-section reorder pass, leaving the
 /// AST-level sorts to apply on their own when set `false`.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlphabetizeConfig {
     pub docstring_entries: bool,
