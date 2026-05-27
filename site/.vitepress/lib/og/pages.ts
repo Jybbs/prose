@@ -1,4 +1,3 @@
-import fs   from 'node:fs'
 import path from 'node:path'
 
 import matter from 'gray-matter'
@@ -27,10 +26,8 @@ export interface OgPage {
 }
 
 export function enumeratePages(srcDir: string, pages: readonly string[]): readonly OgPage[] {
-  const rules           = discoverRuleSlugs(path.join(srcDir, 'rules'))
-  const rulesIndex      = new Map(rules.map(r => [r.slug, r]))
-  const primitives      = discoverPrimitives(path.join(srcDir, 'primitives'))
-  const primitivesIndex = new Map(primitives.map(p => [p.slug as string, p]))
+  const rulesIndex      = new Map(discoverRuleSlugs(path.join(srcDir, 'rules')).map(r => [r.slug, r]))
+  const primitivesIndex = new Map(discoverPrimitives(path.join(srcDir, 'primitives')).map(p => [p.slug as string, p]))
   const pipeline        = parsePipeline(import.meta.url)
   const pipelinePos     = new Map(pipeline.map(r => [r.slug, r.position]))
   const out: OgPage[]   = []
@@ -111,13 +108,12 @@ function indexTitle(rel: string, kind: OgKind): string {
 }
 
 function pageSlug(rel: string): string {
-  const trimmed = rel.replace(/\.md$/, '').replace(/\/index$/, '')
-  return trimmed.split('/').pop() || 'index'
+  const stem = path.basename(rel, '.md')
+  return stem === 'index' ? path.basename(path.dirname(rel)) || 'index' : stem
 }
 
 function pageTitle(srcDir: string, rel: string): string {
-  const body  = fs.readFileSync(path.join(srcDir, rel), 'utf8')
-  const fm    = matter(body)
+  const fm    = matter.read(path.join(srcDir, rel))
   const named = typeof fm.data.name === 'string' ? fm.data.name.trim() : ''
   if (named) return named
   const h1 = fm.content.match(/^#\s+(.+?)\s*$/m)?.[1]

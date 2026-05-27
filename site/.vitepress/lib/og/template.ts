@@ -3,20 +3,13 @@ import { createElement, type JSXNode } from 'satori/jsx'
 import { CATEGORY_META, FAMILY_META } from '../shared/registries'
 
 import type { OgKind, OgPage } from './pages'
+import {
+  BG, CARD_HEIGHT, CARD_WIDTH, META_LABEL, MONO_DIM,
+  leftRail, monoLabel, panelDivider, panelRow, panelShell, versionCallout
+} from './parts'
 
-export const CARD_HEIGHT = 630
-export const CARD_WIDTH  = 1200
-
-const BG              = '#16151a'
 const BODY            = '#d4c8b5'
-const BORDER          = 'rgba(255, 255, 255, 0.10)'
-const KICKER          = '#a8a0c0'
-const META_LABEL      = '#8b7f9e'
-const META_VALUE      = '#e8dec8'
-const NEUTRAL         = '#a8a0c0'
-const PANEL_FILL      = 'rgba(255, 255, 255, 0.04)'
-const TRACK           = '0.14em'
-const VERSION_C       = '#e8dec8'
+const DOCS_TRACK      = '0.14em'
 const WORDMARK_ASPECT = 1031 / 380
 
 const SECTION_ACCENTS: Partial<Record<OgKind, string>> = {
@@ -25,6 +18,11 @@ const SECTION_ACCENTS: Partial<Record<OgKind, string>> = {
   reference    : '#a8b8c8',
   usage        : '#c8b8a0'
 }
+
+const TITLE_SIZES = {
+  bare : [[4, 144], [8, 132], [14, 120], [Infinity, 100]],
+  cap  : [[12, 108], [17, 100], [22, 84], [Infinity, 76]]
+} as const
 
 export function buildCard(page: OgPage, version: string, wordmark: string, glyph: string): JSXNode {
   const accent = pageAccent(page)
@@ -57,116 +55,27 @@ function buildKicker(page: OgPage): string {
 }
 
 function dataPanel(page: OgPage, version: string, accent: string): JSXNode {
-  const rows     = panelRows(page)
-  const isWarm   = page.family !== undefined && FAMILY_META[page.family].warmth === 'warm'
-  const alpha    = isWarm ? '99' : '66'
-  const children: JSXNode[] = rows.map(([label, value]) => panelRow(label, value))
-  if (rows.length > 0) {
-    children.push(createElement('div', {
-      style: {
-        borderTop    : `1px solid ${BORDER}`,
-        height       : 1,
-        marginBottom : 18,
-        marginTop    : 14
-      }
-    }))
-  }
-  children.push(versionCallout(version))
-  return createElement('div',
-    {
-      style: {
-        backgroundColor : PANEL_FILL,
-        border          : `1px solid ${accent}${alpha}`,
-        borderRadius    : 8,
-        display         : 'flex',
-        flexDirection   : 'column',
-        minWidth        : 360,
-        padding         : '24px 28px',
-        position        : 'absolute',
-        right           : 80,
-        top             : 80
-      }
-    },
-    ...children
+  const rows = panelRows(page)
+  const warm = page.family !== undefined && FAMILY_META[page.family].warmth === 'warm'
+  return panelShell(accent, warm ? '99' : '66',
+    ...rows.map(row => panelRow(...row)),
+    ...(rows.length > 0 ? [panelDivider()] : []),
+    versionCallout(version)
   )
 }
 
 function fitTitleSize(text: string, hasCaption: boolean): number {
-  if (!hasCaption) {
-    if (text.length <= 4)  return 144
-    if (text.length <= 8)  return 132
-    if (text.length <= 14) return 120
-    return 100
-  }
-  if (text.length > 22) return 76
-  if (text.length > 17) return 84
-  if (text.length > 12) return 100
-  return 108
+  return TITLE_SIZES[hasCaption ? 'cap' : 'bare'].find(([max]) => text.length <= max)![1]
 }
 
 function formatCaption(raw: string): string {
-  const s = raw
-    .replace(/`([^`]+)`/g,    '$1')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/\*([^*]+)\*/g,  '$1')
-    .replace(/_([^_]+)_/g,    '$1')
-  return s.length === 0 ? s : s[0].toUpperCase() + s.slice(1)
-}
-
-function leftRail(color: string): JSXNode {
-  return createElement('div', {
-    style: {
-      backgroundImage : `linear-gradient(to bottom, ${color}, ${color}cc)`,
-      bottom          : 0,
-      left            : 50,
-      position        : 'absolute',
-      top             : 0,
-      width           : 14
-    }
-  })
-}
-
-function monoLabel(color: string, size: number) {
-  return {
-    color         : color,
-    fontFamily    : 'JetBrains Mono',
-    fontSize      : size,
-    fontWeight    : 500,
-    letterSpacing : TRACK
-  }
+  return raw.replace(/(`|\*\*?|_)(.+?)\1/g, '$2').replace(/^./, c => c.toUpperCase())
 }
 
 function pageAccent(page: OgPage): string {
-  if (page.family !== undefined) return FAMILY_META[page.family].color
-  return SECTION_ACCENTS[page.kind] ?? NEUTRAL
-}
-
-function panelRow(label: string, value: string): JSXNode {
-  return createElement('div',
-    {
-      style: {
-        alignItems     : 'baseline',
-        display        : 'flex',
-        gap            : 24,
-        justifyContent : 'space-between',
-        marginBottom   : 8
-      }
-    },
-    createElement('div', {
-      children : label.toUpperCase(),
-      style    : monoLabel(META_LABEL, 16)
-    }),
-    createElement('div', {
-      children : value,
-      style    : {
-        color              : META_VALUE,
-        fontFamily         : 'JetBrains Mono',
-        fontSize           : 19,
-        fontVariantNumeric : 'tabular-nums',
-        fontWeight         : 500
-      }
-    })
-  )
+  return page.family !== undefined
+    ? FAMILY_META[page.family].color
+    : SECTION_ACCENTS[page.kind] ?? MONO_DIM
 }
 
 function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
@@ -174,9 +83,8 @@ function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
     const rows: Array<[string, string]> = [['Family', page.family]]
     if (page.category && page.category !== page.family) rows.push(['Category', page.category])
     if (page.pipeline) {
-      const position = String(page.pipeline.position).padStart(2, '0')
-      const total    = String(page.pipeline.total).padStart(2, '0')
-      rows.push(['Pipeline', `${position} / ${total}`])
+      const pad = (n: number) => String(n).padStart(2, '0')
+      rows.push(['Pipeline', `${pad(page.pipeline.position)} / ${pad(page.pipeline.total)}`])
     }
     return rows
   }
@@ -188,12 +96,10 @@ function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
 
 function titleBlock(page: OgPage, accent: string): JSXNode {
   const hasCaption = page.caption !== undefined
-  const kickerText = buildKicker(page)
-  const titleSize  = fitTitleSize(page.title, hasCaption)
   const children: JSXNode[] = [
     createElement('div', {
-      children : kickerText,
-      style    : { ...monoLabel(KICKER, 22), marginBottom: 12 }
+      children : buildKicker(page),
+      style    : { ...monoLabel(MONO_DIM, 22), marginBottom: 12 }
     }),
     createElement('div', {
       children : page.title,
@@ -201,7 +107,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
         color         : accent,
         display       : 'flex',
         fontFamily    : 'Fraunces',
-        fontSize      : titleSize,
+        fontSize      : fitTitleSize(page.title, hasCaption),
         fontStyle     : 'normal',
         fontWeight    : 600,
         letterSpacing : '-0.015em',
@@ -241,35 +147,6 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
       }
     },
     ...children
-  )
-}
-
-function versionCallout(version: string): JSXNode {
-  return createElement('div',
-    {
-      style: {
-        alignItems     : 'baseline',
-        display        : 'flex',
-        gap            : 18,
-        justifyContent : 'space-between'
-      }
-    },
-    createElement('div', {
-      children : 'VERSION',
-      style    : monoLabel(META_LABEL, 16)
-    }),
-    createElement('div', {
-      children : version,
-      style    : {
-        color              : VERSION_C,
-        fontFamily         : 'Fraunces',
-        fontSize           : 72,
-        fontVariantNumeric : 'tabular-nums',
-        fontWeight         : 600,
-        letterSpacing      : '-0.01em',
-        lineHeight         : 1
-      }
-    })
   )
 }
 
@@ -319,7 +196,7 @@ function wordmarkBlock(wordmark: string): JSXNode {
         fontFamily      : 'JetBrains Mono',
         fontSize        : 15,
         fontWeight      : 600,
-        letterSpacing   : TRACK,
+        letterSpacing   : DOCS_TRACK,
         marginBottom    : 22,
         padding         : '6px 12px'
       }
