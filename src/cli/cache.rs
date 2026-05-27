@@ -76,9 +76,8 @@ fn relative_age(t: SystemTime) -> String {
 fn write_report<W: Write>(mut stdout: W, report: CleanReport) -> anyhow::Result<()> {
     writeln!(
         stdout,
-        "removed {entries} entries ({bytes} bytes)",
-        entries = report.entries,
-        bytes = report.bytes,
+        "removed {} entries ({} bytes)",
+        report.entries, report.bytes
     )
     .context("writing stdout")
 }
@@ -86,6 +85,12 @@ fn write_report<W: Write>(mut stdout: W, report: CleanReport) -> anyhow::Result<
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn relative_age_renders_future_when_mtime_lies_ahead_of_now() {
+        let future = SystemTime::now() + std::time::Duration::from_secs(60);
+        assert_eq!(relative_age(future), "in the future");
+    }
 
     #[test]
     fn relative_age_renders_seconds_minutes_hours_days() {

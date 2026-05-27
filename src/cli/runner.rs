@@ -28,28 +28,11 @@ enum FileOutcome {
     Failed(ExitStatus),
 }
 
-/// Per-run context shared across every path the walker yields.
-struct RunContext<'a> {
-    cache: Option<&'a Cache>,
-    config_toml: &'a str,
-    pipeline: &'a Pipeline,
-}
-
-/// Owned setup that backs [`RunContext`]'s borrows.
+/// Per-run setup shared across every path the walker yields.
 struct RunSetup {
     cache: Option<Cache>,
     config_toml: String,
     pipeline: Pipeline,
-}
-
-impl RunSetup {
-    fn context(&self) -> RunContext<'_> {
-        RunContext {
-            cache: self.cache.as_ref(),
-            config_toml: &self.config_toml,
-            pipeline: &self.pipeline,
-        }
-    }
 }
 
 pub(crate) fn check_with_io<R: Read, W: Write>(
@@ -62,17 +45,13 @@ pub(crate) fn check_with_io<R: Read, W: Write>(
         Ok(s) => s,
         Err(s) => return Ok(s),
     };
-    let ctx = setup.context();
     let outcomes = if args.stdin {
-        vec![process_stdin(stdin, ctx.pipeline)]
+        vec![process_stdin(stdin, &setup.pipeline)]
     } else {
-        process_paths(&args.paths, |path| process_path(path, &ctx))
+        process_paths(&args.paths, |path| process_path(path, &setup))
     };
     emit_outcomes(&outcomes, args.output_format, &mut stdout)?;
-    if verbose {
-        report_verbose(&outcomes, ctx.cache.is_some(), &mut io::stderr());
-    }
-    Ok(status_from_outcomes(&outcomes, false))
+    Ok(finish(outcomes, &setup, verbose, false))
 }
 
 pub(crate) fn format_with_io<R: Read, W: Write>(
@@ -85,20 +64,25 @@ pub(crate) fn format_with_io<R: Read, W: Write>(
         Ok(s) => s,
         Err(s) => return Ok(s),
     };
-    let ctx = setup.context();
     if args.stdin {
         return format_stdin(
             stdin,
             args.diff,
             args.output_format,
-            ctx.pipeline,
+            &setup.pipeline,
             &mut stdout,
         );
     }
     if args.diff {
-        format_paths_diff(&args.paths, &ctx, verbose, &mut stdout)
+        format_paths_diff(&args.paths, &setup, verbose, &mut stdout)
     } else {
-        format_paths_rewrite(&args.paths, args.output_format, &ctx, verbose, &mut stdout)
+        format_paths_rewrite(
+            &args.paths,
+            args.output_format,
+            &setup,
+            verbose,
+            &mut stdout,
+        )
     }
 }
 
@@ -118,7 +102,8 @@ fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
 }
 
 fn build_run(rules: &RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> {
-    let (config, pipeline) = load_or_status(rules)?;
+    let config = super::load_config_or_status()?;
+    let pipeline = Pipeline::with_filters(&config, &rules.select, &rules.ignore);
     let cache = open_cache(&config, no_cache);
     let config_toml = toml::to_string(&config).unwrap_or_default();
     Ok(RunSetup {
@@ -152,13 +137,25 @@ fn emit_outcomes<W: Write>(
     Ok(())
 }
 
+fn finish(
+    outcomes: Vec<FileOutcome>,
+    setup: &RunSetup,
+    verbose: bool,
+    demote_format_change: bool,
+) -> ExitStatus {
+    if verbose {
+        report_verbose(&outcomes, setup.cache.is_some(), &mut io::stderr());
+    }
+    status_from_outcomes(&outcomes, demote_format_change)
+}
+
 fn format_paths_diff<W: Write>(
     paths: &[PathBuf],
-    ctx: &RunContext<'_>,
+    setup: &RunSetup,
     verbose: bool,
     stdout: &mut W,
 ) -> anyhow::Result<ExitStatus> {
-    let outcomes = process_paths(paths, |path| process_path(path, ctx));
+    let outcomes = process_paths(paths, |path| process_path(path, setup));
     for outcome in &outcomes {
         if let FileOutcome::Done {
             file,
@@ -170,27 +167,21 @@ fn format_paths_diff<W: Write>(
             write_diff(stdout, file.name(), original_text, formatted)?;
         }
     }
-    if verbose {
-        report_verbose(&outcomes, ctx.cache.is_some(), &mut io::stderr());
-    }
-    Ok(status_from_outcomes(&outcomes, false))
+    Ok(finish(outcomes, setup, verbose, false))
 }
 
 fn format_paths_rewrite<W: Write>(
     paths: &[PathBuf],
     format: OutputFormat,
-    ctx: &RunContext<'_>,
+    setup: &RunSetup,
     verbose: bool,
     stdout: &mut W,
 ) -> anyhow::Result<ExitStatus> {
-    let outcomes = process_paths(paths, |path| apply_rewrite(path, process_path(path, ctx)));
+    let outcomes = process_paths(paths, |path| apply_rewrite(path, process_path(path, setup)));
     if !format.is_text() {
         emit_outcomes(&outcomes, format, stdout)?;
     }
-    if verbose {
-        report_verbose(&outcomes, ctx.cache.is_some(), &mut io::stderr());
-    }
-    Ok(status_from_outcomes(&outcomes, true))
+    Ok(finish(outcomes, setup, verbose, true))
 }
 
 fn format_stdin<R: Read, W: Write>(
@@ -224,12 +215,6 @@ fn format_stdin<R: Read, W: Write>(
     Ok(status_from_outcomes(std::slice::from_ref(&outcome), !diff))
 }
 
-fn load_or_status(filter: &RuleFilter) -> Result<(Config, Pipeline), ExitStatus> {
-    let config = super::load_config_or_status()?;
-    let pipeline = Pipeline::with_filters(&config, &filter.select, &filter.ignore);
-    Ok((config, pipeline))
-}
-
 fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
     if no_cache || !config.cache.enabled {
         return None;
@@ -240,7 +225,7 @@ fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
         .ok()
 }
 
-fn process_path(path: &Path, ctx: &RunContext<'_>) -> FileOutcome {
+fn process_path(path: &Path, setup: &RunSetup) -> FileOutcome {
     let bytes = match fs_err::read(path) {
         Ok(b) => b,
         Err(e) => {
@@ -248,9 +233,10 @@ fn process_path(path: &Path, ctx: &RunContext<'_>) -> FileOutcome {
             return FileOutcome::Failed(ExitStatus::ConfigError);
         }
     };
-    let cached = ctx
+    let cached = setup
         .cache
-        .map(|c| (c, CacheKey::compute(&bytes, ctx.config_toml)));
+        .as_ref()
+        .map(|c| (c, CacheKey::compute(&bytes, &setup.config_toml)));
     if let Some(outcome) = cached
         .as_ref()
         .and_then(|(c, k)| c.lookup(k))
@@ -272,7 +258,7 @@ fn process_path(path: &Path, ctx: &RunContext<'_>) -> FileOutcome {
             return FileOutcome::Failed(ExitStatus::ParseError);
         }
     };
-    let outcome = run_pipeline(source, ctx.pipeline);
+    let outcome = run_pipeline(source, &setup.pipeline);
     if let (
         Some((c, k)),
         FileOutcome::Done {
@@ -426,26 +412,6 @@ mod tests {
     use crate::diagnostics::Severity;
     use crate::rule::RuleId;
 
-    fn check_args(paths: Vec<PathBuf>, stdin: bool) -> CheckArgs {
-        CheckArgs {
-            no_cache: true,
-            paths,
-            stdin,
-            ..Default::default()
-        }
-    }
-
-    fn diagnostic(severity: Severity, range: TextRange, slug: &'static str) -> Diagnostic {
-        Diagnostic {
-            fix: matches!(severity, Severity::Format)
-                .then(|| Edit::range_replacement("y".into(), range)),
-            message: "test".into(),
-            range,
-            rule: RuleId::from(slug),
-            severity,
-        }
-    }
-
     struct ErrorReader;
 
     impl Read for ErrorReader {
@@ -463,6 +429,26 @@ mod tests {
 
         fn write(&mut self, _: &[u8]) -> io::Result<usize> {
             Err(io::Error::other("simulated write failure"))
+        }
+    }
+
+    fn check_args(paths: Vec<PathBuf>, stdin: bool) -> CheckArgs {
+        CheckArgs {
+            no_cache: true,
+            paths,
+            stdin,
+            ..Default::default()
+        }
+    }
+
+    fn diagnostic(severity: Severity, range: TextRange, slug: &'static str) -> Diagnostic {
+        Diagnostic {
+            fix: matches!(severity, Severity::Format)
+                .then(|| Edit::range_replacement("y".into(), range)),
+            message: "test".into(),
+            range,
+            rule: RuleId::from(slug),
+            severity,
         }
     }
 
@@ -841,13 +827,12 @@ mod tests {
     fn process_path_returns_config_error_on_missing_file() {
         let tmp = TempDir::new().expect("tempdir");
         let config = Config::default();
-        let pipeline = Pipeline::with_filters(&config, &[], &[]);
-        let ctx = RunContext {
+        let setup = RunSetup {
             cache: None,
-            config_toml: "",
-            pipeline: &pipeline,
+            config_toml: String::new(),
+            pipeline: Pipeline::with_filters(&config, &[], &[]),
         };
-        let outcome = process_path(&tmp.path().join("does_not_exist.py"), &ctx);
+        let outcome = process_path(&tmp.path().join("does_not_exist.py"), &setup);
         assert!(matches!(
             outcome,
             FileOutcome::Failed(ExitStatus::ConfigError),

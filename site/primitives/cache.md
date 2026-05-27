@@ -36,11 +36,11 @@ Resolution chains through `PROSE_CACHE_DIR` → `dirs::cache_dir().join("prose")
 
 ## Re-Using This Primitive
 
-The cache is consumed by the CLI's `prose check` and `prose format` entry points and the three `prose cache` subcommands. A downstream Rust consumer integrating *Prose* through `Pipeline::run` typically holds its own caching layer above or below the pipeline, since the per-file cache hit semantics depend on the consumer's build-system or editor lifecycle rather than on the user-level cache directory.
+The cache is consumed by the CLI's `prose check` and `prose format` entry points and every `prose cache` subcommand. A downstream Rust consumer integrating *Prose* through `Pipeline::run` typically holds its own caching layer above or below the pipeline, since the per-file cache hit semantics depend on the consumer's build-system or editor lifecycle rather than on the user-level cache directory.
 
 <template #related>
 
-- [[source]] is the value the cache shortcuts: a hit produces a `SourceFile` from the cached payload without re-parsing.
+- [[source]] is the value the cache shortcuts, in that a hit produces a `SourceFile` from the cached payload without re-parsing.
 - [[edit]] is the rewrite shape every cached entry carries alongside its diagnostics.
 - The [**Cache**](/reference/cache) reference covers the cache from a user's perspective.
 

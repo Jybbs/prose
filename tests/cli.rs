@@ -18,14 +18,17 @@ fn prose() -> Command {
     Command::cargo_bin("prose").expect("prose binary")
 }
 
+fn prose_isolated() -> (Command, TempDir) {
+    let dir = tempdir().expect("tempdir");
+    let mut cmd = prose();
+    cmd.env("PROSE_CACHE_DIR", dir.path());
+    (cmd, dir)
+}
+
 #[test]
 fn cache_clean_subcommand_exits_zero_and_reports_count() {
-    let cache_dir = tempdir().expect("tempdir");
-    let assert = prose()
-        .args(["cache", "clean"])
-        .env("PROSE_CACHE_DIR", cache_dir.path())
-        .assert()
-        .success();
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.args(["cache", "clean"]).assert().success();
     let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
     assert!(out.starts_with("removed "), "stdout was {out:?}");
     assert!(out.contains("entries"));
@@ -34,24 +37,19 @@ fn cache_clean_subcommand_exits_zero_and_reports_count() {
 
 #[test]
 fn cache_compact_subcommand_exits_zero_and_reports_count() {
-    let cache_dir = tempdir().expect("tempdir");
-    let assert = prose()
-        .args(["cache", "compact"])
-        .env("PROSE_CACHE_DIR", cache_dir.path())
-        .assert()
-        .success();
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.args(["cache", "compact"]).assert().success();
     let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
     assert!(out.starts_with("removed "), "stdout was {out:?}");
 }
 
 #[test]
 fn cache_hit_produces_identical_diagnostics_to_miss() {
-    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("ab.py", "ab = 1\nx = 2\n");
-    let miss = prose()
+    let (mut miss_cmd, cache_dir) = prose_isolated();
+    let miss = miss_cmd
         .args(["check", "--output-format", "json"])
         .arg(&path)
-        .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .code(1);
     let miss_stdout = miss.get_output().stdout.clone();
@@ -68,13 +66,38 @@ fn cache_hit_produces_identical_diagnostics_to_miss() {
 }
 
 #[test]
-fn cache_info_subcommand_prints_path_and_counts() {
-    let cache_dir = tempdir().expect("tempdir");
+fn cache_invalidates_on_config_change() {
+    let project = tempdir().expect("project");
+    let py = project.path().join("clean.py");
+    std::fs::write(&py, "x = 1\n").expect("writes");
+    let (mut warm_cmd, cache_dir) = prose_isolated();
+    warm_cmd
+        .args(["--verbose", "check"])
+        .arg(&py)
+        .current_dir(project.path())
+        .assert()
+        .success();
+
+    std::fs::write(
+        project.path().join("pyproject.toml"),
+        "[tool.prose]\ncode-line-length = 100\n",
+    )
+    .expect("writes pyproject");
     let assert = prose()
-        .args(["cache", "info"])
+        .args(["--verbose", "check"])
+        .arg(&py)
+        .current_dir(project.path())
         .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .success();
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(err.contains("0 hits, 1 misses"), "stderr was {err:?}");
+}
+
+#[test]
+fn cache_info_subcommand_prints_path_and_counts() {
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.args(["cache", "info"]).assert().success();
     let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
     assert!(out.contains("path:"), "stdout was {out:?}");
     assert!(out.contains("entries: 0"));
@@ -83,14 +106,9 @@ fn cache_info_subcommand_prints_path_and_counts() {
 
 #[test]
 fn check_clean_fixture_exits_zero() {
-    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("clean.py", "x = 1\n");
-    prose()
-        .arg("check")
-        .arg(&path)
-        .env("PROSE_CACHE_DIR", cache_dir.path())
-        .assert()
-        .success();
+    let (mut cmd, _cache_dir) = prose_isolated();
+    cmd.arg("check").arg(&path).assert().success();
 }
 
 #[test]
@@ -106,7 +124,6 @@ fn check_no_cache_flag_runs_clean() {
 #[test]
 fn check_respects_cache_disabled_in_pyproject() {
     let project = tempdir().expect("tempdir");
-    let cache_dir = tempdir().expect("cache");
     std::fs::write(
         project.path().join("pyproject.toml"),
         "[tool.prose.cache]\nenabled = false\n",
@@ -114,11 +131,11 @@ fn check_respects_cache_disabled_in_pyproject() {
     .expect("writes pyproject");
     let py = project.path().join("clean.py");
     std::fs::write(&py, "x = 1\n").expect("writes");
-    let assert = prose()
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
         .args(["--verbose", "check"])
         .arg(&py)
         .current_dir(project.path())
-        .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .success();
     let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
@@ -163,14 +180,9 @@ fn check_stdin_unaligned_exits_format_change() {
 
 #[test]
 fn check_unaligned_fixture_exits_format_change() {
-    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
-    prose()
-        .arg("check")
-        .arg(&path)
-        .env("PROSE_CACHE_DIR", cache_dir.path())
-        .assert()
-        .code(1);
+    let (mut cmd, _cache_dir) = prose_isolated();
+    cmd.arg("check").arg(&path).assert().code(1);
 }
 
 #[test]
@@ -181,13 +193,11 @@ fn check_unparseable_fixture_exits_parse_error() {
 
 #[test]
 fn color_arms_exit_zero() {
-    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("clean.py", "x = 1\n");
     for arm in ["always", "never"] {
-        prose()
-            .args(["--color", arm, "check"])
+        let (mut cmd, _cache_dir) = prose_isolated();
+        cmd.args(["--color", arm, "check"])
             .arg(&path)
-            .env("PROSE_CACHE_DIR", cache_dir.path())
             .assert()
             .success();
     }
@@ -225,14 +235,9 @@ fn format_dash_writes_rewrite_to_stdout() {
 
 #[test]
 fn format_diff_renders_diff_and_leaves_file_unchanged() {
-    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
-    let assert = prose()
-        .args(["format", "--diff"])
-        .arg(&path)
-        .env("PROSE_CACHE_DIR", cache_dir.path())
-        .assert()
-        .code(1);
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
     let stdout = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
     assert!(stdout.contains("@@"), "diff missing hunks: {stdout:?}");
     assert!(
@@ -261,14 +266,9 @@ fn format_no_cache_flag_rewrites_when_needed() {
 
 #[test]
 fn format_unaligned_rewrites_and_re_check_is_clean() {
-    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
-    prose()
-        .arg("format")
-        .arg(&path)
-        .env("PROSE_CACHE_DIR", cache_dir.path())
-        .assert()
-        .success();
+    let (mut format_cmd, cache_dir) = prose_isolated();
+    format_cmd.arg("format").arg(&path).assert().success();
     prose()
         .arg("check")
         .arg(&path)
@@ -289,12 +289,11 @@ fn no_args_prints_help_and_exits_clean() {
 
 #[test]
 fn verbose_flag_prints_cache_telemetry_to_stderr() {
-    let cache_dir = tempdir().expect("tempdir");
     let (_dir, path) = fixture("clean.py", "x = 1\n");
-    let assert = prose()
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
         .args(["--verbose", "check"])
         .arg(&path)
-        .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .success();
     let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");

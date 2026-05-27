@@ -11,7 +11,7 @@
 //! mtime caps the directory at the configured size on every insert.
 
 use std::fs::Metadata;
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{self, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
@@ -43,10 +43,10 @@ impl Cache {
     /// Returns `io::ErrorKind::NotFound` when no override is set and
     /// the platform exposes no cache directory, or any underlying IO
     /// error encountered while creating the directory.
-    pub fn open() -> std::io::Result<Self> {
+    pub fn open() -> io::Result<Self> {
         let root = cache_root().ok_or_else(|| {
-            std::io::Error::new(
-                std::io::ErrorKind::NotFound,
+            io::Error::new(
+                io::ErrorKind::NotFound,
                 "no platform cache directory is available",
             )
         })?;
@@ -68,25 +68,20 @@ impl Cache {
         fs_err::read_dir(&self.root)
             .into_iter()
             .flatten()
-            .filter_map(|e| {
-                let e = e.ok()?;
-                if !is_entry_file(&e.path()) {
-                    return None;
-                }
-                let m = e.metadata().ok()?;
-                Some((e, m))
-            })
+            .filter_map(Result::ok)
+            .filter(|e| is_entry_file(&e.path()))
+            .filter_map(|e| e.metadata().ok().map(|m| (e, m)))
     }
 
     fn path_for(&self, key: &CacheKey) -> PathBuf {
         self.root.join(key.0.to_hex().as_str())
     }
 
-    fn try_insert(&self, key: &CacheKey, value: &CacheEntry) -> std::io::Result<()> {
+    fn try_insert(&self, key: &CacheKey, value: &CacheEntry) -> io::Result<()> {
         let mut tmp = NamedTempFile::with_suffix_in(".tmp", &self.root)?;
         {
             let mut buf = BufWriter::new(tmp.as_file_mut());
-            encode_into_std_write(value, &mut buf, standard()).map_err(std::io::Error::other)?;
+            encode_into_std_write(value, &mut buf, standard()).map_err(io::Error::other)?;
             buf.flush()?;
         }
         tmp.persist(self.path_for(key)).map_err(|e| e.error)?;
@@ -101,7 +96,7 @@ impl Cache {
     ///
     /// Returns the underlying IO error if the cache directory cannot
     /// be read.
-    pub fn clean(&self) -> std::io::Result<CleanReport> {
+    pub fn clean(&self) -> io::Result<CleanReport> {
         let mut report = CleanReport::default();
         for entry in fs_err::read_dir(&self.root)? {
             let entry = entry?;
@@ -169,7 +164,7 @@ impl Cache {
     /// tempfile clean itself up on drop.
     pub fn insert(&self, key: &CacheKey, value: &CacheEntry) {
         let _ = self.try_insert(key, value);
-        let _ = self.compact();
+        self.compact();
     }
 
     /// Returns the entry stored at `key` if present and well-formed,
