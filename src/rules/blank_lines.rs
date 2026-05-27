@@ -2,7 +2,8 @@
 //! class, and function scopes. The walker pairs each statement with its
 //! predecessor and emits edits to bring the gap to the canonical count
 //! returned by `canonical_blanks`. Own-line comments between adjacent
-//! statements carry 1 blank line on each side.
+//! statements carry 1 blank line above the comment block, 0 blank lines
+//! below a description block, and 1 blank line below a banner block.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_docstring_stmt;
@@ -70,16 +71,20 @@ impl Walker<'_> {
         ));
     }
 
-    /// Places exactly 1 blank line between `block_end` and
-    /// `curr_line_start`.
-    fn normalize_below_block(&mut self, block_end: TextSize, curr_line_start: TextSize) {
-        let target_newlines: u32 = 2;
+    /// Places `target_newlines` line breaks between `block_end` and
+    /// `curr_line_start`. Emits a replacement edit when the actual
+    /// count differs.
+    fn normalize_below_block(
+        &mut self,
+        block_end: TextSize,
+        curr_line_start: TextSize,
+        target_newlines: u32,
+    ) {
         if lines_after(block_end, self.source.text()) == target_newlines {
             return;
         }
-        let replacement = self.source.newline_str().repeat(target_newlines as usize);
         self.edits.push(Edit::range_replacement(
-            replacement,
+            self.source.newline_str().repeat(target_newlines as usize),
             TextRange::new(block_end, curr_line_start),
         ));
     }
@@ -107,7 +112,8 @@ impl Walker<'_> {
         let above_line_start = block.map_or(curr_line_start, TextRange::start);
         self.normalize_above(above_line_start, canonical + 1);
         if let Some(b) = block {
-            self.normalize_below_block(b.end(), curr_line_start);
+            let below_target = 1 + u32::from(is_banner_block(self.source, b));
+            self.normalize_below_block(b.end(), curr_line_start, below_target);
         }
     }
 }
@@ -182,6 +188,11 @@ fn header_signature_end(source: &Source, body_start: TextSize) -> TextSize {
         .map_or(body_start, |t| t.end())
 }
 
+/// True when any line in the comment block is a decorative rule line.
+fn is_banner_block(source: &Source, block: TextRange) -> bool {
+    source.slice(block).lines().any(is_rule_line)
+}
+
 /// True when `stmt` is `if __name__ == "__main__":`.
 fn is_main_guard(stmt: &Stmt) -> bool {
     let Some(if_stmt) = stmt.as_if_stmt() else {
@@ -200,6 +211,19 @@ fn is_main_guard(stmt: &Stmt) -> bool {
         return false;
     };
     left.id == "__name__" && right.value.to_str() == "__main__"
+}
+
+/// True when `line` is a comment whose body, after stripping the
+/// leading `#` and surrounding whitespace, consists of 5 or more
+/// identical non-alphanumeric characters.
+fn is_rule_line(line: &str) -> bool {
+    let stripped = line
+        .trim_start()
+        .strip_prefix('#')
+        .map(str::trim)
+        .unwrap_or("");
+    let bytes = stripped.as_bytes();
+    bytes.len() >= 5 && !bytes[0].is_ascii_alphanumeric() && bytes.iter().all(|&b| b == bytes[0])
 }
 
 /// Returns the contiguous range of own-line comments lying between
@@ -476,6 +500,24 @@ mod tests {
     }
 
     #[test]
+    fn is_banner_block_detects_block_with_any_rule_line() {
+        let s = parse(
+            "x = 1\n# ========================\n# Section: helpers\n# ========================\ndef f(): pass\n",
+        );
+        let body = &s.ast().body;
+        let block = leading_block_of(&s, body[0].end(), &body[1]).expect("block");
+        assert!(is_banner_block(&s, block));
+    }
+
+    #[test]
+    fn is_banner_block_returns_false_for_all_prose_block() {
+        let s = parse("x = 1\n# describes f\n# helper\ndef f(): pass\n");
+        let body = &s.ast().body;
+        let block = leading_block_of(&s, body[0].end(), &body[1]).expect("block");
+        assert!(!is_banner_block(&s, block));
+    }
+
+    #[test]
     fn is_main_guard_accepts_canonical_form() {
         let s = parse(main_guard_src());
         assert!(is_main_guard(&s.ast().body[0]));
@@ -499,6 +541,41 @@ mod tests {
         ] {
             let s = parse(src);
             assert!(!is_main_guard(&s.ast().body[0]), "src = {src:?}");
+        }
+    }
+
+    #[test]
+    fn is_rule_line_accepts_canonical_decorative_runs() {
+        for line in [
+            "# =====",
+            "# -----",
+            "# *****",
+            "# _____",
+            "# ~~~~~",
+            "##########",
+        ] {
+            assert!(is_rule_line(line), "line = {line:?}");
+        }
+    }
+
+    #[test]
+    fn is_rule_line_rejects_alpha_prose() {
+        for line in ["# describes f", "# Section: helpers", "# x"] {
+            assert!(!is_rule_line(line), "line = {line:?}");
+        }
+    }
+
+    #[test]
+    fn is_rule_line_rejects_mixed_characters() {
+        for line in ["# = = = =", "# -=-=-=", "# - - -"] {
+            assert!(!is_rule_line(line), "line = {line:?}");
+        }
+    }
+
+    #[test]
+    fn is_rule_line_rejects_short_runs() {
+        for line in ["# ====", "# ---", "# ", "#"] {
+            assert!(!is_rule_line(line), "line = {line:?}");
         }
     }
 
