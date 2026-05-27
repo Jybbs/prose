@@ -101,7 +101,8 @@ impl Cache {
     }
 
     /// Removes every file in the cache directory and returns the
-    /// count and freed bytes. Orphaned `.tmp` sidecars are swept too.
+    /// count and freed bytes, including any orphan sidecars or stray
+    /// files alongside the keyed entries.
     ///
     /// # Errors
     ///
@@ -128,7 +129,7 @@ impl Cache {
     /// Reports the cache directory's path, entry count, and byte total,
     /// plus the oldest and newest entry mtimes when any entry exists.
     pub fn info(&self) -> CacheInfo {
-        let mut info = CacheInfo {
+        let init = CacheInfo {
             bytes: 0,
             entries: 0,
             newest_mtime: None,
@@ -136,53 +137,47 @@ impl Cache {
             path: self.root.clone(),
         };
         let Ok(read) = fs_err::read_dir(&self.root) else {
-            return info;
+            return init;
         };
-        for entry in read.flatten() {
-            let path = entry.path();
-            if !is_entry_file(&path) {
-                continue;
-            }
-            let Ok(meta) = entry.metadata() else {
-                continue;
-            };
-            info.entries += 1;
-            info.bytes += meta.len();
-            if let Ok(mtime) = meta.modified() {
-                info.oldest_mtime = Some(
-                    info.oldest_mtime
-                        .map_or(mtime, |o: SystemTime| o.min(mtime)),
-                );
-                info.newest_mtime = Some(
-                    info.newest_mtime
-                        .map_or(mtime, |n: SystemTime| n.max(mtime)),
-                );
-            }
-        }
-        info
+        read.flatten()
+            .filter(|e| is_entry_file(&e.path()))
+            .filter_map(|e| {
+                let m = e.metadata().ok()?;
+                Some((m.len(), m.modified().ok()))
+            })
+            .fold(init, |mut acc, (len, mtime)| {
+                acc.entries += 1;
+                acc.bytes += len;
+                if let Some(t) = mtime {
+                    acc.oldest_mtime = Some(acc.oldest_mtime.map_or(t, |o| o.min(t)));
+                    acc.newest_mtime = Some(acc.newest_mtime.map_or(t, |n| n.max(t)));
+                }
+                acc
+            })
     }
 
     /// Atomically writes `value` for `key` via a temporary sidecar and
-    /// `rename`, then runs best-effort LRU eviction.
+    /// `rename`, then runs best-effort LRU eviction. Encode, write,
+    /// and rename failures drop the insert silently and remove any
+    /// orphan sidecar.
     pub fn insert(&self, key: &CacheKey, value: &CacheEntry) {
         let Ok(bytes) = encode_to_vec(value, bincode_config()) else {
             return;
         };
-        let final_path = self.path_for(key);
-        let tmp_path = self
-            .root
-            .join(format!("{}.{}.tmp", key.hex(), std::process::id()));
+        let hex = key.hex();
+        let tmp_path = self.root.join(format!("{hex}.{}.tmp", std::process::id()));
         if fs_err::write(&tmp_path, bytes).is_err() {
             return;
         }
-        if fs_err::rename(&tmp_path, &final_path).is_err() {
+        if fs_err::rename(&tmp_path, self.root.join(&hex)).is_err() {
             let _ = fs_err::remove_file(&tmp_path);
             return;
         }
         let _ = self.evict();
     }
 
-    /// Returns the entry stored at `key` if present and well-formed.
+    /// Returns the entry stored at `key` if present and well-formed,
+    /// bumping the entry's mtime.
     pub fn lookup(&self, key: &CacheKey) -> Option<CacheEntry> {
         let path = self.path_for(key);
         let bytes = fs_err::read(&path).ok()?;
@@ -263,13 +258,10 @@ pub struct CleanReport {
 }
 
 fn cache_root() -> Option<PathBuf> {
-    if let Some(path) = std::env::var_os("PROSE_CACHE_DIR") {
-        return Some(PathBuf::from(path));
-    }
-    if let Some(path) = std::env::var_os("XDG_CACHE_HOME") {
-        return Some(PathBuf::from(path).join(SUBDIR));
-    }
-    dirs::cache_dir().map(|d| d.join(SUBDIR))
+    std::env::var_os("PROSE_CACHE_DIR")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("XDG_CACHE_HOME").map(|p| PathBuf::from(p).join(SUBDIR)))
+        .or_else(|| dirs::cache_dir().map(|d| d.join(SUBDIR)))
 }
 
 fn is_entry_file(path: &Path) -> bool {

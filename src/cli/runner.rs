@@ -116,7 +116,6 @@ pub(crate) fn check_with_io<R: Read, W: Write>(
         Err(s) => return Ok(s),
     };
     let cache = open_cache(&config, args.no_cache);
-    let cache_enabled = cache.is_some();
     let ctx = RunContext {
         cache: cache.as_ref(),
         config_toml: toml::to_string(&config).unwrap_or_default(),
@@ -129,7 +128,7 @@ pub(crate) fn check_with_io<R: Read, W: Write>(
     };
     emit_outcomes(&outcomes, args.output_format, &mut stdout)?;
     if verbose {
-        report_verbose(&outcomes, cache_enabled, &mut io::stderr());
+        report_verbose(&outcomes, ctx.cache.is_some(), &mut io::stderr());
     }
     Ok(status_from_outcomes(&outcomes, false))
 }
@@ -385,13 +384,12 @@ fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline) -> FileOutcome {
 
 fn rehydrate(path: &Path, original_bytes: &[u8], entry: CacheEntry) -> Option<FileOutcome> {
     let original_text = std::str::from_utf8(original_bytes).ok()?.to_owned();
-    let name = path.display().to_string();
     let display_text = entry
         .formatted_source
         .as_deref()
         .unwrap_or(&original_text)
         .to_owned();
-    let file = SourceFileBuilder::new(name, display_text).finish();
+    let file = SourceFileBuilder::new(path.display().to_string(), display_text).finish();
     Some(FileOutcome::Done {
         cached: true,
         diagnostics: entry.diagnostics,
@@ -422,17 +420,16 @@ fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, write
         let _ = writeln!(writer, "cache: bypassed");
         return;
     }
-    let mut hits = 0_usize;
-    let mut misses = 0_usize;
-    for outcome in outcomes {
-        if let FileOutcome::Done { cached, .. } = outcome {
-            if *cached {
-                hits += 1;
-            } else {
-                misses += 1;
-            }
-        }
-    }
+    let (hits, misses) = outcomes
+        .iter()
+        .filter_map(|o| match o {
+            FileOutcome::Done { cached, .. } => Some(*cached),
+            FileOutcome::Failed(_) => None,
+        })
+        .fold(
+            (0_usize, 0_usize),
+            |(h, m), c| if c { (h + 1, m) } else { (h, m + 1) },
+        );
     let _ = writeln!(
         writer,
         "cache: {hits} hits, {misses} misses, {total} files",
