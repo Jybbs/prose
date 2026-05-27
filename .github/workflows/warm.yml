@@ -10,6 +10,9 @@ on:
       - Cargo.toml
       - Cargo.lock
       - mise.toml
+      - package.json
+      - bun.lock
+      - .github/actions/provision-bun/**
       - .github/actions/provision-cargo/**
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
@@ -37,6 +40,24 @@ jobs:
       - name : Emit build matrix
         id   : matrix
         run  : ./.github/scripts/emit-matrix.py
+
+  bun:
+    name    : 🍞 Bun
+    runs-on : ubuntu-latest
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Provision Cargo
+        uses : ./.github/actions/provision-cargo
+        with : { cache: 'false' }
+
+      - name : Provision bun
+        uses : ./.github/actions/provision-bun
+
+      - name : Install bun dependencies
+        run  : bun install --frozen-lockfile
 
   checks:
     name    : ${{ matrix.name }}
