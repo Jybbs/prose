@@ -115,11 +115,11 @@ impl Rule for MyRule {
 
 ## Re-Using This Primitive
 
-A new docstring rule's `apply` body is a single `rewrite_docstrings` call carrying the per-docstring decision as a closure. The PEP 257 detection, the nested-scope traversal, and the implicitly-concatenated skip come for free. A rule that needs the `name: description` entries of every Google-style entry-carrying section additionally reaches for `entry_carrying_sections`, which composes the section-detection leaves into a single pass over a docstring's body and hands back a per-section vector of `SectionEntry` ranges the rule can reorder, rewrap, or inspect. A consumer that needs richer state across the walk can implement `DocstringHandler` directly and call `walk(source)` from inside `apply`.
+A new docstring rule's `apply` body is a single `rewrite_docstrings` call carrying the per-docstring decision as a closure. The PEP 257 detection, the nested-scope traversal, and the implicitly-concatenated skip come for free. A rule that needs the `name: description` entries of every Title-case-headed section additionally reaches for `entry_carrying_sections`, which composes the section-detection leaves into a single pass over a docstring's body and hands back a per-section vector of `SectionEntry` ranges the rule can reorder, rewrap, or inspect. A consumer that needs richer state across the walk can implement `DocstringHandler` directly and call `walk(source)` from inside `apply`.
 
 <template #related>
 
-- [[alphabetize]] reorders the `name: description` entries within entry-carrying sections.
+- [[alphabetize]] reorders the `name: description` entries within every Title-case-headed section.
 - [[docstring-wrap]] wraps description prose and structured sections to their budgets.
 - [[multi-line-docstrings]] enforces own-line quote placement.
 - [[no-single-line-docstrings]] expands single-line shapes.
