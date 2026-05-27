@@ -1,0 +1,10 @@
+"""
+A run carrying any inline comment within its line extent skips
+entirely. Trailing comments on assign lines do not break the
+run boundary, but a comment intersecting any run line forces
+source order to win.
+"""
+
+zebra = 1  # explanatory note
+alpha = 2
+beta = 3

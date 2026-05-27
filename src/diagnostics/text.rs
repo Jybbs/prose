@@ -22,12 +22,12 @@ impl Text {
 
 impl Emitter for Text {
     fn emit(&self, writer: &mut dyn Write, runs: &[Run<'_>]) -> io::Result<()> {
-        for (source, diagnostics) in runs {
+        for (file, diagnostics) in runs {
             for diag in *diagnostics {
                 let warning = Level::WARNING.primary_title(diag.message.as_str()).element(
-                    Snippet::source(source.text())
+                    Snippet::source(file.source_text())
                         .line_start(1)
-                        .path(source.filename())
+                        .path(file.name())
                         .annotation(
                             AnnotationKind::Primary
                                 .span(diag.range.to_std_range())
@@ -38,9 +38,9 @@ impl Emitter for Text {
                 if let Some(edit) = &diag.fix {
                     groups.push(
                         Level::HELP.secondary_title("replace with").element(
-                            Snippet::source(source.text())
+                            Snippet::source(file.source_text())
                                 .line_start(1)
-                                .path(source.filename())
+                                .path(file.name())
                                 .patch(Patch::new(
                                     edit.range().to_std_range(),
                                     edit.content().unwrap_or_default(),
@@ -80,7 +80,10 @@ mod tests {
         {
             let mut writer = anstream::AutoStream::never(&mut buf);
             Text::new()
-                .emit(&mut writer, &[(source, std::slice::from_ref(diag))])
+                .emit(
+                    &mut writer,
+                    &[(source.source_file(), std::slice::from_ref(diag))],
+                )
                 .expect("emits");
         }
         String::from_utf8(buf).expect("utf-8")

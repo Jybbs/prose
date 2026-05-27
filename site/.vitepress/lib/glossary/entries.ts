@@ -40,11 +40,28 @@ export const glossary: Record<string, GlossaryEntry> = {
     href      : '/usage/quick-start#subset-the-active-rules'
   },
 
+  '--no-cache': {
+    definition: '`--no-cache` is a CLI flag that bypasses the user-level cache for a single '
+              + 'invocation of `prose check` or `prose format`. The flag overrides the '
+              + 'configured `[tool.prose.cache] enabled` value.',
+    family    : 'formatting',
+    href      : '/reference/cache#no-cache'
+  },
+
   '--select': {
     definition: '`--select` is a CLI flag that restricts a run to the named rules. The flag is '
               + 'repeatable, and pairs with `--ignore` to subtract from the active set.',
     family    : 'formatting',
     href      : '/usage/quick-start#subset-the-active-rules'
+  },
+
+  '--verbose': {
+    definition: '`--verbose` is a global CLI flag that prints a one-line cache hit/miss '
+              + 'summary to stderr at the end of each `prose check` or `prose format` run. '
+              + 'The flag writes `cache: bypassed` when the cache is disabled via '
+              + '`--no-cache` or `[tool.prose.cache] enabled = false`.',
+    family    : 'formatting',
+    href      : '/reference/cache#hit-miss-telemetry'
   },
 
   'AST': {
@@ -63,6 +80,15 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'it.',
     family    : 'engine',
     href      : '/primitives/binding-analysis'
+  },
+
+  'BLAKE3': {
+    definition: 'BLAKE3 is the cryptographic hash function *Prose* uses to derive [[Cache]] '
+              + 'keys. The key digests the source bytes, the canonical TOML serialization of '
+              + 'the active configuration, and the *Prose* version, so any meaningful change '
+              + 'to any input produces a different key.',
+    family    : 'engine',
+    href      : '/reference/cache#key-shape'
   },
 
   'Diagnostic': {
@@ -164,9 +190,22 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases   : ['blank-line', 'blank lines', 'blank-lines'],
     definition: 'A blank line is an empty line separating logical units. *Prose* enforces '
               + 'blank-line counts between module-level definitions, class members, and import '
-              + 'groups per the `blank-lines` rule.',
+              + 'groups per the `blank-lines` rule, and binds description-shaped own-line '
+              + 'comment blocks tight against the following statement while leaving '
+              + 'banner-shaped blocks separated by 1 blank line below.',
     family    : 'formatting',
     href      : '/rules/blank-lines'
+  },
+
+  'cache': {
+    aliases   : ['Cache', 'cached', 'caching'],
+    definition: 'The user-level on-disk cache *Prose* keeps for repeat `prose check` and '
+              + '`prose format` runs. Keyed by [[BLAKE3]] over '
+              + '`(source ++ config ++ prose_version)`, capped by the LRU eviction the '
+              + '`[tool.prose.cache] max-size-mib` knob configures, bypassable per invocation '
+              + 'with `--no-cache`, and clearable with `prose cache clean`.',
+    family    : 'engine',
+    href      : '/reference/cache'
   },
 
   'code-line-length': {
@@ -296,6 +335,22 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'diagnostic output.',
     family    : 'engine',
     href      : '/primitives/rule-id'
+  },
+
+  'leading comment block': {
+    aliases   : [
+      'own-line comment', 'own-line comments', 'leading comment', 'leading comments',
+      'own-line comment block'
+    ],
+    definition: 'A leading comment block is a run of own-line `#` comments sitting directly '
+              + 'above a statement. `blank-lines` binds description-shaped blocks tight '
+              + 'against the following statement and keeps 1 blank line below banner-shaped '
+              + 'blocks *(any line of which is a decorative rule of `=`, `-`, `*`, `_`, '
+              + '`#`, or `~`)*, with the canonical above-gap measured from the topmost '
+              + 'comment either way. The orderer primitive\'s `block_range` carries the '
+              + 'block with its item when reordering siblings.',
+    family    : 'formatting',
+    href      : '/rules/blank-lines'
   },
 
   'lexical scope': {

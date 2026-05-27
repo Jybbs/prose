@@ -8,9 +8,9 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::visitor::{walk_expr, Visitor};
+use ruff_python_ast::visitor::{walk_expr, Visitor as AstVisitor};
 use ruff_python_ast::{CmpOp, Expr, ExprBoolOp};
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::config::Config;
 use crate::primitives::aligner;
@@ -31,13 +31,11 @@ impl AlignComparisons {
 
 impl Rule for AlignComparisons {
     fn apply(&self, source: &Source) -> Vec<Edit> {
-        let mut walker = Walker {
-            edits: Vec::new(),
-            settings: self.settings,
-            source,
+        let mut visitor = Visitor {
+            walker: aligner::AlignWalker::new(source, self.settings),
         };
-        walker.visit_body(&source.ast().body);
-        walker.edits
+        visitor.visit_body(&source.ast().body);
+        visitor.walker.edits
     }
 
     fn id(&self) -> RuleId {
@@ -45,24 +43,13 @@ impl Rule for AlignComparisons {
     }
 }
 
-struct Walker<'a> {
-    edits: Vec<Edit>,
-    settings: aligner::Settings,
-    source: &'a Source,
+struct Visitor<'a> {
+    walker: aligner::AlignWalker<'a>,
 }
 
-impl Walker<'_> {
-    /// Returns `true` when `prev_end` and `next_start` sit on directly
-    /// consecutive source lines. Directive comments (`# fmt: off`,
-    /// `# prose: skip[...]`) are handled by the pipeline's
-    /// `SuppressionMap` filter on emitted edits, so the rule itself
-    /// stays comment-agnostic.
-    fn is_operand_line_adjacent(&self, prev_end: TextSize, next_start: TextSize) -> bool {
-        self.source.line_index(next_start) == self.source.line_index(prev_end).saturating_add(1)
-    }
-
+impl Visitor<'_> {
     fn process_bool_op(&mut self, bool_op: &ExprBoolOp) {
-        if !self.source.contains_line_break(bool_op) {
+        if !self.walker.source.contains_line_break(bool_op) {
             return;
         }
         let mut groups: Vec<Vec<aligner::Member>> = Vec::new();
@@ -73,8 +60,9 @@ impl Walker<'_> {
                 continue;
             };
             let extends = active.is_some_and(|prev| {
-                !self.source.contains_line_break(prev)
-                    && self.is_operand_line_adjacent(prev.end(), operand.start())
+                !self.walker.source.contains_line_break(prev)
+                    && self.walker.source.line_index(operand.start())
+                        == self.walker.source.line_index(prev.end()).saturating_add(1)
             });
             if extends {
                 groups
@@ -88,7 +76,7 @@ impl Walker<'_> {
         }
         for group in &groups {
             if aligner::is_alignment_candidate(group) {
-                aligner::emit_group(self.source, group, self.settings, &mut self.edits);
+                self.walker.emit_group(group);
             }
         }
     }
@@ -98,7 +86,7 @@ impl Walker<'_> {
         let op = *compare.ops.first()?;
         let comparator = compare.comparators.first()?;
         let member = aligner::line_anchored_member_at_kind(
-            self.source,
+            self.walker.source,
             TextRange::new(compare.left.end(), comparator.start()),
             cmp_op_anchor_token_kind(op),
         )?;
@@ -106,7 +94,7 @@ impl Walker<'_> {
     }
 }
 
-impl<'a> Visitor<'a> for Walker<'a> {
+impl<'a> AstVisitor<'a> for Visitor<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
         if let Expr::BoolOp(bool_op) = expr {
             self.process_bool_op(bool_op);

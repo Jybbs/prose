@@ -7,7 +7,7 @@ on:
     paths-ignore:
       - '**.md'
       - LICENSE
-      - assets/**
+      - site/**
 
   workflow_dispatch:
 

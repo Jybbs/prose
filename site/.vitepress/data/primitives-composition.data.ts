@@ -30,7 +30,7 @@ interface PrimitivesCompositionData {
 
 const SOURCES: readonly PrimitiveEntrySource[] = [
   {
-    consumedBy : ['align-colons', 'align-equals', 'align-imports', 'match-case-align'],
+    consumedBy : ['align-colons', 'align-comparisons', 'align-equals', 'align-imports', 'match-case-align'],
     consumes   : ['edit', 'source'],
     layer      : 'orchestration',
     slug       : 'aligner',
@@ -46,6 +46,14 @@ const SOURCES: readonly PrimitiveEntrySource[] = [
     summary    : 'Per-source table indexing every write and read of every name in every lexical '
                + 'scope.',
     tagline    : 'name binding index'
+  },
+  {
+    consumedBy : ['cli'],
+    consumes   : ['source'],
+    layer      : 'analysis',
+    slug       : 'cache',
+    summary    : 'User-level on-disk cache keyed on `(source ++ config ++ version)`, collapsing repeat runs to a stat plus a hash plus a deserialize.',
+    tagline    : 'content-addressed result cache'
   },
   {
     consumedBy : ['align-colons', 'singleton-rule'],

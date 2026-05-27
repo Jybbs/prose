@@ -9,9 +9,9 @@ rather than fusing into one. Code outside the blocks aligns normally while
 code inside each block stays verbatim.
 """
 
-x       = 1
-foo     = 2
 bar_baz = 3
+foo     = 2
+x       = 1
 
 # fmt: off
 inside_one_alpha = 1

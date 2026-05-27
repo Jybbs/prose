@@ -10,12 +10,13 @@ The canonical invocation is `prose format path/to/project`, which walks the dire
 prose format path/to/project
 ```
 
-Three variants cover the surrounding cases. `prose check` is the CI shape, doing the same walk against the same rules but reporting diagnostics to stdout and gating on the exit code without touching files. `prose format --diff` is the previewing shape, emitting a unified diff to stdout in lieu of writing changes. `prose check --stdin` *(also `prose format --stdin`)* takes one file's contents on stdin and routes diagnostics or rewrites to stdout, which is the shape an editor wires into a save hook.
+Three variants cover the surrounding cases. `prose check` is the CI shape, doing the same walk against the same rules but reporting diagnostics to stdout and gating on the exit code without touching files. `prose format --diff` is the previewing shape, emitting a unified diff to stdout in lieu of writing changes. `prose check --stdin` *(also `prose format --stdin`, or the `-` positional shorthand on either subcommand)* takes one file's contents on stdin and routes diagnostics or rewrites to stdout, which is the shape an editor wires into a save hook.
 
 ```bash
 prose check path/to/project
 prose format --diff path/to/project
 prose check --stdin < file.py
+prose format - < file.py
 ```
 
 ## Which Files Get Walked
@@ -41,6 +42,10 @@ The [**Rules**](/rules/) page enumerates every rule the binary ships, with one p
 ## Parallelism
 
 Path-mode runs parallelize across files via [**`rayon`**](https://docs.rs/rayon/), with one rule pipeline per worker thread, leaving large repos to settle in wall-clock time proportional to the slowest file rather than the file count. Setting `RAYON_NUM_THREADS=1` forces single-threaded execution, which is the shape to reach for when debugging a rule whose diagnostic output reads as confusing under parallel emission. Stdin mode is single-threaded by construction, because the input is one file and there's nothing to parallelize across.
+
+## Cache
+
+`prose check` and `prose format` hit a user-level [**cache**](/reference/cache) on by default. Bypass for one invocation with `--no-cache`, tune the size cap under `[tool.prose.cache]`, or clear with `prose cache clean`.
 
 ## Where to Go Next
 

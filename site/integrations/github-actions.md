@@ -59,6 +59,20 @@ Reach for the SARIF shape when the project wants findings persisted across runs 
 
 SARIF persists every diagnostic with its rule slug and source location, so the Security tab carries a tracked history per rule. The [**Output Formats**](/reference/output-formats) reference enumerates the per-finding record shape.
 
+## Persisting the Cache
+
+Repeat runs hit the user-level [**cache**](/reference/cache) on by default, but the runner's filesystem evaporates between jobs. Wire `actions/cache` to persist `~/.cache/prose` across runs, so an unchanged file collapses to a stat plus a hash plus a deserialize on every subsequent CI invocation:
+
+```yaml
+- uses: actions/cache@v4
+  with:
+    path: ~/.cache/prose
+    key: prose-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+- run: prose check .
+```
+
+Keying off `pyproject.toml` invalidates the cache whenever configuration changes, since the cache key already digests the active `[tool.prose]` table and an upstream change to it produces a fresh set of entries. macOS runners use `~/Library/Caches/prose` and Windows runners use `%LOCALAPPDATA%\prose\cache`, both [documented on the cache page](/reference/cache#location).
+
 ## Pairing With Ruff in CI
 
 When a project pairs *Prose* with [**Ruff**](https://docs.astral.sh/ruff/), the two tools chain into CI as sequential check steps, with Ruff first to settle line wraps and *Prose* second for layout. Each tool runs in check mode so the gate fails on any pending rewrite without writing to the runner's filesystem:

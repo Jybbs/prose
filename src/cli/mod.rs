@@ -1,35 +1,58 @@
 //! Command-line interface.
 //!
-//! Exposes three subcommands: `check` reports violations without
-//! modifying files, `format` rewrites in place (or prints a unified
-//! diff with `--diff`), and `completions` emits a shell-completion
-//! script. `check` and `format` accept positional paths and a
-//! `--stdin` flag for pipeline use, mutually exclusive via clap's
-//! `conflicts_with`.
+//! Subcommands: `check` reports violations without modifying files,
+//! `format` rewrites in place (or prints a unified diff with
+//! `--diff`), `cache` manages the user-level content cache, and
+//! `completions` emits a shell-completion script. `check` and
+//! `format` accept positional paths, a `-` positional alias for
+//! stdin, and a `--stdin` flag, all mutually exclusive.
 //!
 //! Path mode parallelizes across files via `rayon`. Set
 //! `RAYON_NUM_THREADS=1` to force single-threaded execution when
 //! debugging a rule. Stdin mode is single-threaded by construction.
 //!
 //! Layout: `args` houses every clap-derived type and parse-time
-//! validation. `runner` houses the pipeline-orchestration helpers
-//! that translate parsed args into source loading, emitter dispatch,
-//! and diff rendering. `exit_status` carries the matrix every
-//! subcommand resolves into.
+//! validation. `cache` houses the `prose cache` subcommand handlers.
+//! `runner` houses the pipeline-orchestration helpers that translate
+//! parsed args into source loading, emitter dispatch, and diff
+//! rendering. `exit_status` carries the matrix every subcommand
+//! resolves into.
 
 use std::io::{self, Write};
 use std::process::ExitCode;
 
 use anstream::AutoStream;
+use anyhow::Context;
 use clap::{ColorChoice, CommandFactory, Parser};
 use clap_complete::generate;
 
 mod args;
+mod cache;
 mod exit_status;
 mod runner;
 
-use args::{report_clap_error, validate_diff_format_combination, Cli, Command};
+use args::{
+    normalize_stdin_dash, report_clap_error, validate_diff_format_combination, CacheAction, Cli,
+    Command,
+};
 use exit_status::ExitStatus;
+
+use crate::config::Config;
+
+pub(super) fn load_config_or_status() -> Result<Config, ExitStatus> {
+    let cwd = std::env::current_dir()
+        .context("reading current working directory")
+        .map_err(|e| {
+            log_error_chain(&e);
+            ExitStatus::ConfigError
+        })?;
+    Config::load(&cwd)
+        .context("loading [tool.prose] config")
+        .map_err(|e| {
+            log_error_chain(&e);
+            ExitStatus::ConfigError
+        })
+}
 
 pub(super) fn log_error_chain(err: &anyhow::Error) {
     let mut stderr = io::stderr().lock();
@@ -39,21 +62,30 @@ pub(super) fn log_error_chain(err: &anyhow::Error) {
 }
 
 pub fn run() -> ExitCode {
-    let cli = match Cli::try_parse() {
+    let mut cli = match Cli::try_parse() {
         Ok(cli) => cli,
         Err(err) => return report_clap_error(err),
     };
+    if let Some(err) = normalize_stdin_dash(&mut cli) {
+        return report_clap_error(err);
+    }
     if let Some(err) = validate_diff_format_combination(&cli) {
         return report_clap_error(err);
     }
     let stdout = stdout_with_color(cli.color);
+    let verbose = cli.verbose;
     let result = match cli.command {
-        Command::Check(args) => runner::check_with_io(args, io::stdin(), stdout),
+        Command::Cache { action } => match action {
+            CacheAction::Clean => cache::clean(stdout),
+            CacheAction::Compact => cache::compact(stdout),
+            CacheAction::Info => cache::info(stdout),
+        },
+        Command::Check(args) => runner::check_with_io(args, verbose, io::stdin(), stdout),
         Command::Completions { shell } => {
             generate(shell, &mut Cli::command(), "prose", &mut io::stdout());
             Ok(ExitStatus::Clean)
         }
-        Command::Format(args) => runner::format_with_io(args, io::stdin(), stdout),
+        Command::Format(args) => runner::format_with_io(args, verbose, io::stdin(), stdout),
     };
     finalize(result).into()
 }

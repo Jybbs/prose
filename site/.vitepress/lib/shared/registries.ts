@@ -37,5 +37,5 @@ export const FAMILY_ORDER: readonly RuleFamily[] = [
 ]
 
 export type PrimitiveSlug =
-  | 'aligner' | 'binding-analysis' | 'colon-targets' | 'docstring' | 'edit' | 'orderer'
-  | 'pipeline' | 'rule-id' | 'source' | 'suppression-map' | 'walker'
+  | 'aligner' | 'binding-analysis' | 'cache' | 'colon-targets' | 'docstring' | 'edit'
+  | 'orderer' | 'pipeline' | 'rule-id' | 'source' | 'suppression-map' | 'walker'

@@ -26,13 +26,14 @@ const REFERENCE_SIDEBAR: DefaultTheme.SidebarItem[] = [
   {
     items: [
       { link: '/reference/',                       text: 'Overview'               },
+      { link: '/reference/cache',                  text: 'Cache'                  },
       { link: '/reference/cli',                    text: 'CLI'                    },
-      { link: '/reference/exit-codes',             text: 'Exit Codes'             },
-      { link: '/reference/output-formats',         text: 'Output Formats'         },
       { link: '/reference/configuration',          text: 'Configuration'          },
-      { link: '/reference/suppression-directives', text: 'Suppression Directives' },
+      { link: '/reference/exit-codes',             text: 'Exit Codes'             },
+      { link: '/reference/glossary',               text: 'Glossary'               },
+      { link: '/reference/output-formats',         text: 'Output Formats'         },
       { link: '/reference/pipeline-order',         text: 'Pipeline Order'         },
-      { link: '/reference/glossary',               text: 'Glossary'               }
+      { link: '/reference/suppression-directives', text: 'Suppression Directives' }
     ],
     text : 'Reference'
   }

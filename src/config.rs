@@ -12,13 +12,13 @@ use std::path::Path;
 
 use regex_lite::Regex;
 use ruff_python_ast::PythonVersion;
-use serde::{de::IntoDeserializer, Deserialize, Deserializer};
+use serde::{de::IntoDeserializer, Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
 
 pub use crate::rule::RuleConfigs;
 
 /// Configuration shared by the alignment rules (`align_colons`, `align_equals`).
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlignmentConfig {
     pub enabled: bool,
@@ -36,8 +36,27 @@ impl Default for AlignmentConfig {
     }
 }
 
+/// Configuration for the `alphabetize` rule. `docstring_entries`
+/// gates the Google-style entry-section reorder pass, leaving the
+/// AST-level sorts to apply on their own when set `false`.
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct AlphabetizeConfig {
+    pub docstring_entries: bool,
+    pub enabled: bool,
+}
+
+impl Default for AlphabetizeConfig {
+    fn default() -> Self {
+        Self {
+            docstring_entries: true,
+            enabled: true,
+        }
+    }
+}
+
 /// Configuration for the `bare_import_allowlist` rule.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BareImportAllowlistConfig {
     pub allow: Vec<String>,
@@ -53,8 +72,25 @@ impl Default for BareImportAllowlistConfig {
     }
 }
 
+/// Cache settings parsed from `[tool.prose.cache]`.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct CacheConfig {
+    pub enabled: bool,
+    pub max_size_mib: u32,
+}
+
+impl Default for CacheConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_size_mib: 100,
+        }
+    }
+}
+
 /// Configuration for the `collection_layout` rule.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CollectionLayoutConfig {
     pub enabled: bool,
@@ -77,9 +113,10 @@ impl Default for CollectionLayoutConfig {
 /// to `CodeLineLength`. `target_version` defaults to `None`.
 /// Per-rule settings live under `rules`, where each rule's sub-table
 /// carries `enabled` plus that rule's own knobs.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
+    pub cache: CacheConfig,
     pub code_line_length: Option<NonZeroUsize>,
     pub docstring_line_length: Option<NonZeroUsize>,
     pub docstring_structured_policy: DocstringStructuredPolicy,
@@ -90,6 +127,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            cache: CacheConfig::default(),
             code_line_length: NonZeroUsize::new(88),
             docstring_line_length: NonZeroUsize::new(76),
             docstring_structured_policy: DocstringStructuredPolicy::default(),
@@ -163,7 +201,7 @@ pub enum ConfigError {
 ///
 /// `CodeLineLength` reuses `Config::code_line_length`.
 /// `DocstringLineLength` reuses `Config::docstring_line_length`.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DocstringStructuredPolicy {
     #[default]
@@ -180,7 +218,7 @@ pub enum DocstringStructuredPolicy {
 /// the padding calculation until the cap is satisfied, leaving those
 /// members at their original spacing while neighbors align around
 /// them. `Skip` leaves the entire group unaligned.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum MaxAlignShiftPolicy {
     Drop,
@@ -190,7 +228,7 @@ pub enum MaxAlignShiftPolicy {
 }
 
 /// Configuration for the `loose_constants` rule.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct LooseConstantsConfig {
     pub allow: Vec<String>,
@@ -210,7 +248,7 @@ impl Default for LooseConstantsConfig {
 ///
 /// `max_inline_params` caps the count threshold. A positive integer
 /// enforces the cap. `false` disables the count trigger.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SignatureLayoutConfig {
     pub enabled: bool,
@@ -228,10 +266,13 @@ impl Default for SignatureLayoutConfig {
 }
 
 /// Configuration for the `single_use_variables` rule.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SingleUseVariablesConfig {
-    #[serde(deserialize_with = "deserialize_regex")]
+    #[serde(
+        deserialize_with = "deserialize_regex",
+        serialize_with = "serialize_regex"
+    )]
     pub allow_pattern: Regex,
     pub enabled: bool,
 }
@@ -246,7 +287,7 @@ impl Default for SingleUseVariablesConfig {
 }
 
 /// Sub-table shape for rules whose only knob is `enabled`.
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ToggleOnly {
     pub enabled: bool,
@@ -280,6 +321,10 @@ where
 fn deserialize_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Regex, D::Error> {
     let pattern = String::deserialize(deserializer)?;
     Regex::new(&pattern).map_err(serde::de::Error::custom)
+}
+
+fn serialize_regex<S: Serializer>(regex: &Regex, serializer: S) -> Result<S::Ok, S::Error> {
+    serializer.serialize_str(regex.as_str())
 }
 
 fn parse_prose_section<F>(contents: &str, on_unknown: &mut F) -> Result<Option<Config>, ConfigError>

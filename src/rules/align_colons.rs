@@ -30,12 +30,10 @@ impl AlignColons {
 impl Rule for AlignColons {
     fn apply(&self, source: &Source) -> Vec<Edit> {
         let mut emitter = Emitter {
-            edits: Vec::new(),
-            settings: self.settings,
-            source,
+            walker: aligner::AlignWalker::new(source, self.settings),
         };
         emitter.walk(source);
-        emitter.edits
+        emitter.walker.edits
     }
 
     fn id(&self) -> RuleId {
@@ -44,21 +42,19 @@ impl Rule for AlignColons {
 }
 
 struct Emitter<'a> {
-    edits: Vec<Edit>,
-    settings: aligner::Settings,
-    source: &'a Source,
+    walker: aligner::AlignWalker<'a>,
 }
 
 impl ColonEmitter for Emitter<'_> {
     fn dict(&mut self, d: &ExprDict, members: &[aligner::Member]) {
-        if !self.source.intersects_comment(d) {
+        if !self.walker.source.intersects_comment(d) {
             self.handle(members);
         }
     }
 
     fn handle(&mut self, members: &[aligner::Member]) {
         if aligner::is_alignment_candidate(members) {
-            aligner::emit_group(self.source, members, self.settings, &mut self.edits);
+            self.walker.emit_group(members);
         }
     }
 
