@@ -108,7 +108,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'blank line': {
     aliases   : ['blank-line', 'blank lines', 'blank-lines'],
-    definition: 'A blank line is an empty line separating logical units. *Prose* enforces blank-line counts between module-level definitions, class members, and import groups per the `blank-lines` rule.',
+    definition: 'A blank line is an empty line separating logical units. *Prose* enforces blank-line counts between module-level definitions, class members, and import groups per the `blank-lines` rule, and binds description-shaped own-line comment blocks tight against the following statement while leaving banner-shaped blocks separated by 1 blank line below.',
     href      : '/rules/blank-lines'
   },
 
@@ -188,6 +188,12 @@ export const glossary: Record<string, GlossaryEntry> = {
   'kebab-case': {
     definition: 'Kebab-case is the lowercase-with-hyphens naming convention *Prose* uses for every rule slug (`align-equals`, `single-use-variables`). The form is canonical across CLI flags, config tables, suppression directives, and diagnostic output.',
     href      : '/primitives/rule-id'
+  },
+
+  'leading comment block': {
+    aliases   : ['own-line comment', 'own-line comments', 'leading comment', 'leading comments', 'own-line comment block'],
+    definition: 'A leading comment block is a run of own-line `#` comments sitting directly above a statement. `blank-lines` binds description-shaped blocks tight against the following statement and keeps 1 blank line below banner-shaped blocks *(any line of which is a decorative rule of `=`, `-`, `*`, `_`, `#`, or `~`)*, with the canonical above-gap measured from the topmost comment either way. The orderer primitive\'s `block_range` carries the block with its item when reordering siblings.',
+    href      : '/rules/blank-lines'
   },
 
   'lexical scope': {

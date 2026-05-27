@@ -1,8 +1,8 @@
 """
 A chain of own-line comments between two statements forms a single
 leading comment block for the second statement. The rule normalizes
-2 blank lines above the topmost comment and 1 blank line between
-the bottommost comment and the following def.
+2 blank lines above the topmost comment and binds the bottommost
+comment tight against the following def.
 """
 
 
