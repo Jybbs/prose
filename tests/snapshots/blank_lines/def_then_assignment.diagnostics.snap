@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/def_then_assignment.input.py
+---
+blank-lines@180..181
