@@ -3,10 +3,12 @@
 //! holds a string literal as its first expression statement.
 //! Implementors of [`DocstringHandler`] receive every such docstring
 //! literal in source order via the trait's `walk` method. Implicitly
-//! concatenated docstring expressions are skipped. Google-style
-//! section helpers `section_heading`, `entry_description_col`, and
-//! `entry_carrying_sections` parse a docstring body's structured
-//! sections for consumers that walk text rather than the AST.
+//! concatenated docstring expressions are skipped. The section
+//! helpers `section_heading`, `entry_description_col`, and
+//! `entry_carrying_sections` parse a docstring body's Title-case-headed
+//! sections for consumers that walk text rather than the AST,
+//! recognizing entry-carrying sections by content shape rather than
+//! against a closed name list.
 
 use std::sync::LazyLock;
 
@@ -23,16 +25,9 @@ use crate::source::Source;
 static ENTRY_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^\w[\w.]*\s*:\s+\S").expect("static pattern compiles"));
 
-const SECTIONS: &[(&str, bool)] = &[
-    ("Args", true),
-    ("Attributes", true),
-    ("Examples", false),
-    ("Note", false),
-    ("Raises", true),
-    ("Returns", true),
-    ("Warning", false),
-    ("Yields", true),
-];
+static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^[A-Z][A-Za-z]*( [A-Z][A-Za-z]*)*:").expect("static pattern compiles")
+});
 
 /// Body slice between a triple-quoted docstring's opener and closer,
 /// paired with the source range that slice covers.
@@ -131,7 +126,7 @@ impl<'src> EntryWalker<'src> {
         }
         if indent_chars == self.body_indent_chars {
             self.finish_section();
-            if section_heading(trimmed) == Some(true) {
+            if section_heading(trimmed) {
                 self.open_section = Some(Vec::new());
             }
             return;
@@ -285,16 +280,11 @@ where
     collector.edits
 }
 
-/// Returns `Some(allows_entries)` when `trimmed` matches a recognized
-/// Google-style section heading ending in `:`. The boolean signals
-/// whether the section permits `name: description` entries.
-pub(crate) fn section_heading(trimmed: &str) -> Option<bool> {
-    SECTIONS.iter().find_map(|(name, allows_entries)| {
-        trimmed
-            .strip_prefix(name)?
-            .starts_with(':')
-            .then_some(*allows_entries)
-    })
+/// True when `trimmed` opens with a Title-case word or multi-word
+/// run with every word capitalized, immediately followed by `:`.
+/// Trailing content after the `:` is permitted.
+pub(crate) fn section_heading(trimmed: &str) -> bool {
+    SECTION_HEADING.is_match(trimmed)
 }
 
 /// Returns the body slice and source range when `lit` is triple-quoted
@@ -454,11 +444,12 @@ mod tests {
     }
 
     #[test]
-    fn entry_carrying_sections_returns_empty_for_non_entry_carrying_sections() {
-        let src = "def f():\n    \"\"\"\n    Examples:\n        foo: bar\n    \"\"\"\n    pass\n";
+    fn entry_carrying_sections_recognizes_section_by_content_shape() {
+        let src = "def f():\n    \"\"\"\n    Steps:\n        bar: second\n        alpha: first\n    \"\"\"\n    pass\n";
         let s = parse(src);
         let lit = first_function_docstring(&s);
-        assert!(entry_carrying_sections(&s, lit).is_empty());
+        let sections = entry_carrying_sections(&s, lit);
+        assert_eq!(entry_names(&sections), vec![vec!["bar", "alpha"]]);
     }
 
     #[test]
@@ -547,31 +538,47 @@ mod tests {
     }
 
     #[test]
-    fn section_heading_matches_recognized_names_with_colon() {
-        for (name, _) in SECTIONS {
-            assert!(
-                section_heading(&format!("{name}:")).is_some(),
-                "{name}: should match"
-            );
+    fn section_heading_accepts_title_case_word_with_colon() {
+        for heading in [
+            "Args:",
+            "Attributes:",
+            "Raises:",
+            "Returns:",
+            "Yields:",
+            "Examples:",
+            "Note:",
+            "Warning:",
+            "Arguments:",
+            "Parameters:",
+            "Inputs:",
+            "Steps:",
+            "Outputs:",
+        ] {
+            assert!(section_heading(heading), "{heading} should match");
         }
-        assert!(section_heading("Returns: int").is_some());
-        assert!(section_heading("Args :").is_none());
-        assert!(section_heading("args:").is_none());
-        assert!(section_heading("Argz:").is_none());
-        assert!(section_heading("Args").is_none());
-        assert!(section_heading("Arguments:").is_none());
     }
 
     #[test]
-    fn section_heading_returns_entry_flag_per_section() {
-        assert_eq!(section_heading("Args:"), Some(true));
-        assert_eq!(section_heading("Attributes:"), Some(true));
-        assert_eq!(section_heading("Examples:"), Some(false));
-        assert_eq!(section_heading("Note:"), Some(false));
-        assert_eq!(section_heading("Raises:"), Some(true));
-        assert_eq!(section_heading("Returns:"), Some(true));
-        assert_eq!(section_heading("Warning:"), Some(false));
-        assert_eq!(section_heading("Yields:"), Some(true));
+    fn section_heading_accepts_multi_word_title_case_with_colon() {
+        assert!(section_heading("Other Parameters:"));
+        assert!(section_heading("See Also:"));
+        assert!(section_heading("Side Effects:"));
+    }
+
+    #[test]
+    fn section_heading_accepts_trailing_content_after_colon() {
+        assert!(section_heading("Returns: int"));
+        assert!(section_heading("Note: see below"));
+    }
+
+    #[test]
+    fn section_heading_rejects_lowercase_start_or_missing_colon() {
+        assert!(!section_heading("args:"));
+        assert!(!section_heading("Args :"));
+        assert!(!section_heading("Args"));
+        assert!(!section_heading("Foo bar:"));
+        assert!(!section_heading("1Args:"));
+        assert!(!section_heading(": no name"));
     }
 
     #[test]

@@ -292,7 +292,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'structured section': {
     aliases   : ['structured sections', 'Args block', 'Args section', 'Returns section', 'Raises section'],
-    definition: 'A structured section is a docstring section like `Args:`, `Returns:`, or `Raises:` that reads as a code-shaped table rather than prose. `docstring-wrap` budgets these against `code-line-length` by default, so argument lines align with surrounding code, and `alphabetize` reorders the `name: description` entries within entry-carrying sections (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`) alphabetically by name.',
+    definition: 'A structured section is a docstring section with a Title-case heading at body-indent followed by content one indent deeper, reading as a code-shaped table rather than prose. `docstring-wrap` budgets these against `code-line-length` by default, so the section body aligns with surrounding code, and `alphabetize` reorders the `name: description` entries within every section that carries them.',
     href      : '/rules/docstring-wrap'
   },
 

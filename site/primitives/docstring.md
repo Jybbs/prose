@@ -55,15 +55,15 @@ Two `pub(crate)` helpers reach for the docstring body:
 
 ## Section-Parsing Surface
 
-A second layer of `pub(crate)` helpers parses Google-style section bodies into their `name: description` entries, for consumers that walk docstring text rather than the AST. Three leaf classifiers shape each line:
+A second layer of `pub(crate)` helpers parses Title-case-headed docstring sections into their `name: description` entries, for consumers that walk docstring text rather than the AST. Three leaf classifiers shape each line:
 
 ```rust
-pub(crate) fn section_heading(trimmed: &str) -> Option<bool>;
+pub(crate) fn section_heading(trimmed: &str) -> bool;
 pub(crate) fn entry_description_col(trimmed: &str) -> Option<usize>;
 pub(crate) fn is_list_marker(trimmed: &str) -> bool;
 ```
 
-`section_heading` recognizes the Google-style heading shape, returning `Some(true)` for the **entry-carrying** sections (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`) and `Some(false)` for the prose-only sections (`Examples:`, `Note:`, `Warning:`). `entry_description_col` returns the character column where an entry's description begins after the `name: ` head, matched against a `\w[\w.]*\s*:\s+\S` shape. `is_list_marker` recognizes the Markdown list openers (`-`, `*`, `+`, numeric) that mark verbatim-passthrough continuations, so a `Args:` entry whose description carries a bulleted list keeps the list attached as part of the entry.
+`section_heading` matches a Title-case word or multi-word run with every word capitalized, immediately followed by `:`, so Google's canonical headings (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`), Numpy's multi-word headings (`Other Parameters:`, `See Also:`), and project-specific custom headings (`Inputs:`, `Steps:`, `Outputs:`) all qualify. `entry_description_col` returns the character column where an entry's description begins after the `name: ` head, matched against a `\w[\w.]*\s*:\s+\S` shape. `is_list_marker` recognizes the Markdown list openers (`-`, `*`, `+`, numeric) that mark verbatim-passthrough continuations, so a section entry whose description carries a bulleted list keeps the list attached as part of the entry.
 
 The entry iterator composes those leaves into a section walk:
 
@@ -79,7 +79,7 @@ pub(crate) struct SectionEntry<'a> {
 }
 ```
 
-`entry_carrying_sections` returns one inner vector per entry-carrying section, with each `SectionEntry` carrying the parameter name and the byte range covering the entry's head line through any attached continuations *(verbatim region, hanging description, list item, fenced code block)*. The walker drops empty sections, sections without recognized entries, and any docstring whose body is single-line or non-triple-quoted, leaving the caller iterating over only the sections worth touching. Continuation attachment reuses the fence and list-indent state the leaf classifiers expose, so a `Raises:` entry whose description embeds an indented code block keeps the block attached through any downstream reorder.
+`entry_carrying_sections` returns one inner vector per section whose body carries at least one entry-shaped line, with each `SectionEntry` carrying the parameter name and the byte range covering the entry's head line through any attached continuations *(verbatim region, hanging description, list item, fenced code block)*. The walker drops sections whose body is prose-only, since the content-shape check filters them out, and drops any docstring whose body is single-line or non-triple-quoted. Continuation attachment reuses the fence and list-indent state the leaf classifiers expose, so a section entry whose description embeds an indented code block keeps the block attached through any downstream reorder.
 
 ## How Alphabetize Composes
 

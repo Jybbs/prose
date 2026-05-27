@@ -93,7 +93,6 @@ struct Walker<'a> {
     paragraph: Paragraph,
     region: Region,
     rule: &'a DocstringWrap,
-    section_allows_entries: bool,
 }
 
 impl Walker<'_> {
@@ -144,14 +143,11 @@ impl Walker<'_> {
             return;
         }
 
-        if indent_chars == self.body_indent_chars {
-            if let Some(allows_entries) = section_heading(trimmed) {
-                self.flush_paragraph();
-                self.region = Region::Section;
-                self.section_allows_entries = allows_entries;
-                self.emit_verbatim(line);
-                return;
-            }
+        if indent_chars == self.body_indent_chars && section_heading(trimmed) {
+            self.flush_paragraph();
+            self.region = Region::Section;
+            self.emit_verbatim(line);
+            return;
         }
 
         let text = trimmed.trim_end();
@@ -182,11 +178,9 @@ impl Walker<'_> {
         match self.region {
             Region::Description => self.buffer_description(indent_str, text),
             Region::Section => {
-                if self.section_allows_entries {
-                    if let Some(desc_col) = entry_description_col(text) {
-                        self.start_entry(indent_str, indent_chars, text, desc_col);
-                        return;
-                    }
+                if let Some(desc_col) = entry_description_col(text) {
+                    self.start_entry(indent_str, indent_chars, text, desc_col);
+                    return;
                 }
                 self.emit_wrapped(indent_str, indent_str, text, self.rule.section_width);
             }
@@ -262,7 +256,6 @@ fn rewrite_body(
         paragraph: Paragraph::default(),
         region: Region::Description,
         rule,
-        section_allows_entries: false,
     };
     for line in content.split(newline) {
         walker.consume(line);
