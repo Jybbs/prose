@@ -38,9 +38,12 @@ unicode-width      = "0.2"
 
 [dev-dependencies]
 assert_cmd            = "2"
+assert_matches        = "1"
 indoc                 = "2"
 insta                 = { version = "1.39", features = ["glob", "yaml"] }
+pretty_assertions     = "1"
 proptest              = "1"
+rstest                = "0.26"
 ruff_python_formatter = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10" }
 tempfile              = "3"
 

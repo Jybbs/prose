@@ -139,6 +139,8 @@ fn body_uses_scope_modifier(body: &[Stmt]) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::diagnostics::Severity;
     use crate::test_support::parse;

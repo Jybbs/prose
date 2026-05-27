@@ -90,6 +90,8 @@ fn stdout_with_color(choice: ColorChoice) -> AutoStream<io::StdoutLock<'static>>
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
 
     #[test]

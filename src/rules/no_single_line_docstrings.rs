@@ -48,6 +48,8 @@ impl Rule for NoSingleLineDocstrings {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::pipeline::Pipeline;
     use crate::test_support::parse;

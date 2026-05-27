@@ -125,6 +125,8 @@ pub(crate) fn triple_quoted_body<'a>(
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::test_support::parse;
 

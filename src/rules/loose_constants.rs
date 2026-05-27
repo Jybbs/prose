@@ -139,19 +139,28 @@ fn is_typing_constructor_call(value: &Expr) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
-    #[test]
-    fn is_screaming_case_accepts_canonical_constants() {
-        for id in ["PI", "MAX_RETRIES", "X1", "LOG_LEVEL_2"] {
-            assert!(is_screaming_case(id), "expected screaming for {id}");
-        }
+    #[rstest]
+    #[case("PI")]
+    #[case("MAX_RETRIES")]
+    #[case("X1")]
+    #[case("LOG_LEVEL_2")]
+    fn is_screaming_case_accepts_canonical_constants(#[case] id: &str) {
+        assert!(is_screaming_case(id));
     }
 
-    #[test]
-    fn is_screaming_case_rejects_mixed_and_lowercase_names() {
-        for id in ["", "pi", "Pi", "pI", "_HIDDEN", "1ABC", "MAX_retries"] {
-            assert!(!is_screaming_case(id), "expected not screaming for {id}");
-        }
+    #[rstest]
+    #[case("")]
+    #[case("pi")]
+    #[case("Pi")]
+    #[case("pI")]
+    #[case("_HIDDEN")]
+    #[case("1ABC")]
+    #[case("MAX_retries")]
+    fn is_screaming_case_rejects_mixed_and_lowercase_names(#[case] id: &str) {
+        assert!(!is_screaming_case(id));
     }
 }

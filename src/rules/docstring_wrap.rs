@@ -318,6 +318,8 @@ fn section_heading(trimmed: &str) -> Option<bool> {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::pipeline::Pipeline;
     use crate::test_support::parse;

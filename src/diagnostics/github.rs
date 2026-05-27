@@ -46,6 +46,7 @@ fn emit_one(writer: &mut dyn Write, source: &Source, diag: &Diagnostic) -> io::R
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use ruff_diagnostics::Edit;
     use ruff_text_size::TextRange;
 

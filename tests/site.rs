@@ -4,6 +4,7 @@
 use std::{collections::BTreeSet, fs, path::Path};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
+use pretty_assertions::assert_eq;
 use prose::pipeline::Pipeline;
 use regex_lite::Regex;
 

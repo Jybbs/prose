@@ -189,6 +189,10 @@ fn rule_id_parser() -> impl TypedValueParser<Value = RuleId> {
 
 #[cfg(test)]
 mod tests {
+    use assert_matches::assert_matches;
+    use pretty_assertions::assert_eq;
+    use rstest::{fixture, rstest};
+
     use super::*;
 
     fn check_command(cli: Cli) -> CheckArgs {
@@ -205,29 +209,46 @@ mod tests {
         args
     }
 
+    #[fixture]
+    fn long_help_table() -> String {
+        Cli::command()
+            .get_after_long_help()
+            .expect("after_long_help is set")
+            .to_string()
+    }
+
     fn parse_err(args: &[&str]) -> clap::Error {
         Cli::try_parse_from(args).expect_err("expected parse failure")
     }
 
-    #[test]
-    fn after_long_help_documents_the_exit_code_matrix() {
-        let table = Cli::command()
-            .get_after_long_help()
-            .expect("after_long_help is set")
-            .to_string();
-        for code in 0..=4 {
-            let needle = format!("  {code}    ");
-            assert!(
-                table.contains(&needle),
-                "after_long_help missing row for code {code}: {table}",
-            );
-        }
-        for label in ["Clean", "Format", "Lint", "Parse", "Config"] {
-            assert!(
-                table.contains(label),
-                "after_long_help missing label `{label}`: {table}",
-            );
-        }
+    #[rstest]
+    #[case("Clean")]
+    #[case("Config")]
+    #[case("Format")]
+    #[case("Lint")]
+    #[case("Parse")]
+    fn after_long_help_documents_each_exit_code_label(
+        long_help_table: String,
+        #[case] label: &str,
+    ) {
+        assert!(
+            long_help_table.contains(label),
+            "missing label `{label}`: {long_help_table}",
+        );
+    }
+
+    #[rstest]
+    #[case(0)]
+    #[case(1)]
+    #[case(2)]
+    #[case(3)]
+    #[case(4)]
+    fn after_long_help_documents_each_exit_code_row(long_help_table: String, #[case] code: u8) {
+        let needle = format!("  {code}    ");
+        assert!(
+            long_help_table.contains(&needle),
+            "missing row for code {code}: {long_help_table}",
+        );
     }
 
     #[test]
@@ -252,7 +273,7 @@ mod tests {
         let cli =
             Cli::try_parse_from(["prose", "check", "--output-format", "github"]).expect("parses");
         let args = check_command(cli);
-        assert!(matches!(args.output_format, OutputFormat::Github));
+        assert_matches!(args.output_format, OutputFormat::Github);
     }
 
     #[test]
@@ -260,7 +281,7 @@ mod tests {
         let cli =
             Cli::try_parse_from(["prose", "check", "--output-format", "json"]).expect("parses");
         let args = check_command(cli);
-        assert!(matches!(args.output_format, OutputFormat::Json));
+        assert_matches!(args.output_format, OutputFormat::Json);
     }
 
     #[test]
@@ -425,12 +446,15 @@ mod tests {
         );
     }
 
-    #[test]
-    fn completions_parses_each_supported_shell() {
-        for shell in ["bash", "elvish", "fish", "powershell", "zsh"] {
-            let cli = Cli::try_parse_from(["prose", "completions", shell]).expect("parses shell");
-            assert!(matches!(cli.command, Command::Completions { .. }));
-        }
+    #[rstest]
+    #[case("bash")]
+    #[case("elvish")]
+    #[case("fish")]
+    #[case("powershell")]
+    #[case("zsh")]
+    fn completions_parses_each_supported_shell(#[case] shell: &str) {
+        let cli = Cli::try_parse_from(["prose", "completions", shell]).expect("parses shell");
+        assert_matches!(cli.command, Command::Completions { .. });
     }
 
     #[test]

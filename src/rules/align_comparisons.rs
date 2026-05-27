@@ -123,23 +123,26 @@ fn cmp_op_anchor_token_kind(op: CmpOp) -> TokenKind {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
+
     use super::*;
 
-    #[test]
-    fn cmp_op_anchor_token_kind_covers_every_variant() {
-        for (op, expected) in [
-            (CmpOp::Eq, TokenKind::EqEqual),
-            (CmpOp::Gt, TokenKind::Greater),
-            (CmpOp::GtE, TokenKind::GreaterEqual),
-            (CmpOp::In, TokenKind::In),
-            (CmpOp::Is, TokenKind::Is),
-            (CmpOp::IsNot, TokenKind::Is),
-            (CmpOp::Lt, TokenKind::Less),
-            (CmpOp::LtE, TokenKind::LessEqual),
-            (CmpOp::NotEq, TokenKind::NotEqual),
-            (CmpOp::NotIn, TokenKind::Not),
-        ] {
-            assert_eq!(cmp_op_anchor_token_kind(op), expected);
-        }
+    #[rstest]
+    #[case(CmpOp::Eq, TokenKind::EqEqual)]
+    #[case(CmpOp::Gt, TokenKind::Greater)]
+    #[case(CmpOp::GtE, TokenKind::GreaterEqual)]
+    #[case(CmpOp::In, TokenKind::In)]
+    #[case(CmpOp::Is, TokenKind::Is)]
+    #[case(CmpOp::IsNot, TokenKind::Is)]
+    #[case(CmpOp::Lt, TokenKind::Less)]
+    #[case(CmpOp::LtE, TokenKind::LessEqual)]
+    #[case(CmpOp::NotEq, TokenKind::NotEqual)]
+    #[case(CmpOp::NotIn, TokenKind::Not)]
+    fn cmp_op_anchor_token_kind_covers_every_variant(
+        #[case] op: CmpOp,
+        #[case] expected: TokenKind,
+    ) {
+        assert_eq!(cmp_op_anchor_token_kind(op), expected);
     }
 }

@@ -17,6 +17,7 @@ use crate::source::{Source, SourceError};
 use crate::walker;
 
 /// One file's contribution to the run.
+#[derive(Debug)]
 enum FileOutcome {
     Failed(ExitStatus),
     Parsed(Source, Vec<Diagnostic>),
@@ -286,6 +287,9 @@ fn write_diff<W: Write>(
 mod tests {
     use std::io::{self, Cursor};
 
+    use assert_matches::assert_matches;
+    use pretty_assertions::{assert_eq, assert_ne};
+    use rstest::rstest;
     use ruff_diagnostics::Edit;
     use ruff_text_size::TextRange;
     use tempfile::TempDir;
@@ -472,19 +476,16 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn emit_outcomes_renders_each_output_format() {
+    #[rstest]
+    #[case(OutputFormat::Github)]
+    #[case(OutputFormat::Json)]
+    #[case(OutputFormat::Sarif)]
+    #[case(OutputFormat::Text)]
+    fn emit_outcomes_renders_each_output_format(#[case] format: OutputFormat) {
         let source = "x = 1\n".parse::<Source>().expect("parses");
         let outcomes = vec![FileOutcome::Parsed(source, Vec::new())];
-        for format in [
-            OutputFormat::Github,
-            OutputFormat::Json,
-            OutputFormat::Sarif,
-            OutputFormat::Text,
-        ] {
-            let mut buf = Vec::new();
-            emit_outcomes(&outcomes, format, &mut buf).expect("emits");
-        }
+        let mut buf = Vec::new();
+        emit_outcomes(&outcomes, format, &mut buf).expect("emits");
     }
 
     #[test]
@@ -672,17 +673,14 @@ mod tests {
         let nonexistent = tmp.path().join("does_not_exist.py");
         let (original, outcome) = process_path_with_original(&nonexistent, &pipeline);
         assert_eq!(original, "");
-        assert!(matches!(
-            outcome,
-            FileOutcome::Failed(ExitStatus::ConfigError),
-        ));
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
     }
 
     #[test]
     fn read_source_or_status_returns_config_error_on_missing_file() {
         let tmp = TempDir::new().expect("tempdir");
         let result = read_source_or_status(&tmp.path().join("missing.py"));
-        assert!(matches!(result, Err(ExitStatus::ConfigError)));
+        assert_matches!(result, Err(ExitStatus::ConfigError));
     }
 
     #[test]
@@ -706,9 +704,6 @@ mod tests {
     #[test]
     fn walk_error_returns_failed_with_config_error() {
         let outcome = walk_error("synthetic walk failure");
-        assert!(matches!(
-            outcome,
-            FileOutcome::Failed(ExitStatus::ConfigError),
-        ));
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
     }
 }
