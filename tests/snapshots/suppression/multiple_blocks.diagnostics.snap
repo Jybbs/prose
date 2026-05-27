@@ -3,10 +3,11 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/multiple_blocks.input.py
 ---
-align-equals@196..197
-align-equals@204..205
+align-equals@210..211
+align-equals@216..217
 align-equals@286..287
 align-equals@293..294
 align-equals@372..373
 align-equals@380..381
+alphabetize@195..220
 docstring-wrap@69..151

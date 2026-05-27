@@ -14,6 +14,7 @@
 //! emits a single edit covering its descendants.
 
 use std::borrow::Cow;
+use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
 use ruff_diagnostics::Edit;
@@ -25,7 +26,7 @@ use ruff_python_ast::{
     StmtFunctionDef,
 };
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextLen, TextRange};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::config::Config;
 use crate::primitives::edit::{apply_inline_edits, narrowed_replacement};
@@ -200,6 +201,35 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
     }
 }
 
+struct RhsAnalyzer<'src> {
+    access_roots: Vec<&'src str>,
+    deps: Vec<&'src str>,
+    tainted: bool,
+}
+
+impl<'src> AstVisitor<'src> for RhsAnalyzer<'src> {
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        if self.tainted {
+            return;
+        }
+        match expr {
+            Expr::Attribute(_) | Expr::Subscript(_) => {
+                let Some(root) = root_name(expr) else {
+                    self.tainted = true;
+                    return;
+                };
+                self.access_roots.push(root);
+                walk_expr(self, expr);
+            }
+            Expr::Await(_) | Expr::Call(_) | Expr::Yield(_) | Expr::YieldFrom(_) => {
+                self.tainted = true;
+            }
+            Expr::Name(name) if name.ctx.is_load() => self.deps.push(name.id.as_str()),
+            _ => walk_expr(self, expr),
+        }
+    }
+}
+
 /// Returns the `StmtAnnAssign` and its target name when the target
 /// is a single `Name`.
 fn ann_assign_with_named_field(stmt: &Stmt) -> Option<(&StmtAnnAssign, &str)> {
@@ -233,6 +263,22 @@ fn assemble_dict_items_multiline(
         }
     }
     out
+}
+
+/// Returns the target name and optional value of an `Assign` or
+/// `AnnAssign` whose target is a single `Name`. `None` for any other
+/// shape.
+fn assign_run_target(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
+    match stmt {
+        Stmt::AnnAssign(a) => Some((a.target.as_name_expr()?.id.as_str(), a.value.as_deref())),
+        Stmt::Assign(a) => {
+            let [Expr::Name(name)] = a.targets.as_slice() else {
+                return None;
+            };
+            Some((name.id.as_str(), Some(a.value.as_ref())))
+        }
+        _ => None,
+    }
 }
 
 /// True when a class body has at least two `Stmt::AnnAssign` field
@@ -389,6 +435,97 @@ fn method_group(f: &StmtFunctionDef) -> u8 {
     }
 }
 
+/// Returns the paragraph-adjacent runs of `Assign` and `AnnAssign`
+/// statements in `body`. A blank line *(two or more newlines in the
+/// gap)* breaks the run. Trailing comments on assign lines do not
+/// break the run on their own.
+fn module_assign_run_ranges(source: &Source, body: &[Stmt]) -> Vec<Range<usize>> {
+    let is_assign = |s: &Stmt| s.is_assign_stmt() || s.is_ann_assign_stmt();
+    let mut start = 0;
+    body.chunk_by(|a, b| {
+        is_assign(a) && is_assign(b) && {
+            let gap = TextRange::new(a.end(), b.range().start());
+            source.slice(gap).matches('\n').count() <= 1
+        }
+    })
+    .filter_map(|chunk| {
+        let end = start + chunk.len();
+        let range = (chunk.len() >= 2).then_some(start..end);
+        start = end;
+        range
+    })
+    .collect()
+}
+
+/// Returns a per-run tier-and-name lookup keyed by each statement's
+/// start offset, or `None` when the run cannot reorder. The run skips
+/// when any item has a non-`Name` target, duplicates an earlier
+/// target, carries a side-effecting RHS shape (*`Call`, `Await`,
+/// `Yield`, `YieldFrom`, or an `Attribute` / `Subscript` whose root
+/// names neither a run target nor a module-local binding written
+/// before the run*), or when the intra-run dependency graph carries a
+/// cycle. The composite `(tier, name)` key combines a Kahn-style
+/// topological tier with the binding's name.
+fn module_assign_tier_keys<'src>(
+    source: &'src Source,
+    run: &'src [Stmt],
+) -> Option<HashMap<TextSize, (usize, &'src str)>> {
+    let first = run.first()?;
+    let line_extent = TextRange::new(
+        source.text().line_start(first.range().start()),
+        source.text().full_line_end(run.last()?.range().end()),
+    );
+    if source.intersects_comment(line_extent) {
+        return None;
+    }
+    let extracted: Vec<(&'src str, Option<&'src Expr>)> =
+        run.iter().map(assign_run_target).collect::<Option<_>>()?;
+    let mut target_to_idx: HashMap<&str, usize> = HashMap::with_capacity(extracted.len());
+    for (i, &(name, _)) in extracted.iter().enumerate() {
+        if target_to_idx.insert(name, i).is_some() {
+            return None;
+        }
+    }
+    let analysis = source.binding_analysis();
+    let run_start = first.range().start();
+    let dep_sets: Vec<HashSet<usize>> = extracted
+        .iter()
+        .map(|&(_, value)| -> Option<HashSet<usize>> {
+            let mut analyzer = RhsAnalyzer {
+                access_roots: Vec::new(),
+                deps: Vec::new(),
+                tainted: false,
+            };
+            if let Some(rhs) = value {
+                analyzer.visit_expr(rhs);
+            }
+            if analyzer.tainted
+                || analyzer.access_roots.iter().any(|&root| {
+                    !target_to_idx.contains_key(root)
+                        && !analysis.is_defined_before(root, run_start)
+                })
+            {
+                return None;
+            }
+            Some(
+                analyzer
+                    .deps
+                    .iter()
+                    .filter_map(|name| target_to_idx.get(name).copied())
+                    .collect(),
+            )
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let tiers = tier_levels(&dep_sets)?;
+    Some(
+        run.iter()
+            .zip(tiers)
+            .zip(&extracted)
+            .map(|((stmt, tier), &(name, _))| (stmt.range().start(), (tier, name)))
+            .collect(),
+    )
+}
+
 /// Returns the new-order slot indices after which a blank-line
 /// divider should sit. A divider goes on either side of every keyed
 /// multi-line entry, isolating it from its neighbors so each
@@ -474,6 +611,16 @@ fn rewrite_body<'src>(
                 .min()
         });
         import_run_slots.extend(start..end - 1);
+    }
+    if scope == BodyScope::Module {
+        for Range { start, end } in module_assign_run_ranges(source, body) {
+            let Some(keys) = module_assign_tier_keys(source, &body[start..end]) else {
+                continue;
+            };
+            permute_in_place(&mut order, body, start..end, |s| {
+                keys.get(&s.range().start()).copied()
+            });
+        }
     }
     import_run_slots.sort_unstable();
     let any_owned = rendered.iter().any(|c| matches!(c, Cow::Owned(_)));
@@ -601,6 +748,22 @@ fn rewrite_stmt<'src>(
     splice_bodies(source, block, [(body_text, body_span)], leaf_edits)
 }
 
+/// Returns the leftmost `Name` identifier of an `Attribute` or
+/// `Subscript` access chain. `None` when the chain bottoms out at any
+/// other expression shape (*a parenthesized binary, a literal, a
+/// `Call` return*).
+fn root_name(expr: &Expr) -> Option<&str> {
+    let mut current = expr;
+    loop {
+        match current {
+            Expr::Attribute(a) => current = &a.value,
+            Expr::Name(n) => return Some(n.id.as_str()),
+            Expr::Subscript(s) => current = &s.value,
+            _ => return None,
+        }
+    }
+}
+
 /// Returns the elements of a list or tuple expression. `None` for
 /// any other shape.
 fn sequence_elts(expr: &Expr) -> Option<&[Expr]> {
@@ -671,6 +834,31 @@ fn statement_run_ranges(
         .collect()
 }
 
+/// Assigns each binding a Kahn-style topological tier from its
+/// intra-run dependency set. Tier 0 is bindings with no deps, tier N
+/// is bindings whose deps all sit in tiers strictly less than N.
+/// Returns `None` when any binding remains untiered after `n`
+/// iterations.
+fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
+    let n = dep_sets.len();
+    let mut tiers: Vec<Option<usize>> = vec![None; n];
+    for _ in 0..n {
+        for i in 0..n {
+            if tiers[i].is_some() || !dep_sets[i].iter().all(|&d| tiers[d].is_some()) {
+                continue;
+            }
+            tiers[i] = Some(
+                dep_sets[i]
+                    .iter()
+                    .filter_map(|&d| tiers[d])
+                    .max()
+                    .map_or(0, |t| t + 1),
+            );
+        }
+    }
+    tiers.into_iter().collect()
+}
+
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
@@ -688,6 +876,18 @@ mod tests {
             .map(|s| ann_assign_with_named_field(s).map(|(_, name)| name))
             .collect();
         assert_eq!(names, vec![Some("x"), None]);
+    }
+
+    #[test]
+    fn assign_run_target_unwraps_both_assign_kinds_and_filters_non_names() {
+        let s = parse("X = 1\nself.x = 1\ny: int = 2\nz: int\n(a, b) = (1, 2)\n");
+        let targets: Vec<Option<&str>> = s
+            .ast()
+            .body
+            .iter()
+            .map(|s| assign_run_target(s).map(|(name, _)| name))
+            .collect();
+        assert_eq!(targets, vec![Some("X"), None, Some("y"), Some("z"), None]);
     }
 
     #[test]
@@ -759,9 +959,61 @@ mod tests {
     }
 
     #[test]
+    fn root_name_walks_attribute_and_subscript_chains_to_leftmost_identifier() {
+        for (src, expected) in [
+            ("a", Some("a")),
+            ("a.b.c", Some("a")),
+            ("a[0]", Some("a")),
+            ("a.b[c]", Some("a")),
+            ("a[b][c]", Some("a")),
+            ("(a + b)[c]", None),
+            ("1[c]", None),
+        ] {
+            let s = parse(&format!("x = {src}\n"));
+            let assign = s.ast().body[0].as_assign_stmt().expect("assign");
+            assert_eq!(root_name(&assign.value), expected, "src = {src}");
+        }
+    }
+
+    #[test]
     fn simple_name_assign_filters_to_single_name_targets() {
         let s = parse("X = 1\nself.x = 1\nx, y = 1, 2\n");
         let names: Vec<Option<&str>> = s.ast().body.iter().map(simple_name_assign).collect();
         assert_eq!(names, vec![Some("X"), None, None]);
+    }
+
+    #[test]
+    fn tier_levels_assigns_zero_for_empty_deps() {
+        let deps = vec![HashSet::new(), HashSet::new(), HashSet::new()];
+        assert_eq!(tier_levels(&deps), Some(vec![0, 0, 0]));
+    }
+
+    #[test]
+    fn tier_levels_climbs_through_chain() {
+        let deps = vec![
+            HashSet::new(),
+            HashSet::from([0]),
+            HashSet::from([1]),
+            HashSet::from([0, 2]),
+        ];
+        assert_eq!(tier_levels(&deps), Some(vec![0, 1, 2, 3]));
+    }
+
+    #[test]
+    fn tier_levels_returns_none_on_self_loop() {
+        let deps = vec![HashSet::from([0])];
+        assert_eq!(tier_levels(&deps), None);
+    }
+
+    #[test]
+    fn tier_levels_returns_none_on_three_node_cycle() {
+        let deps = vec![HashSet::from([1]), HashSet::from([2]), HashSet::from([0])];
+        assert_eq!(tier_levels(&deps), None);
+    }
+
+    #[test]
+    fn tier_levels_returns_none_on_two_node_cycle() {
+        let deps = vec![HashSet::from([1]), HashSet::from([0])];
+        assert_eq!(tier_levels(&deps), None);
     }
 }

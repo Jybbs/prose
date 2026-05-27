@@ -10,7 +10,7 @@ layout   : doc
 
 <RuleLayout rule="alphabetize" canonical="classes">
 
-A reader who already knows the codebase carries a **mental map** of where things live. When sibling members within a class, an enum, a dataclass, or a function call sit in arrival order, every reader builds a **different map**, which slows each new reader's first read. `alphabetize` gives everyone the **same landmarks**, with classes ordered alphabetically inside a module, methods ordered inside a class body (*dunders first, then properties, then private, then public*), enum members ordered, dataclass and Pydantic fields ordered (*required before optional*), function parameters with defaults ordered, keyword arguments at call sites ordered, and `from` imports ordered within each block.
+A reader who already knows the codebase carries a **mental map** of where things live. When sibling members within a class, an enum, a dataclass, or a function call sit in arrival order, every reader builds a **different map**, which slows each new reader's first read. `alphabetize` gives everyone the **same landmarks**, with classes ordered alphabetically inside a module, module-level assignment runs ordered within each dependency tier, methods ordered inside a class body (*dunders first, then properties, then private, then public*), enum members ordered, dataclass and Pydantic fields ordered (*required before optional*), function parameters with defaults ordered, keyword arguments at call sites ordered, and `from` imports ordered within each block.
 
 The rule fires on siblings whose order does not carry meaning. It leaves alone every surface where ordering is load-bearing (*positional-only parameters before the `/` separator, enum members with explicit integer or string values, tuple-unpacking targets bound to positional results*). Pair with [[align-imports]] to align the `import` keyword across the freshly-sorted block, with [[align-colons]] to align dataclass-field annotations after the sort, and with [[blank-lines]] for the blank-line discipline around class members.
 
@@ -33,6 +33,10 @@ Classes inside a module sort alphabetically, giving every reader the same first-
 <Fixture rule="alphabetize" case="class_with_branched_body" title="Methods Follow the Dunders → Properties → Private → Public Rhythm" />
 
 <Fixture rule="alphabetize" case="dataclass" title="Dataclass Fields Sort, Required before Optional" />
+
+<Fixture rule="alphabetize" case="module_assigns_multi_tier" title="Module-Level Assignment Runs Sort within Dependency Tiers" />
+
+<Fixture rule="alphabetize" case="module_assigns_call_skip" title="Module-Level Runs Skip When the RHS Could Have Side Effects" />
 
 <Fixture rule="alphabetize" case="from_imports" title="`from` Imports Sort Alphabetically inside Their Block" />
 
