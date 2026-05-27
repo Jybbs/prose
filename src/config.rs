@@ -36,6 +36,25 @@ impl Default for AlignmentConfig {
     }
 }
 
+/// Configuration for the `alphabetize` rule. `docstring_entries`
+/// gates the Google-style entry-section reorder pass, leaving the
+/// AST-level sorts to apply on their own when set `false`.
+#[derive(Debug, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct AlphabetizeConfig {
+    pub docstring_entries: bool,
+    pub enabled: bool,
+}
+
+impl Default for AlphabetizeConfig {
+    fn default() -> Self {
+        Self {
+            docstring_entries: true,
+            enabled: true,
+        }
+    }
+}
+
 /// Configuration for the `bare_import_allowlist` rule.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]

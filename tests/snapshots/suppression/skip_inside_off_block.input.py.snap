@@ -9,9 +9,9 @@ block stays verbatim, leaving the assignment runs above and below the block
 to align as separate groups.
 """
 
-x       = 1
-foo     = 2
 bar_baz = 3
+foo     = 2
+x       = 1
 
 # fmt: off
 short = 1

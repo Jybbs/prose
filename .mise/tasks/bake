@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Install bun dependencies against the frozen lockfile"
+#MISE sources=["package.json", "bun.lock"]
+
+bun install --frozen-lockfile

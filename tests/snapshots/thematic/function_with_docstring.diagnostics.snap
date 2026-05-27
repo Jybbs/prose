@@ -3,10 +3,10 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/function_with_docstring.input.py
 ---
-align-colons@621..621
-align-colons@661..661
-align-colons@707..707
-alphabetize@439..466
+align-colons@620..620
+align-colons@666..666
+align-colons@701..701
+alphabetize@439..718
 blank-lines@426..428
 docstring-wrap@553..553
 docstring-wrap@70..389

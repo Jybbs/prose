@@ -2,7 +2,7 @@
 
 *Prose* loads the nearest `[tool.prose]` table found by walking upward from the working directory. The table is the canonical look-up surface for every project-wide knob *Prose* exposes. With no configuration, every rule runs at its default, in that a project that doesn't write a `[tool.prose]` table gets the canonical *Prose* shape automatically.
 
-`target-version` carries the bare `major.minor` form *(`"3.13"`, `"3.14"`)* used by `mypy`'s `python_version` setting, with rules whose safety depends on the runtime reading the field directly. The docstring-budget duality *(`code-line-length` for structured `Args:` / `Returns:` / `Raises:` sections, `docstring-line-length` for description prose)* lets a project keep code-shaped tables wide while keeping description prose at a comfortable reading measure, and `docstring-structured-policy` collapses both to a single budget when a project prefers a uniform width.
+`target-version` carries the bare `major.minor` form *(`"3.13"`, `"3.14"`)* used by `mypy`'s `python_version` setting, with rules whose safety depends on the runtime reading the field directly. The docstring-budget duality *(`code-line-length` for Title-case-headed structured sections, `docstring-line-length` for description prose)* lets a project keep code-shaped tables wide while keeping description prose at a comfortable reading measure, and `docstring-structured-policy` collapses both to a single budget when a project prefers a uniform width.
 
 To tune a rule, write its sub-table inside `pyproject.toml`:
 
@@ -66,6 +66,7 @@ Each rule's sub-table sits at `[tool.prose.rules.<rule>]`. Every rule accepts `e
 | `enabled` | bool | every rule | `true` | Toggle the rule on or off |
 | `max-shift` | positive int | alignment rules | `8` | Ceiling on per-line padding |
 | `max-shift-policy` | `"split"` \| `"drop"` \| `"skip"` | alignment rules | `"split"` | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation, `skip` leaves the whole group unaligned |
+| `docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within every Title-case-headed docstring section alongside the AST-level sorts. Set `false` to keep narrative-curated entry order while still sorting every other surface |
 | `max-atomics-per-line` | positive int | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap |
 | `allow` | list of module names | [[bare-import-allowlist]] | `["numpy", "pandas"]` | Modules whose bare-import form is preserved |
 | `allow` | list of names | [[loose-constants]] | `[]` | Module-level names exempted from the lint |
@@ -85,15 +86,15 @@ The four rules that line columns vertically share one structural question: what 
 
 ### Toggle-Only Rules
 
-Ten rules each answer a single yes-or-no question with no parameters worth tuning, so each one ships with `enabled` and nothing else. Reach for the toggle to silence a rule whose default doesn't fit the project: [[alphabetize]], [[blank-lines]], [[docstring-wrap]], [[legacy-union-syntax]], [[multi-line-docstrings]], [[no-single-line-docstrings]], [[no-step-narration]], [[singleton-rule]], [[strip-trailing-commas]], and [[unused-future-annotations]].
+Some rules answer a single yes-or-no question with no parameters worth tuning, so each ships with `enabled` and nothing else. Reach for the toggle to silence a rule whose default doesn't fit the project: [[blank-lines]], [[docstring-wrap]], [[legacy-union-syntax]], [[multi-line-docstrings]], [[no-single-line-docstrings]], [[no-step-narration]], [[singleton-rule]], [[strip-trailing-commas]], and [[unused-future-annotations]].
 
 ### Rule-Specific Knobs
 
-Four rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the knob shaped for its question. [[bare-import-allowlist]] takes an `allow` list of modules whose bare-import form is preserved, [[collection-layout]] takes `max-atomics-per-line` to cap the inline-collection budget, [[loose-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
+Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the knob shaped for its question. [[alphabetize]] takes `docstring-entries` for the docstring-entry reorder, [[bare-import-allowlist]] takes an `allow` list of modules whose bare-import form is preserved, [[collection-layout]] takes `max-atomics-per-line` to cap the inline-collection budget, [[loose-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
 
 ## Docstring Budgets
 
-Docstrings carry two readings inside one triple-quoted region. Description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Structured sections (*`Args:`, `Returns:`, `Raises:`*) read as code-shaped tables and reuse `code-line-length` (*88 by default*) to match surrounding indentation. `docstring-structured-policy` switches them to `docstring-line-length` if a project prefers a single narrower budget across the whole docstring. The [[docstring-wrap]] rule consumes both budgets.
+Docstrings carry two readings inside one triple-quoted region. Description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Every Title-case-headed section that follows reads as a code-shaped table and reuses `code-line-length` (*88 by default*) to match surrounding indentation. `docstring-structured-policy` switches them to `docstring-line-length` if a project prefers a single narrower budget across the whole docstring. The [[docstring-wrap]] rule consumes both budgets.
 
 ## Subset by Invocation
 

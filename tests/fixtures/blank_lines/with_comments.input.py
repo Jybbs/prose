@@ -1,8 +1,8 @@
 """
 An own-line comment between two statements forms the second
 statement's leading block. The rule normalizes the canonical gap
-above the comment and 1 blank line between the comment and the
-following statement.
+above the comment and binds the comment tight against the following
+statement.
 """
 
 

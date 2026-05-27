@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/module_assigns_destructure_skip.input.py
+---
+"""
+A run containing a destructuring target skips entirely. Tuple
+unpacking binds multiple names from one statement, and reorder
+would risk a sortable item referencing those names landing before
+the unpacking.
+"""
+
+zebra = 1
+(alpha, beta) = (2, 3)
+delta = 4

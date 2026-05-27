@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/module_assigns_bare_annassign.input.py
+---
+alphabetize@213..253

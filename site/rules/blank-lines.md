@@ -12,7 +12,7 @@ layout   : doc
 
 Blank lines carry rhythm. They tell the reader where one unit ends and the next begins, and a consistent rhythm across a file lets the reader skim by section without parsing each statement. `blank-lines` normalizes the discipline around module-level definitions, class members, and the `if __name__ == "__main__":` guard, so every file in the project reads with the same cadence.
 
-Module-level `def` and `class` carry two blank lines before them, methods inside a class body carry one, a module-level statement after `if __name__ == "__main__":` carries one, and adjacent bare-import and `from`-import groups carry one between them. Inside function bodies the rule leaves blank-line discipline alone, since the in-body rhythm remains a per-author choice. The import surface sits downstream of [[alphabetize]] (*which orders the entries first*) and [[bare-import-allowlist]] (*which decides which packages keep the bare form*), then this rule lands the blank-line separators between groups, and [[align-imports]] closes the sequence by aligning the `import` keyword.
+Module-level `def` and `class` carry two blank lines before them and two after when followed by a top-level assignment. Methods inside a class body carry one, a module-level statement after `if __name__ == "__main__":` carries one, and adjacent bare-import and `from`-import groups carry one between them. Inside function bodies the rule leaves blank-line discipline alone, since the in-body rhythm remains a per-author choice. A description-shaped own-line comment block above a statement binds tight against the following statement, reading the comment as a description of the statement it precedes, whereas a banner-shaped block *(with any line a decorative rule of `=`, `-`, `*`, `_`, `#`, or `~`)* keeps 1 blank line below to read as a section divider. The canonical above-gap is measured from the topmost comment in the block either way. The import surface sits downstream of [[alphabetize]] (*which orders the entries first*) and [[bare-import-allowlist]] (*which decides which packages keep the bare form*), then this rule lands the blank-line separators between groups, and [[align-imports]] closes the sequence by aligning the `import` keyword.
 
 <template #configuration>
 
@@ -33,6 +33,8 @@ Two blank lines precede every module-level `def` and `class`, giving the reader'
 <Fixture rule="blank_lines" case="bare_then_from_insert" title="One Blank Lands between Adjacent Bare and `from` Import Groups" />
 
 <Fixture rule="blank_lines" case="class_with_docstring" title="The First Method after a Class Docstring Tightens Up" />
+
+<Fixture rule="blank_lines" case="class_then_assignment" title="An Assignment after a Module-Level `class` Carries Two Blanks" />
 
 <Fixture rule="blank_lines" case="bare_then_from_collapse" title="Excess Blanks Collapse to the Canonical Single Blank" />
 

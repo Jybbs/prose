@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/module_assigns_multi_tier.input.py
+---
+alphabetize@366..386

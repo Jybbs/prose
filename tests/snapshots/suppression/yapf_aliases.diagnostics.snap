@@ -3,8 +3,9 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/yapf_aliases.input.py
 ---
-align-equals@151..152
-align-equals@159..160
+align-equals@165..166
+align-equals@171..172
 align-equals@249..250
 align-equals@256..257
+alphabetize@150..175
 docstring-wrap@61..123
