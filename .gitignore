@@ -22,5 +22,4 @@ __pycache__/
 node_modules/
 site/.vitepress/cache/
 site/.vitepress/dist/
-og-previews/
 **/*.timestamp-*.mjs

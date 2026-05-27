@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-#MISE description="Re-render OG card probes on every change under `site/.vitepress/lib/og/`"
-
-bun --watch site/.vitepress/lib/og/preview.ts
