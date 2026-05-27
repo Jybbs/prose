@@ -1,9 +1,9 @@
 """
-Multiple alignment groups separated by blank lines. Each group
-aligns at its own target column independent of its neighbors.
-A form change between `from`-imports and `import`-as statements
-also splits the run, so the second cluster of `from`-imports at
-the bottom aligns on its own and not against the top one.
+Three clusters separated by single blank lines collapse into one
+unified block under the absorption rule. The bare-with-alias
+cluster and the surrounding from-import clusters key into the
+same alignment group, so the post-keyword name lands at one
+shared column across every line.
 """
 
 from collections import OrderedDict

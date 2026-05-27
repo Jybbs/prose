@@ -1,10 +1,9 @@
 """
-A multi-line `from`-import (parenthesized continuation) skips
-alignment, since shifting the `import` keyword would leave its
-continuation indent visually disconnected. The skipper also acts
-as a group breaker, so the single-line neighbors above align only
-with each other and the single-line neighbors below do the same,
-without crossing the multi-line stretch.
+A multi-line `from`-import (parenthesized continuation) sits in
+the unified block without contributing a member, since shifting
+the `import` keyword would leave its continuation indent visually
+disconnected. Single-line neighbors above and below the multi-line
+stretch share the same alignment group.
 """
 
 from collections import OrderedDict

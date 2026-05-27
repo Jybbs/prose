@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/two_blank_lines_break.input.py
+---
+align-imports@205..206
+align-imports@221..222

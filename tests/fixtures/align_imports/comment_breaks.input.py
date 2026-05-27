@@ -1,9 +1,9 @@
 """
-A comment between two imports (either an own-line block comment
-or a trailing comment on an import line) breaks adjacency, since
-the aligner's `is_line_adjacent` walks the inter-statement token
-gap and aborts on any comment token. Each comment-bracketed
-sub-run aligns only with its own contiguous neighbors.
+Comments between imports (block comments on their own line and
+trailing comments on an import line) leave the block intact. The
+`import_block_ranges` predicate looks only at blank-line count, so
+a comment-only line counts as zero blank lines and the block flows
+through it.
 """
 
 from collections import OrderedDict

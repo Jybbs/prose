@@ -1,0 +1,12 @@
+"""
+From-imports followed directly by bare aliased imports key into
+one unified block. Direction does not matter to the block
+primitive, so the `import` keyword in the froms and the `as`
+keyword in the bares still right-align at the same shared
+post-keyword column.
+"""
+
+from os import path
+from sys import argv
+import os as o
+import sys as s

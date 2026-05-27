@@ -1,10 +1,7 @@
 """
-A single import (or any singleton group) is left untouched, since
-alignment requires at least two members per group. The lone
-`from`-import and the lone `import`-as below are each their own
-singleton.
+A genuine singleton block (just one import statement in the file)
+fails the `members.len() >= 2` gate and so emits no edit. The lone
+gap stays untouched.
 """
 
 from collections import OrderedDict
-
-import json as j

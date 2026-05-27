@@ -1,13 +1,19 @@
-//! Aligns the `import` keyword across consecutive `from M import N`
-//! statements and the `as` keyword across consecutive `import M as A`
-//! statements at the same block indentation. Group boundaries are
-//! blank lines, comments in the inter-statement gap, form changes
-//! (`from`-imports vs `import`-as), bare `import M` statements without
-//! aliases, and multi-name imports. The two forms align independently,
-//! so a stranded `import M as A` between two `from`-imports breaks the
-//! `from`-import group rather than fusing all three. Multi-line imports
-//! (parenthesized name lists, backslash continuations) skip alignment
-//! because shifting the keyword would break the continuation indent.
+//! Aligns the `import` keyword across the unified block of consecutive
+//! bare and `from`-import statements at the same indent. The block
+//! absorbs a single blank line between adjacent imports, so a bare run
+//! and a `from` run separated only by `blank_lines`'s kind-boundary
+//! gap key into one alignment group. Bare `import M as A` statements
+//! anchor on their `as` keyword and right-align it against the
+//! `import` keyword of `from` statements, so the post-keyword name
+//! starts at one shared column across the entire block. Bare imports
+//! without an alias and multi-name or multi-line imports sit in the
+//! block without participating in alignment.
+//!
+//! Block scope mirrors `alphabetize::import_block_ranges`, so the two
+//! rules see the same notion of "import block" and key on the same
+//! gap semantics.
+
+use std::ops::Range;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::statement_visitor::{walk_body, StatementVisitor};
@@ -18,6 +24,7 @@ use ruff_text_size::{Ranged, TextRange};
 use crate::config::Config;
 use crate::primitives::aligner;
 use crate::rule::{Rule, RuleId};
+use crate::rules::alphabetize::import_block_ranges;
 use crate::source::Source;
 
 pub(crate) struct AlignImports {
@@ -46,66 +53,57 @@ impl Rule for AlignImports {
     }
 }
 
-#[derive(Eq, PartialEq)]
-enum Form {
-    As,
-    From,
-}
-
 struct Visitor<'a> {
     walker: aligner::AlignWalker<'a>,
 }
 
 impl Visitor<'_> {
-    /// Walks `body` once through `aligner::keyed_line_adjacent_groups`,
-    /// tagging each qualifying statement with its form. The keyed
-    /// grouper closes an active run whenever the form changes at an
-    /// otherwise-adjacent boundary, so a stranded `import M as A`
-    /// between two `from`-imports splits the surrounding run without
-    /// merging its neighbors and without re-walking the body.
+    /// Walks `body` once through `import_block_ranges`, collecting
+    /// alignment members for every qualifying statement in the block
+    /// and emitting one alignment group per block whose members
+    /// total at least two.
     fn process_body(&mut self, body: &[Stmt]) {
-        let groups = aligner::keyed_line_adjacent_groups(self.walker.source, body, |s| {
-            self.qualify_from(s)
-                .map(|m| (Form::From, m))
-                .or_else(|| self.qualify_import_as(s).map(|m| (Form::As, m)))
-        });
-        for members in groups {
+        for Range { start, end } in import_block_ranges(self.walker.source, body) {
+            let members: Vec<aligner::Member> = body[start..end]
+                .iter()
+                .filter_map(|s| self.qualify(s))
+                .collect();
             if members.len() >= 2 {
                 self.walker.emit_group(&members);
             }
         }
     }
 
-    /// Builds an alignment member for a `from M import N` statement,
-    /// anchored at the `import` keyword. Returns `None` for any other
-    /// statement shape and for multi-line imports whose continuation
-    /// indent would misalign if the keyword shifted.
-    fn qualify_from(&self, stmt: &Stmt) -> Option<aligner::Member> {
-        let s = stmt.as_import_from_stmt()?;
-        if self.walker.source.contains_line_break(s.range) {
+    /// Builds an alignment member for an import statement. `from M
+    /// import N` anchors at the `import` keyword with op-width 6.
+    /// `import M as A` (single-name, single-line) anchors at the `as`
+    /// keyword with op-width 2. Bare imports without an alias,
+    /// multi-name imports, and multi-line imports return `None` and
+    /// sit in the block without contributing to or receiving
+    /// alignment.
+    fn qualify(&self, stmt: &Stmt) -> Option<aligner::Member> {
+        if self.walker.source.contains_line_break(stmt.range()) {
             return None;
         }
-        aligner::line_anchored_member_at_kind(self.walker.source, s.range, TokenKind::Import)
-    }
-
-    /// Builds an alignment member for a single-name aliased import
-    /// (`import M as A`), anchored at the `as` keyword. Returns `None`
-    /// for bare imports, multi-name imports, multi-line imports, and any
-    /// other statement shape.
-    fn qualify_import_as(&self, stmt: &Stmt) -> Option<aligner::Member> {
+        if let Some(s) = stmt.as_import_from_stmt() {
+            let member = aligner::line_anchored_member_at_kind(
+                self.walker.source,
+                s.range,
+                TokenKind::Import,
+            )?;
+            return Some(member.with_op_width("import".len()));
+        }
         let s = stmt.as_import_stmt()?;
-        if self.walker.source.contains_line_break(s.range) {
-            return None;
-        }
         let [alias] = s.names.as_slice() else {
             return None;
         };
         let asname = alias.asname.as_ref()?;
-        aligner::line_anchored_member_at_kind(
+        let member = aligner::line_anchored_member_at_kind(
             self.walker.source,
             TextRange::new(alias.name.end(), asname.start()),
             TokenKind::As,
-        )
+        )?;
+        Some(member.with_op_width("as".len()))
     }
 }
 

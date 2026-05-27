@@ -3,5 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_imports/breakers.input.py
 ---
-align-imports@321..322
-align-imports@347..348
+align-imports@337..338
+align-imports@363..364
+align-imports@380..381
+align-imports@395..396

@@ -3,7 +3,9 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/module_top.input.py
 ---
+align-imports@400..401
 align-imports@477..478
+align-imports@506..507
 alphabetize@430..466
 bare-import-allowlist@414..416
 bare-import-allowlist@424..432

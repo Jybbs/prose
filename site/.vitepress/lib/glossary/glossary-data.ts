@@ -185,6 +185,12 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'A second `prose format` run against `prose`-formatted source produces no further edits. Every rule preserves this property, so re-running the formatter never thrashes the source.'
   },
 
+  'import block': {
+    aliases   : ['unified import block', 'import blocks'],
+    definition: 'An import block is the run of consecutive bare and `from` imports at the same indent, separated by at most one blank line. The primitive is shared by [[alphabetize]] (*which sorts each kind within its own contiguous slot inside the block*) and [[align-imports]] (*which right-aligns the post-keyword name at one shared column across the block*). Two or more blank lines or any non-import statement end the block.',
+    href      : '/rules/align-imports'
+  },
+
   'kebab-case': {
     definition: 'Kebab-case is the lowercase-with-hyphens naming convention *Prose* uses for every rule slug (`align-equals`, `single-use-variables`). The form is canonical across CLI flags, config tables, suppression directives, and diagnostic output.',
     href      : '/primitives/rule-id'

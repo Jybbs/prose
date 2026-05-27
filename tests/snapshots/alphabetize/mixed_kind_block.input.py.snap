@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/mixed_kind_block.input.py
+---
+"""
+A unified import block carrying bare and `from` imports sorts each
+kind within its own contiguous slot. The two slots keep their
+source-order positions until issue #137 lands the canonical order.
+"""
+
+import argparse
+import zlib
+from collections import Counter
+from loguru import logger

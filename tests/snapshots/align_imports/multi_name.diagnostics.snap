@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_imports/multi_name.input.py
 ---
-
+align-imports@375..376

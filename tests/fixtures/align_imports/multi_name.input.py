@@ -1,8 +1,9 @@
 """
 Multi-name `import` statements (comma-separated, with or without
-aliases per name) skip alignment entirely. The rule aligns the
-unique `as` keyword in single-aliased imports, whereas multi-name
-shapes have no single anchor and so do not qualify.
+aliases per name) sit in the unified block without contributing a
+member, since they carry no single `as` anchor. The single-aliased
+neighbors flanking them align as their own pair within the same
+unified block.
 """
 
 import collections as c

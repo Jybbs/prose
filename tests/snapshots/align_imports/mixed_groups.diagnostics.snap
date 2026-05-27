@@ -3,6 +3,8 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_imports/mixed_groups.input.py
 ---
-align-imports@367..368
-align-imports@394..395
-align-imports@435..436
+align-imports@337..338
+align-imports@364..365
+align-imports@385..386
+align-imports@405..406
+align-imports@430..431

@@ -1,9 +1,9 @@
 """
-Bare `import M` statements without aliases break the surrounding
-`import`-as group, since they have no `as` keyword to align
-against. Non-import statements between imports also break the
-run. Each broken side aligns only with its own contiguous
-neighbors of the same form.
+Bare `import M` statements without aliases sit in the unified
+block without contributing a member, since they carry no `as`
+keyword to anchor on. Non-import statements between imports still
+end the block, so the from-import below the assignment lands in
+its own singleton block and drops.
 """
 
 import collections as c

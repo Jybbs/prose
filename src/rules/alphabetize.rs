@@ -3,10 +3,15 @@
 //! class-scope `Stmt::AnnAssign` field declarations and `Stmt::Assign`
 //! runs with simple `Name` targets, function and lambda parameters
 //! with `self` / `cls` and decorators carrying positional arguments
-//! pinned, call kwargs, set literal elements, `from` and bare
-//! `import` runs plus their alias lists, `global` and `nonlocal`
-//! name lists, `del` target lists, and the string literals inside
-//! `__all__` / `__slots__`.
+//! pinned, call kwargs, set literal elements, unified import blocks
+//! plus their alias lists, `global` and `nonlocal` name lists, `del`
+//! target lists, and the string literals inside `__all__` / `__slots__`.
+//!
+//! An import block is the run of consecutive bare and `from` imports
+//! at the same indent, separated by at most one blank line. Within a
+//! block, each kind sorts in its own contiguous sub-run, leaving the
+//! relative order of the bare and `from` sub-runs as they appear in
+//! the source.
 //!
 //! Sorting flows through `primitives::orderer::reorder_text`. A
 //! recursive `Cow<'src, str>` rewriter folds inner sorts into the
@@ -25,6 +30,7 @@ use ruff_python_ast::{
     Identifier, ParameterWithDefault, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtDelete,
     StmtFunctionDef,
 };
+use ruff_python_trivia::lines_before;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
@@ -229,6 +235,20 @@ impl<'src> AstVisitor<'src> for RhsAnalyzer<'src> {
             _ => walk_expr(self, expr),
         }
     }
+}
+
+/// Builds a `Vec<Range<usize>>` of body slots that form unified import
+/// blocks. An import block is the run of consecutive `import` and
+/// `from`-import statements at the same indent, separated by at most
+/// one blank line. A non-import statement, a comment-only gap, or a
+/// gap spanning two or more blank lines ends the block. Singleton
+/// runs drop. Shared with `align_imports`, so the two rules see the
+/// same notion of "import block".
+pub(crate) fn import_block_ranges(source: &Source, body: &[Stmt]) -> Vec<Range<usize>> {
+    let is_import = |s: &Stmt| s.is_import_stmt() || s.is_import_from_stmt();
+    chunk_runs(body, |a, b| {
+        is_import(a) && is_import(b) && lines_before(b.start(), source.text()) <= 2
+    })
 }
 
 /// Returns the `StmtAnnAssign` and its target name when the target
@@ -599,22 +619,24 @@ fn rewrite_body<'src>(
         }
     }
     let mut import_run_slots: Vec<usize> = Vec::new();
-    for Range { start, end } in statement_run_ranges(body, Stmt::is_import_from_stmt) {
-        permute_in_place(&mut order, body, start..end, |s| {
-            let i = s.as_import_from_stmt()?;
-            Some((i.level, i.module.as_deref().unwrap_or_default()))
-        });
-        import_run_slots.extend(start..end - 1);
-    }
-    for Range { start, end } in statement_run_ranges(body, Stmt::is_import_stmt) {
-        permute_in_place(&mut order, body, start..end, |s| {
-            s.as_import_stmt()?
-                .names
-                .iter()
-                .map(|a| a.name.as_str())
-                .min()
-        });
-        import_run_slots.extend(start..end - 1);
+    for block in import_block_ranges(source, body) {
+        for sub in same_kind_sub_runs(body, block.clone(), Stmt::is_import_from_stmt) {
+            permute_in_place(&mut order, body, sub.clone(), |s| {
+                let i = s.as_import_from_stmt()?;
+                Some((i.level, i.module.as_deref().unwrap_or_default()))
+            });
+            import_run_slots.extend(sub.start..sub.end - 1);
+        }
+        for sub in same_kind_sub_runs(body, block, Stmt::is_import_stmt) {
+            permute_in_place(&mut order, body, sub.clone(), |s| {
+                s.as_import_stmt()?
+                    .names
+                    .iter()
+                    .map(|a| a.name.as_str())
+                    .min()
+            });
+            import_run_slots.extend(sub.start..sub.end - 1);
+        }
     }
     if scope == BodyScope::Module {
         for Range { start, end } in module_assign_run_ranges(source, body) {
@@ -768,6 +790,22 @@ fn root_name(expr: &Expr) -> Option<&str> {
     }
 }
 
+/// Returns the absolute body-slot ranges of contiguous same-kind
+/// sub-runs inside `block`, keyed by `predicate`. Singleton sub-runs
+/// drop. Used to partition a unified import block into bare-only and
+/// from-only slots, each sorted independently.
+fn same_kind_sub_runs(
+    body: &[Stmt],
+    block: Range<usize>,
+    mut predicate: impl FnMut(&Stmt) -> bool,
+) -> Vec<Range<usize>> {
+    let Range { start, end } = block;
+    chunk_runs(&body[start..end], |a, b| predicate(a) && predicate(b))
+        .into_iter()
+        .map(|r| (start + r.start)..(start + r.end))
+        .collect()
+}
+
 /// Returns the elements of a list or tuple expression. `None` for
 /// any other shape.
 fn sequence_elts(expr: &Expr) -> Option<&[Expr]> {
@@ -817,17 +855,6 @@ where
         leaf_edits,
     ));
     concat_or_borrow(&parts, source, block)
-}
-
-/// Builds a `Vec<Range<usize>>` of body slots whose statements all
-/// match `predicate`. Consecutive matching slots collapse into one
-/// run, and a non-matching statement between two matching ones breaks
-/// the run. Singleton runs drop.
-fn statement_run_ranges(
-    body: &[Stmt],
-    mut predicate: impl FnMut(&Stmt) -> bool,
-) -> Vec<Range<usize>> {
-    chunk_runs(body, |a, b| predicate(a) && predicate(b))
 }
 
 /// Assigns each binding a Kahn-style topological tier from its
@@ -934,6 +961,36 @@ mod tests {
     }
 
     #[test]
+    fn import_block_ranges_absorbs_single_blank_line() {
+        let s = parse("import a\n\nfrom m import b\n");
+        assert_eq!(import_block_ranges(&s, &s.ast().body), vec![0..2]);
+    }
+
+    #[test]
+    fn import_block_ranges_breaks_at_two_blank_lines() {
+        let s = parse("import a\nimport b\n\n\nfrom m import c\nfrom n import d\n");
+        assert_eq!(import_block_ranges(&s, &s.ast().body), vec![0..2, 2..4]);
+    }
+
+    #[test]
+    fn import_block_ranges_collapses_bare_and_from_into_one_block() {
+        let s = parse("import a\nfrom m import b\n");
+        assert_eq!(import_block_ranges(&s, &s.ast().body), vec![0..2]);
+    }
+
+    #[test]
+    fn import_block_ranges_drops_singleton() {
+        let s = parse("import a\nLOG = 1\n");
+        assert!(import_block_ranges(&s, &s.ast().body).is_empty());
+    }
+
+    #[test]
+    fn import_block_ranges_ends_at_non_import_statement() {
+        let s = parse("import a\nimport b\nLOG = 1\nfrom m import c\n");
+        assert_eq!(import_block_ranges(&s, &s.ast().body), vec![0..2]);
+    }
+
+    #[test]
     fn method_group_orders_dunder_property_private_public() {
         let src = indoc! {"
             class C:
@@ -969,6 +1026,27 @@ mod tests {
             let assign = s.ast().body[0].as_assign_stmt().expect("assign");
             assert_eq!(root_name(&assign.value), expected, "src = {src}");
         }
+    }
+
+    #[test]
+    fn same_kind_sub_runs_drops_singletons_within_block() {
+        let s = parse("import a\nfrom m import b\nimport c\n");
+        let body = &s.ast().body;
+        assert!(same_kind_sub_runs(body, 0..3, Stmt::is_import_from_stmt).is_empty());
+    }
+
+    #[test]
+    fn same_kind_sub_runs_partitions_into_absolute_index_ranges() {
+        let s = parse("import a\nimport b\nfrom m import c\nfrom n import d\n");
+        let body = &s.ast().body;
+        assert_eq!(
+            same_kind_sub_runs(body, 0..4, Stmt::is_import_stmt),
+            vec![0..2],
+        );
+        assert_eq!(
+            same_kind_sub_runs(body, 0..4, Stmt::is_import_from_stmt),
+            vec![2..4],
+        );
     }
 
     #[test]

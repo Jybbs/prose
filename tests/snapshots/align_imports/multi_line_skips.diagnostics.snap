@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_imports/multi_line_skips.input.py
 ---
-align-imports@418..419
-align-imports@511..512
+align-imports@357..358
+align-imports@430..431

@@ -13,14 +13,14 @@ definition.
 """
 
 
-import numpy as np
+import numpy         as np
 import os
 import requests
 
 from collections import Counter
 from typing      import Any
 
-import functools as ft
+import functools     as ft
 
 
 def render(text):

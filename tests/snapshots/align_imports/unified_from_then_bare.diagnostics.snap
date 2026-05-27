@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/unified_from_then_bare.input.py
+---
+align-imports@278..279
+align-imports@299..300
+align-imports@321..322
+align-imports@337..338
