@@ -22,7 +22,8 @@ Config {
                 8,
             ),
         },
-        alphabetize: ToggleOnly {
+        alphabetize: AlphabetizeConfig {
+            docstring_entries: true,
             enabled: true,
         },
         strip_trailing_commas: ToggleOnly {

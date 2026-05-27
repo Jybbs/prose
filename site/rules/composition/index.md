@@ -37,4 +37,10 @@ Each case's pipeline runs the listed rules in canonical order, reparsing between
 
 [[no-single-line-docstrings]] and [[multi-line-docstrings]] running upstream of [[docstring-wrap]] settle the quote placement before the body rewrap measures budgets.
 
+### Module Reorder Around a Block Marker
+
+[[alphabetize]]'s module-level branch reorders the assigns above and below a `# fmt: off` block while the bracketed lines stay verbatim. The suppression directive bounds its own scope, so [[alphabetize]] and [[align-equals]] fire freely on every assign outside the bracket and the run boundary respects the marker.
+
+<Fixture rule="composition" case="module_reorder_around_block" />
+
 For the per-rule canonical case, click any rule chip above. For the deterministic order the pipeline runs in, see the [**Pipeline Order**](/reference/pipeline-order) reference. For the runner that drives the composition, see the [[pipeline]] primitive. For the full rule catalog, see the [**Rules**](/rules/).

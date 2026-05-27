@@ -1,13 +1,11 @@
 """
 Function with parameters and matching Args entries both in
 non-alphabetical source order, with long descriptions.
-`alphabetize` reorders the signature, `align_colons` aligns every
-colon in both the signature and the Args section, and
-`docstring_wrap` wraps each Args description at the post-align
-hanging column. The Args entries themselves stay in source order
-because no current rule reaches into docstring text to reorder
-them, and the resulting signature-vs-Args mismatch pins a known
-gap in the rule suite.
+`alphabetize` reorders the signature and the Args entries against
+the same alphabetical key, `align_colons` aligns every colon in
+both the signature and the Args section, and `docstring_wrap`
+wraps each Args description at the post-align hanging column.
+Signature and Args entries land in matching alphabetical order.
 
 Rules:
 - alphabetize
