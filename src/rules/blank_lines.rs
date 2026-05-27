@@ -2,7 +2,8 @@
 //! class, and function scopes. The walker pairs each statement with its
 //! predecessor and emits edits to bring the gap to the canonical count
 //! returned by `canonical_blanks`. Own-line comments between adjacent
-//! statements carry 1 blank line on each side.
+//! statements carry 1 blank line above the comment block and 0 blank
+//! lines between the block and the following statement.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_docstring_stmt;
@@ -70,16 +71,14 @@ impl Walker<'_> {
         ));
     }
 
-    /// Places exactly 1 blank line between `block_end` and
+    /// Binds the comment block ending at `block_end` tight against
     /// `curr_line_start`.
     fn normalize_below_block(&mut self, block_end: TextSize, curr_line_start: TextSize) {
-        let target_newlines: u32 = 2;
-        if lines_after(block_end, self.source.text()) == target_newlines {
+        if lines_after(block_end, self.source.text()) == 1 {
             return;
         }
-        let replacement = self.source.newline_str().repeat(target_newlines as usize);
         self.edits.push(Edit::range_replacement(
-            replacement,
+            self.source.newline_str().to_owned(),
             TextRange::new(block_end, curr_line_start),
         ));
     }
