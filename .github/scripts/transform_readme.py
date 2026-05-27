@@ -3,10 +3,10 @@
 # requires-python = ">=3.11"
 # ///
 """
-Rewrite the README's relative `assets/` paths to absolute raw URLs.
+Rewrite the README's relative `site/` paths to absolute raw URLs.
 
-Handles both Markdown link form `](assets/...)` and HTML attribute
-form `src="assets/..."`.
+Handles both Markdown link form `](site/...)` and HTML attribute
+form `src="site/..."`.
 """
 
 from pathlib import Path
@@ -19,6 +19,6 @@ if __name__ == "__main__":
     readme = Path("README.md")
 
     content = readme.read_text(encoding="utf-8")
-    content = sub(r"\]\((assets/[^)]+)\)", rf"]({prefix}\g<1>)",   content)
-    content = sub(r'src="(assets/[^"]+)"', rf'src="{prefix}\g<1>"', content)
+    content = sub(r"\]\((site/[^)]+)\)", rf"]({prefix}\g<1>)",   content)
+    content = sub(r'src="(site/[^"]+)"', rf'src="{prefix}\g<1>"', content)
     readme.write_text(content, encoding="utf-8")

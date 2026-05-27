@@ -2,8 +2,10 @@
 //! `Config::code_line_length` budget. Multi-line literals whose
 //! assembled inline form fits collapse back to a single line.
 //! Single-line literals whose inline form overflows expand to one
-//! entry per line. Comprehensions and any literal whose source range
-//! contains a comment are out of scope.
+//! entry per line. A dict entry whose `key: value` width overflows
+//! at the item-indent column breaks at `:` and hangs the value at
+//! `item_indent + INDENT_STEP`. Comprehensions and any literal
+//! whose source range contains a comment are out of scope.
 
 use std::borrow::Cow;
 use std::ops::Range;
@@ -85,6 +87,8 @@ impl<'a> Layouter<'a> {
     /// laying out any qualifying child collections.
     fn expand(&self, expr: &Expr, indent: usize) -> String {
         let item_indent = indent + INDENT_STEP;
+        let dict_items = expr.as_dict_expr().map(|d| &d.items);
+        let parent = AnyNodeRef::from(expr);
         let GatheredItems {
             atomics,
             close,
@@ -102,9 +106,16 @@ impl<'a> Layouter<'a> {
             match segment {
                 Segment::OnePerLine(range) => {
                     for idx in range {
-                        out.push_str(&item_prefix);
-                        out.push_str(&texts[idx]);
                         let has_more = idx + 1 < total;
+                        let inline = &texts[idx];
+                        let row_overflows = !inline.contains('\n')
+                            && item_indent + inline.width() + usize::from(has_more)
+                                > self.code_line_length;
+                        let hung = dict_items.filter(|_| row_overflows).and_then(|items| {
+                            self.hang_dict_value(&items[idx], parent, item_indent)
+                        });
+                        out.push_str(&item_prefix);
+                        out.push_str(hung.as_deref().unwrap_or(inline));
                         if has_more {
                             out.push(',');
                         }
@@ -183,6 +194,25 @@ impl<'a> Layouter<'a> {
             ranges,
             texts,
         }
+    }
+
+    /// Builds the hung two-line form of a `key: value` dict entry,
+    /// breaking at `:` and emitting the value at `item_indent +
+    /// INDENT_STEP`. Returns `None` for `**value` unpacking items.
+    fn hang_dict_value(
+        &self,
+        item: &DictItem,
+        parent: AnyNodeRef,
+        item_indent: usize,
+    ) -> Option<String> {
+        let key_text = self.source.slice(item.key.as_ref()?);
+        let hang_column = item_indent + INDENT_STEP;
+        let value_text = self.serialize_expr(&item.value, parent, hang_column, hang_column);
+        let hang_prefix = " ".repeat(hang_column);
+        Some(format!(
+            "{key_text}:{newline}{hang_prefix}{value_text}",
+            newline = self.newline,
+        ))
     }
 
     /// Builds the canonical inline form of `expr`, recursively
@@ -433,12 +463,13 @@ fn is_layoutable(expr: &Expr) -> bool {
     )
 }
 
-/// True when `expr` is a multi-item `Dict`, `List`, or `Set`, the
-/// shape the expand path canonicalizes. Tuples and single-item
-/// collections collapse only, never expand.
+/// True for a `Dict`, `List`, or `Set` shape the expand path
+/// canonicalizes. Multi-item `List` and `Set` qualify. Any
+/// non-empty `Dict` qualifies. Tuples and empty collections
+/// collapse only, never expand.
 fn requires_expand(expr: &Expr) -> bool {
     match expr {
-        Expr::Dict(d) => d.len() > 1,
+        Expr::Dict(d) => !d.is_empty(),
         Expr::List(l) => l.len() > 1,
         Expr::Set(s) => s.len() > 1,
         _ => false,

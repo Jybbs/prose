@@ -9,7 +9,7 @@
 
 *Walker* lives at `src/walker.rs` and is itself `pub(crate)`, so the function is documented here for the consumer-visible CLI behavior it shapes rather than as a directly-callable type. The downstream-visible consequence is the set of files `prose check` and `prose format` operate on, with the walk shape settled before any [[source]] construction or [[pipeline]] run.
 
-A downstream consumer in `0.2.x` reaches the walker indirectly through the CLI's path-mode arguments. The `--stdin` shape bypasses the walker entirely, because stdin mode consumes a single source from the input stream and writes to stdout.
+A downstream consumer in `0.2.x` reaches the walker indirectly through the CLI's path-mode arguments. Stdin mode bypasses the walker entirely, whether invoked through `--stdin` or the `-` positional alias, because the input stream resolves to a single source written straight to stdout.
 
 At `1.0` the discovery hooks open so a downstream can plug its own path source in front of the pipeline.
 
@@ -27,7 +27,7 @@ There is no built-in skip list. Directories like `node_modules`, `__pycache__`, 
 
 The walker accepts a slice of input paths, where the first path seeds a `WalkBuilder` and subsequent paths add to that builder's root set via `WalkBuilder::add`. Two paths under the same gitignore-controlled tree share the ignore stack, because a `.gitignore` at the common ancestor applies to both walks.
 
-An empty path list yields an empty iterator, because the CLI shape requires at least one path when not in `--stdin` mode.
+An empty path list yields an empty iterator, because the CLI shape requires at least one path outside stdin mode.
 
 ## Python File Detection
 
