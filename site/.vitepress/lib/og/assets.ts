@@ -9,7 +9,7 @@ export interface BrandAssets {
   wordmark : string
 }
 
-const FONT_FACES: ReadonlyArray<Omit<Font, 'data'>> = [
+const FONT_FACES: readonly Omit<Font, 'data'>[] = [
   { name: 'Fraunces',       style: 'italic', weight: 400 },
   { name: 'Fraunces',       style: 'normal', weight: 400 },
   { name: 'Fraunces',       style: 'italic', weight: 500 },

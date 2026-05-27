@@ -1,7 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { repoRoot, siteDir }    from '../shared/paths'
+import { repoRoot }             from '../shared/paths'
 import { readCargoVersion }     from '../shared/version'
 import { loadBrandAssets }      from './assets'
 import { enumeratePages }       from './pages'
@@ -20,11 +20,11 @@ const PROBES: readonly string[] = [
   'usage/suppression.md'
 ]
 
-const outDir = process.argv[2] ?? path.join(repoRoot(import.meta.url), 'og-previews')
+const repo   = repoRoot(import.meta.url)
+const srcDir = path.join(repo, 'site')
+const outDir = process.argv[2] ?? path.join(repo, 'og-previews')
 
 async function main(): Promise<void> {
-  const srcDir  = siteDir(import.meta.url)
-  const repo    = repoRoot(import.meta.url)
   const brand   = loadBrandAssets(srcDir, repo)
   const version = readCargoVersion(repo)
   fs.mkdirSync(outDir, { recursive: true })
