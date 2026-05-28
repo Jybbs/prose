@@ -12,6 +12,7 @@ Every CLI flag, configuration key, exit code, output format, subcommand, and sup
 
 ## The Section at a Glance
 
+- [**Cache**](/reference/cache) covers the user-level cache, the `[tool.prose.cache]` knobs, the `--no-cache` flag, and the `prose cache clean` subcommand.
 - [**CLI**](/reference/cli) covers every flag, its precedence, and the subcommand it belongs to.
 - [**Configuration**](/reference/configuration) covers the `[tool.prose]` table and per-rule knobs.
 - [**Exit Codes**](/reference/exit-codes) covers the five-code contract CI gates compile against.

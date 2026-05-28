@@ -1,3 +1,7 @@
+---
+stability: internal
+---
+
 # Docstring
 
 <PrimitiveLayout primitive="docstring">
@@ -51,7 +55,41 @@ Two `pub(crate)` helpers reach for the docstring body:
 1. `triple_quoted_body(source, lit) -> Option<DocstringBody>` returns the body slice between a triple-quoted docstring's opener and closer, paired with the source range the slice covers. Returns `None` for non-triple-quoted literals and for inline shapes like `def f(): """doc"""`.
 2. `indent_prefix(source, lit) -> &str` returns the whitespace preceding the docstring on its first line, useful when a rule rewraps the body and needs to re-indent the result.
 
-[[colon-targets]] also reaches into leading docstrings independently when emitting `Args:` members. The seam is deliberate, because the colon walker handles one structured-section context inline rather than standing up its own `DocstringHandler`, so this primitive's surface stays unchanged for rules whose question is *"every docstring in source order"* rather than *"every `name: description` line inside an `Args:` block."*
+[[colon-targets]] reaches into leading docstrings independently when emitting `Args:` members for colon alignment. The seam is deliberate, because the two primitives answer structurally different questions. *Docstring* surfaces entry names and the byte range a reorder would carry along, whereas *Colon-Targets* surfaces each line's `:`-position for the aligner's padding math. Two views of the same source, each shaped for its consumer.
+
+## Section-Parsing Surface
+
+A second layer of `pub(crate)` helpers parses Title-case-headed docstring sections into their `name: description` entries, for consumers that walk docstring text rather than the AST. Three leaf classifiers shape each line:
+
+```rust
+pub(crate) fn section_heading(trimmed: &str) -> bool;
+pub(crate) fn entry_description_col(trimmed: &str) -> Option<usize>;
+pub(crate) fn is_list_marker(trimmed: &str) -> bool;
+```
+
+`section_heading` matches a Title-case word or multi-word run with every word capitalized, immediately followed by `:`, so Google's canonical headings (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`), Numpy's multi-word headings (`Other Parameters:`, `See Also:`), and project-specific custom headings (`Inputs:`, `Steps:`, `Outputs:`) all qualify. `entry_description_col` returns the character column where an entry's description begins after the `name: ` head, matched against a `\w[\w.]*\s*:\s+\S` shape. `is_list_marker` recognizes the Markdown list openers (`-`, `*`, `+`, numeric) that mark verbatim-passthrough continuations, so a section entry whose description carries a bulleted list keeps the list attached as part of the entry.
+
+The entry iterator composes those leaves into a section walk:
+
+```rust
+pub(crate) fn entry_carrying_sections<'src>(
+    source: &'src Source,
+    lit: &StringLiteral,
+) -> Vec<Vec<SectionEntry<'src>>>;
+
+pub(crate) struct SectionEntry<'a> {
+    pub(crate) name: &'a str,
+    pub(crate) range: TextRange,
+}
+```
+
+`entry_carrying_sections` returns one inner vector per section whose body carries at least one entry-shaped line, with each `SectionEntry` carrying the parameter name and the byte range covering the entry's head line through any attached continuations *(verbatim region, hanging description, list item, fenced code block)*. The walker drops sections whose body is prose-only, since the content-shape check filters them out, and drops any docstring whose body is single-line or non-triple-quoted. Continuation attachment reuses the fence and list-indent state the leaf classifiers expose, so a section entry whose description embeds an indented code block keeps the block attached through any downstream reorder.
+
+## How Alphabetize Composes
+
+[[alphabetize]] consumes the entry iterator when its `docstring-entries` knob is on, which is the default. For each docstring, the rule walks `entry_carrying_sections` and reorders the entries within each section alphabetically by name, threading the result through the shared `reorder_text` machinery from [[orderer]], so the no-op case allocates nothing. Each section emits one [[edit]] when its entries arrive out of order, with the edit's range covering the section's entries span and leaving the heading and trailing blank line untouched.
+
+Section headings, blank lines between entries, and verbatim continuations *(indented code blocks, fenced blocks, list items)* stay attached to their parent entries through the move because each `SectionEntry`'s range already covers its continuations, leaving the reorder as a straight permutation of byte slices. The rule's `[tool.prose.rules.alphabetize]` table carries `docstring-entries`, defaulting to `true`. Setting `docstring-entries = false` keeps the AST-level sorts firing while opting out of the docstring-entry reorder, useful when a project curates entry order to match a narrative rather than the signature alphabet.
 
 ## How Docstring-Wrap Composes
 
@@ -81,10 +119,11 @@ impl Rule for MyRule {
 
 ## Re-Using This Primitive
 
-A new docstring rule's `apply` body is a single `rewrite_docstrings` call carrying the per-docstring decision as a closure. The PEP 257 detection, the nested-scope traversal, and the implicitly-concatenated skip come for free. A consumer that needs richer state across the walk can implement `DocstringHandler` directly and call `walk(source)` from inside `apply`.
+A new docstring rule's `apply` body is a single `rewrite_docstrings` call carrying the per-docstring decision as a closure. The PEP 257 detection, the nested-scope traversal, and the implicitly-concatenated skip come for free. A rule that needs the `name: description` entries of every Title-case-headed section additionally reaches for `entry_carrying_sections`, which composes the section-detection leaves into a single pass over a docstring's body and hands back a per-section vector of `SectionEntry` ranges the rule can reorder, rewrap, or inspect. A consumer that needs richer state across the walk can implement `DocstringHandler` directly and call `walk(source)` from inside `apply`.
 
 <template #related>
 
+- [[alphabetize]] reorders the `name: description` entries within every Title-case-headed section.
 - [[docstring-wrap]] wraps description prose and structured sections to their budgets.
 - [[multi-line-docstrings]] enforces own-line quote placement.
 - [[no-single-line-docstrings]] expands single-line shapes.

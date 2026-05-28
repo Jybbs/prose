@@ -4,6 +4,10 @@ expression: config
 input_file: tests/fixtures/config/target_version_only.toml
 ---
 Config {
+    cache: CacheConfig {
+        enabled: true,
+        max_size_mib: 100,
+    },
     code_line_length: Some(
         88,
     ),
@@ -18,7 +22,8 @@ Config {
                 8,
             ),
         },
-        alphabetize: ToggleOnly {
+        alphabetize: AlphabetizeConfig {
+            docstring_entries: true,
             enabled: true,
         },
         strip_trailing_commas: ToggleOnly {

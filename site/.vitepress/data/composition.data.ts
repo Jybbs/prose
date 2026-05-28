@@ -4,8 +4,8 @@ import path from 'node:path'
 import { parse }        from 'smol-toml'
 import { defineLoader } from 'vitepress'
 
-import { repoRoot }     from '../lib/shared/paths'
-import { toTitleCase }  from '../lib/shared/title-case'
+import { repoRoot }    from '../lib/shared/paths'
+import { toTitleCase } from '../lib/shared/title-case'
 
 interface CompositionCase {
   case  : string
@@ -28,7 +28,8 @@ export default defineLoader({
     const files = (await fs.readdir(compositionDir)).filter(f => f.endsWith('.config.toml')).sort()
     const cases = await Promise.all(files.map(async file => {
       const caseName = path.basename(file, '.config.toml')
-      const parsed   = parse(await fs.readFile(path.join(compositionDir, file), 'utf8')) as { harness?: { rules?: readonly string[] } }
+      type Parsed    = { harness?: { rules?: readonly string[] } }
+      const parsed   = parse(await fs.readFile(path.join(compositionDir, file), 'utf8')) as Parsed
       const rules    = parsed.harness?.rules
       if (rules === undefined) {
         throw new Error(`composition.data: ${file} missing [harness].rules`)

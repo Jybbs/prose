@@ -1,3 +1,7 @@
+---
+stability: public
+---
+
 # RuleId
 
 <PrimitiveLayout primitive="rule-id">

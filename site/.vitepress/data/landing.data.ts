@@ -1,7 +1,7 @@
 import { defineLoader } from 'vitepress'
 
 import { getRenderer, renderFencedHtml, renderInlineField } from '../lib/markdown/renderer'
-import type { RuleFamily }                from '../lib/shared/registries'
+import type { RuleFamily }                                  from '../lib/shared/registries'
 
 export interface Step {
   bodyHtml : string
@@ -30,31 +30,40 @@ type SurfaceSource = Omit<Surface, 'bodyHtml'> & { body: string }
 
 const SURFACE_SOURCES: readonly SurfaceSource[] = [
   {
-    body   : 'Equals signs, colons, the `import` keyword, and match arrows line up across consecutive lines. The eye drops down the column.',
+    body   : 'Equals signs, colons, the `import` keyword, and match arrows line up across '
+           + 'consecutive lines. The eye drops down the column.',
     family : 'alignment',
     icon   : '🪜',
     number : '01'
   },
   {
-    body   : 'Sibling entries sort into a predictable order. Imports, dictionary keys, and set members read top-to-bottom by name, so a reader looking for an entry already knows where it sits.',
+    body   : 'Sibling entries sort into a predictable order. Imports, dictionary keys, and '
+           + 'set members read top-to-bottom by name, so a reader looking for an entry '
+           + 'already knows where it sits.',
     family : 'ordering',
     icon   : '🪉',
     number : '02'
   },
   {
-    body   : 'Dictionaries, lists, and sets expand to one entry per line. Multi-line collections drop their trailing comma, blank lines snap to canonical counts, and singletons collapse to their natural form.',
+    body   : 'Dictionaries, lists, and sets expand to one entry per line. Multi-line '
+           + 'collections drop their trailing comma, blank lines snap to canonical counts, '
+           + 'and singletons collapse to their natural form.',
     family : 'formatting',
     icon   : '🪶',
     number : '03'
   },
   {
-    body   : 'Docstrings join the same legibility discipline as code. Wrap to the project line length, keep single-line shapes single-line, multi-line shapes multi-line, and quote style consistent throughout.',
+    body   : 'Docstrings join the same legibility discipline as code. Wrap to the project '
+           + 'line length, keep single-line shapes single-line, multi-line shapes '
+           + 'multi-line, and quote style consistent throughout.',
     family : 'docs',
     icon   : '📰',
     number : '04'
   },
   {
-    body   : 'Legacy union syntax, loose constants, step-narration comments, bare-import patterns, and single-use bindings surface as diagnostics. The formatter never rewrites these, because the fix belongs to the reader.',
+    body   : 'Legacy union syntax, loose constants, step-narration comments, bare-import '
+           + 'patterns, and single-use bindings surface as diagnostics. The formatter never '
+           + 'rewrites these, because the fix belongs to the reader.',
     family : 'lint',
     icon   : '🧶',
     number : '05'

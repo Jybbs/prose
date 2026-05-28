@@ -11,11 +11,11 @@ use std::fmt;
 use std::str::FromStr;
 
 use ruff_diagnostics::Edit;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::config::{
-    AlignmentConfig, BareImportAllowlistConfig, CollectionLayoutConfig, Config,
+    AlignmentConfig, AlphabetizeConfig, BareImportAllowlistConfig, CollectionLayoutConfig, Config,
     LooseConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
 };
 use crate::diagnostics::Diagnostic;
@@ -135,6 +135,12 @@ impl FromStr for RuleId {
     }
 }
 
+impl Serialize for RuleId {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.0)
+    }
+}
+
 /// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,
 /// starts and ends with a lowercase ASCII letter or digit, contains
 /// only lowercase ASCII letters, digits, and dashes, and has no `--`
@@ -197,7 +203,7 @@ macro_rules! register_rules {
         /// Each field is a sub-table whose `enabled` key (defaulting
         /// to `true`) toggles the rule and whose remaining keys carry
         /// that rule's knobs.
-        #[derive(Debug, Default, Deserialize)]
+        #[derive(Debug, Default, Deserialize, Serialize)]
         #[serde(default, rename_all = "kebab-case")]
         pub struct RuleConfigs {
             $(pub $field: $config,)*
@@ -297,7 +303,7 @@ macro_rules! register_rules {
 
 register_rules! {
     "collection-layout":         collection_layout:         CollectionLayoutConfig    => CollectionLayout         => "lay out collection literal against the line budget",
-    "alphabetize":               alphabetize:               ToggleOnly                => Alphabetize              => "alphabetize this group",
+    "alphabetize":               alphabetize:               AlphabetizeConfig         => Alphabetize              => "alphabetize this group",
     "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas      => "strip trailing comma",
     "no-single-line-docstrings": no_single_line_docstrings: ToggleOnly                => NoSingleLineDocstrings   => "expand single-line docstring to multi-line form",
     "multi-line-docstrings":     multi_line_docstrings:     ToggleOnly                => MultiLineDocstrings      => "place docstring opener and closer on their own lines",
@@ -326,22 +332,16 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case("a")]
-    #[case("a-b")]
-    #[case("abc123")]
-    #[case("single-use-variables")]
-    fn is_valid_slug_accepts_canonical_kebab_shapes(#[case] valid: &str) {
+    fn is_valid_slug_accepts_canonical_kebab_shapes(
+        #[values("a", "a-b", "abc123", "single-use-variables")] valid: &str,
+    ) {
         assert!(is_valid_slug(valid.as_bytes()));
     }
 
     #[rstest]
-    #[case("")]
-    #[case("-foo")]
-    #[case("foo-")]
-    #[case("a--b")]
-    #[case("Foo")]
-    #[case("abc!")]
-    fn is_valid_slug_rejects_invalid_shapes(#[case] invalid: &str) {
+    fn is_valid_slug_rejects_invalid_shapes(
+        #[values("", "-foo", "foo-", "a--b", "Foo", "abc!")] invalid: &str,
+    ) {
         assert!(!is_valid_slug(invalid.as_bytes()));
     }
 

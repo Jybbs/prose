@@ -71,12 +71,16 @@ mod tests {
     }
 
     #[rstest]
-    #[case(ExitStatus::Clean)]
-    #[case(ExitStatus::ConfigError)]
-    #[case(ExitStatus::FormatChange)]
-    #[case(ExitStatus::LintViolation)]
-    #[case(ExitStatus::ParseError)]
-    fn into_exit_code_compiles_for_each_variant(#[case] status: ExitStatus) {
+    fn into_exit_code_compiles_for_each_variant(
+        #[values(
+            ExitStatus::Clean,
+            ExitStatus::ConfigError,
+            ExitStatus::FormatChange,
+            ExitStatus::LintViolation,
+            ExitStatus::ParseError
+        )]
+        status: ExitStatus,
+    ) {
         let _: ExitCode = status.into();
     }
 

@@ -34,7 +34,7 @@ pub struct Source {
 }
 
 impl Source {
-    fn build(text: String, name: impl Into<Box<str>>) -> Result<Self, ParseError> {
+    pub(crate) fn build(text: String, name: impl Into<Box<str>>) -> Result<Self, ParseError> {
         let parsed = parse_module(&text)?;
         let file = SourceFileBuilder::new(name, text).finish();
         let comment_ranges = CommentRanges::from(parsed.tokens());
@@ -182,6 +182,11 @@ impl Source {
     /// is guaranteed to fall on `char` boundaries.
     pub fn slice<R: Ranged>(&self, ranged: R) -> &str {
         self.file.slice(ranged.range())
+    }
+
+    /// Borrows the underlying `SourceFile`.
+    pub fn source_file(&self) -> &SourceFile {
+        &self.file
     }
 
     /// Returns the suppression index built during parsing.

@@ -22,6 +22,10 @@ Exit codes:
 
 #[derive(Debug, Default, clap::Args)]
 pub(crate) struct CheckArgs {
+    /// Bypass the user-level cache for this invocation.
+    #[arg(long)]
+    pub(crate) no_cache: bool,
+
     /// Output format for diagnostics.
     #[arg(long, value_enum, default_value_t)]
     pub(crate) output_format: OutputFormat,
@@ -56,10 +60,20 @@ pub(crate) struct Cli {
 
     #[command(subcommand)]
     pub(crate) command: Command,
+
+    /// Print extra diagnostic information to stderr.
+    #[arg(long, global = true)]
+    pub(crate) verbose: bool,
 }
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum Command {
+    /// Manage the user-level cache.
+    Cache {
+        #[command(subcommand)]
+        action: CacheAction,
+    },
+
     /// Check files for formatting violations without rewriting.
     Check(CheckArgs),
 
@@ -73,11 +87,27 @@ pub(crate) enum Command {
     Format(FormatArgs),
 }
 
+#[derive(Debug, Subcommand)]
+pub(crate) enum CacheAction {
+    /// Clear every cached entry and report the freed bytes.
+    Clean,
+
+    /// Evict oldest entries until the configured size cap is met.
+    Compact,
+
+    /// Print the cache directory, entry count, byte total, and mtimes.
+    Info,
+}
+
 #[derive(Debug, Default, clap::Args)]
 pub(crate) struct FormatArgs {
     /// Show a unified diff instead of writing changes.
     #[arg(long)]
     pub(crate) diff: bool,
+
+    /// Bypass the user-level cache for this invocation.
+    #[arg(long)]
+    pub(crate) no_cache: bool,
 
     /// Output format for diagnostics.
     #[arg(long, value_enum, default_value_t)]
@@ -130,8 +160,8 @@ pub(crate) struct RuleFilter {
 /// error when `-` appears alongside other paths.
 pub(crate) fn normalize_stdin_dash(cli: &mut Cli) -> Option<clap::Error> {
     let (paths, stdin) = match &mut cli.command {
+        Command::Cache { .. } | Command::Completions { .. } => return None,
         Command::Check(args) => (&mut args.paths, &mut args.stdin),
-        Command::Completions { .. } => return None,
         Command::Format(args) => (&mut args.paths, &mut args.stdin),
     };
     if !paths.iter().any(|p| p.as_os_str() == "-") {
@@ -222,14 +252,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case("Clean")]
-    #[case("Config")]
-    #[case("Format")]
-    #[case("Lint")]
-    #[case("Parse")]
     fn after_long_help_documents_each_exit_code_label(
         long_help_table: String,
-        #[case] label: &str,
+        #[values("Clean", "Config", "Format", "Lint", "Parse")] label: &str,
     ) {
         assert!(
             long_help_table.contains(label),
@@ -238,12 +263,10 @@ mod tests {
     }
 
     #[rstest]
-    #[case(0)]
-    #[case(1)]
-    #[case(2)]
-    #[case(3)]
-    #[case(4)]
-    fn after_long_help_documents_each_exit_code_row(long_help_table: String, #[case] code: u8) {
+    fn after_long_help_documents_each_exit_code_row(
+        long_help_table: String,
+        #[values(0, 1, 2, 3, 4)] code: u8,
+    ) {
         let needle = format!("  {code}    ");
         assert!(
             long_help_table.contains(&needle),
@@ -447,12 +470,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case("bash")]
-    #[case("elvish")]
-    #[case("fish")]
-    #[case("powershell")]
-    #[case("zsh")]
-    fn completions_parses_each_supported_shell(#[case] shell: &str) {
+    fn completions_parses_each_supported_shell(
+        #[values("bash", "elvish", "fish", "powershell", "zsh")] shell: &str,
+    ) {
         let cli = Cli::try_parse_from(["prose", "completions", shell]).expect("parses shell");
         assert_matches!(cli.command, Command::Completions { .. });
     }

@@ -1,13 +1,13 @@
-import fs                 from 'node:fs/promises'
-import { existsSync }     from 'node:fs'
-import path               from 'node:path'
+import fs             from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import path           from 'node:path'
 
-import matter             from 'gray-matter'
-import { defineLoader }   from 'vitepress'
+import matter           from 'gray-matter'
+import { defineLoader } from 'vitepress'
 
 import { FIXTURES_DIR, INPUT_SUFFIX, SNAPSHOTS_DIR, walkFixtures } from '../lib/fixtures/walker'
 import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
-import { repoRoot }       from '../lib/shared/paths'
+import { repoRoot }                      from '../lib/shared/paths'
 
 const root          = repoRoot(import.meta.url)
 const fixturesRoot  = path.join(root, FIXTURES_DIR)
@@ -38,9 +38,22 @@ export default defineLoader({
     )
     const rows = await Promise.all(entries.map(async ({ rule, caseName, inputPath }) => {
       const snapPath            = path.join(snapshotsRoot, rule, `${caseName}${INPUT_SUFFIX}.snap`)
-      const [inputRaw, snapRaw] = await Promise.all([fs.readFile(inputPath, 'utf8'), fs.readFile(snapPath, 'utf8')])
+      const [inputRaw, snapRaw] = await Promise.all([
+        fs.readFile(inputPath, 'utf8'),
+        fs.readFile(snapPath,  'utf8')
+      ])
       const output              = matter(snapRaw).content.replace(/\s+$/, '\n')
-      return { caseName, entry: { changesSource: inputRaw !== output, input: inputRaw, inputHtml: renderFencedHtml(md, inputRaw, 'python'), output, outputHtml: renderFencedHtml(md, output, 'python') }, rule }
+      return {
+        caseName,
+        entry: {
+          changesSource : inputRaw !== output,
+          input         : inputRaw,
+          inputHtml     : renderFencedHtml(md, inputRaw, 'python'),
+          output,
+          outputHtml    : renderFencedHtml(md, output, 'python')
+        },
+        rule
+      }
     }))
     const out: FixtureData = {}
     for (const { caseName, entry, rule } of rows) (out[rule] ??= {})[caseName] = entry

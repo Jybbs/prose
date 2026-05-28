@@ -43,7 +43,8 @@ const SOURCES: readonly ExitCodeSource[] = [
     code   : 2,
     detail : [
       'Surfaces under both `prose check` and `prose format`.',
-      'The shipped lints contribute: `legacy-union-syntax`, `loose-constants`, `no-step-narration`, `single-use-variables`.'
+      'The shipped lints contribute: `legacy-union-syntax`, `loose-constants`, '
+      + '`no-step-narration`, `single-use-variables`.'
     ],
     label  : 'Lint violation',
     summary: 'At least one lint-only diagnostic surfaced.'
@@ -60,7 +61,8 @@ const SOURCES: readonly ExitCodeSource[] = [
   {
     code   : 4,
     detail : [
-      'Surfaces from `Config::from_pyproject_str` errors, malformed `--select` / `--ignore` flags, or unknown CLI options.',
+      'Surfaces from `Config::from_pyproject_str` errors, malformed `--select` / '
+      + '`--ignore` flags, or unknown CLI options.',
       'Pre-empts every other code (the run never reaches the pipeline).'
     ],
     label  : 'Config error',

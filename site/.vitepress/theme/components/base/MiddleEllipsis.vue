@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useResizeObserver }                  from '@vueuse/core'
+import { useResizeObserver }                     from '@vueuse/core'
 import { onMounted, ref, useTemplateRef, watch } from 'vue'
 
 const props = withDefaults(

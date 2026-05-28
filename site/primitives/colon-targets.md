@@ -1,3 +1,7 @@
+---
+stability: internal
+---
+
 # ColonTargets
 
 <PrimitiveLayout primitive="colon-targets">

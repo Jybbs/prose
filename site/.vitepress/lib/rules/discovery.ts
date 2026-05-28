@@ -1,5 +1,5 @@
-import fs     from 'node:fs'
-import path   from 'node:path'
+import fs   from 'node:fs'
+import path from 'node:path'
 
 import matter from 'gray-matter'
 
@@ -35,7 +35,10 @@ export function discoverRuleSlugs(rulesDirectory: string): DiscoveredRule[] {
       throw new Error(`Rule "${slug}" has invalid or missing family: ${JSON.stringify(family)}`)
     }
     if ((category === 'lint') !== (family === 'lint')) {
-      throw new Error(`Rule "${slug}" mismatched category/family (${category}/${family}), because the lint family pairs exclusively with the lint category`)
+      throw new Error(
+        `Rule "${slug}" mismatched category/family (${category}/${family}), `
+        + 'because the lint family pairs exclusively with the lint category'
+      )
     }
     const caption = fm.caption
     if (typeof caption !== 'string' || caption.trim() === '') {

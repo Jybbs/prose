@@ -4,6 +4,10 @@ docstring-line-length = 60
 docstring-structured-policy = "docstring-line-length"
 target-version = "3.14"
 
+[tool.prose.cache]
+enabled = false
+max-size-mib = 250
+
 [tool.prose.rules.align-colons]
 enabled = false
 
@@ -14,6 +18,7 @@ enabled = false
 enabled = false
 
 [tool.prose.rules.alphabetize]
+docstring-entries = false
 enabled = false
 
 [tool.prose.rules.bare-import-allowlist]

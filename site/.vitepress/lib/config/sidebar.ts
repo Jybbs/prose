@@ -1,7 +1,8 @@
 import type { DefaultTheme } from 'vitepress'
 
-import { type DiscoveredRule } from '../rules/discovery'
-import { FAMILY_META, FAMILY_ORDER, PRIMITIVES, PRIMITIVE_SLUGS, PUBLIC_PRIMITIVES, type RuleFamily } from '../shared/registries'
+import { type DiscoveredPrimitive }                   from '../primitives/discovery'
+import { type DiscoveredRule }                        from '../rules/discovery'
+import { FAMILY_META, FAMILY_ORDER, type RuleFamily } from '../shared/registries'
 
 const primLink = (slug: string, text: string): DefaultTheme.SidebarItem =>
   ({ link: `/primitives/${slug}`, text })
@@ -25,13 +26,14 @@ const REFERENCE_SIDEBAR: DefaultTheme.SidebarItem[] = [
   {
     items: [
       { link: '/reference/',                       text: 'Overview'               },
+      { link: '/reference/cache',                  text: 'Cache'                  },
       { link: '/reference/cli',                    text: 'CLI'                    },
-      { link: '/reference/exit-codes',             text: 'Exit Codes'             },
-      { link: '/reference/output-formats',         text: 'Output Formats'         },
       { link: '/reference/configuration',          text: 'Configuration'          },
-      { link: '/reference/suppression-directives', text: 'Suppression Directives' },
+      { link: '/reference/exit-codes',             text: 'Exit Codes'             },
+      { link: '/reference/glossary',               text: 'Glossary'               },
+      { link: '/reference/output-formats',         text: 'Output Formats'         },
       { link: '/reference/pipeline-order',         text: 'Pipeline Order'         },
-      { link: '/reference/glossary',               text: 'Glossary'               }
+      { link: '/reference/suppression-directives', text: 'Suppression Directives' }
     ],
     text : 'Reference'
   }
@@ -51,7 +53,10 @@ const INTEGRATIONS_SIDEBAR: DefaultTheme.SidebarItem[] = [
   }
 ]
 
-export function buildSidebar(rules: readonly DiscoveredRule[]): DefaultTheme.Sidebar {
+export function buildSidebar(
+  rules      : readonly DiscoveredRule[],
+  primitives : readonly DiscoveredPrimitive[]
+): DefaultTheme.Sidebar {
   const familySections: DefaultTheme.SidebarItem[] = FAMILY_ORDER.map(family => ({
     items : rules
       .filter(r => r.family === family)
@@ -59,19 +64,19 @@ export function buildSidebar(rules: readonly DiscoveredRule[]): DefaultTheme.Sid
     link  : `/rules/${family}/`,
     text  : FAMILY_META[family].label
   }))
+  const publicPrimitives   = primitives.filter(p => p.stability === 'public')
+  const internalPrimitives = primitives.filter(p => p.stability === 'internal')
   return {
     '/integrations/' : INTEGRATIONS_SIDEBAR,
     '/usage/'        : USAGE_SIDEBAR,
     '/primitives/'   : [
       { items: [{ link: '/primitives/', text: 'Overview' }], text: 'Primitives' },
       {
-        items : PUBLIC_PRIMITIVES.map(slug => primLink(slug, PRIMITIVES[slug])),
+        items : publicPrimitives.map(p => primLink(p.slug, p.name)),
         text  : 'Public Surface'
       },
       {
-        items : PRIMITIVE_SLUGS
-          .filter(slug => !PUBLIC_PRIMITIVES.includes(slug))
-          .map(slug => primLink(slug, PRIMITIVES[slug])),
+        items : internalPrimitives.map(p => primLink(p.slug, p.name)),
         text  : 'Crate Internal'
       }
     ],

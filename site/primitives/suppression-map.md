@@ -1,3 +1,7 @@
+---
+stability: internal
+---
+
 # SuppressionMap
 
 <PrimitiveLayout primitive="suppression-map">

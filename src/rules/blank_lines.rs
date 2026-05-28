@@ -289,9 +289,13 @@ mod tests {
     }
 
     #[rstest]
-    #[case("class C:\n    x: int = 1\n    def m(self): pass\n")]
-    #[case("class C:\n    x = 1\n    def m(self): pass\n")]
-    fn canonical_blanks_class_field_to_method_returns_one(#[case] src: &str) {
+    fn canonical_blanks_class_field_to_method_returns_one(
+        #[values(
+            "class C:\n    x: int = 1\n    def m(self): pass\n",
+            "class C:\n    x = 1\n    def m(self): pass\n"
+        )]
+        src: &str,
+    ) {
         let s = parse(src);
         let class = s.ast().body[0].as_class_def_stmt().expect("class");
         assert_eq!(
@@ -311,12 +315,16 @@ mod tests {
     }
 
     #[rstest]
-    #[case("class C:\n    def m(self): pass\n")]
-    #[case("class C:\n    @decorator\n    def m(self): pass\n")]
-    #[case("class C:\n    x: int = 1\n")]
-    #[case("class C:\n    x = 1\n")]
-    #[case("class C:\n    class Inner:\n        pass\n")]
-    fn canonical_blanks_class_header_to_first_member_returns_one(#[case] src: &str) {
+    fn canonical_blanks_class_header_to_first_member_returns_one(
+        #[values(
+            "class C:\n    def m(self): pass\n",
+            "class C:\n    @decorator\n    def m(self): pass\n",
+            "class C:\n    x: int = 1\n",
+            "class C:\n    x = 1\n",
+            "class C:\n    class Inner:\n        pass\n"
+        )]
+        src: &str,
+    ) {
         let s = parse(src);
         let class = s.ast().body[0].as_class_def_stmt().expect("class");
         assert_eq!(
@@ -326,15 +334,19 @@ mod tests {
     }
 
     #[rstest]
-    #[case("def f():\n    for x in y:\n        pass\n")]
-    #[case("def f():\n    if x:\n        pass\n")]
-    #[case("def f():\n    match x:\n        case _: pass\n")]
-    #[case("def f():\n    try:\n        pass\n    except Exception:\n        pass\n")]
-    #[case("def f():\n    while x:\n        pass\n")]
-    #[case("def f():\n    with x:\n        pass\n")]
-    #[case("async def f():\n    async for x in y:\n        pass\n")]
-    #[case("async def f():\n    async with x:\n        pass\n")]
-    fn canonical_blanks_function_header_to_compound_body_returns_one(#[case] src: &str) {
+    fn canonical_blanks_function_header_to_compound_body_returns_one(
+        #[values(
+            "def f():\n    for x in y:\n        pass\n",
+            "def f():\n    if x:\n        pass\n",
+            "def f():\n    match x:\n        case _: pass\n",
+            "def f():\n    try:\n        pass\n    except Exception:\n        pass\n",
+            "def f():\n    while x:\n        pass\n",
+            "def f():\n    with x:\n        pass\n",
+            "async def f():\n    async for x in y:\n        pass\n",
+            "async def f():\n    async with x:\n        pass\n"
+        )]
+        src: &str,
+    ) {
         let s = parse(src);
         let func = s.ast().body[0].as_function_def_stmt().expect("def");
         assert_eq!(
@@ -344,11 +356,15 @@ mod tests {
     }
 
     #[rstest]
-    #[case("def f():\n    x = 1\n")]
-    #[case("def f():\n    return None\n")]
-    #[case("def f():\n    '''doc'''\n")]
-    #[case("def f():\n    def inner(): pass\n")]
-    fn canonical_blanks_function_header_to_simple_stmt_returns_none(#[case] src: &str) {
+    fn canonical_blanks_function_header_to_simple_stmt_returns_none(
+        #[values(
+            "def f():\n    x = 1\n",
+            "def f():\n    return None\n",
+            "def f():\n    '''doc'''\n",
+            "def f():\n    def inner(): pass\n"
+        )]
+        src: &str,
+    ) {
         let s = parse(src);
         let func = s.ast().body[0].as_function_def_stmt().expect("def");
         assert_eq!(
@@ -388,11 +404,15 @@ mod tests {
     }
 
     #[rstest]
-    #[case("class C: pass\nPORT = 8080\n")]
-    #[case("class C: pass\nPORT: int = 8080\n")]
-    #[case("def f(): pass\nPORT = 8080\n")]
-    #[case("def f(): pass\nPORT: int = 8080\n")]
-    fn canonical_blanks_module_assignment_after_def_or_class_returns_two(#[case] src: &str) {
+    fn canonical_blanks_module_assignment_after_def_or_class_returns_two(
+        #[values(
+            "class C: pass\nPORT = 8080\n",
+            "class C: pass\nPORT: int = 8080\n",
+            "def f(): pass\nPORT = 8080\n",
+            "def f(): pass\nPORT: int = 8080\n"
+        )]
+        src: &str,
+    ) {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
@@ -422,9 +442,13 @@ mod tests {
     }
 
     #[rstest]
-    #[case("import os\nfrom sys import argv\n")]
-    #[case("from sys import argv\nimport os\n")]
-    fn canonical_blanks_module_import_kind_boundary_returns_one(#[case] src: &str) {
+    fn canonical_blanks_module_import_kind_boundary_returns_one(
+        #[values(
+            "import os\nfrom sys import argv\n",
+            "from sys import argv\nimport os\n"
+        )]
+        src: &str,
+    ) {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
@@ -434,9 +458,13 @@ mod tests {
     }
 
     #[rstest]
-    #[case("import os\nimport sys\n")]
-    #[case("from os import path\nfrom sys import argv\n")]
-    fn canonical_blanks_module_same_kind_import_run_returns_none(#[case] src: &str) {
+    fn canonical_blanks_module_same_kind_import_run_returns_none(
+        #[values(
+            "import os\nimport sys\n",
+            "from os import path\nfrom sys import argv\n"
+        )]
+        src: &str,
+    ) {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
@@ -526,50 +554,44 @@ mod tests {
     }
 
     #[rstest]
-    #[case("if x:\n    pass\n")]
-    #[case("if __name__ != \"__main__\":\n    pass\n")]
-    #[case("if __name__ == \"main\":\n    pass\n")]
-    #[case("if other == \"__main__\":\n    pass\n")]
-    #[case("if __name__ == __main__:\n    pass\n")]
-    #[case("if __name__ == \"__main__\" and x:\n    pass\n")]
-    fn is_main_guard_rejects_other_if_conditions(#[case] src: &str) {
+    fn is_main_guard_rejects_other_if_conditions(
+        #[values(
+            "if x:\n    pass\n",
+            "if __name__ != \"__main__\":\n    pass\n",
+            "if __name__ == \"main\":\n    pass\n",
+            "if other == \"__main__\":\n    pass\n",
+            "if __name__ == __main__:\n    pass\n",
+            "if __name__ == \"__main__\" and x:\n    pass\n"
+        )]
+        src: &str,
+    ) {
         let s = parse(src);
         assert!(!is_main_guard(&s.ast().body[0]));
     }
 
     #[rstest]
-    #[case("# =====")]
-    #[case("# -----")]
-    #[case("# *****")]
-    #[case("# _____")]
-    #[case("# ~~~~~")]
-    #[case("##########")]
-    fn is_rule_line_accepts_canonical_decorative_runs(#[case] line: &str) {
+    fn is_rule_line_accepts_canonical_decorative_runs(
+        #[values("# =====", "# -----", "# *****", "# _____", "# ~~~~~", "##########")] line: &str,
+    ) {
         assert!(is_rule_line(line));
     }
 
     #[rstest]
-    #[case("# describes f")]
-    #[case("# Section: helpers")]
-    #[case("# x")]
-    fn is_rule_line_rejects_alpha_prose(#[case] line: &str) {
+    fn is_rule_line_rejects_alpha_prose(
+        #[values("# describes f", "# Section: helpers", "# x")] line: &str,
+    ) {
         assert!(!is_rule_line(line));
     }
 
     #[rstest]
-    #[case("# = = = =")]
-    #[case("# -=-=-=")]
-    #[case("# - - -")]
-    fn is_rule_line_rejects_mixed_characters(#[case] line: &str) {
+    fn is_rule_line_rejects_mixed_characters(
+        #[values("# = = = =", "# -=-=-=", "# - - -")] line: &str,
+    ) {
         assert!(!is_rule_line(line));
     }
 
     #[rstest]
-    #[case("# ====")]
-    #[case("# ---")]
-    #[case("# ")]
-    #[case("#")]
-    fn is_rule_line_rejects_short_runs(#[case] line: &str) {
+    fn is_rule_line_rejects_short_runs(#[values("# ====", "# ---", "# ", "#")] line: &str) {
         assert!(!is_rule_line(line));
     }
 

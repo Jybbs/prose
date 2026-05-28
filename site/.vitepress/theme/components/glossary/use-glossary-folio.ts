@@ -16,7 +16,8 @@ const filtered = computed<RenderedGlossaryEntry[]>(() => {
 })
 
 const grouped = computed<[string, RenderedGlossaryEntry[]][]>(() =>
-  [...Map.groupBy(filtered.value, e => e.initial).entries()].toSorted(([a], [b]) => a.localeCompare(b, 'en', { sensitivity: 'base' })))
+  [...Map.groupBy(filtered.value, e => e.initial).entries()]
+    .toSorted(([a], [b]) => a.localeCompare(b, 'en', { sensitivity: 'base' })))
 
 const active = computed<RenderedGlossaryEntry | undefined>(() =>
   ordered.find(e => e.slug === selected.value))

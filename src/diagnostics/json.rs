@@ -3,20 +3,19 @@
 use std::io::{self, Write};
 
 use ruff_diagnostics::{Applicability, Edit};
-use ruff_source_file::{LineColumn, OneIndexed};
+use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 use ruff_text_size::Ranged;
 use serde::Serialize;
 
-use crate::diagnostics::{Diagnostic, Emitter, Run};
-use crate::source::Source;
+use crate::diagnostics::{line_columns, Diagnostic, Emitter, Run};
 
 pub(crate) struct Json;
 
 impl Emitter for Json {
     fn emit(&self, writer: &mut dyn Write, runs: &[Run<'_>]) -> io::Result<()> {
-        for (source, diagnostics) in runs {
+        for (file, diagnostics) in runs {
             for diag in *diagnostics {
-                serde_json::to_writer(&mut *writer, &JsonDiagnostic::new(source, diag))
+                serde_json::to_writer(&mut *writer, &JsonDiagnostic::new(file, diag))
                     .map_err(io::Error::other)?;
                 writer.write_all(b"\n")?;
             }
@@ -36,13 +35,14 @@ struct JsonDiagnostic<'a> {
 }
 
 impl<'a> JsonDiagnostic<'a> {
-    fn new(source: &'a Source, diag: &'a Diagnostic) -> Self {
+    fn new(file: &'a SourceFile, diag: &'a Diagnostic) -> Self {
+        let (start, end) = line_columns(file, diag.range);
         Self {
             code: diag.rule.as_str(),
-            end_location: source.line_column(diag.range.end()).into(),
-            filename: source.filename(),
-            fix: diag.fix.as_ref().map(|edit| JsonFix::new(source, edit)),
-            location: source.line_column(diag.range.start()).into(),
+            end_location: end.into(),
+            filename: file.name(),
+            fix: diag.fix.as_ref().map(|edit| JsonFix::new(file, edit)),
+            location: start.into(),
             message: &diag.message,
         }
     }
@@ -56,11 +56,12 @@ struct JsonEdit<'a> {
 }
 
 impl<'a> JsonEdit<'a> {
-    fn new(source: &'a Source, edit: &'a Edit) -> Self {
+    fn new(file: &'a SourceFile, edit: &'a Edit) -> Self {
+        let (start, end) = line_columns(file, edit.range());
         Self {
             content: edit.content().unwrap_or_default(),
-            end_location: source.line_column(edit.range().end()).into(),
-            location: source.line_column(edit.range().start()).into(),
+            end_location: end.into(),
+            location: start.into(),
         }
     }
 }
@@ -72,10 +73,10 @@ struct JsonFix<'a> {
 }
 
 impl<'a> JsonFix<'a> {
-    fn new(source: &'a Source, edit: &'a Edit) -> Self {
+    fn new(file: &'a SourceFile, edit: &'a Edit) -> Self {
         Self {
             applicability: Applicability::Safe,
-            edits: vec![JsonEdit::new(source, edit)],
+            edits: vec![JsonEdit::new(file, edit)],
         }
     }
 }
@@ -101,6 +102,7 @@ mod tests {
     use super::*;
     use crate::diagnostics::Severity;
     use crate::rule::RuleId;
+    use crate::source::Source;
 
     fn diag() -> Diagnostic {
         let range = TextRange::new(0.into(), 1.into());
@@ -118,8 +120,11 @@ mod tests {
         let source: Source = "x = 1\n".parse().expect("parses");
         let diag = diag();
         let mut buf = Vec::<u8>::new();
-        Json.emit(&mut buf, &[(&source, std::slice::from_ref(&diag))])
-            .expect("emits");
+        Json.emit(
+            &mut buf,
+            &[(source.source_file(), std::slice::from_ref(&diag))],
+        )
+        .expect("emits");
         let text = String::from_utf8(buf).expect("utf-8");
         assert!(text.ends_with('\n'));
         assert_eq!(text.matches('\n').count(), 1);
@@ -131,8 +136,11 @@ mod tests {
         let source: Source = "x = 1\n".parse().expect("parses");
         let diag = diag();
         let mut buf = Vec::<u8>::new();
-        Json.emit(&mut buf, &[(&source, std::slice::from_ref(&diag))])
-            .expect("emits");
+        Json.emit(
+            &mut buf,
+            &[(source.source_file(), std::slice::from_ref(&diag))],
+        )
+        .expect("emits");
         let v: Value = serde_json::from_slice(&buf).expect("parses");
         assert_eq!(v["code"], "rewrite-x");
         assert_eq!(v["filename"], "<source>");

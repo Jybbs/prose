@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import LandingSection      from './LandingSection.vue'
 
-import { data as tools }   from '../../../data/tools.data'
-import { externalAttrs }   from '../../../lib/shared/links'
-import { lookup }          from '../../../lib/shared/lookup'
+import { data as tools } from '../../../data/tools.data'
+import { externalAttrs } from '../../../lib/shared/links'
+import { lookup }        from '../../../lib/shared/lookup'
 
 interface Credit {
   role : string

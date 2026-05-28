@@ -1,36 +1,39 @@
 import postcssCustomMedia                         from 'postcss-custom-media'
-import { defineConfig }                            from 'vitepress'
+import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
-import { buildPhraseToSlug }                      from './lib/glossary/glossary'
-import { glossary }                               from './lib/glossary/glossary-data'
-import { glossaryPlugin }                         from './lib/glossary/plugin'
-import { bodyLinkPlugin }                         from './lib/markdown/body-link-plugin'
-import { proseMarkPlugin }                        from './lib/markdown/prose-mark-plugin'
-import { discoverRuleSlugs }                      from './lib/rules/discovery'
-import { ruleLinkPlugin }                         from './lib/rules/link-plugin'
-import { canonicalUrl }                           from './lib/config/canonical-url'
-import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME }  from './lib/shared/constants'
-import { buildPageTimestamps }                    from './lib/config/page-timestamps'
-import { repoRoot, rulesDir }                     from './lib/shared/paths'
-import { PRIMITIVES }                             from './lib/shared/registries'
-import type { PrimitiveSlug }                     from './lib/shared/registries'
-import { buildSidebar }                           from './lib/config/sidebar'
-import { toTitleCase }                            from './lib/shared/title-case'
-import { TOOL_SEEDS }                             from './lib/shared/tools'
-import { readCargoVersion }                       from './lib/shared/version'
+import { buildPhraseToSlug }                 from './lib/glossary/glossary'
+import { glossary }                          from './lib/glossary/entries'
+import { glossaryPlugin }                    from './lib/glossary/plugin'
+import { bodyLinkPlugin }                    from './lib/markdown/body-link-plugin'
+import { proseMarkPlugin }                   from './lib/markdown/prose-mark-plugin'
+import { discoverPrimitives }                from './lib/primitives/discovery'
+import { discoverRuleSlugs }                 from './lib/rules/discovery'
+import { ruleLinkPlugin }                    from './lib/rules/link-plugin'
+import { canonicalUrl }                      from './lib/config/canonical-url'
+import { ogImageUrl }                        from './lib/config/og-url'
+import { CARD_HEIGHT, CARD_WIDTH }           from './lib/og/parts'
+import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME, SITE_TAGLINE } from './lib/shared/constants'
+import { buildPageTimestamps }               from './lib/config/page-timestamps'
+import { primitivesDir, repoRoot, rulesDir } from './lib/shared/paths'
+import { buildSidebar }                      from './lib/config/sidebar'
+import { toTitleCase }                       from './lib/shared/title-case'
+import { TOOL_SEEDS }                        from './lib/shared/tools'
+import { readCargoVersion }                  from './lib/shared/version'
 
-const repoDir          = repoRoot(import.meta.url)
-const version          = readCargoVersion(repoDir)
-const pageTimestamps   = buildPageTimestamps(repoDir)
-const discoveredRules  = discoverRuleSlugs(rulesDir(import.meta.url))
-const validSlugs       = new Set(discoveredRules.map(r => r.slug))
+const repoDir              = repoRoot(import.meta.url)
+const version              = readCargoVersion(repoDir)
+const pageTimestamps       = buildPageTimestamps(repoDir)
+const discoveredRules      = discoverRuleSlugs(rulesDir(import.meta.url))
+const discoveredPrimitives = discoverPrimitives(primitivesDir(import.meta.url))
+const primitiveNames       = new Map(discoveredPrimitives.map(p => [p.slug as string, p.name]))
+const validSlugs           = new Set(discoveredRules.map(r => r.slug))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 
 export default defineConfig({
   cleanUrls     : true,
-  description   : 'A Python typesetter for the reader.',
+  description   : SITE_TAGLINE,
   head          : [
     ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }],
     ['meta', { content: '#dfbc97',                 name:     'theme-color'   }],
@@ -43,7 +46,7 @@ export default defineConfig({
     config      : md => {
       md.use(groupIconMdPlugin)
       md.use(tabsMarkdownPlugin)
-      md.use(ruleLinkPlugin(validSlugs))
+      md.use(ruleLinkPlugin(validSlugs, primitiveNames))
       md.use(glossaryPlugin(glossaryPhraseToSlug))
       md.use(proseMarkPlugin)
       md.use(bodyLinkPlugin)
@@ -70,7 +73,7 @@ export default defineConfig({
     ],
     outline     : { level: [2, 3] },
     search      : { provider: 'local' },
-    sidebar     : buildSidebar(discoveredRules),
+    sidebar     : buildSidebar(discoveredRules, discoveredPrimitives),
     siteTitle   : 'Prose',
     socialLinks : [
       { icon: 'github', link: REPO_URL }
@@ -78,14 +81,30 @@ export default defineConfig({
   },
   title         : 'Prose',
   titleTemplate : ':title · Prose',
+  async buildEnd(siteConfig) {
+    const { buildOgCards } = await import('./lib/og/build')
+    await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
+  },
   transformHead({ pageData }) {
-    const description = pageData.frontmatter.description ?? pageData.frontmatter.caption ?? 'A Python typesetter for the reader.'
+    const isLanding   = pageData.relativePath === 'index.md'
+    const description = pageData.frontmatter.description ?? pageData.frontmatter.caption ?? SITE_TAGLINE
     const title       = pageData.frontmatter.name ?? pageData.title ?? 'Prose'
+    const ogImage     = ogImageUrl(pageData.relativePath)
+    const ogTitle     = isLanding ? 'Prose'                                       : `${title} · Prose`
+    const ogAlt       = isLanding ? 'Prose, a Python typesetter for the reader.'  : `${title} card`
+    const ogUrl       = canonicalUrl(pageData.relativePath)
     return [
-      ['meta', { content: `${title} · Prose`, property: 'og:title'            }],
-      ['meta', { content: description,        property: 'og:description'      }],
-      ['meta', { content: `${title} · Prose`, name:     'twitter:title'       }],
-      ['meta', { content: description,        name:     'twitter:description' }]
+      ['meta', { content: ogTitle,             property: 'og:title'           }],
+      ['meta', { content: description,         property: 'og:description'     }],
+      ['meta', { content: ogUrl,               property: 'og:url'             }],
+      ['meta', { content: 'en_US',             property: 'og:locale'          }],
+      ['meta', { content: ogImage,             property: 'og:image'           }],
+      ['meta', { content: String(CARD_WIDTH),  property: 'og:image:width'     }],
+      ['meta', { content: String(CARD_HEIGHT), property: 'og:image:height'    }],
+      ['meta', { content: 'image/png',         property: 'og:image:type'      }],
+      ['meta', { content: ogAlt,               property: 'og:image:alt'       }],
+      ['meta', { content: ogImage,             name:     'twitter:image'      }],
+      ['meta', { content: ogAlt,               name:     'twitter:image:alt'  }]
     ]
   },
   transformPageData(pageData) {
@@ -103,7 +122,7 @@ export default defineConfig({
     }
     if (pageData.relativePath.startsWith('primitives/') && !pageData.relativePath.endsWith('index.md')) {
       const slug = pageData.relativePath.replace(/^primitives\/|\.md$/g, '')
-      pageData.frontmatter.name ??= PRIMITIVES[slug as PrimitiveSlug]
+      pageData.frontmatter.name ??= primitiveNames.get(slug)
     }
   },
   vite          : {

@@ -2,6 +2,7 @@
 //!
 //! See the project README and the approved plan for design rationale.
 
+pub(crate) mod cache;
 pub mod cli;
 pub mod config;
 pub mod diagnostics;

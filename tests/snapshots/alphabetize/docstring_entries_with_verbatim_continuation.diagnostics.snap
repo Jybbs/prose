@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/docstring_entries_with_verbatim_continuation.input.py
+---
+alphabetize@342..592

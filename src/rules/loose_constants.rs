@@ -144,23 +144,16 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case("PI")]
-    #[case("MAX_RETRIES")]
-    #[case("X1")]
-    #[case("LOG_LEVEL_2")]
-    fn is_screaming_case_accepts_canonical_constants(#[case] id: &str) {
+    fn is_screaming_case_accepts_canonical_constants(
+        #[values("PI", "MAX_RETRIES", "X1", "LOG_LEVEL_2")] id: &str,
+    ) {
         assert!(is_screaming_case(id));
     }
 
     #[rstest]
-    #[case("")]
-    #[case("pi")]
-    #[case("Pi")]
-    #[case("pI")]
-    #[case("_HIDDEN")]
-    #[case("1ABC")]
-    #[case("MAX_retries")]
-    fn is_screaming_case_rejects_mixed_and_lowercase_names(#[case] id: &str) {
+    fn is_screaming_case_rejects_mixed_and_lowercase_names(
+        #[values("", "pi", "Pi", "pI", "_HIDDEN", "1ABC", "MAX_retries")] id: &str,
+    ) {
         assert!(!is_screaming_case(id));
     }
 }

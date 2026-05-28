@@ -408,14 +408,18 @@ mod tests {
     }
 
     #[rstest]
-    #[case("x = 1  # prose: ignore[align-equals\n")]
-    #[case("x = 1  # prose:\n")]
-    #[case("x = 1  # proseignore\n")]
-    #[case("x = 1  # prose: ignoring\n")]
-    #[case("x = 1  # prose: ignore extra\n")]
-    #[case("x = 1  # prose: skip[align-equals\n")]
-    #[case("x = 1  # prose: skip extra\n")]
-    fn malformed_directive_does_not_register(#[case] src: &str) {
+    fn malformed_directive_does_not_register(
+        #[values(
+            "x = 1  # prose: ignore[align-equals\n",
+            "x = 1  # prose:\n",
+            "x = 1  # proseignore\n",
+            "x = 1  # prose: ignoring\n",
+            "x = 1  # prose: ignore extra\n",
+            "x = 1  # prose: skip[align-equals\n",
+            "x = 1  # prose: skip extra\n"
+        )]
+        src: &str,
+    ) {
         let source = parse(src);
         let map = source.suppression_map();
         assert!(!map.has_lint_suppression());
@@ -462,11 +466,15 @@ mod tests {
     }
 
     #[rstest]
-    #[case("# prose: off\nx = 1\n# prose: on\n")]
-    #[case("# fmt: off\nx = 1\n# fmt: on\n")]
-    #[case("# prose: off\nx = 1\n")]
-    #[case("# fmt: off\nx = 1\n")]
-    fn prose_off_and_fmt_off_open_the_same_span(#[case] text: &str) {
+    fn prose_off_and_fmt_off_open_the_same_span(
+        #[values(
+            "# prose: off\nx = 1\n# prose: on\n",
+            "# fmt: off\nx = 1\n# fmt: on\n",
+            "# prose: off\nx = 1\n",
+            "# fmt: off\nx = 1\n"
+        )]
+        text: &str,
+    ) {
         let src = parse(text);
         let x_offset = src.text().find('x').expect("x is present") as u32;
         assert!(src

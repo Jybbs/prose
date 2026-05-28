@@ -11,32 +11,18 @@
 //! reStructuredText markup, Sphinx directives, and Numpydoc style
 //! pass through unwrapped.
 
-use std::sync::LazyLock;
-
-use regex_lite::Regex;
 use ruff_diagnostics::Edit;
 use ruff_python_trivia::leading_indentation;
 use textwrap::Options;
 
 use crate::config::{Config, DocstringStructuredPolicy};
-use crate::primitives::docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body};
+use crate::primitives::docstring::{
+    entry_description_col, indent_prefix, is_list_marker, rewrite_docstrings, section_heading,
+    triple_quoted_body,
+};
 use crate::primitives::edit::narrowed_replacement;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
-
-static ENTRY_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^\w[\w.]*\s*:\s+\S").expect("static pattern compiles"));
-
-const SECTIONS: &[(&str, bool)] = &[
-    ("Args", true),
-    ("Attributes", true),
-    ("Examples", false),
-    ("Note", false),
-    ("Raises", true),
-    ("Returns", true),
-    ("Warning", false),
-    ("Yields", true),
-];
 
 pub(crate) struct DocstringWrap {
     description_width: usize,
@@ -107,7 +93,6 @@ struct Walker<'a> {
     paragraph: Paragraph,
     region: Region,
     rule: &'a DocstringWrap,
-    section_allows_entries: bool,
 }
 
 impl Walker<'_> {
@@ -158,14 +143,11 @@ impl Walker<'_> {
             return;
         }
 
-        if indent_chars == self.body_indent_chars {
-            if let Some(allows_entries) = section_heading(trimmed) {
-                self.flush_paragraph();
-                self.region = Region::Section;
-                self.section_allows_entries = allows_entries;
-                self.emit_verbatim(line);
-                return;
-            }
+        if indent_chars == self.body_indent_chars && section_heading(trimmed) {
+            self.flush_paragraph();
+            self.region = Region::Section;
+            self.emit_verbatim(line);
+            return;
         }
 
         let text = trimmed.trim_end();
@@ -196,11 +178,9 @@ impl Walker<'_> {
         match self.region {
             Region::Description => self.buffer_description(indent_str, text),
             Region::Section => {
-                if self.section_allows_entries {
-                    if let Some(desc_col) = entry_description_col(text) {
-                        self.start_entry(indent_str, indent_chars, text, desc_col);
-                        return;
-                    }
+                if let Some(desc_col) = entry_description_col(text) {
+                    self.start_entry(indent_str, indent_chars, text, desc_col);
+                    return;
                 }
                 self.emit_wrapped(indent_str, indent_str, text, self.rule.section_width);
             }
@@ -259,22 +239,6 @@ impl Walker<'_> {
     }
 }
 
-fn entry_description_col(trimmed: &str) -> Option<usize> {
-    let m = ENTRY_PATTERN.find(trimmed)?;
-    Some(trimmed[..m.end() - 1].chars().count())
-}
-
-fn is_list_marker(trimmed: &str) -> bool {
-    if trimmed
-        .strip_prefix(['-', '*', '+'])
-        .is_some_and(|rest| rest.starts_with(' '))
-    {
-        return true;
-    }
-    let after_digits = trimmed.trim_start_matches(|c: char| c.is_ascii_digit());
-    after_digits.len() < trimmed.len() && after_digits.starts_with(". ")
-}
-
 fn rewrite_body(
     body: &str,
     body_indent: &str,
@@ -292,7 +256,6 @@ fn rewrite_body(
         paragraph: Paragraph::default(),
         region: Region::Description,
         rule,
-        section_allows_entries: false,
     };
     for line in content.split(newline) {
         walker.consume(line);
@@ -305,15 +268,6 @@ fn rewrite_body(
     result.push_str(newline);
     result.push_str(closer_indent);
     Some(result)
-}
-
-fn section_heading(trimmed: &str) -> Option<bool> {
-    SECTIONS.iter().find_map(|(name, allows_entries)| {
-        trimmed
-            .strip_prefix(name)?
-            .starts_with(':')
-            .then_some(*allows_entries)
-    })
 }
 
 #[cfg(test)]
@@ -361,38 +315,10 @@ mod tests {
     }
 
     #[test]
-    fn entry_description_col_rejects_lines_without_name_colon_shape() {
-        assert!(entry_description_col("just prose with no colon").is_none());
-        assert!(entry_description_col("name:no_space_after_colon").is_none());
-        assert!(entry_description_col(": no name before colon").is_none());
-        assert!(entry_description_col("name: ").is_none());
-        assert!(entry_description_col("123: digits-only name").is_some());
-    }
-
-    #[test]
-    fn entry_description_col_returns_char_column_of_description_start() {
-        assert_eq!(entry_description_col("name: desc"), Some(6));
-        assert_eq!(entry_description_col("name : desc"), Some(7));
-        assert_eq!(entry_description_col("dotted.name: desc"), Some(13));
-    }
-
-    #[test]
     fn fenced_code_block_passes_through_verbatim() {
         let src =
             "\"\"\"\nSummary.\n\n```python\nx = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12\n```\n\"\"\"\n";
         assert_eq!(run(src), src);
-    }
-
-    #[test]
-    fn is_list_marker_matches_dash_star_plus_and_numeric() {
-        assert!(is_list_marker("- foo"));
-        assert!(is_list_marker("* foo"));
-        assert!(is_list_marker("+ foo"));
-        assert!(is_list_marker("1. foo"));
-        assert!(is_list_marker("12. foo"));
-        assert!(!is_list_marker("foo"));
-        assert!(!is_list_marker("-foo"));
-        assert!(!is_list_marker(". foo"));
     }
 
     #[test]
@@ -414,34 +340,6 @@ mod tests {
         for line in out.lines() {
             assert!(line.chars().count() <= 76, "line over 76: {line:?}");
         }
-    }
-
-    #[test]
-    fn section_heading_matches_recognized_names_with_colon() {
-        for (name, _) in SECTIONS {
-            assert!(
-                section_heading(&format!("{name}:")).is_some(),
-                "{name}: should match"
-            );
-        }
-        assert!(section_heading("Returns: int").is_some());
-        assert!(section_heading("Args :").is_none());
-        assert!(section_heading("args:").is_none());
-        assert!(section_heading("Argz:").is_none());
-        assert!(section_heading("Args").is_none());
-        assert!(section_heading("Arguments:").is_none());
-    }
-
-    #[test]
-    fn section_heading_returns_entry_flag_per_section() {
-        assert_eq!(section_heading("Args:"), Some(true));
-        assert_eq!(section_heading("Attributes:"), Some(true));
-        assert_eq!(section_heading("Examples:"), Some(false));
-        assert_eq!(section_heading("Note:"), Some(false));
-        assert_eq!(section_heading("Raises:"), Some(true));
-        assert_eq!(section_heading("Returns:"), Some(true));
-        assert_eq!(section_heading("Warning:"), Some(false));
-        assert_eq!(section_heading("Yields:"), Some(true));
     }
 
     #[test]

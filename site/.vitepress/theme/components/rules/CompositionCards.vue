@@ -4,12 +4,12 @@ import { computed, ref } from 'vue'
 import FixturePairDoc from '../fixtures/FixturePairDoc.vue'
 import FixtureToggle  from '../fixtures/FixtureToggle.vue'
 
-import { data as composition }   from '../../../data/composition.data'
-import { data as fixturesData }  from '../../../data/fixtures.data'
-import { data as rules }         from '../../../data/rules.data'
-import type { RenderedRule }     from '../../../data/rules.data'
-import type { FixtureTab }       from '../../../lib/shared/fixture-tab'
-import { formatFolio }           from '../../../lib/shared/numerals'
+import { data as composition }  from '../../../data/composition.data'
+import { data as fixturesData } from '../../../data/fixtures.data'
+import { data as rules }        from '../../../data/rules.data'
+import type { RenderedRule }    from '../../../data/rules.data'
+import type { FixtureTab }      from '../../../lib/shared/fixture-tab'
+import { formatFolio }          from '../../../lib/shared/numerals'
 
 interface RuleSegment {
   family : string | null

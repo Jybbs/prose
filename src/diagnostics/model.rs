@@ -2,10 +2,11 @@
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange};
+use serde::{Deserialize, Serialize};
 
 use crate::rule::RuleId;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Diagnostic {
     pub fix: Option<Edit>,
     pub message: String,
@@ -46,7 +47,7 @@ impl Ranged for Diagnostic {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Severity {
     Format,
     Lint,
