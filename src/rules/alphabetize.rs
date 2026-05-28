@@ -36,6 +36,7 @@ use crate::primitives::imports::{import_group, ImportGroup};
 use crate::primitives::orderer::{
     assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
 };
+use crate::primitives::scope::BodyScope;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -48,7 +49,7 @@ impl Alphabetize {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             docstring_entries: config.rules.alphabetize.docstring_entries,
-            first_party: config.imports.first_party.clone(),
+            first_party: config.first_party(),
         }
     }
 }
@@ -83,13 +84,6 @@ impl Rule for Alphabetize {
     fn id(&self) -> RuleId {
         Self::SLUG
     }
-}
-
-#[derive(Clone, Copy, Eq, PartialEq)]
-enum BodyScope {
-    Class,
-    Function,
-    Module,
 }
 
 struct LeafCollector<'a> {

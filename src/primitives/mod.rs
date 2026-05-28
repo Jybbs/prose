@@ -7,6 +7,8 @@ pub(crate) mod docstring;
 pub(crate) mod edit;
 pub(crate) mod imports;
 pub(crate) mod orderer;
+pub(crate) mod range;
+pub(crate) mod scope;
 
 /// PEP 8 indent step in spaces, the depth one nested level adds.
 pub(crate) const INDENT_STEP: usize = 4;

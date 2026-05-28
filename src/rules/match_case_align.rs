@@ -28,10 +28,7 @@ pub(crate) struct MatchCaseAlign {
 impl MatchCaseAlign {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            code_line_length: config
-                .code_line_length
-                .expect("Config::default synthesizes Some(88)")
-                .get(),
+            code_line_length: config.code_width(),
             settings: aligner::Settings::from(&config.rules.match_case_align)
                 .with_singleton_subgroup_strip(),
         }

@@ -5,14 +5,13 @@
 use std::collections::HashMap;
 
 use ruff_python_ast::name::{QualifiedName, UnqualifiedName};
-use ruff_python_ast::token::parenthesized_range;
 use ruff_python_ast::visitor::{walk_expr, walk_stmt, Visitor};
 use ruff_python_ast::{AnyNodeRef, Expr, ExprSubscript, Identifier, PythonVersion, Stmt};
-use ruff_text_size::Ranged;
 
 use crate::config::Config;
 use crate::diagnostics::Diagnostic;
 use crate::primitives::binding::top_level_module;
+use crate::primitives::range::paren_aware_range;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -91,8 +90,7 @@ impl<'a> Walker<'a> {
             .parents
             .last()
             .expect("invariant: subscript visited inside a stmt or expr");
-        let range = parenthesized_range(subscript.into(), parent, self.source.tokens())
-            .unwrap_or(subscript.range());
+        let range = paren_aware_range(subscript.into(), parent, self.source.tokens());
         self.diagnostics
             .push(Diagnostic::lint(self.rule, range, message));
     }
