@@ -186,6 +186,7 @@ fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
             |mut summary, (diagnostics, formatted_text)| {
                 summary.files_visited += 1;
                 summary.files_changed += usize::from(formatted_text.is_some());
+                summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
                 summary.diagnostics_total += diagnostics.len();
                 for diag in diagnostics {
                     *summary.rules_fired.entry(diag.rule).or_default() += 1;
@@ -193,13 +194,6 @@ fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
                 summary
             },
         )
-}
-
-fn files_with_diagnostics(outcomes: &[FileOutcome]) -> usize {
-    outcomes
-        .iter()
-        .filter(|o| matches!(o, FileOutcome::Done { diagnostics, .. } if !diagnostics.is_empty()))
-        .count()
 }
 
 fn finish(
@@ -496,7 +490,7 @@ fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> 
         Mode::Check => match summary.diagnostics_total {
             0 => Summary::Clean,
             total => Summary::Diagnostics {
-                files: files_with_diagnostics(outcomes),
+                files: summary.files_with_diagnostics,
                 total,
             },
         },
@@ -827,6 +821,7 @@ mod tests {
 
         assert_eq!(summary.files_visited, 2);
         assert_eq!(summary.files_changed, 1);
+        assert_eq!(summary.files_with_diagnostics, 1);
         assert_eq!(summary.diagnostics_total, 2);
         assert_eq!(summary.rules_fired[&RuleId::from("align-equals")], 1);
         assert_eq!(summary.rules_fired[&RuleId::from("loose-constants")], 1);

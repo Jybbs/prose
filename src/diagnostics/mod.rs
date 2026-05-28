@@ -34,13 +34,14 @@ pub(crate) trait Emitter {
     ) -> io::Result<()>;
 }
 
-/// Run-wide rollup accumulated across every processed file, emitted as
-/// the closing record by formats that carry an envelope.
+/// Run-wide rollup accumulated across every processed file. Feeds both
+/// the JSON envelope's closing record and the human run summary.
 #[derive(Default)]
 pub(crate) struct EmitterSummary {
     pub(crate) diagnostics_total: usize,
     pub(crate) files_changed: usize,
     pub(crate) files_visited: usize,
+    pub(crate) files_with_diagnostics: usize,
     pub(crate) rules_fired: BTreeMap<RuleId, usize>,
 }
 

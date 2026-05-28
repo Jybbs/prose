@@ -266,6 +266,7 @@ mod tests {
             diagnostics_total: 2,
             files_changed: 1,
             files_visited: 1,
+            files_with_diagnostics: 1,
             rules_fired,
         };
 
