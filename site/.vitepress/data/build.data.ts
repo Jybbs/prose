@@ -23,7 +23,9 @@ export default defineLoader({
   async load(): Promise<BuildData> {
     const gitSha = await withFallback(
       'build:git-sha',
-      () => execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
+      () => execFileSync(
+        'git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }
+      ).trim(),
       'unknown'
     )
     return {

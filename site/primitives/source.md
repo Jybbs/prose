@@ -1,3 +1,7 @@
+---
+stability: public
+---
+
 # Source
 
 <PrimitiveLayout primitive="source">

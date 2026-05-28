@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useData } from 'vitepress'
+import { useData }  from 'vitepress'
 import { computed } from 'vue'
 
 import { useGlossaryFolio } from './use-glossary-folio'

@@ -1,3 +1,7 @@
+---
+stability: internal
+---
+
 # Edit
 
 <PrimitiveLayout primitive="edit">

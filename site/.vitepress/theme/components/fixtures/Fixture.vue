@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useEventListener }     from '@vueuse/core'
+import { useEventListener }         from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 import FixturePairDoc     from './FixturePairDoc.vue'

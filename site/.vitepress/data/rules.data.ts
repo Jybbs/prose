@@ -1,11 +1,12 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer }         from '../lib/markdown/renderer'
-import { discoverRuleSlugs }   from '../lib/rules/discovery'
-import type { DiscoveredRule } from '../lib/rules/discovery'
-import { rulesDir }            from '../lib/shared/paths'
-import { CATEGORY_META, FAMILY_META, FAMILY_ORDER, type RuleCategory, type RuleFamily } from '../lib/shared/registries'
-import { toTitleCase }         from '../lib/shared/title-case'
+import { getRenderer }                              from '../lib/markdown/renderer'
+import { discoverRuleSlugs }                        from '../lib/rules/discovery'
+import type { DiscoveredRule }                      from '../lib/rules/discovery'
+import { rulesDir }                                 from '../lib/shared/paths'
+import { CATEGORY_META, FAMILY_META, FAMILY_ORDER } from '../lib/shared/registries'
+import type { RuleCategory, RuleFamily }            from '../lib/shared/registries'
+import { toTitleCase }                              from '../lib/shared/title-case'
 
 export type { DiscoveredRule }
 
@@ -56,11 +57,13 @@ export default defineLoader({
       name          : toTitleCase(r.slug, '-')
     }))
     const bySlug     = Object.fromEntries(list.map(r => [r.slug, r])) as Record<string, RenderedRule>
-    const byFamily   = Object.groupBy(list, r => r.family) as Record<RuleFamily, readonly RenderedRule[]>
+    type ByFamily    = Record<RuleFamily, readonly RenderedRule[]>
+    const byFamily   = Object.groupBy(list, r => r.family) as ByFamily
     for (const family of FAMILY_ORDER) byFamily[family] ??= []
     const byCategory = (['auto-fix', 'lint'] as const).map(category => {
       const rulesInCategory = list.filter(r => r.category === category)
-      const grouped         = Object.groupBy(rulesInCategory, r => r.family) as Partial<Record<RuleFamily, readonly RenderedRule[]>>
+      type GroupedRules     = Partial<Record<RuleFamily, readonly RenderedRule[]>>
+      const grouped         = Object.groupBy(rulesInCategory, r => r.family) as GroupedRules
       return {
         byFamily : FAMILY_ORDER
           .filter(family => grouped[family]?.length)

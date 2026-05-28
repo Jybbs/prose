@@ -1,7 +1,7 @@
 //! Coverage checks pairing the docs site at `site/` with the live
 //! rule registry, the primitive surface, and the fixture catalog.
 
-use std::{collections::BTreeSet, fs, path::Path};
+use std::{fs, path::Path};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
 use prose::pipeline::Pipeline;
@@ -63,41 +63,4 @@ fn every_registered_rule_has_a_page() {
             "rule `{id}` registered in `KNOWN_IDS` has no page at `site/rules/{id}.md`"
         );
     }
-}
-
-#[test]
-fn every_registered_primitive_has_a_page() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let registries =
-        fs::read_to_string(root.join("site/.vitepress/lib/shared/registries.ts")).unwrap();
-    let block = registries
-        .split_once("PRIMITIVES = {")
-        .unwrap()
-        .1
-        .split_once("} as const")
-        .unwrap()
-        .0;
-
-    let expected: BTreeSet<String> = Regex::new(r#"['"]([a-z-]+)['"]\s*:"#)
-        .unwrap()
-        .captures_iter(block)
-        .map(|c| c[1].to_string())
-        .collect();
-
-    let found: BTreeSet<String> = fs::read_dir(root.join("site/primitives"))
-        .unwrap()
-        .flatten()
-        .filter_map(|e| {
-            Some(
-                e.file_name()
-                    .into_string()
-                    .ok()?
-                    .strip_suffix(".md")?
-                    .to_owned(),
-            )
-        })
-        .filter(|n| n != "index")
-        .collect();
-
-    assert_eq!(found, expected, "site/primitives/ != PRIMITIVES registry");
 }

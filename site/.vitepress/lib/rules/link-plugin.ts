@@ -1,9 +1,11 @@
 import type MarkdownIt from 'markdown-it'
 
 import { walkBodyInlines } from '../markdown/walk'
-import { PRIMITIVES }      from '../shared/registries'
 
-export function ruleLinkPlugin(validRuleSlugs: Set<string>): (md: MarkdownIt) => void {
+export function ruleLinkPlugin(
+  validRuleSlugs : Set<string>,
+  primitiveNames : ReadonlyMap<string, string>
+): (md: MarkdownIt) => void {
   return function plugin(md: MarkdownIt): void {
     md.inline.ruler.before('link', 'doc-link', (state, silent) => {
       if (state.src.slice(state.pos, state.pos + 2) !== '[[') return false
@@ -13,8 +15,8 @@ export function ruleLinkPlugin(validRuleSlugs: Set<string>): (md: MarkdownIt) =>
       if (!/^[a-z][a-z0-9-]*$/.test(slug)) return false
 
       let kind: 'primitive' | 'rule'
-      if (validRuleSlugs.has(slug)) kind = 'rule'
-      else if (slug in PRIMITIVES)  kind = 'primitive'
+      if (validRuleSlugs.has(slug))      kind = 'rule'
+      else if (primitiveNames.has(slug)) kind = 'primitive'
       else {
         throw new Error(`Unknown slug "${slug}" referenced by [[${slug}]]`)
       }
@@ -45,8 +47,11 @@ export function ruleLinkPlugin(validRuleSlugs: Set<string>): (md: MarkdownIt) =>
       if (tokens[idx].meta?.kind === 'rule') {
         return `<InlineRuleLink slug="${slug}" />`
       }
-      const display = PRIMITIVES[slug as keyof typeof PRIMITIVES]
-      return `<a class="body-link" href="/primitives/${slug}"><strong><code>${display}</code></strong></a>`
+      const display = primitiveNames.get(slug)!
+      return (
+        `<a class="body-link" href="/primitives/${slug}">`
+        + `<strong><code>${display}</code></strong></a>`
+      )
     }
   }
 }

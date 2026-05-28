@@ -2,10 +2,11 @@
 import { useResizeObserver }              from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { data as primitives }                  from '../../../data/primitives-composition.data'
-import type { PrimitiveLayer }                 from '../../../data/primitives-composition.data'
-import { data as rules }                       from '../../../data/rules.data'
-import { PRIMITIVES, type PrimitiveSlug }      from '../../../lib/shared/registries'
+import { data as primitives }    from '../../../data/primitives-composition.data'
+import type { PrimitiveLayer }   from '../../../data/primitives-composition.data'
+import { data as primitiveMeta } from '../../../data/primitives.data'
+import { data as rules }         from '../../../data/rules.data'
+import { type PrimitiveSlug }    from '../../../lib/shared/registries'
 
 const props = defineProps<{
   focused : PrimitiveSlug | null
@@ -25,7 +26,7 @@ const relations = computed(() => {
 })
 
 function isPrimitive(s: string): s is PrimitiveSlug {
-  return s in PRIMITIVES
+  return s in primitiveMeta.bySlug
 }
 
 function layerOf(slug: string): string {
@@ -69,7 +70,7 @@ watch(focusedEntry, scheduleUpdate, { immediate: true })
       <div class="primitives-composition-card-head">
         <span class="primitives-composition-card-layer-numeral" aria-hidden="true">{{ LAYER_NUMERAL[focusedEntry.layer] }}</span>
         <div class="primitives-composition-card-head-text">
-          <span class="primitives-composition-card-name">{{ PRIMITIVES[focusedEntry.slug] }}</span>
+          <span class="primitives-composition-card-name">{{ primitiveMeta.bySlug[focusedEntry.slug].name }}</span>
           <span class="primitives-composition-card-summary" v-html="focusedEntry.summaryHtml" />
         </div>
       </div>

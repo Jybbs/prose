@@ -24,5 +24,6 @@ export function withFallbackSync<T>(
 }
 
 function warnFallback(label: string, err: unknown): void {
-  console.warn(`[data:${label}] external call failed, using fallback:`, Error.isError(err) ? err.message : err)
+  const message = Error.isError(err) ? err.message : err
+  console.warn(`[data:${label}] external call failed, using fallback:`, message)
 }

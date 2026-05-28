@@ -1,3 +1,7 @@
+---
+stability: internal
+---
+
 # BindingAnalysis
 
 <PrimitiveLayout primitive="binding-analysis">

@@ -1,3 +1,7 @@
+---
+stability: internal
+---
+
 # Cache
 
 <PrimitiveLayout primitive="cache">

@@ -34,7 +34,8 @@ interface DirectiveSource {
 
 const SOURCES: readonly DirectiveSource[] = [
   {
-    effect   : 'Suppresses every *Prose* rewrite for the entire file. Declared on a comment line near the top.',
+    effect   : 'Suppresses every *Prose* rewrite for the entire file. Declared on a comment '
+             + 'line near the top.',
     example  : '# prose: off\n\ndef messy(): pass',
     form     : '# prose: off',
     id       : 'prose-off',
@@ -46,7 +47,8 @@ const SOURCES: readonly DirectiveSource[] = [
     scope    : 'file'
   },
   {
-    effect   : 'Opens a region every auto-fix rule leaves untouched, so a hand-tuned block survives the formatter pass intact.',
+    effect   : 'Opens a region every auto-fix rule leaves untouched, so a hand-tuned block '
+             + 'survives the formatter pass intact.',
     example  : '# fmt: off\nkeep_this_block_exactly_as_written = (1,2,3)\n# fmt: on',
     form     : '# fmt: off',
     id       : 'fmt-off',
@@ -104,8 +106,10 @@ const SOURCES: readonly DirectiveSource[] = [
     scope    : 'block'
   },
   {
-    effect    : 'Every ordering rule leaves the dict entries in their authored order. Scopes to that one dict literal.',
-    example   : 'config = {  # prose: keep\n    "stage_one"   : True,\n    "stage_two"   : False,\n}',
+    effect    : 'Every ordering rule leaves the dict entries in their authored order. Scopes '
+              + 'to that one dict literal.',
+    example   : 'config = {  # prose: keep\n    "stage_one"   : True,\n    "stage_two"   : '
+              + 'False,\n}',
     form      : '# prose: keep',
     id        : 'prose-keep',
     parts     : [
@@ -117,7 +121,8 @@ const SOURCES: readonly DirectiveSource[] = [
     scopeNote : 'dict literal only'
   },
   {
-    effect  : 'Every auto-fix rule skips the line carrying the directive. Pairs with `[<rule>, ...]` to narrow the scope.',
+    effect  : 'Every auto-fix rule skips the line carrying the directive. Pairs with '
+            + '`[<rule>, ...]` to narrow the scope.',
     example : 'data = {"a": 1, "b": 2, "c": 3}  # fmt: skip',
     form    : '# fmt: skip',
     id      : 'fmt-skip',
@@ -142,7 +147,8 @@ const SOURCES: readonly DirectiveSource[] = [
     scope   : 'line'
   },
   {
-    effect  : 'Only the listed auto-fix rules skip the line. Two bracketed directives on one line union their rule slugs.',
+    effect  : 'Only the listed auto-fix rules skip the line. Two bracketed directives on one '
+            + 'line union their rule slugs.',
     example : 'foo = 1  # prose: skip[align-equals, strip-trailing-commas]',
     form    : '# prose: skip[<rule>, ...]',
     id      : 'prose-skip-rules',
@@ -167,7 +173,8 @@ const SOURCES: readonly DirectiveSource[] = [
     scope   : 'line'
   },
   {
-    effect  : 'Only the listed lint rules skip the line. Two bracketed directives on one line union their rule slugs.',
+    effect  : 'Only the listed lint rules skip the line. Two bracketed directives on one '
+            + 'line union their rule slugs.',
     example : 'TIMEOUT = 30  # prose: ignore[loose-constants, single-use-variables]',
     form    : '# prose: ignore[<rule>, ...]',
     id      : 'prose-ignore-rules',

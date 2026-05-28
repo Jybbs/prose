@@ -14,7 +14,9 @@ export function buildPhraseToSlug(source: Record<string, GlossaryEntry>): Map<st
 function register(map: Map<string, string>, phrase: string, slug: string): void {
   const existing = map.get(phrase)
   if (existing !== undefined && existing !== slug) {
-    throw new Error(`Glossary phrase "${phrase}" registered against both "${existing}" and "${slug}"`)
+    throw new Error(
+      `Glossary phrase "${phrase}" registered against both "${existing}" and "${slug}"`
+    )
   }
   map.set(phrase, slug)
 }

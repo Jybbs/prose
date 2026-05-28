@@ -23,7 +23,8 @@ export const SCOPE_ORDER: ScopeKey[] = ['file', 'block', 'line', 'dict']
 
 export const DECISIONS: Decision[] = [
   {
-    detail        : 'Useful for a generated file, an embedded vendored module, or any source where Prose would fight the existing layout.',
+    detail        : 'Useful for a generated file, an embedded vendored module, or any source where '
+                  + 'Prose would fight the existing layout.',
     directive     : '# prose: off',
     id            : 'file-off',
     intent        : 'format',
@@ -32,16 +33,20 @@ export const DECISIONS: Decision[] = [
     situationLead : 'Whole file hand-tuned'
   },
   {
-    detail        : 'The opening line is the marker, and formatting resumes after the closing line.',
+    detail        : 'The opening line is the marker, and formatting resumes after the closing '
+                  + 'line.',
     directive     : '# fmt: off … # fmt: on',
     id            : 'block-fmt',
     intent        : 'format',
     scope         : 'block',
-    situation     : 'A block of code is a hand-tuned data table, ASCII diagram, or otherwise carries layout that the formatter would smooth over.',
+    situation     : 'A block of code is a hand-tuned data table, ASCII diagram, or otherwise '
+                  + 'carries layout that the formatter would smooth over.',
     situationLead : 'Hand-tuned block'
   },
   {
-    detail        : 'The right shape when only one statement carries the exception, because wrapping a single line in fmt off-on reads heavier than the exception warrants.',
+    detail        : 'The right shape when only one statement carries the exception, because '
+                  + 'wrapping a single line in fmt off-on reads heavier than the exception '
+                  + 'warrants.',
     directive     : '# fmt: skip',
     id            : 'line-skip',
     intent        : 'format',
@@ -50,16 +55,19 @@ export const DECISIONS: Decision[] = [
     situationLead : 'Single line, no format'
   },
   {
-    detail        : 'Use [<rule>] for one rule, [a, b] for several. The other auto-fix rules stay free to run on the line.',
+    detail        : 'Use [<rule>] for one rule, [a, b] for several. The other auto-fix rules stay '
+                  + 'free to run on the line.',
     directive     : '# prose: skip[<rule>]',
     id            : 'line-skip-rules',
     intent        : 'format',
     scope         : 'line',
-    situation     : 'A single line wants specific rewrite rules to leave it alone, with the others free to fire.',
+    situation     : 'A single line wants specific rewrite rules to leave it alone, with the others '
+                  + 'free to fire.',
     situationLead : 'Single line, narrow rewrite skip'
   },
   {
-    detail        : 'Use [<rule>] for one rule, [a, b] for several, or bare ignore for every lint on the line.',
+    detail        : 'Use [<rule>] for one rule, [a, b] for several, or bare ignore for every lint '
+                  + 'on the line.',
     directive     : '# prose: ignore[<rule>]',
     id            : 'line-ignore',
     intent        : 'lint',
@@ -68,12 +76,14 @@ export const DECISIONS: Decision[] = [
     situationLead : 'Single line, silence lint'
   },
   {
-    detail        : 'Tells alphabetize to leave the entries alone. The directive scopes only to that one dict.',
+    detail        : 'Tells alphabetize to leave the entries alone. The directive scopes only to '
+                  + 'that one dict.',
     directive     : '# prose: keep',
     id            : 'dict-keep',
     intent        : 'order',
     scope         : 'dict',
-    situation     : 'A dict literal’s entry order carries meaning a future reader needs preserved, like a pipeline-stage sequence or a column layout.',
+    situation     : 'A dict literal’s entry order carries meaning a future reader needs preserved, '
+                  + 'like a pipeline-stage sequence or a column layout.',
     situationLead : 'Dict order matters'
   }
 ]

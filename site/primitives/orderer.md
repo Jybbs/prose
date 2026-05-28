@@ -1,3 +1,7 @@
+---
+stability: internal
+---
+
 # Orderer
 
 <PrimitiveLayout primitive="orderer">

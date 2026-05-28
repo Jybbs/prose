@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMediaQuery }                       from '@vueuse/core'
+import { useMediaQuery }                         from '@vueuse/core'
 import { computed, useTemplateRef, watchEffect } from 'vue'
 
 import LandingSection from '../LandingSection.vue'

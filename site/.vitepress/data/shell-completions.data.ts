@@ -37,7 +37,9 @@ const SOURCES: readonly ShellCompletionSource[] = [
     language : 'bash',
     mono     : 'bash',
     name     : 'Bash',
-    note     : 'The `/etc/bash_completion.d/` directory is the system-wide completion hook on most distributions. For a per-user install, write to `~/.local/share/bash-completion/completions/prose` instead.',
+    note     : 'The `/etc/bash_completion.d/` directory is the system-wide completion hook on '
+             + 'most distributions. For a per-user install, write to '
+             + '`~/.local/share/bash-completion/completions/prose` instead.',
     slug     : 'bash',
     target   : '/etc/bash_completion.d/prose'
   },
@@ -49,7 +51,8 @@ use prose-completions`,
     language : 'shellscript',
     mono     : 'elvish',
     name     : 'Elvish',
-    note     : 'The `use` line goes in `~/.config/elvish/rc.elv` to register the completions on shell start.',
+    note     : 'The `use` line goes in `~/.config/elvish/rc.elv` to register the completions '
+             + 'on shell start.',
     slug     : 'elvish',
     target   : '~/.config/elvish/lib/prose-completions.elv'
   },
@@ -60,7 +63,8 @@ use prose-completions`,
     language : 'fish',
     mono     : 'fish',
     name     : 'Fish',
-    note     : 'Fish picks up completions in `~/.config/fish/completions/` on the next shell start, no `source` required.',
+    note     : 'Fish picks up completions in `~/.config/fish/completions/` on the next shell '
+             + 'start, no `source` required.',
     slug     : 'fish',
     target   : '~/.config/fish/completions/prose.fish'
   },
@@ -71,7 +75,8 @@ use prose-completions`,
     language : 'powershell',
     mono     : 'powershell',
     name     : 'PowerShell',
-    note     : 'PowerShell loads `$PROFILE.CurrentUserAllHosts` on every session, so the completions register on the next shell start.',
+    note     : 'PowerShell loads `$PROFILE.CurrentUserAllHosts` on every session, so the '
+             + 'completions register on the next shell start.',
     slug     : 'powershell',
     target   : '$PROFILE.CurrentUserAllHosts'
   },
@@ -82,7 +87,10 @@ use prose-completions`,
     language : 'zsh',
     mono     : 'zsh',
     name     : 'Zsh',
-    note     : 'The `${fpath[1]}` expansion lands at the first entry of zsh\'s function path, which is where `compinit` picks up new completions. Restart the shell or run `autoload -Uz compinit && compinit` to pick the completions up without re-launching.',
+    note     : 'The `${fpath[1]}` expansion lands at the first entry of zsh\'s function path, '
+             + 'which is where `compinit` picks up new completions. Restart the shell or run '
+             + '`autoload -Uz compinit && compinit` to pick the completions up without '
+             + 're-launching.',
     slug     : 'zsh',
     target   : '${fpath[1]}/_prose'
   }

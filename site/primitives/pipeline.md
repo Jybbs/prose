@@ -1,3 +1,7 @@
+---
+stability: public
+---
+
 # Pipeline
 
 <PrimitiveLayout primitive="pipeline">

@@ -3,11 +3,11 @@ import { useIntersectionObserver, useMediaQuery }   from '@vueuse/core'
 import { ShikiMagicMovePrecompiled }                from 'shiki-magic-move/vue'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 
-import { data }                                                from '../../../data/landing-typing-demo.data'
+import { data }                                 from '../../../data/landing-typing-demo.data'
 import { applyCompletedEdits, EMPTY_SEGMENTS, segmentsForEdit } from './typing-demo-buffer'
-import type { BufferSegments }                                  from './typing-demo-buffer'
-import { MAGIC_MOVE_MS, useTypingStateMachine }                 from './typing-state-machine'
-import type { Phase }                                           from './typing-state-machine'
+import type { BufferSegments }                  from './typing-demo-buffer'
+import { MAGIC_MOVE_MS, useTypingStateMachine } from './typing-state-machine'
+import type { Phase }                           from './typing-state-machine'
 
 type CaretLocation = 'bottom' | 'editing' | 'none'
 
