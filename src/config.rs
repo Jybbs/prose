@@ -201,6 +201,10 @@ impl Config {
             .expect("Config::default synthesizes Some(76)")
             .get()
     }
+
+    pub(crate) fn first_party(&self) -> Vec<String> {
+        self.imports.first_party.clone()
+    }
 }
 
 /// Failure to load a `[tool.prose]` configuration from a `pyproject.toml`.

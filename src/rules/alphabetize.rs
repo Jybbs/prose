@@ -49,7 +49,7 @@ impl Alphabetize {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             docstring_entries: config.rules.alphabetize.docstring_entries,
-            first_party: config.imports.first_party.clone(),
+            first_party: config.first_party(),
         }
     }
 }
