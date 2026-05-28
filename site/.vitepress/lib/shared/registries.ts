@@ -1,6 +1,6 @@
 export type RuleCategory   = 'auto-fix' | 'lint'
 export type RuleFamily     = 'alignment' | 'docs' | 'formatting' | 'lint' | 'ordering'
-export type GlossaryFamily = RuleFamily | 'engine'
+export type GlossaryFamily = RuleFamily | 'cli' | 'engine'
 
 interface CategoryMeta {
   badge : 'A' | 'L'
@@ -27,9 +27,10 @@ export const FAMILY_META: Record<RuleFamily, FamilyMeta> = {
   ordering   : { badge: '🪉', color: '#7db3e0', label: 'Ordering',   warmth: 'cool' }
 }
 
-export const GLOSSARY_FAMILY_META: Record<GlossaryFamily, FamilyMeta> = {
+export const GLOSSARY_FAMILY_META: Record<GlossaryFamily, Pick<FamilyMeta, 'badge' | 'label'>> = {
   ...FAMILY_META,
-  engine: { badge: '🦉', color: '#8a80cb', label: 'Engine', warmth: 'cool' }
+  cli    : { badge: '🪄', label: 'CLI'    },
+  engine : { badge: '🦉', label: 'Engine' }
 }
 
 export const FAMILY_ORDER: readonly RuleFamily[] = [
