@@ -8,7 +8,7 @@
 
 use std::io::{self, Write};
 
-use anstyle::{AnsiColor, Color, RgbColor, Style};
+use anstyle::{AnsiColor, Color, Reset, RgbColor};
 
 const APRICOT: (RgbColor, AnsiColor) = (RgbColor(0xe8, 0x87, 0x6f), AnsiColor::Red);
 const CELADON: (RgbColor, AnsiColor) = (RgbColor(0x8c, 0xc5, 0xa3), AnsiColor::Green);
@@ -108,8 +108,7 @@ fn paint_with(text: &str, truecolor: bool, (rgb, fallback): (RgbColor, AnsiColor
     } else {
         Color::Ansi(fallback)
     };
-    let style = Style::new().fg_color(Some(color));
-    format!("{}{text}{}", style.render(), style.render_reset())
+    format!("{}{text}{}", color.render_fg(), Reset.render())
 }
 
 fn pluralize(count: usize, noun: &str) -> String {
