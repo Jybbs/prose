@@ -131,6 +131,7 @@ pub enum PipelineError {
 mod tests {
     use std::sync::{Arc, Mutex};
 
+    use pretty_assertions::assert_eq;
     use ruff_diagnostics::Edit;
     use ruff_text_size::TextRange;
 

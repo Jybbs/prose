@@ -227,6 +227,8 @@ pub enum SourceError {
 
 #[cfg(test)]
 mod tests {
+    use assert_matches::assert_matches;
+    use pretty_assertions::assert_eq;
     use ruff_python_ast::token::TokenKind;
     use ruff_source_file::OneIndexed;
     use ruff_text_size::TextRange;
@@ -315,13 +317,13 @@ mod tests {
         std::fs::write(tmp.path(), b"def foo(").expect("temp file writes");
 
         let result = Source::from_path(tmp.path());
-        assert!(matches!(result, Err(SourceError::Parse(_))));
+        assert_matches!(result, Err(SourceError::Parse(_)));
     }
 
     #[test]
     fn from_path_missing_file_returns_io_error() {
         let result = Source::from_path("/definitely/does/not/exist.py");
-        assert!(matches!(result, Err(SourceError::Io(_))));
+        assert_matches!(result, Err(SourceError::Io(_)));
     }
 
     #[test]

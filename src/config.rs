@@ -349,16 +349,15 @@ fn warn_unknown_key(key: &str) {
 
 #[cfg(test)]
 mod tests {
+    use assert_matches::assert_matches;
     use indoc::indoc;
+    use pretty_assertions::assert_eq;
     use tempfile::TempDir;
 
     use super::*;
 
     fn assert_toml_error(toml: &str) {
-        assert!(matches!(
-            Config::from_pyproject_str(toml),
-            Err(ConfigError::Toml(_))
-        ));
+        assert_matches!(Config::from_pyproject_str(toml), Err(ConfigError::Toml(_)));
     }
 
     fn write_pyproject(dir: &Path, contents: &str) {
@@ -455,7 +454,7 @@ mod tests {
 
         let result = Config::load(tmp.path());
 
-        assert!(matches!(result, Err(ConfigError::Toml(_))));
+        assert_matches!(result, Err(ConfigError::Toml(_)));
     }
 
     #[test]

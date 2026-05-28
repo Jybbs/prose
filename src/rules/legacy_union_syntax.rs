@@ -174,6 +174,8 @@ fn is_typing_root(module: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::diagnostics::Severity;
     use crate::test_support::parse;

@@ -896,6 +896,9 @@ fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
+    use pretty_assertions::assert_eq;
+    use proptest::prelude::*;
+    use rstest::rstest;
 
     use super::*;
     use crate::test_support::parse;
@@ -971,26 +974,23 @@ mod tests {
         );
     }
 
-    #[test]
-    fn decorator_simple_name_extracts_rightmost_segment() {
-        for (src, expected) in [
-            ("@property\ndef f(): pass\n", Some("property")),
-            (
-                "@functools.cached_property\ndef f(): pass\n",
-                Some("cached_property"),
-            ),
-            ("@click.option(\"--name\")\ndef f(): pass\n", Some("option")),
-            (
-                "@pytest.mark.parametrize(\"a\", [1])\ndef f(): pass\n",
-                Some("parametrize"),
-            ),
-            ("@functools.wraps(other)\ndef f(): pass\n", Some("wraps")),
-        ] {
-            let s = parse(src);
-            let f = s.ast().body[0].as_function_def_stmt().expect("def");
-            let decorator = f.decorator_list.first().expect("one decorator");
-            assert_eq!(decorator_simple_name(decorator), expected, "src = {src}");
-        }
+    #[rstest]
+    #[case("@property\ndef f(): pass\n", Some("property"))]
+    #[case("@functools.cached_property\ndef f(): pass\n", Some("cached_property"))]
+    #[case("@click.option(\"--name\")\ndef f(): pass\n", Some("option"))]
+    #[case(
+        "@pytest.mark.parametrize(\"a\", [1])\ndef f(): pass\n",
+        Some("parametrize")
+    )]
+    #[case("@functools.wraps(other)\ndef f(): pass\n", Some("wraps"))]
+    fn decorator_simple_name_extracts_rightmost_segment(
+        #[case] src: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        let s = parse(src);
+        let f = s.ast().body[0].as_function_def_stmt().expect("def");
+        let decorator = f.decorator_list.first().expect("one decorator");
+        assert_eq!(decorator_simple_name(decorator), expected);
     }
 
     #[test]
@@ -1022,21 +1022,21 @@ mod tests {
         assert_eq!(groups, vec![0, 1, 2, 3]);
     }
 
-    #[test]
-    fn root_name_walks_attribute_and_subscript_chains_to_leftmost_identifier() {
-        for (src, expected) in [
-            ("a", Some("a")),
-            ("a.b.c", Some("a")),
-            ("a[0]", Some("a")),
-            ("a.b[c]", Some("a")),
-            ("a[b][c]", Some("a")),
-            ("(a + b)[c]", None),
-            ("1[c]", None),
-        ] {
-            let s = parse(&format!("x = {src}\n"));
-            let assign = s.ast().body[0].as_assign_stmt().expect("assign");
-            assert_eq!(root_name(&assign.value), expected, "src = {src}");
-        }
+    #[rstest]
+    #[case("a", Some("a"))]
+    #[case("a.b.c", Some("a"))]
+    #[case("a[0]", Some("a"))]
+    #[case("a.b[c]", Some("a"))]
+    #[case("a[b][c]", Some("a"))]
+    #[case("(a + b)[c]", None)]
+    #[case("1[c]", None)]
+    fn root_name_walks_attribute_and_subscript_chains_to_leftmost_identifier(
+        #[case] src: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        let s = parse(&format!("x = {src}\n"));
+        let assign = s.ast().body[0].as_assign_stmt().expect("assign");
+        assert_eq!(root_name(&assign.value), expected);
     }
 
     #[test]
@@ -1063,14 +1063,48 @@ mod tests {
         assert_eq!(tier_levels(&deps), Some(vec![0, 1, 2, 3]));
     }
 
-    #[test]
-    fn tier_levels_returns_none_on_cycles() {
-        for deps in [
-            vec![HashSet::from([0])],
-            vec![HashSet::from([1]), HashSet::from([0])],
-            vec![HashSet::from([1]), HashSet::from([2]), HashSet::from([0])],
-        ] {
-            assert_eq!(tier_levels(&deps), None, "deps = {deps:?}");
+    #[rstest]
+    #[case(vec![HashSet::from([0])])]
+    #[case(vec![HashSet::from([1]), HashSet::from([0])])]
+    #[case(vec![HashSet::from([1]), HashSet::from([2]), HashSet::from([0])])]
+    fn tier_levels_returns_none_on_cycles(#[case] deps: Vec<HashSet<usize>>) {
+        assert_eq!(tier_levels(&deps), None);
+    }
+
+    proptest! {
+        #[test]
+        fn tier_levels_assigns_dependency_respecting_tiers_for_dags(
+            deps in prop::collection::vec(prop::collection::vec(0usize..16, 0..4), 1..16),
+        ) {
+            let dag: Vec<HashSet<usize>> = deps
+                .into_iter()
+                .enumerate()
+                .map(|(i, ds)| ds.into_iter().filter(|&d| d < i).collect())
+                .collect();
+            let Some(tiers) = tier_levels(&dag) else {
+                return Err(TestCaseError::fail("acyclic input must tier"));
+            };
+            for (i, ds) in dag.iter().enumerate() {
+                for &d in ds {
+                    prop_assert!(
+                        tiers[i] > tiers[d],
+                        "binding {i} (tier {}) must sit strictly above dep {d} (tier {})",
+                        tiers[i],
+                        tiers[d],
+                    );
+                }
+            }
+        }
+
+        #[test]
+        fn tier_levels_rejects_inputs_with_self_loops(
+            n in 1usize..8,
+            cycle_index in 0usize..8,
+        ) {
+            let cycle_index = cycle_index.min(n - 1);
+            let mut deps: Vec<HashSet<usize>> = (0..n).map(|_| HashSet::new()).collect();
+            deps[cycle_index].insert(cycle_index);
+            prop_assert_eq!(tier_levels(&deps), None);
         }
     }
 }

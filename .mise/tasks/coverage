@@ -2,4 +2,5 @@
 #MISE description="Generate an LCOV coverage report at `target/lcov.info`"
 #MISE tools={"aqua:taiki-e/cargo-llvm-cov" = "latest"}
 
+rustup component add llvm-tools-preview
 cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info

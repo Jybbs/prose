@@ -500,6 +500,7 @@ pub(crate) fn top_level_module(dotted: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use proptest::prelude::*;
     use ruff_text_size::TextSize;
 

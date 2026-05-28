@@ -176,7 +176,9 @@ fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize
 
 #[cfg(test)]
 mod tests {
+    use assert_matches::assert_matches;
     use indoc::indoc;
+    use pretty_assertions::assert_eq;
     use ruff_text_size::TextLen;
 
     use super::*;
@@ -337,7 +339,7 @@ mod tests {
             |p| Some(p.parameter.name.as_str()),
             borrow,
         );
-        assert!(matches!(cow, Cow::Owned(_)));
+        assert_matches!(cow, Cow::Owned(_));
         assert_eq!(&*cow, "a, b");
     }
 
@@ -367,7 +369,7 @@ mod tests {
             |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
             borrow,
         );
-        assert!(matches!(cow, Cow::Borrowed(_)));
+        assert_matches!(cow, Cow::Borrowed(_));
     }
 
     #[test]
@@ -380,7 +382,7 @@ mod tests {
             |stmt: &ruff_python_ast::Stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
             borrow,
         );
-        assert!(matches!(cow, Cow::Borrowed("")));
+        assert_matches!(cow, Cow::Borrowed(""));
     }
 
     #[test]
@@ -398,7 +400,7 @@ mod tests {
                 }
             },
         );
-        assert!(matches!(cow, Cow::Owned(_)));
+        assert_matches!(cow, Cow::Owned(_));
         assert!((*cow).contains("def A"));
     }
 
@@ -411,7 +413,7 @@ mod tests {
             |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
             |_, slice| Cow::Owned(slice.replace("def ", "DEF ")),
         );
-        assert!(matches!(cow, Cow::Owned(_)));
+        assert_matches!(cow, Cow::Owned(_));
         assert_eq!(&*cow, "DEF a(): pass\nDEF b(): pass");
     }
 }

@@ -5,6 +5,8 @@ use std::fs::write;
 use std::path::PathBuf;
 
 use assert_cmd::Command;
+use pretty_assertions::assert_eq;
+use rstest::rstest;
 use tempfile::{tempdir, TempDir};
 
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
@@ -191,16 +193,14 @@ fn check_unparseable_fixture_exits_parse_error() {
     prose().arg("check").arg(&path).assert().code(3);
 }
 
-#[test]
-fn color_arms_exit_zero() {
+#[rstest]
+fn color_arms_exit_zero(#[values("always", "never")] arm: &str) {
     let (_dir, path) = fixture("clean.py", "x = 1\n");
-    for arm in ["always", "never"] {
-        let (mut cmd, _cache_dir) = prose_isolated();
-        cmd.args(["--color", arm, "check"])
-            .arg(&path)
-            .assert()
-            .success();
-    }
+    let (mut cmd, _cache_dir) = prose_isolated();
+    cmd.args(["--color", arm, "check"])
+        .arg(&path)
+        .assert()
+        .success();
 }
 
 #[test]
@@ -208,19 +208,15 @@ fn completions_bash_exits_zero() {
     prose().args(["completions", "bash"]).assert().success();
 }
 
-#[test]
-fn config_errors_exit_four() {
-    let cases: &[&[&str]] = &[
-        &["check", "--stdin", "."],
-        &["check", "-", "--stdin"],
-        &["check", "-", "a.py"],
-        &["--not-a-flag"],
-        &["check", "--select", "not-a-rule", "."],
-        &["format", "--diff", "--output-format", "json", "."],
-    ];
-    for args in cases {
-        prose().args(*args).assert().code(4);
-    }
+#[rstest]
+#[case(&["check", "--stdin", "."])]
+#[case(&["check", "-", "--stdin"])]
+#[case(&["check", "-", "a.py"])]
+#[case(&["--not-a-flag"])]
+#[case(&["check", "--select", "not-a-rule", "."])]
+#[case(&["format", "--diff", "--output-format", "json", "."])]
+fn config_errors_exit_four(#[case] args: &[&str]) {
+    prose().args(args).assert().code(4);
 }
 
 #[test]

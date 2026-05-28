@@ -262,6 +262,8 @@ fn parameter_groups(source: &Source, params: &Parameters) -> Vec<Vec<aligner::Me
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
 
     #[test]

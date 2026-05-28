@@ -65,6 +65,7 @@ impl ColonEmitter for Emitter {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use ruff_text_size::{Ranged, TextRange, TextSize};
 
     use super::*;

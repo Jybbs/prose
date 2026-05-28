@@ -326,20 +326,23 @@ register_rules! {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
+
     use super::*;
 
-    #[test]
-    fn is_valid_slug_accepts_canonical_kebab_shapes() {
-        for valid in ["a", "a-b", "abc123", "single-use-variables"] {
-            assert!(is_valid_slug(valid.as_bytes()), "{valid}");
-        }
+    #[rstest]
+    fn is_valid_slug_accepts_canonical_kebab_shapes(
+        #[values("a", "a-b", "abc123", "single-use-variables")] valid: &str,
+    ) {
+        assert!(is_valid_slug(valid.as_bytes()));
     }
 
-    #[test]
-    fn is_valid_slug_rejects_invalid_shapes() {
-        for invalid in ["", "-foo", "foo-", "a--b", "Foo", "abc!"] {
-            assert!(!is_valid_slug(invalid.as_bytes()), "{invalid}");
-        }
+    #[rstest]
+    fn is_valid_slug_rejects_invalid_shapes(
+        #[values("", "-foo", "foo-", "a--b", "Foo", "abc!")] invalid: &str,
+    ) {
+        assert!(!is_valid_slug(invalid.as_bytes()));
     }
 
     #[test]

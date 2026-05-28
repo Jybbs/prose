@@ -317,6 +317,9 @@ fn entry_name(trimmed: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
+
     use super::*;
     use crate::test_support::parse;
 
@@ -537,9 +540,9 @@ mod tests {
         assert!(edits.windows(2).all(|w| w[0].start() < w[1].start()));
     }
 
-    #[test]
-    fn section_heading_accepts_title_case_word_with_colon() {
-        for heading in [
+    #[rstest]
+    fn section_heading_accepts_title_case_word_with_colon(
+        #[values(
             "Args:",
             "Attributes:",
             "Raises:",
@@ -552,10 +555,11 @@ mod tests {
             "Parameters:",
             "Inputs:",
             "Steps:",
-            "Outputs:",
-        ] {
-            assert!(section_heading(heading), "{heading} should match");
-        }
+            "Outputs:"
+        )]
+        heading: &str,
+    ) {
+        assert!(section_heading(heading));
     }
 
     #[test]

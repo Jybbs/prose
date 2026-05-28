@@ -293,6 +293,8 @@ fn parse_prose_ignore(after_hash: &str) -> Option<RuleEntry> {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
     use ruff_source_file::OneIndexed;
 
     use crate::rule::RuleId;
@@ -405,28 +407,23 @@ mod tests {
         assert!(map.intersects(range(0, 27)));
     }
 
-    #[test]
-    fn malformed_directive_does_not_register() {
-        for src in [
+    #[rstest]
+    fn malformed_directive_does_not_register(
+        #[values(
             "x = 1  # prose: ignore[align-equals\n",
             "x = 1  # prose:\n",
             "x = 1  # proseignore\n",
             "x = 1  # prose: ignoring\n",
             "x = 1  # prose: ignore extra\n",
             "x = 1  # prose: skip[align-equals\n",
-            "x = 1  # prose: skip extra\n",
-        ] {
-            let source = parse(src);
-            let map = source.suppression_map();
-            assert!(
-                !map.has_lint_suppression(),
-                "expected no lint suppression for {src:?}",
-            );
-            assert!(
-                !map.has_skip_suppression(),
-                "expected no skip suppression for {src:?}",
-            );
-        }
+            "x = 1  # prose: skip extra\n"
+        )]
+        src: &str,
+    ) {
+        let source = parse(src);
+        let map = source.suppression_map();
+        assert!(!map.has_lint_suppression());
+        assert!(!map.has_skip_suppression());
     }
 
     #[test]
@@ -468,22 +465,21 @@ mod tests {
             .intersects(range(x_offset, x_offset + 5)),);
     }
 
-    #[test]
-    fn prose_off_and_fmt_off_open_the_same_span() {
-        for text in [
+    #[rstest]
+    fn prose_off_and_fmt_off_open_the_same_span(
+        #[values(
             "# prose: off\nx = 1\n# prose: on\n",
             "# fmt: off\nx = 1\n# fmt: on\n",
             "# prose: off\nx = 1\n",
-            "# fmt: off\nx = 1\n",
-        ] {
-            let src = parse(text);
-            let x_offset = src.text().find('x').expect("x is present") as u32;
-            assert!(
-                src.suppression_map()
-                    .intersects(range(x_offset, x_offset + 5)),
-                "expected suppression to cover `x = 1` in {text:?}",
-            );
-        }
+            "# fmt: off\nx = 1\n"
+        )]
+        text: &str,
+    ) {
+        let src = parse(text);
+        let x_offset = src.text().find('x').expect("x is present") as u32;
+        assert!(src
+            .suppression_map()
+            .intersects(range(x_offset, x_offset + 5)));
     }
 
     #[test]
@@ -527,19 +523,19 @@ mod tests {
         assert!(!map.is_format_suppressed_at(line(0), alphabetize()));
     }
 
-    #[test]
-    fn skip_whitespace_tolerant_inside_brackets() {
+    #[rstest]
+    #[case(align_equals())]
+    #[case(alphabetize())]
+    fn skip_whitespace_tolerant_inside_brackets(#[case] rule: RuleId) {
         let canonical = parse("x = 1  # prose: skip[align-equals, alphabetize]\n");
         let compact = parse("x = 1  # prose:skip[ align-equals ,alphabetize ]\n");
         let canonical_map = canonical.suppression_map();
         let compact_map = compact.suppression_map();
-        for rule in [align_equals(), alphabetize()] {
-            assert_eq!(
-                canonical_map.is_format_suppressed_at(line(0), rule),
-                compact_map.is_format_suppressed_at(line(0), rule),
-            );
-            assert!(canonical_map.is_format_suppressed_at(line(0), rule));
-        }
+        assert_eq!(
+            canonical_map.is_format_suppressed_at(line(0), rule),
+            compact_map.is_format_suppressed_at(line(0), rule),
+        );
+        assert!(canonical_map.is_format_suppressed_at(line(0), rule));
     }
 
     #[test]
@@ -574,18 +570,18 @@ mod tests {
         assert!(!map.is_lint_suppressed_at(line(0), alphabetize()));
     }
 
-    #[test]
-    fn whitespace_tolerant_canonical_and_compact_forms_parse_identically() {
+    #[rstest]
+    #[case(align_equals())]
+    #[case(alphabetize())]
+    fn whitespace_tolerant_canonical_and_compact_forms_parse_identically(#[case] rule: RuleId) {
         let canonical = parse("x = 1  # prose: ignore[align-equals, alphabetize]\n");
         let compact = parse("x = 1  # prose:ignore[ align-equals ,alphabetize ]\n");
         let canonical_map = canonical.suppression_map();
         let compact_map = compact.suppression_map();
-        for rule in [align_equals(), alphabetize()] {
-            assert_eq!(
-                canonical_map.is_lint_suppressed_at(line(0), rule),
-                compact_map.is_lint_suppressed_at(line(0), rule),
-            );
-            assert!(canonical_map.is_lint_suppressed_at(line(0), rule));
-        }
+        assert_eq!(
+            canonical_map.is_lint_suppressed_at(line(0), rule),
+            compact_map.is_lint_suppressed_at(line(0), rule),
+        );
+        assert!(canonical_map.is_lint_suppressed_at(line(0), rule));
     }
 }

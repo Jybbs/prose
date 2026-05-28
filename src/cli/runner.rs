@@ -17,6 +17,7 @@ use crate::source::Source;
 use crate::walker;
 
 /// One file's contribution to the run.
+#[derive(Debug)]
 enum FileOutcome {
     Done {
         cached: bool,
@@ -404,6 +405,9 @@ fn write_diff<W: Write>(
 mod tests {
     use std::io::{self, Cursor};
 
+    use assert_matches::assert_matches;
+    use pretty_assertions::{assert_eq, assert_ne};
+    use rstest::rstest;
     use ruff_diagnostics::Edit;
     use ruff_text_size::TextRange;
     use tempfile::TempDir;
@@ -612,19 +616,20 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn emit_outcomes_renders_each_output_format() {
-        let source = "x = 1\n".parse::<Source>().expect("parses");
-        let outcomes = vec![outcome_with(source, Vec::new())];
-        for format in [
+    #[rstest]
+    fn emit_outcomes_renders_each_output_format(
+        #[values(
             OutputFormat::Github,
             OutputFormat::Json,
             OutputFormat::Sarif,
-            OutputFormat::Text,
-        ] {
-            let mut buf = Vec::new();
-            emit_outcomes(&outcomes, format, &mut buf).expect("emits");
-        }
+            OutputFormat::Text
+        )]
+        format: OutputFormat,
+    ) {
+        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let outcomes = vec![outcome_with(source, Vec::new())];
+        let mut buf = Vec::new();
+        emit_outcomes(&outcomes, format, &mut buf).expect("emits");
     }
 
     #[test]
@@ -833,10 +838,7 @@ mod tests {
             pipeline: Pipeline::with_filters(&config, &[], &[]),
         };
         let outcome = process_path(&tmp.path().join("does_not_exist.py"), &setup);
-        assert!(matches!(
-            outcome,
-            FileOutcome::Failed(ExitStatus::ConfigError),
-        ));
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
     }
 
     #[test]
@@ -891,9 +893,6 @@ mod tests {
     #[test]
     fn walk_error_returns_failed_with_config_error() {
         let outcome = walk_error("synthetic walk failure");
-        assert!(matches!(
-            outcome,
-            FileOutcome::Failed(ExitStatus::ConfigError),
-        ));
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
     }
 }

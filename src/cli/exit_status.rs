@@ -32,6 +32,9 @@ impl From<ExitStatus> for ExitCode {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
+
     use super::*;
 
     const ASCENDING: [ExitStatus; 5] = [
@@ -47,11 +50,14 @@ mod tests {
         assert_eq!(ExitStatus::default(), ExitStatus::Clean);
     }
 
-    #[test]
-    fn discriminants_match_matrix() {
-        for (i, status) in ASCENDING.iter().enumerate() {
-            assert_eq!(*status as u8, i as u8);
-        }
+    #[rstest]
+    #[case(0, ExitStatus::Clean)]
+    #[case(1, ExitStatus::FormatChange)]
+    #[case(2, ExitStatus::LintViolation)]
+    #[case(3, ExitStatus::ParseError)]
+    #[case(4, ExitStatus::ConfigError)]
+    fn discriminant_matches_matrix(#[case] expected: u8, #[case] status: ExitStatus) {
+        assert_eq!(status as u8, expected);
     }
 
     #[test]
@@ -64,11 +70,18 @@ mod tests {
         assert_eq!(ExitStatus::from(Severity::Lint), ExitStatus::LintViolation);
     }
 
-    #[test]
-    fn into_exit_code_compiles_for_each_variant() {
-        for status in ASCENDING {
-            let _: ExitCode = status.into();
-        }
+    #[rstest]
+    fn into_exit_code_compiles_for_each_variant(
+        #[values(
+            ExitStatus::Clean,
+            ExitStatus::ConfigError,
+            ExitStatus::FormatChange,
+            ExitStatus::LintViolation,
+            ExitStatus::ParseError
+        )]
+        status: ExitStatus,
+    ) {
+        let _: ExitCode = status.into();
     }
 
     #[test]
