@@ -1,5 +1,6 @@
 //! Sarif emitter: SARIF 2.1.0 document for GitHub Code Scanning.
 
+use std::collections::BTreeSet;
 use std::io::{self, Write};
 
 use ruff_diagnostics::Edit;
@@ -11,19 +12,23 @@ use serde_sarif::sarif::{
     Sarif as SarifDoc, ToolComponent,
 };
 
-use crate::diagnostics::{line_columns, Diagnostic, Emitter, Run};
+use crate::diagnostics::{line_columns, write_json_line, Diagnostic, Emitter, EmitterSummary, Run};
 use crate::rule::RuleId;
 
 pub(crate) struct Sarif;
 
 impl Emitter for Sarif {
-    fn emit(&self, writer: &mut dyn Write, runs: &[Run<'_>]) -> io::Result<()> {
+    fn emit(
+        &self,
+        writer: &mut dyn Write,
+        runs: &[Run<'_>],
+        _summary: &EmitterSummary,
+    ) -> io::Result<()> {
         let document = SarifDoc::builder()
             .version("2.1.0")
             .runs(vec![sarif_run(runs)])
             .build();
-        serde_json::to_writer(&mut *writer, &document).map_err(io::Error::other)?;
-        writer.write_all(b"\n")
+        write_json_line(writer, &document)
     }
 }
 
@@ -32,13 +37,11 @@ fn artifact_location(file: &SourceFile) -> ArtifactLocation {
 }
 
 fn collect_rule_ids(runs: &[Run<'_>]) -> Vec<RuleId> {
-    let mut ids: Vec<RuleId> = runs
-        .iter()
+    runs.iter()
         .flat_map(|(_, diagnostics)| diagnostics.iter().map(|d| d.rule))
-        .collect();
-    ids.sort_by_key(RuleId::as_str);
-    ids.dedup();
-    ids
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 fn region(start: LineColumn, end: LineColumn) -> Region {
@@ -131,18 +134,34 @@ mod tests {
         }
     }
 
+    fn emit_value(file: &SourceFile, diagnostics: &[Diagnostic]) -> Value {
+        let mut buf = Vec::<u8>::new();
+        Sarif
+            .emit(&mut buf, &[(file, diagnostics)], &EmitterSummary::default())
+            .expect("emits");
+        serde_json::from_slice(&buf).expect("parses")
+    }
+
+    #[test]
+    fn deduplicates_rule_descriptors_across_diagnostics() {
+        let source: Source = "x = 1\n".parse().expect("parses");
+        let diags = vec![diag(), diag()];
+        let v = emit_value(source.source_file(), &diags);
+        let rules = v["runs"][0]["tool"]["driver"]["rules"]
+            .as_array()
+            .expect("rules array");
+        assert_eq!(rules.len(), 1);
+        assert_eq!(
+            v["runs"][0]["results"].as_array().expect("results").len(),
+            2
+        );
+    }
+
     #[test]
     fn emits_a_single_sarif_run_per_invocation() {
         let source: Source = "x = 1\n".parse().expect("parses");
         let diag = diag();
-        let mut buf = Vec::<u8>::new();
-        Sarif
-            .emit(
-                &mut buf,
-                &[(source.source_file(), std::slice::from_ref(&diag))],
-            )
-            .expect("emits");
-        let v: Value = serde_json::from_slice(&buf).expect("parses as JSON");
+        let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
         assert_eq!(v["version"], "2.1.0");
         assert_eq!(v["runs"].as_array().expect("runs array").len(), 1);
         let run = &v["runs"][0];
@@ -160,17 +179,21 @@ mod tests {
     }
 
     #[test]
+    fn omits_fixes_payload_when_diagnostic_has_no_edit() {
+        let source: Source = "x = 1\n".parse().expect("parses");
+        let diag = Diagnostic {
+            fix: None,
+            ..diag()
+        };
+        let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
+        assert!(v["runs"][0]["results"][0]["fixes"].is_null());
+    }
+
+    #[test]
     fn populates_fixes_payload_when_diagnostic_carries_an_edit() {
         let source: Source = "x = 1\n".parse().expect("parses");
         let diag = diag();
-        let mut buf = Vec::<u8>::new();
-        Sarif
-            .emit(
-                &mut buf,
-                &[(source.source_file(), std::slice::from_ref(&diag))],
-            )
-            .expect("emits");
-        let v: Value = serde_json::from_slice(&buf).expect("parses");
+        let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
         let fix = &v["runs"][0]["results"][0]["fixes"][0];
         let change = &fix["artifactChanges"][0];
         assert_eq!(change["artifactLocation"]["uri"], "<source>");
@@ -181,42 +204,5 @@ mod tests {
         assert_eq!(region["startColumn"], 1);
         assert_eq!(region["endLine"], 1);
         assert_eq!(region["endColumn"], 2);
-    }
-
-    #[test]
-    fn omits_fixes_payload_when_diagnostic_has_no_edit() {
-        let source: Source = "x = 1\n".parse().expect("parses");
-        let diag = Diagnostic {
-            fix: None,
-            ..diag()
-        };
-        let mut buf = Vec::<u8>::new();
-        Sarif
-            .emit(
-                &mut buf,
-                &[(source.source_file(), std::slice::from_ref(&diag))],
-            )
-            .expect("emits");
-        let v: Value = serde_json::from_slice(&buf).expect("parses");
-        assert!(v["runs"][0]["results"][0]["fixes"].is_null());
-    }
-
-    #[test]
-    fn deduplicates_rule_descriptors_across_diagnostics() {
-        let source: Source = "x = 1\n".parse().expect("parses");
-        let diags = vec![diag(), diag()];
-        let mut buf = Vec::<u8>::new();
-        Sarif
-            .emit(&mut buf, &[(source.source_file(), &diags)])
-            .expect("emits");
-        let v: Value = serde_json::from_slice(&buf).expect("parses");
-        let rules = v["runs"][0]["tool"]["driver"]["rules"]
-            .as_array()
-            .expect("rules array");
-        assert_eq!(rules.len(), 1);
-        assert_eq!(
-            v["runs"][0]["results"].as_array().expect("results").len(),
-            2
-        );
     }
 }
