@@ -10,7 +10,18 @@ layout   : doc
 
 <RuleLayout rule="alphabetize" canonical="classes">
 
-A reader who already knows the codebase carries a **mental map** of where things live. When sibling members within a class, an enum, a dataclass, or a function call sit in arrival order, every reader builds a **different map**, which slows each new reader's first read. `alphabetize` gives everyone the **same landmarks**, with classes ordered alphabetically inside a module, module-level assignment runs ordered within each dependency tier, methods ordered inside a class body (*dunders first, then properties, then private, then public*), enum members ordered, dataclass and Pydantic fields ordered (*required before optional*), function parameters with defaults ordered, keyword arguments at call sites ordered, consecutive imports grouped into their canonical order and sorted within each group, and `name: description` entries within every Title-case-headed docstring section ordered alongside the matching signature.
+A reader who already knows the codebase carries a **mental map** of where things live. When sibling members within a class, an enum, a dataclass, or a function call sit in arrival order, every reader builds a **different map**, which slows each new reader's first read. `alphabetize` gives everyone the **same landmarks**:
+
+| Surface | Order |
+|---|---|
+| **Classes in a module** | Alphabetical |
+| **Module-level assignments** | Within each dependency tier |
+| **Methods in a class** | Dunders, properties, private, public |
+| **Enum members** | Alphabetical |
+| **Dataclass and Pydantic fields** | Required before optional |
+| **Parameters and keyword arguments** | Alphabetical |
+| **Imports** | Canonical groups, alphabetical within each |
+| **Docstring entries** | Alphabetical within each Title-case section |
 
 The rule fires on siblings whose order does not carry meaning. It leaves alone every surface where ordering is load-bearing (*positional-only parameters before the `/` separator, enum members with explicit integer or string values, tuple-unpacking targets bound to positional results*). Pair with [[align-imports]] to align the `import` keyword across the freshly-sorted block, with [[align-colons]] to align dataclass-field annotations after the sort, and with [[blank-lines]] for the blank-line discipline around class members and the single blank line between the import groups.
 
