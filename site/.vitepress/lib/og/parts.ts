@@ -5,16 +5,33 @@ import satori, { type Font }            from 'satori'
 export const CARD_HEIGHT = 630
 export const CARD_WIDTH  = 1200
 
-export const BG         = '#16151a'
-export const BORDER     = 'rgba(255, 255, 255, 0.10)'
 export const META_LABEL = '#8b7f9e'
-export const META_VALUE = '#e8dec8'
 export const MONO_DIM   = '#a8a0c0'
-export const PANEL_FILL = 'rgba(255, 255, 255, 0.04)'
+
+const BG         = '#16151a'
+const BORDER     = 'rgba(255, 255, 255, 0.10)'
+const META_VALUE = '#e8dec8'
+const PANEL_FILL = 'rgba(255, 255, 255, 0.04)'
 
 export async function rasterize(node: JSXNode, fonts: Font[]): Promise<Buffer> {
-  const svg = await satori(node, { fonts: fonts, height: CARD_HEIGHT, width: CARD_WIDTH })
+  const svg = await satori(node, { fonts, height: CARD_HEIGHT, width: CARD_WIDTH })
   return new Resvg(svg).render().asPng()
+}
+
+export function cardShell(...children: JSXNode[]): JSXNode {
+  return createElement('div',
+    {
+      style: {
+        backgroundColor : BG,
+        display         : 'flex',
+        flexDirection   : 'column',
+        height          : '100%',
+        position        : 'relative',
+        width           : '100%'
+      }
+    },
+    ...children
+  )
 }
 
 export function leftRail(color: string): JSXNode {
@@ -71,11 +88,11 @@ export function panelDivider(): JSXNode {
   })
 }
 
-export function metaRow(
+function metaRow(
   label        : string,
   value        : string,
   valueStyle   : Record<string, unknown>,
-  gap          : number = 24,
+  gap          : number,
   marginBottom : number = 0
 ): JSXNode {
   return createElement('div',

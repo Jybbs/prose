@@ -2,8 +2,8 @@ import { createElement, type JSXNode }  from 'satori/jsx'
 
 import type { BrandAssets }             from './assets'
 import {
-  BG, CARD_WIDTH, META_LABEL, MONO_DIM,
-  leftRail, monoLabel, panelDivider, panelRow, panelShell, rasterize, versionCallout
+  CARD_WIDTH, META_LABEL, MONO_DIM,
+  cardShell, leftRail, monoLabel, panelDivider, panelRow, panelShell, rasterize, versionCallout
 } from './parts'
 
 const ARTIFACT_LEFT = 120
@@ -17,18 +17,8 @@ export async function renderLanding(brand: BrandAssets, version: string): Promis
   return rasterize(buildLandingCard(version, brand.titleWithTagline), brand.fonts)
 }
 
-export function buildLandingCard(version: string, titleWithTagline: string): JSXNode {
-  return createElement('div',
-    {
-      style: {
-        backgroundColor : BG,
-        display         : 'flex',
-        flexDirection   : 'column',
-        height          : '100%',
-        position        : 'relative',
-        width           : '100%'
-      }
-    },
+function buildLandingCard(version: string, titleWithTagline: string): JSXNode {
+  return cardShell(
     leftRail(PURPLE),
     glyphBlock(),
     dataPanel(version),
@@ -92,14 +82,13 @@ function pilcrowMark(): JSXNode {
 
 function titleArtwork(src: string): JSXNode {
   const height = Math.round(TITLE_WIDTH / TITLE_ASPECT)
-  const left   = Math.round((CARD_WIDTH - TITLE_WIDTH) / 2)
   return createElement('div', {
     style: {
       display  : 'flex',
-      left     : left,
+      left     : Math.round((CARD_WIDTH - TITLE_WIDTH) / 2),
       position : 'absolute',
       top      : TITLE_TOP
     },
-    children: createElement('img', { height: height, src: src, width: TITLE_WIDTH })
+    children: createElement('img', { height, src, width: TITLE_WIDTH })
   })
 }

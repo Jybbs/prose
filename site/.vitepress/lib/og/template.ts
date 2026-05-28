@@ -2,10 +2,11 @@ import { createElement, type JSXNode } from 'satori/jsx'
 
 import { CATEGORY_META, FAMILY_META } from '../shared/registries'
 
-import type { OgKind, OgPage } from './pages'
+import type { BrandAssets }     from './assets'
+import type { OgKind, OgPage }  from './pages'
 import {
-  BG, CARD_HEIGHT, CARD_WIDTH, META_LABEL, MONO_DIM,
-  leftRail, monoLabel, panelDivider, panelRow, panelShell, versionCallout
+  CARD_HEIGHT, CARD_WIDTH, META_LABEL, MONO_DIM,
+  cardShell, leftRail, monoLabel, panelDivider, panelRow, panelShell, rasterize, versionCallout
 } from './parts'
 
 const BODY            = '#d4c8b5'
@@ -24,19 +25,17 @@ const TITLE_SIZES = {
   cap  : [[12, 108], [17, 100], [22, 84], [Infinity, 76]]
 } as const
 
-export function buildCard(page: OgPage, version: string, wordmark: string, glyph: string): JSXNode {
+export async function renderPage(
+  page    : OgPage,
+  brand   : BrandAssets,
+  version : string
+): Promise<Buffer> {
+  return rasterize(buildCard(page, version, brand.wordmark, brand.glyph), brand.fonts)
+}
+
+function buildCard(page: OgPage, version: string, wordmark: string, glyph: string): JSXNode {
   const accent = pageAccent(page)
-  return createElement('div',
-    {
-      style: {
-        backgroundColor : BG,
-        display         : 'flex',
-        flexDirection   : 'column',
-        height          : '100%',
-        position        : 'relative',
-        width           : '100%'
-      }
-    },
+  return cardShell(
     watermarkLayer(glyph),
     leftRail(accent),
     wordmarkBlock(wordmark),
@@ -96,7 +95,17 @@ function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
 
 function titleBlock(page: OgPage, accent: string): JSXNode {
   const hasCaption = page.caption !== undefined
-  const children: JSXNode[] = [
+  return createElement('div',
+    {
+      style: {
+        display       : 'flex',
+        flexDirection : 'column',
+        left          : 80,
+        position      : 'absolute',
+        right         : 80,
+        top           : 360
+      }
+    },
     createElement('div', {
       children : buildKicker(page),
       style    : { ...monoLabel(MONO_DIM, 22), marginBottom: 12 }
@@ -115,10 +124,8 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
         marginBottom  : 14,
         maxWidth      : 1040
       }
-    })
-  ]
-  if (hasCaption) {
-    children.push(createElement('div', {
+    }),
+    ...(hasCaption ? [createElement('div', {
       children : formatCaption(page.caption!),
       style    : {
         color             : BODY,
@@ -133,20 +140,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
         WebkitBoxOrient   : 'vertical',
         WebkitLineClamp   : 2
       }
-    }))
-  }
-  return createElement('div',
-    {
-      style: {
-        display       : 'flex',
-        flexDirection : 'column',
-        left          : 80,
-        position      : 'absolute',
-        right         : 80,
-        top           : 360
-      }
-    },
-    ...children
+    })] : [])
   )
 }
 

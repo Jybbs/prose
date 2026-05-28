@@ -21,7 +21,6 @@ export interface OgPage {
   outputPath : string
   pipeline  ?: { position: number; total: number }
   primitive ?: { stability: 'internal' | 'public' }
-  slug       : string
   title      : string
 }
 
@@ -56,7 +55,6 @@ function buildPage(
       breadcrumb : [toTitleCase(kind, '-')],
       kind,
       outputPath,
-      slug,
       title      : indexTitle(rel, kind)
     }
   }
@@ -71,7 +69,6 @@ function buildPage(
       kind,
       outputPath,
       pipeline   : position !== undefined ? { position, total: pipelineTotal } : undefined,
-      slug,
       title      : toTitleCase(slug, '-')
     }
   }
@@ -82,7 +79,6 @@ function buildPage(
       kind,
       outputPath,
       primitive  : { stability: primitive?.stability ?? 'internal' },
-      slug,
       title      : primitive?.name ?? toTitleCase(slug, '-')
     }
   }
@@ -90,7 +86,6 @@ function buildPage(
     breadcrumb : [toTitleCase(kind, '-')],
     kind,
     outputPath,
-    slug,
     title      : pageTitle(srcDir, rel)
   }
 }

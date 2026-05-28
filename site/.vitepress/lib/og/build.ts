@@ -5,7 +5,7 @@ import { readCargoVersion } from '../shared/version'
 import { loadBrandAssets }  from './assets'
 import { renderLanding }    from './landing'
 import { enumeratePages }   from './pages'
-import { renderPage }       from './render'
+import { renderPage }       from './template'
 
 export async function buildOgCards(
   srcDir : string,
