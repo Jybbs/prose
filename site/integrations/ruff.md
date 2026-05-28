@@ -43,6 +43,10 @@ The conflict table:
 | `E501` | Lint flags lines past `line-length` | A long member in an alignment group pads shorter lines rightward, occasionally past the configured limit |
 | `skip-magic-trailing-comma` | Formatter re-expands collections by trailing-comma presence | `prose format` controls collection layout independently of comma signaling, via [[collection-layout]] |
 
+## Import Sorting
+
+Ruff's import-sorting rules (*the isort `I` category, surfaced through `ruff check` rather than `ruff format`*) are a different kind of overlap from the formatter codes above. *Prose*'s [[alphabetize]] owns import ordering, grouping each block into bare, then external `from`, then local-package, with one blank line between groups, which does not match Ruff's isort layout. A project that runs `ruff check` should leave the `I` rules unselected so the two tools don't rewrite the same import block against competing conventions.
+
 ## In CI
 
 The pairing compiles into CI as two sequential check steps, with the exit codes gating the workflow. The <Tool slug="github" /> integration page covers the workflow shape end-to-end:

@@ -15,6 +15,9 @@ Config {
         60,
     ),
     docstring_structured_policy: DocstringLineLength,
+    imports: ImportsConfig {
+        first_party: [],
+    },
     rules: RuleConfigs {
         collection_layout: CollectionLayoutConfig {
             enabled: false,
