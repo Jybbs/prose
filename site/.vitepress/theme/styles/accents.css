@@ -1,6 +1,7 @@
 [data-family="alignment"],  .fam-alignment  { --family-color: var(--prose-c-family-alignment);  }
+[data-family="cli"],        .fam-cli        { --family-color: var(--prose-c-family-cli);        }
 [data-family="docs"],       .fam-docs       { --family-color: var(--prose-c-family-docs);       }
-[data-family="engine"],     .fam-engine     { --family-color: var(--prose-c-ube);               }
+[data-family="engine"],     .fam-engine     { --family-color: var(--prose-c-family-engine);     }
 [data-family="formatting"], .fam-formatting { --family-color: var(--prose-c-family-formatting); }
 [data-family="lint"],       .fam-lint       { --family-color: var(--prose-c-family-lint);       }
 [data-family="ordering"],   .fam-ordering   { --family-color: var(--prose-c-family-ordering);   }

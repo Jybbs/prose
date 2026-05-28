@@ -2,6 +2,7 @@
 import { useData }  from 'vitepress'
 import { computed } from 'vue'
 
+import { railPaint }        from '../../../lib/shared/family-rail'
 import { useGlossaryFolio } from './use-glossary-folio'
 
 const props = defineProps<{ forceRender?: boolean }>()
@@ -40,10 +41,11 @@ const { filtered, grouped, ordered, query, selected } = useGlossaryFolio()
               type="button"
               class="glossary-folio-row"
               :class="{ 'is-active': entry.slug === selected }"
-              :data-family="entry.family"
+              :data-family="entry.primaryFamily"
+              :style="{ '--rail-paint': railPaint(entry.families) }"
               @click="selected = entry.slug"
             >
-              <span class="glossary-folio-row-dot" aria-hidden="true"></span>
+              <span class="glossary-folio-row-rail" aria-hidden="true"></span>
               <code class="glossary-folio-row-slug">{{ entry.slug }}</code>
             </button>
           </li>

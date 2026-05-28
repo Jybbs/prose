@@ -3,7 +3,7 @@ import type { GlossaryFamily } from '../shared/registries'
 export interface GlossaryEntry {
   aliases   ?: readonly string[]
   definition : string
-  family     : GlossaryFamily
+  families   : readonly [GlossaryFamily, ...GlossaryFamily[]]
   href      ?: string
 }
 
@@ -13,14 +13,14 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`# fmt: off` and `# fmt: on` are block markers that preserve the exact source '
               + 'layout of code between them by disabling every rewriting rule. Inline '
               + 'comments on the same line are recognized as the marker.',
-    family    : 'formatting',
+    families  : ['formatting', 'engine'],
     href      : '/usage/suppression#block-markers'
   },
 
   '# fmt: skip': {
     definition: '`# fmt: skip` is a line-level marker that exempts the statement it sits on '
               + 'from every rewriting rule, without needing surrounding block markers.',
-    family    : 'formatting',
+    families  : ['formatting', 'engine'],
     href      : '/usage/suppression#line-markers'
   },
 
@@ -29,14 +29,14 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`# prose: ignore` is a per-line directive that suppresses specific lint '
               + 'diagnostics. The bracketed form names the rule slugs to silence, whereas the '
               + 'bare form silences every lint on that line.',
-    family    : 'formatting',
+    families  : ['lint', 'engine'],
     href      : '/usage/suppression#lint-directives'
   },
 
   '--ignore': {
     definition: '`--ignore` is a CLI flag that disables the named rules for a single '
               + 'invocation. The flag is repeatable, and pairs with `--select` to scope a run.',
-    family    : 'formatting',
+    families  : ['cli'],
     href      : '/usage/quick-start#subset-the-active-rules'
   },
 
@@ -44,14 +44,14 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`--no-cache` is a CLI flag that bypasses the user-level cache for a single '
               + 'invocation of `prose check` or `prose format`. The flag overrides the '
               + 'configured `[tool.prose.cache] enabled` value.',
-    family    : 'formatting',
+    families  : ['cli'],
     href      : '/reference/cache#no-cache'
   },
 
   '--select': {
     definition: '`--select` is a CLI flag that restricts a run to the named rules. The flag is '
               + 'repeatable, and pairs with `--ignore` to subtract from the active set.',
-    family    : 'formatting',
+    families  : ['cli'],
     href      : '/usage/quick-start#subset-the-active-rules'
   },
 
@@ -60,7 +60,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'summary to stderr at the end of each `prose check` or `prose format` run. '
               + 'The flag writes `cache: bypassed` when the cache is disabled via '
               + '`--no-cache` or `[tool.prose.cache] enabled = false`.',
-    family    : 'formatting',
+    families  : ['cli'],
     href      : '/reference/cache#hit-miss-telemetry'
   },
 
@@ -69,7 +69,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'An AST is the parsed-program tree produced by `ruff_python_parser`. *Prose* '
               + 'bundles it inside `Source` and reparses it between rules so each rule reads '
               + 'against the post-rewrite tree.',
-    family    : 'engine',
+    families  : ['engine'],
     href      : '/primitives/source'
   },
 
@@ -78,7 +78,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`BindingAnalysis` is a per-`Source` table indexing every write and read of '
               + 'every name in every lexical scope. The `single-use-variables` rule consumes '
               + 'it.',
-    family    : 'engine',
+    families  : ['engine', 'lint'],
     href      : '/primitives/binding-analysis'
   },
 
@@ -87,7 +87,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'keys. The key digests the source bytes, the canonical TOML serialization of '
               + 'the active configuration, and the *Prose* version, so any meaningful change '
               + 'to any input produces a different key.',
-    family    : 'engine',
+    families  : ['engine', 'cli'],
     href      : '/reference/cache#key-shape'
   },
 
@@ -96,14 +96,14 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'A `Diagnostic` is the structured report a rule emits when it detects a '
               + 'pattern. It carries a severity, wherein `AutoFix` rewrites source under '
               + '`prose format` and `Lint` only surfaces.',
-    family    : 'engine'
+    families  : ['engine', 'lint']
   },
 
   'Pipeline': {
     aliases   : ['pipeline'],
     definition: 'The `Pipeline` orchestrates the rule loop against a `Source`, reparses '
               + 'between rules, and returns the final source plus diagnostics.',
-    family    : 'engine',
+    families  : ['engine'],
     href      : '/primitives/pipeline'
   },
 
@@ -112,7 +112,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'Ruff is Astral\'s Python linter and formatter. *Prose* composes cleanly with '
               + 'it when both are in the toolchain, leaving token-level normalization to '
               + '`ruff` and layout-level legibility to *Prose*.',
-    family    : 'engine',
+    families  : ['engine'],
     href      : '/integrations/ruff'
   },
 
@@ -121,14 +121,14 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'A `RuleId` is the canonical kebab-case slug identifying each registered rule '
               + 'across CLI flags, config tables, suppression directives, and diagnostic '
               + 'output.',
-    family    : 'engine',
+    families  : ['engine', 'cli'],
     href      : '/primitives/rule-id'
   },
 
   'Source': {
     definition: '`Source` is the parsed-text wrapper bundling original text, AST, token '
               + 'stream, line index, and suppression map. Every rule reads through this value.',
-    family    : 'engine',
+    families  : ['engine'],
     href      : '/primitives/source'
   },
 
@@ -139,7 +139,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`SuppressionMap` is the per-`Source` index of `# fmt: off` / `# fmt: skip` / '
               + '`# yapf` / `# prose: ignore[...]` directives, consulted at the edit-emission '
               + 'boundary.',
-    family    : 'engine',
+    families  : ['engine', 'formatting', 'lint'],
     href      : '/primitives/suppression-map'
   },
 
@@ -148,7 +148,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'An alignment group is a run of consecutive members at the same indentation '
               + 'that share an alignment target. Blank lines, comment lines, and non-member '
               + 'statements reset the run, so each contiguous group resolves independently.',
-    family    : 'alignment',
+    families  : ['alignment'],
     href      : '/primitives/aligner'
   },
 
@@ -157,7 +157,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'An annotation is a `name: Type` declaration on a function parameter, return '
               + 'value, or variable. Type checkers and version-gated rules like '
               + '`legacy-union-syntax` and `unused-future-annotations` read it.',
-    family    : 'lint',
+    families  : ['lint', 'alignment'],
     href      : 'https://docs.python.org/3/glossary.html#term-annotation'
   },
 
@@ -166,7 +166,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'payload. `safe` means the rewrite preserves runtime semantics and an editor '
               + 'can apply it without prompting, whereas `unsafe` and `display` exist in the '
               + 'schema for forward compatibility.',
-    family    : 'engine',
+    families  : ['cli', 'engine'],
     href      : '/reference/output-formats#json'
   },
 
@@ -175,7 +175,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'An atomic is a simple, indivisible code element (integer, float, string, '
               + 'single name) that `collection-layout` can safely keep on one line without '
               + 'readability loss.',
-    family    : 'formatting',
+    families  : ['formatting'],
     href      : '/rules/collection-layout'
   },
 
@@ -183,7 +183,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases   : ['auto-fixes', 'auto-fixing', 'Auto-Fix'],
     definition: 'Auto-fix is the rule category whose diagnostics rewrite source under `prose '
               + 'format` and surface as `Severity::AutoFix` under `prose check`.',
-    family    : 'formatting'
+    families  : ['formatting']
   },
 
   'blank line': {
@@ -193,7 +193,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'groups per the `blank-lines` rule, and binds description-shaped own-line '
               + 'comment blocks tight against the following statement while leaving '
               + 'banner-shaped blocks separated by 1 blank line below.',
-    family    : 'formatting',
+    families  : ['formatting'],
     href      : '/rules/blank-lines'
   },
 
@@ -204,14 +204,14 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`(source ++ config ++ prose_version)`, capped by the LRU eviction the '
               + '`[tool.prose.cache] max-size-mib` knob configures, bypassable per invocation '
               + 'with `--no-cache`, and clearable with `prose cache clean`.',
-    family    : 'engine',
+    families  : ['engine', 'cli'],
     href      : '/reference/cache'
   },
 
   'code-line-length': {
     definition: '`code-line-length` is the top-level config key for the line budget consumed '
               + 'by code-shaped rules. It defaults to **88**.',
-    family    : 'formatting',
+    families  : ['cli', 'formatting'],
     href      : '/reference/configuration#top-level-keys'
   },
 
@@ -223,7 +223,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`{x for ...}` literal forms that build a list, dict, or set inline. '
               + '`collection-layout` keeps them on one line when they fit, and their bound '
               + 'targets sit outside `single-use-variables`.',
-    family    : 'formatting',
+    families  : ['formatting', 'lint'],
     href      : 'https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions'
   },
 
@@ -233,7 +233,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'field declarations. `alphabetize` reorders the fields (required before '
               + 'optional), `align-colons` aligns their annotation colons, and `align-equals` '
               + 'aligns their default-value `=` signs.',
-    family    : 'ordering',
+    families  : ['ordering', 'alignment'],
     href      : 'https://docs.python.org/3/library/dataclasses.html'
   },
 
@@ -243,7 +243,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'that wraps it at definition time. `alphabetize` sorts decorated functions '
               + 'together inside framework-decorator groups, and `blank-lines` keeps each '
               + 'decorator attached to its `def`.',
-    family    : 'ordering',
+    families  : ['ordering', 'formatting'],
     href      : 'https://docs.python.org/3/glossary.html#term-decorator'
   },
 
@@ -253,14 +253,14 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'in a module, class, or function. *Prose* rewraps multi-line bodies under '
               + '`docstring-wrap` and gates single-line shapes under '
               + '`no-single-line-docstrings`.',
-    family    : 'docs',
+    families  : ['docs', 'engine'],
     href      : '/primitives/docstring'
   },
 
   'docstring-line-length': {
     definition: '`docstring-line-length` is the top-level config key for the description-prose '
               + 'budget inside docstrings. It defaults to **76**.',
-    family    : 'docs',
+    families  : ['cli', 'docs'],
     href      : '/reference/configuration#top-level-keys'
   },
 
@@ -270,7 +270,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '(`__name__`, `__all__`, `__init__`). `loose-constants` treats them as runtime '
               + 'sentinels, and `alphabetize` treats them as ordering anchors that surface '
               + 'before properties and privates inside a class body.',
-    family    : 'ordering'
+    families  : ['ordering', 'lint']
   },
 
   'enum': {
@@ -278,7 +278,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'An enum is a subclass of `enum.Enum` whose body lists named constants. '
               + '`alphabetize` sorts the members, except when they carry explicit integer or '
               + 'string values that encode ordering.',
-    family    : 'ordering',
+    families  : ['ordering'],
     href      : 'https://docs.python.org/3/library/enum.html'
   },
 
@@ -288,7 +288,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'expressions inside `{}` placeholders. The `docstring` walker skips f-string '
               + 'and other concatenated forms, so only plain triple-quoted string literals '
               + 'count as docstrings.',
-    family    : 'formatting',
+    families  : ['formatting', 'docs'],
     href      : 'https://docs.python.org/3/reference/lexical_analysis.html#f-strings'
   },
 
@@ -297,7 +297,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'A fixture is an input-and-output pair that pins a rule\'s behavior. Each rule '
               + 'page renders fixtures inline as side-by-side before-and-after Python '
               + 'snippets, and the same files drive snapshot testing inside the crate.',
-    family    : 'engine'
+    families  : ['engine']
   },
 
   'forward reference': {
@@ -306,7 +306,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'later in the file. The `from __future__ import annotations` directive made '
               + 'these safe on older Python runtimes, and `unused-future-annotations` removes '
               + 'the directive when no annotation needs the forward reference.',
-    family    : 'lint',
+    families  : ['lint'],
     href      : '/rules/unused-future-annotations'
   },
 
@@ -316,7 +316,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`.gitignore` and `.ignore` files at every level of the walked tree plus the '
               + 'user\'s global gitignore, so vendored dependencies and build artifacts stay '
               + 'out of the run automatically.',
-    family    : 'engine',
+    families  : ['engine'],
     href      : '/primitives/walker#ignore-semantics'
   },
 
@@ -325,7 +325,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'A second `prose format` run against `prose`-formatted source produces no '
               + 'further edits. Every rule preserves this property, so re-running the '
               + 'formatter never thrashes the source.',
-    family    : 'engine'
+    families  : ['engine']
   },
 
   'kebab-case': {
@@ -333,7 +333,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'every rule slug (`align-equals`, `single-use-variables`). The form is '
               + 'canonical across CLI flags, config tables, suppression directives, and '
               + 'diagnostic output.',
-    family    : 'engine',
+    families  : ['engine', 'cli'],
     href      : '/primitives/rule-id'
   },
 
@@ -349,7 +349,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`#`, or `~`)*, with the canonical above-gap measured from the topmost '
               + 'comment either way. The orderer primitive\'s `block_range` carries the '
               + 'block with its item when reordering siblings.',
-    family    : 'formatting',
+    families  : ['formatting', 'ordering'],
     href      : '/rules/blank-lines'
   },
 
@@ -359,7 +359,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'to a given binding. Python scopes nest by module, class, and function, and '
               + '`binding-analysis` walks them once per `Source` to index every write and '
               + 'read.',
-    family    : 'engine',
+    families  : ['engine'],
     href      : '/primitives/binding-analysis'
   },
 
@@ -368,7 +368,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'Lint is the rule category whose diagnostics surface as `Severity::Lint` '
               + 'without rewriting source. *Prose* always inspects them, but never modifies '
               + 'the source.',
-    family    : 'lint'
+    families  : ['lint']
   },
 
   'match': {
@@ -377,7 +377,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`case Pattern: body` arm pairs a pattern with a body, and `match-case-align` '
               + 'shares a column for the post-pattern `:` separator across consecutive '
               + 'single-expression arms.',
-    family    : 'alignment',
+    families  : ['alignment'],
     href      : '/rules/match-case-align'
   },
 
@@ -385,7 +385,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`max-shift` is the per-alignment-rule config key capping per-line padding. It '
               + 'defaults to **8**, and groups whose widest member exceeds the cap fall back '
               + 'to `max-shift-policy`.',
-    family    : 'alignment',
+    families  : ['alignment', 'cli'],
     href      : '/reference/configuration#per-rule-knobs'
   },
 
@@ -393,7 +393,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`max-shift-policy` decides how an alignment group overflowing `max-shift` '
               + 'resolves. `split` partitions the group, `drop` excludes the widest members, '
               + 'and `skip` leaves the whole group unaligned.',
-    family    : 'alignment',
+    families  : ['alignment', 'cli'],
     href      : '/reference/configuration#per-rule-knobs'
   },
 
@@ -403,7 +403,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'outside any class or function body. `loose-constants` fires only on '
               + 'module-level assignments, and `blank-lines` reserves two blanks above every '
               + 'module-level `def` and `class`.',
-    family    : 'engine'
+    families  : ['engine', 'formatting', 'lint']
   },
 
   'NDJSON': {
@@ -411,7 +411,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'NDJSON is newline-delimited JSON. `prose check --output-format json` emits '
               + 'one record per line in this shape, so editors and tooling can stream '
               + 'diagnostics without buffering the whole document.',
-    family    : 'engine',
+    families  : ['cli'],
     href      : '/reference/output-formats#json'
   },
 
@@ -421,7 +421,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'body statement of a module, class, or function when that statement is a '
               + 'single string literal expression, and the `docstring` walker matches this '
               + 'shape exactly.',
-    family    : 'docs',
+    families  : ['docs', 'engine'],
     href      : '/primitives/docstring#the-pep-257-definition'
   },
 
@@ -431,7 +431,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'None` replace `Union[X, Y]` and `Optional[T]` at the type level, and '
               + '`legacy-union-syntax` surfaces the legacy `typing` forms on projects whose '
               + '`target-version` allows the pipe form.',
-    family    : 'lint',
+    families  : ['lint'],
     href      : '/rules/legacy-union-syntax'
   },
 
@@ -441,7 +441,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'The runtime no longer evaluates annotations eagerly for typing-only code, so '
               + '`from __future__ import annotations` becomes redundant and '
               + '`unused-future-annotations` removes it on 3.14+.',
-    family    : 'lint',
+    families  : ['lint'],
     href      : '/rules/unused-future-annotations'
   },
 
@@ -451,7 +451,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'fields in the class body. `alphabetize` sorts those fields with required '
               + 'before optional, and `align-colons` aligns the annotation colons across the '
               + 'field block.',
-    family    : 'ordering',
+    families  : ['ordering', 'alignment'],
     href      : 'https://docs.pydantic.dev/'
   },
 
@@ -460,7 +460,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'Reparse names the `Source::reparse` step the `Pipeline` runs between rules. '
               + 'Each rule reads a settled AST built from the post-rewrite text, so no rule '
               + 'observes another rule\'s half-applied state.',
-    family    : 'engine',
+    families  : ['engine'],
     href      : '/primitives/pipeline'
   },
 
@@ -470,7 +470,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '*Prose*, Ruff runs first to settle line wraps, quote normalization, '
               + 'indentation, and blank-line discipline, after which `prose format` runs '
               + 'against the settled tokens.',
-    family    : 'engine',
+    families  : ['engine'],
     href      : '/integrations/ruff'
   },
 
@@ -478,7 +478,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`ruff_python_parser` is the Astral parser crate *Prose* consumes to produce '
               + 'the AST inside each `Source`. Reparsing between rules guarantees every rule '
               + 'reads against the post-rewrite tree.',
-    family    : 'engine'
+    families  : ['engine']
   },
 
   'Severity': {
@@ -486,14 +486,14 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'Severity is a diagnostic\'s emission kind. `AutoFix` rewrites source under '
               + '`prose format` and surfaces as a pending change under `prose check`, whereas '
               + '`Lint` only reports and never rewrites.',
-    family    : 'engine'
+    families  : ['engine']
   },
 
   'singleton rule': {
     aliases   : ['singleton rules'],
     definition: 'The singleton rule drops alignment padding when a group resolves to a single '
               + 'member, so a one-key dict reads as plain code.',
-    family    : 'alignment',
+    families  : ['alignment'],
     href      : '/rules/singleton-rule'
   },
 
@@ -502,7 +502,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'Stdin mode is the CLI shape that reads a single source from standard input '
               + 'and writes to standard output. It bypasses the filesystem walker entirely, so '
               + 'editors and pipelines drive *Prose* without touching disk.',
-    family    : 'engine'
+    families  : ['cli']
   },
 
   'structured section': {
@@ -513,7 +513,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`Raises:` that reads as a code-shaped table rather than prose. '
               + '`docstring-wrap` budgets these against `code-line-length` by default, so '
               + 'argument lines align with surrounding code.',
-    family    : 'docs',
+    families  : ['docs', 'alignment'],
     href      : '/rules/docstring-wrap'
   },
 
@@ -522,7 +522,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`target-version` is the top-level config key naming the Python runtime the '
               + 'project ships to. Version-gated rules consume it, and leaving it unset means '
               + 'no version-dependent rewrites fire.',
-    family    : 'engine',
+    families  : ['cli', 'lint'],
     href      : '/reference/configuration#top-level-keys'
   },
 
@@ -532,7 +532,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'type checkers, used inside `if TYPE_CHECKING:` blocks to guard '
               + 'import-only-for-typing code. `loose-constants` exempts bindings declared '
               + 'inside the block.',
-    family    : 'lint',
+    families  : ['lint'],
     href      : 'https://docs.python.org/3/library/typing.html#typing.TYPE_CHECKING'
   },
 
@@ -541,7 +541,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'A `TypedDict` is a `typing.TypedDict` subclass declaring a dict\'s '
               + 'key-to-value-type contract. `alphabetize` sorts its fields the same way it '
               + 'sorts `dataclass` and Pydantic fields.',
-    family    : 'ordering',
+    families  : ['ordering', 'alignment'],
     href      : 'https://docs.python.org/3/library/typing.html#typing.TypedDict'
   },
 
@@ -550,7 +550,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'The walrus operator is Python\'s assignment expression `:=` (PEP 572). '
               + '`align-equals` treats it as a non-member, so a walrus inside a condition or '
               + 'comprehension never enters an alignment group.',
-    family    : 'alignment'
+    families  : ['alignment']
   },
 
   'workflow command': {
@@ -559,7 +559,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'file=...,line=...::message`). The `--output-format github` shape emits one '
               + 'workflow command per diagnostic, which GitHub renders as a check-run '
               + 'annotation on the PR diff.',
-    family    : 'engine',
+    families  : ['cli'],
     href      : '/reference/output-formats#github'
   }
 }

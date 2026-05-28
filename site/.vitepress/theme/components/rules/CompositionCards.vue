@@ -8,6 +8,7 @@ import { data as composition }  from '../../../data/composition.data'
 import { data as fixturesData } from '../../../data/fixtures.data'
 import { data as rules }        from '../../../data/rules.data'
 import type { RenderedRule }    from '../../../data/rules.data'
+import { railPaint }            from '../../../lib/shared/family-rail'
 import type { FixtureTab }      from '../../../lib/shared/fixture-tab'
 import { formatFolio }          from '../../../lib/shared/numerals'
 
@@ -30,15 +31,6 @@ interface CardRow {
   title          : string
 }
 
-function familyColor(family: string | null): string {
-  return family ? `var(--prose-c-family-${family})` : 'var(--vp-c-divider)'
-}
-
-function railPaintFor(families: readonly (string | null)[]): string {
-  if (families.length <= 1) return familyColor(families[0] ?? null)
-  return `linear-gradient(to bottom, ${families.map(familyColor).join(', ')})`
-}
-
 const cards = computed<readonly CardRow[]>(() =>
   composition.cases.map((entry, i) => {
     const families = entry.rules.map(slug => rules.bySlug[slug]?.family ?? null)
@@ -50,7 +42,7 @@ const cards = computed<readonly CardRow[]>(() =>
       inputHtml      : fixture?.inputHtml ?? '',
       num            : formatFolio(i + 1, 3),
       outputHtml     : fixture?.outputHtml ?? '',
-      railPaint      : railPaintFor(families),
+      railPaint      : railPaint(families),
       segments       : entry.rules.map((slug, idx) => ({
         family : families[idx],
         index  : idx + 1,
