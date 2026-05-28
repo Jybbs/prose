@@ -12,14 +12,13 @@ use std::ops::Range;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_dotted_name;
-use ruff_python_ast::token::parenthesized_range;
 use ruff_python_ast::visitor::{walk_expr, Visitor};
 use ruff_python_ast::{AnyNodeRef, DictItem, Expr, ExprDict};
 use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
-use crate::primitives::{edit::narrowed_replacement, INDENT_STEP};
+use crate::primitives::{edit::narrowed_replacement, range::paren_aware_range, INDENT_STEP};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -31,10 +30,7 @@ pub(crate) struct CollectionLayout {
 impl CollectionLayout {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            code_line_length: config
-                .code_line_length
-                .expect("Config::default synthesizes Some(88)")
-                .get(),
+            code_line_length: config.code_width(),
             max_atomics_per_line: config
                 .rules
                 .collection_layout
@@ -311,14 +307,13 @@ impl<'a> Layouter<'a> {
     /// recovered against `parent` so precedence-bearing parens like
     /// `(-a) ** 2` survive a borrow.
     fn slice_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> &'a str {
-        let range = parenthesized_range(expr.into(), parent, self.source.tokens())
-            .unwrap_or_else(|| expr.range());
+        let range = paren_aware_range(expr.into(), parent, self.source.tokens());
         self.source.slice(range)
     }
 
     /// Appends the inline serialization of `expr` to `buf`. Recursive
     /// helper backing `inline_form`. `parent` is the immediate
-    /// enclosing AST node, used for `parenthesized_range` recovery on
+    /// enclosing AST node, used for `paren_aware_range` recovery on
     /// non-collection leaves.
     fn write_inline(&self, buf: &mut String, expr: &Expr, parent: AnyNodeRef) {
         let here = AnyNodeRef::from(expr);

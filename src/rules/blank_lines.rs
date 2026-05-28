@@ -15,6 +15,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::config::Config;
 use crate::primitives::imports::import_group;
+use crate::primitives::scope::BodyScope;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -46,13 +47,6 @@ impl Rule for BlankLines {
     fn id(&self) -> RuleId {
         Self::SLUG
     }
-}
-
-#[derive(Clone, Copy)]
-enum BodyScope {
-    Class,
-    Function,
-    Module,
 }
 
 struct Walker<'a> {
