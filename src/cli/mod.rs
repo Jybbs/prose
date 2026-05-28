@@ -18,10 +18,10 @@
 //! rendering. `exit_status` carries the matrix every subcommand
 //! resolves into.
 
-use std::io::{self, Write};
+use std::io::{self, IsTerminal, Write};
 use std::process::ExitCode;
 
-use anstream::AutoStream;
+use anstream::{stream::RawStream, AutoStream};
 use anyhow::Context;
 use clap::{ColorChoice, CommandFactory, Parser};
 use clap_complete::generate;
@@ -29,6 +29,7 @@ use clap_complete::generate;
 mod args;
 mod cache;
 mod exit_status;
+mod output;
 mod runner;
 
 use args::{
@@ -36,6 +37,7 @@ use args::{
     Command,
 };
 use exit_status::ExitStatus;
+use output::Presentation;
 
 use crate::config::Config;
 
@@ -72,7 +74,12 @@ pub fn run() -> ExitCode {
     if let Some(err) = validate_diff_format_combination(&cli) {
         return report_clap_error(err);
     }
-    let stdout = stdout_with_color(cli.color);
+    let present = Presentation {
+        quiet: command_quiet(&cli.command),
+        stdout_tty: io::stdout().is_terminal(),
+    };
+    let stdout = with_color(io::stdout().lock(), cli.color);
+    let stderr = with_color(io::stderr(), cli.color);
     let verbose = cli.verbose;
     let result = match cli.command {
         Command::Cache { action } => match action {
@@ -80,14 +87,26 @@ pub fn run() -> ExitCode {
             CacheAction::Compact => cache::compact(stdout),
             CacheAction::Info => cache::info(stdout),
         },
-        Command::Check(args) => runner::check_with_io(args, verbose, io::stdin(), stdout),
+        Command::Check(args) => {
+            runner::check_with_io(args, verbose, &present, io::stdin(), stdout, stderr)
+        }
         Command::Completions { shell } => {
             generate(shell, &mut Cli::command(), "prose", &mut io::stdout());
             Ok(ExitStatus::Clean)
         }
-        Command::Format(args) => runner::format_with_io(args, verbose, io::stdin(), stdout),
+        Command::Format(args) => {
+            runner::format_with_io(args, verbose, &present, io::stdin(), stdout, stderr)
+        }
     };
     finalize(result).into()
+}
+
+fn command_quiet(command: &Command) -> bool {
+    match command {
+        Command::Check(args) => args.quiet,
+        Command::Format(args) => args.quiet,
+        Command::Cache { .. } | Command::Completions { .. } => false,
+    }
 }
 
 fn finalize(result: anyhow::Result<ExitStatus>) -> ExitStatus {
@@ -106,12 +125,11 @@ fn is_broken_pipe(err: &anyhow::Error) -> bool {
         .is_some_and(|e| e.kind() == io::ErrorKind::BrokenPipe)
 }
 
-fn stdout_with_color(choice: ColorChoice) -> AutoStream<io::StdoutLock<'static>> {
-    let lock = io::stdout().lock();
+fn with_color<S: RawStream>(raw: S, choice: ColorChoice) -> AutoStream<S> {
     match choice {
-        ColorChoice::Always => AutoStream::always(lock),
-        ColorChoice::Auto => AutoStream::auto(lock),
-        ColorChoice::Never => AutoStream::never(lock),
+        ColorChoice::Always => AutoStream::always(raw),
+        ColorChoice::Auto => AutoStream::auto(raw),
+        ColorChoice::Never => AutoStream::never(raw),
     }
 }
 

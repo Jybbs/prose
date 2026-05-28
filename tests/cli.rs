@@ -114,6 +114,27 @@ fn check_clean_fixture_exits_zero() {
 }
 
 #[test]
+fn check_clean_summary_anchors_with_hyacinth() {
+    let (_dir, path) = fixture("clean.py", "x = 1\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.arg("check").arg(&path).assert().success();
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert_eq!(err.trim(), "🪻 All clean.");
+}
+
+#[test]
+fn check_violation_summary_anchors_with_coffee() {
+    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.arg("check").arg(&path).assert().code(1);
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(
+        err.contains("☕ 1 diagnostic in 1 file."),
+        "stderr was {err:?}"
+    );
+}
+
+#[test]
 fn check_no_cache_flag_runs_clean() {
     let (_dir, path) = fixture("clean.py", "x = 1\n");
     prose()
@@ -204,6 +225,51 @@ fn color_arms_exit_zero(#[values("always", "never")] arm: &str) {
 }
 
 #[test]
+fn color_always_summary_emits_truecolor_when_colorterm_set() {
+    let (_dir, path) = fixture("clean.py", "x = 1\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .env("COLORTERM", "truecolor")
+        .args(["--color", "always", "check"])
+        .arg(&path)
+        .assert()
+        .success();
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(
+        err.contains("\u{1b}[38;2;138;128;203m"),
+        "stderr was {err:?}"
+    );
+}
+
+#[test]
+fn color_always_summary_falls_back_to_ansi_without_colorterm() {
+    let (_dir, path) = fixture("clean.py", "x = 1\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .env_remove("COLORTERM")
+        .args(["--color", "always", "check"])
+        .arg(&path)
+        .assert()
+        .success();
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(err.contains("\u{1b}[35m"), "stderr was {err:?}");
+    assert!(!err.contains("38;2;"), "stderr was {err:?}");
+}
+
+#[test]
+fn color_never_summary_stays_plain() {
+    let (_dir, path) = fixture("clean.py", "x = 1\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["--color", "never", "check"])
+        .arg(&path)
+        .assert()
+        .success();
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(!err.contains('\u{1b}'), "stderr was {err:?}");
+}
+
+#[test]
 fn completions_bash_exits_zero() {
     prose().args(["completions", "bash"]).assert().success();
 }
@@ -249,6 +315,31 @@ fn format_diff_renders_diff_and_leaves_file_unchanged() {
 }
 
 #[test]
+fn format_diff_off_tty_leaves_a_plain_patch() {
+    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
+    let stdout = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    assert!(stdout.contains("--- "), "patch header missing: {stdout:?}");
+    assert!(
+        !stdout.contains('🧵'),
+        "decoration leaked off a TTY: {stdout:?}"
+    );
+}
+
+#[test]
+fn format_diff_summary_reports_would_reformat() {
+    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(
+        err.contains("🗞️ 1 file would be reformatted."),
+        "stderr was {err:?}"
+    );
+}
+
+#[test]
 fn format_no_cache_flag_rewrites_when_needed() {
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     prose()
@@ -258,6 +349,15 @@ fn format_no_cache_flag_rewrites_when_needed() {
         .success();
     let after = std::fs::read_to_string(&path).expect("reads");
     assert_ne!(after, "ab = 1\nx = 2\n");
+}
+
+#[test]
+fn format_rewrite_summary_reports_reformatted() {
+    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.arg("format").arg(&path).assert().success();
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(err.contains("🗞️ Reformatted 1 file."), "stderr was {err:?}");
 }
 
 #[test]
@@ -281,6 +381,22 @@ fn help_exits_clean() {
 #[test]
 fn no_args_prints_help_and_exits_clean() {
     prose().assert().success();
+}
+
+#[test]
+fn quiet_check_reduces_summary_to_a_bare_count() {
+    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .env("COLORTERM", "truecolor")
+        .args(["--color", "always", "check", "--quiet"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert_eq!(err.trim(), "1 diagnostic in 1 file.");
+    assert!(!err.contains('☕'), "quiet kept the anchor: {err:?}");
+    assert!(!err.contains('\u{1b}'), "quiet kept color: {err:?}");
 }
 
 #[test]
