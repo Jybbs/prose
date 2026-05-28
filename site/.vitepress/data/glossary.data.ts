@@ -7,11 +7,12 @@ import { GLOSSARY_FAMILY_META, type GlossaryFamily } from '../lib/shared/registr
 export interface RenderedGlossaryEntry {
   aliases        : readonly string[]
   definitionHtml : string
-  family         : GlossaryFamily
-  familyBadge    : string
-  familyLabel    : string
+  families       : readonly GlossaryFamily[]
+  familyBadges   : readonly string[]
+  familyLabels   : readonly string[]
   href          ?: string
   initial        : string
+  primaryFamily  : GlossaryFamily
   slug           : string
 }
 
@@ -32,11 +33,12 @@ export default defineLoader({
       entries[slug] = {
         aliases        : entry.aliases ?? [],
         definitionHtml : md.renderInline(entry.definition),
-        family         : entry.family,
-        familyBadge    : GLOSSARY_FAMILY_META[entry.family].badge,
-        familyLabel    : GLOSSARY_FAMILY_META[entry.family].label,
+        families       : entry.families,
+        familyBadges   : entry.families.map(f => GLOSSARY_FAMILY_META[f].badge),
+        familyLabels   : entry.families.map(f => GLOSSARY_FAMILY_META[f].label),
         href           : entry.href,
         initial        : firstLetter(slug),
+        primaryFamily  : entry.families[0],
         slug
       }
     }
