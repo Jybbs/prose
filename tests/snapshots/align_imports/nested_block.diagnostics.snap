@@ -1,8 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/align_imports/nested_block.input.py
----
-align-imports@265..266
-align-imports@314..315
-align-imports@343..344

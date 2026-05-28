@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/module_def_to_assignment_two_blanks/input.py
+---
+"""
+A module-level def followed by an annotated assignment normalizes to 2
+blank lines between them, regardless of the source's actual count.
+"""
+
+
+def configure():
+    return None
+
+
+TIMEOUT: float = 30.0

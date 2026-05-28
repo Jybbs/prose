@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/off_block_keeps_trailing_comma/input.py
+---
+docstring-wrap@61..185
+strip-trailing-commas@260..261

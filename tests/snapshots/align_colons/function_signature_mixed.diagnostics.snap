@@ -1,9 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/align_colons/function_signature_mixed.input.py
----
-align-colons@275..275
-align-colons@293..293
-align-colons@327..327
-align-colons@349..349

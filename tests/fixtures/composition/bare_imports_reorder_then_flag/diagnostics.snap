@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
+---
+alphabetize@272..297
+bare-import-allowlist@272..276
+bare-import-allowlist@284..286
+bare-import-allowlist@294..297

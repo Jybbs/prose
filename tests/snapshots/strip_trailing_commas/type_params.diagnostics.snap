@@ -1,8 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/strip_trailing_commas/type_params.input.py
----
-strip-trailing-commas@344..345
-strip-trailing-commas@421..422
-strip-trailing-commas@460..461

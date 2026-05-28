@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/no_step_narration/module_scope_step_flagged/input.py
+---
+no-step-narration@127..147
+no-step-narration@148..168

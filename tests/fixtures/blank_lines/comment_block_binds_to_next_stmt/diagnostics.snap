@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/comment_block_binds_to_next_stmt/input.py
+---
+blank-lines@239..240

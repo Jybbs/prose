@@ -1,0 +1,25 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/suppression/consecutive_off_flattens/input.py
+---
+"""
+Two consecutive fmt: off directives flatten, with the first fmt: on closing
+the block. The second fmt: off does not nest, so text after the closing fmt:
+on aligns normally.
+"""
+
+bar_baz = 3
+foo     = 2
+x       = 1
+
+# fmt: off
+short = 1
+# fmt: off
+much_longer_name = 2
+mid = 3
+# fmt: on
+
+a   = 1
+bb  = 2
+ccc = 3

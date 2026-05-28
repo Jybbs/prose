@@ -1,0 +1,20 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/missing_default_splits_run/input.py
+---
+"""
+An annotated parameter without a default value splits the
+surrounding parameter run. The remaining parameters have widths
+that would align if grouped, but they stay unpadded as
+singletons.
+"""
+
+
+def f(
+    *,
+    x: int = 1,
+    flag: bool,
+    verbose: bool = True,
+):
+    pass

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_comparisons/blank_line_breaks_run/input.py
+---
+align-comparisons@131..132

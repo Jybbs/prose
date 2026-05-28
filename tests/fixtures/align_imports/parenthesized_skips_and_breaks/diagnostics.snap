@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/parenthesized_skips_and_breaks/input.py
+---
+align-imports@418..419
+align-imports@511..512

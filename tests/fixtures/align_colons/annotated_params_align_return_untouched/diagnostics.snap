@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/annotated_params_align_return_untouched/input.py
+---
+align-colons@299..299
+align-colons@314..314
+align-colons@334..334
+align-colons@352..352

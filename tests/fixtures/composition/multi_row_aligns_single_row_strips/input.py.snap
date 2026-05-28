@@ -1,0 +1,27 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/multi_row_aligns_single_row_strips/input.py
+---
+"""
+Two dict literals in the same scope where one carries multiple
+entries on distinct lines and the other carries a single entry. The
+multi-row group has its `:` column aligned and the single-row group
+has its pre-`:` padding stripped.
+
+Rules:
+- align_colons
+- singleton_rule
+"""
+
+
+def make():
+    paired = {
+        "first"  : 1,
+        "second" : 2,
+        "third"  : 3,
+    }
+    single = {
+        "only_key": 1,
+    }
+    return paired, single

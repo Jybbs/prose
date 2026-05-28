@@ -1,0 +1,20 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/def_edge_at_topmost_decorator/input.py
+---
+"""
+A module-level def with stacked decorators has its leading edge at
+the topmost decorator. The rule normalizes the blank-line count above
+that decorator, with the rest of the decorator chain riding along.
+"""
+
+
+def first():
+    return 1
+
+
+@first_decorator
+@second_decorator
+def second():
+    return 2

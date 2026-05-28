@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/drop_future_sort_align_cushion/input.py
+---
+align-imports@418..419
+align-imports@440..441
+alphabetize@380..483
+blank-lines@447..451
+unused-future-annotations@448..483

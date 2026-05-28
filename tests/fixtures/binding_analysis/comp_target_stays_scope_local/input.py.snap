@@ -1,0 +1,47 @@
+---
+source: tests/binding_analysis.rs
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/comp_target_stays_scope_local/input.py
+---
+bindings:
+  - kinds:
+      - Assignment
+    name: xs
+    read_offsets:
+      - 201
+    scope: 0
+    write_offsets:
+      - 150
+  - kinds:
+      - Assignment
+    name: x
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 167
+  - kinds:
+      - Comprehension
+    name: x
+    read_offsets:
+      - 190
+    scope: 1
+    write_offsets:
+      - 196
+  - kinds:
+      - Assignment
+    name: vals
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 182
+scopes:
+  - bindings:
+      vals: 3
+      x: 1
+      xs: 0
+    kind: Module
+    parent: ~
+  - bindings:
+      x: 2
+    kind: Comprehension
+    parent: 0

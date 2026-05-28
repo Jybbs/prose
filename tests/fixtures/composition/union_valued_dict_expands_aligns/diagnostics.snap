@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/union_valued_dict_expands_aligns/input.py
+---
+align-colons@310..310
+align-colons@344..344
+align-colons@376..376
+align-colons@413..413
+alphabetize@295..427
+collection-layout@289..411

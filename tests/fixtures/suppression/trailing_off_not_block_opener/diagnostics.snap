@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/trailing_off_not_block_opener/input.py
+---
+align-equals@185..186
+align-equals@193..194
+align-equals@222..223
+align-equals@230..231
+docstring-wrap@68..150

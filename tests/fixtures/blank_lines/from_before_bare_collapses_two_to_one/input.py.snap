@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/from_before_bare_collapses_two_to_one/input.py
+---
+"""
+A `from` import followed by a bare `import` separated by two blank
+lines collapses to one.
+"""
+
+from sys import argv
+
+import os

@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/loose_constants/paramspec_assignment_untouched/input.py
+---
+"""
+A `ParamSpec("P")` assignment is SCREAMING_CASE by Python convention
+and structural by definition, so it passes through the rule
+untouched.
+"""
+
+from typing import ParamSpec
+
+P = ParamSpec("P")

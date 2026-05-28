@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/lambda_params_self_pinned/input.py
+---
+alphabetize@315..401

@@ -1,6 +1,6 @@
 //! Snapshot tests for `[tool.prose]` config parsing.
 //!
-//! Each `tests/fixtures/config/*.toml` file is a self-contained
+//! Each `tests/fixtures/config/*/input.toml` file is a self-contained
 //! `pyproject.toml` snippet. The harness parses it through
 //! `Config::from_pyproject_str` and snapshots the resulting `Config`
 //! debug representation, so a regression in any default, rename, or
@@ -13,8 +13,8 @@ use prose::config::Config;
 
 #[test]
 fn fixtures() {
-    insta::glob!("fixtures/config/*.toml", |path| {
-        let case = common::case_stem(path);
+    insta::glob!("fixtures/config/*/input.toml", |path| {
+        let case = common::case_name(path);
         let toml = fs_err::read_to_string(path).expect("fixture reads");
         let config = Config::from_pyproject_str(&toml).expect("fixture parses");
 
@@ -26,8 +26,8 @@ fn fixtures() {
             common::unified_diff(&a, &b),
         );
 
-        common::in_snapshot_dir("config", || {
-            insta::assert_debug_snapshot!(case, config);
+        common::in_snapshot_dir(path, || {
+            insta::assert_debug_snapshot!("config", config);
         });
     });
 }

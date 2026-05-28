@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/py314_target_defers_directive_noop/input.py
+---
+"""
+The configured `target-version = "3.14"` defers annotations by default
+per PEP 749, so the directive is a no-op even with annotations present.
+The sole import is removed.
+"""
+
+
+
+def add(x: int, y: int) -> int:
+    return x + y

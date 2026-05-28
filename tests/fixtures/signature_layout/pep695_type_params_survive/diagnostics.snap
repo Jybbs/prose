@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/signature_layout/pep695_type_params_survive/input.py
+---
+signature-layout@333..381

@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_import_allowlist/import_inside_function_flagged/input.py
+---
+"""
+The rule recurses into function bodies through `walk_stmt`, flagging
+a non-allowlisted bare import nested inside `def` the same as a
+module-level one.
+"""
+
+
+def show_version():
+    import sys
+
+    return sys.version

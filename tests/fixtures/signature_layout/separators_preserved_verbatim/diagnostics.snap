@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/signature_layout/separators_preserved_verbatim/input.py
+---
+signature-layout@320..414

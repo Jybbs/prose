@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/legacy_union_syntax/pep604_pipe_unflagged/input.py
+---
+"""
+Already-modern PEP 604 annotations using `|` are not flagged. The
+walker only inspects `Subscript` shapes, so the binary `BitOr`
+expression that backs `int | None` slips past entirely.
+"""
+
+x: int | None = None
+y: int | str  = 0

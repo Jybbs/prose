@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/from_import_keyword_run/input.py
+---
+align-imports@270..271
+align-imports@295..296
+align-imports@320..321

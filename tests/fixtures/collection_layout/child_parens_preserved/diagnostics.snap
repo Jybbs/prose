@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/child_parens_preserved/input.py
+---
+collection-layout@334..427
+collection-layout@449..482

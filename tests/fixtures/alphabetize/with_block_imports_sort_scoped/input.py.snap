@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/with_block_imports_sort_scoped/input.py
+---
+"""
+`with` blocks recurse the same way other compound bodies do.
+The body's `from`-import run sorts within the context-managed
+scope without leaking into surrounding statements.
+"""
+
+with open("foo") as f:
+    from alpha import b
+    from beta import c
+    from zeta import a

@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/three_defs_each_pair_two_blanks/input.py
+---
+blank-lines@190..191
+blank-lines@215..217

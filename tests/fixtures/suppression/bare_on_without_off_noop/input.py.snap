@@ -1,0 +1,19 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/suppression/bare_on_without_off_noop/input.py
+---
+"""
+A bare fmt: on with no preceding fmt: off is a no-op. Every assignment in
+the file is eligible for alignment.
+"""
+
+bar_baz = 3
+foo     = 2
+x       = 1
+
+# fmt: on
+
+aa   = 1
+bbb  = 2
+cccc = 3

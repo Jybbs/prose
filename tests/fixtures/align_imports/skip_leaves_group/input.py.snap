@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/skip_leaves_group/input.py
+---
+"""
+Same shape as `shift_limit_split` under the `skip` policy. Any
+group whose widest module overshoots the cap leaves the entire
+group untouched.
+"""
+
+from io import BytesIO
+from re import sub
+from os import getenv
+from collections.abc.mapping_helpers.namespaced import OrderedDict
+from sys import path
+from os.path import join

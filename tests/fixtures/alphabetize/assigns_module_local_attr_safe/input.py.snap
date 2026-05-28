@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/assigns_module_local_attr_safe/input.py
+---
+"""
+A run whose `Attribute` root names a module-local binding written
+before the run reorders normally. `SETTINGS` is module-local
+(assigned above the run), so the attribute access does not taint
+the run.
+"""
+
+SETTINGS = {"timeout": 30}
+
+alpha = 1
+beta = 2
+zebra = SETTINGS["timeout"]

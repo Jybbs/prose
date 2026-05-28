@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_import_allowlist/from_import_not_targeted/input.py
+---
+"""
+A `from os import path` carries no diagnostic because the rule
+targets `Stmt::Import` rather than `Stmt::ImportFrom`. The explicit
+shape the rule recommends is already in use.
+"""
+
+from os import path

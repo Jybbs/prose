@@ -1,9 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/collection_layout/oversized_entries.input.py
----
-collection-layout@442..442
-collection-layout@584..584
-collection-layout@713..808
-collection-layout@948..1056

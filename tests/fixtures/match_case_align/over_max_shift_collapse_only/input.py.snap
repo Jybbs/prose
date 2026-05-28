@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/match_case_align/over_max_shift_collapse_only/input.py
+---
+"""
+One arm's pattern is dramatically wider than its neighbors,
+exceeding the rule's `max-shift` cap. With `max-shift-policy
+= "skip"` from the sidecar, alignment emits nothing. The
+collapse edits still fire, so each arm's body still lands on
+its case line.
+"""
+
+match status:
+    case "ok": result = True
+    case "warn": result = True
+    case "fail" | "error" | "panic" | "abort" | "halt": result = False

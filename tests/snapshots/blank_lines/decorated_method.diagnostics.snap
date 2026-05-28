@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/blank_lines/decorated_method.input.py
----
-blank-lines@206..207
-blank-lines@244..248

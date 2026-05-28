@@ -1,0 +1,22 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/docstring_returns_named_entries_sort/input.py
+---
+"""
+The `Returns:` section reorders alphabetically when each entry
+carries a `name: description` shape. Single-paragraph `Returns:`
+prose without entries falls through to the description path,
+which `docstring_wrap` owns.
+"""
+
+
+def parse(text):
+    """Split into components.
+
+    Returns:
+        body: The mid-section captured between separators.
+        head: The leading token before the first separator.
+        tail: The trailing remainder after consuming each field.
+    """
+    return text

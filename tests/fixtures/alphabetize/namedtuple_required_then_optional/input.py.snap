@@ -1,0 +1,20 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/namedtuple_required_then_optional/input.py
+---
+"""
+A `NamedTuple` class body has its annotated field declarations
+alphabetized with required-then-optional. Default-bearing fields
+land last per Python's positional-default invariant, which the
+required-then-optional split already enforces.
+"""
+
+from typing import NamedTuple
+
+
+class Point(NamedTuple):
+    x: int
+    y: int
+    color: str = "black"
+    z: int = 0

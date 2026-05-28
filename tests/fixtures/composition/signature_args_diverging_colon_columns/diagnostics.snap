@@ -1,0 +1,13 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/signature_args_diverging_colon_columns/input.py
+---
+align-colons@496..496
+align-colons@515..515
+align-colons@537..537
+align-colons@603..603
+align-colons@725..725
+align-colons@851..851
+docstring-wrap@676..927
+docstring-wrap@68..313

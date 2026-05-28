@@ -1,0 +1,23 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/non_assign_write_kinds_exempt/input.py
+---
+"""
+Bindings whose write kinds fall outside `Assignment` and `Walrus` are
+not flagged, because the rule's narrative of inlining the right-hand
+side does not extend to parameters, loop targets, with-targets,
+exception handlers, or local imports.
+"""
+
+
+def kinds(arg):
+    import os
+
+    for value in arg:
+        with open(value) as fp:
+            try:
+                use(arg, value, fp)
+            except OSError as err:
+                handle(err)
+    return os

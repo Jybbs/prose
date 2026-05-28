@@ -15,7 +15,7 @@ One module-level constant carries the full composition story. The right-hand dic
 
 The five rules fire in [**Pipeline Order**](/reference/pipeline-order) against the same block, reparsing between each so every rule downstream measures against the rewritten source rather than the original.
 
-<Fixture rule="composition" case="union_in_constant" />
+<Fixture rule="composition" case="overflow_dict_constants_rewrite_legacy_union" />
 
 ## All Cases
 
@@ -41,6 +41,6 @@ Each case's pipeline runs the listed rules in canonical order, reparsing between
 
 [[alphabetize]]'s module-level branch reorders the assigns above and below a `# fmt: off` block while the bracketed lines stay verbatim. The suppression directive bounds its own scope, so [[alphabetize]] and [[align-equals]] fire freely on every assign outside the bracket and the run boundary respects the marker.
 
-<Fixture rule="composition" case="module_reorder_around_block" />
+<Fixture rule="composition" case="constants_sort_around_fmt_off" />
 
 For the per-rule canonical case, click any rule chip above. For the deterministic order the pipeline runs in, see the [**Pipeline Order**](/reference/pipeline-order) reference. For the runner that drives the composition, see the [[pipeline]] primitive. For the full rule catalog, see the [**Rules**](/rules/).

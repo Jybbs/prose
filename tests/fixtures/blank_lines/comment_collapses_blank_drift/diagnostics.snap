@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/comment_collapses_blank_drift/input.py
+---
+blank-lines@314..319

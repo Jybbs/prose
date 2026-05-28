@@ -1,0 +1,18 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/nested_arms_recurse_arbitrary_depth/input.py
+---
+"""
+Nested compound statements recurse to arbitrary depth. The outer
+arm's body and the inner arm's body each sort independently, and
+the inner compound stays in its source slot within the outer
+arm while its own body's contents reorder.
+"""
+
+if outer:
+    if inner:
+        from alpha import b
+        from zeta import a
+    from beta import d
+    from gamma import c

@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/single_use_variables/nested_function_inner_flagged.input.py
----
-single-use-variables@357..358

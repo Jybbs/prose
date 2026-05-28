@@ -8,7 +8,7 @@ layout   : doc
 
 # docstring-wrap
 
-<RuleLayout rule="docstring_wrap" canonical="description_wrap">
+<RuleLayout rule="docstring_wrap">
 
 A docstring carries two readings inside one triple-quoted region. The description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Every Title-case-headed section that follows reads as a code-shaped table, where the line budget matches the surrounding code's `code-line-length` (*88 by default*) so that argument annotations sit at the same column as the function body's expressions. `docstring-wrap` honors both budgets, wrapping description prose to the narrower line and structured sections to the wider one.
 
@@ -25,28 +25,6 @@ Description and structured budgets come from the top-level [**Configuration**](/
 <template #canonical-lead>
 
 Description prose wraps to `docstring-line-length`, with the existing paragraph structure preserved across the rewrap.
-
-</template>
-
-<template #more-examples>
-
-<Fixture rule="docstring_wrap" case="args_wrap" title="Structured `Args:` Sections Wrap to the Wider Budget" />
-
-<Fixture rule="docstring_wrap" case="mixed_description_and_args" title="Mixed Description + Args Apply Both Budgets in Sequence" />
-
-<Fixture rule="docstring_wrap" case="code_block_fenced" title="Fenced Code Blocks inside the Description Are Preserved" />
-
-<Fixture rule="docstring_wrap" case="code_block_indented" title="Indented Code Blocks Are Preserved Too" />
-
-<Fixture rule="docstring_wrap" case="list_preserved" title="Bulleted Lists inside the Description Are Preserved" />
-
-<Fixture rule="docstring_wrap" case="class_docstring" title="Class Docstrings Wrap the Same Way as Function Docstrings" />
-
-<Fixture rule="docstring_wrap" case="returns_wrap" title="Structured `Returns:` Sections Wrap to the Wider Budget" />
-
-<Fixture rule="docstring_wrap" case="policy_docstring_line_length" title="The `docstring-line-length` Policy Overrides the Structured Budget" />
-
-<Fixture rule="docstring_wrap" case="idempotent" title="Already-Wrapped Source Is Left Alone" />
 
 </template>
 

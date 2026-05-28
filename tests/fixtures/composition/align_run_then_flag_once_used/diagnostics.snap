@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/align_run_then_flag_once_used/input.py
+---
+align-equals@348..349
+align-equals@370..371
+align-equals@428..429
+single-use-variables@344..348
+single-use-variables@401..411
+single-use-variables@432..438

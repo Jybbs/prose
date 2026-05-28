@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/signature_layout/async_and_nested.input.py
----
-signature-layout@285..365
-signature-layout@382..447

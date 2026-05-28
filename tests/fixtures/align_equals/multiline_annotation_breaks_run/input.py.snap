@@ -1,0 +1,21 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/multiline_annotation_breaks_run/input.py
+---
+"""
+A parameter whose annotation spans multiple lines breaks the
+parameter run. The surrounding parameters have widths that would
+align if grouped, but they stay unpadded as singletons.
+"""
+
+
+def configure(
+    host: str = "localhost",
+    fn: Callable[
+        [int, str],
+        bool,
+    ] = default,
+    timeout: float = 30.0,
+):
+    pass

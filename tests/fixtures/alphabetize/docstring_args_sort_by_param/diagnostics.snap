@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/docstring_args_sort_by_param/input.py
+---
+alphabetize@177..367

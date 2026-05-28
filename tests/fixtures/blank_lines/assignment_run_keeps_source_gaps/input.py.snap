@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/assignment_run_keeps_source_gaps/input.py
+---
+"""
+A run of module-level assignments leaves each adjacency at the
+source's actual count, because the module-scope dispatch returns
+`None` for assignment-after-assignment pairs.
+"""
+
+PORT = 8080
+HOST = "localhost"
+TIMEOUT: float = 30.0

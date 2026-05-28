@@ -1,0 +1,25 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/suppression/all_directives_preformatted_noop/input.py
+---
+"""
+Already-formatted source carrying every directive shape produces no further
+edits on a fresh pipeline run.
+"""
+
+bar_baz = 3
+foo     = 2
+x       = 1
+
+# fmt: off
+short = 1
+much_longer_name = 2
+mid = 3
+# fmt: on
+
+skipped = 4  # fmt: skip
+
+a   = 1
+bb  = 2
+ccc = 3

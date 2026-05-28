@@ -8,7 +8,7 @@ layout   : doc
 
 # unused-future-annotations
 
-<RuleLayout rule="unused_future_annotations" canonical="binding_safe_target_py313">
+<RuleLayout rule="unused_future_annotations">
 
 The `from __future__ import annotations` directive made forward-reference annotations possible on Python versions where the runtime evaluated annotations eagerly. PEP 749 lands deferred annotation evaluation in Python **3.14** by default whenever the file's annotations are typing-only, and the import becomes redundant. `unused-future-annotations` removes the import when removal is provably safe for the file.
 
@@ -42,24 +42,6 @@ The `target-version` field from the top-level [**Configuration**](/reference/con
 <template #canonical-lead>
 
 A file whose annotations are typing-only loses the `__future__` import when the target version allows safe removal.
-
-</template>
-
-<template #more-examples>
-
-<Fixture rule="unused_future_annotations" case="among_others_no_annotations" title="The Import Removes Cleanly from a Mixed Import Block" />
-
-<Fixture rule="unused_future_annotations" case="among_others_annotations_last" title="The Import Removes Whether Other Imports Sit before or after It" />
-
-<Fixture rule="unused_future_annotations" case="annotation_in_for_body" title="A Runtime Consumer inside the Body Keeps the Import" />
-
-<Fixture rule="unused_future_annotations" case="async_def_annotation" title="Async Function Annotations Are Recognized" />
-
-<Fixture rule="unused_future_annotations" case="class_scope_ann_assign" title="Class-Scope Annotated Assignments Are Recognized Too" />
-
-<Fixture rule="unused_future_annotations" case="directive_with_asname" title="An Aliased Directive Is Recognized Through the `as` Form" />
-
-<Fixture rule="unused_future_annotations" case="fmt_off_suppresses" title="A `# fmt: off` Block Suppresses the Rewrite" />
 
 </template>
 

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/lone_assignment_collapses_whitespace/input.py
+---
+"""
+A lone assignment collapses its pre-`=` whitespace to a single space,
+matching the whitespace-normalization default every `=` rule shares.
+"""
+
+solitary = 1

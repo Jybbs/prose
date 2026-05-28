@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/header_comment_first_member_binds_comment/input.py
+---
+blank-lines@205..206

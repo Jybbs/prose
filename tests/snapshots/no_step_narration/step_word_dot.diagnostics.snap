@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/no_step_narration/step_word_dot.input.py
----
-no-step-narration@136..160

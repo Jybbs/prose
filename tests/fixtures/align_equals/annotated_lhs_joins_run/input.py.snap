@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/annotated_lhs_joins_run/input.py
+---
+"""
+Annotated assignment with an initializer (`x: int = 1`) participates
+in the group. The effective left-hand-side width extends through the
+annotation, so the `=` of `beta: int` aligns with the `=` of plain
+assignments alongside.
+"""
+
+alpha      = 1
+beta: int  = 2
+gamma_long = 3

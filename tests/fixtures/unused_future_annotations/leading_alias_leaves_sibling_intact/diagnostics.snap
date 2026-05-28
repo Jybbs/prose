@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/unused_future_annotations/leading_alias_leaves_sibling_intact/input.py
+---
+unused-future-annotations@222..235

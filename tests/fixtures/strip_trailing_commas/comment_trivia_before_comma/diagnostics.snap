@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_trailing_commas/comment_trivia_before_comma/input.py
+---
+strip-trailing-commas@346..347
+strip-trailing-commas@430..431

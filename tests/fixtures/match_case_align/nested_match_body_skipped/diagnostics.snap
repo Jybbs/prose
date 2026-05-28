@@ -1,0 +1,12 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/match_case_align/nested_match_body_skipped/input.py
+---
+match-case-align@417..417
+match-case-align@418..435
+match-case-align@468..468
+match-case-align@469..486
+match-case-align@520..520
+match-case-align@521..538
+match-case-align@564..573

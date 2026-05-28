@@ -4,20 +4,14 @@
 
 mod common;
 
-use std::ffi::OsStr;
-
 use prose::source::Source;
 
 #[test]
 fn binding_tables() {
-    insta::glob!("fixtures/binding_analysis/*.input.py", |path| {
-        let case = path
-            .file_name()
-            .and_then(OsStr::to_str)
-            .expect("fixture path has a file name");
+    insta::glob!("fixtures/binding_analysis/*/input.py", |path| {
         let source = Source::from_path(path).expect("fixture parses");
-        common::in_snapshot_dir("binding_analysis", || {
-            insta::assert_yaml_snapshot!(case, source.binding_analysis());
+        common::in_snapshot_dir(path, || {
+            insta::assert_yaml_snapshot!("input.py", source.binding_analysis());
         });
     });
 }

@@ -1,0 +1,13 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/annotated_fields_sort_align_both/input.py
+---
+align-colons@228..228
+align-colons@254..254
+align-colons@289..289
+align-colons@310..310
+align-equals@234..235
+align-equals@270..271
+align-equals@308..309
+alphabetize@215..324

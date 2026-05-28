@@ -1,8 +1,0 @@
----
-source: tests/diagnostics.rs
-assertion_line: 39
-expression: render(&diagnostics)
-input_file: tests/fixtures/align_colons/multiline_field_value_breaks_group.input.py
----
-align-colons@252..252
-align-colons@271..271

@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/call_splits_atomic_run/input.py
+---
+collection-layout@363..478
+collection-layout@497..603

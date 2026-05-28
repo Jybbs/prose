@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/dict_expand_sort_strip_align/input.py
+---
+align-colons@376..376
+align-colons@400..400
+align-colons@420..420
+align-colons@443..443
+alphabetize@365..461
+collection-layout@359..441

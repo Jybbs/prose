@@ -8,7 +8,7 @@ layout   : doc
 
 # strip-trailing-commas
 
-<RuleLayout rule="strip_trailing_commas" canonical="dict_literal">
+<RuleLayout rule="strip_trailing_commas">
 
 A trailing comma on the last entry of a multi-line collection adds a small **visual hiccup** at every block boundary without earning its keep. Each entry already has its own line, so a new entry adds a new line of its own, which leaves the trailing comma on the previous last entry with no diff-stability win to bring. `strip-trailing-commas` removes the trailing comma from any bracketed container that carries one, and it leaves tuples alone because Python uses the trailing comma to disambiguate single-element tuples from parenthesized expressions.
 
@@ -25,24 +25,6 @@ The strip is unconditional within the contexts named above, so the rule carries 
 <template #canonical-lead>
 
 A multi-line dict literal loses its trailing comma after the strip.
-
-</template>
-
-<template #more-examples>
-
-<Fixture rule="strip_trailing_commas" case="function_signature" title="Function Signatures Drop the Trailing Comma on the Final Arg" />
-
-<Fixture rule="strip_trailing_commas" case="function_call" title="Function Calls Drop the Trailing Comma on the Final Arg" />
-
-<Fixture rule="strip_trailing_commas" case="list_literal" title="Lists Follow the Same Strip as Dicts" />
-
-<Fixture rule="strip_trailing_commas" case="class_bases" title="Class Base Lists Strip the Trailing Comma" />
-
-<Fixture rule="strip_trailing_commas" case="parenthesized_args" title="Parenthesized Argument Lists Strip the Trailing Comma" />
-
-<Fixture rule="strip_trailing_commas" case="nested" title="Nested Multi-Line Collections Strip Independently" />
-
-<Fixture rule="strip_trailing_commas" case="idempotent" title="Already-Stripped Source Is Left Alone" />
 
 </template>
 

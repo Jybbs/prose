@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/no_step_narration/class_body_step_flagged/input.py
+---
+"""
+A numbered-step comment inside a class body is flagged the same way as
+inside a function body. The own-line filter passes, the scope does not
+affect the match.
+"""
+
+
+class Processor:
+    # 1. normalize input
+    def run(self, payload):
+        return payload.strip()

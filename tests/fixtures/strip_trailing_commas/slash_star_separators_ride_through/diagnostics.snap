@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_trailing_commas/slash_star_separators_ride_through/input.py
+---
+strip-trailing-commas@303..304
+strip-trailing-commas@365..366

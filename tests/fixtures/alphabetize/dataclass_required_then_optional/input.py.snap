@@ -1,0 +1,22 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dataclass_required_then_optional/input.py
+---
+"""
+A `@dataclass`-decorated class has annotated field declarations
+alphabetized by AST shape, not by decorator name. Required fields
+land before optional, each sub-group sorted by name. The structural
+detection covers attrs, msgspec, and any hand-rolled annotated
+container with the same shape.
+"""
+
+from dataclasses import dataclass
+
+
+@dataclass
+class Posting:
+    company: str
+    date_posted: str
+    description: str | None = None
+    title: str = "Untitled"

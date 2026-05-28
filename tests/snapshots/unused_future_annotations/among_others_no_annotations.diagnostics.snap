@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/unused_future_annotations/among_others_no_annotations.input.py
----
-unused-future-annotations@222..235

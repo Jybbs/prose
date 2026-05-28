@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_comparisons/or_chain_aligns_like_and/input.py
+---
+align-comparisons@119..120
+align-comparisons@156..157

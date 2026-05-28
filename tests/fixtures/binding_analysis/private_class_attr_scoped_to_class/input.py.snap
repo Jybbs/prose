@@ -1,0 +1,49 @@
+---
+source: tests/binding_analysis.rs
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/private_class_attr_scoped_to_class/input.py
+---
+bindings:
+  - kinds:
+      - ClassDef
+    name: C
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 192
+  - kinds:
+      - Assignment
+    name: __secret
+    read_offsets: []
+    scope: 1
+    write_offsets:
+      - 199
+  - kinds:
+      - FunctionDef
+    name: get
+    read_offsets: []
+    scope: 1
+    write_offsets:
+      - 221
+  - kinds:
+      - Parameter
+    name: self
+    read_offsets:
+      - 247
+    scope: 2
+    write_offsets:
+      - 225
+scopes:
+  - bindings:
+      C: 0
+    kind: Module
+    parent: ~
+  - bindings:
+      __secret: 1
+      get: 2
+    kind: Class
+    parent: 0
+  - bindings:
+      self: 3
+    kind: Function
+    parent: 1

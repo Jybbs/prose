@@ -1,0 +1,2 @@
+[docs]
+title = "Imports Regroup into Bare → External `from` → Local-Package Order"

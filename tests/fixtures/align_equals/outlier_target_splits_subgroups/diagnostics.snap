@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_equals/outlier_target_splits_subgroups/input.py
+---
+align-equals@339..340
+align-equals@405..406

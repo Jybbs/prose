@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/docstring_wrap/policy_docstring_line_length.input.py
----
-docstring-wrap@143..149
-docstring-wrap@303..372

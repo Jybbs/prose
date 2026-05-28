@@ -1,0 +1,25 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/docstring_wrap/fence_inside_entry_resumes/input.py
+---
+"""
+Verbatim regions inside an entry preserve their shape and end the entry at
+the block's boundary, so a triple-backtick fence inside an Args entry passes
+through unchanged and the next entry resumes the hanging-column wrap.
+"""
+
+
+def render():
+    """
+    Summary line.
+
+    Args:
+        sample: A leading description that introduces a fenced code block.
+        ```python
+        x = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 + 15
+        ```
+        next_entry: A descriptive entry following the verbatim region that
+                    wraps with the hanging-column shape because the entry
+                    detection resumes after the block.
+    """

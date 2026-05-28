@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/no_step_narration/step_word_dot_separator/input.py
+---
+"""
+A `# Step 1. text` comment matches the step-word shape with a dot
+separator and earns a diagnostic.
+"""
+
+
+def process(payload):
+    # Step 1. validate input
+    if not payload:
+        return None
+    return payload

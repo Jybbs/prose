@@ -1,0 +1,23 @@
+---
+source: tests/binding_analysis.rs
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/aug_assign_reads_and_writes/input.py
+---
+bindings:
+  - kinds:
+      - Assignment
+      - AugAssign
+    name: x
+    read_offsets:
+      - 191
+      - 198
+    scope: 0
+    write_offsets:
+      - 184
+      - 191
+      - 198
+scopes:
+  - bindings:
+      x: 0
+    kind: Module
+    parent: ~

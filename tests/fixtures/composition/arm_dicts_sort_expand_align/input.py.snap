@@ -1,0 +1,34 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/arm_dicts_sort_expand_align/input.py
+---
+"""
+A `match` whose single-statement arms each return a long inline
+dict.
+
+Rules:
+- collection_layout
+- alphabetize
+- match_case_align
+- align_colons
+"""
+
+
+def dispatch(kind):
+    match kind:
+        case "alpha":
+            return {
+                "comment_text" : "primary",
+                "extra"        : True,
+                "name"         : "alpha",
+                "weight"       : 1
+            }
+        case "beta":
+            return {
+                "comment_text" : "secondary",
+                "extra"        : False,
+                "name"         : "beta",
+                "weight"       : 2
+            }
+        case _: return None

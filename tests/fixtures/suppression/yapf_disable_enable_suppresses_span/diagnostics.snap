@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/yapf_disable_enable_suppresses_span/input.py
+---
+align-equals@165..166
+align-equals@171..172
+align-equals@249..250
+align-equals@256..257
+alphabetize@150..175
+docstring-wrap@61..123

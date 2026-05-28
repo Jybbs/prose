@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/no_comma_roundtrips_unchanged/input.py
+---
+"""
+A container that already lacks a trailing comma round-trips
+unchanged. The backward scan finds the last element rather than a
+comma and emits no edit.
+"""
+
+posting = Posting(
+    company="Cianbro",
+    title="Electrician"
+)

@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/top_level_functions_sort_and_cushion/input.py
+---
+alphabetize@138..211
+blank-lines@133..134
+blank-lines@159..160
+blank-lines@185..186

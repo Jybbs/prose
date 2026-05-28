@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/split_singleton_anchors_all/input.py
+---
+align-colons@351..351
+align-colons@372..372
+align-colons@406..406
+align-colons@424..424
+align-colons@438..438

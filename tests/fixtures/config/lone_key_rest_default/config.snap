@@ -1,0 +1,114 @@
+---
+source: tests/config_parsing.rs
+expression: config
+input_file: tests/fixtures/config/lone_key_rest_default/input.toml
+---
+Config {
+    cache: CacheConfig {
+        enabled: true,
+        max_size_mib: 100,
+    },
+    code_line_length: Some(
+        88,
+    ),
+    docstring_line_length: Some(
+        76,
+    ),
+    docstring_structured_policy: CodeLineLength,
+    imports: ImportsConfig {
+        first_party: [],
+    },
+    rules: RuleConfigs {
+        collection_layout: CollectionLayoutConfig {
+            enabled: true,
+            max_atomics_per_line: Some(
+                8,
+            ),
+        },
+        alphabetize: AlphabetizeConfig {
+            docstring_entries: true,
+            enabled: true,
+        },
+        strip_trailing_commas: ToggleOnly {
+            enabled: true,
+        },
+        no_single_line_docstrings: ToggleOnly {
+            enabled: true,
+        },
+        multi_line_docstrings: ToggleOnly {
+            enabled: true,
+        },
+        unused_future_annotations: ToggleOnly {
+            enabled: true,
+        },
+        blank_lines: ToggleOnly {
+            enabled: true,
+        },
+        bare_import_allowlist: BareImportAllowlistConfig {
+            allow: [
+                "numpy",
+                "pandas",
+            ],
+            enabled: true,
+        },
+        match_case_align: AlignmentConfig {
+            enabled: true,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
+        signature_layout: SignatureLayoutConfig {
+            enabled: true,
+            max_inline_params: Some(
+                4,
+            ),
+        },
+        align_imports: AlignmentConfig {
+            enabled: true,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
+        align_colons: AlignmentConfig {
+            enabled: true,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
+        docstring_wrap: ToggleOnly {
+            enabled: true,
+        },
+        align_equals: AlignmentConfig {
+            enabled: true,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
+        align_comparisons: AlignmentConfig {
+            enabled: true,
+            max_shift: 8,
+            max_shift_policy: Split,
+        },
+        singleton_rule: ToggleOnly {
+            enabled: true,
+        },
+        loose_constants: LooseConstantsConfig {
+            allow: [],
+            enabled: true,
+        },
+        no_step_narration: ToggleOnly {
+            enabled: true,
+        },
+        legacy_union_syntax: ToggleOnly {
+            enabled: true,
+        },
+        single_use_variables: SingleUseVariablesConfig {
+            allow_pattern: Regex(
+                "^_",
+            ),
+            enabled: true,
+        },
+    },
+    target_version: Some(
+        PythonVersion {
+            major: 3,
+            minor: 10,
+        },
+    ),
+}

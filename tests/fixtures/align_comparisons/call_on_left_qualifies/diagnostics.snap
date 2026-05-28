@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_comparisons/call_on_left_qualifies/input.py
+---
+align-comparisons@159..160
+align-comparisons@196..197

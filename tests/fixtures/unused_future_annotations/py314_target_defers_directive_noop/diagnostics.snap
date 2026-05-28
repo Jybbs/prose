@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/unused_future_annotations/py314_target_defers_directive_noop/input.py
+---
+unused-future-annotations@180..215

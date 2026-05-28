@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/consecutive_off_flattens/input.py
+---
+align-equals@197..198
+align-equals@203..204
+align-equals@282..283
+align-equals@289..290
+alphabetize@182..207
+docstring-wrap@63..157

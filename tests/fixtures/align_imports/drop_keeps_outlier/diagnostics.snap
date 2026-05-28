@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/drop_keeps_outlier/input.py
+---
+align-imports@253..254
+align-imports@276..277
+align-imports@295..296
+align-imports@385..386

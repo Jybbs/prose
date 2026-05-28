@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/leading_alias_leaves_sibling_intact/input.py
+---
+"""
+The `annotations` alias sits alongside `division` in a multi-name
+`__future__` import. Only the `annotations` entry is removed, leaving
+the surrounding `division` entry's formatting intact.
+"""
+
+from __future__ import division
+
+x = 1 / 2

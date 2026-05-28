@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/blank_lines/multiple_consecutive_defs.input.py
----
-blank-lines@190..191
-blank-lines@215..217

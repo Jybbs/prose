@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/spread_survives_expansion/input.py
+---
+collection-layout@1023..1103
+collection-layout@1131..1182
+collection-layout@819..905
+collection-layout@922..1007

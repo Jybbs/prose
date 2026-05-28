@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/match_case_align/over_max_shift_collapse_only/input.py
+---
+match-case-align@291..300
+match-case-align@330..339
+match-case-align@408..417

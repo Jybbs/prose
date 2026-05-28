@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/docstring_custom_heading_entries.input.py
----
-alphabetize@408..633

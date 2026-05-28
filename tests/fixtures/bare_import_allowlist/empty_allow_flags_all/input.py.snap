@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_import_allowlist/empty_allow_flags_all/input.py
+---
+"""
+An empty allowlist flags every bare import in the file. The default
+`["numpy", "pandas"]` carve-out vanishes when the user clears `allow`.
+"""
+
+import numpy
+import pandas
+import os

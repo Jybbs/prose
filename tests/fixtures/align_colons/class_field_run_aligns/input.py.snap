@@ -1,0 +1,18 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/class_field_run_aligns/input.py
+---
+"""
+A class body with a run of annotated fields at the same indent.
+The `:` columns align across the run. Class-level statements that
+are not `AnnAssign` would break the group, but this fixture has
+none so the whole body aligns as one block.
+"""
+
+class User:
+    id        : int
+    name      : str
+    email     : str
+    role      : str
+    is_active : bool

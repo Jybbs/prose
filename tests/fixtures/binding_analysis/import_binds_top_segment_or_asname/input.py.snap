@@ -1,0 +1,58 @@
+---
+source: tests/binding_analysis.rs
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/import_binds_top_segment_or_asname/input.py
+---
+bindings:
+  - kinds:
+      - Import
+    name: a
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 190
+  - kinds:
+      - Import
+    name: b
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 199
+  - kinds:
+      - Import
+    name: g
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 212
+  - kinds:
+      - Import
+    name: i
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 235
+  - kinds:
+      - Import
+    name: l
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 251
+  - kinds:
+      - Import
+    name: annotations
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 281
+scopes:
+  - bindings:
+      a: 0
+      annotations: 5
+      b: 1
+      g: 2
+      i: 3
+      l: 4
+    kind: Module
+    parent: ~

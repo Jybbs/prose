@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/validator_decorator_pins_methods/input.py
+---
+alphabetize@407..425

@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/legacy_union_syntax/optional_int_flagged/input.py
+---
+"""
+A bare `Optional[int]` flags as the legacy form. The diagnostic message
+spells out the recommended `int | None` shape, leaving the source
+untouched for the human to migrate.
+"""
+
+from typing import Optional
+
+x: Optional[int] = None

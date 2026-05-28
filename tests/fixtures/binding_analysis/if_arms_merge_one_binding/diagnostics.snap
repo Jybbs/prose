@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/binding_analysis/if_arms_merge_one_binding/input.py
+---
+

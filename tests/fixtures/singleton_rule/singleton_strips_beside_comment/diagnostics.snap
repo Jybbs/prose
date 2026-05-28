@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/singleton_rule/singleton_strips_beside_comment/input.py
+---
+singleton-rule@388..390
+singleton-rule@445..447

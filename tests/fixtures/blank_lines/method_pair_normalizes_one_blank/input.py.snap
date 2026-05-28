@@ -1,0 +1,18 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/method_pair_normalizes_one_blank/input.py
+---
+"""
+Two methods inside a class body normalize to 1 blank line between
+them, collapsing extra blanks and expanding missing ones.
+"""
+
+
+class Posting:
+
+    def first(self):
+        return 1
+
+    def second(self):
+        return 2

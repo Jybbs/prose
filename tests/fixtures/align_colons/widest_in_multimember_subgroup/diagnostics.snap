@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/widest_in_multimember_subgroup/input.py
+---
+align-colons@287..287
+align-colons@302..302
+align-colons@326..326
+align-colons@353..353

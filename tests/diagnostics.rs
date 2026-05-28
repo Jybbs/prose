@@ -1,5 +1,5 @@
 //! Per-fixture snapshot of the diagnostic list emitted by each rule
-//! against its `tests/fixtures/<directory>/<case>.input.py` input,
+//! against its `tests/fixtures/<domain>/<case>/input.py` input,
 //! locking in the `rule@start..end` shape against churn.
 
 mod common;
@@ -25,18 +25,15 @@ fn render(diagnostics: &[Diagnostic]) -> String {
 
 #[test]
 fn fixtures_emit_expected_diagnostics() {
-    insta::glob!("fixtures/**/*.input.py", |path| {
-        let directory = common::directory_name(path);
-        let case = common::case_stem(path)
-            .strip_suffix(".input")
-            .expect("fixture path ends in .input.py");
+    insta::glob!("fixtures/**/input.py", |path| {
+        let domain = common::domain_name(path);
         let (config, harness) = common::fixture_inputs(path);
-        let pipeline = common::build_pipeline(directory, &config, &harness);
+        let pipeline = common::build_pipeline(domain, &config, &harness);
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
         let (_, diagnostics) = pipeline.run(source).expect("pipeline runs");
 
-        common::in_snapshot_dir(directory, || {
-            insta::assert_snapshot!(format!("{case}.diagnostics"), render(&diagnostics));
+        common::in_snapshot_dir(path, || {
+            insta::assert_snapshot!("diagnostics", render(&diagnostics));
         });
     });
 }

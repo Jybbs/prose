@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/no_step_narration/trailing_step_excluded/input.py
+---
+"""
+An end-of-line comment that happens to match the numbered-step shape
+is excluded by the own-line filter. Only own-line comments earn
+diagnostics.
+"""
+
+
+def process(payload):
+    cleaned = payload.strip()  # 1. trim whitespace
+    return cleaned

@@ -1,0 +1,29 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/arm_lists_expand_force_wrapped_bodies/input.py
+---
+"""
+A `match` whose single-statement arms return inline lists that
+overflow the line budget. collection_layout expands each list and
+match_case_align leaves the arm bodies wrapped because expansion
+forces multi-line statements.
+
+Rules:
+- collection_layout
+- match_case_align
+"""
+
+
+def dispatch(kind):
+    match kind:
+        case "alpha":
+            return [
+                "primary_label", "secondary_label", "tertiary_label",
+                "quaternary_label", "quinary_label"
+            ]
+        case "beta":
+            return [
+                "beta_first", "beta_second", "beta_third", "beta_fourth", "beta_fifth"
+            ]
+        case _: return []

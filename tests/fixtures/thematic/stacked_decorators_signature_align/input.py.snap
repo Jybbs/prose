@@ -1,0 +1,34 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
+---
+"""
+Function decorated with a stack of three decorators, a multi-line docstring
+whose opener and closer sit on the same lines as the prose, and a typed
+parameter list with varying-width names. The full pipeline reshapes
+the docstring opener and closer onto their own lines, wraps the prose,
+normalizes the blank-line cushion around the function definition, and aligns
+the parameter `:` and default `=` columns within the signature.
+"""
+
+import functools
+
+
+@memoize
+@trace
+@functools.lru_cache(maxsize=128)
+def lookup(key: str, default: int = 0, ttl: float = 60.0):
+    """
+    Look up a key with optional default and TTL. Returns the cached value or
+    the default.
+    """
+    return key
+
+
+def memoize(fn):
+    return fn
+
+
+def trace(fn):
+    return fn

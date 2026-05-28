@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/align_comparisons/attribute_and_subscript_left.input.py
----
-align-comparisons@170..171
-align-comparisons@207..208

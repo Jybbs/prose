@@ -1,0 +1,29 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/fields_and_methods_both_sort/input.py
+---
+"""
+A field-bearing class without validator decorators sorts both its
+fields (required-then-optional) and its methods (four-group). The
+method-skip rule fires only when at least one method carries a
+positional-binding decorator, the structural signal for validator-
+shaped methods that depend on declaration order.
+"""
+
+from pydantic import BaseModel
+
+
+class Posting(BaseModel):
+    company: str
+    name: str
+    title: str
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+    def display(self):
+        pass
+
+    def reset(self):
+        pass

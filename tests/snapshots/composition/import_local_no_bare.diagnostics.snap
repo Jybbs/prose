@@ -1,9 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/composition/import_local_no_bare.input.py
----
-align-imports@336..337
-align-imports@377..378
-alphabetize@298..390
-blank-lines@347..348

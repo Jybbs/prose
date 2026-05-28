@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/type_checking_block_imports_sort/input.py
+---
+alphabetize@386..456

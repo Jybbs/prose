@@ -1,0 +1,23 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/drop_future_then_aliases_align/input.py
+---
+"""
+A module opening with `from __future__ import annotations` followed
+by a run of aliased imports, where no annotation in the module needs
+the future import.
+
+Rules:
+- unused_future_annotations
+- align_imports
+"""
+
+
+import numpy       as np
+import collections as col
+import functools   as ft
+
+
+def add(a, b):
+    return a + b

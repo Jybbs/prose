@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/unused_future_annotations/parenthesized_sole_alias_full_span_deleted/input.py
+---
+unused-future-annotations@214..258

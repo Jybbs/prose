@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/match_case_align/lone_arm_colon_hugs/input.py
+---
+match-case-align@149..158

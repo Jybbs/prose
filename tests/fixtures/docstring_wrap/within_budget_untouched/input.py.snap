@@ -1,0 +1,24 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/docstring_wrap/within_budget_untouched/input.py
+---
+"""
+A docstring whose description and section bodies already fit their budgets
+passes through unchanged, confirming the rule fires only when wrapping
+actually shortens a line.
+"""
+
+
+def configure(name, retries):
+    """
+    Summary line.
+
+    Args:
+        name: A short parameter description.
+        retries: Number of retry attempts.
+
+    Returns:
+        The pair the caller passed in.
+    """
+    return name, retries

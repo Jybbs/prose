@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/loose_constants/compliant_constants_no_edits/input.py
+---
+

@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/bare_and_from_each_sorted_in_place/input.py
+---
+align-imports@369..370
+align-imports@391..392
+align-imports@439..440
+alphabetize@338..473
+blank-lines@398..399

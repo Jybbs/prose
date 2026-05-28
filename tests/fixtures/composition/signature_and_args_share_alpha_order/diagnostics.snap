@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/signature_and_args_share_alpha_order/input.py
+---
+align-colons@629..629
+align-colons@774..774
+align-colons@910..910
+alphabetize@507..1053
+docstring-wrap@62..372
+docstring-wrap@679..1022

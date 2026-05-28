@@ -8,7 +8,7 @@ layout   : doc
 
 # bare-import-allowlist
 
-<RuleLayout rule="bare_import_allowlist" canonical="allowlisted_preserved">
+<RuleLayout rule="bare_import_allowlist">
 
 A handful of packages encourage the namespace-as-import style, where `pandas.DataFrame` and `numpy.linalg.norm` read clearly at every call site because the package name carries genuine information. Most packages don't, and a bare `import requests` followed by `requests.get(...)` four pages later forces the reader to walk back up to the import block. `bare-import-allowlist` surfaces every off-list bare import as a lint diagnostic, recommending the explicit `from package import name` rewrite, leaving the rewrite itself to a future migration pass that picks up the lint output.
 
@@ -28,22 +28,6 @@ The `allow` list holds bare package names, where any dotted submodule of an allo
 <template #canonical-lead>
 
 Allowlisted packages stay quiet, and everything else surfaces the lint.
-
-</template>
-
-<template #more-examples>
-
-<Fixture rule="bare_import_allowlist" case="custom_allowlist" title="A Custom Allowlist Replaces the Default" />
-
-<Fixture rule="bare_import_allowlist" case="dotted_allowlisted" title="Dotted Submodules Inherit the Exemption" />
-
-<Fixture rule="bare_import_allowlist" case="empty_allowlist" title="An Empty Allowlist Flags Everything" />
-
-<Fixture rule="bare_import_allowlist" case="aliased_flag" title="Aliased Bare Imports Are Flagged Too" />
-
-<Fixture rule="bare_import_allowlist" case="fmt_off_suppresses" title="A `# fmt: off` Block Suppresses the Lint" />
-
-<Fixture rule="bare_import_allowlist" case="idempotent" title="Already-Conforming Imports Surface Nothing" />
 
 </template>
 

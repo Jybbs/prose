@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/thematic/collapse_strips_colon_padding/input.py
+---
+"""
+Cross-rule composition over a multi-line dict carrying `align_colons`-shaped
+padding whose inline form fits the budget. `collection_layout`'s collapse
+strips the padding when emitting the inline form, because `write_inline`
+always emits `": "` without honoring the source's `[ ]*: ` gap.
+`align_colons` does not re-pad after collapse because the inline dict lives
+on one line. The full pipeline running twice produces no further change.
+"""
+
+config = {"alpha": 1, "beta": 2, "gamma": 3}

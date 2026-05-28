@@ -8,7 +8,7 @@ layout   : doc
 
 # no-single-line-docstrings
 
-<RuleLayout rule="no_single_line_docstrings" canonical="module_docstring">
+<RuleLayout rule="no_single_line_docstrings">
 
 A single-line docstring (*opener, body, and closer all on one line*) reads as a kind of inline comment, and many downstream tools (*Sphinx, IDE preview surfaces, doctest, PEP 257-aware linters*) treat it inconsistently with its multi-line sibling. `no-single-line-docstrings` expands every single-line triple-quoted docstring into the canonical multi-line shape, so a project's documentation surface presents one consistent structure across every documented unit.
 
@@ -19,18 +19,6 @@ The walker [[docstring]] reads against the PEP 257 definition, so f-string forms
 <template #canonical-lead>
 
 A module-level single-line docstring expands to the multi-line form, with the opener and closer landing on their own lines.
-
-</template>
-
-<template #more-examples>
-
-<Fixture rule="no_single_line_docstrings" case="class_docstring" title="Class Docstrings Expand the Same Way" />
-
-<Fixture rule="no_single_line_docstrings" case="method_docstring" title="Method Docstrings Expand inside the Class Body" />
-
-<Fixture rule="no_single_line_docstrings" case="nested_def_docstrings" title="Nested Function Docstrings Expand at Each Scope" />
-
-<Fixture rule="no_single_line_docstrings" case="single_to_multi" title="The Body Content Is Preserved Verbatim Across the Expansion" />
 
 </template>
 

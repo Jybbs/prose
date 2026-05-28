@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/assigns_bare_annassign_no_rhs/input.py
+---
+"""
+A run mixing bare annotated assignments with valued bindings
+reorders normally. Bare `Stmt::AnnAssign` contributes its target
+name to the run but has no RHS to walk for dependencies or
+side-effect taint.
+"""
+
+apple = 1
+banana: str = "two"
+zebra: int

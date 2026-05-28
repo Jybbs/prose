@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/constants_sort_around_fmt_off/input.py
+---
+align-equals@322..323
+align-equals@332..333
+alphabetize@307..336

@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/method_edge_at_decorator/input.py
+---
+blank-lines@206..207
+blank-lines@244..248

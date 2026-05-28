@@ -1,0 +1,25 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/docstring_wrap/description_and_args_each_shape/input.py
+---
+"""
+A docstring with both shapes wraps each region to its own shape. The
+description paragraph wraps at the docstring budget against the body indent,
+and the Args entry wraps at the same budget with a hanging indent at the
+description's start column.
+"""
+
+
+def render(label, count):
+    """
+    A description paragraph above the structured section that runs past the
+    seventy six character description budget needs to wrap at seventy six.
+
+    Args:
+        label: A parameter description that runs past the seventy six
+               character docstring budget wraps with a hanging indent at the
+               description column because the entry shape was detected.
+        count: Number of times to render the label.
+    """
+    return label * count

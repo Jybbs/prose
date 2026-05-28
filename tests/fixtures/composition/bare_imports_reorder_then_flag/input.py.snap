@@ -1,0 +1,19 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
+---
+"""
+Bare imports outside the default allowlist arrive out of order.
+alphabetize reorders the statements and bare-import-allowlist
+emits a diagnostic per offending import whose range tracks the
+post-reorder offset.
+
+Rules:
+- alphabetize
+- bare-import-allowlist
+"""
+
+import json
+import os
+import sys

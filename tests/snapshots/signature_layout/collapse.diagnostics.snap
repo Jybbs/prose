@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/signature_layout/collapse.input.py
----
-signature-layout@232..268

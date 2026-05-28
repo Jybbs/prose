@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/bare_import_breaks_group/input.py
+---
+align-imports@321..322
+align-imports@347..348

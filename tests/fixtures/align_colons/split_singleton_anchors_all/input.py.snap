@@ -1,0 +1,19 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/split_singleton_anchors_all/input.py
+---
+"""
+Class fields whose widths span more than the rule's `max-shift`
+apart trigger the default `split` policy. The greedy partitioner
+isolates `really_really_long_field` as a singleton sub-group. As
+the strictly widest member, it anchors every other sub-group at
+its column, overriding the cap so all `:`s share one column.
+"""
+
+class Packet:
+    short                    : int
+    medium_size              : str
+    really_really_long_field : bytes
+    longer                   : int
+    tiny                     : str

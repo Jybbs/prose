@@ -1,0 +1,12 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/method_docstring_openers_split_and_cushion/input.py
+---
+blank-lines@241..242
+blank-lines@389..390
+docstring-wrap@310..318
+docstring-wrap@463..471
+docstring-wrap@69..137
+multi-line-docstrings@276..340
+multi-line-docstrings@408..474

@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/blank_lines/top_level_class_then_def.input.py
----
-blank-lines@146..147
-blank-lines@162..163

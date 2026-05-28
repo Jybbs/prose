@@ -1,0 +1,25 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/pre_match_assigns_align_arms_collapse/input.py
+---
+"""
+A function whose body opens with a run of single-target assignments
+followed by a `match` whose arms each return one of the bindings.
+The pre-match run aligns its `=` column and the match arm bodies
+collapse onto their pattern lines.
+
+Rules:
+- match_case_align
+- align_equals
+"""
+
+
+def dispatch(kind):
+    x   = 1
+    yz  = 22
+    qrs = 333
+    match kind:
+        case "alpha" : return x
+        case "beta"  : return yz
+        case _       : return qrs

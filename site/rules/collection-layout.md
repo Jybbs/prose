@@ -8,7 +8,7 @@ layout   : doc
 
 # collection-layout
 
-<RuleLayout rule="collection_layout" canonical="dict_literal">
+<RuleLayout rule="collection_layout">
 
 A dictionary, list, or set with five non-trivial entries on one line reads as a **single chunky token**, and the reader's eye flicks across to find the entry it wants. The same data on five separate lines reads as a **column of entries**, each one a unit. `collection-layout` expands multi-entry collections to the one-per-line shape whenever the entries cross the atomicity threshold, and it leaves short single-line collections alone when each entry is already small enough to skim.
 
@@ -30,24 +30,6 @@ A short tuple inside a function-call argument list, like `numpy.zeros((3, 4))`, 
 <template #canonical-lead>
 
 A dict literal with non-atomic entries expands to one entry per line, and the reader reads the entries as a column of key-value pairs.
-
-</template>
-
-<template #more-examples>
-
-<Fixture rule="collection_layout" case="list_literal" title="Lists Follow the Same Expansion Threshold as Dicts" />
-
-<Fixture rule="collection_layout" case="atomic_kinds" title="Atomic Entries inside the Cap Stay on One Line" />
-
-<Fixture rule="collection_layout" case="nested" title="Nested Collections Expand Level by Level Independently" />
-
-<Fixture rule="collection_layout" case="matrix" title="A Matrix Literal Expands Each Row Independently" />
-
-<Fixture rule="collection_layout" case="comprehensions" title="Comprehensions Stay on One Line When They Fit" />
-
-<Fixture rule="collection_layout" case="oversized_entries" title="An Oversized Dict Entry Hangs Its Value at the Post-Colon Column" />
-
-<Fixture rule="collection_layout" case="idempotent" title="Already-Expanded Source Is Left Alone" />
 
 </template>
 

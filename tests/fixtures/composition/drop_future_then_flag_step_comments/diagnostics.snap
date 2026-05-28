@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/drop_future_then_flag_step_comments/input.py
+---
+no-step-narration@348..368
+no-step-narration@409..429
+unused-future-annotations@322..357

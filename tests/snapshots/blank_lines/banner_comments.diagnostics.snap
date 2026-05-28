@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/blank_lines/banner_comments.input.py
----
-blank-lines@255..256
-blank-lines@410..411

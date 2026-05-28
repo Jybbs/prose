@@ -1,0 +1,22 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/class_body_inside_if_arms/input.py
+---
+"""
+A class body whose statements live inside `if` / `else` arms
+sorts each arm under class scope. Methods inside an arm sort
+into the four-group ordering, and annotated field declarations
+sort required-then-optional, the same way they would at the
+class's top level.
+"""
+
+class C:
+    if FLAG:
+        def __init__(self): pass
+        def alpha(self): pass
+        def beta(self): pass
+    else:
+        z: int
+        x: int = 1
+        y: int = 2

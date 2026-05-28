@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/fmt_skip_line_keeps_directive/input.py
+---
+"""
+A trailing `# fmt: skip` on the directive line drops the edit through
+the pipeline's central suppression filter, leaving the directive in
+place even though the file carries no annotations.
+"""
+
+from __future__ import annotations  # fmt: skip
+
+x = 1

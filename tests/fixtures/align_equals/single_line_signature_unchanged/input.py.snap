@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/single_line_signature_unchanged/input.py
+---
+"""
+A single-line typed signature passes through `align_equals`
+unchanged.
+"""
+
+
+def f(a: int = 1, bee: int = 2): pass

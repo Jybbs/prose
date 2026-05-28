@@ -1,9 +1,0 @@
----
-source: tests/diagnostics.rs
-assertion_line: 45
-expression: render(&diagnostics)
-input_file: tests/fixtures/match_case_align/shift_limit_skip.input.py
----
-match-case-align@291..300
-match-case-align@330..339
-match-case-align@408..417

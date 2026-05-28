@@ -1,17 +1,16 @@
-import fs             from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import path           from 'node:path'
+import fs             from 'node:fs/promises'
+import path          from 'node:path'
 
 import matter           from 'gray-matter'
 import { defineLoader } from 'vitepress'
 
-import { FIXTURES_DIR, INPUT_SUFFIX, SNAPSHOTS_DIR, walkFixtures } from '../lib/fixtures/walker'
+import { FIXTURES_DIR, INPUT_FILE, SNAPSHOT_FILE, walkFixtures } from '../lib/fixtures/walker'
 import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
 import { repoRoot }                      from '../lib/shared/paths'
 
-const root          = repoRoot(import.meta.url)
-const fixturesRoot  = path.join(root, FIXTURES_DIR)
-const snapshotsRoot = path.join(root, SNAPSHOTS_DIR)
+const root         = repoRoot(import.meta.url)
+const fixturesRoot = path.join(root, FIXTURES_DIR)
 
 interface FixtureEntry {
   changesSource : boolean
@@ -28,19 +27,16 @@ export { data }
 
 export default defineLoader({
   watch: [
-    `${fixturesRoot}/**/*${INPUT_SUFFIX}`,
-    `${snapshotsRoot}/**/*${INPUT_SUFFIX}.snap`
+    `${fixturesRoot}/**/${INPUT_FILE}`,
+    `${fixturesRoot}/**/${SNAPSHOT_FILE}`
   ],
   async load(): Promise<FixtureData> {
     const md      = await getRenderer()
-    const entries = [...walkFixtures(root)].filter(({ rule, caseName }) =>
-      existsSync(path.join(snapshotsRoot, rule, `${caseName}${INPUT_SUFFIX}.snap`))
-    )
+    const entries = [...walkFixtures(root)].filter(({ inputPath }) => existsSync(`${inputPath}.snap`))
     const rows = await Promise.all(entries.map(async ({ rule, caseName, inputPath }) => {
-      const snapPath            = path.join(snapshotsRoot, rule, `${caseName}${INPUT_SUFFIX}.snap`)
       const [inputRaw, snapRaw] = await Promise.all([
-        fs.readFile(inputPath, 'utf8'),
-        fs.readFile(snapPath,  'utf8')
+        fs.readFile(inputPath,           'utf8'),
+        fs.readFile(`${inputPath}.snap`, 'utf8')
       ])
       const output              = matter(snapRaw).content.replace(/\s+$/, '\n')
       return {
