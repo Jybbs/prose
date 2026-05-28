@@ -13,6 +13,8 @@ version      = "0.2.3"
 [dependencies]
 annotate-snippets  = "=0.12.13"
 anstream           = "1.0"
+anstyle            = "1.0"
+anstyle-query      = "1.1"
 anyhow             = "1.0"
 bincode            = { version = "2", features = ["serde"] }
 blake3             = "1"
