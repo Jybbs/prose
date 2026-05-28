@@ -22,7 +22,9 @@
   --prose-c-warning              : var(--prose-c-eureka);
 
   --prose-c-family-alignment     : var(--prose-c-eureka);
+  --prose-c-family-cli           : var(--prose-c-ube-pale);
   --prose-c-family-docs          : var(--prose-c-celadon);
+  --prose-c-family-engine        : var(--prose-c-ube);
   --prose-c-family-formatting    : var(--prose-c-heath);
   --prose-c-family-lint          : var(--prose-c-apricot);
   --prose-c-family-ordering      : var(--prose-c-chambray);
