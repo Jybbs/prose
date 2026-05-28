@@ -110,9 +110,10 @@ impl Default for CollectionLayoutConfig {
 ///
 /// `code_line_length` defaults to `Some(88)`. `docstring_line_length`
 /// defaults to `Some(76)`. `docstring_structured_policy` defaults
-/// to `CodeLineLength`. `target_version` defaults to `None`.
-/// Per-rule settings live under `rules`, where each rule's sub-table
-/// carries `enabled` plus that rule's own knobs.
+/// to `CodeLineLength`. `imports.first_party` defaults to empty.
+/// `target_version` defaults to `None`. Per-rule settings live under
+/// `rules`, where each rule's sub-table carries `enabled` plus that
+/// rule's own knobs.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
@@ -120,6 +121,7 @@ pub struct Config {
     pub code_line_length: Option<NonZeroUsize>,
     pub docstring_line_length: Option<NonZeroUsize>,
     pub docstring_structured_policy: DocstringStructuredPolicy,
+    pub imports: ImportsConfig,
     pub rules: RuleConfigs,
     pub target_version: Option<PythonVersion>,
 }
@@ -131,6 +133,7 @@ impl Default for Config {
             code_line_length: NonZeroUsize::new(88),
             docstring_line_length: NonZeroUsize::new(76),
             docstring_structured_policy: DocstringStructuredPolicy::default(),
+            imports: ImportsConfig::default(),
             rules: RuleConfigs::default(),
             target_version: None,
         }
@@ -207,6 +210,15 @@ pub enum DocstringStructuredPolicy {
     #[default]
     CodeLineLength,
     DocstringLineLength,
+}
+
+/// Settings parsed from `[tool.prose.imports]`. `first_party` lists
+/// the package names whose imports group with relative imports as
+/// local-package, keyed kebab-case under `first-party`.
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct ImportsConfig {
+    pub first_party: Vec<String>,
 }
 
 /// What to do when an alignment group's widest padding exceeds the
@@ -425,6 +437,23 @@ mod tests {
         .expect("parses");
 
         assert_eq!(config.code_line_length, NonZeroUsize::new(100));
+    }
+
+    #[test]
+    fn imports_first_party_defaults_to_empty_when_absent() {
+        let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+
+        assert!(config.imports.first_party.is_empty());
+    }
+
+    #[test]
+    fn imports_first_party_reads_kebab_case_list() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.imports]\nfirst-party = [\"myapp\", \"acme\"]\n",
+        )
+        .expect("parses");
+
+        assert_eq!(config.imports.first_party, ["myapp", "acme"]);
     }
 
     #[test]

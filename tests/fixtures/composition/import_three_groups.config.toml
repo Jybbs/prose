@@ -1,0 +1,5 @@
+[tool.prose.imports]
+first-party = ["myapp"]
+
+[harness]
+rules = ["alphabetize", "align-imports", "blank-lines"]

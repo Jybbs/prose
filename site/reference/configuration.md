@@ -57,6 +57,21 @@ enabled      = true
 max-size-mib = 250
 ```
 
+## Imports
+
+The `[tool.prose.imports]` sub-table names the project's first-party packages, so [[alphabetize]] groups their imports with relative imports in the local-package block rather than the external `from` block. With no list, only relative imports (`from .`, `from ..pkg`) populate the local-package group.
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `first-party` | list of package names | `[]` | Root package names whose imports lift into the local-package group |
+
+```toml
+[tool.prose.imports]
+first-party = ["myapp", "acme"]
+```
+
+A list entry names a root package, so `myapp` matches `import myapp.db` and `from myapp import app` while leaving `from myapplication import x` in the external `from` group.
+
 ## Per-Rule Knobs
 
 Each rule's sub-table sits at `[tool.prose.rules.<rule>]`. Every rule accepts `enabled` (*defaulting to `true`*), and a handful carry rule-specific knobs. The table below mixes two kinds of row, with the *Where* column resolving the difference. Generic knobs *(`enabled`, `max-shift`, `max-shift-policy`)* apply to every rule in their column's named category. Rule-specific knobs sit at the named rule's sub-table only, even when two rules happen to spell their knob the same way *(the two `allow` rows are distinct, scoped to different rules and reading different inputs)*.

@@ -14,14 +14,19 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::config::Config;
+use crate::primitives::imports::import_group;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
-pub(crate) struct BlankLines;
+pub(crate) struct BlankLines {
+    first_party: Vec<String>,
+}
 
 impl BlankLines {
-    pub(crate) fn from_config(_: &Config) -> Self {
-        Self
+    pub(crate) fn from_config(config: &Config) -> Self {
+        Self {
+            first_party: config.imports.first_party.clone(),
+        }
     }
 }
 
@@ -30,6 +35,7 @@ impl Rule for BlankLines {
         let body = &source.ast().body;
         let mut walker = Walker {
             edits: Vec::new(),
+            first_party: &self.first_party,
             source,
         };
         walker.pair_siblings(body, BodyScope::Module);
@@ -51,6 +57,7 @@ enum BodyScope {
 
 struct Walker<'a> {
     edits: Vec<Edit>,
+    first_party: &'a [String],
     source: &'a Source,
 }
 
@@ -104,7 +111,7 @@ impl Walker<'_> {
     }
 
     fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
-        let Some(canonical) = canonical_blanks(prev, curr, scope) else {
+        let Some(canonical) = canonical_blanks(prev, curr, scope, self.first_party) else {
             return;
         };
         let block = leading_block_of(self.source, prev_end, curr);
@@ -135,11 +142,16 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
 /// and `Function` scopes, the pair includes the scope-entry transition
 /// wherein `prev` is the enclosing `ClassDef` or `FunctionDef` itself
 /// and `curr` is the first body member.
-fn canonical_blanks(prev: &Stmt, curr: &Stmt, scope: BodyScope) -> Option<u32> {
+fn canonical_blanks(
+    prev: &Stmt,
+    curr: &Stmt,
+    scope: BodyScope,
+    first_party: &[String],
+) -> Option<u32> {
     match scope {
         BodyScope::Class => class_scope_blanks(prev, curr),
         BodyScope::Function => function_scope_blanks(prev, curr),
-        BodyScope::Module => module_scope_blanks(prev, curr),
+        BodyScope::Module => module_scope_blanks(prev, curr, first_party),
     }
 }
 
@@ -244,15 +256,22 @@ fn leading_block_of(source: &Source, prev_end: TextSize, curr: &Stmt) -> Option<
 }
 
 /// Module-scope pair dispatch. A statement following an
-/// `if __name__ == "__main__":` block carries 1 blank line. The bare /
-/// `from` import kind boundary carries 1. A top-level `FunctionDef` or
-/// `ClassDef` carries 2 blank lines before it. An `Assign` or
-/// `AnnAssign` following a top-level `FunctionDef` or `ClassDef`
-/// carries 2.
-fn module_scope_blanks(prev: &Stmt, curr: &Stmt) -> Option<u32> {
+/// `if __name__ == "__main__":` block carries 1 blank line. A pair of
+/// import statements lands 1 blank line when they fall in different
+/// canonical groups (bare, external `from`, local-package) and none
+/// when they share a group. A top-level `FunctionDef` or `ClassDef`
+/// carries 2 blank lines before it. An `Assign` or `AnnAssign`
+/// following a top-level `FunctionDef` or `ClassDef` carries 2.
+fn module_scope_blanks(prev: &Stmt, curr: &Stmt, first_party: &[String]) -> Option<u32> {
+    if is_main_guard(prev) {
+        return Some(1);
+    }
+    if let Some((prev_group, curr_group)) =
+        import_group(prev, first_party).zip(import_group(curr, first_party))
+    {
+        return (prev_group != curr_group).then_some(1);
+    }
     match (prev, curr) {
-        _ if is_main_guard(prev) => Some(1),
-        (Stmt::Import(_), Stmt::ImportFrom(_)) | (Stmt::ImportFrom(_), Stmt::Import(_)) => Some(1),
         (_, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) => Some(2),
         (Stmt::FunctionDef(_) | Stmt::ClassDef(_), Stmt::Assign(_) | Stmt::AnnAssign(_)) => Some(2),
         _ => None,
@@ -283,7 +302,7 @@ mod tests {
         let s = parse("class C:\n    '''doc'''\n    def m1(self): pass\n");
         let class = s.ast().body[0].as_class_def_stmt().expect("class");
         assert_eq!(
-            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class),
+            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[]),
             Some(1),
         );
     }
@@ -299,7 +318,7 @@ mod tests {
         let s = parse(src);
         let class = s.ast().body[0].as_class_def_stmt().expect("class");
         assert_eq!(
-            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class),
+            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[]),
             Some(1),
         );
     }
@@ -309,7 +328,7 @@ mod tests {
         let s = parse("class C:\n    '''doc'''\n    pass\n");
         let class = s.ast().body[0].as_class_def_stmt().expect("class");
         assert_eq!(
-            canonical_blanks(&s.ast().body[0], &class.body[0], BodyScope::Class),
+            canonical_blanks(&s.ast().body[0], &class.body[0], BodyScope::Class, &[]),
             Some(0),
         );
     }
@@ -328,7 +347,7 @@ mod tests {
         let s = parse(src);
         let class = s.ast().body[0].as_class_def_stmt().expect("class");
         assert_eq!(
-            canonical_blanks(&s.ast().body[0], &class.body[0], BodyScope::Class),
+            canonical_blanks(&s.ast().body[0], &class.body[0], BodyScope::Class, &[]),
             Some(1),
         );
     }
@@ -350,7 +369,7 @@ mod tests {
         let s = parse(src);
         let func = s.ast().body[0].as_function_def_stmt().expect("def");
         assert_eq!(
-            canonical_blanks(&s.ast().body[0], &func.body[0], BodyScope::Function),
+            canonical_blanks(&s.ast().body[0], &func.body[0], BodyScope::Function, &[]),
             Some(1),
         );
     }
@@ -368,7 +387,7 @@ mod tests {
         let s = parse(src);
         let func = s.ast().body[0].as_function_def_stmt().expect("def");
         assert_eq!(
-            canonical_blanks(&s.ast().body[0], &func.body[0], BodyScope::Function),
+            canonical_blanks(&s.ast().body[0], &func.body[0], BodyScope::Function, &[]),
             None,
         );
     }
@@ -378,7 +397,7 @@ mod tests {
         let s = parse("class C:\n    def m1(self): pass\n    def m2(self): pass\n");
         let class = s.ast().body[0].as_class_def_stmt().expect("class");
         assert_eq!(
-            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class),
+            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[]),
             Some(1),
         );
     }
@@ -388,7 +407,7 @@ mod tests {
         let s = parse("def f():\n    x = 1\n    y = 2\n");
         let func = s.ast().body[0].as_function_def_stmt().expect("def");
         assert_eq!(
-            canonical_blanks(&func.body[0], &func.body[1], BodyScope::Function),
+            canonical_blanks(&func.body[0], &func.body[1], BodyScope::Function, &[]),
             None,
         );
     }
@@ -398,7 +417,7 @@ mod tests {
         let s = parse(&format!("{}xs = 1\n", main_guard_src()));
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
             Some(1)
         );
     }
@@ -416,7 +435,7 @@ mod tests {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
             Some(2),
         );
     }
@@ -426,7 +445,7 @@ mod tests {
         let s = parse("x = 1\nclass C: pass\n");
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
             Some(2)
         );
     }
@@ -436,8 +455,28 @@ mod tests {
         let s = parse("x = 1\ndef f(): pass\n");
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
             Some(2)
+        );
+    }
+
+    #[rstest]
+    #[case("from os import path\nfrom . import x\n", &[], Some(1))]
+    #[case("from os import path\nfrom myapp import x\n", &["myapp"], Some(1))]
+    #[case("import os\nimport myapp\n", &["myapp"], Some(1))]
+    #[case("import myapp\nfrom myapp import x\n", &["myapp"], None)]
+    #[case("from myapp import a\nfrom myapp.db import b\n", &["myapp"], None)]
+    fn canonical_blanks_module_import_group_boundary_separates_distinct_groups(
+        #[case] src: &str,
+        #[case] first_party: &[&str],
+        #[case] expected: Option<u32>,
+    ) {
+        let list: Vec<String> = first_party.iter().map(|&s| s.to_owned()).collect();
+        let s = parse(src);
+        let body = &s.ast().body;
+        assert_eq!(
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &list),
+            expected,
         );
     }
 
@@ -452,7 +491,7 @@ mod tests {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
             Some(1),
         );
     }
@@ -468,7 +507,7 @@ mod tests {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
             None
         );
     }
@@ -478,7 +517,7 @@ mod tests {
         let s = parse("x = 1\ny = 2\n");
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
             None
         );
     }
