@@ -27,10 +27,10 @@ export const FAMILY_META: Record<RuleFamily, FamilyMeta> = {
   ordering   : { badge: '🪉', color: '#7db3e0', label: 'Ordering',   warmth: 'cool' }
 }
 
-export const GLOSSARY_FAMILY_META: Record<GlossaryFamily, FamilyMeta> = {
+export const GLOSSARY_FAMILY_META: Record<GlossaryFamily, Pick<FamilyMeta, 'badge' | 'label'>> = {
   ...FAMILY_META,
-  cli    : { badge: '🪄', color: '#b4aede', label: 'CLI',    warmth: 'cool' },
-  engine : { badge: '🦉', color: '#8a80cb', label: 'Engine', warmth: 'cool' }
+  cli    : { badge: '🪄', label: 'CLI'    },
+  engine : { badge: '🦉', label: 'Engine' }
 }
 
 export const FAMILY_ORDER: readonly RuleFamily[] = [
