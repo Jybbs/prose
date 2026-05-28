@@ -114,6 +114,54 @@ fn check_clean_fixture_exits_zero() {
 }
 
 #[test]
+fn check_json_closes_clean_run_with_summary_envelope() {
+    let (_dir, path) = fixture("clean.py", "x = 1\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["check", "--output-format", "json"])
+        .arg(&path)
+        .assert()
+        .success();
+    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let summary: serde_json::Value =
+        serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses");
+    assert_eq!(summary["kind"], "summary");
+    assert_eq!(summary["diagnostics_total"], 0);
+    assert_eq!(summary["files_visited"], 1);
+    assert_eq!(summary["files_changed"], 0);
+}
+
+#[test]
+fn check_json_summary_counts_a_changed_file() {
+    let (_dir, path) = fixture("misaligned.py", "ab = 1\nx = 2\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["check", "--output-format", "json"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let summary: serde_json::Value =
+        serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses");
+    assert_eq!(summary["kind"], "summary");
+    assert_eq!(summary["files_visited"], 1);
+    assert_eq!(summary["files_changed"], 1);
+    assert!(
+        summary["diagnostics_total"].as_u64().expect("integer") >= 1,
+        "diagnostics_total was {:?}",
+        summary["diagnostics_total"],
+    );
+    assert!(
+        !summary["rules_fired"]
+            .as_object()
+            .expect("object")
+            .is_empty(),
+        "rules_fired was {:?}",
+        summary["rules_fired"],
+    );
+}
+
+#[test]
 fn check_no_cache_flag_runs_clean() {
     let (_dir, path) = fixture("clean.py", "x = 1\n");
     prose()

@@ -11,7 +11,7 @@ use super::args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter};
 use super::exit_status::ExitStatus;
 use crate::cache::{Cache, CacheEntry, CacheKey};
 use crate::config::Config;
-use crate::diagnostics::{Diagnostic, Emitter, Github, Json, Run, Sarif, Text};
+use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Text};
 use crate::pipeline::Pipeline;
 use crate::source::Source;
 use crate::walker;
@@ -128,11 +128,12 @@ fn emit_outcomes<W: Write>(
             FileOutcome::Failed(_) => None,
         })
         .collect();
+    let summary = summarize(outcomes);
     match format {
-        OutputFormat::Github => Github.emit(writer, &view),
-        OutputFormat::Json => Json.emit(writer, &view),
-        OutputFormat::Sarif => Sarif.emit(writer, &view),
-        OutputFormat::Text => Text::new().emit(writer, &view),
+        OutputFormat::Github => Github.emit(writer, &view, &summary),
+        OutputFormat::Json => Json.emit(writer, &view, &summary),
+        OutputFormat::Sarif => Sarif.emit(writer, &view, &summary),
+        OutputFormat::Text => Text::new().emit(writer, &view, &summary),
     }?;
     writer.flush().context("flushing stdout")?;
     Ok(())
@@ -378,6 +379,31 @@ fn status_from_outcomes(outcomes: &[FileOutcome], demote_format_change: bool) ->
         })
         .max()
         .unwrap_or_default()
+}
+
+fn summarize(outcomes: &[FileOutcome]) -> EmitterSummary {
+    outcomes
+        .iter()
+        .filter_map(|o| match o {
+            FileOutcome::Done {
+                diagnostics,
+                formatted_text,
+                ..
+            } => Some((diagnostics, formatted_text)),
+            FileOutcome::Failed(_) => None,
+        })
+        .fold(
+            EmitterSummary::default(),
+            |mut summary, (diagnostics, formatted_text)| {
+                summary.files_visited += 1;
+                summary.files_changed += usize::from(formatted_text.is_some());
+                summary.diagnostics_total += diagnostics.len();
+                for diag in diagnostics {
+                    *summary.rules_fired.entry(diag.rule).or_default() += 1;
+                }
+                summary
+            },
+        )
 }
 
 fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
@@ -888,6 +914,47 @@ mod tests {
             status_from_outcomes(&outcomes, false),
             ExitStatus::FormatChange,
         );
+    }
+
+    #[test]
+    fn summarize_counts_visited_changed_diagnostics_and_rules() {
+        let range = TextRange::new(0.into(), 1.into());
+        let mut changed = outcome_with(
+            "x = 1\n".parse::<Source>().expect("parses"),
+            vec![
+                diagnostic(Severity::Format, range, "align-equals"),
+                diagnostic(Severity::Lint, range, "loose-constants"),
+            ],
+        );
+        if let FileOutcome::Done { formatted_text, .. } = &mut changed {
+            *formatted_text = Some("x   = 1\n".to_owned());
+        }
+        let clean = outcome_with("y = 2\n".parse::<Source>().expect("parses"), Vec::new());
+        let outcomes = vec![changed, clean, FileOutcome::Failed(ExitStatus::ParseError)];
+
+        let summary = summarize(&outcomes);
+
+        assert_eq!(summary.files_visited, 2);
+        assert_eq!(summary.files_changed, 1);
+        assert_eq!(summary.diagnostics_total, 2);
+        assert_eq!(summary.rules_fired[&RuleId::from("align-equals")], 1);
+        assert_eq!(summary.rules_fired[&RuleId::from("loose-constants")], 1);
+    }
+
+    #[test]
+    fn summarize_tallies_repeated_rule_occurrences() {
+        let range = TextRange::new(0.into(), 1.into());
+        let outcome = outcome_with(
+            "x = 1\n".parse::<Source>().expect("parses"),
+            vec![
+                diagnostic(Severity::Format, range, "align-equals"),
+                diagnostic(Severity::Format, range, "align-equals"),
+            ],
+        );
+
+        let summary = summarize(std::slice::from_ref(&outcome));
+
+        assert_eq!(summary.rules_fired[&RuleId::from("align-equals")], 2);
     }
 
     #[test]
