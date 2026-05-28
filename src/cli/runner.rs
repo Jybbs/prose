@@ -500,18 +500,17 @@ fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
 /// stays a valid patch.
 fn write_diff<W: Write>(
     writer: &mut W,
-    name: impl std::fmt::Display,
+    name: &str,
     before: &str,
     after: &str,
     decorate: bool,
 ) -> anyhow::Result<()> {
-    let header = name.to_string();
     let diff = similar::TextDiff::from_lines(before, after);
     let mut unified = diff.unified_diff();
     if decorate {
-        writeln!(writer, "{}", output::ube(&format!("🧵 {header}"))).context("writing diff")?;
+        writeln!(writer, "{}", output::ube(&format!("🧵 {name}"))).context("writing diff")?;
     } else {
-        unified.header(&header, &header);
+        unified.header(name, name);
     }
     unified.to_writer(writer).context("writing diff")?;
     Ok(())

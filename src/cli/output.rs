@@ -31,7 +31,7 @@ impl Presentation {
 }
 
 /// One run's outcome, resolved to a single anchored summary line.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub(crate) enum Summary {
     Clean,
     Diagnostics { files: usize, total: usize },
@@ -146,6 +146,19 @@ mod tests {
             quiet: false,
             stdout_tty: false,
         }
+    }
+
+    #[rstest]
+    #[case(true, false, true)]
+    #[case(true, true, false)]
+    #[case(false, false, false)]
+    #[case(false, true, false)]
+    fn decorate_diff_requires_a_tty_without_quiet(
+        #[case] stdout_tty: bool,
+        #[case] quiet: bool,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(Presentation { quiet, stdout_tty }.decorate_diff(), expected);
     }
 
     #[rstest]

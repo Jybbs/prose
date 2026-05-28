@@ -78,8 +78,8 @@ pub fn run() -> ExitCode {
         quiet: command_quiet(&cli.command),
         stdout_tty: io::stdout().is_terminal(),
     };
-    let stdout = stdout_with_color(cli.color);
-    let stderr = stderr_with_color(cli.color);
+    let stdout = with_color(io::stdout().lock(), cli.color);
+    let stderr = with_color(io::stderr(), cli.color);
     let verbose = cli.verbose;
     let result = match cli.command {
         Command::Cache { action } => match action {
@@ -123,14 +123,6 @@ fn finalize(result: anyhow::Result<ExitStatus>) -> ExitStatus {
 fn is_broken_pipe(err: &anyhow::Error) -> bool {
     err.downcast_ref::<io::Error>()
         .is_some_and(|e| e.kind() == io::ErrorKind::BrokenPipe)
-}
-
-fn stderr_with_color(choice: ColorChoice) -> AutoStream<io::Stderr> {
-    with_color(io::stderr(), choice)
-}
-
-fn stdout_with_color(choice: ColorChoice) -> AutoStream<io::StdoutLock<'static>> {
-    with_color(io::stdout().lock(), choice)
 }
 
 fn with_color<S: RawStream>(raw: S, choice: ColorChoice) -> AutoStream<S> {
