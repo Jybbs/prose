@@ -3,11 +3,12 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/module_top.input.py
 ---
-align-imports@477..478
-alphabetize@430..466
-bare-import-allowlist@414..416
-bare-import-allowlist@424..432
-bare-import-allowlist@497..506
-blank-lines@512..513
+align-imports@422..423
+align-imports@499..500
+alphabetize@387..547
+bare-import-allowlist@394..403
+bare-import-allowlist@436..438
+bare-import-allowlist@446..454
+blank-lines@510..511
 docstring-wrap@68..370
-unused-future-annotations@387..422
+unused-future-annotations@456..491

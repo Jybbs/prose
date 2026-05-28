@@ -3,8 +3,8 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/future_with_imports_and_blanks.input.py
 ---
-align-imports@419..420
-align-imports@441..442
-alphabetize@423..483
-blank-lines@448..452
-unused-future-annotations@380..415
+align-imports@418..419
+align-imports@440..441
+alphabetize@380..483
+blank-lines@447..451
+unused-future-annotations@448..483

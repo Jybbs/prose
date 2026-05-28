@@ -12,15 +12,13 @@ run, and settles the surrounding blank-line cushion before the function
 definition.
 """
 
-
-import numpy as np
+import functools as ft
+import numpy     as np
 import os
 import requests
 
 from collections import Counter
 from typing      import Any
-
-import functools as ft
 
 
 def render(text):

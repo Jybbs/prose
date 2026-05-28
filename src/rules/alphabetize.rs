@@ -3,8 +3,9 @@
 //! class-scope `Stmt::AnnAssign` field declarations and `Stmt::Assign`
 //! runs with simple `Name` targets, function and lambda parameters
 //! with `self` / `cls` and decorators carrying positional arguments
-//! pinned, call kwargs, set literal elements, `from` and bare
-//! `import` runs plus their alias lists, `global` and `nonlocal`
+//! pinned, call kwargs, set literal elements, consecutive `import`
+//! blocks reordered into canonical bare / external-`from` /
+//! local-package groups plus their alias lists, `global` and `nonlocal`
 //! name lists, `del` target lists, and the string literals inside
 //! `__all__` / `__slots__`.
 //!
@@ -31,6 +32,7 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use crate::config::Config;
 use crate::primitives::docstring::{entry_carrying_sections, rewrite_docstrings};
 use crate::primitives::edit::{apply_inline_edits, narrowed_replacement};
+use crate::primitives::imports::{import_group, ImportGroup};
 use crate::primitives::orderer::{
     assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
 };
@@ -39,12 +41,14 @@ use crate::source::Source;
 
 pub(crate) struct Alphabetize {
     docstring_entries: bool,
+    first_party: Vec<String>,
 }
 
 impl Alphabetize {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             docstring_entries: config.rules.alphabetize.docstring_entries,
+            first_party: config.imports.first_party.clone(),
         }
     }
 }
@@ -66,6 +70,7 @@ impl Rule for Alphabetize {
             TextRange::up_to(source.text().text_len()),
             BodyScope::Module,
             &leaf_edits,
+            &self.first_party,
         );
         match body_text {
             Cow::Borrowed(_) => leaf_edits,
@@ -468,6 +473,33 @@ fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
         .any(|c| source.slice(c).trim_start_matches('#').trim() == "prose: keep")
 }
 
+/// Composite import sort key landing the canonical group order
+/// (bare → external `from` → local-package) ahead of a per-kind
+/// inner sort. Within a group, bare imports sort before `from`
+/// imports, bare by least alias name and `from` by `(level, module)`.
+/// `None` pins any non-import statement in place.
+fn import_sort_key<'a>(
+    stmt: &'a Stmt,
+    first_party: &[String],
+) -> Option<(ImportGroup, u8, u32, &'a str)> {
+    let group = import_group(stmt, first_party)?;
+    Some(match stmt {
+        Stmt::Import(i) => (group, 0, 0, least_alias(&i.names)),
+        Stmt::ImportFrom(i) => (group, 1, i.level, i.module.as_deref().unwrap_or_default()),
+        _ => unreachable!("import_group returns Some only for import statements"),
+    })
+}
+
+/// Returns the alphabetically least alias name in a bare import's
+/// name list. An `import` statement always binds at least one name.
+fn least_alias(names: &[Alias]) -> &str {
+    names
+        .iter()
+        .map(|a| a.name.as_str())
+        .min()
+        .expect("import binds at least one name")
+}
+
 /// Returns the method-group index. `0` for dunders, `1` for
 /// `@property` / `@cached_property` (decided by the first decorator),
 /// `2` for single-leading-underscore privates, `3` for public.
@@ -606,13 +638,17 @@ fn rewrite_body<'src>(
     outer: TextRange,
     scope: BodyScope,
     leaf_edits: &[Edit],
+    first_party: &[String],
 ) -> (Cow<'src, str>, TextRange) {
     let (blocks, rendered): (Vec<TextRange>, Vec<Cow<'src, str>>) = body
         .iter()
         .enumerate()
         .map(|(i, stmt)| {
             let block = block_range(source, body, i, outer);
-            (block, rewrite_stmt(source, stmt, block, scope, leaf_edits))
+            (
+                block,
+                rewrite_stmt(source, stmt, block, scope, leaf_edits, first_party),
+            )
         })
         .unzip();
     let body_span = blocks_span(&blocks);
@@ -637,22 +673,15 @@ fn rewrite_body<'src>(
         }
     }
     let mut import_run_slots: Vec<usize> = Vec::new();
-    for Range { start, end } in statement_run_ranges(body, Stmt::is_import_from_stmt) {
+    let is_import = |s: &Stmt| s.is_import_stmt() || s.is_import_from_stmt();
+    for Range { start, end } in statement_run_ranges(body, is_import) {
         permute_in_place(&mut order, body, start..end, |s| {
-            let i = s.as_import_from_stmt()?;
-            Some((i.level, i.module.as_deref().unwrap_or_default()))
+            import_sort_key(s, first_party)
         });
-        import_run_slots.extend(start..end - 1);
-    }
-    for Range { start, end } in statement_run_ranges(body, Stmt::is_import_stmt) {
-        permute_in_place(&mut order, body, start..end, |s| {
-            s.as_import_stmt()?
-                .names
-                .iter()
-                .map(|a| a.name.as_str())
-                .min()
-        });
-        import_run_slots.extend(start..end - 1);
+        import_run_slots.extend((start..end - 1).filter(|&slot| {
+            import_group(&body[order[slot]], first_party)
+                == import_group(&body[order[slot + 1]], first_party)
+        }));
     }
     if scope == BodyScope::Module {
         for Range { start, end } in module_assign_run_ranges(source, body) {
@@ -664,14 +693,13 @@ fn rewrite_body<'src>(
             });
         }
     }
-    import_run_slots.sort_unstable();
     let any_owned = rendered.iter().any(|c| matches!(c, Cow::Owned(_)));
     let identity = order.iter().copied().eq(0..n);
     if !any_owned && identity && import_run_slots.is_empty() {
         return (Cow::Borrowed(source.slice(body_span)), body_span);
     }
     let assembled = assemble_blocks(source, &blocks, &rendered, &order, |i| {
-        import_run_slots.binary_search(&i).ok().map(|_| "\n")
+        import_run_slots.binary_search(&i).is_ok().then_some("\n")
     });
     (Cow::Owned(assembled), body_span)
 }
@@ -685,11 +713,12 @@ fn rewrite_compound<'src>(
     block: TextRange,
     scope: BodyScope,
     leaf_edits: &[Edit],
+    first_party: &[String],
 ) -> Cow<'src, str> {
     let bodies = compound_sub_bodies(stmt)
         .into_iter()
         .filter(|(body, _)| !body.is_empty())
-        .map(|(body, outer)| rewrite_body(source, body, outer, scope, leaf_edits));
+        .map(|(body, outer)| rewrite_body(source, body, outer, scope, leaf_edits, first_party));
     splice_bodies(source, block, bodies, leaf_edits)
 }
 
@@ -774,19 +803,21 @@ fn rewrite_stmt<'src>(
     block: TextRange,
     parent_scope: BodyScope,
     leaf_edits: &[Edit],
+    first_party: &[String],
 ) -> Cow<'src, str> {
     let (body, body_outer, scope): (&[Stmt], TextRange, BodyScope) = match stmt {
         Stmt::ClassDef(c) => (&c.body, c.range(), BodyScope::Class),
         Stmt::FunctionDef(f) => (&f.body, f.range(), BodyScope::Function),
         s if is_compound_statement(s) => {
-            return rewrite_compound(source, stmt, block, parent_scope, leaf_edits)
+            return rewrite_compound(source, stmt, block, parent_scope, leaf_edits, first_party)
         }
         _ => return apply_inline_edits(source, block, leaf_edits),
     };
     if body.is_empty() {
         return apply_inline_edits(source, block, leaf_edits);
     }
-    let (body_text, body_span) = rewrite_body(source, body, body_outer, scope, leaf_edits);
+    let (body_text, body_span) =
+        rewrite_body(source, body, body_outer, scope, leaf_edits, first_party);
     splice_bodies(source, block, [(body_text, body_span)], leaf_edits)
 }
 
@@ -970,7 +1001,7 @@ mod tests {
         assert!(edits.len() >= 5, "fixture must trigger multiple producers");
         assert!(
             edits.is_sorted(),
-            "leaf edits must be emitted in source order; partition_point in apply_inline_edits relies on this",
+            "leaf edits must be emitted in source order, since partition_point in apply_inline_edits relies on it",
         );
     }
 
@@ -999,6 +1030,35 @@ mod tests {
         let f = s.ast().body[0].as_function_def_stmt().expect("def");
         let decorator = f.decorator_list.first().expect("one decorator");
         assert_eq!(decorator_simple_name(decorator), None);
+    }
+
+    #[test]
+    fn import_sort_key_ranks_groups_then_bare_before_from_within_local() {
+        let first_party = vec!["myapp".to_owned()];
+        let s = parse("import os\nfrom os import path\nimport myapp.core\nfrom myapp import app\n");
+        let keys: Vec<_> = s
+            .ast()
+            .body
+            .iter()
+            .map(|stmt| import_sort_key(stmt, &first_party).expect("import statement"))
+            .collect();
+        assert!(
+            keys[0] < keys[1] && keys[1] < keys[2] && keys[2] < keys[3],
+            "expected bare-external < external-from < local-bare < local-from",
+        );
+    }
+
+    #[test]
+    fn import_sort_key_returns_none_for_non_import() {
+        let s = parse("x = 1\n");
+        assert!(import_sort_key(&s.ast().body[0], &[]).is_none());
+    }
+
+    #[test]
+    fn least_alias_returns_alphabetically_min_name() {
+        let s = parse("import sys, os, abc\n");
+        let import = s.ast().body[0].as_import_stmt().expect("import");
+        assert_eq!(least_alias(&import.names), "abc");
     }
 
     #[test]

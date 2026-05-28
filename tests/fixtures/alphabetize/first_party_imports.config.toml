@@ -1,0 +1,2 @@
+[tool.prose.imports]
+first-party = ["myapp"]
