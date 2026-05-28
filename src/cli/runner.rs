@@ -12,7 +12,7 @@ use super::exit_status::ExitStatus;
 use super::output::{self, Presentation, Summary};
 use crate::cache::{Cache, CacheEntry, CacheKey};
 use crate::config::Config;
-use crate::diagnostics::{Diagnostic, Emitter, Github, Json, Run, Sarif, Text};
+use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Text};
 use crate::pipeline::Pipeline;
 use crate::source::Source;
 use crate::walker;
@@ -62,9 +62,14 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
     } else {
         process_paths(&args.paths, |path| process_path(path, &setup))
     };
-    emit_outcomes(&outcomes, args.output_format, &mut stdout)?;
+    let summary = emitter_summary(&outcomes);
+    emit_outcomes(&outcomes, args.output_format, &mut stdout, &summary)?;
     let status = finish(&outcomes, &setup, verbose, false);
-    render_summary(&mut stderr, present, summarize(&outcomes, Mode::Check));
+    render_summary(
+        &mut stderr,
+        present,
+        summarize(&outcomes, &summary, Mode::Check),
+    );
     Ok(status)
 }
 
@@ -140,25 +145,11 @@ fn build_run(rules: &RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus>
     })
 }
 
-fn changed_files(outcomes: &[FileOutcome]) -> usize {
-    outcomes
-        .iter()
-        .filter(|o| {
-            matches!(
-                o,
-                FileOutcome::Done {
-                    formatted_text: Some(_),
-                    ..
-                }
-            )
-        })
-        .count()
-}
-
 fn emit_outcomes<W: Write>(
     outcomes: &[FileOutcome],
     format: OutputFormat,
     writer: &mut W,
+    summary: &EmitterSummary,
 ) -> anyhow::Result<()> {
     let view: Vec<Run<'_>> = outcomes
         .iter()
@@ -170,13 +161,39 @@ fn emit_outcomes<W: Write>(
         })
         .collect();
     match format {
-        OutputFormat::Github => Github.emit(writer, &view),
-        OutputFormat::Json => Json.emit(writer, &view),
-        OutputFormat::Sarif => Sarif.emit(writer, &view),
-        OutputFormat::Text => Text::new().emit(writer, &view),
+        OutputFormat::Github => Github.emit(writer, &view, summary),
+        OutputFormat::Json => Json.emit(writer, &view, summary),
+        OutputFormat::Sarif => Sarif.emit(writer, &view, summary),
+        OutputFormat::Text => Text::new().emit(writer, &view, summary),
     }?;
     writer.flush().context("flushing stdout")?;
     Ok(())
+}
+
+fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
+    outcomes
+        .iter()
+        .filter_map(|o| match o {
+            FileOutcome::Done {
+                diagnostics,
+                formatted_text,
+                ..
+            } => Some((diagnostics, formatted_text)),
+            FileOutcome::Failed(_) => None,
+        })
+        .fold(
+            EmitterSummary::default(),
+            |mut summary, (diagnostics, formatted_text)| {
+                summary.files_visited += 1;
+                summary.files_changed += usize::from(formatted_text.is_some());
+                summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
+                summary.diagnostics_total += diagnostics.len();
+                for diag in diagnostics {
+                    *summary.rules_fired.entry(diag.rule).or_default() += 1;
+                }
+                summary
+            },
+        )
 }
 
 fn finish(
@@ -217,8 +234,13 @@ fn format_paths_diff<O: Write, E: Write>(
             )?;
         }
     }
+    let summary = emitter_summary(&outcomes);
     let status = finish(&outcomes, setup, verbose, false);
-    render_summary(stderr, present, summarize(&outcomes, Mode::Preview));
+    render_summary(
+        stderr,
+        present,
+        summarize(&outcomes, &summary, Mode::Preview),
+    );
     Ok(status)
 }
 
@@ -232,11 +254,16 @@ fn format_paths_rewrite<O: Write, E: Write>(
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let outcomes = process_paths(paths, |path| apply_rewrite(path, process_path(path, setup)));
+    let summary = emitter_summary(&outcomes);
     if !format.is_text() {
-        emit_outcomes(&outcomes, format, stdout)?;
+        emit_outcomes(&outcomes, format, stdout, &summary)?;
     }
     let status = finish(&outcomes, setup, verbose, true);
-    render_summary(stderr, present, summarize(&outcomes, Mode::Reformat));
+    render_summary(
+        stderr,
+        present,
+        summarize(&outcomes, &summary, Mode::Reformat),
+    );
     Ok(status)
 }
 
@@ -250,6 +277,8 @@ fn format_stdin<R: Read, O: Write, E: Write>(
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let outcome = process_stdin(stdin, pipeline);
+    let outcomes = std::slice::from_ref(&outcome);
+    let summary = emitter_summary(outcomes);
     if let FileOutcome::Done {
         file,
         formatted_text,
@@ -273,13 +302,12 @@ fn format_stdin<R: Read, O: Write, E: Write>(
                 .write_all(to_write.as_bytes())
                 .context("writing stdout")?;
         } else {
-            emit_outcomes(std::slice::from_ref(&outcome), format, writer)?;
+            emit_outcomes(outcomes, format, writer, &summary)?;
         }
     }
-    let outcomes = std::slice::from_ref(&outcome);
     let mode = if diff { Mode::Preview } else { Mode::Reformat };
     let status = status_from_outcomes(outcomes, !diff);
-    render_summary(stderr, present, summarize(outcomes, mode));
+    render_summary(stderr, present, summarize(outcomes, &summary, mode));
     Ok(status)
 }
 
@@ -456,36 +484,28 @@ fn status_from_outcomes(outcomes: &[FileOutcome], demote_format_change: bool) ->
 /// Resolves an outcome set into its closing [`Summary`], or `None`
 /// when a clean run is shadowed by a per-file failure already logged
 /// to stderr.
-fn summarize(outcomes: &[FileOutcome], mode: Mode) -> Option<Summary> {
+fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> Option<Summary> {
     let failed = outcomes.iter().any(|o| matches!(o, FileOutcome::Failed(_)));
-    let summary = match mode {
-        Mode::Check => {
-            let (files, total) =
-                outcomes
-                    .iter()
-                    .fold((0, 0), |(files, total), outcome| match outcome {
-                        FileOutcome::Done { diagnostics, .. } if !diagnostics.is_empty() => {
-                            (files + 1, total + diagnostics.len())
-                        }
-                        _ => (files, total),
-                    });
-            match total {
-                0 => Summary::Clean,
-                total => Summary::Diagnostics { files, total },
-            }
-        }
-        Mode::Preview => match changed_files(outcomes) {
+    let resolved = match mode {
+        Mode::Check => match summary.diagnostics_total {
+            0 => Summary::Clean,
+            total => Summary::Diagnostics {
+                files: summary.files_with_diagnostics,
+                total,
+            },
+        },
+        Mode::Preview => match summary.files_changed {
             0 => Summary::Clean,
             files => Summary::WouldReformat { files },
         },
-        Mode::Reformat => match changed_files(outcomes) {
+        Mode::Reformat => match summary.files_changed {
             0 => Summary::Clean,
             files => Summary::Reformatted { files },
         },
     };
-    match summary {
+    match resolved {
         Summary::Clean if failed => None,
-        summary => Some(summary),
+        resolved => Some(resolved),
     }
 }
 
@@ -756,7 +776,12 @@ mod tests {
             "synthetic-format",
         )];
         let outcomes = vec![outcome_with(source, diags)];
-        let result = emit_outcomes(&outcomes, OutputFormat::Json, &mut FailingWriter);
+        let result = emit_outcomes(
+            &outcomes,
+            OutputFormat::Json,
+            &mut FailingWriter,
+            &EmitterSummary::default(),
+        );
         assert!(result.is_err());
     }
 
@@ -773,7 +798,49 @@ mod tests {
         let source = "x = 1\n".parse::<Source>().expect("parses");
         let outcomes = vec![outcome_with(source, Vec::new())];
         let mut buf = Vec::new();
-        emit_outcomes(&outcomes, format, &mut buf).expect("emits");
+        emit_outcomes(&outcomes, format, &mut buf, &EmitterSummary::default()).expect("emits");
+    }
+
+    #[test]
+    fn emitter_summary_counts_visited_changed_diagnostics_and_rules() {
+        let range = TextRange::new(0.into(), 1.into());
+        let mut changed = outcome_with(
+            "x = 1\n".parse::<Source>().expect("parses"),
+            vec![
+                diagnostic(Severity::Format, range, "align-equals"),
+                diagnostic(Severity::Lint, range, "loose-constants"),
+            ],
+        );
+        if let FileOutcome::Done { formatted_text, .. } = &mut changed {
+            *formatted_text = Some("x   = 1\n".to_owned());
+        }
+        let clean = outcome_with("y = 2\n".parse::<Source>().expect("parses"), Vec::new());
+        let outcomes = vec![changed, clean, FileOutcome::Failed(ExitStatus::ParseError)];
+
+        let summary = emitter_summary(&outcomes);
+
+        assert_eq!(summary.files_visited, 2);
+        assert_eq!(summary.files_changed, 1);
+        assert_eq!(summary.files_with_diagnostics, 1);
+        assert_eq!(summary.diagnostics_total, 2);
+        assert_eq!(summary.rules_fired[&RuleId::from("align-equals")], 1);
+        assert_eq!(summary.rules_fired[&RuleId::from("loose-constants")], 1);
+    }
+
+    #[test]
+    fn emitter_summary_tallies_repeated_rule_occurrences() {
+        let range = TextRange::new(0.into(), 1.into());
+        let outcome = outcome_with(
+            "x = 1\n".parse::<Source>().expect("parses"),
+            vec![
+                diagnostic(Severity::Format, range, "align-equals"),
+                diagnostic(Severity::Format, range, "align-equals"),
+            ],
+        );
+
+        let summary = emitter_summary(std::slice::from_ref(&outcome));
+
+        assert_eq!(summary.rules_fired[&RuleId::from("align-equals")], 2);
     }
 
     #[test]
@@ -1077,7 +1144,7 @@ mod tests {
             FileOutcome::Failed(ExitStatus::ParseError),
         ];
         assert_matches!(
-            summarize(&outcomes, Mode::Check),
+            summarize(&outcomes, &emitter_summary(&outcomes), Mode::Check),
             Some(Summary::Diagnostics { files: 1, total: 1 })
         );
     }
@@ -1085,7 +1152,7 @@ mod tests {
     #[test]
     fn summarize_suppresses_clean_summary_when_a_file_failed() {
         let outcomes = vec![FileOutcome::Failed(ExitStatus::ParseError)];
-        assert!(summarize(&outcomes, Mode::Check).is_none());
+        assert!(summarize(&outcomes, &emitter_summary(&outcomes), Mode::Check).is_none());
     }
 
     #[test]

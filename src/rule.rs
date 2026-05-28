@@ -89,7 +89,7 @@ pub(crate) trait Rule: Send + Sync {
 /// [`FromStr`]. The canonical handle in `--select` / `--ignore`,
 /// `# prose: ignore[...]`, JSON `"rule"` fields, and `github`
 /// annotations.
-#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct RuleId(&'static str);
 
 impl RuleId {

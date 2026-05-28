@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use annotate_snippets::{AnnotationKind, Level, Patch, Renderer, Snippet};
 use ruff_text_size::Ranged;
 
-use crate::diagnostics::{Emitter, Run};
+use crate::diagnostics::{Emitter, EmitterSummary, Run};
 
 pub(crate) struct Text {
     renderer: Renderer,
@@ -21,7 +21,12 @@ impl Text {
 }
 
 impl Emitter for Text {
-    fn emit(&self, writer: &mut dyn Write, runs: &[Run<'_>]) -> io::Result<()> {
+    fn emit(
+        &self,
+        writer: &mut dyn Write,
+        runs: &[Run<'_>],
+        _summary: &EmitterSummary,
+    ) -> io::Result<()> {
         for (file, diagnostics) in runs {
             for diag in *diagnostics {
                 let warning = Level::WARNING.primary_title(diag.message.as_str()).element(
@@ -83,21 +88,11 @@ mod tests {
                 .emit(
                     &mut writer,
                     &[(source.source_file(), std::slice::from_ref(diag))],
+                    &EmitterSummary::default(),
                 )
                 .expect("emits");
         }
         String::from_utf8(buf).expect("utf-8")
-    }
-
-    #[test]
-    fn renders_path_line_column_message_and_caret() {
-        let source: Source = "x = 1\n".parse().expect("parses");
-        let range = TextRange::new(0.into(), 1.into());
-        let rendered = render_to_string(&source, &diag(range, None));
-        assert!(rendered.contains("warning: rewrite x to y"));
-        assert!(rendered.contains("--> <source>:1:1"));
-        assert!(rendered.contains("rewrite-x"));
-        assert!(rendered.contains("x = 1"));
     }
 
     #[test]
@@ -111,5 +106,16 @@ mod tests {
         assert!(rendered.contains("warning: rewrite x to y"));
         assert!(rendered.contains("help: replace with"));
         assert!(rendered.contains('y'));
+    }
+
+    #[test]
+    fn renders_path_line_column_message_and_caret() {
+        let source: Source = "x = 1\n".parse().expect("parses");
+        let range = TextRange::new(0.into(), 1.into());
+        let rendered = render_to_string(&source, &diag(range, None));
+        assert!(rendered.contains("warning: rewrite x to y"));
+        assert!(rendered.contains("--> <source>:1:1"));
+        assert!(rendered.contains("rewrite-x"));
+        assert!(rendered.contains("x = 1"));
     }
 }
