@@ -7,5 +7,5 @@ task.source_freshness_hash_contents = true
 bun     = "latest"
 maturin = "latest"
 python  = "3.14"
-rust    = { version = "1.95", profile = "default" }
+rust    = "stable"
 uv      = "latest"

@@ -1,5 +1,5 @@
 name        : Provision the Cargo toolchain with a warm build cache
-description : Restore the rustup toolchain cache keyed off `mise.toml`, install mise tools (which provisions the Rust toolchain pinned in `mise.toml`), and restore the Swatinem Cargo cache for the given `shared-key`. The toolchain cache restores on every cell regardless of `cache`, because the pinned toolchain is not pre-baked on the runner image. Setting `cache` to `false` skips both the Swatinem step and mise's toolchain write-back, for cells that touch neither `target/` nor the registry.
+description : Install mise tools, which provisions the Rust toolchain pinned in `mise.toml`, and restore the Swatinem Cargo cache for the given `shared-key`. Setting `cache` to `false` skips both the Swatinem step and mise's toolchain write-back, for cells that touch neither `target/` nor the registry.
 
 inputs:
   cache:
@@ -16,12 +16,6 @@ runs:
   using: composite
 
   steps:
-    - name : Restore Rust toolchain
-      uses : actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
-      with:
-        key  : rustup-toolchain-${{ runner.os }}-${{ hashFiles('mise.toml') }}
-        path : ~/.rustup/toolchains
-
     - name : Install mise tools
       uses : jdx/mise-action@1648a7812b9aeae629881980618f079932869151
       with:
