@@ -158,10 +158,11 @@
 
 .glossary-folio-row {
   display               : grid;
-  grid-template-columns : 8px 1fr;
+  grid-template-columns : 3px 1fr;
   align-items           : center;
-  gap                   : 8px;
+  gap                   : 10px;
   width                 : 100%;
+  min-height            : 24px;
   padding               : 3px 8px;
   border                : none;
   border-radius         : var(--prose-radius-sm);
@@ -171,11 +172,10 @@
   transition            : background var(--prose-transition);
 }
 
-.glossary-folio-row-dot {
-  width         : 6px;
-  height        : 6px;
-  border-radius : 50%;
-  background    : color-mix(in srgb, var(--family-color) 70%, transparent);
+.glossary-folio-row-rail {
+  align-self    : stretch;
+  border-radius : 2px;
+  background    : var(--rail-paint, var(--family-color));
 }
 
 .glossary-folio-row-slug {
@@ -203,8 +203,4 @@
 .glossary-folio-row.is-active .glossary-folio-row-slug {
   color       : var(--vp-c-text-1);
   font-weight : 600;
-}
-
-.glossary-folio-row.is-active .glossary-folio-row-dot {
-  background : var(--family-color);
 }

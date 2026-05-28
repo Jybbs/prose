@@ -35,6 +35,11 @@ pub(crate) struct CheckArgs {
     #[arg(conflicts_with = "stdin", value_name = "PATH")]
     pub(crate) paths: Vec<PathBuf>,
 
+    /// Reduce the summary to a bare count line, dropping the section
+    /// anchors and color.
+    #[arg(short, long)]
+    pub(crate) quiet: bool,
+
     #[command(flatten)]
     pub(crate) rules: RuleFilter,
 
@@ -117,6 +122,11 @@ pub(crate) struct FormatArgs {
     /// stdin. Omit when using `--stdin`.
     #[arg(conflicts_with = "stdin", value_name = "PATH")]
     pub(crate) paths: Vec<PathBuf>,
+
+    /// Reduce the summary to a bare count line, dropping the section
+    /// anchors and color.
+    #[arg(short, long)]
+    pub(crate) quiet: bool,
 
     #[command(flatten)]
     pub(crate) rules: RuleFilter,

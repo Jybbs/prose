@@ -1,18 +1,24 @@
 <script setup lang="ts">
-import { useGlossaryFolio } from './use-glossary-folio'
-import { formatFolio }      from '../../../lib/shared/numerals'
+import { useGlossaryFolio }   from './use-glossary-folio'
+import { formatFolio }        from '../../../lib/shared/numerals'
+import { GLOSSARY_FAMILY_META } from '../../../lib/shared/registries'
 
 const { active, activeIndex, filtered, step } = useGlossaryFolio()
 </script>
 
 <template>
-  <div class="glossary-folio-stage" :data-family="active?.family">
+  <div class="glossary-folio-stage" :data-family="active?.primaryFamily">
     <article v-if="active" class="glossary-folio-pane">
       <header class="glossary-folio-head">
         <p class="glossary-folio-folio">
-          <span class="glossary-folio-chip">
-            <span class="glossary-folio-badge" aria-hidden="true">{{ active.familyBadge }}</span>
-            <span class="glossary-folio-folio-family">{{ active.familyLabel }}</span>
+          <span
+            v-for="family in active.families"
+            :key="family"
+            class="glossary-folio-chip"
+            :data-family="family"
+          >
+            <span class="glossary-folio-badge" aria-hidden="true">{{ GLOSSARY_FAMILY_META[family].badge }}</span>
+            <span class="glossary-folio-folio-family">{{ GLOSSARY_FAMILY_META[family].label }}</span>
           </span>
           <span class="glossary-folio-folio-sep" aria-hidden="true">·</span>
           <span>{{ activeIndex < 0 ? '–' : formatFolio(activeIndex + 1) }} / {{ formatFolio(filtered.length) }}</span>

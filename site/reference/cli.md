@@ -19,6 +19,7 @@ Rewrites Python files to conform to the *Prose* style. Returns exit code 0 once 
 | `--diff` | bool | off | Show a unified diff on stdout instead of writing changes |
 | `--no-cache` | bool | off | Bypass the user-level [**cache**](/reference/cache) for this invocation |
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. `--diff` requires `text` |
+| `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor, color, and the `--diff` heading |
 | `--stdin` | bool | off | Read source from stdin and write the rewritten source to stdout |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules, replacing the configured-enabled set |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, subtracting from whichever set would otherwise have run |
@@ -57,6 +58,7 @@ Reports violations without modifying source. Returns the canonical [**Exit Codes
 |---|---|---|---|
 | `--no-cache` | bool | off | Bypass the user-level [**cache**](/reference/cache) for this invocation |
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. See [**Output Formats**](/reference/output-formats) for the per-format record layout |
+| `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor and color |
 | `--stdin` | bool | off | Read source from stdin instead of the filesystem |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules |
@@ -111,6 +113,20 @@ prose completions zsh > "${fpath[1]}/_prose"
 ```
 
 The [**Shell Completions**](/integrations/shell-completions) integration page covers the install path for each shell.
+
+## Run Summary
+
+Every interactive `check` or `format` run closes with a one-line summary on **stderr**, leaving stdout free for diagnostics, rewritten source, unified diffs, and the machine formats. Each outcome resolves to a single anchored line:
+
+<RunSummary />
+
+A clean run anchors on 🪻, `check` violations on ☕, and `format`'s applied or pending rewrites on 🗞️.
+
+ANSI color draws on the project palette, with **Ube** on the anchor, **Celadon** on a clean count, and **Apricot** on a violation or change count. Each span renders as 24-bit color when the terminal advertises truecolor *(via `COLORTERM`)* and falls back to ANSI 8-color otherwise.
+
+`--quiet` / `-q` reduces the line to its bare count *(`5 diagnostics in 2 files.`)*, dropping the anchor emoji and color, which is the shape a CI log wants. A non-TTY stderr keeps the anchored line but strips color, so a redirected run stays readable without escape noise. `--color never` strips color while leaving the anchor. Under `--output-format json`, `sarif`, or `github`, the machine output on stdout stays untouched by the summary.
+
+`format --diff` heads each file's diff with a 🧵 `<path>` line on an interactive stdout. Off a TTY *(a pipe or redirect)* it keeps the plain `--- / +++` header instead, so the output stays a diff that `patch` and `delta` can read.
 
 ## Global Flags
 
