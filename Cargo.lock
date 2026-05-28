@@ -1265,6 +1265,8 @@ version = "0.2.3"
 dependencies = [
  "annotate-snippets",
  "anstream",
+ "anstyle",
+ "anstyle-query",
  "anyhow",
  "assert_cmd",
  "assert_matches",

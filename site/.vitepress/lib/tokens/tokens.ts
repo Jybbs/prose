@@ -43,6 +43,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: '--ignore <slug>', href: '/reference/cli#precedence',           blurb: 'Subtract the listed rule from the active set.' },
     { key: '--no-cache',      href: '/reference/cache',                    blurb: 'Bypass the user-level cache for the single invocation.' },
     { key: '--output-format', href: '/reference/cli#prose-format',         blurb: 'Pick the diagnostic shape (`text` / `json` / `github` / `sarif`).' },
+    { key: '--quiet',         href: '/reference/cli#run-summary',          blurb: 'Reduce the closing summary to a bare count line.' },
     { key: '--select <slug>', href: '/reference/cli#precedence',           blurb: 'Restrict the run to the listed rule.' },
     { key: '--stdin',         href: '/reference/cli#prose-format',         blurb: 'Read source from stdin, write the rewrite to stdout.' },
     { key: '--verbose',       href: '/reference/cache#hit-miss-telemetry', blurb: 'Print a one-line cache summary to stderr at the end of the run.' }

@@ -9,6 +9,7 @@ use ruff_source_file::{SourceFile, SourceFileBuilder};
 
 use super::args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter};
 use super::exit_status::ExitStatus;
+use super::output::{self, Presentation, Summary};
 use crate::cache::{Cache, CacheEntry, CacheKey};
 use crate::config::Config;
 use crate::diagnostics::{Diagnostic, Emitter, Github, Json, Run, Sarif, Text};
@@ -29,6 +30,14 @@ enum FileOutcome {
     Failed(ExitStatus),
 }
 
+/// Which closing summary an outcome set resolves into.
+#[derive(Clone, Copy)]
+enum Mode {
+    Check,
+    Preview,
+    Reformat,
+}
+
 /// Per-run setup shared across every path the walker yields.
 struct RunSetup {
     cache: Option<Cache>,
@@ -36,11 +45,13 @@ struct RunSetup {
     pipeline: Pipeline,
 }
 
-pub(crate) fn check_with_io<R: Read, W: Write>(
+pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
     args: CheckArgs,
     verbose: bool,
+    present: &Presentation,
     stdin: R,
-    mut stdout: W,
+    mut stdout: O,
+    mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
     let setup = match build_run(&args.rules, args.no_cache) {
         Ok(s) => s,
@@ -52,14 +63,18 @@ pub(crate) fn check_with_io<R: Read, W: Write>(
         process_paths(&args.paths, |path| process_path(path, &setup))
     };
     emit_outcomes(&outcomes, args.output_format, &mut stdout)?;
-    Ok(finish(outcomes, &setup, verbose, false))
+    let status = finish(&outcomes, &setup, verbose, false);
+    render_summary(&mut stderr, present, summarize(&outcomes, Mode::Check));
+    Ok(status)
 }
 
-pub(crate) fn format_with_io<R: Read, W: Write>(
+pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
     args: FormatArgs,
     verbose: bool,
+    present: &Presentation,
     stdin: R,
-    mut stdout: W,
+    mut stdout: O,
+    mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
     let setup = match build_run(&args.rules, args.no_cache) {
         Ok(s) => s,
@@ -70,19 +85,30 @@ pub(crate) fn format_with_io<R: Read, W: Write>(
             stdin,
             args.diff,
             args.output_format,
+            present,
             &setup.pipeline,
             &mut stdout,
+            &mut stderr,
         );
     }
     if args.diff {
-        format_paths_diff(&args.paths, &setup, verbose, &mut stdout)
+        format_paths_diff(
+            &args.paths,
+            &setup,
+            verbose,
+            present,
+            &mut stdout,
+            &mut stderr,
+        )
     } else {
         format_paths_rewrite(
             &args.paths,
             args.output_format,
             &setup,
             verbose,
+            present,
             &mut stdout,
+            &mut stderr,
         )
     }
 }
@@ -114,6 +140,21 @@ fn build_run(rules: &RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus>
     })
 }
 
+fn changed_files(outcomes: &[FileOutcome]) -> usize {
+    outcomes
+        .iter()
+        .filter(|o| {
+            matches!(
+                o,
+                FileOutcome::Done {
+                    formatted_text: Some(_),
+                    ..
+                }
+            )
+        })
+        .count()
+}
+
 fn emit_outcomes<W: Write>(
     outcomes: &[FileOutcome],
     format: OutputFormat,
@@ -139,22 +180,24 @@ fn emit_outcomes<W: Write>(
 }
 
 fn finish(
-    outcomes: Vec<FileOutcome>,
+    outcomes: &[FileOutcome],
     setup: &RunSetup,
     verbose: bool,
     demote_format_change: bool,
 ) -> ExitStatus {
     if verbose {
-        report_verbose(&outcomes, setup.cache.is_some(), &mut io::stderr());
+        report_verbose(outcomes, setup.cache.is_some(), &mut io::stderr());
     }
-    status_from_outcomes(&outcomes, demote_format_change)
+    status_from_outcomes(outcomes, demote_format_change)
 }
 
-fn format_paths_diff<W: Write>(
+fn format_paths_diff<O: Write, E: Write>(
     paths: &[PathBuf],
     setup: &RunSetup,
     verbose: bool,
-    stdout: &mut W,
+    present: &Presentation,
+    stdout: &mut O,
+    stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let outcomes = process_paths(paths, |path| process_path(path, setup));
     for outcome in &outcomes {
@@ -165,32 +208,46 @@ fn format_paths_diff<W: Write>(
             ..
         } = outcome
         {
-            write_diff(stdout, file.name(), original_text, formatted)?;
+            write_diff(
+                stdout,
+                file.name(),
+                original_text,
+                formatted,
+                present.decorate_diff(),
+            )?;
         }
     }
-    Ok(finish(outcomes, setup, verbose, false))
+    let status = finish(&outcomes, setup, verbose, false);
+    render_summary(stderr, present, summarize(&outcomes, Mode::Preview));
+    Ok(status)
 }
 
-fn format_paths_rewrite<W: Write>(
+fn format_paths_rewrite<O: Write, E: Write>(
     paths: &[PathBuf],
     format: OutputFormat,
     setup: &RunSetup,
     verbose: bool,
-    stdout: &mut W,
+    present: &Presentation,
+    stdout: &mut O,
+    stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let outcomes = process_paths(paths, |path| apply_rewrite(path, process_path(path, setup)));
     if !format.is_text() {
         emit_outcomes(&outcomes, format, stdout)?;
     }
-    Ok(finish(outcomes, setup, verbose, true))
+    let status = finish(&outcomes, setup, verbose, true);
+    render_summary(stderr, present, summarize(&outcomes, Mode::Reformat));
+    Ok(status)
 }
 
-fn format_stdin<R: Read, W: Write>(
+fn format_stdin<R: Read, O: Write, E: Write>(
     stdin: R,
     diff: bool,
     format: OutputFormat,
+    present: &Presentation,
     pipeline: &Pipeline,
-    writer: &mut W,
+    writer: &mut O,
+    stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let outcome = process_stdin(stdin, pipeline);
     if let FileOutcome::Done {
@@ -202,7 +259,13 @@ fn format_stdin<R: Read, W: Write>(
     {
         if diff {
             if let Some(formatted) = formatted_text {
-                write_diff(writer, "<stdin>", original_text, formatted)?;
+                write_diff(
+                    writer,
+                    "<stdin>",
+                    original_text,
+                    formatted,
+                    present.decorate_diff(),
+                )?;
             }
         } else if format.is_text() {
             let to_write = formatted_text.as_deref().unwrap_or(file.source_text());
@@ -213,7 +276,11 @@ fn format_stdin<R: Read, W: Write>(
             emit_outcomes(std::slice::from_ref(&outcome), format, writer)?;
         }
     }
-    Ok(status_from_outcomes(std::slice::from_ref(&outcome), !diff))
+    let outcomes = std::slice::from_ref(&outcome);
+    let mode = if diff { Mode::Preview } else { Mode::Reformat };
+    let status = status_from_outcomes(outcomes, !diff);
+    render_summary(stderr, present, summarize(outcomes, mode));
+    Ok(status)
 }
 
 fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
@@ -321,6 +388,12 @@ fn rehydrate(path: &Path, original_bytes: &[u8], entry: CacheEntry) -> Option<Fi
     })
 }
 
+fn render_summary<E: Write>(stderr: &mut E, present: &Presentation, summary: Option<Summary>) {
+    if let Some(summary) = summary {
+        let _ = output::report(stderr, present, &summary);
+    }
+}
+
 fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, writer: &mut W) {
     if !cache_enabled {
         let _ = writeln!(writer, "cache: bypassed");
@@ -380,24 +453,67 @@ fn status_from_outcomes(outcomes: &[FileOutcome], demote_format_change: bool) ->
         .unwrap_or_default()
 }
 
+/// Resolves an outcome set into its closing [`Summary`], or `None`
+/// when a clean run is shadowed by a per-file failure already logged
+/// to stderr.
+fn summarize(outcomes: &[FileOutcome], mode: Mode) -> Option<Summary> {
+    let failed = outcomes.iter().any(|o| matches!(o, FileOutcome::Failed(_)));
+    let summary = match mode {
+        Mode::Check => {
+            let (files, total) =
+                outcomes
+                    .iter()
+                    .fold((0, 0), |(files, total), outcome| match outcome {
+                        FileOutcome::Done { diagnostics, .. } if !diagnostics.is_empty() => {
+                            (files + 1, total + diagnostics.len())
+                        }
+                        _ => (files, total),
+                    });
+            match total {
+                0 => Summary::Clean,
+                total => Summary::Diagnostics { files, total },
+            }
+        }
+        Mode::Preview => match changed_files(outcomes) {
+            0 => Summary::Clean,
+            files => Summary::WouldReformat { files },
+        },
+        Mode::Reformat => match changed_files(outcomes) {
+            0 => Summary::Clean,
+            files => Summary::Reformatted { files },
+        },
+    };
+    match summary {
+        Summary::Clean if failed => None,
+        summary => Some(summary),
+    }
+}
+
 fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
     eprintln!("error: cannot walk: {err}");
     FileOutcome::Failed(ExitStatus::ConfigError)
 }
 
-/// Writes a unified diff between `before` and `after` to `writer`.
+/// Writes a unified diff between `before` and `after`. When
+/// `decorate`, a Ube `🧵 <name>` heading stands in for the plain
+/// `---`/`+++` header, which is reserved for off-TTY runs so the diff
+/// stays a valid patch.
 fn write_diff<W: Write>(
     writer: &mut W,
     name: impl std::fmt::Display,
     before: &str,
     after: &str,
+    decorate: bool,
 ) -> anyhow::Result<()> {
     let header = name.to_string();
-    similar::TextDiff::from_lines(before, after)
-        .unified_diff()
-        .header(&header, &header)
-        .to_writer(writer)
-        .context("writing diff")?;
+    let diff = similar::TextDiff::from_lines(before, after);
+    let mut unified = diff.unified_diff();
+    if decorate {
+        writeln!(writer, "{}", output::ube(&format!("🧵 {header}"))).context("writing diff")?;
+    } else {
+        unified.header(&header, &header);
+    }
+    unified.to_writer(writer).context("writing diff")?;
     Ok(())
 }
 
@@ -477,6 +593,13 @@ mod tests {
         }
     }
 
+    fn windowed() -> Presentation {
+        Presentation {
+            quiet: false,
+            stdout_tty: false,
+        }
+    }
+
     #[test]
     fn check_clean_returns_clean() {
         let tmp = TempDir::new().expect("tempdir");
@@ -486,8 +609,10 @@ mod tests {
         let status = check_with_io(
             check_args(vec![tmp.path().to_path_buf()], false),
             false,
+            &windowed(),
             io::empty(),
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs successfully");
 
@@ -550,8 +675,10 @@ mod tests {
         let status = check_with_io(
             check_args(vec![tmp.path().to_path_buf()], false),
             false,
+            &windowed(),
             io::empty(),
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs successfully");
 
@@ -561,8 +688,15 @@ mod tests {
     #[test]
     fn check_stdin_returns_clean_when_pipeline_is_empty() {
         let stdin = Cursor::new(b"x = 1\n".to_vec());
-        let status = check_with_io(check_args(Vec::new(), true), false, stdin, Vec::<u8>::new())
-            .expect("runs successfully");
+        let status = check_with_io(
+            check_args(Vec::new(), true),
+            false,
+            &windowed(),
+            stdin,
+            Vec::<u8>::new(),
+            io::sink(),
+        )
+        .expect("runs successfully");
         assert_eq!(status, ExitStatus::Clean);
     }
 
@@ -571,8 +705,10 @@ mod tests {
         let status = check_with_io(
             check_args(Vec::new(), true),
             false,
+            &windowed(),
             ErrorReader,
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs without anyhow");
         assert_eq!(status, ExitStatus::ConfigError);
@@ -587,8 +723,10 @@ mod tests {
         let status = check_with_io(
             check_args(vec![tmp.path().to_path_buf()], false),
             false,
+            &windowed(),
             io::empty(),
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs without anyhow");
 
@@ -598,8 +736,15 @@ mod tests {
     #[test]
     fn check_unparseable_stdin_returns_parse_error() {
         let stdin = Cursor::new(b"def foo(".to_vec());
-        let status = check_with_io(check_args(Vec::new(), true), false, stdin, Vec::<u8>::new())
-            .expect("runs without anyhow");
+        let status = check_with_io(
+            check_args(Vec::new(), true),
+            false,
+            &windowed(),
+            stdin,
+            Vec::<u8>::new(),
+            io::sink(),
+        )
+        .expect("runs without anyhow");
         assert_eq!(status, ExitStatus::ParseError);
     }
 
@@ -641,8 +786,10 @@ mod tests {
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, true),
             false,
+            &windowed(),
             io::empty(),
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs successfully");
 
@@ -657,8 +804,10 @@ mod tests {
         let status = format_with_io(
             format_args(vec![missing], false, true),
             false,
+            &windowed(),
             io::empty(),
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs without anyhow");
 
@@ -674,8 +823,10 @@ mod tests {
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, true),
             false,
+            &windowed(),
             io::empty(),
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs successfully");
 
@@ -691,8 +842,10 @@ mod tests {
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, false),
             false,
+            &windowed(),
             io::empty(),
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs successfully");
 
@@ -710,8 +863,15 @@ mod tests {
         let mut args = format_args(vec![tmp.path().to_path_buf()], false, false);
         args.output_format = OutputFormat::Json;
         let mut stdout = Vec::new();
-        let status =
-            format_with_io(args, false, io::empty(), &mut stdout).expect("runs successfully");
+        let status = format_with_io(
+            args,
+            false,
+            &windowed(),
+            io::empty(),
+            &mut stdout,
+            io::sink(),
+        )
+        .expect("runs successfully");
 
         assert_eq!(status, ExitStatus::Clean);
         assert!(!stdout.is_empty());
@@ -724,8 +884,10 @@ mod tests {
         let status = format_with_io(
             format_args(Vec::new(), true, true),
             false,
+            &windowed(),
             stdin,
             &mut stdout,
+            io::sink(),
         )
         .expect("runs successfully");
         assert_eq!(status, ExitStatus::FormatChange);
@@ -739,7 +901,8 @@ mod tests {
         let mut stdout = Vec::new();
         let mut args = format_args(Vec::new(), true, false);
         args.output_format = OutputFormat::Json;
-        let status = format_with_io(args, false, stdin, &mut stdout).expect("runs successfully");
+        let status = format_with_io(args, false, &windowed(), stdin, &mut stdout, io::sink())
+            .expect("runs successfully");
         assert_eq!(status, ExitStatus::Clean);
         assert!(!stdout.is_empty());
     }
@@ -751,8 +914,10 @@ mod tests {
         let status = format_with_io(
             format_args(Vec::new(), true, false),
             false,
+            &windowed(),
             stdin,
             &mut stdout,
+            io::sink(),
         )
         .expect("runs successfully");
         assert_eq!(status, ExitStatus::Clean);
@@ -765,8 +930,10 @@ mod tests {
         let status = format_with_io(
             format_args(Vec::new(), true, false),
             false,
+            &windowed(),
             ErrorReader,
             &mut stdout,
+            io::sink(),
         )
         .expect("runs without anyhow");
         assert_eq!(status, ExitStatus::ConfigError);
@@ -781,8 +948,10 @@ mod tests {
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, false),
             false,
+            &windowed(),
             io::empty(),
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs without anyhow");
 
@@ -798,8 +967,10 @@ mod tests {
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, false),
             false,
+            &windowed(),
             io::empty(),
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs successfully");
 
@@ -820,8 +991,10 @@ mod tests {
         let status = format_with_io(
             format_args(vec![tmp.path().to_path_buf()], false, false),
             false,
+            &windowed(),
             io::empty(),
             Vec::<u8>::new(),
+            io::sink(),
         )
         .expect("runs successfully");
 
@@ -891,8 +1064,73 @@ mod tests {
     }
 
     #[test]
+    fn summarize_reports_diagnostics_alongside_a_failure() {
+        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let outcomes = vec![
+            outcome_with(
+                source,
+                vec![diagnostic(
+                    Severity::Lint,
+                    TextRange::new(0.into(), 1.into()),
+                    "synthetic-lint",
+                )],
+            ),
+            FileOutcome::Failed(ExitStatus::ParseError),
+        ];
+        assert_matches!(
+            summarize(&outcomes, Mode::Check),
+            Some(Summary::Diagnostics { files: 1, total: 1 })
+        );
+    }
+
+    #[test]
+    fn summarize_suppresses_clean_summary_when_a_file_failed() {
+        let outcomes = vec![FileOutcome::Failed(ExitStatus::ParseError)];
+        assert!(summarize(&outcomes, Mode::Check).is_none());
+    }
+
+    #[test]
     fn walk_error_returns_failed_with_config_error() {
         let outcome = walk_error("synthetic walk failure");
         assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+    }
+
+    #[test]
+    fn write_diff_decorates_with_thread_anchor() {
+        let mut buf = Vec::new();
+        {
+            let mut writer = anstream::AutoStream::never(&mut buf);
+            write_diff(
+                &mut writer,
+                "sample.py",
+                "ab = 1\nx = 2\n",
+                "ab = 1\nx  = 2\n",
+                true,
+            )
+            .expect("writes");
+        }
+        let out = String::from_utf8(buf).expect("utf-8");
+        assert!(out.contains("🧵 sample.py"), "anchor missing: {out:?}");
+        assert!(!out.contains("--- "), "plain header leaked: {out:?}");
+        assert!(out.contains("@@"), "hunks missing: {out:?}");
+    }
+
+    #[test]
+    fn write_diff_plain_keeps_the_patch_header() {
+        let mut buf = Vec::new();
+        write_diff(
+            &mut buf,
+            "sample.py",
+            "ab = 1\nx = 2\n",
+            "ab = 1\nx  = 2\n",
+            false,
+        )
+        .expect("writes");
+        let out = String::from_utf8(buf).expect("utf-8");
+        assert!(
+            out.contains("--- sample.py"),
+            "patch header missing: {out:?}"
+        );
+        assert!(!out.contains('🧵'), "decoration leaked: {out:?}");
     }
 }
