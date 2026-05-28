@@ -699,7 +699,7 @@ fn rewrite_body<'src>(
         return (Cow::Borrowed(source.slice(body_span)), body_span);
     }
     let assembled = assemble_blocks(source, &blocks, &rendered, &order, |i| {
-        import_run_slots.binary_search(&i).ok().map(|_| "\n")
+        import_run_slots.binary_search(&i).is_ok().then_some("\n")
     });
     (Cow::Owned(assembled), body_span)
 }
@@ -1001,7 +1001,7 @@ mod tests {
         assert!(edits.len() >= 5, "fixture must trigger multiple producers");
         assert!(
             edits.is_sorted(),
-            "leaf edits must be emitted in source order; partition_point in apply_inline_edits relies on this",
+            "leaf edits must be emitted in source order, since partition_point in apply_inline_edits relies on it",
         );
     }
 
@@ -1052,6 +1052,13 @@ mod tests {
     fn import_sort_key_returns_none_for_non_import() {
         let s = parse("x = 1\n");
         assert!(import_sort_key(&s.ast().body[0], &[]).is_none());
+    }
+
+    #[test]
+    fn least_alias_returns_alphabetically_min_name() {
+        let s = parse("import sys, os, abc\n");
+        let import = s.ast().body[0].as_import_stmt().expect("import");
+        assert_eq!(least_alias(&import.names), "abc");
     }
 
     #[test]
