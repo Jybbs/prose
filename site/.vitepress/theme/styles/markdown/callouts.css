@@ -33,23 +33,3 @@
 .vp-doc .custom-block.info::before {
   background: var(--prose-c-accent);
 }
-
-.vp-doc .custom-block.tip.family-alignment::before {
-  background: var(--prose-family-alignment);
-}
-
-.vp-doc .custom-block.tip.family-engine::before {
-  background: var(--prose-family-engine);
-}
-
-.vp-doc .custom-block.tip.family-formatting::before {
-  background: var(--prose-family-formatting);
-}
-
-.vp-doc .custom-block.tip.family-lint::before {
-  background: var(--prose-family-lint);
-}
-
-.vp-doc .custom-block.tip.family-ordering::before {
-  background: var(--prose-family-ordering);
-}

@@ -29,12 +29,6 @@
   --prose-c-family-lint          : var(--prose-c-apricot);
   --prose-c-family-ordering      : var(--prose-c-chambray);
 
-  --prose-family-alignment       : #4a2511;
-  --prose-family-engine          : #4a1418;
-  --prose-family-formatting      : #e8e856;
-  --prose-family-lint            : #4a3a08;
-  --prose-family-ordering        : #4a1a3e;
-
   --prose-radius                 : 8px;
   --prose-radius-sm              : 4px;
 
@@ -50,7 +44,6 @@
   --prose-ease-emphasized        : cubic-bezier(0.4, 0, 0.2, 1);
 
   --prose-tint-faint             : 5%;
-  --prose-tint-interact          : 8%;
   --prose-tint-medium            : 14%;
   --prose-tint-strong            : 32%;
 
@@ -73,7 +66,6 @@
   --prose-text-sm                : 0.85rem;
   --prose-text-md                : 0.95rem;
 
-  --prose-pad-card               : 14px 16px;
   --prose-pad-card-snug          : 10px 14px;
 
   --prose-c-ube                  : #8a80cb;

@@ -1,6 +1,5 @@
 .built-on-grid {
   --stack-accent : var(--prose-c-ube);
-  --stack-ink    : color-mix(in srgb, var(--vp-c-text-1) 92%, var(--stack-accent) 8%);
 
   display               : grid;
   grid-template-columns : repeat(5, minmax(0, 1fr));

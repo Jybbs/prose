@@ -15,15 +15,15 @@ export type Phase =
   | 'starting'
   | 'typing'
 
-export const BACKSPACE_MS_PER_CHAR      = 5
-export const EDIT_BACKSPACE_MS_PER_CHAR = 70
-export const EDIT_TRAVEL_MS             = 520
-export const HOLD_AFTER_ERASED_MS       = 1200
-export const HOLD_AFTER_TYPED_MS        = 3500
-export const HOLD_BETWEEN_EDITS_MS      = 1800
-export const MAGIC_MOVE_MS              = 600
-export const PAUSE_AFTER_ADD_MS         = 1800
-export const TYPE_MS_PER_CHAR           = 22
+const BACKSPACE_MS_PER_CHAR      = 5
+const EDIT_BACKSPACE_MS_PER_CHAR = 70
+const EDIT_TRAVEL_MS             = 520
+const HOLD_AFTER_ERASED_MS       = 1200
+const HOLD_AFTER_TYPED_MS        = 3500
+const HOLD_BETWEEN_EDITS_MS      = 1800
+export const MAGIC_MOVE_MS       = 600
+const PAUSE_AFTER_ADD_MS         = 1800
+const TYPE_MS_PER_CHAR           = 22
 
 interface MachineRefs {
   charProgress     : Ref<number>
