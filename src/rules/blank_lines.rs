@@ -224,11 +224,7 @@ fn is_main_guard(stmt: &Stmt) -> bool {
 /// leading `#` and surrounding whitespace, consists of 5 or more
 /// identical non-alphanumeric characters.
 fn is_rule_line(line: &str) -> bool {
-    let stripped = line
-        .trim_start()
-        .strip_prefix('#')
-        .map(str::trim)
-        .unwrap_or("");
+    let stripped = line.trim_start().strip_prefix('#').map_or("", str::trim);
     let bytes = stripped.as_bytes();
     bytes.len() >= 5 && !bytes[0].is_ascii_alphanumeric() && bytes.iter().all(|&b| b == bytes[0])
 }

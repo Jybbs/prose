@@ -52,8 +52,8 @@ pub(crate) fn block_range<T: Ranged>(
     outer: TextRange,
 ) -> TextRange {
     let item = items[i].range();
-    let lower = items[..i].last().map_or(outer.start(), |t| t.end());
-    let upper = items.get(i + 1).map_or(outer.end(), |t| t.start());
+    let lower = items[..i].last().map_or(outer.start(), Ranged::end);
+    let upper = items.get(i + 1).map_or(outer.end(), Ranged::start);
     TextRange::new(
         leading_attached_start(source, item.start(), lower),
         source.text().line_end(item.end()).min(upper),
