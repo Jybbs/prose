@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/pydantic_required_then_optional/input.py
+---
+from pydantic import BaseModel
+
+
+class Posting(BaseModel):
+    company: str
+    date_posted: str
+    url: str
+    description: str | None = None
+    location: str | None = None
+    title: str = "Untitled"

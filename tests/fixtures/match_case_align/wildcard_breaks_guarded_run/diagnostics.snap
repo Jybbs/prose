@@ -1,0 +1,12 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/match_case_align/wildcard_breaks_guarded_run/input.py
+---
+match-case-align@142..142
+match-case-align@143..152
+match-case-align@182..191
+match-case-align@38..38
+match-case-align@39..48
+match-case-align@90..90
+match-case-align@91..100

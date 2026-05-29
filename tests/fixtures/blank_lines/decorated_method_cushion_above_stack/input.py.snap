@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/decorated_method_cushion_above_stack/input.py
+---
+class Posting:
+
+    capacity: int = 0
+
+    @cached_property
+    @logged
+    def label(self):
+        return self.capacity

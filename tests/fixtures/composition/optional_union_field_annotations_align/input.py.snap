@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/optional_union_field_annotations_align/input.py
+---
+from typing import Optional, Union
+
+
+class Endpoint:
+    host : Optional[str]   = None
+    port : Union[int, str] = 0
+    fallback_host : Optional[str]    = "localhost"
+    retry_count   : Union[int, None] = 3

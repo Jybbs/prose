@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/annotated_defaults_align/input.py
+---
+def configure(
+    host: str    = "localhost",
+    port: int    = 8080,
+    delay: float = 0.5,
+):
+    pass

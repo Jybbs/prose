@@ -1,0 +1,6 @@
+[docs]
+title = "Inner Tuple Commas Survive the Strip"
+description = '''
+A tuple literal like `(1,)` nested inside a call keeps its own trailing `,`, since tuples fall outside the rule's scope. **The call's trailing comma is still stripped**, leaving the tuple separators intact.
+'''
+previewable = false

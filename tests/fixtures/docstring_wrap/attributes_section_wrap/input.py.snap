@@ -1,0 +1,18 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/docstring_wrap/attributes_section_wrap/input.py
+---
+class Posting:
+    """
+    Summary line.
+
+    Attributes:
+        title: A descriptive title that exceeds the eighty eight character
+               section budget when written out as a single line.
+        salary: Annual salary in USD.
+    """
+
+    salary = 0.0
+    title = "Untitled"

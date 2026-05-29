@@ -1,0 +1,6 @@
+[docs]
+title = "NewType Bindings Pass Through Untouched"
+description = '''
+A `NewType("UserId", int)` binding is `SCREAMING_CASE` by Python convention and **structural by definition**, so it passes through the rule without a diagnostic.
+'''
+previewable = false

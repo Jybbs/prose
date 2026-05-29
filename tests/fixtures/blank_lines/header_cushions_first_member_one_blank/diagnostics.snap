@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/header_cushions_first_member_one_blank/input.py
+---
+blank-lines@17..18
+blank-lines@175..176
+blank-lines@220..221
+blank-lines@265..266
+blank-lines@282..283
+blank-lines@87..88

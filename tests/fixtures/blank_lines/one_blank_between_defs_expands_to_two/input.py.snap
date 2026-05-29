@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/one_blank_between_defs_expands_to_two/input.py
+---
+def first():
+    return 1
+
+
+def second():
+    return 2

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/multiline_field_value_breaks_group/input.py
+---
+class C:
+    primary: dict = {
+        "alpha" : 1,
+        "beta"  : 2,
+    }
+    secondary: str

@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/outlier_target_splits_subgroups/input.py
+---
+short       = 1
+medium_size = 2
+really_really_long_target = 3
+longer = 4
+tiny   = 5

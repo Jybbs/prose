@@ -1,0 +1,58 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/thematic/deep_nested_dict_per_level/input.py
+---
+DEPLOY = {
+    "owner"   : "core",
+    "region"  : "us-east",
+    "stage"   : "prod",
+    "version" : 12,
+
+    "services": {
+        "worker": {"concurrency": 8, "queue": "tasks"},
+
+        "api": {
+            "port"    : 8080,
+            "retries" : 3,
+            "timeout" : 30,
+
+            "endpoints": {
+                "health"    : "/health",
+                "metrics"   : "/metrics",
+                "readiness" : "/ready",
+                "version"   : "/v"
+            },
+
+            "headers": {
+                "request_id" : "x-req",
+                "trace_id"   : "x-trace",
+                "user_agent" : "deploy/1"
+            }
+        },
+
+        "gateway": {
+            "rate_limit" : 1000,
+            "timeout"    : 5,
+            "upstream"   : {"fallback": "api.backup", "primary": "api.internal"}
+        }
+    },
+
+    "telemetry": {
+        "interval" : 30,
+        "sink"     : "datadog",
+
+        "logs": {
+            "format" : "json",
+            "level"  : "info",
+
+            "destinations": {
+                "file"        : "/var/log/app",
+                "remote_sink" : "logserver",
+                "stdout"      : True,
+                "syslog"      : False
+            }
+        }
+    }
+}

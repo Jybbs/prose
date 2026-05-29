@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/skip_and_ignore_same_line/input.py
+---
+align-equals@13..14
+loose-constants@0..19
+loose-constants@121..135

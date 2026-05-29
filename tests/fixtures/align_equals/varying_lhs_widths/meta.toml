@@ -1,0 +1,7 @@
+[docs]
+title = "Varying Left-Hand Widths Settle on One Column"
+description = '''
+Three consecutive bindings with varying left-hand widths align on the `=` sign. The eye drops down the column of equals signs and reads the right-hand sides as a parallel list.
+'''
+previewable = true
+canonical = true

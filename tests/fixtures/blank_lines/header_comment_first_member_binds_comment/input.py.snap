@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/header_comment_first_member_binds_comment/input.py
+---
+class Posting:
+
+    # describes the first method
+    def m1(self):
+        return 1

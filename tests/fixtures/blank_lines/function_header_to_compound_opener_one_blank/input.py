@@ -1,0 +1,41 @@
+def with_match(value):
+    match value:
+        case _:
+            return value
+
+
+def with_if(value):
+    if value:
+        return value
+
+
+def with_for(items):
+    for item in items:
+        yield item
+
+
+def with_while(condition):
+    while condition:
+        condition = False
+
+
+def with_with(handle):
+    with handle:
+        return None
+
+
+def with_try(action):
+    try:
+        action()
+    except Exception:
+        pass
+
+
+async def with_async_for(items):
+    async for item in items:
+        yield item
+
+
+async def with_async_with(handle):
+    async with handle:
+        return None

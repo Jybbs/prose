@@ -1,0 +1,6 @@
+[docs]
+title = "Methods Sort Around One Opening With `try`/`except`"
+description = '''
+Out-of-order methods, one opening its body with a `try`/`except` block. **`alphabetize` reorders the methods and `blank-lines` cushions them**, leaving the compound-statement body of the reordered method untouched.
+'''
+previewable = true

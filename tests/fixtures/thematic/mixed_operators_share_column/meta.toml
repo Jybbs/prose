@@ -1,0 +1,6 @@
+[docs]
+title = "Comparison, Arithmetic, and Identity Operators Share One Column"
+description = '''
+A predicate-heavy `return` mixes `==`, `>`, a chained `<=` compare, `is`, and `not in` across stacked `and` operands. **Every qualifying operator right-aligns onto one shared column**, with each compare anchored on its first operator so the operands read as a parallel list.
+'''
+previewable = false

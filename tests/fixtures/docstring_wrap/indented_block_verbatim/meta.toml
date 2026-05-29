@@ -1,0 +1,6 @@
+[docs]
+title = "Indented Code Blocks Are Preserved Too"
+description = '''
+A four-space-indented block under a description paragraph **passes through verbatim** because indented blocks read as code samples. Re-flowing them would damage their semantics, so the rule leaves the over-budget lines in place.
+'''
+previewable = true

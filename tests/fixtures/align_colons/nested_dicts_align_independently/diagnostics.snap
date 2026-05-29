@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/nested_dicts_align_independently/input.py
+---
+align-colons@113..113
+align-colons@131..131
+align-colons@174..174
+align-colons@28..28
+align-colons@46..46
+align-colons@82..82

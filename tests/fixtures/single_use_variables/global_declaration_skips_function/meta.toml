@@ -1,0 +1,6 @@
+[docs]
+title = "Global-Scope Function Bindings Aren't Single-Use"
+description = '''
+A function whose body declares `global` is **skipped entirely**, because an accurate single-use reading would have to follow the binding out through the module chain. The whole scope is exempted rather than guessed at.
+'''
+previewable = true

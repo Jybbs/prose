@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/suppression/off_block_keeps_trailing_comma/input.py
+---
+# fmt: off
+inside(1, 2, 3,)
+# fmt: on
+
+outside(4, 5, 6)

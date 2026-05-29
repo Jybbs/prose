@@ -1,0 +1,6 @@
+[docs]
+title = "A `# fmt: off` Block Suppresses the Lint"
+description = '''
+A bare import sitting inside a `# fmt: off` span **draws no diagnostic**. The pipeline filters `Severity::Lint` entries by range the same way it filters edits, so suppression covers reports as well as rewrites.
+'''
+previewable = true

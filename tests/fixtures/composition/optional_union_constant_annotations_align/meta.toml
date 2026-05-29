@@ -1,0 +1,6 @@
+[docs]
+title = "Optional and Union Constant Annotations Align on `=`"
+description = '''
+Module constants annotated with `Optional` and `Union` from `typing`. **The `=` column aligns one space past the widest annotation**, with the leading `:` left tight against each name.
+'''
+previewable = true

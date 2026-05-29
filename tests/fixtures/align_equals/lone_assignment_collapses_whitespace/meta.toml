@@ -1,0 +1,6 @@
+[docs]
+title = "A Lone Assignment Collapses to One Space"
+description = '''
+A solitary assignment with extra pre-`=` whitespace **collapses to a single space**, matching the whitespace-normalization default every `=` rule shares.
+'''
+previewable = false

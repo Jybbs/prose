@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/comment_splits_runs/input.py
+---
+alpha = 1
+beta  = 2
+# break
+long_name = 3
+short     = 4

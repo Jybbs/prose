@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/loose_constants/compliant_constants_no_edits/input.py
+---
+__version__ = "0.2.0"
+
+
+def main() -> None:
+    pass

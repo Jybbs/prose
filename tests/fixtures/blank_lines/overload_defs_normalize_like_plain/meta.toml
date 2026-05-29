@@ -1,0 +1,6 @@
+[docs]
+title = "Overload-Decorated Defs Normalize like Plain Defs"
+description = '''
+A module-level chain of `@overload`-decorated defs treats each adjacent pair as a regular def-after-def case, normalizing to **two blank lines**. The rule does not special-case overloads.
+'''
+previewable = false

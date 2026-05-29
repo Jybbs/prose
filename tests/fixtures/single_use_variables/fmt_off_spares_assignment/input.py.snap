@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/fmt_off_spares_assignment/input.py
+---
+# fmt: off
+def basic(arg):
+    x = expensive(arg)
+    return x + 1
+# fmt: on

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/binding_analysis/with_as_binds_enclosing/input.py
+---
+

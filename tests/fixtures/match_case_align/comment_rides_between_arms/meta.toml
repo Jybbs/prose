@@ -1,0 +1,6 @@
+[docs]
+title = "Comments between Cases Reset the Run"
+description = '''
+A standalone `# comment` line sits between two arms. **The comment rides through unchanged** while the arms on either side collapse and align their `:` to one shared column around it.
+'''
+previewable = true

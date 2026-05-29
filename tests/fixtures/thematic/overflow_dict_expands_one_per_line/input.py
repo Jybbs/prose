@@ -1,0 +1,1 @@
+CONFIG = {"timeout": 30, "retries": 5, "backoff": 1.5, "verbose": True, "label": "primary-region-default", "tags": ["staging", "ingest"], "limits": {"requests_per_minute": 600, "burst_capacity": 1200, "concurrent_streams": 8, "queue_depth": 256}}

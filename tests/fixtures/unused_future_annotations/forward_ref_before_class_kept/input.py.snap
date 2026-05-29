@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/forward_ref_before_class_kept/input.py
+---
+from __future__ import annotations
+
+
+def visit(node: Node) -> Node:
+    return node
+
+
+class Node:
+    pass

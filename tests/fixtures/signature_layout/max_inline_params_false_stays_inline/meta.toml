@@ -1,0 +1,6 @@
+[docs]
+title = "Disabling `max-inline-params` Leaves the Count Trigger Off"
+description = '''
+A five-parameter signature whose inline form fits the line budget **stays inline** when `max-inline-params = false` disables the count trigger entirely. Line length becomes the sole expansion gate.
+'''
+previewable = false

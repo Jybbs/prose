@@ -193,7 +193,7 @@
   position             : relative;
   padding              : 2px 0;
   font-family          : var(--vp-font-family-mono);
-  font-size            : 0.72rem;
+  font-size            : var(--prose-text-xxs);
   letter-spacing       : 0.06em;
   text-decoration-line : none;
   color                : var(--vp-c-text-3);

@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/read_twice_keeps_handle/input.py
+---
+def doubled():
+    x = compute()
+    return x + x

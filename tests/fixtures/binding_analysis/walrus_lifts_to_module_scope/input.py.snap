@@ -1,0 +1,49 @@
+---
+source: tests/binding_analysis.rs
+assertion_line: 14
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/walrus_lifts_to_module_scope/input.py
+---
+bindings:
+  - kinds:
+      - Assignment
+    name: xs
+    read_offsets:
+      - 34
+    scope: 0
+    write_offsets:
+      - 0
+  - kinds:
+      - Comprehension
+    name: x
+    read_offsets:
+      - 46
+    scope: 1
+    write_offsets:
+      - 29
+  - kinds:
+      - Walrus
+    name: y
+    read_offsets:
+      - 23
+    scope: 0
+    write_offsets:
+      - 41
+  - kinds:
+      - Assignment
+    name: vals
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 15
+scopes:
+  - bindings:
+      vals: 3
+      xs: 0
+      y: 2
+    kind: Module
+    parent: ~
+  - bindings:
+      x: 1
+    kind: Comprehension
+    parent: 0

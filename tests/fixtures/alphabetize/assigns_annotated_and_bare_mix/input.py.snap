@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/assigns_annotated_and_bare_mix/input.py
+---
+apple = 1
+banana: str = "two"
+zoo: int = 3

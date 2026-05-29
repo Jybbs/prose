@@ -1,0 +1,11 @@
+def render():
+    """
+    Summary line.
+
+    Args:
+        sample: A leading description that introduces a fenced code block.
+        ```python
+        x = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 + 15
+        ```
+        next_entry: A descriptive entry following the verbatim region that wraps with the hanging-column shape because the entry detection resumes after the block.
+    """

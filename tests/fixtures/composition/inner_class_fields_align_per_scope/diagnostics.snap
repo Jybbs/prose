@@ -1,0 +1,17 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/inner_class_fields_align_per_scope/input.py
+---
+align-colons@120..120
+align-colons@150..150
+align-colons@171..171
+align-colons@28..28
+align-colons@52..52
+align-colons@72..72
+align-equals@171..172
+align-equals@198..199
+align-equals@34..35
+align-equals@61..62
+alphabetize@17..181

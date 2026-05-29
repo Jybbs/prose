@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/legacy_union_syntax/qualified_optional_flagged/input.py
+---
+import typing
+
+x: typing.Optional[int] = None

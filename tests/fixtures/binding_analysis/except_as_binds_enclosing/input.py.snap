@@ -1,0 +1,21 @@
+---
+source: tests/binding_analysis.rs
+assertion_line: 14
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/except_as_binds_enclosing/input.py
+---
+bindings:
+  - kinds:
+      - ExceptHandler
+    name: e
+    read_offsets:
+      - 66
+      - 79
+    scope: 0
+    write_offsets:
+      - 53
+scopes:
+  - bindings:
+      e: 0
+    kind: Module
+    parent: ~

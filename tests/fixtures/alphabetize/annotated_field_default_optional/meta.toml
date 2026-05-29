@@ -1,0 +1,6 @@
+[docs]
+title = "Field Defaults Are Preserved Across the Reorder"
+description = '''
+Fields whose default arrives through `Annotated[type, Field(default=...)]` or `Annotated[type, Field(default_factory=...)]` **register as optional**. A structural walk finds the nested `Call` carrying a `default` or `default_factory` keyword, covering Pydantic, msgspec, and attrs without naming the constructor.
+'''
+previewable = true

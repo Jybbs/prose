@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/class_base_list_dropped/input.py
+---
+class Loader(
+    BaseLoader,
+    CacheMixin
+):
+    pass

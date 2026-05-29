@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/from_import_names_sort/input.py
+---
+from collections import Counter, defaultdict, deque

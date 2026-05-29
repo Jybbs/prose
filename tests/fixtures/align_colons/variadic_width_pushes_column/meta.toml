@@ -1,0 +1,6 @@
+[docs]
+title = "Variadic Prefixes Push the Target Column Out"
+description = '''
+A signature annotates `*args` and `**kwargs` beside named parameters. The `*` and `**` prefixes count toward each variadic's display width, so **`**kwargs` pushes the `:` column out** and the named parameters pad to match.
+'''
+previewable = false

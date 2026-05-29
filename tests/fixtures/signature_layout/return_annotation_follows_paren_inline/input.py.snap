@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/return_annotation_follows_paren_inline/input.py
+---
+def render(target: int) -> int:
+    return target

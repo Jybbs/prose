@@ -1,0 +1,6 @@
+[docs]
+title = "Attribute, Subscript, and Destructuring Targets Beyond Plain Names"
+description = '''
+Targets past a bare name behave distinctly. Attribute and subscript targets like `obj.attr` and `obj[ix]` **walk the receiver and index as reads without binding**, whereas tuple, list, and starred targets recurse into the names they contain.
+'''
+previewable = false

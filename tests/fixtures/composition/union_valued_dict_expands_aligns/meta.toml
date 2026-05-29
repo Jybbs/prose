@@ -1,0 +1,6 @@
+[docs]
+title = "Union-Valued Dict Expands, Sorts, and Aligns Colons"
+description = '''
+An overflowing single-line dict whose values are `Optional` and `Union` expressions. **The dict expands, sorts its keys, and aligns the `:` column**, leaving the legacy union values on the right untouched.
+'''
+previewable = true

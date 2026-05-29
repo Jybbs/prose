@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_equals/augmented_joins_run/input.py
+---
+align-equals@14..15
+align-equals@5..6

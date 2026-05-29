@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/slash_star_separators_ride_through/input.py
+---
+def split_pos_only(
+    a,
+    /
+) -> None:
+    return None
+
+
+def split_kw_only(
+    *,
+    b
+) -> None:
+    return None

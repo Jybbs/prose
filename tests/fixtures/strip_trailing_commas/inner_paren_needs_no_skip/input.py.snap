@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/inner_paren_needs_no_skip/input.py
+---
+result = compute(
+    (a + b),
+    (c * d)
+)

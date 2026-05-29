@@ -32,6 +32,7 @@ const validSlugs           = new Set(discoveredRules.map(r => r.slug))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 
 export default defineConfig({
+  cacheDir      : `${repoDir}/.cache/vitepress`,
   cleanUrls     : true,
   description   : SITE_TAGLINE,
   head          : [

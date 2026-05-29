@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/assigns_inline_comment_skips_run/input.py
+---
+zebra = 1  # explanatory note
+alpha = 2
+beta = 3

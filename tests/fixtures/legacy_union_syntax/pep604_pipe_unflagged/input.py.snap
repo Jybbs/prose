@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/legacy_union_syntax/pep604_pipe_unflagged/input.py
+---
+x: int | None = None
+y: int | str  = 0

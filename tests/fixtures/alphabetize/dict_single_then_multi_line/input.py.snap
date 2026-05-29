@@ -1,0 +1,63 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dict_single_then_multi_line/input.py
+---
+mixed = {
+    "author"   : "jibbs",
+    "deps"     : ["ruff_python_parser", "clap"],
+    "metadata" : load_metadata(),
+    "name"     : "prose",
+    "tags"     : ["staging", "ingest"],
+    "version"  : "0.1.0",
+
+    "config": {
+        "strict"     : True,
+        "tracebacks" : "short",
+        "verbose"    : False,
+    },
+}
+
+inline = {"config": {"strict": True}, "name": "prose", "version": "0.1.0"}
+
+with_spread = {
+    "name"    : "prose",
+    **defaults,
+    "version" : "0.1.0",
+
+    "config": {
+        "strict"  : True,
+        "tracing" : "off",
+        "verbose" : False,
+    },
+}
+
+single_line_only = {
+    "config"   : {"strict": True},
+    "deps"     : ["ruff_python_parser", "clap"],
+    "metadata" : load_metadata(),
+    "version"  : "0.1.0",
+}
+
+deep_nesting = {
+    "alpha" : 1,
+    "beta"  : 2,
+    "delta" : "...",
+
+    "settings": {
+        "logging": {
+            "stderr" : "warn",
+            "stdout" : "info",
+
+            "format": {
+                "compact" : False,
+                "json"    : True,
+            },
+        },
+
+        "network": {
+            "retries" : 5,
+            "timeout" : 30,
+        },
+    },
+}

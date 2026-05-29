@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/legacy_union_syntax/typing_list_falls_through/input.py
+---
+from typing import List
+
+values: List[int] = []

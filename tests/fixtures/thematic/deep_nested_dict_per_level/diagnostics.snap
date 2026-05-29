@@ -1,0 +1,34 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/thematic/deep_nested_dict_per_level/input.py
+---
+align-colons@1006..1006
+align-colons@1053..1053
+align-colons@1092..1092
+align-colons@1124..1124
+align-colons@208..208
+align-colons@22..22
+align-colons@237..237
+align-colons@263..263
+align-colons@321..321
+align-colons@359..359
+align-colons@400..400
+align-colons@437..437
+align-colons@44..44
+align-colons@513..513
+align-colons@550..550
+align-colons@591..591
+align-colons@675..675
+align-colons@68..68
+align-colons@704..704
+align-colons@731..731
+align-colons@842..842
+align-colons@862..862
+align-colons@91..91
+align-colons@914..914
+align-colons@943..943
+alphabetize@16..1123
+collection-layout@10..688
+loose-constants@0..1232

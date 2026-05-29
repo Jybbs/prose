@@ -1,0 +1,6 @@
+[docs]
+title = "Yapf Disable and Enable Alias the Fmt Span"
+description = '''
+The `# yapf: disable` / `# yapf: enable` aliases produce **the same suppressed span** as `# fmt: off` / `# fmt: on`, leaving the bracketed assignments verbatim while the surrounding runs align.
+'''
+previewable = false

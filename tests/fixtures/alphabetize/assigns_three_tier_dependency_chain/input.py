@@ -1,0 +1,4 @@
+RADIUS = 5
+PI = 3.14
+DIAMETER = RADIUS * 2
+AREA = PI * (DIAMETER / 2) ** 2

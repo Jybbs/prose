@@ -1,0 +1,6 @@
+[docs]
+title = "Bare Imports Sort Alphabetically Too"
+description = '''
+Every bare `import` statement at a body's top level **collapses into a single alphabetized block**. Blank lines the user wrote between imports are removed, so the form reads as one paragraph regardless of source arrangement.
+'''
+previewable = true

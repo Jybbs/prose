@@ -1,9 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/singleton_rule/method_self_and_kwarg.input.py
----
-singleton-rule@521..522
-singleton-rule@587..588
-singleton-rule@654..655
-singleton-rule@669..670

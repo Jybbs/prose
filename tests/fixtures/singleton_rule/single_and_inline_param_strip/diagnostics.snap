@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/singleton_rule/single_and_inline_param_strip/input.py
+---
+singleton-rule@141..142
+singleton-rule@156..157
+singleton-rule@17..18
+singleton-rule@174..175
+singleton-rule@70..71
+singleton-rule@87..88

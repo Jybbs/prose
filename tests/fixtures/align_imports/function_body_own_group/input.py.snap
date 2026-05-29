@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/function_body_own_group/input.py
+---
+from collections import OrderedDict
+from typing      import Optional
+
+
+def lazy_setup():
+    from sys        import path
+    from os.path    import join
+    from contextlib import suppress
+
+    return path, join, suppress

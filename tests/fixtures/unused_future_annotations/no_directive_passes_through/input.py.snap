@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/no_directive_passes_through/input.py
+---
+import os
+
+
+def main():
+    print(os.getcwd())

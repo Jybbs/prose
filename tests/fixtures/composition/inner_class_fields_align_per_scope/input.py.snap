@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/inner_class_fields_align_per_scope/input.py
+---
+class Order:
+    customer_id : str   = ""
+    placed_on   : str   = ""
+    total       : float = 0.0
+
+    class LineItem:
+        price    : float = 0.0
+        quantity : int   = 1
+        sku      : str   = ""

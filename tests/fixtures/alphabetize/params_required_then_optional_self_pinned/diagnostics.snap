@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/params_required_then_optional_self_pinned/input.py
+---
+alphabetize@10..233

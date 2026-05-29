@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/del_targets_sort_independent/input.py
+---
+def cleanup():
+    cache = {}
+    buffer = []
+    registry = {}
+    del buffer, cache, registry

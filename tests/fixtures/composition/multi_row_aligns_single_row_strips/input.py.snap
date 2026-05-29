@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/multi_row_aligns_single_row_strips/input.py
+---
+def make():
+    paired = {
+        "first"  : 1,
+        "second" : 2,
+        "third"  : 3,
+    }
+    single = {
+        "only_key": 1,
+    }
+    return paired, single

@@ -1,0 +1,6 @@
+[docs]
+title = "Indent Is Measured From the Enclosing Block"
+description = '''
+Collections in function and class bodies compute their indent from the **opening bracket's line, not the module top level**. Short collections at any depth stay inline, a long dict expands one entry per line, and a long list or set of atomics flow-packs at the item indent.
+'''
+previewable = false

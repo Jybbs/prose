@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/bare_param_breaks_run/input.py
+---
+def combine(
+    user   : User,
+    source : str,
+    legacy,
+    target_path : str,
+    destination : Filesystem,
+) -> None:
+    _impl(user, source, legacy, target_path, destination)

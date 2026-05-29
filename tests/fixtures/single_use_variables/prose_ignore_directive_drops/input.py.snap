@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/prose_ignore_directive_drops/input.py
+---
+def basic(arg):
+    x = expensive(arg)  # prose: ignore[single-use-variables]
+    return x + 1

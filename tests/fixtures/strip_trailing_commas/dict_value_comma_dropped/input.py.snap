@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/dict_value_comma_dropped/input.py
+---
+config = {
+    "linkage": "ward",
+    "metric": "euclidean",
+    "n_clusters": None,
+    "threshold": 0.7
+}

@@ -1,0 +1,6 @@
+[docs]
+title = "A Comment between Imports Binds to the `from` Below"
+description = '''
+An own-line comment between a bare `import` and a following `from` import surfaces **one blank line above the comment** and binds the comment tight against the from-import.
+'''
+previewable = false

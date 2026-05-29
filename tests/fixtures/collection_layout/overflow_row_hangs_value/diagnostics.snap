@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/overflow_row_hangs_value/input.py
+---
+collection-layout@108..108
+collection-layout@250..250
+collection-layout@379..474
+collection-layout@614..722

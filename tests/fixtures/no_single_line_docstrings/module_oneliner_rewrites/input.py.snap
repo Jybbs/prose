@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/no_single_line_docstrings/module_oneliner_rewrites/input.py
+---
+# This fixture pins module-level single-line docstring rewriting at
+# column 0. The fixture's module docstring is itself the rewrite
+# target, so the conventional triple-quoted claim-banner is replaced
+# by these `#` comments.
+
+
+"""
+Module summary on a single line.
+"""
+
+
+x = 1

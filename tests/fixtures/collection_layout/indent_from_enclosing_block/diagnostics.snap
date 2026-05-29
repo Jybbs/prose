@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/indent_from_enclosing_block/input.py
+---
+collection-layout@266..344
+collection-layout@80..160

@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/annotations_from_other_module_untouched/input.py
+---
+from typing import annotations  # pretend module
+
+x = annotations

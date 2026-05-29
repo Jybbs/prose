@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/args_variadic_entries_align/input.py
+---
+def emit(channel, *args, **kwargs):
+    """
+    Emits a structured event.
+
+    Args:
+        channel  : target stream.
+        *args    : positional payload.
+        **kwargs : keyword payload.
+    """
+    _emit(channel, *args, **kwargs)

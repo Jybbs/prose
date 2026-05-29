@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/single_use_variables/closure_capture_flagged.input.py
----
-single-use-variables@353..359

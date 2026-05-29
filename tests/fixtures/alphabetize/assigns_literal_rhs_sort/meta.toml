@@ -1,0 +1,6 @@
+[docs]
+title = "Literal-Valued Bindings Sort within Tier Zero"
+description = '''
+A module-level run of single-name `Assign` statements with literal right-hand sides **alphabetizes within tier 0**. With no intra-run references, the dependency graph is empty and every name sorts directly against the rest.
+'''
+previewable = false

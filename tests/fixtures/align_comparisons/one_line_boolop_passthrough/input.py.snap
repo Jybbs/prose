@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_comparisons/one_line_boolop_passthrough/input.py
+---
+x = foo == 1 and bar_baz == 2 and qux == 3

@@ -1,0 +1,23 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/thematic/match_arms_split_and_collapse/input.py
+---
+def dispatch(event):
+
+    match event.kind:
+        case "create":
+            return Counter(action="create", source=event.src, timestamp=event.ts)
+        case "update":
+            return Counter(action="update", source=event.src, timestamp=event.ts)
+        case "delete":
+            return Counter(action="delete", source=event.src, timestamp=event.ts)
+        case _: return None
+
+
+SETTINGS = {"default_action": "noop"}
+
+
+def required_only(name):
+    return {name}

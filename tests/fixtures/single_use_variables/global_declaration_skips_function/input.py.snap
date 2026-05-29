@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/global_declaration_skips_function/input.py
+---
+def updater():
+    global counter
+    next_value = counter + 1
+    return next_value

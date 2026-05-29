@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/collection_layout/call_splits_atomic_run/input.py
+---
+mixed_atomics = [
+    1, "two", None, True, alpha, beta, pkg.CONST, cls.name.upper,
+    -1, +5, not ready, ~mask, gamma, delta, epsilon, zeta
+]
+split_by_call = [
+    "first", "second", "third", "fourth", "fifth",
+    lookup(),
+    "seventh", "eighth", "ninth", "tenth", "eleventh"
+]

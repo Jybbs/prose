@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/nested_arms_recurse_arbitrary_depth/input.py
+---
+if outer:
+    if inner:
+        from alpha import b
+        from zeta import a
+    from beta import d
+    from gamma import c

@@ -1,0 +1,6 @@
+[docs]
+title = "`is` and `is not` Participate in the Same Column"
+description = '''
+Identity and membership operators join the same aligned group as `==` and `<`. The wider `is not` and `not in` **widen the operator column**, and every other operator's last character lands at the shared right edge.
+'''
+previewable = true

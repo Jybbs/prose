@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/zero_blanks_between_defs_inserts_two/input.py
+---
+def first():
+    return 1
+
+
+def second():
+    return 2

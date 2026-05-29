@@ -1,0 +1,6 @@
+[docs]
+title = "Names on the Configured Allow List Stay Quiet"
+description = '''
+Any name listed in `[tool.prose.rules.loose-constants].allow` **passes through silently**, so project conventions like `LOG_LEVEL` and `DEFAULT_TIMEOUT` publish at the module root while an unlisted `OTHER` still draws the diagnostic.
+'''
+previewable = true

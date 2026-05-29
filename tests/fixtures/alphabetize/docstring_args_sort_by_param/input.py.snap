@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/docstring_args_sort_by_param/input.py
+---
+def render(context, encoding, template):
+    """Summary above the section.
+
+    Args:
+        context: Mapping of names to values.
+        encoding: Output encoding.
+        template: Compiled template.
+    """
+    return template

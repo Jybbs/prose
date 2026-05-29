@@ -1,0 +1,6 @@
+[docs]
+title = "Already-Aligned Source Is Left Alone"
+description = '''
+A run whose `=` already share a column is **idempotent** under the rule, so no edit fires and the group passes through unchanged.
+'''
+previewable = true

@@ -86,7 +86,7 @@
 
 .directive-anatomy-thumb-form {
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.72rem;
+  font-size   : var(--prose-text-xxs);
   line-height : 1.5;
   background  : transparent;
   padding     : 0;

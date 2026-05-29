@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/first_party_lifted_to_local/input.py
+---
+import os
+from collections import Counter
+import myapp.core
+from myapp import app
+from myapp.db import Session
+from . import shared

@@ -1,0 +1,6 @@
+[docs]
+title = "Parenthesized Argument Lists Strip the Trailing Comma"
+description = '''
+Each argument carries its own parenthesized expression, so an inner `)` sits between the expression and the trailing `,`. **The scan reads from the call's outer `)` and reaches the comma directly**, never needing to step over the inner paren.
+'''
+previewable = true

@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/drop_future_then_aliases_align/input.py
+---
+
+import numpy       as np
+import collections as col
+import functools   as ft
+
+
+def add(a, b):
+    return a + b

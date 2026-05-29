@@ -1,0 +1,6 @@
+[docs]
+title = "From-Imports Are Outside the Rule's Reach"
+description = '''
+`from os import path` carries no diagnostic because the rule inspects `Stmt::Import` and **never `Stmt::ImportFrom`**. The explicit member-import shape the rule nudges toward is already what this statement uses.
+'''
+previewable = false

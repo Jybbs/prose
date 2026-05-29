@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/if_elif_else_no_cross_arm/input.py
+---
+alphabetize@18..168

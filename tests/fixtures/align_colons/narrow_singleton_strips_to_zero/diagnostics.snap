@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/narrow_singleton_strips_to_zero/input.py
+---
+align-colons@107..107
+align-colons@28..28
+align-colons@49..49
+align-colons@83..83

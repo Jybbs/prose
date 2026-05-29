@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/compound_stmt_to_def_two_blanks/input.py
+---
+for setup in initial_steps:
+    setup.run()
+
+
+def main():
+    return 0

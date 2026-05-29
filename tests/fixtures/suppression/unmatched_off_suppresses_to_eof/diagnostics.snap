@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/suppression/unmatched_off_suppresses_to_eof/input.py
+---
+align-equals@1..2
+align-equals@9..10

@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/scrambled_imports_into_three_groups/input.py
+---
+import os
+import sys
+
+from collections import Counter
+from typing      import Any
+
+import myapp.core
+from myapp    import app
+from myapp.db import Session
+from .        import shared

@@ -1,0 +1,23 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/type_param_list_three_homes/input.py
+---
+def transform[
+    T,
+    U
+](x: T) -> U:
+    raise NotImplementedError
+
+
+class Container[
+    T,
+    U
+]:
+    pass
+
+
+type Pair[
+    T,
+    U
+] = tuple[T, U]

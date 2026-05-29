@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/multiline_target_skips_member/input.py
+---
+alpha = 1
+(
+    x,
+    y,
+) = 2, 3
+beta = 4

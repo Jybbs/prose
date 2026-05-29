@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/annotated_field_default_optional/input.py
+---
+from pydantic import BaseModel, Field
+from typing import Annotated
+
+
+class Posting(BaseModel):
+    company: Annotated[str, Field(min_length=1)]
+    description: Annotated[str, Field(min_length=50)]
+    tags: Annotated[list[str], Field(default_factory=list)]
+    title: Annotated[str, Field(default="Untitled")]

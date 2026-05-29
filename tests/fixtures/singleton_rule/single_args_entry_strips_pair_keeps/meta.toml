@@ -1,0 +1,6 @@
+[docs]
+title = "A One-Arg Docstring `Args:` Block Drops the Colon Padding"
+description = '''
+A docstring `Args:` section with one entry **strips the pre-`:` padding** on that entry. A section with two or more entries keeps its padding for `align_colons` to align in a separate pass.
+'''
+previewable = true

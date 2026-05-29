@@ -1,0 +1,12 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/string_keys_sort_strip_align/input.py
+---
+align-colons@22..22
+align-colons@37..37
+align-colons@53..53
+align-colons@68..68
+alphabetize@16..71
+strip-trailing-commas@71..72

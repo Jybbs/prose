@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/binding_analysis/inner_reads_outer_no_shadow/input.py
+---
+

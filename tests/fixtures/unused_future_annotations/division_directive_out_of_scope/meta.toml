@@ -1,0 +1,6 @@
+[docs]
+title = "Other Future Directives Like Division Stay Out of Scope"
+description = '''
+A `from __future__ import division` may still carry semantic weight on legacy code paths and is **out of scope**. The rule fires only on the `annotations` alias, leaving every other `__future__` directive untouched.
+'''
+previewable = false

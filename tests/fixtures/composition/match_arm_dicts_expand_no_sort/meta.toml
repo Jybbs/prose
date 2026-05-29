@@ -1,0 +1,6 @@
+[docs]
+title = "Arm Dicts Expand and Align Colons, Keys Unsorted"
+description = '''
+Single-statement `match` arms return long inline dicts that overflow once on their arm line. **Each dict expands and aligns its `:` column, but the keys keep source order** because the rule set excludes `alphabetize`.
+'''
+previewable = true

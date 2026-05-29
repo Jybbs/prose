@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/multiline_annotation_breaks_run/input.py
+---
+def configure(
+    host: str = "localhost",
+    fn: Callable[
+        [int, str],
+        bool,
+    ] = default,
+    timeout: float = 30.0,
+):
+    pass

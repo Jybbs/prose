@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/set_element_comma_dropped/input.py
+---
+allowed = {
+    "INST_2014_0007",
+    "INST_2018_0033",
+    "INST_2021_0044"
+}

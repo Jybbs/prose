@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/comment_chain_binds_bottom_to_def/input.py
+---
+def first():
+    return 1
+
+
+# explains why
+# bookkeeping
+# second helper
+def second():
+    return 2

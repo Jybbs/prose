@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/docstring_wrap/description_body_indent_wrap/input.py
+---
+def greet():
+    """
+    The function-level description carries the same wrap shape as the module
+    docstring, with each wrapped line indented to match the docstring body.
+    """
+    return 1

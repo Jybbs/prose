@@ -1,0 +1,6 @@
+[docs]
+title = "Nested Multi-Line Collections Strip Independently"
+description = '''
+An outer call wrapping an inner dict and an inner list each carry a trailing `,`. **Every container emits its own separate deletion edit**, and the edits do not interact across nesting levels.
+'''
+previewable = true

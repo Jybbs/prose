@@ -1,0 +1,6 @@
+[docs]
+title = "Multi-Line Expressions Break the Run, Too"
+description = '''
+The first arm's body is a single assignment whose right-hand side spans several lines across a parenthesized `+`. **The multi-line right-hand side disqualifies the arm** even though it is structurally one statement, leaving it untouched. The remaining arm is alone in its sub-group and collapses without padding.
+'''
+previewable = true

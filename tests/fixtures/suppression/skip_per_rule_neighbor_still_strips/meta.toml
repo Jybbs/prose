@@ -1,0 +1,6 @@
+[docs]
+title = "Per-Rule Skip Is Line-Scoped, Neighbors Still Strip"
+description = '''
+`# prose: skip[<rule>]` opts one line out of a named rule **without sparing neighboring lines from that same rule**. The inside call keeps its trailing `,`, while the outside call is still stripped.
+'''
+previewable = false

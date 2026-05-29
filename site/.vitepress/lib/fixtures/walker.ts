@@ -1,9 +1,19 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
+import { parse } from 'smol-toml'
+
 export const FIXTURES_DIR  = 'tests/fixtures'
-export const INPUT_SUFFIX  = '.input.py'
-export const SNAPSHOTS_DIR = 'tests/snapshots'
+export const INPUT_FILE    = 'input.py'
+export const META_FILE     = 'meta.toml'
+export const SNAPSHOT_FILE = 'input.py.snap'
+
+interface FixtureDocs {
+  canonical   ?: boolean
+  description ?: string
+  previewable ?: boolean
+  title       ?: string
+}
 
 interface FixtureWalkEntry {
   caseName  : string
@@ -11,21 +21,27 @@ interface FixtureWalkEntry {
   rule      : string
 }
 
-export function* walkFixtures(repoRoot: string): Generator<FixtureWalkEntry> {
-  const fixturesRoot = path.join(repoRoot, FIXTURES_DIR)
-  const ruleDirs     = fs.readdirSync(fixturesRoot, { withFileTypes: true })
+export function readFixtureDocs(inputPath: string): FixtureDocs | undefined {
+  const metaPath = path.join(path.dirname(inputPath), META_FILE)
+  if (!fs.existsSync(metaPath)) return undefined
+  return (parse(fs.readFileSync(metaPath, 'utf8')) as { docs?: FixtureDocs }).docs
+}
+
+export function subdirNames(dir: string): string[] {
+  return fs.readdirSync(dir, { withFileTypes: true })
     .filter(d => d.isDirectory())
     .map(d => d.name)
     .sort()
-  for (const rule of ruleDirs) {
+}
+
+export function* walkFixtures(repoRoot: string): Generator<FixtureWalkEntry> {
+  const fixturesRoot = path.join(repoRoot, FIXTURES_DIR)
+  for (const rule of subdirNames(fixturesRoot)) {
     const ruleDir = path.join(fixturesRoot, rule)
-    for (const file of fs.readdirSync(ruleDir).sort()) {
-      if (!file.endsWith(INPUT_SUFFIX)) continue
-      yield {
-        caseName : file.slice(0, -INPUT_SUFFIX.length),
-        inputPath: path.join(ruleDir, file),
-        rule
-      }
+    for (const caseName of subdirNames(ruleDir)) {
+      const inputPath = path.join(ruleDir, caseName, INPUT_FILE)
+      if (!fs.existsSync(inputPath)) continue
+      yield { caseName, inputPath, rule }
     }
   }
 }

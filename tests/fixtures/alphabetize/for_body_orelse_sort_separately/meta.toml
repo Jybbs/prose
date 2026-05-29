@@ -1,0 +1,6 @@
+[docs]
+title = "`for` Body and `else` Arm Sort Independently"
+description = '''
+The `body` and `orelse` arms of a `for` loop **each sort their own contents independently**. The `else:` clause runs only when the loop ends without a `break`, but the rule treats both arms as ordinary statement bodies for sort purposes.
+'''
+previewable = false

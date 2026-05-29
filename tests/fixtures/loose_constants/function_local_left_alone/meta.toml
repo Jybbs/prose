@@ -1,0 +1,6 @@
+[docs]
+title = "Function-Local Constants Fall Outside Module Scope"
+description = '''
+A `SCREAMING_CASE` binding inside a `def` body is not module-level, so the rule **leaves it alone**. The walker stops at `def` and `class` boundaries by design.
+'''
+previewable = false

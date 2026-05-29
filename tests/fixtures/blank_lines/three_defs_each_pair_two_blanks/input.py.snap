@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/three_defs_each_pair_two_blanks/input.py
+---
+def alpha():
+    return 1
+
+
+def beta():
+    return 2
+
+
+def gamma():
+    return 3

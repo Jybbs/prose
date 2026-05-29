@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/pep695_type_params_survive/input.py
+---
+def render[T](
+    alpha: T,
+    beta: T,
+    delta: T,
+    gamma: T,
+    target: T,
+) -> tuple[T, T]:
+    return (alpha, beta)

@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/dotted_relative_aligns/input.py
+---
+from .         import siblings
+from .helpers  import normalize
+from ..core    import register
+from ...common import constants

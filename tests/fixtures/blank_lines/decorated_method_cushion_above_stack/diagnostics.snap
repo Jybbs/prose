@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/decorated_method_cushion_above_stack/input.py
+---
+blank-lines@14..15
+blank-lines@36..37

@@ -1,9 +1,0 @@
----
-source: tests/diagnostics.rs
-assertion_line: 45
-expression: render(&diagnostics)
-input_file: tests/fixtures/align_imports/aliased_shift_limit_drop.input.py
----
-align-imports@284..285
-align-imports@299..300
-align-imports@372..373

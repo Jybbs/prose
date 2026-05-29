@@ -1,0 +1,6 @@
+[docs]
+title = "Decorated Functions Sort Together inside Framework Groups"
+description = '''
+Three decorators bind values into the signature positionally and so **block parameter alphabetization**: `pytest.mark.parametrize`, `hypothesis.given`, and `click.argument`. Functions carrying any of them keep their parameter order intact.
+'''
+previewable = true

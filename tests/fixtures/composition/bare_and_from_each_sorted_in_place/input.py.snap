@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/bare_and_from_each_sorted_in_place/input.py
+---
+import collections as col
+import numpy       as np
+import requests    as req
+
+from collections import Counter
+from os     import path
+from typing import Any

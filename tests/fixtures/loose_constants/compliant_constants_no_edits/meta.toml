@@ -1,0 +1,6 @@
+[docs]
+title = "Already-Conforming Source Surfaces Nothing"
+description = '''
+A clean file with only an allowed `__version__` dunder **passes through unchanged on every pass**, pinning the lint-only shape where the rule emits no edits and no diagnostic.
+'''
+previewable = true

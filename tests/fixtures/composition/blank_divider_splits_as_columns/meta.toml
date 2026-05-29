@@ -1,0 +1,6 @@
+[docs]
+title = "Blank Divider Splits the `as` Alignment Into Two Columns"
+description = '''
+Two aliased-import runs sit either side of a blank-line divider. **Each run gets its own `as` alignment column** because the blank line partitions the imports into separate alignment groups.
+'''
+previewable = true

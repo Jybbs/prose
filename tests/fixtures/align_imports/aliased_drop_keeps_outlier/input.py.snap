@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/aliased_drop_keeps_outlier/input.py
+---
+import datetime as dt
+import os       as o
+import re       as r
+import collections_with_a_very_long_module_name as long
+import json     as j

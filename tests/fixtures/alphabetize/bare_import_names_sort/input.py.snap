@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/bare_import_names_sort/input.py
+---
+import argparse, os, zlib

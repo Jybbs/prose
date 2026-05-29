@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/split_subgroups/input.py
+---
+from io import BytesIO
+from re import sub
+from os import getenv
+from collections.abc.mapping_helpers.namespaced import OrderedDict
+from sys     import path
+from os.path import join

@@ -1,0 +1,6 @@
+[docs]
+title = "A Lone Arm Collapses with Its Colon Hugging the Pattern"
+description = '''
+A one-arm match collapses its body onto the `case` line. With no neighbor to align against, **the aligner skips and the `:` hugs the pattern** with a single trailing space.
+'''
+previewable = false

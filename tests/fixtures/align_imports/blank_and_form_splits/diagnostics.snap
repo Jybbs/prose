@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/blank_and_form_splits/input.py
+---
+align-imports@115..116
+align-imports@47..48
+align-imports@74..75

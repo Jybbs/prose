@@ -1,0 +1,6 @@
+[docs]
+title = "Class-Scope Annotated Assignments Are Recognized Too"
+description = '''
+A class-body `x: int` annotation names the `int` builtin, which the module-scope binding analysis does not record. **Trigger 3 fails conservatively and the directive stays**, even though Python would resolve `int` at runtime.
+'''
+previewable = true

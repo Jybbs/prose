@@ -1,0 +1,6 @@
+[docs]
+title = "`Args:` Entries Sort Alongside the Signature"
+description = '''
+The `Args:` section's `name: description` entries **reorder alphabetically by parameter name**, matching how the rule treats the function signature itself.
+'''
+previewable = true

@@ -1,0 +1,6 @@
+[docs]
+title = "Ignore Silences One Lint Line, Format Rewrites Persist"
+description = '''
+`# prose: ignore[<rule>]` **suppresses one named lint diagnostic on its line only**, leaving the same rule's diagnostics on unrelated lines in place. Format-side rewrites for every line, including the ignored one, still apply.
+'''
+previewable = false

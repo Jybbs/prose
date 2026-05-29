@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/methods_sort_around_pinned_constants/input.py
+---
+alphabetize@50..172

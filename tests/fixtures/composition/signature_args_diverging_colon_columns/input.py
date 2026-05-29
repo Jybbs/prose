@@ -1,0 +1,14 @@
+def write(
+    destination: str,
+    contents: bytes,
+    overwrite: bool,
+) -> int:
+    """
+    Summary line.
+
+    Args:
+        dst: A description of the destination sink long enough to wrap at the Args hanging column under the description.
+        body: The bytes to write, a description long enough to wrap and demonstrate the hanging behavior at the Args column.
+        force: Whether to overwrite any existing target, a description long enough to wrap at the same hanging column as the others.
+    """
+    return 0

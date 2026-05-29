@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/dict_default_collapses_keeps_signature_inline/input.py
+---
+collection-layout@35..69

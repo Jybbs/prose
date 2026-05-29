@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/header_binds_docstring_zero_blanks/input.py
+---
+class Bound:
+    """
+    The class docstring sits flush against the header line.
+    """
+
+    def follow_up(self):
+        return self

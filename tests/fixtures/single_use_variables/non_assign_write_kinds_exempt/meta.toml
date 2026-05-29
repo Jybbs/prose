@@ -1,0 +1,12 @@
+[docs]
+title = "Non-Assignment Write Kinds Are Exempt"
+description = '''
+Bindings whose write kind falls outside `Assignment` and `Walrus` are **never flagged**, because inlining a right-hand side does not extend to:
+
+- function parameters
+- `for` loop targets
+- `with` targets
+- `except` handler names
+- local `import` bindings
+'''
+previewable = false

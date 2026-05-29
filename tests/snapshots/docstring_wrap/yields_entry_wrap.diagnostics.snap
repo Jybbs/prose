@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/docstring_wrap/yields_entry_wrap.input.py
----
-docstring-wrap@325..386

@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/parenthesized_sole_alias_full_span_deleted/input.py
+---
+
+x = 1

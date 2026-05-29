@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/inline_kwargs_positional_stay/input.py
+---
+posting = Posting(record, company="Cianbro", title="Electrician", url="https://example.com")

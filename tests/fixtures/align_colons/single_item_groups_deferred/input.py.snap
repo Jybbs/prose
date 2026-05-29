@@ -1,0 +1,20 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/single_item_groups_deferred/input.py
+---
+one_entry = {"only": 42}
+
+
+def identity(x: int) -> int:
+    """
+    Returns its argument.
+
+    Args:
+        x: input value.
+    """
+    return x
+
+
+class Lonely:
+    solo: str

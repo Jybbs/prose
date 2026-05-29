@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_comparisons/mixed_operators_right_align/input.py
+---
+if (
+    foo         == 1
+    and bar_baz == 2
+    and qux      < 100
+    and quux     < 200
+):
+    pass

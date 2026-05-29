@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/module_def_to_assignment_two_blanks/input.py
+---
+def configure():
+    return None
+
+
+TIMEOUT: float = 30.0

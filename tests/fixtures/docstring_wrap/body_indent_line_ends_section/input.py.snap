@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/docstring_wrap/body_indent_line_ends_section/input.py
+---
+def example():
+    """
+    Summary.
+
+    Args:
+        foo: short description.
+    Continued description prose at the body indent that exceeds the seventy
+    six character description budget wraps at that budget.
+    """
+    return 1

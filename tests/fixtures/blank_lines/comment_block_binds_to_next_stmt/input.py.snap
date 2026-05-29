@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/comment_block_binds_to_next_stmt/input.py
+---
+def first():
+    return 1
+
+
+# describes the second helper
+def second():
+    return 2

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/class_body_builtin_kept_conservatively/input.py
+---
+from __future__ import annotations
+
+
+class Config:
+    x: int
+    y: int

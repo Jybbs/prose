@@ -1,0 +1,6 @@
+[docs]
+title = "Methods Sort into Four Sub-Groups"
+description = '''
+Methods within a class **sort into four sub-groups in order**: dunders, then properties (`@property` and `@cached_property`), then private methods (single leading underscore), then public methods. Each sub-group sorts alphabetically among its members.
+'''
+previewable = false

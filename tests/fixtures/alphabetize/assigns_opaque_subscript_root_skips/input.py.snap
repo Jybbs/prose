@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/assigns_opaque_subscript_root_skips/input.py
+---
+zebra = sys.argv[0]
+alpha = 1
+beta = 2

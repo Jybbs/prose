@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/function_body_import_runs_sort/input.py
+---
+def f():
+    from alpha import b
+    from zeta import a
+    return a + b
+
+
+def g():
+    import argparse
+    import zlib
+    return argparse, zlib

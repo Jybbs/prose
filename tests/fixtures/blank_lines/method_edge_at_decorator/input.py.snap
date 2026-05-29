@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/method_edge_at_decorator/input.py
+---
+class Posting:
+
+    def first(self):
+        return 1
+
+    @cached_property
+    def second(self):
+        return 2

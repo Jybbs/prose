@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/match_case_align/colons_align_to_widest_pattern/input.py
+---
+match-case-align@142..142
+match-case-align@143..152
+match-case-align@48..48
+match-case-align@49..58
+match-case-align@98..98
+match-case-align@99..108

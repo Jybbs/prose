@@ -1,0 +1,6 @@
+[docs]
+title = "Already-Aligned Source Is Left Alone"
+description = '''
+An `and`-chain whose `==` already sit one space past the widest left side is **idempotent** under the rule. No edit is emitted and the group passes through unchanged.
+'''
+previewable = true

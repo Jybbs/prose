@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/identity/empty_pipeline_noop/input.py
+---
+x = 1

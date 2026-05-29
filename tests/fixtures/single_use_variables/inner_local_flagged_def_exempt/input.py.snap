@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/inner_local_flagged_def_exempt/input.py
+---
+def outer():
+    def inner():
+        x = compute()
+        return x + 1
+
+    return inner

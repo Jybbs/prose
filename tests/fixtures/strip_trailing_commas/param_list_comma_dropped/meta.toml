@@ -1,0 +1,6 @@
+[docs]
+title = "Function Signatures Drop the Trailing Comma on the Final Arg"
+description = '''
+A multi-line function signature whose parameter list covers `(...)` loses the `,` after its last parameter. **The backward scan from before the closing `)` lands on that comma**, treating the signature like any other argument list.
+'''
+previewable = true

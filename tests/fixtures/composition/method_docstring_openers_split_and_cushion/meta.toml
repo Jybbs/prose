@@ -1,0 +1,6 @@
+[docs]
+title = "Method Docstring Openers Split and Methods Gain Cushions"
+description = '''
+Methods carry multi-line docstrings with opener and closer sharing prose lines, and no spacing between methods. **The opener and closer move to their own lines, the prose reflows, and `blank-lines` cushions the methods**.
+'''
+previewable = true

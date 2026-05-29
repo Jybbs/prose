@@ -1,0 +1,18 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/attached_comment_travels_with_method/input.py
+---
+class Matcher:
+    def __init__(self, clusters):
+        pass
+
+    # describes the constructor
+
+    # describes the private validator
+    def _validate(self, resume):
+        pass
+
+    # describes the public match entry point
+    def match(self, resume):
+        pass

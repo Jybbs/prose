@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/aliased_imports_sort_and_align/input.py
+---
+import collections as col
+import functools   as ft
+import itertools   as it
+import numpy       as np

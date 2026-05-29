@@ -1,0 +1,22 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/singleton_rule/zero_padding_emits_no_edits/input.py
+---
+def fetch(timeout: float) -> bytes:
+    return b""
+
+
+single = {"only_key": compute_value()}
+
+
+class Solo:
+    only_field: str
+
+
+def render(template):
+    """Expands the template with substitutions.
+
+    Args:
+        template: The template string.
+    """

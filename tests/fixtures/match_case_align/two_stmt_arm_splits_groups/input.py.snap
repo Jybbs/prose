@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/match_case_align/two_stmt_arm_splits_groups/input.py
+---
+match credential.kind:
+    case "apprenticeship": icon = "wrench"
+    case "certification":
+        icon = "scroll"
+        notes.append("verified")
+    case "program" : icon = "cap"
+    case _         : icon = "blank"

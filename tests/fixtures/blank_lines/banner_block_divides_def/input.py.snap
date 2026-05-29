@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/banner_block_divides_def/input.py
+---
+def first():
+    return 1
+
+
+# ============================================================
+# Section: Auxiliary Helpers
+# ============================================================
+
+def second():
+    return 2

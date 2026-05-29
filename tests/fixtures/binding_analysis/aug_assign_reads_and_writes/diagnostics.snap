@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/binding_analysis/aug_assign_reads_and_writes/input.py
+---
+

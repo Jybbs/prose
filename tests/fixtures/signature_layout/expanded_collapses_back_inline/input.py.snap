@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/expanded_collapses_back_inline/input.py
+---
+def render(palette: str, target: int):
+    return (palette, target)

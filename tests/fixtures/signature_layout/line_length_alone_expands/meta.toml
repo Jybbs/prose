@@ -1,0 +1,6 @@
+[docs]
+title = "A Signature That Overflows `code-line-length` Expands"
+description = '''
+A three-parameter signature whose inline form overflows the default `code-line-length` of 88 columns expands, with the parameter count comfortably under the cap. **The length trigger fires alone.**
+'''
+previewable = true

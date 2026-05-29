@@ -1,0 +1,6 @@
+[docs]
+title = "Consecutive Free Functions Sort, Other Statements Break the Run"
+description = '''
+Top-level free functions **alphabetize within their tight slice**. A non-function statement between two functions breaks the run, so each contiguous block sorts independently. Class bodies route their members through four-group method ordering instead.
+'''
+previewable = false

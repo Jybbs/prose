@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/nonlocal_declaration_skips_function/input.py
+---
+def outer():
+    counter = 0
+
+    def inner():
+        nonlocal counter
+        bumped = counter + 1
+        return bumped
+
+    return inner

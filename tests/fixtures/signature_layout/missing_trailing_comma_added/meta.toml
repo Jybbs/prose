@@ -1,0 +1,6 @@
+[docs]
+title = "Expansion Adds the Missing Trailing Comma"
+description = '''
+A multi-line signature whose last parameter lacks a trailing `,` **gets one added in the canonical expansion**. The rewrite holds its trailing-comma invariant against source variants that omit it.
+'''
+previewable = false

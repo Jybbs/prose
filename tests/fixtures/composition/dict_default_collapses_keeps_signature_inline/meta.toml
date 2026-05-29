@@ -1,0 +1,6 @@
+[docs]
+title = "Collapsed Dict Default Keeps the Signature Inline"
+description = '''
+A multi-line dict default collapses to inline form under `collection-layout`. **The shortened signature stays under the line budget, so `signature-layout` leaves it inline** rather than expanding to one parameter per line, and the pipeline is idempotent on a second pass.
+'''
+previewable = true

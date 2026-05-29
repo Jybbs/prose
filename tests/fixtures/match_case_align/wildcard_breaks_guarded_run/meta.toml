@@ -1,0 +1,6 @@
+[docs]
+title = "A Short Wildcard Drops Out of the Guarded Run"
+description = '''
+Arms carry an `if` guard between the pattern and the `:`, and the guarded trio aligns on one column. **The short wildcard `case _` breaks the greedy split-policy run** into a singleton sub-group whose colon hugs its own pattern instead of joining the shared column.
+'''
+previewable = false

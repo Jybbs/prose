@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/custom_allow_pattern_exempts/input.py
+---
+def consume():
+    tmp_value = compute()
+    return tmp_value + 1

@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/legacy_union_syntax/optional_inside_dict_value/input.py
+---
+from typing import Optional
+
+table: dict[str, Optional[int]] = {}

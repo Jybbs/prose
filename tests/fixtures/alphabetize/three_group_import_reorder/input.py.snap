@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/three_group_import_reorder/input.py
+---
+import os
+import sys
+from collections import Counter
+from pathlib import Path
+from . import helpers
+from .config import settings
+from ..shared import base

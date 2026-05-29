@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/unused_future_annotations/binding_safe_overrides_py313_target/input.py
+---
+unused-future-annotations@0..35

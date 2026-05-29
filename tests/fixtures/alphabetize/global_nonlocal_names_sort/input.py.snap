@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/global_nonlocal_names_sort/input.py
+---
+def reset_outer():
+    items = []
+    def inner():
+        nonlocal counter, items, registry
+        items.clear()
+
+
+def update():
+    global counter, items, registry
+    counter = 0

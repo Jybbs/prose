@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/match_case_align/collapse_under_88_budget/input.py
+---
+match-case-align@133..133
+match-case-align@134..147
+match-case-align@74..74
+match-case-align@75..88

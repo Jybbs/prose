@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/param_count_alone_expands/input.py
+---
+def render(
+    layout: tuple[int, int],
+    palette: str,
+    spread: float,
+    target: int,
+    verbose: bool,
+):
+    return (layout, palette, spread, target, verbose)

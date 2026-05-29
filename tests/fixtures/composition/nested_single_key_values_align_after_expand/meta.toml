@@ -1,0 +1,6 @@
+[docs]
+title = "Outer Dict Expands and Aligns Over Single-Key Values"
+description = '''
+An overflowing single-line dict whose entries each carry a single-key nested dict. **The outer dict expands and sorts, and after expansion each nested single-key dict stays inline** as its own one-row group while the outer `:` column aligns.
+'''
+previewable = true

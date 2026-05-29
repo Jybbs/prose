@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/two_future_lines_processed_separately/input.py
+---
+from __future__ import division
+
+x = 1 / 2

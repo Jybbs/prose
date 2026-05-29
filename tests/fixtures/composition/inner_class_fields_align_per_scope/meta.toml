@@ -1,0 +1,6 @@
+[docs]
+title = "Nested Class Fields Sort and Align Per Scope"
+description = '''
+An outer class and its nested helper class each carry out-of-order annotated fields. **`alphabetize` and the alignment rules act independently within each scope**, giving the inner class its own `:` and `=` columns.
+'''
+previewable = true

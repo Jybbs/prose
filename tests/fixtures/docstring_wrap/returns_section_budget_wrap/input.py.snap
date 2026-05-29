@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/docstring_wrap/returns_section_budget_wrap/input.py
+---
+def total(items):
+    """
+    Summary line.
+
+    Returns:
+        The running total of every numeric value the caller passed in, computed by
+        adding each item to the accumulator in source order.
+    """
+    return sum(items)

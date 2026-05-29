@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/augmented_assign_two_writes/input.py
+---
+def accumulate(items):
+    total = 0
+    for value in items:
+        total += value
+    return total

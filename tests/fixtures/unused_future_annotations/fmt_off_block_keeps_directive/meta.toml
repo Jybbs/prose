@@ -1,0 +1,6 @@
+[docs]
+title = "A `# fmt: off` Block Suppresses the Rewrite"
+description = '''
+A `# fmt: off` block wrapping the directive keeps it in place. The pipeline **drops any edit whose range overlaps a suppressed span**, so suppression is handled centrally rather than re-implemented per rule.
+'''
+previewable = true

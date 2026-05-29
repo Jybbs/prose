@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/legacy_union_syntax/optional_via_alias/input.py
+---
+from typing import Optional as Opt
+
+x: Opt[int] = None

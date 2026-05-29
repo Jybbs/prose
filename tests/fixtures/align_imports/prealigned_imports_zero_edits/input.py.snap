@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/prealigned_imports_zero_edits/input.py
+---
+from collections import OrderedDict
+from typing      import Optional
+from sys         import path
+
+import collections as c
+import datetime    as dt
+import functools   as fn

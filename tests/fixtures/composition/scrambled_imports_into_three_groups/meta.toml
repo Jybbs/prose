@@ -1,0 +1,6 @@
+[docs]
+title = "Scrambled Imports Resolve Into Three Cushioned Groups"
+description = '''
+Bare, external `from`, and local-package imports scrambled together, with `myapp` declared first-party. **`alphabetize` resolves them into the three canonical groups, `blank-lines` separates each with one blank, and `align-imports` aligns the keyword within each group**.
+'''
+previewable = true

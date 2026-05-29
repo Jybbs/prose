@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/method_comment_binds_to_method/input.py
+---
+class Posting:
+
+    def first(self):
+        return 1
+
+    # describes the second helper
+    def second(self):
+        return 2

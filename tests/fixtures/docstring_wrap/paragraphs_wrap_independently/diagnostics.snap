@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/docstring_wrap/paragraphs_wrap_independently/input.py
+---
+docstring-wrap@132..132

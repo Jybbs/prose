@@ -1,0 +1,6 @@
+[docs]
+title = "Skip and Ignore Coexist on One Line"
+description = '''
+One line carries both `# prose: skip[<rule>]` and `# prose: ignore[<rule>]`. The **skip suppresses the named format rule's edit**, the **ignore suppresses the named lint rule's diagnostic**, and every other rule on the line continues to fire.
+'''
+previewable = false

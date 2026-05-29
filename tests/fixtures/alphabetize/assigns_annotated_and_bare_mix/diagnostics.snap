@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/assigns_annotated_and_bare_mix/input.py
+---
+alphabetize@0..42

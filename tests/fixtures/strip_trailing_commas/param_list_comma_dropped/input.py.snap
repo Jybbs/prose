@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/param_list_comma_dropped/input.py
+---
+def load_lexicon(
+    path: Path,
+    encoding: str,
+    fallback: dict[str, str]
+) -> LexiconLoader:
+    return LexiconLoader(path, encoding, fallback)

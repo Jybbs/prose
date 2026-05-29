@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dataclass_required_then_optional/input.py
+---
+from dataclasses import dataclass
+
+
+@dataclass
+class Posting:
+    company: str
+    date_posted: str
+    description: str | None = None
+    title: str = "Untitled"

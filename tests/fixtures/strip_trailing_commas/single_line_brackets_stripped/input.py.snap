@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/single_line_brackets_stripped/input.py
+---
+call = f(a, b, c)
+literal = [1, 2, 3]
+mapping = {"a": 1, "b": 2}
+
+
+def signature(a, b, c):
+    return a + b + c

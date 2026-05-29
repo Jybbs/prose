@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_comparisons/or_chain_aligns_like_and/input.py
+---
+if (
+    foo        == 1
+    or bar_baz == 2
+    or quux    == 3
+):
+    pass

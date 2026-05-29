@@ -1,0 +1,36 @@
+---
+source: tests/binding_analysis.rs
+assertion_line: 14
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/annotation_expr_read_target_write/input.py
+---
+bindings:
+  - kinds:
+      - Assignment
+    name: Pair
+    read_offsets:
+      - 37
+    scope: 0
+    write_offsets:
+      - 0
+  - kinds:
+      - Assignment
+    name: x
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 23
+  - kinds:
+      - Assignment
+    name: y
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 34
+scopes:
+  - bindings:
+      Pair: 0
+      x: 1
+      y: 2
+    kind: Module
+    parent: ~

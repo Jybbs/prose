@@ -1,0 +1,6 @@
+[docs]
+title = "Comment Lines Reset the Run, like Blank Lines"
+description = '''
+A comment between two imports, whether an own-line block comment or a trailing comment on an import line, **breaks adjacency** because the aligner aborts on any comment token in the inter-statement gap. Each comment-bracketed sub-run aligns only with its own contiguous neighbors.
+'''
+previewable = true

@@ -1,0 +1,16 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/fields_and_methods_sort_align_cushion/input.py
+---
+align-colons@24..24
+align-colons@59..59
+align-colons@80..80
+align-equals@37..38
+align-equals@73..74
+alphabetize@19..246
+blank-lines@137..138
+blank-lines@14..15
+blank-lines@191..192
+blank-lines@93..94

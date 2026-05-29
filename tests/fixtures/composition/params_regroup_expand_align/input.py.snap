@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/params_regroup_expand_align/input.py
+---
+def configure(
+    alpha : int,
+    beta  : float,
+    zebra : str,
+    delta : float = 0.5,
+    mango : bool  = False,
+):
+    return (zebra, alpha, beta, mango, delta)

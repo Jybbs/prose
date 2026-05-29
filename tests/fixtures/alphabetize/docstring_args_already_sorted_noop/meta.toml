@@ -1,0 +1,6 @@
+[docs]
+title = "An Already-Sorted `Args:` Section Passes Through"
+description = '''
+An `Args:` section whose entries already sit in alphabetical order **passes through untouched**, producing no edit to the docstring.
+'''
+previewable = false

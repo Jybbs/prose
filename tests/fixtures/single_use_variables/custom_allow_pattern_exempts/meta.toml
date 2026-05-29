@@ -1,0 +1,6 @@
+[docs]
+title = "A Custom `allow-pattern` Exempts Matching Names"
+description = '''
+A user-supplied `allow_pattern` **replaces** the default `^_`, so names matching a project's local convention pass through unflagged. Here the `tmp_` prefix is the configured exemption, sparing `tmp_value` from the diagnostic.
+'''
+previewable = true

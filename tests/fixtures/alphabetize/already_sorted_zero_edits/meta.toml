@@ -1,0 +1,6 @@
+[docs]
+title = "Compliant Input Emits Zero Edits"
+description = '''
+Source already in sorted form walks the AST, finds every sortable site in order, and **emits zero edits**. Imports, methods, and the four-group method rhythm all pass through untouched.
+'''
+previewable = false

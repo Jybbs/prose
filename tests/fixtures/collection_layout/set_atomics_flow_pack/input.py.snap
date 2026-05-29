@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/collection_layout/set_atomics_flow_pack/input.py
+---
+short_set = {"read", "write", "execute"}
+long_set = {
+    "read", "write", "execute", "delete", "admin",
+    "owner", "moderator", "guest", "root"
+}
+collapsing_set = {"read", "write", "execute"}

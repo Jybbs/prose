@@ -1,0 +1,20 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/singleton_rule/single_args_entry_strips_pair_keeps/input.py
+---
+def fetch(timeout):
+    """Loads the resource over the network.
+
+    Args:
+        timeout: Maximum seconds to wait before giving up.
+    """
+
+
+def render(template, context):
+    """Expands the template with substitutions.
+
+    Args:
+        template : The template string.
+        context  : Substitution dictionary.
+    """

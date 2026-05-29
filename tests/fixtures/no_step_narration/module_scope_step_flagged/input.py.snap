@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/no_step_narration/module_scope_step_flagged/input.py
+---
+# 1. normalize input
+# 2. emit the result
+
+
+def process(payload):
+    return payload.strip()

@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/variadic_width_pushes_column/input.py
+---
+def record(
+    event_name : str,
+    *args      : Any,
+    timestamp  : float,
+    **kwargs   : object,
+) -> None:
+    _store(event_name, *args, timestamp=timestamp, **kwargs)

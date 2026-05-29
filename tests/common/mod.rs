@@ -50,23 +50,19 @@ pub(crate) fn build_pipeline(
     }
 }
 
-pub(crate) fn case_filename(path: &Path) -> &str {
-    path.file_name()
-        .and_then(OsStr::to_str)
-        .expect("fixture path has a file name")
-}
-
-pub(crate) fn case_stem(path: &Path) -> &str {
-    path.file_stem()
-        .and_then(OsStr::to_str)
-        .expect("fixture path has a stem")
-}
-
-pub(crate) fn directory_name(path: &Path) -> &str {
+pub(crate) fn case_name(path: &Path) -> &str {
     path.parent()
         .and_then(Path::file_name)
         .and_then(OsStr::to_str)
-        .expect("fixture path has a parent directory name")
+        .expect("fixture path has a case directory")
+}
+
+pub(crate) fn domain_name(path: &Path) -> &str {
+    path.parent()
+        .and_then(Path::parent)
+        .and_then(Path::file_name)
+        .and_then(OsStr::to_str)
+        .expect("fixture path has a domain directory")
 }
 
 pub(crate) fn fixture_inputs(path: &Path) -> (Config, HarnessOptions) {
@@ -81,9 +77,9 @@ pub(crate) fn fixture_inputs(path: &Path) -> (Config, HarnessOptions) {
     (config, harness)
 }
 
-pub(crate) fn in_snapshot_dir(directory: &str, f: impl FnOnce()) {
+pub(crate) fn in_snapshot_dir(path: &Path, f: impl FnOnce()) {
     insta::with_settings!({
-        snapshot_path => format!("snapshots/{directory}"),
+        snapshot_path => format!("fixtures/{}/{}", domain_name(path), case_name(path)),
         prepend_module_to_snapshot => false,
         snapshot_suffix => "",
     }, {
@@ -99,10 +95,7 @@ pub(crate) fn unified_diff(expected: &str, actual: &str) -> String {
 }
 
 fn sidecar_contents(path: &Path) -> Option<String> {
-    let stem = case_stem(path)
-        .strip_suffix(".input")
-        .expect("fixture path ends in .input.py");
-    let sidecar = path.with_file_name(format!("{stem}.config.toml"));
+    let sidecar = path.with_file_name("config.toml");
     match fs_err::read_to_string(&sidecar) {
         Ok(c) => Some(c),
         Err(e) if e.kind() == ErrorKind::NotFound => None,

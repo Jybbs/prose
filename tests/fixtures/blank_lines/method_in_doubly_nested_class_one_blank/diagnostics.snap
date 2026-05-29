@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/method_in_doubly_nested_class_one_blank/input.py
+---
+blank-lines@12..13
+blank-lines@29..30
+blank-lines@75..79

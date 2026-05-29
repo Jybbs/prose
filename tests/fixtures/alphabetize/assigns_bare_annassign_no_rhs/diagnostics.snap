@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/assigns_bare_annassign_no_rhs/input.py
+---
+alphabetize@0..40

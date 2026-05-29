@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/closure_read_attributed_outer/input.py
+---
+def factory():
+    helper = compute()
+    return lambda x: x * helper

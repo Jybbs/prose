@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/drop_future_collapse_leading_blanks/input.py
+---
+
+CONFIG = {}
+
+
+def add(a, b):
+    return a + b

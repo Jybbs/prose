@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/legacy_union_syntax/parens_folded_into_span/input.py
+---
+from typing import Optional
+
+
+def annotate(x: (Optional[int])) -> None: ...

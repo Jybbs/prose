@@ -1,0 +1,6 @@
+[docs]
+title = "Class Methods Reshape the Same Way Free Functions Do"
+description = '''
+A class method with `self` and four typed parameters trips the count trigger and **expands at the class-body indent**. The walker descends into class bodies the same way it descends into top-level defs, deriving the indent from the method's own `def` position.
+'''
+previewable = true

@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/method_in_doubly_nested_class_one_blank/input.py
+---
+class Outer:
+
+    class Inner:
+
+        def alpha(self):
+            return 1
+
+        def beta(self):
+            return 2

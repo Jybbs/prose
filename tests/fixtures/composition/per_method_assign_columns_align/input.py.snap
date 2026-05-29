@@ -1,0 +1,19 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/per_method_assign_columns_align/input.py
+---
+class Builder:
+
+    def configure(self):
+        host    = "localhost"
+        port_id = 8080
+        retries = 3
+        return host, port_id, retries
+
+    def render(self):
+        out         = []
+        markup_text = ""
+        flag        = True
+        return out, markup_text, flag

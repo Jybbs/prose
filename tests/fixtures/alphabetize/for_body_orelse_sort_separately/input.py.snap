@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/for_body_orelse_sort_separately/input.py
+---
+for i in items:
+    from alpha import b
+    from zeta import a
+else:
+    from delta import d
+    from omega import c

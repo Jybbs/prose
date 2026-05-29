@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/list_atomics_flow_pack/input.py
+---
+collection-layout@151..187
+collection-layout@47..130

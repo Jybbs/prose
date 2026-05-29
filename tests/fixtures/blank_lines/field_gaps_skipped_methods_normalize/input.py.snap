@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/field_gaps_skipped_methods_normalize/input.py
+---
+class Posting:
+
+    field: int = 1
+    name: str = "x"
+
+    def m1(self):
+        return 1
+
+    def m2(self):
+        return 2

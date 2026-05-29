@@ -1,0 +1,58 @@
+---
+source: tests/binding_analysis.rs
+assertion_line: 14
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/method_skips_class_scope/input.py
+---
+bindings:
+  - kinds:
+      - Assignment
+    name: x
+    read_offsets:
+      - 74
+    scope: 0
+    write_offsets:
+      - 0
+  - kinds:
+      - ClassDef
+    name: C
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 20
+  - kinds:
+      - Assignment
+    name: x
+    read_offsets: []
+    scope: 1
+    write_offsets:
+      - 27
+  - kinds:
+      - FunctionDef
+    name: get
+    read_offsets: []
+    scope: 1
+    write_offsets:
+      - 48
+  - kinds:
+      - Parameter
+    name: self
+    read_offsets: []
+    scope: 2
+    write_offsets:
+      - 52
+scopes:
+  - bindings:
+      C: 1
+      x: 0
+    kind: Module
+    parent: ~
+  - bindings:
+      get: 3
+      x: 2
+    kind: Class
+    parent: 0
+  - bindings:
+      self: 4
+    kind: Function
+    parent: 1

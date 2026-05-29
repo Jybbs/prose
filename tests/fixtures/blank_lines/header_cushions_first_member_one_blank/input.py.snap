@@ -1,0 +1,34 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/header_cushions_first_member_one_blank/input.py
+---
+class WithMethod:
+
+    def alpha(self):
+        return self
+
+
+class WithDecoratedMethod:
+
+    @classmethod
+    def builder(cls):
+        return cls()
+
+
+class WithAnnotatedField:
+
+    capacity: int = 0
+
+
+class WithBareField:
+
+    label = "unset"
+
+
+class WithNestedClass:
+
+    class Inner:
+
+        def m(self):
+            return self

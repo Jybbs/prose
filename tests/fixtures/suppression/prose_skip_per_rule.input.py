@@ -1,9 +1,0 @@
-"""
-prose: skip[<rule>] opts one line out of one named format rule
-while leaving edits from the same rule on neighboring lines in
-place. Here strip-trailing-commas is skipped on the inside call
-but still strips the outside call's trailing comma.
-"""
-
-inside(1, 2, 3,)  # prose: skip[strip-trailing-commas]
-outside(4, 5, 6,)

@@ -1,0 +1,6 @@
+[docs]
+title = "Fenced Code Blocks inside the Description Are Preserved"
+description = '''
+A triple-backtick fenced code block **passes through verbatim no matter how wide its lines run**. The fence marks the region as code rather than prose, so the wrap math leaves it untouched.
+'''
+previewable = true

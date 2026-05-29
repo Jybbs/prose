@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/inner_layout_per_column/input.py
+---
+collection-layout@11..166
+collection-layout@183..324
+collection-layout@350..435
+collection-layout@465..559
+collection-layout@592..640
+collection-layout@764..801

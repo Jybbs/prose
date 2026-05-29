@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/aliased_imports_sort_and_align/input.py
+---
+align-imports@42..43
+align-imports@65..66
+align-imports@84..85
+alphabetize@7..90

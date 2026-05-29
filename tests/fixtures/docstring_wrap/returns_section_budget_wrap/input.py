@@ -1,0 +1,8 @@
+def total(items):
+    """
+    Summary line.
+
+    Returns:
+        The running total of every numeric value the caller passed in, computed by adding each item to the accumulator in source order.
+    """
+    return sum(items)

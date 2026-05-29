@@ -1,0 +1,6 @@
+[docs]
+title = "Positional and Keyword-Only Separators Ride Through"
+description = '''
+The positional-only `/` and keyword-only `*` separators have no AST node of their own. **The backward scan only asks whether the immediate previous non-trivia token is a `,`**, so the separators pass through with no special handling.
+'''
+previewable = false

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_comparisons/chained_compare_anchors_first_operator/input.py
+---
+if (
+    foo     == 1
+    and 0    < bar < 100
+    and qux == 3
+):
+    pass

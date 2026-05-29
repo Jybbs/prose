@@ -1,0 +1,6 @@
+[docs]
+title = "Walrus Binds the Enclosing Function Scope"
+description = '''
+A `:=` inside a function-body conditional **binds its target in the enclosing function scope**, kept distinct from the iter-source name it reads from.
+'''
+previewable = false

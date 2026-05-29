@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_trailing_commas/inner_tuple_comma_preserved/input.py
+---
+strip-trailing-commas@42..43

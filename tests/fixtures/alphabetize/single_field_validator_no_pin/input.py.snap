@@ -1,0 +1,20 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/single_field_validator_no_pin/input.py
+---
+from pydantic import BaseModel, field_validator
+
+
+class Counter(BaseModel):
+    value: int
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+    @field_validator("value")
+    def normalize(cls, v):
+        return max(v, 0)
+
+    def reset(self):
+        self.value = 0

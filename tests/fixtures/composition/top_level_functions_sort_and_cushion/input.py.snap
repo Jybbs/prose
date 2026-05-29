@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/top_level_functions_sort_and_cushion/input.py
+---
+def alpha():
+    return 2
+
+
+def mango():
+    return 3
+
+
+def zebra():
+    return 1

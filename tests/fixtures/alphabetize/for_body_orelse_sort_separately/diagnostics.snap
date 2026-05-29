@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/for_body_orelse_sort_separately/input.py
+---
+alphabetize@25..116

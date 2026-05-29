@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/unused_sole_import_removed_with_blank_line/input.py
+---
+
+x = 1
+
+
+def main():
+    print(x)

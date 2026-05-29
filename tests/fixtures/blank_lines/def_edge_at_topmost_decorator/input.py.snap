@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/def_edge_at_topmost_decorator/input.py
+---
+def first():
+    return 1
+
+
+@first_decorator
+@second_decorator
+def second():
+    return 2

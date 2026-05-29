@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/bare_import_breaks_group/input.py
+---
+import collections as c
+import datetime    as dt
+import os
+import re   as r
+import json as j
+
+from sys import path
+LOG_LEVEL = "INFO"
+from typing import Optional

@@ -1,0 +1,6 @@
+[docs]
+title = "A Custom Allowlist Replaces the Default"
+description = '''
+A sidecar `allow = ["torch"]` **swaps out the default allowlist entirely** rather than extending it. The formerly exempt `numpy` is now flagged, and only `torch` survives unmarked.
+'''
+previewable = true

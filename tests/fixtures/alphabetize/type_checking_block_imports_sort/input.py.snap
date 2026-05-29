@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/type_checking_block_imports_sort/input.py
+---
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from alpha import beta
+    from beta import gamma
+    from zeta import alpha

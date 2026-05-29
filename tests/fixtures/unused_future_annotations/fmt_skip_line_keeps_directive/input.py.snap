@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/fmt_skip_line_keeps_directive/input.py
+---
+from __future__ import annotations  # fmt: skip
+
+x = 1

@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/parenthesized_skips_and_breaks/input.py
+---
+from collections import OrderedDict
+from typing      import Optional
+from sys import (
+    path,
+    platform,
+)
+from os.path import join
+from re      import sub

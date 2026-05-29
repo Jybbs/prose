@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/align_equals/shift_limit_split.input.py
----
-align-equals@339..340
-align-equals@405..406

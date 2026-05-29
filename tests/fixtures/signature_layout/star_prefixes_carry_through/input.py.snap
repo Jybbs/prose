@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/star_prefixes_carry_through/input.py
+---
+def dispatch(
+    palette: str,
+    target: int,
+    *args: int,
+    layout: tuple[int, int],
+    spread: float = 0.0,
+    **kwargs: object,
+):
+    return (palette, target, layout, spread, args, kwargs)

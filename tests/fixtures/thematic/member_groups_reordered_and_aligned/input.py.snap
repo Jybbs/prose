@@ -1,0 +1,24 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/thematic/member_groups_reordered_and_aligned/input.py
+---
+class CacheService:
+
+    backend_name : str   = "memory"
+    capacity     : int   = 128
+    timeout      : float = 30.0
+
+    @property
+    def size(self):
+        return len(self._store)
+
+    def _initialize_store(self):
+        self._store = {}
+
+    def evict(self, key):
+        return self._store.pop(key, None)
+
+    def get(self, key):
+        return self._store.get(key)

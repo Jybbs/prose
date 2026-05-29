@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/asname_directive_still_removed/input.py
+---
+
+x = 1

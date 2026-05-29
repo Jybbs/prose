@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_trailing_commas/nested_containers_each_dropped/input.py
+---
+strip-trailing-commas@180..181
+strip-trailing-commas@191..192
+strip-trailing-commas@198..199
+strip-trailing-commas@66..67

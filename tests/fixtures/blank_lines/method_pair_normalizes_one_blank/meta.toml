@@ -1,0 +1,6 @@
+[docs]
+title = "Methods inside a Class Body Carry One Blank between Them"
+description = '''
+Two methods inside a class body normalize to **one blank line** between them, collapsing extra blanks and expanding missing ones to the same canonical count.
+'''
+previewable = true

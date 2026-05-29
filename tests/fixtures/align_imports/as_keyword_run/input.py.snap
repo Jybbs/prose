@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/as_keyword_run/input.py
+---
+import collections as c
+import datetime    as dt
+import functools   as fn
+import itertools   as it

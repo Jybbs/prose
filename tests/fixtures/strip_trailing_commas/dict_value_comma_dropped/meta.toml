@@ -1,0 +1,7 @@
+[docs]
+title = "Multi-Line Dict Drops the Trailing Comma"
+description = '''
+A multi-line dict literal loses its trailing comma after the strip.
+'''
+previewable = true
+canonical = true

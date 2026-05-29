@@ -1,0 +1,6 @@
+[docs]
+title = "Already-Conforming Source Is Left Alone"
+description = '''
+Every singleton context already carries zero pre-`:` padding. The rule recognizes each gap as empty and **emits no edits**, so the output equals the input byte-for-byte and the pipeline reports no change.
+'''
+previewable = true

@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/module_def_edge_at_decorator/input.py
+---
+def first():
+    return 1
+
+
+@decorator
+def second():
+    return 2

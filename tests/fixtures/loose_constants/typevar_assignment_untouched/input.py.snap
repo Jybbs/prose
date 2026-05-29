@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/loose_constants/typevar_assignment_untouched/input.py
+---
+from typing import TypeVar
+
+T = TypeVar("T")

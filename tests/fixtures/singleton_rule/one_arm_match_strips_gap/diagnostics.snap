@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/singleton_rule/one_arm_match_strips_gap/input.py
+---
+singleton-rule@28..29

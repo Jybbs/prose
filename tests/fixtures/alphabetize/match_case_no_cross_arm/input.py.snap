@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/match_case_no_cross_arm/input.py
+---
+match value:
+    case 1:
+        from alpha import b
+        from zeta import a
+    case 2:
+        from beta import d
+        from gamma import c
+    case _:
+        pass

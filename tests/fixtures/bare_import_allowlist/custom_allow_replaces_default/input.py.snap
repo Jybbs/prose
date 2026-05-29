@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_import_allowlist/custom_allow_replaces_default/input.py
+---
+import numpy
+import torch

@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/function_siblings_run_breaks/input.py
+---
+def aggregate(records):
+    pass
+
+
+def collect(source):
+    pass
+
+
+def render(items):
+    return items

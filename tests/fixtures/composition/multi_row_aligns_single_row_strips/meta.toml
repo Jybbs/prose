@@ -1,0 +1,6 @@
+[docs]
+title = "Multi-Row Dict Aligns While Single-Row Dict Strips"
+description = '''
+Two dicts in one scope, one multi-entry and one single-entry. **The multi-row dict aligns its `:` column, while the single-row dict has its pre-`:` padding stripped** because a lone entry forms no alignment group.
+'''
+previewable = true

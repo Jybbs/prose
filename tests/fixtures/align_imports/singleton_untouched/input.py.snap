@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/singleton_untouched/input.py
+---
+from collections import OrderedDict
+
+import json as j

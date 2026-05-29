@@ -1,0 +1,18 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/nested_containers_each_dropped/input.py
+---
+posting = Posting(
+    keywords=[
+        "rust",
+        "python"
+    ],
+    metadata={
+        "source": "indeed",
+        "tags": [
+            "remote",
+            "contract"
+        ]
+    }
+)

@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/function_body_own_group/input.py
+---
+align-imports@125..126
+align-imports@47..48
+align-imports@96..97

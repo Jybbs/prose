@@ -1,0 +1,6 @@
+[docs]
+title = "Function Parameters with Defaults Sort"
+description = '''
+Function parameters **alphabetize within two sub-groups**: required (no default) before optional (has default). `self` and `cls` pin first in method lists. The fixture exercises a free function and two methods so all three pin shapes appear in one snapshot.
+'''
+previewable = true

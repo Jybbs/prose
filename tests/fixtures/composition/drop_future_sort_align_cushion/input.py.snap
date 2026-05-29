@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/drop_future_sort_align_cushion/input.py
+---
+import collections as col
+import numpy       as np
+import requests    as req
+
+
+def add(a, b):
+    return a + b

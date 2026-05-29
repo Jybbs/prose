@@ -1,0 +1,1 @@
+solitary     = 1

@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/assign_run_align_boolop_right_align/input.py
+---
+def evaluate(record):
+    name    = record.get("name")
+    user_id = record.get("user_id")
+    age     = record.get("age")
+    if (
+        name       is None
+        or user_id == 0
+        or age      < 18
+    ):
+        return None
+    return record

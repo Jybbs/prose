@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/thematic/mixed_operators_share_column/input.py
+---
+def is_ready(rec):
+    return (
+        rec.kind          == "task"
+        and rec.score      > 0
+        and 1             <= rec.age <= 99
+        and rec.owner     is None
+        and rec.tag   not in BLOCKED
+    )

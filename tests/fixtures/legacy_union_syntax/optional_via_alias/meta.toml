@@ -1,0 +1,6 @@
+[docs]
+title = "Aliased Imports of `typing.Optional` Are Flagged Too"
+description = '''
+`from typing import Optional as Opt` binds `Opt` to `typing.Optional`, so `Opt[int]` **resolves through the alias** and flags the same as the bare name.
+'''
+previewable = true

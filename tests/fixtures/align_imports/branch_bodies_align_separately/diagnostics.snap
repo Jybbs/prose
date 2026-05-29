@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/branch_bodies_align_separately/input.py
+---
+align-imports@160..161
+align-imports@188..189
+align-imports@60..61
+align-imports@90..91

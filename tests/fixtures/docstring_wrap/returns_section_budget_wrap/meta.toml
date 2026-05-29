@@ -1,0 +1,6 @@
+[docs]
+title = "Structured `Returns:` Sections Wrap to the Wider Budget"
+description = '''
+A `Returns:` section body **wraps to the section budget**, so the return-value description tracks the same horizontal room the `Args:` table uses rather than the narrower description budget.
+'''
+previewable = true

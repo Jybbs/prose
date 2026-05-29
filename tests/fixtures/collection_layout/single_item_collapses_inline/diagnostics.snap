@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/single_item_collapses_inline/input.py
+---
+collection-layout@126..156
+collection-layout@186..194
+collection-layout@221..222
+collection-layout@315..315

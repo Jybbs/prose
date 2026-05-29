@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/method_opens_with_try_then_sort/input.py
+---
+alphabetize@34..296
+blank-lines@16..17
+blank-lines@161..162
+blank-lines@235..236
+blank-lines@53..54

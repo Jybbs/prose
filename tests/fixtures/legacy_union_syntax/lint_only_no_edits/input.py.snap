@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/legacy_union_syntax/lint_only_no_edits/input.py
+---
+from typing import Optional, Union
+
+legacy_optional: Optional[int] = None
+legacy_union: Union[int, str]  = 0
+modern: int | None = None

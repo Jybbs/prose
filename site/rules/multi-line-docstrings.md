@@ -8,27 +8,13 @@ layout   : doc
 
 # multi-line-docstrings
 
-<RuleLayout rule="multi_line_docstrings" canonical="opening_inline_body">
+<RuleLayout rule="multi_line_docstrings">
 
 A multi-line docstring whose opener or closer shares a line with the body reads as a fragment, with the prose flowing into the triple-quotes rather than sitting between them as a self-contained block. `multi-line-docstrings` lands the opening `"""` flush with the docstring indent on its own line, drops the closing `"""` to its own line beneath the last content line, and leaves the prose body untouched between them.
 
 The rule fires on every multi-line docstring across module, class, and function scopes. Single-line docstrings (*opener, body, and closer all on one line*) are left alone for [[no-single-line-docstrings]] to handle. Pair with [[docstring-wrap]] for the description-prose wrap that runs after this rule canonicalizes the opener and closer.
 
 The walker [[docstring]] reads against the PEP 257 definition, so f-string docstrings *(`f"""..."""`)* and concatenated string forms are excluded by construction. Raw-prefixed *(`r"""`)* and byte-prefixed *(`b"""`)* literals canonicalize the same way as plain triple-quoted forms, with the prefix preserved verbatim on the opener. An empty docstring *(`""""""`)* lands as an empty multi-line shape, leaving the opener and closer on their own lines with a blank line between them.
-
-<template #canonical-lead>
-
-A docstring whose opener shares a line with the first body sentence drops the body to a new line beneath the opener.
-
-</template>
-
-<template #more-examples>
-
-<Fixture rule="multi_line_docstrings" case="closing_inline_body" title="A Closer Sitting on the Last Content Line Drops to Its Own Line" />
-
-<Fixture rule="multi_line_docstrings" case="idempotent_multi" title="Already-Canonical Multi-Line Docstrings Are Left Alone" />
-
-</template>
 
 <template #related-after>
 

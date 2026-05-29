@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/unannotated_parameter_splits_run/input.py
+---
+def f(
+    x: int = 1,
+    unannotated=2,
+    verbose: bool = True,
+):
+    pass

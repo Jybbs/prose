@@ -1,0 +1,23 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/match_arm_dicts_expand_no_sort/input.py
+---
+def dispatch(kind):
+    match kind:
+        case "alpha":
+            return {
+                "name"         : "alpha",
+                "weight"       : 1,
+                "extra_field"  : True,
+                "comment_text" : "primary"
+            }
+        case "beta":
+            return {
+                "name"         : "beta",
+                "weight"       : 2,
+                "extra_field"  : False,
+                "comment_text" : "secondary"
+            }
+        case _: return None

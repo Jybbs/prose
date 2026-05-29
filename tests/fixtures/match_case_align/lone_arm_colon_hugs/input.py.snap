@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/match_case_align/lone_arm_colon_hugs/input.py
+---
+match value:
+    case "only": result = "lone"

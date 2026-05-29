@@ -90,25 +90,33 @@
 }
 
 .fixture-card-title {
-  font-family   : var(--prose-font-display);
-  font-style    : italic;
-  font-size     : var(--prose-text-md);
-  line-height   : 1.25;
-  color         : var(--vp-c-text-1);
-  white-space   : nowrap;
-  overflow      : hidden;
-  text-overflow : ellipsis;
+  justify-self            : start;
+  width                   : fit-content;
+  max-width               : 100%;
+  font-family             : var(--vp-font-family-mono);
+  font-weight             : 600;
+  font-size               : var(--prose-text-sm);
+  letter-spacing          : 0.02em;
+  line-height             : 1.35;
+  text-transform          : uppercase;
+  background              : var(--headline-paint, var(--family-color, var(--vp-c-text-1)));
+  -webkit-background-clip : text;
+  background-clip         : text;
+  color                   : transparent;
 }
 
 .fixture-card[data-edits="false"] .fixture-card-title {
-  color : var(--vp-c-text-2);
+  background              : none;
+  color                   : var(--vp-c-text-3);
+  -webkit-text-fill-color : var(--vp-c-text-3);
 }
 
 .fixture-card-title code {
-  font-family : var(--vp-font-family-mono);
-  font-style  : normal;
-  font-size   : 0.85em;
-  color       : var(--prose-c-ube);
+  font-family             : var(--vp-font-family-mono);
+  font-size               : 0.85em;
+  text-transform          : none;
+  color                   : var(--prose-c-ube);
+  -webkit-text-fill-color : var(--prose-c-ube);
 }
 
 .fixture-card-actions {
@@ -146,6 +154,70 @@
 
 .fixture-card-body-content {
   padding : 0 12px 12px;
+}
+
+.fixture-card-desc {
+  position    : relative;
+  margin      : 0 0 14px;
+  padding-top : 13px;
+  border-top  : 1px solid var(--vp-c-divider);
+  color       : var(--vp-c-text-2);
+  font-size   : var(--prose-text-sm);
+}
+
+.fixture-card-desc::before {
+  content    : "";
+  position   : absolute;
+  top        : -1px;
+  left       : 0;
+  width      : 30px;
+  height     : 2px;
+  background : var(--headline-paint, var(--family-color, var(--prose-c-chambray)));
+}
+
+.fixture-card[data-edits="false"] .fixture-card-desc::before {
+  background : var(--vp-c-divider);
+}
+
+.fixture-card-desc :first-child { margin-top    : 0; }
+.fixture-card-desc :last-child  { margin-bottom : 0; }
+
+.fixture-card-desc p {
+  margin      : 0 0 0.5em;
+  line-height : 1.55;
+}
+
+.fixture-card-desc ul {
+  margin       : 0.4em 0 0;
+  padding-left : 1.1em;
+  line-height  : 1.5;
+}
+
+.fixture-card-desc li {
+  margin : 0.1em 0;
+}
+
+.fixture-card-desc code {
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.85em;
+  color       : var(--prose-c-ube);
+}
+
+.fixture-card-rule {
+  height           : 2px;
+  margin           : 0 0 14px;
+  background       : var(--headline-paint, var(--family-color, var(--prose-c-chambray)));
+  transform        : scaleX(0);
+  transform-origin : left;
+  transition       : transform 0.42s ease;
+}
+
+.fixture-card.is-open .fixture-card-rule {
+  transform : scaleX(1);
+}
+
+.fixture-card[data-edits="false"] .fixture-card-rule {
+  background : var(--vp-c-divider);
 }
 
 .fixture-card-body-inner :deep(.fixture-pair-doc) {

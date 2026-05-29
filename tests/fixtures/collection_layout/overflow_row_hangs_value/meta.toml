@@ -1,0 +1,6 @@
+[docs]
+title = "An Oversized Dict Entry Hangs Its Value at the Post-Colon Column"
+description = '''
+A dict row whose `key: value` width overflows at the item-indent column **breaks at `:` and hangs the value at `item_indent + INDENT_STEP`**. Rows that fit stay on one line, and an already-multi-line nested value runs its own expansion without triggering the hang.
+'''
+previewable = true

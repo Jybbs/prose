@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/enum_members_single_group/input.py
+---
+from enum import StrEnum
+
+
+class OnetSkillType(StrEnum):
+    ABILITY    = "ability"
+    DWA        = "dwa"
+    KNOWLEDGE  = "knowledge"
+    SKILL      = "skill"
+    TASK       = "task"
+    TECHNOLOGY = "technology"

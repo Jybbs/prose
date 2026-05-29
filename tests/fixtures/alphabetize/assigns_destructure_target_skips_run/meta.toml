@@ -1,0 +1,6 @@
+[docs]
+title = "Tuple-Unpacking Targets Skip the Run"
+description = '''
+A destructuring target **skips the whole run**. Tuple unpacking binds several names from one statement, and reordering would risk a sortable item referencing those names landing before the unpacking that defines them.
+'''
+previewable = false

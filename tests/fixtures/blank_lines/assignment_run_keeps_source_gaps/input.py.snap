@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/assignment_run_keeps_source_gaps/input.py
+---
+PORT = 8080
+HOST = "localhost"
+TIMEOUT: float = 30.0

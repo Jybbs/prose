@@ -1,0 +1,6 @@
+[docs]
+title = "A Dependency Cycle Skips the Whole Run"
+description = '''
+When the intra-run dependency graph carries a cycle, **the run skips entirely**. `FORWARD` references `BACKWARD` and `BACKWARD` references `FORWARD`, so no topological tier exists and source order survives.
+'''
+previewable = false

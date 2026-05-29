@@ -1,0 +1,30 @@
+---
+source: tests/binding_analysis.rs
+assertion_line: 14
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/if_arms_merge_one_binding/input.py
+---
+bindings:
+  - kinds:
+      - Assignment
+    name: cond
+    read_offsets:
+      - 15
+    scope: 0
+    write_offsets:
+      - 0
+  - kinds:
+      - Assignment
+    name: x
+    read_offsets:
+      - 53
+    scope: 0
+    write_offsets:
+      - 25
+      - 41
+scopes:
+  - bindings:
+      cond: 0
+      x: 1
+    kind: Module
+    parent: ~

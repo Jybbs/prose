@@ -1,0 +1,6 @@
+[docs]
+title = "Bare and Defaulted Fields Share One Group"
+description = '''
+Annotated class fields mix bare declarations like `timeout: int` with defaulted ones like `debug: bool = False`. Both shapes carry the `:` structure the rule anchors on, so **they participate in the same alignment group**.
+'''
+previewable = false

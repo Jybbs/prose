@@ -1,0 +1,6 @@
+[docs]
+title = "Async Function Annotations Are Recognized"
+description = '''
+An `async def` carries its return annotation in the same function-def shape as a sync `def`, with `is_async` flipped. The annotation probe sees it, and with `Result` defined ahead of the annotation **the directive is removed**.
+'''
+previewable = true

@@ -1,0 +1,26 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
+---
+import functools
+
+
+@memoize
+@trace
+@functools.lru_cache(maxsize=128)
+def lookup(key: str, default: int = 0, ttl: float = 60.0):
+    """
+    Look up a key with optional default and TTL. Returns the cached value or
+    the default.
+    """
+    return key
+
+
+def memoize(fn):
+    return fn
+
+
+def trace(fn):
+    return fn

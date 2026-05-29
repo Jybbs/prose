@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/comprehension_target_own_scope/input.py
+---
+def squares(xs):
+    return [x * x for x in xs]

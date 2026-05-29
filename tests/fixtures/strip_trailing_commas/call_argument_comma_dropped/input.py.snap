@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/call_argument_comma_dropped/input.py
+---
+posting = Posting(
+    company="Cianbro",
+    date_posted=None,
+    title="Electrician"
+)

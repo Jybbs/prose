@@ -1,0 +1,31 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/methods_four_subgroup_order/input.py
+---
+class Matcher:
+    def __init__(self, clusters):
+        pass
+
+    def __repr__(self):
+        pass
+
+    @cached_property
+    def adjacency(self):
+        pass
+
+    @property
+    def cluster_count(self):
+        pass
+
+    def _validate_one(self):
+        pass
+
+    def _validate_two(self):
+        pass
+
+    def public_one(self):
+        pass
+
+    def public_two(self):
+        pass

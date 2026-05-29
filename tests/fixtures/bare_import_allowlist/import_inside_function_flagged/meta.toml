@@ -1,0 +1,6 @@
+[docs]
+title = "Imports Nested in Functions Are Flagged"
+description = '''
+A non-allowlisted `import sys` inside a `def` body is reported just like a module-level one. The rule recurses through `walk_stmt`, so **function scope grants no exemption**.
+'''
+previewable = false

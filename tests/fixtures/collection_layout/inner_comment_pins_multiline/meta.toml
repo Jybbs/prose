@@ -1,0 +1,6 @@
+[docs]
+title = "An Inner Comment Pins the Multi-Line Shape"
+description = '''
+A literal whose range contains a comment in any position is **left expanded to preserve author prose the collapse would drop**. Own-line, trailing, and pre-close comments all pin the shape, whereas a comment after the closing bracket still lets an overflowing literal expand and flow its atomics.
+'''
+previewable = false

@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/param_annotation_no_return_resolves/input.py
+---
+
+
+class Result:
+    pass
+
+
+def fetch(target: Result):
+    return target

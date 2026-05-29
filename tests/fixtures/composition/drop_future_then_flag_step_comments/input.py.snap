@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/drop_future_then_flag_step_comments/input.py
+---
+
+
+def process(items):
+    # 1. Filter empties.
+    items = [i for i in items if i]
+    # 2. Sort ascending.
+    items.sort()
+    return items

@@ -1,0 +1,6 @@
+[docs]
+title = "Module-Level Runs Skip When the RHS Could Have Side Effects"
+description = '''
+Any `Call` on a binding's right-hand side **skips the entire run**. The call could carry observable side effects, so reordering would risk running them out of source order. Source order survives intact.
+'''
+previewable = true

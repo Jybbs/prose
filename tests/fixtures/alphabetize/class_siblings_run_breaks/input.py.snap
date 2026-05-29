@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/class_siblings_run_breaks/input.py
+---
+class Alpha:
+    pass
+
+
+class Beta:
+    pass
+
+
+class Gamma:
+    pass

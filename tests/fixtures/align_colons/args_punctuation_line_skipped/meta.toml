@@ -1,0 +1,6 @@
+[docs]
+title = "Malformed Arg Line Starting With Punctuation Is Skipped"
+description = '''
+An `Args:` block holds a malformed entry whose line opens with `:` rather than an identifier. The rule **drops that line from the member set**, so the well-formed entries above and below it still align with each other.
+'''
+previewable = false

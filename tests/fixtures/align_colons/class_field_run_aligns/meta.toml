@@ -1,0 +1,6 @@
+[docs]
+title = "An Unbroken Annotated Field Run Aligns as One Block"
+description = '''
+A class body holds a run of annotated fields at one indent with nothing between them. Every `:` aligns to the widest field name's column, so **the whole body aligns as a single block**.
+'''
+previewable = false

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/four_blanks_before_def_collapse/input.py
+---
+blank-lines@25..30

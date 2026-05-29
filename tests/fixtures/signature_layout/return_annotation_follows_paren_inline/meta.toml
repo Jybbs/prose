@@ -1,0 +1,6 @@
+[docs]
+title = "Return Annotations Trail the Closing `)`"
+description = '''
+A single typed parameter in expanded shape collapses to an inline signature once the inline form fits under both thresholds. **The return annotation trails the closing `)` on the same line**, rather than landing on its own line.
+'''
+previewable = true

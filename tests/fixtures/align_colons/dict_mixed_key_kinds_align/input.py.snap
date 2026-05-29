@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/dict_mixed_key_kinds_align/input.py
+---
+HEADER = "x-request-id"
+
+mapping = {
+    "x"    : 1,
+    42     : 2,
+    HEADER : 3,
+    "host" : 4,
+}

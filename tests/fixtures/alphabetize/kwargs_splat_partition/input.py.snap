@@ -1,0 +1,21 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/kwargs_splat_partition/input.py
+---
+posting = Posting(
+    company="Cianbro",
+    date_posted=None,
+    description="Wire conduits.",
+    title="Electrician",
+    url="https://example.com",
+)
+
+
+merged = combine(
+    first=1,
+    second=2,
+    **overrides,
+    fourth=4,
+    third=3,
+)

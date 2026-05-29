@@ -1,0 +1,6 @@
+[docs]
+title = "Pragma-Style Comments Stay Quiet"
+description = '''
+A pragma comment routed through `ruff_python_trivia::is_pragma_comment` is **invisible to the rule**, even when its body opens with a digit or mimics another tool's directive shape. Lines like `# noqa: F401` and `# type: ignore` pass through silently.
+'''
+previewable = true

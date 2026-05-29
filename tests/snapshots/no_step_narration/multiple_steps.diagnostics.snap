@@ -1,8 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/no_step_narration/multiple_steps.input.py
----
-no-step-narration@159..184
-no-step-narration@219..244
-no-step-narration@278..302

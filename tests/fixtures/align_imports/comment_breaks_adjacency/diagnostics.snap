@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/comment_breaks_adjacency/input.py
+---
+align-imports@103..104
+align-imports@47..48

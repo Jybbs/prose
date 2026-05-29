@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/defs_in_if_body_no_pair_count/input.py
+---
+if FEATURE_X:
+    def alpha():
+        return 1
+    def beta():
+        return 2

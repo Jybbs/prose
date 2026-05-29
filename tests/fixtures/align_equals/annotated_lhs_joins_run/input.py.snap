@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/annotated_lhs_joins_run/input.py
+---
+alpha      = 1
+beta: int  = 2
+gamma_long = 3

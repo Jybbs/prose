@@ -1,0 +1,6 @@
+[docs]
+title = "Import Runs Sort Inside Function Bodies"
+description = '''
+`from`-import and bare `import` runs **alphabetize inside function bodies** just as at module scope. Function bodies otherwise skip class, method, and field reorders, but imports are idempotent and order-independent, so import-run sorts apply uniformly.
+'''
+previewable = false

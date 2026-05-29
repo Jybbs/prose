@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/chained_double_equals_skipped/input.py
+---
+a = b = 1
+xx = 2

@@ -1,0 +1,6 @@
+[docs]
+title = "Bindings Inside Class Methods Are Flagged"
+description = '''
+A single-use binding inside a class method is **flagged** like any function-local binding. The rule walks into class bodies and processes each method's scope independently, so methods carry no blanket exemption.
+'''
+previewable = false

@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/relative_annotations_import_skipped/input.py
+---
+from . import annotations
+
+x = annotations

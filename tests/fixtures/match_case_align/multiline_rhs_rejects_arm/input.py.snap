@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/match_case_align/multiline_rhs_rejects_arm/input.py
+---
+match status:
+    case "fail":
+        result = (
+            base
+            + extra
+        )
+    case "ok": result = simple

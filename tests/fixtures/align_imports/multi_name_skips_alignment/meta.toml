@@ -1,0 +1,6 @@
+[docs]
+title = "Multi-Name Imports Skip Alignment"
+description = '''
+A comma-separated `import a, b` carries no single `as` anchor, so it **skips alignment entirely**. The rule aligns only the lone `as` of a single-aliased import, leaving multi-name shapes untouched.
+'''
+previewable = false

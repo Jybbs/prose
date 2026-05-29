@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/docstring_wrap/blank_splits_entry_paragraphs/input.py
+---
+docstring-wrap@126..339

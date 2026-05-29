@@ -1,0 +1,6 @@
+[docs]
+title = "Non-Import Statements Reset the Alignment Run"
+description = '''
+A bare `import M` carries no `as` keyword to align against, so it **breaks the surrounding `import`-as run**. A non-import statement between imports breaks it the same way, and each side aligns only with its own contiguous neighbors.
+'''
+previewable = true

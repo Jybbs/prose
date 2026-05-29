@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
+---
+import functools as ft
+import numpy     as np
+import os
+import requests
+
+from collections import Counter
+from typing      import Any
+
+
+def render(text):
+    return text

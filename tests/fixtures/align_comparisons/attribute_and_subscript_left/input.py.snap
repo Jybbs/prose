@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_comparisons/attribute_and_subscript_left/input.py
+---
+if (
+    foo.attr   == 1
+    and bar[0] == 2
+    and qux    == 3
+):
+    pass

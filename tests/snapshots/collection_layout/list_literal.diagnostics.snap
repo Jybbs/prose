@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/collection_layout/list_literal.input.py
----
-collection-layout@487..570
-collection-layout@591..627

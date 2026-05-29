@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/fields_with_defaults_share_group/input.py
+---
+class Settings:
+    debug     : bool = False
+    log_level : str = "INFO"
+    timeout   : int
+    retries   : int = 3
+    backend   : str

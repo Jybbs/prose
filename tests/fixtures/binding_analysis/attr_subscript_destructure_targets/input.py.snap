@@ -1,0 +1,99 @@
+---
+source: tests/binding_analysis.rs
+assertion_line: 14
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/attr_subscript_destructure_targets/input.py
+---
+bindings:
+  - kinds:
+      - ClassDef
+    name: Holder
+    read_offsets:
+      - 36
+    scope: 0
+    write_offsets:
+      - 6
+  - kinds:
+      - Assignment
+    name: obj
+    read_offsets:
+      - 79
+      - 92
+    scope: 0
+    write_offsets:
+      - 25
+  - kinds:
+      - Assignment
+    name: ix
+    read_offsets:
+      - 96
+    scope: 0
+    write_offsets:
+      - 45
+  - kinds:
+      - Assignment
+    name: xs
+    read_offsets:
+      - 133
+    scope: 0
+    write_offsets:
+      - 58
+  - kinds:
+      - Assignment
+    name: a
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 105
+  - kinds:
+      - Assignment
+    name: b
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 108
+  - kinds:
+      - Assignment
+    name: head
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 120
+  - kinds:
+      - Assignment
+    name: tail
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 126
+  - kinds:
+      - Assignment
+    name: c
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 137
+  - kinds:
+      - Assignment
+    name: d
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 140
+scopes:
+  - bindings:
+      Holder: 0
+      a: 4
+      b: 5
+      c: 8
+      d: 9
+      head: 6
+      ix: 2
+      obj: 1
+      tail: 7
+      xs: 3
+    kind: Module
+    parent: ~
+  - bindings: {}
+    kind: Class
+    parent: 0

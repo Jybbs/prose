@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/method_expands_at_class_indent/input.py
+---
+class Renderer:
+    def render(
+        self,
+        layout: tuple[int, int],
+        palette: str,
+        spread: float,
+        target: int,
+    ):
+        return (self, layout, palette, spread, target)

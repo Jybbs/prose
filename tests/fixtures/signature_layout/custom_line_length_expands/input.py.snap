@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/custom_line_length_expands/input.py
+---
+def render(
+    left: LayoutLayer,
+    palette: PaletteSpec,
+    right: LayoutLayer,
+):
+    return (left, palette, right)

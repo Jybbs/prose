@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/varying_lhs_widths/input.py
+---
+x       = 1
+foo     = 2
+bar_baz = 3

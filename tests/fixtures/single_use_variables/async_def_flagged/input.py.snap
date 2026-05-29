@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/async_def_flagged/input.py
+---
+async def fetch(url):
+    payload = await get(url)
+    return payload

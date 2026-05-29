@@ -1,8 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/composition/match_collection_arms.input.py
----
-collection-layout@359..448
-collection-layout@491..561
-match-case-align@654..667

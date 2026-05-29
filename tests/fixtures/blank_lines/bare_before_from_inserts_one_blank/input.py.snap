@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/bare_before_from_inserts_one_blank/input.py
+---
+import os
+
+from sys import argv

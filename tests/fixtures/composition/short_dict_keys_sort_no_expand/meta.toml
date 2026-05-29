@@ -1,0 +1,6 @@
+[docs]
+title = "Short Dict Keys Sort In Place Without Expanding"
+description = '''
+A short inline dict with out-of-order keys that fits the line budget. **`alphabetize` reorders the keys in place and the dict stays inline**, because the fitting width gives `collection-layout` no reason to expand.
+'''
+previewable = true

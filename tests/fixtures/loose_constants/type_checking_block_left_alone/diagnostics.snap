@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/loose_constants/type_checking_block_left_alone/input.py
+---
+

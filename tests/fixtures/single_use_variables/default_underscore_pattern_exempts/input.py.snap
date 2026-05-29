@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/default_underscore_pattern_exempts/input.py
+---
+def explainer():
+    _hidden = 1
+    return _hidden

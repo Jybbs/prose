@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/docstring_attributes_sort_with_continuations/input.py
+---
+class Config:
+    """Holds settings.
+
+    Attributes:
+        retries: How many times to retry on failure.
+        timeout: How long to wait, in seconds.
+        verbose: Whether to print progress.
+    """

@@ -1,0 +1,6 @@
+[docs]
+title = "A Default-Less Parameter Splits the Run"
+description = '''
+An annotated parameter without a default value **splits the surrounding parameter run**. The remaining parameters have widths that would align if grouped, yet they stay unpadded as singletons.
+'''
+previewable = false

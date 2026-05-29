@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/args_body_phrase_ignored/input.py
+---
+align-colons@235..235
+align-colons@268..268
+align-colons@296..296

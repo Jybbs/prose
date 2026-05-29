@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/type_checking_in_function_imports_sort/input.py
+---
+from typing import TYPE_CHECKING
+
+
+def use_types():
+    if TYPE_CHECKING:
+        from alpha import b
+        from beta import c
+        from zeta import a
+    return a, b, c

@@ -1,0 +1,12 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/per_method_assign_columns_align/input.py
+---
+align-equals@183..184
+align-equals@226..227
+align-equals@53..54
+alphabetize@23..269
+blank-lines@14..15
+blank-lines@147..148

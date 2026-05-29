@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/no_comma_roundtrips_unchanged/input.py
+---
+posting = Posting(
+    company="Cianbro",
+    title="Electrician"
+)

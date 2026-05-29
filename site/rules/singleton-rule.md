@@ -8,7 +8,7 @@ layout   : doc
 
 # singleton-rule
 
-<RuleLayout rule="singleton_rule" canonical="dict_literal">
+<RuleLayout rule="singleton_rule">
 
 An alignment group exists to give the reader's eye a column to drop down. With **two or more members** the column carries information, where each row reads as a row in a table. With **exactly one member** the column becomes a single cell, and padding it to a width that no sibling matches adds visual noise without payoff. `singleton-rule` strips the pre-`:` padding from every `:`-alignment context that resolves to a single member, so a one-key dict, a one-arg signature, or a one-field dataclass reads as **plain code** instead of a one-row table.
 
@@ -19,30 +19,6 @@ The rule operates on the `:`-shaped contexts that [[align-colons]] covers (*dict
 <RuleConfigTable />
 
 `singleton-rule` is the cleanup pass for the alignment rules above it, so its only knob is `enabled`. Turning it off leaves one-member alignment contexts as one-row tables *(a one-key dict reading with the same padding a multi-key dict would carry)*, which is rarely what a project wants in practice.
-
-</template>
-
-<template #canonical-lead>
-
-A one-key dict literal drops its pre-`:` padding, reading as a plain key-value pair rather than a one-row table.
-
-</template>
-
-<template #more-examples>
-
-<Fixture rule="singleton_rule" case="function_signature" title="A One-Arg Function Signature Drops the Parameter Padding" />
-
-<Fixture rule="singleton_rule" case="match_case" title="A One-Arm `match` Drops the Pre-`:` Padding" />
-
-<Fixture rule="singleton_rule" case="docstring_args" title="A One-Arg Docstring `Args:` Block Drops the Colon Padding" />
-
-<Fixture rule="singleton_rule" case="method_self_and_kwarg" title="The `self` Receiver Doesn't Count Toward the Group Size" />
-
-<Fixture rule="singleton_rule" case="mixed_singleton_and_group" title="Singleton and Multi-Member Groups Compose inside One File" />
-
-<Fixture rule="singleton_rule" case="multiline_signature" title="Multi-Line Singleton Signatures Drop the Padding Too" />
-
-<Fixture rule="singleton_rule" case="idempotent" title="Already-Conforming Source Is Left Alone" />
 
 </template>
 

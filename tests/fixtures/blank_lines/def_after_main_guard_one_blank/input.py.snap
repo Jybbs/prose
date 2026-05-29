@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/def_after_main_guard_one_blank/input.py
+---
+if __name__ == "__main__":
+    main()
+
+def cleanup():
+    return None

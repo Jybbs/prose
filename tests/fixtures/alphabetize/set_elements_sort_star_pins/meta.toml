@@ -1,0 +1,6 @@
+[docs]
+title = "Set Literals Sort"
+description = '''
+Set-literal elements **alphabetize** because Python sets are mathematically unordered. The sort key is each element's source text, so mixed-type sets sort by representation. Star unpacks (`*defaults`) pin in their source slot to preserve the visual blend.
+'''
+previewable = true

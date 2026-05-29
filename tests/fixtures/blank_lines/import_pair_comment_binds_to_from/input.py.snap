@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/import_pair_comment_binds_to_from/input.py
+---
+import os
+
+# boundary
+from sys import argv

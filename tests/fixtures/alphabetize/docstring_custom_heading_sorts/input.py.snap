@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/docstring_custom_heading_sorts/input.py
+---
+def run_pipeline(payload):
+    """Run the data pipeline.
+
+    Steps:
+        emit: Hand the normalized rows to the downstream consumer.
+        ingest: Pull the payload into the staging table.
+        normalize: Apply column-level transforms.
+        validate: Reject malformed payloads at the boundary.
+    """
+    return payload

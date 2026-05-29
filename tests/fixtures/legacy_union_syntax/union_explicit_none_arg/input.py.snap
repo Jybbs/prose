@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/legacy_union_syntax/union_explicit_none_arg/input.py
+---
+from typing import Union
+
+x: Union[int, str, None] = None

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/class_field_run_aligns/input.py
+---
+class User:
+    id        : int
+    name      : str
+    email     : str
+    role      : str
+    is_active : bool

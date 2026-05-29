@@ -1,0 +1,6 @@
+[docs]
+title = "Parameter Separators Are Preserved Verbatim"
+description = '''
+Expansion preserves every parameter-list shape (*defaults, the posonly `/` separator, the bare `*` separator, and a return-type annotation*) **verbatim from source**. The slice machinery renders each separator at its source position rather than synthesizing a different shape.
+'''
+previewable = false

@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/subscript_inner_names_resolve/input.py
+---
+
+
+class Container:
+    pass
+
+
+class Item:
+    pass
+
+
+x: Container[Item] = Container()

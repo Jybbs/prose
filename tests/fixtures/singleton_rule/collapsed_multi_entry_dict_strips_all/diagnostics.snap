@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/singleton_rule/collapsed_multi_entry_dict_strips_all/input.py
+---
+singleton-rule@18..19
+singleton-rule@32..33
+singleton-rule@45..46

@@ -1,0 +1,6 @@
+[docs]
+title = "A Clean File Passes Through Unchanged"
+description = '''
+A file with no single-use bindings draws **no diagnostic and no edit**, so it passes through untouched on every run. This pins the rule's lint-only shape, where a clean input is left exactly as written.
+'''
+previewable = false

@@ -1,0 +1,6 @@
+[docs]
+title = "Spreads Survive Expansion and Split Atomic Runs"
+description = '''
+Dict `**` and list or set `*` unpacking survive expansion, each landing on its own line. **Being non-atomic, a `*` spread in a list splits its surrounding atomics into two independent runs**, and a set of pure spreads goes one per line. A `**value` row that overflows stays single-line, because the hang shape needs a `:`.
+'''
+previewable = false

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_comparisons/already_aligned_emits_no_edits/input.py
+---
+if (
+    foo     == 1
+    and bar == 2
+    and qux == 3
+):
+    pass

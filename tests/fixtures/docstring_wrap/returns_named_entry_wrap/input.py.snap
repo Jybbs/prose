@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/docstring_wrap/returns_named_entry_wrap/input.py
+---
+def lookup():
+    """
+    Summary line.
+
+    Returns:
+        record: The matching row from the database when the lookup succeeds,
+                populated from every selected column and ready for the
+                caller to consume.
+        cached: Whether the record came from the in-memory cache rather than
+                a fresh query.
+    """

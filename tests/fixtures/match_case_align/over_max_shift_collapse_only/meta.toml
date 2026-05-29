@@ -1,0 +1,6 @@
+[docs]
+title = "`max-shift-policy = \"skip\"` Collapses without Aligning"
+description = '''
+One arm's pattern runs far wider than its neighbors, past the `max-shift` cap. Under `max-shift-policy = "skip"` from the sidecar, **alignment emits nothing while the collapse edits still fire**, so each body lands on its `case` line with the `:` hugging its own pattern.
+'''
+previewable = false

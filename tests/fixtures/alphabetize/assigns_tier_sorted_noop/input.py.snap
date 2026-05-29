@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/assigns_tier_sorted_noop/input.py
+---
+ALPHA = 1
+BRAVO = 2
+CHARLIE = ALPHA + BRAVO

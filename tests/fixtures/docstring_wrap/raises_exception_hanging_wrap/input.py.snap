@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/docstring_wrap/raises_exception_hanging_wrap/input.py
+---
+def parse():
+    """
+    Summary line.
+
+    Raises:
+        ValueError: When the input bytes do not form a valid token
+                    sequence and the parser cannot recover a structured
+                    representation from the surrounding context.
+        IOError: When the underlying stream is closed before the parser
+                 reaches a terminating token.
+    """

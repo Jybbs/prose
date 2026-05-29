@@ -1,0 +1,6 @@
+[docs]
+title = "`Raises:` Entries Sort by Exception Name"
+description = '''
+The `Raises:` section **reorders alphabetically by exception name**, so `KeyError`, `OSError`, and `ValueError` settle into name order regardless of source position.
+'''
+previewable = false

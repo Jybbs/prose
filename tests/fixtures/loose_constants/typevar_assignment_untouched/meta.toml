@@ -1,0 +1,6 @@
+[docs]
+title = "TypeVar Bindings Pass Through Untouched"
+description = '''
+A `TypeVar("T")` binding is `SCREAMING_CASE` by Python convention and **structural by definition**, so it passes through the rule untouched and draws no diagnostic.
+'''
+previewable = false

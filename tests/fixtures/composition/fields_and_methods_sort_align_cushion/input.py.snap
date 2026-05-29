@@ -1,0 +1,20 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/composition/fields_and_methods_sort_align_cushion/input.py
+---
+class Service:
+
+    host        : str   = "localhost"
+    retry_count : int   = 3
+    timeout     : float = 30.0
+
+    def _cleanup(self):
+        return None
+
+    def restart(self):
+        return self.shutdown()
+
+    def shutdown(self):
+        return self._cleanup()

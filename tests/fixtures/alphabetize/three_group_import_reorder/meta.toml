@@ -1,0 +1,6 @@
+[docs]
+title = "Imports Regroup into Bare → External `from` → Local-Package Order"
+description = '''
+A scrambled block of bare, external `from`, and relative imports **reorders into the canonical bare → external `from` → local-package grouping**, sorting within each group and ranking relative imports by level then module.
+'''
+previewable = true

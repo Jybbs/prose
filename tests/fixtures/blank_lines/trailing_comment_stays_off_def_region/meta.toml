@@ -1,0 +1,6 @@
+[docs]
+title = "A Trailing Comment Stays Off the Next Def's Region"
+description = '''
+A trailing end-of-line comment on the predecessor **stays on its line** without joining the next def's leading region. The blank-line rewrite lands cleanly between the two statements.
+'''
+previewable = false

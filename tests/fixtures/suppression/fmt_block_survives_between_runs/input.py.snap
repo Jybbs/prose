@@ -1,0 +1,19 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/suppression/fmt_block_survives_between_runs/input.py
+---
+bar_baz = 3
+foo     = 2
+x       = 1
+
+# fmt: off
+short = 1
+much_longer_name = 2
+mid = 3
+# fmt: on
+
+a   = 1
+bb  = 2
+ccc = 3

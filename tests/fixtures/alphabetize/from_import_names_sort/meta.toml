@@ -1,0 +1,6 @@
+[docs]
+title = "Alias Lists Sort within One `from` Statement"
+description = '''
+The alias list inside one `from M import a, b, c` **alphabetizes by alias name**. Inline lists run through inline block mode and multi-line lists run through line block mode.
+'''
+previewable = false

@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/blank_and_form_splits/input.py
+---
+from collections import OrderedDict
+from typing      import Optional
+
+import re   as regex
+import json as parser
+
+from sys     import path
+from os.path import join

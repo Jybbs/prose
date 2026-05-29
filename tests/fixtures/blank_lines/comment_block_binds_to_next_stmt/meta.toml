@@ -1,0 +1,6 @@
+[docs]
+title = "An Own-Line Comment Binds to the Statement Below"
+description = '''
+An own-line comment between two statements becomes the **second statement's leading block**. The canonical gap normalizes above the comment, and the comment binds tight against the following statement with no blank between them.
+'''
+previewable = false

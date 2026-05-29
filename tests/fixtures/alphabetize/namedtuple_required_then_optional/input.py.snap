@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/namedtuple_required_then_optional/input.py
+---
+from typing import NamedTuple
+
+
+class Point(NamedTuple):
+    x: int
+    y: int
+    color: str = "black"
+    z: int = 0

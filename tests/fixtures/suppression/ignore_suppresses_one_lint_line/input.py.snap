@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/suppression/ignore_suppresses_one_lint_line/input.py
+---
+DEFAULT_LIMIT  = 50
+RETRY_INTERVAL = 30  # prose: ignore[loose-constants]
+PAGE_SIZE = 25

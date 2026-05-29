@@ -1,0 +1,6 @@
+[docs]
+title = "An Empty Allowlist Flags Everything"
+description = '''
+Setting `allow = []` makes **every bare import a diagnostic**, including `numpy` and `pandas`. Clearing the list removes the default carve-out rather than restoring it.
+'''
+previewable = true

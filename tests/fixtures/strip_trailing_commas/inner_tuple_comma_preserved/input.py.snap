@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_trailing_commas/inner_tuple_comma_preserved/input.py
+---
+singletons = make_pair(
+    (1,),
+    (2,)
+)

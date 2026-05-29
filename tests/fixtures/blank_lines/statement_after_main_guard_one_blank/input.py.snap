@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/statement_after_main_guard_one_blank/input.py
+---
+def main():
+    return 0
+
+
+if __name__ == "__main__":
+    main()
+
+trailing = True

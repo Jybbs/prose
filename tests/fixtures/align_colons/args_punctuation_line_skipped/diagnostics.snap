@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/args_punctuation_line_skipped/input.py
+---
+align-colons@125..125
+align-colons@220..220
+align-colons@257..257

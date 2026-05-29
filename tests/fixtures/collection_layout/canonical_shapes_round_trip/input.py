@@ -1,0 +1,16 @@
+canonical_inline = {"alpha": 1, "beta": 2, "gamma": 3}
+canonical_multi_line = {
+    "alpha": 1,
+    "beta": 2,
+    "gamma": 3,
+    "delta": 4,
+    "epsilon": 5,
+    "zeta": 6,
+    "eta": 7
+}
+canonical_hung_entry = {
+    "alpha": 1,
+    "beta": 2,
+    "extremely_long_key_name_that_pushes_its_row_past_the_budget":
+        "value_long_enough_to_overflow_at_item_indent"
+}

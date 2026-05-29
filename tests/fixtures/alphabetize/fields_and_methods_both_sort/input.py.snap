@@ -1,0 +1,21 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/fields_and_methods_both_sort/input.py
+---
+from pydantic import BaseModel
+
+
+class Posting(BaseModel):
+    company: str
+    name: str
+    title: str
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+    def display(self):
+        pass
+
+    def reset(self):
+        pass

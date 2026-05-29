@@ -1,0 +1,9 @@
+def build_config():
+    short_local = {"alpha": 1, "beta": 2}
+    long_local = {"alpha": 1, "beta": 2, "gamma": 3, "delta": 4, "epsilon": 5, "zeta": 6, "eta": 7}
+    return short_local, long_local
+
+
+class Defaults:
+    SHORT_PRIMES = [2, 3, 5, 7]
+    LONG_PRIMES = [101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179]

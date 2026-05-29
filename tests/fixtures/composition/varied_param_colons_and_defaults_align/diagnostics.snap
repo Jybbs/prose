@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/varied_param_colons_and_defaults_align/input.py
+---
+align-colons@112..112
+align-colons@23..23
+align-colons@52..52
+align-colons@85..85
+align-equals@129..130

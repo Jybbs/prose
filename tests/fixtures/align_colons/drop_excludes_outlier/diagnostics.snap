@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/drop_excludes_outlier/input.py
+---
+align-colons@110..110
+align-colons@23..23
+align-colons@44..44
+align-colons@96..96

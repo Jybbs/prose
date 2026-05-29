@@ -1,0 +1,9 @@
+def render(label, count):
+    """
+    A description paragraph above the structured section that runs past the seventy six character description budget needs to wrap at seventy six.
+
+    Args:
+        label: A parameter description that runs past the seventy six character docstring budget wraps with a hanging indent at the description column because the entry shape was detected.
+        count: Number of times to render the label.
+    """
+    return label * count

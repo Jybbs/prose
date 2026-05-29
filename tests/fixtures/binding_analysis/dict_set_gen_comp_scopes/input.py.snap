@@ -1,0 +1,107 @@
+---
+source: tests/binding_analysis.rs
+assertion_line: 14
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/dict_set_gen_comp_scopes/input.py
+---
+bindings:
+  - kinds:
+      - Assignment
+    name: pairs
+    read_offsets:
+      - 57
+      - 86
+      - 119
+    scope: 0
+    write_offsets:
+      - 0
+  - kinds:
+      - Comprehension
+    name: k
+    read_offsets:
+      - 40
+    scope: 1
+    write_offsets:
+      - 49
+  - kinds:
+      - Comprehension
+    name: v
+    read_offsets:
+      - 43
+    scope: 1
+    write_offsets:
+      - 52
+  - kinds:
+      - Assignment
+    name: mapping
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 29
+  - kinds:
+      - Comprehension
+    name: k
+    read_offsets:
+      - 72
+    scope: 2
+    write_offsets:
+      - 78
+  - kinds:
+      - Comprehension
+    name: _
+    read_offsets: []
+    scope: 2
+    write_offsets:
+      - 81
+  - kinds:
+      - Assignment
+    name: keys
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 64
+  - kinds:
+      - Comprehension
+    name: _
+    read_offsets: []
+    scope: 3
+    write_offsets:
+      - 111
+  - kinds:
+      - Comprehension
+    name: v
+    read_offsets:
+      - 105
+    scope: 3
+    write_offsets:
+      - 114
+  - kinds:
+      - Assignment
+    name: total
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 93
+scopes:
+  - bindings:
+      keys: 6
+      mapping: 3
+      pairs: 0
+      total: 9
+    kind: Module
+    parent: ~
+  - bindings:
+      k: 1
+      v: 2
+    kind: Comprehension
+    parent: 0
+  - bindings:
+      _: 5
+      k: 4
+    kind: Comprehension
+    parent: 0
+  - bindings:
+      _: 7
+      v: 8
+    kind: Comprehension
+    parent: 0

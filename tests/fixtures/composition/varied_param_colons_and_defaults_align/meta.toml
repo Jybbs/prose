@@ -1,0 +1,6 @@
+[docs]
+title = "Param Colons and Defaults Align in Width Groups"
+description = '''
+An expanded signature with typed parameters of varying widths and defaults. The `:` and `=` columns align, but **the run splits into two adjacent groups** where the narrow `host`/`port` share one column and the wider `timeout_seconds`/`retries` share another.
+'''
+previewable = true

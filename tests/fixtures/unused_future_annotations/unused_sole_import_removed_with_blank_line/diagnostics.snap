@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/unused_future_annotations/unused_sole_import_removed_with_blank_line/input.py
+---
+unused-future-annotations@0..35

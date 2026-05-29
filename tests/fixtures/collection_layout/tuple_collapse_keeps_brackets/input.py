@@ -1,0 +1,11 @@
+paren_tuple = (1, 2, 3)
+bare_tuple = 4, 5, 6
+collapsing_paren_tuple = (
+    1,
+    2,
+    3
+)
+collapsing_one_element = (
+    42,
+)
+qualifying_inner_in_tuple = (1, {"first_key": 100, "second_key": 200, "third_key": 300, "fourth_key": 400, "fifth_key": 500}, 3)

@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/typeddict_fields_sort_by_shape/input.py
+---
+from typing import TypedDict
+
+
+class Config(TypedDict):
+    host: str
+    name: str
+    retries: int
+    timeout: int

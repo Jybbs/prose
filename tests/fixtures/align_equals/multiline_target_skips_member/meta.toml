@@ -1,0 +1,6 @@
+[docs]
+title = "A Multi-Line Target Skips the Member"
+description = '''
+A target spanning multiple lines leaves the surrounding group intact, but the **multi-line entry itself does not participate** in the alignment.
+'''
+previewable = false

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/dict_varying_key_widths/input.py
+---
+capitals = {
+    "USA"    : "Washington",
+    "France" : "Paris",
+    "Japan"  : "Tokyo",
+    "Spain"  : "Madrid",
+}

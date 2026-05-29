@@ -1,0 +1,48 @@
+---
+source: tests/binding_analysis.rs
+assertion_line: 14
+expression: source.binding_analysis()
+input_file: tests/fixtures/binding_analysis/for_target_name_and_tuple/input.py
+---
+bindings:
+  - kinds:
+      - Assignment
+    name: xs
+    read_offsets:
+      - 31
+      - 60
+    scope: 0
+    write_offsets:
+      - 0
+  - kinds:
+      - For
+    name: i
+    read_offsets:
+      - 45
+    scope: 0
+    write_offsets:
+      - 26
+  - kinds:
+      - For
+    name: a
+    read_offsets:
+      - 74
+    scope: 0
+    write_offsets:
+      - 52
+  - kinds:
+      - For
+    name: b
+    read_offsets:
+      - 78
+    scope: 0
+    write_offsets:
+      - 55
+scopes:
+  - bindings:
+      a: 2
+      b: 3
+      i: 1
+      xs: 0
+    kind: Module
+    parent: ~

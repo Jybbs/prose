@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/try_except_else_finally_sort_separately/input.py
+---
+alphabetize@14..287

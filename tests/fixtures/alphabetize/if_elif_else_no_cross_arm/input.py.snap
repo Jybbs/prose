@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/if_elif_else_no_cross_arm/input.py
+---
+if cond:
+    from alpha import b
+    from zeta import a
+elif other:
+    from beta import d
+    from gamma import c
+else:
+    from delta import f
+    from omega import e

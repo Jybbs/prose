@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/undecorated_annotated_fields_sort/input.py
+---
+class Posting:
+    company: str
+    date_posted: str
+    description: str | None = None
+    title: str = "Untitled"

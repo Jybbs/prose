@@ -1,0 +1,6 @@
+[docs]
+title = "`if TYPE_CHECKING` Inside a Function Sorts Its Imports"
+description = '''
+`if TYPE_CHECKING` inside a function body **sorts its imports through the same compound-statement recursion** that fires at module level. The function body skips class, method, and field reorders, but import runs sort in every scope.
+'''
+previewable = false

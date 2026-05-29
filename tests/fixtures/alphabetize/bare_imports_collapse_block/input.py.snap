@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/bare_imports_collapse_block/input.py
+---
+import argparse
+import numpy as np
+import os
+import pandas as pd
+import zlib

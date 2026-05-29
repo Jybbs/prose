@@ -1,0 +1,6 @@
+[docs]
+title = "Multi-Level Nested Dict Expands and Aligns Per Depth"
+description = '''
+A long single-line dict nesting several dict levels exercises expansion, sorting, partitioning, per-group `:` alignment, and trailing-comma removal in concert. **At every depth the sort, the single-line-before-multi-line partition with its blank-line divider, and the per-group alignment are all visible**, and a second pass is stable.
+'''
+previewable = false

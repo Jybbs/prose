@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/docstring_raises_sort_by_exception/input.py
+---
+def load(path):
+    """Load configuration.
+
+    Raises:
+        KeyError: When a required field is missing.
+        OSError: When the path cannot be opened.
+        ValueError: When the file is empty.
+    """
+    return path

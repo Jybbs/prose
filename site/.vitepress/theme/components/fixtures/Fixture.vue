@@ -2,6 +2,7 @@
 import { useEventListener }         from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
+import FixtureNoChange    from './FixtureNoChange.vue'
 import FixturePairDoc     from './FixturePairDoc.vue'
 import FixturePairLanding from './FixturePairLanding.vue'
 import FixtureToggle      from './FixtureToggle.vue'
@@ -69,7 +70,8 @@ useEventListener('hashchange', syncWithHash)
         class="fixture-card-actions"
         :class="{ 'is-active': isOpen }"
       >
-        <FixtureToggle v-if="showToggle" v-model="activeTab" />
+        <FixtureToggle v-if="entry.changesSource" v-model="activeTab" />
+        <FixtureNoChange v-else />
       </div>
     </div>
     <div
@@ -78,8 +80,13 @@ useEventListener('hashchange', syncWithHash)
       role="region"
     >
       <div class="fixture-card-body-inner">
-        <div v-if="isOpen" class="fixture-card-body-content">
+        <div class="fixture-card-body-content">
+          <template v-if="entry.descriptionHtml">
+            <div class="fixture-card-desc" v-html="entry.descriptionHtml" />
+            <div class="fixture-card-rule" aria-hidden="true" />
+          </template>
           <FixturePairDoc
+            v-if="isOpen"
             :active-tab="activeTab"
             :input-html="entry.inputHtml"
             :output-html="entry.outputHtml"
@@ -90,6 +97,11 @@ useEventListener('hashchange', syncWithHash)
   </section>
 
   <div v-else class="fixture">
+    <div
+      v-if="entry.descriptionHtml && variant !== 'landing'"
+      class="fixture-lead"
+      v-html="entry.descriptionHtml"
+    />
     <header v-if="showToggle" class="fixture-bar">
       <FixtureToggle v-model="activeTab" />
     </header>

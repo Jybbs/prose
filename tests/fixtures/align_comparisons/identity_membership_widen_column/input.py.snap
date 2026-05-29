@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_comparisons/identity_membership_widen_column/input.py
+---
+if (
+    foo          == 1
+    and bar      is None
+    and baz  is not Empty
+    and qux      in items
+    and quux not in others
+    and zorg      < 5
+):
+    pass

@@ -1,0 +1,23 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/thematic/dataclass_fields_and_docstring_reshape/input.py
+---
+from dataclasses import dataclass
+
+
+@dataclass
+class JobPosting:
+
+    company     : str   = "TBD"
+    description : str   = ""
+    posted_on   : str   = ""
+    salary_band : float = 0.0
+    title       : str   = "Untitled"
+
+    def summary(self):
+        """
+        Return a short summary string.
+        """
+        return f"{self.title} at {self.company}"

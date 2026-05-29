@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/trailing_comment_stays_off_def_region/input.py
+---
+def first():
+    return 1  # short note
+
+
+def second():
+    return 2

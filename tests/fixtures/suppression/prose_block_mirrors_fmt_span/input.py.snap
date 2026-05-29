@@ -1,0 +1,19 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/suppression/prose_block_mirrors_fmt_span/input.py
+---
+bar_baz = 3
+foo     = 2
+x       = 1
+
+# prose: off
+short = 1
+much_longer_name = 2
+mid = 3
+# prose: on
+
+a   = 1
+bb  = 2
+ccc = 3

@@ -1,0 +1,3 @@
+LOG_LEVEL       = "INFO"
+DEFAULT_TIMEOUT = 30
+OTHER           = 1

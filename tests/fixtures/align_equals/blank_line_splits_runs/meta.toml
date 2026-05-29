@@ -1,0 +1,6 @@
+[docs]
+title = "Blank Lines Reset the Group"
+description = '''
+A blank line between two runs **splits them into independent groups**, so each side settles on its own `=` column rather than aligning across the gap.
+'''
+previewable = true

@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/both_canonical_shapes_untouched/input.py
+---
+def already_inline(palette: str, target: int):
+    return (palette, target)
+
+
+def already_expanded(
+    layout: tuple[int, int],
+    palette: str,
+    spread: float,
+    target: int,
+    verbose: bool,
+):
+    return (layout, palette, spread, target, verbose)

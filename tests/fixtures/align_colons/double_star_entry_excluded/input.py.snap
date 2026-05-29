@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/double_star_entry_excluded/input.py
+---
+defaults = {"host": "localhost", "port": 8080, "timeout": 30}
+
+overrides = {
+    "host"       : "example.com",
+    **defaults,
+    "user_agent" : "prose/0.1",
+    "proxy"      : None,
+}

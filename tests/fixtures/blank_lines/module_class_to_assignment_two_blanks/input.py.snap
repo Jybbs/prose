@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/module_class_to_assignment_two_blanks/input.py
+---
+class Posting:
+
+    title = "x"
+
+
+PORT = 8080

@@ -1,0 +1,6 @@
+[docs]
+title = "Attribute and Subscript Left Sides Qualify"
+description = '''
+Operands whose left sides are **attribute access or subscript expressions qualify** for the alignment group, alongside plain name references. The `foo.attr` and `bar[0]` widths pad the operator column the same as a bare name.
+'''
+previewable = false

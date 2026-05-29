@@ -1,0 +1,6 @@
+[docs]
+title = "Field Gaps Stay, Only the Method Pair Normalizes"
+description = '''
+The class-scope rule fires **only on adjacent `(method, method)` pairs**. A field-to-field or field-to-method gap carries no canonical count, so only the inter-method gap normalizes to one blank line.
+'''
+previewable = false

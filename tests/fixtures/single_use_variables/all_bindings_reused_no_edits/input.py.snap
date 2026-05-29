@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/all_bindings_reused_no_edits/input.py
+---
+def main() -> None:
+    pass

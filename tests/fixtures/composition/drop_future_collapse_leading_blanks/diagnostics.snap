@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/drop_future_collapse_leading_blanks/input.py
+---
+blank-lines@12..16
+unused-future-annotations@0..35

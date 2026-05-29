@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/decorated_class_docstring_and_field_cushions/input.py
+---
+blank-lines@128..129
+blank-lines@32..34
+blank-lines@96..97

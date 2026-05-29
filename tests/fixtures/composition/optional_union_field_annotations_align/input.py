@@ -1,0 +1,8 @@
+from typing import Optional, Union
+
+
+class Endpoint:
+    host: Optional[str] = None
+    port: Union[int, str] = 0
+    fallback_host: Optional[str] = "localhost"
+    retry_count: Union[int, None] = 3

@@ -1,0 +1,6 @@
+[docs]
+title = "Attribute Roots on Module-Local Bindings Stay Safe"
+description = '''
+A run whose `Attribute` root names a module-local binding written above it **reorders normally**. `SETTINGS` is assigned before the run, so the attribute access does not taint it.
+'''
+previewable = false
