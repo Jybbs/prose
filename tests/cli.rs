@@ -171,13 +171,13 @@ fn check_json_summary_counts_a_changed_file() {
 }
 
 #[test]
-fn check_violation_summary_anchors_with_coffee() {
+fn check_violation_summary_anchors_with_bookmark() {
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.arg("check").arg(&path).assert().code(1);
     let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
     assert!(
-        err.contains("☕ 1 diagnostic in 1 file."),
+        err.contains("🔖 1 diagnostic in 1 file."),
         "stderr was {err:?}"
     );
 }
@@ -443,7 +443,7 @@ fn quiet_check_reduces_summary_to_a_bare_count() {
         .code(1);
     let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
     assert_eq!(err.trim(), "1 diagnostic in 1 file.");
-    assert!(!err.contains('☕'), "quiet kept the anchor: {err:?}");
+    assert!(!err.contains('🔖'), "quiet kept the anchor: {err:?}");
     assert!(!err.contains('\u{1b}'), "quiet kept color: {err:?}");
 }
 
