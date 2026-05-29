@@ -106,5 +106,8 @@ jobs:
         uses : ./.github/actions/provision-cargo
         with : { shared-key: "prose-wheel-${{ matrix.name }}" }
 
+      - name : Refresh stable toolchain
+        run  : rustup update --no-self-update stable
+
       - name : Build release artifacts for ${{ matrix.target }}
         run  : mise exec -- cargo build --release --locked --target ${{ matrix.target }}

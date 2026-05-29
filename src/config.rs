@@ -189,6 +189,22 @@ impl Config {
             )
             .unwrap_or_else(|| Ok(Self::default()))
     }
+
+    pub(crate) fn code_width(&self) -> usize {
+        self.code_line_length
+            .expect("Config::default synthesizes Some(88)")
+            .get()
+    }
+
+    pub(crate) fn docstring_width(&self) -> usize {
+        self.docstring_line_length
+            .expect("Config::default synthesizes Some(76)")
+            .get()
+    }
+
+    pub(crate) fn first_party(&self) -> Vec<String> {
+        self.imports.first_party.clone()
+    }
 }
 
 /// Failure to load a `[tool.prose]` configuration from a `pyproject.toml`.

@@ -29,10 +29,11 @@ The renderer uses [**`annotate-snippets`**](https://docs.rs/annotate-snippets/) 
 
 ## `json`
 
-NDJSON shape, one Ruff-compatible record per diagnostic on its own line. The shape mirrors what Ruff and ESLint publish, so editors with LSP-style diagnostic surfaces map the records onto inline squiggles and the `fix` payload drives quick-fix actions.
+NDJSON shape, one Ruff-compatible record per diagnostic on its own line, closed by a summary envelope. The shape mirrors what Ruff and ESLint publish, so editors with LSP-style diagnostic surfaces map the records onto inline squiggles and the `fix` payload drives quick-fix actions. Every record opens with a `kind` discriminator, wherein per-diagnostic records carry `kind: "diagnostic"` and the closing envelope carries `kind: "summary"`, so a streaming consumer dispatches on the first parsed property without inferring from field presence.
 
 ```json
 {
+  "kind"         : "diagnostic",
   "code"         : "align-equals",
   "filename"     : "src/module.py",
   "location"     : { "row": 14, "column": 5 },
@@ -42,6 +43,7 @@ NDJSON shape, one Ruff-compatible record per diagnostic on its own line. The sha
     "applicability" : "safe",
     "edits"         : [
       {
+        "before"       : "foo = 1",
         "content"      : "foo   = 1",
         "location"     : { "row": 14, "column": 5 },
         "end_location" : { "row": 14, "column": 12 }
@@ -55,6 +57,7 @@ Fields:
 
 | Field | Type | Meaning |
 |---|---|---|
+| `kind` | `"diagnostic"` | Record discriminator, always the first key |
 | `code` | string | The [[rule-id]] slug |
 | `filename` | string | Source path |
 | `location` | `{ row, column }` | One-indexed start position |
@@ -62,7 +65,8 @@ Fields:
 | `message` | string | The rule's imperative |
 | `fix` | object \| null | `null` for lint-only diagnostics, otherwise `{ applicability, edits }` |
 | `fix.applicability` | `"safe"` \| `"unsafe"` \| `"display"` | Confidence the edits preserve runtime semantics |
-| `fix.edits` | array of `{ content, location, end_location }` | Replacement spans the editor or CI can apply |
+| `fix.edits` | array of `{ before, content, location, end_location }` | Replacement spans the editor or CI can apply |
+| `fix.edits[].before` | string | The original substring at the edit's range, paired with `content` for a before/after view without re-reading source |
 
 `applicability` is `"safe"` for every auto-fix *Prose* emits at the current release, matching the Ruff-shared scale wherein `safe` means the rewrite preserves runtime semantics and editors can apply the fix automatically. The `unsafe` and `display` levels exist in the schema for forward compatibility with rules whose rewrites might change observable behavior, with no shipped *Prose* rule emitting at those levels today.
 
@@ -70,6 +74,7 @@ An auto-fix that touches several lines emits one diagnostic with one entry per l
 
 ```json
 {
+  "kind"         : "diagnostic",
   "code"         : "align-equals",
   "filename"     : "src/configure.py",
   "location"     : { "row": 12, "column": 5 },
@@ -79,16 +84,19 @@ An auto-fix that touches several lines emits one diagnostic with one entry per l
     "applicability" : "safe",
     "edits"         : [
       {
+        "before"       : "    timeout = 30",
         "content"      : "    timeout      = 30",
         "location"     : { "row": 12, "column": 1 },
         "end_location" : { "row": 12, "column": 16 }
       },
       {
+        "before"       : "    retries = 5",
         "content"      : "    retries      = 5",
         "location"     : { "row": 13, "column": 1 },
         "end_location" : { "row": 13, "column": 16 }
       },
       {
+        "before"       : "    backoff_base = 1.5",
         "content"      : "    backoff_base = 1.5",
         "location"     : { "row": 14, "column": 1 },
         "end_location" : { "row": 14, "column": 24 }
@@ -101,6 +109,34 @@ An auto-fix that touches several lines emits one diagnostic with one entry per l
 Editors apply the edits in array order, and *Prose* guarantees the spans don't overlap, leaving the application order-independent within one diagnostic.
 
 The [**Editor**](/integrations/editor) integration page covers wiring this format into VSCode, Neovim, and the other editors that consume Ruff-shaped diagnostics.
+
+### Summary Envelope
+
+A final record closes every `json` run, carrying run-wide rollup so a consumer reads file and rule counts without re-aggregating the per-diagnostic stream. It emits even when the run surfaces zero diagnostics, where every count lands at zero and the envelope is the stream's only line.
+
+```json
+{
+  "kind"              : "summary",
+  "diagnostics_total" : 12,
+  "files_changed"     : 3,
+  "files_visited"     : 47,
+  "prose_version"     : "0.3.0",
+  "rules_fired"       : { "align-equals": 8, "alphabetize": 4 },
+  "schema_version"    : 1
+}
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `kind` | `"summary"` | Record discriminator |
+| `diagnostics_total` | integer | Diagnostics emitted across the run |
+| `files_changed` | integer | Files whose formatting would change |
+| `files_visited` | integer | Files the run processed |
+| `prose_version` | string | The emitting *Prose* release |
+| `rules_fired` | `{ "<slug>": count }` | Per-rule diagnostic counts, key-sorted for deterministic output |
+| `schema_version` | integer | Bumps on any breaking change to existing field shapes, leaving additive fields to land unversioned |
+
+The `schema_version` field versions the whole NDJSON contract. It bumps when a release reshapes an existing field and stays put when a release only adds fields, so a consumer pins parsing against a known version and still reads newer additive fields. The envelope itself, the leading `kind` discriminator, and each edit's `before` arrived this way, additive over the bare per-diagnostic record, leaving a consumer that reads only `code`, `location`, and `message` parsing unchanged.
 
 ## `github`
 

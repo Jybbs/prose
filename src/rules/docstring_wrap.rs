@@ -31,15 +31,9 @@ pub(crate) struct DocstringWrap {
 
 impl DocstringWrap {
     pub(crate) fn from_config(config: &Config) -> Self {
-        let description_width = config
-            .docstring_line_length
-            .expect("Config::default synthesizes Some(76)")
-            .get();
+        let description_width = config.docstring_width();
         let section_width = match config.docstring_structured_policy {
-            DocstringStructuredPolicy::CodeLineLength => config
-                .code_line_length
-                .expect("Config::default synthesizes Some(88)")
-                .get(),
+            DocstringStructuredPolicy::CodeLineLength => config.code_width(),
             DocstringStructuredPolicy::DocstringLineLength => description_width,
         };
         Self {
