@@ -27,15 +27,13 @@ const outcomeOpts = computed<SelectOption[]>(() => OUTCOMES.map(o => ({
 })))
 
 const quietOpts = computed<SelectOption[]>(() => QUIET_OPTIONS.map(q => ({
-  id      : q.id,
-  mono    : q.mono,
-  preview : resolveSelection(outcomeId.value, q.id, streamId.value)
+  ...q,
+  preview: resolveSelection(outcomeId.value, q.id, streamId.value)
 })))
 
 const streamOpts = computed<SelectOption[]>(() => STREAM_OPTIONS.map(s => ({
-  id      : s.id,
-  mono    : s.mono,
-  preview : resolveSelection(outcomeId.value, quietId.value, s.id)
+  ...s,
+  preview: resolveSelection(outcomeId.value, quietId.value, s.id)
 })))
 </script>
 

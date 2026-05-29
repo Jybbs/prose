@@ -171,7 +171,7 @@ fn check_json_summary_counts_a_changed_file() {
 }
 
 #[test]
-fn check_violation_summary_anchors_with_coffee() {
+fn check_violation_summary_anchors_with_bookmark() {
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.arg("check").arg(&path).assert().code(1);

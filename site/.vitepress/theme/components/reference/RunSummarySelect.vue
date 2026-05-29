@@ -4,20 +4,15 @@ import { computed } from 'vue'
 import type { SelectOption } from './run-summary'
 
 const props = defineProps<{
-  ariaLabel  : string
-  modelValue : string
-  options    : readonly SelectOption[]
+  ariaLabel : string
+  options   : readonly SelectOption[]
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const model = defineModel<string>({ required: true })
 
 const selected = computed(() =>
-  props.options.find(o => o.id === props.modelValue) ?? props.options[0]
+  props.options.find(o => o.id === model.value) ?? props.options[0]
 )
-
-function choose(option: SelectOption): void {
-  emit('update:modelValue', option.id)
-}
 </script>
 
 <template>
@@ -28,7 +23,7 @@ function choose(option: SelectOption): void {
       :aria-label="ariaLabel"
       aria-haspopup="listbox"
     >
-      <span class="run-summary-select-value">{{ selected.mono }}</span>
+      <span>{{ selected.mono }}</span>
       <span class="run-summary-select-caret" aria-hidden="true">▾</span>
     </button>
     <template #popper>
@@ -37,14 +32,14 @@ function choose(option: SelectOption): void {
           v-for="o in options"
           :key="o.id"
           role="option"
-          :aria-selected="o.id === modelValue"
+          :aria-selected="o.id === model"
         >
           <button
             v-close-popper
             type="button"
             class="run-summary-opt"
-            :class="{ 'is-active': o.id === modelValue }"
-            @click="choose(o)"
+            :class="{ 'is-active': o.id === model }"
+            @click="model = o.id"
           >
             <span class="run-summary-opt-mono">{{ o.mono }}</span>
             <span v-if="o.preview" class="run-summary-opt-eg">
