@@ -1,12 +1,14 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
+import { parse } from 'smol-toml'
+
 export const FIXTURES_DIR  = 'tests/fixtures'
 export const INPUT_FILE    = 'input.py'
 export const META_FILE     = 'meta.toml'
 export const SNAPSHOT_FILE = 'input.py.snap'
 
-export interface FixtureDocs {
+interface FixtureDocs {
   canonical   ?: boolean
   description ?: string
   previewable ?: boolean
@@ -17,6 +19,12 @@ interface FixtureWalkEntry {
   caseName  : string
   inputPath : string
   rule      : string
+}
+
+export function readFixtureDocs(inputPath: string): FixtureDocs | undefined {
+  const metaPath = path.join(path.dirname(inputPath), META_FILE)
+  if (!fs.existsSync(metaPath)) return undefined
+  return (parse(fs.readFileSync(metaPath, 'utf8')) as { docs?: FixtureDocs }).docs
 }
 
 export function subdirNames(dir: string): string[] {

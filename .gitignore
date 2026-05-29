@@ -1,6 +1,7 @@
 /target/
 /dist/
 /wheels/
+/.cache/
 
 *.pyc
 __pycache__/
@@ -20,6 +21,6 @@ __pycache__/
 .idea/
 
 node_modules/
-site/.vitepress/cache/
 site/.vitepress/dist/
+site/.vitepress/.temp/
 **/*.timestamp-*.mjs

@@ -1,13 +1,9 @@
-import { existsSync } from 'node:fs'
-import fs             from 'node:fs/promises'
-import path          from 'node:path'
+import path from 'node:path'
 
-import { parse }        from 'smol-toml'
 import { defineLoader } from 'vitepress'
 
-import { FIXTURES_DIR, META_FILE, walkFixtures } from '../lib/fixtures/walker'
-import type { FixtureDocs }                      from '../lib/fixtures/walker'
-import { repoRoot }                              from '../lib/shared/paths'
+import { FIXTURES_DIR, META_FILE, readFixtureDocs, walkFixtures } from '../lib/fixtures/walker'
+import { repoRoot } from '../lib/shared/paths'
 
 interface RuleExample {
   case  : string
@@ -36,12 +32,8 @@ export default defineLoader({
 
     const byRule: Record<string, Pending> = {}
     for (const { rule, caseName, inputPath } of walkFixtures(root)) {
-      const metaPath = path.join(path.dirname(inputPath), META_FILE)
-      if (!existsSync(metaPath)) continue
-      const docs = (parse(await fs.readFile(metaPath, 'utf8')) as { docs?: FixtureDocs }).docs
-      if (docs === undefined) {
-        throw new Error(`rule-fixtures.data: ${rule}/${caseName}/meta.toml missing [docs]`)
-      }
+      const docs = readFixtureDocs(inputPath)
+      if (docs === undefined) continue
       const set   = (byRule[rule] ??= { canonical: null, examples: [] })
       const title = docs.title?.trim()
       if (docs.canonical === true) {

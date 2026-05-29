@@ -3,13 +3,11 @@ import fs             from 'node:fs/promises'
 import path          from 'node:path'
 
 import matter           from 'gray-matter'
-import { parse }        from 'smol-toml'
 import { defineLoader } from 'vitepress'
 
 import {
-  FIXTURES_DIR, INPUT_FILE, META_FILE, SNAPSHOT_FILE, walkFixtures
+  FIXTURES_DIR, INPUT_FILE, META_FILE, SNAPSHOT_FILE, readFixtureDocs, walkFixtures
 } from '../lib/fixtures/walker'
-import type { FixtureDocs }              from '../lib/fixtures/walker'
 import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
 import { repoRoot }                      from '../lib/shared/paths'
 
@@ -19,9 +17,7 @@ const fixturesRoot = path.join(root, FIXTURES_DIR)
 interface FixtureEntry {
   changesSource    : boolean
   descriptionHtml ?: string
-  input            : string
   inputHtml        : string
-  output           : string
   outputHtml       : string
 }
 
@@ -30,15 +26,11 @@ type FixtureData = Record<string, Record<string, FixtureEntry>>
 declare const data: FixtureData
 export { data }
 
-async function descriptionHtml(
+function descriptionHtml(
   md        : Awaited<ReturnType<typeof getRenderer>>,
   inputPath : string
-): Promise<string | undefined> {
-  const metaPath = path.join(path.dirname(inputPath), META_FILE)
-  if (!existsSync(metaPath)) return undefined
-  const raw  = await fs.readFile(metaPath, 'utf8')
-  const docs = (parse(raw) as { docs?: FixtureDocs }).docs
-  const text = docs?.description?.trim()
+): string | undefined {
+  const text = readFixtureDocs(inputPath)?.description?.trim()
   return text ? md.render(text) : undefined
 }
 
@@ -61,10 +53,8 @@ export default defineLoader({
         caseName,
         entry: {
           changesSource   : inputRaw !== output,
-          descriptionHtml : await descriptionHtml(md, inputPath),
-          input           : inputRaw,
+          descriptionHtml : descriptionHtml(md, inputPath),
           inputHtml       : renderFencedHtml(md, inputRaw, 'python'),
-          output,
           outputHtml      : renderFencedHtml(md, output, 'python')
         },
         rule
