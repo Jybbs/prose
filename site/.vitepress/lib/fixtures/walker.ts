@@ -3,7 +3,15 @@ import path from 'node:path'
 
 export const FIXTURES_DIR  = 'tests/fixtures'
 export const INPUT_FILE    = 'input.py'
+export const META_FILE     = 'meta.toml'
 export const SNAPSHOT_FILE = 'input.py.snap'
+
+export interface FixtureDocs {
+  canonical   ?: boolean
+  description ?: string
+  previewable ?: boolean
+  title       ?: string
+}
 
 interface FixtureWalkEntry {
   caseName  : string

@@ -6,7 +6,10 @@ import matter           from 'gray-matter'
 import { parse }        from 'smol-toml'
 import { defineLoader } from 'vitepress'
 
-import { FIXTURES_DIR, INPUT_FILE, SNAPSHOT_FILE, walkFixtures } from '../lib/fixtures/walker'
+import {
+  FIXTURES_DIR, INPUT_FILE, META_FILE, SNAPSHOT_FILE, walkFixtures
+} from '../lib/fixtures/walker'
+import type { FixtureDocs }              from '../lib/fixtures/walker'
 import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
 import { repoRoot }                      from '../lib/shared/paths'
 
@@ -31,9 +34,10 @@ async function descriptionHtml(
   md        : Awaited<ReturnType<typeof getRenderer>>,
   inputPath : string
 ): Promise<string | undefined> {
-  const metaPath = path.join(path.dirname(inputPath), 'meta.toml')
+  const metaPath = path.join(path.dirname(inputPath), META_FILE)
   if (!existsSync(metaPath)) return undefined
-  const docs = (parse(await fs.readFile(metaPath, 'utf8')) as { docs?: { description?: string } }).docs
+  const raw  = await fs.readFile(metaPath, 'utf8')
+  const docs = (parse(raw) as { docs?: FixtureDocs }).docs
   const text = docs?.description?.trim()
   return text ? md.render(text) : undefined
 }
@@ -42,7 +46,7 @@ export default defineLoader({
   watch: [
     `${fixturesRoot}/**/${INPUT_FILE}`,
     `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
-    `${fixturesRoot}/*/*/meta.toml`
+    `${fixturesRoot}/*/*/${META_FILE}`
   ],
   async load(): Promise<FixtureData> {
     const md      = await getRenderer()

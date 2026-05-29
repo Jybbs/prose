@@ -69,9 +69,7 @@ a.rule-chip {
 }
 
 .vp-doc a.specimen,
-.vp-doc a.composition-cards-rule-chip,
-a.specimen,
-a.composition-cards-rule-chip {
+a.specimen {
   display              : inline-flex;
   align-items          : baseline;
   border               : 1px solid color-mix(in srgb, var(--family-color, var(--vp-c-divider)) 30%, transparent);
@@ -87,12 +85,8 @@ a.composition-cards-rule-chip {
 
 .vp-doc a.specimen:hover,
 .vp-doc a.specimen:focus-visible,
-.vp-doc a.composition-cards-rule-chip:hover,
-.vp-doc a.composition-cards-rule-chip:focus-visible,
 a.specimen:hover,
-a.specimen:focus-visible,
-a.composition-cards-rule-chip:hover,
-a.composition-cards-rule-chip:focus-visible {
+a.specimen:focus-visible {
   border-color         : var(--family-color, var(--vp-c-brand-1));
   text-decoration-line : none;
   transform            : translateY(-1px);
