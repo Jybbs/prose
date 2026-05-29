@@ -122,7 +122,7 @@ impl BindingAnalysis {
     pub(crate) fn bindings_in_scope(
         &self,
         stmt: &Stmt,
-    ) -> impl Iterator<Item = BindingId> + '_ + use<'_> {
+    ) -> impl Iterator<Item = BindingId> + use<'_> {
         self.function_scope_at
             .get(&stmt.range().start())
             .copied()
