@@ -1,13 +1,3 @@
-"""
-Service class with annotated fields out of alphabetical order, a
-property, a private helper, and two public methods declared in
-arbitrary order. The full pipeline reorders methods into the
-canonical dunder / property / private / public groups, alphabetizes
-the annotated fields, aligns their `:` and `=` columns, and
-normalizes the blank-line spacing between members.
-"""
-
-
 class CacheService:
     capacity: int = 128
     timeout: float = 30.0

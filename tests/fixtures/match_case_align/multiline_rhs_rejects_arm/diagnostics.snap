@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/match_case_align/multiline_rhs_rejects_arm/input.py
 ---
-match-case-align@375..384
+match-case-align@111..120

@@ -1,0 +1,6 @@
+[docs]
+title = "Mixed Method Docstrings Expand While Methods Sort"
+description = '''
+Out-of-order methods carry a mix of single-line and multi-line docstrings. **The methods reorder, single-line docstrings expand to multi-line form, multi-line openers and closers move to their own lines**, and `blank-lines` cushions each.
+'''
+previewable = true

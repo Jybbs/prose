@@ -1,5 +1,6 @@
 ---
 source: tests/binding_analysis.rs
+assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/aug_assign_reads_and_writes/input.py
 ---
@@ -9,13 +10,13 @@ bindings:
       - AugAssign
     name: x
     read_offsets:
-      - 191
-      - 198
+      - 7
+      - 14
     scope: 0
     write_offsets:
-      - 184
-      - 191
-      - 198
+      - 0
+      - 7
+      - 14
 scopes:
   - bindings:
       x: 0

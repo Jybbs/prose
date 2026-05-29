@@ -1,20 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/bare_and_from_each_sorted_in_place/input.py
 ---
-"""
-Module top with a mixed run of bare imports and from-imports, each
-kind out of alphabetical order. alphabetize sorts each kind in place,
-align_imports aligns the `as` keyword across the aliased lines, and
-blank_lines inserts one blank line at the bare-to-from boundary.
-
-Rules:
-- alphabetize
-- align_imports
-- blank_lines
-"""
-
 import collections as col
 import numpy       as np
 import requests    as req

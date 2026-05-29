@@ -1,8 +1,3 @@
-"""
-A bare fmt: on with no preceding fmt: off is a no-op. Every
-assignment in the file is eligible for alignment.
-"""
-
 x = 1
 foo = 2
 bar_baz = 3

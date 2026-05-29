@@ -1,18 +1,18 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/class_method_groups_then_align/input.py
 ---
-align-colons@492..492
-align-colons@521..521
-align-colons@542..542
-align-colons@565..565
-align-equals@502..503
-align-equals@532..533
-align-equals@589..590
-align-imports@446..447
-alphabetize@381..850
-bare-import-allowlist@388..390
-bare-import-allowlist@398..401
-blank-lines@474..475
-docstring-wrap@73..368
+align-colons@111..111
+align-colons@140..140
+align-colons@161..161
+align-colons@184..184
+align-equals@121..122
+align-equals@151..152
+align-equals@208..209
+align-imports@65..66
+alphabetize@0..469
+bare-import-allowlist@17..20
+bare-import-allowlist@7..9
+blank-lines@93..94

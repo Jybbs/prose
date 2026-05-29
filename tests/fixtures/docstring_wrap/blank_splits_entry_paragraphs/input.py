@@ -1,11 +1,3 @@
-"""
-A blank line terminates an entry's first paragraph and the following
-non-blank line is checked as a new entry candidate, so a multi-paragraph
-Args section composes from two adjacent entries rather than carrying the
-second paragraph as a continuation.
-"""
-
-
 def configure():
     """
     Summary line.

@@ -1,2 +1,6 @@
 [docs]
 title = "`__all__` Sorts Alphabetically"
+description = '''
+The string-literal items inside `__all__` **alphabetize by string value**. Detection keys on the target's simple name, because the dunder-list convention is what makes the list documentary, leaving ordinary list assignments untouched.
+'''
+previewable = true

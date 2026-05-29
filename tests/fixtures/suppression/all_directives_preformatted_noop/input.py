@@ -1,8 +1,3 @@
-"""
-Already-formatted source carrying every directive shape produces
-no further edits on a fresh pipeline run.
-"""
-
 x       = 1
 foo     = 2
 bar_baz = 3

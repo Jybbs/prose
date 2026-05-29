@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/unused_future_annotations/asname_directive_still_removed/input.py
 ---
-unused-future-annotations@198..243
+unused-future-annotations@0..45

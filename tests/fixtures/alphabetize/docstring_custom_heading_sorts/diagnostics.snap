@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/docstring_custom_heading_sorts/input.py
 ---
-alphabetize@408..633
+alphabetize@77..302

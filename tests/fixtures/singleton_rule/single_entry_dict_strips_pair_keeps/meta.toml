@@ -1,2 +1,7 @@
 [docs]
+title = "Single-Entry Dict Strips, Two-Entry Dict Keeps"
+description = '''
+A one-key dict literal drops its pre-`:` padding, reading as a plain key-value pair rather than a one-row table.
+'''
+previewable = true
 canonical = true

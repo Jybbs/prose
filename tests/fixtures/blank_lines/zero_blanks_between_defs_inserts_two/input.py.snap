@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/blank_lines/zero_blanks_between_defs_inserts_two/input.py
 ---
-"""
-Zero blank lines between two module-level defs expand to the
-canonical 2. The rule inserts the missing newlines into the
-inter-statement whitespace.
-"""
-
-
 def first():
     return 1
 

@@ -33,10 +33,4 @@ The ordering itself follows fixed per-construct conventions. Method groups follo
 
 </template>
 
-<template #canonical-lead>
-
-Classes inside a module sort alphabetically, giving every reader the same first-pass landmarks.
-
-</template>
-
 </RuleLayout>

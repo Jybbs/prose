@@ -1,10 +1,2 @@
-"""
-A trailing comment on the `def` line after `:` sits outside `(...)`
-and so does not pin the signature. The rule still expands when count
-or length trips, confirming the pin check covers only comments
-strictly between the opening `(` and closing `)`.
-"""
-
-
 def render(layout: tuple[int, int], palette: str, spread: float, target: int, verbose: bool):  # entry point
     return (layout, palette, spread, target, verbose)

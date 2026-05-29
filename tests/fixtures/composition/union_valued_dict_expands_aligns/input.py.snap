@@ -1,19 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/union_valued_dict_expands_aligns/input.py
 ---
-"""
-A long single-line dict whose values are `Optional` and `Union`
-expressions from `typing`. The outer dict overflows the inline
-budget and the values carry legacy union syntax.
-
-Rules:
-- collection_layout
-- alphabetize
-- align_colons
-"""
-
 from typing import Optional, Union
 
 ALIASES = {

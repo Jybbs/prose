@@ -1,11 +1,3 @@
-"""
-A class-level docstring with an Attributes section wraps its entries
-with the same hanging-column shape as a function-level Args entry, since
-the walker visits every body holding a string literal as its first
-expression statement.
-"""
-
-
 class Posting:
     """
     Summary line.

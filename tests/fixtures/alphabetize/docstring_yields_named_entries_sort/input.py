@@ -1,9 +1,3 @@
-"""
-The `Yields:` section reorders alphabetically when each entry
-carries a `name: description` shape.
-"""
-
-
 def stream(source):
     """Yield each record from `source`.
 

@@ -1,2 +1,6 @@
 [docs]
 title = "Async and Nested Definitions Reshape Independently"
+description = '''
+An outer `async def` and an inner sync `def` each trip the count trigger and **expand at their own indents**. The walker descends recursively rather than stopping at the outer body.
+'''
+previewable = true

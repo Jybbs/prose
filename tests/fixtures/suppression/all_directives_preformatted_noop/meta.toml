@@ -1,0 +1,6 @@
+[docs]
+title = "Already-Formatted Source With Every Directive Is Idempotent"
+description = '''
+Source carrying a `# fmt: off` block, a trailing `# fmt: skip`, and surrounding aligned runs is already at rest, so a fresh pipeline pass produces **no further edits**. The suppressed spans and the eligible runs alike pass through unchanged.
+'''
+previewable = false

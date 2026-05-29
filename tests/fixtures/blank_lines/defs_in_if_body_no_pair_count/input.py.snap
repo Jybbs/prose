@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/blank_lines/defs_in_if_body_no_pair_count/input.py
 ---
-"""
-Defs sitting inside an `if` block at module level do not pair-count.
-The walker descends into the if body to find nested classes and
-functions but applies no canonical rule at the if-body indentation.
-"""
-
-
 if FEATURE_X:
     def alpha():
         return 1

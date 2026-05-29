@@ -1,0 +1,6 @@
+[docs]
+title = "Args Section Aligns While Other Sections Stay Put"
+description = '''
+A function docstring carries a Google-style `Args:` section. Each entry's `:` aligns to the widest argument name's column, while **the surrounding `Returns:` section and the function body stay untouched**.
+'''
+previewable = false

@@ -1,10 +1,3 @@
-"""
-A trailing comma followed by a same-line comment loses only the
-comma. A comment that sits between the last element and the closing
-bracket also rides through unchanged because the backward scan
-treats comments as trivia before checking for a comma.
-"""
-
 posting = Posting(
     company="Cianbro",
     date_posted=None,

@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/dict_single_then_multi_line/input.py
 ---
-alphabetize@364..1493
+alphabetize@15..1144

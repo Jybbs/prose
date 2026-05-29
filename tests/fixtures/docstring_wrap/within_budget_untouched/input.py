@@ -1,10 +1,3 @@
-"""
-A docstring whose description and section bodies already fit their budgets
-passes through unchanged, confirming the rule fires only when wrapping
-actually shortens a line.
-"""
-
-
 def configure(name, retries):
     """
     Summary line.

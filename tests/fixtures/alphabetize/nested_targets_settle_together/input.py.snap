@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/nested_targets_settle_together/input.py
 ---
-"""
-Several alphabetize targets fire in one source: classes at module
-level, methods within a class, kwargs at a call site, and a
-`from`-import run. The rule iterates internally to settle nested
-concerns inside an enclosing reorder.
-"""
-
 from collections import Counter
 from loguru import logger
 

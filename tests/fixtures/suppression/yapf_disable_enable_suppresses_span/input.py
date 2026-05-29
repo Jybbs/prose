@@ -1,9 +1,3 @@
-"""
-The yapf: disable / yapf: enable aliases produce the same
-suppressed span as fmt: off / fmt: on, leaving the bracketed
-assignments verbatim.
-"""
-
 x = 1
 foo = 2
 bar_baz = 3

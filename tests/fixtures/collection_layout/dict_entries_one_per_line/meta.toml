@@ -1,2 +1,7 @@
 [docs]
+title = "Dict Entries Break to One Per Line Past the Threshold"
+description = '''
+A dict literal with non-atomic entries expands to one entry per line, and the reader reads the entries as a column of key-value pairs.
+'''
+previewable = true
 canonical = true

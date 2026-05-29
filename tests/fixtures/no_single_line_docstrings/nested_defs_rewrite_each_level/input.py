@@ -1,9 +1,3 @@
-"""
-Nested function defs each carry their own docstring, and the
-rewrite fires at every level independently.
-"""
-
-
 def outer():
     """Outer docstring."""
 

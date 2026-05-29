@@ -1,15 +1,3 @@
-"""
-A function body assigns several locals at consecutive lines, some
-used once and some reused. align-equals widens the `=` column
-across the whole run and single-use-variables emits a diagnostic
-per once-used binding whose range tracks the post-align offset.
-
-Rules:
-- align-equals
-- single-use-variables
-"""
-
-
 def compute(data, factor):
     base = data * 2
     offset = base + factor

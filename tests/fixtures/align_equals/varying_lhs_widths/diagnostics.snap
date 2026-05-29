@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_equals/varying_lhs_widths/input.py
 ---
-align-equals@79..80
-align-equals@87..88
+align-equals@1..2
+align-equals@9..10

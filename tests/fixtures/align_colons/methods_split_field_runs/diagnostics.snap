@@ -3,8 +3,8 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/methods_split_field_runs/input.py
 ---
-align-colons@279..279
-align-colons@298..298
-align-colons@313..313
-align-colons@460..460
-align-colons@485..485
+align-colons@202..202
+align-colons@21..21
+align-colons@227..227
+align-colons@40..40
+align-colons@55..55

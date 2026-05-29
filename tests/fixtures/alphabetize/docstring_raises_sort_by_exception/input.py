@@ -1,8 +1,3 @@
-"""
-The `Raises:` section reorders alphabetically by exception name.
-"""
-
-
 def load(path):
     """Load configuration.
 

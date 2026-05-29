@@ -1,0 +1,6 @@
+[docs]
+title = "Annotated Fields Sort With No Decorator or Base Class"
+description = '''
+A class with no decorator and no recognized base class **still has its annotated fields alphabetized**. The structural shape (`AnnAssign` with a `Name` target) is the signal, not the framework around it.
+'''
+previewable = false

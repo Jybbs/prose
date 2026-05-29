@@ -1,2 +1,6 @@
 [docs]
 title = "`__slots__` Sorts Alphabetically"
+description = '''
+The string-literal items inside `__slots__` **alphabetize by string value**, matching `__all__`. The tuple form parses identically through the rule's list-or-tuple branch.
+'''
+previewable = true

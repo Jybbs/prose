@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/unused_future_annotations/subscript_inner_names_resolve/input.py
 ---
-unused-future-annotations@222..257
+unused-future-annotations@0..35

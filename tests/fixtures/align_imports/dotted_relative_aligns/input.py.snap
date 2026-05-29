@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/align_imports/dotted_relative_aligns/input.py
 ---
-"""
-Relative `from`-imports with explicit dot prefixes participate in
-the same alignment as absolute ones. The `import` keyword aligns
-across the run regardless of whether the module path leads with
-dots, named segments, or both.
-"""
-
 from .         import siblings
 from .helpers  import normalize
 from ..core    import register

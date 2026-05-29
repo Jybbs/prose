@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/signature_layout/method_expands_at_class_indent/input.py
 ---
-signature-layout@309..380
+signature-layout@31..102

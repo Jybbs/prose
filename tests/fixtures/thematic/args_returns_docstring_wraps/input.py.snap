@@ -1,18 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
 ---
-"""
-Top-level function with a long-form docstring carrying free prose, an
-`Args:` section, and a `Returns:` section, plus a typed parameter list of
-varying widths. The full pipeline reshapes the docstring opener and closer
-onto their own lines, wraps the long prose paragraph at the docstring
-budget, settles the blank-line cushion around the function definition, and
-aligns the parameter `:` columns within the signature.
-"""
-
-
 def render(context, encoding, template):
     """
     Render a template against the provided context, applying the configured

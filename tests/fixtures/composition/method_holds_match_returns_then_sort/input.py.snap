@@ -1,20 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/method_holds_match_returns_then_sort/input.py
 ---
-"""
-Class with methods out of alphabetical order, one of which contains
-a match statement whose arms are single-statement returns. Blank
-lines between methods are missing.
-
-Rules:
-- alphabetize
-- blank_lines
-- match_case_align
-"""
-
-
 class Dispatcher:
 
     def handle_alpha(self, value):

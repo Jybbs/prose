@@ -1,0 +1,6 @@
+[docs]
+title = "Drop Future, Sort Aliases, Align `as`, Settle Cushion"
+description = '''
+A module top carries `from __future__ import annotations`, out-of-order aliased imports, and irregular spacing. **The subset removes the unused future, sorts the imports, aligns the `as` column, and normalizes the blank-line cushion** before the first function.
+'''
+previewable = true

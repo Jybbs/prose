@@ -1,0 +1,6 @@
+[docs]
+title = "Inline-Opener Docstring Splits, Aligns Args, Wraps Prose"
+description = '''
+A multi-line docstring opens on the triple-quote line and carries an `Args:` section. **The opener and closer move to their own lines, the Args entries align their `:` column, and the prose paragraph wraps to the docstring budget**.
+'''
+previewable = true

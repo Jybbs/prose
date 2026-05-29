@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/unused_future_annotations/two_future_lines_processed_separately/input.py
 ---
-unused-future-annotations@231..266
+unused-future-annotations@0..35

@@ -1,2 +1,6 @@
 [docs]
 title = "A Matrix Literal Expands Each Row Independently"
+description = '''
+A nested matrix stays fully inline within the 88-character budget. When the outer list overflows, **it expands row by row**, each inner row checking fit at its own column and staying inline when it fits, producing the matrix-by-row layout rather than one cell per line.
+'''
+previewable = true

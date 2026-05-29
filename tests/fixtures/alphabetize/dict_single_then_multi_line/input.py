@@ -1,11 +1,3 @@
-"""
-Multi-line dict literals partition entries by rendered line count.
-Single-line entries (key + value fit on one source line) sort first,
-followed by a blank-line divider, followed by multi-line entries
-(value spans multiple source lines). `**unpacked` items pin in source
-position. The partition fires recursively at every level of nesting.
-"""
-
 mixed = {
     "version"  : "0.1.0",
     "tags"     : ["staging", "ingest"],

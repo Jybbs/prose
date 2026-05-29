@@ -3,7 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/match_case_align/trailing_comment_disqualifies_first_arm/input.py
 ---
-match-case-align@322..322
-match-case-align@323..332
-match-case-align@363..363
-match-case-align@364..373
+match-case-align@103..103
+match-case-align@104..113
+match-case-align@144..144
+match-case-align@145..154

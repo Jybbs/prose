@@ -1,22 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/signature_args_diverging_colon_columns/input.py
 ---
-"""
-Function with a typed signature requiring colon alignment in the parameter
-list AND an `Args` section whose entry names align at a different column.
-The parameter names and the Args entry names diverge by design to make the
-two column groups visible. `align_colons` handles the two as independent
-groups, and `docstring_wrap` then wraps the Args descriptions at the Args
-hanging column rather than the signature column.
-
-Rules:
-- align_colons
-- docstring_wrap
-"""
-
-
 def write(
     destination : str,
     contents    : bytes,

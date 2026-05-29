@@ -3,14 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/signature_layout/walker_descends_nested_defs/input.py
 ---
-"""
-Async and nested function definitions both walk through the rule.
-The outer `async def` and the inner sync `def` each trip the count
-trigger and expand at their own indents, pinning that the walker
-descends recursively rather than stopping at the outer body.
-"""
-
-
 async def outer(
     layout: tuple[int, int],
     palette: str,

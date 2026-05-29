@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/from_imports_collapse_block/input.py
 ---
-alphabetize@259..423
+alphabetize@5..169

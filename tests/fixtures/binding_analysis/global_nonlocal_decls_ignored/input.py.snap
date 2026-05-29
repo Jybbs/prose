@@ -1,5 +1,6 @@
 ---
 source: tests/binding_analysis.rs
+assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/global_nonlocal_decls_ignored/input.py
 ---
@@ -10,43 +11,43 @@ bindings:
     read_offsets: []
     scope: 0
     write_offsets:
-      - 164
+      - 4
   - kinds:
       - Assignment
     name: x
     read_offsets: []
     scope: 1
     write_offsets:
-      - 195
+      - 35
   - kinds:
       - FunctionDef
     name: nested
     read_offsets: []
     scope: 0
     write_offsets:
-      - 207
+      - 47
   - kinds:
       - Assignment
     name: y
     read_offsets: []
     scope: 2
     write_offsets:
-      - 221
+      - 61
   - kinds:
       - FunctionDef
     name: inner
     read_offsets:
-      - 281
+      - 121
     scope: 2
     write_offsets:
-      - 235
+      - 75
   - kinds:
       - Assignment
     name: y
     read_offsets: []
     scope: 3
     write_offsets:
-      - 271
+      - 111
 scopes:
   - bindings:
       globalized: 0

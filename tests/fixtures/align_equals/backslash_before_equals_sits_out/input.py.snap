@@ -3,11 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/align_equals/backslash_before_equals_sits_out/input.py
 ---
-"""
-A backslash continuation between the target and the `=` sits out the
-group, leaving neighboring assignments unaligned.
-"""
-
 foo \
     = 1
 bar = 2

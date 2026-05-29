@@ -3,15 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/single_use_variables/inner_local_flagged_def_exempt/input.py
 ---
-"""
-An inner function's single-use binding is flagged on its own, since
-the outer scope's `def inner` binding has only one write (the
-function definition) and one read (the return) but its kind is
-`FunctionDef`, falling outside the rule's `Assignment` and `Walrus`
-filter, whereas inner's local `x` does qualify.
-"""
-
-
 def outer():
     def inner():
         x = compute()

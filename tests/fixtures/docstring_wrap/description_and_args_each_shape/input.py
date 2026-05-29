@@ -1,11 +1,3 @@
-"""
-A docstring with both shapes wraps each region to its own shape. The
-description paragraph wraps at the docstring budget against the body
-indent, and the Args entry wraps at the same budget with a hanging indent
-at the description's start column.
-"""
-
-
 def render(label, count):
     """
     A description paragraph above the structured section that runs past the seventy six character description budget needs to wrap at seventy six.

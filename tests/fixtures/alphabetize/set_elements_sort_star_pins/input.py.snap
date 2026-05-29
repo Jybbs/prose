@@ -3,14 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/set_elements_sort_star_pins/input.py
 ---
-"""
-Set literal elements alphabetize because Python sets are
-mathematically unordered. The sort key is each element's source
-text, so mixed-type sets sort by source representation. Star
-unpacks (`*defaults`) pin in their source slot to preserve the
-visual blend with the rest of the set.
-"""
-
 allowed = {"html", "markdown", "text"}
 
 priorities = {1, 2, 3}

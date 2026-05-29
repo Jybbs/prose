@@ -25,12 +25,6 @@ The `allow` list holds bare package names, where any dotted submodule of an allo
 
 </template>
 
-<template #canonical-lead>
-
-Allowlisted packages stay quiet, and everything else surfaces the lint.
-
-</template>
-
 <template #related-after>
 
 For per-line opt-outs, the [**Suppression**](/usage/suppression#lint-directives) chapter covers the `# prose: ignore[bare-import-allowlist]` directive.

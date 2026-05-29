@@ -1,10 +1,3 @@
-"""
-A Raises entry naming an exception type wraps the description at the
-docstring budget with a hanging indent at the description's start column,
-keeping the exception name flush at the parameter-list indent.
-"""
-
-
 def parse():
     """
     Summary line.

@@ -1,2 +1,6 @@
 [docs]
 title = "Unpacking Entries Break the Alignment Run"
+description = '''
+A dict mixes `key: value` entries with a `**defaults` unpacking. The unpacking carries no key expression, so it **drops out of the alignment group** while the keyed entries around it align on a shared `:` column.
+'''
+previewable = true

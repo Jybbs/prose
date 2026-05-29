@@ -1,10 +1,3 @@
-"""
-A non-heading line at the docstring body indent within a section ends
-the section and resumes description prose at the description budget,
-even when no blank line separates the section body from the prose.
-"""
-
-
 def example():
     """
     Summary.

@@ -1,0 +1,6 @@
+[docs]
+title = "A Class Header Binds Its Docstring with Zero Blanks"
+description = '''
+A class header introducing a docstring carries **zero blank lines** between header and docstring, binding the docstring to its signature. The docstring then carries one blank before the next member, per the docstring-predecessor canonical.
+'''
+previewable = false

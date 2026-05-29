@@ -1,19 +1,3 @@
-"""
-Function with parameters and matching Args entries both in
-non-alphabetical source order, with long descriptions.
-`alphabetize` reorders the signature and the Args entries against
-the same alphabetical key, `align_colons` aligns every colon in
-both the signature and the Args section, and `docstring_wrap`
-wraps each Args description at the post-align hanging column.
-Signature and Args entries land in matching alphabetical order.
-
-Rules:
-- alphabetize
-- align_colons
-- docstring_wrap
-"""
-
-
 def render(template, context_map, escape_html):
     """
     Summary line above the structured section.

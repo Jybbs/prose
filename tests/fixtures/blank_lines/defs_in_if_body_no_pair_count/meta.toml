@@ -1,0 +1,6 @@
+[docs]
+title = "Defs inside an If Body Don't Pair-Count"
+description = '''
+Defs nested in a module-level `if` block **do not pair-count**. The walker descends into the if body to find nested classes and functions but applies no canonical rule at the if-body indentation.
+'''
+previewable = false

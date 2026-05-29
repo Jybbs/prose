@@ -1,0 +1,6 @@
+[docs]
+title = "Colon-Padded Signature Splits into Aligned Sub-Groups"
+description = '''
+A typed signature already carrying `align_colons`-style padding is **partitioned by `max_shift` into two sub-groups**, and the `=` is aligned within each sub-group independently.
+'''
+previewable = false

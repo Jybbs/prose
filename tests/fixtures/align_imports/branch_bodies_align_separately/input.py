@@ -1,10 +1,3 @@
-"""
-Imports inside `if` and `else` branches (lazy or compatibility
-imports) align within their own branch body. Each branch is a
-separate body slice, so cross-branch alignment never happens. The
-visitor descends into every branch.
-"""
-
 import sys
 
 if sys.version_info >= (3, 11):

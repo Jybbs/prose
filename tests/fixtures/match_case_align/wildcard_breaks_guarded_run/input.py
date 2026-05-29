@@ -1,10 +1,3 @@
-"""
-Arms carrying an `if` guard between the pattern and the colon.
-The wildcard `case _` is short enough to break the greedy
-split-policy run, falling into a singleton sub-group whose
-colon hugs its pattern.
-"""
-
 match point:
     case (x, y) if x == 0:
         label = "y_axis"

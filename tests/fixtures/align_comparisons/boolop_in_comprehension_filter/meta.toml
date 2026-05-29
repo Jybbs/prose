@@ -1,0 +1,6 @@
+[docs]
+title = "BoolOp in a Comprehension `if` Filter Aligns"
+description = '''
+A multi-line `BoolOp` inside a list comprehension's `if` filter **aligns like any other multi-line `BoolOp`**. The `==` of the two filter operands settle onto a shared column.
+'''
+previewable = false

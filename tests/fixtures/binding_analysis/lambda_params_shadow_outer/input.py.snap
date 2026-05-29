@@ -1,5 +1,6 @@
 ---
 source: tests/binding_analysis.rs
+assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/lambda_params_shadow_outer/input.py
 ---
@@ -10,22 +11,22 @@ bindings:
     read_offsets: []
     scope: 0
     write_offsets:
-      - 127
+      - 0
   - kinds:
       - Parameter
     name: x
     read_offsets:
-      - 147
+      - 20
     scope: 1
     write_offsets:
-      - 144
+      - 17
   - kinds:
       - Assignment
     name: f
     read_offsets: []
     scope: 0
     write_offsets:
-      - 133
+      - 6
 scopes:
   - bindings:
       f: 2

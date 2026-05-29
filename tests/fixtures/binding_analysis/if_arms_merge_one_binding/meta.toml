@@ -1,0 +1,6 @@
+[docs]
+title = "Both If Arms Merge Into One Binding"
+description = '''
+A name rebound across the arms of an `if`/`else` **collapses into a single module-scope binding** carrying two write offsets, independent of which arm actually runs.
+'''
+previewable = false

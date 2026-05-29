@@ -3,14 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/signature_layout/star_prefixes_carry_through/input.py
 ---
-"""
-A signature mixing positional parameters, `*args`, kwonly parameters,
-and `**kwargs` pins each variadic's `*` or `**` prefix carrying
-through to the expanded form. Every variadic slot counts as one
-parameter for the count trigger.
-"""
-
-
 def dispatch(
     palette: str,
     target: int,

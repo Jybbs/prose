@@ -1,15 +1,3 @@
-"""
-A class carrying both annotated fields and methods, all declared
-out of order, with missing blank-line spacing between methods.
-
-Rules:
-- alphabetize
-- blank_lines
-- align_colons
-- align_equals
-"""
-
-
 class Service:
     timeout: float = 30.0
     host: str = "localhost"

@@ -1,17 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/thematic/dataclass_fields_and_docstring_reshape/input.py
 ---
-"""
-Dataclass declaration with annotated fields out of order, default values of
-varying widths, and a method body below the field block. The full pipeline
-sorts the field declarations, aligns the annotation `:` and default `=`
-columns across the run, normalizes the blank-line cushion between the field
-block and the method, and reshapes the method's single-line docstring into
-multi-line form.
-"""
-
 from dataclasses import dataclass
 
 

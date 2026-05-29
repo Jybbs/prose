@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/overload_defs_normalize_like_plain/input.py
 ---
-blank-lines@219..221
-blank-lines@262..263
-blank-lines@304..305
+blank-lines@112..113
+blank-lines@27..29
+blank-lines@70..71

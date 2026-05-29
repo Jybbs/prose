@@ -1,15 +1,3 @@
-"""
-Two dict literals in the same scope where one carries multiple
-entries on distinct lines and the other carries a single entry. The
-multi-row group has its `:` column aligned and the single-row group
-has its pre-`:` padding stripped.
-
-Rules:
-- align_colons
-- singleton_rule
-"""
-
-
 def make():
     paired = {
         "first" : 1,

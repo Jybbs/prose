@@ -1,17 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/thematic/class_method_groups_then_align/input.py
 ---
-"""
-Cross-rule composition on a small class: alphabetize reorders methods into
-the canonical dunder / property / private / public groups, alphabetizes
-annotated fields, and sorts both bare and from-import runs at the module
-top. align_colons and align_equals then settle the field-declaration
-columns. The full pipeline running twice on this input produces no further
-change.
-"""
-
 import os
 import sys
 

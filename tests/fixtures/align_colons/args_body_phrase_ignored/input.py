@@ -1,9 +1,3 @@
-"""
-The phrase `Args:` appears once in the docstring's body prose and
-again as the section header. Only the real header triggers
-alignment, leaving the inline phrase as-is.
-"""
-
 def emit(channel: str, severity: str, payload: str) -> None:
     """
     Sends a structured event.

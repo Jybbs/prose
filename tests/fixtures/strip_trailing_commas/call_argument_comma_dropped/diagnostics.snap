@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/strip_trailing_commas/call_argument_comma_dropped/input.py
 ---
-strip-trailing-commas@285..286
+strip-trailing-commas@87..88

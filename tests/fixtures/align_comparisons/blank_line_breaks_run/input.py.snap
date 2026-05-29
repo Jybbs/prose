@@ -3,11 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/align_comparisons/blank_line_breaks_run/input.py
 ---
-"""
-A blank line between two qualifying operands breaks the alignment
-run.
-"""
-
 if (
     foo == 1
 

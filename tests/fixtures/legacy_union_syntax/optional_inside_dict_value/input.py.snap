@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/legacy_union_syntax/optional_inside_dict_value/input.py
 ---
-"""
-A legacy `Optional[X]` nested inside another `Subscript` is flagged
-on the inner expression. The parent passed to `parenthesized_range`
-is the enclosing expression rather than the enclosing statement.
-"""
-
 from typing import Optional
 
 table: dict[str, Optional[int]] = {}

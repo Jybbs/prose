@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/docstring_raises_sort_by_exception/input.py
 ---
-alphabetize@139..274
+alphabetize@64..199

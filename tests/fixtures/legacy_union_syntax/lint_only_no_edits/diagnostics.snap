@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/legacy_union_syntax/lint_only_no_edits/input.py
 ---
-legacy-union-syntax@195..208
-legacy-union-syntax@230..245
+legacy-union-syntax@53..66
+legacy-union-syntax@88..103

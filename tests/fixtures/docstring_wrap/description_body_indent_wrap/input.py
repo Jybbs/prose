@@ -1,10 +1,3 @@
-"""
-A description paragraph that runs past the seventy six character docstring
-budget wraps to fit, preserving the body indent on every wrapped line so
-the column where prose begins stays put across the run.
-"""
-
-
 def greet():
     """
     The function-level description carries the same wrap shape as the module docstring, with each wrapped line indented to match the docstring body.

@@ -1,10 +1,3 @@
-"""
-A fmt: off / fmt: on block sits between two assignment runs that
-the alignment rules would otherwise touch. The block survives
-verbatim while the runs above and below it pad to their group
-widths.
-"""
-
 x = 1
 foo = 2
 bar_baz = 3

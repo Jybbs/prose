@@ -1,0 +1,6 @@
+[docs]
+title = "Imports in a Function Body Form Their Own Group"
+description = '''
+Imports inside a function body align at the function's indent level, **independent of any module-level imports above**. The visitor descends into the nested body, so its per-block run reaches its own `import` column without crossing the outer group.
+'''
+previewable = false

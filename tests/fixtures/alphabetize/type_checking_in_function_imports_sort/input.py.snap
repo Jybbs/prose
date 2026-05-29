@@ -3,14 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/type_checking_in_function_imports_sort/input.py
 ---
-"""
-`if TYPE_CHECKING` inside a function body sorts its imports
-through the same compound-statement recursion that fires at
-module level. The function body itself skips class, method,
-and field reorders because Function scope leaves sequential
-statements untouched, but import runs sort in every scope.
-"""
-
 from typing import TYPE_CHECKING
 
 

@@ -1,0 +1,6 @@
+[docs]
+title = "Dict, Set, and Generator Comprehensions Each Push a Scope"
+description = '''
+Non-list comprehension shapes `{k: v for ...}`, `{x for ...}`, and `(x for ...)` **each push their own comprehension scope**, matching the list-comprehension shape already covered elsewhere.
+'''
+previewable = false

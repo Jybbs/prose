@@ -1,15 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/no_single_line_docstrings/oneliner_expands_to_three_lines/input.py
 ---
-"""
-Single-line function docstring expands to the canonical three-line
-multi-line form, with opener on its own line, trimmed body on its
-own line at the def's indent, and closer on its own line.
-"""
-
-
 def greet():
     """
     Hello, world.

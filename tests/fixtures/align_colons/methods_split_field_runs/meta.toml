@@ -1,0 +1,6 @@
+[docs]
+title = "Interleaved Methods Split the Field Run"
+description = '''
+A class body declares fields, defines methods, then declares more fields. The methods **break the field run into two independent groups**, each aligning its `:` column at its own widest name rather than as one cross-method block.
+'''
+previewable = false

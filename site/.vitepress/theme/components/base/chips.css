@@ -79,7 +79,7 @@ a.composition-cards-rule-chip {
   background           : var(--vp-c-bg);
   text-decoration-line : none;
   font-family          : var(--vp-font-family-mono);
-  font-size            : 0.72rem;
+  font-size            : var(--prose-text-xxs);
   transition           :
     border-color var(--prose-transition),
     transform    var(--prose-transition);

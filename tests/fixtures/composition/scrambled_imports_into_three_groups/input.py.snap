@@ -1,20 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/scrambled_imports_into_three_groups/input.py
 ---
-"""
-Module top with bare, external `from`, and local-package imports
-scrambled together. alphabetize reorders into the three canonical
-groups, blank_lines separates each with one blank line, and
-align_imports aligns the `import` keyword inside each group.
-
-Rules:
-- alphabetize
-- align_imports
-- blank_lines
-"""
-
 import os
 import sys
 

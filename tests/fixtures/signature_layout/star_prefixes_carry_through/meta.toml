@@ -1,0 +1,6 @@
+[docs]
+title = "Variadic Star Prefixes Carry Through Expansion"
+description = '''
+A signature mixing positional parameters, `*args`, kwonly parameters, and `**kwargs` **carries each variadic's `*` or `**` prefix through to the expanded form**. Every variadic slot counts as one parameter toward the count trigger.
+'''
+previewable = false

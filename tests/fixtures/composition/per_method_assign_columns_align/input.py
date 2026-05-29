@@ -1,15 +1,3 @@
-"""
-Class methods out of alphabetical order, each carrying a run of
-assignments in its body. Method bodies' `=` columns align within
-each method.
-
-Rules:
-- alphabetize
-- blank_lines
-- align_equals
-"""
-
-
 class Builder:
     def render(self):
         out = []

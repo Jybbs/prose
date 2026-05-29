@@ -1,0 +1,6 @@
+[docs]
+title = "File-Top Prose Off Opts the Whole Source Out"
+description = '''
+A `# prose: off` at the top of the source **opts every subsequent line out of every rule**. The assignments, the unsorted dict, and the unsorted parameter list all survive untouched across passes regardless of how many rules would otherwise fire.
+'''
+previewable = false

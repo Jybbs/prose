@@ -1,11 +1,11 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/prose_block_mirrors_fmt_span/input.py
 ---
-align-equals@304..305
-align-equals@310..311
-align-equals@382..383
-align-equals@389..390
-alphabetize@289..314
-docstring-wrap@72..260
+align-equals@100..101
+align-equals@15..16
+align-equals@21..22
+align-equals@93..94
+alphabetize@0..25

@@ -1,0 +1,6 @@
+[docs]
+title = "Private Class Attribute Stays Scoped to the Class"
+description = '''
+A class-body `__name` assignment **lives in the class scope and stays invisible to nested methods**, while the sibling method records its own function-scope binding for `self`.
+'''
+previewable = false

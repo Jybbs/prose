@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/blank_lines/method_comment_binds_to_method/input.py
 ---
-"""
-A class-body method preceded by an own-line comment normalizes to
-1 blank line above the comment and binds the comment tight against
-the following method.
-"""
-
-
 class Posting:
 
     def first(self):

@@ -1,0 +1,6 @@
+[docs]
+title = "Annotated Fields Sort Then Align Both `:` and `=`"
+description = '''
+Annotated class fields out of alphabetical order with varied name and default widths. `alphabetize` reorders them, then **both the type-annotation `:` column and the default `=` column align across the sorted run**.
+'''
+previewable = true

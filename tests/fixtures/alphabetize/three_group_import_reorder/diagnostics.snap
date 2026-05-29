@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/three_group_import_reorder/input.py
 ---
-alphabetize@229..383
+alphabetize@0..154

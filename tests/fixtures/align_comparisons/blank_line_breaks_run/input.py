@@ -1,8 +1,3 @@
-"""
-A blank line between two qualifying operands breaks the alignment
-run.
-"""
-
 if (
     foo == 1
 

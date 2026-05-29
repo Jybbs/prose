@@ -1,2 +1,6 @@
 [docs]
 title = "The First Method after a Class Docstring Tightens Up"
+description = '''
+A class carrying its own docstring (here in triple-apostrophe quotes) gets **one blank line** before its first method. The class-scope canonical fires on the `(docstring, method)` pair, collapsing any wider drift below.
+'''
+previewable = true

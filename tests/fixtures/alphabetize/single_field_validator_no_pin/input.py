@@ -1,11 +1,3 @@
-"""
-A class with a single annotated field plus a validator-shaped
-method does not pin its methods. The structural pin requires at
-least two annotated fields, so single-field containers (which are
-rarely true data classes) keep their method alphabetization. This
-pins the lower bound of the field-bearing detection.
-"""
-
 from pydantic import BaseModel, field_validator
 
 

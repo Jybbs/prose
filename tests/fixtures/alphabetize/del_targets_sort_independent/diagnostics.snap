@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/del_targets_sort_independent/input.py
 ---
-alphabetize@252..275
+alphabetize@72..95

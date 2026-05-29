@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/blank_lines/three_defs_each_pair_two_blanks/input.py
 ---
-"""
-Three back-to-back module-level defs each pair-count independently.
-Each adjacent pair normalizes to 2 blank lines, regardless of the
-source's actual gap.
-"""
-
-
 def alpha():
     return 1
 

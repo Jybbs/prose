@@ -1,0 +1,6 @@
+[docs]
+title = "A Validator Decorator Pins Every Method"
+description = '''
+A field-bearing class with a validator-shaped method **skips method alphabetization entirely**. The validator's positional-binding decorator (`@field_validator("title")`) signals that methods may carry declaration-order semantics, so all methods stay put while fields still sort.
+'''
+previewable = false

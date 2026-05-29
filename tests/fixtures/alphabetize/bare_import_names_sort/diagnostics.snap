@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/bare_import_names_sort/input.py
 ---
-alphabetize@264..282
+alphabetize@7..25

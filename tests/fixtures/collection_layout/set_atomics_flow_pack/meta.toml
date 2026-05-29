@@ -1,0 +1,6 @@
+[docs]
+title = "Set Atomics Flow-Pack on Overflow"
+description = '''
+A set stays inline within the 88-character budget and expands when it overflows. **Inside the expanded form, atomic items flow across as few balanced lines as fit** under `code-line-length` and the `max_atomics_per_line` cap. A multi-line set that fits collapses back inline.
+'''
+previewable = false

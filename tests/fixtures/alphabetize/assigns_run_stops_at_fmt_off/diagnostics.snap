@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/assigns_run_stops_at_fmt_off/input.py
 ---
-alphabetize@228..257
+alphabetize@0..29

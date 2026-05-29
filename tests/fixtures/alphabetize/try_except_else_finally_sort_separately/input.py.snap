@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/try_except_else_finally_sort_separately/input.py
 ---
-"""
-A `try` statement exercises every arm shape in one block: the
-`try` body, multiple `except` handlers, an `else` clause that
-runs on success, and a `finally` clause that always runs. Each
-arm sorts independently of the others.
-"""
-
 try:
     from alpha import b
     from zeta import a

@@ -1,0 +1,6 @@
+[docs]
+title = "Step Word With a Dot Separator Is Flagged"
+description = '''
+A `# Step 1. text` comment matches the **step-word shape carrying a `.` separator** and earns a diagnostic. The `Step` keyword and number trigger the lint whether the separator is `.` or `:`.
+'''
+previewable = false

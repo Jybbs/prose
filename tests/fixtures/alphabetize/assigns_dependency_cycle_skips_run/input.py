@@ -1,10 +1,3 @@
-"""
-A run whose intra-run dependency graph carries a cycle skips
-entirely. `FORWARD` references `BACKWARD` and `BACKWARD`
-references `FORWARD`, so no topological tier exists and source
-order survives.
-"""
-
 FORWARD = BACKWARD + 1
 BACKWARD = FORWARD - 1
 MIDDLE = 0

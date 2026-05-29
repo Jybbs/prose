@@ -3,11 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/align_comparisons/multiline_operand_breaks_run/input.py
 ---
-"""
-An operand whose own range spans multiple source lines breaks the
-run.
-"""
-
 if (
     foo == (
         1

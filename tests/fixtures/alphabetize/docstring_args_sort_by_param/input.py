@@ -1,10 +1,3 @@
-"""
-The `Args:` section's `name: description` entries reorder
-alphabetically by parameter name, matching the rule's treatment
-of the function signature itself.
-"""
-
-
 def render(template, context, encoding):
     """Summary above the section.
 

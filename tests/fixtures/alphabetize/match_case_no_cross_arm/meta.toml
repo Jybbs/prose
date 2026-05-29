@@ -1,0 +1,6 @@
+[docs]
+title = "`match` Case Arms Sort Without Crossing"
+description = '''
+Each `match` case arm **sorts its body independently**. The arms share no sort key space, so identical import names in two arms never migrate across the case boundary.
+'''
+previewable = false

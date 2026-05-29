@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/align_comparisons/nested_boolop_breaks_outer_run/input.py
 ---
-"""
-A nested parenthesized `BoolOp` breaks the outer run. The inner
-`BoolOp`'s own operands still align when its range spans multiple
-source lines.
-"""
-
 if (
     foo == 1
     and (

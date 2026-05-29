@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/undecorated_annotated_fields_sort/input.py
 ---
-"""
-A class with no decorator and no recognized base class still has
-its annotated field declarations alphabetized. The structural
-shape (`Stmt::AnnAssign` with `Name` target) is the signal, not the
-framework around it.
-"""
-
 class Posting:
     company: str
     date_posted: str

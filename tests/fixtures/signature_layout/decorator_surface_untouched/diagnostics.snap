@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/signature_layout/decorator_surface_untouched/input.py
 ---
-signature-layout@298..378
+signature-layout@48..128

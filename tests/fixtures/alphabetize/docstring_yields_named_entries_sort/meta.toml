@@ -1,0 +1,6 @@
+[docs]
+title = "`Yields:` Entries Sort When Named"
+description = '''
+The `Yields:` section **reorders alphabetically** when each entry carries a `name: description` shape, settling the named entries into alphabetical order.
+'''
+previewable = false

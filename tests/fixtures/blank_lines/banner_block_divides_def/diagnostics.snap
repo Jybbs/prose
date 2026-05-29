@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/banner_block_divides_def/input.py
 ---
-blank-lines@255..256
-blank-lines@410..411
+blank-lines@180..181
+blank-lines@25..26

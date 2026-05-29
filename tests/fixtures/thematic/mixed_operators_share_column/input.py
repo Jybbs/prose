@@ -1,11 +1,3 @@
-"""
-Predicate-heavy function exercising the full alignment surface. Every
-qualifying comparison operand joins one right-aligned group, with
-arithmetic, identity, membership, and a chained compare anchored on
-its first operator all participating in the shared column.
-"""
-
-
 def is_ready(rec):
     return (
         rec.kind == "task"

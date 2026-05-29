@@ -1,0 +1,6 @@
+[docs]
+title = "Bracketed Generics in Arg Types Do Not Fool the Detector"
+description = '''
+`Args:` entries carry parenthesized types holding bracketed generics like `Dict[str, int]` and `List[Tuple[int, str]]`. The detector tracks both `()` and `[]` nesting, so **alignment anchors on each entry's outer `:`** rather than any colon buried inside the type.
+'''
+previewable = false

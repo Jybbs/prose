@@ -3,6 +3,7 @@ import fs             from 'node:fs/promises'
 import path          from 'node:path'
 
 import matter           from 'gray-matter'
+import { parse }        from 'smol-toml'
 import { defineLoader } from 'vitepress'
 
 import { FIXTURES_DIR, INPUT_FILE, SNAPSHOT_FILE, walkFixtures } from '../lib/fixtures/walker'
@@ -13,11 +14,12 @@ const root         = repoRoot(import.meta.url)
 const fixturesRoot = path.join(root, FIXTURES_DIR)
 
 interface FixtureEntry {
-  changesSource : boolean
-  input         : string
-  inputHtml     : string
-  output        : string
-  outputHtml    : string
+  changesSource    : boolean
+  descriptionHtml ?: string
+  input            : string
+  inputHtml        : string
+  output           : string
+  outputHtml       : string
 }
 
 type FixtureData = Record<string, Record<string, FixtureEntry>>
@@ -25,10 +27,22 @@ type FixtureData = Record<string, Record<string, FixtureEntry>>
 declare const data: FixtureData
 export { data }
 
+async function descriptionHtml(
+  md        : Awaited<ReturnType<typeof getRenderer>>,
+  inputPath : string
+): Promise<string | undefined> {
+  const metaPath = path.join(path.dirname(inputPath), 'meta.toml')
+  if (!existsSync(metaPath)) return undefined
+  const docs = (parse(await fs.readFile(metaPath, 'utf8')) as { docs?: { description?: string } }).docs
+  const text = docs?.description?.trim()
+  return text ? md.render(text) : undefined
+}
+
 export default defineLoader({
   watch: [
     `${fixturesRoot}/**/${INPUT_FILE}`,
-    `${fixturesRoot}/**/${SNAPSHOT_FILE}`
+    `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
+    `${fixturesRoot}/*/*/meta.toml`
   ],
   async load(): Promise<FixtureData> {
     const md      = await getRenderer()
@@ -38,15 +52,16 @@ export default defineLoader({
         fs.readFile(inputPath,           'utf8'),
         fs.readFile(`${inputPath}.snap`, 'utf8')
       ])
-      const output              = matter(snapRaw).content.replace(/\s+$/, '\n')
+      const output = matter(snapRaw).content.replace(/\s+$/, '\n')
       return {
         caseName,
         entry: {
-          changesSource : inputRaw !== output,
-          input         : inputRaw,
-          inputHtml     : renderFencedHtml(md, inputRaw, 'python'),
+          changesSource   : inputRaw !== output,
+          descriptionHtml : await descriptionHtml(md, inputPath),
+          input           : inputRaw,
+          inputHtml       : renderFencedHtml(md, inputRaw, 'python'),
           output,
-          outputHtml    : renderFencedHtml(md, output, 'python')
+          outputHtml      : renderFencedHtml(md, output, 'python')
         },
         rule
       }

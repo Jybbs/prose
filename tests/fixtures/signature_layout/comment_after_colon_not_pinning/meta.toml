@@ -1,0 +1,6 @@
+[docs]
+title = "Trailing Comment After the Colon Does Not Pin"
+description = '''
+A trailing comment on the `def` line after `:` sits outside `(...)` and **does not pin the signature**. The rule still expands when count or length trips, confirming the pin check covers only comments strictly between the opening `(` and closing `)`.
+'''
+previewable = false

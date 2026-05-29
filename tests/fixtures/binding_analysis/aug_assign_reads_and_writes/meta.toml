@@ -1,0 +1,6 @@
+[docs]
+title = "Augmented Assignment Counts One Read and One Write"
+description = '''
+An augmented assignment like `x += 1` is **one read plus one write**, so the target's `assignment_count` climbs and its kind list carries `AugAssign` next to the original `Assignment`.
+'''
+previewable = false

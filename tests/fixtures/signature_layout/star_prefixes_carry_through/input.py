@@ -1,10 +1,2 @@
-"""
-A signature mixing positional parameters, `*args`, kwonly parameters,
-and `**kwargs` pins each variadic's `*` or `**` prefix carrying
-through to the expanded form. Every variadic slot counts as one
-parameter for the count trigger.
-"""
-
-
 def dispatch(palette: str, target: int, *args: int, layout: tuple[int, int], spread: float = 0.0, **kwargs: object):
     return (palette, target, layout, spread, args, kwargs)

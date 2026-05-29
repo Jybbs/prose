@@ -3,14 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/signature_layout/interior_comment_pins_shape/input.py
 ---
-"""
-A comment anywhere between `(` and `)` pins the existing shape,
-overriding both count and length triggers. Each pinned signature
-keeps its comment in place rather than getting rewritten around.
-Both own-line and trailing-line comment placements anchor.
-"""
-
-
 def own_line_pin(
     layout: tuple[int, int],
     # comment between parameters

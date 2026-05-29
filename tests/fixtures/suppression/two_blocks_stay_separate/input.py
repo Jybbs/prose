@@ -1,9 +1,3 @@
-"""
-Two distinct fmt: off / fmt: on blocks remain separate suppressed
-spans rather than fusing into one. Code outside the blocks aligns
-normally while code inside each block stays verbatim.
-"""
-
 x = 1
 foo = 2
 bar_baz = 3

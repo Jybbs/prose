@@ -1,9 +1,3 @@
-"""
-A fmt: skip line sits inside an active fmt: off block. Every line
-within the block stays verbatim, leaving the assignment runs above
-and below the block to align as separate groups.
-"""
-
 x = 1
 foo = 2
 bar_baz = 3

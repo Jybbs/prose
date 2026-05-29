@@ -1,0 +1,6 @@
+[docs]
+title = "Singleton Strips Despite Leading or Trailing Comments"
+description = '''
+A singleton dict carrying a leading or trailing comment still **strips its pre-`:` padding**. The edit deletes only the whitespace span between key and `:`, structurally separate from any comment on another line or trailing the value, so the comment is not at risk and the strip lands.
+'''
+previewable = false

@@ -1,2 +1,6 @@
 [docs]
 title = "Module-Level Runs Reorder Around `# fmt: off` Blocks"
+description = '''
+A module-level run **terminates at a `# fmt: off` block**. Assigns above the block sort within their run, the suppression directive bounds its own verbatim scope, and no run forms across the bracket.
+'''
+previewable = true

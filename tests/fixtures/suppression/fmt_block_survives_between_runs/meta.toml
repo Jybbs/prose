@@ -1,0 +1,6 @@
+[docs]
+title = "Off Block Survives Verbatim Between Aligned Runs"
+description = '''
+A `# fmt: off` / `# fmt: on` block sits between two assignment runs the alignment rules would otherwise touch. The bracketed lines **survive verbatim** while the runs above and below pad to their respective group widths.
+'''
+previewable = false

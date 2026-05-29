@@ -1,14 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/docstring_wrap/returns_section_budget_wrap/input.py
 ---
-"""
-A Returns section wraps to the section budget so the return-value
-description tracks the same horizontal room the Args table uses.
-"""
-
-
 def total(items):
     """
     Summary line.

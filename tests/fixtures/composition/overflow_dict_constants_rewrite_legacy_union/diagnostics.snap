@@ -1,15 +1,16 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/overflow_dict_constants_rewrite_legacy_union/input.py
 ---
-align-colons@265..265
-align-colons@292..292
-align-colons@327..327
-align-colons@359..359
-alphabetize@316..373
-collection-layout@253..357
-legacy-union-syntax@273..286
-legacy-union-syntax@307..322
-legacy-union-syntax@343..360
-legacy-union-syntax@381..394
+align-colons@121..121
+align-colons@153..153
+align-colons@59..59
+align-colons@86..86
+alphabetize@110..167
+collection-layout@47..151
+legacy-union-syntax@101..116
+legacy-union-syntax@137..154
+legacy-union-syntax@175..188
+legacy-union-syntax@67..80

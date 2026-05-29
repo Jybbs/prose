@@ -1,9 +1,3 @@
-"""
-A Returns section wraps to the section budget so the return-value
-description tracks the same horizontal room the Args table uses.
-"""
-
-
 def total(items):
     """
     Summary line.

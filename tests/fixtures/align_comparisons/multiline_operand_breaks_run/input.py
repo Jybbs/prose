@@ -1,8 +1,3 @@
-"""
-An operand whose own range spans multiple source lines breaks the
-run.
-"""
-
 if (
     foo == (
         1

@@ -1,10 +1,3 @@
-"""
-A module-level def with stacked decorators has its leading edge at
-the topmost decorator. The rule normalizes the blank-line count above
-that decorator, with the rest of the decorator chain riding along.
-"""
-
-
 def first():
     return 1
 

@@ -1,2 +1,6 @@
 [docs]
 title = "Augmented Assignments Count as Both Write and Read"
+description = '''
+An augmented assignment such as `total += value` is **both a read and a write** of its target, so the binding's write count climbs above one and the rule leaves it alone. Inlining a name that mutates itself is never the intended cleanup.
+'''
+previewable = true

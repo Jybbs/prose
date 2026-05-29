@@ -1,15 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/docstring_wrap/list_items_not_reflowed/input.py
 ---
-"""
-List items pass through verbatim. A long bulleted item is not re-flowed onto
-multiple lines because the list shape carries meaning the wrap math must
-not erase.
-"""
-
-
 def example():
     """
     The supported markers cover the conventional set:

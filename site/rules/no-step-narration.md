@@ -14,12 +14,6 @@ A numbered-step comment inside a function body (*`# 1. ...`, `# Step 2: ...`*) i
 
 Two shapes are recognized: the bare numeric-dot form `# N. text` and the `Step`-prefixed forms `# Step N: text` and `# Step N. text` (*case-insensitive on the keyword*). Inline comments at the end of a code line stay quiet, since they annotate the line rather than narrate a procedure. Pragma-style comments (*`# type: ignore`, `# noqa`*) stay quiet too, since they carry a different meaning. The lint fires at every scope (*module-level, function body, class body, nested block*) and never rewrites.
 
-<template #canonical-lead>
-
-A module-level own-line numbered-step comment surfaces the lint.
-
-</template>
-
 <template #related-after>
 
 For per-line opt-outs, the [**Suppression**](/usage/suppression#lint-directives) chapter covers the `# prose: ignore[no-step-narration]` directive.

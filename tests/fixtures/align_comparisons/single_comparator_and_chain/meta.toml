@@ -1,2 +1,7 @@
 [docs]
+title = "Single-Comparator Operands Share One Operator Column"
+description = '''
+Three single-comparator `==` operands in a multi-line `and`-chain share an alignment column. The operator at each row sits one space past the widest operand's left side.
+'''
+previewable = true
 canonical = true

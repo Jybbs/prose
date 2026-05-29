@@ -1,10 +1,3 @@
-"""
-A run carrying any `Call` on a binding's RHS skips entirely. The
-call could carry observable side effects, so reorder would risk
-running them in a different order than source. Source order
-survives.
-"""
-
 zebra = compute_default()
 alpha = 1
 beta = 2

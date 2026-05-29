@@ -1,0 +1,6 @@
+[docs]
+title = "Methods Sort Around One Holding a Collapsing Match"
+description = '''
+Out-of-order methods, one holding a `match` with single-statement return arms. **The methods sort alphabetically, `match-case-align` collapses each arm body onto its pattern line and aligns the `:` column**, and `blank-lines` cushions the methods.
+'''
+previewable = true

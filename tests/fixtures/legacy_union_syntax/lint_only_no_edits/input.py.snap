@@ -3,11 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/legacy_union_syntax/lint_only_no_edits/input.py
 ---
-"""
-The rule emits no edits, so every pass leaves the source byte-for-byte
-identical. A mix of legacy and modern forms stays as written.
-"""
-
 from typing import Optional, Union
 
 legacy_optional: Optional[int] = None

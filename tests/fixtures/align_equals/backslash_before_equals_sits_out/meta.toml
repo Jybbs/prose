@@ -1,0 +1,6 @@
+[docs]
+title = "Backslash Before the Equals Sits Out"
+description = '''
+A backslash continuation between the target and the `=` **drops the assignment out of the group**, leaving the neighboring binding unaligned rather than padded to a shared column.
+'''
+previewable = false

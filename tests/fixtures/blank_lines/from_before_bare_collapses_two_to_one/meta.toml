@@ -1,0 +1,6 @@
+[docs]
+title = "Two Blanks between `from` and Bare Import Collapse to One"
+description = '''
+A `from` import followed by a bare `import` with two blank lines between them **collapses to one**, the canonical gap between adjacent import groups.
+'''
+previewable = false

@@ -1,9 +1,3 @@
-"""
-An input that is already in alphabetize-compliant form. The rule
-walks the AST, finds every sortable site already in order, and
-emits zero edits.
-"""
-
 from collections import Counter
 from loguru import logger
 

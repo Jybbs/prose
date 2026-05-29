@@ -1,2 +1,7 @@
 [docs]
+title = "Body Sharing the Opener Line Drops to Its Own Line"
+description = '''
+A docstring whose opener shares a line with the first body sentence drops the body to a new line beneath the opener.
+'''
+previewable = true
 canonical = true

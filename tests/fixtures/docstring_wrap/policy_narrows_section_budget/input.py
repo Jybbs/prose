@@ -1,10 +1,3 @@
-"""
-A `.config.toml` sidecar flips `docstring-structured-policy` to the
-docstring budget so non-entry section bodies wrap at seventy six rather
-than the default eighty eight.
-"""
-
-
 def configure():
     """
     Summary line.

@@ -1,18 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/top_level_functions_sort_and_cushion/input.py
 ---
-"""
-Module-level function definitions arriving out of order with no
-blank lines between them.
-
-Rules:
-- alphabetize
-- blank_lines
-"""
-
-
 def alpha():
     return 2
 

@@ -25,12 +25,6 @@ The `allow` list holds bare names. An entry never produces a lint, even when its
 
 </template>
 
-<template #canonical-lead>
-
-A bare `SCREAMING_CASE = literal` at module level surfaces the lint, recommending a refactor to a more structured shape.
-
-</template>
-
 <template #related-after>
 
 For per-line opt-outs, the [**Suppression**](/usage/suppression#lint-directives) chapter covers the `# prose: ignore[loose-constants]` directive.

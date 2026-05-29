@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/compound_stmt_to_def_two_blanks/input.py
 ---
-blank-lines@215..217
+blank-lines@43..45

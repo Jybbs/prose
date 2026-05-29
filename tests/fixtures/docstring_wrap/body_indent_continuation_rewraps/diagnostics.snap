@@ -1,7 +1,7 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/docstring_wrap/body_indent_continuation_rewraps/input.py
 ---
-docstring-wrap@363..433
-docstring-wrap@75..221
+docstring-wrap@123..193

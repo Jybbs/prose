@@ -1,13 +1,3 @@
-"""
-Collections inside function and class bodies compute their enclosing
-indent from the opening bracket's line, not from the module top-level.
-Short collections at any indent level stay inline. A long dict at
-any depth expands with each entry on its own line, whereas a long
-list or set of atomic items flow-packs across balanced lines at the
-item indent.
-"""
-
-
 def build_config():
     short_local = {"alpha": 1, "beta": 2}
     long_local = {"alpha": 1, "beta": 2, "gamma": 3, "delta": 4, "epsilon": 5, "zeta": 6, "eta": 7}

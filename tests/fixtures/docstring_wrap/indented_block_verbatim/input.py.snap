@@ -1,15 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/docstring_wrap/indented_block_verbatim/input.py
 ---
-"""
-A four-space-indented block under a description paragraph passes through
-verbatim because indented blocks are treated as code samples and re-flowing
-them would damage their semantics.
-"""
-
-
 def example():
     """
     Summary line.

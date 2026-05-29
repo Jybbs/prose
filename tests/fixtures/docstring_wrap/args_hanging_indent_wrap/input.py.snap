@@ -1,16 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/docstring_wrap/args_hanging_indent_wrap/input.py
 ---
-"""
-A long Args entry wraps at the seventy six character docstring budget with
-a hanging indent at the description's start column, so continuation lines
-sit under the description they continue rather than at the parameter-list
-indent.
-"""
-
-
 def configure(name, retries):
     """
     Summary line.

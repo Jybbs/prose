@@ -1,0 +1,6 @@
+[docs]
+title = "Single-Line Signatures Pass Through Untouched"
+description = '''
+A single-line typed signature with parameter defaults **passes through unchanged**, since the rule aligns `=` only across multi-line signatures.
+'''
+previewable = false

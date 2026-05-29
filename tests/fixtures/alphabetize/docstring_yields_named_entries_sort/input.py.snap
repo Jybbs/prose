@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/docstring_yields_named_entries_sort/input.py
 ---
-"""
-The `Yields:` section reorders alphabetically when each entry
-carries a `name: description` shape.
-"""
-
-
 def stream(source):
     """Yield each record from `source`.
 

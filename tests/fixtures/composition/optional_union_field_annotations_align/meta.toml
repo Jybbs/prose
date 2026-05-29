@@ -1,0 +1,6 @@
+[docs]
+title = "Optional and Union Field Annotations Align in Width Groups"
+description = '''
+Class fields annotated with `Optional` and `Union`. The `:` and `=` columns align, but **the run splits into two adjacent alignment groups** where the shorter `host`/`port` names share one column and the longer `fallback_host`/`retry_count` names share another.
+'''
+previewable = true

@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/docstring_attributes_sort_with_continuations/input.py
 ---
-"""
-The `Attributes:` section reorders alphabetically by attribute
-name, with each entry's hanging continuations carried along.
-"""
-
-
 class Config:
     """Holds settings.
 

@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/strip_trailing_commas/param_list_comma_dropped/input.py
 ---
-"""
-A multi-line function signature drops its trailing comma. The
-parameter list's range covers `(...)`, and the backward scan from
-before the closing `)` lands on the comma after the last parameter.
-"""
-
-
 def load_lexicon(
     path: Path,
     encoding: str,

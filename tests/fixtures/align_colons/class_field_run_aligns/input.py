@@ -1,10 +1,3 @@
-"""
-A class body with a run of annotated fields at the same indent.
-The `:` columns align across the run. Class-level statements that
-are not `AnnAssign` would break the group, but this fixture has
-none so the whole body aligns as one block.
-"""
-
 class User:
     id: int
     name: str

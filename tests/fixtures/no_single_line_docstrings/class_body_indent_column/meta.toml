@@ -1,2 +1,6 @@
 [docs]
 title = "Class Docstrings Expand the Same Way"
+description = '''
+A class-level `"""A simple bag."""` splits across three lines with the body line landing at the **class-body indent**, sitting exactly where any other class-scope statement would. The rewrite tracks the enclosing scope's column rather than a fixed offset.
+'''
+previewable = true

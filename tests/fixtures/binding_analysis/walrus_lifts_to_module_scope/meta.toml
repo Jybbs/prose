@@ -1,0 +1,6 @@
+[docs]
+title = "Walrus in a Comprehension Lifts to Module Scope"
+description = '''
+A `:=` target inside a comprehension **lifts to the nearest non-comprehension scope**. The comprehension's own target stays scope-local while the walrus target becomes a module-level binding.
+'''
+previewable = false

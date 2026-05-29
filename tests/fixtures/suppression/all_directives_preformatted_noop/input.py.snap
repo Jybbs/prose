@@ -1,13 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/suppression/all_directives_preformatted_noop/input.py
 ---
-"""
-Already-formatted source carrying every directive shape produces no further
-edits on a fresh pipeline run.
-"""
-
 bar_baz = 3
 foo     = 2
 x       = 1

@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/class_siblings_run_breaks/input.py
 ---
-"""
-Top-level classes alphabetize among consecutive class siblings. A
-non-class statement between two class blocks breaks the run, so each
-contiguous class run sorts independently of statements that pin in
-place around it.
-"""
-
 class Alpha:
     pass
 

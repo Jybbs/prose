@@ -3,14 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/collection_layout/child_parens_preserved/input.py
 ---
-"""
-Parenthesized child expressions inside a multi-item list keep their
-explicit parens through both expansion and collapse. Without
-`parenthesized_range`, slicing each child's `range()` would drop
-the parens and turn `(-a) ** 2` into `-a ** 2`, which Python parses
-as `-(a ** 2)` and flips the sign of the result.
-"""
-
 precedence = [
     (-a) ** 2,
     (b + c) ** 3,

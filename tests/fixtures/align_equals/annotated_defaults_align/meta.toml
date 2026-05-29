@@ -1,2 +1,6 @@
 [docs]
 title = "Function-Parameter Defaults Align on the Same Column"
+description = '''
+Annotated parameter defaults align across a multi-line signature. The `=` column sits **one space past** the widest annotation, with shorter rows padded between the annotation and `=`.
+'''
+previewable = true

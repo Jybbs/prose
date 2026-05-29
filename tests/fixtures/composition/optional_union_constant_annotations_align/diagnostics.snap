@@ -1,7 +1,8 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/optional_union_constant_annotations_align/input.py
 ---
-align-equals@192..193
-align-equals@222..223
+align-equals@56..57
+align-equals@86..87

@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/signature_layout/rich_annotations_sliced_verbatim/input.py
 ---
-signature-layout@394..559
+signature-layout@106..271

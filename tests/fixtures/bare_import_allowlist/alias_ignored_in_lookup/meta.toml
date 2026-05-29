@@ -1,2 +1,6 @@
 [docs]
 title = "Aliased Bare Imports Are Flagged Too"
+description = '''
+`import os as o` is flagged on the top-level module `os`. The local alias `o` plays **no part in the allowlist lookup**, which matches the imported module name rather than the binding it introduces.
+'''
+previewable = true

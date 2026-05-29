@@ -1,11 +1,3 @@
-"""
-A signature carrying a rich variety of type annotations (*a
-`Callable` parameter, a generic `Mapping`, an `Annotated` wrapper, a
-tuple alias, and an `Optional` default*) expands to the one-per-line
-shape with each annotation's source slice preserved verbatim across
-the rewrite.
-"""
-
 from collections.abc import Callable, Mapping
 from typing import Annotated, Any, Optional
 

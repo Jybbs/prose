@@ -1,12 +1,3 @@
-"""
-Nested collections each run their own layout decision at their own
-column position. An outer literal's rewrite drags its inners along,
-whereas a pinned outer leaves each inner to its own pass. Dict-value
-nesting includes the key-text offset in the inner's column, so a
-long key can push its value past the budget even when the outer
-fits.
-"""
-
 cascade = [{"name": "alice_wonderland_the_explorer", "role": "administrator", "email": "alice.wonderland@example-company-domain.com"}, {"name": "bob", "role": "user"}]
 tiered_dict = {"primary_database": {"host": "very-long-hostname.example.com", "port": 5432, "username": "admin", "password": "secret"}, "cache": {"ttl": 60}}
 shallow_dict_in_dict = {"connection": {"host": "localhost", "port": 5432}, "cache": {"ttl": 60, "size": 1024}}

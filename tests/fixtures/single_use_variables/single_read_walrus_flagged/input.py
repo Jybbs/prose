@@ -1,10 +1,3 @@
-"""
-A walrus target binds its name in the nearest non-comprehension scope.
-When that target's read count is exactly one, the rule flags the
-walrus the same way it flags a single-use assignment.
-"""
-
-
 def first(items):
     if (n := len(items)) == 1:
         return n

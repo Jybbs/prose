@@ -1,16 +1,17 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/match_arm_dicts_expand_no_sort/input.py
 ---
-align-colons@360..360
-align-colons@395..395
-align-colons@429..429
-align-colons@467..467
-align-colons@557..557
-align-colons@591..591
-align-colons@625..625
-align-colons@664..664
-collection-layout@337..413
-collection-layout@456..534
-match-case-align@707..720
+align-colons@101..101
+align-colons@136..136
+align-colons@170..170
+align-colons@208..208
+align-colons@298..298
+align-colons@332..332
+align-colons@366..366
+align-colons@405..405
+collection-layout@197..275
+collection-layout@78..154
+match-case-align@448..461

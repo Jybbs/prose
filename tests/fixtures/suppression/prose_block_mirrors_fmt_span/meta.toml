@@ -1,0 +1,6 @@
+[docs]
+title = "Native Prose Block Mirrors the Fmt Span Exactly"
+description = '''
+A `# prose: off` / `# prose: on` block between two assignment runs **survives verbatim** while the runs around it pad to their group widths. The native `prose` namespace mirrors the `fmt` namespace's span semantics exactly.
+'''
+previewable = false

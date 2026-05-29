@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/loose_constants/fmt_off_suppresses_diagnostic/input.py
 ---
-"""
-A `# fmt: off` block carries the same suppression weight against
-lint diagnostics as it does against edits. The constant inside
-the block escapes the rule's emission path.
-"""
-
 # fmt: off
 PI = 3.14
 # fmt: on

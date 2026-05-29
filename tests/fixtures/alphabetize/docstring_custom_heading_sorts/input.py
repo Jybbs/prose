@@ -1,12 +1,3 @@
-"""
-A custom Title-case section heading whose body carries `name: description`
-entries reorders alphabetically by name, the same as the canonical Google
-headings. The heading shape (*Title-case word, immediately followed by
-`:`, body-indented children one step deeper*) is what qualifies the
-section, not the heading's name.
-"""
-
-
 def run_pipeline(payload):
     """Run the data pipeline.
 

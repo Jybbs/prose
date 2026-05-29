@@ -3,7 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/strip_trailing_commas/single_line_brackets_stripped/input.py
 ---
-strip-trailing-commas@294..295
-strip-trailing-commas@315..316
-strip-trailing-commas@343..344
-strip-trailing-commas@369..370
+strip-trailing-commas@16..17
+strip-trailing-commas@37..38
+strip-trailing-commas@65..66
+strip-trailing-commas@91..92

@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/typeddict_fields_sort_by_shape/input.py
 ---
-alphabetize@302..359
+alphabetize@60..117

@@ -1,7 +1,8 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/single_line_docstring_expands_only/input.py
 ---
-no-single-line-docstrings@210..234
-no-single-line-docstrings@291..317
+no-single-line-docstrings@130..156
+no-single-line-docstrings@49..73

@@ -1,17 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/optional_union_field_annotations_align/input.py
 ---
-"""
-A class whose annotated fields use `Optional` and `Union` from
-`typing`.
-
-Rules:
-- align_colons
-- align_equals
-"""
-
 from typing import Optional, Union
 
 

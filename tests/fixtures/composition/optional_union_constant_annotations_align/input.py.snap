@@ -1,17 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/optional_union_constant_annotations_align/input.py
 ---
-"""
-Module-level typed constants whose annotations use `Optional` and
-`Union` from `typing`.
-
-Rules:
-- align_colons
-- align_equals
-"""
-
 from typing import Optional, Union
 
 ALPHA: Optional[str]        = None

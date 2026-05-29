@@ -27,10 +27,4 @@ A short tuple inside a function-call argument list, like `numpy.zeros((3, 4))`, 
 
 </template>
 
-<template #canonical-lead>
-
-A dict literal with non-atomic entries expands to one entry per line, and the reader reads the entries as a column of key-value pairs.
-
-</template>
-
 </RuleLayout>

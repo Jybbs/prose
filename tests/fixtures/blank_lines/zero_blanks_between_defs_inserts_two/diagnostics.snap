@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/zero_blanks_between_defs_inserts_two/input.py
 ---
-blank-lines@184..185
+blank-lines@25..26

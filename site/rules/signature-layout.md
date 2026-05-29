@@ -25,10 +25,4 @@ The line-length budget comes from the top-level [`code-line-length`](/reference/
 
 </template>
 
-<template #canonical-lead>
-
-A five-parameter signature whose inline form fits the line budget pins the count trigger firing alone. The rule expands solely on the parameter count exceeding `max-inline-params`.
-
-</template>
-
 </RuleLayout>

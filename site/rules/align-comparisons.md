@@ -22,10 +22,4 @@ The rule walks each `BoolOp` whose operands are all `Expr::Compare`. The widest 
 
 </template>
 
-<template #canonical-lead>
-
-Three single-comparator `==` operands in a multi-line `and`-chain share an alignment column. The operator at each row sits one space past the widest operand's left side.
-
-</template>
-
 </RuleLayout>

@@ -1,9 +1,3 @@
-"""
-Two consecutive fmt: off directives flatten, with the first
-fmt: on closing the block. The second fmt: off does not nest, so
-text after the closing fmt: on aligns normally.
-"""
-
 x = 1
 foo = 2
 bar_baz = 3

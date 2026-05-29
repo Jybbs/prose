@@ -1,0 +1,6 @@
+[docs]
+title = "A Nested BoolOp Breaks the Outer Run"
+description = '''
+A nested parenthesized `BoolOp` **breaks the outer run**, since its multi-line range separates the operands around it. The inner `BoolOp`'s own operands still align when its range spans multiple source lines.
+'''
+previewable = false

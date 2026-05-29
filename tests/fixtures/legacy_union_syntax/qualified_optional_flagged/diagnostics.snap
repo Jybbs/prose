@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/legacy_union_syntax/qualified_optional_flagged/input.py
 ---
-legacy-union-syntax@188..208
+legacy-union-syntax@18..38

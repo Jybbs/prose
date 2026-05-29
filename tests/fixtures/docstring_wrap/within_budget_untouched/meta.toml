@@ -1,2 +1,6 @@
 [docs]
 title = "Already-Wrapped Source Is Left Alone"
+description = '''
+A docstring whose description and section bodies already fit their budgets **passes through unchanged**. The rule fires only when wrapping actually shortens a line, so short `Args:` and `Returns:` entries produce no edit.
+'''
+previewable = true

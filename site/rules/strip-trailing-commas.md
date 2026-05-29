@@ -22,12 +22,6 @@ The strip is unconditional within the contexts named above, so the rule carries 
 
 </template>
 
-<template #canonical-lead>
-
-A multi-line dict literal loses its trailing comma after the strip.
-
-</template>
-
 <template #related-after>
 
 For per-line opt-outs *(projects that prefer the trailing comma for diff stability even on multi-line forms)*, [**Suppression**](/usage/suppression) covers the `# fmt: off` / `# fmt: on` block markers.

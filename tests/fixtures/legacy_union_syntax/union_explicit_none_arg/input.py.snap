@@ -3,11 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/legacy_union_syntax/union_explicit_none_arg/input.py
 ---
-"""
-`Union[int, str, None]` flattens its explicit `None` arg into the
-recommendation `int | str | None`, leaving the source untouched.
-"""
-
 from typing import Union
 
 x: Union[int, str, None] = None

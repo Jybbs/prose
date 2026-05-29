@@ -1,11 +1,2 @@
-"""
-A generic function with PEP 695 type parameters between the name and
-`(` expands when its parameter count trips the cap. The type
-parameter list, the parameter annotations, and the return annotation
-each survive the rewrite intact because the replacement range starts
-at `(` rather than at the function name.
-"""
-
-
 def render[T](alpha: T, beta: T, delta: T, gamma: T, target: T) -> tuple[T, T]:
     return (alpha, beta)

@@ -1,10 +1,3 @@
-"""
-Several alphabetize targets fire in one source: classes at module
-level, methods within a class, kwargs at a call site, and a
-`from`-import run. The rule iterates internally to settle nested
-concerns inside an enclosing reorder.
-"""
-
 from loguru import logger
 from collections import Counter
 

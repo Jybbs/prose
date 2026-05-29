@@ -1,0 +1,6 @@
+[docs]
+title = "Trailing Off Comment Is Not a Block Opener"
+description = '''
+A trailing `# fmt: off` is a **normal end-of-line comment, not a block opener**. The line carrying it still receives its alignment edit, and the code below it is not suppressed.
+'''
+previewable = false

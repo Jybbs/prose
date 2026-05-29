@@ -1,9 +1,3 @@
-"""
-A docstring `Args:` section with one entry strips the pre-`:` padding
-on that entry. A section with two or more entries keeps padding so
-that `align_colons` can align them in a separate pass.
-"""
-
 def fetch(timeout):
     """Loads the resource over the network.
 

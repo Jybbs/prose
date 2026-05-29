@@ -1,10 +1,3 @@
-"""
-An `Args:` block with a malformed entry whose line starts with
-punctuation rather than an identifier. The rule skips that line
-when collecting alignment members, so the well-formed entries
-above and below it still align with each other.
-"""
-
 def render(template: str, context: dict, partials: dict) -> None:
     """
     Renders a template.

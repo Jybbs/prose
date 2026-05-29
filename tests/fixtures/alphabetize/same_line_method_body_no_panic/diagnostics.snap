@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/same_line_method_body_no_panic/input.py
 ---
-alphabetize@390..463
+alphabetize@17..90

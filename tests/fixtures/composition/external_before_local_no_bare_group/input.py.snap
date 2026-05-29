@@ -1,20 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/external_before_local_no_bare_group/input.py
 ---
-"""
-A block with no bare imports. alphabetize keeps external `from`
-imports ahead of the local-package group, blank_lines separates the
-two with one blank line and adds no leading bare group, and
-align_imports aligns within each group.
-
-Rules:
-- alphabetize
-- align_imports
-- blank_lines
-"""
-
 from collections import Counter
 from typing      import Any
 

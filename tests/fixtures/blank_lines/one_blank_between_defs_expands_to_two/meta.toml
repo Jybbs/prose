@@ -1,0 +1,6 @@
+[docs]
+title = "One Blank between Module Defs Expands to Two"
+description = '''
+Two module-level defs separated by a single blank line **expand to the canonical two**. The rule replaces the inter-statement whitespace run in place.
+'''
+previewable = false

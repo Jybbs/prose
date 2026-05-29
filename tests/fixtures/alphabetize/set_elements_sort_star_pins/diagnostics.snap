@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/set_elements_sort_star_pins/input.py
 ---
-alphabetize@305..406
+alphabetize@12..113

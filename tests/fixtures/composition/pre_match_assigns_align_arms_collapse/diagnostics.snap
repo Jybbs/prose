@@ -1,13 +1,14 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/pre_match_assigns_align_arms_collapse/input.py
 ---
-align-equals@311..312
-align-equals@322..323
-match-case-align@378..378
-match-case-align@379..392
-match-case-align@420..420
-match-case-align@421..434
-match-case-align@458..458
-match-case-align@459..472
+align-equals@25..26
+align-equals@36..37
+match-case-align@134..134
+match-case-align@135..148
+match-case-align@172..172
+match-case-align@173..186
+match-case-align@92..92
+match-case-align@93..106

@@ -1,6 +1,7 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/no_single_line_docstrings/oneliner_expands_to_three_lines/input.py
 ---
-no-single-line-docstrings@221..234
+no-single-line-docstrings@20..33

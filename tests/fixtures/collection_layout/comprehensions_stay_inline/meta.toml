@@ -1,2 +1,6 @@
 [docs]
 title = "Comprehensions Stay on One Line When They Fit"
+description = '''
+List, dict, set, and generator comprehensions are not literals, so the rule **leaves them inline** and never expands them. The visitor returns no rewrite for these shapes and keeps descending through their bodies.
+'''
+previewable = true

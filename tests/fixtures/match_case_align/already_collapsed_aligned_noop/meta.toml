@@ -1,0 +1,6 @@
+[docs]
+title = "Already Collapsed and Aligned Passes Through Untouched"
+description = '''
+Input whose arms are already on one line with their `:` sharing a column. **The rule emits zero edits** and the output equals the input byte-for-byte, pinning idempotence.
+'''
+previewable = false

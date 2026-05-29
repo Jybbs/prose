@@ -1,10 +1,3 @@
-"""
-The first arm's body is a single `Stmt::Assign` whose right-hand
-side spans multiple source lines. The multi-line check rejects
-the arm even though it is structurally collapsible. The remaining
-arm is alone in its sub-group and collapses without padding.
-"""
-
 match status:
     case "fail":
         result = (

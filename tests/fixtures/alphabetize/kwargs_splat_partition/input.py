@@ -1,11 +1,3 @@
-"""
-Keyword arguments at call sites alphabetize within splat-bounded
-segments. A `**kwargs` splat carries no `arg` name and acts as a
-hard partition, so named kwargs never cross the splat boundary
-during sort. The fixture covers a call with no splat and a call
-with a mid-list splat.
-"""
-
 posting = Posting(
     url="https://example.com",
     company="Cianbro",

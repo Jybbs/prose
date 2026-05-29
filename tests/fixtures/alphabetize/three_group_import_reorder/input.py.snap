@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/three_group_import_reorder/input.py
 ---
-"""
-Reorders a scrambled block of bare, external `from`, and relative
-imports into the canonical bare → external `from` → local-package
-order, sorting within each group and ranking relative imports by
-level then module.
-"""
-
 import os
 import sys
 from collections import Counter

@@ -1,12 +1,13 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/mixed_method_docstrings_expand_and_sort/input.py
 ---
-alphabetize@433..687
-blank-lines@424..425
-blank-lines@555..556
-blank-lines@648..649
-multi-line-docstrings@457..517
-no-single-line-docstrings@569..592
-no-single-line-docstrings@644..667
+alphabetize@23..277
+blank-lines@14..15
+blank-lines@145..146
+blank-lines@238..239
+multi-line-docstrings@47..107
+no-single-line-docstrings@159..182
+no-single-line-docstrings@234..257

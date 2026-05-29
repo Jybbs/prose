@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/type_checking_in_function_imports_sort/input.py
 ---
-alphabetize@395..463
+alphabetize@87..155

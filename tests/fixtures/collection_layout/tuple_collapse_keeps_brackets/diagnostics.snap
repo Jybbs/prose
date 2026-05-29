@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/collection_layout/tuple_collapse_keeps_brackets/input.py
 ---
-collection-layout@596..617
-collection-layout@645..654
-collection-layout@689..779
+collection-layout@120..129
+collection-layout@164..254
+collection-layout@71..92

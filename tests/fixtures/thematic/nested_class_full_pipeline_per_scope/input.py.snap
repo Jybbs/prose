@@ -1,17 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/thematic/nested_class_full_pipeline_per_scope/input.py
 ---
-"""
-Outer class with an inner helper class, where each class carries field
-declarations and methods in arbitrary order. The full pipeline sorts
-fields and methods at every nesting depth, aligns the declaration columns
-within each scope independently, and settles the blank-line cushion between
-methods.
-"""
-
-
 class Order:
 
     customer_id : str   = ""

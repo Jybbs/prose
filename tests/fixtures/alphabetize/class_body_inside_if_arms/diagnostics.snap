@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/class_body_inside_if_arms/input.py
 ---
-alphabetize@307..430
+alphabetize@34..157

@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/unused_future_annotations/two_future_lines_processed_separately/input.py
 ---
-"""
-Two consecutive `from __future__ import` lines, one carrying
-`annotations` and one carrying `division`. Each `ImportFrom` is
-processed independently, so the `annotations` line is removed while
-the `division` line remains.
-"""
-
 from __future__ import division
 
 x = 1 / 2

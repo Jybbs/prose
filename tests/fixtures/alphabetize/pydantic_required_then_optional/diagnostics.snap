@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/pydantic_required_then_optional/input.py
 ---
-alphabetize@284..425
+alphabetize@63..204

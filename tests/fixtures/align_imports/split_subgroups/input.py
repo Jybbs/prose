@@ -1,10 +1,3 @@
-"""
-A run whose widest module overshoots the default `max-shift = 8`
-greedily partitions into contiguous sub-groups under the default
-`split` policy. Each sub-group aligns at its own column, so an
-outlier line does not drag its short neighbors across the page.
-"""
-
 from io import BytesIO
 from re import sub
 from os import getenv

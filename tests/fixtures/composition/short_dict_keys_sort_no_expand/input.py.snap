@@ -1,15 +1,7 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/short_dict_keys_sort_no_expand/input.py
 ---
-"""
-A short inline dict whose keys arrive out of order but whose inline
-form fits within the line budget. alphabetize reorders the keys in
-place without forcing expansion.
-
-Rules:
-- alphabetize
-"""
-
 config = {"alpha": 1, "beta": 2, "mango": 3, "zeta": 6}

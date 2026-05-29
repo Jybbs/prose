@@ -1,2 +1,6 @@
 [docs]
 title = "Already-Aligned Imports Are Left Alone"
+description = '''
+Input whose gaps already carry the target width of spaces is **idempotent** under the rule. The `from`-import and `import`-as groups already sit on their columns, so the rule emits zero edits and the output equals the input byte-for-byte.
+'''
+previewable = true

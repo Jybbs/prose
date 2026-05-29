@@ -1,18 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/string_keys_sort_strip_align/input.py
 ---
-"""
-A multi-entry dict whose string keys arrive out of order and whose
-last entry carries a trailing comma.
-
-Rules:
-- alphabetize
-- strip_trailing_commas
-- align_colons
-"""
-
 config = {
     "alpha" : 1,
     "beta"  : 2,

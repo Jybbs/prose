@@ -1,0 +1,6 @@
+[docs]
+title = "Lambda Parameters Sort With `self` / `cls` Pinned"
+description = '''
+Lambda parameters **alphabetize the same way function parameters do**, with `self` / `cls` pinned. Lambdas cannot carry decorators, so the positional-binding skip never engages here.
+'''
+previewable = false

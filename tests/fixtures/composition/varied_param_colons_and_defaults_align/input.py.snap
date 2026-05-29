@@ -1,19 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/varied_param_colons_and_defaults_align/input.py
 ---
-"""
-Function signature with typed parameters of varying widths and
-default values. The signature's parameter `:` columns and default
-`=` columns each align across the run.
-
-Rules:
-- align_colons
-- align_equals
-"""
-
-
 def configure(
     host : str = "localhost",
     port : int = 8080,

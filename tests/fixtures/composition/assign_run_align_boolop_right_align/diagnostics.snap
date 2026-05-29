@@ -1,9 +1,10 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/assign_run_align_boolop_right_align/input.py
 ---
-align-comparisons@411..412
-align-comparisons@458..459
-align-equals@297..298
-align-equals@362..363
+align-comparisons@144..145
+align-comparisons@191..192
+align-equals@30..31
+align-equals@95..96

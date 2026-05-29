@@ -1,20 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/fields_and_methods_sort_align_cushion/input.py
 ---
-"""
-A class carrying both annotated fields and methods, all declared
-out of order, with missing blank-line spacing between methods.
-
-Rules:
-- alphabetize
-- blank_lines
-- align_colons
-- align_equals
-"""
-
-
 class Service:
 
     host        : str   = "localhost"

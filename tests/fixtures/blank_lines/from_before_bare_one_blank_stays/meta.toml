@@ -1,0 +1,6 @@
+[docs]
+title = "One Blank between `from` and Bare Import Stays"
+description = '''
+A `from` import and a following bare `import` already separated by one blank line **stay at one**, passing through unchanged.
+'''
+previewable = false

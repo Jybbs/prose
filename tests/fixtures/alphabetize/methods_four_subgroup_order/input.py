@@ -1,10 +1,3 @@
-"""
-Methods within a class sort into four sub-groups in this order:
-dunders, then properties (`@property` and `@cached_property`), then
-private methods (single leading underscore), then public methods.
-Each sub-group sorts alphabetically among its own members.
-"""
-
 class Matcher:
     def public_two(self):
         pass

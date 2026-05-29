@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/collection_layout/set_atomics_flow_pack/input.py
 ---
-collection-layout@490..574
-collection-layout@594..634
+collection-layout@157..197
+collection-layout@53..137

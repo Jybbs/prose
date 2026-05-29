@@ -3,8 +3,8 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/singleton_rule/interleaved_singletons_and_groups_all_shapes/input.py
 ---
-singleton-rule@411..412
-singleton-rule@488..489
-singleton-rule@573..574
-singleton-rule@624..625
-singleton-rule@638..639
+singleton-rule@103..104
+singleton-rule@188..189
+singleton-rule@239..240
+singleton-rule@253..254
+singleton-rule@26..27

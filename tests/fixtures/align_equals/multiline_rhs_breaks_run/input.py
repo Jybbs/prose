@@ -1,9 +1,3 @@
-"""
-A right-hand side that spans multiple source lines breaks the
-alignment group, so the following single-line assignment lands in
-its own group rather than aligning across the multi-line entry.
-"""
-
 PRIMARY = {
     "alpha": 1,
     "beta": 2,

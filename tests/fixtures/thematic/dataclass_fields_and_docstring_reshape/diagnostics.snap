@@ -1,19 +1,19 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/dataclass_fields_and_docstring_reshape/input.py
 ---
-align-colons@477..477
-align-colons@506..506
-align-colons@530..530
-align-colons@556..556
-align-colons@579..579
-align-equals@487..488
-align-equals@517..518
-align-equals@544..545
-align-equals@601..602
-alphabetize@469..595
-blank-lines@464..465
-blank-lines@596..597
-docstring-wrap@69..378
-no-single-line-docstrings@631..661
+align-colons@106..106
+align-colons@130..130
+align-colons@156..156
+align-colons@179..179
+align-colons@77..77
+align-equals@117..118
+align-equals@144..145
+align-equals@201..202
+align-equals@87..88
+alphabetize@69..195
+blank-lines@196..197
+blank-lines@64..65
+no-single-line-docstrings@231..261

@@ -1,17 +1,17 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/member_groups_reordered_and_aligned/input.py
 ---
-align-colons@415..415
-align-colons@444..444
-align-colons@467..467
-align-equals@421..422
-align-equals@455..456
-alphabetize@402..732
-blank-lines@397..398
-blank-lines@480..481
-blank-lines@546..547
-blank-lines@604..605
-blank-lines@672..673
-docstring-wrap@68..321
+align-colons@37..37
+align-colons@66..66
+align-colons@89..89
+align-equals@43..44
+align-equals@77..78
+alphabetize@24..354
+blank-lines@102..103
+blank-lines@168..169
+blank-lines@19..20
+blank-lines@226..227
+blank-lines@294..295

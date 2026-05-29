@@ -1,0 +1,6 @@
+[docs]
+title = "Bare and From Imports Each Sort Within Their Group"
+description = '''
+A mixed run of bare imports and `from` imports, each kind out of order. **`alphabetize` sorts each kind in place, `align-imports` aligns the `as` and `import` keywords, and `blank-lines` inserts one blank at the bare-to-from boundary**.
+'''
+previewable = true

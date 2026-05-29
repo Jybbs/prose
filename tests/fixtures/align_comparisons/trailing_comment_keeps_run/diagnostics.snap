@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_comparisons/trailing_comment_keeps_run/input.py
 ---
-align-comparisons@204..205
-align-comparisons@254..255
+align-comparisons@12..13
+align-comparisons@62..63

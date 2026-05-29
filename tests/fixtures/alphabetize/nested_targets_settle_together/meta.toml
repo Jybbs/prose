@@ -1,0 +1,6 @@
+[docs]
+title = "Nested Sort Targets Settle in One Pass"
+description = '''
+Several targets fire in one source: classes at module level, methods within a class, kwargs at a call site, and a `from`-import run. **The rule iterates internally** to settle nested concerns inside each enclosing reorder.
+'''
+previewable = false

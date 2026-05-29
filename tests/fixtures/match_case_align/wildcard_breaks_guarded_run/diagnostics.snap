@@ -3,10 +3,10 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/match_case_align/wildcard_breaks_guarded_run/input.py
 ---
-match-case-align@251..251
-match-case-align@252..261
-match-case-align@303..303
-match-case-align@304..313
-match-case-align@355..355
-match-case-align@356..365
-match-case-align@395..404
+match-case-align@142..142
+match-case-align@143..152
+match-case-align@182..191
+match-case-align@38..38
+match-case-align@39..48
+match-case-align@90..90
+match-case-align@91..100

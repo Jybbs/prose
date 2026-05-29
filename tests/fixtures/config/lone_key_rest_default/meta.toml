@@ -1,0 +1,6 @@
+[docs]
+title = "Lone Key Leaves Every Other Field at Its Default"
+description = '''
+Only `target-version = "3.10"` is set under `[tool.prose]`. **Every other field falls through to its built-in default**, so the resolved `Config` pairs the overridden version with the stock line lengths, cache settings, and rule toggles.
+'''
+previewable = false

@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/blank_lines/method_in_doubly_nested_class_one_blank/input.py
 ---
-"""
-A method inside a class nested in an outer class normalizes to 1
-blank line between siblings.
-"""
-
-
 class Outer:
 
     class Inner:

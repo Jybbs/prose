@@ -3,14 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/blank_lines/comment_block_binds_to_next_stmt/input.py
 ---
-"""
-An own-line comment between two statements forms the second
-statement's leading block. The rule normalizes the canonical gap
-above the comment and binds the comment tight against the following
-statement.
-"""
-
-
 def first():
     return 1
 

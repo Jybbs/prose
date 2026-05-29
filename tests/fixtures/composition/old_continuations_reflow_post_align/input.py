@@ -1,17 +1,3 @@
-"""
-Args entries with old-style continuations indented to the section
-body's `body_indent + 4` rather than under the description, and
-names of varying widths. `align_colons` shifts every colon to the
-longest-name column, and `docstring_wrap` then re-flows the
-continuations into the post-align hanging-column shape rather
-than leaving them at `body_indent + 4`.
-
-Rules:
-- align_colons
-- docstring_wrap
-"""
-
-
 def configure(host, encoding):
     """
     Summary line.

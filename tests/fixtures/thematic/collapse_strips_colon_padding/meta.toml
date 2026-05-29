@@ -1,0 +1,6 @@
+[docs]
+title = "Collapse Drops Aligned Padding When a Dict Fits Inline"
+description = '''
+A multi-line dict carrying `align_colons`-shaped padding fits the budget inline. **Collapse strips that padding because the inline writer always emits `": "` rather than honoring the source gap**, and `align_colons` does not re-pad a single-line dict, so a second pass is stable.
+'''
+previewable = false

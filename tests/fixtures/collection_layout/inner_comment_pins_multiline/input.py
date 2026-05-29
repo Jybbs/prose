@@ -1,14 +1,3 @@
-"""
-A literal whose source range contains a comment in any attachment
-position is left alone to preserve author-intended prose that the
-collapse would drop. Own-line comments between entries, trailing
-comments on an entry, and comments before the closing bracket all
-pin the multi-line shape. A trailing comment outside the literal's
-range still allows the literal to expand when the inline form
-overflows. Atomic items inside the expanded form flow across
-balanced lines.
-"""
-
 own_line_comment_between_entries = [
     1,
     # explanatory

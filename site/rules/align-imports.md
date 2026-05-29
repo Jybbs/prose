@@ -22,10 +22,4 @@ The rule reads each block as the run of consecutive imports at the same indentat
 
 </template>
 
-<template #canonical-lead>
-
-A run of `from ... import ...` statements lines up on the `import` keyword, so the module column flushes left and the name column flushes right.
-
-</template>
-
 </RuleLayout>

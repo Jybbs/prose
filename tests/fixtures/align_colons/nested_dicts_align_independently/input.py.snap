@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/align_colons/nested_dicts_align_independently/input.py
 ---
-"""
-A dict whose values are themselves dicts. Each nested dict aligns
-its own `:` column independently at its own indent, so the inner
-dict's alignment is not affected by the outer dict's key widths.
-"""
-
 config = {
     "development" : {
         "host"        : "localhost",

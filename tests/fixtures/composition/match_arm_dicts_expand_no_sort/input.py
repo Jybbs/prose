@@ -1,15 +1,3 @@
-"""
-A `match` whose single-statement arms each return a long inline
-dict that exceeds the line budget once it lands on its arm line.
-No key reordering — the rule list excludes alphabetize.
-
-Rules:
-- collection_layout
-- match_case_align
-- align_colons
-"""
-
-
 def dispatch(kind):
     match kind:
         case "alpha":

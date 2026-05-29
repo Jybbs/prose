@@ -1,10 +1,10 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/single_line_method_docstrings_expand_and_space/input.py
 ---
-blank-lines@178..183
-blank-lines@197..198
-blank-lines@294..295
-no-single-line-docstrings@232..256
-no-single-line-docstrings@313..339
+blank-lines@111..112
+blank-lines@14..15
+no-single-line-docstrings@130..156
+no-single-line-docstrings@49..73

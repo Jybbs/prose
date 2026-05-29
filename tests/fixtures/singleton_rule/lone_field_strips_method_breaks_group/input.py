@@ -1,12 +1,3 @@
-"""
-A class with a single annotated field strips that field's pre-`:`
-padding. A class with multiple line-adjacent annotated fields keeps
-its padding, since `align_colons` owns the multi-field alignment.
-A class that mixes a single annotated field with method definitions
-still treats the field as a singleton, because the method breaks the
-line-adjacent group rather than joining it.
-"""
-
 from pydantic import BaseModel
 
 

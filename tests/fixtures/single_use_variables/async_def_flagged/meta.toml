@@ -1,2 +1,6 @@
 [docs]
 title = "Async Function Bodies Are Recognized the Same Way"
+description = '''
+A single-use binding inside an `async def` is **flagged the same way** as one inside a plain `def`. The rule consumes the unified function-def shape and treats both as the same scope kind, so `await`-driven code earns no exemption.
+'''
+previewable = true

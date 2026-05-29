@@ -3,14 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/collection_layout/dict_entries_one_per_line/input.py
 ---
-"""
-A multi-item dict stays inline when its inline form fits the
-budget. A dict whose inline form overflows expands one `key: value`
-entry per line, never flow-packed because each row needs to pin
-its `:` for the downstream `align_colons` rule. A multi-line dict
-whose inline form fits collapses back to one line.
-"""
-
 short_dict = {"alpha": 1, "beta": 2, "gamma": 3}
 long_dict = {
     "alpha": 1,

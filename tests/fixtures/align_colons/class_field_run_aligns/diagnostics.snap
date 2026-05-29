@@ -3,8 +3,8 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/class_field_run_aligns/input.py
 ---
-align-colons@265..265
-align-colons@279..279
-align-colons@294..294
-align-colons@308..308
-align-colons@327..327
+align-colons@18..18
+align-colons@32..32
+align-colons@47..47
+align-colons@61..61
+align-colons@80..80

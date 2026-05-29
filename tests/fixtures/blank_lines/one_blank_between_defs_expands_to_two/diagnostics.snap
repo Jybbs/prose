@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/one_blank_between_defs_expands_to_two/input.py
 ---
-blank-lines@197..199
+blank-lines@25..27

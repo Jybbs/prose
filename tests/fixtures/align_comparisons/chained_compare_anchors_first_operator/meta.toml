@@ -1,2 +1,6 @@
 [docs]
 title = "A Chained Compare Anchors on Its First Operator"
+description = '''
+A chained compare such as `0 < bar < 100` **anchors on its first operator**. The remaining operators stay in place and take no part in the column math, while the surrounding single-comparator rows align around it.
+'''
+previewable = true

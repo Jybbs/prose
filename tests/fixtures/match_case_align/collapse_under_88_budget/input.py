@@ -1,15 +1,3 @@
-"""
-Five arms multi-line in source:
-
-- arm 1 fits comfortably under the 88-char budget and collapses
-- arm 2 sits at exactly 88 columns collapsed and also collapses
-- arm 3 lands at 89 columns (one over) and stays multi-line
-- arm 4 lands well past the budget and stays multi-line
-- arm 5's `if` guard pushes the collapsed form past the budget,
-  pinning that the gate measures the guard width alongside the
-  pattern width
-"""
-
 def dispatch(event):
     match event.kind:
         case "under_88_columns":

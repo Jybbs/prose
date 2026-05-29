@@ -1,0 +1,6 @@
+[docs]
+title = "Signature Regroups Required-Then-Optional, Expands, Aligns"
+description = '''
+A five-parameter signature with out-of-order typed parameters. **The parameters regroup into required-then-optional alphabetical runs, expand to one per line, align the annotation `:` column, and align the default `=` column** across the optional run.
+'''
+previewable = true

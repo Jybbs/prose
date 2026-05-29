@@ -39,12 +39,6 @@ The `target-version` field from the top-level [**Configuration**](/reference/con
 
 </template>
 
-<template #canonical-lead>
-
-A file whose annotations are typing-only loses the `__future__` import when the target version allows safe removal.
-
-</template>
-
 <template #related-after>
 
 For the gate semantics, [**`target-version`**](/reference/configuration#top-level-keys) in the Configuration chapter covers how the field is read across version-gated rules.

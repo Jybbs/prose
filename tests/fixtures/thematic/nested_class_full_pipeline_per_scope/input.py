@@ -1,12 +1,3 @@
-"""
-Outer class with an inner helper class, where each class carries
-field declarations and methods in arbitrary order. The full pipeline
-sorts fields and methods at every nesting depth, aligns the
-declaration columns within each scope independently, and settles
-the blank-line cushion between methods.
-"""
-
-
 class Order:
     total: float = 0.0
     customer_id: str = ""

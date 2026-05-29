@@ -1,10 +1,3 @@
-"""
-Google-style `Args:` section inside a function docstring. Each
-argument entry's `:` aligns to the widest argument name's column.
-The leading and trailing sections of the docstring stay untouched,
-and the body of the function is unaffected.
-"""
-
 def transfer(source: str, destination: str, amount: float, memo: str) -> None:
     """
     Transfers funds between two accounts.

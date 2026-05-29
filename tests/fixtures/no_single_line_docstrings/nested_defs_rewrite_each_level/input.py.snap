@@ -1,14 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/no_single_line_docstrings/nested_defs_rewrite_each_level/input.py
 ---
-"""
-Nested function defs each carry their own docstring, and the
-rewrite fires at every level independently.
-"""
-
-
 def outer():
     """
     Outer docstring.

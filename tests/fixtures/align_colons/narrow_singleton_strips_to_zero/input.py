@@ -1,11 +1,3 @@
-"""
-Class fields whose widths split into sub-groups under the rule's
-`max-shift` cap. A single narrow field falls into its own singleton
-sub-group whose width sits below the surrounding sub-groups' max,
-triggering the strip-to-zero collapse rather than the wide-singleton
-anchor.
-"""
-
 class Packet:
     connection: int
     descriptors: list

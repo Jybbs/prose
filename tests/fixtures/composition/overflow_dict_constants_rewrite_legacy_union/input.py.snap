@@ -1,20 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/overflow_dict_constants_rewrite_legacy_union/input.py
 ---
-"""
-Module-level constants whose RHS dicts overflow the budget and whose
-values carry legacy union syntax.
-
-Rules:
-- collection_layout
-- alphabetize
-- align_colons
-- align_equals
-- legacy_union_syntax
-"""
-
 from typing import Optional, Union
 
 PRIMARY = {

@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_imports/aliased_drop_keeps_outlier/input.py
 ---
-align-imports@284..285
-align-imports@299..300
-align-imports@372..373
+align-imports@119..120
+align-imports@31..32
+align-imports@46..47

@@ -1,12 +1,12 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
 ---
-alphabetize@456..740
-bare-import-allowlist@444..453
-blank-lines@689..690
-blank-lines@720..722
-docstring-wrap@621..653
-docstring-wrap@69..402
-multi-line-docstrings@572..661
+alphabetize@19..303
+bare-import-allowlist@7..16
+blank-lines@252..253
+blank-lines@283..285
+docstring-wrap@184..216
+multi-line-docstrings@135..224

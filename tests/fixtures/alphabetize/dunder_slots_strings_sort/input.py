@@ -1,9 +1,3 @@
-"""
-The string-literal items inside `__slots__` alphabetize by string
-value, matching `__all__`. Tuple form parses identically through
-the rule's list-or-tuple branch.
-"""
-
 class Posting:
     __slots__ = ("title", "company", "date_posted")
 

@@ -31,7 +31,7 @@ export { data }
 export default defineLoader({
   watch: [`${fixturesDir}/*/*/meta.toml`],
   async load(): Promise<RuleFixturesData> {
-    type Docs    = { canonical?: boolean, title?: string }
+    type Docs    = { canonical?: boolean, previewable?: boolean, title?: string }
     type Pending = { canonical: string | null, examples: RuleExample[] }
 
     const byRule: Record<string, Pending> = {}
@@ -45,16 +45,14 @@ export default defineLoader({
       const set = (byRule[rule] ??= { canonical: null, examples: [] })
       if (docs.canonical === true) {
         set.canonical = caseName
-      } else if (typeof docs.title === 'string' && docs.title.length > 0) {
+      } else if (docs.previewable === true && typeof docs.title === 'string' && docs.title.trim().length > 0) {
         set.examples.push({ case: caseName, title: docs.title })
       }
     }
 
     const out: RuleFixturesData = {}
     for (const [rule, set] of Object.entries(byRule)) {
-      if (set.canonical === null) {
-        throw new Error(`rule-fixtures.data: rule "${rule}" has no canonical = true case`)
-      }
+      if (set.canonical === null) continue
       out[rule] = {
         canonical : set.canonical,
         examples  : set.examples.sort((a, b) => sortKey(a.title).localeCompare(sortKey(b.title)))

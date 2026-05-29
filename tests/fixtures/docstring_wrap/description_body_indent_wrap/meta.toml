@@ -1,2 +1,7 @@
 [docs]
+title = "Description Paragraphs Wrap at the Body Indent"
+description = '''
+Description prose wraps to `docstring-line-length`, with the existing paragraph structure preserved across the rewrap.
+'''
+previewable = true
 canonical = true

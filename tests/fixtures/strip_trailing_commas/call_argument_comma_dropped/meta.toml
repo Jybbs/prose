@@ -1,2 +1,6 @@
 [docs]
 title = "Function Calls Drop the Trailing Comma on the Final Arg"
+description = '''
+A multi-line call whose argument list covers `(...)` loses the `,` after its last argument. **The backward scan from before the closing `)` finds that comma and deletes it**, so the call reads without a dangling separator.
+'''
+previewable = true

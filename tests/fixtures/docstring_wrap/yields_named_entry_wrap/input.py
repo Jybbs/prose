@@ -1,10 +1,3 @@
-"""
-A Yields entry naming the yielded value wraps the description at the
-docstring budget with a hanging indent at the description's start column,
-matching every other entry-carrying section.
-"""
-
-
 def stream():
     """
     Summary line.

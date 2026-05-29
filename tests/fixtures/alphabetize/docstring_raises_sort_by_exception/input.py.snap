@@ -3,11 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/docstring_raises_sort_by_exception/input.py
 ---
-"""
-The `Raises:` section reorders alphabetically by exception name.
-"""
-
-
 def load(path):
     """Load configuration.
 

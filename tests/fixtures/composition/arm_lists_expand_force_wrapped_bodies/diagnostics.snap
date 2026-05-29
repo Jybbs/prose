@@ -1,8 +1,9 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/arm_lists_expand_force_wrapped_bodies/input.py
 ---
-collection-layout@359..448
-collection-layout@491..561
-match-case-align@654..667
+collection-layout@210..280
+collection-layout@78..167
+match-case-align@373..386

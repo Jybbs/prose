@@ -1,2 +1,6 @@
 [docs]
 title = "Nested Matches Align Independently"
+description = '''
+An outer arm whose body is itself a `match` disqualifies and stays multi-line, while the lone sibling arm collapses without padding. **The inner `match` is visited as its own group**, collapsing and aligning its three single-statement arms on a separate `:` column.
+'''
+previewable = true

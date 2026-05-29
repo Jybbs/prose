@@ -1,0 +1,6 @@
+[docs]
+title = "External Froms Lead Local Froms With No Bare Group"
+description = '''
+A block of only `from` imports, external and local-package mixed. **`alphabetize` keeps external imports ahead of the local group, `blank-lines` separates the two with one blank and adds no leading bare group**, and `align-imports` aligns within each.
+'''
+previewable = true

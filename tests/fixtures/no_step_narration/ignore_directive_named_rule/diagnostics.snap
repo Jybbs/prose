@@ -1,6 +1,7 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/no_step_narration/ignore_directive_named_rule/input.py
 ---
-no-step-narration@300..351
+no-step-narration@117..168

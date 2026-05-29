@@ -1,13 +1,3 @@
-"""
-A function header carries 1 blank line of separation before its first
-body statement when that statement is a compound-body opener. The
-cushion applies uniformly to `match`, `if`, `for`, `while`, `with`,
-and `try` openers. Async function bodies that open with `async for` or
-`async with` get the same cushion since `async` collapses into the
-sync variant in the AST.
-"""
-
-
 def with_match(value):
     match value:
         case _:

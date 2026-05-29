@@ -1,0 +1,6 @@
+[docs]
+title = "Opaque Subscript Roots Skip the Run"
+description = '''
+A run reaching a non-module-local root through a `Subscript` chain **skips entirely**. The root `sys` is neither a run target nor a module-local binding written above the run, so safety cannot be proved.
+'''
+previewable = false

@@ -1,2 +1,6 @@
 [docs]
 title = "Class-Body Numbered Steps Surface the Lint Too"
+description = '''
+A numbered-step comment inside a class body is **flagged the same way as one inside a function**. The own-line filter passes and the enclosing scope plays no part in the match.
+'''
+previewable = true

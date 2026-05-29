@@ -1,12 +1,3 @@
-"""
-A row in a multi-item dict whose `key: value` width overflows the
-line budget at the item-indent column breaks at `:` and hangs the
-value at `item_indent + INDENT_STEP`. Rows that fit at the
-item-indent stay on one line. Already-multi-line nested values
-pass through their own expansion and never trigger the hang
-predicate.
-"""
-
 config = {
     "alpha": 1,
     "beta": 2,

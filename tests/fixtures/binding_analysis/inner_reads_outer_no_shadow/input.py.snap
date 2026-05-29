@@ -1,5 +1,6 @@
 ---
 source: tests/binding_analysis.rs
+assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/inner_reads_outer_no_shadow/input.py
 ---
@@ -10,23 +11,23 @@ bindings:
     read_offsets: []
     scope: 0
     write_offsets:
-      - 154
+      - 4
   - kinds:
       - Assignment
     name: x
     read_offsets:
-      - 206
+      - 56
     scope: 1
     write_offsets:
-      - 167
+      - 17
   - kinds:
       - FunctionDef
     name: inner
     read_offsets:
-      - 220
+      - 70
     scope: 1
     write_offsets:
-      - 182
+      - 32
 scopes:
   - bindings:
       outer: 0

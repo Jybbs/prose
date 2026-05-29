@@ -1,2 +1,6 @@
 [docs]
 title = "Module-Level Assignment Runs Sort within Dependency Tiers"
+description = '''
+A three-tier dependency chain **reorders within each tier without crossing tier boundaries**. `RADIUS` is tier 0, `DIAMETER` is tier 1, and `AREA` is tier 2, so two tier-0 constants swap relative to source while staying above tier 1.
+'''
+previewable = true

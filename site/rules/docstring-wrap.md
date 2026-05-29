@@ -22,12 +22,6 @@ Description and structured budgets come from the top-level [**Configuration**](/
 
 </template>
 
-<template #canonical-lead>
-
-Description prose wraps to `docstring-line-length`, with the existing paragraph structure preserved across the rewrap.
-
-</template>
-
 <template #related-after>
 
 For the budget semantics, the [**Docstring Budgets**](/reference/configuration#docstring-budgets) section of the Configuration chapter covers how the description and structured budgets interact.

@@ -1,10 +1,3 @@
-"""
-A multi-line function signature drops its trailing comma. The
-parameter list's range covers `(...)`, and the backward scan from
-before the closing `)` lands on the comma after the last parameter.
-"""
-
-
 def load_lexicon(
     path: Path,
     encoding: str,

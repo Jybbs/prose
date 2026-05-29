@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/signature_layout/walker_descends_nested_defs/input.py
 ---
-signature-layout@285..365
-signature-layout@382..447
+signature-layout@113..178
+signature-layout@16..96

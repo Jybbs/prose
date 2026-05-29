@@ -1,2 +1,7 @@
 [docs]
+title = "Bare SCREAMING_CASE Assignment Draws the Diagnostic"
+description = '''
+A bare `SCREAMING_CASE = literal` at module level surfaces the lint, recommending a refactor to a more structured shape.
+'''
+previewable = true
 canonical = true

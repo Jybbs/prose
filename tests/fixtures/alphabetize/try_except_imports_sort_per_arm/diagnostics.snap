@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/try_except_imports_sort_per_arm/input.py
 ---
-alphabetize@269..397
+alphabetize@14..142

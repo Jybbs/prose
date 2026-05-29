@@ -1,0 +1,6 @@
+[docs]
+title = "Single-Assignment Bodies Collapse and Align Colons"
+description = '''
+Three arms whose every body is a lone assignment each fold onto their `case` line. **The `:` column aligns to the widest pattern**, padding the shorter two so the colons stack.
+'''
+previewable = false

@@ -1,0 +1,6 @@
+[docs]
+title = "Decimal-Version Comments Sit Out"
+description = '''
+A decimal-version comment such as `# 1.2 release notes` carries a digit right after the `.`, so the numeric-dot pattern's **whitespace-after-dot requirement excludes it**. Version annotations never trigger the rule.
+'''
+previewable = false

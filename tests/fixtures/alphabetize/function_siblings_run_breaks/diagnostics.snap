@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/function_siblings_run_breaks/input.py
 ---
-alphabetize@341..438
+alphabetize@4..101

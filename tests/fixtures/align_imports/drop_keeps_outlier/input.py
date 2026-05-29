@@ -1,10 +1,3 @@
-"""
-Same shape as `shift_limit_split` under the `drop` policy. The
-outlier module sorts to the top of the kept set on width, the
-remaining modules align at their tightened column, and the
-outlier itself keeps its original spacing untouched.
-"""
-
 from io import BytesIO
 from re import sub
 from os import getenv

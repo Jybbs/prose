@@ -22,10 +22,4 @@ The rule walks consecutive single-target assignments at the same indentation lev
 
 </template>
 
-<template #canonical-lead>
-
-Three consecutive bindings with varying left-hand widths align on the `=` sign. The eye drops down the column of equals signs and reads the right-hand sides as a parallel list.
-
-</template>
-
 </RuleLayout>

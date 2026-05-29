@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/align_imports/prealigned_imports_zero_edits/input.py
 ---
-"""
-Input that is already aligned. Each gap already carries the
-target width of spaces, so the rule emits zero edits and the
-output equals the input byte-for-byte.
-"""
-
 from collections import OrderedDict
 from typing      import Optional
 from sys         import path

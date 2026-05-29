@@ -1,10 +1,3 @@
-"""
-Annotated parameter defaults align across a multi-line function
-signature. The `=` columns sit one space past the widest annotation
-end, with shorter rows padded between the annotation and `=`.
-"""
-
-
 def configure(
     host: str = "localhost",
     port: int = 8080,

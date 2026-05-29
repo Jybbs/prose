@@ -1,10 +1,3 @@
-"""
-Google-style `Args:` entries with parenthesized type hints. The
-colon detector skips past the `(...)` group, so alignment anchors
-on the `:` that follows the closing paren rather than any colons
-that might sit inside the parens.
-"""
-
 def schedule(when: float, action: str, retries: int) -> None:
     """
     Queues an action.

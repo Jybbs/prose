@@ -3,11 +3,11 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/function_header_to_compound_opener_one_blank/input.py
 ---
-blank-lines@399..400
-blank-lines@479..480
-blank-lines@537..538
-blank-lines@608..609
-blank-lines@680..681
-blank-lines@741..742
-blank-lines@837..838
-blank-lines@922..923
+blank-lines@102..103
+blank-lines@160..161
+blank-lines@22..23
+blank-lines@231..232
+blank-lines@303..304
+blank-lines@364..365
+blank-lines@460..461
+blank-lines@545..546

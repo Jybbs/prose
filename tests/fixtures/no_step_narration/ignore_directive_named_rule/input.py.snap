@@ -1,15 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/no_step_narration/ignore_directive_named_rule/input.py
 ---
-"""
-A `# prose: ignore[no-step-narration]` directive on a step-narration
-line suppresses the diagnostic. A directive that names a different rule
-leaves the diagnostic in place.
-"""
-
-
 def process(payload):
     # 1. normalize input  # prose: ignore[no-step-narration]
     cleaned = payload.strip()

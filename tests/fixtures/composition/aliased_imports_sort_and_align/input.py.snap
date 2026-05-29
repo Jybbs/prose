@@ -1,16 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/aliased_imports_sort_and_align/input.py
 ---
-"""
-A run of aliased module imports whose paths arrive out of order.
-
-Rules:
-- alphabetize
-- align_imports
-"""
-
 import collections as col
 import functools   as ft
 import itertools   as it

@@ -1,2 +1,6 @@
 [docs]
 title = "Keyword Arguments at Call Sites Sort"
+description = '''
+Keyword arguments at call sites **alphabetize within splat-bounded segments**. A `**kwargs` splat carries no `arg` name and acts as a hard partition, so named kwargs never cross it. The fixture covers a call with no splat and one with a mid-list splat.
+'''
+previewable = true

@@ -1,5 +1,6 @@
 ---
 source: tests/binding_analysis.rs
+assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/dict_set_gen_comp_scopes/input.py
 ---
@@ -8,79 +9,79 @@ bindings:
       - Assignment
     name: pairs
     read_offsets:
-      - 237
-      - 266
-      - 299
+      - 57
+      - 86
+      - 119
     scope: 0
     write_offsets:
-      - 180
+      - 0
   - kinds:
       - Comprehension
     name: k
     read_offsets:
-      - 220
+      - 40
     scope: 1
     write_offsets:
-      - 229
+      - 49
   - kinds:
       - Comprehension
     name: v
     read_offsets:
-      - 223
+      - 43
     scope: 1
     write_offsets:
-      - 232
+      - 52
   - kinds:
       - Assignment
     name: mapping
     read_offsets: []
     scope: 0
     write_offsets:
-      - 209
+      - 29
   - kinds:
       - Comprehension
     name: k
     read_offsets:
-      - 252
+      - 72
     scope: 2
     write_offsets:
-      - 258
+      - 78
   - kinds:
       - Comprehension
     name: _
     read_offsets: []
     scope: 2
     write_offsets:
-      - 261
+      - 81
   - kinds:
       - Assignment
     name: keys
     read_offsets: []
     scope: 0
     write_offsets:
-      - 244
+      - 64
   - kinds:
       - Comprehension
     name: _
     read_offsets: []
     scope: 3
     write_offsets:
-      - 291
+      - 111
   - kinds:
       - Comprehension
     name: v
     read_offsets:
-      - 285
+      - 105
     scope: 3
     write_offsets:
-      - 294
+      - 114
   - kinds:
       - Assignment
     name: total
     read_offsets: []
     scope: 0
     write_offsets:
-      - 273
+      - 93
 scopes:
   - bindings:
       keys: 6

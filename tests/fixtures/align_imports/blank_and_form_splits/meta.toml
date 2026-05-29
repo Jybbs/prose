@@ -1,0 +1,6 @@
+[docs]
+title = "Blank Lines and Form Changes Split Groups"
+description = '''
+A blank line between imports starts a fresh alignment group, and a switch between `from`-import and `import`-as form **also splits the run**. Each cluster aligns at its own target column, so the trailing `from`-imports align among themselves rather than against the top block.
+'''
+previewable = false

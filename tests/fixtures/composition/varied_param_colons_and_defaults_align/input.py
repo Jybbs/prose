@@ -1,14 +1,3 @@
-"""
-Function signature with typed parameters of varying widths and
-default values. The signature's parameter `:` columns and default
-`=` columns each align across the run.
-
-Rules:
-- align_colons
-- align_equals
-"""
-
-
 def configure(
     host: str = "localhost",
     port: int = 8080,

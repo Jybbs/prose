@@ -3,15 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/signature_layout/separators_preserved_verbatim/input.py
 ---
-"""
-The expansion preserves every parameter-list shape (*defaults, the
-posonly-only `/` separator, the bare `*` separator, and a return-type
-annotation*) verbatim from source. Pins the slice machinery rendering
-each canonical separator at its source position rather than
-synthesizing a different shape.
-"""
-
-
 def render(
     palette: str,
     target: int,

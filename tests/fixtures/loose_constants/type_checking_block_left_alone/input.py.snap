@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/loose_constants/type_checking_block_left_alone/input.py
 ---
-"""
-An assignment inside `if TYPE_CHECKING:` is type-system-only, so the
-file's type-checker boundary already owns it and the rule leaves it
-alone.
-"""
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

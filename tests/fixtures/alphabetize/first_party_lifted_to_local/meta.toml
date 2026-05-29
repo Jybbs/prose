@@ -1,2 +1,6 @@
 [docs]
 title = "Configured First-Party Packages Lift into the Local-Package Group"
+description = '''
+Configured first-party imports **lift into the local-package group**. `myapp` imports join relative imports as local-package, bare before `from`, while unrelated packages stay in the bare and external `from` groups.
+'''
+previewable = true

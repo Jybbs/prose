@@ -1,2 +1,6 @@
 [docs]
 title = "One Blank Lands between Adjacent Bare and `from` Import Groups"
+description = '''
+A bare `import` butted directly against a `from` import with zero blank lines **expands to one blank line**, splitting the two import kinds into distinct groups.
+'''
+previewable = true

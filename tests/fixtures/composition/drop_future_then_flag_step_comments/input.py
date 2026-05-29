@@ -1,14 +1,3 @@
-"""
-A `from __future__ import annotations` precedes step-narration
-comments inside a function body. unused-future-annotations removes
-the unused import and no-step-narration emits one diagnostic per
-offending comment whose range tracks the post-removal offset.
-
-Rules:
-- no-step-narration
-- unused-future-annotations
-"""
-
 from __future__ import annotations
 
 

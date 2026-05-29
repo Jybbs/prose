@@ -1,0 +1,6 @@
+[docs]
+title = "Import Binds the Top Segment or the Asname"
+description = '''
+Plain `import` **binds the top-level module segment**, or the explicit asname when present. `from ... import` binds each imported name or its asname directly, skipping the dotted-path step.
+'''
+previewable = false

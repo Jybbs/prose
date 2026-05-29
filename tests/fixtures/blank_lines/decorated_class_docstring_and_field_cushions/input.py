@@ -1,13 +1,3 @@
-"""
-A class carrying a decorator stack with a first-member docstring binds
-the docstring tight against `class Posting:` (0 blank lines) with the
-top-level 2-blank cushion measured above the topmost decorator. The
-docstring then cushions the next member by 1 blank line per the
-existing docstring-predecessor canonical, and the field block cushions
-the following method by 1 blank line per the new class-field → method
-arm.
-"""
-
 @final
 @dataclass
 class Posting:

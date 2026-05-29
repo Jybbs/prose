@@ -1,0 +1,6 @@
+[docs]
+title = "Bare and Annotated Assignments Sort Together"
+description = '''
+A run intermixing annotated and bare assignments has **both forms contribute their target name** and sort by name within tier. The annotation kind stays transparent to the reorder.
+'''
+previewable = false

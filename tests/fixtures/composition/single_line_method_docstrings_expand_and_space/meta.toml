@@ -1,0 +1,6 @@
+[docs]
+title = "Method Docstrings Expand and Methods Gain Blank Lines"
+description = '''
+Methods each carry a single-line docstring with no blank line between them. **The docstrings expand to multi-line form and `blank-lines` inserts the one-blank cushion** between the methods.
+'''
+previewable = true

@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/field_gaps_skipped_methods_normalize/input.py
 ---
-blank-lines@219..220
-blank-lines@258..262
-blank-lines@296..300
+blank-lines@14..15
+blank-lines@53..57
+blank-lines@91..95

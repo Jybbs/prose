@@ -1,11 +1,3 @@
-"""
-Three decorators bind values into the function signature
-positionally and so block parameter alphabetization:
-`pytest.mark.parametrize`, `hypothesis.given`, and
-`click.argument`. Functions carrying any of these keep their
-parameter order intact.
-"""
-
 import click
 import hypothesis.strategies as st
 import pytest

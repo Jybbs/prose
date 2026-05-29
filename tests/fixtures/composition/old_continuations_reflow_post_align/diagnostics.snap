@@ -1,9 +1,9 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/old_continuations_reflow_post_align/input.py
 ---
-align-colons@488..488
-align-colons@646..646
-docstring-wrap@551..617
-docstring-wrap@69..322
+align-colons@238..238
+align-colons@80..80
+docstring-wrap@143..209

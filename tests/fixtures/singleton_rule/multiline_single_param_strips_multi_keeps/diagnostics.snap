@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/singleton_rule/multiline_single_param_strips_multi_keeps/input.py
 ---
-singleton-rule@347..348
+singleton-rule@22..23

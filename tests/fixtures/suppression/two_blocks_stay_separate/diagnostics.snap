@@ -1,13 +1,13 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/two_blocks_stay_separate/input.py
 ---
-align-equals@210..211
-align-equals@216..217
-align-equals@286..287
-align-equals@293..294
-align-equals@372..373
-align-equals@380..381
-alphabetize@195..220
-docstring-wrap@69..151
+align-equals@15..16
+align-equals@177..178
+align-equals@185..186
+align-equals@21..22
+align-equals@91..92
+align-equals@98..99
+alphabetize@0..25

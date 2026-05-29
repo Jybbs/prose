@@ -1,20 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/assign_run_align_boolop_right_align/input.py
 ---
-"""
-A function body opens with a run of single-target assignments and
-guards on a multi-line `BoolOp`. The assignment run aligns its `=`
-column, and the `BoolOp`'s comparison operators right-align in their
-own column.
-
-Rules:
-- align_equals
-- align_comparisons
-"""
-
-
 def evaluate(record):
     name    = record.get("name")
     user_id = record.get("user_id")

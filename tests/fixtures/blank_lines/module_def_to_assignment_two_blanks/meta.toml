@@ -1,0 +1,6 @@
+[docs]
+title = "An Annotated Assignment after a Def Carries Two Blanks"
+description = '''
+A module-level `def` followed by an annotated assignment normalizes to **two blank lines** between them, regardless of the source's actual count.
+'''
+previewable = false

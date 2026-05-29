@@ -1,0 +1,6 @@
+[docs]
+title = "Description Paragraphs Wrap Independently Across a Blank Line"
+description = '''
+Two description paragraphs separated by a blank line **wrap independently**, with the short paragraph left alone and the long one re-flowed. The blank line between them is preserved verbatim through the rewrite.
+'''
+previewable = false

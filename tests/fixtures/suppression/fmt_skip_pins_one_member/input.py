@@ -1,10 +1,3 @@
-"""
-A trailing fmt: skip pins one line's original spacing. The other
-members of the same alignment group still pad to the group's
-target column, and the assignment run after the skip line aligns
-as a separate group.
-"""
-
 x = 1
 foo = 2
 bar_baz = 3

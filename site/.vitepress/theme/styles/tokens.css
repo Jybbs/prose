@@ -54,11 +54,11 @@
   --prose-tint-medium            : 14%;
   --prose-tint-strong            : 32%;
 
-  --prose-kicker-size            : 0.72rem;
+  --prose-kicker-size            : var(--prose-text-xxs);
   --prose-kicker-size-sm         : 0.62rem;
   --prose-kicker-tracking        : 0.14em;
 
-  --prose-label-size             : 0.72rem;
+  --prose-label-size             : var(--prose-text-xxs);
   --prose-label-tracking         : 0.1em;
   --prose-label-tracking-loose   : 0.08em;
 
@@ -67,6 +67,7 @@
   --prose-display-tracking-wide  : 0.18em;
 
   --prose-text-meta              : 0.62rem;
+  --prose-text-xxs               : 0.7rem;
   --prose-text-xs                : 0.78rem;
   --prose-text-code              : 0.78rem;
   --prose-text-sm                : 0.85rem;

@@ -3,11 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/unused_future_annotations/no_directive_passes_through/input.py
 ---
-"""
-A file carrying no `from __future__ import annotations` directive
-passes through unchanged on every pass.
-"""
-
 import os
 
 

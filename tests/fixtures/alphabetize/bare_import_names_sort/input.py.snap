@@ -3,11 +3,4 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/bare_import_names_sort/input.py
 ---
-"""
-Multi-name `import a, b, c` aliases alphabetize within the
-statement, mirroring the from-import alias sort. Single-name
-imports are the preferred form and `align_imports` skips multi-name
-imports, so this case is rare but covered for completeness.
-"""
-
 import argparse, os, zlib

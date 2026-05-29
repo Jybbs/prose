@@ -1,15 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/docstring_wrap/raises_exception_hanging_wrap/input.py
 ---
-"""
-A Raises entry naming an exception type wraps the description at the
-docstring budget with a hanging indent at the description's start column,
-keeping the exception name flush at the parameter-list indent.
-"""
-
-
 def parse():
     """
     Summary line.

@@ -25,12 +25,6 @@ The default `^_` exempts names starting with an underscore, matching the Python 
 
 </template>
 
-<template #canonical-lead>
-
-A binding assigned and read exactly once surfaces the lint, recommending inlining the right-hand side.
-
-</template>
-
 <template #related-after>
 
 For per-line opt-outs, the [**Suppression**](/usage/suppression#lint-directives) chapter covers the `# prose: ignore[single-use-variables]` directive.

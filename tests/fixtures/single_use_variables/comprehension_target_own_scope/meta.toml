@@ -1,2 +1,6 @@
 [docs]
 title = "Comprehension Targets Stay outside the Rule's Reach"
+description = '''
+A comprehension target such as `x` in `[x * x for x in xs]` lives in the **comprehension's own scope**, not the enclosing function, so its lone use never enters the function-scope enumeration the rule walks.
+'''
+previewable = true

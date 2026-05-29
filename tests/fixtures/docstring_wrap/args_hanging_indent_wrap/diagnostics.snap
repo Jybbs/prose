@@ -1,6 +1,7 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/docstring_wrap/args_hanging_indent_wrap/input.py
 ---
-docstring-wrap@377..440
+docstring-wrap@136..199

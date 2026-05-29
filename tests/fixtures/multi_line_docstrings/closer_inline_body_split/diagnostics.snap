@@ -1,6 +1,7 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/multi_line_docstrings/closer_inline_body_split/input.py
 ---
-multi-line-docstrings@247..247
+multi-line-docstrings@92..92

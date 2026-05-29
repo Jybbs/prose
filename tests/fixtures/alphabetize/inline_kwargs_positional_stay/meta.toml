@@ -1,0 +1,6 @@
+[docs]
+title = "Inline Keyword Arguments Sort, Positionals Stay"
+description = '''
+A single-line call site's keyword arguments **reorder through inline block mode**. Positional arguments never appear in the keyword list, so they do not move.
+'''
+previewable = false

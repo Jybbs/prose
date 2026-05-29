@@ -1,5 +1,6 @@
 ---
 source: tests/binding_analysis.rs
+assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/method_skips_class_scope/input.py
 ---
@@ -8,38 +9,38 @@ bindings:
       - Assignment
     name: x
     read_offsets:
-      - 263
+      - 74
     scope: 0
     write_offsets:
-      - 189
+      - 0
   - kinds:
       - ClassDef
     name: C
     read_offsets: []
     scope: 0
     write_offsets:
-      - 209
+      - 20
   - kinds:
       - Assignment
     name: x
     read_offsets: []
     scope: 1
     write_offsets:
-      - 216
+      - 27
   - kinds:
       - FunctionDef
     name: get
     read_offsets: []
     scope: 1
     write_offsets:
-      - 237
+      - 48
   - kinds:
       - Parameter
     name: self
     read_offsets: []
     scope: 2
     write_offsets:
-      - 241
+      - 52
 scopes:
   - bindings:
       C: 1

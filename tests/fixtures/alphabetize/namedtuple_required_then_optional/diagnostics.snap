@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/namedtuple_required_then_optional/input.py
 ---
-alphabetize@308..365
+alphabetize@61..118

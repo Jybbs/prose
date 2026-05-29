@@ -1,10 +1,3 @@
-"""
-Input that is already aligned. The rule recognizes each gap as
-already carrying its target width of spaces and emits zero edits,
-so the output text equals the input text byte-for-byte and the
-pipeline reports no change.
-"""
-
 CAPITALS = {
     "USA"    : "Washington",
     "France" : "Paris",

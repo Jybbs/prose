@@ -1,2 +1,6 @@
 [docs]
 title = "A Widest Member past `max-shift` Splits the Group"
+description = '''
+An outlier target **partitions the group** under the default `split` policy. Members above align among themselves, members below align among themselves, and the outlier collapses to one space. Each sub-group settles on a different `=` column.
+'''
+previewable = true

@@ -1,8 +1,3 @@
-"""
-A one-arm match. The rule collapses the body onto the case line.
-Aligner skips and the colon hugs the pattern.
-"""
-
 match value:
     case "only":
         result = "lone"

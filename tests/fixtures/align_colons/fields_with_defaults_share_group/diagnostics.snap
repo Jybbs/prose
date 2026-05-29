@@ -3,8 +3,8 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/fields_with_defaults_share_group/input.py
 ---
-align-colons@267..267
-align-colons@295..295
-align-colons@321..321
-align-colons@338..338
-align-colons@359..359
+align-colons@117..117
+align-colons@25..25
+align-colons@53..53
+align-colons@79..79
+align-colons@96..96

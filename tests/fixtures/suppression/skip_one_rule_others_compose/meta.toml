@@ -1,0 +1,6 @@
+[docs]
+title = "Per-Rule Skip Leaves Other Format Rules Composing"
+description = '''
+`# prose: skip[<rule>]` opts one line out of **a single format rule** while every other rule's edits stay in place on that line. Here `strip-trailing-commas` is skipped on the last assignment, yet `align-equals` still draws the `=` column across all three.
+'''
+previewable = false

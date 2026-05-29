@@ -1,0 +1,6 @@
+[docs]
+title = "Custom Line-Length Budget Drives Expansion"
+description = '''
+A three-parameter signature that fits the default `code-line-length` of 88 but overflows a custom budget of 50 **expands under the custom budget**. The length trigger consumes the configured threshold rather than a hard-coded one.
+'''
+previewable = false

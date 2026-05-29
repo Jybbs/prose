@@ -11,15 +11,18 @@ interface FixtureWalkEntry {
   rule      : string
 }
 
-export function* walkFixtures(repoRoot: string): Generator<FixtureWalkEntry> {
-  const fixturesRoot = path.join(repoRoot, FIXTURES_DIR)
-  const subdirs      = (dir: string) => fs.readdirSync(dir, { withFileTypes: true })
+export function subdirNames(dir: string): string[] {
+  return fs.readdirSync(dir, { withFileTypes: true })
     .filter(d => d.isDirectory())
     .map(d => d.name)
     .sort()
-  for (const rule of subdirs(fixturesRoot)) {
+}
+
+export function* walkFixtures(repoRoot: string): Generator<FixtureWalkEntry> {
+  const fixturesRoot = path.join(repoRoot, FIXTURES_DIR)
+  for (const rule of subdirNames(fixturesRoot)) {
     const ruleDir = path.join(fixturesRoot, rule)
-    for (const caseName of subdirs(ruleDir)) {
+    for (const caseName of subdirNames(ruleDir)) {
       const inputPath = path.join(ruleDir, caseName, INPUT_FILE)
       if (!fs.existsSync(inputPath)) continue
       yield { caseName, inputPath, rule }

@@ -3,15 +3,15 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/match_case_align/pass_break_raise_return_bodies/input.py
 ---
-match-case-align@320..320
-match-case-align@321..334
-match-case-align@358..358
-match-case-align@359..372
-match-case-align@400..400
-match-case-align@401..414
-match-case-align@439..439
-match-case-align@440..453
-match-case-align@499..499
-match-case-align@500..513
-match-case-align@538..538
-match-case-align@539..552
+match-case-align@137..137
+match-case-align@138..151
+match-case-align@176..176
+match-case-align@177..190
+match-case-align@236..236
+match-case-align@237..250
+match-case-align@275..275
+match-case-align@276..289
+match-case-align@57..57
+match-case-align@58..71
+match-case-align@95..95
+match-case-align@96..109

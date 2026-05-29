@@ -1,10 +1,3 @@
-"""
-A long Returns entry with the `name: description` shape wraps at the
-docstring budget with a hanging indent at the description's start column,
-matching the Args entry shape for named-tuple-style return docs.
-"""
-
-
 def lookup():
     """
     Summary line.

@@ -1,8 +1,3 @@
-"""
-A multi-line `BoolOp` inside a list comprehension's `if` filter
-aligns just like any other multi-line `BoolOp`.
-"""
-
 filtered = [
     x
     for x in xs

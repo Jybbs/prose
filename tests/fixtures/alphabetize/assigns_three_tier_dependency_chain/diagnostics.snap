@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/assigns_three_tier_dependency_chain/input.py
 ---
-alphabetize@366..386
+alphabetize@0..20

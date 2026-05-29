@@ -1,2 +1,6 @@
 [docs]
 title = "Class Docstrings Wrap the Same Way as Function Docstrings"
+description = '''
+An `Attributes:` section in a class docstring **wraps its entries with the same hanging-column shape a function `Args:` entry uses**. The walker visits every body whose first statement is a string literal, so class and function docstrings reshape identically.
+'''
+previewable = true

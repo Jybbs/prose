@@ -1,2 +1,6 @@
 [docs]
 title = "`or`-Chains Align with the Same Column Math as `and`-Chains"
+description = '''
+Operands across an `or` chain align with the **same column math** the rule applies to `and` chains. The `==` of each row settles one space past the widest operand's left side.
+'''
+previewable = true

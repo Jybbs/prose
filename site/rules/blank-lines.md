@@ -22,10 +22,4 @@ The canonical blank-line counts are hard-coded to PEP 8's `2`-between-top-level 
 
 </template>
 
-<template #canonical-lead>
-
-Two blank lines precede every module-level `def` and `class`, giving the reader's eye an anchor between top-level units.
-
-</template>
-
 </RuleLayout>

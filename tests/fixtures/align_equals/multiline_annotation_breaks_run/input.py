@@ -1,10 +1,3 @@
-"""
-A parameter whose annotation spans multiple lines breaks the
-parameter run. The surrounding parameters have widths that would
-align if grouped, but they stay unpadded as singletons.
-"""
-
-
 def configure(
     host: str = "localhost",
     fn: Callable[

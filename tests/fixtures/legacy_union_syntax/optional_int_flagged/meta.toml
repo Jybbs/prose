@@ -1,2 +1,7 @@
 [docs]
+title = "Bare Optional Flags With a Pipe Recommendation"
+description = '''
+A `from typing import Optional` followed by `Optional[X]` surfaces the lint, recommending `X | None`.
+'''
+previewable = true
 canonical = true

@@ -1,15 +1,3 @@
-"""
-A `match` whose single-statement arms each return a long inline
-dict.
-
-Rules:
-- collection_layout
-- alphabetize
-- match_case_align
-- align_colons
-"""
-
-
 def dispatch(kind):
     match kind:
         case "alpha":

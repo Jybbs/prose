@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/bare_before_from_collapses_two_to_one/input.py
 ---
-blank-lines@109..112
+blank-lines@9..12

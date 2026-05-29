@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/pydantic_required_then_optional/input.py
 ---
-"""
-Pydantic fields split into required (no default) and optional (has
-default) sub-groups. Each sub-group alphabetizes independently and
-the required group lands above the optional group regardless of
-source order.
-"""
-
 from pydantic import BaseModel
 
 

@@ -1,13 +1,3 @@
-"""
-A class whose methods each carry a single-line triple-quoted
-docstring on one source line.
-
-Rules:
-- no_single_line_docstrings
-- multi_line_docstrings
-"""
-
-
 class Service:
     def primary(self):
         """The primary entry point."""

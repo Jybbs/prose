@@ -1,11 +1,3 @@
-"""
-A comment anywhere between `(` and `)` pins the existing shape,
-overriding both count and length triggers. Each pinned signature
-keeps its comment in place rather than getting rewritten around.
-Both own-line and trailing-line comment placements anchor.
-"""
-
-
 def own_line_pin(
     layout: tuple[int, int],
     # comment between parameters

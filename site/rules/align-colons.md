@@ -22,10 +22,4 @@ The rule walks each context independently, treating a group as the consecutive m
 
 </template>
 
-<template #canonical-lead>
-
-A dictionary literal with three entries of differing key lengths aligns on the `:` separator, and the reader reads keys and values as separate columns.
-
-</template>
-
 </RuleLayout>

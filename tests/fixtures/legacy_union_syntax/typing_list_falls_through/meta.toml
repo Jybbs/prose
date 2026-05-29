@@ -1,2 +1,6 @@
 [docs]
 title = "Non-Union `typing` Imports like `List` Stay Quiet"
+description = '''
+A `typing` import naming something other than `Optional` or `Union` is **not flagged**. The walker resolves `List[int]` to `typing.List` and falls through the suffix match's catch-all.
+'''
+previewable = true

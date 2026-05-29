@@ -22,10 +22,4 @@ The rule operates on the `:`-shaped contexts that [[align-colons]] covers (*dict
 
 </template>
 
-<template #canonical-lead>
-
-A one-key dict literal drops its pre-`:` padding, reading as a plain key-value pair rather than a one-row table.
-
-</template>
-
 </RuleLayout>

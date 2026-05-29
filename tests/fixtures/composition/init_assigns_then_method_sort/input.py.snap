@@ -1,20 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/init_assigns_then_method_sort/input.py
 ---
-"""
-A class whose `__init__` body opens with a run of self-attribute
-assignments alignable on `=`, followed by methods declared out of
-alphabetical order with missing blank-line spacing.
-
-Rules:
-- alphabetize
-- blank_lines
-- align_equals
-"""
-
-
 class Service:
 
     def __init__(self, host, port):

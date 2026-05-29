@@ -3,8 +3,4 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/identity/empty_pipeline_noop/input.py
 ---
-"""
-Seed harness proof that the empty pipeline is the identity transform.
-"""
-
 x = 1

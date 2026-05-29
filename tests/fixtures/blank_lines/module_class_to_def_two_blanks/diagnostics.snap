@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/module_class_to_def_two_blanks/input.py
 ---
-blank-lines@146..147
-blank-lines@162..163
+blank-lines@14..15
+blank-lines@30..31

@@ -3,7 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/dict_varying_key_widths/input.py
 ---
-align-colons@213..213
-align-colons@241..241
-align-colons@263..263
-align-colons@285..285
+align-colons@22..22
+align-colons@50..50
+align-colons@72..72
+align-colons@94..94

@@ -1,9 +1,3 @@
-"""
-Same shape as `aliased_shift_limit_split` under the `skip` policy.
-A run whose widest module overshoots the cap leaves the entire run
-untouched.
-"""
-
 import datetime as dt
 import os as o
 import re as r

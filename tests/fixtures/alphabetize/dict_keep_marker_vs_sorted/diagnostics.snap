@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/dict_keep_marker_vs_sorted/input.py
 ---
-alphabetize@289..413
+alphabetize@18..142

@@ -1,10 +1,3 @@
-"""
-Single-line function docstring expands to the canonical three-line
-multi-line form, with opener on its own line, trimmed body on its
-own line at the def's indent, and closer on its own line.
-"""
-
-
 def greet():
     """Hello, world."""
     return 1

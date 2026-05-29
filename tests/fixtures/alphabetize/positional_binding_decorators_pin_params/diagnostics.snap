@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/positional_binding_decorators_pin_params/input.py
 ---
-alphabetize@320..572
+alphabetize@65..317

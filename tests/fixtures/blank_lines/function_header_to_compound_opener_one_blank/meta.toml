@@ -1,0 +1,6 @@
+[docs]
+title = "A Function Header Cushions a Compound-Body Opener"
+description = '''
+A function header carries **one blank line** before a first body statement that opens a compound block. The cushion applies uniformly to `match`, `if`, `for`, `while`, `with`, and `try`, and to `async for` or `async with`, since `async` collapses into the sync variant in the AST.
+'''
+previewable = false

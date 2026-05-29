@@ -1,11 +1,11 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/mixed_operators_share_column/input.py
 ---
-align-comparisons@321..322
-align-comparisons@353..354
-align-comparisons@371..372
-align-comparisons@410..411
-align-comparisons@438..439
-docstring-wrap@207..212
+align-comparisons@137..138
+align-comparisons@165..166
+align-comparisons@48..49
+align-comparisons@80..81
+align-comparisons@98..99

@@ -1,12 +1,3 @@
-"""
-Inputs that interleave singleton contexts with multi-item groups
-across all four shapes: class fields, dict literals, function
-parameters. Singletons strip their pre-`:` padding. Multi-line
-multi-item groups stay padded for `align_colons` to align. A
-multi-item group squashed onto a single line strips its padding
-too, because same-line `:`s have no column to align against.
-"""
-
 class Solo:
     only_field : str
 

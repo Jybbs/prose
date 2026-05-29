@@ -1,14 +1,3 @@
-"""
-A function whose multi-line docstring opens on the same line as the
-opening triple-quote and carries a single overlong prose line that
-exceeds the docstring budget.
-
-Rules:
-- multi_line_docstrings
-- docstring_wrap
-"""
-
-
 def render(template):
     """Render the template against the configured context, applying every
     default behavior expected of the rendering pipeline when callers omit per-call overrides.

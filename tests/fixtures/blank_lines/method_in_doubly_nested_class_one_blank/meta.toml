@@ -1,0 +1,6 @@
+[docs]
+title = "Methods in a Doubly Nested Class Carry One Blank"
+description = '''
+A method inside a class nested within an outer class normalizes to **one blank line** between siblings, the same class-scope canonical that applies at any nesting depth.
+'''
+previewable = false

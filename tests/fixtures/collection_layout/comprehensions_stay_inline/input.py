@@ -1,10 +1,3 @@
-"""
-Comprehensions are not literals and stay inline. `replacement_for` only
-matches `Expr::Dict`, `Expr::List`, `Expr::Set`, and `Expr::Tuple`, so
-`ListComp`, `DictComp`, `SetComp`, and `GeneratorExp` return `None` and
-the visitor keeps descending through their bodies without rewrite.
-"""
-
 list_comp = [x * 2 for x in range(10)]
 dict_comp = {k: v for k, v in pairs.items()}
 set_comp  = {x for x in items}

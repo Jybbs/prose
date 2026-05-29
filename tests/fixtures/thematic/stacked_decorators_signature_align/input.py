@@ -1,13 +1,3 @@
-"""
-Function decorated with a stack of three decorators, a multi-line
-docstring whose opener and closer sit on the same lines as the prose,
-and a typed parameter list with varying-width names. The full
-pipeline reshapes the docstring opener and closer onto their own
-lines, wraps the prose, normalizes the blank-line cushion around the
-function definition, and aligns the parameter `:` and default `=`
-columns within the signature.
-"""
-
 import functools
 
 

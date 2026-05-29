@@ -1,11 +1,3 @@
-"""
-Single-item groups across every supported context. A one-entry
-dict, a single-parameter annotated signature, a one-field class,
-and a one-entry docstring `Args:` section all pass through
-unchanged because `align_colons` defers single-item alignment to
-the singleton rule.
-"""
-
 one_entry = {"only": 42}
 
 

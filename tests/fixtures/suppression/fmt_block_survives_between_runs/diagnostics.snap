@@ -1,11 +1,11 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/fmt_block_survives_between_runs/input.py
 ---
-align-equals@221..222
-align-equals@227..228
-align-equals@295..296
-align-equals@302..303
-alphabetize@206..231
-docstring-wrap@68..193
+align-equals@15..16
+align-equals@21..22
+align-equals@89..90
+align-equals@96..97
+alphabetize@0..25

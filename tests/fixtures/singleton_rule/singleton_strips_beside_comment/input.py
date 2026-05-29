@@ -1,11 +1,3 @@
-"""
-A singleton dict carrying a leading or trailing comment still strips
-its pre-`:` padding. The rule's edit deletes a small whitespace span
-between key and `:`, which is structurally separate from any comment
-on a different line or trailing the value, so the comment is not at
-risk and the strip lands.
-"""
-
 stays_singleton = {
     # leading comment lives on its own line
     "only_key"  : compute_value(),

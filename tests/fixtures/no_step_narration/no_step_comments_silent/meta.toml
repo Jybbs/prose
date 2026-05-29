@@ -1,2 +1,6 @@
 [docs]
 title = "Source Without Numbered Comments Surfaces Nothing"
+description = '''
+A module carrying no numbered-step comments produces **no diagnostics**. The rule is lint-only, so any pass over clean source leaves the text unchanged and reports nothing.
+'''
+previewable = true

@@ -1,12 +1,3 @@
-"""
-Cross-rule composition on a small class: alphabetize reorders methods
-into the canonical dunder / property / private / public groups,
-alphabetizes annotated fields, and sorts both bare and from-import
-runs at the module top. align_colons and align_equals then settle
-the field-declaration columns. The full pipeline running twice on
-this input produces no further change.
-"""
-
 from typing import Any
 from collections import Counter
 

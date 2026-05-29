@@ -3,7 +3,6 @@
 //! pointer or a malformed `meta.toml` fails a test rather than a build.
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
@@ -11,14 +10,18 @@ use prose::pipeline::Pipeline;
 use regex_lite::Regex;
 use serde::Deserialize;
 
-/// The `[docs]` opt-in a fixture directory carries to surface on its
-/// rule page. A secondary example sets `title`, whereas the lead sets
-/// `canonical = true` and omits it.
+/// The `[docs]` block every fixture case carries. `title` and
+/// `description` document the case, `previewable` gates whether it
+/// renders on the docs site, and `canonical = true` marks the one lead
+/// example per rule page.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Docs {
     #[serde(default)]
     canonical: bool,
+    description: Option<String>,
+    #[serde(default)]
+    previewable: bool,
     title: Option<String>,
 }
 
@@ -35,8 +38,8 @@ fn dir_name(path: &Path) -> String {
 }
 
 fn subdirs(dir: &Path) -> Vec<PathBuf> {
-    let mut out: Vec<PathBuf> = fs::read_dir(dir)
-        .unwrap_or_else(|e| panic!("read {}: {e}", dir.display()))
+    let mut out: Vec<PathBuf> = fs_err::read_dir(dir)
+        .unwrap()
         .flatten()
         .map(|entry| entry.path())
         .filter(|path| path.is_dir())
@@ -48,12 +51,17 @@ fn subdirs(dir: &Path) -> Vec<PathBuf> {
 #[test]
 fn every_case_directory_is_well_formed() {
     let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let rule_slugs: BTreeSet<String> = Pipeline::known_ids()
+        .iter()
+        .map(|id| id.to_string())
+        .collect();
     let mut violations = Vec::new();
     let mut canonical = BTreeMap::<String, usize>::new();
-    let mut domains_w_meta = BTreeSet::<String>::new();
+    let mut domains = BTreeSet::<String>::new();
 
     for domain_dir in subdirs(&fixtures) {
         let domain = dir_name(&domain_dir);
+        domains.insert(domain.clone());
         for case_dir in subdirs(&domain_dir) {
             let id = format!("{domain}/{}", dir_name(&case_dir));
             let has_py = case_dir.join("input.py").is_file();
@@ -71,30 +79,47 @@ fn every_case_directory_is_well_formed() {
 
             let meta_path = case_dir.join("meta.toml");
             if !meta_path.is_file() {
+                violations.push(format!("{id}: missing meta.toml"));
                 continue;
             }
-            domains_w_meta.insert(domain.clone());
-            let raw = fs::read_to_string(&meta_path).expect("meta.toml reads");
-            match toml::from_str::<Meta>(&raw) {
-                Err(e) => violations.push(format!("{id}: meta.toml is not the [docs] shape: {e}")),
-                Ok(meta) if meta.docs.canonical => {
-                    *canonical.entry(domain.clone()).or_default() += 1
+            let raw = fs_err::read_to_string(&meta_path).expect("meta.toml reads");
+            let docs = match toml::from_str::<Meta>(&raw) {
+                Ok(meta) => meta.docs,
+                Err(e) => {
+                    violations.push(format!("{id}: meta.toml is not the [docs] shape: {e}"));
+                    continue;
                 }
-                Ok(meta) if meta.docs.title.as_deref().unwrap_or("").trim().is_empty() => {
-                    violations.push(format!(
-                        "{id}: non-canonical meta.toml lacks a non-empty title"
-                    ));
+            };
+            if docs.title.as_deref().is_none_or(|t| t.trim().is_empty()) {
+                violations.push(format!("{id}: meta.toml lacks a non-empty title"));
+            }
+            if docs
+                .description
+                .as_deref()
+                .is_none_or(|d| d.trim().is_empty())
+            {
+                violations.push(format!("{id}: meta.toml lacks a non-empty description"));
+            }
+            if docs.canonical {
+                *canonical.entry(domain.clone()).or_default() += 1;
+                if !docs.previewable {
+                    violations.push(format!("{id}: canonical case must be previewable"));
                 }
-                Ok(_) => {}
             }
         }
     }
 
-    for domain in &domains_w_meta {
+    for domain in &domains {
         let count = canonical.get(domain).copied().unwrap_or(0);
-        if count != 1 {
+        let is_rule_page = rule_slugs.contains(&domain.replace('_', "-"));
+        if is_rule_page && count != 1 {
             violations.push(format!(
                 "rule \"{domain}\" resolves {count} canonical cases, expected exactly 1"
+            ));
+        }
+        if !is_rule_page && count != 0 {
+            violations.push(format!(
+                "non-rule domain \"{domain}\" carries {count} canonical cases, expected 0"
             ));
         }
     }
@@ -124,10 +149,9 @@ fn every_fixture_invocation_resolves() {
         }
         found_any = true;
         let path = entry.path();
-        let body = fs::read_to_string(path).unwrap();
+        let body = fs_err::read_to_string(path).unwrap();
         for caps in pattern.captures_iter(&body) {
-            let rule = caps.get(1).unwrap().as_str();
-            let case = caps.get(2).unwrap().as_str();
+            let (_, [rule, case]) = caps.extract();
             let dir = root.join("tests/fixtures").join(rule).join(case);
             let input = dir.join("input.py");
             let snap = dir.join("input.py.snap");

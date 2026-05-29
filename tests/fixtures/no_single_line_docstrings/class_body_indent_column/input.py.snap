@@ -1,14 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/no_single_line_docstrings/class_body_indent_column/input.py
 ---
-"""
-Class-level single-line docstring expands with the class-body indent,
-so the body line sits where any other class-scope statement would.
-"""
-
-
 class Bag:
     """
     A simple bag.

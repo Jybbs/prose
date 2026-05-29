@@ -22,7 +22,6 @@ const canonical = lookup(ruleFixtures, props.rule, 'RuleLayout rule').canonical
   </slot>
 
   <DocHeading id="the-canonical-case" title="The Canonical Case" />
-  <slot name="canonical-lead" />
   <Fixture :rule="rule" :case="canonical" />
 
   <DocHeading id="more-examples" title="More Examples" />

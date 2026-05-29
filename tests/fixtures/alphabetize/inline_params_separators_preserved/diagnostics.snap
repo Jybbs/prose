@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/inline_params_separators_preserved/input.py
 ---
-alphabetize@217..241
+alphabetize@10..34

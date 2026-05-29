@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/method_comment_binds_to_method/input.py
 ---
-blank-lines@179..180
-blank-lines@217..221
+blank-lines@14..15
+blank-lines@52..56

@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/unused_future_annotations/unused_sole_import_removed_with_blank_line/input.py
 ---
-"""
-The file carries no annotations on any function or assignment, so the
-`from __future__ import annotations` directive is unused regardless of
-target Python version. The sole import is removed along with the blank
-line that becomes superfluous.
-"""
-
 
 x = 1
 

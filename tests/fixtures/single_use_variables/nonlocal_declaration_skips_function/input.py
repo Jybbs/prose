@@ -1,10 +1,3 @@
-"""
-A function whose body declares `nonlocal` is skipped entirely, since
-the scope analysis would need to follow the closure chain to give an
-accurate single-use reading.
-"""
-
-
 def outer():
     counter = 0
 

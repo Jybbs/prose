@@ -4,6 +4,7 @@ import path from 'node:path'
 import { parse }        from 'smol-toml'
 import { defineLoader } from 'vitepress'
 
+import { subdirNames } from '../lib/fixtures/walker'
 import { repoRoot }    from '../lib/shared/paths'
 import { toTitleCase } from '../lib/shared/title-case'
 
@@ -25,10 +26,7 @@ export { data }
 export default defineLoader({
   watch: [`${compositionDir}/*/config.toml`],
   async load(): Promise<CompositionData> {
-    const caseDirs = (await fs.readdir(compositionDir, { withFileTypes: true }))
-      .filter(d => d.isDirectory())
-      .map(d => d.name)
-      .sort()
+    const caseDirs = subdirNames(compositionDir)
     const cases = await Promise.all(caseDirs.map(async caseName => {
       type Parsed  = { harness?: { rules?: readonly string[] } }
       const config = path.join(compositionDir, caseName, 'config.toml')

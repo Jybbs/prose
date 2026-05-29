@@ -3,7 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/bare_param_breaks_run/input.py
 ---
-align-colons@275..275
-align-colons@293..293
-align-colons@327..327
-align-colons@349..349
+align-colons@21..21
+align-colons@39..39
+align-colons@73..73
+align-colons@95..95

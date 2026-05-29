@@ -1,13 +1,3 @@
-"""
-A module that already carries canonical blank-line spacing round-trips
-unchanged. The fixture covers each canonical pair the rule emits: a
-two-blank gap around module-level defs, a one-blank gap between methods,
-a one-blank cushion between class header and first non-docstring member,
-a zero-blank gap between class header and a first-member docstring, and
-a one-blank gap between a function header and a compound-body opener.
-"""
-
-
 def alpha():
     return 1
 

@@ -1,14 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/suppression/trailing_off_not_block_opener/input.py
 ---
-"""
-A trailing fmt: off comment is a normal end-of-line comment, not a block-
-opener. The line carrying it still receives its alignment edit, and code
-after it is not suppressed.
-"""
-
 x     = 1
 foo   = 2
 short = 3  # fmt: off

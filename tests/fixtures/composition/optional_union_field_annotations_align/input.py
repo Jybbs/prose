@@ -1,12 +1,3 @@
-"""
-A class whose annotated fields use `Optional` and `Union` from
-`typing`.
-
-Rules:
-- align_colons
-- align_equals
-"""
-
 from typing import Optional, Union
 
 

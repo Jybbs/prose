@@ -1,15 +1,3 @@
-"""
-A `match` whose single-statement arms return inline lists that
-overflow the line budget. collection_layout expands each list and
-match_case_align leaves the arm bodies wrapped because expansion
-forces multi-line statements.
-
-Rules:
-- collection_layout
-- match_case_align
-"""
-
-
 def dispatch(kind):
     match kind:
         case "alpha":

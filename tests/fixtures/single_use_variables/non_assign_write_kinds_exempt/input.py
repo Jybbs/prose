@@ -1,11 +1,3 @@
-"""
-Bindings whose write kinds fall outside `Assignment` and `Walrus` are
-not flagged, because the rule's narrative of inlining the right-hand
-side does not extend to parameters, loop targets, with-targets,
-exception handlers, or local imports.
-"""
-
-
 def kinds(arg):
     import os
 

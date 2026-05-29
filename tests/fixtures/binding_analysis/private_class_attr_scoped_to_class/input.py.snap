@@ -1,5 +1,6 @@
 ---
 source: tests/binding_analysis.rs
+assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/private_class_attr_scoped_to_class/input.py
 ---
@@ -10,29 +11,29 @@ bindings:
     read_offsets: []
     scope: 0
     write_offsets:
-      - 192
+      - 6
   - kinds:
       - Assignment
     name: __secret
     read_offsets: []
     scope: 1
     write_offsets:
-      - 199
+      - 13
   - kinds:
       - FunctionDef
     name: get
     read_offsets: []
     scope: 1
     write_offsets:
-      - 221
+      - 35
   - kinds:
       - Parameter
     name: self
     read_offsets:
-      - 247
+      - 61
     scope: 2
     write_offsets:
-      - 225
+      - 39
 scopes:
   - bindings:
       C: 0

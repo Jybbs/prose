@@ -1,14 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/no_step_narration/pragma_comment_invisible/input.py
 ---
-"""
-A pragma comment routed through `ruff_python_trivia::is_pragma_comment`
-is invisible to the rule, even when its body starts with a digit or
-matches another tool's directive shape.
-"""
-
 # noqa: F401
 # type: ignore
 # pyright: ignore[reportMissingImports]

@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/function_body_import_runs_sort/input.py
 ---
-alphabetize@363..464
+alphabetize@18..119

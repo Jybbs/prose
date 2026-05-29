@@ -1,13 +1,3 @@
-"""
-A `match` whose single-statement arms each return an inline
-collection literal carrying a trailing comma.
-
-Rules:
-- strip_trailing_commas
-- match_case_align
-"""
-
-
 def dispatch(kind):
     match kind:
         case "alpha":

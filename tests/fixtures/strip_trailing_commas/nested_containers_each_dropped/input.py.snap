@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/strip_trailing_commas/nested_containers_each_dropped/input.py
 ---
-"""
-Nested multi-line containers each drop their own trailing comma.
-The outer call, the inner dict, and the inner list each emit a
-separate deletion edit, and the edits do not interact.
-"""
-
 posting = Posting(
     keywords=[
         "rust",

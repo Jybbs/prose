@@ -1,10 +1,3 @@
-"""
-Imports inside a function body align at the function's indent
-level, independently of any module-level imports above. The
-visitor descends into nested bodies, so the per-block alignment
-runs on its own group.
-"""
-
 from collections import OrderedDict
 from typing import Optional
 

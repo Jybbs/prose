@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/blank_lines/trailing_comment_stays_off_def_region/input.py
 ---
-"""
-A trailing end-of-line comment on the predecessor stays on its line
-without joining the next def's leading region. The blank-line rewrite
-lands between the two statements.
-"""
-
-
 def first():
     return 1  # short note
 

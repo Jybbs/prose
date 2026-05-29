@@ -3,11 +3,5 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/singleton_rule/one_arm_match_strips_gap/input.py
 ---
-"""
-A pre-collapsed one-arm match carrying one space before its
-colon. The rule strips the gap, leaving the colon flush against
-the pattern.
-"""
-
 match value:
     case "only": icon = "wrench"

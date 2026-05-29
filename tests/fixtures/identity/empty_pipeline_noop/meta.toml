@@ -1,0 +1,6 @@
+[docs]
+title = "Empty Pipeline Returns Source Unchanged"
+description = '''
+A single binding `x = 1` under a module docstring runs through a pipeline with **no rules enabled** and emerges byte-for-byte identical, with no diagnostics. Confirms the empty pipeline is the identity transform that touches nothing.
+'''
+previewable = false

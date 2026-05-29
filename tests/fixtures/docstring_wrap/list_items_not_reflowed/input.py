@@ -1,10 +1,3 @@
-"""
-List items pass through verbatim. A long bulleted item is not re-flowed
-onto multiple lines because the list shape carries meaning the wrap math
-must not erase.
-"""
-
-
 def example():
     """
     The supported markers cover the conventional set:

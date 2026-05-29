@@ -1,13 +1,3 @@
-"""
-Cross-rule composition over a match statement: match_case_align
-splits the three arms whose collapsed form would exceed 88 columns
-and collapses the under-budget fallback arm, alphabetize sorts the
-kwargs inside the dispatched calls, strip_trailing_commas removes
-the dangling commas the source carries, and collection_layout
-collapses the lone-key SETTINGS dict back to one line. The full
-pipeline running twice produces no further change.
-"""
-
 def dispatch(event):
     match event.kind:
         case "create": return Counter(timestamp=event.ts, source=event.src, action="create")

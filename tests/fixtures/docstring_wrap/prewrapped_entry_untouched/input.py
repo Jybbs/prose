@@ -1,10 +1,3 @@
-"""
-An Args entry already wrapped with the hanging-column shape passes
-through unchanged, confirming the rule fires only when re-wrapping would
-change the output.
-"""
-
-
 def configure():
     """
     Summary line.

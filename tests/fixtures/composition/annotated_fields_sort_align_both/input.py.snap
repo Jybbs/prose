@@ -1,19 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/annotated_fields_sort_align_both/input.py
 ---
-"""
-A class body with annotated field declarations out of alphabetical
-order, varying name widths, and default values of varying widths.
-
-Rules:
-- alphabetize
-- align_colons
-- align_equals
-"""
-
-
 class Endpoint:
     backend_label : str   = "primary"
     host          : str   = "localhost"

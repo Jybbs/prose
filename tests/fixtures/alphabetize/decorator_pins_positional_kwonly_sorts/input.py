@@ -1,11 +1,3 @@
-"""
-A function carrying a positional-binding decorator skips the
-positional parameter sub-lists (`posonlyargs`, `args`) but still
-alphabetizes its keyword-only sub-list. Keyword-only parameters sit
-past the `*` separator and cannot be bound positionally, so the
-decorator-to-parameter contract does not constrain their order.
-"""
-
 import pytest
 
 

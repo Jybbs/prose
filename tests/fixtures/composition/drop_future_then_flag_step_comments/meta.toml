@@ -1,0 +1,6 @@
+[docs]
+title = "Drop Future Import, Then Flag Step-Narration Comments"
+description = '''
+A `from __future__ import annotations` precedes step-narration comments in a function body. `unused-future-annotations` removes the import, and **`no-step-narration` emits one diagnostic per offending comment whose range tracks the post-removal offset**.
+'''
+previewable = true

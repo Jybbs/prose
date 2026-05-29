@@ -22,10 +22,4 @@ The rule fires only on runs of single-expression cases at the same indentation. 
 
 </template>
 
-<template #canonical-lead>
-
-A `match` whose arms each return a literal aligns on the post-pattern `:` separator.
-
-</template>
-
 </RuleLayout>

@@ -1,0 +1,6 @@
+[docs]
+title = "`__init__` Self-Assigns Align, Then Methods Sort"
+description = '''
+A class `__init__` opens with a run of self-attribute assignments followed by out-of-order methods. **The self-assigns align their `=` column inside `__init__`, the later methods sort alphabetically**, and `blank-lines` cushions each one.
+'''
+previewable = true

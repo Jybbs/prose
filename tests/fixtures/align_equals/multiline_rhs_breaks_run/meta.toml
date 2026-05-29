@@ -1,0 +1,6 @@
+[docs]
+title = "A Multi-Line Right-Hand Side Breaks the Run"
+description = '''
+A right-hand side spanning multiple source lines **breaks the alignment group**, so the following single-line assignment lands in its own group rather than aligning across the multi-line entry.
+'''
+previewable = false

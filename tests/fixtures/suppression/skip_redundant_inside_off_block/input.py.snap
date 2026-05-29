@@ -1,14 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/suppression/skip_redundant_inside_off_block/input.py
 ---
-"""
-A fmt: skip line sits inside an active fmt: off block. Every line within the
-block stays verbatim, leaving the assignment runs above and below the block
-to align as separate groups.
-"""
-
 bar_baz = 3
 foo     = 2
 x       = 1

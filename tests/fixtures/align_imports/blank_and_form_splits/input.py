@@ -1,11 +1,3 @@
-"""
-Multiple alignment groups separated by blank lines. Each group
-aligns at its own target column independent of its neighbors.
-A form change between `from`-imports and `import`-as statements
-also splits the run, so the second cluster of `from`-imports at
-the bottom aligns on its own and not against the top one.
-"""
-
 from collections import OrderedDict
 from typing import Optional
 

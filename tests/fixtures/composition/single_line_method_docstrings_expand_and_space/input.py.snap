@@ -1,19 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/single_line_method_docstrings_expand_and_space/input.py
 ---
-"""
-A class whose methods each carry a single-line docstring with no
-blank line between the methods.
-
-Rules:
-- no_single_line_docstrings
-- multi_line_docstrings
-- blank_lines
-"""
-
-
 class Service:
 
     def primary(self):

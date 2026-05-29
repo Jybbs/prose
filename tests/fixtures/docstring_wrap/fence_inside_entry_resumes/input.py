@@ -1,11 +1,3 @@
-"""
-Verbatim regions inside an entry preserve their shape and end the entry
-at the block's boundary, so a triple-backtick fence inside an Args entry
-passes through unchanged and the next entry resumes the hanging-column
-wrap.
-"""
-
-
 def render():
     """
     Summary line.

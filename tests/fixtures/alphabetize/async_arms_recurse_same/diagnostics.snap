@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/async_arms_recurse_same/input.py
 ---
-alphabetize@328..539
+alphabetize@30..241

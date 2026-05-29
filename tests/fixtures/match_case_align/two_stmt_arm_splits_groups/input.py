@@ -1,12 +1,3 @@
-"""
-A four-arm match where the second arm carries a two-statement
-body. The disqualifying arm divides the match into sub-groups.
-The first arm is alone in its sub-group and collapses without
-padding. The third and fourth arms align together at the wider
-of their two patterns. The disqualifying arm itself stays
-multi-line.
-"""
-
 match credential.kind:
     case "apprenticeship":
         icon = "wrench"

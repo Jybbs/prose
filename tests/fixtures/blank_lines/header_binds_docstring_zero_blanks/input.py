@@ -1,11 +1,3 @@
-"""
-A class header that introduces a docstring carries 0 blank lines
-between the header and the docstring, binding the docstring to its
-signature. The docstring then carries 1 blank line before the next
-member, per the existing docstring-predecessor canonical.
-"""
-
-
 class Bound:
     """
     The class docstring sits flush against the header line.

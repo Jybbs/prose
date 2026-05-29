@@ -1,11 +1,3 @@
-"""
-Async and nested function definitions both walk through the rule.
-The outer `async def` and the inner sync `def` each trip the count
-trigger and expand at their own indents, pinning that the walker
-descends recursively rather than stopping at the outer body.
-"""
-
-
 async def outer(layout: tuple[int, int], palette: str, spread: float, target: int, verbose: bool):
     def inner(host: str, port: int, retries: int, timeout: float, verbose: bool):
         return (host, port, retries, timeout, verbose)

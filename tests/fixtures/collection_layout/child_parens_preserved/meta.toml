@@ -1,0 +1,6 @@
+[docs]
+title = "Parenthesized Children Keep Their Explicit Parens"
+description = '''
+Parenthesized child expressions inside a list **retain their explicit parens through both expansion and collapse**. Slicing each child's raw range would drop the parens and turn `(-a) ** 2` into `-a ** 2`, which Python reparses as `-(a ** 2)` and flips the sign.
+'''
+previewable = false

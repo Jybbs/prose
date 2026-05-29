@@ -1,11 +1,11 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/inline_opener_args_align_prose_wrap/input.py
 ---
-align-colons@592..592
-align-colons@636..636
-align-colons@685..685
-docstring-wrap@525..525
-docstring-wrap@67..306
-multi-line-docstrings@449..449
+align-colons@198..198
+align-colons@242..242
+align-colons@291..291
+docstring-wrap@131..131
+multi-line-docstrings@55..55

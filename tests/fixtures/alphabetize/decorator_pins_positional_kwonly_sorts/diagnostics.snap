@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/decorator_pins_positional_kwonly_sorts/input.py
 ---
-alphabetize@420..457
+alphabetize@89..126

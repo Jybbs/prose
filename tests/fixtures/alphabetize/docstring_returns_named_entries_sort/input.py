@@ -1,11 +1,3 @@
-"""
-The `Returns:` section reorders alphabetically when each entry
-carries a `name: description` shape. Single-paragraph `Returns:`
-prose without entries falls through to the description path,
-which `docstring_wrap` owns.
-"""
-
-
 def parse(text):
     """Split into components.
 

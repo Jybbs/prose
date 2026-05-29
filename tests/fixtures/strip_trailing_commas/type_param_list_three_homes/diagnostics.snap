@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/strip_trailing_commas/type_param_list_three_homes/input.py
 ---
-strip-trailing-commas@344..345
-strip-trailing-commas@421..422
-strip-trailing-commas@460..461
+strip-trailing-commas@104..105
+strip-trailing-commas@143..144
+strip-trailing-commas@27..28

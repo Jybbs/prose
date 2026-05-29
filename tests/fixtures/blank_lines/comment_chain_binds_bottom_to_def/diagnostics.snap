@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/comment_chain_binds_bottom_to_def/input.py
 ---
-blank-lines@276..277
+blank-lines@25..26

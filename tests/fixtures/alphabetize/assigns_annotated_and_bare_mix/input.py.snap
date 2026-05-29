@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/assigns_annotated_and_bare_mix/input.py
 ---
-"""
-A run intermixes annotated and bare assignments. The bare and
-annotated forms both contribute their target name to the run and
-sort by name within tier, with the annotation kind transparent to
-the reorder.
-"""
-
 apple = 1
 banana: str = "two"
 zoo: int = 3

@@ -1,11 +1,3 @@
-"""
-An outlier target partitions the group under the default `split`
-policy. Members above the outlier align among themselves, members
-below align among themselves, and the outlier falls to a singleton
-that collapses to one space. The two sub-groups settle on different
-`=` columns because each one's widest target is different.
-"""
-
 short = 1
 medium_size = 2
 really_really_long_target = 3

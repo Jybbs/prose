@@ -1,16 +1,17 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/method_holds_match_returns_then_sort/input.py
 ---
-alphabetize@266..573
-blank-lines@250..251
-blank-lines@285..286
-blank-lines@455..456
-blank-lines@514..515
-match-case-align@327..327
-match-case-align@328..345
-match-case-align@376..376
-match-case-align@377..394
-match-case-align@425..425
-match-case-align@426..443
+alphabetize@33..340
+blank-lines@17..18
+blank-lines@222..223
+blank-lines@281..282
+blank-lines@52..53
+match-case-align@143..143
+match-case-align@144..161
+match-case-align@192..192
+match-case-align@193..210
+match-case-align@94..94
+match-case-align@95..112

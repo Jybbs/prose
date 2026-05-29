@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/alphabetize/attached_comment_travels_with_method/input.py
 ---
-alphabetize@252..472
+alphabetize@19..239

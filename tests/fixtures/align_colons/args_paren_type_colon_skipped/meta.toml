@@ -1,0 +1,6 @@
+[docs]
+title = "Parenthesized Type Hints Hide Their Inner Colons"
+description = '''
+Google-style `Args:` entries carry parenthesized type hints like `(float)` and `(str)`. The detector skips past the `(...)` group, so **alignment anchors on the `:` after the closing paren**, never a colon sitting inside the parens.
+'''
+previewable = false

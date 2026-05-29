@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_imports/dotted_relative_aligns/input.py
 ---
-align-imports@241..242
-align-imports@271..272
-align-imports@300..301
+align-imports@36..37
+align-imports@6..7
+align-imports@65..66

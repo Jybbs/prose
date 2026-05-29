@@ -1,9 +1,3 @@
-"""
-The `Attributes:` section reorders alphabetically by attribute
-name, with each entry's hanging continuations carried along.
-"""
-
-
 class Config:
     """Holds settings.
 

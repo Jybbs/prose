@@ -1,20 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/constants_sort_around_fmt_off/input.py
 ---
-"""
-Module-level constants reorder around a `# fmt: off` block. The
-assigns above the block sort alphabetically and align their `=`
-columns, the block stays verbatim because the suppression
-directive bounds its own scope, and the run boundary respects
-the bracket.
-
-Rules:
-- align-equals
-- alphabetize
-"""
-
 bar_baz = 3
 foo     = 2
 zebra   = 1

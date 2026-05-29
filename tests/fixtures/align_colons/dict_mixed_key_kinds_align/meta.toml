@@ -1,2 +1,6 @@
 [docs]
 title = "Mixed Key Shapes Still Find the Widest Key"
+description = '''
+A dict mixes string literals, an integer literal, and a bare name reference as keys. The math runs on each key's **display width**, so the `:` lines up identically regardless of the key expression's kind.
+'''
+previewable = true

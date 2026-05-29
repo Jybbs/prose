@@ -3,7 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/drop_excludes_outlier/input.py
 ---
-align-colons@314..314
-align-colons@335..335
-align-colons@387..387
-align-colons@401..401
+align-colons@110..110
+align-colons@23..23
+align-colons@44..44
+align-colons@96..96

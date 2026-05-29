@@ -1,15 +1,3 @@
-"""
-A function carrying a single-line docstring whose content would
-overflow the docstring line budget once expanded into multi-line
-form.
-
-Rules:
-- no_single_line_docstrings
-- multi_line_docstrings
-- docstring_wrap
-"""
-
-
 def render(template):
     """Render the template against the configured context with sensible defaults applied when callers omit per-call overrides for the rendering pipeline."""
     return template

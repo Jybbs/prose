@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/single_use_variables/global_declaration_skips_function/input.py
 ---
-"""
-A function whose body declares `global` is skipped entirely, since
-the scope analysis would need to follow the module chain to give an
-accurate single-use reading.
-"""
-
-
 def updater():
     global counter
     next_value = counter + 1

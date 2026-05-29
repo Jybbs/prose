@@ -1,2 +1,6 @@
 [docs]
 title = "Custom Title-Case Headings Reorder by Content Shape"
+description = '''
+A custom Title-case heading whose body carries `name: description` entries **reorders alphabetically by name**, the same as the canonical Google headings. The heading *shape* qualifies the section, not its name.
+'''
+previewable = true

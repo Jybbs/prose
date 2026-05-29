@@ -1,0 +1,6 @@
+[docs]
+title = "Collapsing Tuples Keep Their Source Bracket Shape"
+description = '''
+A multi-line tuple that fits collapses inline while **preserving its source bracket shape**, so a paren tuple keeps its parens, a bare tuple stays bare, and a one-element tuple keeps its trailing `,`. Single-line tuples are untouched because only the collapse path handles tuples, yet a qualifying inner collection inside an inline tuple still expands at its own column.
+'''
+previewable = false

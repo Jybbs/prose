@@ -1,7 +1,7 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/docstring_wrap/prewrapped_entry_untouched/input.py
 ---
-docstring-wrap@367..388
-docstring-wrap@70..151
+docstring-wrap@198..219

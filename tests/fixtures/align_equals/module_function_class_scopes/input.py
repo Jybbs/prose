@@ -1,7 +1,3 @@
-"""
-Independent groups at module, function-body, and class-body scope.
-"""
-
 outer = 1
 answer = 42
 

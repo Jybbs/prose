@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_imports/as_keyword_run/input.py
 ---
-align-imports@204..205
-align-imports@227..228
-align-imports@250..251
+align-imports@39..40
+align-imports@62..63
+align-imports@85..86

@@ -1,15 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/docstring_wrap/paragraphs_wrap_independently/input.py
 ---
-"""
-Two description paragraphs separated by a blank line wrap each paragraph
-independently. The blank line between paragraphs is preserved verbatim
-through the rewrite.
-"""
-
-
 def render():
     """
     First paragraph that is short.

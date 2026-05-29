@@ -1,0 +1,6 @@
+[docs]
+title = "Multi-Name `import` Aliases Sort within the Statement"
+description = '''
+Aliases in a multi-name `import a, b, c` **alphabetize within the statement**, mirroring the from-import alias sort. Single-name imports are the preferred form, so this shape is rare but covered for completeness.
+'''
+previewable = false

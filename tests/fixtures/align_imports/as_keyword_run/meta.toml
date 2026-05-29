@@ -1,2 +1,6 @@
 [docs]
 title = "Bare Imports with Aliases Align on the `as` Keyword"
+description = '''
+A run of `import M as A` statements aligns the `as` keyword across them. The **widest module name fixes the shared column**, and shorter rows pad between the module and `as` to reach it.
+'''
+previewable = true

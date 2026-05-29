@@ -1,2 +1,6 @@
 [docs]
 title = "Chained and Tuple Targets Are Recognized"
+description = '''
+Chained assignment (`A = B = 1`), tuple unpacking (`A, B = 1, 2`), and attribute targets (`FOO.bar = 1`) all fall outside the single-target name shape the rule flags, so **each line passes through silently**.
+'''
+previewable = true

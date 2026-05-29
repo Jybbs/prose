@@ -1,0 +1,6 @@
+[docs]
+title = "Four Blanks Before a Def Collapse to Two"
+description = '''
+Four blank lines before a module-level `def` **collapse to the canonical two**. The rule replaces the entire inter-statement whitespace run at once.
+'''
+previewable = false

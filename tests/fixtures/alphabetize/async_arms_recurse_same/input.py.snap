@@ -3,14 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/async_arms_recurse_same/input.py
 ---
-"""
-Async compound shapes (`async def`, `async for`, `async with`)
-recurse identically to their synchronous counterparts. Each
-arm's imports flow through the same compound-statement recursion
-the sync versions use, so the `is_async` flag changes nothing
-about how alphabetize treats the body.
-"""
-
 async def example():
     from alpha import b
     from zeta import a

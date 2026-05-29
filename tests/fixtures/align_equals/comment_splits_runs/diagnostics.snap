@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_equals/comment_splits_runs/input.py
 ---
-align-equals@119..120
-align-equals@87..88
+align-equals@14..15
+align-equals@46..47

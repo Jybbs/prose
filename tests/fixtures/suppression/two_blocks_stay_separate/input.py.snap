@@ -1,14 +1,9 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/suppression/two_blocks_stay_separate/input.py
 ---
-"""
-Two distinct fmt: off / fmt: on blocks remain separate suppressed spans
-rather than fusing into one. Code outside the blocks aligns normally while
-code inside each block stays verbatim.
-"""
-
 bar_baz = 3
 foo     = 2
 x       = 1

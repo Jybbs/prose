@@ -1,5 +1,6 @@
 ---
 source: tests/binding_analysis.rs
+assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/if_arms_merge_one_binding/input.py
 ---
@@ -8,19 +9,19 @@ bindings:
       - Assignment
     name: cond
     read_offsets:
-      - 177
+      - 15
     scope: 0
     write_offsets:
-      - 162
+      - 0
   - kinds:
       - Assignment
     name: x
     read_offsets:
-      - 215
+      - 53
     scope: 0
     write_offsets:
-      - 187
-      - 203
+      - 25
+      - 41
 scopes:
   - bindings:
       cond: 0

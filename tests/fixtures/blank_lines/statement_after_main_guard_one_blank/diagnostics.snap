@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/blank_lines/statement_after_main_guard_one_blank/input.py
 ---
-blank-lines@183..187
+blank-lines@64..68

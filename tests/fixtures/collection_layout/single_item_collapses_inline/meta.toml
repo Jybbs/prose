@@ -1,0 +1,6 @@
+[docs]
+title = "Single-Item and Empty Literals Collapse to Bare Form"
+description = '''
+Single-item literals collapse inline when they fit, and empty literals spread across lines collapse to bare brackets. **A single-entry dict that overflows still breaks at `:` and hangs its value**, since any non-empty dict is an expand target, whereas single-item lists and sets never enter the hang shape.
+'''
+previewable = false

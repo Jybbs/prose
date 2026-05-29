@@ -1,0 +1,6 @@
+[docs]
+title = "With-As Binds in the Enclosing Scope"
+description = '''
+A `with ... as f` clause **binds the as-target in the enclosing scope**, and reads of that binding inside the body resolve back to it.
+'''
+previewable = false

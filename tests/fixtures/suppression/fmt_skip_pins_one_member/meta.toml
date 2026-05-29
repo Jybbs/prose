@@ -1,0 +1,6 @@
+[docs]
+title = "Skip Pins One Line While Its Group Aligns Around It"
+description = '''
+A trailing `# fmt: skip` **pins one line's original spacing**, yet the other members of its alignment group still pad to the target column. The assignment run after the skip line aligns as a separate group.
+'''
+previewable = false

@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/unused_future_annotations/all_refs_defined_before_use/input.py
 ---
-unused-future-annotations@191..226
+unused-future-annotations@0..35

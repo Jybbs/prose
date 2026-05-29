@@ -1,2 +1,6 @@
 [docs]
 title = "The `__main__` Guard Carries One Blank above Its Sibling"
+description = '''
+A module-level statement following an `if __name__ == "__main__":` block carries **one blank line** of separation, the main-guard cushion rather than the wider def-after-statement gap.
+'''
+previewable = true

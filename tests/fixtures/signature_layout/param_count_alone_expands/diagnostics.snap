@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/signature_layout/param_count_alone_expands/input.py
 ---
-signature-layout@202..282
+signature-layout@11..91

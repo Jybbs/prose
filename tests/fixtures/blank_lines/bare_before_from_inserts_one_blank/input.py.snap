@@ -3,11 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/blank_lines/bare_before_from_inserts_one_blank/input.py
 ---
-"""
-A bare `import` immediately followed by a `from` import with zero
-blank lines between them expands to one blank line of separation.
-"""
-
 import os
 
 from sys import argv

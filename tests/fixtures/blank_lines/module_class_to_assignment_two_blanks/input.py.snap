@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/blank_lines/module_class_to_assignment_two_blanks/input.py
 ---
-"""
-A module-level class followed by an assignment normalizes to 2 blank
-lines between them, regardless of the source's actual count.
-"""
-
-
 class Posting:
 
     title = "x"

@@ -3,12 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/blank_lines/statement_after_main_guard_one_blank/input.py
 ---
-"""
-A module-level statement following an `if __name__ == "__main__":`
-block carries 1 blank line of separation.
-"""
-
-
 def main():
     return 0
 

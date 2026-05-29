@@ -1,9 +1,10 @@
 ---
 source: tests/diagnostics.rs
+assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/aliased_imports_sort_and_align/input.py
 ---
-align-imports@154..155
-align-imports@177..178
-align-imports@196..197
-alphabetize@119..202
+align-imports@42..43
+align-imports@65..66
+align-imports@84..85
+alphabetize@7..90

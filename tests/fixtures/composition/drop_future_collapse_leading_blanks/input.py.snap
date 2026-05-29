@@ -1,16 +1,11 @@
 ---
 source: tests/integration.rs
+assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/drop_future_collapse_leading_blanks/input.py
 ---
-"""
-A module opening with `from __future__ import annotations` followed
-by extra blank lines before the first non-import statement.
 
-Rules:
-- unused_future_annotations
-- blank_lines
-"""
+CONFIG = {}
 
 
 def add(a, b):

@@ -1,10 +1,3 @@
-"""
-Two description paragraphs separated by a blank line wrap each
-paragraph independently. The blank line between paragraphs is
-preserved verbatim through the rewrite.
-"""
-
-
 def render():
     """
     First paragraph that is short.

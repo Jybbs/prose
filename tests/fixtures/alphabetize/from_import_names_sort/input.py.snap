@@ -3,10 +3,4 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/alphabetize/from_import_names_sort/input.py
 ---
-"""
-The alias list inside one `from M import a, b, c` statement
-alphabetizes by alias name. Inline lists run through inline block
-mode and multi-line lists run through line block mode.
-"""
-
 from collections import Counter, defaultdict, deque

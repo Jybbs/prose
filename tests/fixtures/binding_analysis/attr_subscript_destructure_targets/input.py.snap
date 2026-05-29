@@ -1,5 +1,6 @@
 ---
 source: tests/binding_analysis.rs
+assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/attr_subscript_destructure_targets/input.py
 ---
@@ -8,77 +9,77 @@ bindings:
       - ClassDef
     name: Holder
     read_offsets:
-      - 261
+      - 36
     scope: 0
     write_offsets:
-      - 231
+      - 6
   - kinds:
       - Assignment
     name: obj
     read_offsets:
-      - 304
-      - 317
+      - 79
+      - 92
     scope: 0
     write_offsets:
-      - 250
+      - 25
   - kinds:
       - Assignment
     name: ix
     read_offsets:
-      - 321
+      - 96
     scope: 0
     write_offsets:
-      - 270
+      - 45
   - kinds:
       - Assignment
     name: xs
     read_offsets:
-      - 358
+      - 133
     scope: 0
     write_offsets:
-      - 283
+      - 58
   - kinds:
       - Assignment
     name: a
     read_offsets: []
     scope: 0
     write_offsets:
-      - 330
+      - 105
   - kinds:
       - Assignment
     name: b
     read_offsets: []
     scope: 0
     write_offsets:
-      - 333
+      - 108
   - kinds:
       - Assignment
     name: head
     read_offsets: []
     scope: 0
     write_offsets:
-      - 345
+      - 120
   - kinds:
       - Assignment
     name: tail
     read_offsets: []
     scope: 0
     write_offsets:
-      - 351
+      - 126
   - kinds:
       - Assignment
     name: c
     read_offsets: []
     scope: 0
     write_offsets:
-      - 362
+      - 137
   - kinds:
       - Assignment
     name: d
     read_offsets: []
     scope: 0
     write_offsets:
-      - 365
+      - 140
 scopes:
   - bindings:
       Holder: 0

@@ -1,0 +1,6 @@
+[docs]
+title = "Aligned Constants Carry the Loose-Constants Lint Past Padding"
+description = '''
+Untyped module constants of varied widths widen onto a shared `=` column under `align-equals`, while `loose-constants` flags each as a structural-home candidate. **The diagnostic range tracks the post-align statement positions** rather than the source offsets.
+'''
+previewable = true

@@ -3,13 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/align_imports/multi_name_skips_alignment/input.py
 ---
-"""
-Multi-name `import` statements (comma-separated, with or without
-aliases per name) skip alignment entirely. The rule aligns the
-unique `as` keyword in single-aliased imports, whereas multi-name
-shapes have no single anchor and so do not qualify.
-"""
-
 import collections as c
 import os, sys
 import re as regex, json as parser
