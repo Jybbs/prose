@@ -10,7 +10,7 @@
 //! Parameter widths reflect the post-`align_colons` source.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::statement_visitor::{walk_body, walk_stmt, StatementVisitor};
+use ruff_python_ast::statement_visitor::{StatementVisitor, walk_body, walk_stmt};
 use ruff_python_ast::token::TokenKind;
 use ruff_python_ast::{AnyParameterRef, Parameters, Stmt};
 use ruff_text_size::{Ranged, TextRange, TextSize};

@@ -12,16 +12,16 @@ use std::ops::Range;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_dotted_name;
-use ruff_python_ast::visitor::{walk_expr, Visitor};
+use ruff_python_ast::visitor::{Visitor, walk_expr};
 use ruff_python_ast::{AnyNodeRef, DictItem, Expr, ExprDict};
 use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
 use crate::primitives::{
+    INDENT_STEP,
     edit::{narrowed_replacement, singleton_groups},
     range::paren_aware_range,
-    INDENT_STEP,
 };
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;

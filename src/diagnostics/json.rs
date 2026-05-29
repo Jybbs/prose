@@ -9,7 +9,7 @@ use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 use ruff_text_size::Ranged;
 use serde::Serialize;
 
-use crate::diagnostics::{line_columns, write_json_line, Diagnostic, Emitter, EmitterSummary, Run};
+use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns, write_json_line};
 use crate::rule::RuleId;
 
 /// Bumps on any breaking change to existing field shapes, leaving
@@ -143,7 +143,7 @@ impl<'a> JsonSummary<'a> {
 mod tests {
     use pretty_assertions::assert_eq;
     use ruff_text_size::TextRange;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     use super::*;
     use crate::diagnostics::Severity;
@@ -246,14 +246,18 @@ mod tests {
             &EmitterSummary::default(),
         );
         let mut lines = text.lines();
-        assert!(lines
-            .next()
-            .expect("diagnostic line")
-            .starts_with("{\"kind\":\"diagnostic\""));
-        assert!(lines
-            .next()
-            .expect("summary line")
-            .starts_with("{\"kind\":\"summary\""));
+        assert!(
+            lines
+                .next()
+                .expect("diagnostic line")
+                .starts_with("{\"kind\":\"diagnostic\"")
+        );
+        assert!(
+            lines
+                .next()
+                .expect("summary line")
+                .starts_with("{\"kind\":\"summary\"")
+        );
     }
 
     #[test]

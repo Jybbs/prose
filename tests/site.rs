@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-use ignore::{types::TypesBuilder, WalkBuilder};
+use ignore::{WalkBuilder, types::TypesBuilder};
 use prose::pipeline::Pipeline;
 use regex_lite::Regex;
 use serde::Deserialize;

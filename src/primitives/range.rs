@@ -1,6 +1,6 @@
 //! Parenthesis-aware source ranges for expression nodes.
 
-use ruff_python_ast::token::{parenthesized_range, Tokens};
+use ruff_python_ast::token::{Tokens, parenthesized_range};
 use ruff_python_ast::{AnyNodeRef, ExprRef};
 use ruff_text_size::{Ranged, TextRange};
 

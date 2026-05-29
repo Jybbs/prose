@@ -6,7 +6,7 @@
 //! final non-trivia token is not a comma are left unchanged.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::visitor::{walk_arguments, walk_expr, walk_stmt, walk_type_params, Visitor};
+use ruff_python_ast::visitor::{Visitor, walk_arguments, walk_expr, walk_stmt, walk_type_params};
 use ruff_python_ast::{Arguments, Expr, Stmt, TypeParams};
 use ruff_python_trivia::{BackwardsTokenizer, SimpleTokenKind};
 use ruff_text_size::{Ranged, TextRange, TextSize};

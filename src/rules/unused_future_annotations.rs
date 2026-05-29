@@ -6,7 +6,7 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::any_over_expr;
-use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
+use ruff_python_ast::statement_visitor::{StatementVisitor, walk_stmt};
 use ruff_python_ast::{
     AnyParameterRef, Expr, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef, StmtImportFrom,
 };

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::builder::{PossibleValuesParser, TypedValueParser};
-use clap::{error::ErrorKind, ColorChoice, CommandFactory, Parser, Subcommand};
+use clap::{ColorChoice, CommandFactory, Parser, Subcommand, error::ErrorKind};
 use clap_complete::Shell;
 
 use super::exit_status::ExitStatus;

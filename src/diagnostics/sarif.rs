@@ -12,7 +12,7 @@ use serde_sarif::sarif::{
     Sarif as SarifDoc, ToolComponent,
 };
 
-use crate::diagnostics::{line_columns, write_json_line, Diagnostic, Emitter, EmitterSummary, Run};
+use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns, write_json_line};
 use crate::rule::RuleId;
 
 pub(crate) struct Sarif;
@@ -69,10 +69,12 @@ fn sarif_fix(file: &SourceFile, edits: &[Edit]) -> Fix {
         })
         .collect();
     Fix::builder()
-        .artifact_changes(vec![ArtifactChange::builder()
-            .artifact_location(artifact_location(file))
-            .replacements(replacements)
-            .build()])
+        .artifact_changes(vec![
+            ArtifactChange::builder()
+                .artifact_location(artifact_location(file))
+                .replacements(replacements)
+                .build(),
+        ])
         .build()
 }
 
@@ -82,14 +84,16 @@ fn sarif_result(file: &SourceFile, diag: &Diagnostic) -> SarifResult {
         .rule_id(diag.rule.as_str())
         .level(ResultLevel::Warning)
         .message(diag.message.as_str())
-        .locations(vec![Location::builder()
-            .physical_location(
-                PhysicalLocation::builder()
-                    .artifact_location(artifact_location(file))
-                    .region(region(start, end))
-                    .build(),
-            )
-            .build()]);
+        .locations(vec![
+            Location::builder()
+                .physical_location(
+                    PhysicalLocation::builder()
+                        .artifact_location(artifact_location(file))
+                        .region(region(start, end))
+                        .build(),
+                )
+                .build(),
+        ]);
     match &diag.fix {
         Some(edits) => builder.fixes(vec![sarif_fix(file, edits)]).build(),
         None => builder.build(),
@@ -199,10 +203,10 @@ mod tests {
             severity: Severity::Format,
         };
         let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
-        let replacements = v["runs"][0]["results"][0]["fixes"][0]["artifactChanges"][0]
-            ["replacements"]
-            .as_array()
-            .expect("replacements array");
+        let replacements =
+            v["runs"][0]["results"][0]["fixes"][0]["artifactChanges"][0]["replacements"]
+                .as_array()
+                .expect("replacements array");
         assert_eq!(replacements.len(), 2);
         assert_eq!(replacements[0]["insertedContent"]["text"], "a");
         assert_eq!(replacements[1]["insertedContent"]["text"], "b");

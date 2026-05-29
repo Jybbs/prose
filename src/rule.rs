@@ -157,7 +157,7 @@ const fn is_valid_slug(bytes: &[u8]) -> bool {
                 return false;
             }
             prev_was_dash = true;
-        } else if matches!(b, b'a'..=b'z' | b'0'..=b'9') {
+        } else if b.is_ascii_lowercase() || b.is_ascii_digit() {
             prev_was_dash = false;
         } else {
             return false;

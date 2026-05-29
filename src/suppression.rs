@@ -460,9 +460,11 @@ mod tests {
     fn nested_prose_off_after_non_pragma_hash_is_recognized() {
         let source = parse("# my note # prose: off\nx = 1\n");
         let x_offset = source.text().find('x').expect("x is present") as u32;
-        assert!(source
-            .suppression_map()
-            .intersects(range(x_offset, x_offset + 5)),);
+        assert!(
+            source
+                .suppression_map()
+                .intersects(range(x_offset, x_offset + 5)),
+        );
     }
 
     #[rstest]
@@ -477,9 +479,10 @@ mod tests {
     ) {
         let src = parse(text);
         let x_offset = src.text().find('x').expect("x is present") as u32;
-        assert!(src
-            .suppression_map()
-            .intersects(range(x_offset, x_offset + 5)));
+        assert!(
+            src.suppression_map()
+                .intersects(range(x_offset, x_offset + 5))
+        );
     }
 
     #[test]

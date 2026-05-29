@@ -16,7 +16,7 @@ use ruff_python_ast::PySourceType;
 /// source. Returns an empty iterator when `paths` is empty.
 pub(crate) fn walk(
     paths: &[PathBuf],
-) -> impl Iterator<Item = Result<PathBuf, ignore::Error>> + Send {
+) -> impl Iterator<Item = Result<PathBuf, ignore::Error>> + Send + use<> {
     let builder = paths.split_first().map(|(first, rest)| {
         let mut builder = WalkBuilder::new(first);
         for path in rest {

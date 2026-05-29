@@ -17,7 +17,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use ruff_python_ast::visitor::{walk_arguments, walk_expr, walk_parameters, walk_stmt, Visitor};
+use ruff_python_ast::visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt};
 use ruff_python_ast::{
     Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed, ExprSetComp,
     ExprTuple, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign,
@@ -119,7 +119,10 @@ impl BindingAnalysis {
     /// Returns the binding ids declared directly inside the local
     /// scope of `stmt`. `stmt` must be a `Stmt::FunctionDef`; any
     /// other statement yields an empty iterator.
-    pub(crate) fn bindings_in_scope(&self, stmt: &Stmt) -> impl Iterator<Item = BindingId> + '_ {
+    pub(crate) fn bindings_in_scope(
+        &self,
+        stmt: &Stmt,
+    ) -> impl Iterator<Item = BindingId> + '_ + use<'_> {
         self.function_scope_at
             .get(&stmt.range().start())
             .copied()

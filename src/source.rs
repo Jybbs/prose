@@ -3,12 +3,12 @@
 use std::path::Path;
 use std::str::FromStr;
 
-use ruff_python_ast::token::{Token, Tokens};
 use ruff_python_ast::ModModule;
-use ruff_python_parser::{parse_module, ParseError, Parsed};
-use ruff_python_trivia::{leading_indentation, lines_before, CommentRanges};
+use ruff_python_ast::token::{Token, Tokens};
+use ruff_python_parser::{ParseError, Parsed, parse_module};
+use ruff_python_trivia::{CommentRanges, leading_indentation, lines_before};
 use ruff_source_file::{
-    find_newline, LineColumn, LineEnding, LineRanges, OneIndexed, SourceFile, SourceFileBuilder,
+    LineColumn, LineEnding, LineRanges, OneIndexed, SourceFile, SourceFileBuilder, find_newline,
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use thiserror::Error;

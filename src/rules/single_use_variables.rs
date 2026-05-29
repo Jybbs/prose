@@ -17,8 +17,8 @@
 //!   `def`/`class` bindings out of the diagnostic surface.
 
 use regex_lite::Regex;
-use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
 use ruff_python_ast::Stmt;
+use ruff_python_ast::statement_visitor::{StatementVisitor, walk_stmt};
 use ruff_text_size::{TextRange, TextSize};
 
 use crate::config::Config;

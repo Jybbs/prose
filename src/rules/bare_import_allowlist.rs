@@ -3,8 +3,8 @@
 
 use std::collections::HashSet;
 
-use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
 use ruff_python_ast::Stmt;
+use ruff_python_ast::statement_visitor::{StatementVisitor, walk_stmt};
 
 use crate::config::Config;
 use crate::diagnostics::Diagnostic;

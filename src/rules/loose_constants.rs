@@ -7,7 +7,7 @@ use std::collections::HashSet;
 
 use ruff_python_ast::helpers::is_dunder;
 use ruff_python_ast::name::UnqualifiedName;
-use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
+use ruff_python_ast::statement_visitor::{StatementVisitor, walk_stmt};
 use ruff_python_ast::{Expr, ExprName, Stmt, StmtIf};
 use ruff_text_size::Ranged;
 
@@ -69,17 +69,17 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
             Stmt::FunctionDef(_) | Stmt::ClassDef(_) => return,
             Stmt::If(if_stmt) if is_type_checking_block(if_stmt) => return,
             Stmt::Assign(a) => {
-                if let [Expr::Name(target)] = a.targets.as_slice() {
-                    if is_loose_constant_target(target, Some(a.value.as_ref()), self.allow) {
-                        self.emit(stmt, &target.id);
-                    }
+                if let [Expr::Name(target)] = a.targets.as_slice()
+                    && is_loose_constant_target(target, Some(a.value.as_ref()), self.allow)
+                {
+                    self.emit(stmt, &target.id);
                 }
             }
             Stmt::AnnAssign(a) => {
-                if let Expr::Name(target) = a.target.as_ref() {
-                    if is_loose_constant_target(target, a.value.as_deref(), self.allow) {
-                        self.emit(stmt, &target.id);
-                    }
+                if let Expr::Name(target) = a.target.as_ref()
+                    && is_loose_constant_target(target, a.value.as_deref(), self.allow)
+                {
+                    self.emit(stmt, &target.id);
                 }
             }
             _ => {}

@@ -3,7 +3,7 @@
 //! decimal-version comments are excluded.
 
 use ruff_python_trivia::{
-    is_pragma_comment, is_python_whitespace, CommentRanges, Cursor, PythonWhitespace,
+    CommentRanges, Cursor, PythonWhitespace, is_pragma_comment, is_python_whitespace,
 };
 
 use crate::config::Config;

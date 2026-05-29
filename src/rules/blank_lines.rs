@@ -7,9 +7,9 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::is_docstring_stmt;
-use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
+use ruff_python_ast::statement_visitor::{StatementVisitor, walk_stmt};
 use ruff_python_ast::{CmpOp, Expr, Stmt};
-use ruff_python_trivia::{lines_after, lines_before, BackwardsTokenizer, CommentRanges};
+use ruff_python_trivia::{BackwardsTokenizer, CommentRanges, lines_after, lines_before};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 

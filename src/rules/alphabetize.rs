@@ -20,7 +20,7 @@ use std::ops::Range;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable};
-use ruff_python_ast::visitor::{walk_expr, walk_stmt, Visitor as AstVisitor};
+use ruff_python_ast::visitor::{Visitor as AstVisitor, walk_expr, walk_stmt};
 use ruff_python_ast::{
     Alias, Decorator, DictItem, ExceptHandler, Expr, ExprCall, ExprDict, ExprLambda, ExprSet,
     Identifier, ParameterWithDefault, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtDelete,
@@ -32,7 +32,7 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use crate::config::Config;
 use crate::primitives::docstring::{entry_carrying_sections, rewrite_docstrings};
 use crate::primitives::edit::{apply_inline_edits, narrowed_replacement, singleton_groups};
-use crate::primitives::imports::{import_group, ImportGroup};
+use crate::primitives::imports::{ImportGroup, import_group};
 use crate::primitives::orderer::{
     assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
 };
@@ -804,7 +804,7 @@ fn rewrite_stmt<'src>(
         Stmt::ClassDef(c) => (&c.body, c.range(), BodyScope::Class),
         Stmt::FunctionDef(f) => (&f.body, f.range(), BodyScope::Function),
         s if is_compound_statement(s) => {
-            return rewrite_compound(source, stmt, block, parent_scope, leaf_edits, first_party)
+            return rewrite_compound(source, stmt, block, parent_scope, leaf_edits, first_party);
         }
         _ => return apply_inline_edits(source, block, leaf_edits),
     };

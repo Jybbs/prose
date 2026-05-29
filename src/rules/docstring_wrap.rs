@@ -302,16 +302,16 @@ mod tests {
     fn description_wraps_to_default_76_character_budget() {
         let src = "\"\"\"\nThis is a long description line that exceeds the seventy six character docstring budget by a margin.\n\"\"\"\n";
         let out = run(src);
-        assert!(out
-            .lines()
-            .filter(|l| !l.starts_with("\"\"\""))
-            .all(|l| l.chars().count() <= 76));
+        assert!(
+            out.lines()
+                .filter(|l| !l.starts_with("\"\"\""))
+                .all(|l| l.chars().count() <= 76)
+        );
     }
 
     #[test]
     fn fenced_code_block_passes_through_verbatim() {
-        let src =
-            "\"\"\"\nSummary.\n\n```python\nx = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12\n```\n\"\"\"\n";
+        let src = "\"\"\"\nSummary.\n\n```python\nx = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12\n```\n\"\"\"\n";
         assert_eq!(run(src), src);
     }
 

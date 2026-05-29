@@ -5,7 +5,7 @@
 use std::num::NonZeroUsize;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
+use ruff_python_ast::statement_visitor::{StatementVisitor, walk_stmt};
 use ruff_python_ast::token::TokenKind;
 use ruff_python_ast::{ParameterWithDefault, Parameters, Stmt, StmtFunctionDef};
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -13,8 +13,8 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
 use crate::primitives::{
-    edit::{narrowed_replacement, singleton_groups},
     INDENT_STEP,
+    edit::{narrowed_replacement, singleton_groups},
 };
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;

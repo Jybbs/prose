@@ -7,7 +7,7 @@
 //! align to.
 
 use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::visitor::{walk_expr, walk_parameters, walk_stmt, Visitor as AstVisitor};
+use ruff_python_ast::visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt};
 use ruff_python_ast::{
     AnyParameterRef, DictItem, Expr, ExprDict, ExprStringLiteral, MatchCase, Parameters, Stmt,
 };

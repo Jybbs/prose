@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use ruff_python_ast::name::{QualifiedName, UnqualifiedName};
-use ruff_python_ast::visitor::{walk_expr, walk_stmt, Visitor};
+use ruff_python_ast::visitor::{Visitor, walk_expr, walk_stmt};
 use ruff_python_ast::{AnyNodeRef, Expr, ExprSubscript, Identifier, PythonVersion, Stmt};
 
 use crate::config::Config;

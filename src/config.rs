@@ -19,7 +19,7 @@ use std::path::{Path, PathBuf};
 
 use regex_lite::Regex;
 use ruff_python_ast::PythonVersion;
-use serde::de::{value::MapAccessDeserializer, IntoDeserializer, MapAccess, Visitor};
+use serde::de::{IntoDeserializer, MapAccess, Visitor, value::MapAccessDeserializer};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
 
@@ -921,11 +921,13 @@ mod tests {
         )
         .expect("parses");
 
-        assert!(config
-            .rules
-            .single_use_variables
-            .allow_pattern
-            .is_match("tmp_x"));
+        assert!(
+            config
+                .rules
+                .single_use_variables
+                .allow_pattern
+                .is_match("tmp_x")
+        );
         assert!(config.rules.single_use_variables.enabled);
     }
 
@@ -992,16 +994,20 @@ mod tests {
         )
         .expect("parses");
 
-        assert!(config
-            .rules
-            .single_use_variables
-            .allow_pattern
-            .is_match("tmp_x"));
-        assert!(!config
-            .rules
-            .single_use_variables
-            .allow_pattern
-            .is_match("xtmp_"));
+        assert!(
+            config
+                .rules
+                .single_use_variables
+                .allow_pattern
+                .is_match("tmp_x")
+        );
+        assert!(
+            !config
+                .rules
+                .single_use_variables
+                .allow_pattern
+                .is_match("xtmp_")
+        );
     }
 
     #[test]

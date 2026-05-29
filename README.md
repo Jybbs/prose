@@ -1,7 +1,7 @@
 <div align="center">
 <img src="site/public/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." width="800">
 
-[![Rust](site/public/badges/rust.svg)![1.95+](https://img.shields.io/badge/1.95+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
+[![Rust](site/public/badges/rust.svg)![1.96+](https://img.shields.io/badge/1.96+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
 [![Python](site/public/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
 [![Coverage](site/public/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
 [![Documentation](site/public/badges/docs.svg)![Docs](https://img.shields.io/badge/Docs-8a80cb?style=for-the-badge)](https://prose.fyi/)

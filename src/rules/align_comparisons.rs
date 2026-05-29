@@ -8,7 +8,7 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::visitor::{walk_expr, Visitor as AstVisitor};
+use ruff_python_ast::visitor::{Visitor as AstVisitor, walk_expr};
 use ruff_python_ast::{CmpOp, Expr, ExprBoolOp};
 use ruff_text_size::{Ranged, TextRange};
 

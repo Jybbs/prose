@@ -64,7 +64,7 @@ impl Cache {
         self
     }
 
-    fn entries(&self) -> impl Iterator<Item = (DirEntry, Metadata)> {
+    fn entries(&self) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
         fs_err::read_dir(&self.root)
             .into_iter()
             .flatten()
@@ -321,9 +321,10 @@ mod tests {
         let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
         let hex = key.0.to_hex();
         assert_eq!(hex.len(), 64);
-        assert!(hex
-            .chars()
-            .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+        assert!(
+            hex.chars()
+                .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase())
+        );
     }
 
     #[test]
