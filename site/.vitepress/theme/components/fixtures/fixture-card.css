@@ -59,6 +59,7 @@
   align-items           : center;
   gap                   : 12px;
   padding               : 4px 12px 4px 4px;
+  cursor                : pointer;
 }
 
 .fixture-card-summary {
@@ -90,33 +91,27 @@
 }
 
 .fixture-card-title {
-  justify-self            : start;
-  width                   : fit-content;
-  max-width               : 100%;
-  font-family             : var(--vp-font-family-mono);
-  font-weight             : 600;
-  font-size               : var(--prose-text-sm);
-  letter-spacing          : 0.02em;
-  line-height             : 1.35;
-  text-transform          : uppercase;
-  background              : var(--headline-paint, var(--family-color, var(--vp-c-text-1)));
-  -webkit-background-clip : text;
-  background-clip         : text;
-  color                   : transparent;
+  justify-self   : start;
+  width          : fit-content;
+  max-width      : 100%;
+  font-family    : var(--vp-font-family-mono);
+  font-weight    : 600;
+  font-size      : var(--prose-text-sm);
+  letter-spacing : 0.02em;
+  line-height    : 1.35;
+  text-transform : uppercase;
+  color          : var(--vp-c-text-1);
 }
 
 .fixture-card[data-edits="false"] .fixture-card-title {
-  background              : none;
-  color                   : var(--vp-c-text-3);
-  -webkit-text-fill-color : var(--vp-c-text-3);
+  color : var(--vp-c-text-3);
 }
 
 .fixture-card-title code {
-  font-family             : var(--vp-font-family-mono);
-  font-size               : 0.85em;
-  text-transform          : none;
-  color                   : var(--prose-c-ube);
-  -webkit-text-fill-color : var(--prose-c-ube);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.85em;
+  text-transform : none;
+  color          : var(--prose-c-ube);
 }
 
 .fixture-card-actions {
@@ -209,7 +204,7 @@
   background       : var(--headline-paint, var(--family-color, var(--prose-c-chambray)));
   transform        : scaleX(0);
   transform-origin : left;
-  transition       : transform 0.42s ease;
+  transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease;
 }
 
 .fixture-card.is-open .fixture-card-rule {

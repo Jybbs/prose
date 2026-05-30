@@ -40,6 +40,7 @@
   --prose-transition             : 0.15s ease;
   --prose-transition-slow        : 0.2s ease;
   --prose-transition-card        : var(--prose-transition-slow);
+  --prose-rule-draw-ms           : 420;
 
   --prose-ease-emphasized        : cubic-bezier(0.4, 0, 0.2, 1);
 

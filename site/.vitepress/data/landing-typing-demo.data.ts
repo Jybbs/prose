@@ -3,10 +3,8 @@ import fs               from 'node:fs'
 import os               from 'node:os'
 import path             from 'node:path'
 
-import { getSingletonHighlighter }                   from 'shiki'
-import { codeToKeyedTokens, createMagicMoveMachine } from 'shiki-magic-move/core'
-import type { KeyedTokensInfo }                      from 'shiki-magic-move/types'
-import { defineLoader }                              from 'vitepress'
+import type { KeyedTokensInfo } from 'shiki-magic-move/types'
+import { defineLoader }         from 'vitepress'
 
 import { ENTRIES, PRELUDE, RESET_ROWS, RULES, SOURCE } from '../theme/components/landing/typing-demo-fixtures'
 import type {
@@ -14,8 +12,8 @@ import type {
   LandingTypingDemoEntry,
   LandingTypingDemoResetRow
 } from '../theme/components/landing/typing-demo-fixtures'
-import { SHIKI_THEMES } from '../lib/shared/constants'
-import { repoRoot }     from '../lib/shared/paths'
+import { precompileMagicMove } from '../lib/markdown/magic-move'
+import { repoRoot }            from '../lib/shared/paths'
 
 export type {
   LandingTypingDemoEditEntry,
@@ -53,25 +51,11 @@ export default defineLoader({
       }
     }
 
-    const highlighter = await getSingletonHighlighter({
-      langs  : ['python'],
-      themes : Object.values(SHIKI_THEMES)
-    })
-
-    const machine = createMagicMoveMachine(code =>
-      codeToKeyedTokens(highlighter, code, { lang: 'python', themes: SHIKI_THEMES })
-    )
-    const pythonStateSteps: KeyedTokensInfo[] = []
-    for (const state of states) {
-      const { current } = machine.commit(state)
-      pythonStateSteps.push(current)
-    }
-
     return {
-      entries   : ENTRIES,
-      prelude   : PRELUDE,
-      pythonStateSteps,
-      resetRows : RESET_ROWS
+      entries          : ENTRIES,
+      prelude          : PRELUDE,
+      pythonStateSteps : await precompileMagicMove(states),
+      resetRows        : RESET_ROWS
     }
   }
 })
