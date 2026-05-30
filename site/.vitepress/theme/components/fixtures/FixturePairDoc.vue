@@ -64,7 +64,7 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       :steps="steps"
       :step="step"
       :animate="animate && !reducedMotion"
-      :options="{ containerStyle: false, duration, stagger: 3 }"
+      :options="{ containerStyle: false, delayMove: 0, duration, stagger: 3 }"
     />
     <div v-else class="fixture-pair-panel" v-html="activeHtml" />
   </div>
