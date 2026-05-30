@@ -209,7 +209,7 @@
   background       : var(--headline-paint, var(--family-color, var(--prose-c-chambray)));
   transform        : scaleX(0);
   transform-origin : left;
-  transition       : transform 0.42s ease;
+  transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease;
 }
 
 .fixture-card.is-open .fixture-card-rule {
