@@ -7,8 +7,7 @@
 //! [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
 //! [`Pipeline::with_filters`] from a registry table.
 
-use std::fmt;
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use ruff_diagnostics::Edit;
 use serde::{Deserialize, Serialize};

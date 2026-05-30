@@ -12,15 +12,19 @@
 //! Each rule's configuration lives under `[tool.prose.rules]`, where
 //! a bare bool toggles the rule and a sub-table carries its knobs.
 
-use std::fmt;
-use std::marker::PhantomData;
-use std::num::NonZeroUsize;
-use std::path::{Path, PathBuf};
+use std::{
+    fmt,
+    marker::PhantomData,
+    num::NonZeroUsize,
+    path::{Path, PathBuf},
+};
 
 use regex_lite::Regex;
 use ruff_python_ast::PythonVersion;
-use serde::de::{IntoDeserializer, MapAccess, Visitor, value::MapAccessDeserializer};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{
+    Deserialize, Deserializer, Serialize, Serializer,
+    de::{IntoDeserializer, MapAccess, Visitor, value::MapAccessDeserializer},
+};
 use thiserror::Error;
 
 pub use crate::rule::RuleConfigs;
@@ -212,10 +216,10 @@ impl Config {
                 }
                 return parse_prose_toml(&contents, &mut on_notice);
             }
-            if let Some(contents) = read_optional(dir.join(PYPROJECT_TOML))? {
-                if let Some(config) = parse_pyproject(&contents, &mut on_notice)? {
-                    return Ok(config);
-                }
+            if let Some(contents) = read_optional(dir.join(PYPROJECT_TOML))?
+                && let Some(config) = parse_pyproject(&contents, &mut on_notice)?
+            {
+                return Ok(config);
             }
         }
         Ok(Self::default())
