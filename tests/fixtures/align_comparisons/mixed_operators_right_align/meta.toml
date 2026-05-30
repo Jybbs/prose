@@ -1,6 +1,7 @@
 [docs]
-title = "Mixed-Width Operators Right-Align on the Shared Column"
+previewable = true
+title       = "Mixed-Width Operators Right-Align on the Shared Column"
+
 description = '''
 `==` operands and `<` operands share one aligned group. The variable-width operators **right-align**, so the second `=` of `==` and the `<` land in the same column.
 '''
-previewable = true

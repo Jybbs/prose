@@ -1,6 +1,7 @@
 [docs]
-title = "Two Off Blocks Stay Distinct Spans"
+previewable = false
+title       = "Two Off Blocks Stay Distinct Spans"
+
 description = '''
 Two distinct `# fmt: off` / `# fmt: on` blocks **remain separate suppressed spans** rather than fusing into one. Code outside the blocks aligns normally while each block's interior stays verbatim.
 '''
-previewable = false

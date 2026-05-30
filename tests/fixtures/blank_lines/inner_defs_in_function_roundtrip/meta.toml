@@ -1,6 +1,7 @@
 [docs]
-title = "Nested Function Defs Round-Trip Unchanged"
+previewable = false
+title       = "Nested Function Defs Round-Trip Unchanged"
+
 description = '''
 Function defs nested inside another function body **do not pair-count**. The Function scope has no canonical blank-line rule, so the inner defs round-trip unchanged regardless of their source spacing.
 '''
-previewable = false

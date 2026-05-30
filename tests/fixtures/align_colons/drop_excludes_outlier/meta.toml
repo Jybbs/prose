@@ -1,6 +1,7 @@
 [docs]
-title = "Drop Policy Aligns Around the Outlier"
+previewable = false
+title       = "Drop Policy Aligns Around the Outlier"
+
 description = '''
 Under `max-shift-policy = "drop"`, a class-field group whose widest name exceeds `max-shift` **excludes the outlier from the math**. The remaining fields align on one shared `:` column as if it were invisible, and the outlier keeps its original spacing.
 '''
-previewable = false

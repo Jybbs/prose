@@ -1,6 +1,7 @@
 [docs]
-title = "Comments Around the Comma Ride Through"
+previewable = false
+title       = "Comments Around the Comma Ride Through"
+
 description = '''
 A trailing `,` trailed by a same-line comment loses only the comma, and a comment sitting between the last element and the closing bracket survives untouched. **The backward scan treats comments as trivia before testing for a comma**, so neither comment is disturbed.
 '''
-previewable = false

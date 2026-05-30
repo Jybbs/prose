@@ -1,6 +1,7 @@
 [docs]
-title = "A Trailing prose: ignore Directive Drops the Diagnostic"
+previewable = false
+title       = "A Trailing prose: ignore Directive Drops the Diagnostic"
+
 description = '''
 A trailing `# prose: ignore[loose-constants]` directive **drops the diagnostic the rule would otherwise emit**, running the per-line suppression filter against the rule's lint-severity output.
 '''
-previewable = false

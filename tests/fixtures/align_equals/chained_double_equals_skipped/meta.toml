@@ -1,6 +1,7 @@
 [docs]
-title = "Chained Assignments Stay Un-Aligned"
+previewable = true
+title       = "Chained Assignments Stay Un-Aligned"
+
 description = '''
 A chained assignment like `a = b = 1` carries two `=` tokens, so the rule **skips it** rather than guess which one to align, while the surrounding single-target binding aligns around it.
 '''
-previewable = true

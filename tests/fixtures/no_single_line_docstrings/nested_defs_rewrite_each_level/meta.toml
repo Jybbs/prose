@@ -1,6 +1,7 @@
 [docs]
-title = "Nested Function Docstrings Expand at Each Scope"
+previewable = true
+title       = "Nested Function Docstrings Expand at Each Scope"
+
 description = '''
 Outer and inner function defs each carry a single-line docstring, and the rewrite **fires independently at every nesting level**. Each expanded body line settles at the indent of its own def, so the inner docstring sits one step deeper than the outer.
 '''
-previewable = true

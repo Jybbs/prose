@@ -1,6 +1,7 @@
 [docs]
-title = "Methods Follow the Dunders → Properties → Private → Public Rhythm"
+previewable = true
+title       = "Methods Follow the Dunders → Properties → Private → Public Rhythm"
+
 description = '''
 A class body whose statements live inside `if` / `else` arms **sorts each arm under class scope**. Methods inside an arm fall into the four-group ordering and annotated fields sort required-then-optional, just as they would at the class's top level.
 '''
-previewable = true

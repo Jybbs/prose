@@ -1,6 +1,7 @@
 [docs]
-title = "Skip Inside an Off Block Is Redundant"
+previewable = false
+title       = "Skip Inside an Off Block Is Redundant"
+
 description = '''
 A `# fmt: skip` line sitting inside an active `# fmt: off` block is **redundant**, since the block already pins every line verbatim. The assignment runs above and below the block align as separate groups.
 '''
-previewable = false

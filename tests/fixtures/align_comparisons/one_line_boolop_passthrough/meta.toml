@@ -1,6 +1,7 @@
 [docs]
-title = "A Single-Line BoolOp Passes Through Verbatim"
+previewable = false
+title       = "A Single-Line BoolOp Passes Through Verbatim"
+
 description = '''
 A `BoolOp` that fits on **one source line passes through verbatim**. With no multi-line layout to align against, the rule makes no edit.
 '''
-previewable = false

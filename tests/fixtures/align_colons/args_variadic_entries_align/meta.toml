@@ -1,6 +1,7 @@
 [docs]
-title = "Variadic Arg Entries Align Beside Named Ones"
+previewable = false
+title       = "Variadic Arg Entries Align Beside Named Ones"
+
 description = '''
 A Google-style `Args:` section lists `*args` and `**kwargs` among the named entries. The `*` prefix counts as a valid entry-line starter, so **the variadic colons align alongside the named ones** on the shared column.
 '''
-previewable = false

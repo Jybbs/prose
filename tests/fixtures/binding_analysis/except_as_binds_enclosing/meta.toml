@@ -1,6 +1,7 @@
 [docs]
-title = "Except-As Binds in the Enclosing Scope"
+previewable = false
+title       = "Except-As Binds in the Enclosing Scope"
+
 description = '''
 An `except ... as e` clause **introduces a binding in the enclosing scope**, classified as `ExceptHandler`, with every read of the name inside the handler body counted against it.
 '''
-previewable = false

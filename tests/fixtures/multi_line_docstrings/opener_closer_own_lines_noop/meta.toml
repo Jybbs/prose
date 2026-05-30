@@ -1,6 +1,7 @@
 [docs]
-title = "Already-Canonical Multi-Line Docstrings Are Left Alone"
+previewable = true
+title       = "Already-Canonical Multi-Line Docstrings Are Left Alone"
+
 description = '''
 A multi-line docstring whose opening and closing `"""` each already sit on their own line is **left unchanged**. The rule fires only when one of the two boundaries shares a line with body content, so this shape is a noop.
 '''
-previewable = true

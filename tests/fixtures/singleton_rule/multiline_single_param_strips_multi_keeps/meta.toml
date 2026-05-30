@@ -1,6 +1,7 @@
 [docs]
-title = "Multi-Line Singleton Signatures Drop the Padding Too"
+previewable = true
+title       = "Multi-Line Singleton Signatures Drop the Padding Too"
+
 description = '''
 A multi-line single-parameter signature **strips its pre-`:` padding**, since the lone parameter and its `:` share a line with non-zero width. A multi-line multi-parameter signature qualifies two distinct-line members, so the rule defers to `align_colons` and the padding stays.
 '''
-previewable = true

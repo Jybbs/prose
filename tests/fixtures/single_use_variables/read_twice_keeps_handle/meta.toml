@@ -1,6 +1,7 @@
 [docs]
-title = "A Binding Read Twice Keeps Its Handle"
+previewable = false
+title       = "A Binding Read Twice Keeps Its Handle"
+
 description = '''
 A function-local binding read more than once, as in `return x + x`, is **not flagged**, because the reader benefits from the named handle at every use site. Inlining would force the right-hand side to repeat.
 '''
-previewable = false

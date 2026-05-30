@@ -1,5 +1,7 @@
 [docs]
-title = "Non-Assignment Write Kinds Are Exempt"
+previewable = false
+title       = "Non-Assignment Write Kinds Are Exempt"
+
 description = '''
 Bindings whose write kind falls outside `Assignment` and `Walrus` are **never flagged**, because inlining a right-hand side does not extend to:
 
@@ -9,4 +11,3 @@ Bindings whose write kind falls outside `Assignment` and `Walrus` are **never fl
 - `except` handler names
 - local `import` bindings
 '''
-previewable = false

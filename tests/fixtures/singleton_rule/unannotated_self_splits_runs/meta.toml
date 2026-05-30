@@ -1,6 +1,7 @@
 [docs]
-title = "The `self` Receiver Doesn't Count Toward the Group Size"
+previewable = true
+title       = "The `self` Receiver Doesn't Count Toward the Group Size"
+
 description = '''
 An unannotated `self` yields a `None` that splits the parameter slice into runs. A method with one annotated parameter after `self` forms a **singleton run that strips its pre-`:` padding**, as does a keyword-only parameter introduced by `*`. Two annotated parameters land a size-two run on one line, which strips because same-line `:` have no column to align against.
 '''
-previewable = true

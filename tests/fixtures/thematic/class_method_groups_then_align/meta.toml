@@ -1,6 +1,7 @@
 [docs]
-title = "Method Regrouping Then Field Column Alignment on a Class"
+previewable = false
+title       = "Method Regrouping Then Field Column Alignment on a Class"
+
 description = '''
 Methods sort into the canonical dunder, property, private, then public groups while annotated fields and both import runs alphabetize at the module top. **`align_colons` and `align_equals` then settle the field-declaration columns**, and a second pipeline pass produces no further change.
 '''
-previewable = false

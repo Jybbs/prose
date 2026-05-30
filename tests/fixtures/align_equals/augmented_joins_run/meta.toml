@@ -1,6 +1,7 @@
 [docs]
-title = "Augmented Assignments Join the Run"
+previewable = true
+title       = "Augmented Assignments Join the Run"
+
 description = '''
 An augmented assignment like `beta += 2` aligns its `=` on the shared column, so the `+` **sits one column before** the equals shared by the neighboring plain bindings.
 '''
-previewable = true

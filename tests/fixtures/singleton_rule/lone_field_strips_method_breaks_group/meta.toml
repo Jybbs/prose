@@ -1,6 +1,7 @@
 [docs]
-title = "A Method Breaks the Line-Adjacent Field Group"
+previewable = false
+title       = "A Method Breaks the Line-Adjacent Field Group"
+
 description = '''
 A class with a single annotated field **strips that field's pre-`:` padding**, while a class of line-adjacent annotated fields keeps its padding for `align_colons`. Mixing a single field with method definitions still treats the field as a singleton, because the method breaks the line-adjacent group rather than joining it.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "Overflowing Arm Lists Expand and Stay Wrapped"
+previewable = true
+title       = "Overflowing Arm Lists Expand and Stay Wrapped"
+
 description = '''
 Single-statement `match` arms return inline lists that overflow the line budget. `collection-layout` expands each list, and **`match-case-align` leaves those arm bodies wrapped because expansion forces a multi-line statement** the arm cannot collapse.
 '''
-previewable = true

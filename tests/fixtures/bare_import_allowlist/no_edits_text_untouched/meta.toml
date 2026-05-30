@@ -1,6 +1,7 @@
 [docs]
-title = "Already-Conforming Imports Surface Nothing"
+previewable = true
+title       = "Already-Conforming Imports Surface Nothing"
+
 description = '''
 A mix of flagged and preserved imports passes through **byte-for-byte unchanged** across every run. The rule emits diagnostics only and never an edit, so its output is always identical to its input.
 '''
-previewable = true

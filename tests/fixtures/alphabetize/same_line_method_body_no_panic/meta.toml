@@ -1,6 +1,7 @@
 [docs]
-title = "Same-Line Method Bodies Recurse Without Panic"
+previewable = false
+title       = "Same-Line Method Bodies Recurse Without Panic"
+
 description = '''
 Methods whose body sits on the same line as `def` **recurse through the body rewriter without a same-line block-range panic**. The body's first statement starts mid-line, so `block_range` skips the leading-comment scan rather than constructing a negative range.
 '''
-previewable = false

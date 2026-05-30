@@ -1,7 +1,8 @@
 [docs]
-title = "From-Imports Align the `import` Keyword on a Shared Column"
+canonical   = true
+previewable = true
+title       = "From-Imports Align the `import` Keyword on a Shared Column"
+
 description = '''
 A run of `from ... import ...` statements lines up on the `import` keyword, so the module column flushes left and the name column flushes right.
 '''
-previewable = true
-canonical = true

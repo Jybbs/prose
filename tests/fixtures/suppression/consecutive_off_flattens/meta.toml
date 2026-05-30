@@ -1,6 +1,7 @@
 [docs]
-title = "Stacked Off Directives Flatten, First On Closes"
+previewable = false
+title       = "Stacked Off Directives Flatten, First On Closes"
+
 description = '''
 Two consecutive `# fmt: off` directives **flatten into a single span** rather than nesting, so the first `# fmt: on` closes the block. Assignments after that closing directive align as a normal group.
 '''
-previewable = false

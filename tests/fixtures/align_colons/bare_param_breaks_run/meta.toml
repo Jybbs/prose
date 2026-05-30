@@ -1,6 +1,7 @@
 [docs]
-title = "A Bare Parameter Splits the Run in Two"
+previewable = false
+title       = "A Bare Parameter Splits the Run in Two"
+
 description = '''
 A multi-line signature mixes annotated and bare parameters. A bare `legacy` between annotated runs **breaks the alignment group**, so the runs above and below it each align against their own widest name rather than across the bare break.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "Constants Sort and Align Around a `# fmt: off` Block"
+previewable = true
+title       = "Constants Sort and Align Around a `# fmt: off` Block"
+
 description = '''
 Module constants above a `# fmt: off` block sort alphabetically and align their `=` column. **The suppressed block stays verbatim because the directive bounds its own scope**, and the run boundary respects that bracket.
 '''
-previewable = true

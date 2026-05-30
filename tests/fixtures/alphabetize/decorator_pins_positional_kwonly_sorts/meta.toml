@@ -1,6 +1,7 @@
 [docs]
-title = "Pinned Positionals, Sorted Keyword-Only Parameters"
+previewable = false
+title       = "Pinned Positionals, Sorted Keyword-Only Parameters"
+
 description = '''
 A positional-binding decorator skips the positional sub-lists (`posonlyargs`, `args`) **but still sorts the keyword-only sub-list**. Keyword-only parameters sit past the `*` separator and cannot be bound positionally, so the decorator contract does not constrain their order.
 '''
-previewable = false

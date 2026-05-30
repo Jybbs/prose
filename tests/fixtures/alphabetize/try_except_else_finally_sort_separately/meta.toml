@@ -1,6 +1,7 @@
 [docs]
-title = "Every `try` Arm Sorts on Its Own"
+previewable = false
+title       = "Every `try` Arm Sorts on Its Own"
+
 description = '''
 A `try` statement exercises every arm shape in one block: the `try` body, multiple `except` handlers, an `else` clause on success, and a `finally` clause that always runs. **Each arm sorts independently** of the others.
 '''
-previewable = false

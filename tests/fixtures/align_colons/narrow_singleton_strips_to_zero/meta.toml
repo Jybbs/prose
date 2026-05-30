@@ -1,6 +1,7 @@
 [docs]
-title = "A Narrow Singleton Sub-Group Strips to Zero"
+previewable = false
+title       = "A Narrow Singleton Sub-Group Strips to Zero"
+
 description = '''
 Class-field widths split into sub-groups under `max-shift`. A lone narrow field whose width sits below the surrounding sub-groups' max **collapses its gap to zero** rather than firing the wide-singleton anchor override.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "Dropped Future Import, Then the Gap Collapses to the Cushion"
+previewable = true
+title       = "Dropped Future Import, Then the Gap Collapses to the Cushion"
+
 description = '''
 A module opens with `from __future__ import annotations` ahead of a constant and an over-large blank-line gap before the first definition. **`unused-future-annotations` removes the import and `blank-lines` collapses the gap** down to the canonical two-line cushion between the constant and the `def`.
 '''
-previewable = true

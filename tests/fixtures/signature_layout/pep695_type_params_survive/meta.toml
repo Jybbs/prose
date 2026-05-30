@@ -1,6 +1,7 @@
 [docs]
-title = "PEP 695 Type Parameters Survive the Rewrite"
+previewable = false
+title       = "PEP 695 Type Parameters Survive the Rewrite"
+
 description = '''
 A generic function with PEP 695 type parameters between the name and `(` expands when its parameter count trips the cap. **The type parameter list, annotations, and return annotation all survive intact**, because the replacement range starts at `(` rather than the function name.
 '''
-previewable = false

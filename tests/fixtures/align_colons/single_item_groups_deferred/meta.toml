@@ -1,6 +1,7 @@
 [docs]
-title = "Single-Item Groups Defer to the Singleton Rule"
+previewable = false
+title       = "Single-Item Groups Defer to the Singleton Rule"
+
 description = '''
 A one-entry dict, a single-parameter signature, a one-field class, and a one-entry `Args:` section all pass through unchanged. With one member apiece, **`align_colons` defers single-item alignment to the singleton rule**.
 '''
-previewable = false

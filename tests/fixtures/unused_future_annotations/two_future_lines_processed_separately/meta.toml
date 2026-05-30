@@ -1,6 +1,7 @@
 [docs]
-title = "Two Future Lines Are Processed Independently"
+previewable = false
+title       = "Two Future Lines Are Processed Independently"
+
 description = '''
 Two consecutive `from __future__ import` lines carry `annotations` and `division` separately. **Each import statement is processed independently**, so the `annotations` line is removed while the `division` line remains.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "Assignments Under if TYPE_CHECKING Are Left Alone"
+previewable = false
+title       = "Assignments Under if TYPE_CHECKING Are Left Alone"
+
 description = '''
 A binding inside `if TYPE_CHECKING:` is type-system-only, so the file's type-checker boundary already owns it and **the rule leaves it alone**.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "A Single-Read Walrus Target Is Flagged"
+previewable = false
+title       = "A Single-Read Walrus Target Is Flagged"
+
 description = '''
 A walrus target binds its name in the nearest non-comprehension scope. When that target's read count is exactly one, the `:=` binding is **flagged** the same way as a single-use assignment.
 '''
-previewable = false

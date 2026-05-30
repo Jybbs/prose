@@ -1,6 +1,7 @@
 [docs]
-title = "A Method's Leading Edge Is Counted from Its Decorator"
+previewable = false
+title       = "A Method's Leading Edge Is Counted from Its Decorator"
+
 description = '''
 A class-body method with a leading decorator has its **leading edge at the decorator line**. The class-scope canonical of one blank line normalizes above that decorator.
 '''
-previewable = false

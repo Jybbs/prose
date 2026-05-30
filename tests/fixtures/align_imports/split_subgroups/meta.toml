@@ -1,6 +1,7 @@
 [docs]
-title = "A Widest Member past the Default `max-shift` Splits the Group"
+previewable = false
+title       = "A Widest Member past the Default `max-shift` Splits the Group"
+
 description = '''
 A run whose widest module overshoots the default `max-shift = 8` **greedily partitions into contiguous sub-groups** under the default `split` policy. Each sub-group aligns `import` at its own column, so a single wide outlier does not drag its short neighbors across the page.
 '''
-previewable = false

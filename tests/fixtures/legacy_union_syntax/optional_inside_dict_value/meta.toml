@@ -1,6 +1,7 @@
 [docs]
-title = "Nested Subscripts inside `Union` Are Recognized"
+previewable = true
+title       = "Nested Subscripts inside `Union` Are Recognized"
+
 description = '''
 A legacy `Optional[int]` nested as the value type of `dict[str, Optional[int]]` is **flagged on the inner expression**. The enclosing subscript, rather than the statement, is passed as the parent for the parenthesized range.
 '''
-previewable = true

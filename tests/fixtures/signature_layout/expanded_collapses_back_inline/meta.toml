@@ -1,6 +1,7 @@
 [docs]
-title = "An Expanded Signature That Fits Both Thresholds Collapses"
+previewable = true
+title       = "An Expanded Signature That Fits Both Thresholds Collapses"
+
 description = '''
 A two-parameter signature already in expanded shape, whose inline form fits under both thresholds, **collapses back to a single line**. The reverse direction of the rewrite is symmetric with expansion.
 '''
-previewable = true

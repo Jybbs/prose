@@ -1,6 +1,7 @@
 [docs]
-title = "A Class Header Cushions Its First Member by One Blank"
+previewable = false
+title       = "A Class Header Cushions Its First Member by One Blank"
+
 description = '''
 A class header carries **one blank line** before its first non-docstring member, whether that member is a method, a decorated method, an annotated field, a bare assignment, or a nested class. For a decorated method, the cushion sits above the topmost decorator.
 '''
-previewable = false

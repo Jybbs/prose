@@ -1,6 +1,7 @@
 [docs]
-title = "A Closure-Captured Single-Use Binding Is Flagged"
+previewable = true
+title       = "A Closure-Captured Single-Use Binding Is Flagged"
+
 description = '''
 A binding captured by a nested closure is **flagged** because the analyzer attributes the closure's read to the outer scope, leaving it single-use. Inlining shifts evaluation timing when the right-hand side carries side effects, so the diagnostic invites review rather than a blind rewrite.
 '''
-previewable = true

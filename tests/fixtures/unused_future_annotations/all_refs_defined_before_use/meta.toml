@@ -1,6 +1,7 @@
 [docs]
-title = "References Defined Before Their Annotation Resolve Eagerly"
+previewable = false
+title       = "References Defined Before Their Annotation Resolve Eagerly"
+
 description = '''
 Every annotation names `Node`, defined at module scope ahead of any annotation's offset. **Eager evaluation would succeed even on Python 3.13**, so trigger 3 resolves and the `from __future__ import annotations` directive is removed.
 '''
-previewable = false

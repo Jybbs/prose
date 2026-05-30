@@ -1,6 +1,7 @@
 [docs]
-title = "A Header Comment Cushions Above, Binds to the Member"
+previewable = false
+title       = "A Header Comment Cushions Above, Binds to the Member"
+
 description = '''
 A class header followed by an own-line comment and then the first member normalizes to **one blank line above the comment block** and binds the comment tight against the member below it.
 '''
-previewable = false

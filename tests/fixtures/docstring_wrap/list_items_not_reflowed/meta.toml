@@ -1,6 +1,7 @@
 [docs]
-title = "Bulleted Lists inside the Description Are Preserved"
+previewable = true
+title       = "Bulleted Lists inside the Description Are Preserved"
+
 description = '''
 List items **pass through verbatim and are never re-flowed onto multiple lines**, even when an item runs long. The recognized markers cover `-`, `*`, `+`, and numeric ordered items, matching the CommonMark set. Body text after the list resumes the description budget.
 '''
-previewable = true

@@ -1,6 +1,7 @@
 [docs]
-title = "File-Top Off Opts the Whole Source Out"
+previewable = false
+title       = "File-Top Off Opts the Whole Source Out"
+
 description = '''
 A `# fmt: off` at the top of the source, with no closing `# fmt: on`, **suppresses every subsequent line** from every rule. Assignments, the unsorted dict, and the unsorted parameter list all stay untouched, matching a file-level `# prose: off`.
 '''
-previewable = false

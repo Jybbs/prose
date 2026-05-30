@@ -1,6 +1,7 @@
 [docs]
-title = "Class Base Lists Strip the Trailing Comma"
+previewable = true
+title       = "Class Base Lists Strip the Trailing Comma"
+
 description = '''
 A multi-line class base list shares the same argument shape as a call, so the `,` after the final base is stripped. **The backward scan from before the closing `)` lands on that comma**, treating bases exactly as it treats call arguments.
 '''
-previewable = true

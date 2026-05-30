@@ -1,6 +1,7 @@
 [docs]
-title = "Qualified `typing.Optional` Is Flagged the Same Way"
+previewable = true
+title       = "Qualified `typing.Optional` Is Flagged the Same Way"
+
 description = '''
 After `import typing`, the annotation `typing.Optional[int]` **resolves through the attribute chain** back to `typing.Optional` and flags identically to the bare `Optional[int]` form.
 '''
-previewable = true

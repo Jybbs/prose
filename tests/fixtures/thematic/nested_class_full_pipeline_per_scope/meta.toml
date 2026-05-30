@@ -1,6 +1,7 @@
 [docs]
-title = "Nested Classes Sort and Align Independently Per Scope"
+previewable = false
+title       = "Nested Classes Sort and Align Independently Per Scope"
+
 description = '''
 An outer class wraps an inner helper class, each carrying fields and methods in arbitrary order. **The pipeline sorts fields and methods at every nesting depth and aligns the declaration columns within each scope independently**, settling the blank-line cushion between methods.
 '''
-previewable = false

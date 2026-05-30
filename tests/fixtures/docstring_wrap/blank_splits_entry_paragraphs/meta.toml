@@ -1,6 +1,7 @@
 [docs]
-title = "Blank Line Splits an Args Section into Adjacent Entries"
+previewable = false
+title       = "Blank Line Splits an Args Section into Adjacent Entries"
+
 description = '''
 A blank line terminates an entry's first paragraph, so **the following non-blank line is tested as a fresh entry candidate rather than a continuation**. A two-paragraph `Args:` section composes from two adjacent entries, each wrapping on its own.
 '''
-previewable = false

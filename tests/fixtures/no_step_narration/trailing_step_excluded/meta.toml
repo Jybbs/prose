@@ -1,6 +1,7 @@
 [docs]
-title = "Inline End-of-Line Comments Stay Quiet"
+previewable = true
+title       = "Inline End-of-Line Comments Stay Quiet"
+
 description = '''
 An end-of-line comment that happens to match the numbered-step shape is **excluded by the own-line filter**. Only comments occupying their own line earn diagnostics, so a trailing `# 1.` rides alongside its statement untouched.
 '''
-previewable = true

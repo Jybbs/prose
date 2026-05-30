@@ -1,6 +1,7 @@
 [docs]
-title = "Import Block Drops Future, Sorts, and Aligns Aliases"
+previewable = false
+title       = "Import Block Drops Future, Sorts, and Aligns Aliases"
+
 description = '''
 A module top mixing `__future__`, bare, and from-imports out of order leads an unannotated function. **The pipeline removes the unused future import, sorts each kind, aligns the `as` aliases of the aliased run**, and settles the blank-line cushion before the definition.
 '''
-previewable = false

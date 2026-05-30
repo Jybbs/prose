@@ -1,6 +1,7 @@
 [docs]
-title = "Already-Modern Pipe-Union Syntax Stays Clean"
+previewable = true
+title       = "Already-Modern Pipe-Union Syntax Stays Clean"
+
 description = '''
 Modern PEP 604 annotations written with `|` are **never flagged**. The walker inspects only `Subscript` shapes, so the binary `BitOr` expression backing `int | None` slips past entirely.
 '''
-previewable = true

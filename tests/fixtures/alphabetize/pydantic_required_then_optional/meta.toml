@@ -1,6 +1,7 @@
 [docs]
-title = "Pydantic Fields Sort, Required before Optional"
+previewable = true
+title       = "Pydantic Fields Sort, Required before Optional"
+
 description = '''
 Pydantic fields **split into required (no default) and optional (has default) sub-groups**. Each sub-group alphabetizes independently and the required group lands above the optional group regardless of source order.
 '''
-previewable = true

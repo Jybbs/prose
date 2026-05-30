@@ -1,6 +1,7 @@
 [docs]
-title = "Dataclass Fields Sort, Required before Optional"
+previewable = true
+title       = "Dataclass Fields Sort, Required before Optional"
+
 description = '''
 A `@dataclass`-decorated class has its annotated fields **alphabetized by AST shape, not decorator name**. Required fields land before optional, each sub-group sorted by name. The same structural detection covers attrs, msgspec, and any hand-rolled annotated container.
 '''
-previewable = true

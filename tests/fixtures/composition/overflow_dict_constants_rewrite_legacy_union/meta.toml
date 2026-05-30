@@ -1,6 +1,7 @@
 [docs]
-title = "Overflow Dict Expands While Legacy Unions Are Untouched"
+previewable = true
+title       = "Overflow Dict Expands While Legacy Unions Are Untouched"
+
 description = '''
 A module constant whose overflowing dict carries legacy union values, with `target-version` pinned to `3.10`. **The dict expands, sorts, and aligns its `:` column, while `legacy-union-syntax` leaves the `Optional`/`Union` values intact** because the target predates `X | Y`.
 '''
-previewable = true

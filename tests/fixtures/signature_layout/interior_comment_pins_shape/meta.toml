@@ -1,6 +1,7 @@
 [docs]
-title = "Comments inside the Parameter List Pin the Shape"
+previewable = true
+title       = "Comments inside the Parameter List Pin the Shape"
+
 description = '''
 A comment anywhere between `(` and `)` **pins the existing shape**, overriding both count and length triggers. Each pinned signature keeps its comment in place rather than getting rewritten around, covering both own-line and trailing-line placements.
 '''
-previewable = true

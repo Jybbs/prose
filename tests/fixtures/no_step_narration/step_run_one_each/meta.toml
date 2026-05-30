@@ -1,6 +1,7 @@
 [docs]
-title = "Multiple Steps in One Function Surface One Lint Each"
+previewable = true
+title       = "Multiple Steps in One Function Surface One Lint Each"
+
 description = '''
 A run of numbered-step comments earns **one diagnostic per matching comment**, each range pinned to its own comment in turn. The mix of `# 1.`, `# 2.`, and `# Step 3:` shapes all match independently rather than collapsing into a single report.
 '''
-previewable = true

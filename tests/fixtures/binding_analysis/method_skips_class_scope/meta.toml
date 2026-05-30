@@ -1,6 +1,7 @@
 [docs]
-title = "Method Lookup Skips the Class Scope"
+previewable = false
+title       = "Method Lookup Skips the Class Scope"
+
 description = '''
 A class-body binding is **invisible to a nested method's lookup chain**, so the method's reference to the same name walks past the class scope and resolves to the outer binding instead.
 '''
-previewable = false

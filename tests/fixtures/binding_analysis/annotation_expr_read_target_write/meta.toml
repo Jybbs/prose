@@ -1,6 +1,7 @@
 [docs]
-title = "Annotated Assignment Writes the Target and Reads the Annotation"
+previewable = false
+title       = "Annotated Assignment Writes the Target and Reads the Annotation"
+
 description = '''
 An annotated assignment such as `x: int = 0` records a **write at the target offset**, while the annotation expression is walked as a read that attributes a usage to every name it references.
 '''
-previewable = false

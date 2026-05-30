@@ -1,6 +1,7 @@
 [docs]
-title = "Relative Imports Align Beside Absolute Ones"
+previewable = false
+title       = "Relative Imports Align Beside Absolute Ones"
+
 description = '''
 Relative `from`-imports with leading dots join the same alignment as absolute ones. The `import` keyword **lines up across the whole run** whether a module path leads with dots, named segments, or both.
 '''
-previewable = false

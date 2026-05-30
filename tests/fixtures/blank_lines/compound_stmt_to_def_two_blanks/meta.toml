@@ -1,7 +1,8 @@
 [docs]
-title = "Compound Statement Before a Def Takes Two Blanks"
+canonical   = true
+previewable = true
+title       = "Compound Statement Before a Def Takes Two Blanks"
+
 description = '''
 Two blank lines precede every module-level `def` and `class`, giving the reader's eye an anchor between top-level units.
 '''
-previewable = true
-canonical = true

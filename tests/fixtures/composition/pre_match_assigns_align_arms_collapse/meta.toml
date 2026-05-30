@@ -1,6 +1,7 @@
 [docs]
-title = "Pre-Match Assigns Align While Match Arms Collapse"
+previewable = true
+title       = "Pre-Match Assigns Align While Match Arms Collapse"
+
 description = '''
 A function opens with single-target assignments ahead of a `match` whose arms return one binding each. **The pre-match run aligns its `=` column, and `match-case-align` collapses each arm body onto its pattern line** with the `:` column aligned.
 '''
-previewable = true

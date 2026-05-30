@@ -1,6 +1,7 @@
 [docs]
-title = "An Unannotated Parameter Splits the Run"
+previewable = false
+title       = "An Unannotated Parameter Splits the Run"
+
 description = '''
 An unannotated parameter like `unannotated=2` **splits the parameter run**. The surrounding annotated parameters have widths that would align if grouped, yet they stay unpadded as singletons.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "A Stacked Def's Leading Edge Is Its Topmost Decorator"
+previewable = false
+title       = "A Stacked Def's Leading Edge Is Its Topmost Decorator"
+
 description = '''
 A module-level `def` with stacked decorators has its **leading edge at the topmost decorator**. The blank-line count normalizes above that decorator, with the rest of the chain riding along below it.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "Already Hanging-Wrapped Entry Passes Through Unchanged"
+previewable = false
+title       = "Already Hanging-Wrapped Entry Passes Through Unchanged"
+
 description = '''
 An `Args:` entry already wrapped with the hanging-column shape **passes through unchanged**. The rule fires only when re-wrapping would alter the output, so a correctly shaped entry and its short sibling are left exactly as written.
 '''
-previewable = false

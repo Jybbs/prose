@@ -1,6 +1,7 @@
 [docs]
-title = "Trailing Comments Extend with the Operator Column"
+previewable = true
+title       = "Trailing Comments Extend with the Operator Column"
+
 description = '''
 A comment on its own line between two operands pushes them onto non-adjacent source lines, so the **line-distance check breaks the run** regardless of comment content. The rows below the divider still align among themselves.
 '''
-previewable = true

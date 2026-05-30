@@ -1,6 +1,7 @@
 [docs]
-title = "A Signature Already in Canonical Form Is Left Alone"
+previewable = true
+title       = "A Signature Already in Canonical Form Is Left Alone"
+
 description = '''
 Two signatures already at their canonical shape **pass through unchanged**. The inline two-parameter form fits both thresholds, and the expanded five-parameter form trips the count trigger yet already lands at the rewrite target, so the rule makes no edit on either.
 '''
-previewable = true

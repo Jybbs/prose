@@ -1,6 +1,7 @@
 [docs]
-title = "Body-Indent Prose After an Entry Ends the Section"
+previewable = false
+title       = "Body-Indent Prose After an Entry Ends the Section"
+
 description = '''
 A non-heading line at the docstring body indent inside a section **ends the section and resumes description prose at the description budget**, even with no blank line separating the section body from the prose that follows.
 '''
-previewable = false

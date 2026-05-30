@@ -1,6 +1,7 @@
 [docs]
-title = "Banner Comments Don't Block the Blank-Line Discipline"
+previewable = true
+title       = "Banner Comments Don't Block the Blank-Line Discipline"
+
 description = '''
 A banner-style block of own-line comments above a `def` reads as a **section divider**, not a description of the def. The canonical gap lands above the banner, with one blank line between the banner and the def below.
 '''
-previewable = true

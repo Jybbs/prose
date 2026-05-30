@@ -1,6 +1,7 @@
 [docs]
-title = "`Attributes:` Entries Sort, Carrying Their Continuations"
+previewable = false
+title       = "`Attributes:` Entries Sort, Carrying Their Continuations"
+
 description = '''
 The `Attributes:` section **reorders alphabetically by attribute name**, with each entry's hanging continuation lines carried along to its new position.
 '''
-previewable = false

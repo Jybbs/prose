@@ -1,6 +1,7 @@
 [docs]
-title = "Inner Function Reads Outer Without Shadowing"
+previewable = false
+title       = "Inner Function Reads Outer Without Shadowing"
+
 description = '''
 A nested function reading an outer-scope name **attributes the usage to the outer binding**, leaving the inner scope with no shadowing entry of its own.
 '''
-previewable = false

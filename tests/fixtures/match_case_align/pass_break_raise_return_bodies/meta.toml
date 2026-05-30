@@ -1,7 +1,8 @@
 [docs]
-title = "Every Collapsible Body Kind Aligns on One Colon"
+canonical   = true
+previewable = true
+title       = "Every Collapsible Body Kind Aligns on One Colon"
+
 description = '''
 A `match` whose arms each return a literal aligns on the post-pattern `:` separator.
 '''
-previewable = true
-canonical = true

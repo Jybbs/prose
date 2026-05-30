@@ -1,6 +1,7 @@
 [docs]
-title = "Methods Sort Around Pinned Class Constants"
+previewable = false
+title       = "Methods Sort Around Pinned Class Constants"
+
 description = '''
 A class body interleaving methods with class-level constants **pins the constants in their source slots** and sorts the methods around them, redistributing into the slots that other methods vacate.
 '''
-previewable = false

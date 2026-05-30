@@ -1,6 +1,7 @@
 [docs]
-title = "A `# fmt: off` Block Suppresses the Lint"
+previewable = true
+title       = "A `# fmt: off` Block Suppresses the Lint"
+
 description = '''
 A `# fmt: off` block **drops the diagnostic** for any single-use binding inside the suppressed span. The pipeline filters `Severity::Lint` diagnostics by range alongside edits, so suppression covers lint output and rewrites alike.
 '''
-previewable = true

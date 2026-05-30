@@ -1,6 +1,7 @@
 [docs]
-title = "Opaque Attribute Roots Skip the Run"
+previewable = false
+title       = "Opaque Attribute Roots Skip the Run"
+
 description = '''
 A run reaching a non-module-local root through an `Attribute` chain **skips entirely**. The root `os` is neither a run target nor a module-local binding written above the run, so safety cannot be proved.
 '''
-previewable = false

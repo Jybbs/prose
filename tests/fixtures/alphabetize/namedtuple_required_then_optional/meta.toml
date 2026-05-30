@@ -1,6 +1,7 @@
 [docs]
-title = "`namedtuple` Fields Sort"
+previewable = true
+title       = "`namedtuple` Fields Sort"
+
 description = '''
 A `NamedTuple` body has its annotated fields **alphabetized with required-then-optional**. Default-bearing fields land last per Python's positional-default invariant, which the required-then-optional split already enforces.
 '''
-previewable = true

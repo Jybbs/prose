@@ -1,6 +1,7 @@
 [docs]
-title = "Annotated Constants Are Flagged the Same Way"
+previewable = true
+title       = "Annotated Constants Are Flagged the Same Way"
+
 description = '''
 A module-level annotated `SCREAMING_CASE` assignment draws the diagnostic **whether or not a value follows the annotation**. Both the `X: int` and `Y: int = 1` shapes exercise the annotated-assignment code path.
 '''
-previewable = true

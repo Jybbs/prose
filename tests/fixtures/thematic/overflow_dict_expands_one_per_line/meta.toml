@@ -1,6 +1,7 @@
 [docs]
-title = "Inline Dict Overflows Budget and Expands One Per Line"
+previewable = false
+title       = "Inline Dict Overflows Budget and Expands One Per Line"
+
 description = '''
 A dict literal fits on one source line but overflows `code-line-length` once expanded. **`collection_layout` puts each entry on its own line and recursively expands the long nested value**, single-line entries partition before the multi-line one, `:` columns align, and dangling commas drop.
 '''
-previewable = false

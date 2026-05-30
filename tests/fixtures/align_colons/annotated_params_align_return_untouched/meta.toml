@@ -1,6 +1,7 @@
 [docs]
-title = "Function-Signature Annotations Align inside the Parameter List"
+previewable = true
+title       = "Function-Signature Annotations Align inside the Parameter List"
+
 description = '''
 Every annotated parameter on a multi-line signature settles its `:` onto a shared column at the widest name's width. The return-type `:` closing the signature line sits outside the parameter group and **stays untouched**.
 '''
-previewable = true

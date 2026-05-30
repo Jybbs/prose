@@ -1,6 +1,7 @@
 [docs]
-title = "Match-Arm Dicts Expand, Sort Keys, and Align Colons"
+previewable = true
+title       = "Match-Arm Dicts Expand, Sort Keys, and Align Colons"
+
 description = '''
 Single-statement `match` arms each return a long inline dict. **Each dict expands one entry per line, its keys sort alphabetically, and the `:` column aligns within each arm**, while the bodiless wildcard arm collapses back onto its pattern line.
 '''
-previewable = true

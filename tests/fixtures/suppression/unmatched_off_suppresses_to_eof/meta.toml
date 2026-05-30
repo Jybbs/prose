@@ -1,6 +1,7 @@
 [docs]
-title = "Unmatched Off Suppresses Through End of File"
+previewable = false
+title       = "Unmatched Off Suppresses Through End of File"
+
 description = '''
 An unmatched `# fmt: off` with no closing `# fmt: on` **suppresses through end of file**. Assignments below it stay verbatim while the run above pads to its group width.
 '''
-previewable = false

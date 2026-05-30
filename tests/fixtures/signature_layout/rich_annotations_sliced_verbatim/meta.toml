@@ -1,6 +1,7 @@
 [docs]
-title = "Rich Annotations Are Sliced Verbatim"
+previewable = false
+title       = "Rich Annotations Are Sliced Verbatim"
+
 description = '''
 A signature carrying varied annotations (*a `Callable`, a generic `Mapping`, an `Annotated` wrapper, a tuple alias, and an `Optional` default*) expands to one-per-line shape with **each annotation's source slice preserved verbatim**.
 '''
-previewable = false

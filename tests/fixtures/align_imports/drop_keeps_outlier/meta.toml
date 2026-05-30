@@ -1,6 +1,7 @@
 [docs]
-title = "The `drop` Policy Excludes the Widest `from`-Import"
+previewable = false
+title       = "The `drop` Policy Excludes the Widest `from`-Import"
+
 description = '''
 Under `max-shift-policy = "drop"`, a `from`-import run whose widest module overshoots the cap **drops that outlier from the aligned set**. The remaining members tighten onto their own `import` column while the dropped line keeps its original single-space spacing.
 '''
-previewable = false

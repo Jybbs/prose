@@ -1,6 +1,7 @@
 [docs]
-title = "An Inline Comment Forces Source Order"
+previewable = false
+title       = "An Inline Comment Forces Source Order"
+
 description = '''
 Any inline comment intersecting a run line **skips the entire run**. Trailing comments on assign lines do not break the run boundary, but a comment within the run extent forces source order to win.
 '''
-previewable = false

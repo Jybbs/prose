@@ -1,6 +1,7 @@
 [docs]
-title = "Step Word With a Colon Separator Is Flagged"
+previewable = false
+title       = "Step Word With a Colon Separator Is Flagged"
+
 description = '''
 A `# Step 1: text` comment matches the **step-word shape carrying a `:` separator** and earns a diagnostic. The literal `Step` keyword plus a number is enough, with `:` standing in for the dot.
 '''
-previewable = false

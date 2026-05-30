@@ -1,6 +1,7 @@
 [docs]
-title = "Imports in `if` and `else` Branches Align per Branch"
+previewable = false
+title       = "Imports in `if` and `else` Branches Align per Branch"
+
 description = '''
 Imports inside `if` and `else` branch bodies align **within their own branch only**. Each branch is a separate body slice the visitor descends into, so cross-branch alignment never happens and the two compatibility blocks reach independent columns.
 '''
-previewable = false

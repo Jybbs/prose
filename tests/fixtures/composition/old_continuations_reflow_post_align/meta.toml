@@ -1,6 +1,7 @@
 [docs]
-title = "Old Args Continuations Reflow at the Post-Align Column"
+previewable = true
+title       = "Old Args Continuations Reflow at the Post-Align Column"
+
 description = '''
 Args entries with old-style continuations indented to `body_indent + 4` rather than under the description. `align_colons` shifts every colon to the longest-name column, and **`docstring_wrap` reflows the continuations into the post-align hanging-column shape**.
 '''
-previewable = true

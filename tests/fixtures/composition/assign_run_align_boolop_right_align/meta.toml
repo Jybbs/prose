@@ -1,6 +1,7 @@
 [docs]
-title = "Assignment Run and `BoolOp` Align in Separate Columns"
+previewable = true
+title       = "Assignment Run and `BoolOp` Align in Separate Columns"
+
 description = '''
 A function opens with single-target assignments and guards on a multi-line `BoolOp`. The assignment run aligns its `=` column, and **the `BoolOp`'s comparison operators right-align in their own independent column** below.
 '''
-previewable = true

@@ -1,6 +1,7 @@
 [docs]
-title = "A Relative `annotations` Import Is Skipped"
+previewable = false
+title       = "A Relative `annotations` Import Is Skipped"
+
 description = '''
 A `from . import annotations` carries `level > 0`, so the detector skips it. The directive-shaped import resolves against the package, not `__future__`, and **stays in place**.
 '''
-previewable = false
