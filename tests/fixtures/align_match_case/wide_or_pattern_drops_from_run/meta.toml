@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Wide Or-Pattern Drops Out of the Run"
+
+description = '''
+Arms carry `case A | B` alternations of differing width. The widest third arm exceeds `max-shift` and breaks into its own sub-group, **dropping out of the alignment** with its `:` hugging the pattern while the narrower arms share one column.
+'''

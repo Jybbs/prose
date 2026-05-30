@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize", "blank-lines", "match-case-align"]
+rules = ["alphabetize", "blank-lines", "align-match-case"]

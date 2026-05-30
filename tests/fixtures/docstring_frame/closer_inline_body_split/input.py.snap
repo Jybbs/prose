@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/docstring_frame/closer_inline_body_split/input.py
+---
+def greet():
+    """
+    Summary line on its own line.
+    Trailing line touches the closer.
+    """
+    return 1

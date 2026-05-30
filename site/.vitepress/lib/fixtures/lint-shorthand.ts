@@ -51,7 +51,7 @@ export function lintShorthand(input: ShorthandInput): Shorthand | null {
         ? { after : truncate(inlined), before : name, kind : 'replace' }
         : null
     }
-    case 'bare-import-allowlist': {
+    case 'bare-imports': {
       const module = firstBacktick(message)
       return module
         ? { after : `from ${module} import …`, before : `import ${module}`, kind : 'replace' }
@@ -61,7 +61,7 @@ export function lintShorthand(input: ShorthandInput): Shorthand | null {
       const name = firstBacktick(message)
       return name ? { kind : 'relocate', name } : null
     }
-    case 'no-step-narration':
+    case 'step-narration':
       return { kind : 'remove', text : truncate(flagged) }
     default:
       return null

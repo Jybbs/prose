@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-assertion_line: 36
-expression: render(&diagnostics)
-input_file: tests/fixtures/no_step_narration/class_body_step_flagged/input.py
----
-no-step-narration@21..41

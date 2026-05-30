@@ -3,5 +3,5 @@ previewable = true
 title       = "Arm Literals Drop Trailing Commas as Bodies Collapse"
 
 description = '''
-Single-statement `match` arms return inline collection literals carrying a trailing comma. **`strip-trailing-commas` removes the comma and `match-case-align` collapses each body onto its pattern line**, aligning the arm `:` column across the run.
+Single-statement `match` arms return inline collection literals carrying a trailing comma. **`strip-trailing-commas` removes the comma and `align-match-case` collapses each body onto its pattern line**, aligning the arm `:` column across the run.
 '''

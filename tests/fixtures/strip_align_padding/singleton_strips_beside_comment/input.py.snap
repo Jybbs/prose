@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_align_padding/singleton_strips_beside_comment/input.py
+---
+stays_singleton = {
+    # leading comment lives on its own line
+    "only_key": compute_value(),
+}
+
+
+also_stripped = {
+    "only_key": compute_value(),  # trailing comment after the value
+}

@@ -1,8 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/bare_import_allowlist/fmt_off_spares_import_line/input.py
----
-# fmt: off
-import os
-# fmt: on

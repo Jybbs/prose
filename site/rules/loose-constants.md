@@ -2,7 +2,7 @@
 category : lint
 family   : lint
 caption  : "surfaces module-level constants that aren't `UPPER_SNAKE_CASE`."
-related  : [no-step-narration, single-use-variables]
+related  : [step-narration, single-use-variables]
 layout   : doc
 ---
 

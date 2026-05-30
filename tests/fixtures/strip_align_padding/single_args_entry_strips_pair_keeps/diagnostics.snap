@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_align_padding/single_args_entry_strips_pair_keeps/input.py
+---
+strip-align-padding@90..91

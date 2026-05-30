@@ -1,2 +1,2 @@
 [harness]
-rules = ["multi-line-docstrings", "align-colons", "docstring-wrap"]
+rules = ["docstring-frame", "align-colons", "docstring-wrap"]

@@ -75,15 +75,15 @@ impl Default for AlphabetizeConfig {
     }
 }
 
-/// Configuration for the `bare_import_allowlist` rule.
+/// Configuration for the `bare_imports` rule.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
-pub struct BareImportAllowlistConfig {
+pub struct BareImportsConfig {
     pub allow: Vec<String>,
     pub enabled: bool,
 }
 
-impl Default for BareImportAllowlistConfig {
+impl Default for BareImportsConfig {
     fn default() -> Self {
         Self {
             allow: vec!["numpy".to_owned(), "pandas".to_owned()],
@@ -390,7 +390,7 @@ macro_rules! impl_rule_toggle {
 impl_rule_toggle!(
     AlignmentConfig,
     AlphabetizeConfig,
-    BareImportAllowlistConfig,
+    BareImportsConfig,
     CollectionLayoutConfig,
     LooseConstantsConfig,
     SignatureLayoutConfig,

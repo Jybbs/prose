@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/no_edits_text_untouched/input.py
+---
+import os
+import numpy
+import pandas
+from os import path

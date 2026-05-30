@@ -1,0 +1,2 @@
+[rules]
+bare-imports = { allow = ["torch"] }

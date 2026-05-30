@@ -1,2 +1,2 @@
 [harness]
-rules = ["collection-layout", "match-case-align", "align-colons"]
+rules = ["collection-layout", "align-match-case", "align-colons"]

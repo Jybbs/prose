@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_match_case/colons_align_to_widest_pattern/input.py
+---
+match credential.kind:
+    case "apprenticeship" : icon = "wrench"
+    case "certification"  : icon = "scroll"
+    case "program"        : icon = "cap"

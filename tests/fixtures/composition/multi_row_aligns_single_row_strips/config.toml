@@ -1,2 +1,2 @@
 [harness]
-rules = ["align-colons", "singleton-rule"]
+rules = ["align-colons", "strip-align-padding"]

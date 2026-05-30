@@ -3,9 +3,9 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/method_holds_match_returns_then_sort/input.py
 ---
+align-match-case@94..210
 alphabetize@33..340
 blank-lines@17..18
 blank-lines@222..223
 blank-lines@281..282
 blank-lines@52..53
-match-case-align@94..210

@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_align_padding/interleaved_singletons_and_groups_all_shapes/input.py
+---
+strip-align-padding@103..104
+strip-align-padding@188..189
+strip-align-padding@239..240
+strip-align-padding@253..254
+strip-align-padding@26..27

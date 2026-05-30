@@ -35,7 +35,7 @@ Each case's pipeline runs the listed rules in canonical order, reparsing between
 
 ### Docstring Discipline Before Wrap
 
-[[no-single-line-docstrings]] and [[multi-line-docstrings]] running upstream of [[docstring-wrap]] settle the quote placement before the body rewrap measures budgets.
+[[docstring-expand]] and [[docstring-frame]] running upstream of [[docstring-wrap]] settle the quote placement before the body rewrap measures budgets.
 
 ### Module Reorder Around a Block Marker
 

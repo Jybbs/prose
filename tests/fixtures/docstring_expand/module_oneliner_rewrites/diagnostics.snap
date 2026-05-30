@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/docstring_expand/module_oneliner_rewrites/input.py
+---
+docstring-expand@232..264

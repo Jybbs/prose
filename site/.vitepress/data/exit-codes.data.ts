@@ -44,7 +44,7 @@ const SOURCES: readonly ExitCodeSource[] = [
     detail : [
       'Surfaces under both `prose check` and `prose format`.',
       'The shipped lints contribute: `legacy-union-syntax`, `loose-constants`, '
-      + '`no-step-narration`, `single-use-variables`.'
+      + '`step-narration`, `single-use-variables`.'
     ],
     label  : 'Lint violation',
     summary: 'At least one lint-only diagnostic surfaced.'

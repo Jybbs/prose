@@ -32,10 +32,10 @@ Config {
         strip_trailing_commas: ToggleOnly {
             enabled: true,
         },
-        no_single_line_docstrings: ToggleOnly {
+        docstring_expand: ToggleOnly {
             enabled: true,
         },
-        multi_line_docstrings: ToggleOnly {
+        docstring_frame: ToggleOnly {
             enabled: true,
         },
         unused_future_annotations: ToggleOnly {
@@ -44,14 +44,14 @@ Config {
         blank_lines: ToggleOnly {
             enabled: true,
         },
-        bare_import_allowlist: BareImportAllowlistConfig {
+        bare_imports: BareImportsConfig {
             allow: [
                 "numpy",
                 "pandas",
             ],
             enabled: true,
         },
-        match_case_align: AlignmentConfig {
+        align_match_case: AlignmentConfig {
             enabled: true,
             max_shift: 8,
             max_shift_policy: Split,
@@ -83,14 +83,14 @@ Config {
             max_shift: 8,
             max_shift_policy: Split,
         },
-        singleton_rule: ToggleOnly {
+        strip_align_padding: ToggleOnly {
             enabled: true,
         },
         loose_constants: LooseConstantsConfig {
             allow: [],
             enabled: true,
         },
-        no_step_narration: ToggleOnly {
+        step_narration: ToggleOnly {
             enabled: true,
         },
         legacy_union_syntax: ToggleOnly {

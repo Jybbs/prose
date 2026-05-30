@@ -2,7 +2,7 @@
 category : lint
 family   : lint
 caption  : "surfaces single-use local bindings that could inline cleanly."
-related  : [loose-constants, no-step-narration]
+related  : [loose-constants, step-narration]
 layout   : doc
 ---
 

@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/match_case_align/wide_or_pattern_anchors_run/input.py
----
-match-case-align@36..144

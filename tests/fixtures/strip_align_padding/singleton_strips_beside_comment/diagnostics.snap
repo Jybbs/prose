@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_align_padding/singleton_strips_beside_comment/input.py
+---
+strip-align-padding@135..137
+strip-align-padding@78..80

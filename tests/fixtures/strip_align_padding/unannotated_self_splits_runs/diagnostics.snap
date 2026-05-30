@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_align_padding/unannotated_self_splits_runs/input.py
+---
+strip-align-padding@108..109
+strip-align-padding@175..176
+strip-align-padding@190..191
+strip-align-padding@42..43

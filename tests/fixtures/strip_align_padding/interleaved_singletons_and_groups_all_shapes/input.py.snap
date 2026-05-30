@@ -1,0 +1,28 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_align_padding/interleaved_singletons_and_groups_all_shapes/input.py
+---
+class Solo:
+    only_field: str
+
+
+class Pair:
+    first  : str
+    second : int
+
+
+single_dict = {"key": "value"}
+
+paired_dict = {
+    "first"  : 1,
+    "second" : 2,
+}
+
+
+def lone_param(x: int) -> int:
+    return x
+
+
+def two_params(first: int, second: str) -> str:
+    return ""

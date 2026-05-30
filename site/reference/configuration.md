@@ -83,12 +83,12 @@ The `[rules]` table holds one entry per rule you change. A bare bool is the shor
 | `max-shift-policy` | `"split"` \| `"drop"` | alignment rules | `"split"` | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation. To leave one row out of an otherwise-aligned group, hold it with `# prose: skip` rather than abandoning the alignment |
 | `docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within every Title-case-headed docstring section alongside the AST-level sorts. Set `false` to keep narrative-curated entry order while still sorting every other surface |
 | `max-atomics-per-line` | positive int | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap |
-| `allow` | list of module names | [[bare-import-allowlist]] | `["numpy", "pandas"]` | Modules whose bare-import form is preserved |
+| `allow` | list of module names | [[bare-imports]] | `["numpy", "pandas"]` | Modules whose bare-import form is preserved |
 | `allow` | list of names | [[loose-constants]] | `[]` | Module-level names exempted from the lint |
 | `allow-pattern` | regex | [[single-use-variables]] | `"^_"` | Binding names exempted from the lint |
 
 ::: warning `allow` Replaces the Default
-A user-supplied `allow` list replaces the rule's default rather than extending it. A project that wants its own modules alongside `bare-import-allowlist`'s bundled `"numpy"` and `"pandas"` must list those two explicitly in the supplied `allow` array, otherwise the default falls away.
+A user-supplied `allow` list replaces the rule's default rather than extending it. A project that wants its own modules alongside `bare-imports`'s bundled `"numpy"` and `"pandas"` must list those two explicitly in the supplied `allow` array, otherwise the default falls away.
 :::
 
 ## Rule Categories
@@ -97,15 +97,15 @@ Rules sit in configuration buckets, with each bucket carrying a distinct knob sh
 
 ### Alignment Rules
 
-The four rules that line columns vertically share one structural question: what happens when the widest member would push the alignment column past `code-line-length`. `max-shift` caps the leftward shift and `max-shift-policy` names the fallback the rule reaches for when the cap binds. [[align-colons]] aligns `:` in five Python contexts, [[align-equals]] does the same for `=` in keyword arguments and assignments, [[align-imports]] lines up `as` aliases in `from … import` blocks, and [[match-case-align]] aligns the `->` arrows of match arms.
+The rules that line columns vertically share one structural question, which is what happens when the widest member would push the alignment column past `code-line-length`. `max-shift` caps the leftward shift and `max-shift-policy` names the fallback the rule reaches for when the cap binds. [[align-colons]] aligns `:` across its Python contexts, [[align-equals]] does the same for `=` in keyword arguments and assignments, [[align-comparisons]] lines up comparison operators across consecutive lines, [[align-imports]] lines up `as` aliases in `from … import` blocks, and [[align-match-case]] aligns the post-pattern `:` of match arms.
 
 ### Toggle-Only Rules
 
-Some rules answer a single yes-or-no question with no parameters worth tuning, so each takes only a bare bool toggle. Reach for `<rule> = false` to silence a rule whose default doesn't fit the project: [[blank-lines]], [[docstring-wrap]], [[legacy-union-syntax]], [[multi-line-docstrings]], [[no-single-line-docstrings]], [[no-step-narration]], [[singleton-rule]], [[strip-trailing-commas]], and [[unused-future-annotations]].
+Some rules answer a single yes-or-no question with no parameters worth tuning, so each takes only a bare bool toggle. Reach for `<rule> = false` to silence a rule whose default doesn't fit the project: [[blank-lines]], [[docstring-wrap]], [[legacy-union-syntax]], [[docstring-frame]], [[docstring-expand]], [[step-narration]], [[strip-align-padding]], [[strip-trailing-commas]], and [[unused-future-annotations]].
 
 ### Rule-Specific Knobs
 
-Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the knob shaped for its question. [[alphabetize]] takes `docstring-entries` for the docstring-entry reorder, [[bare-import-allowlist]] takes an `allow` list of modules whose bare-import form is preserved, [[collection-layout]] takes `max-atomics-per-line` to cap the inline-collection budget, [[loose-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
+Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the knob shaped for its question. [[alphabetize]] takes `docstring-entries` for the docstring-entry reorder, [[bare-imports]] takes an `allow` list of modules whose bare-import form is preserved, [[collection-layout]] takes `max-atomics-per-line` to cap the inline-collection budget, [[loose-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
 
 ## Docstring Budgets
 

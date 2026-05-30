@@ -37,6 +37,19 @@ export function applyCompletedEdits(
   return text
 }
 
+// Splits an edit into the prefix `from` and `to` share and their differing
+// cores, so the animation only backspaces and retypes the changed tail.
+export function editPlan(from: string, to: string): {
+  fromCore : string
+  prefix   : string
+  toCore   : string
+} {
+  let i = 0
+  const max = Math.min(from.length, to.length)
+  while (i < max && from[i] === to[i]) i += 1
+  return { fromCore: from.slice(i), prefix: from.slice(0, i), toCore: to.slice(i) }
+}
+
 export function segmentsForEdit(
   entry        : LandingTypingDemoEditEntry,
   text         : string,
@@ -58,11 +71,12 @@ export function segmentsForEdit(
   const editingLineAfter  = firstNewline === -1 ? fullAfter : fullAfter.slice(0, firstNewline)
   const after             = firstNewline === -1 ? '' : fullAfter.slice(firstNewline)
 
+  const { prefix, fromCore, toCore } = editPlan(entry.from, entry.to)
   let editing: string
   if (phase === 'editBackspacing') {
-    editing = entry.from.slice(0, entry.from.length - editProgress)
+    editing = prefix + fromCore.slice(0, fromCore.length - editProgress)
   } else if (phase === 'editTyping') {
-    editing = entry.to.slice(0, editProgress)
+    editing = prefix + toCore.slice(0, editProgress)
   } else {
     editing = entry.to
   }

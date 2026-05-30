@@ -3,5 +3,5 @@ previewable = true
 title       = "Inline-Opener Docstring Splits and Rewraps Overlong Prose"
 
 description = '''
-A multi-line docstring opens on the triple-quote line and carries a single overlong prose line. **`multi-line-docstrings` moves the opener to its own line and `docstring-wrap` reflows the prose** to fit the docstring budget.
+A multi-line docstring opens on the triple-quote line and carries a single overlong prose line. **`docstring-frame` moves the opener to its own line and `docstring-wrap` reflows the prose** to fit the docstring budget.
 '''

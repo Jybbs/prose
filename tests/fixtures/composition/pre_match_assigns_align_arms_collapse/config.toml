@@ -1,2 +1,2 @@
 [harness]
-rules = ["match-case-align", "align-equals"]
+rules = ["align-match-case", "align-equals"]

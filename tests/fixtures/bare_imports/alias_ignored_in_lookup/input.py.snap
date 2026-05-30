@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/alias_ignored_in_lookup/input.py
+---
+import os as o

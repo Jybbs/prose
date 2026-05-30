@@ -1,9 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/singleton_rule/unannotated_self_splits_runs/input.py
----
-singleton-rule@108..109
-singleton-rule@175..176
-singleton-rule@190..191
-singleton-rule@42..43

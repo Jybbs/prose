@@ -5,7 +5,7 @@ input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
 ---
 [
   {
-    "code": "bare-import-allowlist",
+    "code": "bare-imports",
     "end_location": {
       "column": 12,
       "row": 1
@@ -18,7 +18,7 @@ input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
     "message": "bare import `json` outside allowlist. Rewrite as `from json import ...` listing only the symbols this module uses"
   },
   {
-    "code": "bare-import-allowlist",
+    "code": "bare-imports",
     "end_location": {
       "column": 10,
       "row": 2
@@ -31,7 +31,7 @@ input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
     "message": "bare import `os` outside allowlist. Rewrite as `from os import ...` listing only the symbols this module uses"
   },
   {
-    "code": "bare-import-allowlist",
+    "code": "bare-imports",
     "end_location": {
       "column": 11,
       "row": 3

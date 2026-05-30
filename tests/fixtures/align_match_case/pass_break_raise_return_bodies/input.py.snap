@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_match_case/pass_break_raise_return_bodies/input.py
+---
+def dispatch(token):
+    match token:
+        case "noop" : pass
+        case "skip" : continue
+        case "stop" : break
+        case "boom" : raise RuntimeError("boom")
+        case "echo" : log(token)
+        case _      : return None

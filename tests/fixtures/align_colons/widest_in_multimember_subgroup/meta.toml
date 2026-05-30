@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Widest Field in a Shared Sub-Group Fires No Override"
+title       = "Widest Field in a Shared Sub-Group Aligns With It"
 
 description = '''
-Class-field widths split into two sub-groups under `max-shift`. The widest field sits in a multi-member sub-group rather than alone, so **no anchor override fires** and each sub-group aligns at its own widest member's column.
+Class-field widths split into two sub-groups under `max-shift`. The widest field sits in a multi-member sub-group rather than alone, so it **aligns with its neighbors** at that sub-group's widest column.
 '''

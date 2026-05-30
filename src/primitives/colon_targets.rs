@@ -1,8 +1,8 @@
 //! Member constructors for the five `:` alignment contexts. The
 //! contexts are dict items, Pydantic-style class fields, annotated
 //! function parameters, Google/numpy docstring `Args:` entries, and
-//! `match` arm cases. `align_colons` and `match_case_align` consume
-//! them to align multi-item groups, whereas `singleton_rule` consumes
+//! `match` arm cases. `align_colons` and `align_match_case` consume
+//! them to align multi-item groups, whereas `strip_align_padding` consumes
 //! them to strip pre-colon padding from groups that have no column to
 //! align to.
 

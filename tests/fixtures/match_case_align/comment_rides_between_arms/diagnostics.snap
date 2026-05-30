@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/match_case_align/comment_rides_between_arms/input.py
----
-match-case-align@48..174

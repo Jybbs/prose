@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_match_case/trailing_comment_disqualifies_first_arm/input.py
+---
+align-match-case@103..154

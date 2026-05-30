@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_align_padding/multiline_single_param_strips_multi_keeps/input.py
+---
+strip-align-padding@22..23

@@ -2,7 +2,7 @@
 category : auto-fix
 family   : formatting
 caption  : "splits list, tuple, dict, and set literals into one-entry-per-line layout once they cross a threshold."
-related  : [align-colons, alphabetize, singleton-rule, strip-trailing-commas]
+related  : [align-colons, alphabetize, strip-align-padding, strip-trailing-commas]
 layout   : doc
 ---
 

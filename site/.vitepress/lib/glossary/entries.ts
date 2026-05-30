@@ -252,7 +252,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'A docstring is a triple-quoted string literal placed as the first statement '
               + 'in a module, class, or function. *Prose* rewraps multi-line bodies under '
               + '`docstring-wrap` and gates single-line shapes under '
-              + '`no-single-line-docstrings`.',
+              + '`docstring-expand`.',
     families  : ['docs', 'engine'],
     href      : '/primitives/docstring'
   },
@@ -374,11 +374,11 @@ export const glossary: Record<string, GlossaryEntry> = {
   'match': {
     aliases   : ['match statement', 'match-arm', 'match arms', 'match-case'],
     definition: 'A match is Python\'s structural-pattern-matching statement (PEP 634). Each '
-              + '`case Pattern: body` arm pairs a pattern with a body, and `match-case-align` '
+              + '`case Pattern: body` arm pairs a pattern with a body, and `align-match-case` '
               + 'shares a column for the post-pattern `:` separator across consecutive '
               + 'single-expression arms.',
     families  : ['alignment'],
-    href      : '/rules/match-case-align'
+    href      : '/rules/align-match-case'
   },
 
   'max-shift': {
@@ -489,20 +489,21 @@ export const glossary: Record<string, GlossaryEntry> = {
     families  : ['engine']
   },
 
-  'singleton rule': {
-    aliases   : ['singleton rules'],
-    definition: 'The singleton rule drops alignment padding when a group resolves to a single '
-              + 'member, so a one-key dict reads as plain code.',
-    families  : ['alignment'],
-    href      : '/rules/singleton-rule'
-  },
-
   'stdin mode': {
     aliases   : ['--stdin', 'stdin'],
     definition: 'Stdin mode is the CLI shape that reads a single source from standard input '
               + 'and writes to standard output. It bypasses the filesystem walker entirely, so '
               + 'editors and pipelines drive *Prose* without touching disk.',
     families  : ['cli']
+  },
+
+  'strip-align-padding': {
+    aliases   : ['singleton rule', 'singleton rules'],
+    definition: '`strip-align-padding` drops the pre-`:` padding when a colon group has no '
+              + 'column to align to, either a single-member group or a multi-member group '
+              + 'whose colons all share one source line, so a one-key dict reads as plain code.',
+    families  : ['alignment'],
+    href      : '/rules/strip-align-padding'
   },
 
   'structured section': {

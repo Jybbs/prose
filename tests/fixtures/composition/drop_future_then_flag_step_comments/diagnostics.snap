@@ -4,6 +4,6 @@ assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/drop_future_then_flag_step_comments/input.py
 ---
-no-step-narration@26..46
-no-step-narration@87..107
+step-narration@26..46
+step-narration@87..107
 unused-future-annotations@0..35

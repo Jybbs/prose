@@ -12,16 +12,16 @@ align-colons              = false
 align-equals              = false
 align-imports             = false
 alphabetize               = { docstring-entries = false, enabled = false }
-bare-import-allowlist     = { allow = ["scipy", "torch"], enabled = false }
+bare-imports     = { allow = ["scipy", "torch"], enabled = false }
 blank-lines               = false
 collection-layout         = { enabled = false, max-atomics-per-line = 3 }
 legacy-union-syntax       = false
 loose-constants           = { allow = ["LOG_LEVEL"], enabled = false }
-match-case-align          = false
-multi-line-docstrings     = false
-no-single-line-docstrings = false
-no-step-narration         = false
+align-match-case          = false
+docstring-frame     = false
+docstring-expand = false
+step-narration         = false
 signature-layout          = { enabled = false, max-inline-params = false }
 single-use-variables      = { allow-pattern = "^tmp_", enabled = false }
-singleton-rule            = false
+strip-align-padding            = false
 strip-trailing-commas     = false
