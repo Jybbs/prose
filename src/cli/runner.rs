@@ -583,7 +583,7 @@ mod tests {
     fn diagnostic(severity: Severity, range: TextRange, slug: &'static str) -> Diagnostic {
         Diagnostic {
             fix: matches!(severity, Severity::Format)
-                .then(|| Edit::range_replacement("y".into(), range)),
+                .then(|| vec![Edit::range_replacement("y".into(), range)]),
             message: "test".into(),
             range,
             rule: RuleId::from(slug),

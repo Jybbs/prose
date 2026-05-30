@@ -26,9 +26,9 @@ The types every consumer touches:
 
 1. `Member { gap: TextRange, line_start: TextSize, op_width: usize, width: usize }` describes one row in an alignment group. `gap` is the whitespace range immediately before the aligned token, rewritten into padding. `line_start` is the offset of the source-line start, used by `is_alignment_candidate` to confirm each member sits on its own line. `op_width` is the display width of variable-width operators *(`==`, `!=`, `<=`)* opting into right-alignment. `width` is the display-column width from member start to gap start, which is what the math compares to find the target column.
 2. `Settings { max_shift, policy, strip_singleton_subgroup }` carries the rule's `[rules]` knobs. `From<&AlignmentConfig>` builds the canonical settings, and `with_singleton_subgroup_strip` flips the singleton-collapse behavior on.
-3. `AlignWalker { edits: Vec<Edit>, settings: Settings, source: &'a Source }` is the carrier each rule's visitor struct wraps. `AlignWalker::new(source, settings)` builds one with an empty `edits` vector, and `AlignWalker::emit_group(&mut self, members)` pushes alignment edits for a group into `self.edits`.
+3. `AlignWalker { groups: Vec<Vec<Edit>>, rule: RuleId, settings: Settings, source: &'a Source }` is the carrier each rule's visitor struct wraps. `AlignWalker::new(source, settings, rule)` builds one with an empty `groups` accumulator, where each entry is one fix the pipeline maps to a single diagnostic. `emit_group(&mut self, members)` records a group's alignment edits, the `group_edits` / `push_group` pair lets a rule fold extra edits into a group before committing it, and `is_held(anchor)` reports whether a row's line is skip-suppressed for `rule`.
 
-The entry point `emit_group(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>)` resolves the target column across `members`, falls back through `policy` *(`split` / `drop` / `skip`)* when the widest member exceeds `max_shift`, and pushes one `Edit` per row that needs padding into the caller's accumulator. A singleton group collapses its gap to one space, or to zero when `settings.strip_singleton_subgroup` is set.
+The entry point `emit_group(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>)` resolves the target column across `members`, falls back through `policy` *(`split` / `drop`)* when the widest member exceeds `max_shift`, and pushes one `Edit` per row that needs padding into the caller's accumulator. A singleton group collapses its gap to one space, or to zero when `settings.strip_singleton_subgroup` is set.
 
 ### Supporting Helpers
 
@@ -49,7 +49,9 @@ Aligners always carry a **one-space buffer** between content and the aligned tok
 
 When the widest member exceeds `max_shift`, the policy decides what happens next.
 
-The `split` policy partitions the group into sub-groups of contiguous rows where the within-group widest is under `max_shift`, resolving each sub-group independently. The `drop` policy excludes the widest members from the padding calculation, leaving the group aligned to the widest non-overflow row. The `skip` policy leaves the whole group unaligned, with no edits emitted at all.
+The `split` policy partitions the group into sub-groups of contiguous rows where the within-group widest is under `max_shift`, resolving each sub-group independently. The `drop` policy excludes the widest members from the padding calculation, leaving the group aligned to the widest non-overflow row.
+
+A row carrying a line-level skip directive *(`# prose: skip`, `# fmt: skip`, or `# prose: skip[<rule>]`)* is **held** out of its group: excluded from the column math, emitting no edit, and transparent to the run so the rows on either side align as one block around it. The grouping treats a held row's own trailing skip comment as not breaking the run, while a standalone comment or blank line between rows still does. This is the same exclude-then-align shape as the `drop` policy, chosen by the author rather than by width.
 
 Variable-width operators opt in to right-alignment by setting `op_width`, shifting each row's padding inward by `max(op_width) - row.op_width`. [[align-comparisons]] is the shipped consumer of this hook, with the infrastructure leaving the door open for future variable-width-operator rules to land as a grouping walker plus a knob set rather than a from-scratch implementation.
 
@@ -65,12 +67,12 @@ struct Visitor<'a> {
 }
 
 impl Rule for MyAlignmentRule {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
-            walker: AlignWalker::new(source, self.settings),
+            walker: AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
-        visitor.walker.edits
+        visitor.walker.groups
     }
 }
 

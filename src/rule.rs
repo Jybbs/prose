@@ -51,17 +51,19 @@ pub struct ParseRuleIdError(pub String);
 /// Every rule in Prose implements this trait and nothing more.
 ///
 /// Implementations inspect `source` and return the edits that would
-/// bring it into conformance, the `Severity::Lint` diagnostics they
-/// surface without an edit, or both. An empty `Vec<Edit>` from
-/// `apply` skips the reparse for that rule.
+/// bring it into conformance, partitioned into fix groups, the
+/// `Severity::Lint` diagnostics they surface without an edit, or both.
+/// An empty outer `Vec` from `apply` skips the reparse for that rule.
 ///
 /// Rules must be `Send + Sync` so that the pipeline can run across
 /// files in parallel without moving the rule list per worker.
 pub(crate) trait Rule: Send + Sync {
-    /// Computes the edit list this rule would apply to `source`.
-    /// Edits must not overlap after sorting, an invariant the
+    /// Computes the edits this rule would apply to `source`,
+    /// partitioned into fix groups. Each inner `Vec` is one fix that
+    /// the pipeline maps to a single diagnostic, and the edits across
+    /// all groups must not overlap after sorting, an invariant the
     /// pipeline's applicator debug-asserts.
-    fn apply(&self, _source: &Source) -> Vec<Edit> {
+    fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
         Vec::new()
     }
 

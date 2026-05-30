@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Skip Policy Leaves the Whole Group Untouched"
-
-description = '''
-Under `max-shift-policy = "skip"`, a class-field group whose widest name exceeds `max-shift` **stays entirely untouched**. No member's pre-colon whitespace changes, outlier and neighbors alike.
-'''

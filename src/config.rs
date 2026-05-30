@@ -294,12 +294,11 @@ impl Default for LooseConstantsConfig {
 /// aligns independently. `Drop` excludes the widest member(s) from
 /// the padding calculation until the cap is satisfied, leaving those
 /// members at their original spacing while neighbors align around
-/// them. `Skip` leaves the entire group unaligned.
+/// them.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum MaxAlignShiftPolicy {
     Drop,
-    Skip,
     #[default]
     Split,
 }
@@ -698,7 +697,7 @@ mod tests {
                 max-shift-policy = "drop"
 
                 [tool.prose.rules.align-equals]
-                max-shift-policy = "skip"
+                max-shift-policy = "split"
             "#},
         );
 
@@ -710,7 +709,7 @@ mod tests {
         );
         assert_eq!(
             config.rules.align_equals.max_shift_policy,
-            MaxAlignShiftPolicy::Skip
+            MaxAlignShiftPolicy::Split
         );
     }
 

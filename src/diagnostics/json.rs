@@ -54,7 +54,7 @@ impl<'a> JsonDiagnostic<'a> {
             code: diag.rule.as_str(),
             end_location: end.into(),
             filename: file.name(),
-            fix: diag.fix.as_ref().map(|edit| JsonFix::new(file, edit)),
+            fix: diag.fix.as_ref().map(|edits| JsonFix::new(file, edits)),
             location: start.into(),
             message: &diag.message,
         }
@@ -88,10 +88,10 @@ struct JsonFix<'a> {
 }
 
 impl<'a> JsonFix<'a> {
-    fn new(file: &'a SourceFile, edit: &'a Edit) -> Self {
+    fn new(file: &'a SourceFile, edits: &'a [Edit]) -> Self {
         Self {
             applicability: Applicability::Safe,
-            edits: vec![JsonEdit::new(file, edit)],
+            edits: edits.iter().map(|edit| JsonEdit::new(file, edit)).collect(),
         }
     }
 }
@@ -152,7 +152,7 @@ mod tests {
     fn diag() -> Diagnostic {
         let range = TextRange::new(0.into(), 1.into());
         Diagnostic {
-            fix: Some(Edit::range_replacement("y".to_owned(), range)),
+            fix: Some(vec![Edit::range_replacement("y".to_owned(), range)]),
             message: "rewrite x to y".to_owned(),
             range,
             rule: RuleId::from("rewrite-x"),
@@ -199,7 +199,7 @@ mod tests {
         let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
         let range = TextRange::new(0.into(), 11.into());
         let diag = Diagnostic {
-            fix: Some(Edit::range_replacement("z = 3".to_owned(), range)),
+            fix: Some(vec![Edit::range_replacement("z = 3".to_owned(), range)]),
             message: "collapse".to_owned(),
             range,
             rule: RuleId::from("rewrite-x"),
@@ -211,6 +211,30 @@ mod tests {
             &EmitterSummary::default(),
         );
         assert_eq!(records[0]["fix"]["edits"][0]["before"], "x = 1\ny = 2");
+    }
+
+    #[test]
+    fn fix_carries_one_edit_entry_per_group_member() {
+        let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
+        let diag = Diagnostic {
+            fix: Some(vec![
+                Edit::range_replacement("a".to_owned(), TextRange::new(0.into(), 1.into())),
+                Edit::range_replacement("b".to_owned(), TextRange::new(6.into(), 7.into())),
+            ]),
+            message: "align".to_owned(),
+            range: TextRange::new(0.into(), 7.into()),
+            rule: RuleId::from("align-equals"),
+            severity: Severity::Format,
+        };
+        let records = emit_records(
+            &source,
+            std::slice::from_ref(&diag),
+            &EmitterSummary::default(),
+        );
+        let edits = records[0]["fix"]["edits"].as_array().expect("edits array");
+        assert_eq!(edits.len(), 2);
+        assert_eq!(edits[0]["content"], "a");
+        assert_eq!(edits[1]["content"], "b");
     }
 
     #[test]

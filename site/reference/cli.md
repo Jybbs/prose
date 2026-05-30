@@ -116,11 +116,11 @@ The [**Shell Completions**](/integrations/shell-completions) integration page co
 
 ## Run Summary
 
-Every interactive `check` or `format` run closes with a one-line summary on **stderr**, leaving stdout free for diagnostics, rewritten source, unified diffs, and the machine formats. Each outcome resolves to a single anchored line:
+Every interactive `check` or `format` run closes with a one-line summary on **stderr**, leaving stdout free for diagnostics, rewritten source, unified diffs, and the machine formats. Build an invocation to watch the line each outcome resolves to, across the run outcome, `--quiet`, and the stream's color state:
 
-<RunSummary />
+<RunSummaryExplorer />
 
-A clean run anchors on 🪻, `check` violations on ☕, and `format`'s applied or pending rewrites on 🗞️.
+A clean run anchors on 🪻, `check` violations on 🔖, and `format`'s applied or pending rewrites on 🗞️.
 
 ANSI color draws on the project palette, with **Ube** on the anchor, **Celadon** on a clean count, and **Apricot** on a violation or change count. Each span renders as 24-bit color when the terminal advertises truecolor *(via `COLORTERM`)* and falls back to ANSI 8-color otherwise.
 

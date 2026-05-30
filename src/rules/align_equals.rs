@@ -33,12 +33,12 @@ impl AlignEquals {
 }
 
 impl Rule for AlignEquals {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
-            walker: aligner::AlignWalker::new(source, self.settings),
+            walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
-        visitor.walker.edits
+        visitor.walker.groups
     }
 
     fn id(&self) -> RuleId {
@@ -64,7 +64,9 @@ impl Visitor<'_> {
     }
 
     fn process_body(&mut self, body: &[Stmt]) {
-        for members in aligner::line_adjacent_groups(self.walker.source, body, |s| self.qualify(s))
+        let rule = self.walker.rule;
+        for members in
+            aligner::line_adjacent_groups(self.walker.source, body, rule, |s| self.qualify(s))
         {
             self.walker.emit_group(&members);
         }
@@ -75,9 +77,7 @@ impl Visitor<'_> {
     /// each sub-group that clears [`aligner::is_alignment_candidate`].
     fn process_parameters(&mut self, params: &Parameters) {
         for members in aligner::parameter_split_groups(params, |p| self.qualify_parameter(p)) {
-            if aligner::is_alignment_candidate(&members) {
-                self.walker.emit_group(&members);
-            }
+            self.walker.emit_unheld(members);
         }
     }
 

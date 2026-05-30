@@ -40,18 +40,17 @@ impl Emitter for Text {
                         ),
                 );
                 let mut groups = vec![warning];
-                if let Some(edit) = &diag.fix {
-                    groups.push(
-                        Level::HELP.secondary_title("replace with").element(
-                            Snippet::source(file.source_text())
-                                .line_start(1)
-                                .path(file.name())
-                                .patch(Patch::new(
-                                    edit.range().to_std_range(),
-                                    edit.content().unwrap_or_default(),
-                                )),
-                        ),
-                    );
+                if let Some(edits) = &diag.fix {
+                    let snippet = Snippet::source(file.source_text())
+                        .line_start(1)
+                        .path(file.name())
+                        .patches(edits.iter().map(|edit| {
+                            Patch::new(
+                                edit.range().to_std_range(),
+                                edit.content().unwrap_or_default(),
+                            )
+                        }));
+                    groups.push(Level::HELP.secondary_title("replace with").element(snippet));
                 }
                 writeln!(writer, "{}", self.renderer.render(&groups))?;
             }
@@ -70,7 +69,7 @@ mod tests {
     use crate::rule::RuleId;
     use crate::source::Source;
 
-    fn diag(range: TextRange, fix: Option<Edit>) -> Diagnostic {
+    fn diag(range: TextRange, fix: Option<Vec<Edit>>) -> Diagnostic {
         Diagnostic {
             fix,
             message: "rewrite x to y".to_owned(),
@@ -101,11 +100,32 @@ mod tests {
         let range = TextRange::new(0.into(), 1.into());
         let rendered = render_to_string(
             &source,
-            &diag(range, Some(Edit::range_replacement("y".to_owned(), range))),
+            &diag(
+                range,
+                Some(vec![Edit::range_replacement("y".to_owned(), range)]),
+            ),
         );
         assert!(rendered.contains("warning: rewrite x to y"));
         assert!(rendered.contains("help: replace with"));
         assert!(rendered.contains('y'));
+    }
+
+    #[test]
+    fn help_block_renders_every_edit_in_a_group() {
+        let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
+        let rendered = render_to_string(
+            &source,
+            &diag(
+                TextRange::new(0.into(), 7.into()),
+                Some(vec![
+                    Edit::range_replacement("aaa".to_owned(), TextRange::new(0.into(), 1.into())),
+                    Edit::range_replacement("bbb".to_owned(), TextRange::new(6.into(), 7.into())),
+                ]),
+            ),
+        );
+        assert!(rendered.contains("help: replace with"));
+        assert!(rendered.contains("aaa"));
+        assert!(rendered.contains("bbb"));
     }
 
     #[test]

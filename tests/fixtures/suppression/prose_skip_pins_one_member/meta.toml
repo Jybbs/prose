@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Prose Skip Pins One Line, Mirroring Fmt Skip"
+title       = "Prose Skip Holds One Line Out, Mirroring Fmt Skip"
 
 description = '''
-A trailing `# prose: skip` **pins one line's original spacing** while the rest of its alignment group pads to the target column. The run after the skip line aligns as a separate group, mirroring bare `# fmt: skip` semantics.
+A trailing `# prose: skip` **holds one line out of its alignment group** as a transparent gap, leaving every other row in the run to align to one shared column around it, mirroring bare `# fmt: skip` semantics.
 '''

@@ -18,7 +18,7 @@ The rule fires only on runs of single-expression cases at the same indentation. 
 
 <RuleConfigTable />
 
-`max-shift` caps the per-line padding the alignment can introduce. When a `match`'s widest pattern would push the post-pattern `:` column past the cap, `max-shift-policy` decides the fallback shape, which defaults to `"split"`. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the `"drop"` and `"skip"` policies.
+`max-shift` caps the per-line padding the alignment can introduce. When a `match`'s widest pattern would push the post-pattern `:` column past the cap, `max-shift-policy` decides the fallback shape, which defaults to `"split"`. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the `"drop"` policy.
 
 </template>
 

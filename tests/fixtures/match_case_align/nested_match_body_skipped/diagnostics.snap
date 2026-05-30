@@ -3,10 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/match_case_align/nested_match_body_skipped/input.py
 ---
-match-case-align@126..126
-match-case-align@127..144
-match-case-align@178..178
-match-case-align@179..196
 match-case-align@222..231
-match-case-align@75..75
-match-case-align@76..93
+match-case-align@75..196

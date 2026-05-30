@@ -80,7 +80,7 @@ The `[rules]` table holds one entry per rule you change. A bare bool is the shor
 |---|---|---|---|---|
 | `enabled` | bool | every rule | `true` | Toggle the rule on or off |
 | `max-shift` | positive int | alignment rules | `8` | Ceiling on per-line padding |
-| `max-shift-policy` | `"split"` \| `"drop"` \| `"skip"` | alignment rules | `"split"` | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation, `skip` leaves the whole group unaligned |
+| `max-shift-policy` | `"split"` \| `"drop"` | alignment rules | `"split"` | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation. To leave one row out of an otherwise-aligned group, hold it with `# prose: skip` rather than abandoning the alignment |
 | `docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within every Title-case-headed docstring section alongside the AST-level sorts. Set `false` to keep narrative-curated entry order while still sorting every other surface |
 | `max-atomics-per-line` | positive int | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap |
 | `allow` | list of module names | [[bare-import-allowlist]] | `["numpy", "pandas"]` | Modules whose bare-import form is preserved |

@@ -8,7 +8,7 @@ use crate::rule::RuleId;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Diagnostic {
-    pub fix: Option<Edit>,
+    pub fix: Option<Vec<Edit>>,
     pub message: String,
     pub range: TextRange,
     pub rule: RuleId,
@@ -16,12 +16,17 @@ pub struct Diagnostic {
 }
 
 impl Diagnostic {
-    /// Builds a `Severity::Format` diagnostic that carries `edit` as its
-    /// proposed fix and inherits the edit's range.
-    pub fn format(rule: RuleId, edit: Edit, message: String) -> Self {
-        let range = edit.range();
+    /// Builds a `Severity::Format` diagnostic carrying `edits` as one
+    /// grouped fix, its range covering every edit in the group.
+    /// `edits` must be non-empty.
+    pub fn format(rule: RuleId, edits: Vec<Edit>, message: String) -> Self {
+        let range = edits
+            .iter()
+            .map(Ranged::range)
+            .reduce(TextRange::cover)
+            .expect("a format diagnostic carries at least one edit");
         Self {
-            fix: Some(edit),
+            fix: Some(edits),
             message,
             range,
             rule,

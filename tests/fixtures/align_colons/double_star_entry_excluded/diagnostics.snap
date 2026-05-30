@@ -3,6 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/double_star_entry_excluded/input.py
 ---
-align-colons@136..136
-align-colons@162..162
-align-colons@87..87
+align-colons@87..162

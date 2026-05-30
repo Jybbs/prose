@@ -18,7 +18,7 @@ The rule walks each context independently, treating a group as the consecutive m
 
 <RuleConfigTable />
 
-`max-shift` caps the per-line padding the alignment can introduce. When a group's widest member would push the column past the cap, `max-shift-policy` decides the fallback shape *(`"split"` partitions the group, `"drop"` excludes the widest members from the padding calculation, `"skip"` leaves the whole group unaligned)*. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the full semantics.
+`max-shift` caps the per-line padding the alignment can introduce. When a group's widest member would push the column past the cap, `max-shift-policy` decides the fallback shape *(`"split"` partitions the group, `"drop"` excludes the widest members from the padding calculation)*. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the full semantics.
 
 </template>
 

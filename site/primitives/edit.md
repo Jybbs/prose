@@ -6,12 +6,12 @@ stability: internal
 
 <PrimitiveLayout primitive="edit">
 
-*Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Edit>` method returns a list of replacement spans, the pipeline splices them into a fresh buffer between rules, and the rewritten source feeds the next rule. *Prose* re-exports the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the shape matches what Ruff and other Astral-stack consumers expect.
+*Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Vec<Edit>>` method returns its replacement spans partitioned into fix groups, the pipeline maps each group to one diagnostic and splices their edits into a fresh buffer between rules, and the rewritten source feeds the next rule. *Prose* re-exports the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the shape matches what Ruff and other Astral-stack consumers expect.
 
 
 ## Public Surface
 
-`Edit` itself is `pub` *(re-exported from `ruff_diagnostics`)*, and the `Diagnostic` type a rule emits through the pipeline carries an `Option<Edit>` in its `fix` field, visible in every [**output format**](/reference/output-formats) the CLI emits *(json, github, sarif)*. A downstream consumer reading the json output sees the edit's range and content in the `fix.edits[]` array.
+`Edit` itself is `pub` *(re-exported from `ruff_diagnostics`)*, and the `Diagnostic` type a rule emits through the pipeline carries an `Option<Vec<Edit>>` in its `fix` field, visible in every [**output format**](/reference/output-formats) the CLI emits *(json, github, sarif)*. A downstream consumer reading the json output sees every edit's range and content in the `fix.edits[]` array.
 
 The edit-shaping helpers *(`apply_edits`, `apply_inline_edits`, `narrow_edit`)* live at `src/primitives/edit.rs` and are `pub(crate)`. The helpers move to `pub` at `1.0` alongside the `Rule` trait, so a downstream rule can splice edits into source the same way the bundled rules do.
 
@@ -50,9 +50,9 @@ Within one rule, debug assertions catch overlapping edits at `apply_edits` time.
 
 ## Build Pattern
 
-A rule emits `Vec<Edit>` from its `apply(&Source)` method, with each edit's range naming the source span to rewrite and its content carrying the replacement. The pipeline handles sorting, splicing, and reparsing on the rule's behalf.
+A rule emits `Vec<Vec<Edit>>` from its `apply(&Source)` method, each inner vector one fix group, with each edit's range naming the source span to rewrite and its content carrying the replacement. The pipeline handles sorting, splicing, and reparsing on the rule's behalf.
 
-For rules that compute multiple edits per logical change *(an alignment rule that pads several rows in one group)*, each edit is emitted independently and the pipeline sorts them at apply time.
+A rule that computes one logical change as several edits *(an alignment rule padding several rows)* returns them as a single group, so the pipeline maps the whole change to one diagnostic and sorts every group's edits together at apply time. Rules whose edits are mutually independent return one single-edit group per edit.
 
 ## Re-Using This Primitive
 

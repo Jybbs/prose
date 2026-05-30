@@ -33,12 +33,12 @@ impl AlignImports {
 }
 
 impl Rule for AlignImports {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
-            walker: aligner::AlignWalker::new(source, self.settings),
+            walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
-        visitor.walker.edits
+        visitor.walker.groups
     }
 
     fn id(&self) -> RuleId {
@@ -64,7 +64,8 @@ impl Visitor<'_> {
     /// between two `from`-imports splits the surrounding run without
     /// merging its neighbors and without re-walking the body.
     fn process_body(&mut self, body: &[Stmt]) {
-        let groups = aligner::keyed_line_adjacent_groups(self.walker.source, body, |s| {
+        let rule = self.walker.rule;
+        let groups = aligner::keyed_line_adjacent_groups(self.walker.source, body, rule, |s| {
             self.qualify_from(s)
                 .map(|m| (Form::From, m))
                 .or_else(|| self.qualify_import_as(s).map(|m| (Form::As, m)))

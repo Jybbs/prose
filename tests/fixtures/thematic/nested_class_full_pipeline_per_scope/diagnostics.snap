@@ -1,19 +1,12 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/nested_class_full_pipeline_per_scope/input.py
 ---
-align-colons@122..122
-align-colons@152..152
-align-colons@173..173
-align-colons@29..29
-align-colons@53..53
-align-colons@73..73
-align-equals@173..174
-align-equals@200..201
-align-equals@35..36
-align-equals@62..63
+align-colons@122..173
+align-colons@29..73
+align-equals@173..201
+align-equals@35..63
 alphabetize@17..398
 blank-lines@106..107
 blank-lines@12..13

@@ -57,7 +57,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'enabled',                     href: '/reference/configuration#per-rule-knobs',    blurb: 'Per-rule toggle, the bare bool in `[rules]`.' },
     { key: 'imports.first-party',         href: '/reference/configuration#imports',           blurb: 'Package names lifted into the local-package import group.' },
     { key: 'max-shift',                   href: '/reference/configuration#per-rule-knobs',    blurb: 'Per-rule alignment-shift bound.' },
-    { key: 'max-shift-policy',            href: '/reference/configuration#per-rule-knobs',    blurb: 'Fallback (`split` / `drop` / `skip`) when the widest member overflows `max-shift`.' },
+    { key: 'max-shift-policy',            href: '/reference/configuration#per-rule-knobs',    blurb: 'Fallback (`split` / `drop`) when the widest member overflows `max-shift`.' },
     { key: 'target-version',              href: '/reference/configuration#top-level-keys',    blurb: 'Python version the parser reads against.' }
   ],
   'exit-code': [

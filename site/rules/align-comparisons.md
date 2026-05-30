@@ -18,7 +18,7 @@ The rule walks each `BoolOp` whose operands are all `Expr::Compare`. The widest 
 
 <RuleConfigTable />
 
-`max-shift` caps the per-line padding the alignment can introduce, and `max-shift-policy` resolves the fallback when a group's widest operand would push the operator column past the cap. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the `"split"` / `"drop"` / `"skip"` semantics.
+`max-shift` caps the per-line padding the alignment can introduce, and `max-shift-policy` resolves the fallback when a group's widest operand would push the operator column past the cap. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the `"split"` / `"drop"` semantics.
 
 </template>
 

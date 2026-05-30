@@ -31,7 +31,7 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::config::Config;
 use crate::primitives::docstring::{entry_carrying_sections, rewrite_docstrings};
-use crate::primitives::edit::{apply_inline_edits, narrowed_replacement};
+use crate::primitives::edit::{apply_inline_edits, narrowed_replacement, singleton_groups};
 use crate::primitives::imports::{import_group, ImportGroup};
 use crate::primitives::orderer::{
     assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
@@ -55,7 +55,7 @@ impl Alphabetize {
 }
 
 impl Rule for Alphabetize {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let body = &source.ast().body;
         if body.is_empty() {
             return Vec::new();
@@ -73,12 +73,13 @@ impl Rule for Alphabetize {
             &leaf_edits,
             &self.first_party,
         );
-        match body_text {
+        let edits = match body_text {
             Cow::Borrowed(_) => leaf_edits,
             Cow::Owned(text) => narrowed_replacement(source, body_span, text)
                 .into_iter()
                 .collect(),
-        }
+        };
+        singleton_groups(edits)
     }
 
     fn id(&self) -> RuleId {
@@ -956,7 +957,7 @@ mod tests {
         config.rules.alphabetize.docstring_entries = false;
         let rule = Alphabetize::from_config(&config);
         let source = parse(src);
-        let edits = rule.apply(&source);
+        let edits = rule.apply(&source).into_iter().flatten().collect();
         let text = crate::primitives::edit::apply_edits(source.text(), edits);
         let args_section_end = text.find("\"\"\"\n    pass").expect("closer follows args");
         let args_section = &text[..args_section_end];

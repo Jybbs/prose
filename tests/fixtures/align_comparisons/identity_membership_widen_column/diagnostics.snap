@@ -3,8 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_comparisons/identity_membership_widen_column/input.py
 ---
-align-comparisons@12..13
-align-comparisons@123..124
-align-comparisons@29..30
-align-comparisons@49..50
-align-comparisons@74..75
+align-comparisons@12..124

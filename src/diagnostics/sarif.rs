@@ -53,18 +53,25 @@ fn region(start: LineColumn, end: LineColumn) -> Region {
         .build()
 }
 
-fn sarif_fix(file: &SourceFile, edit: &Edit) -> Fix {
-    let (start, end) = line_columns(file, edit.range());
-    let inserted = ArtifactContent::builder()
-        .text(edit.content().unwrap_or_default())
-        .build();
+fn sarif_fix(file: &SourceFile, edits: &[Edit]) -> Fix {
+    let replacements: Vec<Replacement> = edits
+        .iter()
+        .map(|edit| {
+            let (start, end) = line_columns(file, edit.range());
+            Replacement::builder()
+                .deleted_region(region(start, end))
+                .inserted_content(
+                    ArtifactContent::builder()
+                        .text(edit.content().unwrap_or_default())
+                        .build(),
+                )
+                .build()
+        })
+        .collect();
     Fix::builder()
         .artifact_changes(vec![ArtifactChange::builder()
             .artifact_location(artifact_location(file))
-            .replacements(vec![Replacement::builder()
-                .deleted_region(region(start, end))
-                .inserted_content(inserted)
-                .build()])
+            .replacements(replacements)
             .build()])
         .build()
 }
@@ -84,7 +91,7 @@ fn sarif_result(file: &SourceFile, diag: &Diagnostic) -> SarifResult {
             )
             .build()]);
     match &diag.fix {
-        Some(edit) => builder.fixes(vec![sarif_fix(file, edit)]).build(),
+        Some(edits) => builder.fixes(vec![sarif_fix(file, edits)]).build(),
         None => builder.build(),
     }
 }
@@ -126,7 +133,7 @@ mod tests {
     fn diag() -> Diagnostic {
         let range = TextRange::new(0.into(), 1.into());
         Diagnostic {
-            fix: Some(Edit::range_replacement("y".to_owned(), range)),
+            fix: Some(vec![Edit::range_replacement("y".to_owned(), range)]),
             message: "rewrite x to y".to_owned(),
             range,
             rule: RuleId::from("rewrite-x"),
@@ -176,6 +183,29 @@ mod tests {
         assert_eq!(region["startColumn"], 1);
         assert_eq!(region["endLine"], 1);
         assert_eq!(region["endColumn"], 2);
+    }
+
+    #[test]
+    fn fix_carries_one_replacement_per_group_edit() {
+        let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
+        let diag = Diagnostic {
+            fix: Some(vec![
+                Edit::range_replacement("a".to_owned(), TextRange::new(0.into(), 1.into())),
+                Edit::range_replacement("b".to_owned(), TextRange::new(6.into(), 7.into())),
+            ]),
+            message: "align".to_owned(),
+            range: TextRange::new(0.into(), 7.into()),
+            rule: RuleId::from("align-equals"),
+            severity: Severity::Format,
+        };
+        let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
+        let replacements = v["runs"][0]["results"][0]["fixes"][0]["artifactChanges"][0]
+            ["replacements"]
+            .as_array()
+            .expect("replacements array");
+        assert_eq!(replacements.len(), 2);
+        assert_eq!(replacements[0]["insertedContent"]["text"], "a");
+        assert_eq!(replacements[1]["insertedContent"]["text"], "b");
     }
 
     #[test]

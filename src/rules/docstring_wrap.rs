@@ -20,7 +20,7 @@ use crate::primitives::docstring::{
     entry_description_col, indent_prefix, is_list_marker, rewrite_docstrings, section_heading,
     triple_quoted_body,
 };
-use crate::primitives::edit::narrowed_replacement;
+use crate::primitives::edit::{narrowed_replacement, singleton_groups};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -44,8 +44,8 @@ impl DocstringWrap {
 }
 
 impl Rule for DocstringWrap {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
-        rewrite_docstrings(source, |source, lit, edits| {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
             let Some(body) = triple_quoted_body(source, lit).filter(|b| b.text.contains('\n'))
             else {
                 return;
@@ -56,7 +56,7 @@ impl Rule for DocstringWrap {
                 return;
             };
             edits.extend(narrowed_replacement(source, body.range, rewritten));
-        })
+        }))
     }
 
     fn id(&self) -> RuleId {

@@ -1,12 +1,9 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
 ---
-align-colons@191..191
-align-colons@237..237
-align-colons@272..272
+align-colons@191..272
 alphabetize@11..290
 docstring-wrap@124..124
 multi-line-docstrings@48..48

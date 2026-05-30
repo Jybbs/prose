@@ -43,7 +43,7 @@ impl Summary {
     fn anchor(&self) -> &'static str {
         match self {
             Self::Clean => "🪻",
-            Self::Diagnostics { .. } => "☕",
+            Self::Diagnostics { .. } => "🔖",
             Self::Reformatted { .. } | Self::WouldReformat { .. } => "🗞️",
         }
     }
@@ -162,8 +162,8 @@ mod tests {
 
     #[rstest]
     #[case(Summary::Clean, "🪻 All clean.\n")]
-    #[case(Summary::Diagnostics { files: 2, total: 5 }, "☕ 5 diagnostics in 2 files.\n")]
-    #[case(Summary::Diagnostics { files: 1, total: 1 }, "☕ 1 diagnostic in 1 file.\n")]
+    #[case(Summary::Diagnostics { files: 2, total: 5 }, "🔖 5 diagnostics in 2 files.\n")]
+    #[case(Summary::Diagnostics { files: 1, total: 1 }, "🔖 1 diagnostic in 1 file.\n")]
     #[case(Summary::Reformatted { files: 4 }, "🗞️ Reformatted 4 files.\n")]
     #[case(Summary::Reformatted { files: 1 }, "🗞️ Reformatted 1 file.\n")]
     #[case(Summary::WouldReformat { files: 3 }, "🗞️ 3 files would be reformatted.\n")]
