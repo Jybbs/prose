@@ -1,15 +1,50 @@
 .lint-flag {
   --family-color : var(--prose-c-family-lint);
+  --lint-wave    : url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='8'%20height='4'%3E%3Cpath%20d='M0%203%20Q2%200%204%203%20T8%203'%20fill='none'%20stroke='%23000'%20stroke-width='1.1'/%3E%3C/svg%3E");
 
-  cursor                    : help;
-  text-decoration           : underline wavy color-mix(in srgb, var(--family-color) 50%, transparent);
-  text-decoration-thickness : 1px;
-  text-underline-offset     : 3px;
-  transition                : text-decoration-color 0.12s ease;
+  cursor     : help;
+  position   : relative;
+  background : linear-gradient(var(--family-color), var(--family-color)) no-repeat left bottom / 0% 1px;
+  transition : background-size var(--prose-transition-slow);
 }
 
 .lint-flag:hover {
-  text-decoration-color : var(--family-color);
+  background-size : 100% 1px;
+}
+
+/* Masked pseudo-element rather than `text-decoration`, which cannot
+   scaleX-draw on settle the way `.fixture-card-rule` does. */
+.lint-flag::after {
+  content          : "";
+  position         : absolute;
+  inset-inline     : 0;
+  bottom           : -3px;
+  height           : 4px;
+  background       : color-mix(in srgb, var(--family-color) 55%, transparent);
+  -webkit-mask     : var(--lint-wave) left center / 8px 4px repeat-x;
+  mask             : var(--lint-wave) left center / 8px 4px repeat-x;
+  transform        : scaleX(0);
+  transform-origin : left;
+  transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease, opacity var(--prose-transition);
+}
+
+.lint-drawn .lint-flag::after {
+  transform : scaleX(1);
+}
+
+.lint-flag:hover::after {
+  opacity : 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lint-flag,
+  .lint-flag::after {
+    transition : none;
+  }
+
+  .lint-flag::after {
+    transform : scaleX(1);
+  }
 }
 
 .lint-popover {

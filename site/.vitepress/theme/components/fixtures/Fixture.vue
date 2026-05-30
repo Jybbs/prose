@@ -55,13 +55,12 @@ useEventListener('hashchange', syncWithHash)
     :data-family="family"
     :data-edits="entry.changesSource"
   >
-    <div class="fixture-card-summary-row">
+    <div class="fixture-card-summary-row" @click="toggle">
       <button
         type="button"
         class="fixture-card-summary"
         :aria-expanded="isOpen"
         :aria-controls="`${id}-body`"
-        @click="toggle"
       >
         <span class="fixture-card-num" aria-hidden="true" />
         <span class="fixture-card-title" v-html="titleHtml" />
@@ -69,6 +68,7 @@ useEventListener('hashchange', syncWithHash)
       <div
         class="fixture-card-actions"
         :class="{ 'is-active': isOpen }"
+        @click.stop
       >
         <FixtureToggle v-if="entry.changesSource" v-model="activeTab" />
         <FixtureNoChange v-else />
