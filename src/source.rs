@@ -1,7 +1,6 @@
 //! Source-text wrapper bundling parsed AST, token stream, and line index.
 
-use std::path::Path;
-use std::str::FromStr;
+use std::{path::Path, str::FromStr};
 
 use ruff_python_ast::{
     ModModule,
@@ -15,8 +14,7 @@ use ruff_source_file::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use thiserror::Error;
 
-use crate::primitives::binding::BindingAnalysis;
-use crate::suppression::SuppressionMap;
+use crate::{primitives::binding::BindingAnalysis, suppression::SuppressionMap};
 
 /// Owned wrapper around a parsed Python source file.
 ///

@@ -11,8 +11,10 @@ use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 use ruff_text_size::Ranged;
 use serde::Serialize;
 
-use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns, write_json_line};
-use crate::rule::RuleId;
+use crate::{
+    diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns, write_json_line},
+    rule::RuleId,
+};
 
 /// Bumps on any breaking change to existing field shapes, leaving
 /// additive fields to land unversioned.

@@ -10,11 +10,13 @@ use ruff_python_ast::{
     visitor::{Visitor, walk_expr, walk_stmt},
 };
 
-use crate::config::Config;
-use crate::diagnostics::Diagnostic;
-use crate::primitives::{binding::top_level_module, range::paren_aware_range};
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    diagnostics::Diagnostic,
+    primitives::{binding::top_level_module, range::paren_aware_range},
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct LegacyUnionSyntax {
     target_version: Option<PythonVersion>,

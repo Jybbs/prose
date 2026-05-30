@@ -17,10 +17,12 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
-use crate::config::Config;
-use crate::primitives::{INDENT_STEP, aligner, colon_targets};
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::{INDENT_STEP, aligner, colon_targets},
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct MatchCaseAlign {
     code_line_length: usize,

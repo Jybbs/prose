@@ -15,9 +15,7 @@ use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::primitives::aligner;
-use crate::rule::RuleId;
-use crate::source::Source;
+use crate::{primitives::aligner, rule::RuleId, source::Source};
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
 /// for class fields, docstring args, and parameters. `dict` carries

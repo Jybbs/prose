@@ -2,8 +2,10 @@
 //! registry and the per-case fixture tree, so a drifted `<Fixture>`
 //! pointer or a malformed `meta.toml` fails a test rather than a build.
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::path::{Path, PathBuf};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::{Path, PathBuf},
+};
 
 use ignore::{WalkBuilder, types::TypesBuilder};
 use prose::pipeline::Pipeline;

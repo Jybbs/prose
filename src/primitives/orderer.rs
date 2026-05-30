@@ -5,8 +5,7 @@
 //! interstitial text between adjacent items stays in source
 //! position.
 
-use std::borrow::Cow;
-use std::ops::Range;
+use std::{borrow::Cow, ops::Range};
 
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::LineRanges;

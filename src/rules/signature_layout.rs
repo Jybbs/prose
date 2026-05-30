@@ -13,13 +13,15 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
-use crate::config::Config;
-use crate::primitives::{
-    INDENT_STEP,
-    edit::{narrowed_replacement, singleton_groups},
+use crate::{
+    config::Config,
+    primitives::{
+        INDENT_STEP,
+        edit::{narrowed_replacement, singleton_groups},
+    },
+    rule::{Rule, RuleId},
+    source::Source,
 };
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
 
 pub(crate) struct SignatureLayout {
     code_line_length: usize,

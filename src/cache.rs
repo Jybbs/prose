@@ -17,8 +17,10 @@ use std::{
     time::SystemTime,
 };
 
-use bincode::config::standard;
-use bincode::serde::{decode_from_std_read, encode_into_std_write};
+use bincode::{
+    config::standard,
+    serde::{decode_from_std_read, encode_into_std_write},
+};
 use fs_err::DirEntry;
 use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;

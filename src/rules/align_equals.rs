@@ -17,10 +17,12 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::config::Config;
-use crate::primitives::aligner;
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::aligner,
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct AlignEquals {
     settings: aligner::Settings,

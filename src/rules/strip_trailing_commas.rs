@@ -13,10 +13,12 @@ use ruff_python_ast::{
 use ruff_python_trivia::{BackwardsTokenizer, SimpleTokenKind};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::config::Config;
-use crate::primitives::edit::singleton_groups;
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::edit::singleton_groups,
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct StripTrailingCommas;
 

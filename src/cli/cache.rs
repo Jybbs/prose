@@ -4,8 +4,7 @@ use std::{io::Write, time::SystemTime};
 
 use anyhow::Context;
 
-use super::exit_status::ExitStatus;
-use super::load_config_or_status;
+use super::{exit_status::ExitStatus, load_config_or_status};
 use crate::cache::{Cache, CleanReport};
 
 pub(crate) fn clean<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {

@@ -14,9 +14,11 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
-use crate::config::{AlignmentConfig, MaxAlignShiftPolicy};
-use crate::rule::RuleId;
-use crate::source::Source;
+use crate::{
+    config::{AlignmentConfig, MaxAlignShiftPolicy},
+    rule::RuleId,
+    source::Source,
+};
 
 /// Bundles the `groups` accumulator, `settings`, the owning `rule`, and
 /// borrowed `source` shared by every alignment-rule visitor. Each entry

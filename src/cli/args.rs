@@ -1,7 +1,6 @@
 //! Clap-derived argument types and parse-time validation.
 
-use std::path::PathBuf;
-use std::process::ExitCode;
+use std::{path::PathBuf, process::ExitCode};
 
 use clap::{
     ColorChoice, CommandFactory, Parser, Subcommand,
@@ -11,8 +10,7 @@ use clap::{
 use clap_complete::Shell;
 
 use super::exit_status::ExitStatus;
-use crate::pipeline::Pipeline;
-use crate::rule::RuleId;
+use crate::{pipeline::Pipeline, rule::RuleId};
 
 /// Matrix appended to `prose --help` via `after_long_help`.
 const EXIT_CODE_TABLE: &str = "\

@@ -1,7 +1,9 @@
 //! Pipeline orchestration: load source, run, emit diagnostics, classify outcome.
 
-use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
+use std::{
+    io::{self, Read, Write},
+    path::{Path, PathBuf},
+};
 
 use anyhow::Context;
 use rayon::iter::{ParallelBridge, ParallelIterator};

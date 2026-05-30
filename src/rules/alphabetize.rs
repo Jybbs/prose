@@ -14,33 +14,37 @@
 //! outer scope's replacement text, so each outermost reordering scope
 //! emits a single edit covering its descendants.
 
-use std::borrow::Cow;
-use std::collections::{HashMap, HashSet};
-use std::ops::Range;
+use std::{
+    borrow::Cow,
+    collections::{HashMap, HashSet},
+    ops::Range,
+};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable};
-use ruff_python_ast::visitor::{Visitor as AstVisitor, walk_expr, walk_stmt};
 use ruff_python_ast::{
     Alias, Decorator, DictItem, ExceptHandler, Expr, ExprCall, ExprDict, ExprLambda, ExprSet,
     Identifier, ParameterWithDefault, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtDelete,
     StmtFunctionDef,
+    helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
+    visitor::{Visitor as AstVisitor, walk_expr, walk_stmt},
 };
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
-use crate::config::Config;
-use crate::primitives::{
-    docstring::{entry_carrying_sections, rewrite_docstrings},
-    edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
-    imports::{ImportGroup, import_group},
-    orderer::{
-        assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
+use crate::{
+    config::Config,
+    primitives::{
+        docstring::{entry_carrying_sections, rewrite_docstrings},
+        edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
+        imports::{ImportGroup, import_group},
+        orderer::{
+            assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
+        },
+        scope::BodyScope,
     },
-    scope::BodyScope,
+    rule::{Rule, RuleId},
+    source::Source,
 };
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
 
 pub(crate) struct Alphabetize {
     docstring_entries: bool,

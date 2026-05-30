@@ -10,10 +10,12 @@ use ruff_python_parser::ParseError;
 use ruff_text_size::Ranged;
 use thiserror::Error;
 
-use crate::diagnostics::{Diagnostic, Severity};
-use crate::primitives::edit::apply_edits;
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    diagnostics::{Diagnostic, Severity},
+    primitives::edit::apply_edits,
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 /// Ordered sequence of enabled rules, run against each source file.
 pub struct Pipeline {

@@ -7,8 +7,7 @@
 //! `item_indent + INDENT_STEP`. Comprehensions and any literal
 //! whose source range contains a comment are out of scope.
 
-use std::borrow::Cow;
-use std::ops::Range;
+use std::{borrow::Cow, ops::Range};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -19,14 +18,16 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
-use crate::config::Config;
-use crate::primitives::{
-    INDENT_STEP,
-    edit::{narrowed_replacement, singleton_groups},
-    range::paren_aware_range,
+use crate::{
+    config::Config,
+    primitives::{
+        INDENT_STEP,
+        edit::{narrowed_replacement, singleton_groups},
+        range::paren_aware_range,
+    },
+    rule::{Rule, RuleId},
+    source::Source,
 };
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
 
 pub(crate) struct CollectionLayout {
     code_line_length: usize,

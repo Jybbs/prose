@@ -15,16 +15,18 @@ use ruff_diagnostics::Edit;
 use ruff_python_trivia::leading_indentation;
 use textwrap::Options;
 
-use crate::config::{Config, DocstringStructuredPolicy};
-use crate::primitives::{
-    docstring::{
-        entry_description_col, indent_prefix, is_list_marker, rewrite_docstrings, section_heading,
-        triple_quoted_body,
+use crate::{
+    config::{Config, DocstringStructuredPolicy},
+    primitives::{
+        docstring::{
+            entry_description_col, indent_prefix, is_list_marker, rewrite_docstrings,
+            section_heading, triple_quoted_body,
+        },
+        edit::{narrowed_replacement, singleton_groups},
     },
-    edit::{narrowed_replacement, singleton_groups},
+    rule::{Rule, RuleId},
+    source::Source,
 };
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
 
 pub(crate) struct DocstringWrap {
     description_width: usize,

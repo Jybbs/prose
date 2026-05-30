@@ -9,10 +9,12 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::ExprDict;
 use ruff_text_size::Ranged;
 
-use crate::config::Config;
-use crate::primitives::{aligner, colon_targets::ColonEmitter};
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::{aligner, colon_targets::ColonEmitter},
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct AlignColons {
     settings: aligner::Settings,

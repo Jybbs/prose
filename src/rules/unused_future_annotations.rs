@@ -13,10 +13,12 @@ use ruff_python_ast::{
 use ruff_source_file::LineRanges;
 use ruff_text_size::TextRange;
 
-use crate::config::Config;
-use crate::primitives::{binding::BindingAnalysis, edit::singleton_groups};
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::{binding::BindingAnalysis, edit::singleton_groups},
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 const FUTURE_ANNOTATIONS: &str = "annotations";
 const FUTURE_MODULE: &str = "__future__";

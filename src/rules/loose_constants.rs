@@ -13,10 +13,12 @@ use ruff_python_ast::{
 };
 use ruff_text_size::Ranged;
 
-use crate::config::Config;
-use crate::diagnostics::Diagnostic;
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    diagnostics::Diagnostic,
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct LooseConstants {
     allow: HashSet<String>,

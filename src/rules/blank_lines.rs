@@ -6,17 +6,21 @@
 //! below a description block, and 1 blank line below a banner block.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::helpers::is_docstring_stmt;
-use ruff_python_ast::statement_visitor::{StatementVisitor, walk_stmt};
-use ruff_python_ast::{CmpOp, Expr, Stmt};
+use ruff_python_ast::{
+    CmpOp, Expr, Stmt,
+    helpers::is_docstring_stmt,
+    statement_visitor::{StatementVisitor, walk_stmt},
+};
 use ruff_python_trivia::{BackwardsTokenizer, CommentRanges, lines_after, lines_before};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::config::Config;
-use crate::primitives::{edit::singleton_groups, imports::import_group, scope::BodyScope};
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::{edit::singleton_groups, imports::import_group, scope::BodyScope},
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct BlankLines {
     first_party: Vec<String>,

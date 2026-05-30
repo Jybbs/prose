@@ -1,8 +1,7 @@
 //! End-to-end tests against the `prose` binary, exercising
 //! `cli::run` and the exit-code matrix.
 
-use std::fs::write;
-use std::path::PathBuf;
+use std::{fs::write, path::PathBuf};
 
 use assert_cmd::Command;
 use pretty_assertions::assert_eq;

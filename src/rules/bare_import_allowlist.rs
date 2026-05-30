@@ -8,11 +8,13 @@ use ruff_python_ast::{
     statement_visitor::{StatementVisitor, walk_stmt},
 };
 
-use crate::config::Config;
-use crate::diagnostics::Diagnostic;
-use crate::primitives::binding::top_level_module;
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    diagnostics::Diagnostic,
+    primitives::binding::top_level_module,
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct BareImportAllowlist {
     allow: HashSet<String>,

@@ -2,8 +2,7 @@
 
 mod common;
 
-use prose::pipeline::Pipeline;
-use prose::source::Source;
+use prose::{pipeline::Pipeline, source::Source};
 use ruff_python_formatter::{PyFormatOptions, format_module_source};
 
 #[test]

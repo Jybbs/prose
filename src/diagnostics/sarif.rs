@@ -14,8 +14,10 @@ use serde_sarif::sarif::{
     Sarif as SarifDoc, ToolComponent,
 };
 
-use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns, write_json_line};
-use crate::rule::RuleId;
+use crate::{
+    diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns, write_json_line},
+    rule::RuleId,
+};
 
 pub(crate) struct Sarif;
 

@@ -1,7 +1,9 @@
 //! Diagnostic model and output emitters.
 
-use std::collections::BTreeMap;
-use std::io::{self, Write};
+use std::{
+    collections::BTreeMap,
+    io::{self, Write},
+};
 
 use ruff_source_file::{LineColumn, SourceFile};
 use ruff_text_size::TextRange;

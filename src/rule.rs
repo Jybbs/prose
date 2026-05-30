@@ -13,25 +13,27 @@ use ruff_diagnostics::Edit;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::config::{
-    AlignmentConfig, AlphabetizeConfig, BareImportAllowlistConfig, CollectionLayoutConfig, Config,
-    LooseConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
+use crate::{
+    config::{
+        AlignmentConfig, AlphabetizeConfig, BareImportAllowlistConfig, CollectionLayoutConfig,
+        Config, LooseConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
+    },
+    diagnostics::Diagnostic,
+    pipeline::Pipeline,
+    rules::{
+        align_colons::AlignColons, align_comparisons::AlignComparisons, align_equals::AlignEquals,
+        align_imports::AlignImports, alphabetize::Alphabetize,
+        bare_import_allowlist::BareImportAllowlist, blank_lines::BlankLines,
+        collection_layout::CollectionLayout, docstring_wrap::DocstringWrap,
+        legacy_union_syntax::LegacyUnionSyntax, loose_constants::LooseConstants,
+        match_case_align::MatchCaseAlign, multi_line_docstrings::MultiLineDocstrings,
+        no_single_line_docstrings::NoSingleLineDocstrings, no_step_narration::NoStepNarration,
+        signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
+        singleton_rule::SingletonRule, strip_trailing_commas::StripTrailingCommas,
+        unused_future_annotations::UnusedFutureAnnotations,
+    },
+    source::Source,
 };
-use crate::diagnostics::Diagnostic;
-use crate::pipeline::Pipeline;
-use crate::rules::{
-    align_colons::AlignColons, align_comparisons::AlignComparisons, align_equals::AlignEquals,
-    align_imports::AlignImports, alphabetize::Alphabetize,
-    bare_import_allowlist::BareImportAllowlist, blank_lines::BlankLines,
-    collection_layout::CollectionLayout, docstring_wrap::DocstringWrap,
-    legacy_union_syntax::LegacyUnionSyntax, loose_constants::LooseConstants,
-    match_case_align::MatchCaseAlign, multi_line_docstrings::MultiLineDocstrings,
-    no_single_line_docstrings::NoSingleLineDocstrings, no_step_narration::NoStepNarration,
-    signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
-    singleton_rule::SingletonRule, strip_trailing_commas::StripTrailingCommas,
-    unused_future_annotations::UnusedFutureAnnotations,
-};
-use crate::source::Source;
 
 /// Returned when a string fails to match any registered rule slug.
 /// Carries the offending input so callers can surface it verbatim.
