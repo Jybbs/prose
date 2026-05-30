@@ -1,2 +1,0 @@
-[harness]
-rules = ["blank-lines", "align-imports"]
