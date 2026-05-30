@@ -14,6 +14,7 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::config::Config;
+use crate::primitives::edit::singleton_groups;
 use crate::primitives::imports::import_group;
 use crate::primitives::scope::BodyScope;
 use crate::rule::{Rule, RuleId};
@@ -32,7 +33,7 @@ impl BlankLines {
 }
 
 impl Rule for BlankLines {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let body = &source.ast().body;
         let mut walker = Walker {
             edits: Vec::new(),
@@ -41,7 +42,7 @@ impl Rule for BlankLines {
         };
         walker.pair_siblings(body, BodyScope::Module);
         walker.visit_body(body);
-        walker.edits
+        singleton_groups(walker.edits)
     }
 
     fn id(&self) -> RuleId {

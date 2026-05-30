@@ -3,8 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/split_singleton_anchors_all/input.py
 ---
-align-colons@110..110
-align-colons@23..23
-align-colons@44..44
-align-colons@78..78
-align-colons@96..96
+align-colons@23..110

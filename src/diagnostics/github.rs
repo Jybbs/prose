@@ -62,7 +62,7 @@ mod tests {
 
     fn diag(range: TextRange) -> Diagnostic {
         Diagnostic {
-            fix: Some(Edit::range_replacement("y".to_owned(), range)),
+            fix: Some(vec![Edit::range_replacement("y".to_owned(), range)]),
             message: "rewrite x to y".to_owned(),
             range,
             rule: RuleId::from("rewrite-x"),

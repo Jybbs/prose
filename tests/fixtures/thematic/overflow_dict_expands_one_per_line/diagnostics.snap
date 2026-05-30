@@ -1,19 +1,10 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/overflow_dict_expands_one_per_line/input.py
 ---
-align-colons@136..136
-align-colons@155..155
-align-colons@204..204
-align-colons@24..24
-align-colons@240..240
-align-colons@266..266
-align-colons@302..302
-align-colons@42..42
-align-colons@83..83
-align-colons@98..98
+align-colons@204..302
+align-colons@24..155
 alphabetize@16..306
 collection-layout@10..245
 loose-constants@0..344

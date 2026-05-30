@@ -18,7 +18,11 @@ use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
-use crate::primitives::{edit::narrowed_replacement, range::paren_aware_range, INDENT_STEP};
+use crate::primitives::{
+    edit::{narrowed_replacement, singleton_groups},
+    range::paren_aware_range,
+    INDENT_STEP,
+};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -42,7 +46,7 @@ impl CollectionLayout {
 }
 
 impl Rule for CollectionLayout {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Layouter {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
@@ -51,7 +55,7 @@ impl Rule for CollectionLayout {
             source,
         };
         visitor.visit_body(&source.ast().body);
-        visitor.edits
+        singleton_groups(visitor.edits)
     }
 
     fn id(&self) -> RuleId {

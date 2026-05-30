@@ -1,11 +1,9 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/init_assigns_then_method_sort/input.py
 ---
-align-equals@69..70
-align-equals@97..98
+align-equals@69..98
 alphabetize@142..276
 blank-lines@133..134
 blank-lines@14..15

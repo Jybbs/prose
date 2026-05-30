@@ -3,7 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/annotated_params_align_return_untouched/input.py
 ---
-align-colons@28..28
-align-colons@43..43
-align-colons@63..63
-align-colons@81..81
+align-colons@28..81

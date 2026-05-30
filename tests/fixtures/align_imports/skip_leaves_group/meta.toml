@@ -1,6 +1,0 @@
-[docs]
-title = "The `skip` Policy Leaves the Whole `from`-Import Group Unaligned"
-description = '''
-Under `max-shift-policy = "skip"`, a `from`-import group whose widest module overshoots the cap is **left entirely untouched**. No member shifts toward an `import` column, so the whole group passes through with its original spacing.
-'''
-previewable = false

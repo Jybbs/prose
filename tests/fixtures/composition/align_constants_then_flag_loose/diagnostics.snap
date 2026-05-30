@@ -1,12 +1,9 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/align_constants_then_flag_loose/input.py
 ---
-align-equals@15..16
-align-equals@32..33
-align-equals@78..79
+align-equals@15..79
 loose-constants@0..23
 loose-constants@24..46
 loose-constants@47..77

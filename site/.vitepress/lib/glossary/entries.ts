@@ -391,8 +391,8 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'max-shift-policy': {
     definition: '`max-shift-policy` decides how an alignment group overflowing `max-shift` '
-              + 'resolves. `split` partitions the group, `drop` excludes the widest members, '
-              + 'and `skip` leaves the whole group unaligned.',
+              + 'resolves. `split` partitions the group, and `drop` excludes the widest '
+              + 'members from the padding calculation.',
     families  : ['alignment', 'cli'],
     href      : '/reference/configuration#per-rule-knobs'
   },

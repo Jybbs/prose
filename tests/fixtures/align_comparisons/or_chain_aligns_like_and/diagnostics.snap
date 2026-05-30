@@ -3,5 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_comparisons/or_chain_aligns_like_and/input.py
 ---
-align-comparisons@12..13
-align-comparisons@49..50
+align-comparisons@12..50

@@ -3,7 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/dict_mixed_key_kinds_align/input.py
 ---
-align-colons@44..44
-align-colons@55..55
-align-colons@70..70
-align-colons@85..85
+align-colons@44..85

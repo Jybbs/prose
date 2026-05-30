@@ -12,6 +12,7 @@ use ruff_python_trivia::{BackwardsTokenizer, SimpleTokenKind};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::config::Config;
+use crate::primitives::edit::singleton_groups;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -24,13 +25,13 @@ impl StripTrailingCommas {
 }
 
 impl Rule for StripTrailingCommas {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Stripper {
             edits: Vec::new(),
             source,
         };
         visitor.visit_body(&source.ast().body);
-        visitor.edits
+        singleton_groups(visitor.edits)
     }
 
     fn id(&self) -> RuleId {

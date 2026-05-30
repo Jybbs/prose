@@ -36,13 +36,13 @@ impl MatchCaseAlign {
 }
 
 impl Rule for MatchCaseAlign {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
             code_line_length: self.code_line_length,
-            walker: aligner::AlignWalker::new(source, self.settings),
+            walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
-        visitor.walker.edits
+        visitor.walker.groups
     }
 
     fn id(&self) -> RuleId {
@@ -66,15 +66,17 @@ struct Visitor<'a> {
 }
 
 impl Visitor<'_> {
-    /// Emits alignment and collapse edits for a sub-group and drains it.
+    /// Emits a sub-group's alignment and collapse edits as one fix
+    /// group and drains it.
     fn flush_subgroup(&mut self, group: &mut Vec<(aligner::Member, TextRange)>) {
         let (members, ranges): (Vec<aligner::Member>, Vec<TextRange>) = group.drain(..).unzip();
-        self.walker.emit_group(&members);
-        self.walker.edits.extend(
+        let mut edits = self.walker.group_edits(&members);
+        edits.extend(
             ranges
                 .into_iter()
                 .filter_map(|r| aligner::space_padding_edit(self.walker.source, r, 1)),
         );
+        self.walker.push_group(edits);
     }
 
     /// Returns `Disqualify` when the `:`-to-body gap already carries
@@ -116,12 +118,15 @@ impl Visitor<'_> {
     fn process_match(&mut self, m: &StmtMatch) {
         let mut current: Vec<(aligner::Member, TextRange)> = Vec::new();
         for case in &m.cases {
+            if self.walker.is_held(case.start()) {
+                continue;
+            }
             match self.qualify_case(case) {
                 CaseOutcome::Align(member, range) => current.push((member, range)),
                 CaseOutcome::Disqualify => self.flush_subgroup(&mut current),
                 CaseOutcome::Split(edit) => {
                     self.flush_subgroup(&mut current);
-                    self.walker.edits.push(edit);
+                    self.walker.push_group(vec![edit]);
                 }
             }
         }

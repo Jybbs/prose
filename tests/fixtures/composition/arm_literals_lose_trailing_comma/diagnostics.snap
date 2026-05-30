@@ -1,14 +1,8 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/arm_literals_lose_trailing_comma/input.py
 ---
-match-case-align@106..106
-match-case-align@107..120
-match-case-align@151..151
-match-case-align@152..165
-match-case-align@56..56
-match-case-align@57..70
+match-case-align@56..165
 strip-trailing-commas@136..137
 strip-trailing-commas@85..86

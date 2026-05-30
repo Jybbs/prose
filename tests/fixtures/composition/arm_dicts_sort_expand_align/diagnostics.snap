@@ -1,17 +1,10 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/arm_dicts_sort_expand_align/input.py
 ---
-align-colons@109..109
-align-colons@145..145
-align-colons@175..175
-align-colons@210..210
-align-colons@300..300
-align-colons@338..338
-align-colons@369..369
-align-colons@403..403
+align-colons@109..210
+align-colons@300..403
 alphabetize@96..406
 collection-layout@191..263
 collection-layout@78..148

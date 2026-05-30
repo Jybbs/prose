@@ -3,5 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_comparisons/chained_compare_anchors_first_operator/input.py
 ---
-align-comparisons@12..13
-align-comparisons@27..28
+align-comparisons@12..28

@@ -15,6 +15,7 @@ use ruff_text_size::TextRange;
 
 use crate::config::Config;
 use crate::primitives::binding::BindingAnalysis;
+use crate::primitives::edit::singleton_groups;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -34,7 +35,7 @@ impl UnusedFutureAnnotations {
 }
 
 impl Rule for UnusedFutureAnnotations {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let directives: Vec<(&StmtImportFrom, usize)> = source
             .ast()
             .body
@@ -47,10 +48,11 @@ impl Rule for UnusedFutureAnnotations {
         if directives.is_empty() || !rule_fires(source, self.target_version) {
             return Vec::new();
         }
-        directives
-            .into_iter()
-            .map(|(node, idx)| edit_for(source, node, idx))
-            .collect()
+        singleton_groups(
+            directives
+                .into_iter()
+                .map(|(node, idx)| edit_for(source, node, idx)),
+        )
     }
 
     fn id(&self) -> RuleId {

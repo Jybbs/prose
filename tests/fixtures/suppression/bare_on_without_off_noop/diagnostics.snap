@@ -1,11 +1,8 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/bare_on_without_off_noop/input.py
 ---
-align-equals@15..16
-align-equals@21..22
-align-equals@40..41
-align-equals@48..49
+align-equals@15..22
+align-equals@40..49
 alphabetize@0..25

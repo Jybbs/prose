@@ -31,11 +31,11 @@ stability: public
 
 ```rust
 pub struct Diagnostic {
-    pub fix      : Option<Edit>,   // the rewrite, or `None` for lint-only findings
-    pub message  : String,         // human-readable explanation of the finding
-    pub range    : TextRange,      // source span the finding points at
-    pub rule     : RuleId,         // slug of the rule that emitted the finding
-    pub severity : Severity,       // `Format` for auto-fix, `Lint` for report-only
+    pub fix      : Option<Vec<Edit>>, // the fix's edits, or `None` for lint-only findings
+    pub message  : String,            // human-readable explanation of the finding
+    pub range    : TextRange,         // source span the finding points at
+    pub rule     : RuleId,            // slug of the rule that emitted the finding
+    pub severity : Severity,          // `Format` for auto-fix, `Lint` for report-only
 }
 ```
 

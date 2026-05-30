@@ -1,12 +1,7 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/optional_union_field_annotations_align/input.py
 ---
-align-colons@131..131
-align-colons@176..176
-align-colons@61..61
-align-colons@92..92
-align-equals@149..150
-align-equals@77..78
+align-colons@61..176
+align-equals@77..150
