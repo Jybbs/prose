@@ -5,8 +5,10 @@
 //! one-space buffer between content and the aligned token.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::token::{Token, TokenKind};
-use ruff_python_ast::{AnyParameterRef, Parameters, Stmt};
+use ruff_python_ast::{
+    AnyParameterRef, Parameters, Stmt,
+    token::{Token, TokenKind},
+};
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};

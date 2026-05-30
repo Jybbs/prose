@@ -7,15 +7,19 @@ use anyhow::Context;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use ruff_source_file::{SourceFile, SourceFileBuilder};
 
-use super::args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter};
-use super::exit_status::ExitStatus;
-use super::output::{self, Presentation, Summary};
-use crate::cache::{Cache, CacheEntry, CacheKey};
-use crate::config::Config;
-use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Text};
-use crate::pipeline::Pipeline;
-use crate::source::Source;
-use crate::walker;
+use super::{
+    args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter},
+    exit_status::ExitStatus,
+    output::{self, Presentation, Summary},
+};
+use crate::{
+    cache::{Cache, CacheEntry, CacheKey},
+    config::Config,
+    diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Text},
+    pipeline::Pipeline,
+    source::Source,
+    walker,
+};
 
 /// One file's contribution to the run.
 #[derive(Debug)]

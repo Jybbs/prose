@@ -17,11 +17,11 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use ruff_python_ast::visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt};
 use ruff_python_ast::{
     Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed, ExprSetComp,
     ExprTuple, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign,
     StmtClassDef, StmtFor, StmtFunctionDef, StmtImport, StmtImportFrom, StmtTry, StmtWith,
+    visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextSize};
 use serde::Serialize;

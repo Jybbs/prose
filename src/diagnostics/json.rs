@@ -1,8 +1,10 @@
 //! Json emitter: NDJSON of Ruff-shaped diagnostic records closed by a
 //! summary envelope.
 
-use std::collections::BTreeMap;
-use std::io::{self, Write};
+use std::{
+    collections::BTreeMap,
+    io::{self, Write},
+};
 
 use ruff_diagnostics::{Applicability, Edit};
 use ruff_source_file::{LineColumn, OneIndexed, SourceFile};

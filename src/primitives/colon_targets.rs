@@ -6,10 +6,10 @@
 //! them to strip pre-colon padding from groups that have no column to
 //! align to.
 
-use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt};
 use ruff_python_ast::{
     AnyParameterRef, DictItem, Expr, ExprDict, ExprStringLiteral, MatchCase, Parameters, Stmt,
+    token::TokenKind,
+    visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::UniversalNewlines;

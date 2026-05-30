@@ -11,9 +11,11 @@ use std::borrow::Cow;
 use std::ops::Range;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::helpers::is_dotted_name;
-use ruff_python_ast::visitor::{Visitor, walk_expr};
-use ruff_python_ast::{AnyNodeRef, DictItem, Expr, ExprDict};
+use ruff_python_ast::{
+    AnyNodeRef, DictItem, Expr, ExprDict,
+    helpers::is_dotted_name,
+    visitor::{Visitor, walk_expr},
+};
 use ruff_text_size::{Ranged, TextRange};
 use unicode_width::UnicodeWidthStr;
 

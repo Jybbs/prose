@@ -3,8 +3,10 @@
 use std::path::Path;
 use std::str::FromStr;
 
-use ruff_python_ast::ModModule;
-use ruff_python_ast::token::{Token, Tokens};
+use ruff_python_ast::{
+    ModModule,
+    token::{Token, Tokens},
+};
 use ruff_python_parser::{ParseError, Parsed, parse_module};
 use ruff_python_trivia::{CommentRanges, leading_indentation, lines_before};
 use ruff_source_file::{

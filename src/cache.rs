@@ -10,10 +10,12 @@
 //! concurrent reader never observes a partial entry. LRU eviction by
 //! mtime caps the directory at the configured size on every insert.
 
-use std::fs::Metadata;
-use std::io::{self, BufReader, BufWriter, Write};
-use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+use std::{
+    fs::Metadata,
+    io::{self, BufReader, BufWriter, Write},
+    path::{Path, PathBuf},
+    time::SystemTime,
+};
 
 use bincode::config::standard;
 use bincode::serde::{decode_from_std_read, encode_into_std_write};

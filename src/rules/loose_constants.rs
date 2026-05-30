@@ -5,10 +5,12 @@
 
 use std::collections::HashSet;
 
-use ruff_python_ast::helpers::is_dunder;
-use ruff_python_ast::name::UnqualifiedName;
-use ruff_python_ast::statement_visitor::{StatementVisitor, walk_stmt};
-use ruff_python_ast::{Expr, ExprName, Stmt, StmtIf};
+use ruff_python_ast::{
+    Expr, ExprName, Stmt, StmtIf,
+    helpers::is_dunder,
+    name::UnqualifiedName,
+    statement_visitor::{StatementVisitor, walk_stmt},
+};
 use ruff_text_size::Ranged;
 
 use crate::config::Config;

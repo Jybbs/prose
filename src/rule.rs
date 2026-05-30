@@ -20,26 +20,18 @@ use crate::config::{
 };
 use crate::diagnostics::Diagnostic;
 use crate::pipeline::Pipeline;
-use crate::rules::align_colons::AlignColons;
-use crate::rules::align_comparisons::AlignComparisons;
-use crate::rules::align_equals::AlignEquals;
-use crate::rules::align_imports::AlignImports;
-use crate::rules::alphabetize::Alphabetize;
-use crate::rules::bare_import_allowlist::BareImportAllowlist;
-use crate::rules::blank_lines::BlankLines;
-use crate::rules::collection_layout::CollectionLayout;
-use crate::rules::docstring_wrap::DocstringWrap;
-use crate::rules::legacy_union_syntax::LegacyUnionSyntax;
-use crate::rules::loose_constants::LooseConstants;
-use crate::rules::match_case_align::MatchCaseAlign;
-use crate::rules::multi_line_docstrings::MultiLineDocstrings;
-use crate::rules::no_single_line_docstrings::NoSingleLineDocstrings;
-use crate::rules::no_step_narration::NoStepNarration;
-use crate::rules::signature_layout::SignatureLayout;
-use crate::rules::single_use_variables::SingleUseVariables;
-use crate::rules::singleton_rule::SingletonRule;
-use crate::rules::strip_trailing_commas::StripTrailingCommas;
-use crate::rules::unused_future_annotations::UnusedFutureAnnotations;
+use crate::rules::{
+    align_colons::AlignColons, align_comparisons::AlignComparisons, align_equals::AlignEquals,
+    align_imports::AlignImports, alphabetize::Alphabetize,
+    bare_import_allowlist::BareImportAllowlist, blank_lines::BlankLines,
+    collection_layout::CollectionLayout, docstring_wrap::DocstringWrap,
+    legacy_union_syntax::LegacyUnionSyntax, loose_constants::LooseConstants,
+    match_case_align::MatchCaseAlign, multi_line_docstrings::MultiLineDocstrings,
+    no_single_line_docstrings::NoSingleLineDocstrings, no_step_narration::NoStepNarration,
+    signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
+    singleton_rule::SingletonRule, strip_trailing_commas::StripTrailingCommas,
+    unused_future_annotations::UnusedFutureAnnotations,
+};
 use crate::source::Source;
 
 /// Returned when a string fails to match any registered rule slug.

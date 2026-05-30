@@ -14,9 +14,7 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::config::Config;
-use crate::primitives::edit::singleton_groups;
-use crate::primitives::imports::import_group;
-use crate::primitives::scope::BodyScope;
+use crate::primitives::{edit::singleton_groups, imports::import_group, scope::BodyScope};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 

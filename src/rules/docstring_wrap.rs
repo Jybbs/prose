@@ -16,11 +16,13 @@ use ruff_python_trivia::leading_indentation;
 use textwrap::Options;
 
 use crate::config::{Config, DocstringStructuredPolicy};
-use crate::primitives::docstring::{
-    entry_description_col, indent_prefix, is_list_marker, rewrite_docstrings, section_heading,
-    triple_quoted_body,
+use crate::primitives::{
+    docstring::{
+        entry_description_col, indent_prefix, is_list_marker, rewrite_docstrings, section_heading,
+        triple_quoted_body,
+    },
+    edit::{narrowed_replacement, singleton_groups},
 };
-use crate::primitives::edit::{narrowed_replacement, singleton_groups};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 

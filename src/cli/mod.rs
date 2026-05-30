@@ -18,8 +18,10 @@
 //! rendering. `exit_status` carries the matrix every subcommand
 //! resolves into.
 
-use std::io::{self, IsTerminal, Write};
-use std::process::ExitCode;
+use std::{
+    io::{self, IsTerminal, Write},
+    process::ExitCode,
+};
 
 use anstream::{AutoStream, stream::RawStream};
 use anyhow::Context;

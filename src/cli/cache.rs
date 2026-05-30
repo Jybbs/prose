@@ -1,7 +1,6 @@
 //! `prose cache` subcommand handlers and their shared helpers.
 
-use std::io::Write;
-use std::time::SystemTime;
+use std::{io::Write, time::SystemTime};
 
 use anyhow::Context;
 

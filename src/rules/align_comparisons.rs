@@ -7,9 +7,11 @@
 //! or a blank line in the gap breaks the run.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::visitor::{Visitor as AstVisitor, walk_expr};
-use ruff_python_ast::{CmpOp, Expr, ExprBoolOp};
+use ruff_python_ast::{
+    CmpOp, Expr, ExprBoolOp,
+    token::TokenKind,
+    visitor::{Visitor as AstVisitor, walk_expr},
+};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::config::Config;

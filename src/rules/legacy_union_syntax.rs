@@ -4,14 +4,15 @@
 
 use std::collections::HashMap;
 
-use ruff_python_ast::name::{QualifiedName, UnqualifiedName};
-use ruff_python_ast::visitor::{Visitor, walk_expr, walk_stmt};
-use ruff_python_ast::{AnyNodeRef, Expr, ExprSubscript, Identifier, PythonVersion, Stmt};
+use ruff_python_ast::{
+    AnyNodeRef, Expr, ExprSubscript, Identifier, PythonVersion, Stmt,
+    name::{QualifiedName, UnqualifiedName},
+    visitor::{Visitor, walk_expr, walk_stmt},
+};
 
 use crate::config::Config;
 use crate::diagnostics::Diagnostic;
-use crate::primitives::binding::top_level_module;
-use crate::primitives::range::paren_aware_range;
+use crate::primitives::{binding::top_level_module, range::paren_aware_range};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 

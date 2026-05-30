@@ -10,8 +10,7 @@ use ruff_python_ast::ExprDict;
 use ruff_text_size::Ranged;
 
 use crate::config::Config;
-use crate::primitives::aligner;
-use crate::primitives::colon_targets::ColonEmitter;
+use crate::primitives::{aligner, colon_targets::ColonEmitter};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 

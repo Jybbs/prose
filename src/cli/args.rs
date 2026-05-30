@@ -3,8 +3,11 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use clap::builder::{PossibleValuesParser, TypedValueParser};
-use clap::{ColorChoice, CommandFactory, Parser, Subcommand, error::ErrorKind};
+use clap::{
+    ColorChoice, CommandFactory, Parser, Subcommand,
+    builder::{PossibleValuesParser, TypedValueParser},
+    error::ErrorKind,
+};
 use clap_complete::Shell;
 
 use super::exit_status::ExitStatus;

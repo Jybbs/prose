@@ -6,10 +6,12 @@ use ruff_python_trivia::{
     CommentRanges, Cursor, PythonWhitespace, is_pragma_comment, is_python_whitespace,
 };
 
-use crate::config::Config;
-use crate::diagnostics::Diagnostic;
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    diagnostics::Diagnostic,
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct NoStepNarration;
 

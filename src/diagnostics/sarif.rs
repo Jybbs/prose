@@ -1,7 +1,9 @@
 //! Sarif emitter: SARIF 2.1.0 document for GitHub Code Scanning.
 
-use std::collections::BTreeSet;
-use std::io::{self, Write};
+use std::{
+    collections::BTreeSet,
+    io::{self, Write},
+};
 
 use ruff_diagnostics::Edit;
 use ruff_source_file::{LineColumn, SourceFile};

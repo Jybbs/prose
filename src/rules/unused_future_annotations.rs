@@ -5,17 +5,16 @@
 //! is module-scope-defined before that annotation's offset.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::helpers::any_over_expr;
-use ruff_python_ast::statement_visitor::{StatementVisitor, walk_stmt};
 use ruff_python_ast::{
     AnyParameterRef, Expr, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef, StmtImportFrom,
+    helpers::any_over_expr,
+    statement_visitor::{StatementVisitor, walk_stmt},
 };
 use ruff_source_file::LineRanges;
 use ruff_text_size::TextRange;
 
 use crate::config::Config;
-use crate::primitives::binding::BindingAnalysis;
-use crate::primitives::edit::singleton_groups;
+use crate::primitives::{binding::BindingAnalysis, edit::singleton_groups};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 

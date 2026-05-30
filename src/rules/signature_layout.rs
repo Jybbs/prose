@@ -5,9 +5,11 @@
 use std::num::NonZeroUsize;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::statement_visitor::{StatementVisitor, walk_stmt};
-use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::{ParameterWithDefault, Parameters, Stmt, StmtFunctionDef};
+use ruff_python_ast::{
+    ParameterWithDefault, Parameters, Stmt, StmtFunctionDef,
+    statement_visitor::{StatementVisitor, walk_stmt},
+    token::TokenKind,
+};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 

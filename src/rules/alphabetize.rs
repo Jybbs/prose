@@ -30,13 +30,15 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::config::Config;
-use crate::primitives::docstring::{entry_carrying_sections, rewrite_docstrings};
-use crate::primitives::edit::{apply_inline_edits, narrowed_replacement, singleton_groups};
-use crate::primitives::imports::{ImportGroup, import_group};
-use crate::primitives::orderer::{
-    assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
+use crate::primitives::{
+    docstring::{entry_carrying_sections, rewrite_docstrings},
+    edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
+    imports::{ImportGroup, import_group},
+    orderer::{
+        assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
+    },
+    scope::BodyScope,
 };
-use crate::primitives::scope::BodyScope;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
