@@ -1,21 +1,37 @@
-//! Parses the `[tool.prose]` section from `pyproject.toml`.
+//! Resolves `prose` configuration from `prose.toml` or the
+//! `[tool.prose]` table of `pyproject.toml`.
 //!
 //! `Config::load` walks upward from a starting path toward the
-//! filesystem root, stopping at the first `pyproject.toml` that
-//! carries a `[tool.prose]` section. Reaching the root without a match
-//! resolves to full defaults, so Prose works on a fresh Python
-//! project with no configuration step. Each rule's configuration
-//! lives under `[tool.prose.rules.<name>]`.
+//! filesystem root. In each directory a `prose.toml` outranks a
+//! `pyproject.toml`, and the nearest directory carrying either wins.
+//! A `prose.toml` holds the config at its document root, whereas a
+//! `pyproject.toml` nests it under `[tool.prose]`. Reaching the root
+//! without a match resolves to full defaults, so prose works on a
+//! fresh project with no configuration step.
+//!
+//! Each rule's configuration lives under `[tool.prose.rules]`, where
+//! a bare bool toggles the rule and a sub-table carries its knobs.
 
+use std::fmt;
+use std::marker::PhantomData;
 use std::num::NonZeroUsize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use regex_lite::Regex;
 use ruff_python_ast::PythonVersion;
-use serde::{de::IntoDeserializer, Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{value::MapAccessDeserializer, IntoDeserializer, MapAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
 
 pub use crate::rule::RuleConfigs;
+
+/// Filename of the dedicated config, parsed with its keys at the
+/// document root.
+const PROSE_TOML: &str = "prose.toml";
+
+/// Filename of the shared manifest, parsed under its `[tool.prose]`
+/// table.
+const PYPROJECT_TOML: &str = "pyproject.toml";
 
 /// Configuration shared by the alignment rules (`align_colons`, `align_equals`).
 #[derive(Debug, Deserialize, Serialize)]
@@ -106,14 +122,14 @@ impl Default for CollectionLayoutConfig {
     }
 }
 
-/// The `[tool.prose]` section of a user's `pyproject.toml`.
+/// The resolved `prose` configuration, read from a `prose.toml` root
+/// or a `pyproject.toml` `[tool.prose]` table.
 ///
 /// `code_line_length` defaults to `Some(88)`. `docstring_line_length`
 /// defaults to `Some(76)`. `docstring_structured_policy` defaults
 /// to `CodeLineLength`. `imports.first_party` defaults to empty.
 /// `target_version` defaults to `None`. Per-rule settings live under
-/// `rules`, where each rule's sub-table carries `enabled` plus that
-/// rule's own knobs.
+/// `rules`.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
@@ -141,6 +157,16 @@ impl Default for Config {
 }
 
 impl Config {
+    /// Parses a `prose.toml` snippet directly from a string, reading
+    /// its keys at the document root.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ConfigError::Toml` when `contents` is not valid TOML.
+    pub fn from_prose_toml_str(contents: &str) -> Result<Self, ConfigError> {
+        parse_prose_toml(contents, &mut emit_notice)
+    }
+
     /// Parses a `pyproject.toml` snippet directly from a string.
     ///
     /// Returns `Config::default()` when `contents` carries no
@@ -151,43 +177,48 @@ impl Config {
     ///
     /// Returns `ConfigError::Toml` when `contents` is not valid TOML.
     pub fn from_pyproject_str(contents: &str) -> Result<Self, ConfigError> {
-        Ok(parse_prose_section(contents, &mut warn_unknown_key)?.unwrap_or_default())
+        Ok(parse_pyproject(contents, &mut emit_notice)?.unwrap_or_default())
     }
 
-    /// Walks upward from `from` and returns the first `[tool.prose]`
-    /// section found in a `pyproject.toml` along the way, or
-    /// `Config::default()` if no such section exists on the chain.
+    /// Walks upward from `from`, returning the config from the nearest
+    /// directory that carries a `prose.toml` or a `pyproject.toml` with
+    /// a `[tool.prose]` table, or `Config::default()` if neither exists
+    /// on the chain. A `prose.toml` outranks a same-directory
+    /// `pyproject.toml`.
     ///
-    /// Unknown keys under `[tool.prose]` are logged to stderr as
-    /// warnings and ignored, keeping the loader forward-compatible
-    /// with rules added in future releases.
+    /// Unknown keys and the precedence outcome are logged to stderr and
+    /// ignored, keeping the loader forward-compatible with rules added
+    /// in future releases.
     ///
     /// # Errors
     ///
-    /// Returns `ConfigError::Io` if a `pyproject.toml` is found but
-    /// cannot be read, and `ConfigError::Toml` if its contents are not
-    /// valid TOML.
+    /// Returns `ConfigError::Io` if a config file is found but cannot be
+    /// read, and `ConfigError::Toml` if its contents are not valid TOML.
     pub fn load<P: AsRef<Path>>(from: P) -> Result<Self, ConfigError> {
-        Self::load_with_warnings(from, warn_unknown_key)
+        Self::load_with_notices(from, emit_notice)
     }
 
     /// Shared implementation backing `load`, factored out so tests can
-    /// inspect the unknown-key callback without capturing stderr.
-    fn load_with_warnings<P, F>(from: P, mut on_unknown: F) -> Result<Self, ConfigError>
+    /// inspect the emitted notices without capturing stderr.
+    fn load_with_notices<P, F>(from: P, mut on_notice: F) -> Result<Self, ConfigError>
     where
         P: AsRef<Path>,
-        F: FnMut(&str),
+        F: FnMut(ConfigNotice<'_>),
     {
-        from.as_ref()
-            .ancestors()
-            .find_map(
-                |dir| match fs_err::read_to_string(dir.join("pyproject.toml")) {
-                    Ok(contents) => parse_prose_section(&contents, &mut on_unknown).transpose(),
-                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
-                    Err(e) => Some(Err(e.into())),
-                },
-            )
-            .unwrap_or_else(|| Ok(Self::default()))
+        for dir in from.as_ref().ancestors() {
+            if let Some(contents) = read_optional(dir.join(PROSE_TOML))? {
+                if pyproject_declares_prose(dir) {
+                    on_notice(ConfigNotice::ProseTomlPrecedence(dir));
+                }
+                return parse_prose_toml(&contents, &mut on_notice);
+            }
+            if let Some(contents) = read_optional(dir.join(PYPROJECT_TOML))? {
+                if let Some(config) = parse_pyproject(&contents, &mut on_notice)? {
+                    return Ok(config);
+                }
+            }
+        }
+        Ok(Self::default())
     }
 
     pub(crate) fn code_width(&self) -> usize {
@@ -207,7 +238,8 @@ impl Config {
     }
 }
 
-/// Failure to load a `[tool.prose]` configuration from a `pyproject.toml`.
+/// Failure to load a `prose` configuration from a `prose.toml` or a
+/// `pyproject.toml`.
 #[derive(Debug, Error)]
 pub enum ConfigError {
     #[error(transparent)]
@@ -327,6 +359,81 @@ impl Default for ToggleOnly {
     }
 }
 
+impl RuleToggle for ToggleOnly {
+    fn with_enabled(enabled: bool) -> Self {
+        Self { enabled }
+    }
+}
+
+/// A per-rule config a bare bool can toggle. `with_enabled` is the
+/// shorthand for the `{ enabled = <bool> }` table under
+/// `[tool.prose.rules]`, leaving every other knob at its default.
+pub(crate) trait RuleToggle: Default {
+    fn with_enabled(enabled: bool) -> Self;
+}
+
+/// Implements [`RuleToggle`] for configs carrying knobs beyond
+/// `enabled`, filling the rest from `Default`.
+macro_rules! impl_rule_toggle {
+    ($($config:ty),+ $(,)?) => {
+        $(impl RuleToggle for $config {
+            fn with_enabled(enabled: bool) -> Self {
+                Self { enabled, ..Self::default() }
+            }
+        })+
+    };
+}
+
+impl_rule_toggle!(
+    AlignmentConfig,
+    AlphabetizeConfig,
+    BareImportAllowlistConfig,
+    CollectionLayoutConfig,
+    LooseConstantsConfig,
+    SignatureLayoutConfig,
+    SingleUseVariablesConfig,
+);
+
+/// A diagnostic surfaced while resolving configuration.
+enum ConfigNotice<'a> {
+    /// A `prose.toml` outranked a `[tool.prose]` table in a
+    /// `pyproject.toml` sharing its directory. Carries that directory.
+    ProseTomlPrecedence(&'a Path),
+    /// An unrecognized key under the prose table. Carries the dotted
+    /// key path.
+    UnknownKey(&'a str),
+}
+
+/// Resolves a rule's config from either a bare bool toggle or a
+/// sub-table. `deserialize_any` dispatches on the TOML value so the
+/// sub-table arm forwards a live map, preserving `serde_ignored`'s
+/// unknown-key tracking inside the table.
+pub(crate) fn deserialize_rule<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: RuleToggle + Deserialize<'de>,
+{
+    struct RuleVisitor<T>(PhantomData<T>);
+
+    impl<'de, T: RuleToggle + Deserialize<'de>> Visitor<'de> for RuleVisitor<T> {
+        type Value = T;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            formatter.write_str("a boolean toggle or a rule sub-table")
+        }
+
+        fn visit_bool<E: serde::de::Error>(self, enabled: bool) -> Result<T, E> {
+            Ok(T::with_enabled(enabled))
+        }
+
+        fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<T, A::Error> {
+            T::deserialize(MapAccessDeserializer::new(map))
+        }
+    }
+
+    deserializer.deserialize_any(RuleVisitor(PhantomData))
+}
+
 fn deserialize_max_inline_params<'de, D>(deserializer: D) -> Result<Option<NonZeroUsize>, D::Error>
 where
     D: Deserializer<'de>,
@@ -346,33 +453,72 @@ where
     }
 }
 
+fn deserialize_prose<F>(value: toml::Value, on_notice: &mut F) -> Result<Config, ConfigError>
+where
+    F: FnMut(ConfigNotice<'_>),
+{
+    let config = serde_ignored::deserialize(value.into_deserializer(), |path| {
+        on_notice(ConfigNotice::UnknownKey(&path.to_string()));
+    })?;
+    Ok(config)
+}
+
 fn deserialize_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Regex, D::Error> {
     let pattern = String::deserialize(deserializer)?;
     Regex::new(&pattern).map_err(serde::de::Error::custom)
 }
 
-fn serialize_regex<S: Serializer>(regex: &Regex, serializer: S) -> Result<S::Ok, S::Error> {
-    serializer.serialize_str(regex.as_str())
+fn emit_notice(notice: ConfigNotice<'_>) {
+    match notice {
+        ConfigNotice::ProseTomlPrecedence(dir) => eprintln!(
+            "note: prose.toml takes precedence over the [tool.prose] table in {}",
+            dir.join(PYPROJECT_TOML).display(),
+        ),
+        ConfigNotice::UnknownKey(key) => {
+            eprintln!("warning: unknown key `{key}` in [tool.prose]");
+        }
+    }
 }
 
-fn parse_prose_section<F>(contents: &str, on_unknown: &mut F) -> Result<Option<Config>, ConfigError>
+fn parse_prose_toml<F>(contents: &str, on_notice: &mut F) -> Result<Config, ConfigError>
 where
-    F: FnMut(&str),
+    F: FnMut(ConfigNotice<'_>),
+{
+    deserialize_prose(toml::from_str(contents)?, on_notice)
+}
+
+fn parse_pyproject<F>(contents: &str, on_notice: &mut F) -> Result<Option<Config>, ConfigError>
+where
+    F: FnMut(ConfigNotice<'_>),
 {
     let value: toml::Value = toml::from_str(contents)?;
-    let Some(prose) = value.get("tool").and_then(|t| t.get("prose")).cloned() else {
+    let Some(prose) = prose_table(&value).cloned() else {
         return Ok(None);
     };
-
-    let config: Config = serde_ignored::deserialize(prose.into_deserializer(), |path| {
-        on_unknown(&path.to_string())
-    })?;
-
-    Ok(Some(config))
+    Ok(Some(deserialize_prose(prose, on_notice)?))
 }
 
-fn warn_unknown_key(key: &str) {
-    eprintln!("warning: unknown key `{key}` in [tool.prose]");
+fn prose_table(value: &toml::Value) -> Option<&toml::Value> {
+    value.get("tool").and_then(|tool| tool.get("prose"))
+}
+
+fn pyproject_declares_prose(dir: &Path) -> bool {
+    fs_err::read_to_string(dir.join(PYPROJECT_TOML))
+        .ok()
+        .and_then(|contents| toml::from_str::<toml::Value>(&contents).ok())
+        .is_some_and(|value| prose_table(&value).is_some())
+}
+
+fn read_optional(path: PathBuf) -> Result<Option<String>, ConfigError> {
+    match fs_err::read_to_string(path) {
+        Ok(contents) => Ok(Some(contents)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e.into()),
+    }
+}
+
+fn serialize_regex<S: Serializer>(regex: &Regex, serializer: S) -> Result<S::Ok, S::Error> {
+    serializer.serialize_str(regex.as_str())
 }
 
 #[cfg(test)]
@@ -380,12 +526,17 @@ mod tests {
     use assert_matches::assert_matches;
     use indoc::indoc;
     use pretty_assertions::assert_eq;
+    use rstest::rstest;
     use tempfile::TempDir;
 
     use super::*;
 
     fn assert_toml_error(toml: &str) {
         assert_matches!(Config::from_pyproject_str(toml), Err(ConfigError::Toml(_)));
+    }
+
+    fn write_prose_toml(dir: &Path, contents: &str) {
+        std::fs::write(dir.join("prose.toml"), contents).expect("prose.toml writes");
     }
 
     fn write_pyproject(dir: &Path, contents: &str) {
@@ -443,6 +594,24 @@ mod tests {
     #[test]
     fn docstring_structured_policy_invalid_value_returns_toml_error() {
         assert_toml_error("[tool.prose]\ndocstring-structured-policy = \"nonsense\"\n");
+    }
+
+    #[test]
+    fn from_prose_toml_str_empty_returns_defaults() {
+        let config = Config::from_prose_toml_str("").expect("parses");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(88));
+        assert!(config.rules.align_equals.enabled);
+    }
+
+    #[test]
+    fn from_prose_toml_str_reads_bare_root_keys() {
+        let config =
+            Config::from_prose_toml_str("code-line-length = 120\n[rules]\nalphabetize = false\n")
+                .expect("parses");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+        assert!(!config.rules.alphabetize.enabled);
     }
 
     #[test]
@@ -558,6 +727,84 @@ mod tests {
     }
 
     #[test]
+    fn load_emits_precedence_notice_when_both_present() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_prose_toml(tmp.path(), "code-line-length = 120\n");
+        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+
+        let mut precedence_notices = 0;
+        let config = Config::load_with_notices(tmp.path(), |notice| {
+            if matches!(notice, ConfigNotice::ProseTomlPrecedence(_)) {
+                precedence_notices += 1;
+            }
+        })
+        .expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+        assert_eq!(precedence_notices, 1);
+    }
+
+    #[test]
+    fn load_empty_prose_toml_returns_defaults_and_stops_walk() {
+        let tmp = TempDir::new().expect("tempdir");
+        let nested = tmp.path().join("child");
+        std::fs::create_dir_all(&nested).expect("nested dirs create");
+        write_prose_toml(&nested, "");
+        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+
+        let config = Config::load(&nested).expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(88));
+    }
+
+    #[test]
+    fn load_picks_nearest_prose_toml_over_ancestor_pyproject() {
+        let tmp = TempDir::new().expect("tempdir");
+        let nested = tmp.path().join("child");
+        std::fs::create_dir_all(&nested).expect("nested dirs create");
+        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+        write_prose_toml(&nested, "code-line-length = 120\n");
+
+        let config = Config::load(&nested).expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    }
+
+    #[test]
+    fn load_prefers_prose_toml_over_sibling_pyproject() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_prose_toml(tmp.path(), "code-line-length = 120\n");
+        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+
+        let config = Config::load(tmp.path()).expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    }
+
+    #[test]
+    fn load_reads_pure_prose_toml() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_prose_toml(tmp.path(), "code-line-length = 120\n");
+
+        let config = Config::load(tmp.path()).expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    }
+
+    #[test]
+    fn load_walks_past_sectionless_pyproject_to_ancestor_prose_toml() {
+        let tmp = TempDir::new().expect("tempdir");
+        let nested = tmp.path().join("child");
+        std::fs::create_dir_all(&nested).expect("nested dirs create");
+        write_pyproject(&nested, "[project]\nname = \"x\"\n");
+        write_prose_toml(tmp.path(), "code-line-length = 120\n");
+
+        let config = Config::load(&nested).expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    }
+
+    #[test]
     fn load_unknown_key_invokes_callback() {
         let tmp = TempDir::new().expect("tempdir");
         write_pyproject(
@@ -566,8 +813,12 @@ mod tests {
         );
 
         let mut captured = Vec::new();
-        let config = Config::load_with_warnings(tmp.path(), |key| captured.push(key.to_owned()))
-            .expect("loads");
+        let config = Config::load_with_notices(tmp.path(), |notice| {
+            if let ConfigNotice::UnknownKey(key) = notice {
+                captured.push(key.to_owned());
+            }
+        })
+        .expect("loads");
 
         assert_eq!(captured, ["unknown-future-key"]);
         assert!(config.rules.align_equals.enabled);
@@ -581,6 +832,14 @@ mod tests {
         let config = Config::load(tmp.path()).expect("loads");
 
         assert!(config.rules.align_equals.enabled);
+    }
+
+    #[test]
+    fn load_unreadable_config_returns_io_error() {
+        let tmp = TempDir::new().expect("tempdir");
+        std::fs::create_dir(tmp.path().join("prose.toml")).expect("dir at config path");
+
+        assert_matches!(Config::load(tmp.path()), Err(ConfigError::Io(_)));
     }
 
     #[test]
@@ -631,6 +890,98 @@ mod tests {
     #[test]
     fn max_inline_params_zero_returns_toml_error() {
         assert_toml_error("[tool.prose.rules.signature-layout]\nmax-inline-params = 0\n");
+    }
+
+    #[rstest]
+    #[case("false", false)]
+    #[case("true", true)]
+    fn rules_bare_bool_sets_enabled(#[case] literal: &str, #[case] expected: bool) {
+        let config =
+            Config::from_pyproject_str(&format!("[tool.prose.rules]\nalphabetize = {literal}\n"))
+                .expect("parses");
+
+        assert_eq!(config.rules.alphabetize.enabled, expected);
+        assert!(config.rules.align_equals.enabled);
+    }
+
+    #[test]
+    fn rules_bare_bool_false_leaves_other_knobs_default() {
+        let config = Config::from_pyproject_str("[tool.prose.rules]\nalphabetize = false\n")
+            .expect("parses");
+
+        assert!(!config.rules.alphabetize.enabled);
+        assert!(config.rules.alphabetize.docstring_entries);
+    }
+
+    #[test]
+    fn rules_inline_table_compiles_regex_knob() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.rules]\nsingle-use-variables = { allow-pattern = \"^tmp_\" }\n",
+        )
+        .expect("parses");
+
+        assert!(config
+            .rules
+            .single_use_variables
+            .allow_pattern
+            .is_match("tmp_x"));
+        assert!(config.rules.single_use_variables.enabled);
+    }
+
+    #[test]
+    fn rules_inline_table_resolves_nested_max_inline_params() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.rules]\nsignature-layout = { max-inline-params = false }\n",
+        )
+        .expect("parses");
+
+        assert!(config.rules.signature_layout.enabled);
+        assert!(config.rules.signature_layout.max_inline_params.is_none());
+    }
+
+    #[test]
+    fn rules_inline_table_sets_knob_and_stays_enabled() {
+        let config =
+            Config::from_pyproject_str("[tool.prose.rules]\nalign-equals = { max-shift = 4 }\n")
+                .expect("parses");
+
+        assert!(config.rules.align_equals.enabled);
+        assert_eq!(config.rules.align_equals.max_shift.get(), 4);
+    }
+
+    #[test]
+    fn rules_non_bool_non_table_value_returns_toml_error() {
+        assert_toml_error("[tool.prose.rules]\nalign-equals = 5\n");
+    }
+
+    #[test]
+    fn rules_subtable_form_still_parses() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.rules.align-equals]\nenabled = false\nmax-shift = 4\n",
+        )
+        .expect("parses");
+
+        assert!(!config.rules.align_equals.enabled);
+        assert_eq!(config.rules.align_equals.max_shift.get(), 4);
+    }
+
+    #[test]
+    fn rules_unknown_subtable_key_invokes_notice() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_pyproject(
+            tmp.path(),
+            "[tool.prose.rules.align-equals]\nbogus-knob = 1\n",
+        );
+
+        let mut captured = Vec::new();
+        Config::load_with_notices(tmp.path(), |notice| {
+            if let ConfigNotice::UnknownKey(key) = notice {
+                captured.push(key.to_owned());
+            }
+        })
+        .expect("loads");
+
+        assert_eq!(captured, ["rules.align-equals.bogus-knob"]);
     }
 
     #[test]

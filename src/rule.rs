@@ -198,15 +198,19 @@ macro_rules! register_rules {
             $(RuleId($slug)),*
         ];
 
-        /// Per-rule configuration parsed from `[tool.prose.rules.<name>]`.
+        /// Per-rule configuration under `[tool.prose.rules]`.
         ///
-        /// Each field is a sub-table whose `enabled` key (defaulting
-        /// to `true`) toggles the rule and whose remaining keys carry
-        /// that rule's knobs.
+        /// Each field accepts a bare bool, where `false` disables the
+        /// rule and `true` keeps its defaults, or a sub-table whose
+        /// keys carry that rule's knobs. An absent field defaults to
+        /// enabled.
         #[derive(Debug, Default, Deserialize, Serialize)]
         #[serde(default, rename_all = "kebab-case")]
         pub struct RuleConfigs {
-            $(pub $field: $config,)*
+            $(
+                #[serde(deserialize_with = "crate::config::deserialize_rule")]
+                pub $field: $config,
+            )*
         }
 
         // Routes a missing-`Default` error to the offending `$config`

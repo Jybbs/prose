@@ -1,2 +1,2 @@
-[tool.prose.rules.match-case-align]
-max-shift-policy = "skip"
+[rules]
+match-case-align = { max-shift-policy = "skip" }

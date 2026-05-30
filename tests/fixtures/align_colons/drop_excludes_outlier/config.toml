@@ -1,2 +1,2 @@
-[tool.prose.rules.align-colons]
-max-shift-policy = "drop"
+[rules]
+align-colons = { max-shift-policy = "drop" }

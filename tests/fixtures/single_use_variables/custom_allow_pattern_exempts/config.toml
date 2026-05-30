@@ -1,2 +1,2 @@
-[tool.prose.rules.single-use-variables]
-allow-pattern = "^tmp_"
+[rules]
+single-use-variables = { allow-pattern = "^tmp_" }

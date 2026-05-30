@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Rule Toggles Accept Bool Shorthand and Inline Tables"
+
+description = '''
+The `[tool.prose.rules]` map disables `alphabetize` with a bare `false`, sets the `align-equals` `max-shift` knob through an inline table while leaving the rule enabled, and resolves the nested `signature-layout` `max-inline-params` toggle. Every unlisted rule stays at its default.
+'''
