@@ -29,7 +29,7 @@ The rule fires on siblings whose order does not carry meaning. It leaves alone e
 
 <RuleConfigTable />
 
-The ordering itself follows fixed per-construct conventions. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. Consecutive imports group into their canonical order (*bare first, then external `from`, then local-package*), sorted within each group, with the `imports.first-party` list under `[tool.prose.imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that lift into the local-package group alongside relative imports. Set `docstring-entries = false` to skip the docstring-entry reorder while keeping every AST-level surface sorted.
+The ordering itself follows fixed per-construct conventions. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. Consecutive imports group into their canonical order (*bare first, then external `from`, then local-package*), sorted within each group, with the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that lift into the local-package group alongside relative imports. Set `alphabetize = { docstring-entries = false }` to skip the docstring-entry reorder while keeping every AST-level surface sorted.
 
 </template>
 

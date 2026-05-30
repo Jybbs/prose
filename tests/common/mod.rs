@@ -69,12 +69,14 @@ pub(crate) fn fixture_inputs(path: &Path) -> (Config, HarnessOptions) {
     };
     let mut table: toml::Table =
         toml::from_str(&contents).unwrap_or_else(|e| panic!("parse sidecar TOML: {e}"));
-    let harness: HarnessOptions = match table.remove("harness") {
-        Some(section) => section
-            .try_into()
-            .unwrap_or_else(|e| panic!("parse sidecar harness section: {e}")),
-        None => HarnessOptions::default(),
-    };
+    let harness: HarnessOptions = table
+        .remove("harness")
+        .map(|section| {
+            section
+                .try_into()
+                .unwrap_or_else(|e| panic!("parse sidecar harness section: {e}"))
+        })
+        .unwrap_or_default();
     let config: Config = toml::Value::Table(table)
         .try_into()
         .unwrap_or_else(|e| panic!("parse sidecar config: {e}"));

@@ -269,6 +269,23 @@ pub struct ImportsConfig {
     pub first_party: Vec<String>,
 }
 
+/// Configuration for the `loose_constants` rule.
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct LooseConstantsConfig {
+    pub allow: Vec<String>,
+    pub enabled: bool,
+}
+
+impl Default for LooseConstantsConfig {
+    fn default() -> Self {
+        Self {
+            allow: Vec::new(),
+            enabled: true,
+        }
+    }
+}
+
 /// What to do when an alignment group's widest padding exceeds the
 /// rule's `max-shift`.
 ///
@@ -285,23 +302,6 @@ pub enum MaxAlignShiftPolicy {
     Skip,
     #[default]
     Split,
-}
-
-/// Configuration for the `loose_constants` rule.
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct LooseConstantsConfig {
-    pub allow: Vec<String>,
-    pub enabled: bool,
-}
-
-impl Default for LooseConstantsConfig {
-    fn default() -> Self {
-        Self {
-            allow: Vec::new(),
-            enabled: true,
-        }
-    }
 }
 
 /// Configuration for the `signature_layout` rule.
@@ -457,10 +457,12 @@ fn deserialize_prose<F>(value: toml::Value, on_notice: &mut F) -> Result<Config,
 where
     F: FnMut(ConfigNotice<'_>),
 {
-    let config = serde_ignored::deserialize(value.into_deserializer(), |path| {
-        on_notice(ConfigNotice::UnknownKey(&path.to_string()));
-    })?;
-    Ok(config)
+    Ok(serde_ignored::deserialize(
+        value.into_deserializer(),
+        |path| {
+            on_notice(ConfigNotice::UnknownKey(&path.to_string()));
+        },
+    )?)
 }
 
 fn deserialize_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Regex, D::Error> {
