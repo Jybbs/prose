@@ -1,9 +1,11 @@
 //! Recommends `X | Y` and `X | None` over `Union[X, Y]` and
-//! `Optional[X]` when `target-version` is `3.10` or higher. Lint-only,
-//! emits no edits.
+//! `Optional[X]` when `target-version` is `3.10` or higher. The
+//! suggested rewrite rides as a display-only fix, recorded for the
+//! reader but never applied.
 
 use std::collections::HashMap;
 
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     AnyNodeRef, Expr, ExprSubscript, Identifier, PythonVersion, Stmt,
     name::{QualifiedName, UnqualifiedName},
@@ -87,15 +89,17 @@ impl<'a> Walker<'a> {
             .map(|e| self.source.slice(e))
             .collect::<Vec<_>>()
             .join(" | ");
+        let replacement = format!("{joined}{suffix}");
         let legacy = self.source.slice(subscript);
-        let message = format!("`{legacy}` is the legacy form. Use `{joined}{suffix}`");
+        let message = format!("`{legacy}` is the legacy form. Use `{replacement}`");
         let parent = *self
             .parents
             .last()
             .expect("invariant: subscript visited inside a stmt or expr");
         let range = paren_aware_range(subscript.into(), parent, self.source.tokens());
+        let edit = Edit::range_replacement(replacement, range);
         self.diagnostics
-            .push(Diagnostic::lint(self.rule, range, message));
+            .push(Diagnostic::suggestion(self.rule, range, message, edit));
     }
 
     /// Resolves `value` (the head of a `Subscript`) to the qualified
@@ -176,6 +180,7 @@ fn is_typing_root(module: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
+    use ruff_diagnostics::Applicability;
 
     use super::*;
     use crate::diagnostics::Severity;
@@ -236,13 +241,15 @@ mod tests {
     }
 
     #[test]
-    fn pins_severity_no_fix_and_message_format() {
+    fn pins_severity_display_only_fix_and_message_format() {
         let source = parse("from typing import Optional\nx: Optional[int]\n");
         let diagnostics = rule(Some(PythonVersion::PY310)).lint(&source);
         let only = diagnostics.first().expect("one diagnostic");
 
         assert_eq!(only.severity, Severity::Lint);
-        assert!(only.fix.is_none());
+        let fix = only.fix.as_ref().expect("display-only suggestion");
+        assert_eq!(fix.applicability(), Applicability::DisplayOnly);
+        assert_eq!(fix.edits()[0].content(), Some("int | None"));
         assert!(only.message.contains("`Optional[int]`"));
         assert!(only.message.contains("`int | None`"));
     }

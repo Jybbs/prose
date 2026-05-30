@@ -391,7 +391,15 @@ mod tests {
 
         assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nZ\n");
         assert_eq!(diagnostics.len(), 1);
-        assert_eq!(diagnostics[0].fix.as_ref().expect("survivor fix").len(), 1);
+        assert_eq!(
+            diagnostics[0]
+                .fix
+                .as_ref()
+                .expect("survivor fix")
+                .edits()
+                .len(),
+            1
+        );
     }
 
     #[test]
@@ -433,7 +441,7 @@ mod tests {
             .fix
             .as_ref()
             .expect("format diagnostic carries a fix");
-        assert_eq!(fix.len(), 2);
+        assert_eq!(fix.edits().len(), 2);
         assert_eq!(diagnostics[0].range, range(0, 5));
     }
 

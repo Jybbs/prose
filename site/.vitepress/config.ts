@@ -7,6 +7,7 @@ import { buildPhraseToSlug }                 from './lib/glossary/glossary'
 import { glossary }                          from './lib/glossary/entries'
 import { glossaryPlugin }                    from './lib/glossary/plugin'
 import { bodyLinkPlugin }                    from './lib/markdown/body-link-plugin'
+import { lintDecorationTransformer }         from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                   from './lib/markdown/prose-mark-plugin'
 import { discoverPrimitives }                from './lib/primitives/discovery'
 import { discoverRuleSlugs }                 from './lib/rules/discovery'
@@ -44,6 +45,7 @@ export default defineConfig({
   ],
   lastUpdated   : false,
   markdown      : {
+    codeTransformers : [lintDecorationTransformer],
     config      : md => {
       md.use(groupIconMdPlugin)
       md.use(tabsMarkdownPlugin)

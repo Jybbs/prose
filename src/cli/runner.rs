@@ -549,7 +549,7 @@ mod tests {
     use assert_matches::assert_matches;
     use pretty_assertions::{assert_eq, assert_ne};
     use rstest::rstest;
-    use ruff_diagnostics::Edit;
+    use ruff_diagnostics::{Edit, Fix};
     use ruff_text_size::TextRange;
     use tempfile::TempDir;
 
@@ -589,7 +589,7 @@ mod tests {
     fn diagnostic(severity: Severity, range: TextRange, slug: &'static str) -> Diagnostic {
         Diagnostic {
             fix: matches!(severity, Severity::Format)
-                .then(|| vec![Edit::range_replacement("y".into(), range)]),
+                .then(|| Fix::safe_edit(Edit::range_replacement("y".into(), range))),
             message: "test".into(),
             range,
             rule: RuleId::from(slug),

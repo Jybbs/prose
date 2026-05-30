@@ -99,7 +99,7 @@ fn sarif_result(file: &SourceFile, diag: &Diagnostic) -> SarifResult {
                 .build(),
         ]);
     match &diag.fix {
-        Some(edits) => builder.fixes(vec![sarif_fix(file, edits)]).build(),
+        Some(fix) => builder.fixes(vec![sarif_fix(file, fix.edits())]).build(),
         None => builder.build(),
     }
 }
@@ -141,7 +141,10 @@ mod tests {
     fn diag() -> Diagnostic {
         let range = TextRange::new(0.into(), 1.into());
         Diagnostic {
-            fix: Some(vec![Edit::range_replacement("y".to_owned(), range)]),
+            fix: Some(ruff_diagnostics::Fix::safe_edit(Edit::range_replacement(
+                "y".to_owned(),
+                range,
+            ))),
             message: "rewrite x to y".to_owned(),
             range,
             rule: RuleId::from("rewrite-x"),
@@ -197,10 +200,13 @@ mod tests {
     fn fix_carries_one_replacement_per_group_edit() {
         let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
         let diag = Diagnostic {
-            fix: Some(vec![
+            fix: Some(ruff_diagnostics::Fix::safe_edits(
                 Edit::range_replacement("a".to_owned(), TextRange::new(0.into(), 1.into())),
-                Edit::range_replacement("b".to_owned(), TextRange::new(6.into(), 7.into())),
-            ]),
+                [Edit::range_replacement(
+                    "b".to_owned(),
+                    TextRange::new(6.into(), 7.into()),
+                )],
+            )),
             message: "align".to_owned(),
             range: TextRange::new(0.into(), 7.into()),
             rule: RuleId::from("align-equals"),

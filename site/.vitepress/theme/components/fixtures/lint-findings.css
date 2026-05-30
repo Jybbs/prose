@@ -1,0 +1,104 @@
+.lint-flag {
+  --family-color : var(--prose-c-family-lint);
+
+  cursor                    : help;
+  text-decoration           : underline wavy color-mix(in srgb, var(--family-color) 50%, transparent);
+  text-decoration-thickness : 1px;
+  text-underline-offset     : 3px;
+  transition                : text-decoration-color 0.12s ease;
+}
+
+.lint-flag:hover {
+  text-decoration-color : var(--family-color);
+}
+
+.lint-popover {
+  position : fixed;
+  z-index  : 60;
+}
+
+.lint-popover .rule-card {
+  overflow : hidden;
+}
+
+.rule-card-header {
+  background    : var(--vp-c-bg-alt);
+  border-bottom : 1px solid var(--vp-c-divider);
+  grid-column   : 1 / -1;
+  margin        : -12px -16px 12px;
+  padding       : 8px 16px;
+}
+
+.lint-shorthand {
+  align-items : center;
+  display     : flex;
+  flex-wrap   : wrap;
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-xs);
+  gap         : 0.4rem;
+}
+
+.lint-chip {
+  border-radius : var(--prose-radius-sm);
+  padding       : 0.1rem 0.45rem;
+}
+
+.lint-chip-gray,
+.lint-chip-struck {
+  background : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
+  color      : var(--vp-c-text-3);
+}
+
+.lint-chip-struck {
+  text-decoration : line-through;
+}
+
+.lint-chip-suggest {
+  background : color-mix(in srgb, var(--family-color) 12%, transparent);
+  color      : var(--family-color);
+}
+
+.lint-into {
+  color : var(--vp-c-text-3);
+}
+
+.lint-relocate {
+  color : var(--family-color);
+}
+
+.lint-slot {
+  align-items : center;
+  display     : flex;
+  flex-wrap   : wrap;
+  gap         : 0.35rem;
+}
+
+.lint-slot-chip {
+  background    : var(--vp-code-block-bg);
+  border-radius : var(--prose-radius-sm);
+  color         : var(--vp-c-text-1);
+  padding       : 0.12rem 0.4rem;
+}
+
+.lint-slot-keyword {
+  color : var(--prose-c-ube);
+}
+
+.lint-slot-bracket {
+  opacity : 0.6;
+}
+
+.lint-slot-leaf {
+  color : var(--family-color);
+}
+
+.lint-message {
+  font-family : var(--vp-font-family-base);
+  font-size   : var(--prose-text-sm);
+}
+
+.lint-message code {
+  color       : var(--family-color);
+  font-family : var(--vp-font-family-mono);
+  font-size   : 0.86em;
+}

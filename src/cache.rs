@@ -249,7 +249,7 @@ fn is_entry_file(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
-    use ruff_diagnostics::Edit;
+    use ruff_diagnostics::{Edit, Fix};
     use ruff_text_size::TextRange;
     use tempfile::TempDir;
 
@@ -272,7 +272,10 @@ mod tests {
     fn entry(formatted: Option<&str>) -> CacheEntry {
         CacheEntry {
             diagnostics: vec![Diagnostic {
-                fix: Some(vec![Edit::range_replacement("y".into(), range(0, 1))]),
+                fix: Some(Fix::safe_edit(Edit::range_replacement(
+                    "y".into(),
+                    range(0, 1),
+                ))),
                 message: "rewrite".into(),
                 range: range(0, 1),
                 rule: RuleId::from("align-equals"),

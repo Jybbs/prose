@@ -18,10 +18,10 @@
 
 use regex_lite::Regex;
 use ruff_python_ast::{
-    Stmt,
+    Expr, Stmt,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
@@ -54,6 +54,7 @@ impl Rule for SingleUseVariables {
             analysis: source.binding_analysis(),
             diagnostics: Vec::new(),
             rule: self.id(),
+            text: source.text(),
         };
         visitor.visit_body(&source.ast().body);
         visitor.diagnostics
@@ -81,10 +82,11 @@ struct Visitor<'a> {
     analysis: &'a BindingAnalysis,
     diagnostics: Vec<Diagnostic>,
     rule: RuleId,
+    text: &'a str,
 }
 
 impl Visitor<'_> {
-    fn candidate(&self, binding: BindingId) -> Option<Diagnostic> {
+    fn candidate(&self, binding: BindingId, body: &[Stmt]) -> Option<Diagnostic> {
         if !matches!(
             self.analysis.binding_kinds(binding),
             [BindingKind::Assignment | BindingKind::Walrus],
@@ -98,13 +100,18 @@ impl Visitor<'_> {
         if self.allow_pattern.is_match(name) {
             return None;
         }
+        let write_offset = self.analysis.first_write_offset(binding);
+        let message = match assignment_value_range(body, write_offset) {
+            Some(range) => format!(
+                "`{name}` is assigned and used once. Consider inlining `{}`",
+                &self.text[range],
+            ),
+            None => format!("`{name}` is assigned and used once. Consider inlining"),
+        };
         Some(Diagnostic::lint(
             self.rule,
-            TextRange::at(
-                self.analysis.first_write_offset(binding),
-                TextSize::of(name),
-            ),
-            format!("`{name}` is assigned and used once. Consider inlining"),
+            TextRange::at(write_offset, TextSize::of(name)),
+            message,
         ))
     }
 
@@ -113,7 +120,7 @@ impl Visitor<'_> {
             return;
         }
         for binding in self.analysis.bindings_in_scope(stmt) {
-            if let Some(diagnostic) = self.candidate(binding) {
+            if let Some(diagnostic) = self.candidate(binding, body) {
                 self.diagnostics.push(diagnostic);
             }
         }
@@ -139,6 +146,55 @@ fn body_uses_scope_modifier(body: &[Stmt]) -> bool {
     let mut walker = ScopeModifierWalker { found: false };
     walker.visit_body(body);
     walker.found
+}
+
+/// Returns the source range of the value bound to the name written at
+/// `target_offset`, so the inlining suggestion can name what would be
+/// substituted. Descends through compound statements but stops at
+/// nested `def` and `class` scopes, where a same-named binding belongs
+/// to another scope.
+fn assignment_value_range(body: &[Stmt], target_offset: TextSize) -> Option<TextRange> {
+    let mut finder = AssignmentValueFinder {
+        target_offset,
+        value_range: None,
+    };
+    finder.visit_body(body);
+    finder.value_range
+}
+
+fn name_at_offset(expr: &Expr, offset: TextSize) -> bool {
+    matches!(expr, Expr::Name(name) if name.range().start() == offset)
+}
+
+struct AssignmentValueFinder {
+    target_offset: TextSize,
+    value_range: Option<TextRange>,
+}
+
+impl<'a> StatementVisitor<'a> for AssignmentValueFinder {
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        if self.value_range.is_some() {
+            return;
+        }
+        match stmt {
+            Stmt::FunctionDef(_) | Stmt::ClassDef(_) => {}
+            Stmt::Assign(assign)
+                if assign
+                    .targets
+                    .iter()
+                    .any(|target| name_at_offset(target, self.target_offset)) =>
+            {
+                self.value_range = Some(assign.value.range());
+            }
+            Stmt::AnnAssign(annotation)
+                if annotation.value.is_some()
+                    && name_at_offset(&annotation.target, self.target_offset) =>
+            {
+                self.value_range = annotation.value.as_ref().map(|value| value.range());
+            }
+            _ => walk_stmt(self, stmt),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -184,6 +240,17 @@ mod tests {
         assert_eq!(only.severity, Severity::Lint);
         assert!(only.fix.is_none());
         assert!(only.message.contains("`x`"));
+        assert!(only.message.ends_with("Consider inlining `1`"));
         assert_eq!(&source.text()[only.range], "x");
+    }
+
+    #[test]
+    fn message_carries_inlined_value_from_nested_block() {
+        let source = parse("def f():\n    if cond:\n        y = g() + 1\n        return y\n");
+        let rule = SingleUseVariables::from_config(&Config::default());
+        let diagnostics = rule.lint(&source);
+        let only = diagnostics.first().expect("one diagnostic");
+
+        assert!(only.message.ends_with("Consider inlining `g() + 1`"));
     }
 }

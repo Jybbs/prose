@@ -17,6 +17,7 @@ pub(crate) mod model;
 pub(crate) mod sarif;
 pub(crate) mod text;
 
+pub use json::lint_records_json;
 pub use model::{Diagnostic, Severity};
 
 pub(crate) use github::Github;

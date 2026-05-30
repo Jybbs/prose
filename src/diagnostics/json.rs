@@ -6,13 +6,15 @@ use std::{
     io::{self, Write},
 };
 
-use ruff_diagnostics::{Applicability, Edit};
+use ruff_diagnostics::{Applicability, Edit, Fix};
 use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 use ruff_text_size::Ranged;
 use serde::Serialize;
 
 use crate::{
-    diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns, write_json_line},
+    diagnostics::{
+        Diagnostic, Emitter, EmitterSummary, Run, Severity, line_columns, write_json_line,
+    },
     rule::RuleId,
 };
 
@@ -41,6 +43,74 @@ impl Emitter for Json {
     }
 }
 
+/// Renders the lint-severity diagnostics as the JSON records the docs
+/// site reads, or `None` when the run emitted none.
+pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
+    let records: Vec<LintRecord> = diagnostics
+        .iter()
+        .filter(|diag| diag.severity == Severity::Lint)
+        .map(|diag| LintRecord::new(file, diag))
+        .collect();
+    (!records.is_empty())
+        .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
+}
+
+#[derive(Serialize)]
+struct LintEdit<'a> {
+    before: &'a str,
+    content: &'a str,
+}
+
+impl<'a> LintEdit<'a> {
+    fn new(file: &'a SourceFile, edit: &'a Edit) -> Self {
+        Self {
+            before: &file.source_text()[edit.range()],
+            content: edit.content().unwrap_or_default(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct LintFix<'a> {
+    applicability: Applicability,
+    edits: Vec<LintEdit<'a>>,
+}
+
+impl<'a> LintFix<'a> {
+    fn new(file: &'a SourceFile, fix: &'a Fix) -> Self {
+        Self {
+            applicability: fix.applicability(),
+            edits: fix
+                .edits()
+                .iter()
+                .map(|edit| LintEdit::new(file, edit))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct LintRecord<'a> {
+    code: &'a str,
+    end_location: JsonLocation,
+    fix: Option<LintFix<'a>>,
+    location: JsonLocation,
+    message: &'a str,
+}
+
+impl<'a> LintRecord<'a> {
+    fn new(file: &'a SourceFile, diag: &'a Diagnostic) -> Self {
+        let (start, end) = line_columns(file, diag.range);
+        Self {
+            code: diag.rule.as_str(),
+            end_location: end.into(),
+            fix: diag.fix.as_ref().map(|fix| LintFix::new(file, fix)),
+            location: start.into(),
+            message: &diag.message,
+        }
+    }
+}
+
 #[derive(Serialize)]
 struct JsonDiagnostic<'a> {
     code: &'a str,
@@ -58,7 +128,7 @@ impl<'a> JsonDiagnostic<'a> {
             code: diag.rule.as_str(),
             end_location: end.into(),
             filename: file.name(),
-            fix: diag.fix.as_ref().map(|edits| JsonFix::new(file, edits)),
+            fix: diag.fix.as_ref().map(|fix| JsonFix::new(file, fix)),
             location: start.into(),
             message: &diag.message,
         }
@@ -92,10 +162,14 @@ struct JsonFix<'a> {
 }
 
 impl<'a> JsonFix<'a> {
-    fn new(file: &'a SourceFile, edits: &'a [Edit]) -> Self {
+    fn new(file: &'a SourceFile, fix: &'a Fix) -> Self {
         Self {
-            applicability: Applicability::Safe,
-            edits: edits.iter().map(|edit| JsonEdit::new(file, edit)).collect(),
+            applicability: fix.applicability(),
+            edits: fix
+                .edits()
+                .iter()
+                .map(|edit| JsonEdit::new(file, edit))
+                .collect(),
         }
     }
 }
@@ -156,7 +230,10 @@ mod tests {
     fn diag() -> Diagnostic {
         let range = TextRange::new(0.into(), 1.into());
         Diagnostic {
-            fix: Some(vec![Edit::range_replacement("y".to_owned(), range)]),
+            fix: Some(Fix::safe_edit(Edit::range_replacement(
+                "y".to_owned(),
+                range,
+            ))),
             message: "rewrite x to y".to_owned(),
             range,
             rule: RuleId::from("rewrite-x"),
@@ -203,7 +280,10 @@ mod tests {
         let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
         let range = TextRange::new(0.into(), 11.into());
         let diag = Diagnostic {
-            fix: Some(vec![Edit::range_replacement("z = 3".to_owned(), range)]),
+            fix: Some(Fix::safe_edit(Edit::range_replacement(
+                "z = 3".to_owned(),
+                range,
+            ))),
             message: "collapse".to_owned(),
             range,
             rule: RuleId::from("rewrite-x"),
@@ -221,10 +301,13 @@ mod tests {
     fn fix_carries_one_edit_entry_per_group_member() {
         let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
         let diag = Diagnostic {
-            fix: Some(vec![
+            fix: Some(Fix::safe_edits(
                 Edit::range_replacement("a".to_owned(), TextRange::new(0.into(), 1.into())),
-                Edit::range_replacement("b".to_owned(), TextRange::new(6.into(), 7.into())),
-            ]),
+                [Edit::range_replacement(
+                    "b".to_owned(),
+                    TextRange::new(6.into(), 7.into()),
+                )],
+            )),
             message: "align".to_owned(),
             range: TextRange::new(0.into(), 7.into()),
             rule: RuleId::from("align-equals"),

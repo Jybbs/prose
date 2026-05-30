@@ -1,0 +1,91 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/composition/overflow_dict_constants_rewrite_legacy_union/input.py
+---
+[
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 33,
+      "row": 4
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Optional[str]",
+          "content": "str | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 20,
+      "row": 4
+    },
+    "message": "`Optional[str]` is the legacy form. Use `str | None`"
+  },
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 35,
+      "row": 5
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Union[int, str]",
+          "content": "int | str"
+        }
+      ]
+    },
+    "location": {
+      "column": 20,
+      "row": 5
+    },
+    "message": "`Union[int, str]` is the legacy form. Use `int | str`"
+  },
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 37,
+      "row": 6
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Union[bool, None]",
+          "content": "bool | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 20,
+      "row": 6
+    },
+    "message": "`Union[bool, None]` is the legacy form. Use `bool | None`"
+  },
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 33,
+      "row": 7
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Optional[int]",
+          "content": "int | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 20,
+      "row": 7
+    },
+    "message": "`Optional[int]` is the legacy form. Use `int | None`"
+  }
+]

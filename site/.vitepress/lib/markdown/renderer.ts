@@ -1,6 +1,8 @@
+import type { DecorationItem }                          from '@shikijs/types'
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
-import { siteDir } from '../shared/paths'
+import { siteDir }       from '../shared/paths'
+import { encodeLintMeta } from './lint-decorations'
 
 let cachedRenderer: Promise<MarkdownRenderer> | null = null
 
@@ -14,8 +16,14 @@ type HtmlKey<K extends string> = `${K}Html`
 type Rendered<T, K extends string & keyof T> =
   Omit<T, K> & { [P in HtmlKey<K>]: T[K] extends readonly string[] ? string[] : string }
 
-export function renderFencedHtml(md: MarkdownRenderer, code: string, language: string): string {
-  return md.render(`\`\`\`${language}\n${code}\n\`\`\``)
+export function renderFencedHtml(
+  md          : MarkdownRenderer,
+  code        : string,
+  language    : string,
+  decorations : readonly DecorationItem[] = []
+): string {
+  const meta = decorations.length ? ` ${encodeLintMeta(decorations)}` : ''
+  return md.render(`\`\`\`${language}${meta}\n${code}\n\`\`\``)
 }
 
 export function renderInlineField<T extends object, K extends string & keyof T>(
