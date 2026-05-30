@@ -3,5 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_comparisons/attribute_and_subscript_left/input.py
 ---
-align-comparisons@17..18
-align-comparisons@54..55
+align-comparisons@17..55

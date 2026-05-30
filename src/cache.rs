@@ -268,7 +268,7 @@ mod tests {
     fn entry(formatted: Option<&str>) -> CacheEntry {
         CacheEntry {
             diagnostics: vec![Diagnostic {
-                fix: Some(Edit::range_replacement("y".into(), range(0, 1))),
+                fix: Some(vec![Edit::range_replacement("y".into(), range(0, 1))]),
                 message: "rewrite".into(),
                 range: range(0, 1),
                 rule: RuleId::from("align-equals"),

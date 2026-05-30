@@ -10,7 +10,7 @@ use ruff_python_trivia::has_leading_content;
 
 use crate::config::Config;
 use crate::primitives::docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body};
-use crate::primitives::edit::narrowed_replacement;
+use crate::primitives::edit::{narrowed_replacement, singleton_groups};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -23,8 +23,8 @@ impl MultiLineDocstrings {
 }
 
 impl Rule for MultiLineDocstrings {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
-        rewrite_docstrings(source, |source, lit, edits| {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
             let Some(body) = triple_quoted_body(source, lit).filter(|b| b.text.contains('\n'))
             else {
                 return;
@@ -39,7 +39,7 @@ impl Rule for MultiLineDocstrings {
             let trailing = if trailing_ok { "" } else { pad.as_str() };
             let new_body = format!("{leading}{}{trailing}", body.text);
             edits.extend(narrowed_replacement(source, body.range, new_body));
-        })
+        }))
     }
 
     fn id(&self) -> RuleId {

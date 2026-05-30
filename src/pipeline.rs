@@ -52,9 +52,11 @@ impl Pipeline {
     /// rule emitted.
     ///
     /// File-level `# prose: off` short-circuits to identity. The
-    /// suppression map otherwise filters edits per-rule (off spans
-    /// plus `# prose: skip[<id>]`) and lint diagnostics per-line
-    /// (`# prose: ignore`).
+    /// suppression map otherwise filters each fix group's edits per-rule
+    /// (off spans plus `# prose: skip[<id>]`), drops a group left empty,
+    /// and filters lint diagnostics per-line (`# prose: ignore`).
+    /// Alignment rules pre-exclude suppressed rows before grouping, so
+    /// this edit-level pass is a no-op for them.
     ///
     /// # Errors
     ///
@@ -67,34 +69,39 @@ impl Pipeline {
         let (source, mut diagnostics) = self.rules.iter().try_fold(
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
-                let mut edits = rule.apply(&source);
+                let mut groups = rule.apply(&source);
                 let suppression = source.suppression_map();
                 let rule_id = rule.id();
                 if suppression.has_format_suppression() || suppression.has_skip_suppression() {
-                    edits.retain(|edit| {
-                        !suppression.intersects(edit)
-                            && !suppression
-                                .is_format_suppressed_at(source.line_index(edit.start()), rule_id)
-                    });
+                    for group in &mut groups {
+                        group.retain(|edit| {
+                            !suppression.intersects(edit)
+                                && !suppression.is_format_suppressed_at(
+                                    source.line_index(edit.start()),
+                                    rule_id,
+                                )
+                        });
+                    }
                 }
+                groups.retain(|group| !group.is_empty());
                 diagnostics.extend(
                     rule.lint(&source)
                         .into_iter()
                         .filter(|d| !suppression.intersects(d.range)),
                 );
-                if edits.is_empty() {
+                if groups.is_empty() {
                     return Ok((source, diagnostics));
                 }
                 let message = rule.message();
-                diagnostics.extend(
-                    edits
-                        .iter()
-                        .map(|edit| Diagnostic::format(rule_id, edit.clone(), message.to_owned())),
-                );
-                let new_text = apply_edits(source.text(), edits);
+                let new_text = apply_edits(source.text(), groups.concat());
                 debug_assert!(
                     new_text != source.text(),
                     "rule `{rule_id}` emitted edits that produced identical text",
+                );
+                diagnostics.extend(
+                    groups
+                        .into_iter()
+                        .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
                 );
                 source
                     .reparse(new_text)
@@ -137,6 +144,7 @@ mod tests {
 
     use super::*;
     use crate::config::Config;
+    use crate::primitives::edit::singleton_groups;
     use crate::test_support::{assert_send_sync, parse, range};
 
     /// Test-only lint-only rule that returns the range list supplied
@@ -147,7 +155,7 @@ mod tests {
     }
 
     impl Rule for LintSentinelRule {
-        fn apply(&self, _source: &Source) -> Vec<Edit> {
+        fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
             Vec::new()
         }
 
@@ -178,9 +186,9 @@ mod tests {
     }
 
     impl Rule for SentinelRule {
-        fn apply(&self, _source: &Source) -> Vec<Edit> {
+        fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
             self.log.lock().expect("log mutex").push(self.id.as_str());
-            self.edits.clone()
+            singleton_groups(self.edits.clone())
         }
 
         fn id(&self) -> RuleId {
@@ -201,9 +209,9 @@ mod tests {
     }
 
     impl Rule for TextCapturingRule {
-        fn apply(&self, source: &Source) -> Vec<Edit> {
+        fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
             self.seen.lock().unwrap().push(source.text().to_owned());
-            self.edits.clone()
+            singleton_groups(self.edits.clone())
         }
 
         fn id(&self) -> RuleId {
@@ -212,6 +220,28 @@ mod tests {
 
         fn message(&self) -> &'static str {
             "test rule"
+        }
+    }
+
+    /// Test-only rule that returns the fix groups supplied at
+    /// construction, exercising the multi-edit groups the singleton
+    /// wrappers cannot produce.
+    struct GroupSentinelRule {
+        groups: Vec<Vec<Edit>>,
+        id: RuleId,
+    }
+
+    impl Rule for GroupSentinelRule {
+        fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
+            self.groups.clone()
+        }
+
+        fn id(&self) -> RuleId {
+            self.id
+        }
+
+        fn message(&self) -> &'static str {
+            "group test rule"
         }
     }
 
@@ -339,21 +369,27 @@ mod tests {
     }
 
     #[test]
-    fn run_emits_one_diagnostic_per_surviving_edit() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
-            id: RuleId::from("rewrite-x-to-y"),
-            log: Arc::new(Mutex::new(Vec::new())),
+    fn run_drops_only_the_suppressed_edit_within_a_group() {
+        // Source: "# fmt: off\nx = 1\n# fmt: on\nz = 9\n"
+        //         |0--------|11----|17--------|27----|33
+        // The group bundles an edit at 11..16 (inside the suppressed
+        // [0..17) span) with one at 27..32. Per-edit filtering drops
+        // only the suppressed edit, leaving the survivor to apply as a
+        // single-edit fix.
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![
+                Edit::range_replacement("y".to_owned(), range(11, 16)),
+                Edit::range_replacement("Z".to_owned(), range(27, 32)),
+            ]],
+            id: RuleId::from("rewrite-x-and-z"),
         })]);
-        let source = parse("x = 1\n");
+        let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
 
-        let (result, diagnostics) = pipeline.run(source).expect("rewrite succeeds");
+        let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
 
-        assert_eq!(result.text(), "y = 1\n");
+        assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nZ\n");
         assert_eq!(diagnostics.len(), 1);
-        assert_eq!(diagnostics[0].rule.as_str(), "rewrite-x-to-y");
-        assert_eq!(diagnostics[0].severity, Severity::Format);
-        assert!(diagnostics[0].fix.is_some());
+        assert_eq!(diagnostics[0].fix.as_ref().expect("survivor fix").len(), 1);
     }
 
     #[test]
@@ -377,6 +413,47 @@ mod tests {
     }
 
     #[test]
+    fn run_emits_one_diagnostic_per_group_carrying_every_edit() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![
+                Edit::range_replacement("Y".to_owned(), range(0, 1)),
+                Edit::range_replacement("Z".to_owned(), range(4, 5)),
+            ]],
+            id: RuleId::from("rewrite-x-and-1"),
+        })]);
+        let source = parse("x = 1\n");
+
+        let (result, diagnostics) = pipeline.run(source).expect("grouped rewrite succeeds");
+
+        assert_eq!(result.text(), "Y = Z\n");
+        assert_eq!(diagnostics.len(), 1);
+        let fix = diagnostics[0]
+            .fix
+            .as_ref()
+            .expect("format diagnostic carries a fix");
+        assert_eq!(fix.len(), 2);
+        assert_eq!(diagnostics[0].range, range(0, 5));
+    }
+
+    #[test]
+    fn run_emits_one_diagnostic_per_surviving_edit() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
+            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+            id: RuleId::from("rewrite-x-to-y"),
+            log: Arc::new(Mutex::new(Vec::new())),
+        })]);
+        let source = parse("x = 1\n");
+
+        let (result, diagnostics) = pipeline.run(source).expect("rewrite succeeds");
+
+        assert_eq!(result.text(), "y = 1\n");
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].rule.as_str(), "rewrite-x-to-y");
+        assert_eq!(diagnostics[0].severity, Severity::Format);
+        assert!(diagnostics[0].fix.is_some());
+    }
+
+    #[test]
     fn run_short_circuits_when_file_is_suppressed() {
         let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
@@ -391,6 +468,20 @@ mod tests {
         assert_eq!(result.text(), "# prose: off\nx = 1\n");
         assert!(diagnostics.is_empty());
         assert!(log.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn run_skips_empty_group_without_emitting_a_diagnostic() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![Vec::new()],
+            id: RuleId::from("emits-empty-group"),
+        })]);
+        let source = parse("x = 1\n");
+
+        let (result, diagnostics) = pipeline.run(source).expect("empty-group run succeeds");
+
+        assert_eq!(result.text(), "x = 1\n");
+        assert!(diagnostics.is_empty());
     }
 
     #[test]

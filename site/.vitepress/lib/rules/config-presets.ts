@@ -28,7 +28,7 @@ const ALIGNMENT_ROWS: RuleConfigRowSource[] = [
     meaning : 'How to handle a group whose widest member exceeds `max-shift`. See [the '
             + 'per-rule knobs](/reference/configuration#per-rule-knobs) for the full '
             + 'semantics',
-    type    : '`"split"` | `"drop"` | `"skip"`'
+    type    : '`"split"` | `"drop"`'
   }
 ]
 

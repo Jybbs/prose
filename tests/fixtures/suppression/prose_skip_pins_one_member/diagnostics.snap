@@ -1,10 +1,6 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/prose_skip_pins_one_member/input.py
 ---
-align-equals@1..2
-align-equals@53..54
-align-equals@61..62
-align-equals@9..10
+align-equals@1..71

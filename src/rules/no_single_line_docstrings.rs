@@ -11,7 +11,7 @@ use ruff_python_trivia::PythonWhitespace;
 
 use crate::config::Config;
 use crate::primitives::docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body};
-use crate::primitives::edit::narrowed_replacement;
+use crate::primitives::edit::{narrowed_replacement, singleton_groups};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -24,8 +24,8 @@ impl NoSingleLineDocstrings {
 }
 
 impl Rule for NoSingleLineDocstrings {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
-        rewrite_docstrings(source, |source, lit, edits| {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
             let Some(body) = triple_quoted_body(source, lit).filter(|b| !b.text.contains('\n'))
             else {
                 return;
@@ -38,7 +38,7 @@ impl Rule for NoSingleLineDocstrings {
             let newline = source.newline_str();
             let candidate = format!("{newline}{indent}{trimmed}{newline}{indent}");
             edits.extend(narrowed_replacement(source, body.range, candidate));
-        })
+        }))
     }
 
     fn id(&self) -> RuleId {

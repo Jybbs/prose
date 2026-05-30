@@ -1,10 +1,8 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/skip_one_rule_others_compose/input.py
 ---
-align-equals@47..48
-align-equals@5..6
+align-equals@5..48
 strip-trailing-commas@17..18
 strip-trailing-commas@43..44

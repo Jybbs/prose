@@ -1,2 +1,0 @@
-[tool.prose.rules.match-case-align]
-max-shift-policy = "skip"

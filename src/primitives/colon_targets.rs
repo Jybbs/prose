@@ -16,14 +16,16 @@ use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::primitives::aligner;
+use crate::rule::RuleId;
 use crate::source::Source;
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
 /// for class fields, docstring args, and parameters. `dict` carries
 /// the surrounding `ExprDict` for callers that need its range.
 /// `match_arms` is split out so a rule can opt out of match-arm
-/// alignment by overriding it to a no-op. Call `walk` to drive the
-/// emitter across `source`'s module body.
+/// alignment by overriding it to a no-op. `rule` names the consuming
+/// rule so the group builders can hold its skip-suppressed rows out of
+/// alignment. Call `walk` to drive the emitter across `source`'s body.
 pub(crate) trait ColonEmitter {
     fn dict(&mut self, _d: &ExprDict, members: &[aligner::Member]) {
         self.handle(members);
@@ -34,6 +36,8 @@ pub(crate) trait ColonEmitter {
     fn match_arms(&mut self, members: &[aligner::Member]) {
         self.handle(members);
     }
+
+    fn rule(&self) -> RuleId;
 
     /// Drives `self` across every `:` context in `source`'s module
     /// body. Recurses into nested classes, functions, matches, and
@@ -58,7 +62,7 @@ struct ContextVisitor<'a, E> {
 impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
     fn visit_expr(&mut self, expr: &'a Expr) {
         if let Expr::Dict(d) = expr {
-            for group in dict_member_groups(self.source, &d.items) {
+            for group in dict_member_groups(self.source, self.emitter.rule(), &d.items) {
                 self.emitter.dict(d, &group);
             }
         }
@@ -66,7 +70,7 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
     }
 
     fn visit_parameters(&mut self, parameters: &'a Parameters) {
-        for group in parameter_groups(self.source, parameters) {
+        for group in parameter_groups(self.source, self.emitter.rule(), parameters) {
             self.emitter.handle(&group);
         }
         walk_parameters(self, parameters);
@@ -75,7 +79,7 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         match stmt {
             Stmt::ClassDef(cd) => {
-                for group in class_field_groups(self.source, &cd.body) {
+                for group in class_field_groups(self.source, self.emitter.rule(), &cd.body) {
                     self.emitter.handle(&group);
                 }
                 self.emitter.handle(&docstring_args(self.source, &cd.body));
@@ -115,9 +119,10 @@ fn class_field(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
 
 /// Walks `body`, qualifying each statement through `class_field`,
 /// and returns one group per run of contiguous line-adjacent
-/// annotated-assignment statements.
-fn class_field_groups(source: &Source, body: &[Stmt]) -> Vec<Vec<aligner::Member>> {
-    aligner::line_adjacent_groups(source, body, |s| class_field(source, s))
+/// annotated-assignment statements. A field skip-suppressed for `rule`
+/// drops out as a transparent hole per [`aligner::line_adjacent_groups`].
+fn class_field_groups(source: &Source, rule: RuleId, body: &[Stmt]) -> Vec<Vec<aligner::Member>> {
+    aligner::line_adjacent_groups(source, body, rule, |s| class_field(source, s))
 }
 
 /// Builds a `:`-anchored alignment member from the half-open span
@@ -140,25 +145,35 @@ fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
 /// independently. `**spread` entries skip the colon scan but do not
 /// break the run, matching the long-standing rule that an unpacking
 /// passes alignment through.
-fn dict_member_groups(source: &Source, items: &[DictItem]) -> Vec<Vec<aligner::Member>> {
+fn dict_member_groups(
+    source: &Source,
+    rule: RuleId,
+    items: &[DictItem],
+) -> Vec<Vec<aligner::Member>> {
     let mut groups: Vec<Vec<aligner::Member>> = Vec::new();
-    let mut last_keyed_end: Option<TextSize> = None;
+    let mut current: Vec<aligner::Member> = Vec::new();
+    let mut active: Option<(TextSize, bool)> = None;
     for item in items {
         let Some(member) = dict_item(source, item) else {
             continue;
         };
-        let extends = last_keyed_end
-            .is_some_and(|prev| source.is_line_adjacent(TextRange::new(prev, item.start())));
-        if extends {
-            groups
-                .last_mut()
-                .expect("active run implies non-empty groups")
-                .push(member);
-        } else {
-            groups.push(vec![member]);
+        if aligner::is_held(source, rule, item.start()) {
+            if let Some((prev_end, prev_held)) = active.as_mut() {
+                *prev_end = item.end();
+                *prev_held = true;
+            }
+            continue;
         }
-        last_keyed_end = Some(item.end());
+        let extends = active.is_some_and(|(prev_end, prev_held)| {
+            aligner::run_continues(source, prev_end, prev_held, item.start())
+        });
+        if !extends {
+            aligner::flush_run(&mut groups, &mut current);
+        }
+        current.push(member);
+        active = Some((item.end(), false));
     }
+    aligner::flush_run(&mut groups, &mut current);
     groups
 }
 
@@ -255,9 +270,22 @@ fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Mem
 
 /// Walks `params` in source order and returns one group per run of
 /// contiguous annotated parameters, splitting at every unannotated
-/// parameter.
-fn parameter_groups(source: &Source, params: &Parameters) -> Vec<Vec<aligner::Member>> {
+/// parameter. A parameter skip-suppressed for `rule` drops out of its
+/// group as a transparent hole, leaving its neighbors to align.
+fn parameter_groups(
+    source: &Source,
+    rule: RuleId,
+    params: &Parameters,
+) -> Vec<Vec<aligner::Member>> {
     aligner::parameter_split_groups(params, |p| parameter(source, p))
+        .into_iter()
+        .map(|group| {
+            group
+                .into_iter()
+                .filter(|m| !aligner::is_held(source, rule, m.line_start))
+                .collect()
+        })
+        .collect()
 }
 
 #[cfg(test)]

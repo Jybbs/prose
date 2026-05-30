@@ -12,7 +12,10 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::config::Config;
-use crate::primitives::{edit::narrowed_replacement, INDENT_STEP};
+use crate::primitives::{
+    edit::{narrowed_replacement, singleton_groups},
+    INDENT_STEP,
+};
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -35,7 +38,7 @@ impl SignatureLayout {
 }
 
 impl Rule for SignatureLayout {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Layout {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
@@ -44,7 +47,7 @@ impl Rule for SignatureLayout {
             source,
         };
         visitor.visit_body(&source.ast().body);
-        visitor.edits
+        singleton_groups(visitor.edits)
     }
 
     fn id(&self) -> RuleId {

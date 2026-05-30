@@ -1,9 +1,7 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/constants_sort_around_fmt_off/input.py
 ---
-align-equals@15..16
-align-equals@25..26
+align-equals@15..26
 alphabetize@0..29

@@ -13,6 +13,7 @@ use ruff_diagnostics::Edit;
 use crate::config::Config;
 use crate::primitives::aligner;
 use crate::primitives::colon_targets::ColonEmitter;
+use crate::primitives::edit::singleton_groups;
 use crate::rule::{Rule, RuleId};
 use crate::source::Source;
 
@@ -25,10 +26,10 @@ impl SingletonRule {
 }
 
 impl Rule for SingletonRule {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut emitter = Emitter { edits: Vec::new() };
         emitter.walk(source);
-        emitter.edits
+        singleton_groups(emitter.edits)
     }
 
     fn id(&self) -> RuleId {
@@ -60,6 +61,10 @@ impl ColonEmitter for Emitter {
                 .filter(|m| m.width > 0 && !m.gap.is_empty())
                 .map(|m| Edit::range_deletion(m.gap)),
         );
+    }
+
+    fn rule(&self) -> RuleId {
+        SingletonRule::SLUG
     }
 }
 

@@ -1,6 +1,0 @@
-[docs]
-title = "The `skip` Policy Leaves the Whole Group Unaligned"
-description = '''
-Under `max-shift-policy = "skip"`, an `import M as A` run whose widest module overshoots the cap is **left entirely untouched**. No member shifts, so the whole run passes through with its original spacing.
-'''
-previewable = true

@@ -7,6 +7,7 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::ExprDict;
+use ruff_text_size::Ranged;
 
 use crate::config::Config;
 use crate::primitives::aligner;
@@ -28,12 +29,12 @@ impl AlignColons {
 }
 
 impl Rule for AlignColons {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut emitter = Emitter {
-            walker: aligner::AlignWalker::new(source, self.settings),
+            walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         emitter.walk(source);
-        emitter.walker.edits
+        emitter.walker.groups
     }
 
     fn id(&self) -> RuleId {
@@ -47,7 +48,14 @@ struct Emitter<'a> {
 
 impl ColonEmitter for Emitter<'_> {
     fn dict(&mut self, d: &ExprDict, members: &[aligner::Member]) {
-        if !self.walker.source.intersects_comment(d) {
+        let source = self.walker.source;
+        let rule = self.walker.rule;
+        let dict_range = d.range();
+        let has_real_comment = source
+            .comment_ranges()
+            .iter()
+            .any(|c| dict_range.contains_range(*c) && !aligner::is_held(source, rule, c.start()));
+        if !has_real_comment {
             self.handle(members);
         }
     }
@@ -59,4 +67,8 @@ impl ColonEmitter for Emitter<'_> {
     }
 
     fn match_arms(&mut self, _: &[aligner::Member]) {}
+
+    fn rule(&self) -> RuleId {
+        self.walker.rule
+    }
 }

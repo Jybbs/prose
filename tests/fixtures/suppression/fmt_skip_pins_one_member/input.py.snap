@@ -1,6 +1,5 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/suppression/fmt_skip_pins_one_member/input.py
 ---
@@ -8,6 +7,6 @@ x       = 1
 foo     = 2
 bar_baz = 3
 short = 4  # fmt: skip
-aa   = 5
-bbb  = 6
-cccc = 7
+aa      = 5
+bbb     = 6
+cccc    = 7

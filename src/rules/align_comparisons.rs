@@ -30,12 +30,12 @@ impl AlignComparisons {
 }
 
 impl Rule for AlignComparisons {
-    fn apply(&self, source: &Source) -> Vec<Edit> {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
-            walker: aligner::AlignWalker::new(source, self.settings),
+            walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
-        visitor.walker.edits
+        visitor.walker.groups
     }
 
     fn id(&self) -> RuleId {
@@ -75,9 +75,7 @@ impl Visitor<'_> {
             active = Some(operand.range());
         }
         for group in &groups {
-            if aligner::is_alignment_candidate(group) {
-                self.walker.emit_group(group);
-            }
+            self.walker.emit_unheld(group.iter().copied());
         }
     }
 

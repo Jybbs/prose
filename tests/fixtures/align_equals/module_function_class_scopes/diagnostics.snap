@@ -3,7 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_equals/module_function_class_scopes/input.py
 ---
-align-equals@100..101
 align-equals@40..41
 align-equals@5..6
-align-equals@89..90
+align-equals@89..101

@@ -3,7 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/align_colons/variadic_width_pushes_column/input.py
 ---
-align-colons@26..26
-align-colons@42..42
-align-colons@62..62
-align-colons@83..83
+align-colons@26..83
