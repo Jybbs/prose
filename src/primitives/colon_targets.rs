@@ -6,18 +6,16 @@
 //! them to strip pre-colon padding from groups that have no column to
 //! align to.
 
-use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::visitor::{walk_expr, walk_parameters, walk_stmt, Visitor as AstVisitor};
 use ruff_python_ast::{
     AnyParameterRef, DictItem, Expr, ExprDict, ExprStringLiteral, MatchCase, Parameters, Stmt,
+    token::TokenKind,
+    visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::primitives::aligner;
-use crate::rule::RuleId;
-use crate::source::Source;
+use crate::{primitives::aligner, rule::RuleId, source::Source};
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
 /// for class fields, docstring args, and parameters. `dict` carries

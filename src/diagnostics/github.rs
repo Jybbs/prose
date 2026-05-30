@@ -4,7 +4,7 @@ use std::io::{self, Write};
 
 use ruff_source_file::SourceFile;
 
-use crate::diagnostics::{line_columns, Diagnostic, Emitter, EmitterSummary, Run};
+use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns};
 
 pub(crate) struct Github;
 

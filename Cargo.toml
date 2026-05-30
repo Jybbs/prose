@@ -1,13 +1,13 @@
 [package]
 categories   = ["development-tools"]
 description  = "A Python typesetter for the reader."
-edition      = "2021"
+edition      = "2024"
 keywords     = ["formatter", "linter", "python", "style"]
 license      = "MIT"
 name         = "prose"
 readme       = "README.md"
 repository   = "https://github.com/Jybbs/prose"
-rust-version = "1.95"
+rust-version = "1.96"
 version      = "0.2.3"
 
 [dependencies]

@@ -17,15 +17,19 @@
 //!   `def`/`class` bindings out of the diagnostic surface.
 
 use regex_lite::Regex;
-use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
-use ruff_python_ast::Stmt;
+use ruff_python_ast::{
+    Stmt,
+    statement_visitor::{StatementVisitor, walk_stmt},
+};
 use ruff_text_size::{TextRange, TextSize};
 
-use crate::config::Config;
-use crate::diagnostics::Diagnostic;
-use crate::primitives::binding::{BindingAnalysis, BindingId, BindingKind};
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    diagnostics::Diagnostic,
+    primitives::binding::{BindingAnalysis, BindingId, BindingKind},
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct SingleUseVariables {
     allow_pattern: Regex,

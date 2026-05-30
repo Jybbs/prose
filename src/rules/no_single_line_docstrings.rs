@@ -9,11 +9,15 @@
 use ruff_diagnostics::Edit;
 use ruff_python_trivia::PythonWhitespace;
 
-use crate::config::Config;
-use crate::primitives::docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body};
-use crate::primitives::edit::{narrowed_replacement, singleton_groups};
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::{
+        docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body},
+        edit::{narrowed_replacement, singleton_groups},
+    },
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct NoSingleLineDocstrings;
 

@@ -9,12 +9,10 @@ inputs:
   args:
     default     : ''
     description : Additional flags passed to maturin
-    required    : false
 
   manylinux:
     default     : ''
     description : Manylinux compatibility tag (`auto` on Linux, empty elsewhere)
-    required    : false
 
   name:
     default     : sdist
@@ -23,7 +21,6 @@ inputs:
   target:
     default     : ''
     description : Cargo target triple (Linux/macOS/Windows wheel rows). Empty for sdist.
-    required    : false
 
 runs:
   using: composite
@@ -40,7 +37,6 @@ runs:
         args      : ${{ inputs.args }}
         command   : ${{ inputs.command }}
         manylinux : ${{ inputs.manylinux }}
-        sccache   : false
         target    : ${{ inputs.target }}
 
     - name : Upload artifact

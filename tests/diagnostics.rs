@@ -4,8 +4,7 @@
 
 mod common;
 
-use prose::diagnostics::Diagnostic;
-use prose::source::Source;
+use prose::{diagnostics::Diagnostic, source::Source};
 
 fn render(diagnostics: &[Diagnostic]) -> String {
     let mut lines: Vec<String> = diagnostics

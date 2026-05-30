@@ -1,13 +1,12 @@
 //! End-to-end tests against the `prose` binary, exercising
 //! `cli::run` and the exit-code matrix.
 
-use std::fs::write;
-use std::path::PathBuf;
+use std::{fs::write, path::PathBuf};
 
 use assert_cmd::Command;
 use pretty_assertions::assert_eq;
 use rstest::rstest;
-use tempfile::{tempdir, TempDir};
+use tempfile::{TempDir, tempdir};
 
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
     let dir = tempdir().expect("tempdir");

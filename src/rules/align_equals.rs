@@ -10,15 +10,19 @@
 //! Parameter widths reflect the post-`align_colons` source.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::statement_visitor::{walk_body, walk_stmt, StatementVisitor};
-use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::{AnyParameterRef, Parameters, Stmt};
+use ruff_python_ast::{
+    AnyParameterRef, Parameters, Stmt,
+    statement_visitor::{StatementVisitor, walk_body, walk_stmt},
+    token::TokenKind,
+};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::config::Config;
-use crate::primitives::aligner;
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::aligner,
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct AlignEquals {
     settings: aligner::Settings,

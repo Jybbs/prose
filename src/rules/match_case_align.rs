@@ -9,16 +9,20 @@
 //! on the next line. Nested matches recurse.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::helpers::is_compound_statement;
-use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
-use ruff_python_ast::{MatchCase, Stmt, StmtMatch};
+use ruff_python_ast::{
+    MatchCase, Stmt, StmtMatch,
+    helpers::is_compound_statement,
+    statement_visitor::{StatementVisitor, walk_stmt},
+};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
-use crate::config::Config;
-use crate::primitives::{aligner, colon_targets, INDENT_STEP};
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::{INDENT_STEP, aligner, colon_targets},
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct MatchCaseAlign {
     code_line_length: usize,

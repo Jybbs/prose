@@ -5,8 +5,7 @@
 //! interstitial text between adjacent items stays in source
 //! position.
 
-use std::borrow::Cow;
-use std::ops::Range;
+use std::{borrow::Cow, ops::Range};
 
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::LineRanges;
@@ -52,8 +51,8 @@ pub(crate) fn block_range<T: Ranged>(
     outer: TextRange,
 ) -> TextRange {
     let item = items[i].range();
-    let lower = items[..i].last().map_or(outer.start(), |t| t.end());
-    let upper = items.get(i + 1).map_or(outer.end(), |t| t.start());
+    let lower = items[..i].last().map_or(outer.start(), Ranged::end);
+    let upper = items.get(i + 1).map_or(outer.end(), Ranged::start);
     TextRange::new(
         leading_attached_start(source, item.start(), lower),
         source.text().line_end(item.end()).min(upper),

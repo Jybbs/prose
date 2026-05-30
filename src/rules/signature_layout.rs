@@ -5,19 +5,23 @@
 use std::num::NonZeroUsize;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
-use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::{ParameterWithDefault, Parameters, Stmt, StmtFunctionDef};
+use ruff_python_ast::{
+    ParameterWithDefault, Parameters, Stmt, StmtFunctionDef,
+    statement_visitor::{StatementVisitor, walk_stmt},
+    token::TokenKind,
+};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
-use crate::config::Config;
-use crate::primitives::{
-    edit::{narrowed_replacement, singleton_groups},
-    INDENT_STEP,
+use crate::{
+    config::Config,
+    primitives::{
+        INDENT_STEP,
+        edit::{narrowed_replacement, singleton_groups},
+    },
+    rule::{Rule, RuleId},
+    source::Source,
 };
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
 
 pub(crate) struct SignatureLayout {
     code_line_length: usize,

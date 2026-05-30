@@ -1,16 +1,20 @@
 //! Json emitter: NDJSON of Ruff-shaped diagnostic records closed by a
 //! summary envelope.
 
-use std::collections::BTreeMap;
-use std::io::{self, Write};
+use std::{
+    collections::BTreeMap,
+    io::{self, Write},
+};
 
 use ruff_diagnostics::{Applicability, Edit};
 use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 use ruff_text_size::Ranged;
 use serde::Serialize;
 
-use crate::diagnostics::{line_columns, write_json_line, Diagnostic, Emitter, EmitterSummary, Run};
-use crate::rule::RuleId;
+use crate::{
+    diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns, write_json_line},
+    rule::RuleId,
+};
 
 /// Bumps on any breaking change to existing field shapes, leaving
 /// additive fields to land unversioned.
@@ -143,7 +147,7 @@ impl<'a> JsonSummary<'a> {
 mod tests {
     use pretty_assertions::assert_eq;
     use ruff_text_size::TextRange;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     use super::*;
     use crate::diagnostics::Severity;
@@ -246,14 +250,18 @@ mod tests {
             &EmitterSummary::default(),
         );
         let mut lines = text.lines();
-        assert!(lines
-            .next()
-            .expect("diagnostic line")
-            .starts_with("{\"kind\":\"diagnostic\""));
-        assert!(lines
-            .next()
-            .expect("summary line")
-            .starts_with("{\"kind\":\"summary\""));
+        assert!(
+            lines
+                .next()
+                .expect("diagnostic line")
+                .starts_with("{\"kind\":\"diagnostic\"")
+        );
+        assert!(
+            lines
+                .next()
+                .expect("summary line")
+                .starts_with("{\"kind\":\"summary\"")
+        );
     }
 
     #[test]

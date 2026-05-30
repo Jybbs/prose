@@ -7,15 +7,19 @@
 //! or a blank line in the gap breaks the run.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::visitor::{walk_expr, Visitor as AstVisitor};
-use ruff_python_ast::{CmpOp, Expr, ExprBoolOp};
+use ruff_python_ast::{
+    CmpOp, Expr, ExprBoolOp,
+    token::TokenKind,
+    visitor::{Visitor as AstVisitor, walk_expr},
+};
 use ruff_text_size::{Ranged, TextRange};
 
-use crate::config::Config;
-use crate::primitives::aligner;
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::aligner,
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct AlignComparisons {
     settings: aligner::Settings,

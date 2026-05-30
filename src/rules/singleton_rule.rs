@@ -10,12 +10,12 @@
 
 use ruff_diagnostics::Edit;
 
-use crate::config::Config;
-use crate::primitives::aligner;
-use crate::primitives::colon_targets::ColonEmitter;
-use crate::primitives::edit::singleton_groups;
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::{aligner, colon_targets::ColonEmitter, edit::singleton_groups},
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct SingletonRule;
 

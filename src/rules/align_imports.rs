@@ -10,15 +10,19 @@
 //! because shifting the keyword would break the continuation indent.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::statement_visitor::{walk_body, StatementVisitor};
-use ruff_python_ast::token::TokenKind;
-use ruff_python_ast::Stmt;
+use ruff_python_ast::{
+    Stmt,
+    statement_visitor::{StatementVisitor, walk_body},
+    token::TokenKind,
+};
 use ruff_text_size::{Ranged, TextRange};
 
-use crate::config::Config;
-use crate::primitives::aligner;
-use crate::rule::{Rule, RuleId};
-use crate::source::Source;
+use crate::{
+    config::Config,
+    primitives::aligner,
+    rule::{Rule, RuleId},
+    source::Source,
+};
 
 pub(crate) struct AlignImports {
     settings: aligner::Settings,

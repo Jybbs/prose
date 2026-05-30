@@ -18,10 +18,12 @@
 //! rendering. `exit_status` carries the matrix every subcommand
 //! resolves into.
 
-use std::io::{self, IsTerminal, Write};
-use std::process::ExitCode;
+use std::{
+    io::{self, IsTerminal, Write},
+    process::ExitCode,
+};
 
-use anstream::{stream::RawStream, AutoStream};
+use anstream::{AutoStream, stream::RawStream};
 use anyhow::Context;
 use clap::{ColorChoice, CommandFactory, Parser};
 use clap_complete::generate;
@@ -33,8 +35,8 @@ mod output;
 mod runner;
 
 use args::{
-    normalize_stdin_dash, report_clap_error, validate_diff_format_combination, CacheAction, Cli,
-    Command,
+    CacheAction, Cli, Command, normalize_stdin_dash, report_clap_error,
+    validate_diff_format_combination,
 };
 use exit_status::ExitStatus;
 use output::Presentation;

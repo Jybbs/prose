@@ -10,13 +10,17 @@
 //! concurrent reader never observes a partial entry. LRU eviction by
 //! mtime caps the directory at the configured size on every insert.
 
-use std::fs::Metadata;
-use std::io::{self, BufReader, BufWriter, Write};
-use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+use std::{
+    fs::Metadata,
+    io::{self, BufReader, BufWriter, Write},
+    path::{Path, PathBuf},
+    time::SystemTime,
+};
 
-use bincode::config::standard;
-use bincode::serde::{decode_from_std_read, encode_into_std_write};
+use bincode::{
+    config::standard,
+    serde::{decode_from_std_read, encode_into_std_write},
+};
 use fs_err::DirEntry;
 use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
@@ -64,7 +68,7 @@ impl Cache {
         self
     }
 
-    fn entries(&self) -> impl Iterator<Item = (DirEntry, Metadata)> {
+    fn entries(&self) -> impl Iterator<Item = (DirEntry, Metadata)> + use<> {
         fs_err::read_dir(&self.root)
             .into_iter()
             .flatten()
@@ -321,9 +325,10 @@ mod tests {
         let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
         let hex = key.0.to_hex();
         assert_eq!(hex.len(), 64);
-        assert!(hex
-            .chars()
-            .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+        assert!(
+            hex.chars()
+                .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase())
+        );
     }
 
     #[test]

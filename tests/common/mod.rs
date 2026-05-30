@@ -2,13 +2,9 @@
 
 #![allow(dead_code)]
 
-use std::ffi::OsStr;
-use std::io::ErrorKind;
-use std::path::Path;
+use std::{ffi::OsStr, io::ErrorKind, path::Path};
 
-use prose::config::Config;
-use prose::pipeline::Pipeline;
-use prose::rule::RuleId;
+use prose::{config::Config, pipeline::Pipeline, rule::RuleId};
 use serde::Deserialize;
 use similar::TextDiff;
 

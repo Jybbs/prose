@@ -14,8 +14,10 @@ use std::sync::LazyLock;
 
 use regex_lite::Regex;
 use ruff_diagnostics::Edit;
-use ruff_python_ast::statement_visitor::{walk_stmt, StatementVisitor};
-use ruff_python_ast::{ExprStringLiteral, Stmt, StringFlags, StringLiteral};
+use ruff_python_ast::{
+    ExprStringLiteral, Stmt, StringFlags, StringLiteral,
+    statement_visitor::{StatementVisitor, walk_stmt},
+};
 use ruff_python_trivia::{has_leading_content, leading_indentation};
 use ruff_source_file::{Line, LineRanges, UniversalNewlineIterator};
 use ruff_text_size::{Ranged, TextRange, TextSize};
