@@ -5,12 +5,10 @@ inputs:
   cache:
     default     : true
     description : When `false` the Swatinem Cargo cache step is skipped and the mise toolchain cache is not written back. Use for cells (*`Format`, `Unused`*) that populate neither `target/` nor `~/.cargo/registry/`.
-    required    : false
 
   shared-key:
     default     : prose
     description : Swatinem cache scope. Distinct keys allow per-profile cache isolation.
-    required    : false
 
 runs:
   using: composite
@@ -19,7 +17,6 @@ runs:
     - name : Install mise tools
       uses : jdx/mise-action@1648a7812b9aeae629881980618f079932869151
       with:
-        cache      : true
         cache_save : ${{ inputs.cache != 'false' }}
 
     - name  : Refresh stable toolchain
