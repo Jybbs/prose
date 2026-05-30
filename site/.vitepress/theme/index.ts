@@ -109,6 +109,15 @@ export default {
           placement       : 'top',
           triggers        : ['focus', 'hover']
         },
+        'run-summary-select': {
+          $extend        : 'dropdown',
+          delay          : { hide: 200, show: 60 },
+          handleResize   : true,
+          instantMove    : true,
+          placement      : 'bottom-start',
+          popperTriggers : ['hover'],
+          triggers       : ['hover', 'focus']
+        },
         'rule-card': {
           $extend         : 'tooltip',
           'arrow-padding' : 14,
