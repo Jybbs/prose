@@ -1,6 +1,7 @@
 [docs]
-title = "Parenthesized Multi-Line Import Drops Only the Alias"
+previewable = false
+title       = "Parenthesized Multi-Line Import Drops Only the Alias"
+
 description = '''
 The `__future__` import spans multiple lines inside a parenthesized names list. **Only the `annotations` entry is deleted**, leaving the surrounding whitespace and the `division` sibling in place.
 '''
-previewable = false

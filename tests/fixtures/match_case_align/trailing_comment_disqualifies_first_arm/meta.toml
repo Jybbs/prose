@@ -1,6 +1,7 @@
 [docs]
-title = "A Trailing Comment Disqualifies the First Arm"
+previewable = false
+title       = "A Trailing Comment Disqualifies the First Arm"
+
 description = '''
 The first arm carries a `# comment` between its `:` and its body. **That trailing comment disqualifies the arm**, leaving it multi-line, while the two qualifying arms after it form one sub-group and align at the wider of their patterns.
 '''
-previewable = false

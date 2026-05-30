@@ -1,6 +1,7 @@
 [docs]
-title = "A Def after the Main Guard Carries One Blank"
+previewable = false
+title       = "A Def after the Main Guard Carries One Blank"
+
 description = '''
 A module-level `def` following an `if __name__ == "__main__":` block carries **one blank line**. The main-guard case takes precedence over the usual two-blank def-after-statement rule.
 '''
-previewable = false

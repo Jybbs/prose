@@ -1,6 +1,7 @@
 [docs]
-title = "Compound Import Flags Only the Disallowed Segments"
+previewable = false
+title       = "Compound Import Flags Only the Disallowed Segments"
+
 description = '''
 `import os, sys, numpy` fires a separate diagnostic on `os` and on `sys` while leaving `numpy` alone. Each segment is judged **independently against the allowlist** even though they share one statement.
 '''
-previewable = false

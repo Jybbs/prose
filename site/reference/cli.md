@@ -76,7 +76,7 @@ prose check - < module.py
 
 ## `prose cache clean`
 
-Removes every entry from the user-level cache and prints the freed bytes plus the cleared entry count. The [**Cache**](/reference/cache) reference covers the cache's location, key shape, and `[tool.prose.cache]` configuration.
+Removes every entry from the user-level cache and prints the freed bytes plus the cleared entry count. The [**Cache**](/reference/cache) reference covers the cache's location, key shape, and `[cache]` configuration.
 
 ```bash
 prose cache clean
@@ -86,7 +86,7 @@ Returns exit code 0 on success. The IO-error exit code applies on permission or 
 
 ## `prose cache compact`
 
-Runs the LRU eviction pass against the cache, reducing it to the configured `[tool.prose.cache] max-size-mib` cap and reporting the bytes and entry count it removed. Useful after lowering the cap, since eviction otherwise runs only on insert.
+Runs the LRU eviction pass against the cache, reducing it to the configured `[cache] max-size-mib` cap and reporting the bytes and entry count it removed. Useful after lowering the cap, since eviction otherwise runs only on insert.
 
 ```bash
 prose cache compact
@@ -151,7 +151,7 @@ ANSI color draws on the project palette, with **Ube** on the anchor, **Celadon**
 prose check --select align-equals src/
 ```
 
-This runs `align-equals` against `src/` even when `[tool.prose.rules.align-equals]` has `enabled = false`. The [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` knob.
+This runs `align-equals` against `src/` even when `[rules]` has `align-equals = false`. The [**Configuration**](/reference/configuration) reference covers the per-rule toggle.
 
 CLI flags are per-invocation only. None of the flags above *(including `--output-format`, `--color`, `--diff`, `--select`, `--ignore`)* can be set in `[tool.prose]`. The configuration file carries semantic knobs *(line lengths, per-rule toggles, rule-specific inputs)*, and the CLI carries invocation knobs *(input source, output shape, color)*.
 

@@ -1,6 +1,7 @@
 [docs]
-title = "Multi-Statement Arms Break the Alignment Run"
+previewable = true
+title       = "Multi-Statement Arms Break the Alignment Run"
+
 description = '''
 A two-statement arm sits second in a four-arm match. **The multi-statement body disqualifies that arm and splits the match into sub-groups**, so the lone arm before it collapses without padding and the two arms after it align together at the wider of their patterns. The two-statement arm itself stays multi-line.
 '''
-previewable = true

@@ -1,6 +1,7 @@
 [docs]
-title = "Each Method's Assignment Run Aligns on Its Own `=`"
+previewable = true
+title       = "Each Method's Assignment Run Aligns on Its Own `=`"
+
 description = '''
 Out-of-order class methods each carry a run of body assignments. The methods sort and gain blank-line cushions, and **each method's `=` column aligns independently within its own body**.
 '''
-previewable = true

@@ -1,6 +1,7 @@
 [docs]
-title = "Nested Collections Expand Level by Level Independently"
+previewable = true
+title       = "Nested Collections Expand Level by Level Independently"
+
 description = '''
 **Each nested collection runs its own layout decision at its own column.** An expanding outer literal drags its inners along, whereas a pinned outer leaves each inner to its own pass. Dict-value nesting folds the key-text offset into the inner's column, so a long key can push its value past the budget even when the outer fits.
 '''
-previewable = true

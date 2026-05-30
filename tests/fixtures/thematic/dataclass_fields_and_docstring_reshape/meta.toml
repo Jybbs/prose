@@ -1,6 +1,7 @@
 [docs]
-title = "Dataclass Fields Sort, Align, and Method Docstring Reshapes"
+previewable = false
+title       = "Dataclass Fields Sort, Align, and Method Docstring Reshapes"
+
 description = '''
 A dataclass with out-of-order annotated fields and varying-width defaults precedes a method body. **The pipeline sorts the field declarations, aligns the annotation `:` and default `=` columns**, normalizes the cushion before the method, and reshapes its single-line docstring into multi-line form.
 '''
-previewable = false

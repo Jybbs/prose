@@ -1,6 +1,7 @@
 [docs]
-title = "Two-Argument Union Recommends a Pipe Join"
+previewable = false
+title       = "Two-Argument Union Recommends a Pipe Join"
+
 description = '''
 `Union[int, str]` is reported as the legacy form, with the diagnostic recommending `int | str` joined by the PEP 604 `|`. **No edit lands**, so the binding stays as written.
 '''
-previewable = false

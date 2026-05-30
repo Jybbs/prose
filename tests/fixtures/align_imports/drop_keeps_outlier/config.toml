@@ -1,2 +1,2 @@
-[tool.prose.rules.align-imports]
-max-shift-policy = "drop"
+[rules]
+align-imports = { max-shift-policy = "drop" }

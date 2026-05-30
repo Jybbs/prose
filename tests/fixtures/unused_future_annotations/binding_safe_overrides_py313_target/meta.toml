@@ -1,7 +1,8 @@
 [docs]
-title = "Binding Resolution Removes the Directive on a 3.13 Target"
+canonical   = true
+previewable = true
+title       = "Binding Resolution Removes the Directive on a 3.13 Target"
+
 description = '''
 A file whose annotations are typing-only loses the `__future__` import when the target version allows safe removal.
 '''
-previewable = true
-canonical = true

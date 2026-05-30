@@ -1,6 +1,7 @@
 [docs]
-title = "Single-Line Method Docstrings Expand to Multi-Line"
+previewable = true
+title       = "Single-Line Method Docstrings Expand to Multi-Line"
+
 description = '''
 Methods each carry a single-line triple-quoted docstring. **`no-single-line-docstrings` and `multi-line-docstrings` expand each into three-line form** with opener and closer on their own lines, leaving method spacing untouched.
 '''
-previewable = true

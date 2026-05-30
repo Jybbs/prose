@@ -1,6 +1,7 @@
 [docs]
-title = "The `docstring-line-length` Policy Overrides the Structured Budget"
+previewable = true
+title       = "The `docstring-line-length` Policy Overrides the Structured Budget"
+
 description = '''
 A `.config.toml` sidecar flips `docstring-structured-policy` so **non-entry section bodies wrap at the narrower docstring budget instead of the default structured budget**. A long `Note:` paragraph wraps at the docstring width once the policy selects it.
 '''
-previewable = true

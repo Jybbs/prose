@@ -13,18 +13,12 @@ use serde::Deserialize;
 use similar::TextDiff;
 
 /// Per-fixture flags read from the sidecar TOML's `[harness]` table,
-/// independent of the `[tool.prose]` config the rule itself consumes.
+/// independent of the prose config the rule itself consumes.
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
 pub(crate) struct HarnessOptions {
     rules: Vec<RuleId>,
     pub(crate) skip_ruff_coexistence: bool,
-}
-
-#[derive(Debug, Default, Deserialize)]
-#[serde(default)]
-struct Sidecar {
-    harness: HarnessOptions,
 }
 
 /// Returns the pipeline that exercises a fixture directory.
@@ -65,15 +59,27 @@ pub(crate) fn domain_name(path: &Path) -> &str {
         .expect("fixture path has a domain directory")
 }
 
+/// Reads a fixture's `config.toml` sidecar as a `prose.toml` document, lifting
+/// the `[harness]` table out before the remainder deserializes into `Config`,
+/// so the prose config sits at the document root the way a real `prose.toml`
+/// carries it. A sidecar with no prose keys resolves to `Config::default`.
 pub(crate) fn fixture_inputs(path: &Path) -> (Config, HarnessOptions) {
     let Some(contents) = sidecar_contents(path) else {
         return Default::default();
     };
-    let config = Config::from_pyproject_str(&contents)
+    let mut table: toml::Table =
+        toml::from_str(&contents).unwrap_or_else(|e| panic!("parse sidecar TOML: {e}"));
+    let harness: HarnessOptions = table
+        .remove("harness")
+        .map(|section| {
+            section
+                .try_into()
+                .unwrap_or_else(|e| panic!("parse sidecar harness section: {e}"))
+        })
+        .unwrap_or_default();
+    let config: Config = toml::Value::Table(table)
+        .try_into()
         .unwrap_or_else(|e| panic!("parse sidecar config: {e}"));
-    let harness = toml::from_str::<Sidecar>(&contents)
-        .unwrap_or_else(|e| panic!("parse sidecar harness section: {e}"))
-        .harness;
     (config, harness)
 }
 

@@ -1,6 +1,7 @@
 [docs]
-title = "Platform-Guarded If Bodies Stay Module-Level"
+previewable = false
+title       = "Platform-Guarded If Bodies Stay Module-Level"
+
 description = '''
 The walker descends into top-level `if` / `for` / `try` bodies because they preserve module scope. A `SCREAMING_CASE` binding guarded by `if sys.platform == ...` is **still module-level and draws the diagnostic**.
 '''
-previewable = false

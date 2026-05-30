@@ -1,6 +1,7 @@
 [docs]
-title = "Multi-Line Dict Sorts Keys, Strips Comma, Aligns `:`"
+previewable = true
+title       = "Multi-Line Dict Sorts Keys, Strips Comma, Aligns `:`"
+
 description = '''
 An already-expanded dict with out-of-order string keys and a trailing comma. **`alphabetize` sorts the keys, `strip-trailing-commas` drops the final comma, and `align-colons` aligns the `:` column** across the rows.
 '''
-previewable = true

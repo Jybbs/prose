@@ -1,6 +1,7 @@
 [docs]
-title = "A Lone Import Is Left Untouched"
+previewable = false
+title       = "A Lone Import Is Left Untouched"
+
 description = '''
 Alignment requires **at least two members per group**, so any singleton is left untouched. The lone `from`-import and the lone `import`-as below, each isolated by a blank line, are their own one-member groups and receive no edit.
 '''
-previewable = false

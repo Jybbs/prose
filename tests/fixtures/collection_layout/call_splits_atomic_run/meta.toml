@@ -1,6 +1,7 @@
 [docs]
-title = "Atomic Entries inside the Cap Stay on One Line"
+previewable = true
+title       = "Atomic Entries inside the Cap Stay on One Line"
+
 description = '''
 Literals, names, attribute chains, and unary operands are all atomic and flow together across balanced lines. **A non-atomic call expression in the middle breaks its surrounding run into two independent flow segments**, each balancing on its own.
 '''
-previewable = true

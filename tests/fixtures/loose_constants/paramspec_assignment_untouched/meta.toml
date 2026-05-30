@@ -1,6 +1,7 @@
 [docs]
-title = "ParamSpec Bindings Pass Through Untouched"
+previewable = false
+title       = "ParamSpec Bindings Pass Through Untouched"
+
 description = '''
 A `ParamSpec("P")` binding is `SCREAMING_CASE` by Python convention and **structural by definition**, so the rule leaves it untouched and emits no diagnostic.
 '''
-previewable = false

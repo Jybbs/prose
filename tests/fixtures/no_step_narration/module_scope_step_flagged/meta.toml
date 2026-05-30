@@ -1,7 +1,8 @@
 [docs]
-title = "Module-Scope Numbered Steps Are Flagged"
+canonical   = true
+previewable = true
+title       = "Module-Scope Numbered Steps Are Flagged"
+
 description = '''
 A module-level own-line numbered-step comment surfaces the lint.
 '''
-previewable = true
-canonical = true

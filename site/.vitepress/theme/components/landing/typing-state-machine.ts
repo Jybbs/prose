@@ -1,32 +1,31 @@
 import { useTimeoutFn }    from '@vueuse/core'
 import { watch, type Ref } from 'vue'
 
-import type { LandingTypingDemoEntry } from './typing-demo-fixtures'
+import type { LandingTypingDemoEntry, LandingTypingDemoResetRow } from './typing-demo-fixtures'
 
 export type Phase =
-  | 'backspacing'
   | 'editBackspacing'
-  | 'editTraveling'
   | 'editTyping'
-  | 'holdAfterErased'
+  | 'holdAfterReset'
   | 'holdAfterTyped'
+  | 'holdAtEnd'
   | 'holdBetweenEdits'
   | 'reducedMotion'
+  | 'resetBackspacing'
+  | 'resetTyping'
   | 'starting'
-  | 'typing'
 
-const BACKSPACE_MS_PER_CHAR      = 5
 const EDIT_BACKSPACE_MS_PER_CHAR = 70
-const EDIT_TRAVEL_MS             = 520
-const HOLD_AFTER_ERASED_MS       = 1200
-const HOLD_AFTER_TYPED_MS        = 3500
-const HOLD_BETWEEN_EDITS_MS      = 1800
-export const MAGIC_MOVE_MS       = 600
-const PAUSE_AFTER_ADD_MS         = 1800
+const HOLD_AFTER_RESET_MS        = 1200
+const HOLD_AT_END_MS             = 3500
+const HOLD_BETWEEN_EDITS_MS      = 650
+export const MAGIC_MOVE_MS       = 420
+const RESET_MS_PER_STEP          = 32
+const SHIFT_AFTER_TYPED_MS       = 34
+const SHIFT_HOLD_MS              = 480
 const TYPE_MS_PER_CHAR           = 22
 
 interface MachineRefs {
-  charProgress     : Ref<number>
   editProgress     : Ref<number>
   entryIndex       : Ref<number>
   phase            : Ref<Phase>
@@ -39,10 +38,14 @@ interface MachineGates {
 }
 
 export function useTypingStateMachine(
-  entries : readonly LandingTypingDemoEntry[],
-  refs    : MachineRefs,
-  gates   : MachineGates
+  entries   : readonly LandingTypingDemoEntry[],
+  resetRows : readonly LandingTypingDemoResetRow[],
+  refs      : MachineRefs,
+  gates     : MachineGates
 ) {
+  const resetBackspaceSteps = Math.max(...resetRows.map(row => row.end.length))
+  const resetTypeSteps      = Math.max(...resetRows.map(row => row.prelude.length))
+
   let pendingCallback: (() => void) | null = null
   let pendingInterval = 0
 
@@ -62,43 +65,6 @@ export function useTypingStateMachine(
     start()
   }
 
-  function runCurrentEntry(): void {
-    const entry = entries[refs.entryIndex.value]
-    if (entry.kind === 'append') {
-      refs.phase.value = 'typing'
-      schedule(tickTyping, TYPE_MS_PER_CHAR)
-    } else {
-      refs.phase.value = 'editTraveling'
-      schedule(startEditBackspace, EDIT_TRAVEL_MS)
-    }
-  }
-
-  function advanceEntry(): void {
-    if (refs.entryIndex.value < entries.length - 1) {
-      refs.entryIndex.value++
-      refs.charProgress.value = 0
-      refs.editProgress.value = 0
-      runCurrentEntry()
-    } else {
-      refs.phase.value = 'holdAfterTyped'
-      schedule(startBackspacing, HOLD_AFTER_TYPED_MS)
-    }
-  }
-
-  function tickTyping(): void {
-    const entry = entries[refs.entryIndex.value]
-    if (entry.kind !== 'append') return
-    if (refs.charProgress.value < entry.block.length) {
-      refs.charProgress.value++
-      if (refs.charProgress.value === entry.block.length) {
-        refs.pythonStateIndex.value = refs.entryIndex.value + 1
-        schedule(advanceEntry, PAUSE_AFTER_ADD_MS)
-      } else {
-        schedule(tickTyping, TYPE_MS_PER_CHAR)
-      }
-    }
-  }
-
   function startEditBackspace(): void {
     refs.phase.value        = 'editBackspacing'
     refs.editProgress.value = 0
@@ -106,93 +72,88 @@ export function useTypingStateMachine(
   }
 
   function tickEditBackspace(): void {
-    const entry = entries[refs.entryIndex.value]
-    if (entry.kind !== 'edit') return
-    if (refs.editProgress.value < entry.from.length) {
-      refs.editProgress.value++
-      if (refs.editProgress.value === entry.from.length) {
-        refs.phase.value        = 'editTyping'
-        refs.editProgress.value = 0
-        schedule(tickEditType, TYPE_MS_PER_CHAR)
-      } else {
-        schedule(tickEditBackspace, EDIT_BACKSPACE_MS_PER_CHAR)
-      }
+    refs.editProgress.value++
+    if (refs.editProgress.value === entries[refs.entryIndex.value].from.length) {
+      refs.phase.value        = 'editTyping'
+      refs.editProgress.value = 0
+      schedule(tickEditType, TYPE_MS_PER_CHAR)
+    } else {
+      schedule(tickEditBackspace, EDIT_BACKSPACE_MS_PER_CHAR)
     }
   }
 
   function tickEditType(): void {
-    const entry = entries[refs.entryIndex.value]
-    if (entry.kind !== 'edit') return
-    if (refs.editProgress.value < entry.to.length) {
-      refs.editProgress.value++
-      if (refs.editProgress.value === entry.to.length) {
-        refs.pythonStateIndex.value = refs.entryIndex.value + 1
-        const isLast     = refs.entryIndex.value === entries.length - 1
-        const nextAction = isLast ? startBackspacing : advanceEntry
-        const holdMs     = isLast ? HOLD_AFTER_TYPED_MS : HOLD_BETWEEN_EDITS_MS
-        refs.phase.value = isLast ? 'holdAfterTyped' : 'holdBetweenEdits'
-        schedule(nextAction, holdMs)
-      } else {
-        schedule(tickEditType, TYPE_MS_PER_CHAR)
-      }
+    refs.editProgress.value++
+    if (refs.editProgress.value < entries[refs.entryIndex.value].to.length) {
+      schedule(tickEditType, TYPE_MS_PER_CHAR)
+    } else {
+      schedule(settleTyped, SHIFT_AFTER_TYPED_MS)
     }
   }
 
-  function lastAppendIndex(upTo: number): number {
-    let i = upTo
-    while (i >= 0 && entries[i].kind !== 'append') i--
-    return i
+  function settleTyped(): void {
+    refs.phase.value = 'holdAfterTyped'
+    shiftRight()
   }
 
-  function startBackspacing(): void {
-    refs.phase.value        = 'backspacing'
-    refs.editProgress.value = 0
-    const current = entries[refs.entryIndex.value]
-    if (current?.kind === 'edit') {
-      const i = lastAppendIndex(refs.entryIndex.value - 1)
-      if (i >= 0) {
-        const ap                = entries[i]
-        refs.entryIndex.value   = i
-        refs.charProgress.value = ap.kind === 'append' ? ap.block.length : 0
-      }
+  function shiftRight(): void {
+    refs.pythonStateIndex.value = refs.entryIndex.value + 1
+    schedule(settleAfterShift, SHIFT_HOLD_MS)
+  }
+
+  function settleAfterShift(): void {
+    if (refs.entryIndex.value === entries.length - 1) {
+      refs.phase.value = 'holdAtEnd'
+      schedule(startReset, HOLD_AT_END_MS)
+    } else {
+      refs.phase.value = 'holdBetweenEdits'
+      schedule(advanceEntry, HOLD_BETWEEN_EDITS_MS)
     }
-    tickBackspacing()
   }
 
-  function tickBackspacing(): void {
-    if (refs.charProgress.value > 0) {
-      refs.charProgress.value--
-      if (refs.charProgress.value === 0) {
-        const i = lastAppendIndex(refs.entryIndex.value - 1)
-        if (i >= 0) {
-          const ap                = entries[i]
-          refs.entryIndex.value   = i
-          refs.charProgress.value = ap.kind === 'append' ? ap.block.length : 0
-        } else {
-          refs.phase.value            = 'holdAfterErased'
-          refs.pythonStateIndex.value = 0
-          schedule(restart, HOLD_AFTER_ERASED_MS)
-          return
-        }
-      }
-      schedule(tickBackspacing, BACKSPACE_MS_PER_CHAR)
+  function advanceEntry(): void {
+    refs.entryIndex.value++
+    startEditBackspace()
+  }
+
+  function startReset(): void {
+    refs.pythonStateIndex.value = 0
+    refs.phase.value            = 'resetBackspacing'
+    refs.editProgress.value     = 0
+    schedule(tickResetBackspace, RESET_MS_PER_STEP)
+  }
+
+  function tickResetBackspace(): void {
+    refs.editProgress.value++
+    if (refs.editProgress.value >= resetBackspaceSteps) {
+      refs.phase.value        = 'resetTyping'
+      refs.editProgress.value = 0
+      schedule(tickResetType, RESET_MS_PER_STEP)
+    } else {
+      schedule(tickResetBackspace, RESET_MS_PER_STEP)
+    }
+  }
+
+  function tickResetType(): void {
+    refs.editProgress.value++
+    if (refs.editProgress.value >= resetTypeSteps) {
+      refs.phase.value = 'holdAfterReset'
+      schedule(restart, HOLD_AFTER_RESET_MS)
+    } else {
+      schedule(tickResetType, RESET_MS_PER_STEP)
     }
   }
 
   function restart(): void {
     refs.entryIndex.value       = 0
-    refs.charProgress.value     = 0
     refs.editProgress.value     = 0
     refs.pythonStateIndex.value = 0
-    runCurrentEntry()
+    startEditBackspace()
   }
 
   function freezeAtEnd(): void {
-    const lastIdx               = entries.length - 1
-    const last                  = entries[lastIdx]
-    refs.entryIndex.value       = lastIdx
-    refs.charProgress.value     = last.kind === 'append' ? last.block.length : 0
-    refs.editProgress.value     = last.kind === 'edit'   ? last.to.length    : 0
+    refs.entryIndex.value       = entries.length - 1
+    refs.editProgress.value     = entries[entries.length - 1].to.length
     refs.pythonStateIndex.value = entries.length
     refs.phase.value            = 'reducedMotion'
   }
@@ -200,7 +161,6 @@ export function useTypingStateMachine(
   function replay(): void {
     stop()
     refs.entryIndex.value       = 0
-    refs.charProgress.value     = 0
     refs.editProgress.value     = 0
     refs.pythonStateIndex.value = 0
     refs.phase.value            = 'reducedMotion'

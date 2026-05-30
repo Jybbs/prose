@@ -1,6 +1,7 @@
 [docs]
-title = "A Method's Leading Comment Cushions Above, Binds Below"
+previewable = false
+title       = "A Method's Leading Comment Cushions Above, Binds Below"
+
 description = '''
 A class-body method preceded by an own-line comment normalizes to **one blank line above the comment** and binds the comment tight against the method that follows.
 '''
-previewable = false

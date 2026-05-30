@@ -61,12 +61,12 @@ const SOURCES: readonly ExitCodeSource[] = [
   {
     code   : 4,
     detail : [
-      'Surfaces from `Config::from_pyproject_str` errors, malformed `--select` / '
+      'Surfaces from config-file parse errors, malformed `--select` / '
       + '`--ignore` flags, or unknown CLI options.',
       'Pre-empts every other code (the run never reaches the pipeline).'
     ],
     label  : 'Config error',
-    summary: 'pyproject.toml or argument validation failed.'
+    summary: 'Config file or argument validation failed.'
   }
 ]
 

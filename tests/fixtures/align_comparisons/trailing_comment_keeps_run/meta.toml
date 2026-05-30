@@ -1,6 +1,7 @@
 [docs]
-title = "A Trailing Comment Keeps the Run Intact"
+previewable = false
+title       = "A Trailing Comment Keeps the Run Intact"
+
 description = '''
 A trailing comment after the prev-operand source line **does not break the alignment run**, since the operands stay on adjacent lines. The pipeline's `SuppressionMap` filter handles directive comments separately on emitted edits.
 '''
-previewable = false

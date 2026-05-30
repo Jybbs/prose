@@ -1,6 +1,7 @@
 [docs]
-title = "`with` Blocks Sort Imports in Scope"
+previewable = false
+title       = "`with` Blocks Sort Imports in Scope"
+
 description = '''
 `with` blocks **recurse the same way other compound bodies do**. The body's `from`-import run sorts within the context-managed scope without leaking into the surrounding statements.
 '''
-previewable = false

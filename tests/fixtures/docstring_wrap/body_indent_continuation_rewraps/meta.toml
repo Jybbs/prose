@@ -1,6 +1,7 @@
 [docs]
-title = "Old-Style Body-Indent Continuations Re-Wrap to the Hanging Shape"
+previewable = false
+title       = "Old-Style Body-Indent Continuations Re-Wrap to the Hanging Shape"
+
 description = '''
 An entry whose continuation lines sit at the section-body indent rather than the hanging column **re-wraps into the hanging shape**. One pass normalizes both never-wrapped and old-style-wrapped docstrings onto the same column.
 '''
-previewable = false

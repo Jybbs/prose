@@ -1,6 +1,7 @@
 [docs]
-title = "Lambda Parameters Shadow Outer Bindings"
+previewable = false
+title       = "Lambda Parameters Shadow Outer Bindings"
+
 description = '''
 A lambda opens its own function scope, so its parameters **bind inside the lambda scope and shadow** any same-named binding in the surrounding scope.
 '''
-previewable = false

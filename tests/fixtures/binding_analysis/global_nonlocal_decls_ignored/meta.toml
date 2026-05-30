@@ -1,6 +1,7 @@
 [docs]
-title = "Global and Nonlocal Declarations Are Ignored"
+previewable = false
+title       = "Global and Nonlocal Declarations Are Ignored"
+
 description = '''
 `global` and `nonlocal` declarations are **ignored by the analyzer**, so later writes to the declared names bind in the local function scope rather than rewriting an outer binding.
 '''
-previewable = false

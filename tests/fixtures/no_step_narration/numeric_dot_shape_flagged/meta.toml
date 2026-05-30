@@ -1,6 +1,7 @@
 [docs]
-title = "Numeric-Dot Shape (`# 1.`) Is Recognized"
+previewable = true
+title       = "Numeric-Dot Shape (`# 1.`) Is Recognized"
+
 description = '''
 A leading `# 1. text` comment matches the **numeric-dot shape** and earns a diagnostic recommending the step move into a named function. The digit followed by `.` and whitespace is the trigger.
 '''
-previewable = true

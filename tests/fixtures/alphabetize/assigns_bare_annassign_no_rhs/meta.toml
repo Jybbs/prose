@@ -1,6 +1,7 @@
 [docs]
-title = "Bare Annotated Declarations Carry a Name but No RHS"
+previewable = false
+title       = "Bare Annotated Declarations Carry a Name but No RHS"
+
 description = '''
 A run mixing bare annotated declarations with valued bindings reorders normally. **A bare `AnnAssign` contributes its target name** but has no right-hand side to walk for dependencies or side-effect taint.
 '''
-previewable = false

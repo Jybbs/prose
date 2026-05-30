@@ -1,6 +1,7 @@
 [docs]
-title = "Async Methods Sort Beside Their Sync Siblings"
+previewable = true
+title       = "Async Methods Sort Beside Their Sync Siblings"
+
 description = '''
 Async compound shapes (`async def`, `async for`, `async with`) **recurse identically to their synchronous counterparts**. Each arm's imports flow through the same compound-statement recursion, so the `is_async` flag changes nothing about how the body sorts.
 '''
-previewable = true

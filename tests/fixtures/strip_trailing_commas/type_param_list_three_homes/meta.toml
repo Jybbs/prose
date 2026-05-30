@@ -1,6 +1,7 @@
 [docs]
-title = "Type-Parameter Lists Strip in All Three Homes"
+previewable = false
+title       = "Type-Parameter Lists Strip in All Three Homes"
+
 description = '''
 A generic-syntax type-parameter list spanning `[...]` drops its trailing `,` whether it sits on a function, a class, or a `type` alias. **The backward scan from before the closing `]` lands on the comma after the last parameter** in every one of the three homes.
 '''
-previewable = false

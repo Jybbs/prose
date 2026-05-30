@@ -1,6 +1,7 @@
 [docs]
-title = "Parenthesized Sole Alias Deletes the Whole Statement"
+previewable = false
+title       = "Parenthesized Sole Alias Deletes the Whole Statement"
+
 description = '''
 The sole `__future__` import wraps across lines with parentheses. **The deletion spans every line of the statement**, so no orphaned parenthesized tail survives once `annotations`, the only alias named, is gone.
 '''
-previewable = false

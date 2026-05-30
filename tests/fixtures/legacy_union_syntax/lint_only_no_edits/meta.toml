@@ -1,6 +1,7 @@
 [docs]
-title = "Pipe-Union Source Is Left Alone"
+previewable = true
+title       = "Pipe-Union Source Is Left Alone"
+
 description = '''
 The rule **emits no edits**, so every pass leaves the source byte-for-byte identical. A mix of legacy `Optional[int]` and `Union[int, str]` bindings alongside a modern `int | None` form all pass through as written.
 '''
-previewable = true

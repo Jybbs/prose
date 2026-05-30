@@ -1,6 +1,7 @@
 [docs]
-title = "Verbatim Continuations Stay Attached to Their Parent Entry through the Reorder"
+previewable = true
+title       = "Verbatim Continuations Stay Attached to Their Parent Entry through the Reorder"
+
 description = '''
 A `Raises:` entry whose description carries an indented code block **keeps the verbatim block attached to its parent** through the reorder. The block sits beneath the entry's hanging column, so the walker reads it as a continuation rather than a sibling.
 '''
-previewable = true

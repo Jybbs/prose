@@ -1,6 +1,7 @@
 [docs]
-title = "Nested Compound Arms Recurse to Any Depth"
+previewable = false
+title       = "Nested Compound Arms Recurse to Any Depth"
+
 description = '''
 Nested compound statements **recurse to arbitrary depth**. The outer arm's body and the inner arm's body each sort independently, and the inner compound stays in its source slot within the outer arm while its own contents reorder.
 '''
-previewable = false

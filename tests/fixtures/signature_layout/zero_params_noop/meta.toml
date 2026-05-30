@@ -1,6 +1,7 @@
 [docs]
-title = "Zero-Parameter Signatures Are a No-Op"
+previewable = false
+title       = "Zero-Parameter Signatures Are a No-Op"
+
 description = '''
 A zero-parameter signature trips neither threshold, **leaving the def untouched**. The rewrite gates close cleanly on the degenerate shape, where there is nothing to count or measure.
 '''
-previewable = false

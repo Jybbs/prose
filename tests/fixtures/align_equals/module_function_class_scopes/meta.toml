@@ -1,6 +1,7 @@
 [docs]
-title = "Each Scope Aligns Its Own Group"
+previewable = false
+title       = "Each Scope Aligns Its Own Group"
+
 description = '''
 Assignments at module, function-body, and class-body scope form **independent groups**, each settling on its own `=` column without aligning across the scope boundaries.
 '''
-previewable = false

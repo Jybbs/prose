@@ -1,6 +1,7 @@
 [docs]
-title = "Dotted `typing.TYPE_CHECKING`-Style Names Stay Quiet"
+previewable = true
+title       = "Dotted `typing.TYPE_CHECKING`-Style Names Stay Quiet"
+
 description = '''
 The attribute-qualified `typing.TYPE_CHECKING` guard **skips its block exactly as the bare `TYPE_CHECKING` name does**, so a constant inside draws no diagnostic.
 '''
-previewable = true

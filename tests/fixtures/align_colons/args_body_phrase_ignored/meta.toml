@@ -1,6 +1,7 @@
 [docs]
-title = "Docstring Args Blocks Align the Parameter-Name Column"
+previewable = true
+title       = "Docstring Args Blocks Align the Parameter-Name Column"
+
 description = '''
 The phrase `Args:` appears both in the docstring's body prose and as the real section header. **Only the header triggers alignment**, leaving the inline mention as-is while the named entries beneath the header align on one `:` column.
 '''
-previewable = true

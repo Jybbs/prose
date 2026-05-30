@@ -1,2 +1,2 @@
-[tool.prose.rules.bare-import-allowlist]
-allow = []
+[rules]
+bare-import-allowlist = { allow = [] }

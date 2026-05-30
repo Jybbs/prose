@@ -1,6 +1,7 @@
 [docs]
-title = "A `# prose: ignore` Directive Drops the Diagnostic"
+previewable = false
+title       = "A `# prose: ignore` Directive Drops the Diagnostic"
+
 description = '''
 A trailing `# prose: ignore[single-use-variables]` comment **drops the diagnostic** the rule would otherwise emit on that line. Per-line suppression runs as a post-loop filter against the `Severity::Lint` output of `Rule::lint`.
 '''
-previewable = false

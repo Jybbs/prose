@@ -1,6 +1,7 @@
 [docs]
-title = "Service Class Members Regroup and Field Columns Align"
+previewable = false
+title       = "Service Class Members Regroup and Field Columns Align"
+
 description = '''
 A service class declares annotated fields out of order alongside a property, a private helper, and two public methods. **Methods reorder into the canonical dunder, property, private, then public groups**, the fields alphabetize, their `:` and `=` columns align, and member spacing normalizes.
 '''
-previewable = false

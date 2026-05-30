@@ -1,6 +1,7 @@
 [docs]
-title = "Explicit None Argument Flattens Into the Pipe Form"
+previewable = false
+title       = "Explicit None Argument Flattens Into the Pipe Form"
+
 description = '''
 `Union[int, str, None]` carries an explicit `None` member that **flattens into the recommendation** `int | str | None`. The diagnostic reports the legacy shape and leaves the source unedited.
 '''
-previewable = false

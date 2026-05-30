@@ -1,6 +1,7 @@
 [docs]
-title = "A Forward Reference Before Its Class Keeps the Directive"
+previewable = false
+title       = "A Forward Reference Before Its Class Keeps the Directive"
+
 description = '''
 The annotation on `visit` names `Node` before `Node` is defined at module scope. Eager evaluation on Python 3.13 would fail on the forward reference, so **the directive stays** to keep annotations deferred.
 '''
-previewable = false

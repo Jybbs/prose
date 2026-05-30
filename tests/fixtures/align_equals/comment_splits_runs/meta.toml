@@ -1,6 +1,7 @@
 [docs]
-title = "Comments Reset the Group, like Blank Lines"
+previewable = true
+title       = "Comments Reset the Group, like Blank Lines"
+
 description = '''
 A comment line between two runs **splits them into independent groups**, mirroring the blank-line boundary, so each side lands on its own `=` column.
 '''
-previewable = true

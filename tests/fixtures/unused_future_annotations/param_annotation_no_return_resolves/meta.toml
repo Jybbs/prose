@@ -1,6 +1,7 @@
 [docs]
-title = "A Parameter Annotation Without a Return Still Resolves"
+previewable = false
+title       = "A Parameter Annotation Without a Return Still Resolves"
+
 description = '''
 A function annotates its parameter but declares no return annotation. The annotation probe still recognizes the directive as load-bearing, and the binding-safe `Result` reference lets **trigger 3 remove the directive**.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "Class Fields and Methods Sort, Align, and Gain Cushions"
+previewable = true
+title       = "Class Fields and Methods Sort, Align, and Gain Cushions"
+
 description = '''
 A class with both annotated fields and methods declared out of order. **The fields sort and align both `:` and `=` as one group, the methods sort separately, and `blank-lines` settles a one-blank cushion** between every member.
 '''
-previewable = true

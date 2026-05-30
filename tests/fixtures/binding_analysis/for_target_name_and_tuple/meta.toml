@@ -1,6 +1,7 @@
 [docs]
-title = "For-Loop Target Binds Enclosing as Name or Tuple"
+previewable = false
+title       = "For-Loop Target Binds Enclosing as Name or Tuple"
+
 description = '''
 A for-loop target **binds in the enclosing scope** whether it is a single name or a tuple destructuring, and the iterable being looped over is visited as a read.
 '''
-previewable = false

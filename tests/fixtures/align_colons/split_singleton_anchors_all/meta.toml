@@ -1,6 +1,7 @@
 [docs]
-title = "A Wide Singleton Anchors Every Sub-Group"
+previewable = false
+title       = "A Wide Singleton Anchors Every Sub-Group"
+
 description = '''
 Under the default `split` policy, the greedy partitioner isolates `really_really_long_field` as a singleton sub-group. As the strictly widest member it **anchors every other sub-group at its column**, overriding the cap so all `:` share one column.
 '''
-previewable = false

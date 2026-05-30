@@ -1,6 +1,7 @@
 [docs]
-title = "Set Literals Drop the Trailing Comma"
+previewable = false
+title       = "Set Literals Drop the Trailing Comma"
+
 description = '''
 A multi-line set literal spanning `{...}` drops the `,` after its last element. **The backward scan from before the closing `}` lands on that comma**, matching the path used for dicts.
 '''
-previewable = false

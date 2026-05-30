@@ -1,6 +1,7 @@
 [docs]
-title = "Lists Follow the Same Strip as Dicts"
+previewable = true
+title       = "Lists Follow the Same Strip as Dicts"
+
 description = '''
 A multi-line list literal spanning `[...]` drops the `,` after its last element. **The backward scan from before the closing `]` lands on that comma**, applying the identical path that strips dict values.
 '''
-previewable = true

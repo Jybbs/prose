@@ -1,6 +1,7 @@
 [docs]
-title = "Nested Dicts Align Independently at Each Level"
+previewable = true
+title       = "Nested Dicts Align Independently at Each Level"
+
 description = '''
 A dict whose values are themselves dicts has **each nested dict aligning its own `:` column** at its own indent. The inner alignment is unaffected by the outer dict's key widths.
 '''
-previewable = true

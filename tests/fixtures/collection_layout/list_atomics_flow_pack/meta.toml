@@ -1,6 +1,7 @@
 [docs]
-title = "Lists Follow the Same Expansion Threshold as Dicts"
+previewable = true
+title       = "Lists Follow the Same Expansion Threshold as Dicts"
+
 description = '''
 A list stays inline within the 88-character budget and expands when it overflows. **Inside the expanded form, atomic items flow across as few balanced lines as fit** under `code-line-length` and the `max_atomics_per_line` cap. A multi-line list that fits collapses back inline.
 '''
-previewable = true

@@ -1,6 +1,7 @@
 [docs]
-title = "A File Without the Directive Passes Through Unchanged"
+previewable = false
+title       = "A File Without the Directive Passes Through Unchanged"
+
 description = '''
 A file carrying no `from __future__ import annotations` directive **passes through unchanged on every pass**, since the rule has nothing to act on.
 '''
-previewable = false

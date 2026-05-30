@@ -1,6 +1,7 @@
 [docs]
-title = "A Comment Chain Binds Its Bottom Line to the Def"
+previewable = false
+title       = "A Comment Chain Binds Its Bottom Line to the Def"
+
 description = '''
 A chain of own-line comments forms a **single leading block** for the second statement. Two blank lines normalize above the topmost comment, and the bottommost comment binds tight against the def below it.
 '''
-previewable = false

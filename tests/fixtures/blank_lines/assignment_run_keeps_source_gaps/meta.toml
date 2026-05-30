@@ -1,6 +1,7 @@
 [docs]
-title = "Assignment Runs Keep Their Source Gaps"
+previewable = false
+title       = "Assignment Runs Keep Their Source Gaps"
+
 description = '''
 A run of module-level assignments **keeps each gap at the source's actual count**, because module-scope dispatch returns no canonical for an assignment-after-assignment pair and leaves the whitespace untouched.
 '''
-previewable = false

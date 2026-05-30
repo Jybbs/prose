@@ -1,6 +1,7 @@
 [docs]
-title = "Expanded Single-Line Docstring Overflows and Rewraps"
+previewable = true
+title       = "Expanded Single-Line Docstring Overflows and Rewraps"
+
 description = '''
 A single-line docstring whose content would exceed the docstring budget once expanded. **The docstring expands to multi-line form and `docstring-wrap` reflows the body** across multiple lines to fit the budget.
 '''
-previewable = true

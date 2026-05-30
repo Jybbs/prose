@@ -1,6 +1,7 @@
 [docs]
-title = "A 3.14 Target Makes the Directive a No-Op"
+previewable = false
+title       = "A 3.14 Target Makes the Directive a No-Op"
+
 description = '''
 Under `target-version = "3.14"`, PEP 749 defers annotations by default, so **the directive is a no-op even with annotations present**. The now-redundant sole import is removed.
 '''
-previewable = false

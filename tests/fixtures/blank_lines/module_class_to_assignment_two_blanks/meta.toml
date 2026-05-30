@@ -1,6 +1,7 @@
 [docs]
-title = "An Assignment after a Module-Level `class` Carries Two Blanks"
+previewable = true
+title       = "An Assignment after a Module-Level `class` Carries Two Blanks"
+
 description = '''
 A module-level class followed by an assignment normalizes to **two blank lines** between them, regardless of the source's actual count.
 '''
-previewable = true

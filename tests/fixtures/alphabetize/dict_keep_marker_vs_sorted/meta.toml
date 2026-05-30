@@ -1,6 +1,7 @@
 [docs]
-title = "`# prose: keep` on a Dict Preserves Source Order"
+previewable = true
+title       = "`# prose: keep` on a Dict Preserves Source Order"
+
 description = '''
 A trailing `# prose: keep` comment on the opening `{` line **preserves source order** for that single dict. The unmarked sibling alphabetizes and partitions through the same machinery, so the contrast lands side by side from identical scrambled input.
 '''
-previewable = true

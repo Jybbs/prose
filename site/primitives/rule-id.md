@@ -6,7 +6,7 @@ stability: public
 
 <PrimitiveLayout primitive="rule-id">
 
-Every rule needs a stable identifier the rest of the system can route off. The CLI's `--select` and `--ignore` flags parse names, `pyproject.toml`'s `[tool.prose.rules.<name>]` sub-tables key into names, suppression directives reference names inside `# prose: ignore[<name>]`, and diagnostic output routes by name. *RuleId* is the single canonical handle: a newtype wrapping a kebab-case slug *(`"align-equals"`, `"single-use-variables"`)* with equality, hashing, parsing, and the registry lookup that the [[pipeline]] drives off.
+Every rule needs a stable identifier the rest of the system can route off. The CLI's `--select` and `--ignore` flags parse names, the `[rules]` table keys into names, suppression directives reference names inside `# prose: ignore[<name>]`, and diagnostic output routes by name. *RuleId* is the single canonical handle: a newtype wrapping a kebab-case slug *(`"align-equals"`, `"single-use-variables"`)* with equality, hashing, parsing, and the registry lookup that the [[pipeline]] drives off.
 
 ## Public Surface
 

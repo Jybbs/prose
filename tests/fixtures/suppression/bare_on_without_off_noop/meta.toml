@@ -1,6 +1,7 @@
 [docs]
-title = "Bare On Without a Preceding Off Is a No-Op"
+previewable = false
+title       = "Bare On Without a Preceding Off Is a No-Op"
+
 description = '''
 A `# fmt: on` with no open suppression span ahead of it **does nothing**, leaving every assignment in the file eligible for alignment. Both runs pad to their group widths as if the directive were absent.
 '''
-previewable = false

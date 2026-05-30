@@ -1,6 +1,7 @@
 [docs]
-title = "A Single-Field Container Does Not Pin Its Methods"
+previewable = false
+title       = "A Single-Field Container Does Not Pin Its Methods"
+
 description = '''
 A class with one annotated field plus a validator-shaped method **keeps its method alphabetization**. The structural pin requires at least two annotated fields, so single-field containers stay unpinned. This pins the lower bound of field-bearing detection.
 '''
-previewable = false

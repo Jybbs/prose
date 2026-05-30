@@ -1,6 +1,7 @@
 [docs]
-title = "Already-Canonical Spacing Round-Trips Unchanged"
+previewable = false
+title       = "Already-Canonical Spacing Round-Trips Unchanged"
+
 description = '''
 Source that already carries every canonical pairing **round-trips with no edit**: two blanks around module defs, one between methods, one cushioning a class header from its first member, zero before a first-member docstring, and one before a compound-body opener.
 '''
-previewable = false

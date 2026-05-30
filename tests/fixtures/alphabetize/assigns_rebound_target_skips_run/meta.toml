@@ -1,6 +1,7 @@
 [docs]
-title = "A Re-Bound Target Skips the Run"
+previewable = false
+title       = "A Re-Bound Target Skips the Run"
+
 description = '''
 A run that re-binds the same target name **skips entirely**. The second `LIMIT` shadows the first within the module, and reordering could invert the source-defined sequence in ways the rule does not pin.
 '''
-previewable = false

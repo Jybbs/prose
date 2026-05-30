@@ -1,6 +1,7 @@
 [docs]
-title = "Match Arms Split or Collapse by Budget, Kwargs Sort"
+previewable = false
+title       = "Match Arms Split or Collapse by Budget, Kwargs Sort"
+
 description = '''
 `match_case_align` splits the three over-budget arms onto their own lines and collapses the under-budget `case _` fallback inline. **Kwargs inside the dispatched calls sort, dangling commas drop, and the lone-key `SETTINGS` dict collapses back to one line**, with a second pass stable.
 '''
-previewable = false

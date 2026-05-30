@@ -1,6 +1,7 @@
 [docs]
-title = "Collapsed Multi-Entry Dict Strips Every Colon"
+previewable = false
+title       = "Collapsed Multi-Entry Dict Strips Every Colon"
+
 description = '''
 A multi-entry dict squashed onto one line **strips every entry's pre-`:` padding**, since same-line `:` have no column to align against. The same dict spread across multiple lines belongs to `align_colons` and stays padded for that pass to handle.
 '''
-previewable = false

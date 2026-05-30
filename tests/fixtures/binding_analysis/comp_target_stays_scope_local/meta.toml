@@ -1,6 +1,7 @@
 [docs]
-title = "Comprehension Target Stays Scope-Local"
+previewable = false
+title       = "Comprehension Target Stays Scope-Local"
+
 description = '''
 A comprehension target sits in its own scope and **never bleeds into the module table**, even when its name collides with an existing module binding.
 '''
-previewable = false

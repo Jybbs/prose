@@ -1,66 +1,27 @@
-[tool.prose]
-code-line-length = 100
-docstring-line-length = 60
+code-line-length            = 100
+docstring-line-length       = 60
 docstring-structured-policy = "docstring-line-length"
-target-version = "3.14"
+target-version              = "3.14"
 
-[tool.prose.cache]
-enabled = false
+[cache]
+enabled      = false
 max-size-mib = 250
 
-[tool.prose.rules.align-colons]
-enabled = false
-
-[tool.prose.rules.align-equals]
-enabled = false
-
-[tool.prose.rules.align-imports]
-enabled = false
-
-[tool.prose.rules.alphabetize]
-docstring-entries = false
-enabled = false
-
-[tool.prose.rules.bare-import-allowlist]
-allow = ["scipy", "torch"]
-enabled = false
-
-[tool.prose.rules.blank-lines]
-enabled = false
-
-[tool.prose.rules.collection-layout]
-enabled = false
-max-atomics-per-line = 3
-
-[tool.prose.rules.legacy-union-syntax]
-enabled = false
-
-[tool.prose.rules.loose-constants]
-allow = ["LOG_LEVEL"]
-enabled = false
-
-[tool.prose.rules.match-case-align]
-enabled = false
-
-[tool.prose.rules.multi-line-docstrings]
-enabled = false
-
-[tool.prose.rules.no-single-line-docstrings]
-enabled = false
-
-[tool.prose.rules.no-step-narration]
-enabled = false
-
-[tool.prose.rules.signature-layout]
-enabled = false
-max-inline-params = false
-
-[tool.prose.rules.single-use-variables]
-allow-pattern = "^tmp_"
-enabled = false
-
-[tool.prose.rules.singleton-rule]
-enabled = false
-
-[tool.prose.rules.strip-trailing-commas]
-enabled = false
+[rules]
+align-colons              = false
+align-equals              = false
+align-imports             = false
+alphabetize               = { docstring-entries = false, enabled = false }
+bare-import-allowlist     = { allow = ["scipy", "torch"], enabled = false }
+blank-lines               = false
+collection-layout         = { enabled = false, max-atomics-per-line = 3 }
+legacy-union-syntax       = false
+loose-constants           = { allow = ["LOG_LEVEL"], enabled = false }
+match-case-align          = false
+multi-line-docstrings     = false
+no-single-line-docstrings = false
+no-step-narration         = false
+signature-layout          = { enabled = false, max-inline-params = false }
+single-use-variables      = { allow-pattern = "^tmp_", enabled = false }
+singleton-rule            = false
+strip-trailing-commas     = false

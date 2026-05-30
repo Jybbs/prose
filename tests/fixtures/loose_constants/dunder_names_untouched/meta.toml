@@ -1,6 +1,7 @@
 [docs]
-title = "Dunder Names like `__all__` Are Recognized as Runtime Sentinels"
+previewable = true
+title       = "Dunder Names like `__all__` Are Recognized as Runtime Sentinels"
+
 description = '''
 Dunder names such as `__version__`, `__all__`, and `__author__` are module-level by convention, so the rule **leaves them untouched** and emits no diagnostic for any of them.
 '''
-previewable = true

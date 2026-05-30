@@ -2,7 +2,7 @@
 
 *Prose* caches per-file pipeline output keyed on the source bytes, the active configuration, and the *Prose* version. A repeat `prose check` or `prose format` against an unchanged file collapses to a stat, a hash, and a deserialize, since the cache hit re-emits diagnostics from the cached entry without entering the pipeline.
 
-The cache is enabled by default. The `[tool.prose.cache]` sub-table tunes it, `--no-cache` bypasses it for one invocation, and `prose cache clean` clears it.
+The cache is enabled by default. The `[cache]` table tunes it, `--no-cache` bypasses it for one invocation, and `prose cache clean` clears it.
 
 ## Location
 
@@ -23,7 +23,7 @@ Resolution chains through `PROSE_CACHE_DIR` → the platform default. `PROSE_CAC
 The cache key is the **BLAKE3** digest of `(source_bytes ++ config_toml ++ prose_version ++ cache_format_version)`. The inputs:
 
 - the source bytes of the file under formatting
-- the canonical TOML serialization of the active `Config`, so a semantically-equivalent re-shuffling of the user's `pyproject.toml` produces the same key
+- the canonical TOML serialization of the active `Config`, so a semantically-equivalent re-shuffling of the user's config file produces the same key
 - the *Prose* version from `CARGO_PKG_VERSION`, so a version bump invalidates the cache wholesale
 - a private `CACHE_FORMAT_VERSION` constant that bumps independently when the on-disk entry shape changes, leaving the user-facing version free to ship semver-meaningful bumps without unrelated cache turnover
 
@@ -37,7 +37,7 @@ Inserts write to a `.tmp`-suffixed sibling then `rename` onto the final path, so
 
 ## Configuration
 
-The knobs under `[tool.prose.cache]`:
+The knobs under the `[cache]` table *(`[tool.prose.cache]` in a `pyproject.toml`)*:
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
@@ -45,7 +45,7 @@ The knobs under `[tool.prose.cache]`:
 | `max-size-mib` | positive int | `100` | LRU eviction cap on the cache directory |
 
 ```toml
-[tool.prose.cache]
+[cache]
 enabled      = true
 max-size-mib = 250
 ```
@@ -72,7 +72,7 @@ Returns exit code 0 on success. The IO-error exit code applies on permission or 
 
 ## `prose cache compact`
 
-The `prose cache compact` subcommand runs the LRU eviction pass against the cache, reducing it to the configured `[tool.prose.cache] max-size-mib` cap. Eviction normally runs only on insert, so a project that lowered its cap will not see the new ceiling enforced until the next `prose check` or `prose format` writes a fresh entry. `compact` triggers eviction immediately and reports the bytes and entry count it removed.
+The `prose cache compact` subcommand runs the LRU eviction pass against the cache, reducing it to the configured `[cache] max-size-mib` cap. Eviction normally runs only on insert, so a project that lowered its cap will not see the new ceiling enforced until the next `prose check` or `prose format` writes a fresh entry. `compact` triggers eviction immediately and reports the bytes and entry count it removed.
 
 ```bash
 $ prose cache compact
@@ -101,7 +101,7 @@ $ prose --verbose check src/
 cache: 23 hits, 4 misses, 27 files
 ```
 
-When `--no-cache` is set or `[tool.prose.cache] enabled = false`, the line reads `cache: bypassed` to surface that the cache was skipped for the run.
+When `--no-cache` is set or `[cache] enabled = false`, the line reads `cache: bypassed` to surface that the cache was skipped for the run.
 
 ## Corrupt-Entry Recovery
 

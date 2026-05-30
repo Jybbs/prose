@@ -1,6 +1,7 @@
 [docs]
-title = "Skip Holds One Line Out While Its Group Aligns Around It"
+previewable = false
+title       = "Skip Holds One Line Out While Its Group Aligns Around It"
+
 description = '''
 A trailing `# fmt: skip` **holds one line out of its alignment group** as a transparent gap, so it keeps the spacing the author wrote while every other row in the run aligns to one shared column around it.
 '''
-previewable = false

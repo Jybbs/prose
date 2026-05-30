@@ -1,6 +1,7 @@
 [docs]
-title = "Single-Line Containers Strip Too"
+previewable = false
+title       = "Single-Line Containers Strip Too"
+
 description = '''
 Calls, lists, dicts, and signatures whose brackets sit on one source line still lose the trailing `,`. Single-line trailing commas carry no semantic weight across the in-scope contexts, so **the same backward-scan path strips them as it does multi-line input**.
 '''
-previewable = false

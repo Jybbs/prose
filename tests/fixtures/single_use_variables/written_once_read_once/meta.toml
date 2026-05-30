@@ -1,7 +1,8 @@
 [docs]
-title = "Written Once and Read Once Draws the Diagnostic"
+canonical   = true
+previewable = true
+title       = "Written Once and Read Once Draws the Diagnostic"
+
 description = '''
 A binding assigned and read exactly once surfaces the lint, recommending inlining the right-hand side.
 '''
-previewable = true
-canonical = true

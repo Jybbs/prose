@@ -1,2 +1,2 @@
-[tool.prose.rules.signature-layout]
-max-inline-params = false
+[rules]
+signature-layout = { max-inline-params = false }

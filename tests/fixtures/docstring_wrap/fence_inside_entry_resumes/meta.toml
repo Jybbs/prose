@@ -1,6 +1,7 @@
 [docs]
-title = "Fence Inside an Entry Passes Through and the Next Entry Resumes"
+previewable = false
+title       = "Fence Inside an Entry Passes Through and the Next Entry Resumes"
+
 description = '''
 A triple-backtick fence inside an `Args:` entry **passes through verbatim and ends the entry at the block's boundary**. Entry detection resumes after the fence, so the following entry wraps with the hanging-column shape.
 '''
-previewable = false

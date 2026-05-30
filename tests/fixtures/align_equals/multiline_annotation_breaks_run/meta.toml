@@ -1,6 +1,7 @@
 [docs]
-title = "Multi-Line Annotations Break the Alignment Run"
+previewable = true
+title       = "Multi-Line Annotations Break the Alignment Run"
+
 description = '''
 A parameter whose annotation spans multiple lines **breaks the parameter run**. The surrounding parameters have widths that would align if grouped, yet they stay unpadded as singletons.
 '''
-previewable = true

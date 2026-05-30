@@ -1,6 +1,7 @@
 [docs]
-title = "Top-Level Classes Reorder and Gain Two-Blank Cushions"
+previewable = true
+title       = "Top-Level Classes Reorder and Gain Two-Blank Cushions"
+
 description = '''
 Three top-level class definitions out of alphabetical order with no spacing between them. **`alphabetize` reorders the declarations and `blank-lines` settles the canonical two-blank-line cushion** between top-level definitions.
 '''
-previewable = true

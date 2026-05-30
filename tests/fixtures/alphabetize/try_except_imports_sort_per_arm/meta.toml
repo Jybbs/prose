@@ -1,6 +1,7 @@
 [docs]
-title = "`try` and `except` Imports Sort Per Arm"
+previewable = false
+title       = "`try` and `except` Imports Sort Per Arm"
+
 description = '''
 Imports inside `try` and `except` arms **alphabetize independently per arm**. The handler arm sorts on its own without leaking into the `try` body, mirroring how blank-line-separated import runs each sort within their own bucket.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "Decorators Sit Above the Reshaped Signature"
+previewable = true
+title       = "Decorators Sit Above the Reshaped Signature"
+
 description = '''
 A `@cache`-decorated function with five parameters trips the count trigger and expands. **The decorator surface stays untouched**, because the replacement range starts at `(`, leaving everything above the `def` keyword out of scope.
 '''
-previewable = true

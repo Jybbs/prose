@@ -1,6 +1,7 @@
 [docs]
-title = "Inner Local Flagged While the `def` Stays Exempt"
+previewable = false
+title       = "Inner Local Flagged While the `def` Stays Exempt"
+
 description = '''
 An inner function's single-use local `x` is **flagged**, while the enclosing `def inner` binding is not. The `def` has one write and one read but its kind is `FunctionDef`, falling outside the rule's `Assignment` and `Walrus` filter.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "A Blank Line in the Gap Breaks the Run"
+previewable = true
+title       = "A Blank Line in the Gap Breaks the Run"
+
 description = '''
 A **blank line between two qualifying operands breaks the alignment run**, so the operators on either side of the gap no longer share a column.
 '''
-previewable = true

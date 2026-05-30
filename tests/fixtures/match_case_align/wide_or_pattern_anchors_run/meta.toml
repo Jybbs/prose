@@ -1,6 +1,7 @@
 [docs]
-title = "Or-Patterns Pad to the Widest Member"
+previewable = true
+title       = "Or-Patterns Pad to the Widest Member"
+
 description = '''
 Arms carry `case A | B` alternations of differing width. The widest third arm breaks the greedy split-policy run into its own singleton sub-group, yet **as the strictly widest arm it anchors the others so every `:` shares one column**.
 '''
-previewable = true

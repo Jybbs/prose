@@ -1,6 +1,7 @@
 [docs]
-title = "Three Back-to-Back Defs Each Pair-Count Independently"
+previewable = false
+title       = "Three Back-to-Back Defs Each Pair-Count Independently"
+
 description = '''
 Three consecutive module-level defs each **pair-count independently**, every adjacent pair normalizing to two blank lines regardless of the source's actual gap.
 '''
-previewable = false

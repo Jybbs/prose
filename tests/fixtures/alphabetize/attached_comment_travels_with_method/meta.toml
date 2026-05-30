@@ -1,6 +1,7 @@
 [docs]
-title = "Attached Comments Move With Their Method"
+previewable = false
+title       = "Attached Comments Move With Their Method"
+
 description = '''
 Comments directly above a method **travel with it** when its slot moves. A detached comment separated by a blank line stays in source position, because `Orderer`'s block-range detection stops at the blank-line boundary.
 '''
-previewable = false

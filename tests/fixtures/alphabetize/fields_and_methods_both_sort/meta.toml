@@ -1,6 +1,7 @@
 [docs]
-title = "Without a Validator, Fields and Methods Both Sort"
+previewable = false
+title       = "Without a Validator, Fields and Methods Both Sort"
+
 description = '''
 A field-bearing class with no validator decorators **sorts both its fields (required-then-optional) and its methods (four-group)**. The method-skip rule fires only when at least one method carries a positional-binding decorator, the signal for validator-shaped methods.
 '''
-previewable = false

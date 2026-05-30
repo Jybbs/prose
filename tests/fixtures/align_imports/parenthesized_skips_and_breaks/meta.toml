@@ -1,6 +1,7 @@
 [docs]
-title = "Parenthesized Imports Skip and Break the Run"
+previewable = false
+title       = "Parenthesized Imports Skip and Break the Run"
+
 description = '''
 A multi-line `from`-import with a parenthesized continuation **skips alignment**, since shifting `import` would leave its continuation indent visually disconnected. It also acts as a group breaker, so the single-line neighbors above and below align only among themselves, never crossing the multi-line stretch.
 '''
-previewable = false

@@ -1,6 +1,7 @@
 [docs]
-title = "Zero Blanks between Module Defs Insert Two"
+previewable = false
+title       = "Zero Blanks between Module Defs Insert Two"
+
 description = '''
 Zero blank lines between two module-level defs **expand to the canonical two**. The rule inserts the missing newlines into the inter-statement whitespace.
 '''
-previewable = false
