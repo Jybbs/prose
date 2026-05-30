@@ -1,21 +1,13 @@
-export interface LandingTypingDemoAppendEntry {
-  block : string
-  kind  : 'append'
-  slug  : string
-}
-
 export interface LandingTypingDemoEditEntry {
   anchor : string
   from   : string
   kind   : 'edit'
   slug   : string
-  tail   : string
+  tail  ?: string
   to     : string
 }
 
-export type LandingTypingDemoEntry =
-  | LandingTypingDemoAppendEntry
-  | LandingTypingDemoEditEntry
+export type LandingTypingDemoEntry = LandingTypingDemoEditEntry
 
 export const SOURCE = `from pathlib import Path
 from dataclasses import dataclass
@@ -44,11 +36,20 @@ export const RULES = [
   'collection-layout'
 ] as const
 
-export const PRELUDE = `[tool.prose]
-code-line-length      = 88
+const RULE_COLUMN = Math.max(...RULES.map(rule => rule.length))
+const RULES_NOTE  = "# Rules are on by default.\n# These 'true' lines are just for illustration."
+
+function ruleAnchor(slug: string): string {
+  return `${slug.padEnd(RULE_COLUMN)} = `
+}
+
+export const PRELUDE = `code-line-length      = 88
 docstring-line-length = 76
 target-version        = "3.13"
 
+${RULES_NOTE}
+[rules]
+${RULES.map(slug => `${ruleAnchor(slug)}false`).join('\n')}
 `
 
 interface TailValues {
@@ -58,62 +59,23 @@ interface TailValues {
 }
 
 function tail({ codeLineLength, docstringLineLength, maxShift }: TailValues): string {
-  const base = `[tool.prose]
-code-line-length      = ${codeLineLength}
+  const base = `code-line-length      = ${codeLineLength}
 docstring-line-length = ${docstringLineLength}
 target-version        = "3.13"
 `
   return maxShift === undefined
     ? base
-    : `${base}\n[tool.prose.rules.align-equals]\nmax-shift = ${maxShift}\n`
+    : `${base}\n[rules]\nalign-equals = { max-shift = ${maxShift} }\n`
 }
 
 export const ENTRIES: readonly LandingTypingDemoEntry[] = [
-  {
-    block : '[tool.prose.rules.align-equals]\nenabled   = true\nmax-shift = 8\n\n',
-    kind  : 'append',
-    slug  : 'align-equals'
-  },
-  {
-    block : '[tool.prose.rules.align-colons]\nenabled = true\n\n',
-    kind  : 'append',
-    slug  : 'align-colons'
-  },
-  {
-    block : '[tool.prose.rules.align-imports]\nenabled = true\n\n',
-    kind  : 'append',
-    slug  : 'align-imports'
-  },
-  {
-    block : '[tool.prose.rules.signature-layout]\nenabled = true\n\n',
-    kind  : 'append',
-    slug  : 'signature-layout'
-  },
-  {
-    block : '[tool.prose.rules.alphabetize]\nenabled = true\n\n',
-    kind  : 'append',
-    slug  : 'alphabetize'
-  },
-  {
-    block : '[tool.prose.rules.no-single-line-docstrings]\nenabled = true\n\n',
-    kind  : 'append',
-    slug  : 'no-single-line-docstrings'
-  },
-  {
-    block : '[tool.prose.rules.docstring-wrap]\nenabled = true\n\n',
-    kind  : 'append',
-    slug  : 'docstring-wrap'
-  },
-  {
-    block : '[tool.prose.rules.blank-lines]\nenabled = true\n\n',
-    kind  : 'append',
-    slug  : 'blank-lines'
-  },
-  {
-    block : '[tool.prose.rules.collection-layout]\nenabled = true',
-    kind  : 'append',
-    slug  : 'collection-layout'
-  },
+  ...RULES.map((slug): LandingTypingDemoEditEntry => ({
+    anchor : ruleAnchor(slug),
+    from   : 'false',
+    kind   : 'edit',
+    slug,
+    to     : 'true'
+  })),
   {
     anchor : 'code-line-length      = ',
     from   : '88',
@@ -123,12 +85,12 @@ export const ENTRIES: readonly LandingTypingDemoEntry[] = [
     to     : '100'
   },
   {
-    anchor : 'max-shift = ',
-    from   : '8',
+    anchor : ruleAnchor('align-equals'),
+    from   : 'true',
     kind   : 'edit',
     slug   : 'max-shift',
     tail   : tail({ codeLineLength: 100, docstringLineLength: 76, maxShift: 6 }),
-    to     : '6'
+    to     : '{ max-shift = 6 }'
   },
   {
     anchor : 'docstring-line-length = ',
@@ -139,3 +101,26 @@ export const ENTRIES: readonly LandingTypingDemoEntry[] = [
     to     : '60'
   }
 ]
+
+export interface LandingTypingDemoResetRow {
+  anchor  : string
+  end     : string
+  prelude : string
+}
+
+function buildResetRows(): LandingTypingDemoResetRow[] {
+  const rows  : LandingTypingDemoResetRow[] = []
+  const index = new Map<string, number>()
+  for (const entry of ENTRIES) {
+    const at = index.get(entry.anchor)
+    if (at === undefined) {
+      index.set(entry.anchor, rows.length)
+      rows.push({ anchor: entry.anchor, end: entry.to, prelude: entry.from })
+    } else {
+      rows[at].end = entry.to
+    }
+  }
+  return rows
+}
+
+export const RESET_ROWS: readonly LandingTypingDemoResetRow[] = buildResetRows()

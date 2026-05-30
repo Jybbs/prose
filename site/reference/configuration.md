@@ -1,33 +1,33 @@
 # Configuration
 
-*Prose* loads the nearest `[tool.prose]` table found by walking upward from the working directory. The table is the canonical look-up surface for every project-wide knob *Prose* exposes. With no configuration, every rule runs at its default, in that a project that doesn't write a `[tool.prose]` table gets the canonical *Prose* shape automatically.
+*Prose* loads its configuration from a `prose.toml` file or the `[tool.prose]` table of a `pyproject.toml`, walking upward from the working directory to the nearest one. With no configuration, every rule runs at its default, in that a project that writes no config gets the canonical *Prose* shape automatically.
+
+A `prose.toml` keeps its keys at the document root, the form this page shows throughout. A `pyproject.toml` carries the same keys under a `[tool.prose]` prefix so the manifest can house other tools too, leaving every key below a `[tool.prose.<…>]` equivalent for projects that prefer one file.
 
 `target-version` carries the bare `major.minor` form *(`"3.13"`, `"3.14"`)* used by `mypy`'s `python_version` setting, with rules whose safety depends on the runtime reading the field directly. The docstring-budget duality *(`code-line-length` for Title-case-headed structured sections, `docstring-line-length` for description prose)* lets a project keep code-shaped tables wide while keeping description prose at a comfortable reading measure, and `docstring-structured-policy` collapses both to a single budget when a project prefers a uniform width.
 
-To tune a rule, write its sub-table inside `pyproject.toml`:
+To turn rules off or tune them, write the `[rules]` table:
 
 ```toml
-[tool.prose]
 code-line-length = 88
 
-[tool.prose.rules.align-equals]
-enabled = false
-
-[tool.prose.rules.align-colons]
-max-shift        = 12
-max-shift-policy = "drop"
-
-[tool.prose.rules.collection-layout]
-max-atomics-per-line = 3
+[rules]
+align-colons      = { max-shift = 12, max-shift-policy = "drop" }
+align-equals      = false
+collection-layout = { max-atomics-per-line = 3 }
 ```
+
+A bare `false` disables a rule, an inline table sets its knobs while leaving the rule enabled, and a rule you do not name stays on at its default. Under `pyproject.toml` the table reads `[tool.prose.rules]`, and a rule with several knobs may prefer the expanded `[rules.<rule>]` sub-table *(`[tool.prose.rules.<rule>]` in the manifest)*, which carries the same settings as the inline form.
 
 ## Where Prose Looks
 
-*Prose* walks upward from the working directory looking for a `pyproject.toml` file. The first one it finds wins, in that *Prose* reads only that file's `[tool.prose]` table and never merges across multiple matches up the tree. When no ancestor carries a `pyproject.toml`, every default applies as if the table were empty. No alternate filenames are read *(no `prose.toml`, no `.prose.toml`)*, because the `[tool.prose]` table in `pyproject.toml` already gives the project a single canonical home for the configuration.
+*Prose* walks upward from the working directory toward the filesystem root. In each directory a `prose.toml` outranks a `pyproject.toml`, and the nearest directory carrying either wins, in that *Prose* reads only that one file and never merges across matches up the tree. A `pyproject.toml` lacking a `[tool.prose]` table is passed over, leaving the walk to continue upward. When no ancestor carries either, every default applies as if the config were empty.
+
+When a `prose.toml` and a `pyproject.toml` `[tool.prose]` table share a directory, the `prose.toml` wins and *Prose* notes the precedence to stderr, so the file that took effect is never ambiguous.
 
 ## Top-Level Keys
 
-The top-level `[tool.prose]` table carries settings that span multiple rules.
+The top-level keys carry settings that span multiple rules. They sit at the document root in a `prose.toml` and under `[tool.prose]` in a `pyproject.toml`.
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
@@ -44,7 +44,7 @@ With no value set, every version-dependent arm skips rather than assume a defaul
 
 ## Cache
 
-The `[tool.prose.cache]` sub-table tunes the user-level [**cache**](/reference/cache) that *Prose* keeps for repeat runs. Both keys default to the canonical shape, so a project that does not write the sub-table gets the cache at its full size.
+The `[cache]` table tunes the user-level [**cache**](/reference/cache) that *Prose* keeps for repeat runs *(`[tool.prose.cache]` in a `pyproject.toml`)*. Both keys default to the canonical shape, so a project that does not write the table gets the cache at its full size.
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
@@ -52,21 +52,21 @@ The `[tool.prose.cache]` sub-table tunes the user-level [**cache**](/reference/c
 | `max-size-mib` | positive int | `100` | LRU eviction cap on the cache directory |
 
 ```toml
-[tool.prose.cache]
+[cache]
 enabled      = true
 max-size-mib = 250
 ```
 
 ## Imports
 
-The `[tool.prose.imports]` sub-table names the project's first-party packages, so [[alphabetize]] groups their imports with relative imports in the local-package block rather than the external `from` block. With no list, only relative imports (`from .`, `from ..pkg`) populate the local-package group.
+The `[imports]` table names the project's first-party packages *(`[tool.prose.imports]` in a `pyproject.toml`)*, so [[alphabetize]] groups their imports with relative imports in the local-package block rather than the external `from` block. With no list, only relative imports (`from .`, `from ..pkg`) populate the local-package group.
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `first-party` | list of package names | `[]` | Root package names whose imports lift into the local-package group |
 
 ```toml
-[tool.prose.imports]
+[imports]
 first-party = ["myapp", "acme"]
 ```
 
@@ -74,7 +74,7 @@ A list entry names a root package, so `myapp` matches `import myapp.db` and `fro
 
 ## Per-Rule Knobs
 
-Each rule's sub-table sits at `[tool.prose.rules.<rule>]`. Every rule accepts `enabled` (*defaulting to `true`*), and a handful carry rule-specific knobs. The table below mixes two kinds of row, with the *Where* column resolving the difference. Generic knobs *(`enabled`, `max-shift`, `max-shift-policy`)* apply to every rule in their column's named category. Rule-specific knobs sit at the named rule's sub-table only, even when two rules happen to spell their knob the same way *(the two `allow` rows are distinct, scoped to different rules and reading different inputs)*.
+The `[rules]` table holds one entry per rule you change. A bare bool is the shorthand for `enabled` (*`alphabetize = false`*), an inline table sets a rule's knobs (*`align-equals = { max-shift = 4 }`*), and a rule you do not name stays enabled at its defaults. The table below lists the knobs each rule accepts, with the *Where* column resolving which rules share a knob. Generic knobs *(`enabled`, `max-shift`, `max-shift-policy`)* apply to every rule in their column's named category. Rule-specific knobs read inputs scoped to the named rule, even when two rules happen to spell their knob the same way *(the two `allow` rows are distinct, scoped to different rules and reading different inputs)*.
 
 | Key | Type | Where | Default | Meaning |
 |---|---|---|---|---|
@@ -101,7 +101,7 @@ The four rules that line columns vertically share one structural question: what 
 
 ### Toggle-Only Rules
 
-Some rules answer a single yes-or-no question with no parameters worth tuning, so each ships with `enabled` and nothing else. Reach for the toggle to silence a rule whose default doesn't fit the project: [[blank-lines]], [[docstring-wrap]], [[legacy-union-syntax]], [[multi-line-docstrings]], [[no-single-line-docstrings]], [[no-step-narration]], [[singleton-rule]], [[strip-trailing-commas]], and [[unused-future-annotations]].
+Some rules answer a single yes-or-no question with no parameters worth tuning, so each takes only a bare bool toggle. Reach for `<rule> = false` to silence a rule whose default doesn't fit the project: [[blank-lines]], [[docstring-wrap]], [[legacy-union-syntax]], [[multi-line-docstrings]], [[no-single-line-docstrings]], [[no-step-narration]], [[singleton-rule]], [[strip-trailing-commas]], and [[unused-future-annotations]].
 
 ### Rule-Specific Knobs
 

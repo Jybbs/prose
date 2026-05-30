@@ -45,7 +45,7 @@ Path-mode runs parallelize across files via [**`rayon`**](https://docs.rs/rayon/
 
 ## Cache
 
-`prose check` and `prose format` hit a user-level [**cache**](/reference/cache) on by default. Bypass for one invocation with `--no-cache`, tune the size cap under `[tool.prose.cache]`, or clear with `prose cache clean`.
+`prose check` and `prose format` hit a user-level [**cache**](/reference/cache) on by default. Bypass for one invocation with `--no-cache`, tune the size cap under `[cache]`, or clear with `prose cache clean`.
 
 ## Where to Go Next
 

@@ -10,7 +10,7 @@ stability: internal
 
 ## Consumer-Visible Surface
 
-*Cache* lives at `src/cache.rs` and is `pub(crate)`, so the type is documented here for the consumer-visible CLI behavior it shapes rather than as a directly-callable type. The downstream-visible consequences are the `prose cache` subcommands *(`clean`, `compact`, `info`)*, the `--no-cache` flag on `prose check` and `prose format`, the `--verbose` flag's hit/miss telemetry, and the `[tool.prose.cache]` configuration table. The [**Cache**](/reference/cache) reference covers each surface from a user's perspective.
+*Cache* lives at `src/cache.rs` and is `pub(crate)`, so the type is documented here for the consumer-visible CLI behavior it shapes rather than as a directly-callable type. The downstream-visible consequences are the `prose cache` subcommands *(`clean`, `compact`, `info`)*, the `--no-cache` flag on `prose check` and `prose format`, the `--verbose` flag's hit/miss telemetry, and the `[cache]` configuration table. The [**Cache**](/reference/cache) reference covers each surface from a user's perspective.
 
 A downstream consumer in `0.2.x` reaches the cache indirectly through `cli::runner::process_path`. Each file's bytes feed `CacheKey::compute`, the resulting key drives a lookup, and on hit the runner rehydrates the cached diagnostics and rewrite into a `SourceFile` without entering the pipeline. On miss, the runner runs the pipeline as normal and inserts the resulting entry before emitting.
 
@@ -22,7 +22,7 @@ The cache key is the **BLAKE3** digest of inputs concatenated in order: the sour
 
 A change to any one input produces a different key, so a config tweak invalidates only the entries it semantically affects, and a *Prose* release invalidates the entire cache. The `CACHE_FORMAT_VERSION` input lets the on-disk entry shape bump independently of the user-facing version, leaving a release that does not change the entry shape free to carry its existing cache forward.
 
-The canonical TOML serialization runs through `toml::to_string`, so a semantically-equivalent re-shuffling of the user's `pyproject.toml` produces the same key. Two workspaces editing identical files under matching configuration share a cache hit, because the key already disambiguates source content across projects.
+The canonical TOML serialization runs through `toml::to_string`, so a semantically-equivalent re-shuffling of the user's config file produces the same key. Two workspaces editing identical files under matching configuration share a cache hit, because the key already disambiguates source content across projects.
 
 ## LRU Eviction
 

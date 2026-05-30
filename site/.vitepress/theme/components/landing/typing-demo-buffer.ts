@@ -1,4 +1,8 @@
-import type { LandingTypingDemoEditEntry, LandingTypingDemoEntry } from './typing-demo-fixtures'
+import type {
+  LandingTypingDemoEditEntry,
+  LandingTypingDemoEntry,
+  LandingTypingDemoResetRow
+} from './typing-demo-fixtures'
 
 export interface BufferSegments {
   after             : string
@@ -55,9 +59,7 @@ export function segmentsForEdit(
   const after             = firstNewline === -1 ? '' : fullAfter.slice(firstNewline)
 
   let editing: string
-  if (phase === 'editTraveling') {
-    editing = entry.from
-  } else if (phase === 'editBackspacing') {
+  if (phase === 'editBackspacing') {
     editing = entry.from.slice(0, entry.from.length - editProgress)
   } else if (phase === 'editTyping') {
     editing = entry.to.slice(0, editProgress)
@@ -65,4 +67,23 @@ export function segmentsForEdit(
     editing = entry.to
   }
   return { after, before, editing, editingLineAfter, editingLineBefore }
+}
+
+export function resetText(
+  prelude  : string,
+  rows     : readonly LandingTypingDemoResetRow[],
+  phase    : string,
+  progress : number
+): string {
+  let text = prelude
+  for (const row of rows) {
+    const partial = phase === 'resetBackspacing'
+      ? row.end.slice(0, Math.max(0, row.end.length - progress))
+      : row.prelude.slice(0, progress)
+    const anchorIdx = text.indexOf(row.anchor + row.prelude)
+    if (anchorIdx === -1) continue
+    const valueStart = anchorIdx + row.anchor.length
+    text = text.slice(0, valueStart) + partial + text.slice(valueStart + row.prelude.length)
+  }
+  return text
 }

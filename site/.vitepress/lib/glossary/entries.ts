@@ -43,7 +43,7 @@ export const glossary: Record<string, GlossaryEntry> = {
   '--no-cache': {
     definition: '`--no-cache` is a CLI flag that bypasses the user-level cache for a single '
               + 'invocation of `prose check` or `prose format`. The flag overrides the '
-              + 'configured `[tool.prose.cache] enabled` value.',
+              + 'configured `[cache] enabled` value.',
     families  : ['cli'],
     href      : '/reference/cache#no-cache'
   },
@@ -59,7 +59,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`--verbose` is a global CLI flag that prints a one-line cache hit/miss '
               + 'summary to stderr at the end of each `prose check` or `prose format` run. '
               + 'The flag writes `cache: bypassed` when the cache is disabled via '
-              + '`--no-cache` or `[tool.prose.cache] enabled = false`.',
+              + '`--no-cache` or `[cache] enabled = false`.',
     families  : ['cli'],
     href      : '/reference/cache#hit-miss-telemetry'
   },
@@ -202,7 +202,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'The user-level on-disk cache *Prose* keeps for repeat `prose check` and '
               + '`prose format` runs. Keyed by [[BLAKE3]] over '
               + '`(source ++ config ++ prose_version)`, capped by the LRU eviction the '
-              + '`[tool.prose.cache] max-size-mib` knob configures, bypassable per invocation '
+              + '`[cache] max-size-mib` knob configures, bypassable per invocation '
               + 'with `--no-cache`, and clearable with `prose cache clean`.',
     families  : ['engine', 'cli'],
     href      : '/reference/cache'

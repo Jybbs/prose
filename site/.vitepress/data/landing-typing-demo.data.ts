@@ -8,25 +8,26 @@ import { codeToKeyedTokens, createMagicMoveMachine } from 'shiki-magic-move/core
 import type { KeyedTokensInfo }                      from 'shiki-magic-move/types'
 import { defineLoader }                              from 'vitepress'
 
-import { ENTRIES, PRELUDE, RULES, SOURCE } from '../theme/components/landing/typing-demo-fixtures'
+import { ENTRIES, PRELUDE, RESET_ROWS, RULES, SOURCE } from '../theme/components/landing/typing-demo-fixtures'
 import type {
-  LandingTypingDemoAppendEntry,
   LandingTypingDemoEditEntry,
-  LandingTypingDemoEntry
+  LandingTypingDemoEntry,
+  LandingTypingDemoResetRow
 } from '../theme/components/landing/typing-demo-fixtures'
 import { SHIKI_THEMES } from '../lib/shared/constants'
 import { repoRoot }     from '../lib/shared/paths'
 
 export type {
-  LandingTypingDemoAppendEntry,
   LandingTypingDemoEditEntry,
-  LandingTypingDemoEntry
+  LandingTypingDemoEntry,
+  LandingTypingDemoResetRow
 }
 
 interface LandingTypingDemoData {
   entries          : readonly LandingTypingDemoEntry[]
   prelude          : string
   pythonStateSteps : readonly KeyedTokensInfo[]
+  resetRows        : readonly LandingTypingDemoResetRow[]
 }
 
 declare const data: LandingTypingDemoData
@@ -47,7 +48,7 @@ export default defineLoader({
       states.push(runProse(bin, SOURCE, RULES.slice(0, i + 1).join(',')))
     }
     for (const entry of ENTRIES) {
-      if (entry.kind === 'edit') {
+      if (entry.tail !== undefined) {
         states.push(runProse(bin, SOURCE, RULES.join(','), entry.tail))
       }
     }
@@ -67,9 +68,10 @@ export default defineLoader({
     }
 
     return {
-      entries : ENTRIES,
-      prelude : PRELUDE,
-      pythonStateSteps
+      entries   : ENTRIES,
+      prelude   : PRELUDE,
+      pythonStateSteps,
+      resetRows : RESET_ROWS
     }
   }
 })
@@ -85,12 +87,12 @@ function proseBinary(): string {
 function runProse(bin: string, source: string, select: string, configToml?: string): string {
   const args = ['format', '--stdin', '--select', select]
   if (configToml === undefined) {
-    return execFileSync(bin, args, { encoding: 'utf8', input: source })
+    return execFileSync(bin, args, { encoding: 'utf8', input: source, stdio: ['pipe', 'pipe', 'pipe'] })
   }
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'prose-demo-'))
   try {
-    fs.writeFileSync(path.join(tmpDir, 'pyproject.toml'), configToml)
-    return execFileSync(bin, args, { cwd: tmpDir, encoding: 'utf8', input: source })
+    fs.writeFileSync(path.join(tmpDir, 'prose.toml'), configToml)
+    return execFileSync(bin, args, { cwd: tmpDir, encoding: 'utf8', input: source, stdio: ['pipe', 'pipe', 'pipe'] })
   } finally {
     fs.rmSync(tmpDir, { force: true, recursive: true })
   }

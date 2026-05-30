@@ -67,11 +67,11 @@ Repeat runs hit the user-level [**cache**](/reference/cache) on by default, but 
 - uses: actions/cache@v4
   with:
     path: ~/.cache/prose
-    key: prose-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+    key: prose-${{ runner.os }}-${{ hashFiles('prose.toml', 'pyproject.toml') }}
 - run: prose check .
 ```
 
-Keying off `pyproject.toml` invalidates the cache whenever configuration changes, since the cache key already digests the active `[tool.prose]` table and an upstream change to it produces a fresh set of entries. macOS runners use `~/Library/Caches/prose` and Windows runners use `%LOCALAPPDATA%\prose\cache`, both [documented on the cache page](/reference/cache#location).
+Keying off the config files invalidates the cache whenever configuration changes, since the key already digests the active config and an upstream change to it produces a fresh set of entries. macOS runners use `~/Library/Caches/prose` and Windows runners use `%LOCALAPPDATA%\prose\cache`, both [documented on the cache page](/reference/cache#location).
 
 ## Pairing With Ruff in CI
 
