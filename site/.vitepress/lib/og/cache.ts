@@ -1,6 +1,5 @@
-import fs                from 'node:fs'
-import path              from 'node:path'
-import { fileURLToPath } from 'node:url'
+import fs   from 'node:fs'
+import path from 'node:path'
 
 import * as cacache from 'cacache'
 import { hash }     from 'ohash'
@@ -8,14 +7,14 @@ import { hash }     from 'ohash'
 import type { BrandAssets } from './assets'
 import type { OgPage }      from './pages'
 
-const OG_DIR = path.dirname(fileURLToPath(import.meta.url))
+const OG_DIR = import.meta.dirname
 
 // render sources folded into every cache key, so a change here re-renders all cards
 const TEMPLATE_FILES: readonly string[] = [
   'assets.ts', 'landing.ts', 'parts.ts', 'template.ts', '../shared/registries.ts'
 ]
 
-export type CardInput = OgPage | 'landing'
+type CardInput = OgPage | 'landing'
 
 export function cardKeyer(version: string, brand: BrandAssets): (card: CardInput) => string {
   const base = { brand: hash(brand), template: templateDigest(), version }
