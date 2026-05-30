@@ -84,3 +84,13 @@
   border-radius : 0;
   background    : transparent;
 }
+
+.fixture-pair-doc .shiki-magic-move-container {
+  margin      : 0;
+  padding     : 14px 16px;
+  background  : transparent;
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-code);
+  line-height : 1.55;
+  overflow-x  : auto;
+}
