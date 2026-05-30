@@ -27,7 +27,7 @@ const step       = computed(() => props.activeTab === 'before' ? 0 : 1)
 // the lang chip and copy button stay out of the retokenized code.
 function codeFrom(html: string): string {
   return new DOMParser().parseFromString(html, 'text/html')
-    .querySelector('pre code')?.textContent?.replace(/\s+$/, '') ?? ''
+    .querySelector('pre code')?.textContent?.trimEnd() ?? ''
 }
 
 // Once the fixture scrolls into view, load the renderer and highlighter,

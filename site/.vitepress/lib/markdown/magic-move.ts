@@ -1,6 +1,7 @@
-import { codeToKeyedTokens, createMagicMoveMachine }                from 'shiki-magic-move/core'
-import type { KeyedTokensInfo }                                     from 'shiki-magic-move/types'
-import { createJavaScriptRegexEngine, getSingletonHighlighterCore } from 'shiki/core'
+import { codeToKeyedTokens, createMagicMoveMachine } from 'shiki-magic-move/core'
+import type { KeyedTokensInfo }                      from 'shiki-magic-move/types'
+import { getSingletonHighlighterCore }               from 'shiki/core'
+import { createJavaScriptRegexEngine }               from 'shiki/engine/javascript'
 
 import { SHIKI_THEMES } from '../shared/constants'
 
