@@ -236,9 +236,7 @@ impl<'a> Layouter<'a> {
     }
 
     /// True when `expr` contains an over-cap `Dict` at any depth,
-    /// including itself. Such a dict forces every enclosing collection
-    /// to expand, so a parent collapsing back inline cannot undo the
-    /// count trigger on a nested dict.
+    /// including itself.
     fn has_over_count_dict(&self, expr: &Expr) -> bool {
         let range = expr.range();
         self.tripping_dicts

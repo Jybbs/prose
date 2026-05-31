@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/collection_layout/count_reaches_dict_in_singleton_list/input.py
+---
+wrapper = [{
+    "a": 1,
+    "b": 2,
+    "c": 3,
+    "d": 4
+}]
