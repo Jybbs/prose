@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Dicts Past the Entry-Count Cap Expand Whatever Their Width"
+
+description = '''
+A dict carrying more entries than `max-inline-dict-entries` breaks to one entry per line even when it fits the line budget, while a dict at or under the cap stays inline and an already-expanded dict past the cap stays expanded.
+'''
