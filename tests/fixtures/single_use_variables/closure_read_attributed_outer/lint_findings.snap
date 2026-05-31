@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/single_use_variables/closure_read_attributed_outer/input.py
+---
+[
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 11,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`helper` is assigned and used once. Consider inlining `compute()`"
+  }
+]

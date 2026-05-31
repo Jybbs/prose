@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_align_padding/one_arm_match_strips_gap/input.py
+---
+match value:
+    case "only": icon = "wrench"

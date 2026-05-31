@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_match_case/pass_break_raise_return_bodies/input.py
+---
+align-match-case@57..289

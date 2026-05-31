@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/single_use_variables/async_def_flagged/input.py
+---
+[
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 12,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`payload` is assigned and used once. Consider inlining `await get(url)`"
+  }
+]

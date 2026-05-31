@@ -5,6 +5,6 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
 ---
 alphabetize@7..32
-bare-import-allowlist@19..21
-bare-import-allowlist@29..32
-bare-import-allowlist@7..11
+bare-imports@19..21
+bare-imports@29..32
+bare-imports@7..11

@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Overflowing Dict Expands, Sorts, Strips, and Aligns"
-
-description = '''
-A long inline dict with out-of-order keys and a source trailing comma. The full dict cycle **expands the dict, sorts the keys, strips the surviving trailing comma, and aligns the `:` column** across the rows.
-'''

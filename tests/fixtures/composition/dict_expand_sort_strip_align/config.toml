@@ -1,2 +1,0 @@
-[harness]
-rules = ["collection-layout", "alphabetize", "strip-trailing-commas", "align-colons"]

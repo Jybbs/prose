@@ -1,2 +1,0 @@
-[rules]
-bare-import-allowlist = { allow = [] }

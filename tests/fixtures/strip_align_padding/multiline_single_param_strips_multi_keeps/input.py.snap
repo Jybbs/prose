@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_align_padding/multiline_single_param_strips_multi_keeps/input.py
+---
+def fetch(
+    timeout: float,
+) -> bytes:
+    return b""
+
+
+def render(
+    template : str,
+    context  : dict,
+) -> str:
+    return ""

@@ -5,5 +5,5 @@ input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
 ---
 align-colons@191..272
 alphabetize@11..290
+docstring-frame@48..48
 docstring-wrap@124..124
-multi-line-docstrings@48..48

@@ -1,9 +1,0 @@
----
-source: tests/diagnostics.rs
-assertion_line: 36
-expression: render(&diagnostics)
-input_file: tests/fixtures/no_step_narration/step_run_one_each/input.py
----
-no-step-narration@145..169
-no-step-narration@26..51
-no-step-narration@86..111

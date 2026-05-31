@@ -40,11 +40,11 @@ impl Emitter for Text {
                         ),
                 );
                 let mut groups = vec![warning];
-                if let Some(edits) = &diag.fix {
+                if let Some(fix) = &diag.fix {
                     let snippet = Snippet::source(file.source_text())
                         .line_start(1)
                         .path(file.name())
-                        .patches(edits.iter().map(|edit| {
+                        .patches(fix.edits().iter().map(|edit| {
                             Patch::new(
                                 edit.range().to_std_range(),
                                 edit.content().unwrap_or_default(),
@@ -61,7 +61,7 @@ impl Emitter for Text {
 
 #[cfg(test)]
 mod tests {
-    use ruff_diagnostics::Edit;
+    use ruff_diagnostics::{Edit, Fix};
     use ruff_text_size::TextRange;
 
     use super::*;
@@ -69,7 +69,7 @@ mod tests {
     use crate::rule::RuleId;
     use crate::source::Source;
 
-    fn diag(range: TextRange, fix: Option<Vec<Edit>>) -> Diagnostic {
+    fn diag(range: TextRange, fix: Option<Fix>) -> Diagnostic {
         Diagnostic {
             fix,
             message: "rewrite x to y".to_owned(),
@@ -102,7 +102,10 @@ mod tests {
             &source,
             &diag(
                 range,
-                Some(vec![Edit::range_replacement("y".to_owned(), range)]),
+                Some(Fix::safe_edit(Edit::range_replacement(
+                    "y".to_owned(),
+                    range,
+                ))),
             ),
         );
         assert!(rendered.contains("warning: rewrite x to y"));
@@ -117,10 +120,13 @@ mod tests {
             &source,
             &diag(
                 TextRange::new(0.into(), 7.into()),
-                Some(vec![
+                Some(Fix::safe_edits(
                     Edit::range_replacement("aaa".to_owned(), TextRange::new(0.into(), 1.into())),
-                    Edit::range_replacement("bbb".to_owned(), TextRange::new(6.into(), 7.into())),
-                ]),
+                    [Edit::range_replacement(
+                        "bbb".to_owned(),
+                        TextRange::new(6.into(), 7.into()),
+                    )],
+                )),
             ),
         );
         assert!(rendered.contains("help: replace with"));

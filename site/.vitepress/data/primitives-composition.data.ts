@@ -30,7 +30,9 @@ interface PrimitivesCompositionData {
 
 const SOURCES: readonly PrimitiveEntrySource[] = [
   {
-    consumedBy : ['align-colons', 'align-comparisons', 'align-equals', 'align-imports', 'match-case-align'],
+    consumedBy : [
+      'align-colons', 'align-comparisons', 'align-equals', 'align-imports', 'align-match-case'
+    ],
     consumes   : ['edit', 'source'],
     layer      : 'orchestration',
     slug       : 'aligner',
@@ -56,7 +58,7 @@ const SOURCES: readonly PrimitiveEntrySource[] = [
     tagline    : 'content-addressed result cache'
   },
   {
-    consumedBy : ['align-colons', 'singleton-rule'],
+    consumedBy : ['align-colons', 'strip-align-padding'],
     consumes   : ['aligner', 'source'],
     layer      : 'analysis',
     slug       : 'colon-targets',
@@ -64,7 +66,7 @@ const SOURCES: readonly PrimitiveEntrySource[] = [
     tagline    : 'five-context colon walker'
   },
   {
-    consumedBy : ['docstring-wrap', 'multi-line-docstrings', 'no-single-line-docstrings'],
+    consumedBy : ['docstring-wrap', 'docstring-frame', 'docstring-expand'],
     consumes   : ['edit', 'source'],
     layer      : 'analysis',
     slug       : 'docstring',

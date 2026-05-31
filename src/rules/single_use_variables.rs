@@ -54,6 +54,7 @@ impl Rule for SingleUseVariables {
             analysis: source.binding_analysis(),
             diagnostics: Vec::new(),
             rule: self.id(),
+            text: source.text(),
         };
         visitor.visit_body(&source.ast().body);
         visitor.diagnostics
@@ -81,6 +82,7 @@ struct Visitor<'a> {
     analysis: &'a BindingAnalysis,
     diagnostics: Vec<Diagnostic>,
     rule: RuleId,
+    text: &'a str,
 }
 
 impl Visitor<'_> {
@@ -98,13 +100,16 @@ impl Visitor<'_> {
         if self.allow_pattern.is_match(name) {
             return None;
         }
+        let write_offset = self.analysis.first_write_offset(binding);
+        let value = self
+            .analysis
+            .assignment_value_range(write_offset)
+            .map(|range| format!(" `{}`", &self.text[range]))
+            .unwrap_or_default();
         Some(Diagnostic::lint(
             self.rule,
-            TextRange::at(
-                self.analysis.first_write_offset(binding),
-                TextSize::of(name),
-            ),
-            format!("`{name}` is assigned and used once. Consider inlining"),
+            TextRange::at(write_offset, TextSize::of(name)),
+            format!("`{name}` is assigned and used once. Consider inlining{value}"),
         ))
     }
 
@@ -184,6 +189,41 @@ mod tests {
         assert_eq!(only.severity, Severity::Lint);
         assert!(only.fix.is_none());
         assert!(only.message.contains("`x`"));
+        assert!(only.message.ends_with("Consider inlining `1`"));
         assert_eq!(&source.text()[only.range], "x");
+    }
+
+    #[test]
+    fn message_carries_inlined_value_from_nested_block() {
+        let source = parse("def f():\n    if cond:\n        y = g() + 1\n        return y\n");
+        let rule = SingleUseVariables::from_config(&Config::default());
+        let diagnostics = rule.lint(&source);
+        let only = diagnostics.first().expect("one diagnostic");
+
+        assert!(only.message.ends_with("Consider inlining `g() + 1`"));
+    }
+
+    #[test]
+    fn tuple_unpacked_binding_message_omits_value() {
+        let source = parse("def f(pair):\n    a, b = pair\n    log(b)\n    return a + b\n");
+        let rule = SingleUseVariables::from_config(&Config::default());
+        let diagnostics = rule.lint(&source);
+        let only = diagnostics.first().expect("one diagnostic");
+
+        assert!(only.message.ends_with("Consider inlining"));
+        assert!(!only.message.contains("inlining `"));
+    }
+
+    #[test]
+    fn walrus_binding_message_omits_unnameable_value() {
+        let source = parse(
+            "def f(items):\n    if (n := len(items)) == 1:\n        return n\n    return 0\n",
+        );
+        let rule = SingleUseVariables::from_config(&Config::default());
+        let diagnostics = rule.lint(&source);
+        let only = diagnostics.first().expect("one diagnostic");
+
+        assert!(only.message.ends_with("Consider inlining"));
+        assert!(!only.message.contains("inlining `"));
     }
 }

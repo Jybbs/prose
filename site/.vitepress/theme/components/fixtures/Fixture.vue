@@ -10,6 +10,7 @@ import FixtureToggle      from './FixtureToggle.vue'
 import { data as fixtures } from '../../../data/fixtures.data'
 import { data as rules }    from '../../../data/rules.data'
 import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
+import { inlineCode }       from '../../../lib/shared/inline-code'
 import { lookup }           from '../../../lib/shared/lookup'
 
 const props = defineProps<{
@@ -25,7 +26,7 @@ const entry      = lookup(rule, props.case, `Fixture case under "${props.rule}"`
 const id         = computed(() => `fixture-${props.rule}-${props.case}`)
 const activeTab  = ref<FixtureTab>('after')
 const showToggle = computed(() => props.variant !== 'landing' && entry.changesSource)
-const titleHtml  = computed(() => props.title ? props.title.replace(/`([^`]+)`/g, '<code>$1</code>') : '')
+const titleHtml  = computed(() => props.title ? inlineCode(props.title) : '')
 
 const ruleData = computed(() => rules.bySlug[props.rule.replaceAll('_', '-')] ?? null)
 const family   = computed(() => ruleData.value?.family ?? null)
@@ -54,6 +55,7 @@ useEventListener('hashchange', syncWithHash)
     :class="{ 'is-open': isOpen }"
     :data-family="family"
     :data-edits="entry.changesSource"
+    :data-lint="entry.hasFindings"
   >
     <div class="fixture-card-summary-row" @click="toggle">
       <button
@@ -71,7 +73,7 @@ useEventListener('hashchange', syncWithHash)
         @click.stop
       >
         <FixtureToggle v-if="entry.changesSource" v-model="activeTab" />
-        <FixtureNoChange v-else />
+        <FixtureNoChange v-else :lint="entry.hasFindings" />
       </div>
     </div>
     <div

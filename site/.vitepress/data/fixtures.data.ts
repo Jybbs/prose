@@ -5,6 +5,7 @@ import path          from 'node:path'
 import matter           from 'gray-matter'
 import { defineLoader } from 'vitepress'
 
+import { LINT_FINDINGS_FILE, lintDecorations, readLintFindings } from '../lib/fixtures/lint-findings'
 import {
   FIXTURES_DIR, INPUT_FILE, META_FILE, SNAPSHOT_FILE, readFixtureDocs, walkFixtures
 } from '../lib/fixtures/walker'
@@ -17,6 +18,7 @@ const fixturesRoot = path.join(root, FIXTURES_DIR)
 interface FixtureEntry {
   changesSource    : boolean
   descriptionHtml ?: string
+  hasFindings      : boolean
   inputHtml        : string
   outputHtml       : string
 }
@@ -38,6 +40,7 @@ export default defineLoader({
   watch: [
     `${fixturesRoot}/**/${INPUT_FILE}`,
     `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
+    `${fixturesRoot}/*/*/${LINT_FINDINGS_FILE}`,
     `${fixturesRoot}/*/*/${META_FILE}`
   ],
   async load(): Promise<FixtureData> {
@@ -48,14 +51,16 @@ export default defineLoader({
         fs.readFile(inputPath,           'utf8'),
         fs.readFile(`${inputPath}.snap`, 'utf8')
       ])
-      const output = matter(snapRaw).content.replace(/\s+$/, '\n')
+      const output      = matter(snapRaw).content.replace(/\s+$/, '\n')
+      const decorations = lintDecorations(readLintFindings(inputPath))
       return {
         caseName,
         entry: {
           changesSource   : inputRaw !== output,
           descriptionHtml : descriptionHtml(md, inputPath),
+          hasFindings     : decorations.length > 0,
           inputHtml       : renderFencedHtml(md, inputRaw, 'python'),
-          outputHtml      : renderFencedHtml(md, output, 'python')
+          outputHtml      : renderFencedHtml(md, output, 'python', decorations)
         },
         rule
       }

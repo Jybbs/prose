@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+assertion_line: 36
+expression: render(&diagnostics)
+input_file: tests/fixtures/step_narration/step_word_dot_separator/input.py
+---
+step-narration@26..50

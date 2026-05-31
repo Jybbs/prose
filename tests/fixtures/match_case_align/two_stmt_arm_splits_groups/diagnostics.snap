@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/match_case_align/two_stmt_arm_splits_groups/input.py
----
-match-case-align@175..218
-match-case-align@49..58

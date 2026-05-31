@@ -1,8 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/bare_import_allowlist/empty_allow_flags_all/input.py
----
-import numpy
-import pandas
-import os

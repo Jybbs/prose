@@ -1,9 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/match_case_align/wide_or_pattern_anchors_run/input.py
----
-match status:
-    case "ok" | "pass"              : result = True
-    case "warn"                     : result = True
-    case "fail" | "error" | "panic" : result = False

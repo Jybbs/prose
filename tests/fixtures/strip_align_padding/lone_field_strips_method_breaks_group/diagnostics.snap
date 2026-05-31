@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_align_padding/lone_field_strips_method_breaks_group/input.py
+---
+strip-align-padding@181..182
+strip-align-padding@70..71

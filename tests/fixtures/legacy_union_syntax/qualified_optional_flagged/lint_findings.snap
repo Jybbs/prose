@@ -1,0 +1,28 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/legacy_union_syntax/qualified_optional_flagged/input.py
+---
+[
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 24,
+      "row": 3
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "typing.Optional[int]",
+          "content": "int | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 4,
+      "row": 3
+    },
+    "message": "`typing.Optional[int]` is the legacy form. Use `int | None`"
+  }
+]

@@ -11,7 +11,7 @@ stability: internal
 
 ## Public Surface
 
-*ColonTargets* lives at `src/primitives/colon_targets.rs` and is `pub(crate)`. Two consumers use it today: [[align-colons]] *(which aligns multi-item groups in every context)* and [[singleton-rule]] *(which strips pre-colon padding from groups that have no column to align to)*. The downstream-visible consequence is the rewrites both rules emit through the diagnostic stream.
+*ColonTargets* lives at `src/primitives/colon_targets.rs` and is `pub(crate)`. Two consumers use it today: [[align-colons]] *(which aligns multi-item groups in every context)* and [[strip-align-padding]] *(which strips pre-colon padding from groups that have no column to align to)*. The downstream-visible consequence is the rewrites both rules emit through the diagnostic stream.
 
 At `1.0` the trait promotes to `pub`, so a downstream can implement a `:`-context rule of its own.
 
@@ -45,11 +45,11 @@ pub(crate) trait ColonEmitter {
 }
 ```
 
-`handle` is the catch-all for class fields, docstring args, and parameters. `dict` carries the surrounding `ExprDict` for consumers that need its range *(e.g., the `# prose: keep` suppression check on dict literals)*, with the default delegating to `handle` so a rule that does not care about the surrounding dict gets the same callback. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[match-case-align]] owns the match-arm context)*, with its default also delegating to `handle` for any rule that wants the unified callback.
+`handle` is the catch-all for class fields, docstring args, and parameters. `dict` carries the surrounding `ExprDict` for consumers that need its range *(e.g., the `# prose: keep` suppression check on dict literals)*, with the default delegating to `handle` so a rule that does not care about the surrounding dict gets the same callback. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[align-match-case]] owns the match-arm context)*, with its default also delegating to `handle` for any rule that wants the unified callback.
 
 `walk(source)` is the provided driver across `source`'s module body, recursing into nested classes, functions, matches, and expressions so a single call covers the whole tree. A consuming rule never overrides `walk`, because calling the provided method is enough to drive the receiver across every relevant context.
 
-`match_case(source, case) -> Option<aligner::Member>` is exposed `pub(crate)` alongside the trait for [[match-case-align]], which builds members one match arm at a time rather than through the receiver shape. New rules whose grouping logic is contiguous-line-shaped should reach for the trait, whereas rules that emit one-member-per-construct should reach for `match_case` directly.
+`match_case(source, case) -> Option<aligner::Member>` is exposed `pub(crate)` alongside the trait for [[align-match-case]], which builds members one match arm at a time rather than through the receiver shape. New rules whose grouping logic is contiguous-line-shaped should reach for the trait, whereas rules that emit one-member-per-construct should reach for `match_case` directly.
 
 ## Build Pattern
 
@@ -75,8 +75,8 @@ A new `:`-context rule implements `ColonEmitter`, overrides the handlers for the
 
 - [[aligner]] is the math the produced `Member` lists feed into.
 - [[align-colons]] aligns multi-item groups across every context.
-- [[singleton-rule]] strips padding from singleton groups.
-- [[match-case-align]] owns the match-arm context exclusively.
+- [[strip-align-padding]] strips padding from singleton groups.
+- [[align-match-case]] owns the match-arm context exclusively.
 
 </template>
 

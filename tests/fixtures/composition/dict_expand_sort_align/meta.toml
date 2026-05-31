@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Overflowing Dict Expands, Sorts, and Aligns"
+
+description = '''
+A long inline dict with out-of-order keys. The full dict cycle **expands the dict, sorts the keys, and aligns the `:` column** across the rows.
+'''

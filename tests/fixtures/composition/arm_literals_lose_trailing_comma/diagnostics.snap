@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/arm_literals_lose_trailing_comma/input.py
 ---
-match-case-align@56..165
+align-match-case@56..165
 strip-trailing-commas@136..137
 strip-trailing-commas@85..86

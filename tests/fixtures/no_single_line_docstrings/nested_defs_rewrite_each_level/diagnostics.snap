@@ -1,8 +1,0 @@
----
-source: tests/diagnostics.rs
-assertion_line: 36
-expression: render(&diagnostics)
-input_file: tests/fixtures/no_single_line_docstrings/nested_defs_rewrite_each_level/input.py
----
-no-single-line-docstrings@20..36
-no-single-line-docstrings@69..85

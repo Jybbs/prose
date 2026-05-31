@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/from_import_not_targeted/input.py
+---
+from os import path

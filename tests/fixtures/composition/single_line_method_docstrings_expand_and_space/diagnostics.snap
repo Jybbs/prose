@@ -6,5 +6,5 @@ input_file: tests/fixtures/composition/single_line_method_docstrings_expand_and_
 ---
 blank-lines@111..112
 blank-lines@14..15
-no-single-line-docstrings@130..156
-no-single-line-docstrings@49..73
+docstring-expand@130..156
+docstring-expand@49..73

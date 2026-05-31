@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/single_use_variables/inner_local_flagged_def_exempt/input.py
+---
+[
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 10,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 3
+    },
+    "message": "`x` is assigned and used once. Consider inlining `compute()`"
+  }
+]

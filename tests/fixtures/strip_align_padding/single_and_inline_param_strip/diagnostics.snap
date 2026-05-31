@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_align_padding/single_and_inline_param_strip/input.py
+---
+strip-align-padding@141..142
+strip-align-padding@156..157
+strip-align-padding@17..18
+strip-align-padding@174..175
+strip-align-padding@70..71
+strip-align-padding@87..88

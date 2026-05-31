@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_match_case/multiline_rhs_rejects_arm/input.py
+---
+align-match-case@111..120

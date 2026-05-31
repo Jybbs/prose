@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/docstring_expand/two_step_method_indent/input.py
+---
+class Bag:
+    def empty(self):
+        """
+        Return whether the bag is empty.
+        """
+        return not self.items

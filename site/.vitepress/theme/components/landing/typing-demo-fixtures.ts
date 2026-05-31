@@ -17,11 +17,11 @@ class Config:
     timeout: int | None = None
     name: str = "service"
     debug: bool = False
-    def build_request(self, endpoint_url: str, body: dict, timeout: int = 30, headers: dict | None = None,) -> dict:
+    def build_request(self, db: str, full_endpoint_url: str, body: dict, timeout: int = 30, headers: dict | None = None,) -> dict:
         """Build a configured request with per-call overrides."""
         headers_map = {"x-api-key": "secret", "accept": "application/json", "x-trace-id": "abc-123"}
         base_url = "https://example.com"
-        return {"url": f"{base_url}/{endpoint_url}"}
+        return {"url": f"{base_url}/{full_endpoint_url}"}
 `
 
 export const RULES = [
@@ -30,14 +30,14 @@ export const RULES = [
   'align-imports',
   'signature-layout',
   'alphabetize',
-  'no-single-line-docstrings',
+  'docstring-expand',
   'docstring-wrap',
   'blank-lines',
   'collection-layout'
 ] as const
 
 const RULE_COLUMN = Math.max(...RULES.map(rule => rule.length))
-const RULES_NOTE  = "# Rules are on by default.\n# These 'true' lines are just for illustration."
+const RULES_NOTE  = "# Rules are on by default.\n# All 'true' values are just for show."
 
 function ruleAnchor(slug: string): string {
   return `${slug.padEnd(RULE_COLUMN)} = `
@@ -53,19 +53,23 @@ ${RULES.map(slug => `${ruleAnchor(slug)}false`).join('\n')}
 `
 
 interface TailValues {
-  codeLineLength      : number
-  docstringLineLength : number
-  maxShift           ?: number
+  alignColons         ?: string
+  alignEquals         ?: number
+  docstringLineLength  : number
 }
 
-function tail({ codeLineLength, docstringLineLength, maxShift }: TailValues): string {
-  const base = `code-line-length      = ${codeLineLength}
+function tail({ alignColons, alignEquals, docstringLineLength }: TailValues): string {
+  const base = `code-line-length      = 88
 docstring-line-length = ${docstringLineLength}
 target-version        = "3.13"
 `
-  return maxShift === undefined
+  const rules = [
+    alignEquals !== undefined ? `align-equals = { max-shift = ${alignEquals} }` : null,
+    alignColons !== undefined ? `align-colons = ${alignColons}`                 : null
+  ].filter(Boolean)
+  return rules.length === 0
     ? base
-    : `${base}\n[rules]\nalign-equals = { max-shift = ${maxShift} }\n`
+    : `${base}\n[rules]\n${rules.join('\n')}\n`
 }
 
 export const ENTRIES: readonly LandingTypingDemoEntry[] = [
@@ -77,27 +81,35 @@ export const ENTRIES: readonly LandingTypingDemoEntry[] = [
     to     : 'true'
   })),
   {
-    anchor : 'code-line-length      = ',
-    from   : '88',
-    kind   : 'edit',
-    slug   : 'code-line-length',
-    tail   : tail({ codeLineLength: 100, docstringLineLength: 76 }),
-    to     : '100'
-  },
-  {
     anchor : ruleAnchor('align-equals'),
     from   : 'true',
     kind   : 'edit',
     slug   : 'max-shift',
-    tail   : tail({ codeLineLength: 100, docstringLineLength: 76, maxShift: 6 }),
+    tail   : tail({ alignEquals: 6, docstringLineLength: 76 }),
     to     : '{ max-shift = 6 }'
+  },
+  {
+    anchor : ruleAnchor('align-colons'),
+    from   : 'true',
+    kind   : 'edit',
+    slug   : 'max-shift-policy',
+    tail   : tail({ alignColons: '{ max-shift-policy = "drop" }', alignEquals: 6, docstringLineLength: 76 }),
+    to     : '{ max-shift-policy = "drop" }'
+  },
+  {
+    anchor : ruleAnchor('align-colons'),
+    from   : '{ max-shift-policy = "drop" }',
+    kind   : 'edit',
+    slug   : 'max-shift',
+    tail   : tail({ alignColons: '{ max-shift = 16 }', alignEquals: 6, docstringLineLength: 76 }),
+    to     : '{ max-shift = 16 }'
   },
   {
     anchor : 'docstring-line-length = ',
     from   : '76',
     kind   : 'edit',
     slug   : 'docstring-line-length',
-    tail   : tail({ codeLineLength: 100, docstringLineLength: 60, maxShift: 6 }),
+    tail   : tail({ alignColons: '{ max-shift = 16 }', alignEquals: 6, docstringLineLength: 60 }),
     to     : '60'
   }
 ]

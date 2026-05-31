@@ -1,2 +1,0 @@
-[harness]
-rules = ["no-single-line-docstrings", "multi-line-docstrings"]

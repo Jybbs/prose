@@ -22,11 +22,11 @@ Reachable from a downstream Rust consumer in `0.2.x`:
 
 1. [[binding-analysis]] · per-*Source* table indexing every write and read of every name in every lexical scope
 2. [[suppression-map]] · per-*Source* index of `# fmt: off` / `# fmt: skip` / `# yapf` / `# prose: ignore[...]` directives
-3. [[aligner]] · shared alignment math, consumed by [[align-colons]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[match-case-align]]
+3. [[aligner]] · shared alignment math, consumed by [[align-colons]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[align-match-case]]
 4. [[orderer]] · sibling reorder helper preserving attached comments, consumed by [[alphabetize]]
-5. [[colon-targets]] · walker that finds every `:` alignment context, consumed by [[align-colons]] and [[singleton-rule]]
+5. [[colon-targets]] · walker that finds every `:` alignment context, consumed by [[align-colons]] and [[strip-align-padding]]
 6. [[edit]] · the `Edit { range, content }` shape every rule emits and the *Pipeline* applies
-7. [[docstring]] · PEP 257 docstring walker, consumed by [[docstring-wrap]], [[multi-line-docstrings]], [[no-single-line-docstrings]]
+7. [[docstring]] · PEP 257 docstring walker, consumed by [[docstring-wrap]], [[docstring-frame]], [[docstring-expand]]
 8. [[walker]] · ignore-aware filesystem walker, consumed by the path-mode CLI
 9. [[cache]] · user-level content-addressed cache, consumed by `prose check` and `prose format` to skip the pipeline on unchanged source
 

@@ -32,10 +32,10 @@ Config {
         strip_trailing_commas: ToggleOnly {
             enabled: false,
         },
-        no_single_line_docstrings: ToggleOnly {
+        docstring_expand: ToggleOnly {
             enabled: false,
         },
-        multi_line_docstrings: ToggleOnly {
+        docstring_frame: ToggleOnly {
             enabled: false,
         },
         unused_future_annotations: ToggleOnly {
@@ -44,14 +44,14 @@ Config {
         blank_lines: ToggleOnly {
             enabled: false,
         },
-        bare_import_allowlist: BareImportAllowlistConfig {
+        bare_imports: BareImportsConfig {
             allow: [
                 "scipy",
                 "torch",
             ],
             enabled: false,
         },
-        match_case_align: AlignmentConfig {
+        align_match_case: AlignmentConfig {
             enabled: false,
             max_shift: 8,
             max_shift_policy: Split,
@@ -83,7 +83,7 @@ Config {
             max_shift: 8,
             max_shift_policy: Split,
         },
-        singleton_rule: ToggleOnly {
+        strip_align_padding: ToggleOnly {
             enabled: false,
         },
         loose_constants: LooseConstantsConfig {
@@ -92,7 +92,7 @@ Config {
             ],
             enabled: false,
         },
-        no_step_narration: ToggleOnly {
+        step_narration: ToggleOnly {
             enabled: false,
         },
         legacy_union_syntax: ToggleOnly {

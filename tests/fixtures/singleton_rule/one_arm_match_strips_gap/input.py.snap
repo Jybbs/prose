@@ -1,7 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/singleton_rule/one_arm_match_strips_gap/input.py
----
-match value:
-    case "only": icon = "wrench"

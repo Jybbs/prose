@@ -1,8 +1,7 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/single_line_docstring_overflows_on_expand/input.py
 ---
+docstring-expand@29..175
 docstring-wrap@98..170
-no-single-line-docstrings@29..175

@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/singleton_rule/lone_field_strips_method_breaks_group/input.py
----
-singleton-rule@181..182
-singleton-rule@70..71

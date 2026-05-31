@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/bare_imports/prose_ignore_drops_line/input.py
+---
+

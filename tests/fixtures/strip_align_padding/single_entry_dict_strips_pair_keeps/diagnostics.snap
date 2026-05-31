@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_align_padding/single_entry_dict_strips_pair_keeps/input.py
+---
+strip-align-padding@114..115
+strip-align-padding@125..126
+strip-align-padding@20..22

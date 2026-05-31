@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/pre_match_assigns_align_arms_collapse/input.py
 ---
 align-equals@25..37
-match-case-align@92..186
+align-match-case@92..186

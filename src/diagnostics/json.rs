@@ -6,13 +6,15 @@ use std::{
     io::{self, Write},
 };
 
-use ruff_diagnostics::{Applicability, Edit};
+use ruff_diagnostics::{Applicability, Edit, Fix};
 use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 use ruff_text_size::Ranged;
 use serde::Serialize;
 
 use crate::{
-    diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns, write_json_line},
+    diagnostics::{
+        Diagnostic, Emitter, EmitterSummary, Run, Severity, line_columns, write_json_line,
+    },
     rule::RuleId,
 };
 
@@ -33,7 +35,7 @@ impl Emitter for Json {
             for diag in *diagnostics {
                 write_json_line(
                     writer,
-                    &JsonRecord::Diagnostic(JsonDiagnostic::new(file, diag)),
+                    &JsonRecord::Diagnostic(JsonDiagnostic::new(file, diag, true)),
                 )?;
             }
         }
@@ -45,20 +47,21 @@ impl Emitter for Json {
 struct JsonDiagnostic<'a> {
     code: &'a str,
     end_location: JsonLocation,
-    filename: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    filename: Option<&'a str>,
     fix: Option<JsonFix<'a>>,
     location: JsonLocation,
     message: &'a str,
 }
 
 impl<'a> JsonDiagnostic<'a> {
-    fn new(file: &'a SourceFile, diag: &'a Diagnostic) -> Self {
+    fn new(file: &'a SourceFile, diag: &'a Diagnostic, full: bool) -> Self {
         let (start, end) = line_columns(file, diag.range);
         Self {
             code: diag.rule.as_str(),
             end_location: end.into(),
-            filename: file.name(),
-            fix: diag.fix.as_ref().map(|edits| JsonFix::new(file, edits)),
+            filename: full.then(|| file.name()),
+            fix: diag.fix.as_ref().map(|fix| JsonFix::new(file, fix, full)),
             location: start.into(),
             message: &diag.message,
         }
@@ -69,18 +72,28 @@ impl<'a> JsonDiagnostic<'a> {
 struct JsonEdit<'a> {
     before: &'a str,
     content: &'a str,
-    end_location: JsonLocation,
-    location: JsonLocation,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    end_location: Option<JsonLocation>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    location: Option<JsonLocation>,
 }
 
 impl<'a> JsonEdit<'a> {
-    fn new(file: &'a SourceFile, edit: &'a Edit) -> Self {
-        let (start, end) = line_columns(file, edit.range());
+    fn new(file: &'a SourceFile, edit: &'a Edit, full: bool) -> Self {
+        let (location, end_location) = if full {
+            let (start, end) = line_columns(file, edit.range());
+            (
+                Some(JsonLocation::from(start)),
+                Some(JsonLocation::from(end)),
+            )
+        } else {
+            (None, None)
+        };
         Self {
             before: &file.source_text()[edit.range()],
             content: edit.content().unwrap_or_default(),
-            end_location: end.into(),
-            location: start.into(),
+            end_location,
+            location,
         }
     }
 }
@@ -92,10 +105,14 @@ struct JsonFix<'a> {
 }
 
 impl<'a> JsonFix<'a> {
-    fn new(file: &'a SourceFile, edits: &'a [Edit]) -> Self {
+    fn new(file: &'a SourceFile, fix: &'a Fix, full: bool) -> Self {
         Self {
-            applicability: Applicability::Safe,
-            edits: edits.iter().map(|edit| JsonEdit::new(file, edit)).collect(),
+            applicability: fix.applicability(),
+            edits: fix
+                .edits()
+                .iter()
+                .map(|edit| JsonEdit::new(file, edit, full))
+                .collect(),
         }
     }
 }
@@ -143,6 +160,18 @@ impl<'a> JsonSummary<'a> {
     }
 }
 
+/// Renders the lint-severity diagnostics as the JSON records the docs
+/// site reads, or `None` when the run emitted none.
+pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
+    let records: Vec<JsonDiagnostic> = diagnostics
+        .iter()
+        .filter(|diag| diag.severity == Severity::Lint)
+        .map(|diag| JsonDiagnostic::new(file, diag, false))
+        .collect();
+    (!records.is_empty())
+        .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
+}
+
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
@@ -156,7 +185,10 @@ mod tests {
     fn diag() -> Diagnostic {
         let range = TextRange::new(0.into(), 1.into());
         Diagnostic {
-            fix: Some(vec![Edit::range_replacement("y".to_owned(), range)]),
+            fix: Some(Fix::safe_edit(Edit::range_replacement(
+                "y".to_owned(),
+                range,
+            ))),
             message: "rewrite x to y".to_owned(),
             range,
             rule: RuleId::from("rewrite-x"),
@@ -203,7 +235,10 @@ mod tests {
         let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
         let range = TextRange::new(0.into(), 11.into());
         let diag = Diagnostic {
-            fix: Some(vec![Edit::range_replacement("z = 3".to_owned(), range)]),
+            fix: Some(Fix::safe_edit(Edit::range_replacement(
+                "z = 3".to_owned(),
+                range,
+            ))),
             message: "collapse".to_owned(),
             range,
             rule: RuleId::from("rewrite-x"),
@@ -221,10 +256,13 @@ mod tests {
     fn fix_carries_one_edit_entry_per_group_member() {
         let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
         let diag = Diagnostic {
-            fix: Some(vec![
+            fix: Some(Fix::safe_edits(
                 Edit::range_replacement("a".to_owned(), TextRange::new(0.into(), 1.into())),
-                Edit::range_replacement("b".to_owned(), TextRange::new(6.into(), 7.into())),
-            ]),
+                [Edit::range_replacement(
+                    "b".to_owned(),
+                    TextRange::new(6.into(), 7.into()),
+                )],
+            )),
             message: "align".to_owned(),
             range: TextRange::new(0.into(), 7.into()),
             rule: RuleId::from("align-equals"),

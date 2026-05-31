@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Body Sharing the Opener Line Drops to Its Own Line"
+
+description = '''
+An already-multi-line docstring whose opener shares its line with the first body sentence drops that body to a new line beneath the opener, leaving the prose between the delimiters untouched.
+'''

@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/bare_imports/alias_ignored_in_lookup/input.py
+---
+[
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 10,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 1
+    },
+    "message": "bare import `os` outside allowlist. Rewrite as `from os import ...` listing only the symbols this module uses"
+  }
+]

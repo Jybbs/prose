@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/annotated_fields_sort_align_both/input.py
 ---
-align-colons@33..115
-align-equals@39..114
-alphabetize@20..129
+align-colons@27..109
+align-equals@37..108
+alphabetize@20..123

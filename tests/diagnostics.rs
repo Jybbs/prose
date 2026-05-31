@@ -29,10 +29,15 @@ fn fixtures_emit_expected_diagnostics() {
         let (config, harness) = common::fixture_inputs(path);
         let pipeline = common::build_pipeline(domain, &config, &harness);
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
-        let (_, diagnostics) = pipeline.run(source).expect("pipeline runs");
+        let (output, diagnostics) = pipeline.run(source).expect("pipeline runs");
 
         common::in_snapshot_dir(path, || {
             insta::assert_snapshot!("diagnostics", render(&diagnostics));
+            if let Some(json) =
+                prose::diagnostics::lint_records_json(output.source_file(), &diagnostics)
+            {
+                insta::assert_snapshot!("lint_findings", json);
+            }
         });
     });
 }

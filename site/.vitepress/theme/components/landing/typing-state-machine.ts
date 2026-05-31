@@ -2,6 +2,7 @@ import { useTimeoutFn }    from '@vueuse/core'
 import { watch, type Ref } from 'vue'
 
 import type { LandingTypingDemoEntry, LandingTypingDemoResetRow } from './typing-demo-fixtures'
+import { editPlan } from './typing-demo-buffer'
 
 export type Phase =
   | 'editBackspacing'
@@ -73,7 +74,8 @@ export function useTypingStateMachine(
 
   function tickEditBackspace(): void {
     refs.editProgress.value++
-    if (refs.editProgress.value === entries[refs.entryIndex.value].from.length) {
+    const entry = entries[refs.entryIndex.value]
+    if (refs.editProgress.value === editPlan(entry.from, entry.to).fromCore.length) {
       refs.phase.value        = 'editTyping'
       refs.editProgress.value = 0
       schedule(tickEditType, TYPE_MS_PER_CHAR)
@@ -84,7 +86,8 @@ export function useTypingStateMachine(
 
   function tickEditType(): void {
     refs.editProgress.value++
-    if (refs.editProgress.value < entries[refs.entryIndex.value].to.length) {
+    const entry = entries[refs.entryIndex.value]
+    if (refs.editProgress.value < editPlan(entry.from, entry.to).toCore.length) {
       schedule(tickEditType, TYPE_MS_PER_CHAR)
     } else {
       schedule(settleTyped, SHIFT_AFTER_TYPED_MS)
@@ -152,8 +155,9 @@ export function useTypingStateMachine(
   }
 
   function freezeAtEnd(): void {
+    const last = entries[entries.length - 1]
     refs.entryIndex.value       = entries.length - 1
-    refs.editProgress.value     = entries[entries.length - 1].to.length
+    refs.editProgress.value     = editPlan(last.from, last.to).toCore.length
     refs.pythonStateIndex.value = entries.length
     refs.phase.value            = 'reducedMotion'
   }

@@ -1,0 +1,46 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/composition/align_run_then_flag_once_used/input.py
+---
+[
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 9,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`base` is assigned and used once. Consider inlining `data * 2`"
+  },
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 11,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 5
+    },
+    "message": "`result` is assigned and used once. Consider inlining `used_twice + offset`"
+  },
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 15,
+      "row": 4
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 4
+    },
+    "message": "`used_twice` is assigned and used once. Consider inlining `data + offset`"
+  }
+]

@@ -1,6 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/bare_import_allowlist/dotted_top_segment_allowed/input.py
----
-import numpy.linalg

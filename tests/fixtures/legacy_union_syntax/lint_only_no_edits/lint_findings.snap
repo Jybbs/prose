@@ -1,0 +1,49 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/legacy_union_syntax/lint_only_no_edits/input.py
+---
+[
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 31,
+      "row": 3
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Optional[int]",
+          "content": "int | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 18,
+      "row": 3
+    },
+    "message": "`Optional[int]` is the legacy form. Use `int | None`"
+  },
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 30,
+      "row": 4
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Union[int, str]",
+          "content": "int | str"
+        }
+      ]
+    },
+    "location": {
+      "column": 15,
+      "row": 4
+    },
+    "message": "`Union[int, str]` is the legacy form. Use `int | str`"
+  }
+]

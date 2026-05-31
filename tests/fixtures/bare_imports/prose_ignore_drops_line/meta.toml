@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A `# prose: ignore` Comment Drops the Diagnostic"
+
+description = '''
+A trailing `# prose: ignore[bare-imports]` **suppresses the report for that line**. The pipeline's lint-suppression pass discards the entry keyed by its `(line, rule)` pair.
+'''

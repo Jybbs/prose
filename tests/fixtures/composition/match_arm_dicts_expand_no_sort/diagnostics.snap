@@ -5,6 +5,6 @@ input_file: tests/fixtures/composition/match_arm_dicts_expand_no_sort/input.py
 ---
 align-colons@101..208
 align-colons@298..405
+align-match-case@448..461
 collection-layout@197..275
 collection-layout@78..154
-match-case-align@448..461

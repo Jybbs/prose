@@ -1,2 +1,2 @@
 [harness]
-rules = ["no-single-line-docstrings", "multi-line-docstrings", "docstring-wrap"]
+rules = ["docstring-expand", "docstring-wrap"]

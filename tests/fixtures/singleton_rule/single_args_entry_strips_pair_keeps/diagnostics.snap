@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/singleton_rule/single_args_entry_strips_pair_keeps/input.py
----
-singleton-rule@90..91

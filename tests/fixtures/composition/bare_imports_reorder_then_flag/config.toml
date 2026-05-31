@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize", "bare-import-allowlist"]
+rules = ["alphabetize", "bare-imports"]

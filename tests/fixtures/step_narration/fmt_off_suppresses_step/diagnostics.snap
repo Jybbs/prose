@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/step_narration/fmt_off_suppresses_step/input.py
+---
+

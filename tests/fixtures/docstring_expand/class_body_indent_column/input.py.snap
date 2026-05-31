@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+assertion_line: 28
+expression: output
+input_file: tests/fixtures/docstring_expand/class_body_indent_column/input.py
+---
+class Bag:
+    """
+    A simple bag.
+    """
+
+    def __init__(self):
+        self.items = []

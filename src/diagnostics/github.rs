@@ -52,7 +52,7 @@ fn emit_one(writer: &mut dyn Write, file: &SourceFile, diag: &Diagnostic) -> io:
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
-    use ruff_diagnostics::Edit;
+    use ruff_diagnostics::{Edit, Fix};
     use ruff_text_size::TextRange;
 
     use super::*;
@@ -62,7 +62,10 @@ mod tests {
 
     fn diag(range: TextRange) -> Diagnostic {
         Diagnostic {
-            fix: Some(vec![Edit::range_replacement("y".to_owned(), range)]),
+            fix: Some(Fix::safe_edit(Edit::range_replacement(
+                "y".to_owned(),
+                range,
+            ))),
             message: "rewrite x to y".to_owned(),
             range,
             rule: RuleId::from("rewrite-x"),

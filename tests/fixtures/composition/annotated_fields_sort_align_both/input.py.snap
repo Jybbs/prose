@@ -1,11 +1,10 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/annotated_fields_sort_align_both/input.py
 ---
 class Endpoint:
-    backend_label : str   = "primary"
-    host          : str   = "localhost"
-    retry_count   : int   = 3
-    timeout       : float = 30.0
+    backend     : str   = "primary"
+    host        : str   = "localhost"
+    retry_count : int   = 3
+    timeout     : float = 30.0

@@ -1,0 +1,28 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/legacy_union_syntax/union_explicit_none_arg/input.py
+---
+[
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 25,
+      "row": 3
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Union[int, str, None]",
+          "content": "int | str | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 4,
+      "row": 3
+    },
+    "message": "`Union[int, str, None]` is the legacy form. Use `int | str | None`"
+  }
+]

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_align_padding/collapsed_multi_entry_dict_strips_all/input.py
+---
+oneline = {"first": 1, "second": 2, "third": 3}
+
+multiline = {
+    "first"  : 1,
+    "second" : 2,
+}

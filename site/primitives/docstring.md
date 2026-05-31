@@ -6,7 +6,7 @@ stability: internal
 
 <PrimitiveLayout primitive="docstring">
 
-*Docstring* is the walker that reaches every PEP 257 docstring in a module. The first body statement of the module, each class, and each function may carry a string literal as a docstring, and the walker hands every such literal to a consumer in source order. Three rules ([[docstring-wrap]], [[multi-line-docstrings]], [[no-single-line-docstrings]]) consume the same walk, so the AST traversal lives once in *Docstring* and each rule supplies a closure that decides what to emit per docstring.
+*Docstring* is the walker that reaches every PEP 257 docstring in a module. The first body statement of the module, each class, and each function may carry a string literal as a docstring, and the walker hands every such literal to a consumer in source order. Three rules ([[docstring-wrap]], [[docstring-frame]], [[docstring-expand]]) consume the same walk, so the AST traversal lives once in *Docstring* and each rule supplies a closure that decides what to emit per docstring.
 
 
 ## Public Surface
@@ -97,7 +97,7 @@ Section headings, blank lines between entries, and verbatim continuations *(inde
 
 ## How Multi-Line and Single-Line Rules Compose
 
-[[multi-line-docstrings]] examines each discovered docstring to ensure the triple-quoted opener and closer sit on their own lines. [[no-single-line-docstrings]] expands docstrings that fit on one line into the canonical multi-line shape. Both rules read the literal's source position and emit edits that reshape the quote placement without touching the body text.
+[[docstring-frame]] examines each discovered docstring to ensure the triple-quoted opener and closer sit on their own lines. [[docstring-expand]] expands docstrings that fit on one line into the canonical multi-line shape. Both rules read the literal's source position and emit edits that reshape the quote placement without touching the body text.
 
 ## Build Pattern
 
@@ -125,8 +125,8 @@ A new docstring rule's `apply` body is a single `rewrite_docstrings` call carryi
 
 - [[alphabetize]] reorders the `name: description` entries within every Title-case-headed section.
 - [[docstring-wrap]] wraps description prose and structured sections to their budgets.
-- [[multi-line-docstrings]] enforces own-line quote placement.
-- [[no-single-line-docstrings]] expands single-line shapes.
+- [[docstring-frame]] enforces own-line quote placement.
+- [[docstring-expand]] expands single-line shapes.
 - [[edit]] is the output shape rules emit per docstring.
 
 </template>

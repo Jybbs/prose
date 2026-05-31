@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/bare_imports/empty_allow_flags_all/input.py
+---
+bare-imports@20..26
+bare-imports@34..36
+bare-imports@7..12

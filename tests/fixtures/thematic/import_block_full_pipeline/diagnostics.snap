@@ -7,8 +7,8 @@ input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
 align-imports@112..113
 align-imports@35..36
 alphabetize@0..160
-bare-import-allowlist@49..51
-bare-import-allowlist@59..67
-bare-import-allowlist@7..16
+bare-imports@49..51
+bare-imports@59..67
+bare-imports@7..16
 blank-lines@123..124
 unused-future-annotations@69..104

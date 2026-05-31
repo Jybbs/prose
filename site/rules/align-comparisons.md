@@ -2,7 +2,7 @@
 category : auto-fix
 family   : alignment
 caption  : "aligns comparison operators vertically across the operands of a multi-line `and`-chain or `or`-chain."
-related  : [align-colons, align-equals, align-imports, alphabetize, match-case-align]
+related  : [align-colons, align-equals, align-imports, alphabetize, align-match-case]
 layout   : doc
 ---
 

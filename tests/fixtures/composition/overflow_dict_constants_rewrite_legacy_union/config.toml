@@ -1,4 +1,4 @@
 target-version = "3.10"
 
 [harness]
-rules = ["collection-layout", "alphabetize", "align-colons", "align-equals", "legacy-union-syntax"]
+rules = ["collection-layout", "alphabetize", "align-colons", "legacy-union-syntax"]
