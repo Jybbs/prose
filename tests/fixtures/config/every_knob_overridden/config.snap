@@ -24,6 +24,9 @@ Config {
             max_atomics_per_line: Some(
                 3,
             ),
+            max_inline_dict_entries: Some(
+                5,
+            ),
         },
         alphabetize: AlphabetizeConfig {
             docstring_entries: false,

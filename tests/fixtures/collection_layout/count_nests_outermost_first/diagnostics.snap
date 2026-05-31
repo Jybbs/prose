@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/count_nests_outermost_first/input.py
+---
+collection-layout@76..132
+collection-layout@9..58

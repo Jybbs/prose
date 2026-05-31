@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/collection_layout/count_disabled_via_false/input.py
+---
+disabled = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}

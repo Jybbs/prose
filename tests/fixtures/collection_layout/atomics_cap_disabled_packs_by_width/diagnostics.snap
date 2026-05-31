@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/atomics_cap_disabled_packs_by_width/input.py
+---
+collection-layout@16..110

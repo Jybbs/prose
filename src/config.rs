@@ -110,11 +110,18 @@ impl Default for CacheConfig {
 }
 
 /// Configuration for the `collection_layout` rule.
+///
+/// `max_atomics_per_line` and `max_inline_dict_entries` each take a
+/// positive integer or `false`. The integer sets the cap, and `false`
+/// disables it, leaving width as the only gate.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CollectionLayoutConfig {
     pub enabled: bool,
+    #[serde(deserialize_with = "deserialize_max_atomics_per_line")]
     pub max_atomics_per_line: Option<NonZeroUsize>,
+    #[serde(deserialize_with = "deserialize_max_inline_dict_entries")]
+    pub max_inline_dict_entries: Option<NonZeroUsize>,
 }
 
 impl Default for CollectionLayoutConfig {
@@ -122,6 +129,7 @@ impl Default for CollectionLayoutConfig {
         Self {
             enabled: true,
             max_atomics_per_line: NonZeroUsize::new(8),
+            max_inline_dict_entries: NonZeroUsize::new(3),
         }
     }
 }
@@ -437,7 +445,13 @@ where
     deserializer.deserialize_any(RuleVisitor(PhantomData))
 }
 
-fn deserialize_max_inline_params<'de, D>(deserializer: D) -> Result<Option<NonZeroUsize>, D::Error>
+/// Deserializes an optional count cap a positive integer sets and
+/// `false` disables. `true` is rejected so the disable spelling stays
+/// unambiguous.
+fn deserialize_optional_cap<'de, D>(
+    deserializer: D,
+    knob: &str,
+) -> Result<Option<NonZeroUsize>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -450,11 +464,31 @@ where
     match Value::deserialize(deserializer)? {
         Value::Cap(n) => Ok(Some(n)),
         Value::Off(false) => Ok(None),
-        Value::Off(true) => Err(serde::de::Error::custom(
-            "`max-inline-params` accepts a positive integer or `false`, not `true`",
-        )),
+        Value::Off(true) => Err(serde::de::Error::custom(format!(
+            "`{knob}` accepts a positive integer or `false`, not `true`"
+        ))),
     }
 }
+
+/// Generates a named `deserialize_with` target forwarding to
+/// [`deserialize_optional_cap`] with the knob's kebab-case name.
+macro_rules! optional_cap {
+    ($fn_name:ident, $knob:literal) => {
+        fn $fn_name<'de, D>(deserializer: D) -> Result<Option<NonZeroUsize>, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            deserialize_optional_cap(deserializer, $knob)
+        }
+    };
+}
+
+optional_cap!(deserialize_max_atomics_per_line, "max-atomics-per-line");
+optional_cap!(
+    deserialize_max_inline_dict_entries,
+    "max-inline-dict-entries"
+);
+optional_cap!(deserialize_max_inline_params, "max-inline-params");
 
 fn deserialize_prose<F>(value: toml::Value, on_notice: &mut F) -> Result<Config, ConfigError>
 where
@@ -857,6 +891,79 @@ mod tests {
         let config = Config::load(&nested).expect("loads");
 
         assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    }
+
+    #[test]
+    fn max_atomics_per_line_explicit_integer_takes_effect() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.rules.collection-layout]\nmax-atomics-per-line = 3\n",
+        )
+        .expect("parses");
+
+        assert_eq!(
+            config.rules.collection_layout.max_atomics_per_line,
+            NonZeroUsize::new(3),
+        );
+    }
+
+    #[test]
+    fn max_atomics_per_line_false_disables_cap() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.rules.collection-layout]\nmax-atomics-per-line = false\n",
+        )
+        .expect("parses");
+
+        assert!(
+            config
+                .rules
+                .collection_layout
+                .max_atomics_per_line
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn max_atomics_per_line_true_returns_toml_error() {
+        assert_toml_error("[tool.prose.rules.collection-layout]\nmax-atomics-per-line = true\n");
+    }
+
+    #[test]
+    fn max_inline_dict_entries_explicit_integer_takes_effect() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.rules.collection-layout]\nmax-inline-dict-entries = 5\n",
+        )
+        .expect("parses");
+
+        assert_eq!(
+            config.rules.collection_layout.max_inline_dict_entries,
+            NonZeroUsize::new(5),
+        );
+    }
+
+    #[test]
+    fn max_inline_dict_entries_false_disables_count_trigger() {
+        let config = Config::from_pyproject_str(
+            "[tool.prose.rules.collection-layout]\nmax-inline-dict-entries = false\n",
+        )
+        .expect("parses");
+
+        assert!(
+            config
+                .rules
+                .collection_layout
+                .max_inline_dict_entries
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn max_inline_dict_entries_true_returns_toml_error() {
+        assert_toml_error("[tool.prose.rules.collection-layout]\nmax-inline-dict-entries = true\n");
+    }
+
+    #[test]
+    fn max_inline_dict_entries_zero_returns_toml_error() {
+        assert_toml_error("[tool.prose.rules.collection-layout]\nmax-inline-dict-entries = 0\n");
     }
 
     #[test]
