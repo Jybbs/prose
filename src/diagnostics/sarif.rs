@@ -130,7 +130,7 @@ fn sarif_run(runs: &[Run<'_>]) -> SarifRun {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
-    use ruff_diagnostics::Edit;
+    use ruff_diagnostics::{Edit, Fix};
     use ruff_text_size::TextRange;
     use serde_json::Value;
 
@@ -141,7 +141,7 @@ mod tests {
     fn diag() -> Diagnostic {
         let range = TextRange::new(0.into(), 1.into());
         Diagnostic {
-            fix: Some(ruff_diagnostics::Fix::safe_edit(Edit::range_replacement(
+            fix: Some(Fix::safe_edit(Edit::range_replacement(
                 "y".to_owned(),
                 range,
             ))),
@@ -200,7 +200,7 @@ mod tests {
     fn fix_carries_one_replacement_per_group_edit() {
         let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
         let diag = Diagnostic {
-            fix: Some(ruff_diagnostics::Fix::safe_edits(
+            fix: Some(Fix::safe_edits(
                 Edit::range_replacement("a".to_owned(), TextRange::new(0.into(), 1.into())),
                 [Edit::range_replacement(
                     "b".to_owned(),

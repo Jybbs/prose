@@ -73,8 +73,7 @@ useEventListener('hashchange', syncWithHash)
         @click.stop
       >
         <FixtureToggle v-if="entry.changesSource" v-model="activeTab" />
-        <FixtureNoChange v-else-if="entry.hasFindings" lint />
-        <FixtureNoChange v-else />
+        <FixtureNoChange v-else :lint="entry.hasFindings" />
       </div>
     </div>
     <div

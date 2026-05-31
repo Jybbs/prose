@@ -43,18 +43,6 @@ impl Emitter for Json {
     }
 }
 
-/// Renders the lint-severity diagnostics as the JSON records the docs
-/// site reads, or `None` when the run emitted none.
-pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
-    let records: Vec<JsonDiagnostic> = diagnostics
-        .iter()
-        .filter(|diag| diag.severity == Severity::Lint)
-        .map(|diag| JsonDiagnostic::new(file, diag, false))
-        .collect();
-    (!records.is_empty())
-        .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
-}
-
 #[derive(Serialize)]
 struct JsonDiagnostic<'a> {
     code: &'a str,
@@ -170,6 +158,18 @@ impl<'a> JsonSummary<'a> {
             schema_version: SCHEMA_VERSION,
         }
     }
+}
+
+/// Renders the lint-severity diagnostics as the JSON records the docs
+/// site reads, or `None` when the run emitted none.
+pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
+    let records: Vec<JsonDiagnostic> = diagnostics
+        .iter()
+        .filter(|diag| diag.severity == Severity::Lint)
+        .map(|diag| JsonDiagnostic::new(file, diag, false))
+        .collect();
+    (!records.is_empty())
+        .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
 }
 
 #[cfg(test)]

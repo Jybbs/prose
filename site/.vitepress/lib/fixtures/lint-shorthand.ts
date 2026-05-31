@@ -3,7 +3,7 @@
 // Three shapes cover the lint surface: a `replace` before/after pair, a
 // `relocate` of a constant into one of a few homes, and a `remove`.
 
-export interface RelocateHome {
+interface RelocateHome {
   keyword : boolean
   leaf    : string
   parent  : string
@@ -15,13 +15,13 @@ export const LOOSE_CONSTANT_HOMES: readonly RelocateHome[] = [
   { keyword : true,  leaf : 'local',  parent : 'def'   }
 ]
 
-export interface ReplaceShorthand  { after : string; before : string; kind : 'replace'  }
-export interface RelocateShorthand { kind  : 'relocate'; name : string                  }
-export interface RemoveShorthand   { kind  : 'remove'; text : string                    }
+interface ReplaceShorthand  { after : string; before : string; kind : 'replace'  }
+interface RelocateShorthand { kind  : 'relocate'; name : string                  }
+interface RemoveShorthand   { kind  : 'remove'; text : string                    }
 
 export type Shorthand = RelocateShorthand | RemoveShorthand | ReplaceShorthand
 
-export interface ShorthandInput {
+interface ShorthandInput {
   before    ?: string
   flagged    : string
   message    : string

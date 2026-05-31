@@ -101,17 +101,15 @@ impl Visitor<'_> {
             return None;
         }
         let write_offset = self.analysis.first_write_offset(binding);
-        let message = match self.analysis.assignment_value_range(write_offset) {
-            Some(range) => format!(
-                "`{name}` is assigned and used once. Consider inlining `{}`",
-                &self.text[range],
-            ),
-            None => format!("`{name}` is assigned and used once. Consider inlining"),
-        };
+        let value = self
+            .analysis
+            .assignment_value_range(write_offset)
+            .map(|range| format!(" `{}`", &self.text[range]))
+            .unwrap_or_default();
         Some(Diagnostic::lint(
             self.rule,
             TextRange::at(write_offset, TextSize::of(name)),
-            message,
+            format!("`{name}` is assigned and used once. Consider inlining{value}"),
         ))
     }
 
@@ -203,6 +201,17 @@ mod tests {
         let only = diagnostics.first().expect("one diagnostic");
 
         assert!(only.message.ends_with("Consider inlining `g() + 1`"));
+    }
+
+    #[test]
+    fn tuple_unpacked_binding_message_omits_value() {
+        let source = parse("def f(pair):\n    a, b = pair\n    log(b)\n    return a + b\n");
+        let rule = SingleUseVariables::from_config(&Config::default());
+        let diagnostics = rule.lint(&source);
+        let only = diagnostics.first().expect("one diagnostic");
+
+        assert!(only.message.ends_with("Consider inlining"));
+        assert!(!only.message.contains("inlining `"));
     }
 
     #[test]
