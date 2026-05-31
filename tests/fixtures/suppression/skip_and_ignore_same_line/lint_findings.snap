@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/suppression/skip_and_ignore_same_line/input.py
+---
+[
+  {
+    "code": "loose-constants",
+    "end_location": {
+      "column": 20,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "module-level constant `DEFAULT_LIMIT` found. Consider an enum member, a class field, or a function-local"
+  },
+  {
+    "code": "loose-constants",
+    "end_location": {
+      "column": 15,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "module-level constant `PAGE_SIZE` found. Consider an enum member, a class field, or a function-local"
+  }
+]

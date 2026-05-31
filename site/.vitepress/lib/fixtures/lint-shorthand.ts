@@ -45,19 +45,21 @@ export function lintShorthand(input: ShorthandInput): Shorthand | null {
         ? { after : truncate(suggested), before, kind : 'replace' }
         : null
     case 'single-use-variables': {
-      const name    = firstBacktick(message)
+      // `flagged` spans the binding name, leaving the inlined value to come
+      // from single_use_variables.rs's "Consider inlining `<value>`" message.
       const inlined = /Consider inlining `([^`]+)`/.exec(message)?.[1]
-      return name && inlined
-        ? { after : truncate(inlined), before : name, kind : 'replace' }
+      return flagged && inlined
+        ? { after : truncate(inlined), before : flagged, kind : 'replace' }
         : null
     }
-    case 'bare-imports': {
-      const module = firstBacktick(message)
-      return module
-        ? { after : `from ${module} import …`, before : `import ${module}`, kind : 'replace' }
+    case 'bare-imports':
+      // `flagged` spans the import name, so the rewrite needs no message read.
+      return flagged
+        ? { after : `from ${flagged} import …`, before : `import ${flagged}`, kind : 'replace' }
         : null
-    }
     case 'loose-constants': {
+      // The diagnostic spans the whole assignment, so the name comes from
+      // the first backtick of loose_constants.rs's message.
       const name = firstBacktick(message)
       return name ? { kind : 'relocate', name } : null
     }

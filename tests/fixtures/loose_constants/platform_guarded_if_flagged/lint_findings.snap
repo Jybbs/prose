@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/loose_constants/platform_guarded_if_flagged/input.py
+---
+[
+  {
+    "code": "loose-constants",
+    "end_location": {
+      "column": 31,
+      "row": 4
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 4
+    },
+    "message": "module-level constant `DEFAULT_BACKEND` found. Consider an enum member, a class field, or a function-local"
+  }
+]

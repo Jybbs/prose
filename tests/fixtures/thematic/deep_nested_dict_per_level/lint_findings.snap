@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/deep_nested_dict_per_level/input.py
+---
+[
+  {
+    "code": "loose-constants",
+    "end_location": {
+      "column": 2,
+      "row": 52
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "module-level constant `DEPLOY` found. Consider an enum member, a class field, or a function-local"
+  }
+]

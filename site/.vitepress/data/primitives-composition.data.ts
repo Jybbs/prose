@@ -30,7 +30,9 @@ interface PrimitivesCompositionData {
 
 const SOURCES: readonly PrimitiveEntrySource[] = [
   {
-    consumedBy : ['align-colons', 'align-comparisons', 'align-equals', 'align-imports', 'align-match-case'],
+    consumedBy : [
+      'align-colons', 'align-comparisons', 'align-equals', 'align-imports', 'align-match-case'
+    ],
     consumes   : ['edit', 'source'],
     layer      : 'orchestration',
     slug       : 'aligner',

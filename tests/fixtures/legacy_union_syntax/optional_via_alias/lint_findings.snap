@@ -1,0 +1,28 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/legacy_union_syntax/optional_via_alias/input.py
+---
+[
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 12,
+      "row": 3
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Opt[int]",
+          "content": "int | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 4,
+      "row": 3
+    },
+    "message": "`Opt[int]` is the legacy form. Use `int | None`"
+  }
+]

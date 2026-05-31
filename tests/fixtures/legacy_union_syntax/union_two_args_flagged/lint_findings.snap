@@ -1,0 +1,28 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/legacy_union_syntax/union_two_args_flagged/input.py
+---
+[
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 19,
+      "row": 3
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Union[int, str]",
+          "content": "int | str"
+        }
+      ]
+    },
+    "location": {
+      "column": 4,
+      "row": 3
+    },
+    "message": "`Union[int, str]` is the legacy form. Use `int | str`"
+  }
+]

@@ -33,9 +33,8 @@ fn fixtures_emit_expected_diagnostics() {
 
         common::in_snapshot_dir(path, || {
             insta::assert_snapshot!("diagnostics", render(&diagnostics));
-            if domain == "composition"
-                && let Some(json) =
-                    prose::diagnostics::lint_records_json(output.source_file(), &diagnostics)
+            if let Some(json) =
+                prose::diagnostics::lint_records_json(output.source_file(), &diagnostics)
             {
                 insta::assert_snapshot!("lint_findings", json);
             }

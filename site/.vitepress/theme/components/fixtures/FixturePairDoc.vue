@@ -11,6 +11,7 @@ import type { RenderedRule }                   from '../../../data/rules.data'
 import { lintShorthand, LOOSE_CONSTANT_HOMES } from '../../../lib/fixtures/lint-shorthand'
 import type { Shorthand }                      from '../../../lib/fixtures/lint-shorthand'
 import type { FixtureTab }                     from '../../../lib/shared/fixture-tab'
+import { inlineCode }                          from '../../../lib/shared/inline-code'
 
 const props = defineProps<{
   activeTab  : FixtureTab
@@ -38,9 +39,7 @@ const steps     = shallowRef<readonly KeyedTokensInfo[]>([])
 
 const homes       = LOOSE_CONSTANT_HOMES
 const active      = ref<ActiveFinding | null>(null)
-const messageHtml = computed(() =>
-  (active.value?.message ?? '').replace(/`([^`]+)`/g, '<code>$1</code>')
-)
+const messageHtml = computed(() => inlineCode(active.value?.message ?? ''))
 
 const activeHtml = computed(() => props.activeTab === 'before' ? props.inputHtml : props.outputHtml)
 const step       = computed(() => props.activeTab === 'before' ? 0 : 1)
@@ -81,9 +80,9 @@ function drawSquiggles(): void {
   requestAnimationFrame(() => requestAnimationFrame(() => { drawn.value = true }))
 }
 
-// Magic-move owns the panel through the morph; on settle the decorated
-// static panel returns so its `.lint-flag` hovers work and the squiggles
-// draw back in.
+// Magic-move owns the panel through the morph, and on settle the
+// decorated static panel returns so its `.lint-flag` hovers work and the
+// squiggles draw back in.
 function settle(): void {
   animating.value = false
   drawSquiggles()
@@ -139,7 +138,6 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       :step="step"
       :animate="animate && !reducedMotion"
       :options="{ containerStyle: false, delayMove: 0, duration, stagger: 3 }"
-      @start="animating = true"
       @end="settle"
     />
     <div

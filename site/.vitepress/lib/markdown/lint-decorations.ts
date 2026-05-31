@@ -2,9 +2,9 @@ import type { DecorationItem, ShikiTransformer } from '@shikijs/types'
 
 const META_PREFIX = 'lintdeco-'
 
-/// Encodes decorations into a fence-meta token the transformer decodes in
-/// its preprocess hook, so they travel inside the markdown string rather
-/// than through module state the config and build realms do not share.
+// Encodes decorations into a fence-meta token the transformer decodes in
+// its preprocess hook, so they travel inside the markdown string rather
+// than through module state the config and build realms do not share.
 export function encodeLintMeta(decorations: readonly DecorationItem[]): string {
   return META_PREFIX + Buffer.from(JSON.stringify(decorations)).toString('base64url')
 }

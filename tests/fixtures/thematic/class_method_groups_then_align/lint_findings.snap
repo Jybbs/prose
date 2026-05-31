@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/class_method_groups_then_align/input.py
+---
+[
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 10,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 1
+    },
+    "message": "bare import `os` outside allowlist. Rewrite as `from os import ...` listing only the symbols this module uses"
+  },
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 11,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 2
+    },
+    "message": "bare import `sys` outside allowlist. Rewrite as `from sys import ...` listing only the symbols this module uses"
+  }
+]

@@ -1,0 +1,28 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/legacy_union_syntax/parens_folded_into_span/input.py
+---
+[
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 32,
+      "row": 4
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "(Optional[int])",
+          "content": "int | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 17,
+      "row": 4
+    },
+    "message": "`Optional[int]` is the legacy form. Use `int | None`"
+  }
+]

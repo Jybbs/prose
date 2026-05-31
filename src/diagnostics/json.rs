@@ -35,7 +35,7 @@ impl Emitter for Json {
             for diag in *diagnostics {
                 write_json_line(
                     writer,
-                    &JsonRecord::Diagnostic(JsonDiagnostic::new(file, diag)),
+                    &JsonRecord::Diagnostic(JsonDiagnostic::new(file, diag, true)),
                 )?;
             }
         }
@@ -46,89 +46,34 @@ impl Emitter for Json {
 /// Renders the lint-severity diagnostics as the JSON records the docs
 /// site reads, or `None` when the run emitted none.
 pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
-    let records: Vec<LintRecord> = diagnostics
+    let records: Vec<JsonDiagnostic> = diagnostics
         .iter()
         .filter(|diag| diag.severity == Severity::Lint)
-        .map(|diag| LintRecord::new(file, diag))
+        .map(|diag| JsonDiagnostic::new(file, diag, false))
         .collect();
     (!records.is_empty())
         .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
 }
 
 #[derive(Serialize)]
-struct LintEdit<'a> {
-    before: &'a str,
-    content: &'a str,
-}
-
-impl<'a> LintEdit<'a> {
-    fn new(file: &'a SourceFile, edit: &'a Edit) -> Self {
-        Self {
-            before: &file.source_text()[edit.range()],
-            content: edit.content().unwrap_or_default(),
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct LintFix<'a> {
-    applicability: Applicability,
-    edits: Vec<LintEdit<'a>>,
-}
-
-impl<'a> LintFix<'a> {
-    fn new(file: &'a SourceFile, fix: &'a Fix) -> Self {
-        Self {
-            applicability: fix.applicability(),
-            edits: fix
-                .edits()
-                .iter()
-                .map(|edit| LintEdit::new(file, edit))
-                .collect(),
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct LintRecord<'a> {
-    code: &'a str,
-    end_location: JsonLocation,
-    fix: Option<LintFix<'a>>,
-    location: JsonLocation,
-    message: &'a str,
-}
-
-impl<'a> LintRecord<'a> {
-    fn new(file: &'a SourceFile, diag: &'a Diagnostic) -> Self {
-        let (start, end) = line_columns(file, diag.range);
-        Self {
-            code: diag.rule.as_str(),
-            end_location: end.into(),
-            fix: diag.fix.as_ref().map(|fix| LintFix::new(file, fix)),
-            location: start.into(),
-            message: &diag.message,
-        }
-    }
-}
-
-#[derive(Serialize)]
 struct JsonDiagnostic<'a> {
     code: &'a str,
     end_location: JsonLocation,
-    filename: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    filename: Option<&'a str>,
     fix: Option<JsonFix<'a>>,
     location: JsonLocation,
     message: &'a str,
 }
 
 impl<'a> JsonDiagnostic<'a> {
-    fn new(file: &'a SourceFile, diag: &'a Diagnostic) -> Self {
+    fn new(file: &'a SourceFile, diag: &'a Diagnostic, full: bool) -> Self {
         let (start, end) = line_columns(file, diag.range);
         Self {
             code: diag.rule.as_str(),
             end_location: end.into(),
-            filename: file.name(),
-            fix: diag.fix.as_ref().map(|fix| JsonFix::new(file, fix)),
+            filename: full.then(|| file.name()),
+            fix: diag.fix.as_ref().map(|fix| JsonFix::new(file, fix, full)),
             location: start.into(),
             message: &diag.message,
         }
@@ -139,18 +84,28 @@ impl<'a> JsonDiagnostic<'a> {
 struct JsonEdit<'a> {
     before: &'a str,
     content: &'a str,
-    end_location: JsonLocation,
-    location: JsonLocation,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    end_location: Option<JsonLocation>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    location: Option<JsonLocation>,
 }
 
 impl<'a> JsonEdit<'a> {
-    fn new(file: &'a SourceFile, edit: &'a Edit) -> Self {
-        let (start, end) = line_columns(file, edit.range());
+    fn new(file: &'a SourceFile, edit: &'a Edit, full: bool) -> Self {
+        let (location, end_location) = if full {
+            let (start, end) = line_columns(file, edit.range());
+            (
+                Some(JsonLocation::from(start)),
+                Some(JsonLocation::from(end)),
+            )
+        } else {
+            (None, None)
+        };
         Self {
             before: &file.source_text()[edit.range()],
             content: edit.content().unwrap_or_default(),
-            end_location: end.into(),
-            location: start.into(),
+            end_location,
+            location,
         }
     }
 }
@@ -162,13 +117,13 @@ struct JsonFix<'a> {
 }
 
 impl<'a> JsonFix<'a> {
-    fn new(file: &'a SourceFile, fix: &'a Fix) -> Self {
+    fn new(file: &'a SourceFile, fix: &'a Fix, full: bool) -> Self {
         Self {
             applicability: fix.applicability(),
             edits: fix
                 .edits()
                 .iter()
-                .map(|edit| JsonEdit::new(file, edit))
+                .map(|edit| JsonEdit::new(file, edit, full))
                 .collect(),
         }
     }

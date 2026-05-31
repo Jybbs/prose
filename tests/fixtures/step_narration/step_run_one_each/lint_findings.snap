@@ -1,0 +1,46 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/step_narration/step_run_one_each/input.py
+---
+[
+  {
+    "code": "step-narration",
+    "end_location": {
+      "column": 30,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "numbered-step comment found. Consider extracting each step as a named function"
+  },
+  {
+    "code": "step-narration",
+    "end_location": {
+      "column": 30,
+      "row": 4
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 4
+    },
+    "message": "numbered-step comment found. Consider extracting each step as a named function"
+  },
+  {
+    "code": "step-narration",
+    "end_location": {
+      "column": 29,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 6
+    },
+    "message": "numbered-step comment found. Consider extracting each step as a named function"
+  }
+]

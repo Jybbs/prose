@@ -1,7 +1,7 @@
 ---
 category : lint
 family   : lint
-caption  : "surfaces module-level constants that aren't `UPPER_SNAKE_CASE`."
+caption  : "surfaces bare module-level `UPPER_SNAKE_CASE` constants for relocation."
 related  : [step-narration, single-use-variables]
 layout   : doc
 ---

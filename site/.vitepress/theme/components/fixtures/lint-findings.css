@@ -56,7 +56,7 @@
   overflow : hidden;
 }
 
-.rule-card-header {
+.lint-popover .rule-card-header {
   background    : var(--vp-c-bg-alt);
   border-bottom : 1px solid var(--vp-c-divider);
   grid-column   : 1 / -1;

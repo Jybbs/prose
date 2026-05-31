@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
+---
+[
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 17,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 1
+    },
+    "message": "bare import `functools` outside allowlist. Rewrite as `from functools import ...` listing only the symbols this module uses"
+  }
+]

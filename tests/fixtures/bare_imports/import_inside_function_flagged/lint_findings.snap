@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/bare_imports/import_inside_function_flagged/input.py
+---
+[
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 15,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 2
+    },
+    "message": "bare import `sys` outside allowlist. Rewrite as `from sys import ...` listing only the symbols this module uses"
+  }
+]

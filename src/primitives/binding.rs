@@ -23,7 +23,7 @@ use ruff_python_ast::{
     StmtClassDef, StmtFor, StmtFunctionDef, StmtImport, StmtImportFrom, StmtTry, StmtWith,
     visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt},
 };
-use ruff_text_size::{Ranged, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use serde::Serialize;
 
 /// Stable handle to a binding in `BindingAnalysis`. Cheap to copy.
@@ -82,6 +82,8 @@ pub(crate) struct Scope {
 /// Module-wide binding-resolution table.
 #[derive(Debug, Serialize)]
 pub struct BindingAnalysis {
+    #[serde(skip)]
+    assignment_values: HashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
     #[serde(skip)]
     function_scope_at: HashMap<TextSize, ScopeId>,
@@ -103,6 +105,13 @@ impl BindingAnalysis {
     /// Returns the number of write events recorded for `binding`.
     pub(crate) fn assignment_count(&self, binding: BindingId) -> usize {
         self.binding(binding).write_offsets.len()
+    }
+
+    /// Returns the source range of the value bound at `offset`, for a
+    /// direct `name = value` or `name: T = value` write. `None` for a
+    /// tuple/list target, a bare annotation, or an unrecorded offset.
+    pub(crate) fn assignment_value_range(&self, offset: TextSize) -> Option<TextRange> {
+        self.assignment_values.get(&offset).copied()
     }
 
     /// Returns the recorded write kinds for `binding`, in insertion
@@ -152,6 +161,7 @@ impl BindingAnalysis {
 }
 
 struct Builder {
+    assignment_values: HashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
     function_scope_at: HashMap<TextSize, ScopeId>,
     scope_stack: Vec<ScopeId>,
@@ -161,6 +171,7 @@ struct Builder {
 impl Builder {
     fn new() -> Self {
         let mut builder = Self {
+            assignment_values: HashMap::new(),
             bindings: Vec::new(),
             function_scope_at: HashMap::new(),
             scope_stack: Vec::new(),
@@ -253,6 +264,7 @@ impl Builder {
 
     fn finish(self) -> BindingAnalysis {
         BindingAnalysis {
+            assignment_values: self.assignment_values,
             scopes: self.scopes,
             bindings: self.bindings,
             function_scope_at: self.function_scope_at,
@@ -369,7 +381,11 @@ impl Builder {
         if let Some(value) = &node.value {
             self.visit_expr(value);
         }
-        if node.target.is_name_expr() {
+        if let Expr::Name(name) = node.target.as_ref() {
+            if let Some(value) = &node.value {
+                self.assignment_values
+                    .insert(name.range().start(), value.range());
+            }
             self.record_target(&node.target, BindingKind::Assignment);
         }
     }
@@ -377,6 +393,10 @@ impl Builder {
     fn visit_assign(&mut self, node: &StmtAssign) {
         self.visit_expr(&node.value);
         for target in &node.targets {
+            if let Expr::Name(name) = target {
+                self.assignment_values
+                    .insert(name.range().start(), node.value.range());
+            }
             self.record_target(target, BindingKind::Assignment);
         }
     }

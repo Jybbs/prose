@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/single_use_variables/written_once_read_once/input.py
+---
+[
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 6,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`x` is assigned and used once. Consider inlining `expensive(arg)`"
+  }
+]

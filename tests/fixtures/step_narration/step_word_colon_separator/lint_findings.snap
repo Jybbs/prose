@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/step_narration/step_word_colon_separator/input.py
+---
+[
+  {
+    "code": "step-narration",
+    "end_location": {
+      "column": 29,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "numbered-step comment found. Consider extracting each step as a named function"
+  }
+]

@@ -24,9 +24,9 @@ export interface LintFinding {
   message       : string
 }
 
-/// Reads a composition case's lint findings from its `lint_findings.snap`
-/// sidecar, the harness-emitted JSON records keyed to the formatted
-/// output. Returns `[]` for cases that carry no sidecar.
+// Reads a composition case's lint findings from its `lint_findings.snap`
+// sidecar, the harness-emitted JSON records keyed to the formatted
+// output. Returns `[]` for cases that carry no sidecar.
 export function readLintFindings(inputPath: string): LintFinding[] {
   const snapPath = path.join(path.dirname(inputPath), LINT_FINDINGS_FILE)
   if (!fs.existsSync(snapPath)) return []
@@ -34,9 +34,9 @@ export function readLintFindings(inputPath: string): LintFinding[] {
   return body ? (JSON.parse(body) as LintFinding[]) : []
 }
 
-/// Converts findings into shiki decorations that wrap each flagged span
-/// in a `.lint-flag` element carrying the hover data as `data-*`. Sorted
-/// by position, since shiki rejects unordered or overlapping ranges.
+// Converts findings into shiki decorations that wrap each flagged span
+// in a `.lint-flag` element carrying the hover data as `data-*`. Sorted
+// by position, since shiki rejects unordered or overlapping ranges.
 export function lintDecorations(findings: readonly LintFinding[]): DecorationItem[] {
   return [...findings]
     .sort((a, b) => a.location.row - b.location.row || a.location.column - b.location.column)

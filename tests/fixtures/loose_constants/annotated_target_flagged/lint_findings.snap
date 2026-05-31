@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/loose_constants/annotated_target_flagged/input.py
+---
+[
+  {
+    "code": "loose-constants",
+    "end_location": {
+      "column": 7,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "module-level constant `X` found. Consider an enum member, a class field, or a function-local"
+  },
+  {
+    "code": "loose-constants",
+    "end_location": {
+      "column": 11,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "module-level constant `Y` found. Consider an enum member, a class field, or a function-local"
+  }
+]

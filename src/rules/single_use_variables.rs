@@ -18,10 +18,10 @@
 
 use regex_lite::Regex;
 use ruff_python_ast::{
-    Expr, Stmt,
+    Stmt,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
     config::Config,
@@ -86,7 +86,7 @@ struct Visitor<'a> {
 }
 
 impl Visitor<'_> {
-    fn candidate(&self, binding: BindingId, body: &[Stmt]) -> Option<Diagnostic> {
+    fn candidate(&self, binding: BindingId) -> Option<Diagnostic> {
         if !matches!(
             self.analysis.binding_kinds(binding),
             [BindingKind::Assignment | BindingKind::Walrus],
@@ -101,7 +101,7 @@ impl Visitor<'_> {
             return None;
         }
         let write_offset = self.analysis.first_write_offset(binding);
-        let message = match assignment_value_range(body, write_offset) {
+        let message = match self.analysis.assignment_value_range(write_offset) {
             Some(range) => format!(
                 "`{name}` is assigned and used once. Consider inlining `{}`",
                 &self.text[range],
@@ -120,7 +120,7 @@ impl Visitor<'_> {
             return;
         }
         for binding in self.analysis.bindings_in_scope(stmt) {
-            if let Some(diagnostic) = self.candidate(binding, body) {
+            if let Some(diagnostic) = self.candidate(binding) {
                 self.diagnostics.push(diagnostic);
             }
         }
@@ -146,55 +146,6 @@ fn body_uses_scope_modifier(body: &[Stmt]) -> bool {
     let mut walker = ScopeModifierWalker { found: false };
     walker.visit_body(body);
     walker.found
-}
-
-/// Returns the source range of the value bound to the name written at
-/// `target_offset`, so the inlining suggestion can name what would be
-/// substituted. Descends through compound statements but stops at
-/// nested `def` and `class` scopes, where a same-named binding belongs
-/// to another scope.
-fn assignment_value_range(body: &[Stmt], target_offset: TextSize) -> Option<TextRange> {
-    let mut finder = AssignmentValueFinder {
-        target_offset,
-        value_range: None,
-    };
-    finder.visit_body(body);
-    finder.value_range
-}
-
-fn name_at_offset(expr: &Expr, offset: TextSize) -> bool {
-    matches!(expr, Expr::Name(name) if name.range().start() == offset)
-}
-
-struct AssignmentValueFinder {
-    target_offset: TextSize,
-    value_range: Option<TextRange>,
-}
-
-impl<'a> StatementVisitor<'a> for AssignmentValueFinder {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if self.value_range.is_some() {
-            return;
-        }
-        match stmt {
-            Stmt::FunctionDef(_) | Stmt::ClassDef(_) => {}
-            Stmt::Assign(assign)
-                if assign
-                    .targets
-                    .iter()
-                    .any(|target| name_at_offset(target, self.target_offset)) =>
-            {
-                self.value_range = Some(assign.value.range());
-            }
-            Stmt::AnnAssign(annotation)
-                if annotation.value.is_some()
-                    && name_at_offset(&annotation.target, self.target_offset) =>
-            {
-                self.value_range = annotation.value.as_ref().map(|value| value.range());
-            }
-            _ => walk_stmt(self, stmt),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -252,5 +203,18 @@ mod tests {
         let only = diagnostics.first().expect("one diagnostic");
 
         assert!(only.message.ends_with("Consider inlining `g() + 1`"));
+    }
+
+    #[test]
+    fn walrus_binding_message_omits_unnameable_value() {
+        let source = parse(
+            "def f(items):\n    if (n := len(items)) == 1:\n        return n\n    return 0\n",
+        );
+        let rule = SingleUseVariables::from_config(&Config::default());
+        let diagnostics = rule.lint(&source);
+        let only = diagnostics.first().expect("one diagnostic");
+
+        assert!(only.message.ends_with("Consider inlining"));
+        assert!(!only.message.contains("inlining `"));
     }
 }
