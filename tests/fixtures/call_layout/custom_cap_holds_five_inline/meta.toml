@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Raised `max-inline-args` Holds More Arguments Inline"
+
+description = '''
+Lifting the cap to five keeps a five-argument call on one line, the rule exploding only past the configured threshold.
+'''

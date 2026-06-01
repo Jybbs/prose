@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/explodes_above_threshold/input.py
+---
+def connect(host, port, timeout, user):
+    return (host, port, timeout, user)
+
+
+session = connect(
+    host=h,
+    port=p,
+    timeout=t,
+    user=u
+)

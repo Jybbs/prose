@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "An Inline Trailing Comma Carries Through the Explode"
+
+description = '''
+A call carrying a trailing comma keeps it across the explode, since adding or dropping the comma belongs to `strip-trailing-commas`.
+'''

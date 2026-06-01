@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "Setting `max-inline-args` to `false` Disables the Explode"
+
+description = '''
+With the count trigger turned off, the rule never explodes a call whatever its argument count.
+'''

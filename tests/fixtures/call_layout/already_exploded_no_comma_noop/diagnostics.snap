@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/call_layout/already_exploded_no_comma_noop/input.py
+---
+

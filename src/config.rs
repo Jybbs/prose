@@ -109,6 +109,27 @@ impl Default for CacheConfig {
     }
 }
 
+/// Configuration for the `call_layout` rule.
+///
+/// `max_inline_args` caps the count threshold. A positive integer
+/// enforces the cap. `false` disables the count trigger.
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct CallLayoutConfig {
+    pub enabled: bool,
+    #[serde(deserialize_with = "deserialize_max_inline_args")]
+    pub max_inline_args: Option<NonZeroUsize>,
+}
+
+impl Default for CallLayoutConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_inline_args: NonZeroUsize::new(3),
+        }
+    }
+}
+
 /// Configuration for the `collection_layout` rule.
 ///
 /// `max_atomics_per_line` and `max_inline_dict_entries` each take a
@@ -399,6 +420,7 @@ impl_rule_toggle!(
     AlignmentConfig,
     AlphabetizeConfig,
     BareImportsConfig,
+    CallLayoutConfig,
     CollectionLayoutConfig,
     LooseConstantsConfig,
     SignatureLayoutConfig,
@@ -484,6 +506,7 @@ macro_rules! optional_cap {
 }
 
 optional_cap!(deserialize_max_atomics_per_line, "max-atomics-per-line");
+optional_cap!(deserialize_max_inline_args, "max-inline-args");
 optional_cap!(
     deserialize_max_inline_dict_entries,
     "max-inline-dict-entries"

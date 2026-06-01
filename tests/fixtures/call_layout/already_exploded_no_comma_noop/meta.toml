@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "An Exploded Call Without a Trailing Comma Is Left Alone"
+
+description = '''
+A call already laid out one argument per line with no trailing comma matches the rule's canonical shape, so the pass emits no edit.
+'''

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/interior_comment_pins_shape/input.py
+---
+result = build(
+    alpha=1,  # keep this note anchored
+    beta=2,
+    gamma=3,
+    delta=4
+)

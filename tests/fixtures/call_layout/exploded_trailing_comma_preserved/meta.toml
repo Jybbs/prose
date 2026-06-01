@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "An Exploded Call Keeps Its Trailing Comma"
+
+description = '''
+A call already exploded with a trailing comma is left untouched, the rule deferring comma policy to `strip-trailing-commas`.
+'''

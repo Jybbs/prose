@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/custom_cap_holds_five_inline/input.py
+---
+response = fetch(body=b, headers=h, method=m, params=p, url=u)

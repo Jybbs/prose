@@ -40,6 +40,7 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use crate::{
     config::Config,
     primitives::{
+        call_keywords::{keyword_args, module_call_params, pins_positional_params},
         docstring::{entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
         imports::{ImportGroup, import_group},
@@ -204,38 +205,19 @@ impl<'a> LeafCollector<'a> {
         let Some(&params) = self.rewrite_targets.get(&callee.range().start()) else {
             return false;
         };
-        let (args, keywords) = (&c.arguments.args, &c.arguments.keywords);
-        let posonly = params.posonlyargs.len();
-        if args.len() <= posonly
-            || args.len() > posonly + params.args.len()
-            || args.iter().any(Expr::is_starred_expr)
-            || keywords.iter().any(|kw| kw.arg.is_none())
-        {
+        let Some(keywords) = keyword_args(self.source, c, Some(params)) else {
+            return false;
+        };
+        // A call whose positional arguments are all positional-only has
+        // nothing to convert; the plain keyword reorder sorts it instead.
+        if c.arguments.args.len() <= keywords.posonly_prefix {
             return false;
         }
-        let (blocks, keys, rendered): (Vec<TextRange>, Vec<&str>, Vec<Cow<'a, str>>) = args
-            .iter()
-            .skip(posonly)
-            .zip(&params.args)
-            .map(|(arg, param)| {
-                let name = param.name().as_str();
-                (
-                    arg.range(),
-                    name,
-                    Cow::Owned(format!("{name}={}", self.source.slice(arg))),
-                )
-            })
-            .chain(keywords.iter().map(|kw| {
-                (
-                    kw.range(),
-                    kw.arg.as_deref().expect("`**` excluded above"),
-                    Cow::Borrowed(self.source.slice(kw)),
-                )
-            }))
+        let (blocks, keys, rendered): (Vec<TextRange>, Vec<&str>, Vec<Cow<'a, str>>) = keywords
+            .args
+            .into_iter()
+            .map(|arg| (arg.block, arg.name, arg.rendered))
             .multiunzip();
-        if !keys.iter().all_unique() {
-            return false;
-        }
         let mut order: Vec<usize> = (0..keys.len()).collect();
         order.sort_unstable_by_key(|&i| keys[i]);
         let assembled = assemble_blocks(self.source, &blocks, &rendered, &order, |_| None);
@@ -368,22 +350,10 @@ fn assign_run_target(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
 }
 
 /// Maps each in-module call's callee offset to the parameters of the
-/// top-level function it resolves to, covering every function whose
-/// positional `args` reorder, whose decorators do not pin position, and
-/// whose name binds uniquely to that one definition. The offsets come
-/// from `BindingAnalysis`, so a shadowing local or an aliased reference
-/// resolves to its own binding and never lands here.
+/// top-level function it resolves to, restricted to functions whose
+/// positional `args` reorder under alphabetization.
 fn call_rewrite_targets(source: &Source) -> HashMap<TextSize, &Parameters> {
-    let analysis = source.binding_analysis();
-    source
-        .ast()
-        .body
-        .iter()
-        .filter_map(Stmt::as_function_def_stmt)
-        .filter(|&func| !pins_positional_params(func) && args_reorder(&func.parameters))
-        .filter_map(|func| Some((analysis.module_function_reads(func.name.as_str())?, func)))
-        .flat_map(|(reads, func)| reads.iter().map(move |&offset| (offset, &*func.parameters)))
-        .collect()
+    module_call_params(source, |func| args_reorder(&func.parameters))
 }
 
 /// Returns the slot ranges of consecutive items whose pairwise
@@ -723,17 +693,6 @@ fn partition_divider_slots(source: &Source, order: &[usize], items: &[DictItem])
         .filter(|(_, w)| is_multiline(w[0]) || is_multiline(w[1]))
         .map(|(i, _)| i)
         .collect()
-}
-
-/// True when any of `f`'s decorators is a `Call` carrying positional
-/// arguments, signalling the decorator may bind values into the
-/// signature by position.
-fn pins_positional_params(f: &StmtFunctionDef) -> bool {
-    f.decorator_list.iter().any(|d| {
-        d.expression
-            .as_call_expr()
-            .is_some_and(|c| !c.arguments.args.is_empty())
-    })
 }
 
 /// Rewrites a non-empty body, returning the rewritten text alongside

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/call_layout/order_preserved_not_alphabetized/input.py
+---
+call-layout@95..105

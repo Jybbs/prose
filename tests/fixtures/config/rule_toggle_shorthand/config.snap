@@ -32,6 +32,12 @@ Config {
             docstring_entries: true,
             enabled: false,
         },
+        call_layout: CallLayoutConfig {
+            enabled: true,
+            max_inline_args: Some(
+                3,
+            ),
+        },
         strip_trailing_commas: ToggleOnly {
             enabled: true,
         },

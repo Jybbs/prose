@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Positional-Only Prefix Blocks the Explode"
+
+description = '''
+An argument bound to a positional-only parameter cannot take keyword form, so a call carrying one stays inline whatever its argument count.
+'''

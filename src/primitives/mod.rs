@@ -2,6 +2,7 @@
 
 pub(crate) mod aligner;
 pub(crate) mod binding;
+pub(crate) mod call_keywords;
 pub(crate) mod colon_targets;
 pub(crate) mod docstring;
 pub(crate) mod edit;

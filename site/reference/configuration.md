@@ -84,6 +84,7 @@ The `[rules]` table holds one entry per rule you change. A bare bool is the shor
 | `docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within every Title-case-headed docstring section alongside the AST-level sorts. Set `false` to keep narrative-curated entry order while still sorting every other surface |
 | `max-atomics-per-line` | positive int \| `false` | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. `false` removes the cap and packs by width alone |
 | `max-inline-dict-entries` | positive int \| `false` | [[collection-layout]] | `3` | Expand a dict once its entry count exceeds the cap, whatever its width. `false` disables the count trigger |
+| `max-inline-args` | positive int \| `false` | [[call-layout]] | `3` | Explode a call to one keyword argument per line once its argument count exceeds the cap. `false` disables the count trigger and leaves every call inline |
 | `allow` | list of module names | [[bare-imports]] | `["numpy", "pandas"]` | Modules whose bare-import form is preserved |
 | `allow` | list of names | [[loose-constants]] | `[]` | Module-level names exempted from the lint |
 | `allow-pattern` | regex | [[single-use-variables]] | `"^_"` | Binding names exempted from the lint |
@@ -106,7 +107,7 @@ Some rules answer a single yes-or-no question with no parameters worth tuning, s
 
 ### Rule-Specific Knobs
 
-Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the knob shaped for its question. [[alphabetize]] takes `docstring-entries` for the docstring-entry reorder, [[bare-imports]] takes an `allow` list of modules whose bare-import form is preserved, [[collection-layout]] takes `max-atomics-per-line` to cap the inline-collection budget and `max-inline-dict-entries` to expand a dict past an entry count, [[loose-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
+Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the knob shaped for its question. [[alphabetize]] takes `docstring-entries` for the docstring-entry reorder, [[bare-imports]] takes an `allow` list of modules whose bare-import form is preserved, [[collection-layout]] takes `max-atomics-per-line` to cap the inline-collection budget and `max-inline-dict-entries` to expand a dict past an entry count, [[call-layout]] takes `max-inline-args` to explode a call past an argument count, [[loose-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
 
 ## Docstring Budgets
 

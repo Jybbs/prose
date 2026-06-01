@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/method_call_explodes/input.py
+---
+client.request(
+    headers=h,
+    method=m,
+    params=p,
+    url=u
+)

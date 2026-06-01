@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/order_preserved_not_alphabetized/input.py
+---
+def draw(width, height, depth, color):
+    return (width, height, depth, color)
+
+
+shape = draw(
+    width=w,
+    height=h,
+    depth=d,
+    color=c
+)
