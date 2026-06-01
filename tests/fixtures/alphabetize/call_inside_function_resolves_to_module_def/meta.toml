@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Call Nested in Another Function Resolves to the Module Definition"
+
+description = '''
+A call inside another function body resolves through `BindingAnalysis` to the module-level definition it names, so its positional arguments rewrite alongside the top-level call sites.
+'''

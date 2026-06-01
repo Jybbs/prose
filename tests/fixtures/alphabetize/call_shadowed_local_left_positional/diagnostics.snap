@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/call_shadowed_local_left_positional/input.py
+---
+alphabetize@6..10

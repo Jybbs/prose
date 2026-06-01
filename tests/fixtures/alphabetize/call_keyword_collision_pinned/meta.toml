@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Positional Whose Name Already Appears as a Keyword Pins the Call"
+
+description = '''
+Keying a positional argument to a parameter name already supplied as an explicit keyword would double-bind that parameter, so the rewrite leaves the call as it reads.
+'''

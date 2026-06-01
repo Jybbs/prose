@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Double-Star Unpacking Disqualifies the Call"
+
+description = '''
+A `**` mapping unpacked at the call site cannot map onto fixed parameter names, so the rewrite leaves the call as it reads while the signature reorders.
+'''

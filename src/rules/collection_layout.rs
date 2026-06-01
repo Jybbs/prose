@@ -11,6 +11,7 @@
 
 use std::{borrow::Cow, num::NonZeroUsize, ops::Range};
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     AnyNodeRef, DictItem, Expr, ExprDict,
@@ -176,15 +177,16 @@ impl<'a> Layouter<'a> {
     fn gather_items(&self, expr: &Expr, indent: usize) -> GatheredItems<'a> {
         let parent = AnyNodeRef::from(expr);
         if let Expr::Dict(d) = expr {
-            let (texts, (atomics, ranges)): (Vec<_>, (Vec<_>, Vec<_>)) = d
+            let (texts, atomics, ranges): (Vec<_>, Vec<_>, Vec<_>) = d
                 .iter()
                 .map(|item| {
                     (
                         self.serialize_dict_item(item, parent, indent),
-                        (false, item.range()),
+                        false,
+                        item.range(),
                     )
                 })
-                .unzip();
+                .multiunzip();
             return GatheredItems {
                 atomics,
                 close: '}',
@@ -198,15 +200,16 @@ impl<'a> Layouter<'a> {
             Expr::Set(s) => ('{', '}', &s.elts),
             _ => unreachable!("gather_items called on non-expandable expr"),
         };
-        let (texts, (atomics, ranges)): (Vec<_>, (Vec<_>, Vec<_>)) = elts
+        let (texts, atomics, ranges): (Vec<_>, Vec<_>, Vec<_>) = elts
             .iter()
             .map(|e| {
                 (
                     self.serialize_expr(e, parent, indent, indent),
-                    (is_atomic(e), e.range()),
+                    is_atomic(e),
+                    e.range(),
                 )
             })
-            .unzip();
+            .multiunzip();
         GatheredItems {
             atomics,
             close,

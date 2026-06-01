@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Recursive Call Keys on the Original Parameter Order"
+
+description = '''
+A function calling itself rewrites the recursive call's positional arguments to the parameter names of the original order, so the self-call binds the same values after the reorder.
+'''

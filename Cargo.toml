@@ -23,6 +23,7 @@ clap_complete      = "4.5"
 dirs               = "6"
 fs-err             = "3"
 ignore             = "0.4"
+itertools          = "0.14"
 rayon              = "1.10"
 regex-lite         = "0.1"
 ruff_diagnostics   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10", features = ["serde"] }

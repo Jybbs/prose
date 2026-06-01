@@ -1279,6 +1279,7 @@ dependencies = [
  "ignore",
  "indoc",
  "insta",
+ "itertools",
  "pretty_assertions",
  "proptest",
  "rayon",

@@ -2,17 +2,22 @@
 //! meaning. The covered shapes are classes and functions in a body,
 //! class-scope `Stmt::AnnAssign` field declarations and `Stmt::Assign`
 //! runs with simple `Name` targets, function and lambda parameters
-//! with `self` / `cls` and decorators carrying positional arguments
-//! pinned, call kwargs, set literal elements, consecutive `import`
-//! blocks reordered into canonical bare / external-`from` /
-//! local-package groups plus their alias lists, `global` and `nonlocal`
-//! name lists, `del` target lists, and the string literals inside
-//! `__all__` / `__slots__`.
+//! with `self` / `cls`, positional-only params, and parameters under a
+//! positional-binding decorator pinned, call kwargs, set literal
+//! elements, consecutive `import` blocks reordered into canonical bare
+//! / external-`from` / local-package groups plus their alias lists,
+//! `global` and `nonlocal` name lists, `del` target lists, and the
+//! string literals inside `__all__` / `__slots__`.
 //!
 //! Sorting flows through `primitives::orderer::reorder_text`. A
 //! recursive `Cow<'src, str>` rewriter folds inner sorts into the
 //! outer scope's replacement text, so each outermost reordering scope
 //! emits a single edit covering its descendants.
+//!
+//! When a top-level function's positional parameters reorder, every
+//! in-module call resolved through `BindingAnalysis` rewrites its
+//! keyword-eligible positional arguments to `name=value`, alphabetized,
+//! leaving positional-only prefixes and `*` / `**` call sites in place.
 
 use std::{
     borrow::Cow,
@@ -20,6 +25,7 @@ use std::{
     ops::Range,
 };
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Decorator, DictItem, ExceptHandler, Expr, ExprCall, ExprDict, ExprLambda, ExprSet,
@@ -66,7 +72,8 @@ impl Rule for Alphabetize {
         if body.is_empty() {
             return Vec::new();
         }
-        let mut leaf_edits = collect_leaf_edits(source);
+        let rewrite_targets = call_rewrite_targets(source);
+        let mut leaf_edits = collect_leaf_edits(source, &rewrite_targets);
         if self.docstring_entries {
             leaf_edits.extend(collect_docstring_entry_edits(source));
             leaf_edits.sort_unstable();
@@ -96,6 +103,8 @@ impl Rule for Alphabetize {
 struct LeafCollector<'a> {
     dict_depth: u32,
     edits: Vec<Edit>,
+    rewrite_edits: Vec<Edit>,
+    rewrite_targets: &'a HashMap<TextSize, &'a Parameters>,
     source: &'a Source,
 }
 
@@ -105,6 +114,9 @@ impl<'a> LeafCollector<'a> {
     }
 
     fn emit_call(&mut self, c: &'a ExprCall) {
+        if self.try_emit_keyword_rewrite(c) {
+            return;
+        }
         for chunk in c.arguments.keywords.split(|kw| kw.arg.is_none()) {
             self.try_emit_inline_reorder(chunk, |kw| kw.arg.as_deref());
         }
@@ -147,8 +159,9 @@ impl<'a> LeafCollector<'a> {
     }
 
     fn emit_parameters(&mut self, params: &'a Parameters, pin_positional: bool) {
+        // Positional-only params stay put, because no call-site keyword
+        // form can rebind the arguments a reorder would move.
         if !pin_positional {
-            self.try_emit_inline_reorder(&params.posonlyargs, classify_param);
             self.try_emit_inline_reorder(&params.args, classify_param);
         }
         self.try_emit_inline_reorder(&params.kwonlyargs, classify_param);
@@ -178,6 +191,57 @@ impl<'a> LeafCollector<'a> {
         if let Cow::Owned(text) = rendered {
             self.edits.push(Edit::range_replacement(text, span));
         }
+    }
+
+    /// Rewrites a call to a reordered module function, converting each
+    /// keyword-eligible positional argument to `name=value` and emitting
+    /// the keyword run alphabetized. Returns `false` when the call cannot
+    /// take that form, leaving the caller to fall back on the keyword reorder.
+    fn try_emit_keyword_rewrite(&mut self, c: &'a ExprCall) -> bool {
+        let Expr::Name(callee) = c.func.as_ref() else {
+            return false;
+        };
+        let Some(&params) = self.rewrite_targets.get(&callee.range().start()) else {
+            return false;
+        };
+        let (args, keywords) = (&c.arguments.args, &c.arguments.keywords);
+        let posonly = params.posonlyargs.len();
+        if args.len() <= posonly
+            || args.len() > posonly + params.args.len()
+            || args.iter().any(Expr::is_starred_expr)
+            || keywords.iter().any(|kw| kw.arg.is_none())
+        {
+            return false;
+        }
+        let (blocks, keys, rendered): (Vec<TextRange>, Vec<&str>, Vec<Cow<'a, str>>) = args
+            .iter()
+            .skip(posonly)
+            .zip(&params.args)
+            .map(|(arg, param)| {
+                let name = param.name().as_str();
+                (
+                    arg.range(),
+                    name,
+                    Cow::Owned(format!("{name}={}", self.source.slice(arg))),
+                )
+            })
+            .chain(keywords.iter().map(|kw| {
+                (
+                    kw.range(),
+                    kw.arg.as_deref().expect("`**` excluded above"),
+                    Cow::Borrowed(self.source.slice(kw)),
+                )
+            }))
+            .multiunzip();
+        if !keys.iter().all_unique() {
+            return false;
+        }
+        let mut order: Vec<usize> = (0..keys.len()).collect();
+        order.sort_unstable_by_key(|&i| keys[i]);
+        let assembled = assemble_blocks(self.source, &blocks, &rendered, &order, |_| None);
+        self.rewrite_edits
+            .push(Edit::range_replacement(assembled, blocks_span(&blocks)));
+        true
     }
 }
 
@@ -253,6 +317,12 @@ fn ann_assign_with_named_field(stmt: &Stmt) -> Option<(&StmtAnnAssign, &str)> {
     Some((ann, ann.target.as_name_expr()?.id.as_str()))
 }
 
+/// True when sorting a function's positional-or-keyword `args` by the
+/// parameter sort key would change their order.
+fn args_reorder(params: &Parameters) -> bool {
+    !params.args.iter().filter_map(classify_param).is_sorted()
+}
+
 /// Concatenates dict-item block texts in `order`, normalizing trailing
 /// commas so non-last slots always have one and the new-last slot
 /// matches `source_last_has_comma`. Inserts a blank line at every
@@ -295,6 +365,25 @@ fn assign_run_target(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
         }
         _ => None,
     }
+}
+
+/// Maps each in-module call's callee offset to the parameters of the
+/// top-level function it resolves to, covering every function whose
+/// positional `args` reorder, whose decorators do not pin position, and
+/// whose name binds uniquely to that one definition. The offsets come
+/// from `BindingAnalysis`, so a shadowing local or an aliased reference
+/// resolves to its own binding and never lands here.
+fn call_rewrite_targets(source: &Source) -> HashMap<TextSize, &Parameters> {
+    let analysis = source.binding_analysis();
+    source
+        .ast()
+        .body
+        .iter()
+        .filter_map(Stmt::as_function_def_stmt)
+        .filter(|&func| !pins_positional_params(func) && args_reorder(&func.parameters))
+        .filter_map(|func| Some((analysis.module_function_reads(func.name.as_str())?, func)))
+        .flat_map(|(reads, func)| reads.iter().map(move |&offset| (offset, &*func.parameters)))
+        .collect()
 }
 
 /// Returns the slot ranges of consecutive items whose pairwise
@@ -366,17 +455,37 @@ fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
     })
 }
 
-/// Walks the AST collecting every leaf-level sort edit. Each emitted
-/// edit covers a narrow range inside a single `Stmt` or `Expr`, so
-/// the resulting edits are non-overlapping with each other.
-fn collect_leaf_edits(source: &Source) -> Vec<Edit> {
+/// Walks the AST collecting every leaf-level edit in source order, then
+/// folds in each call-site keyword rewrite that does not overlap an
+/// existing edit, keeping the whole list non-overlapping.
+fn collect_leaf_edits<'a>(
+    source: &'a Source,
+    rewrite_targets: &'a HashMap<TextSize, &'a Parameters>,
+) -> Vec<Edit> {
     let mut collector = LeafCollector {
         dict_depth: 0,
         edits: Vec::new(),
+        rewrite_edits: Vec::new(),
+        rewrite_targets,
         source,
     };
     collector.visit_body(&source.ast().body);
-    collector.edits
+    let mut edits = collector.edits;
+    edits.sort_unstable();
+    // Keyword rewrites are pure additions over the existing leaf edits,
+    // so drop any that would overlap one, sidestepping the leaf-edit
+    // applicator's non-overlap invariant on nested reorder spans.
+    for rewrite in collector.rewrite_edits {
+        if edits.iter().all(|e| {
+            e.range()
+                .intersect(rewrite.range())
+                .is_none_or(|i| i.is_empty())
+        }) {
+            let slot = edits.partition_point(|e| e.range().start() < rewrite.range().start());
+            edits.insert(slot, rewrite);
+        }
+    }
+    edits
 }
 
 /// Returns one `(body, outer)` pair per sub-body of a compound
@@ -977,6 +1086,22 @@ mod tests {
         );
     }
 
+    #[rstest]
+    #[case("def f(b, a): pass\n", true)]
+    #[case("def f(a, b): pass\n", false)]
+    #[case("def f(a): pass\n", false)]
+    #[case("def f(): pass\n", false)]
+    #[case("def f(self, b, a): pass\n", true)]
+    #[case("def f(b, a, /): pass\n", false)]
+    fn args_reorder_tracks_only_the_positional_or_keyword_args(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let s = parse(src);
+        let f = s.ast().body[0].as_function_def_stmt().expect("def");
+        assert_eq!(args_reorder(&f.parameters), expected);
+    }
+
     #[test]
     fn assign_run_target_unwraps_both_assign_kinds_and_filters_non_names() {
         let s = parse("X = 1\nself.x = 1\ny: int = 2\nz: int\n(a, b) = (1, 2)\n");
@@ -990,6 +1115,19 @@ mod tests {
     }
 
     #[test]
+    fn collect_leaf_edits_drops_a_keyword_rewrite_overlapping_another_edit() {
+        let source = parse(
+            "def inner(b, a):\n    pass\n\n\ndef outer(d, c):\n    pass\n\n\nouter(inner(1, 2), 3)\n",
+        );
+        let edits = collect_leaf_edits(&source, &call_rewrite_targets(&source));
+        let text = crate::primitives::edit::apply_edits(source.text(), edits);
+        assert_eq!(
+            text,
+            "def inner(a, b):\n    pass\n\n\ndef outer(c, d):\n    pass\n\n\nouter(c=3, d=inner(1, 2))\n",
+        );
+    }
+
+    #[test]
     fn collect_leaf_edits_yields_edits_in_source_order() {
         let src = indoc! {"
             import b, a
@@ -998,7 +1136,8 @@ mod tests {
             x = {z, y}
             def f(b, a): foo(b=2, a=1)
         "};
-        let edits = collect_leaf_edits(&parse(src));
+        let source = parse(src);
+        let edits = collect_leaf_edits(&source, &call_rewrite_targets(&source));
         assert!(edits.len() >= 5, "fixture must trigger multiple producers");
         assert!(
             edits.is_sorted(),

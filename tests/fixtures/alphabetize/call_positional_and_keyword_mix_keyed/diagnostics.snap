@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/call_positional_and_keyword_mix_keyed/input.py
+---
+alphabetize@6..38

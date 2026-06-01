@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/call_shadowed_local_left_positional/input.py
+---
+def f(a, b):
+    pass
+
+
+def g(f):
+    f(1, 2)
