@@ -14,7 +14,7 @@ use ruff_python_ast::{
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_python_trivia::{BackwardsTokenizer, SimpleTokenKind};
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextSize};
 
 use crate::{
     config::Config,
@@ -81,11 +81,7 @@ impl<'a> Exploder<'a> {
         if arguments.args.len() + arguments.keywords.len() <= self.cap {
             return None;
         }
-        let one = TextSize::from(1u32);
-        if self
-            .source
-            .intersects_comment(arguments.range().add_start(one).sub_end(one))
-        {
+        if self.source.intersects_comment(arguments.inner_range()) {
             return None;
         }
         let params = call
@@ -118,20 +114,16 @@ impl<'a> Exploder<'a> {
         Some(out)
     }
 
-    /// Appends `rendered` to `out`, swapping a nested call value for its
-    /// own exploded form while keeping the `name=` prefix verbatim, so
-    /// nesting resolves in one pass.
+    /// Appends `rendered` to `out`, swapping a nested call value's
+    /// argument list for its own exploded form while keeping everything
+    /// before it verbatim, so nesting resolves in one pass.
     fn render_value(&self, out: &mut String, value: &Expr, rendered: &str, indent: usize) {
         if let Expr::Call(inner) = value
             && let Some(args_text) = self.explode_args(inner, indent)
         {
-            let inline = self.source.slice(value);
-            let head = rendered.strip_suffix(inline).unwrap_or(rendered);
-            let callee = self
-                .source
-                .slice(TextRange::new(inner.start(), inner.arguments.start()));
+            let inner_args = self.source.slice(inner.arguments.range());
+            let head = rendered.strip_suffix(inner_args).unwrap_or(rendered);
             out.push_str(head);
-            out.push_str(callee);
             out.push_str(&args_text);
         } else {
             out.push_str(rendered);
