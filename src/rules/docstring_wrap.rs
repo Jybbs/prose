@@ -270,7 +270,6 @@ fn rewrite_body(
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use crate::pipeline::Pipeline;
     use crate::test_support::parse;

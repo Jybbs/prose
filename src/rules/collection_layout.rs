@@ -535,7 +535,6 @@ fn try_even(
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]

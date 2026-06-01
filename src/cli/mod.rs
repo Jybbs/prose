@@ -144,7 +144,6 @@ fn with_color<S: RawStream>(raw: S, choice: ColorChoice) -> AutoStream<S> {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]

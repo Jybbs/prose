@@ -82,7 +82,6 @@ fn write_report<W: Write>(mut stdout: W, report: CleanReport) -> anyhow::Result<
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]

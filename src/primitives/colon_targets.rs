@@ -288,7 +288,6 @@ fn parameter_groups(
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]

@@ -42,9 +42,10 @@ pub(super) fn to_lsp(
 /// Maps a byte offset to a protocol position in the negotiated encoding.
 fn position_of(source: &Source, offset: TextSize, encoding: PositionEncoding) -> Position {
     let location = source.source_location(offset, encoding);
+    let clamp = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
     Position {
-        character: u32::try_from(location.character_offset.to_zero_indexed()).unwrap_or(u32::MAX),
-        line: u32::try_from(location.line.to_zero_indexed()).unwrap_or(u32::MAX),
+        character: clamp(location.character_offset.to_zero_indexed()),
+        line: clamp(location.line.to_zero_indexed()),
     }
 }
 
