@@ -227,6 +227,17 @@ export const glossary: Record<string, GlossaryEntry> = {
     href      : 'https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions'
   },
 
+  'count trigger': {
+    aliases   : ['count-based trigger', 'count gate'],
+    definition: 'A count trigger expands a layout once an element count crosses a '
+              + 'configured cap, whatever the width. `signature-layout` counts parameters '
+              + 'with `max-inline-params` and `collection-layout` counts dict entries with '
+              + '`max-inline-dict-entries`, and `false` disables either. It replaces the magic '
+              + 'trailing comma that Black and Ruff read with an explicit, configurable count.',
+    families  : ['formatting'],
+    href      : '/rules/collection-layout'
+  },
+
   'dataclass': {
     aliases   : ['dataclasses', 'dataclass field', 'dataclass fields'],
     definition: 'A dataclass is a class decorated with `@dataclass` whose body lists typed '

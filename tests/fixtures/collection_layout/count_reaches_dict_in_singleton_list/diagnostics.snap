@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/count_reaches_dict_in_singleton_list/input.py
+---
+collection-layout@12..42

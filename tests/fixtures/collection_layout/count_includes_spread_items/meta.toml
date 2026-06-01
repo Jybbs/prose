@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Spread Entry Counts Toward the Dict Cap"
+
+description = '''
+A `**spread` occupies an entry slot, so a dict of three keyed pairs and one spread crosses `max-inline-dict-entries` and expands, where the keyed pairs alone would stay inline.
+'''
