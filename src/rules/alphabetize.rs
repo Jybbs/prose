@@ -25,6 +25,7 @@ use std::{
     ops::Range,
 };
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Decorator, DictItem, ExceptHandler, Expr, ExprCall, ExprDict, ExprLambda, ExprSet,
@@ -212,25 +213,31 @@ impl<'a> LeafCollector<'a> {
         {
             return false;
         }
-        let mut blocks: Vec<TextRange> = Vec::new();
-        let mut keys: Vec<&str> = Vec::new();
-        let mut rendered: Vec<Cow<'a, str>> = Vec::new();
-        for (arg, param) in args[posonly..].iter().zip(&params.args) {
-            let name = param.name().as_str();
-            blocks.push(arg.range());
-            keys.push(name);
-            rendered.push(Cow::Owned(format!("{name}={}", self.source.slice(arg))));
-        }
-        for kw in keywords {
-            blocks.push(kw.range());
-            keys.push(kw.arg.as_deref().expect("`**` excluded above"));
-            rendered.push(Cow::Borrowed(self.source.slice(kw)));
+        let (blocks, keys, rendered): (Vec<TextRange>, Vec<&str>, Vec<Cow<'a, str>>) = args
+            .iter()
+            .skip(posonly)
+            .zip(&params.args)
+            .map(|(arg, param)| {
+                let name = param.name().as_str();
+                (
+                    arg.range(),
+                    name,
+                    Cow::Owned(format!("{name}={}", self.source.slice(arg))),
+                )
+            })
+            .chain(keywords.iter().map(|kw| {
+                (
+                    kw.range(),
+                    kw.arg.as_deref().expect("`**` excluded above"),
+                    Cow::Borrowed(self.source.slice(kw)),
+                )
+            }))
+            .multiunzip();
+        if !keys.iter().all_unique() {
+            return false;
         }
         let mut order: Vec<usize> = (0..keys.len()).collect();
         order.sort_unstable_by_key(|&i| keys[i]);
-        if order.windows(2).any(|w| keys[w[0]] == keys[w[1]]) {
-            return false;
-        }
         let assembled = assemble_blocks(self.source, &blocks, &rendered, &order, |_| None);
         self.rewrite_edits
             .push(Edit::range_replacement(assembled, blocks_span(&blocks)));
