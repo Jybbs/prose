@@ -8,11 +8,11 @@
 //!
 //! Layout: `dispatch` owns the handshake and the message loop,
 //! `capabilities` advertises the server's surface and negotiates
-//! position encoding, `documents` holds the live buffers, `analysis`
-//! runs the pipeline over a buffer and resolves its config, and
-//! `conversion` maps between prose's byte offsets and the protocol's
-//! line/character positions. This module holds only the stdio glue, the
-//! one piece that resists unit testing.
+//! position encoding, `documents` holds the live buffers, `config_cache`
+//! resolves and memoizes each document's config, `analysis` runs the
+//! pipeline over a buffer, and `conversion` maps between prose's byte
+//! offsets and the protocol's line/character positions. This module holds
+//! only the stdio glue, the one piece that resists unit testing.
 
 use anyhow::Context;
 use lsp_server::Connection;
@@ -24,6 +24,7 @@ use crate::cli::{
 
 mod analysis;
 mod capabilities;
+mod config_cache;
 mod conversion;
 mod dispatch;
 mod documents;

@@ -2,21 +2,24 @@
 //! requests and notifications to the formatting and diagnostic passes.
 
 use anyhow::Context;
-use lsp_server::{Connection, ErrorCode, ExtractError, Message, Notification, Request, Response};
+use lsp_server::{
+    Connection, ErrorCode, ExtractError, Message, Notification, Request, RequestId, Response,
+};
 use lsp_types::{
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentFormattingParams, InitializeParams, InitializeResult, PublishDiagnosticsParams,
-    ServerInfo, Uri,
+    ClientCapabilities, DidChangeTextDocumentParams, DidChangeWatchedFilesRegistrationOptions,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentFormattingParams,
+    FileSystemWatcher, GlobPattern, InitializeParams, InitializeResult, PublishDiagnosticsParams,
+    Registration, RegistrationParams, ServerInfo, Uri,
     notification::{
-        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument,
-        Notification as NotificationTrait, PublishDiagnostics,
+        DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument, DidOpenTextDocument,
+        Exit, Notification as NotificationTrait, PublishDiagnostics,
     },
-    request::{Formatting, Request as RequestTrait},
+    request::{Formatting, RegisterCapability, Request as RequestTrait},
 };
 use ruff_source_file::PositionEncoding;
 use serde::de::DeserializeOwned;
 
-use super::{analysis, capabilities, documents::DocumentStore};
+use super::{analysis, capabilities, config_cache::ConfigCache, documents::DocumentStore};
 
 /// Completes the `initialize` handshake, negotiating position encoding
 /// from the client's capabilities before advertising the server's, then
@@ -43,7 +46,8 @@ pub(super) fn serve(connection: Connection) -> anyhow::Result<()> {
     connection
         .initialize_finish(id, result)
         .context("finishing language-server handshake")?;
-    main_loop(&connection, encoding)
+    let watching = register_config_watchers(&connection, &params.capabilities)?;
+    main_loop(&connection, encoding, watching)
 }
 
 /// Deserializes a notification's params, contextualizing a decode
@@ -61,18 +65,29 @@ fn decode<P: DeserializeOwned>(notification: Notification) -> anyhow::Result<P> 
 fn handle_notification(
     connection: &Connection,
     documents: &mut DocumentStore,
+    configs: &mut ConfigCache,
     notification: Notification,
     encoding: PositionEncoding,
 ) -> anyhow::Result<()> {
+    if notification.method == DidChangeWatchedFiles::METHOD {
+        configs.clear();
+        return republish_all(connection, documents, configs, encoding);
+    }
     let uri = if notification.method == DidOpenTextDocument::METHOD {
         let params: DidOpenTextDocumentParams = decode(notification)?;
-        documents.set(params.text_document.uri.clone(), params.text_document.text);
+        let version = params.text_document.version;
+        documents.set(
+            params.text_document.uri.clone(),
+            params.text_document.text,
+            version,
+        );
         params.text_document.uri
     } else if notification.method == DidChangeTextDocument::METHOD {
         let mut params: DidChangeTextDocumentParams = decode(notification)?;
+        let version = params.text_document.version;
         let uri = params.text_document.uri;
         if let Some(change) = params.content_changes.pop() {
-            documents.set(uri.clone(), change.text);
+            documents.set(uri.clone(), change.text, version);
         }
         uri
     } else if notification.method == DidCloseTextDocument::METHOD {
@@ -82,7 +97,7 @@ fn handle_notification(
     } else {
         return Ok(());
     };
-    publish(connection, documents, &uri, encoding)
+    publish(connection, documents, configs, &uri, encoding)
 }
 
 /// Routes one request, answering formatting and rejecting any other
@@ -90,15 +105,21 @@ fn handle_notification(
 fn handle_request(
     connection: &Connection,
     documents: &DocumentStore,
+    configs: &mut ConfigCache,
     request: Request,
     encoding: PositionEncoding,
 ) -> anyhow::Result<()> {
+    let id = request.id.clone();
     match request.extract::<DocumentFormattingParams>(Formatting::METHOD) {
         Ok((id, params)) => {
+            // The client's `FormattingOptions` (tab size, spaces) go unused
+            // because prose formats to its own `[tool.prose]` config, not
+            // editor settings.
             let uri = &params.text_document.uri;
+            let config = configs.resolve(uri);
             let edits = documents
                 .get(uri)
-                .and_then(|text| analysis::format_edits(uri, text, encoding));
+                .and_then(|doc| analysis::format_edits(&doc.text, encoding, config));
             send(connection, Message::Response(Response::new_ok(id, edits)))
         }
         Err(ExtractError::MethodMismatch(request)) => send(
@@ -109,29 +130,57 @@ fn handle_request(
                 format!("unsupported request `{}`", request.method),
             )),
         ),
-        Err(ExtractError::JsonError { method, error }) => {
-            Err(anyhow::anyhow!("malformed `{method}` request: {error}"))
-        }
+        Err(ExtractError::JsonError { method, error }) => send(
+            connection,
+            Message::Response(Response::new_err(
+                id,
+                ErrorCode::InvalidParams as i32,
+                format!("malformed `{method}` request: {error}"),
+            )),
+        ),
     }
 }
 
-/// Reads each message until the client requests shutdown.
-fn main_loop(connection: &Connection, encoding: PositionEncoding) -> anyhow::Result<()> {
+/// Reads each message until the client requests shutdown or sends a bare
+/// `exit`. A malformed message is logged and dropped rather than ending the
+/// session, so one bad payload never tears down a live editor.
+fn main_loop(
+    connection: &Connection,
+    encoding: PositionEncoding,
+    watching: bool,
+) -> anyhow::Result<()> {
     let mut documents = DocumentStore::default();
+    let mut configs = ConfigCache::new(watching);
     for message in &connection.receiver {
         match message {
             Message::Notification(notification) => {
-                handle_notification(connection, &mut documents, notification, encoding)?;
-            }
-            Message::Request(request) => {
-                if connection
-                    .handle_shutdown(&request)
-                    .context("handling shutdown")?
-                {
+                if notification.method == Exit::METHOD {
                     return Ok(());
                 }
-                handle_request(connection, &documents, request, encoding)?;
+                if let Err(err) = handle_notification(
+                    connection,
+                    &mut documents,
+                    &mut configs,
+                    notification,
+                    encoding,
+                ) {
+                    eprintln!("prose server: dropped notification: {err:#}");
+                }
             }
+            Message::Request(request) => match connection.handle_shutdown(&request) {
+                Ok(true) => return Ok(()),
+                Ok(false) => {
+                    if let Err(err) =
+                        handle_request(connection, &documents, &mut configs, request, encoding)
+                    {
+                        eprintln!("prose server: request failed: {err:#}");
+                    }
+                }
+                Err(err) => {
+                    eprintln!("prose server: shutdown handshake failed: {err}");
+                    return Ok(());
+                }
+            },
             Message::Response(_) => {}
         }
     }
@@ -143,17 +192,19 @@ fn main_loop(connection: &Connection, encoding: PositionEncoding) -> anyhow::Res
 fn publish(
     connection: &Connection,
     documents: &DocumentStore,
+    configs: &mut ConfigCache,
     uri: &Uri,
     encoding: PositionEncoding,
 ) -> anyhow::Result<()> {
-    let diagnostics = documents
-        .get(uri)
-        .map(|text| analysis::diagnostics(uri, text, encoding))
+    let config = configs.resolve(uri);
+    let doc = documents.get(uri);
+    let diagnostics = doc
+        .map(|doc| analysis::diagnostics(&doc.text, encoding, config))
         .unwrap_or_default();
     let params = PublishDiagnosticsParams {
         diagnostics,
         uri: uri.clone(),
-        version: None,
+        version: doc.map(|doc| doc.version),
     };
     send(
         connection,
@@ -162,6 +213,66 @@ fn publish(
             params,
         )),
     )
+}
+
+/// Registers a `workspace/didChangeWatchedFiles` watcher for prose's config
+/// files when the client supports dynamic registration, so a `pyproject.toml`
+/// or `prose.toml` edit refreshes every open buffer. Clients without dynamic
+/// registration still pick up config changes on the next edit.
+fn register_config_watchers(
+    connection: &Connection,
+    capabilities: &ClientCapabilities,
+) -> anyhow::Result<bool> {
+    let supported = capabilities
+        .workspace
+        .as_ref()
+        .and_then(|workspace| workspace.did_change_watched_files.as_ref())
+        .and_then(|watched| watched.dynamic_registration)
+        == Some(true);
+    if !supported {
+        return Ok(false);
+    }
+    let options = DidChangeWatchedFilesRegistrationOptions {
+        watchers: ["**/pyproject.toml", "**/prose.toml"]
+            .into_iter()
+            .map(|glob| FileSystemWatcher {
+                glob_pattern: GlobPattern::String(glob.to_owned()),
+                kind: None,
+            })
+            .collect(),
+    };
+    let params = RegistrationParams {
+        registrations: vec![Registration {
+            id: "prose-config-watch".to_owned(),
+            method: DidChangeWatchedFiles::METHOD.to_owned(),
+            register_options: Some(
+                serde_json::to_value(options).context("encoding watcher registration")?,
+            ),
+        }],
+    };
+    send(
+        connection,
+        Message::Request(Request::new(
+            RequestId::from("prose/register-config-watch".to_owned()),
+            RegisterCapability::METHOD.to_owned(),
+            params,
+        )),
+    )?;
+    Ok(true)
+}
+
+/// Recomputes and republishes diagnostics for every open buffer, after a
+/// config change invalidates their cached settings.
+fn republish_all(
+    connection: &Connection,
+    documents: &DocumentStore,
+    configs: &mut ConfigCache,
+    encoding: PositionEncoding,
+) -> anyhow::Result<()> {
+    for uri in documents.uris() {
+        publish(connection, documents, configs, &uri, encoding)?;
+    }
+    Ok(())
 }
 
 /// Sends one message to the client, contextualizing a closed channel.
@@ -301,6 +412,18 @@ mod tests {
     }
 
     #[test]
+    fn bare_exit_without_shutdown_ends_the_loop() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        client.sender.send(note(EXIT, ())).expect("send exit");
+        handle
+            .join()
+            .expect("server thread joins")
+            .expect("serve returns Ok on bare exit");
+    }
+
+    #[test]
     fn did_change_republishes_against_the_new_text() {
         let (server, client) = Connection::memory();
         let handle = thread::spawn(move || serve(server));
@@ -358,6 +481,49 @@ mod tests {
         assert_eq!(params.diagnostics.len(), 1);
         assert_eq!(params.diagnostics[0].source.as_deref(), Some("prose"));
         teardown(&client, handle);
+    }
+
+    #[test]
+    fn dynamic_registration_capable_client_gets_a_watcher_registration() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        client
+            .sender
+            .send(req(
+                1,
+                INITIALIZE,
+                serde_json::json!({
+                    "capabilities": {
+                        "workspace": {
+                            "didChangeWatchedFiles": { "dynamicRegistration": true }
+                        }
+                    }
+                }),
+            ))
+            .expect("send initialize");
+        let Message::Response(_) = recv(&client) else {
+            panic!("expected initialize response");
+        };
+        client
+            .sender
+            .send(note(INITIALIZED, InitializedParams {}))
+            .expect("send initialized");
+        let Message::Request(registration) = recv(&client) else {
+            panic!("expected registerCapability request");
+        };
+        assert_eq!(registration.method, "client/registerCapability");
+        client
+            .sender
+            .send(Message::Response(Response::new_ok(
+                registration.id,
+                serde_json::Value::Null,
+            )))
+            .expect("ack registration");
+        client.sender.send(note(EXIT, ())).expect("send exit");
+        handle
+            .join()
+            .expect("server thread joins")
+            .expect("serve returns Ok");
     }
 
     #[test]
@@ -426,6 +592,68 @@ mod tests {
     }
 
     #[test]
+    fn malformed_notification_is_dropped_and_server_survives() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        client
+            .sender
+            .send(note(DID_OPEN, serde_json::json!({ "bogus": true })))
+            .expect("send malformed didOpen");
+        did_open(&client, "import os\n");
+        assert_eq!(published(&client).diagnostics.len(), 1);
+        teardown(&client, handle);
+    }
+
+    #[test]
+    fn malformed_request_receives_invalid_params() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        client
+            .sender
+            .send(req(2, FORMATTING, serde_json::json!({ "bogus": true })))
+            .expect("send malformed formatting");
+        let Message::Response(response) = recv(&client) else {
+            panic!("expected error response");
+        };
+        assert_eq!(
+            response.error.expect("error").code,
+            ErrorCode::InvalidParams as i32
+        );
+        teardown(&client, handle);
+    }
+
+    #[test]
+    fn non_exit_after_shutdown_ends_the_session_cleanly() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        client
+            .sender
+            .send(req(3, SHUTDOWN, ()))
+            .expect("send shutdown");
+        client
+            .sender
+            .send(note("textDocument/didSave", serde_json::json!({})))
+            .expect("send a non-exit message");
+        handle
+            .join()
+            .expect("server thread joins")
+            .expect("serve returns Ok despite the protocol violation");
+    }
+
+    #[test]
+    fn published_diagnostics_carry_the_document_version() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        did_open(&client, "import os\n");
+        assert_eq!(published(&client).version, Some(1));
+        teardown(&client, handle);
+    }
+
+    #[test]
     fn unknown_notification_is_ignored() {
         let (server, client) = Connection::memory();
         let handle = thread::spawn(move || serve(server));
@@ -465,6 +693,24 @@ mod tests {
             response.error.expect("error").code,
             ErrorCode::MethodNotFound as i32
         );
+        teardown(&client, handle);
+    }
+
+    #[test]
+    fn watched_file_change_republishes_open_documents() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        did_open(&client, "import os\n");
+        assert_eq!(published(&client).diagnostics.len(), 1);
+        client
+            .sender
+            .send(note(
+                "workspace/didChangeWatchedFiles",
+                serde_json::json!({ "changes": [] }),
+            ))
+            .expect("send didChangeWatchedFiles");
+        assert_eq!(published(&client).diagnostics.len(), 1);
         teardown(&client, handle);
     }
 }

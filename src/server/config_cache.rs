@@ -1,0 +1,163 @@
+//! Per-document `[tool.prose]` resolution. With a `didChangeWatchedFiles`
+//! watcher registered, each path's config is memoized and cleared on a
+//! watched change. Without one, resolution re-reads on every call.
+
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
+
+use lsp_types::Uri;
+
+use crate::config::Config;
+
+/// Resolves the configuration governing each document, memoizing by path
+/// only when a watcher can invalidate the cache on a config change.
+#[derive(Default)]
+pub(super) struct ConfigCache {
+    by_path: HashMap<PathBuf, Config>,
+    default: Config,
+    enabled: bool,
+    fresh: Config,
+}
+
+impl ConfigCache {
+    /// Builds a cache that memoizes only when `enabled`, set by whether a
+    /// `didChangeWatchedFiles` watcher was registered.
+    pub(super) fn new(enabled: bool) -> Self {
+        Self {
+            enabled,
+            ..Self::default()
+        }
+    }
+
+    /// Drops every cached config, forcing the next resolve to re-read from
+    /// disk.
+    pub(super) fn clear(&mut self) {
+        self.by_path.clear();
+    }
+
+    /// Returns the configuration governing `uri`. A watched session
+    /// memoizes by path; an unwatched one re-reads each call. An unsaved
+    /// buffer whose URI names no file falls back to the defaults.
+    pub(super) fn resolve(&mut self, uri: &Uri) -> &Config {
+        let Some(path) = file_path(uri) else {
+            return &self.default;
+        };
+        if self.enabled {
+            self.by_path
+                .entry(path)
+                .or_insert_with_key(|path| load(path))
+        } else {
+            self.fresh = load(&path);
+            &self.fresh
+        }
+    }
+}
+
+/// Turns a `file://` URI into a filesystem path, or `None` for a URI that
+/// names no local file.
+fn file_path(uri: &Uri) -> Option<PathBuf> {
+    url::Url::parse(uri.as_str()).ok()?.to_file_path().ok()
+}
+
+/// Loads the config governing `path`, logging a present-but-broken config
+/// to stderr before falling back to the defaults.
+fn load(path: &Path) -> Config {
+    Config::load(path).unwrap_or_else(|err| {
+        eprintln!(
+            "prose server: config at {} failed to load, using defaults: {err}",
+            path.display()
+        );
+        Config::default()
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+
+    fn uri(s: &str) -> Uri {
+        Uri::from_str(s).expect("valid uri")
+    }
+
+    fn line_length(config: &Config) -> Option<usize> {
+        config.code_line_length.map(std::num::NonZeroUsize::get)
+    }
+
+    #[test]
+    fn broken_config_logs_and_falls_back_to_defaults() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        std::fs::write(dir.path().join("prose.toml"), "code-line-length = = oops\n")
+            .expect("writes");
+        let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
+
+        let mut cache = ConfigCache::new(true);
+
+        assert_eq!(
+            line_length(cache.resolve(&file)),
+            line_length(&Config::default()),
+        );
+    }
+
+    #[test]
+    fn disabled_cache_re_reads_on_each_resolve() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let toml = dir.path().join("prose.toml");
+        std::fs::write(&toml, "code-line-length = 100\n").expect("writes");
+        let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
+
+        let mut cache = ConfigCache::new(false);
+        assert_eq!(line_length(cache.resolve(&file)), Some(100));
+
+        std::fs::write(&toml, "code-line-length = 80\n").expect("rewrites");
+        assert_eq!(
+            line_length(cache.resolve(&file)),
+            Some(80),
+            "fresh each call"
+        );
+    }
+
+    #[test]
+    fn enabled_cache_is_stale_until_cleared() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let toml = dir.path().join("prose.toml");
+        std::fs::write(&toml, "code-line-length = 100\n").expect("writes");
+        let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
+
+        let mut cache = ConfigCache::new(true);
+        assert_eq!(line_length(cache.resolve(&file)), Some(100));
+
+        std::fs::write(&toml, "code-line-length = 80\n").expect("rewrites");
+        assert_eq!(
+            line_length(cache.resolve(&file)),
+            Some(100),
+            "stale until cleared",
+        );
+        cache.clear();
+        assert_eq!(line_length(cache.resolve(&file)), Some(80));
+    }
+
+    #[test]
+    fn resolve_falls_back_to_default_for_unsaved_buffer() {
+        let mut cache = ConfigCache::new(true);
+        let resolved = cache.resolve(&uri("untitled:Untitled-1"));
+        assert_eq!(
+            resolved.code_line_length,
+            Config::default().code_line_length
+        );
+    }
+
+    #[test]
+    fn resolve_reads_prose_toml_beside_the_document() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        std::fs::write(dir.path().join("prose.toml"), "code-line-length = 100\n").expect("writes");
+        let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
+
+        let mut cache = ConfigCache::new(true);
+
+        assert_eq!(line_length(cache.resolve(&file)), Some(100));
+    }
+}
