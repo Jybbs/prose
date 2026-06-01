@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/call_positional_only_prefix_kept/input.py
+---
+def connect(scheme, host, /, retries, timeout):
+    pass
+
+
+connect("https", "example.com", retries=5, timeout=30)

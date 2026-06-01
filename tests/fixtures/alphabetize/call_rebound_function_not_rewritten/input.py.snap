@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/call_rebound_function_not_rewritten/input.py
+---
+def f(a, b):
+    pass
+
+
+f = helper
+f(1, 2)

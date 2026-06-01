@@ -102,6 +102,13 @@ impl BindingAnalysis {
         &self.bindings[id.0 as usize]
     }
 
+    fn module_binding(&self, name: &str) -> Option<&Binding> {
+        self.scopes[0]
+            .bindings
+            .get(name)
+            .map(|&id| self.binding(id))
+    }
+
     /// Returns the number of write events recorded for `binding`.
     pub(crate) fn assignment_count(&self, binding: BindingId) -> usize {
         self.binding(binding).write_offsets.len()
@@ -126,7 +133,7 @@ impl BindingAnalysis {
     }
 
     /// Returns the binding ids declared directly inside the local
-    /// scope of `stmt`. `stmt` must be a `Stmt::FunctionDef`; any
+    /// scope of `stmt`. `stmt` must be a `Stmt::FunctionDef`. Any
     /// other statement yields an empty iterator.
     pub(crate) fn bindings_in_scope(
         &self,
@@ -147,11 +154,19 @@ impl BindingAnalysis {
     /// Returns `true` when `name` has a module-scope write event at
     /// any offset strictly less than `offset`.
     pub(crate) fn is_defined_before(&self, name: &str, offset: TextSize) -> bool {
-        self.scopes[0]
-            .bindings
-            .get(name)
-            .and_then(|&id| self.binding(id).write_offsets.first())
+        self.module_binding(name)
+            .and_then(|binding| binding.write_offsets.first())
             .is_some_and(|&first| first < offset)
+    }
+
+    /// Returns the read offsets of the module-scope binding for `name`
+    /// when its sole write is one function definition. `None` when
+    /// `name` is unbound at module scope, rebound, or written by
+    /// anything other than a single `def`.
+    pub(crate) fn module_function_reads(&self, name: &str) -> Option<&[TextSize]> {
+        let binding = self.module_binding(name)?;
+        (binding.kinds == [BindingKind::FunctionDef] && binding.write_offsets.len() == 1)
+            .then_some(binding.read_offsets.as_slice())
     }
 
     /// Returns the number of read events recorded for `binding`.
@@ -524,6 +539,7 @@ pub(crate) fn top_level_module(dotted: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use proptest::prelude::*;
+    use rstest::rstest;
     use ruff_text_size::TextSize;
 
     use super::*;
@@ -533,7 +549,7 @@ mod tests {
         BindingAnalysis::new(parse(src).ast())
     }
 
-    fn module_binding(analysis: &BindingAnalysis, name: &str) -> BindingId {
+    fn module_binding_id(analysis: &BindingAnalysis, name: &str) -> BindingId {
         analysis.scopes[0]
             .bindings
             .get(name)
@@ -580,6 +596,42 @@ mod tests {
     }
 
     #[test]
+    fn module_function_reads_counts_each_in_module_reference() {
+        let analysis = analyze("def f(b, a):\n    pass\n\n\nf(1, 2)\nf(3, 4)\n");
+        let reads = analysis.module_function_reads("f").expect("unique def");
+        assert_eq!(reads.len(), 2);
+    }
+
+    #[test]
+    fn module_function_reads_excludes_a_shadowed_local_call() {
+        let analysis = analyze("def f(b, a):\n    pass\n\n\ndef g(f):\n    f(1, 2)\n");
+        assert!(
+            analysis
+                .module_function_reads("f")
+                .expect("unique def")
+                .is_empty(),
+            "the call resolves to g's parameter, not module f",
+        );
+    }
+
+    #[test]
+    fn module_function_reads_offset_points_at_the_call_callee() {
+        let src = "def f(b, a):\n    pass\n\n\nf(1, 2)\n";
+        let analysis = analyze(src);
+        let reads = analysis.module_function_reads("f").expect("unique def");
+        assert_eq!(reads.len(), 1);
+        assert!(src[reads[0].to_usize()..].starts_with("f(1, 2)"));
+    }
+
+    #[rstest]
+    #[case("def f():\n    pass\n\n\nf = 1\n")]
+    #[case("f = lambda: 1\n")]
+    #[case("x = 1\n")]
+    fn module_function_reads_returns_none_unless_name_is_one_def(#[case] src: &str) {
+        assert!(analyze(src).module_function_reads("f").is_none());
+    }
+
+    #[test]
     fn top_level_module_returns_first_segment() {
         assert_eq!(top_level_module("a"), "a");
         assert_eq!(top_level_module("a.b"), "a");
@@ -597,7 +649,7 @@ mod tests {
                 "{name} = 1\ndef inner():\n    {name} = 2\n    return {name}\n",
             );
             let analysis = analyze(&program);
-            let outer = module_binding(&analysis, &name);
+            let outer = module_binding_id(&analysis, &name);
             let inner_scope = analysis
                 .scopes
                 .iter()
@@ -619,7 +671,7 @@ mod tests {
             let name = format!("x{tail}");
             let program = format!("{name} = 1\nprint({name})\n");
             let analysis = analyze(&program);
-            let id = module_binding(&analysis, &name);
+            let id = module_binding_id(&analysis, &name);
             prop_assert_eq!(analysis.usage_count(id), 1);
         }
 
@@ -630,7 +682,7 @@ mod tests {
             let name = format!("x{tail}");
             let program = format!("{name} = 1\n");
             let analysis = analyze(&program);
-            let id = module_binding(&analysis, &name);
+            let id = module_binding_id(&analysis, &name);
             prop_assert_eq!(analysis.usage_count(id), 0);
         }
     }

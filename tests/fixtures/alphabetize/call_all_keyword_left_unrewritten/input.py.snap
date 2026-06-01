@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/call_all_keyword_left_unrewritten/input.py
+---
+def f(a, b):
+    pass
+
+
+f(a=1, b=2)

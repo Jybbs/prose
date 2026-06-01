@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/call_positional_only_call_falls_back/input.py
+---
+alphabetize@12..43

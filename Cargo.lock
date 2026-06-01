@@ -1457,6 +1457,7 @@ dependencies = [
  "ignore",
  "indoc",
  "insta",
+ "itertools",
  "lsp-server",
  "lsp-types",
  "proptest",

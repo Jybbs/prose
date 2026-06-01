@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/call_star_args_forwarding_pinned/input.py
+---
+def f(a, b):
+    pass
+
+
+f(*supplied)

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/collection_layout/count_includes_spread_items/input.py
+---
+counts_spread = {
+    "a": 1,
+    **extra,
+    "c": 3,
+    "d": 4
+}

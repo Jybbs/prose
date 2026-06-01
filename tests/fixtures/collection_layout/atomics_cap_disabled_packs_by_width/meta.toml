@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A False Atomics Cap Packs Flow Lines by Width Alone"
+
+description = '''
+Setting `max-atomics-per-line` to `false` removes the per-line count cap, so a flowing run of atomics fills each line up to the width budget instead of stopping at the default cap.
+'''

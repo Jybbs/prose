@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/call_sites_share_one_reordered_def/input.py
+---
+alphabetize@6..56

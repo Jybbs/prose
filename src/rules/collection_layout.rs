@@ -2,17 +2,20 @@
 //! `Config::code_line_length` budget. Multi-line literals whose
 //! assembled inline form fits collapse back to a single line.
 //! Single-line literals whose inline form overflows expand to one
-//! entry per line. A dict entry whose `key: value` width overflows
-//! at the item-indent column breaks at `:` and hangs the value at
-//! `item_indent + INDENT_STEP`. Comprehensions and any literal
-//! whose source range contains a comment are out of scope.
+//! entry per line. A dict holding more entries than
+//! `max_inline_dict_entries` expands whatever its width, taking any
+//! enclosing collection with it. A dict entry whose `key: value`
+//! width overflows at the item-indent column breaks at `:` and hangs
+//! the value at `item_indent + INDENT_STEP`. Comprehensions and any
+//! literal whose source range contains a comment are out of scope.
 
-use std::{borrow::Cow, ops::Range};
+use std::{borrow::Cow, num::NonZeroUsize, ops::Range};
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     AnyNodeRef, DictItem, Expr, ExprDict,
-    helpers::is_dotted_name,
+    helpers::{any_over_body, is_dotted_name},
     visitor::{Visitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange};
@@ -32,32 +35,46 @@ use crate::{
 pub(crate) struct CollectionLayout {
     code_line_length: usize,
     max_atomics_per_line: usize,
+    max_inline_dict_entries: Option<usize>,
 }
 
 impl CollectionLayout {
     pub(crate) fn from_config(config: &Config) -> Self {
+        let rules = &config.rules.collection_layout;
         Self {
             code_line_length: config.code_width(),
-            max_atomics_per_line: config
-                .rules
-                .collection_layout
+            max_atomics_per_line: rules
                 .max_atomics_per_line
-                .expect("CollectionLayoutConfig::default synthesizes Some(8)")
-                .get(),
+                .map_or(usize::MAX, NonZeroUsize::get),
+            max_inline_dict_entries: rules.max_inline_dict_entries.map(NonZeroUsize::get),
         }
     }
 }
 
 impl Rule for CollectionLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        let body = &source.ast().body;
+        // Precomputed once so the per-node count check is a containment
+        // scan rather than re-walking each subtree.
+        let tripping_dicts = self.max_inline_dict_entries.map_or_else(Vec::new, |cap| {
+            let mut ranges = Vec::new();
+            any_over_body(body, |expr| {
+                if expr.as_dict_expr().is_some_and(|dict| dict.len() > cap) {
+                    ranges.push(expr.range());
+                }
+                false
+            });
+            ranges
+        });
         let mut visitor = Layouter {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             max_atomics_per_line: self.max_atomics_per_line,
             newline: source.newline_str(),
             source,
+            tripping_dicts,
         };
-        visitor.visit_body(&source.ast().body);
+        visitor.visit_body(body);
         singleton_groups(visitor.edits)
     }
 
@@ -83,6 +100,7 @@ struct Layouter<'a> {
     max_atomics_per_line: usize,
     newline: &'static str,
     source: &'a Source,
+    tripping_dicts: Vec<TextRange>,
 }
 
 impl<'a> Layouter<'a> {
@@ -159,15 +177,16 @@ impl<'a> Layouter<'a> {
     fn gather_items(&self, expr: &Expr, indent: usize) -> GatheredItems<'a> {
         let parent = AnyNodeRef::from(expr);
         if let Expr::Dict(d) = expr {
-            let (texts, (atomics, ranges)): (Vec<_>, (Vec<_>, Vec<_>)) = d
+            let (texts, atomics, ranges): (Vec<_>, Vec<_>, Vec<_>) = d
                 .iter()
                 .map(|item| {
                     (
                         self.serialize_dict_item(item, parent, indent),
-                        (false, item.range()),
+                        false,
+                        item.range(),
                     )
                 })
-                .unzip();
+                .multiunzip();
             return GatheredItems {
                 atomics,
                 close: '}',
@@ -181,15 +200,16 @@ impl<'a> Layouter<'a> {
             Expr::Set(s) => ('{', '}', &s.elts),
             _ => unreachable!("gather_items called on non-expandable expr"),
         };
-        let (texts, (atomics, ranges)): (Vec<_>, (Vec<_>, Vec<_>)) = elts
+        let (texts, atomics, ranges): (Vec<_>, Vec<_>, Vec<_>) = elts
             .iter()
             .map(|e| {
                 (
                     self.serialize_expr(e, parent, indent, indent),
-                    (is_atomic(e), e.range()),
+                    is_atomic(e),
+                    e.range(),
                 )
             })
-            .unzip();
+            .multiunzip();
         GatheredItems {
             atomics,
             close,
@@ -218,6 +238,15 @@ impl<'a> Layouter<'a> {
         ))
     }
 
+    /// True when `expr` contains an over-cap `Dict` at any depth,
+    /// including itself.
+    fn has_over_count_dict(&self, expr: &Expr) -> bool {
+        let range = expr.range();
+        self.tripping_dicts
+            .iter()
+            .any(|dict| range.contains_range(*dict))
+    }
+
     /// Builds the canonical inline form of `expr`, recursively
     /// inlining any nested collection literal. Non-collection leaves
     /// pass through as their source slice, with explicit parentheses
@@ -234,7 +263,9 @@ impl<'a> Layouter<'a> {
     /// children. `indent` is where the closing bracket lands if `expr`
     /// expands. Emits `Some(inline)` when a multi-line literal's
     /// inline form fits, `Some(expand)` when a multi-item `Dict`,
-    /// `List`, or `Set`'s rendered width overflows.
+    /// `List`, or `Set`'s rendered width overflows, or when a `Dict`
+    /// carries more than `max_inline_dict_entries` entries whatever
+    /// its width.
     fn replacement_for(&self, expr: &Expr, column: usize, indent: usize) -> Option<String> {
         if !is_layoutable(expr) {
             return None;
@@ -244,14 +275,18 @@ impl<'a> Layouter<'a> {
             return None;
         }
         let expandable = requires_expand(expr);
+        let over_count = self.has_over_count_dict(expr);
         if self.source.contains_line_break(range) {
-            let inline = self.inline_form(expr);
-            if column + inline.width() <= self.code_line_length {
-                return Some(inline);
+            if !over_count {
+                let inline = self.inline_form(expr);
+                if column + inline.width() <= self.code_line_length {
+                    return Some(inline);
+                }
             }
             return expandable.then(|| self.expand(expr, indent));
         }
-        (expandable && column + self.source.slice(range).width() > self.code_line_length)
+        (expandable
+            && (over_count || column + self.source.slice(range).width() > self.code_line_length))
             .then(|| self.expand(expr, indent))
     }
 

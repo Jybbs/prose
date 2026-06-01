@@ -19,7 +19,7 @@ A downstream consumer in `0.2.x` can:
 
 A downstream consumer in `0.2.x` cannot:
 
-- Call `assignment_count`, `usage_count`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `first_write_offset`, or `is_defined_before` on the returned reference. All seven readers are `pub(crate)`.
+- Call `assignment_count`, `usage_count`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `first_write_offset`, `is_defined_before`, or `module_function_reads` on the returned reference. Every reader is `pub(crate)`.
 - Implement a custom rule that consumes the binding table. The `Rule` trait is `pub(crate)`.
 
 The methods stabilize toward `1.0`, where every reader becomes `pub` and the `Rule` trait opens so downstream consumers can implement project-specific binding-aware rules.
@@ -35,6 +35,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `bindings_in_scope(stmt: &Stmt) -> impl Iterator<Item = BindingId>` lists every binding introduced in the lexical scope that contains the statement.
 - `first_write_offset(binding: BindingId) -> TextSize` returns the offset of the first write.
 - `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[unused-future-annotations]] when checking that every name appearing in an annotation resolves to a binding introduced earlier.
+- `module_function_reads(name: &str) -> Option<&[TextSize]>` returns the read offsets of a module-scope name bound exactly once as a function definition, which [[alphabetize]]'s call-site rewrite uses to resolve a reordered function's in-module call sites.
 
 The supporting types `BindingId`, `ScopeId`, `BindingKind`, `ScopeKind`, `Binding`, and `Scope` are also `pub(crate)` in `0.2.x`. `BindingKind` enumerates the categories of write event the table records: `Assignment`, `AugAssign`, `ClassDef`, `Comprehension`, `ExceptHandler`, `For`, `FunctionDef`, `Import`, `Parameter`, `Walrus`, `With`. `ScopeKind` covers `Class`, `Comprehension`, `Function`, `Module`, matching Python's lexical-scope categories.
 
