@@ -122,7 +122,6 @@ pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: Strin
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
 
     use super::*;
     use crate::test_support::range;

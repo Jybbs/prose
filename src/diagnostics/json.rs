@@ -174,7 +174,6 @@ pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Optio
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
     use ruff_text_size::TextRange;
     use serde_json::{Value, json};
 

@@ -6,6 +6,7 @@
 //! rule. Alignment rules run last so earlier rewrites settle before
 //! padding widths are computed.
 
+use ruff_diagnostics::Edit;
 use ruff_python_parser::ParseError;
 use ruff_text_size::Ranged;
 use thiserror::Error;
@@ -15,6 +16,7 @@ use crate::{
     primitives::edit::apply_edits,
     rule::{Rule, RuleId},
     source::Source,
+    suppression::SuppressionMap,
 };
 
 /// Ordered sequence of enabled rules, run against each source file.
@@ -40,6 +42,39 @@ impl Pipeline {
     #[cfg(test)]
     fn len(&self) -> usize {
         self.rules.len()
+    }
+
+    /// Collects every rule's diagnostics against `source` without
+    /// applying edits or reparsing between rules, so each range stays
+    /// valid against the original buffer. Format rules contribute one
+    /// diagnostic per surviving fix group and lint rules their lint
+    /// diagnostics, both filtered through the suppression map exactly as
+    /// [`run`](Self::run) filters them.
+    pub fn diagnose(&self, source: &Source) -> Vec<Diagnostic> {
+        let suppression = source.suppression_map();
+        if suppression.file_is_suppressed() {
+            return Vec::new();
+        }
+        let mut diagnostics = Vec::new();
+        for rule in &self.rules {
+            let rule_id = rule.id();
+            let mut groups = rule.apply(source);
+            retain_unsuppressed(&mut groups, source, suppression, rule_id);
+            groups.retain(|group| !group.is_empty());
+            let message = rule.message();
+            diagnostics.extend(
+                groups
+                    .into_iter()
+                    .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
+            );
+            diagnostics.extend(
+                rule.lint(source)
+                    .into_iter()
+                    .filter(|d| !suppression.intersects(d.range)),
+            );
+        }
+        drop_suppressed_lints(&mut diagnostics, source, suppression);
+        diagnostics
     }
 
     /// Returns every registered rule's id in a stable order.
@@ -74,17 +109,7 @@ impl Pipeline {
                 let mut groups = rule.apply(&source);
                 let suppression = source.suppression_map();
                 let rule_id = rule.id();
-                if suppression.has_format_suppression() || suppression.has_skip_suppression() {
-                    for group in &mut groups {
-                        group.retain(|edit| {
-                            !suppression.intersects(edit)
-                                && !suppression.is_format_suppressed_at(
-                                    source.line_index(edit.start()),
-                                    rule_id,
-                                )
-                        });
-                    }
-                }
+                retain_unsuppressed(&mut groups, &source, suppression, rule_id);
                 groups.retain(|group| !group.is_empty());
                 diagnostics.extend(
                     rule.lint(&source)
@@ -114,13 +139,7 @@ impl Pipeline {
                     })
             },
         )?;
-        let suppression = source.suppression_map();
-        if suppression.has_lint_suppression() {
-            diagnostics.retain(|d| {
-                d.severity != Severity::Lint
-                    || !suppression.is_lint_suppressed_at(source.line_index(d.start()), d.rule)
-            });
-        }
+        drop_suppressed_lints(&mut diagnostics, &source, source.suppression_map());
         Ok((source, diagnostics))
     }
 }
@@ -136,11 +155,44 @@ pub enum PipelineError {
     },
 }
 
+/// Drops the lint diagnostics a `# prose: ignore[<id>]` directive
+/// covers, matched per line and rule.
+fn drop_suppressed_lints(
+    diagnostics: &mut Vec<Diagnostic>,
+    source: &Source,
+    suppression: &SuppressionMap,
+) {
+    if suppression.has_lint_suppression() {
+        diagnostics.retain(|d| {
+            d.severity != Severity::Lint
+                || !suppression.is_lint_suppressed_at(source.line_index(d.start()), d.rule)
+        });
+    }
+}
+
+/// Drops the edits a format-suppression directive covers from each
+/// group, per rule. A `# fmt: off` span or `# prose: skip[<id>]`
+/// removes the edits it overlaps, leaving the rest of the group intact.
+fn retain_unsuppressed(
+    groups: &mut [Vec<Edit>],
+    source: &Source,
+    suppression: &SuppressionMap,
+    rule: RuleId,
+) {
+    if suppression.has_format_suppression() || suppression.has_skip_suppression() {
+        for group in groups.iter_mut() {
+            group.retain(|edit| {
+                !suppression.intersects(edit)
+                    && !suppression.is_format_suppressed_at(source.line_index(edit.start()), rule)
+            });
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
 
-    use pretty_assertions::assert_eq;
     use ruff_diagnostics::Edit;
     use ruff_text_size::TextRange;
 
@@ -249,6 +301,66 @@ mod tests {
 
     fn registered_slugs(pipeline: &Pipeline) -> Vec<&'static str> {
         pipeline.rules.iter().map(|r| r.id().as_str()).collect()
+    }
+
+    #[test]
+    fn diagnose_collects_against_the_original_buffer_without_rewriting() {
+        // The first rule would rewrite `x` to `y`, the second lints the
+        // original `x` at 0..1. `diagnose` must not apply the first
+        // rule's edit, so the lint range stays valid against the
+        // untouched buffer and both findings surface together.
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(SentinelRule {
+                edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+                id: RuleId::from("rewrite-x-to-y"),
+                log: Arc::new(Mutex::new(Vec::new())),
+            }),
+            Box::new(LintSentinelRule {
+                id: RuleId::from("flag-x"),
+                ranges: vec![range(0, 1)],
+            }),
+        ]);
+        let source = parse("x = 1\n");
+
+        let diagnostics = pipeline.diagnose(&source);
+
+        assert_eq!(diagnostics.len(), 2);
+        let format = diagnostics
+            .iter()
+            .find(|d| d.severity == Severity::Format)
+            .expect("format finding");
+        assert_eq!(format.rule.as_str(), "rewrite-x-to-y");
+        let lint = diagnostics
+            .iter()
+            .find(|d| d.severity == Severity::Lint)
+            .expect("lint finding");
+        assert_eq!(lint.rule.as_str(), "flag-x");
+        assert_eq!(lint.range, range(0, 1));
+    }
+
+    #[test]
+    fn diagnose_drops_a_lint_under_a_per_line_ignore_directive() {
+        // A bare `# prose: ignore` suppresses every rule on its line, so
+        // the lint at `x` (line 1) is dropped through diagnose's
+        // lint-suppression tail rather than its file-level short-circuit.
+        let pipeline = Pipeline::from_rules(vec![Box::new(LintSentinelRule {
+            id: RuleId::from("flag-x"),
+            ranges: vec![range(0, 1)],
+        })]);
+        let source = parse("x = 1  # prose: ignore\n");
+
+        assert!(pipeline.diagnose(&source).is_empty());
+    }
+
+    #[test]
+    fn diagnose_drops_findings_under_a_suppressed_span() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(LintSentinelRule {
+            id: RuleId::from("flag-stuff"),
+            ranges: vec![range(13, 14)],
+        })]);
+        let source = parse("# prose: off\nx = 1\n");
+
+        assert!(pipeline.diagnose(&source).is_empty());
     }
 
     #[test]

@@ -179,7 +179,6 @@ fn is_typing_root(module: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
     use ruff_diagnostics::Applicability;
 
     use super::*;

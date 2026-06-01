@@ -280,7 +280,6 @@ fn whitespace_start_before(text: &str, offset: TextSize) -> TextSize {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
     use rstest::rstest;
 
     use super::*;

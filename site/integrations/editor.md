@@ -1,6 +1,31 @@
 # Editor
 
-*Prose* shells out cleanly from any editor that supports run-on-save or that consumes structured diagnostics from an external command. The project doesn't ship a dedicated language server, in that the editor's existing LSP-style diagnostic surface *(the same one Ruff, Pylint, and other linters publish into)* renders *Prose*'s JSON output without further plumbing. Two surfaces cover the cases. For run-on-save rewriting, `prose format <file>` writes to disk. For editors that consume structured diagnostics, `prose check --output-format json --stdin` emits one [**Ruff-shaped**](https://docs.astral.sh/ruff/configuration/#output-format) record per line and stays out of the filesystem.
+*Prose* reaches an editor three ways. The [**`prose server`**](/reference/cli#prose-server) language server is the richest, giving format-on-save and live diagnostics over the protocol an editor already speaks. For editors without a language-server client, `prose format <file>` rewrites on save and `prose check --output-format json --stdin` emits one [**Ruff-shaped**](https://docs.astral.sh/ruff/configuration/#output-format) diagnostic record per line. The shellout paths read from disk or stdin, where the server tracks the editor's live buffer directly.
+
+## Language Server
+
+`prose server` speaks the language-server protocol over stdio, so an editor connects the same way it connects to `ruff server` or any other language server. The server advertises full-document sync and a document-formatting provider, so format-on-save runs the [**pipeline**](/reference/pipeline-order) over the buffer and live diagnostics publish on every open and change. It resolves the workspace `[tool.prose]` [**configuration**](/reference/configuration) per document, so the editor and a `prose check` over the same tree agree on the active rules.
+
+An editor's language-server client launches the binary with the `server` subcommand and talks to it over stdin and stdout. A generic client configuration names the command and the language it serves:
+
+```json
+{
+  "command": ["prose", "server"],
+  "filetypes": ["python"]
+}
+```
+
+Neovim's built-in client wires the same shape through `vim.lsp.start`:
+
+```lua
+vim.lsp.start({
+  name = "prose",
+  cmd = { "prose", "server" },
+  filetypes = { "python" },
+})
+```
+
+The server leans on whole-document runs for now. Range and on-type formatting, code-action quick-fixes, and a bundled editor extension wait for a later pass.
 
 ## Run on Save
 

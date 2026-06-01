@@ -23,6 +23,8 @@ clap_complete      = "4.5"
 dirs               = "6"
 fs-err             = "3"
 ignore             = "0.4"
+lsp-server         = "0.7"
+lsp-types          = "0.97"
 rayon              = "1.10"
 regex-lite         = "0.1"
 ruff_diagnostics   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10", features = ["serde"] }
@@ -41,13 +43,13 @@ textwrap           = "0.16"
 thiserror          = "2.0"
 toml               = "0.9"
 unicode-width      = "0.2"
+url                = "2"
 
 [dev-dependencies]
 assert_cmd            = "2"
 assert_matches        = "1"
 indoc                 = "2"
 insta                 = { version = "1.39", features = ["glob", "yaml"] }
-pretty_assertions     = "1"
 proptest              = "1"
 rstest                = "0.26"
 ruff_python_formatter = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10" }

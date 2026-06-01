@@ -28,9 +28,9 @@ use anyhow::Context;
 use clap::{ColorChoice, CommandFactory, Parser};
 use clap_complete::generate;
 
-mod args;
+pub(crate) mod args;
 mod cache;
-mod exit_status;
+pub(crate) mod exit_status;
 mod output;
 mod runner;
 
@@ -76,6 +76,12 @@ pub fn run() -> ExitCode {
     if let Some(err) = validate_diff_format_combination(&cli) {
         return report_clap_error(err);
     }
+    // The server owns stdin and stdout end to end, so it dispatches
+    // before the shared stdout lock below, which its writer thread would
+    // otherwise deadlock against.
+    if let Command::Server(args) = cli.command {
+        return finalize(crate::server::run(args)).into();
+    }
     let present = Presentation {
         quiet: command_quiet(&cli.command),
         stdout_tty: io::stdout().is_terminal(),
@@ -99,6 +105,7 @@ pub fn run() -> ExitCode {
         Command::Format(args) => {
             runner::format_with_io(args, verbose, &present, io::stdin(), stdout, stderr)
         }
+        Command::Server(_) => unreachable!("Server dispatched before the stdout lock"),
     };
     finalize(result).into()
 }
@@ -107,7 +114,7 @@ fn command_quiet(command: &Command) -> bool {
     match command {
         Command::Check(args) => args.quiet,
         Command::Format(args) => args.quiet,
-        Command::Cache { .. } | Command::Completions { .. } => false,
+        Command::Cache { .. } | Command::Completions { .. } | Command::Server(_) => false,
     }
 }
 
@@ -137,7 +144,6 @@ fn with_color<S: RawStream>(raw: S, choice: ColorChoice) -> AutoStream<S> {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
 
     use super::*;
 

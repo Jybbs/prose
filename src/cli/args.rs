@@ -91,6 +91,9 @@ pub(crate) enum Command {
 
     /// Rewrite files to conform to the Prose style.
     Format(FormatArgs),
+
+    /// Run the language server over stdio.
+    Server(ServerArgs),
 }
 
 #[derive(Debug, Subcommand)]
@@ -167,11 +170,26 @@ pub(crate) struct RuleFilter {
     pub(crate) select: Vec<RuleId>,
 }
 
+#[derive(Debug, Default, clap::Args)]
+pub(crate) struct ServerArgs {
+    /// Transport the server speaks over. Only stdio is supported.
+    #[arg(long, value_enum, default_value_t)]
+    pub(crate) transport: Transport,
+}
+
+/// Transport the language server speaks over.
+#[derive(Clone, Copy, Debug, Default, clap::ValueEnum)]
+pub(crate) enum Transport {
+    /// Communicate over stdin and stdout.
+    #[default]
+    Stdio,
+}
+
 /// Resolves a `-` positional into stdin mode, surfacing a clap
 /// error when `-` appears alongside other paths.
 pub(crate) fn normalize_stdin_dash(cli: &mut Cli) -> Option<clap::Error> {
     let (paths, stdin) = match &mut cli.command {
-        Command::Cache { .. } | Command::Completions { .. } => return None,
+        Command::Cache { .. } | Command::Completions { .. } | Command::Server(_) => return None,
         Command::Check(args) => (&mut args.paths, &mut args.stdin),
         Command::Format(args) => (&mut args.paths, &mut args.stdin),
     };
@@ -231,7 +249,6 @@ fn rule_id_parser() -> impl TypedValueParser<Value = RuleId> {
 #[cfg(test)]
 mod tests {
     use assert_matches::assert_matches;
-    use pretty_assertions::assert_eq;
     use rstest::{fixture, rstest};
 
     use super::*;
@@ -580,5 +597,14 @@ mod tests {
         let args = check_command(cli);
         assert_eq!(args.paths, [PathBuf::from("a.py"), PathBuf::from("b/")]);
         assert!(!args.stdin);
+    }
+
+    #[test]
+    fn server_parses_with_default_stdio_transport() {
+        let cli = Cli::try_parse_from(["prose", "server"]).expect("parses");
+        let Command::Server(args) = cli.command else {
+            panic!("expected Server variant");
+        };
+        assert_matches!(args.transport, Transport::Stdio);
     }
 }
