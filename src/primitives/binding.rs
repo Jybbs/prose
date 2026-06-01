@@ -165,7 +165,7 @@ impl BindingAnalysis {
     /// anything other than a single `def`.
     pub(crate) fn module_function_reads(&self, name: &str) -> Option<&[TextSize]> {
         let binding = self.module_binding(name)?;
-        (binding.kinds.as_slice() == [BindingKind::FunctionDef] && binding.write_offsets.len() == 1)
+        (binding.kinds == [BindingKind::FunctionDef] && binding.write_offsets.len() == 1)
             .then_some(binding.read_offsets.as_slice())
     }
 
@@ -550,7 +550,7 @@ mod tests {
         BindingAnalysis::new(parse(src).ast())
     }
 
-    fn module_binding(analysis: &BindingAnalysis, name: &str) -> BindingId {
+    fn module_binding_id(analysis: &BindingAnalysis, name: &str) -> BindingId {
         analysis.scopes[0]
             .bindings
             .get(name)
@@ -650,7 +650,7 @@ mod tests {
                 "{name} = 1\ndef inner():\n    {name} = 2\n    return {name}\n",
             );
             let analysis = analyze(&program);
-            let outer = module_binding(&analysis, &name);
+            let outer = module_binding_id(&analysis, &name);
             let inner_scope = analysis
                 .scopes
                 .iter()
@@ -672,7 +672,7 @@ mod tests {
             let name = format!("x{tail}");
             let program = format!("{name} = 1\nprint({name})\n");
             let analysis = analyze(&program);
-            let id = module_binding(&analysis, &name);
+            let id = module_binding_id(&analysis, &name);
             prop_assert_eq!(analysis.usage_count(id), 1);
         }
 
@@ -683,7 +683,7 @@ mod tests {
             let name = format!("x{tail}");
             let program = format!("{name} = 1\n");
             let analysis = analyze(&program);
-            let id = module_binding(&analysis, &name);
+            let id = module_binding_id(&analysis, &name);
             prop_assert_eq!(analysis.usage_count(id), 0);
         }
     }

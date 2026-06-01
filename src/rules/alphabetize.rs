@@ -194,11 +194,8 @@ impl<'a> LeafCollector<'a> {
 
     /// Rewrites a call to a reordered module function, converting each
     /// keyword-eligible positional argument to `name=value` and emitting
-    /// the keyword run alphabetized. Returns `false` for the caller to
-    /// fall back on the keyword reorder when the callee is not a
-    /// reordered function, the call carries `*` / `**` unpacking, the
-    /// positionals overflow the named parameters, no positional argument
-    /// is keyword-eligible, or a name collides with an existing keyword.
+    /// the keyword run alphabetized. Returns `false` when the call cannot
+    /// take that form, leaving the caller to fall back on the keyword reorder.
     fn try_emit_keyword_rewrite(&mut self, c: &'a ExprCall) -> bool {
         let Expr::Name(callee) = c.func.as_ref() else {
             return false;
@@ -226,15 +223,14 @@ impl<'a> LeafCollector<'a> {
         }
         for kw in keywords {
             blocks.push(kw.range());
-            keys.push(kw.arg.as_ref().expect("`**` excluded above").as_str());
+            keys.push(kw.arg.as_deref().expect("`**` excluded above"));
             rendered.push(Cow::Borrowed(self.source.slice(kw)));
         }
-        let mut seen = HashSet::with_capacity(keys.len());
-        if !keys.iter().all(|&name| seen.insert(name)) {
+        let mut order: Vec<usize> = (0..keys.len()).collect();
+        order.sort_unstable_by_key(|&i| keys[i]);
+        if order.windows(2).any(|w| keys[w[0]] == keys[w[1]]) {
             return false;
         }
-        let mut order: Vec<usize> = (0..keys.len()).collect();
-        order.sort_by_key(|&i| keys[i]);
         let assembled = assemble_blocks(self.source, &blocks, &rendered, &order, |_| None);
         self.rewrite_edits
             .push(Edit::range_replacement(assembled, blocks_span(&blocks)));
@@ -372,21 +368,15 @@ fn assign_run_target(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
 /// resolves to its own binding and never lands here.
 fn call_rewrite_targets(source: &Source) -> HashMap<TextSize, &Parameters> {
     let analysis = source.binding_analysis();
-    let mut targets = HashMap::new();
-    for func in source
+    source
         .ast()
         .body
         .iter()
         .filter_map(Stmt::as_function_def_stmt)
-    {
-        if pins_positional_params(func) || !args_reorder(&func.parameters) {
-            continue;
-        }
-        if let Some(reads) = analysis.module_function_reads(func.name.as_str()) {
-            targets.extend(reads.iter().map(|&offset| (offset, &*func.parameters)));
-        }
-    }
-    targets
+        .filter(|&func| !pins_positional_params(func) && args_reorder(&func.parameters))
+        .filter_map(|func| Some((analysis.module_function_reads(func.name.as_str())?, func)))
+        .flat_map(|(reads, func)| reads.iter().map(move |&offset| (offset, &*func.parameters)))
+        .collect()
 }
 
 /// Returns the slot ranges of consecutive items whose pairwise
@@ -458,9 +448,9 @@ fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
     })
 }
 
-/// Walks the AST collecting every leaf-level sort edit. Each emitted
-/// edit covers a narrow range inside a single `Stmt` or `Expr`, so
-/// the resulting edits are non-overlapping with each other.
+/// Walks the AST collecting every leaf-level edit in source order, then
+/// folds in each call-site keyword rewrite that does not overlap an
+/// existing edit, keeping the whole list non-overlapping.
 fn collect_leaf_edits<'a>(
     source: &'a Source,
     rewrite_targets: &'a HashMap<TextSize, &'a Parameters>,
