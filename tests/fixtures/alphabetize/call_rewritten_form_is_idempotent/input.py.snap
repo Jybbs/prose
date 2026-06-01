@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/call_rewritten_form_is_idempotent/input.py
+---
+def f(a, b):
+    pass
+
+
+f(a=2, b=1)

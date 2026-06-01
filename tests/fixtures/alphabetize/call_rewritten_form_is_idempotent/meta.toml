@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The Rewritten Keyword Form Is a Fixed Point"
+
+description = '''
+Running over an already-rewritten call, whose parameters are sorted and whose arguments are alphabetized keywords, changes nothing.
+'''

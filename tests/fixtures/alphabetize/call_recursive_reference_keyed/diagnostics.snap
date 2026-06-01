@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/call_recursive_reference_keyed/input.py
+---
+alphabetize@6..30

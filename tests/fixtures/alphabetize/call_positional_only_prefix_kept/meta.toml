@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Positional-Only Prefix Stays Put While the Suffix Keys"
+
+description = '''
+Arguments binding to positional-only parameters (*ahead of the `/`*) cannot take keyword form, so they stay verbatim while the keyword-eligible suffix rewrites to `name=value`. Positional-only parameters never reorder, leaving the pinned prefix binding correctly.
+'''

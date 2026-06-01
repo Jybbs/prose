@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Positional Call Arguments Key on a Parameter Reorder"
+
+description = '''
+When `alphabetize` reorders a function's parameters, every in-module call's positional arguments rewrite to `name=value`, each keyed to the parameter that argument bound to under the **original** order, so the call binds the same values whatever order the parameters now sit in. The keyword run lands alphabetized, leaving the rewritten call a fixed point.
+'''

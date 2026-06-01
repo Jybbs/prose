@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/call_keyword_collision_pinned/input.py
+---
+def f(a, b):
+    pass
+
+
+f(1, b=2)
