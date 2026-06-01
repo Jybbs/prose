@@ -7,7 +7,10 @@ use ruff_python_ast::{
     token::{Token, Tokens},
 };
 use ruff_python_parser::{ParseError, Parsed, parse_module};
-use ruff_python_trivia::{CommentRanges, leading_indentation, lines_before};
+use ruff_python_trivia::{
+    BackwardsTokenizer, CommentRanges, SimpleToken, SimpleTokenKind, leading_indentation,
+    lines_before,
+};
 use ruff_source_file::{
     LineColumn, LineEnding, LineRanges, OneIndexed, SourceFile, SourceFileBuilder, find_newline,
 };
@@ -165,6 +168,14 @@ impl Source {
             .as_str()
     }
 
+    /// Returns the first non-trivia token scanning backward from
+    /// `offset`, or `None` when the scan finds none.
+    pub(crate) fn prev_non_trivia_token(&self, offset: TextSize) -> Option<SimpleToken> {
+        BackwardsTokenizer::up_to(offset, self.text(), self.comment_ranges())
+            .skip_trivia()
+            .next()
+    }
+
     /// Reparses with replacement source text, preserving the original name.
     ///
     /// Diagnostic labels keep the original path or `<source>` placeholder.
@@ -201,6 +212,15 @@ impl Source {
     /// Borrows the token stream produced during parsing.
     pub fn tokens(&self) -> &Tokens {
         self.parsed.tokens()
+    }
+
+    /// Returns the range of the trailing comma immediately before the
+    /// closing bracket of `container`, or `None` when the last
+    /// non-trivia token there is not a comma.
+    pub(crate) fn trailing_comma(&self, container: TextRange) -> Option<TextRange> {
+        self.prev_non_trivia_token(container.end() - TextSize::from(1u32))
+            .filter(|token| token.kind() == SimpleTokenKind::Comma)
+            .map(|token| token.range)
     }
 }
 

@@ -13,7 +13,6 @@ use ruff_python_ast::{
     Expr, ExprCall, Parameters,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
-use ruff_python_trivia::{BackwardsTokenizer, SimpleTokenKind};
 use ruff_text_size::{Ranged, TextSize};
 
 use crate::{
@@ -22,6 +21,7 @@ use crate::{
         INDENT_STEP,
         call_keywords::{keyword_args, module_call_params},
         edit::{narrowed_replacement, singleton_groups},
+        layout::explode_parens,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -95,22 +95,18 @@ impl<'a> Exploder<'a> {
             return None;
         }
         let item_indent = indent + INDENT_STEP;
-        let prefix = " ".repeat(item_indent);
-        let newline = self.source.newline_str();
         let last = keywords.args.len() - 1;
-        let trailing = self.source_trailing_comma(call);
-        let mut out = String::from("(");
-        for (i, arg) in keywords.args.iter().enumerate() {
-            out.push_str(newline);
-            out.push_str(&prefix);
-            self.render_value(&mut out, arg.value, &arg.rendered, item_indent);
-            if trailing || i < last {
-                out.push(',');
-            }
-        }
-        out.push_str(newline);
-        out.extend(std::iter::repeat_n(' ', indent));
-        out.push(')');
+        let trailing = self.source.trailing_comma(call.arguments.range()).is_some();
+        let out = explode_parens(
+            self.source.newline_str(),
+            indent,
+            keywords.args.len(),
+            |out, i| {
+                let arg = &keywords.args[i];
+                self.render_value(out, arg.value, &arg.rendered, item_indent);
+            },
+            |i| trailing || i < last,
+        );
         Some(out)
     }
 
@@ -128,20 +124,6 @@ impl<'a> Exploder<'a> {
         } else {
             out.push_str(rendered);
         }
-    }
-
-    /// True when the last non-trivia token before the closing `)` is a
-    /// comma, the trailing-comma state `explode_args` carries through so
-    /// the explode neither adds nor drops one.
-    fn source_trailing_comma(&self, call: &ExprCall) -> bool {
-        BackwardsTokenizer::up_to(
-            call.arguments.end() - TextSize::from(1u32),
-            self.source.text(),
-            self.source.comment_ranges(),
-        )
-        .skip_trivia()
-        .next()
-        .is_some_and(|token| token.kind() == SimpleTokenKind::Comma)
     }
 }
 

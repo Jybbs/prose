@@ -11,7 +11,7 @@ use ruff_python_ast::{
     helpers::is_docstring_stmt,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
-use ruff_python_trivia::{BackwardsTokenizer, CommentRanges, lines_after, lines_before};
+use ruff_python_trivia::{CommentRanges, lines_after, lines_before};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -191,9 +191,8 @@ fn function_scope_blanks(prev: &Stmt, curr: &Stmt) -> Option<u32> {
 /// landing on the first non-trivia token. Falls back to `body_start`
 /// when the scan finds none.
 fn header_signature_end(source: &Source, body_start: TextSize) -> TextSize {
-    BackwardsTokenizer::up_to(body_start, source.text(), source.comment_ranges())
-        .skip_trivia()
-        .next()
+    source
+        .prev_non_trivia_token(body_start)
         .map_or(body_start, |t| t.end())
 }
 
