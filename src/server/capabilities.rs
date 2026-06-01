@@ -42,6 +42,7 @@ fn encoding_kind(encoding: PositionEncoding) -> PositionEncodingKind {
 
 #[cfg(test)]
 mod tests {
+    use assert_matches::assert_matches;
     use lsp_types::GeneralClientCapabilities;
     use rstest::rstest;
 
@@ -87,13 +88,13 @@ mod tests {
     #[test]
     fn negotiate_defaults_to_utf16_without_general_capabilities() {
         let encoding = negotiate_encoding(&ClientCapabilities::default());
-        assert!(matches!(encoding, PositionEncoding::Utf16));
+        assert_matches!(encoding, PositionEncoding::Utf16);
     }
 
     #[test]
     fn negotiate_defaults_to_utf16_without_utf8_advertised() {
         let encoding = negotiate_encoding(&client_with(Some(vec![PositionEncodingKind::UTF16])));
-        assert!(matches!(encoding, PositionEncoding::Utf16));
+        assert_matches!(encoding, PositionEncoding::Utf16);
     }
 
     #[test]
@@ -102,6 +103,6 @@ mod tests {
             PositionEncodingKind::UTF8,
             PositionEncodingKind::UTF16,
         ])));
-        assert!(matches!(encoding, PositionEncoding::Utf8));
+        assert_matches!(encoding, PositionEncoding::Utf8);
     }
 }

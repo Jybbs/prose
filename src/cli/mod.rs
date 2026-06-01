@@ -43,28 +43,6 @@ use output::Presentation;
 
 use crate::config::Config;
 
-pub(super) fn load_config_or_status() -> Result<Config, ExitStatus> {
-    let cwd = std::env::current_dir()
-        .context("reading current working directory")
-        .map_err(|e| {
-            log_error_chain(&e);
-            ExitStatus::ConfigError
-        })?;
-    Config::load(&cwd)
-        .context("loading [tool.prose] config")
-        .map_err(|e| {
-            log_error_chain(&e);
-            ExitStatus::ConfigError
-        })
-}
-
-pub(super) fn log_error_chain(err: &anyhow::Error) {
-    let mut stderr = io::stderr().lock();
-    for cause in err.chain() {
-        let _ = writeln!(stderr, "error: {cause}");
-    }
-}
-
 pub fn run() -> ExitCode {
     let mut cli = match Cli::try_parse() {
         Ok(cli) => cli,
@@ -132,6 +110,28 @@ fn finalize(result: anyhow::Result<ExitStatus>) -> ExitStatus {
 fn is_broken_pipe(err: &anyhow::Error) -> bool {
     err.downcast_ref::<io::Error>()
         .is_some_and(|e| e.kind() == io::ErrorKind::BrokenPipe)
+}
+
+fn load_config_or_status() -> Result<Config, ExitStatus> {
+    let cwd = std::env::current_dir()
+        .context("reading current working directory")
+        .map_err(|e| {
+            log_error_chain(&e);
+            ExitStatus::ConfigError
+        })?;
+    Config::load(&cwd)
+        .context("loading [tool.prose] config")
+        .map_err(|e| {
+            log_error_chain(&e);
+            ExitStatus::ConfigError
+        })
+}
+
+fn log_error_chain(err: &anyhow::Error) {
+    let mut stderr = io::stderr().lock();
+    for cause in err.chain() {
+        let _ = writeln!(stderr, "error: {cause}");
+    }
 }
 
 fn with_color<S: RawStream>(raw: S, choice: ColorChoice) -> AutoStream<S> {

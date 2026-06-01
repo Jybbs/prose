@@ -58,20 +58,14 @@ impl Pipeline {
         let mut diagnostics = Vec::new();
         for rule in &self.rules {
             let rule_id = rule.id();
-            let mut groups = rule.apply(source);
-            retain_unsuppressed(&mut groups, source, suppression, rule_id);
-            groups.retain(|group| !group.is_empty());
+            let groups = prepared_groups(&**rule, source, suppression, rule_id);
             let message = rule.message();
             diagnostics.extend(
                 groups
                     .into_iter()
                     .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
             );
-            diagnostics.extend(
-                rule.lint(source)
-                    .into_iter()
-                    .filter(|d| !suppression.intersects(d.range)),
-            );
+            diagnostics.extend(unsuppressed_lints(&**rule, source, suppression));
         }
         drop_suppressed_lints(&mut diagnostics, source, suppression);
         diagnostics
@@ -106,16 +100,10 @@ impl Pipeline {
         let (source, mut diagnostics) = self.rules.iter().try_fold(
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
-                let mut groups = rule.apply(&source);
                 let suppression = source.suppression_map();
                 let rule_id = rule.id();
-                retain_unsuppressed(&mut groups, &source, suppression, rule_id);
-                groups.retain(|group| !group.is_empty());
-                diagnostics.extend(
-                    rule.lint(&source)
-                        .into_iter()
-                        .filter(|d| !suppression.intersects(d.range)),
-                );
+                let groups = prepared_groups(&**rule, &source, suppression, rule_id);
+                diagnostics.extend(unsuppressed_lints(&**rule, &source, suppression));
                 if groups.is_empty() {
                     return Ok((source, diagnostics));
                 }
@@ -170,6 +158,20 @@ fn drop_suppressed_lints(
     }
 }
 
+/// Applies `rule` to `source` and returns its fix groups with the
+/// suppressed edits and the groups they emptied removed.
+fn prepared_groups(
+    rule: &dyn Rule,
+    source: &Source,
+    suppression: &SuppressionMap,
+    rule_id: RuleId,
+) -> Vec<Vec<Edit>> {
+    let mut groups = rule.apply(source);
+    retain_unsuppressed(&mut groups, source, suppression, rule_id);
+    groups.retain(|group| !group.is_empty());
+    groups
+}
+
 /// Drops the edits a format-suppression directive covers from each
 /// group, per rule. A `# fmt: off` span or `# prose: skip[<id>]`
 /// removes the edits it overlaps, leaving the rest of the group intact.
@@ -187,6 +189,18 @@ fn retain_unsuppressed(
             });
         }
     }
+}
+
+/// Yields `rule`'s lint diagnostics, dropping the ones whose range
+/// falls within a format-suppressed span.
+fn unsuppressed_lints<'a>(
+    rule: &dyn Rule,
+    source: &Source,
+    suppression: &'a SuppressionMap,
+) -> impl Iterator<Item = Diagnostic> + 'a {
+    rule.lint(source)
+        .into_iter()
+        .filter(move |d| !suppression.intersects(d.range))
 }
 
 #[cfg(test)]

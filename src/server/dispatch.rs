@@ -2,7 +2,7 @@
 //! requests and notifications to the formatting and diagnostic passes.
 
 use anyhow::Context;
-use lsp_server::{Connection, ExtractError, Message, Notification, Request, Response};
+use lsp_server::{Connection, ErrorCode, ExtractError, Message, Notification, Request, Response};
 use lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     DocumentFormattingParams, InitializeParams, InitializeResult, PublishDiagnosticsParams,
@@ -18,9 +18,6 @@ use serde::de::DeserializeOwned;
 
 use super::{analysis, capabilities, documents::DocumentStore};
 
-/// JSON-RPC code for a request whose method the server does not serve.
-const METHOD_NOT_FOUND: i32 = -32601;
-
 /// Completes the `initialize` handshake, negotiating position encoding
 /// from the client's capabilities before advertising the server's, then
 /// runs the message loop until shutdown.
@@ -28,7 +25,7 @@ const METHOD_NOT_FOUND: i32 = -32601;
 /// Takes `connection` by value so its sender drops when the loop
 /// returns. The stdio writer thread runs until every sender drops, so a
 /// surviving borrow would deadlock the caller's `io_threads.join()`.
-pub(crate) fn serve(connection: Connection) -> anyhow::Result<()> {
+pub(super) fn serve(connection: Connection) -> anyhow::Result<()> {
     let (id, params) = connection
         .initialize_start()
         .context("starting language-server handshake")?;
@@ -108,7 +105,7 @@ fn handle_request(
             connection,
             Message::Response(Response::new_err(
                 request.id,
-                METHOD_NOT_FOUND,
+                ErrorCode::MethodNotFound as i32,
                 format!("unsupported request `{}`", request.method),
             )),
         ),
@@ -304,73 +301,6 @@ mod tests {
     }
 
     #[test]
-    fn initialize_advertises_the_formatting_provider() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        let result = handshake(&client);
-        assert!(result.capabilities.document_formatting_provider.is_some());
-        teardown(&client, handle);
-    }
-
-    #[test]
-    fn did_open_publishes_a_lint_diagnostic() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
-        did_open(&client, "import os\n");
-        let params = published(&client);
-        assert_eq!(params.diagnostics.len(), 1);
-        assert_eq!(params.diagnostics[0].source.as_deref(), Some("prose"));
-        teardown(&client, handle);
-    }
-
-    #[rstest]
-    #[case("import os\n", None)]
-    #[case("alpha = 1\nb = 22\n", Some("alpha = 1"))]
-    fn formatting_matches_the_buffer_state(#[case] source: &str, #[case] expected: Option<&str>) {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
-        did_open(&client, source);
-        let _ = published(&client);
-        let edits = formatting_request(&client);
-        match expected {
-            None => assert!(edits.is_empty(), "formatted buffer needs no edits"),
-            Some(needle) => {
-                assert_eq!(edits.len(), 1);
-                assert!(edits[0].new_text.contains(needle));
-            }
-        }
-        teardown(&client, handle);
-    }
-
-    #[test]
-    fn unsupported_request_receives_method_not_found() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
-        client
-            .sender
-            .send(req(
-                2,
-                HOVER,
-                HoverParams {
-                    text_document_position_params: TextDocumentPositionParams {
-                        text_document: TextDocumentIdentifier { uri: uri() },
-                        position: Position::default(),
-                    },
-                    work_done_progress_params: WorkDoneProgressParams::default(),
-                },
-            ))
-            .expect("send hover");
-        let Message::Response(response) = recv(&client) else {
-            panic!("expected error response");
-        };
-        assert_eq!(response.error.expect("error").code, METHOD_NOT_FOUND);
-        teardown(&client, handle);
-    }
-
-    #[test]
     fn did_change_republishes_against_the_new_text() {
         let (server, client) = Connection::memory();
         let handle = thread::spawn(move || serve(server));
@@ -419,6 +349,18 @@ mod tests {
     }
 
     #[test]
+    fn did_open_publishes_a_lint_diagnostic() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        did_open(&client, "import os\n");
+        let params = published(&client);
+        assert_eq!(params.diagnostics.len(), 1);
+        assert_eq!(params.diagnostics[0].source.as_deref(), Some("prose"));
+        teardown(&client, handle);
+    }
+
+    #[test]
     fn formatting_an_untracked_document_returns_no_edits() {
         let (server, client) = Connection::memory();
         let handle = thread::spawn(move || serve(server));
@@ -439,6 +381,90 @@ mod tests {
             panic!("expected formatting response");
         };
         assert_eq!(response.result, Some(Value::Null));
+        teardown(&client, handle);
+    }
+
+    #[rstest]
+    #[case("import os\n", None)]
+    #[case("alpha = 1\nb = 22\n", Some("alpha = 1"))]
+    fn formatting_matches_the_buffer_state(#[case] source: &str, #[case] expected: Option<&str>) {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        did_open(&client, source);
+        let _ = published(&client);
+        let edits = formatting_request(&client);
+        match expected {
+            None => assert!(edits.is_empty(), "formatted buffer needs no edits"),
+            Some(needle) => {
+                assert_eq!(edits.len(), 1);
+                assert!(edits[0].new_text.contains(needle));
+            }
+        }
+        teardown(&client, handle);
+    }
+
+    #[test]
+    fn initialize_advertises_the_formatting_provider() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        let result = handshake(&client);
+        assert!(result.capabilities.document_formatting_provider.is_some());
+        teardown(&client, handle);
+    }
+
+    #[test]
+    fn loop_returns_ok_when_the_client_disconnects() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        drop(client);
+        handle
+            .join()
+            .expect("server thread joins")
+            .expect("serve returns Ok on disconnect");
+    }
+
+    #[test]
+    fn unknown_notification_is_ignored() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        client
+            .sender
+            .send(note("textDocument/didSave", serde_json::json!({})))
+            .expect("send unknown notification");
+        did_open(&client, "import os\n");
+        assert_eq!(published(&client).diagnostics.len(), 1);
+        teardown(&client, handle);
+    }
+
+    #[test]
+    fn unsupported_request_receives_method_not_found() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        client
+            .sender
+            .send(req(
+                2,
+                HOVER,
+                HoverParams {
+                    text_document_position_params: TextDocumentPositionParams {
+                        text_document: TextDocumentIdentifier { uri: uri() },
+                        position: Position::default(),
+                    },
+                    work_done_progress_params: WorkDoneProgressParams::default(),
+                },
+            ))
+            .expect("send hover");
+        let Message::Response(response) = recv(&client) else {
+            panic!("expected error response");
+        };
+        assert_eq!(
+            response.error.expect("error").code,
+            ErrorCode::MethodNotFound as i32
+        );
         teardown(&client, handle);
     }
 }
