@@ -37,15 +37,7 @@ impl Emitter for Sarif {
 }
 
 fn artifact_location(file: &SourceFile) -> ArtifactLocation {
-    ArtifactLocation::builder().uri(artifact_uri(file)).build()
-}
-
-/// Renders a source name as a SARIF artifact URI. An absolute path
-/// becomes an RFC 3986 `file://` URI with its segments percent-encoded,
-/// where a relative path or the `<source>` placeholder for stdin passes
-/// through unchanged.
-fn artifact_uri(file: &SourceFile) -> String {
-    url::Url::from_file_path(file.name()).map_or_else(|()| file.name().to_owned(), String::from)
+    ArtifactLocation::builder().uri(file.name()).build()
 }
 
 fn collect_rule_ids(runs: &[Run<'_>]) -> Vec<RuleId> {
@@ -242,12 +234,12 @@ mod tests {
     }
 
     #[test]
-    fn encodes_an_absolute_path_as_a_percent_encoded_file_uri() {
+    fn emits_an_absolute_path_unchanged() {
         let file = SourceFileBuilder::new("/tmp/My Project/mod.py", "x = 1\n").finish();
         let v = emit_value(&file, std::slice::from_ref(&diag()));
         let uri = &v["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]
             ["uri"];
-        assert_eq!(uri, "file:///tmp/My%20Project/mod.py");
+        assert_eq!(uri, "/tmp/My Project/mod.py");
     }
 
     #[test]

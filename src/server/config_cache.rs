@@ -58,7 +58,22 @@ impl ConfigCache {
 /// Turns a `file://` URI into a filesystem path, or `None` for a URI that
 /// names no local file.
 fn file_path(uri: &Uri) -> Option<PathBuf> {
-    url::Url::parse(uri.as_str()).ok()?.to_file_path().ok()
+    if uri.scheme().map(|scheme| scheme.as_str()) != Some("file") {
+        return None;
+    }
+    let decoded = uri.path().as_estr().decode().into_string().ok()?;
+    // A Windows drive arrives as `/C:/dir`, so drop its leading slash.
+    let path = match decoded.strip_prefix('/') {
+        Some(rest) if has_drive_prefix(rest) => rest,
+        _ => decoded.as_ref(),
+    };
+    Some(PathBuf::from(path))
+}
+
+/// Returns `true` when `s` opens with a `C:`-style Windows drive letter.
+fn has_drive_prefix(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':'
 }
 
 /// Loads the config governing `path`, logging a present-but-broken config
@@ -138,6 +153,27 @@ mod tests {
         );
         cache.clear();
         assert_eq!(line_length(cache.resolve(&file)), Some(80));
+    }
+
+    #[test]
+    fn file_path_decodes_percent_escapes() {
+        assert_eq!(
+            file_path(&uri("file:///tmp/a%20b.py")),
+            Some(PathBuf::from("/tmp/a b.py")),
+        );
+    }
+
+    #[test]
+    fn file_path_rejects_a_non_file_scheme() {
+        assert!(file_path(&uri("untitled:Untitled-1")).is_none());
+    }
+
+    #[test]
+    fn file_path_strips_a_windows_drive_slash() {
+        assert_eq!(
+            file_path(&uri("file:///C:/Users/x.py")),
+            Some(PathBuf::from("C:/Users/x.py")),
+        );
     }
 
     #[test]
