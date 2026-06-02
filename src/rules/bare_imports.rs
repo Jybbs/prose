@@ -62,7 +62,8 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         if let Stmt::Import(import) = stmt {
             for alias in &import.names {
-                if alias.asname.is_some() && self.allow_aliased {
+                let asname = alias.asname.as_ref();
+                if asname.is_some() && self.allow_aliased {
                     continue;
                 }
                 let name = alias.name.as_str();
@@ -70,7 +71,7 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
                 if self.allow.contains(top) {
                     continue;
                 }
-                let bound = alias.asname.as_ref().map_or(top, |id| id.as_str());
+                let bound = asname.map_or(top, |id| id.as_str());
                 if self.analysis.module_read_count(bound) <= 1 {
                     self.diagnostics.push(Diagnostic::lint(
                         self.rule,
