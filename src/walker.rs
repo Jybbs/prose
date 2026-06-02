@@ -45,7 +45,6 @@ mod tests {
     use std::collections::BTreeSet;
     use std::fs;
 
-    use pretty_assertions::assert_eq;
     use tempfile::TempDir;
 
     use super::*;

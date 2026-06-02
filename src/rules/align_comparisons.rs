@@ -125,7 +125,6 @@ fn cmp_op_anchor_token_kind(op: CmpOp) -> TokenKind {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
     use rstest::rstest;
 
     use super::*;

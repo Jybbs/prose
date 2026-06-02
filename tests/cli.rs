@@ -4,7 +4,6 @@
 use std::{fs::write, path::PathBuf};
 
 use assert_cmd::Command;
-use pretty_assertions::assert_eq;
 use rstest::rstest;
 use tempfile::{TempDir, tempdir};
 
@@ -13,6 +12,15 @@ fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
     let path = dir.path().join(name);
     write(&path, source).expect("writes");
     (dir, path)
+}
+
+/// Frames each JSON-RPC body with its `Content-Length` header and joins
+/// them into one stdio stream the language server can read end to end.
+fn lsp_session(bodies: &[&str]) -> String {
+    bodies
+        .iter()
+        .map(|body| format!("Content-Length: {}\r\n\r\n{body}", body.len()))
+        .collect()
 }
 
 fn prose() -> Command {
@@ -428,6 +436,32 @@ fn help_exits_clean() {
 #[test]
 fn no_args_prints_help_and_exits_clean() {
     prose().assert().success();
+}
+
+#[test]
+fn server_completes_a_stdio_session_over_the_real_binary() {
+    let session = lsp_session(&[
+        r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}"#,
+        r#"{"jsonrpc":"2.0","method":"initialized","params":{}}"#,
+        r#"{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"untitled:m.py","languageId":"python","version":1,"text":"import os\n"}}}"#,
+        r#"{"jsonrpc":"2.0","id":2,"method":"textDocument/formatting","params":{"textDocument":{"uri":"untitled:m.py"},"options":{"tabSize":4,"insertSpaces":true}}}"#,
+        r#"{"jsonrpc":"2.0","id":3,"method":"shutdown","params":null}"#,
+        r#"{"jsonrpc":"2.0","method":"exit","params":null}"#,
+    ]);
+    let assert = prose()
+        .arg("server")
+        .write_stdin(session)
+        .assert()
+        .success();
+    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    assert!(
+        out.contains("documentFormattingProvider"),
+        "initialize result missing capabilities: {out:?}",
+    );
+    assert!(
+        out.contains("publishDiagnostics") && out.contains("bare-imports"),
+        "diagnostics not published: {out:?}",
+    );
 }
 
 #[test]

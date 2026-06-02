@@ -564,7 +564,6 @@ fn serialize_regex<S: Serializer>(regex: &Regex, serializer: S) -> Result<S::Ok,
 mod tests {
     use assert_matches::assert_matches;
     use indoc::indoc;
-    use pretty_assertions::assert_eq;
     use rstest::rstest;
     use tempfile::TempDir;
 

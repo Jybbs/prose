@@ -293,7 +293,6 @@ fn parse_prose_ignore(after_hash: &str) -> Option<RuleEntry> {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
 

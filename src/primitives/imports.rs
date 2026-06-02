@@ -48,7 +48,6 @@ fn is_first_party(name: &str, first_party: &[String]) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
     use rstest::rstest;
 
     use super::*;

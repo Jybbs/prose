@@ -28,9 +28,9 @@ use anyhow::Context;
 use clap::{ColorChoice, CommandFactory, Parser};
 use clap_complete::generate;
 
-mod args;
+pub(crate) mod args;
 mod cache;
-mod exit_status;
+pub(crate) mod exit_status;
 mod output;
 mod runner;
 
@@ -43,28 +43,6 @@ use output::Presentation;
 
 use crate::config::Config;
 
-pub(super) fn load_config_or_status() -> Result<Config, ExitStatus> {
-    let cwd = std::env::current_dir()
-        .context("reading current working directory")
-        .map_err(|e| {
-            log_error_chain(&e);
-            ExitStatus::ConfigError
-        })?;
-    Config::load(&cwd)
-        .context("loading [tool.prose] config")
-        .map_err(|e| {
-            log_error_chain(&e);
-            ExitStatus::ConfigError
-        })
-}
-
-pub(super) fn log_error_chain(err: &anyhow::Error) {
-    let mut stderr = io::stderr().lock();
-    for cause in err.chain() {
-        let _ = writeln!(stderr, "error: {cause}");
-    }
-}
-
 pub fn run() -> ExitCode {
     let mut cli = match Cli::try_parse() {
         Ok(cli) => cli,
@@ -75,6 +53,12 @@ pub fn run() -> ExitCode {
     }
     if let Some(err) = validate_diff_format_combination(&cli) {
         return report_clap_error(err);
+    }
+    // The server owns stdin and stdout end to end, so it dispatches
+    // before the shared stdout lock below, which its writer thread would
+    // otherwise deadlock against.
+    if let Command::Server(args) = cli.command {
+        return finalize(crate::server::run(args)).into();
     }
     let present = Presentation {
         quiet: command_quiet(&cli.command),
@@ -99,6 +83,7 @@ pub fn run() -> ExitCode {
         Command::Format(args) => {
             runner::format_with_io(args, verbose, &present, io::stdin(), stdout, stderr)
         }
+        Command::Server(_) => unreachable!("Server dispatched before the stdout lock"),
     };
     finalize(result).into()
 }
@@ -107,7 +92,7 @@ fn command_quiet(command: &Command) -> bool {
     match command {
         Command::Check(args) => args.quiet,
         Command::Format(args) => args.quiet,
-        Command::Cache { .. } | Command::Completions { .. } => false,
+        Command::Cache { .. } | Command::Completions { .. } | Command::Server(_) => false,
     }
 }
 
@@ -127,6 +112,28 @@ fn is_broken_pipe(err: &anyhow::Error) -> bool {
         .is_some_and(|e| e.kind() == io::ErrorKind::BrokenPipe)
 }
 
+fn load_config_or_status() -> Result<Config, ExitStatus> {
+    let cwd = std::env::current_dir()
+        .context("reading current working directory")
+        .map_err(|e| {
+            log_error_chain(&e);
+            ExitStatus::ConfigError
+        })?;
+    Config::load(&cwd)
+        .context("loading [tool.prose] config")
+        .map_err(|e| {
+            log_error_chain(&e);
+            ExitStatus::ConfigError
+        })
+}
+
+fn log_error_chain(err: &anyhow::Error) {
+    let mut stderr = io::stderr().lock();
+    for cause in err.chain() {
+        let _ = writeln!(stderr, "error: {cause}");
+    }
+}
+
 fn with_color<S: RawStream>(raw: S, choice: ColorChoice) -> AutoStream<S> {
     match choice {
         ColorChoice::Always => AutoStream::always(raw),
@@ -137,8 +144,6 @@ fn with_color<S: RawStream>(raw: S, choice: ColorChoice) -> AutoStream<S> {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
-
     use super::*;
 
     #[test]

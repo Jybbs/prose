@@ -248,7 +248,6 @@ fn is_entry_file(path: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
     use ruff_diagnostics::{Edit, Fix};
     use ruff_text_size::TextRange;
     use tempfile::TempDir;

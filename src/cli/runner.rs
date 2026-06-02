@@ -547,7 +547,6 @@ mod tests {
     use std::io::{self, Cursor};
 
     use assert_matches::assert_matches;
-    use pretty_assertions::{assert_eq, assert_ne};
     use rstest::rstest;
     use ruff_diagnostics::{Edit, Fix};
     use ruff_text_size::TextRange;

@@ -129,8 +129,8 @@ fn sarif_run(runs: &[Run<'_>]) -> SarifRun {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
     use ruff_diagnostics::{Edit, Fix};
+    use ruff_source_file::SourceFileBuilder;
     use ruff_text_size::TextRange;
     use serde_json::Value;
 
@@ -231,6 +231,24 @@ mod tests {
         };
         let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
         assert!(v["runs"][0]["results"][0]["fixes"].is_null());
+    }
+
+    #[test]
+    fn emits_an_absolute_path_unchanged() {
+        let file = SourceFileBuilder::new("/tmp/My Project/mod.py", "x = 1\n").finish();
+        let v = emit_value(&file, std::slice::from_ref(&diag()));
+        let uri = &v["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]
+            ["uri"];
+        assert_eq!(uri, "/tmp/My Project/mod.py");
+    }
+
+    #[test]
+    fn passes_the_stdin_placeholder_name_through_unchanged() {
+        let source: Source = "x = 1\n".parse().expect("parses");
+        let v = emit_value(source.source_file(), std::slice::from_ref(&diag()));
+        let uri = &v["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]
+            ["uri"];
+        assert_eq!(uri, "<source>");
     }
 
     #[test]
