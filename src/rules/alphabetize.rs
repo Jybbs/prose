@@ -318,7 +318,7 @@ fn assemble_dict_items_multiline(
     divider_slots: &[usize],
     source_last_has_comma: bool,
 ) -> String {
-    let mut out = String::new();
+    let mut out = String::with_capacity(blocks_span(blocks).len().to_usize());
     for (slot, &idx) in order.iter().enumerate() {
         let block_text = &block_texts[idx];
         let tail_len = (blocks[idx].end() - items[idx].range().end()).to_usize();
