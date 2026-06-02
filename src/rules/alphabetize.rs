@@ -366,27 +366,37 @@ fn args_reorder(params: &Parameters) -> bool {
     !params.args.iter().filter_map(classify_param).is_sorted()
 }
 
-/// Concatenates dict-item block texts in `order`, normalizing trailing
-/// commas so non-last slots always have one and the new-last slot
-/// matches `source_last_has_comma`. Inserts a blank line at every
-/// slot listed in `divider_slots`.
+/// Concatenates dict-item block texts in `order`, placing each slot's
+/// separator comma against the entry's value span so it lands after the
+/// value and before any trailing line comment. Non-last slots always
+/// carry a comma and the new-last slot matches `source_last_has_comma`.
+/// Inserts a blank line at every slot listed in `divider_slots`.
 fn assemble_dict_items_multiline(
+    items: &[DictItem],
+    blocks: &[TextRange],
     block_texts: &[Cow<'_, str>],
     order: &[usize],
     divider_slots: &[usize],
     source_last_has_comma: bool,
 ) -> String {
-    let mut out = String::new();
+    let mut out = String::with_capacity(blocks_span(blocks).len().to_usize());
     for (slot, &idx) in order.iter().enumerate() {
-        let text = block_texts[idx].trim_end_matches(',');
-        out.push_str(text);
+        let block_text = &block_texts[idx];
+        let tail_len = (blocks[idx].end() - items[idx].range().end()).to_usize();
+        let (code, tail) = block_text.split_at(block_text.len() - tail_len);
+        let (separator, comment) = tail.split_at(tail.find('#').unwrap_or(tail.len()));
+        out.push_str(code);
         let is_last = slot + 1 == order.len();
         if !is_last || source_last_has_comma {
             out.push(',');
         }
+        if !comment.is_empty() {
+            out.extend(separator.chars().filter(|&c| c != ','));
+            out.push_str(comment);
+        }
         if !is_last {
             out.push('\n');
-            if divider_slots.contains(&slot) {
+            if divider_slots.binary_search(&slot).is_ok() {
                 out.push('\n');
             }
         }
@@ -958,11 +968,15 @@ fn rewrite_dict_text<'src>(
     let permuted = permute_full(&mut order, &d.items, |item| dict_sort_key(source, item));
     let assembled = if multi_line {
         let divider_slots = partition_divider_slots(source, &order, &d.items);
-        let source_last_has_comma = source
-            .slice(*blocks.last().expect("non-empty"))
-            .trim_end()
-            .ends_with(',');
-        assemble_dict_items_multiline(&block_texts, &order, &divider_slots, source_last_has_comma)
+        let source_last_has_comma = source.trailing_comma(d.range()).is_some();
+        assemble_dict_items_multiline(
+            &d.items,
+            &blocks,
+            &block_texts,
+            &order,
+            &divider_slots,
+            source_last_has_comma,
+        )
     } else {
         assemble_blocks(source, &blocks, &block_texts, &order, |_| None)
     };

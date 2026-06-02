@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/dict_nested_value_trailing_comment/input.py
+---
+alphabetize@35..81
