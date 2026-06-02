@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/bare_namespace_use_passes/input.py
+---
+import os
+
+register(os)
+os.getcwd()

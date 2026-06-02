@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Bare Namespace Reference Passes"
+
+description = '''
+`os` is passed as the module object to `register`, not reached through an attribute, so no `from os import ...` rewrite could replace it. A bare use of the namespace itself spares the import whatever else it touches.
+'''

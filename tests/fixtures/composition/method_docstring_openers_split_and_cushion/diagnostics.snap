@@ -4,8 +4,6 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/method_docstring_openers_split_and_cushion/input.py
 ---
 blank-lines@14..15
-blank-lines@162..163
+blank-lines@144..145
 docstring-frame@181..247
 docstring-frame@49..113
-docstring-wrap@236..244
-docstring-wrap@83..91

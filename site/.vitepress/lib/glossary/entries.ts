@@ -280,7 +280,7 @@ export const glossary: Record<string, GlossaryEntry> = {
   'dunder': {
     aliases   : ['dunder name', 'dunder names', '__all__', '__slots__'],
     definition: 'A dunder is the Python convention for names wrapped in double underscores '
-              + '(`__name__`, `__all__`, `__init__`). `loose-constants` treats them as runtime '
+              + '(`__name__`, `__all__`, `__init__`). `reassigned-constants` treats them as runtime '
               + 'sentinels, and `alphabetize` treats them as ordering anchors that surface '
               + 'before properties and privates inside a class body.',
     families  : ['ordering', 'lint']
@@ -416,7 +416,7 @@ export const glossary: Record<string, GlossaryEntry> = {
   'module-level': {
     aliases   : ['module level', 'module-scope', 'module scope'],
     definition: 'Module-level names the outermost lexical scope of a Python file, sitting '
-              + 'outside any class or function body. `loose-constants` fires only on '
+              + 'outside any class or function body. `reassigned-constants` fires only on '
               + 'module-level assignments, and `blank-lines` reserves two blanks above every '
               + 'module-level `def` and `class`.',
     families  : ['engine', 'formatting', 'lint']
@@ -547,7 +547,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases   : ['typing.TYPE_CHECKING', 'if TYPE_CHECKING'],
     definition: '`TYPE_CHECKING` is a `typing` flag that is `False` at runtime and `True` to '
               + 'type checkers, used inside `if TYPE_CHECKING:` blocks to guard '
-              + 'import-only-for-typing code. `loose-constants` exempts bindings declared '
+              + 'import-only-for-typing code. `reassigned-constants` exempts bindings declared '
               + 'inside the block.',
     families  : ['lint'],
     href      : 'https://docs.python.org/3/library/typing.html#typing.TYPE_CHECKING'

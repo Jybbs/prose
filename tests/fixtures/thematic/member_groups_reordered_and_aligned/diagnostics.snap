@@ -3,11 +3,11 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/member_groups_reordered_and_aligned/input.py
 ---
-align-colons@37..89
-align-equals@43..78
+align-colons@32..86
+align-equals@37..63
 alphabetize@24..354
 blank-lines@102..103
-blank-lines@168..169
+blank-lines@170..171
 blank-lines@19..20
-blank-lines@226..227
-blank-lines@294..295
+blank-lines@230..231
+blank-lines@296..297

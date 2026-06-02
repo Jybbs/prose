@@ -1,6 +1,5 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/inline_opener_args_align_prose_wrap/input.py
 ---

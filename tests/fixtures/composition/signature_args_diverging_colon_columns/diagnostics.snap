@@ -5,4 +5,4 @@ input_file: tests/fixtures/composition/signature_args_diverging_colon_columns/in
 ---
 align-colons@133..381
 align-colons@26..67
-docstring-wrap@206..457
+docstring-wrap@195..443

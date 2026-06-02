@@ -25,7 +25,7 @@ const rule       = lookup(fixtures, props.rule, 'Fixture rule')
 const entry      = lookup(rule, props.case, `Fixture case under "${props.rule}"`)
 const id         = computed(() => `fixture-${props.rule}-${props.case}`)
 const activeTab  = ref<FixtureTab>('after')
-const showToggle = computed(() => props.variant !== 'landing' && entry.changesSource)
+const showToggle = computed(() => props.variant !== 'landing' && entry.hasToggle)
 const titleHtml  = computed(() => props.title ? inlineCode(props.title) : '')
 
 const ruleData = computed(() => rules.bySlug[props.rule.replaceAll('_', '-')] ?? null)
@@ -72,8 +72,8 @@ useEventListener('hashchange', syncWithHash)
         :class="{ 'is-active': isOpen }"
         @click.stop
       >
-        <FixtureToggle v-if="entry.changesSource" v-model="activeTab" />
-        <FixtureNoChange v-else :lint="entry.hasFindings" />
+        <FixtureToggle v-if="entry.hasToggle" v-model="activeTab" />
+        <FixtureNoChange v-else />
       </div>
     </div>
     <div

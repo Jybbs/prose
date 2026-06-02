@@ -1,11 +1,12 @@
 ---
 source: tests/binding_analysis.rs
-assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/aug_assign_reads_and_writes/input.py
 ---
 bindings:
-  - kinds:
+  - attributes: []
+    bare_read: true
+    kinds:
       - Assignment
       - AugAssign
     name: x

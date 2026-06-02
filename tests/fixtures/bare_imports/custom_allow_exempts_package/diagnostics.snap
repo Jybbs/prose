@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/bare_imports/custom_allow_exempts_package/input.py
 ---
-bare-imports@7..12
+bare-imports@20..25

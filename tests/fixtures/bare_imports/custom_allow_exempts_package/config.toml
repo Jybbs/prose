@@ -1,2 +1,2 @@
 [rules]
-bare-imports = { allow = ["torch"] }
+bare-imports = { allow = ["numpy"] }

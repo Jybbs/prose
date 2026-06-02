@@ -43,7 +43,7 @@ const SOURCES: readonly ExitCodeSource[] = [
     code   : 2,
     detail : [
       'Surfaces under both `prose check` and `prose format`.',
-      'The shipped lints contribute: `legacy-union-syntax`, `loose-constants`, '
+      'The shipped lints contribute: `legacy-union-syntax`, `reassigned-constants`, '
       + '`step-narration`, `single-use-variables`.'
     ],
     label  : 'Lint violation',

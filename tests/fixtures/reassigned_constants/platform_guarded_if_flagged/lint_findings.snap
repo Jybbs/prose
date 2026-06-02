@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/reassigned_constants/platform_guarded_if_flagged/input.py
+---
+[
+  {
+    "code": "reassigned-constants",
+    "end_location": {
+      "column": 27,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "module-level `DEFAULT_BACKEND` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+  },
+  {
+    "code": "reassigned-constants",
+    "end_location": {
+      "column": 33,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 5
+    },
+    "message": "module-level `DEFAULT_BACKEND` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+  }
+]

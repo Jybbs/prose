@@ -1,8 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/loose_constants/dunder_names_untouched/input.py
----
-__version__ = "0.2.0"
-__all__     = ["public"]
-__author__  = "prose"

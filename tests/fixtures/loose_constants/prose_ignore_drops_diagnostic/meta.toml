@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Trailing prose: ignore Directive Drops the Diagnostic"
-
-description = '''
-An augmented assignment marks `RETRIES` reassigned, so its initial write would draw a diagnostic, and the trailing `# prose: ignore[loose-constants]` directive **drops it** through the per-line suppression filter.
-'''

@@ -1,6 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/bare_imports/non_allowlisted_lint_only/input.py
----
-import os

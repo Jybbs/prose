@@ -1,6 +1,5 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/docstring_expand/class_body_indent_column/input.py
 ---

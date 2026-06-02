@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/multi_row_aligns_single_row_strips/input.py
 ---
 align-colons@42..85
-strip-align-padding@132..133
+strip-align-padding@129..130

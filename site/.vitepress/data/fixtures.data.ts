@@ -19,6 +19,7 @@ interface FixtureEntry {
   changesSource    : boolean
   descriptionHtml ?: string
   hasFindings      : boolean
+  hasToggle        : boolean
   inputHtml        : string
   outputHtml       : string
 }
@@ -33,7 +34,15 @@ function descriptionHtml(
   inputPath : string
 ): string | undefined {
   const text = readFixtureDocs(inputPath)?.description?.trim()
-  return text ? md.render(text) : undefined
+  if (!text) return undefined
+  // The card description renders through `v-html`, which never instantiates
+  // the `<InlineRuleLink>` component the rule-link plugin emits for a
+  // backticked slug, so downgrade it to the plain anchor primitive links
+  // already use on this surface.
+  return md.render(text).replace(
+    /<InlineRuleLink slug="([^"]+)" \/>/g,
+    (_, slug) => `<a class="body-link" href="/rules/${slug}"><code>${slug}</code></a>`
+  )
 }
 
 export default defineLoader({
@@ -51,14 +60,17 @@ export default defineLoader({
         fs.readFile(inputPath,           'utf8'),
         fs.readFile(`${inputPath}.snap`, 'utf8')
       ])
-      const output      = matter(snapRaw).content.replace(/\s+$/, '\n')
-      const decorations = lintDecorations(readLintFindings(inputPath))
+      const output        = matter(snapRaw).content.replace(/\s+$/, '\n')
+      const decorations   = lintDecorations(readLintFindings(inputPath))
+      const changesSource = inputRaw !== output
+      const hasFindings   = decorations.length > 0
       return {
         caseName,
         entry: {
-          changesSource   : inputRaw !== output,
+          changesSource,
           descriptionHtml : descriptionHtml(md, inputPath),
-          hasFindings     : decorations.length > 0,
+          hasFindings,
+          hasToggle       : changesSource || hasFindings,
           inputHtml       : renderFencedHtml(md, inputRaw, 'python'),
           outputHtml      : renderFencedHtml(md, output, 'python', decorations)
         },

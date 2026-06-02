@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Narrowly-Used Import Flags Where a Wide Fan-Out Passes"
+
+description = '''
+`import os` is reached only through `os.environ`, one distinct attribute, so a `from os import environ` rewrite would cover every use no matter how many times it appears. `import torch` fans out across five distinct attributes, past the `max-attributes` budget of 4, so its bare form is **left untouched**.
+'''

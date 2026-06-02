@@ -3,6 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/union_valued_dict_expands_aligns/input.py
 ---
-align-colons@68..171
-alphabetize@53..185
+alphabetize@48..168
 collection-layout@47..169

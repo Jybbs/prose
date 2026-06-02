@@ -1,8 +1,0 @@
-[docs]
-canonical   = true
-previewable = true
-title       = "A Single-Use Bare Import Flags Where a Broadly-Used One Passes"
-
-description = '''
-A bare `import os` read once draws the lint, where a bare `import torch` whose namespace is read across the module **passes untouched**. The diagnostic tracks how broadly the namespace is used rather than the bare form alone.
-'''

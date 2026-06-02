@@ -3,8 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/bare_imports/no_edits_text_untouched/input.py
 ---
-import json as j
 import os
-import torch
 
-torch.tensor(torch.zeros(3))
+os.getcwd()

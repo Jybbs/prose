@@ -3,6 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/dict_expand_sort_align/input.py
 ---
-align-colons@27..94
-alphabetize@16..112
+alphabetize@11..91
 collection-layout@10..92

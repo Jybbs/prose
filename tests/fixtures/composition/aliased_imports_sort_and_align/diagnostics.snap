@@ -3,5 +3,5 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/aliased_imports_sort_and_align/input.py
 ---
-align-imports@42..85
+align-imports@12..85
 alphabetize@7..90

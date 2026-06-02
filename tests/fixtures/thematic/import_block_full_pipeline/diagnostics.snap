@@ -3,10 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
 ---
-align-imports@112..113
-align-imports@35..36
+align-imports@125..126
 alphabetize@0..160
-bare-imports@49..51
-bare-imports@59..67
-blank-lines@123..124
-unused-future-annotations@69..104
+blank-lines@160..161
+unused-future-annotations@0..35

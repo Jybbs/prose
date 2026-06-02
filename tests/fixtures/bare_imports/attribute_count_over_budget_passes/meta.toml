@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Wide Fan-Out Passes the Attribute Budget"
+
+description = '''
+`os` is reached through five distinct attributes, one past the `max-attributes` budget of 4, so the bare import stays. A `from os import ...` would have to name every symbol, at which point the namespace import earns its keep.
+'''

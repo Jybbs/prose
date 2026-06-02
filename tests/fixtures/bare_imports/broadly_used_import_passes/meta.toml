@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Broadly-Used Bare Import Passes"
-
-description = '''
-A bare `import torch` whose namespace is read more than once reads clearly at every call site, so the rule **leaves it bare** and emits no diagnostic.
-'''

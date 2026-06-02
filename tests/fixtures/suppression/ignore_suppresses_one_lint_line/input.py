@@ -1,5 +1,5 @@
 DEFAULT_LIMIT = 50
-RETRY_INTERVAL = 30  # prose: ignore[loose-constants]
+RETRY_INTERVAL = 30  # prose: ignore[reassigned-constants]
 PAGE_SIZE = 25
 DEFAULT_LIMIT += 1
 RETRY_INTERVAL += 1

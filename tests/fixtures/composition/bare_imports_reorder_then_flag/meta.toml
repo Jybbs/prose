@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Bare Imports Reorder, Then Carry the Allowlist Lint"
+title       = "Bare Imports Reorder, Then Draw the Narrow-Use Lint"
 
 description = '''
-Bare imports outside the default allowlist arrive out of order. `alphabetize` reorders the statements, and **`bare-imports` emits one diagnostic per offending import whose range tracks the post-reorder offset**.
+Three bare imports arrive out of order, each reached through a single attribute. `alphabetize` reorders the statements, and **`bare-imports` flags every one, each diagnostic anchored to the import as written** rather than to its post-reorder position.
 '''

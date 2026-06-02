@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Compound Import Flags Only Its Narrowly-Used Segment"
+
+description = '''
+`import os, torch` binds both names on one statement. `os` is reached through one attribute and draws the lint, while `torch` fans out across five and passes, so the diagnostic lands on the narrow segment alone.
+'''

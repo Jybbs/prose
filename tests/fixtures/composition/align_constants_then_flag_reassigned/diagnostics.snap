@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/align_constants_then_flag_reassigned/input.py
+---
+align-equals@15..96
+reassigned-constants@68..84
+reassigned-constants@85..101

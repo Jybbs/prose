@@ -78,7 +78,6 @@
   padding       : 0.1rem 0.45rem;
 }
 
-.lint-chip-gray,
 .lint-chip-struck {
   background : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
   color      : var(--vp-c-text-3);
@@ -95,36 +94,6 @@
 
 .lint-into {
   color : var(--vp-c-text-3);
-}
-
-.lint-relocate {
-  color : var(--family-color);
-}
-
-.lint-slot {
-  align-items : center;
-  display     : flex;
-  flex-wrap   : wrap;
-  gap         : 0.35rem;
-}
-
-.lint-slot-chip {
-  background    : var(--vp-code-block-bg);
-  border-radius : var(--prose-radius-sm);
-  color         : var(--vp-c-text-1);
-  padding       : 0.12rem 0.4rem;
-}
-
-.lint-slot-keyword {
-  color : var(--prose-c-ube);
-}
-
-.lint-slot-bracket {
-  opacity : 0.6;
-}
-
-.lint-slot-leaf {
-  color : var(--family-color);
 }
 
 .lint-message {

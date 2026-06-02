@@ -5,3 +5,6 @@ input_file: tests/fixtures/bare_imports/custom_allow_exempts_package/input.py
 ---
 import numpy
 import torch
+
+numpy.array([1, 2])
+torch.tensor(0)

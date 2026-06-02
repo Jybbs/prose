@@ -5,7 +5,7 @@ input_file: tests/fixtures/suppression/ignore_suppresses_one_lint_line/input.py
 ---
 [
   {
-    "code": "loose-constants",
+    "code": "reassigned-constants",
     "end_location": {
       "column": 20,
       "row": 1
@@ -18,7 +18,7 @@ input_file: tests/fixtures/suppression/ignore_suppresses_one_lint_line/input.py
     "message": "module-level `DEFAULT_LIMIT` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   },
   {
-    "code": "loose-constants",
+    "code": "reassigned-constants",
     "end_location": {
       "column": 21,
       "row": 3

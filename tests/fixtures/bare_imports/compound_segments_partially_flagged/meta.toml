@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Compound Import Flags Only Its Single-Use Segments"
-
-description = '''
-`import os, sys, torch` fires a separate diagnostic on the unread `os` and `sys` where the broadly-read `torch` passes. Each segment is judged **independently by its own read count** even though they share one statement.
-'''

@@ -3,10 +3,9 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/overflow_dict_constants_rewrite_legacy_union/input.py
 ---
-align-colons@59..153
-alphabetize@110..167
+alphabetize@97..150
 collection-layout@47..151
-legacy-union-syntax@101..116
-legacy-union-syntax@137..154
-legacy-union-syntax@175..188
-legacy-union-syntax@67..80
+legacy-union-syntax@105..118
+legacy-union-syntax@134..151
+legacy-union-syntax@56..69
+legacy-union-syntax@79..94

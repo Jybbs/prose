@@ -6,12 +6,12 @@ import type { Component }                         from 'vue'
 
 import RuleCard from '../rules/RuleCard.vue'
 
-import { data as rules }                       from '../../../data/rules.data'
-import type { RenderedRule }                   from '../../../data/rules.data'
-import { lintShorthand, LOOSE_CONSTANT_HOMES } from '../../../lib/fixtures/lint-shorthand'
-import type { Shorthand }                      from '../../../lib/fixtures/lint-shorthand'
-import type { FixtureTab }                     from '../../../lib/shared/fixture-tab'
-import { inlineCode }                          from '../../../lib/shared/inline-code'
+import { data as rules }     from '../../../data/rules.data'
+import type { RenderedRule } from '../../../data/rules.data'
+import { lintShorthand }     from '../../../lib/fixtures/lint-shorthand'
+import type { Shorthand }    from '../../../lib/fixtures/lint-shorthand'
+import type { FixtureTab }   from '../../../lib/shared/fixture-tab'
+import { inlineCode }        from '../../../lib/shared/inline-code'
 
 const props = defineProps<{
   activeTab  : FixtureTab
@@ -37,7 +37,6 @@ const duration  = ref(0)
 const panel     = shallowRef<Component | null>(null)
 const steps     = shallowRef<readonly KeyedTokensInfo[]>([])
 
-const homes       = LOOSE_CONSTANT_HOMES
 const active      = ref<ActiveFinding | null>(null)
 const messageHtml = computed(() => inlineCode(active.value?.message ?? ''))
 
@@ -115,8 +114,14 @@ function hide(): void {
 
 // Hand the panel to magic-move the instant the side flips, before its
 // deferred render measures, so the morph is never sized while hidden.
-watch(() => props.activeTab, () => {
-  if (panel.value && animate.value && !reducedMotion.value) animating.value = true
+// With no morph to run (a lint-only fixture or reduced motion), draw the
+// squiggles directly so the line lands the same way it does after a morph.
+watch(() => props.activeTab, tab => {
+  if (panel.value && animate.value && !reducedMotion.value) {
+    animating.value = true
+  } else if (tab === 'after') {
+    drawSquiggles()
+  }
 })
 
 const { stop } = useIntersectionObserver(root, ([entry]) => {
@@ -162,13 +167,6 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
               <span class="lint-chip lint-chip-struck">{{ active.shorthand.before }}</span>
               <span class="lint-into" aria-hidden="true">→</span>
               <span class="lint-chip lint-chip-suggest">{{ active.shorthand.after }}</span>
-            </span>
-            <span v-else-if="active.shorthand?.kind === 'relocate'" class="lint-shorthand">
-              <span class="lint-chip lint-chip-gray">{{ active.shorthand.name }}</span>
-              <span class="lint-relocate" aria-hidden="true">⤴</span>
-              <span class="lint-slot">
-                <span v-for="home in homes" :key="home.parent" class="lint-slot-chip"><span :class="{ 'lint-slot-keyword': home.keyword }">{{ home.parent }}</span><span class="lint-slot-bracket" aria-hidden="true">⟨</span><span class="lint-slot-leaf">{{ home.leaf }}</span><span class="lint-slot-bracket" aria-hidden="true">⟩</span></span>
-              </span>
             </span>
             <span v-else-if="active.shorthand?.kind === 'remove'" class="lint-shorthand">
               <span class="lint-chip lint-chip-struck">{{ active.shorthand.text }}</span>

@@ -15,6 +15,6 @@ input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
       "column": 8,
       "row": 1
     },
-    "message": "bare import `functools` is read at most once. Rewrite as `from functools import ...` listing only the symbols this module uses"
+    "message": "bare import `functools` reaches 1 of its attributes. Rewrite as `from functools import ...` naming only the symbols this module uses"
   }
 ]

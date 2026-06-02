@@ -1,6 +1,5 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/suppression/prose_block_mirrors_fmt_span/input.py
 ---

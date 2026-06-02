@@ -1,10 +1,10 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/external_before_local_no_bare_group/input.py
 ---
-align-imports@43..44
-align-imports@84..85
+align-imports@63..87
 alphabetize@5..97
-blank-lines@54..55
+blank-lines@20..21
+blank-lines@52..53
+blank-lines@74..75

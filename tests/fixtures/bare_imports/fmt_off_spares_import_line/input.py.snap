@@ -6,3 +6,5 @@ input_file: tests/fixtures/bare_imports/fmt_off_spares_import_line/input.py
 # fmt: off
 import os
 # fmt: on
+
+os.getcwd()

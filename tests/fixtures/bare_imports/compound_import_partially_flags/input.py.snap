@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/compound_import_partially_flags/input.py
+---
+import os, torch
+
+os.environ
+torch.tensor(torch.zeros(3))
+torch.nn.Linear(8, 8)
+torch.optim.Adam
+torch.cuda.is_available()

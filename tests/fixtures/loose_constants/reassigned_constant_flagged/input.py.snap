@@ -1,7 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/loose_constants/reassigned_constant_flagged/input.py
----
-RETRIES = 3
-RETRIES = 5

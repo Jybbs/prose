@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reassigned_constants/prose_ignore_drops_diagnostic/input.py
+---
+RETRIES = 3  # prose: ignore[reassigned-constants]
+RETRIES += 1

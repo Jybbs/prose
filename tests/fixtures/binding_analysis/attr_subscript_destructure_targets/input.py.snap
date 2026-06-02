@@ -1,11 +1,12 @@
 ---
 source: tests/binding_analysis.rs
-assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/attr_subscript_destructure_targets/input.py
 ---
 bindings:
-  - kinds:
+  - attributes: []
+    bare_read: true
+    kinds:
       - ClassDef
     name: Holder
     read_offsets:
@@ -13,7 +14,9 @@ bindings:
     scope: 0
     write_offsets:
       - 6
-  - kinds:
+  - attributes: []
+    bare_read: true
+    kinds:
       - Assignment
     name: obj
     read_offsets:
@@ -22,7 +25,9 @@ bindings:
     scope: 0
     write_offsets:
       - 25
-  - kinds:
+  - attributes: []
+    bare_read: true
+    kinds:
       - Assignment
     name: ix
     read_offsets:
@@ -30,7 +35,9 @@ bindings:
     scope: 0
     write_offsets:
       - 45
-  - kinds:
+  - attributes: []
+    bare_read: true
+    kinds:
       - Assignment
     name: xs
     read_offsets:
@@ -38,42 +45,54 @@ bindings:
     scope: 0
     write_offsets:
       - 58
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Assignment
     name: a
     read_offsets: []
     scope: 0
     write_offsets:
       - 105
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Assignment
     name: b
     read_offsets: []
     scope: 0
     write_offsets:
       - 108
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Assignment
     name: head
     read_offsets: []
     scope: 0
     write_offsets:
       - 120
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Assignment
     name: tail
     read_offsets: []
     scope: 0
     write_offsets:
       - 126
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Assignment
     name: c
     read_offsets: []
     scope: 0
     write_offsets:
       - 137
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Assignment
     name: d
     read_offsets: []

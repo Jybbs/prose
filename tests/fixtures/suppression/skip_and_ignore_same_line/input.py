@@ -1,5 +1,5 @@
 DEFAULT_LIMIT = 50
-RETRY_INTERVAL = func(3, 4,)  # prose: skip[strip-trailing-commas]  # prose: ignore[loose-constants]
+RETRY_INTERVAL = func(3, 4,)  # prose: skip[strip-trailing-commas]  # prose: ignore[reassigned-constants]
 PAGE_SIZE = 25
 DEFAULT_LIMIT += 1
 RETRY_INTERVAL += 1

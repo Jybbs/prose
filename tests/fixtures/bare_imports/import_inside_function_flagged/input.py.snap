@@ -1,9 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/bare_imports/import_inside_function_flagged/input.py
----
-def show_version():
-    import sys
-
-    return sys.version

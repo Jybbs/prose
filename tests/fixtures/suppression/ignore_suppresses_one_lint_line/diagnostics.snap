@@ -4,6 +4,6 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/ignore_suppresses_one_lint_line/input.py
 ---
 align-equals@13..14
-align-equals@82..137
-loose-constants@0..19
-loose-constants@74..94
+align-equals@87..142
+reassigned-constants@0..18
+reassigned-constants@78..92

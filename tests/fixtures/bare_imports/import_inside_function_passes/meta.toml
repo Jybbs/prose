@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Import Nested in a Function Passes"
+
+description = '''
+`import sys` lives inside a function, where its binding is local rather than module-level. The rule reads module-scope imports, so a function-local import is out of its reach and passes.
+'''

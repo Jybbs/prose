@@ -1,25 +1,12 @@
 // Derives the card-header shorthand for a lint finding from the data the
 // hover already carries (rule, flagged text, message, and any fix edit).
-// Three shapes cover the lint surface: a `replace` before/after pair, a
-// `relocate` of a constant into one of a few homes, and a `remove`.
+// Two shapes cover the lint surface: a `replace` before/after pair and a
+// `remove`.
 
-interface RelocateHome {
-  keyword : boolean
-  leaf    : string
-  parent  : string
-}
+interface ReplaceShorthand { after : string; before : string; kind : 'replace' }
+interface RemoveShorthand  { kind  : 'remove'; text : string                   }
 
-export const LOOSE_CONSTANT_HOMES: readonly RelocateHome[] = [
-  { keyword : false, leaf : 'member', parent : 'enum'  },
-  { keyword : true,  leaf : 'field',  parent : 'class' },
-  { keyword : true,  leaf : 'local',  parent : 'def'   }
-]
-
-interface ReplaceShorthand  { after : string; before : string; kind : 'replace'  }
-interface RelocateShorthand { kind  : 'relocate'; name : string                  }
-interface RemoveShorthand   { kind  : 'remove'; text : string                    }
-
-export type Shorthand = RelocateShorthand | RemoveShorthand | ReplaceShorthand
+export type Shorthand = RemoveShorthand | ReplaceShorthand
 
 interface ShorthandInput {
   before    ?: string
@@ -57,11 +44,12 @@ export function lintShorthand(input: ShorthandInput): Shorthand | null {
       return flagged
         ? { after : `from ${flagged} import …`, before : `import ${flagged}`, kind : 'replace' }
         : null
-    case 'loose-constants': {
+    case 'reassigned-constants': {
       // The diagnostic spans the whole assignment, so the name comes from
-      // the first backtick of loose_constants.rs's message.
+      // the first backtick of reassigned_constants.rs's message, with the
+      // lowercase rename standing in for the rule's first suggestion.
       const name = firstBacktick(message)
-      return name ? { kind : 'relocate', name } : null
+      return name ? { after : name.toLowerCase(), before : name, kind : 'replace' } : null
     }
     case 'step-narration':
       return { kind : 'remove', text : truncate(flagged) }

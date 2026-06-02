@@ -1,7 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/loose_constants/reassigned_constant_flagged/input.py
----
-loose-constants@0..11
-loose-constants@12..23

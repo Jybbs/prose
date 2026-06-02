@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reassigned_constants/non_single_targets_ignored/input.py
+---
+A = B = 1
+A, B = 1, 2
+FOO.bar = 1

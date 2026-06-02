@@ -82,6 +82,7 @@ pub struct BareImportsConfig {
     pub allow: Vec<String>,
     pub allow_aliased: bool,
     pub enabled: bool,
+    pub max_attributes: usize,
 }
 
 impl Default for BareImportsConfig {
@@ -90,6 +91,7 @@ impl Default for BareImportsConfig {
             allow: Vec::new(),
             allow_aliased: true,
             enabled: true,
+            max_attributes: 4,
         }
     }
 }
@@ -304,15 +306,15 @@ pub struct ImportsConfig {
     pub first_party: Vec<String>,
 }
 
-/// Configuration for the `loose_constants` rule.
+/// Configuration for the `reassigned_constants` rule.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
-pub struct LooseConstantsConfig {
+pub struct ReassignedConstantsConfig {
     pub allow: Vec<String>,
     pub enabled: bool,
 }
 
-impl Default for LooseConstantsConfig {
+impl Default for ReassignedConstantsConfig {
     fn default() -> Self {
         Self {
             allow: Vec::new(),
@@ -424,7 +426,7 @@ impl_rule_toggle!(
     BareImportsConfig,
     CallLayoutConfig,
     CollectionLayoutConfig,
-    LooseConstantsConfig,
+    ReassignedConstantsConfig,
     SignatureLayoutConfig,
     SingleUseVariablesConfig,
 );

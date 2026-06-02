@@ -3,8 +3,8 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/inner_class_fields_align_per_scope/input.py
 ---
-align-colons@120..171
-align-colons@28..72
-align-equals@171..199
-align-equals@34..62
+align-colons@118..168
+align-colons@22..75
+align-equals@123..176
+align-equals@29..81
 alphabetize@17..181

@@ -3,5 +3,5 @@ previewable = true
 title       = "Lint Diagnostics Never Rewrite the Source"
 
 description = '''
-A mix of a flagged single-use `os`, a broadly-used `torch`, and an aliased `json` passes through **byte-for-byte unchanged** across every run. The rule emits diagnostics only and never an edit.
+`os` is reached through one attribute and draws the lint, yet `bare-imports` emits no fix. The source text is left exactly as written, the diagnostic standing as a report rather than a rewrite.
 '''

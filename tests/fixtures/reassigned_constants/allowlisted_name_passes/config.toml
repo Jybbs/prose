@@ -1,0 +1,2 @@
+[rules]
+reassigned-constants = { allow = ["LOG_LEVEL"] }

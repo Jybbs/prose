@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reassigned_constants/fmt_off_suppresses_diagnostic/input.py
+---
+

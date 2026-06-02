@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reassigned_constants/function_rebind_spares_module_constant/input.py
+---
+TIMEOUT = 30
+
+
+def override():
+    TIMEOUT = 60
+    return TIMEOUT

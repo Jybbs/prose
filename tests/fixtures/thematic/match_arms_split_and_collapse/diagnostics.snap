@@ -3,11 +3,13 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/match_arms_split_and_collapse/input.py
 ---
-align-match-case@159..160
-align-match-case@252..253
-align-match-case@337..343
-align-match-case@66..67
+align-match-case@158..159
+align-match-case@251..252
+align-match-case@336..342
+align-match-case@65..66
 alphabetize@81..320
 blank-lines@20..21
 collection-layout@370..402
-strip-trailing-commas@439..440
+strip-align-padding@391..392
+strip-trailing-commas@400..401
+strip-trailing-commas@447..448

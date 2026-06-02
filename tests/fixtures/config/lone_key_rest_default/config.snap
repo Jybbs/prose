@@ -57,6 +57,7 @@ Config {
             allow: [],
             allow_aliased: true,
             enabled: true,
+            max_attributes: 4,
         },
         align_match_case: AlignmentConfig {
             enabled: true,
@@ -95,7 +96,7 @@ Config {
         strip_align_padding: ToggleOnly {
             enabled: true,
         },
-        loose_constants: LooseConstantsConfig {
+        reassigned_constants: ReassignedConstantsConfig {
             allow: [],
             enabled: true,
         },

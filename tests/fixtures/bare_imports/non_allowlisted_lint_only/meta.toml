@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Bare Import Outside the Allowlist Lints"
-
-description = '''
-`import os` draws a `Severity::Lint` diagnostic because `os` is absent from the default allowlist of `numpy` and `pandas`. The rule **reports without rewriting**, so the source text is left untouched.
-'''

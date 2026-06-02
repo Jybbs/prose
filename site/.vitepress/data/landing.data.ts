@@ -61,7 +61,7 @@ const SURFACE_SOURCES: readonly SurfaceSource[] = [
     number : '04'
   },
   {
-    body   : 'Legacy union syntax, loose constants, step-narration comments, bare-import '
+    body   : 'Legacy union syntax, reassigned constants, step-narration comments, bare-import '
            + 'patterns, and single-use bindings surface as diagnostics. The formatter never '
            + 'rewrites these, because the fix belongs to the reader.',
     family : 'lint',

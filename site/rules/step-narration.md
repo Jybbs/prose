@@ -2,7 +2,7 @@
 category : lint
 family   : lint
 caption  : "surfaces comments that narrate the next line."
-related  : [loose-constants, single-use-variables]
+related  : [reassigned-constants, single-use-variables]
 layout   : doc
 ---
 

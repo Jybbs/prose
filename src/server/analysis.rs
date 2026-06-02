@@ -64,7 +64,11 @@ mod tests {
 
     #[test]
     fn diagnostics_surface_a_lint_finding_as_a_warning() {
-        let published = diagnostics("import os\n", PositionEncoding::Utf16, &Config::default());
+        let published = diagnostics(
+            "import os\nos.getcwd()\n",
+            PositionEncoding::Utf16,
+            &Config::default(),
+        );
         let only = published.first().expect("one diagnostic");
 
         assert_eq!(only.severity, Some(DiagnosticSeverity::WARNING));

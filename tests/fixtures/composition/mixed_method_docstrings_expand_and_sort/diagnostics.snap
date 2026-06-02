@@ -5,8 +5,8 @@ input_file: tests/fixtures/composition/mixed_method_docstrings_expand_and_sort/i
 ---
 alphabetize@23..277
 blank-lines@14..15
-blank-lines@145..146
-blank-lines@238..239
-docstring-expand@159..182
+blank-lines@202..203
+blank-lines@89..90
 docstring-expand@234..257
-docstring-frame@47..107
+docstring-expand@46..69
+docstring-frame@122..182
