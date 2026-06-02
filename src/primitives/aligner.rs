@@ -500,7 +500,6 @@ fn range_anchored_member(
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
     use ruff_text_size::TextSize;
 
     use super::*;

@@ -1,6 +1,6 @@
 # CLI
 
-The `prose` binary's subcommands each resolve a distinct workflow shape. `format` rewrites Python files in place, `check` reports violations without modifying anything, and `completions` emits a shell-completion script. `format` and `check` share the same path-handling, stdin, rule-filtering, and output-format surface, so a CI step that runs `prose check` and a developer that runs `prose format` see the same flag set with the same precedence.
+The `prose` binary's subcommands each resolve a distinct workflow shape. `format` rewrites Python files in place, `check` reports violations without modifying anything, `server` speaks the language-server protocol to an editor, and `completions` emits a shell-completion script. `format` and `check` share the same path-handling, stdin, rule-filtering, and output-format surface, so a CI step that runs `prose check` and a developer that runs `prose format` see the same flag set with the same precedence.
 
 ## Synopsis
 
@@ -113,6 +113,20 @@ prose completions zsh > "${fpath[1]}/_prose"
 ```
 
 The [**Shell Completions**](/integrations/shell-completions) integration page covers the install path for each shell.
+
+## `prose server`
+
+Runs a language server over stdio, so an editor gets format-on-save and live rule diagnostics from the same binary it already installs. The server tracks each open buffer, runs the [**pipeline**](/reference/pipeline-order) over the editor's live text on a `textDocument/formatting` request, and republishes findings on every open and change. It resolves the workspace `[tool.prose]` [**configuration**](/reference/configuration) the way `prose check` does, so an editor session and a command-line run over the same tree agree on the active rule set.
+
+| Flag | Type | Default | Description |
+|---|---|---|---|
+| `--transport` | `stdio` | `stdio` | Transport the server speaks over. Only stdio is supported |
+
+```bash
+prose server
+```
+
+The [**Editor**](/integrations/editor) integration page covers pointing an editor's language-server client at the binary. Range and on-type formatting, code-action quick-fixes, and a bundled editor extension wait for a later pass, the first cut leaning on whole-document runs.
 
 ## Run Summary
 

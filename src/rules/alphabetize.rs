@@ -996,7 +996,6 @@ fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
-    use pretty_assertions::assert_eq;
     use proptest::prelude::*;
     use rstest::rstest;
 

@@ -177,7 +177,6 @@ fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize
 mod tests {
     use assert_matches::assert_matches;
     use indoc::indoc;
-    use pretty_assertions::assert_eq;
     use ruff_text_size::TextLen;
 
     use super::*;

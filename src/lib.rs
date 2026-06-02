@@ -10,6 +10,7 @@ pub mod pipeline;
 mod primitives;
 pub mod rule;
 mod rules;
+mod server;
 pub mod source;
 pub(crate) mod suppression;
 #[cfg(test)]

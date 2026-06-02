@@ -12,7 +12,8 @@ use ruff_python_trivia::{
     lines_before,
 };
 use ruff_source_file::{
-    LineColumn, LineEnding, LineRanges, OneIndexed, SourceFile, SourceFileBuilder, find_newline,
+    LineColumn, LineEnding, LineRanges, OneIndexed, PositionEncoding, SourceFile,
+    SourceFileBuilder, SourceLocation, find_newline,
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use thiserror::Error;
@@ -200,6 +201,15 @@ impl Source {
         &self.file
     }
 
+    /// Returns the line and character offset for a byte offset, with the
+    /// character offset counted in `encoding`'s units. Both line and
+    /// character offset are `OneIndexed`. The editor protocol publishes
+    /// positions in a negotiated encoding, where `line_column` only ever
+    /// counts characters.
+    pub fn source_location(&self, offset: TextSize, encoding: PositionEncoding) -> SourceLocation {
+        self.file.to_source_code().source_location(offset, encoding)
+    }
+
     /// Returns the suppression index built during parsing.
     pub(crate) fn suppression_map(&self) -> &SuppressionMap {
         &self.suppression
@@ -248,7 +258,6 @@ pub enum SourceError {
 #[cfg(test)]
 mod tests {
     use assert_matches::assert_matches;
-    use pretty_assertions::assert_eq;
     use ruff_python_ast::token::TokenKind;
     use ruff_source_file::OneIndexed;
     use ruff_text_size::TextRange;

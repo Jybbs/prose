@@ -1,3 +1,7 @@
 #!/usr/bin/env bash
 #MISE description="Full local CI sweep"
-#MISE depends=["audit", "check", "lint", "lockfile", "test", "wheel"]
+#MISE depends=["audit", "check", "lint", "lockfile", "test"]
+#MISE depends_post=["wheel"]
+
+# `maturin develop` (the `wheel` task) relinks target/debug/prose, which the
+# cli tests exec, so wheel runs after the suite, not as a parallel peer.

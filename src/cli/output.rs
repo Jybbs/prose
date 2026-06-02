@@ -119,7 +119,6 @@ fn pluralize(count: usize, noun: &str) -> String {
 #[cfg(test)]
 mod tests {
     use anstream::AutoStream;
-    use pretty_assertions::assert_eq;
     use rstest::rstest;
 
     use super::*;
