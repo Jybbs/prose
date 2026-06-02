@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/future_annotation_does_not_pin/input.py
+---
+from __future__ import annotations
+
+
+class Builder:
+    def make(self) -> Helper: ...
+
+
+class Helper:
+    pass

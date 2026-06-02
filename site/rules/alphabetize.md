@@ -25,6 +25,8 @@ A reader who already knows the codebase carries a **mental map** of where things
 
 The rule fires on siblings whose order does not carry meaning. It leaves alone every surface where ordering is load-bearing (*positional-only parameters before the `/` separator, enum members with explicit integer or string values, tuple-unpacking targets bound to positional results*).
 
+A class or function definition also holds its place behind any sibling it names at evaluation time (*a base class, a decorator, a parameter default, a non-deferred annotation, or a class-body value*), since sorting it ahead of that sibling would move the name out of scope and raise `NameError` on import. A run whose references form a cycle stays in source order untouched.
+
 When a function's parameters reorder, `alphabetize` rewrites each in-module call's positional arguments to keyword form, keyed to the parameter each bound to under the original order, so the reorder never silently rebinds a caller. Calls that forward `*args`, unpack `**`, or reach the function through a reassigned name stay as they read.
 
 Pair with [[align-imports]] to align the `import` keyword across the freshly-sorted block, with [[align-colons]] to align dataclass-field annotations after the sort, and with [[blank-lines]] for the blank-line discipline around class members and the single blank line between the import groups.

@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/decorator_reference_pins_function_run/input.py
+---
+def register(handler):
+    return handler
+
+
+@register
+def dispatch():
+    pass

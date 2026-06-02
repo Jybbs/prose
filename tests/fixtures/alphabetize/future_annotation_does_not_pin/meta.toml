@@ -1,0 +1,9 @@
+[docs]
+previewable = false
+title       = "A Deferred Annotation Does Not Pin the Order"
+
+description = '''
+Under `from __future__ import annotations` the `Helper` return annotation no
+longer evaluates at definition time, so it stops constraining the run and
+`Builder` sorts ahead of `Helper`.
+'''

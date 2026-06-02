@@ -15,13 +15,12 @@ use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
-    primitives::{binding::BindingAnalysis, edit::singleton_groups},
+    primitives::{
+        binding::BindingAnalysis, edit::singleton_groups, imports::future_annotations_alias,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
-
-const FUTURE_ANNOTATIONS: &str = "annotations";
-const FUTURE_MODULE: &str = "__future__";
 
 pub(crate) struct UnusedFutureAnnotations {
     target_version: Option<PythonVersion>,
@@ -43,7 +42,7 @@ impl Rule for UnusedFutureAnnotations {
             .iter()
             .filter_map(|stmt| {
                 let node = stmt.as_import_from_stmt()?;
-                Some((node, future_alias_index(node)?))
+                Some((node, future_annotations_alias(node)?))
             })
             .collect();
         if directives.is_empty() || !rule_fires(source, self.target_version) {
@@ -149,15 +148,6 @@ fn edit_for(source: &Source, node: &StmtImportFrom, alias_idx: usize) -> Edit {
     } else {
         Edit::range_deletion(source.text().full_lines_range(node.range))
     }
-}
-
-fn future_alias_index(node: &StmtImportFrom) -> Option<usize> {
-    if node.level != 0 || node.module.as_deref() != Some(FUTURE_MODULE) {
-        return None;
-    }
-    node.names
-        .iter()
-        .position(|alias| alias.name.id == FUTURE_ANNOTATIONS)
 }
 
 fn has_any_annotation(body: &[Stmt]) -> bool {

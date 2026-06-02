@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/class_body_value_reference_pins_run/input.py
+---
+class Defaults:
+    pass
+
+
+class Config:
+    settings = Defaults

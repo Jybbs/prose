@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/return_annotation_reference_pins_run/input.py
+---
+class Helper:
+    pass
+
+
+class Builder:
+    def make(self) -> Helper: ...
