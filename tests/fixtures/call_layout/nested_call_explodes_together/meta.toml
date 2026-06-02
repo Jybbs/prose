@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Nested Call Explodes in the Same Pass"
+
+description = '''
+An eligible call passed as an argument value explodes alongside its enclosing call, the recursion resolving both levels before the rule returns so the layout is stable in one pass.
+'''

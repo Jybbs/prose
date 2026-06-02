@@ -48,6 +48,15 @@ pub(crate) struct EmitterSummary {
     pub(crate) rules_fired: BTreeMap<RuleId, usize>,
 }
 
+/// Flattens every run into its `(file, diagnostic)` pairs in
+/// file-major order, the traversal each emitter walks.
+pub(crate) fn diagnostics<'a>(
+    runs: &'a [Run<'a>],
+) -> impl Iterator<Item = (&'a SourceFile, &'a Diagnostic)> {
+    runs.iter()
+        .flat_map(|(file, ds)| ds.iter().map(move |d| (*file, d)))
+}
+
 pub(crate) fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, LineColumn) {
     let code = file.to_source_code();
     (

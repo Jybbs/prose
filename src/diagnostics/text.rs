@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use annotate_snippets::{AnnotationKind, Level, Patch, Renderer, Snippet};
 use ruff_text_size::Ranged;
 
-use crate::diagnostics::{Emitter, EmitterSummary, Run};
+use crate::diagnostics::{Emitter, EmitterSummary, Run, diagnostics};
 
 pub(crate) struct Text {
     renderer: Renderer,
@@ -27,33 +27,31 @@ impl Emitter for Text {
         runs: &[Run<'_>],
         _summary: &EmitterSummary,
     ) -> io::Result<()> {
-        for (file, diagnostics) in runs {
-            for diag in *diagnostics {
-                let warning = Level::WARNING.primary_title(diag.message.as_str()).element(
-                    Snippet::source(file.source_text())
-                        .line_start(1)
-                        .path(file.name())
-                        .annotation(
-                            AnnotationKind::Primary
-                                .span(diag.range.to_std_range())
-                                .label(diag.rule.as_str()),
-                        ),
-                );
-                let mut groups = vec![warning];
-                if let Some(fix) = &diag.fix {
-                    let snippet = Snippet::source(file.source_text())
-                        .line_start(1)
-                        .path(file.name())
-                        .patches(fix.edits().iter().map(|edit| {
-                            Patch::new(
-                                edit.range().to_std_range(),
-                                edit.content().unwrap_or_default(),
-                            )
-                        }));
-                    groups.push(Level::HELP.secondary_title("replace with").element(snippet));
-                }
-                writeln!(writer, "{}", self.renderer.render(&groups))?;
+        for (file, diag) in diagnostics(runs) {
+            let warning = Level::WARNING.primary_title(diag.message.as_str()).element(
+                Snippet::source(file.source_text())
+                    .line_start(1)
+                    .path(file.name())
+                    .annotation(
+                        AnnotationKind::Primary
+                            .span(diag.range.to_std_range())
+                            .label(diag.rule.as_str()),
+                    ),
+            );
+            let mut groups = vec![warning];
+            if let Some(fix) = &diag.fix {
+                let snippet = Snippet::source(file.source_text())
+                    .line_start(1)
+                    .path(file.name())
+                    .patches(fix.edits().iter().map(|edit| {
+                        Patch::new(
+                            edit.range().to_std_range(),
+                            edit.content().unwrap_or_default(),
+                        )
+                    }));
+                groups.push(Level::HELP.secondary_title("replace with").element(snippet));
             }
+            writeln!(writer, "{}", self.renderer.render(&groups))?;
         }
         Ok(())
     }

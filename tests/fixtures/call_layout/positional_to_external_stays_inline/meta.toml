@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Positional Call to an Unresolved Callee Stays Inline"
+
+description = '''
+The rule cannot name the positional arguments of a call whose callee does not resolve to a module function, so the call reads as written.
+'''

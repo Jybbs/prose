@@ -38,6 +38,13 @@ pub(crate) struct DocstringBody<'a> {
     pub(crate) text: &'a str,
 }
 
+impl DocstringBody<'_> {
+    /// True when the body spans more than one line.
+    pub(crate) fn is_multiline(&self) -> bool {
+        self.text.contains('\n')
+    }
+}
+
 /// Receiver for the docstring walker. Implementors handle each
 /// docstring `StringLiteral` reached in source order. Call `walk`
 /// to drive the receiver across `source`'s module body.
@@ -52,6 +59,67 @@ pub(crate) trait DocstringHandler {
         let body = &source.ast().body;
         visitor.consider(body);
         visitor.visit_body(body);
+    }
+}
+
+/// The classification of a docstring body line by the shared fence,
+/// blank, and list scanner. Every variant but `Body` is terminal for
+/// the line; `Body` hands the line to the walker's own dispatch.
+pub(crate) enum LineScan {
+    Blank,
+    Body,
+    Fence,
+    InFence,
+    ListContinuation,
+    ListMarker,
+}
+
+/// The fence and list state a docstring walker carries across lines.
+/// [`LineScanner::classify`] advances the state per line and returns
+/// its [`LineScan`], leaving each walker to dispatch its own effect.
+pub(crate) struct LineScanner {
+    body_indent_chars: usize,
+    in_fence: bool,
+    list_indent: Option<usize>,
+}
+
+impl LineScanner {
+    pub(crate) fn new(body_indent_chars: usize) -> Self {
+        Self {
+            body_indent_chars,
+            in_fence: false,
+            list_indent: None,
+        }
+    }
+
+    pub(crate) fn body_indent_chars(&self) -> usize {
+        self.body_indent_chars
+    }
+
+    pub(crate) fn classify(&mut self, trimmed: &str, indent_chars: usize) -> LineScan {
+        if trimmed.starts_with("```") {
+            self.in_fence = !self.in_fence;
+            self.list_indent = None;
+            return LineScan::Fence;
+        }
+        if self.in_fence {
+            return LineScan::InFence;
+        }
+        if trimmed.is_empty() {
+            self.list_indent = None;
+            return LineScan::Blank;
+        }
+        if let Some(marker) = self.list_indent {
+            if indent_chars > marker {
+                return LineScan::ListContinuation;
+            }
+            self.list_indent = None;
+        }
+        if indent_chars >= self.body_indent_chars && is_list_marker(trimmed) {
+            self.list_indent = Some(indent_chars);
+            return LineScan::ListMarker;
+        }
+        LineScan::Body
     }
 }
 
@@ -71,22 +139,18 @@ impl Ranged for SectionEntry<'_> {
 }
 
 struct EntryWalker<'src> {
-    body_indent_chars: usize,
-    in_fence: bool,
-    list_indent: Option<usize>,
     open_entry: Option<SectionEntry<'src>>,
     open_section: Option<Vec<SectionEntry<'src>>>,
+    scanner: LineScanner,
     sections: Vec<Vec<SectionEntry<'src>>>,
 }
 
 impl<'src> EntryWalker<'src> {
     fn new(body_indent_chars: usize) -> Self {
         Self {
-            body_indent_chars,
-            in_fence: false,
-            list_indent: None,
             open_entry: None,
             open_section: None,
+            scanner: LineScanner::new(body_indent_chars),
             sections: Vec::new(),
         }
     }
@@ -100,33 +164,27 @@ impl<'src> EntryWalker<'src> {
         let trimmed = &text[indent_str.len()..];
         let indent_chars = indent_str.chars().count();
 
-        if trimmed.starts_with("```") {
-            self.in_fence = !self.in_fence;
-            self.extend_open_entry(line_end);
-            self.list_indent = None;
-            return;
-        }
-        if self.in_fence {
-            self.extend_open_entry(line_end);
-            return;
-        }
-        if trimmed.is_empty() {
-            self.list_indent = None;
-            return;
-        }
-        if let Some(marker) = self.list_indent {
-            if indent_chars > marker {
+        match self.scanner.classify(trimmed, indent_chars) {
+            LineScan::Blank => {}
+            LineScan::Body => self.consume_body(line_start, line_end, trimmed, indent_chars),
+            LineScan::Fence
+            | LineScan::InFence
+            | LineScan::ListContinuation
+            | LineScan::ListMarker => {
                 self.extend_open_entry(line_end);
-                return;
             }
-            self.list_indent = None;
         }
-        if indent_chars >= self.body_indent_chars && is_list_marker(trimmed) {
-            self.list_indent = Some(indent_chars);
-            self.extend_open_entry(line_end);
-            return;
-        }
-        if indent_chars == self.body_indent_chars {
+    }
+
+    fn consume_body(
+        &mut self,
+        line_start: TextSize,
+        line_end: TextSize,
+        trimmed: &'src str,
+        indent_chars: usize,
+    ) {
+        let body_indent = self.scanner.body_indent_chars();
+        if indent_chars == body_indent {
             self.finish_section();
             if section_heading(trimmed) {
                 self.open_section = Some(Vec::new());
@@ -136,7 +194,7 @@ impl<'src> EntryWalker<'src> {
         if self.open_section.is_none() {
             return;
         }
-        if indent_chars == self.body_indent_chars + 4 && entry_description_col(trimmed).is_some() {
+        if indent_chars == body_indent + 4 && entry_description_col(trimmed).is_some() {
             self.finish_entry();
             self.open_entry = Some(SectionEntry {
                 name: entry_name(trimmed),
@@ -211,7 +269,7 @@ pub(crate) fn entry_carrying_sections<'src>(
     source: &'src Source,
     lit: &StringLiteral,
 ) -> Vec<Vec<SectionEntry<'src>>> {
-    let Some(body) = triple_quoted_body(source, lit).filter(|b| b.text.contains('\n')) else {
+    let Some(body) = triple_quoted_body(source, lit).filter(|b| b.is_multiline()) else {
         return Vec::new();
     };
     let mut walker = EntryWalker::new(indent_prefix(source, lit).chars().count());
@@ -234,21 +292,6 @@ pub(crate) fn entry_description_col(trimmed: &str) -> Option<usize> {
 /// preserving the source's mix of tabs and spaces verbatim.
 pub(crate) fn indent_prefix<'a>(source: &'a Source, lit: &StringLiteral) -> &'a str {
     leading_indentation(source.text().line_str(lit.start()))
-}
-
-/// True when `trimmed` opens with a Markdown list marker (`-`, `*`,
-/// or `+` followed by a space) or a numeric marker (one or more
-/// digits followed by `. `). Used by docstring walkers to recognize
-/// verbatim-passthrough list items.
-pub(crate) fn is_list_marker(trimmed: &str) -> bool {
-    if trimmed
-        .strip_prefix(['-', '*', '+'])
-        .is_some_and(|rest| rest.starts_with(' '))
-    {
-        return true;
-    }
-    let after_digits = trimmed.trim_start_matches(|c: char| c.is_ascii_digit());
-    after_digits.len() < trimmed.len() && after_digits.starts_with(". ")
 }
 
 /// Walks every docstring in `source` and collects the edits produced
@@ -315,6 +358,21 @@ pub(crate) fn triple_quoted_body<'a>(
 fn entry_name(trimmed: &str) -> &str {
     let colon = trimmed.find(':').expect("entry head carries a colon");
     trimmed[..colon].trim_end()
+}
+
+/// True when `trimmed` opens with a Markdown list marker (`-`, `*`,
+/// or `+` followed by a space) or a numeric marker (one or more
+/// digits followed by `. `). Used by the shared line scanner to
+/// recognize verbatim-passthrough list items.
+fn is_list_marker(trimmed: &str) -> bool {
+    if trimmed
+        .strip_prefix(['-', '*', '+'])
+        .is_some_and(|rest| rest.starts_with(' '))
+    {
+        return true;
+    }
+    let after_digits = trimmed.trim_start_matches(|c: char| c.is_ascii_digit());
+    after_digits.len() < trimmed.len() && after_digits.starts_with(". ")
 }
 
 #[cfg(test)]

@@ -10,8 +10,7 @@ use ruff_python_ast::{
     Arguments, Expr, Stmt, TypeParams,
     visitor::{Visitor, walk_arguments, walk_expr, walk_stmt, walk_type_params},
 };
-use ruff_python_trivia::{BackwardsTokenizer, SimpleTokenKind};
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
@@ -54,15 +53,9 @@ impl Stripper<'_> {
     /// is a comma.
     fn process_container(&mut self, container: TextRange) {
         self.edits.extend(
-            BackwardsTokenizer::up_to(
-                container.end() - TextSize::from(1u32),
-                self.source.text(),
-                self.source.comment_ranges(),
-            )
-            .skip_trivia()
-            .next()
-            .filter(|t| t.kind() == SimpleTokenKind::Comma)
-            .map(|t| Edit::range_deletion(t.range)),
+            self.source
+                .trailing_comma(container)
+                .map(Edit::range_deletion),
         );
     }
 }

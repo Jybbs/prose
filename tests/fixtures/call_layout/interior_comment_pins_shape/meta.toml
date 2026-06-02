@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "An Interior Comment Pins the Existing Shape"
+
+description = '''
+A comment inside the argument list leaves the call untouched, because reshaping the arguments would orphan the comment from the line it annotates.
+'''

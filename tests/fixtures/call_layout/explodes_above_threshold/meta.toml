@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Explode a Call Above the Argument Threshold"
+
+description = '''
+A four-argument call to an in-module function explodes to one keyword argument per line, each positional argument named from the resolved signature and the closing `)` dropping to the call's own indent.
+'''

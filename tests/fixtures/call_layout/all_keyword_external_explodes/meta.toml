@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "Explode an All-Keyword Call to an External Function"
+
+description = '''
+A four-argument all-keyword call explodes regardless of where its callee is defined, because every argument already names its parameter and needs no signature resolution.
+'''

@@ -16,8 +16,8 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     primitives::{
-        INDENT_STEP,
         edit::{narrowed_replacement, singleton_groups},
+        layout::explode_parens,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -70,17 +70,14 @@ struct Layout<'a> {
 impl Layout<'_> {
     /// Builds the canonical expanded text spanning `(` through `:`.
     fn build_expanded(&self, fd: &StmtFunctionDef, indent: usize) -> String {
-        let prefix = " ".repeat(indent + INDENT_STEP);
-        let mut out = String::from("(");
-        for part in self.signature_parts(&fd.parameters) {
-            out.push_str(self.newline);
-            out.push_str(&prefix);
-            out.push_str(part);
-            out.push(',');
-        }
-        out.push_str(self.newline);
-        out.extend(std::iter::repeat_n(' ', indent));
-        out.push(')');
+        let parts: Vec<&str> = self.signature_parts(&fd.parameters).collect();
+        let mut out = explode_parens(
+            self.newline,
+            indent,
+            parts.len(),
+            |out, i| out.push_str(parts[i]),
+            |_| true,
+        );
         self.push_return_and_colon(&mut out, fd);
         out
     }

@@ -11,6 +11,7 @@ pub(crate) mod align_match_case;
 pub(crate) mod alphabetize;
 pub(crate) mod bare_imports;
 pub(crate) mod blank_lines;
+pub(crate) mod call_layout;
 pub(crate) mod collection_layout;
 pub(crate) mod docstring_expand;
 pub(crate) mod docstring_frame;

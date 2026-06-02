@@ -15,20 +15,22 @@ use thiserror::Error;
 
 use crate::{
     config::{
-        AlignmentConfig, AlphabetizeConfig, BareImportsConfig, CollectionLayoutConfig, Config,
-        LooseConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
+        AlignmentConfig, AlphabetizeConfig, BareImportsConfig, CallLayoutConfig,
+        CollectionLayoutConfig, Config, LooseConstantsConfig, SignatureLayoutConfig,
+        SingleUseVariablesConfig, ToggleOnly,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
     rules::{
         align_colons::AlignColons, align_comparisons::AlignComparisons, align_equals::AlignEquals,
         align_imports::AlignImports, align_match_case::AlignMatchCase, alphabetize::Alphabetize,
-        bare_imports::BareImports, blank_lines::BlankLines, collection_layout::CollectionLayout,
-        docstring_expand::DocstringExpand, docstring_frame::DocstringFrame,
-        docstring_wrap::DocstringWrap, legacy_union_syntax::LegacyUnionSyntax,
-        loose_constants::LooseConstants, signature_layout::SignatureLayout,
-        single_use_variables::SingleUseVariables, step_narration::StepNarration,
-        strip_align_padding::StripAlignPadding, strip_trailing_commas::StripTrailingCommas,
+        bare_imports::BareImports, blank_lines::BlankLines, call_layout::CallLayout,
+        collection_layout::CollectionLayout, docstring_expand::DocstringExpand,
+        docstring_frame::DocstringFrame, docstring_wrap::DocstringWrap,
+        legacy_union_syntax::LegacyUnionSyntax, loose_constants::LooseConstants,
+        signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
+        step_narration::StepNarration, strip_align_padding::StripAlignPadding,
+        strip_trailing_commas::StripTrailingCommas,
         unused_future_annotations::UnusedFutureAnnotations,
     },
     source::Source,
@@ -302,6 +304,7 @@ macro_rules! register_rules {
 register_rules! {
     "collection-layout":         collection_layout:         CollectionLayoutConfig   => CollectionLayout        => "lay out collection literal against the line budget",
     "alphabetize":               alphabetize:               AlphabetizeConfig        => Alphabetize             => "alphabetize this group",
+    "call-layout":               call_layout:               CallLayoutConfig         => CallLayout              => "explode call arguments to one keyword per line",
     "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly               => StripTrailingCommas     => "strip trailing comma",
     "docstring-expand":          docstring_expand:          ToggleOnly               => DocstringExpand         => "expand single-line docstring to multi-line form",
     "docstring-frame":           docstring_frame:           ToggleOnly               => DocstringFrame          => "place docstring opener and closer on their own lines",

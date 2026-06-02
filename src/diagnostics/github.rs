@@ -4,7 +4,7 @@ use std::io::{self, Write};
 
 use ruff_source_file::SourceFile;
 
-use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, line_columns};
+use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, diagnostics, line_columns};
 
 pub(crate) struct Github;
 
@@ -15,10 +15,8 @@ impl Emitter for Github {
         runs: &[Run<'_>],
         _summary: &EmitterSummary,
     ) -> io::Result<()> {
-        for (file, diagnostics) in runs {
-            for diag in *diagnostics {
-                emit_one(writer, file, diag)?;
-            }
+        for (file, diag) in diagnostics(runs) {
+            emit_one(writer, file, diag)?;
         }
         Ok(())
     }

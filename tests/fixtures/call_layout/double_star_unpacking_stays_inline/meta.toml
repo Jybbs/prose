@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "Double-Star Unpacking Blocks the Explode"
+
+description = '''
+A `**` unpacking at the call site cannot be expressed as a keyword argument, so the call stays inline.
+'''

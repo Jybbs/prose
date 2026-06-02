@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/inline_trailing_comma_kept/input.py
+---
+report = render(
+    alpha=1,
+    beta=2,
+    gamma=3,
+    delta=4,
+)

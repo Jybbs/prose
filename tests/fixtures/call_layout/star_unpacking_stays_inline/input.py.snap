@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/star_unpacking_stays_inline/input.py
+---
+def send(body, head, tail, wrap):
+    return (body, head, tail, wrap)
+
+
+send(*parts, extra, more, last)

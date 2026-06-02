@@ -29,8 +29,7 @@ impl DocstringFrame {
 impl Rule for DocstringFrame {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
-            let Some(body) = triple_quoted_body(source, lit).filter(|b| b.text.contains('\n'))
-            else {
+            let Some(body) = triple_quoted_body(source, lit).filter(|b| b.is_multiline()) else {
                 return;
             };
             let leading_ok = body.text.starts_with(['\n', '\r']);
