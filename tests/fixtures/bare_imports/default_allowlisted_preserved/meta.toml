@@ -1,5 +1,4 @@
 [docs]
-canonical   = true
 previewable = true
 title       = "Default-Allowlisted Imports Pass Untouched"
 

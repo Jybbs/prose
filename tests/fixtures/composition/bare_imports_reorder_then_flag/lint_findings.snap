@@ -7,7 +7,7 @@ input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
   {
     "code": "bare-imports",
     "end_location": {
-      "column": 11,
+      "column": 12,
       "row": 1
     },
     "fix": null,
@@ -15,7 +15,7 @@ input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
       "column": 8,
       "row": 1
     },
-    "message": "bare import `sys` outside allowlist. Rewrite as `from sys import ...` listing only the symbols this module uses"
+    "message": "bare import `json` outside allowlist. Rewrite as `from json import ...` listing only the symbols this module uses"
   },
   {
     "code": "bare-imports",
@@ -33,7 +33,7 @@ input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
   {
     "code": "bare-imports",
     "end_location": {
-      "column": 12,
+      "column": 11,
       "row": 3
     },
     "fix": null,
@@ -41,6 +41,6 @@ input_file: tests/fixtures/composition/bare_imports_reorder_then_flag/input.py
       "column": 8,
       "row": 3
     },
-    "message": "bare import `json` outside allowlist. Rewrite as `from json import ...` listing only the symbols this module uses"
+    "message": "bare import `sys` outside allowlist. Rewrite as `from sys import ...` listing only the symbols this module uses"
   }
 ]

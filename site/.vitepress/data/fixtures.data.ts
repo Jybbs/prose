@@ -19,6 +19,7 @@ interface FixtureEntry {
   changesSource    : boolean
   descriptionHtml ?: string
   hasFindings      : boolean
+  hasToggle        : boolean
   inputHtml        : string
   outputHtml       : string
 }
@@ -51,14 +52,17 @@ export default defineLoader({
         fs.readFile(inputPath,           'utf8'),
         fs.readFile(`${inputPath}.snap`, 'utf8')
       ])
-      const output      = matter(snapRaw).content.replace(/\s+$/, '\n')
-      const decorations = lintDecorations(readLintFindings(inputPath))
+      const output        = matter(snapRaw).content.replace(/\s+$/, '\n')
+      const decorations   = lintDecorations(readLintFindings(inputPath))
+      const changesSource = inputRaw !== output
+      const hasFindings   = decorations.length > 0
       return {
         caseName,
         entry: {
-          changesSource   : inputRaw !== output,
+          changesSource,
           descriptionHtml : descriptionHtml(md, inputPath),
-          hasFindings     : decorations.length > 0,
+          hasFindings,
+          hasToggle       : changesSource || hasFindings,
           inputHtml       : renderFencedHtml(md, inputRaw, 'python'),
           outputHtml      : renderFencedHtml(md, output, 'python', decorations)
         },

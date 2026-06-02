@@ -25,6 +25,7 @@ interface CardRow {
   changesSource   : boolean
   descriptionHtml : string | undefined
   dominantFamily  : string | null
+  hasToggle       : boolean
   headlinePaint   : string
   inputHtml       : string
   num             : string
@@ -43,6 +44,7 @@ const cards = computed<readonly CardRow[]>(() =>
       changesSource   : fixture?.changesSource ?? false,
       descriptionHtml : fixture?.descriptionHtml,
       dominantFamily  : families[0] ?? null,
+      hasToggle       : fixture?.hasToggle ?? false,
       headlinePaint   : railPaint(families, 'to right'),
       inputHtml       : fixture?.inputHtml ?? '',
       num             : formatFolio(i + 1, 3),
@@ -115,7 +117,7 @@ function toggle(row: CardRow): void {
             </li>
           </ol>
           <div v-show="activeCase === row.case" class="composition-cards-toggle-slot" @click.stop>
-            <FixtureToggle v-if="row.changesSource" v-model="activeTab" />
+            <FixtureToggle v-if="row.hasToggle" v-model="activeTab" />
             <FixtureNoChange v-else />
           </div>
         </div>

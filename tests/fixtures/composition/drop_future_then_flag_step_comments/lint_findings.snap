@@ -8,12 +8,12 @@ input_file: tests/fixtures/composition/drop_future_then_flag_step_comments/input
     "code": "step-narration",
     "end_location": {
       "column": 25,
-      "row": 5
+      "row": 4
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 5
+      "row": 4
     },
     "message": "numbered-step comment found. Consider extracting each step as a named function"
   },
@@ -21,12 +21,12 @@ input_file: tests/fixtures/composition/drop_future_then_flag_step_comments/input
     "code": "step-narration",
     "end_location": {
       "column": 25,
-      "row": 7
+      "row": 6
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 7
+      "row": 6
     },
     "message": "numbered-step comment found. Consider extracting each step as a named function"
   }

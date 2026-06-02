@@ -115,8 +115,14 @@ function hide(): void {
 
 // Hand the panel to magic-move the instant the side flips, before its
 // deferred render measures, so the morph is never sized while hidden.
-watch(() => props.activeTab, () => {
-  if (panel.value && animate.value && !reducedMotion.value) animating.value = true
+// With no morph to run (a lint-only fixture or reduced motion), draw the
+// squiggles directly so the line lands the same way it does after a morph.
+watch(() => props.activeTab, tab => {
+  if (panel.value && animate.value && !reducedMotion.value) {
+    animating.value = true
+  } else if (tab === 'after') {
+    drawSquiggles()
+  }
 })
 
 const { stop } = useIntersectionObserver(root, ([entry]) => {

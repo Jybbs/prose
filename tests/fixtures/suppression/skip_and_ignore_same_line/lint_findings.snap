@@ -7,7 +7,7 @@ input_file: tests/fixtures/suppression/skip_and_ignore_same_line/input.py
   {
     "code": "loose-constants",
     "end_location": {
-      "column": 19,
+      "column": 20,
       "row": 1
     },
     "fix": null,

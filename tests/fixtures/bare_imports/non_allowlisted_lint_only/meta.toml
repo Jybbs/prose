@@ -1,5 +1,6 @@
 [docs]
-previewable = false
+canonical   = true
+previewable = true
 title       = "A Bare Import Outside the Allowlist Lints"
 
 description = '''
