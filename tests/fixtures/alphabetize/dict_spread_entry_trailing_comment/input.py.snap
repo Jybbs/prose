@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dict_spread_entry_trailing_comment/input.py
+---
+merged = {
+    "alpha": 2,  # first alpha
+    **base,  # spread
+    "zulu": 1,  # last alpha
+}

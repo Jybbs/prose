@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Spread Entry Keeps Its Trailing Comment"
+
+description = '''
+A `**`-unpacked entry pins in source position yet still carries its trailing `#` comment cleanly, with the separator `,` resolved against the value span even though the entry has no key.
+'''
