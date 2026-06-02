@@ -15,8 +15,6 @@ fn assert_cache_hit_matches_miss(name: &str, source: &str) {
         .arg(&path)
         .assert()
         .code(1);
-    let miss_stdout = miss.get_output().stdout.clone();
-
     let hit = prose()
         .args(["check", "--output-format", "json"])
         .arg(&path)
@@ -24,7 +22,7 @@ fn assert_cache_hit_matches_miss(name: &str, source: &str) {
         .assert()
         .code(1);
 
-    assert_eq!(miss_stdout, hit.get_output().stdout.clone());
+    assert_eq!(miss.get_output().stdout, hit.get_output().stdout);
 }
 
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
