@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dict_commented_already_sorted/input.py
+---
+palette = {
+    "amber": "warm",  # sunset
+    "cyan": "cool",  # ocean
+    "magenta": "vivid",  # bloom
+}

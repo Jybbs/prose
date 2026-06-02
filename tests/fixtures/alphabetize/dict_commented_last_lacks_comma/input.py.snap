@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dict_commented_last_lacks_comma/input.py
+---
+versions = {
+    "edge": "2.0",  # bleeding
+    "legacy": "0.9",  # old
+    "stable": "1.0"  # current
+}
