@@ -156,8 +156,10 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases   : ['annotations', 'type annotation', 'type annotations'],
     definition: 'An annotation is a `name: Type` declaration on a function parameter, return '
               + 'value, or variable. Type checkers and version-gated rules like '
-              + '`legacy-union-syntax` and `unused-future-annotations` read it.',
-    families  : ['lint', 'alignment'],
+              + '`legacy-union-syntax` and `unused-future-annotations` read it, and '
+              + '`alphabetize` treats a non-deferred annotation as a reference that pins '
+              + 'definition order.',
+    families  : ['lint', 'alignment', 'ordering'],
     href      : 'https://docs.python.org/3/glossary.html#term-annotation'
   },
 
@@ -316,8 +318,11 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'A forward reference is an annotation that names a class or alias defined '
               + 'later in the file. The `from __future__ import annotations` directive made '
               + 'these safe on older Python runtimes, and `unused-future-annotations` removes '
-              + 'the directive when no annotation needs the forward reference.',
-    families  : ['lint'],
+              + 'the directive when no annotation needs the forward reference. `alphabetize` '
+              + 'never introduces one, holding a class or function behind any sibling it names '
+              + 'at evaluation time so the reorder cannot lift a definition above a name it '
+              + 'depends on.',
+    families  : ['lint', 'ordering'],
     href      : '/rules/unused-future-annotations'
   },
 

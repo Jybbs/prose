@@ -1,0 +1,9 @@
+[docs]
+previewable = false
+title       = "A Decorator Pins the Decorated Function After It"
+
+description = '''
+`dispatch` is decorated with `@register`, applied at definition time, so the
+sort holds `register` ahead of `dispatch` rather than calling the decorator
+before it exists.
+'''

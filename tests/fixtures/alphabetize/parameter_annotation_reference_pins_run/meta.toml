@@ -1,0 +1,9 @@
+[docs]
+previewable = false
+title       = "A Parameter Annotation Pins the Annotated Class After Its Type"
+
+description = '''
+`Loader.load` annotates a parameter as `Record`, evaluated when the method is
+defined, so the sort holds `Record` ahead of `Loader` and the reorder stays
+import-safe.
+'''

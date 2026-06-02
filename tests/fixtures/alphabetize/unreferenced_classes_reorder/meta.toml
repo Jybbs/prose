@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "Classes With No Cross-Reference Still Sort"
+
+description = '''
+Neither class names the other, so the run collapses to a single tier and sorts
+by name exactly as before, moving `Alpha` ahead of `Beta`.
+'''

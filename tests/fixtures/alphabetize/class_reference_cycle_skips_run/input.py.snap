@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/class_reference_cycle_skips_run/input.py
+---
+class Alpha(Beta):
+    pass
+
+
+class Beta(Alpha):
+    pass

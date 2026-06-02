@@ -2,7 +2,10 @@
 //! bare → external `from` → local-package. First-party detection
 //! reads the package-name list from `[tool.prose.imports]`.
 
-use ruff_python_ast::Stmt;
+use ruff_python_ast::{Stmt, StmtImportFrom};
+
+const FUTURE_ANNOTATIONS: &str = "annotations";
+const FUTURE_MODULE: &str = "__future__";
 
 /// Canonical import group. Derived `Ord` ranks the variants in
 /// declaration order, so a sort by group lands bare imports first,
@@ -12,6 +15,18 @@ pub(crate) enum ImportGroup {
     Bare,
     ExternalFrom,
     Local,
+}
+
+/// Returns the position of the `annotations` alias in a
+/// `from __future__ import …` statement, or `None` for any other
+/// import.
+pub(crate) fn future_annotations_alias(node: &StmtImportFrom) -> Option<usize> {
+    if node.level != 0 || node.module.as_deref() != Some(FUTURE_MODULE) {
+        return None;
+    }
+    node.names
+        .iter()
+        .position(|alias| alias.name.id == FUTURE_ANNOTATIONS)
 }
 
 /// Returns the canonical group of an `import` or `from`-import

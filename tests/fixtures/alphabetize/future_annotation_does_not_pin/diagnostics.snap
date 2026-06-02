@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/future_annotation_does_not_pin/input.py
+---
+alphabetize@43..110
