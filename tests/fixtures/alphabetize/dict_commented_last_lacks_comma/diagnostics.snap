@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/dict_commented_last_lacks_comma/input.py
+---
+alphabetize@18..102

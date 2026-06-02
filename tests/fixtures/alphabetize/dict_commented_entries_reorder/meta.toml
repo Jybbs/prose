@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Trailing Comments Travel with Their Entries"
+
+description = '''
+Reordering a multi-line dict keeps every entry's trailing `#` comment, with the separator `,` placed after the value and before the comment. Values carrying their own `#`, such as hex color strings, **stay intact** because the comma resolves against the value span rather than a raw `#` scan.
+'''

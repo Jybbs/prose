@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dict_commented_entries_reorder/input.py
+---
+theme = {
+    "accent": "#ff8800",  # warm orange
+    "background": "#000",  # pure black
+    "ruler": "#888",  # subtle gray
+}
