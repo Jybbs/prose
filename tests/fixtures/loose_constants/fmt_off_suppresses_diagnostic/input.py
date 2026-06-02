@@ -1,3 +1,4 @@
 # fmt: off
-PI = 3.14
+RETRIES = 3
+RETRIES = 5
 # fmt: on

@@ -3,4 +3,5 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/loose_constants/prose_ignore_drops_diagnostic/input.py
 ---
-PI = 3.14  # prose: ignore[loose-constants]
+RETRIES = 3  # prose: ignore[loose-constants]
+RETRIES += 1

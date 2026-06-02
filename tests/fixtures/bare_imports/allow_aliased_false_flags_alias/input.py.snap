@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/allow_aliased_false_flags_alias/input.py
+---
+import os as o
+
+o.getcwd()

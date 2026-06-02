@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Already-Conforming Imports Surface Nothing"
+title       = "Lint Diagnostics Never Rewrite the Source"
 
 description = '''
-A mix of flagged and preserved imports passes through **byte-for-byte unchanged** across every run. The rule emits diagnostics only and never an edit, so its output is always identical to its input.
+A mix of a flagged single-use `os`, a broadly-used `torch`, and an aliased `json` passes through **byte-for-byte unchanged** across every run. The rule emits diagnostics only and never an edit.
 '''

@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/loose_constants/write_once_constant_passes/input.py
+---
+PI          = 3.14
+MAX_RETRIES = 5

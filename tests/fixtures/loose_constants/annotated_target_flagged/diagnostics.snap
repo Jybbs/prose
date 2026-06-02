@@ -3,5 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/loose_constants/annotated_target_flagged/input.py
 ---
-loose-constants@0..6
-loose-constants@7..17
+loose-constants@0..10
+loose-constants@11..22
+loose-constants@23..35
+loose-constants@36..43

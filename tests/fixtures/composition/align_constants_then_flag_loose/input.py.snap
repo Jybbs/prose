@@ -1,6 +1,5 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/align_constants_then_flag_loose/input.py
 ---
@@ -8,3 +7,4 @@ DEFAULT_TIMEOUT    = 30
 MAX_RETRIES        = 3
 WINDOW_NAME_PREFIX = "session"
 RATE_LIMIT         = 100
+RATE_LIMIT         = 200

@@ -1,3 +1,4 @@
-LOG_LEVEL       = "INFO"
-DEFAULT_TIMEOUT = 30
-OTHER           = 1
+LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG"
+CACHE_DIR = "/tmp"
+CACHE_DIR = "/var"

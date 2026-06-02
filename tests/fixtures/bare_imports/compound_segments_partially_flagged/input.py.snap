@@ -3,4 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/bare_imports/compound_segments_partially_flagged/input.py
 ---
-import os, sys, numpy
+import os, sys, torch
+
+torch.tensor(torch.zeros(3))

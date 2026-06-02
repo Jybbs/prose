@@ -3,5 +3,7 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/loose_constants/annotated_target_flagged/input.py
 ---
-X: int
-Y: int = 1
+FLAG: bool
+FLAG = True
+MAX: int = 1
+MAX = 2

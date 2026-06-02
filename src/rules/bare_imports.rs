@@ -1,5 +1,7 @@
-//! Flags every `import X` whose top-level segment is not in the
-//! configured allowlist. Lint-only, emits no edits.
+//! Flags a bare `import X` the author did not alias whose namespace is
+//! read at most once. An aliased bare import passes while `allow-aliased`
+//! holds, and a top-level segment on the `allow` list keeps its bare
+//! form. Lint-only, emits no edits.
 
 use std::collections::HashSet;
 
@@ -11,19 +13,21 @@ use ruff_python_ast::{
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::binding::top_level_module,
+    primitives::binding::{BindingAnalysis, top_level_module},
     rule::{Rule, RuleId},
     source::Source,
 };
 
 pub(crate) struct BareImports {
     allow: HashSet<String>,
+    allow_aliased: bool,
 }
 
 impl BareImports {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             allow: config.rules.bare_imports.allow.iter().cloned().collect(),
+            allow_aliased: config.rules.bare_imports.allow_aliased,
         }
     }
 }
@@ -36,6 +40,8 @@ impl Rule for BareImports {
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
         let mut visitor = Visitor {
             allow: &self.allow,
+            allow_aliased: self.allow_aliased,
+            analysis: source.binding_analysis(),
             diagnostics: Vec::new(),
             rule: self.id(),
         };
@@ -46,6 +52,8 @@ impl Rule for BareImports {
 
 struct Visitor<'a> {
     allow: &'a HashSet<String>,
+    allow_aliased: bool,
+    analysis: &'a BindingAnalysis,
     diagnostics: Vec<Diagnostic>,
     rule: RuleId,
 }
@@ -54,13 +62,21 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         if let Stmt::Import(import) = stmt {
             for alias in &import.names {
+                if alias.asname.is_some() && self.allow_aliased {
+                    continue;
+                }
                 let name = alias.name.as_str();
-                if !self.allow.contains(top_level_module(name)) {
+                let top = top_level_module(name);
+                if self.allow.contains(top) {
+                    continue;
+                }
+                let bound = alias.asname.as_ref().map_or(top, |id| id.as_str());
+                if self.analysis.module_read_count(bound) <= 1 {
                     self.diagnostics.push(Diagnostic::lint(
                         self.rule,
                         alias.name.range,
                         format!(
-                            "bare import `{name}` outside allowlist. Rewrite as `from {name} import ...` listing only the symbols this module uses",
+                            "bare import `{name}` is read at most once. Rewrite as `from {name} import ...` listing only the symbols this module uses",
                         ),
                     ));
                 }

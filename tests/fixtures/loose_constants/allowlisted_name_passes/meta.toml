@@ -3,5 +3,5 @@ previewable = true
 title       = "Names on the Configured Allow List Stay Quiet"
 
 description = '''
-Any name listed in `[tool.prose.rules.loose-constants].allow` **passes through silently**, so project conventions like `LOG_LEVEL` and `DEFAULT_TIMEOUT` publish at the module root while an unlisted `OTHER` still draws the diagnostic.
+A name listed in `[tool.prose.rules.loose-constants].allow` **passes through silently even when reassigned**, so a blessed `LOG_LEVEL` publishes at the module root where an unlisted `CACHE_DIR` reassignment still draws the diagnostic.
 '''

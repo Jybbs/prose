@@ -80,13 +80,15 @@ impl Default for AlphabetizeConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct BareImportsConfig {
     pub allow: Vec<String>,
+    pub allow_aliased: bool,
     pub enabled: bool,
 }
 
 impl Default for BareImportsConfig {
     fn default() -> Self {
         Self {
-            allow: vec!["numpy".to_owned(), "pandas".to_owned()],
+            allow: Vec::new(),
+            allow_aliased: true,
             enabled: true,
         }
     }

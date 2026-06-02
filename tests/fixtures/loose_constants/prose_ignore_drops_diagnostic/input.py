@@ -1,1 +1,2 @@
-PI = 3.14  # prose: ignore[loose-constants]
+RETRIES = 3  # prose: ignore[loose-constants]
+RETRIES += 1

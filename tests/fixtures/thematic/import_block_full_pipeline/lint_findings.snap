@@ -7,19 +7,6 @@ input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
   {
     "code": "bare-imports",
     "end_location": {
-      "column": 17,
-      "row": 1
-    },
-    "fix": null,
-    "location": {
-      "column": 8,
-      "row": 1
-    },
-    "message": "bare import `functools` outside allowlist. Rewrite as `from functools import ...` listing only the symbols this module uses"
-  },
-  {
-    "code": "bare-imports",
-    "end_location": {
       "column": 6,
       "row": 3
     },
@@ -28,7 +15,7 @@ input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
       "column": 4,
       "row": 3
     },
-    "message": "bare import `os` outside allowlist. Rewrite as `from os import ...` listing only the symbols this module uses"
+    "message": "bare import `os` is read at most once. Rewrite as `from os import ...` listing only the symbols this module uses"
   },
   {
     "code": "bare-imports",
@@ -41,6 +28,6 @@ input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
       "column": 4,
       "row": 4
     },
-    "message": "bare import `requests` outside allowlist. Rewrite as `from requests import ...` listing only the symbols this module uses"
+    "message": "bare import `requests` is read at most once. Rewrite as `from requests import ...` listing only the symbols this module uses"
   }
 ]
