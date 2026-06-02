@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/base_class_reference_pins_run/input.py
+---
+class Beta:
+    pass
+
+
+class Alpha(Beta):
+    pass

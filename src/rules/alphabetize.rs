@@ -32,7 +32,7 @@ use ruff_python_ast::{
     Identifier, ParameterWithDefault, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtDelete,
     StmtFunctionDef,
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
-    visitor::{Visitor as AstVisitor, walk_expr, walk_stmt},
+    visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
@@ -43,7 +43,7 @@ use crate::{
         call_keywords::{keyword_args, module_call_params, pins_positional_params},
         docstring::{entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
-        imports::{ImportGroup, import_group},
+        imports::{ImportGroup, future_annotations_alias, import_group},
         orderer::{
             assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
         },
@@ -86,6 +86,7 @@ impl Rule for Alphabetize {
             BodyScope::Module,
             &leaf_edits,
             &self.first_party,
+            defers_annotations(body),
         );
         let edits = match body_text {
             Cow::Borrowed(_) => leaf_edits,
@@ -98,6 +99,58 @@ impl Rule for Alphabetize {
 
     fn id(&self) -> RuleId {
         Self::SLUG
+    }
+}
+
+/// Collects every `Name` load in a definition's evaluation-time
+/// surface: its decorators, base classes and class keywords, parameter
+/// defaults, non-deferred annotations, and the top level of a class
+/// body, descending into nested definitions but pruning every function
+/// and lambda body. Annotation positions are skipped when
+/// `defer_annotations` holds.
+struct EvalRefVisitor<'src> {
+    defer_annotations: bool,
+    names: Vec<&'src str>,
+}
+
+impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
+    fn visit_annotation(&mut self, annotation: &'src Expr) {
+        if !self.defer_annotations {
+            self.visit_expr(annotation);
+        }
+    }
+
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        match expr {
+            Expr::Lambda(lambda) => {
+                if let Some(params) = lambda.parameters.as_deref() {
+                    walk_parameters(self, params);
+                }
+            }
+            Expr::Name(name) if name.ctx.is_load() => self.names.push(name.id.as_str()),
+            _ => walk_expr(self, expr),
+        }
+    }
+
+    fn visit_stmt(&mut self, stmt: &'src Stmt) {
+        match stmt {
+            Stmt::AnnAssign(ann) => {
+                self.visit_annotation(&ann.annotation);
+                if let Some(value) = &ann.value {
+                    self.visit_expr(value);
+                }
+            }
+            Stmt::FunctionDef(func) => {
+                for decorator in &func.decorator_list {
+                    self.visit_expr(&decorator.expression);
+                }
+                walk_parameters(self, &func.parameters);
+                if let Some(returns) = &func.returns {
+                    self.visit_annotation(returns);
+                }
+            }
+            _ => walk_stmt(self, stmt),
+        }
     }
 }
 
@@ -517,6 +570,60 @@ fn decorator_simple_name(decorator: &Decorator) -> Option<&str> {
     }
 }
 
+/// Returns a per-member `(tier, key)` lookup keyed by each definition's
+/// start offset, or `None` when the run cannot reorder. The run skips
+/// when two members share a name or when the intra-run reference graph
+/// carries a cycle. A member depends on every other sibling it names in
+/// its evaluation-time surface, and the composite `(tier, key)` combines
+/// a Kahn-style topological tier with the member's existing sort key, so
+/// a definition never sorts ahead of a sibling it names at evaluation
+/// time.
+fn def_run_tier_keys<'src, K: Copy>(
+    body: &'src [Stmt],
+    defer_annotations: bool,
+    member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,
+) -> Option<HashMap<TextSize, (usize, K)>> {
+    let members: Vec<(&'src Stmt, &'src str, K)> = body
+        .iter()
+        .filter_map(|stmt| member(stmt).map(|(name, key)| (stmt, name, key)))
+        .collect();
+    let name_to_idx = unique_name_index(members.iter().map(|&(_, name, _)| name))?;
+    let dep_sets: Vec<HashSet<usize>> = members
+        .iter()
+        .enumerate()
+        .map(|(idx, &(stmt, _, _))| {
+            let mut visitor = EvalRefVisitor {
+                defer_annotations,
+                names: Vec::new(),
+            };
+            visitor.visit_stmt(stmt);
+            visitor
+                .names
+                .iter()
+                .filter_map(|name| name_to_idx.get(name).copied())
+                // A recursive self-reference does not constrain sibling order.
+                .filter(|&dep| dep != idx)
+                .collect()
+        })
+        .collect();
+    let tiers = tier_levels(&dep_sets)?;
+    Some(
+        members
+            .iter()
+            .zip(tiers)
+            .map(|(&(stmt, _, key), tier)| (stmt.range().start(), (tier, key)))
+            .collect(),
+    )
+}
+
+/// True when the module carries `from __future__ import annotations`,
+/// deferring every annotation's evaluation per PEP 563.
+fn defers_annotations(body: &[Stmt]) -> bool {
+    body.iter()
+        .filter_map(Stmt::as_import_from_stmt)
+        .any(|node| future_annotations_alias(node).is_some())
+}
+
 /// Composite dict-item sort key. `**unpacked` items return `None` and
 /// pin in source position. Keyed items sort single-line entries before
 /// multi-line entries and alphabetize within each partition by the
@@ -638,12 +745,7 @@ fn module_assign_tier_keys<'src>(
     }
     let extracted: Vec<(&'src str, Option<&'src Expr>)> =
         run.iter().map(assign_run_target).collect::<Option<_>>()?;
-    let mut target_to_idx: HashMap<&str, usize> = HashMap::with_capacity(extracted.len());
-    for (i, &(name, _)) in extracted.iter().enumerate() {
-        if target_to_idx.insert(name, i).is_some() {
-            return None;
-        }
-    }
+    let target_to_idx = unique_name_index(extracted.iter().map(|&(name, _)| name))?;
     let analysis = source.binding_analysis();
     let run_start = first.range().start();
     let dep_sets: Vec<HashSet<usize>> = extracted
@@ -695,6 +797,19 @@ fn partition_divider_slots(source: &Source, order: &[usize], items: &[DictItem])
         .collect()
 }
 
+/// Tiers the definition run selected by `member` and permutes `order`
+/// by `(tier, key)`, leaving `order` untouched when the run declines.
+fn permute_defs<'src, K: Copy + Ord>(
+    order: &mut [usize],
+    body: &'src [Stmt],
+    defer_annotations: bool,
+    member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,
+) {
+    if let Some(keys) = def_run_tier_keys(body, defer_annotations, member) {
+        permute_full(order, body, |s| keys.get(&s.range().start()).copied());
+    }
+}
+
 /// Rewrites a non-empty body, returning the rewritten text alongside
 /// the block-extent span it covers. The text is `Cow::Owned` when any
 /// sibling reorder fires, any descendant rewrite produces owned
@@ -708,6 +823,7 @@ fn rewrite_body<'src>(
     scope: BodyScope,
     leaf_edits: &[Edit],
     first_party: &[String],
+    defer_annotations: bool,
 ) -> (Cow<'src, str>, TextRange) {
     let (blocks, rendered): (Vec<TextRange>, Vec<Cow<'src, str>>) = body
         .iter()
@@ -716,7 +832,15 @@ fn rewrite_body<'src>(
             let block = block_range(source, body, i, outer);
             (
                 block,
-                rewrite_stmt(source, stmt, block, scope, leaf_edits, first_party),
+                rewrite_stmt(
+                    source,
+                    stmt,
+                    block,
+                    scope,
+                    leaf_edits,
+                    first_party,
+                    defer_annotations,
+                ),
             )
         })
         .unzip();
@@ -725,8 +849,11 @@ fn rewrite_body<'src>(
     let mut order: Vec<usize> = (0..n).collect();
     let in_class = scope == BodyScope::Class;
     if scope != BodyScope::Function {
-        permute_full(&mut order, body, |s| {
-            s.as_class_def_stmt().map(|c| c.name.as_str())
+        permute_defs(&mut order, body, defer_annotations, |s| {
+            s.as_class_def_stmt().map(|c| {
+                let name = c.name.as_str();
+                (name, name)
+            })
         });
         if in_class {
             permute_full(&mut order, body, |s| {
@@ -735,9 +862,11 @@ fn rewrite_body<'src>(
             permute_full(&mut order, body, simple_name_assign);
         }
         if !(in_class && class_pins_methods(body)) {
-            permute_full(&mut order, body, |s| {
-                s.as_function_def_stmt()
-                    .map(|f| (method_group(f), f.name.as_str()))
+            permute_defs(&mut order, body, defer_annotations, |s| {
+                s.as_function_def_stmt().map(|f| {
+                    let name = f.name.as_str();
+                    (name, (method_group(f), name))
+                })
             });
         }
     }
@@ -783,11 +912,22 @@ fn rewrite_compound<'src>(
     scope: BodyScope,
     leaf_edits: &[Edit],
     first_party: &[String],
+    defer_annotations: bool,
 ) -> Cow<'src, str> {
     let bodies = compound_sub_bodies(stmt)
         .into_iter()
         .filter(|(body, _)| !body.is_empty())
-        .map(|(body, outer)| rewrite_body(source, body, outer, scope, leaf_edits, first_party));
+        .map(|(body, outer)| {
+            rewrite_body(
+                source,
+                body,
+                outer,
+                scope,
+                leaf_edits,
+                first_party,
+                defer_annotations,
+            )
+        });
     splice_bodies(source, block, bodies, leaf_edits)
 }
 
@@ -873,20 +1013,36 @@ fn rewrite_stmt<'src>(
     parent_scope: BodyScope,
     leaf_edits: &[Edit],
     first_party: &[String],
+    defer_annotations: bool,
 ) -> Cow<'src, str> {
     let (body, body_outer, scope): (&[Stmt], TextRange, BodyScope) = match stmt {
         Stmt::ClassDef(c) => (&c.body, c.range(), BodyScope::Class),
         Stmt::FunctionDef(f) => (&f.body, f.range(), BodyScope::Function),
         s if is_compound_statement(s) => {
-            return rewrite_compound(source, stmt, block, parent_scope, leaf_edits, first_party);
+            return rewrite_compound(
+                source,
+                stmt,
+                block,
+                parent_scope,
+                leaf_edits,
+                first_party,
+                defer_annotations,
+            );
         }
         _ => return apply_inline_edits(source, block, leaf_edits),
     };
     if body.is_empty() {
         return apply_inline_edits(source, block, leaf_edits);
     }
-    let (body_text, body_span) =
-        rewrite_body(source, body, body_outer, scope, leaf_edits, first_party);
+    let (body_text, body_span) = rewrite_body(
+        source,
+        body,
+        body_outer,
+        scope,
+        leaf_edits,
+        first_party,
+        defer_annotations,
+    );
     splice_bodies(source, block, [(body_text, body_span)], leaf_edits)
 }
 
@@ -993,6 +1149,19 @@ fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
     tiers.into_iter().collect()
 }
 
+/// Indexes each name to its position, or `None` when a name repeats. A
+/// duplicate makes an intra-run reference ambiguous, so the caller
+/// declines the reorder.
+fn unique_name_index<'a>(names: impl Iterator<Item = &'a str>) -> Option<HashMap<&'a str, usize>> {
+    let mut index = HashMap::new();
+    for (position, name) in names.enumerate() {
+        if index.insert(name, position).is_some() {
+            return None;
+        }
+    }
+    Some(index)
+}
+
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
@@ -1001,6 +1170,13 @@ mod tests {
 
     use super::*;
     use crate::test_support::parse;
+
+    fn class_member(stmt: &Stmt) -> Option<(&str, &str)> {
+        stmt.as_class_def_stmt().map(|class| {
+            let name = class.name.as_str();
+            (name, name)
+        })
+    }
 
     #[test]
     fn ann_assign_with_named_field_filters_to_name_targets() {
@@ -1128,6 +1304,99 @@ mod tests {
         let f = s.ast().body[0].as_function_def_stmt().expect("def");
         let decorator = f.decorator_list.first().expect("one decorator");
         assert_eq!(decorator_simple_name(decorator), None);
+    }
+
+    #[test]
+    fn def_run_tier_keys_declines_a_duplicate_member_name() {
+        let source = parse("class Dup:\n    pass\n\n\nclass Dup:\n    pass\n");
+        assert!(def_run_tier_keys(&source.ast().body, false, class_member).is_none());
+    }
+
+    #[test]
+    fn def_run_tier_keys_declines_a_reference_cycle() {
+        let source = parse("class Alpha(Beta):\n    pass\n\n\nclass Beta(Alpha):\n    pass\n");
+        assert!(def_run_tier_keys(&source.ast().body, false, class_member).is_none());
+    }
+
+    #[test]
+    fn def_run_tier_keys_excludes_a_recursive_self_reference() {
+        let source = parse("class Node:\n    def child(self) -> Node: ...\n");
+        let body = &source.ast().body;
+        let keys =
+            def_run_tier_keys(body, false, class_member).expect("self-reference does not decline");
+        assert_eq!(keys[&body[0].range().start()].0, 0);
+    }
+
+    #[test]
+    fn def_run_tier_keys_tiers_a_backward_base_class_reference() {
+        let source = parse("class Beta:\n    pass\n\n\nclass Alpha(Beta):\n    pass\n");
+        let body = &source.ast().body;
+        let keys = def_run_tier_keys(body, false, class_member).expect("acyclic run tiers");
+        let tier = |i: usize| keys[&body[i].range().start()].0;
+        assert_eq!(tier(0), 0, "Beta has no dependency");
+        assert_eq!(tier(1), 1, "Alpha depends on Beta");
+    }
+
+    #[rstest]
+    #[case("from __future__ import annotations\n", true)]
+    #[case("from __future__ import annotations, division\n", true)]
+    #[case("from __future__ import division\n", false)]
+    #[case("from other import annotations\n", false)]
+    #[case("import __future__\n", false)]
+    #[case("x = 1\n", false)]
+    fn defers_annotations_detects_the_future_import(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        assert_eq!(defers_annotations(&source.ast().body), expected);
+    }
+
+    #[test]
+    fn eval_ref_visitor_collects_eval_surface_and_skips_bodies() {
+        let source = parse(indoc! {"
+            class Probe(BaseRef):
+                field: AnnotRef
+
+                def method(self, p: ParamRef = DefaultRef) -> ReturnRef:
+                    return BodyRef
+        "});
+        let mut visitor = EvalRefVisitor {
+            defer_annotations: false,
+            names: Vec::new(),
+        };
+        visitor.visit_stmt(&source.ast().body[0]);
+        let collected: HashSet<&str> = visitor.names.iter().copied().collect();
+        assert_eq!(
+            collected,
+            HashSet::from(["AnnotRef", "BaseRef", "DefaultRef", "ParamRef", "ReturnRef"]),
+        );
+    }
+
+    #[test]
+    fn eval_ref_visitor_prunes_a_lambda_body() {
+        let source = parse("class Probe:\n    factory = lambda seed=SeedRef: BodyRef\n");
+        let mut visitor = EvalRefVisitor {
+            defer_annotations: false,
+            names: Vec::new(),
+        };
+        visitor.visit_stmt(&source.ast().body[0]);
+        let collected: HashSet<&str> = visitor.names.iter().copied().collect();
+        assert_eq!(collected, HashSet::from(["SeedRef"]));
+    }
+
+    #[test]
+    fn eval_ref_visitor_skips_annotations_when_deferred() {
+        let source = parse(indoc! {"
+            class Probe(BaseRef):
+                field: AnnotRef
+
+                def method(self, p: ParamRef = DefaultRef) -> ReturnRef: ...
+        "});
+        let mut visitor = EvalRefVisitor {
+            defer_annotations: true,
+            names: Vec::new(),
+        };
+        visitor.visit_stmt(&source.ast().body[0]);
+        let collected: HashSet<&str> = visitor.names.iter().copied().collect();
+        assert_eq!(collected, HashSet::from(["BaseRef", "DefaultRef"]));
     }
 
     #[test]

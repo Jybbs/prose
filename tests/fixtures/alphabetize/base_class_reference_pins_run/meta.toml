@@ -1,0 +1,9 @@
+[docs]
+previewable = true
+title       = "A Base Class Pins Its Subclass After It"
+
+description = '''
+`Alpha` names `Beta` as a base class, so the alphabetical sort holds `Beta`
+ahead of `Alpha` instead of moving the subclass above the name it inherits,
+leaving the module import-safe.
+'''

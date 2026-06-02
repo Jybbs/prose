@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/parameter_annotation_reference_pins_run/input.py
+---
+class Record:
+    pass
+
+
+class Loader:
+    def load(self, item: Record) -> None: ...

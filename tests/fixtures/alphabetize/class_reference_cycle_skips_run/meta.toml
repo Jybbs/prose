@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Reference Cycle Skips the Whole Run"
+
+description = '''
+When the intra-run reference graph carries a cycle, **the run skips entirely**. `Alpha` names `Beta` as a base class and `Beta` names `Alpha`, so no topological tier exists and source order survives.
+'''

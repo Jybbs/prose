@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/function_body_reference_does_not_pin/input.py
+---
+class Alpha:
+    def run(self):
+        return Beta()
+
+
+class Beta:
+    pass
