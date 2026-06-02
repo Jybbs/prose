@@ -3,7 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/two_blocks_stay_separate/input.py
 ---
-align-equals@15..22
+align-equals@1..10
 align-equals@177..186
 align-equals@91..99
 alphabetize@0..25

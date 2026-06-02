@@ -3,8 +3,8 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/dataclass_fields_and_docstring_reshape/input.py
 ---
-align-colons@77..179
-align-equals@87..202
+align-colons@74..186
+align-equals@79..192
 alphabetize@69..195
 blank-lines@196..197
 blank-lines@64..65

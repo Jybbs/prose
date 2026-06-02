@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/skip_one_rule_others_compose/input.py
 ---
-align-equals@5..48
+align-equals@5..50
 strip-trailing-commas@17..18
 strip-trailing-commas@43..44

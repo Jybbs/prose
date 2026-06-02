@@ -7,7 +7,7 @@ input_file: tests/fixtures/suppression/ignore_suppresses_one_lint_line/input.py
   {
     "code": "loose-constants",
     "end_location": {
-      "column": 20,
+      "column": 19,
       "row": 1
     },
     "fix": null,

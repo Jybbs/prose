@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/arm_lists_expand_force_wrapped_bodies/input.py
 ---
-align-match-case@373..386
+align-match-case@297..310
 collection-layout@210..280
 collection-layout@78..167

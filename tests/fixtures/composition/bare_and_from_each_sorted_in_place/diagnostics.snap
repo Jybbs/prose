@@ -3,7 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/bare_and_from_each_sorted_in_place/input.py
 ---
-align-imports@108..109
-align-imports@38..61
+align-imports@15..36
+align-imports@98..99
 alphabetize@7..142
 blank-lines@67..68

@@ -31,7 +31,6 @@ enum FileOutcome {
         diagnostics: Vec<Diagnostic>,
         file: SourceFile,
         formatted_text: Option<String>,
-        original_text: String,
     },
     Failed(ExitStatus),
 }
@@ -227,14 +226,13 @@ fn format_paths_diff<O: Write, E: Write>(
         if let FileOutcome::Done {
             file,
             formatted_text: Some(formatted),
-            original_text,
             ..
         } = outcome
         {
             write_diff(
                 stdout,
                 file.name(),
-                original_text,
+                file.source_text(),
                 formatted,
                 present.decorate_diff(),
             )?;
@@ -288,7 +286,6 @@ fn format_stdin<R: Read, O: Write, E: Write>(
     if let FileOutcome::Done {
         file,
         formatted_text,
-        original_text,
         ..
     } = &outcome
     {
@@ -297,7 +294,7 @@ fn format_stdin<R: Read, O: Write, E: Write>(
                 write_diff(
                     writer,
                     "<stdin>",
-                    original_text,
+                    file.source_text(),
                     formatted,
                     present.decorate_diff(),
                 )?;
@@ -407,18 +404,12 @@ fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline) -> FileOutcome {
 
 fn rehydrate(path: &Path, original_bytes: &[u8], entry: CacheEntry) -> Option<FileOutcome> {
     let original_text = std::str::from_utf8(original_bytes).ok()?.to_owned();
-    let display_text = entry
-        .formatted_source
-        .as_deref()
-        .unwrap_or(&original_text)
-        .to_owned();
-    let file = SourceFileBuilder::new(path.display().to_string(), display_text).finish();
+    let file = SourceFileBuilder::new(path.display().to_string(), original_text).finish();
     Some(FileOutcome::Done {
         cached: true,
         diagnostics: entry.diagnostics,
         file,
         formatted_text: entry.formatted_source,
-        original_text,
     })
 }
 
@@ -450,18 +441,20 @@ fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, write
     );
 }
 
+/// Collects diagnostics from `diagnose`, anchored to the source as
+/// written, and the rewritten text from `run`.
 fn run_pipeline(source: Source, pipeline: &Pipeline) -> FileOutcome {
-    let original_text = source.text().to_owned();
+    let diagnostics = pipeline.diagnose(&source);
+    let file = source.source_file().clone();
     match pipeline.run(source) {
-        Ok((formatted, diagnostics)) => {
+        Ok((formatted, _)) => {
             let formatted_text =
-                (formatted.text() != original_text).then(|| formatted.text().to_owned());
+                (formatted.text() != file.source_text()).then(|| formatted.text().to_owned());
             FileOutcome::Done {
                 cached: false,
                 diagnostics,
-                file: formatted.source_file().clone(),
+                file,
                 formatted_text,
-                original_text,
             }
         }
         Err(e) => {
@@ -607,13 +600,11 @@ mod tests {
     }
 
     fn outcome_with(source: Source, diagnostics: Vec<Diagnostic>) -> FileOutcome {
-        let original_text = source.text().to_owned();
         FileOutcome::Done {
             cached: false,
             diagnostics,
             file: source.source_file().clone(),
             formatted_text: None,
-            original_text,
         }
     }
 

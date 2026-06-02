@@ -3,14 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/deep_nested_dict_per_level/input.py
 ---
-align-colons@1006..1124
-align-colons@208..263
-align-colons@22..91
-align-colons@321..437
-align-colons@513..591
-align-colons@675..731
-align-colons@842..862
-align-colons@914..943
-alphabetize@16..1123
+alphabetize@11..688
 collection-layout@10..688
-loose-constants@0..1232
+loose-constants@0..689

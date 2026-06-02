@@ -3,8 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/overflow_dict_expands_one_per_line/input.py
 ---
-align-colons@204..302
-align-colons@24..155
-alphabetize@16..306
+alphabetize@11..245
 collection-layout@10..245
-loose-constants@0..344
+loose-constants@0..246

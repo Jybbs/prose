@@ -4,7 +4,7 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/align_constants_then_flag_loose/input.py
 ---
 align-equals@15..79
-loose-constants@0..23
-loose-constants@24..46
-loose-constants@47..77
-loose-constants@78..102
+loose-constants@0..20
+loose-constants@21..36
+loose-constants@37..67
+loose-constants@68..84

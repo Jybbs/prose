@@ -7,6 +7,26 @@ use assert_cmd::Command;
 use rstest::rstest;
 use tempfile::{TempDir, tempdir};
 
+fn assert_cache_hit_matches_miss(name: &str, source: &str) {
+    let (_dir, path) = fixture(name, source);
+    let (mut miss_cmd, cache_dir) = prose_isolated();
+    let miss = miss_cmd
+        .args(["check", "--output-format", "json"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let miss_stdout = miss.get_output().stdout.clone();
+
+    let hit = prose()
+        .args(["check", "--output-format", "json"])
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .code(1);
+
+    assert_eq!(miss_stdout, hit.get_output().stdout.clone());
+}
+
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
     let dir = tempdir().expect("tempdir");
     let path = dir.path().join(name);
@@ -54,24 +74,12 @@ fn cache_compact_subcommand_exits_zero_and_reports_count() {
 
 #[test]
 fn cache_hit_produces_identical_diagnostics_to_miss() {
-    let (_dir, path) = fixture("ab.py", "ab = 1\nx = 2\n");
-    let (mut miss_cmd, cache_dir) = prose_isolated();
-    let miss = miss_cmd
-        .args(["check", "--output-format", "json"])
-        .arg(&path)
-        .assert()
-        .code(1);
-    let miss_stdout = miss.get_output().stdout.clone();
+    assert_cache_hit_matches_miss("ab.py", "ab = 1\nx = 2\n");
+}
 
-    let hit = prose()
-        .args(["check", "--output-format", "json"])
-        .arg(&path)
-        .env("PROSE_CACHE_DIR", cache_dir.path())
-        .assert()
-        .code(1);
-    let hit_stdout = hit.get_output().stdout.clone();
-
-    assert_eq!(miss_stdout, hit_stdout);
+#[test]
+fn cache_hit_renders_collapsing_literal_like_a_cold_run() {
+    assert_cache_hit_matches_miss("collapse.py", "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n");
 }
 
 #[test]
@@ -340,6 +348,28 @@ fn config_errors_exit_four(#[case] args: &[&str]) {
     prose().args(args).assert().code(4);
 }
 
+/// Each input drives a rule that net-shrinks the buffer (`collection-layout`
+/// collapsing or re-laying-out a literal), the shape that overran the
+/// rewritten buffer before reporting anchored to the source as written. A
+/// panic in the binary would surface as exit code 101, not the format-change 1.
+#[rstest]
+#[case::two_entry_dict("d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n")]
+#[case::three_entry_list("xs = [\n    1,\n    2,\n    3,\n]\n")]
+#[case::noncollapsible_call_dict(
+    "config = {\n        \"alpha\": build_widget(first_argument, second_argument, third_argument),\n        \"beta\": build_gadget(fourth_argument, fifth_argument, sixth_argument),\n}\n"
+)]
+fn emitters_render_shrinking_literals_without_aborting(
+    #[case] source: &str,
+    #[values("text", "json")] format: &str,
+) {
+    let (_dir, path) = fixture("literal.py", source);
+    let (mut cmd, _cache_dir) = prose_isolated();
+    cmd.args(["check", "--output-format", format])
+        .arg(&path)
+        .assert()
+        .code(1);
+}
+
 #[test]
 fn format_dash_writes_rewrite_to_stdout() {
     prose()
@@ -391,6 +421,22 @@ fn format_diff_summary_reports_would_reformat() {
     assert!(
         err.contains("🗞️ 1 file would be reformatted."),
         "stderr was {err:?}"
+    );
+}
+
+#[test]
+fn format_json_renders_collapsing_literal_without_aborting() {
+    let (_dir, path) = fixture("collapse.py", "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["format", "--output-format", "json"])
+        .arg(&path)
+        .assert()
+        .success();
+    let stdout = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    assert!(
+        stdout.contains("collection-layout"),
+        "json missing the format diagnostic: {stdout:?}"
     );
 }
 

@@ -3,10 +3,10 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/fields_and_methods_sort_align_cushion/input.py
 ---
-align-colons@24..80
-align-equals@37..74
+align-colons@26..84
+align-equals@33..55
 alphabetize@19..246
-blank-lines@137..138
 blank-lines@14..15
-blank-lines@191..192
+blank-lines@148..149
+blank-lines@202..203
 blank-lines@93..94

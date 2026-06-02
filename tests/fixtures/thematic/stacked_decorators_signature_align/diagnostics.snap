@@ -5,7 +5,6 @@ input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
 ---
 alphabetize@19..303
 bare-imports@7..16
-blank-lines@252..253
-blank-lines@283..285
-docstring-frame@135..224
-docstring-wrap@184..216
+blank-lines@49..50
+blank-lines@78..80
+docstring-frame@196..285

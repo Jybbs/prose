@@ -7,8 +7,8 @@ input_file: tests/fixtures/thematic/deep_nested_dict_per_level/input.py
   {
     "code": "loose-constants",
     "end_location": {
-      "column": 2,
-      "row": 52
+      "column": 690,
+      "row": 1
     },
     "fix": null,
     "location": {

@@ -7,8 +7,8 @@ input_file: tests/fixtures/composition/overflow_dict_constants_rewrite_legacy_un
   {
     "code": "legacy-union-syntax",
     "end_location": {
-      "column": 33,
-      "row": 4
+      "column": 34,
+      "row": 3
     },
     "fix": {
       "applicability": "displayonly",
@@ -20,16 +20,16 @@ input_file: tests/fixtures/composition/overflow_dict_constants_rewrite_legacy_un
       ]
     },
     "location": {
-      "column": 20,
-      "row": 4
+      "column": 21,
+      "row": 3
     },
     "message": "`Optional[str]` is the legacy form. Use `str | None`"
   },
   {
     "code": "legacy-union-syntax",
     "end_location": {
-      "column": 35,
-      "row": 5
+      "column": 59,
+      "row": 3
     },
     "fix": {
       "applicability": "displayonly",
@@ -41,37 +41,16 @@ input_file: tests/fixtures/composition/overflow_dict_constants_rewrite_legacy_un
       ]
     },
     "location": {
-      "column": 20,
-      "row": 5
+      "column": 44,
+      "row": 3
     },
     "message": "`Union[int, str]` is the legacy form. Use `int | str`"
   },
   {
     "code": "legacy-union-syntax",
     "end_location": {
-      "column": 37,
-      "row": 6
-    },
-    "fix": {
-      "applicability": "displayonly",
-      "edits": [
-        {
-          "before": "Union[bool, None]",
-          "content": "bool | None"
-        }
-      ]
-    },
-    "location": {
-      "column": 20,
-      "row": 6
-    },
-    "message": "`Union[bool, None]` is the legacy form. Use `bool | None`"
-  },
-  {
-    "code": "legacy-union-syntax",
-    "end_location": {
-      "column": 33,
-      "row": 7
+      "column": 83,
+      "row": 3
     },
     "fix": {
       "applicability": "displayonly",
@@ -83,9 +62,30 @@ input_file: tests/fixtures/composition/overflow_dict_constants_rewrite_legacy_un
       ]
     },
     "location": {
-      "column": 20,
-      "row": 7
+      "column": 70,
+      "row": 3
     },
     "message": "`Optional[int]` is the legacy form. Use `int | None`"
+  },
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 116,
+      "row": 3
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Union[bool, None]",
+          "content": "bool | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 99,
+      "row": 3
+    },
+    "message": "`Union[bool, None]` is the legacy form. Use `bool | None`"
   }
 ]

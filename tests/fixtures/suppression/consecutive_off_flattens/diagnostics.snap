@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/consecutive_off_flattens/input.py
 ---
+align-equals@1..10
 align-equals@100..108
-align-equals@15..22
 alphabetize@0..25

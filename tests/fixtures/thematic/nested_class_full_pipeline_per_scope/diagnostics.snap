@@ -3,13 +3,13 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/nested_class_full_pipeline_per_scope/input.py
 ---
-align-colons@122..173
-align-colons@29..73
-align-equals@173..201
-align-equals@35..63
+align-colons@118..172
+align-colons@22..75
+align-equals@123..150
+align-equals@29..81
 alphabetize@17..398
 blank-lines@106..107
 blank-lines@12..13
 blank-lines@181..182
 blank-lines@255..256
-blank-lines@323..324
+blank-lines@330..331

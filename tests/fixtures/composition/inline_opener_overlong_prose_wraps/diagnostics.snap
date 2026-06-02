@@ -4,4 +4,3 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/inline_opener_overlong_prose_wraps/input.py
 ---
 docstring-frame@29..29
-docstring-wrap@174..174
