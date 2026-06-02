@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Ordered Commented Dict Stays Untouched"
+
+description = '''
+A dict already in key order keeps its trailing `#` comments and magic trailing `,` exactly as written, emitting **no edit**. The reassembly reproduces the source verbatim, so an ordered commented dict is left alone.
+'''

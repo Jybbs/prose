@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comma-Less Last Entry Keeps Its Separator"
+
+description = '''
+When the original last entry carries a trailing `#` comment but no `,`, sorting it out of last position places a **real separator** after its value and ahead of the comment. The new last entry stays comma-less, matching the source dict's absent magic trailing comma.
+'''

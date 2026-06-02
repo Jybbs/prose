@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested Block Value Keeps Its Trailing Comment"
+
+description = '''
+A keyed entry whose value is a multi-line dict reorders its inner keys while its trailing `#` comment stays attached, with the separator `,` landing after the closing `}` rather than inside the comment. The partition keeps the multi-line entry isolated by a **blank divider**.
+'''
