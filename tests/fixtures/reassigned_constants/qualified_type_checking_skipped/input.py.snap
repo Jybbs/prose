@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reassigned_constants/qualified_type_checking_skipped/input.py
+---
+import typing
+
+if typing.TYPE_CHECKING:
+    DEFAULT_BACKEND = "memory"

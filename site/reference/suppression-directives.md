@@ -46,8 +46,8 @@ A bare `# fmt: skip` or `# prose: skip` widens to every rewrite rule on the line
 `# prose: ignore` and its bracketed variants suppress lint diagnostics on the same line:
 
 ```python
-SCREAMING_CONSTANT = 42  # prose: ignore[loose-constants]
-TIMEOUT = 30             # prose: ignore[loose-constants, single-use-variables]
+SCREAMING_CONSTANT = 42  # prose: ignore[reassigned-constants]
+TIMEOUT = 30             # prose: ignore[reassigned-constants, single-use-variables]
 helper = build_helper()  # prose: ignore
 ```
 
@@ -73,11 +73,11 @@ A single line can carry one block marker, one `# fmt: skip` *(or its `# prose: s
 
 ```python
 # fmt: off
-data = build()  # prose: ignore[loose-constants]  # prose: ignore[single-use-variables]
+data = build()  # prose: ignore[reassigned-constants]  # prose: ignore[single-use-variables]
 # fmt: on
 ```
 
-The same line carries the block marker pair *(opening and closing on the surrounding lines)*, plus two bracketed line directives whose rule lists merge into `{loose-constants, single-use-variables}`. A bare `# prose: ignore` anywhere on the line would override both into a widen-to-every-rule.
+The same line carries the block marker pair *(opening and closing on the surrounding lines)*, plus two bracketed line directives whose rule lists merge into `{reassigned-constants, single-use-variables}`. A bare `# prose: ignore` anywhere on the line would override both into a widen-to-every-rule.
 
 ::: warning Malformed Directives No-Op
 A malformed directive *(unclosed brackets, misspelled keyword, trailing text after `ignore`)* parses as a no-op, surfacing nothing and rewriting nothing.
@@ -98,6 +98,6 @@ A trailing `# prose: off` on a statement line *(such as `x = 1  # prose: off`)* 
 
 ## Composition with `--select` / `--ignore`
 
-Per-line and block directives compose against the active rule set. `--select align-equals` narrows the pipeline to one rule, and `# prose: ignore[align-equals]` still suppresses that rule on its line. `--ignore loose-constants` drops a rule from the active set, and a line carrying `# prose: ignore[loose-constants]` is a no-op since the rule is already not firing.
+Per-line and block directives compose against the active rule set. `--select align-equals` narrows the pipeline to one rule, and `# prose: ignore[align-equals]` still suppresses that rule on its line. `--ignore reassigned-constants` drops a rule from the active set, and a line carrying `# prose: ignore[reassigned-constants]` is a no-op since the rule is already not firing.
 
 For the per-rule `enabled` knob, see the [**Configuration**](/reference/configuration) reference. For the conceptual narrative on when to reach for suppression, see the [**Suppression**](/usage/suppression) guide chapter.

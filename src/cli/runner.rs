@@ -804,7 +804,7 @@ mod tests {
             "x = 1\n".parse::<Source>().expect("parses"),
             vec![
                 diagnostic(Severity::Format, range, "align-equals"),
-                diagnostic(Severity::Lint, range, "loose-constants"),
+                diagnostic(Severity::Lint, range, "reassigned-constants"),
             ],
         );
         if let FileOutcome::Done { formatted_text, .. } = &mut changed {
@@ -820,7 +820,10 @@ mod tests {
         assert_eq!(summary.files_with_diagnostics, 1);
         assert_eq!(summary.diagnostics_total, 2);
         assert_eq!(summary.rules_fired[&RuleId::from("align-equals")], 1);
-        assert_eq!(summary.rules_fired[&RuleId::from("loose-constants")], 1);
+        assert_eq!(
+            summary.rules_fired[&RuleId::from("reassigned-constants")],
+            1
+        );
     }
 
     #[test]

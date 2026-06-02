@@ -1,6 +1,5 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/method_opens_with_try_then_sort/input.py
 ---

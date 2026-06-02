@@ -34,7 +34,15 @@ function descriptionHtml(
   inputPath : string
 ): string | undefined {
   const text = readFixtureDocs(inputPath)?.description?.trim()
-  return text ? md.render(text) : undefined
+  if (!text) return undefined
+  // The card description renders through `v-html`, which never instantiates
+  // the `<InlineRuleLink>` component the rule-link plugin emits for a
+  // backticked slug, so downgrade it to the plain anchor primitive links
+  // already use on this surface.
+  return md.render(text).replace(
+    /<InlineRuleLink slug="([^"]+)" \/>/g,
+    (_, slug) => `<a class="body-link" href="/rules/${slug}"><code>${slug}</code></a>`
+  )
 }
 
 export default defineLoader({

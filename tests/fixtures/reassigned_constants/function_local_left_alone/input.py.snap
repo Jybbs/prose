@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reassigned_constants/function_local_left_alone/input.py
+---
+def compute(radius: float) -> float:
+    PI = 3.14
+    return PI * radius * radius

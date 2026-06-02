@@ -175,7 +175,7 @@ const SOURCES: readonly DirectiveSource[] = [
   {
     effect  : 'Only the listed lint rules skip the line. Two bracketed directives on one '
             + 'line union their rule slugs.',
-    example : 'TIMEOUT = 30  # prose: ignore[loose-constants, single-use-variables]',
+    example : 'TIMEOUT = 30  # prose: ignore[reassigned-constants, single-use-variables]',
     form    : '# prose: ignore[<rule>, ...]',
     id      : 'prose-ignore-rules',
     parts   : [

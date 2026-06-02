@@ -5,8 +5,5 @@ input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
 ---
 align-imports@125..126
 alphabetize@0..160
-bare-imports@145..154
-bare-imports@43..51
-bare-imports@78..80
 blank-lines@160..161
 unused-future-annotations@0..35

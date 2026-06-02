@@ -1,11 +1,12 @@
 ---
 source: tests/binding_analysis.rs
-assertion_line: 14
 expression: source.binding_analysis()
 input_file: tests/fixtures/binding_analysis/dict_set_gen_comp_scopes/input.py
 ---
 bindings:
-  - kinds:
+  - attributes: []
+    bare_read: true
+    kinds:
       - Assignment
     name: pairs
     read_offsets:
@@ -15,7 +16,9 @@ bindings:
     scope: 0
     write_offsets:
       - 0
-  - kinds:
+  - attributes: []
+    bare_read: true
+    kinds:
       - Comprehension
     name: k
     read_offsets:
@@ -23,7 +26,9 @@ bindings:
     scope: 1
     write_offsets:
       - 49
-  - kinds:
+  - attributes: []
+    bare_read: true
+    kinds:
       - Comprehension
     name: v
     read_offsets:
@@ -31,14 +36,18 @@ bindings:
     scope: 1
     write_offsets:
       - 52
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Assignment
     name: mapping
     read_offsets: []
     scope: 0
     write_offsets:
       - 29
-  - kinds:
+  - attributes: []
+    bare_read: true
+    kinds:
       - Comprehension
     name: k
     read_offsets:
@@ -46,28 +55,36 @@ bindings:
     scope: 2
     write_offsets:
       - 78
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Comprehension
     name: _
     read_offsets: []
     scope: 2
     write_offsets:
       - 81
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Assignment
     name: keys
     read_offsets: []
     scope: 0
     write_offsets:
       - 64
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Comprehension
     name: _
     read_offsets: []
     scope: 3
     write_offsets:
       - 111
-  - kinds:
+  - attributes: []
+    bare_read: true
+    kinds:
       - Comprehension
     name: v
     read_offsets:
@@ -75,7 +92,9 @@ bindings:
     scope: 3
     write_offsets:
       - 114
-  - kinds:
+  - attributes: []
+    bare_read: false
+    kinds:
       - Assignment
     name: total
     read_offsets: []

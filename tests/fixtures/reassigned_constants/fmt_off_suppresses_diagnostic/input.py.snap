@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reassigned_constants/fmt_off_suppresses_diagnostic/input.py
+---
+# fmt: off
+RETRIES = 3
+RETRIES = 5
+# fmt: on

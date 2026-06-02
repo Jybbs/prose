@@ -1,6 +1,5 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/assign_run_align_boolop_right_align/input.py
 ---

@@ -1,0 +1,9 @@
+[docs]
+previewable = false
+title       = "A Method-Body Reference Does Not Pin the Order"
+
+description = '''
+`Alpha.run` names `Beta` only inside a method body, which runs when the method
+is called rather than when the class is defined, so the reference is deferred
+and `Alpha` still sorts ahead of `Beta`.
+'''

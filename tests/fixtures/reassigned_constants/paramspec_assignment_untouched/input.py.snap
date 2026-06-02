@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reassigned_constants/paramspec_assignment_untouched/input.py
+---
+from typing import ParamSpec
+
+P = ParamSpec("P")

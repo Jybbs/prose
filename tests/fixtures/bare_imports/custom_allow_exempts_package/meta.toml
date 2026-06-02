@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Custom Allow List Exempts Its Package"
+
+description = '''
+Both `numpy` and `torch` are reached through a single attribute, so each would draw the lint. The `allow` list blesses `numpy` as a bare import the project keeps, leaving only `torch` flagged.
+'''

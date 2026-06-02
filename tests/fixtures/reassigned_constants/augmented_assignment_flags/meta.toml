@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Augmented Assignment Marks a Constant as Reassigned"
+
+description = '''
+An augmented assignment such as `COUNTER += 1` counts as a rebinding, so the initial `SCREAMING_CASE` assignment it follows draws the diagnostic.
+'''

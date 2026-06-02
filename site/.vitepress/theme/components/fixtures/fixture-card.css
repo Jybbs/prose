@@ -109,7 +109,7 @@
 
 .fixture-card-title code {
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.85em;
+  font-size      : 1em;
   text-transform : none;
   color          : var(--prose-c-ube);
 }

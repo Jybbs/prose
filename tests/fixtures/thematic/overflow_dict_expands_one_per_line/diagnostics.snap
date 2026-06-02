@@ -5,4 +5,3 @@ input_file: tests/fixtures/thematic/overflow_dict_expands_one_per_line/input.py
 ---
 alphabetize@11..245
 collection-layout@10..245
-loose-constants@0..246

@@ -487,7 +487,7 @@ fn server_completes_a_stdio_session_over_the_real_binary() {
     let session = lsp_session(&[
         r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}"#,
         r#"{"jsonrpc":"2.0","method":"initialized","params":{}}"#,
-        r#"{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"untitled:m.py","languageId":"python","version":1,"text":"import os\n"}}}"#,
+        r#"{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"untitled:m.py","languageId":"python","version":1,"text":"import os\nos.getcwd()\n"}}}"#,
         r#"{"jsonrpc":"2.0","id":2,"method":"textDocument/formatting","params":{"textDocument":{"uri":"untitled:m.py"},"options":{"tabSize":4,"insertSpaces":true}}}"#,
         r#"{"jsonrpc":"2.0","id":3,"method":"shutdown","params":null}"#,
         r#"{"jsonrpc":"2.0","method":"exit","params":null}"#,

@@ -3,5 +3,5 @@ previewable = true
 title       = "Aligned Local Run Carries the Single-Use Lint Past Padding"
 
 description = '''
-A function body assigns consecutive locals, some reused and some used once. `align-equals` widens the `=` column across the whole run, and **`single-use-variables` emits one diagnostic per once-used binding whose range tracks the post-align offset**.
+A function body assigns consecutive locals, some reused and some used once. `align-equals` widens the `=` column across the whole run, and **`single-use-variables` emits one diagnostic per once-used binding whose range tracks the source offset**.
 '''

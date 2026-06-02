@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/loose_constants/platform_guarded_if_flagged/input.py
----
-loose-constants@44..70

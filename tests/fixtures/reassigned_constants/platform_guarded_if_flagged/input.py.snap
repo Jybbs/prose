@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reassigned_constants/platform_guarded_if_flagged/input.py
+---
+import sys
+
+DEFAULT_BACKEND = "memory"
+if sys.platform == "win32":
+    DEFAULT_BACKEND = "registry"

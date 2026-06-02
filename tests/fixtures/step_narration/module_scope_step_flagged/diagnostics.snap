@@ -1,6 +1,5 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/step_narration/module_scope_step_flagged/input.py
 ---

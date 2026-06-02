@@ -1,7 +1,7 @@
 [docs]
-previewable = true
-title       = "Dotted Submodules Inherit the Exemption"
+previewable = false
+title       = "A Dotted Import Inherits Its Top Segment's Exemption"
 
 description = '''
-`import numpy.linalg` is preserved because its **top-level segment `numpy` is allowlisted**. Submodule access inherits the parent module's membership, so the full dotted path never triggers.
+`import numpy.linalg` binds `numpy`, reached here through its `linalg` attribute. The `allow` entry names the top segment, so the dotted import inherits the exemption and passes.
 '''

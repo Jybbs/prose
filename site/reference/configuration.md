@@ -19,7 +19,7 @@ collection-layout = { max-atomics-per-line = 3 }
 
 A bare `false` disables a rule, an inline table sets its knobs while leaving the rule enabled, and a rule you do not name stays on at its default. Under `pyproject.toml` the table reads `[tool.prose.rules]`, and a rule with several knobs may prefer the expanded `[rules.<rule>]` sub-table *(`[tool.prose.rules.<rule>]` in the manifest)*, which carries the same settings as the inline form.
 
-## Where Prose Looks
+## Where *Prose* Looks
 
 *Prose* walks upward from the working directory toward the filesystem root. In each directory a `prose.toml` outranks a `pyproject.toml`, and the nearest directory carrying either wins, in that *Prose* reads only that one file and never merges across matches up the tree. A `pyproject.toml` lacking a `[tool.prose]` table is passed over, leaving the walk to continue upward. When no ancestor carries either, every default applies as if the config were empty.
 
@@ -85,13 +85,11 @@ The `[rules]` table holds one entry per rule you change. A bare bool is the shor
 | `max-atomics-per-line` | positive int \| `false` | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. `false` removes the cap and packs by width alone |
 | `max-inline-dict-entries` | positive int \| `false` | [[collection-layout]] | `3` | Expand a dict once its entry count exceeds the cap, whatever its width. `false` disables the count trigger |
 | `max-inline-args` | positive int \| `false` | [[call-layout]] | `3` | Explode a call to one keyword argument per line once its argument count exceeds the cap. `false` disables the count trigger and leaves every call inline |
-| `allow` | list of module names | [[bare-imports]] | `["numpy", "pandas"]` | Modules whose bare-import form is preserved |
-| `allow` | list of names | [[loose-constants]] | `[]` | Module-level names exempted from the lint |
+| `allow` | list of module names | [[bare-imports]] | `[]` | Modules whose bare-import form is preserved whatever their attribute count |
+| `allow-aliased` | bool | [[bare-imports]] | `true` | Exempt every aliased bare import (*`import x as y`*) from the rule |
+| `max-attributes` | positive int | [[bare-imports]] | `4` | Distinct-attribute count at or below which an unaliased bare import is flagged |
+| `allow` | list of names | [[reassigned-constants]] | `[]` | Module-level names exempted from the lint |
 | `allow-pattern` | regex | [[single-use-variables]] | `"^_"` | Binding names exempted from the lint |
-
-::: warning `allow` Replaces the Default
-A user-supplied `allow` list replaces the rule's default rather than extending it. A project that wants its own modules alongside `bare-imports`'s bundled `"numpy"` and `"pandas"` must list those two explicitly in the supplied `allow` array, otherwise the default falls away.
-:::
 
 ## Rule Categories
 
@@ -107,7 +105,7 @@ Some rules answer a single yes-or-no question with no parameters worth tuning, s
 
 ### Rule-Specific Knobs
 
-Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the knob shaped for its question. [[alphabetize]] takes `docstring-entries` for the docstring-entry reorder, [[bare-imports]] takes an `allow` list of modules whose bare-import form is preserved, [[collection-layout]] takes `max-atomics-per-line` to cap the inline-collection budget and `max-inline-dict-entries` to expand a dict past an entry count, [[call-layout]] takes `max-inline-args` to explode a call past an argument count, [[loose-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
+Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the knob shaped for its question. [[alphabetize]] takes `docstring-entries` for the docstring-entry reorder, [[bare-imports]] takes an `allow` list of modules whose bare-import form is preserved alongside an `allow-aliased` toggle for the alias exemption and a `max-attributes` cap on the distinct-attribute count that draws the lint, [[collection-layout]] takes `max-atomics-per-line` to cap the inline-collection budget and `max-inline-dict-entries` to expand a dict past an entry count, [[call-layout]] takes `max-inline-args` to explode a call past an argument count, [[reassigned-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
 
 ## Docstring Budgets
 

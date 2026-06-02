@@ -659,7 +659,7 @@ mod tests {
         config.rules.docstring_frame.enabled = false;
         config.rules.docstring_wrap.enabled = false;
         config.rules.legacy_union_syntax.enabled = false;
-        config.rules.loose_constants.enabled = false;
+        config.rules.reassigned_constants.enabled = false;
         config.rules.signature_layout.enabled = false;
         config.rules.single_use_variables.enabled = false;
         config.rules.step_narration.enabled = false;
@@ -703,7 +703,7 @@ mod tests {
         config.rules.blank_lines.enabled = false;
         config.rules.collection_layout.enabled = false;
         config.rules.legacy_union_syntax.enabled = false;
-        config.rules.loose_constants.enabled = false;
+        config.rules.reassigned_constants.enabled = false;
         config.rules.signature_layout.enabled = false;
         config.rules.single_use_variables.enabled = false;
         config.rules.step_narration.enabled = false;

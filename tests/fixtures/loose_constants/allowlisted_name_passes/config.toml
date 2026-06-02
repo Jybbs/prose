@@ -1,2 +1,0 @@
-[rules]
-loose-constants = { allow = ["LOG_LEVEL", "DEFAULT_TIMEOUT"] }

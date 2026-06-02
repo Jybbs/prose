@@ -15,7 +15,7 @@
 //! the nearest non-comprehension scope, and class-scope names are
 //! invisible to nested functions and comprehensions.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use ruff_python_ast::{
     Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed, ExprSetComp,
@@ -62,8 +62,13 @@ pub(crate) enum ScopeKind {
 }
 
 /// One named binding in some scope, with every observed write and read.
+/// `attributes` collects the distinct attribute names read off the
+/// binding (`os.environ` records `environ`), and `bare_read` flips when
+/// the name is read without an attribute access (`foo(os)`).
 #[derive(Debug, Serialize)]
 pub(crate) struct Binding {
+    attributes: BTreeSet<String>,
+    bare_read: bool,
     kinds: Vec<BindingKind>,
     name: String,
     read_offsets: Vec<TextSize>,
@@ -159,6 +164,14 @@ impl BindingAnalysis {
             .is_some_and(|&first| first < offset)
     }
 
+    /// Returns the number of distinct attributes read off the
+    /// module-scope binding for `name` (`os.environ` and `os.getcwd`
+    /// count as two), or `0` when `name` is unbound at module scope.
+    pub(crate) fn module_attribute_count(&self, name: &str) -> usize {
+        self.module_binding(name)
+            .map_or(0, |binding| binding.attributes.len())
+    }
+
     /// Returns the read offsets of the module-scope binding for `name`
     /// when its sole write is one function definition. `None` when
     /// `name` is unbound at module scope, rebound, or written by
@@ -167,6 +180,24 @@ impl BindingAnalysis {
         let binding = self.module_binding(name)?;
         (binding.kinds == [BindingKind::FunctionDef] && binding.write_offsets.len() == 1)
             .then_some(binding.read_offsets.as_slice())
+    }
+
+    /// Returns `true` when the module-scope binding for `name` carries
+    /// more than one write or an augmented-assignment write, and
+    /// `false` when `name` is write-once or unbound at module scope.
+    pub(crate) fn module_reassigned(&self, name: &str) -> bool {
+        self.module_binding(name).is_some_and(|binding| {
+            binding.write_offsets.len() > 1 || binding.kinds.contains(&BindingKind::AugAssign)
+        })
+    }
+
+    /// Returns `true` when the module-scope binding for `name` is read
+    /// without an attribute access anywhere (the namespace object
+    /// itself is used), and `false` when `name` is only attribute-read
+    /// or unbound at module scope.
+    pub(crate) fn module_used_bare(&self, name: &str) -> bool {
+        self.module_binding(name)
+            .is_some_and(|binding| binding.bare_read)
     }
 
     /// Returns the number of read events recorded for `binding`.
@@ -303,6 +334,10 @@ impl Builder {
         id
     }
 
+    fn record_attribute_read(&mut self, name: &str, offset: TextSize, attribute: &str) {
+        self.record_use(name, offset, Some(attribute));
+    }
+
     fn record_identifier(&mut self, identifier: &Identifier, kind: BindingKind) {
         self.record_write(identifier.as_str(), identifier.range().start(), kind);
     }
@@ -314,19 +349,7 @@ impl Builder {
     }
 
     fn record_read(&mut self, name: &str, offset: TextSize) {
-        let innermost = self.current_scope();
-        for &scope_id in self.scope_stack.iter().rev() {
-            let scope = &self.scopes[scope_id.0 as usize];
-            if scope_id != innermost && matches!(scope.kind, ScopeKind::Class) {
-                continue;
-            }
-            if let Some(&binding_id) = scope.bindings.get(name) {
-                self.bindings[binding_id.0 as usize]
-                    .read_offsets
-                    .push(offset);
-                return;
-            }
-        }
+        self.record_use(name, offset, None);
     }
 
     fn record_target(&mut self, target: &Expr, kind: BindingKind) {
@@ -339,6 +362,27 @@ impl Builder {
             }
             Expr::Starred(starred) => self.record_target(&starred.value, kind),
             _ => walk_expr(self, target),
+        }
+    }
+
+    fn record_use(&mut self, name: &str, offset: TextSize, attribute: Option<&str>) {
+        let innermost = self.current_scope();
+        for &scope_id in self.scope_stack.iter().rev() {
+            let scope = &self.scopes[scope_id.0 as usize];
+            if scope_id != innermost && matches!(scope.kind, ScopeKind::Class) {
+                continue;
+            }
+            if let Some(&binding_id) = scope.bindings.get(name) {
+                let binding = &mut self.bindings[binding_id.0 as usize];
+                binding.read_offsets.push(offset);
+                match attribute {
+                    Some(attribute) => {
+                        binding.attributes.insert(attribute.to_owned());
+                    }
+                    None => binding.bare_read = true,
+                }
+                return;
+            }
         }
     }
 
@@ -378,6 +422,8 @@ impl Builder {
             self.bindings.push(Binding {
                 name: name.to_owned(),
                 scope,
+                attributes: BTreeSet::new(),
+                bare_read: false,
                 kinds: Vec::new(),
                 write_offsets: Vec::new(),
                 read_offsets: Vec::new(),
@@ -490,6 +536,14 @@ impl<'a> Visitor<'a> for Builder {
                     self.record_read(name.id.as_str(), name.range().start());
                 }
             }
+            Expr::Attribute(attr) => match attr.value.as_ref() {
+                Expr::Name(name) if name.ctx.is_load() => self.record_attribute_read(
+                    name.id.as_str(),
+                    name.range().start(),
+                    attr.attr.as_str(),
+                ),
+                _ => walk_expr(self, expr),
+            },
             Expr::Named(named) => self.record_walrus(named),
             Expr::Lambda(lambda) => self.enter_lambda(lambda),
             Expr::ListComp(ExprListComp {
@@ -629,6 +683,53 @@ mod tests {
     #[case("x = 1\n")]
     fn module_function_reads_returns_none_unless_name_is_one_def(#[case] src: &str) {
         assert!(analyze(src).module_function_reads("f").is_none());
+    }
+
+    #[test]
+    fn module_attribute_count_counts_distinct_attributes() {
+        let analysis = analyze("import os\nos.environ\nos.getcwd()\nos.environ\n");
+        assert_eq!(analysis.module_attribute_count("os"), 2);
+    }
+
+    #[test]
+    fn module_attribute_count_records_the_first_segment_of_a_chain() {
+        let analysis = analyze("import os\nos.path.join('a', 'b')\n");
+        assert_eq!(analysis.module_attribute_count("os"), 1);
+    }
+
+    #[rstest]
+    #[case("import os\n")]
+    #[case("import os\nfoo(os)\n")]
+    fn module_attribute_count_is_zero_without_attribute_reads(#[case] src: &str) {
+        assert_eq!(analyze(src).module_attribute_count("os"), 0);
+    }
+
+    #[test]
+    fn module_used_bare_is_false_for_attribute_only_reads() {
+        let analysis = analyze("import os\nos.getcwd()\nos.environ\n");
+        assert!(!analysis.module_used_bare("os"));
+    }
+
+    #[rstest]
+    #[case("import os\nfoo(os)\n")]
+    #[case("import os\nx = os\n")]
+    fn module_used_bare_is_true_for_a_namespace_reference(#[case] src: &str) {
+        assert!(analyze(src).module_used_bare("os"));
+    }
+
+    #[rstest]
+    #[case("X = 1\n")]
+    #[case("x = 1\n")]
+    fn module_reassigned_is_false_for_write_once_or_unbound(#[case] src: &str) {
+        assert!(!analyze(src).module_reassigned("X"));
+    }
+
+    #[rstest]
+    #[case("X = 1\nX = 2\n")]
+    #[case("X = 1\nX += 1\n")]
+    #[case("X += 1\n")]
+    fn module_reassigned_is_true_when_written_twice_or_augmented(#[case] src: &str) {
+        assert!(analyze(src).module_reassigned("X"));
     }
 
     #[test]

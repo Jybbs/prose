@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/reassigned_constants/augmented_assignment_flags/input.py
+---
+reassigned-constants@0..11

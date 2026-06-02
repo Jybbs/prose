@@ -1,6 +1,5 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/step_narration/class_body_step_flagged/input.py
 ---

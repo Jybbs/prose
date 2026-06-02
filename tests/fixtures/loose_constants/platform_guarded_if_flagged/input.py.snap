@@ -1,9 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/loose_constants/platform_guarded_if_flagged/input.py
----
-import sys
-
-if sys.platform == "win32":
-    DEFAULT_BACKEND = "memory"

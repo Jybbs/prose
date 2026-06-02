@@ -1,6 +1,5 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/single_line_docstring_overflows_on_expand/input.py
 ---

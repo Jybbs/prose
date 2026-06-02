@@ -1,6 +1,5 @@
 ---
 source: tests/integration.rs
-assertion_line: 28
 expression: output
 input_file: tests/fixtures/composition/bare_and_from_each_sorted_in_place/input.py
 ---

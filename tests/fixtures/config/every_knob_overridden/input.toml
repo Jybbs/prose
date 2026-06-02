@@ -8,21 +8,21 @@ enabled      = false
 max-size-mib = 250
 
 [rules]
-align-colons              = false
-align-equals              = false
-align-imports             = false
-alphabetize               = { docstring-entries = false, enabled = false }
-bare-imports     = { allow = ["scipy", "torch"], enabled = false }
-blank-lines               = false
-call-layout               = { enabled = false, max-inline-args = 6 }
-collection-layout         = { enabled = false, max-atomics-per-line = 3, max-inline-dict-entries = 5 }
-legacy-union-syntax       = false
-loose-constants           = { allow = ["LOG_LEVEL"], enabled = false }
-align-match-case          = false
-docstring-frame     = false
-docstring-expand = false
-step-narration         = false
-signature-layout          = { enabled = false, max-inline-params = false }
-single-use-variables      = { allow-pattern = "^tmp_", enabled = false }
-strip-align-padding            = false
-strip-trailing-commas     = false
+align-colons          = false
+align-equals          = false
+align-imports         = false
+alphabetize           = { docstring-entries = false, enabled = false }
+bare-imports          = { allow = ["scipy", "torch"], allow-aliased = false, enabled = false, max-attributes = 2 }
+blank-lines           = false
+call-layout           = { enabled = false, max-inline-args = 6 }
+collection-layout     = { enabled = false, max-atomics-per-line = 3, max-inline-dict-entries = 5 }
+legacy-union-syntax   = false
+reassigned-constants       = { allow = ["LOG_LEVEL"], enabled = false }
+align-match-case      = false
+docstring-frame       = false
+docstring-expand      = false
+step-narration        = false
+signature-layout      = { enabled = false, max-inline-params = false }
+single-use-variables  = { allow-pattern = "^tmp_", enabled = false }
+strip-align-padding   = false
+strip-trailing-commas = false

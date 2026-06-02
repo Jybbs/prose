@@ -1,6 +1,5 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/docstring_wrap/policy_narrows_section_budget/input.py
 ---

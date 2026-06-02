@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/function_body_reference_does_not_pin/input.py
+---
+alphabetize@6..76

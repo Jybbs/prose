@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/unreferenced_classes_reorder/input.py
+---
+class Alpha:
+    pass
+
+
+class Beta:
+    pass

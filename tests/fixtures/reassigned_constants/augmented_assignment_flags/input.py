@@ -1,0 +1,2 @@
+COUNTER = 0
+COUNTER += 1

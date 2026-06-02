@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/raising_max_attributes_flags_wide/input.py
+---
+import os
+
+os.getcwd()
+os.environ
+os.sep
+os.name
+os.path

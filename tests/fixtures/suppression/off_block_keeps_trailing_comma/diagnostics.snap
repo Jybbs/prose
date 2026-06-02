@@ -1,6 +1,5 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/off_block_keeps_trailing_comma/input.py
 ---

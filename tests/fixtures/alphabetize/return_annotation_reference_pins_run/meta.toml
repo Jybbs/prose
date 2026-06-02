@@ -1,0 +1,9 @@
+[docs]
+previewable = false
+title       = "A Return Annotation Pins the Annotated Class After Its Type"
+
+description = '''
+`Builder.make` returns `Helper`, an annotation that evaluates at definition
+time, so the sort holds `Helper` ahead of `Builder` rather than raising
+`NameError` on import.
+'''

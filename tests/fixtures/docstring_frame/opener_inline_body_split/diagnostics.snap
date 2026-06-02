@@ -1,6 +1,5 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/docstring_frame/opener_inline_body_split/input.py
 ---

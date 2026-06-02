@@ -3,7 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
 ---
-alphabetize@19..303
 bare-imports@7..16
 blank-lines@49..50
 blank-lines@78..80

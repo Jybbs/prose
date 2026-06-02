@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/attribute_count_over_budget_passes/input.py
+---
+import os
+
+os.getcwd()
+os.environ
+os.sep
+os.name
+os.path

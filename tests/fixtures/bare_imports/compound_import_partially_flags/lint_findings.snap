@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/bare_imports/compound_import_partially_flags/input.py
+---
+[
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 10,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 1
+    },
+    "message": "bare import `os` reaches 1 of its attributes. Rewrite as `from os import ...` naming only the symbols this module uses"
+  }
+]

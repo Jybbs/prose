@@ -58,7 +58,9 @@ Config {
                 "scipy",
                 "torch",
             ],
+            allow_aliased: false,
             enabled: false,
+            max_attributes: 2,
         },
         align_match_case: AlignmentConfig {
             enabled: false,
@@ -95,7 +97,7 @@ Config {
         strip_align_padding: ToggleOnly {
             enabled: false,
         },
-        loose_constants: LooseConstantsConfig {
+        reassigned_constants: ReassignedConstantsConfig {
             allow: [
                 "LOG_LEVEL",
             ],

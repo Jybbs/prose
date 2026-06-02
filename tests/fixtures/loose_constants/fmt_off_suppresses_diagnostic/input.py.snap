@@ -1,8 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/loose_constants/fmt_off_suppresses_diagnostic/input.py
----
-# fmt: off
-PI = 3.14
-# fmt: on

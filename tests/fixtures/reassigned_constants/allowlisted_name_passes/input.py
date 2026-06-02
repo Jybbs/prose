@@ -1,0 +1,4 @@
+LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG"
+CACHE_DIR = "/tmp"
+CACHE_DIR = "/var"

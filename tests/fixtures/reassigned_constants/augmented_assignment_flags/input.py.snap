@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/reassigned_constants/augmented_assignment_flags/input.py
+---
+COUNTER = 0
+COUNTER += 1

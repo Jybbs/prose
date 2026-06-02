@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/loose_constants/allowlisted_name_passes/input.py
----
-loose-constants@46..65
