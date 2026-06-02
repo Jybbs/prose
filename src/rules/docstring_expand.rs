@@ -30,8 +30,7 @@ impl DocstringExpand {
 impl Rule for DocstringExpand {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
-            let Some(body) = triple_quoted_body(source, lit).filter(|b| !b.text.contains('\n'))
-            else {
+            let Some(body) = triple_quoted_body(source, lit).filter(|b| !b.is_multiline()) else {
                 return;
             };
             let trimmed = body.text.trim_whitespace();

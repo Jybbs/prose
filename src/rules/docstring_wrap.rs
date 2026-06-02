@@ -19,7 +19,7 @@ use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            entry_description_col, indent_prefix, is_list_marker, rewrite_docstrings,
+            LineScan, LineScanner, entry_description_col, indent_prefix, rewrite_docstrings,
             section_heading, triple_quoted_body,
         },
         edit::{narrowed_replacement, singleton_groups},
@@ -50,8 +50,7 @@ impl DocstringWrap {
 impl Rule for DocstringWrap {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
-            let Some(body) = triple_quoted_body(source, lit).filter(|b| b.text.contains('\n'))
-            else {
+            let Some(body) = triple_quoted_body(source, lit).filter(|b| b.is_multiline()) else {
                 return;
             };
             let indent = indent_prefix(source, lit);
@@ -83,14 +82,12 @@ enum Region {
 }
 
 struct Walker<'a> {
-    body_indent_chars: usize,
-    in_fence: bool,
-    list_indent: Option<usize>,
     newline: &'a str,
     out: String,
     paragraph: Paragraph,
     region: Region,
     rule: &'a DocstringWrap,
+    scanner: LineScanner,
 }
 
 impl Walker<'_> {
@@ -107,41 +104,26 @@ impl Walker<'_> {
         let trimmed = &line[indent_str.len()..];
         let indent_chars = indent_str.chars().count();
 
-        if trimmed.starts_with("```") {
-            self.flush_paragraph();
-            self.list_indent = None;
-            self.in_fence = !self.in_fence;
-            self.emit_verbatim(line);
-            return;
-        }
-        if self.in_fence {
-            self.emit_verbatim(line);
-            return;
-        }
-
-        if trimmed.is_empty() {
-            self.flush_paragraph();
-            self.list_indent = None;
-            self.out.push_str(self.newline);
-            return;
-        }
-
-        if let Some(list_indent) = self.list_indent {
-            if indent_chars > list_indent {
+        match self.scanner.classify(trimmed, indent_chars) {
+            LineScan::Fence | LineScan::ListMarker => {
+                self.flush_paragraph();
                 self.emit_verbatim(line);
                 return;
             }
-            self.list_indent = None;
+            LineScan::InFence | LineScan::ListContinuation => {
+                self.emit_verbatim(line);
+                return;
+            }
+            LineScan::Blank => {
+                self.flush_paragraph();
+                self.out.push_str(self.newline);
+                return;
+            }
+            LineScan::Body => {}
         }
 
-        if indent_chars >= self.body_indent_chars && is_list_marker(trimmed) {
-            self.flush_paragraph();
-            self.list_indent = Some(indent_chars);
-            self.emit_verbatim(line);
-            return;
-        }
-
-        if indent_chars == self.body_indent_chars && section_heading(trimmed) {
+        let body_indent = self.scanner.body_indent_chars();
+        if indent_chars == body_indent && section_heading(trimmed) {
             self.flush_paragraph();
             self.region = Region::Section;
             self.emit_verbatim(line);
@@ -158,8 +140,8 @@ impl Walker<'_> {
         }
 
         let prose_indent = match self.region {
-            Region::Description => self.body_indent_chars,
-            Region::Section => self.body_indent_chars + 4,
+            Region::Description => body_indent,
+            Region::Section => body_indent + 4,
             Region::SectionEntry(_) => unreachable!("entries handled above"),
         };
         if indent_chars > prose_indent {
@@ -224,7 +206,7 @@ impl Walker<'_> {
         hanging_col: usize,
     ) -> bool {
         indent_chars == hanging_col
-            || (indent_chars == self.body_indent_chars + 4
+            || (indent_chars == self.scanner.body_indent_chars() + 4
                 && entry_description_col(trimmed).is_none())
     }
 
@@ -246,14 +228,12 @@ fn rewrite_body(
     let (content, closer_indent) = body.strip_prefix(newline)?.rsplit_once(newline)?;
 
     let mut walker = Walker {
-        body_indent_chars: body_indent.chars().count(),
-        in_fence: false,
-        list_indent: None,
         newline,
         out: String::with_capacity(content.len()),
         paragraph: Paragraph::default(),
         region: Region::Description,
         rule,
+        scanner: LineScanner::new(body_indent.chars().count()),
     };
     for line in content.split(newline) {
         walker.consume(line);

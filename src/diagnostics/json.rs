@@ -13,7 +13,8 @@ use serde::Serialize;
 
 use crate::{
     diagnostics::{
-        Diagnostic, Emitter, EmitterSummary, Run, Severity, line_columns, write_json_line,
+        Diagnostic, Emitter, EmitterSummary, Run, Severity, diagnostics, line_columns,
+        write_json_line,
     },
     rule::RuleId,
 };
@@ -31,13 +32,11 @@ impl Emitter for Json {
         runs: &[Run<'_>],
         summary: &EmitterSummary,
     ) -> io::Result<()> {
-        for (file, diagnostics) in runs {
-            for diag in *diagnostics {
-                write_json_line(
-                    writer,
-                    &JsonRecord::Diagnostic(JsonDiagnostic::new(file, diag, true)),
-                )?;
-            }
+        for (file, diag) in diagnostics(runs) {
+            write_json_line(
+                writer,
+                &JsonRecord::Diagnostic(JsonDiagnostic::new(file, diag, true)),
+            )?;
         }
         write_json_line(writer, &JsonRecord::Summary(JsonSummary::new(summary)))
     }
