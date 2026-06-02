@@ -15,6 +15,6 @@ input_file: tests/fixtures/bare_imports/import_inside_function_flagged/input.py
       "column": 12,
       "row": 2
     },
-    "message": "bare import `sys` outside allowlist. Rewrite as `from sys import ...` listing only the symbols this module uses"
+    "message": "bare import `sys` is read at most once. Rewrite as `from sys import ...` listing only the symbols this module uses"
   }
 ]

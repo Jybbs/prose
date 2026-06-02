@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Write-Once Constants Pass Whatever Their Value"
+
+description = '''
+A `SCREAMING_CASE` name assigned exactly once is a genuine constant, so the rule **stays silent** whatever its value shape.
+'''

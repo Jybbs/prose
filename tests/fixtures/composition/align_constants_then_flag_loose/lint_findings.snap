@@ -7,45 +7,6 @@ input_file: tests/fixtures/composition/align_constants_then_flag_loose/input.py
   {
     "code": "loose-constants",
     "end_location": {
-      "column": 24,
-      "row": 1
-    },
-    "fix": null,
-    "location": {
-      "column": 1,
-      "row": 1
-    },
-    "message": "module-level constant `DEFAULT_TIMEOUT` found. Consider an enum member, a class field, or a function-local"
-  },
-  {
-    "code": "loose-constants",
-    "end_location": {
-      "column": 23,
-      "row": 2
-    },
-    "fix": null,
-    "location": {
-      "column": 1,
-      "row": 2
-    },
-    "message": "module-level constant `MAX_RETRIES` found. Consider an enum member, a class field, or a function-local"
-  },
-  {
-    "code": "loose-constants",
-    "end_location": {
-      "column": 31,
-      "row": 3
-    },
-    "fix": null,
-    "location": {
-      "column": 1,
-      "row": 3
-    },
-    "message": "module-level constant `WINDOW_NAME_PREFIX` found. Consider an enum member, a class field, or a function-local"
-  },
-  {
-    "code": "loose-constants",
-    "end_location": {
       "column": 25,
       "row": 4
     },
@@ -54,6 +15,19 @@ input_file: tests/fixtures/composition/align_constants_then_flag_loose/input.py
       "column": 1,
       "row": 4
     },
-    "message": "module-level constant `RATE_LIMIT` found. Consider an enum member, a class field, or a function-local"
+    "message": "module-level `RATE_LIMIT` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+  },
+  {
+    "code": "loose-constants",
+    "end_location": {
+      "column": 25,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 5
+    },
+    "message": "module-level `RATE_LIMIT` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   }
 ]

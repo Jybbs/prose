@@ -1,13 +1,13 @@
-//! Flags module-level `SCREAMING_CASE` assignments outside the
-//! recognized structural-home carve-outs (dunder names, `TypeVar` /
-//! `ParamSpec` / `NewType` / `TypeAliasType` constructors, the
-//! `if TYPE_CHECKING:` block, and the per-project `allow` list).
+//! Flags a module-level `SCREAMING_CASE` binding that is reassigned.
+//! A write-once name passes whatever its value. The structural-home
+//! carve-outs (dunder names, `TypeVar` / `ParamSpec` / `NewType` /
+//! `TypeAliasType` constructors, the `if TYPE_CHECKING:` block, and the
+//! per-project `allow` list) drop out ahead of the reassignment gate.
 
 use std::collections::HashSet;
 
 use ruff_python_ast::{
     Expr, ExprName, Stmt, StmtIf,
-    helpers::is_dunder,
     name::UnqualifiedName,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
@@ -16,6 +16,7 @@ use ruff_text_size::Ranged;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
+    primitives::binding::BindingAnalysis,
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -40,6 +41,7 @@ impl Rule for LooseConstants {
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
         let mut walker = Walker {
             allow: &self.allow,
+            analysis: source.binding_analysis(),
             diagnostics: Vec::new(),
             rule: self.id(),
         };
@@ -50,6 +52,7 @@ impl Rule for LooseConstants {
 
 struct Walker<'a> {
     allow: &'a HashSet<String>,
+    analysis: &'a BindingAnalysis,
     diagnostics: Vec<Diagnostic>,
     rule: RuleId,
 }
@@ -60,8 +63,8 @@ impl Walker<'_> {
             self.rule,
             stmt.range(),
             format!(
-                "module-level constant `{name}` found. \
-                 Consider an enum member, a class field, or a function-local",
+                "module-level `{name}` is SCREAMING_CASE but reassigned. \
+                 Rename it to lowercase or keep it write-once",
             ),
         ));
     }
@@ -75,6 +78,7 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
             Stmt::Assign(a) => {
                 if let [Expr::Name(target)] = a.targets.as_slice()
                     && is_loose_constant_target(target, Some(a.value.as_ref()), self.allow)
+                    && self.analysis.module_reassigned(target.id.as_str())
                 {
                     self.emit(stmt, &target.id);
                 }
@@ -82,6 +86,7 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
             Stmt::AnnAssign(a) => {
                 if let Expr::Name(target) = a.target.as_ref()
                     && is_loose_constant_target(target, a.value.as_deref(), self.allow)
+                    && self.analysis.module_reassigned(target.id.as_str())
                 {
                     self.emit(stmt, &target.id);
                 }
@@ -92,18 +97,17 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
     }
 }
 
-/// Returns `true` when `target.id` matches `SCREAMING_CASE`, is not a
-/// dunder, is not in the per-project allowlist, and (when present) the
-/// right-hand side is not a `TypeVar` / `ParamSpec` / `NewType` /
-/// `TypeAliasType` constructor. `value = None` covers the bare
-/// annotation form `X: int`.
+/// Returns `true` when `target.id` matches `SCREAMING_CASE`, is not in
+/// the per-project allowlist, and (when present) the right-hand side is
+/// not a `TypeVar` / `ParamSpec` / `NewType` / `TypeAliasType`
+/// constructor. `value = None` covers the bare annotation form `X: int`.
+/// `SCREAMING_CASE` already rejects dunder names, which lead with `_`.
 fn is_loose_constant_target(
     target: &ExprName,
     value: Option<&Expr>,
     allow: &HashSet<String>,
 ) -> bool {
     is_screaming_case(&target.id)
-        && !is_dunder(&target.id)
         && !allow.contains(target.id.as_str())
         && !value.is_some_and(is_typing_constructor_call)
 }

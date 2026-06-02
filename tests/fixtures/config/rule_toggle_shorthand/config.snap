@@ -54,10 +54,8 @@ Config {
             enabled: true,
         },
         bare_imports: BareImportsConfig {
-            allow: [
-                "numpy",
-                "pandas",
-            ],
+            allow: [],
+            allow_aliased: true,
             enabled: true,
         },
         align_match_case: AlignmentConfig {

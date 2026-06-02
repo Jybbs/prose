@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Function Rebind Leaves the Module Constant Silent"
+
+description = '''
+The reassignment check counts module-scope writes only, so a write-once `TIMEOUT` at module level stays silent even when a function rebinds the same name in its own scope.
+'''

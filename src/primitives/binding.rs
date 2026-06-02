@@ -169,6 +169,22 @@ impl BindingAnalysis {
             .then_some(binding.read_offsets.as_slice())
     }
 
+    /// Returns the read count of the module-scope binding for `name`,
+    /// or `0` when `name` is unbound at module scope.
+    pub(crate) fn module_read_count(&self, name: &str) -> usize {
+        self.module_binding(name)
+            .map_or(0, |binding| binding.read_offsets.len())
+    }
+
+    /// Returns `true` when the module-scope binding for `name` carries
+    /// more than one write or an augmented-assignment write, and
+    /// `false` when `name` is write-once or unbound at module scope.
+    pub(crate) fn module_reassigned(&self, name: &str) -> bool {
+        self.module_binding(name).is_some_and(|binding| {
+            binding.write_offsets.len() > 1 || binding.kinds.contains(&BindingKind::AugAssign)
+        })
+    }
+
     /// Returns the number of read events recorded for `binding`.
     pub(crate) fn usage_count(&self, binding: BindingId) -> usize {
         self.binding(binding).read_offsets.len()
@@ -629,6 +645,40 @@ mod tests {
     #[case("x = 1\n")]
     fn module_function_reads_returns_none_unless_name_is_one_def(#[case] src: &str) {
         assert!(analyze(src).module_function_reads("f").is_none());
+    }
+
+    #[test]
+    fn module_read_count_counts_reads_inside_functions() {
+        let analysis = analyze("import sys\n\n\ndef f():\n    return sys.version\n");
+        assert_eq!(analysis.module_read_count("sys"), 1);
+    }
+
+    #[test]
+    fn module_read_count_counts_repeated_module_reads() {
+        let analysis = analyze("import os\nos.getcwd()\nos.environ\n");
+        assert_eq!(analysis.module_read_count("os"), 2);
+    }
+
+    #[rstest]
+    #[case("import sys\n")]
+    #[case("def f():\n    import sys\n\n    return sys.version\n")]
+    fn module_read_count_is_zero_for_unread_or_function_local(#[case] src: &str) {
+        assert_eq!(analyze(src).module_read_count("sys"), 0);
+    }
+
+    #[rstest]
+    #[case("X = 1\n")]
+    #[case("x = 1\n")]
+    fn module_reassigned_is_false_for_write_once_or_unbound(#[case] src: &str) {
+        assert!(!analyze(src).module_reassigned("X"));
+    }
+
+    #[rstest]
+    #[case("X = 1\nX = 2\n")]
+    #[case("X = 1\nX += 1\n")]
+    #[case("X += 1\n")]
+    fn module_reassigned_is_true_when_written_twice_or_augmented(#[case] src: &str) {
+        assert!(analyze(src).module_reassigned("X"));
     }
 
     #[test]

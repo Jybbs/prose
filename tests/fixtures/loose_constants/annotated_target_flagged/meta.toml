@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Annotated Constants Are Flagged the Same Way"
+title       = "Annotated Targets Are Reassignment Candidates"
 
 description = '''
-A module-level annotated `SCREAMING_CASE` assignment draws the diagnostic **whether or not a value follows the annotation**. Both the `X: int` and `Y: int = 1` shapes exercise the annotated-assignment code path.
+A reassigned `SCREAMING_CASE` annotated assignment draws the diagnostic **whether or not a value follows the annotation**. The bare `FLAG: bool` and the valued `MAX: int = 1` shapes both feed the annotated-assignment path ahead of the reassignment gate.
 '''

@@ -1,8 +1,0 @@
-[docs]
-canonical   = true
-previewable = true
-title       = "Default-Allowlisted Imports Pass Untouched"
-
-description = '''
-Allowlisted packages stay quiet, and everything else surfaces the lint.
-'''

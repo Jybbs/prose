@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/read_inside_functions_passes/input.py
+---
+import torch
+
+
+def train():
+    return torch.tensor(0)
+
+
+def evaluate():
+    return torch.zeros(1)

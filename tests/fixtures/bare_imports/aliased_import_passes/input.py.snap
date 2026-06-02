@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/aliased_import_passes/input.py
+---
+import os as o

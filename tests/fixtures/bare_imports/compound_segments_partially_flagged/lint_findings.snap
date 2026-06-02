@@ -15,7 +15,7 @@ input_file: tests/fixtures/bare_imports/compound_segments_partially_flagged/inpu
       "column": 8,
       "row": 1
     },
-    "message": "bare import `os` outside allowlist. Rewrite as `from os import ...` listing only the symbols this module uses"
+    "message": "bare import `os` is read at most once. Rewrite as `from os import ...` listing only the symbols this module uses"
   },
   {
     "code": "bare-imports",
@@ -28,6 +28,6 @@ input_file: tests/fixtures/bare_imports/compound_segments_partially_flagged/inpu
       "column": 12,
       "row": 1
     },
-    "message": "bare import `sys` outside allowlist. Rewrite as `from sys import ...` listing only the symbols this module uses"
+    "message": "bare import `sys` is read at most once. Rewrite as `from sys import ...` listing only the symbols this module uses"
   }
 ]

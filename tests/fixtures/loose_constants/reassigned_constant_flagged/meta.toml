@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Reassigned SCREAMING_CASE Constant Draws the Diagnostic"
+
+description = '''
+A `SCREAMING_CASE` name reassigned at module scope breaks the immutability its casing promises, so **each write surfaces the lint** where a write-once constant stays silent.
+'''

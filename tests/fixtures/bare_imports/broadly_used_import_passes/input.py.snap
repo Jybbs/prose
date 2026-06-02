@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/bare_imports/broadly_used_import_passes/input.py
+---
+import torch
+
+torch.tensor(torch.zeros(3))

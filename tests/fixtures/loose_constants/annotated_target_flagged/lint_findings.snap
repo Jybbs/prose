@@ -7,7 +7,7 @@ input_file: tests/fixtures/loose_constants/annotated_target_flagged/input.py
   {
     "code": "loose-constants",
     "end_location": {
-      "column": 7,
+      "column": 11,
       "row": 1
     },
     "fix": null,
@@ -15,12 +15,12 @@ input_file: tests/fixtures/loose_constants/annotated_target_flagged/input.py
       "column": 1,
       "row": 1
     },
-    "message": "module-level constant `X` found. Consider an enum member, a class field, or a function-local"
+    "message": "module-level `FLAG` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   },
   {
     "code": "loose-constants",
     "end_location": {
-      "column": 11,
+      "column": 12,
       "row": 2
     },
     "fix": null,
@@ -28,6 +28,32 @@ input_file: tests/fixtures/loose_constants/annotated_target_flagged/input.py
       "column": 1,
       "row": 2
     },
-    "message": "module-level constant `Y` found. Consider an enum member, a class field, or a function-local"
+    "message": "module-level `FLAG` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+  },
+  {
+    "code": "loose-constants",
+    "end_location": {
+      "column": 13,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "module-level `MAX` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+  },
+  {
+    "code": "loose-constants",
+    "end_location": {
+      "column": 8,
+      "row": 4
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 4
+    },
+    "message": "module-level `MAX` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   }
 ]

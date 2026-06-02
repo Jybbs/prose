@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module Import Read Inside Functions Passes"
+
+description = '''
+A bare `import torch` read across two function bodies tallies both reads against its module-scope binding, so the broadly-used import **passes untouched**.
+'''

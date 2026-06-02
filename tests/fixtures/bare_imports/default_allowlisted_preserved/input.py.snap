@@ -1,7 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/bare_imports/default_allowlisted_preserved/input.py
----
-import numpy
-import pandas

@@ -1,9 +1,9 @@
 ---
 source: tests/diagnostics.rs
-assertion_line: 36
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/ignore_suppresses_one_lint_line/input.py
 ---
 align-equals@13..14
+align-equals@82..137
 loose-constants@0..19
-loose-constants@74..88
+loose-constants@74..94
