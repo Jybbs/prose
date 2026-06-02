@@ -335,7 +335,7 @@ fn assemble_dict_items_multiline(
         }
         if !is_last {
             out.push('\n');
-            if divider_slots.contains(&slot) {
+            if divider_slots.binary_search(&slot).is_ok() {
                 out.push('\n');
             }
         }
