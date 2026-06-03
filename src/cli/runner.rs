@@ -148,8 +148,7 @@ fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
         return outcome;
     };
     if let Err(e) = fs_err::write(path, text) {
-        eprintln!("error: {e}");
-        return FileOutcome::Failed(ExitStatus::ConfigError);
+        return config_error(e);
     }
     outcome
 }
@@ -169,14 +168,19 @@ fn build_run(rules: &RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus>
 /// Records what a cached entry knows about the rewrite. A mode that
 /// skipped `run` stores `Skipped`, whereas one that ran it records
 /// whether the text changed.
-fn cache_rewrite(needs_rewrite: bool, formatted_text: &Option<String>) -> Rewrite {
+fn cache_rewrite(needs_rewrite: bool, formatted_text: Option<&str>) -> Rewrite {
     if !needs_rewrite {
         return Rewrite::Skipped;
     }
     match formatted_text {
-        Some(text) => Rewrite::Changed(text.clone()),
+        Some(text) => Rewrite::Changed(text.to_owned()),
         None => Rewrite::Unchanged,
     }
+}
+
+fn config_error(e: impl std::fmt::Display) -> FileOutcome {
+    eprintln!("error: {e}");
+    FileOutcome::Failed(ExitStatus::ConfigError)
 }
 
 fn emit_outcomes<W: Write>(
@@ -219,7 +223,8 @@ fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
             EmitterSummary::default(),
             |mut summary, (diagnostics, formatted_text)| {
                 summary.files_visited += 1;
-                summary.files_changed += usize::from(file_changed(diagnostics, formatted_text));
+                summary.files_changed +=
+                    usize::from(file_changed(diagnostics, formatted_text.as_deref()));
                 summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
                 summary.diagnostics_total += diagnostics.len();
                 for diag in diagnostics {
@@ -233,8 +238,8 @@ fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
 /// A file counts as changed when `run` produced a rewrite, or, on the
 /// `check` path that skips the rewrite, when `diagnose` emitted a format
 /// diagnostic.
-fn file_changed(diagnostics: &[Diagnostic], formatted_text: &Option<String>) -> bool {
-    formatted_text.is_some() || diagnostics.iter().any(|d| d.severity == Severity::Format)
+fn file_changed(diagnostics: &[Diagnostic], formatted_text: Option<&str>) -> bool {
+    formatted_text.is_some() || has_format_change(diagnostics)
 }
 
 fn finish(
@@ -365,6 +370,10 @@ fn format_stdin<R: Read, O: Write, E: Write>(
     Ok(status)
 }
 
+fn has_format_change(diagnostics: &[Diagnostic]) -> bool {
+    diagnostics.iter().any(|d| d.severity == Severity::Format)
+}
+
 fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
     if no_cache || !config.cache.enabled {
         return None;
@@ -378,10 +387,7 @@ fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
 fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOutcome {
     let bytes = match fs_err::read(path) {
         Ok(b) => b,
-        Err(e) => {
-            eprintln!("error: {e}");
-            return FileOutcome::Failed(ExitStatus::ConfigError);
-        }
+        Err(e) => return config_error(e),
     };
     // A plain `format` rewrite churns the key it would write, and a
     // `--validate` check must re-confirm the rewrite parses rather than
@@ -429,7 +435,7 @@ fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOutcome {
             k,
             &CacheEntry {
                 diagnostics: diagnostics.clone(),
-                rewrite: cache_rewrite(needs_rewrite, formatted_text),
+                rewrite: cache_rewrite(needs_rewrite, formatted_text.as_deref()),
             },
         );
     }
@@ -521,15 +527,14 @@ fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, write
 /// rewrite with `diagnose`'s as-written diagnostics when an output format
 /// will render them, or `run`'s own otherwise.
 fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
+    let file = source.source_file().clone();
     if let Pass::Diagnose { validate } = pass {
         let diagnostics = pipeline.diagnose(&source);
-        let file = source.source_file().clone();
         if validate
-            && diagnostics.iter().any(|d| d.severity == Severity::Format)
+            && has_format_change(&diagnostics)
             && let Err(e) = pipeline.validate(source)
         {
-            eprintln!("error: {e}");
-            return FileOutcome::Failed(ExitStatus::ConfigError);
+            return config_error(e);
         }
         return FileOutcome::Done {
             cached: false,
@@ -539,7 +544,6 @@ fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome 
         };
     }
     let diagnosed = matches!(pass, Pass::Both).then(|| pipeline.diagnose(&source));
-    let file = source.source_file().clone();
     match pipeline.run(source) {
         Ok((formatted, run_diagnostics)) => {
             let formatted_text = formatted
@@ -552,10 +556,7 @@ fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome 
                 formatted_text,
             }
         }
-        Err(e) => {
-            eprintln!("error: {e}");
-            FileOutcome::Failed(ExitStatus::ConfigError)
-        }
+        Err(e) => config_error(e),
     }
 }
 
@@ -733,10 +734,10 @@ mod tests {
 
     #[test]
     fn cache_rewrite_marks_skipped_unless_run_supplied_text() {
-        assert_matches!(cache_rewrite(false, &None), Rewrite::Skipped);
-        assert_matches!(cache_rewrite(true, &None), Rewrite::Unchanged);
+        assert_matches!(cache_rewrite(false, None), Rewrite::Skipped);
+        assert_matches!(cache_rewrite(true, None), Rewrite::Unchanged);
         assert_matches!(
-            cache_rewrite(true, &Some("y = 1\n".to_owned())),
+            cache_rewrite(true, Some("y = 1\n")),
             Rewrite::Changed(text) if text == "y = 1\n"
         );
     }
@@ -994,10 +995,10 @@ mod tests {
         let format = vec![diagnostic(Severity::Format, range, "synthetic-format")];
         let lint = vec![diagnostic(Severity::Lint, range, "synthetic-lint")];
 
-        assert!(file_changed(&[], &Some("x = 1\n".to_owned())));
-        assert!(file_changed(&format, &None));
-        assert!(!file_changed(&lint, &None));
-        assert!(!file_changed(&[], &None));
+        assert!(file_changed(&[], Some("x = 1\n")));
+        assert!(file_changed(&format, None));
+        assert!(!file_changed(&lint, None));
+        assert!(!file_changed(&[], None));
     }
 
     #[test]
@@ -1246,6 +1247,15 @@ mod tests {
             Pass::Diagnose { validate: false },
         );
         assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+    }
+
+    #[test]
+    fn rehydrate_returns_none_for_a_skipped_entry() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::Skipped,
+        };
+        assert!(rehydrate(Path::new("a.py"), b"x = 1\n", entry, true).is_none());
     }
 
     #[test]

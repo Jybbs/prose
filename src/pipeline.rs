@@ -118,13 +118,7 @@ impl Pipeline {
                         .into_iter()
                         .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
                 );
-                source
-                    .reparse(new_text)
-                    .map(|src| (src, diagnostics))
-                    .map_err(|source| PipelineError::Reparse {
-                        rule: rule_id,
-                        source,
-                    })
+                reparse_or_reject(&source, new_text, rule_id).map(|src| (src, diagnostics))
             },
         )?;
         drop_suppressed_lints(&mut diagnostics, &source, source.suppression_map());
@@ -151,12 +145,7 @@ impl Pipeline {
                     return Ok(source);
                 }
                 let new_text = apply_edits(source.text(), groups.concat());
-                source
-                    .reparse(new_text)
-                    .map_err(|source| PipelineError::Reparse {
-                        rule: rule_id,
-                        source,
-                    })
+                reparse_or_reject(&source, new_text, rule_id)
             })
             .map(drop)
     }
@@ -200,6 +189,18 @@ fn prepared_groups(
     retain_unsuppressed(&mut groups, source, suppression, rule_id);
     groups.retain(|group| !group.is_empty());
     groups
+}
+
+/// Reparses `new_text`, tagging a parse failure with the `rule` whose
+/// edits produced it.
+fn reparse_or_reject(
+    source: &Source,
+    new_text: String,
+    rule: RuleId,
+) -> Result<Source, PipelineError> {
+    source
+        .reparse(new_text)
+        .map_err(|source| PipelineError::Reparse { rule, source })
 }
 
 /// Drops the edits a format-suppression directive covers from each

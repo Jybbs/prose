@@ -14,6 +14,8 @@ stability: internal
 
 A downstream consumer in `0.2.x` reaches the cache indirectly through `cli::runner::process_path`. Each file's bytes feed `CacheKey::compute`, the resulting key drives a lookup, and on hit the runner rehydrates the cached diagnostics and rewrite into a `SourceFile` without entering the pipeline. On miss, the runner runs the pipeline as normal and inserts the resulting entry before emitting.
 
+What an entry carries tracks the mode that wrote it. A `check` run stores its as-written diagnostics with the rewrite marked skipped, since `check` reads no rewritten text, so a later `format` reading a `check`-populated entry recomputes the rewrite it needs rather than trusting an absent one. Plain `format` and `check --validate` bypass the cache outright, the first because an in-place rewrite churns the very key it would write, the second because it re-confirms each rewrite parses rather than trust an entry an earlier run left unvalidated.
+
 At `1.0` the cache surface stabilizes for downstream consumers integrating the pipeline directly.
 
 ## Key Shape
