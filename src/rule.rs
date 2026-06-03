@@ -55,8 +55,8 @@ pub(crate) trait Rule: Send + Sync {
     /// Computes the edits this rule would apply to `source`,
     /// partitioned into fix groups. Each inner `Vec` is one fix that
     /// the pipeline maps to a single diagnostic, and the edits across
-    /// all groups must not overlap after sorting, an invariant the
-    /// pipeline's applicator debug-asserts.
+    /// all groups must not overlap after sorting. The pipeline's
+    /// applicator declines an overlapping group rather than splicing it.
     fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
         Vec::new()
     }

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Multi-Line Return Annotation Keeps Its Parentheses When Parameters Expand"
+
+description = '''
+A signature whose parameters overflow the line budget expands to one per line, while the parenthesized multi-line return annotation passes through with **its grouping parentheses intact**. Those parentheses are what let the return type span several lines, so dropping them would leave output that no longer parses.
+'''
