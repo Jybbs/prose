@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/return_union_parens_survive_expand/input.py
+---
+def assemble_result(
+    primary_candidate,
+    secondary_candidate,
+    fallback_candidate,
+    retry_budget,
+) -> (
+    PrimaryEnvelope
+    | SecondaryEnvelope
+    | DeferredEnvelope
+):
+    return primary_candidate
