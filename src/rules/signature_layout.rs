@@ -17,7 +17,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     primitives::{
-        edit::{narrowed_replacement, singleton_groups, splice},
+        edit::{narrowed_replacement, singleton_groups, splice_parses},
         layout::explode_parens,
         range::paren_aware_range,
     },
@@ -122,8 +122,13 @@ impl Layout<'_> {
         };
         // Emit the reshape only when the spliced signature re-parses, the
         // safety net for return types the rewrite cannot reassemble.
-        let candidate = splice(self.source, fd.range(), replacement_range, &replacement);
-        if parse_module(&candidate).is_ok() {
+        if splice_parses(
+            self.source,
+            fd.range(),
+            replacement_range,
+            &replacement,
+            parse_module,
+        ) {
             self.edits.extend(narrowed_replacement(
                 self.source,
                 replacement_range,

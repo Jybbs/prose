@@ -44,7 +44,7 @@ use crate::{
     primitives::{
         call_keywords::{keyword_args, module_call_params, pins_positional_params},
         docstring::{entry_carrying_sections, rewrite_docstrings},
-        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, splice},
+        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, splice_parses},
         imports::{ImportGroup, future_annotations_alias, import_group},
         orderer::{
             assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
@@ -1028,8 +1028,7 @@ fn rewrite_dict_text<'src>(
     // safety net for irregular layouts (entries sharing a line, comments
     // inside a `**`-spread's parentheses) the block model cannot shuffle
     // cleanly.
-    let reassembled = splice(source, d.range(), span, &assembled);
-    if parse_expression(&reassembled).is_err() {
+    if !splice_parses(source, d.range(), span, &assembled, parse_expression) {
         return None;
     }
     Some((span, Cow::Owned(assembled)))
@@ -1240,7 +1239,8 @@ mod tests {
         let rule = Alphabetize::from_config(&config);
         let source = parse(src);
         let edits = rule.apply(&source).into_iter().flatten().collect();
-        let text = crate::primitives::edit::apply_edits(source.text(), edits);
+        let text = crate::primitives::edit::apply_edits(source.text(), edits)
+            .expect("non-overlapping edits");
         let args_section_end = text.find("\"\"\"\n    pass").expect("closer follows args");
         let args_section = &text[..args_section_end];
         let bar_pos = args_section.find("bar: two").expect("bar still present");
@@ -1287,7 +1287,8 @@ mod tests {
             "def inner(b, a):\n    pass\n\n\ndef outer(d, c):\n    pass\n\n\nouter(inner(1, 2), 3)\n",
         );
         let edits = collect_leaf_edits(&source, &call_rewrite_targets(&source));
-        let text = crate::primitives::edit::apply_edits(source.text(), edits);
+        let text = crate::primitives::edit::apply_edits(source.text(), edits)
+            .expect("non-overlapping edits");
         assert_eq!(
             text,
             "def inner(a, b):\n    pass\n\n\ndef outer(c, d):\n    pass\n\n\nouter(c=3, d=inner(1, 2))\n",

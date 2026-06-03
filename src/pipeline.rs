@@ -108,7 +108,9 @@ impl Pipeline {
                     return Ok((source, diagnostics));
                 }
                 let message = rule.message();
-                let new_text = apply_edits(source.text(), groups.concat());
+                let Some(new_text) = apply_edits(source.text(), groups.concat()) else {
+                    return Ok((source, diagnostics));
+                };
                 debug_assert!(
                     new_text != source.text(),
                     "rule `{rule_id}` emitted edits that produced identical text",
@@ -470,6 +472,25 @@ mod tests {
         pipeline.run(source).expect("all rules succeed");
 
         assert_eq!(*log.lock().unwrap(), ["first", "second", "third"]);
+    }
+
+    #[test]
+    fn run_declines_an_overlapping_group_as_a_no_op() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![
+                Edit::range_replacement("Y".to_owned(), range(0, 3)),
+                Edit::range_replacement("Z".to_owned(), range(2, 5)),
+            ]],
+            id: RuleId::from("self-overlapping"),
+        })]);
+        let source = parse("x = 1\n");
+
+        let (result, diagnostics) = pipeline
+            .run(source)
+            .expect("overlap degrades, run continues");
+
+        assert_eq!(result.text(), "x = 1\n");
+        assert!(diagnostics.is_empty());
     }
 
     #[test]
