@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Dict Whose Entries Share Lines Keeps Source Order"
+
+description = '''
+A multiline dict that packs several entries onto one physical line stays in source order. The block-based reorder cannot shuffle entries that share a line without merging tokens, so the reassembled dict is checked against the parser and the reorder is declined when it would not re-parse, leaving the source untouched.
+'''

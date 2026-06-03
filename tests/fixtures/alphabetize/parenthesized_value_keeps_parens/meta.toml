@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parenthesized Value Keeps Its Parentheses on Reorder"
+
+description = '''
+A multiline dict entry whose value sits inside parentheses keeps those parentheses when the dict reorders. The entry's code reaches its paren-aware end, so the closing `)` travels with the value rather than shedding into the separator tail and leaving an unbalanced expression behind.
+'''
