@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/commented_already_aligned/input.py
+---
+config = {
+    "host"    : "localhost",  # default bind address
+    "port"    : 8080,  # listener port
+    "timeout" : 30,  # seconds before giving up
+}

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Commented Multi-Line Dict Keeps Its Padding"
+
+description = '''
+A multi-line dict whose entries each carry a trailing comment **keeps its pre-`:` padding**, because the comments ride with their entries and leave the run as one multi-member alignment group that belongs to `align_colons`. Strip touches a group only when it has no column to align against.
+'''

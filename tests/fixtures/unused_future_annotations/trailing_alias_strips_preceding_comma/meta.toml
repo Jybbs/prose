@@ -1,6 +1,6 @@
 [docs]
 previewable = true
-title       = "The Import Removes Whether Other Imports Sit before or after It"
+title       = "A Trailing Alias Strips Its Preceding Comma"
 
 description = '''
 The `annotations` alias sits last in a multi-name `from __future__ import division, annotations`. **The surgical deletion strips the preceding comma alongside the alias**, leaving the earlier `division` entry's formatting intact.

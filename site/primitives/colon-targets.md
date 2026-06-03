@@ -27,14 +27,10 @@ Each context resolves a `Member` for the alignment math, with `width` being the 
 
 ## Internal Surface
 
-The receiver trait carries the per-context handlers, where only `handle` is required with an empty default body and the other three are provided methods a consuming rule overrides on a need-by-need basis:
+The receiver trait carries the per-context handlers, where only `handle` is required with an empty default body and the others are provided methods a consuming rule overrides on a need-by-need basis:
 
 ```rust
 pub(crate) trait ColonEmitter {
-    fn dict(&mut self, d: &ExprDict, members: &[aligner::Member]) {
-        self.handle(members);
-    }
-
     fn handle(&mut self, members: &[aligner::Member]) {}
 
     fn match_arms(&mut self, members: &[aligner::Member]) {
@@ -45,7 +41,7 @@ pub(crate) trait ColonEmitter {
 }
 ```
 
-`handle` is the catch-all for class fields, docstring args, and parameters. `dict` carries the surrounding `ExprDict` for consumers that need its range *(e.g., the `# prose: keep` suppression check on dict literals)*, with the default delegating to `handle` so a rule that does not care about the surrounding dict gets the same callback. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[align-match-case]] owns the match-arm context)*, with its default also delegating to `handle` for any rule that wants the unified callback.
+`handle` is the catch-all for class fields, docstring args, dict entries, and parameters. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[align-match-case]] owns the match-arm context)*, with its default delegating to `handle` for any rule that wants the unified callback.
 
 `walk(source)` is the provided driver across `source`'s module body, recursing into nested classes, functions, matches, and expressions so a single call covers the whole tree. A consuming rule never overrides `walk`, because calling the provided method is enough to drive the receiver across every relevant context.
 
@@ -59,7 +55,7 @@ A rule implementing `ColonEmitter` carries a single accumulator *(typically `Vec
 
 Each context defines its own grouping shape, because what counts as *"adjacent"* inside a dict literal differs from what counts as *"adjacent"* across class-body statements:
 
-1. **Dict items** group by line-adjacency between one key's end and the next item's start. A `**spread` entry skips the colon scan without breaking the run, so the rest of the dict aligns around the spreads.
+1. **Dict items** group by line-adjacency between one key's end and the next item's start. A trailing comment rides with its entry and a `**spread` entry skips the colon scan, neither breaking the run, so the rest of the dict aligns around them.
 2. **Class fields** group via `line_adjacent_groups` over the class body's statements, treating any non-`field: T` statement as a divider.
 3. **Annotated function parameters** group via `parameter_split_groups`, splitting at the first parameter that does not qualify *(an un-annotated argument, a `*args` or `**kwargs`, a `/` or `*` separator)*.
 4. **Match arms** group one per `match` statement, with every arm's colon contributing a member. Patterns may span multiple lines, so the alignment column is per-`match` rather than per-line-run.

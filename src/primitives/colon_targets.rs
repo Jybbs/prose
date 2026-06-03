@@ -7,7 +7,7 @@
 //! align to.
 
 use ruff_python_ast::{
-    AnyParameterRef, DictItem, Expr, ExprDict, ExprStringLiteral, MatchCase, Parameters, Stmt,
+    AnyParameterRef, DictItem, Expr, ExprStringLiteral, MatchCase, Parameters, Stmt,
     token::TokenKind,
     visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt},
 };
@@ -18,17 +18,12 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{primitives::aligner, rule::RuleId, source::Source};
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
-/// for class fields, docstring args, and parameters. `dict` carries
-/// the surrounding `ExprDict` for callers that need its range.
+/// for class fields, docstring args, dict entries, and parameters.
 /// `match_arms` is split out so a rule can opt out of match-arm
 /// alignment by overriding it to a no-op. `rule` names the consuming
 /// rule so the group builders can hold its skip-suppressed rows out of
 /// alignment. Call `walk` to drive the emitter across `source`'s body.
 pub(crate) trait ColonEmitter {
-    fn dict(&mut self, _d: &ExprDict, members: &[aligner::Member]) {
-        self.handle(members);
-    }
-
     fn handle(&mut self, _members: &[aligner::Member]) {}
 
     fn match_arms(&mut self, members: &[aligner::Member]) {
@@ -61,7 +56,7 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
     fn visit_expr(&mut self, expr: &'a Expr) {
         if let Expr::Dict(d) = expr {
             for group in dict_member_groups(self.source, self.emitter.rule(), &d.items) {
-                self.emitter.dict(d, &group);
+                self.emitter.handle(&group);
             }
         }
         walk_expr(self, expr);
@@ -137,12 +132,13 @@ fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
     colon_member(source, key.end(), item.value.start())
 }
 
-/// Returns one group per run of line-adjacent `key: value` entries in
-/// `d`. A blank line between two entries closes the active run and
-/// starts a fresh one, so each contiguous-line group aligns
-/// independently. `**spread` entries skip the colon scan but do not
-/// break the run, matching the long-standing rule that an unpacking
-/// passes alignment through.
+/// Returns one group per run of consecutive-line `key: value` entries
+/// in `d`. A trailing comment on an entry rides with it and keeps the
+/// run going, whereas a standalone comment line or a blank line between
+/// two entries closes the active run and starts a fresh one, so each
+/// run aligns independently. `**spread` entries skip the colon scan but
+/// do not break the run, matching the long-standing rule that an
+/// unpacking passes alignment through.
 fn dict_member_groups(
     source: &Source,
     rule: RuleId,
@@ -150,26 +146,26 @@ fn dict_member_groups(
 ) -> Vec<Vec<aligner::Member>> {
     let mut groups: Vec<Vec<aligner::Member>> = Vec::new();
     let mut current: Vec<aligner::Member> = Vec::new();
-    let mut active: Option<(TextSize, bool)> = None;
+    let mut prev_end: Option<TextSize> = None;
     for item in items {
-        let Some(member) = dict_item(source, item) else {
-            continue;
-        };
-        if aligner::is_held(source, rule, item.start()) {
-            if let Some((prev_end, prev_held)) = active.as_mut() {
-                *prev_end = item.end();
-                *prev_held = true;
+        let member = match dict_item(source, item) {
+            Some(member) if !aligner::is_held(source, rule, item.start()) => member,
+            _ => {
+                // A `**spread` (no key) or a skip-held entry joins no
+                // group yet bridges the run, extending the anchor so the
+                // entries on either side still align as one block.
+                if let Some(end) = prev_end.as_mut() {
+                    *end = item.end();
+                }
+                continue;
             }
-            continue;
-        }
-        let extends = active.is_some_and(|(prev_end, prev_held)| {
-            aligner::run_continues(source, prev_end, prev_held, item.start())
-        });
+        };
+        let extends = prev_end.is_some_and(|end| source.consecutive_lines(end, item.start()));
         if !extends {
             aligner::flush_run(&mut groups, &mut current);
         }
         current.push(member);
-        active = Some((item.end(), false));
+        prev_end = Some(item.end());
     }
     aligner::flush_run(&mut groups, &mut current);
     groups

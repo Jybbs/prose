@@ -6,8 +6,6 @@
 //! colon.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::ExprDict;
-use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
@@ -48,19 +46,6 @@ struct Emitter<'a> {
 }
 
 impl ColonEmitter for Emitter<'_> {
-    fn dict(&mut self, d: &ExprDict, members: &[aligner::Member]) {
-        let source = self.walker.source;
-        let rule = self.walker.rule;
-        let dict_range = d.range();
-        let has_real_comment = source
-            .comment_ranges()
-            .iter()
-            .any(|c| dict_range.contains_range(*c) && !aligner::is_held(source, rule, c.start()));
-        if !has_real_comment {
-            self.handle(members);
-        }
-    }
-
     fn handle(&mut self, members: &[aligner::Member]) {
         if aligner::is_alignment_candidate(members) {
             self.walker.emit_group(members);

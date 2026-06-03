@@ -4,5 +4,5 @@ previewable = true
 title       = "Varying Dict Keys Align on the Widest Column"
 
 description = '''
-A dictionary literal with three entries of differing key lengths aligns on the `:` separator, and the reader reads keys and values as separate columns.
+A dictionary literal whose entries have differing key lengths aligns on the `:` separator, and the reader reads keys and values as separate columns.
 '''

@@ -1,6 +1,6 @@
-x       = 1
-foo     = 2
 bar_baz = 3
+foo     = 2
+x       = 1
 
 # fmt: off
 short = 1

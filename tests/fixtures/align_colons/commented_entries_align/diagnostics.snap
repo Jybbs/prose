@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/commented_entries_align/input.py
+---
+align-colons@21..108
