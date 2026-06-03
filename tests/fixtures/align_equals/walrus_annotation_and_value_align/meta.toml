@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Walrus Annotation and Value Align Together"
+
+description = '''
+An assignment whose annotation and value each parenthesize an assignment expression aligns without disturbing either `:=`, confirming the paren-aware measurement leaves both parenthesized forms intact.
+'''
