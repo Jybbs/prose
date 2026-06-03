@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/import_layout/indented_split_keeps_indent/input.py
+---
+import-layout@54..55

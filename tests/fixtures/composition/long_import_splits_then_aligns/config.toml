@@ -1,0 +1,4 @@
+import-line-length = 40
+
+[harness]
+rules = ["import-layout", "align-imports"]
