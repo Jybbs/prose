@@ -4,3 +4,4 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/fmt_skip_pins_one_member/input.py
 ---
 align-equals@1..69
+alphabetize@0..25

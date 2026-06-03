@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/annotated_constant_trails_its_type/input.py
+---
+class Settings:
+    pass
+
+
+CONFIG: Settings = {}
+HANDLER = Settings

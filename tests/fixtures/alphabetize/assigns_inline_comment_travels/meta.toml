@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Inline Comment Travels with Its Hoisted Constant"
+
+description = '''
+A trailing comment on a constant's line **travels with the constant as the band sorts**, since the comment attaches to the statement's block rather than pinning the run the way a detached comment between statements would.
+'''

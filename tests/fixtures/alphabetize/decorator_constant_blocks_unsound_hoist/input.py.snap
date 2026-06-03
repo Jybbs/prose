@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/decorator_constant_blocks_unsound_hoist/input.py
+---
+def decorate(f):
+    return f
+
+
+HANDLER = decorate
+
+
+@HANDLER
+def target():
+    pass

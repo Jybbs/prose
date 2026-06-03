@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/annotated_constant_trails_its_type/input.py
+---
+alphabetize@27..67
