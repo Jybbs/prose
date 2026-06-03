@@ -502,8 +502,8 @@ where
     deserializer.deserialize_any(RuleVisitor(PhantomData))
 }
 
-/// Deserializes an optional count cap a positive integer sets and
-/// `false` disables. `true` is rejected so the disable spelling stays
+/// Deserializes an optional cap a positive integer sets and `false`
+/// disables. `true` is rejected so the disable spelling stays
 /// unambiguous.
 fn deserialize_optional_cap<'de, D>(
     deserializer: D,
