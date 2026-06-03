@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/walrus_parameter_annotation_aligns/input.py
+---
+def configure(
+    host: (c := int) = 1,
+    portfolio: str   = 2,
+    region: float    = 3,
+):
+    pass

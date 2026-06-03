@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parenthesized Assignment Target Aligns"
+
+description = '''
+An assignment whose target wears redundant parentheses aligns like any other, because the rule measures the target through its explicit parentheses so the closing `)` stays left of the rewritten gap.
+'''

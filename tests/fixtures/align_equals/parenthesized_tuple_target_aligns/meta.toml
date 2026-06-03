@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parenthesized Tuple Target Aligns"
+
+description = '''
+A tuple-unpacking assignment whose target wears parentheses aligns like any other, because the tuple's parentheses already fall inside its node range and the paren-aware measurement leaves that range unchanged.
+'''

@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/yield_from_annotation_aligns/input.py
+---
+def stream(items):
+    forwarded: (yield from items) = 1
+    received_value_field: int     = 2
