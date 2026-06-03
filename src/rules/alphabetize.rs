@@ -21,6 +21,7 @@
 
 use std::{
     borrow::Cow,
+    cmp::Reverse,
     collections::{HashMap, HashSet},
     ops::Range,
 };
@@ -34,6 +35,7 @@ use ruff_python_ast::{
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
     visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt},
 };
+use ruff_python_parser::parse_expression;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
@@ -47,6 +49,7 @@ use crate::{
         orderer::{
             assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
         },
+        range::paren_aware_range,
         scope::BodyScope,
     },
     rule::{Rule, RuleId},
@@ -154,7 +157,6 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
 }
 
 struct LeafCollector<'a> {
-    dict_depth: u32,
     edits: Vec<Edit>,
     rewrite_edits: Vec<Edit>,
     rewrite_targets: &'a HashMap<TextSize, &'a Parameters>,
@@ -180,9 +182,8 @@ impl<'a> LeafCollector<'a> {
     }
 
     fn emit_dict(&mut self, d: &'a ExprDict) {
-        if let Some((span, text)) = rewrite_dict_text(self.source, d) {
-            self.edits
-                .push(Edit::range_replacement(text.into_owned(), span));
+        if let Some((span, text)) = rewrite_dict_text(self.source, d, &self.edits) {
+            self.fold_into(span, text);
         }
     }
 
@@ -226,6 +227,18 @@ impl<'a> LeafCollector<'a> {
         });
     }
 
+    /// Replaces the leaf edits nested inside `span` with a single edit
+    /// carrying `folded`, that span reordered with the nested edits
+    /// already applied. A `Cow::Borrowed` folded nothing, so emits
+    /// nothing. The insert keeps `edits` sorted by start.
+    fn fold_into(&mut self, span: TextRange, folded: Cow<'a, str>) {
+        let Cow::Owned(text) = folded else {
+            return;
+        };
+        self.edits.retain(|e| !span.contains_range(e.range()));
+        insert_by_start(&mut self.edits, Edit::range_replacement(text, span));
+    }
+
     fn try_emit_inline_reorder<T, S>(
         &mut self,
         items: &'a [T],
@@ -238,12 +251,10 @@ impl<'a> LeafCollector<'a> {
             return;
         };
         let span = first.range().cover(last.range());
-        let rendered = reorder_text(self.source, items, classify, |_, slice| {
-            Cow::Borrowed(slice)
+        let folded = reorder_text(self.source, items, classify, |i, _| {
+            apply_inline_edits(self.source, items[i].range(), &self.edits)
         });
-        if let Cow::Owned(text) = rendered {
-            self.edits.push(Edit::range_replacement(text, span));
-        }
+        self.fold_into(span, folded);
     }
 
     /// Rewrites a call to a reordered module function, converting each
@@ -281,25 +292,18 @@ impl<'a> LeafCollector<'a> {
 
 impl<'a> AstVisitor<'a> for LeafCollector<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
-        if let Expr::Dict(d) = expr {
-            if self.dict_depth == 0 {
-                self.emit_dict(d);
-            }
-            self.dict_depth += 1;
-            walk_expr(self, expr);
-            self.dict_depth -= 1;
-            return;
-        }
+        walk_expr(self, expr);
         match expr {
             Expr::Call(c) => self.emit_call(c),
+            Expr::Dict(d) => self.emit_dict(d),
             Expr::Lambda(l) => self.emit_lambda(l),
             Expr::Set(s) => self.emit_set(s),
             _ => {}
         }
-        walk_expr(self, expr);
     }
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        walk_stmt(self, stmt);
         match stmt {
             Stmt::Assign(a) => self.emit_dunder_list(a),
             Stmt::Delete(d) => self.emit_delete(d),
@@ -310,7 +314,6 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
             Stmt::Nonlocal(n) => self.emit_id_run(&n.names),
             _ => {}
         }
-        walk_stmt(self, stmt);
     }
 }
 
@@ -368,11 +371,13 @@ fn args_reorder(params: &Parameters) -> bool {
 
 /// Concatenates dict-item block texts in `order`, placing each slot's
 /// separator comma against the entry's value span so it lands after the
-/// value and before any trailing line comment. Non-last slots always
-/// carry a comma and the new-last slot matches `source_last_has_comma`.
-/// Inserts a blank line at every slot listed in `divider_slots`.
+/// value and before any trailing line comment. `value_ends` carry each
+/// value's paren-aware end, splitting code from the separator tail past
+/// any closing parens. Non-last slots always carry a comma and the
+/// new-last slot matches `source_last_has_comma`. Inserts a blank line at
+/// every slot listed in `divider_slots`.
 fn assemble_dict_items_multiline(
-    items: &[DictItem],
+    value_ends: &[TextSize],
     blocks: &[TextRange],
     block_texts: &[Cow<'_, str>],
     order: &[usize],
@@ -382,7 +387,7 @@ fn assemble_dict_items_multiline(
     let mut out = String::with_capacity(blocks_span(blocks).len().to_usize());
     for (slot, &idx) in order.iter().enumerate() {
         let block_text = &block_texts[idx];
-        let tail_len = (blocks[idx].end() - items[idx].range().end()).to_usize();
+        let tail_len = (blocks[idx].end() - value_ends[idx]).to_usize();
         let (code, tail) = block_text.split_at(block_text.len() - tail_len);
         let (separator, comment) = tail.split_at(tail.find('#').unwrap_or(tail.len()));
         out.push_str(code);
@@ -496,15 +501,14 @@ fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
     })
 }
 
-/// Walks the AST collecting every leaf-level edit in source order, then
-/// folds in each call-site keyword rewrite that does not overlap an
-/// existing edit, keeping the whole list non-overlapping.
+/// Walks the AST collecting one non-overlapping leaf edit per outermost
+/// reordering structure, each folding its nested reorders in, then folds
+/// in every call-site keyword rewrite that does not overlap one.
 fn collect_leaf_edits<'a>(
     source: &'a Source,
     rewrite_targets: &'a HashMap<TextSize, &'a Parameters>,
 ) -> Vec<Edit> {
     let mut collector = LeafCollector {
-        dict_depth: 0,
         edits: Vec::new(),
         rewrite_edits: Vec::new(),
         rewrite_targets,
@@ -512,18 +516,20 @@ fn collect_leaf_edits<'a>(
     };
     collector.visit_body(&source.ast().body);
     let mut edits = collector.edits;
-    edits.sort_unstable();
     // Keyword rewrites are pure additions over the existing leaf edits,
     // so drop any that would overlap one, sidestepping the leaf-edit
-    // applicator's non-overlap invariant on nested reorder spans.
-    for rewrite in collector.rewrite_edits {
+    // applicator's non-overlap invariant on nested reorder spans. An
+    // enclosing rewrite outranks one it contains, so widest-first
+    // ordering keeps the outer of a nested pair.
+    let mut rewrites = collector.rewrite_edits;
+    rewrites.sort_by_key(|e| (e.start(), Reverse(e.end())));
+    for rewrite in rewrites {
         if edits.iter().all(|e| {
             e.range()
                 .intersect(rewrite.range())
                 .is_none_or(|i| i.is_empty())
         }) {
-            let slot = edits.partition_point(|e| e.range().start() < rewrite.range().start());
-            edits.insert(slot, rewrite);
+            insert_by_start(&mut edits, rewrite);
         }
     }
     edits
@@ -674,6 +680,15 @@ fn has_default(ann: &StmtAnnAssign) -> bool {
         })
 }
 
+/// True when two adjacent statements in `body` sit on one physical
+/// line, joined by `;`. A block-based reorder carries such a statement's
+/// `;` separator into its new slot and abuts the displaced sibling, so a
+/// body carrying one keeps source order.
+fn has_inline_statement_join(source: &Source, body: &[Stmt]) -> bool {
+    body.windows(2)
+        .any(|pair| !source.contains_line_break(TextRange::new(pair[0].end(), pair[1].start())))
+}
+
 /// True when the line containing the dict's opening `{` carries a
 /// trailing `# prose: keep` comment.
 fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
@@ -700,6 +715,20 @@ fn import_sort_key<'a>(
         Stmt::ImportFrom(i) => (group, 1, i.level, i.module.as_deref().unwrap_or_default()),
         _ => unreachable!("import_group returns Some only for import statements"),
     })
+}
+
+/// Inserts `edit` into a `Vec<Edit>` kept sorted by `range().start()`,
+/// preserving that order.
+fn insert_by_start(edits: &mut Vec<Edit>, edit: Edit) {
+    let slot = edits.partition_point(|e| e.range().start() < edit.range().start());
+    edits.insert(slot, edit);
+}
+
+/// The end offset of a dict item's value, widened past any parentheses
+/// enclosing it. A multiline reorder splits each entry at this offset, so
+/// excluding the closing parens would shed them into the separator tail.
+fn item_value_end(source: &Source, dict: &ExprDict, item: &DictItem) -> TextSize {
+    paren_aware_range((&item.value).into(), dict.into(), source.tokens()).end()
 }
 
 /// Returns the alphabetically least alias name in a bare import's
@@ -862,48 +891,51 @@ fn rewrite_body<'a>(
     let body_span = blocks_span(&blocks);
     let n = body.len();
     let mut order: Vec<usize> = (0..n).collect();
-    let in_class = scope == BodyScope::Class;
-    if scope != BodyScope::Function {
-        permute_defs(&mut order, body, defer_annotations, |s| {
-            s.as_class_def_stmt().map(|c| {
-                let name = c.name.as_str();
-                (name, name)
-            })
-        });
-        if in_class {
-            permute_full(&mut order, body, |s| {
-                ann_assign_with_named_field(s).map(|(ann, name)| (u8::from(has_default(ann)), name))
-            });
-            permute_full(&mut order, body, simple_name_assign);
-        }
-        if !(in_class && class_pins_methods(body)) {
+    let mut import_run_slots: Vec<usize> = Vec::new();
+    if !has_inline_statement_join(source, body) {
+        let in_class = scope == BodyScope::Class;
+        if scope != BodyScope::Function {
             permute_defs(&mut order, body, defer_annotations, |s| {
-                s.as_function_def_stmt().map(|f| {
-                    let name = f.name.as_str();
-                    (name, (method_group(f), name))
+                s.as_class_def_stmt().map(|c| {
+                    let name = c.name.as_str();
+                    (name, name)
                 })
             });
+            if in_class {
+                permute_full(&mut order, body, |s| {
+                    ann_assign_with_named_field(s)
+                        .map(|(ann, name)| (u8::from(has_default(ann)), name))
+                });
+                permute_full(&mut order, body, simple_name_assign);
+            }
+            if !(in_class && class_pins_methods(body)) {
+                permute_defs(&mut order, body, defer_annotations, |s| {
+                    s.as_function_def_stmt().map(|f| {
+                        let name = f.name.as_str();
+                        (name, (method_group(f), name))
+                    })
+                });
+            }
         }
-    }
-    let mut import_run_slots: Vec<usize> = Vec::new();
-    let is_import = |s: &Stmt| s.is_import_stmt() || s.is_import_from_stmt();
-    for Range { start, end } in statement_run_ranges(body, is_import) {
-        permute_in_place(&mut order, body, start..end, |s| {
-            import_sort_key(s, first_party)
-        });
-        import_run_slots.extend((start..end - 1).filter(|&slot| {
-            import_group(&body[order[slot]], first_party)
-                == import_group(&body[order[slot + 1]], first_party)
-        }));
-    }
-    if scope == BodyScope::Module {
-        for Range { start, end } in module_assign_run_ranges(source, body) {
-            let Some(keys) = module_assign_tier_keys(source, &body[start..end]) else {
-                continue;
-            };
+        let is_import = |s: &Stmt| s.is_import_stmt() || s.is_import_from_stmt();
+        for Range { start, end } in statement_run_ranges(body, is_import) {
             permute_in_place(&mut order, body, start..end, |s| {
-                keys.get(&s.range().start()).copied()
+                import_sort_key(s, first_party)
             });
+            import_run_slots.extend((start..end - 1).filter(|&slot| {
+                import_group(&body[order[slot]], first_party)
+                    == import_group(&body[order[slot + 1]], first_party)
+            }));
+        }
+        if scope == BodyScope::Module {
+            for Range { start, end } in module_assign_run_ranges(source, body) {
+                let Some(keys) = module_assign_tier_keys(source, &body[start..end]) else {
+                    continue;
+                };
+                permute_in_place(&mut order, body, start..end, |s| {
+                    keys.get(&s.range().start()).copied()
+                });
+            }
         }
     }
     let any_owned = rendered.iter().any(|c| matches!(c, Cow::Owned(_)));
@@ -934,14 +966,15 @@ fn rewrite_compound<'a>(
 }
 
 /// Rewrites a dict literal's items span. Returns `Some((span, text))`
-/// when reordering, partition, or any nested-dict rewrite produces
-/// text different from the source slice. Returns `None` for empty
-/// dicts, dicts marked `# prose: keep`, single-item dicts, and any
-/// already-canonical case. Recurses into nested dicts that sit
-/// directly as item values.
+/// when reordering, partition, or any nested reorder folded from `edits`
+/// produces text different from the source slice. Returns `None` for
+/// empty dicts, dicts marked `# prose: keep`, single-item dicts, and any
+/// already-canonical case. `edits` are the leaf edits collected from the
+/// dict's descendants, folded into each item block.
 fn rewrite_dict_text<'src>(
     source: &'src Source,
     d: &ExprDict,
+    edits: &[Edit],
 ) -> Option<(TextRange, Cow<'src, str>)> {
     if d.is_empty() || has_keep_marker(source, d) {
         return None;
@@ -950,18 +983,25 @@ fn rewrite_dict_text<'src>(
         return None;
     };
     let multi_line = source.contains_line_break(first.range().cover(last.range()));
+    // Widen each item to its value's paren-aware end, so a parenthesized
+    // value keeps its closing parens inside the block rather than shedding
+    // them into the separator tail.
+    let item_ranges: Vec<TextRange> = d
+        .items
+        .iter()
+        .map(|item| TextRange::new(item.start(), item_value_end(source, d, item)))
+        .collect();
     let blocks: Vec<TextRange> = if multi_line {
         (0..d.len())
-            .map(|i| block_range(source, &d.items, i, d.range()))
+            .map(|i| block_range(source, &item_ranges, i, d.range()))
             .collect()
     } else {
-        d.iter().map(Ranged::range).collect()
+        item_ranges.clone()
     };
     let span = blocks_span(&blocks);
     let block_texts: Vec<Cow<'src, str>> = blocks
         .iter()
-        .zip(d)
-        .map(|(&block, item)| rewrite_item_block(source, block, item))
+        .map(|&block| apply_inline_edits(source, block, edits))
         .collect();
     let any_nested_rewrite = block_texts.iter().any(|c| matches!(c, Cow::Owned(_)));
     let mut order: Vec<usize> = (0..d.len()).collect();
@@ -969,8 +1009,9 @@ fn rewrite_dict_text<'src>(
     let assembled = if multi_line {
         let divider_slots = partition_divider_slots(source, &order, &d.items);
         let source_last_has_comma = source.trailing_comma(d.range()).is_some();
+        let value_ends: Vec<TextSize> = item_ranges.iter().map(Ranged::end).collect();
         assemble_dict_items_multiline(
-            &d.items,
+            &value_ends,
             &blocks,
             &block_texts,
             &order,
@@ -983,27 +1024,19 @@ fn rewrite_dict_text<'src>(
     if !permuted && !any_nested_rewrite && assembled == source.slice(span) {
         return None;
     }
+    // Decline the reorder when the reassembled dict no longer parses, the
+    // safety net for irregular layouts (entries sharing a line, comments
+    // inside a `**`-spread's parentheses) the block model cannot shuffle
+    // cleanly.
+    let reassembled = format!(
+        "{}{assembled}{}",
+        source.slice(TextRange::new(d.start(), span.start())),
+        source.slice(TextRange::new(span.end(), d.end())),
+    );
+    if parse_expression(&reassembled).is_err() {
+        return None;
+    }
     Some((span, Cow::Owned(assembled)))
-}
-
-/// Returns the block text for a dict item, recursively rewriting a
-/// nested dict that sits directly as the item's value. Returns
-/// `Cow::Borrowed` of `source.slice(block)` when no recursion fires or
-/// the recursive call leaves the inner dict unchanged.
-fn rewrite_item_block<'src>(
-    source: &'src Source,
-    block: TextRange,
-    item: &DictItem,
-) -> Cow<'src, str> {
-    let Some(inner) = item.value.as_dict_expr() else {
-        return Cow::Borrowed(source.slice(block));
-    };
-    let Some((inner_span, inner_text)) = rewrite_dict_text(source, inner) else {
-        return Cow::Borrowed(source.slice(block));
-    };
-    let prefix = source.slice(TextRange::new(block.start(), inner_span.start()));
-    let suffix = source.slice(TextRange::new(inner_span.end(), block.end()));
-    Cow::Owned(format!("{prefix}{inner_text}{suffix}"))
 }
 
 /// Rewrites a single statement. Classes and functions fold their body
@@ -1392,6 +1425,22 @@ mod tests {
             .into_iter()
             .collect();
         assert_eq!(collected, HashSet::from(["BaseRef", "DefaultRef"]));
+    }
+
+    #[rstest]
+    #[case("import b\nimport a; x = 1\n", true)]
+    #[case("import b\nimport a\n", false)]
+    #[case("a = 1; b = 2\n", true)]
+    #[case("x = 1\n", false)]
+    fn has_inline_statement_join_detects_semicolon_joined_siblings(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        assert_eq!(
+            has_inline_statement_join(&source, &source.ast().body),
+            expected
+        );
     }
 
     #[test]

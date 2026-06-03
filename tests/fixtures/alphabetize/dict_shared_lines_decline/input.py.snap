@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dict_shared_lines_decline/input.py
+---
+m = {"b": 1, "a": 2,
+     "c": 3}

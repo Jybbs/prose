@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/nested_kwarg_run_folds/input.py
+---
+foo(a=3, b=g(c=2, d=1))
