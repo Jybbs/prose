@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/derived_call_reaches_class_pools_last/input.py
+---
+class Widget:
+    pass
+
+
+def build(factory=Widget):
+    return factory()
+
+
+CONFIG = build()

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Annotated Constant Trails Its Type"
+
+description = '''
+A non-deferred annotation naming a module class is an eager surface, so the constant **pools into the trailing band beneath the class it names**. Two derived constants order by name within that band.
+'''

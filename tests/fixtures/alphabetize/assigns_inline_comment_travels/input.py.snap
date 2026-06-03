@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/assigns_inline_comment_travels/input.py
+---
+alpha = 2
+beta = 3
+zebra = 1  # explanatory note

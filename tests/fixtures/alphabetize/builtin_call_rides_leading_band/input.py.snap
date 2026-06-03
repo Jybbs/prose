@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/builtin_call_rides_leading_band/input.py
+---
+TABLE = dict(timeout=30)
+
+
+def build():
+    return TABLE

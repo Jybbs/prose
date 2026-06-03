@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Future Import Holds the Front"
+
+description = '''
+A `from __future__ import annotations` **holds the front above the leading band**, and the deferred annotation it enables frees the `int` return hint from constraining the constant the function reads.
+'''

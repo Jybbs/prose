@@ -2,8 +2,10 @@
 //! a sorted edit list into a source string, the pipeline runner's
 //! transform between rules. `apply_inline_edits` folds a list of
 //! edits into a source range, returning `Cow::Borrowed` when no
-//! edit applies. `narrow_edit` trims a candidate replacement to its
-//! minimal divergent range against the source.
+//! edit applies. Both decline overlapping edits, `apply_edits` with
+//! `None` and `apply_inline_edits` with `Cow::Borrowed`. `narrow_edit`
+//! trims a candidate replacement to its minimal divergent range
+//! against the source.
 
 use std::borrow::Cow;
 
@@ -12,59 +14,41 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::source::Source;
 
-/// Splices `edits` into `text` and returns the resulting string.
+/// Splices `edits` into `text` and returns the resulting string, or
+/// `None` when the sorted edits overlap.
 ///
-/// Sorts edits by start-then-end (via `Edit`'s `Ord` impl), then walks
-/// the list forward once, copying the unchanged spans between edits
-/// into a pre-sized buffer and substituting each edit's replacement
-/// at its position. Linear in the source length regardless of how
-/// many edits apply. Debug builds assert the sorted edits are
-/// non-overlapping, a rule-authoring invariant.
-pub(crate) fn apply_edits(text: &str, mut edits: Vec<Edit>) -> String {
+/// Sorts edits by start-then-end (via `Edit`'s `Ord` impl) and weaves
+/// them in one forward pass, linear in the source length regardless of
+/// how many edits apply. Declines with `None` rather than slicing an
+/// inverted range, leaving the caller to keep the source unchanged.
+pub(crate) fn apply_edits(text: &str, mut edits: Vec<Edit>) -> Option<String> {
     edits.sort_unstable();
-    debug_assert!(
-        edits.is_sorted_by(|a, b| a.end() <= b.start()),
-        "edits overlap"
-    );
-    let mut out = String::with_capacity(text.len());
-    let mut cursor = TextSize::default();
-    for edit in edits {
-        out.push_str(&text[TextRange::new(cursor, edit.start())]);
-        out.push_str(edit.content().unwrap_or_default());
-        cursor = edit.end();
-    }
-    out.push_str(&text[TextRange::new(cursor, text.text_len())]);
-    out
+    weave(text, TextRange::up_to(text.text_len()), &edits)
 }
 
 /// Folds any leaf edits whose range falls inside `range` into the
 /// source slice for that range. Returns `Cow::Borrowed` when no leaf
-/// edit applies. `edits` must be sorted by `range().start()`, an
-/// invariant that `collect_leaf_edits` upholds via the AST visitor's
-/// source-order pre-order walk.
+/// edit applies or the in-range edits overlap. `edits` must be sorted
+/// by `range().start()`, an invariant that `collect_leaf_edits` upholds
+/// via the AST visitor's source-order pre-order walk.
 pub(crate) fn apply_inline_edits<'src>(
     source: &'src Source,
     range: TextRange,
     edits: &[Edit],
 ) -> Cow<'src, str> {
-    let lo = edits.partition_point(|e| e.range().start() < range.start());
-    let hi = lo + edits[lo..].partition_point(|e| e.range().start() <= range.end());
+    let lo = edits.partition_point(|e| e.start() < range.start());
+    let hi = lo + edits[lo..].partition_point(|e| e.start() <= range.end());
     let mut inside = edits[lo..hi]
         .iter()
-        .filter(|e| e.range().end() <= range.end())
+        .filter(|e| e.end() <= range.end())
         .peekable();
     if inside.peek().is_none() {
         return Cow::Borrowed(source.slice(range));
     }
-    let mut out = String::with_capacity(range.len().to_usize());
-    let mut cursor = range.start();
-    for edit in inside {
-        out.push_str(source.slice(TextRange::new(cursor, edit.range().start())));
-        out.push_str(edit.content().unwrap_or_default());
-        cursor = edit.range().end();
+    match weave(source.text(), range, inside) {
+        Some(out) => Cow::Owned(out),
+        None => Cow::Borrowed(source.slice(range)),
     }
-    out.push_str(source.slice(TextRange::new(cursor, range.end())));
-    Cow::Owned(out)
 }
 
 /// Trims a candidate replacement to its minimal spanning range by
@@ -120,26 +104,66 @@ pub(crate) fn singleton_groups(edits: impl IntoIterator<Item = Edit>) -> Vec<Vec
     edits.into_iter().map(|edit| vec![edit]).collect()
 }
 
-/// Reassembles the text spanning `outer` with the slice at `inner`
-/// swapped for `replacement`, leaving the rest of `outer` intact. The
-/// parse round-trip a rule runs before committing a rewrite.
-pub(crate) fn splice(
+/// Reports whether splicing `replacement` into `outer` at `inner`
+/// yields source that `parse` accepts, the round-trip a rule runs
+/// before committing a rewrite it cannot otherwise validate.
+pub(crate) fn splice_parses<T, E>(
     source: &Source,
     outer: TextRange,
     inner: TextRange,
     replacement: &str,
-) -> String {
-    format!(
+    parse: impl Fn(&str) -> Result<T, E>,
+) -> bool {
+    let candidate = format!(
         "{}{replacement}{}",
         source.slice(TextRange::new(outer.start(), inner.start())),
         source.slice(TextRange::new(inner.end(), outer.end())),
-    )
+    );
+    parse(&candidate).is_ok()
+}
+
+/// Weaves `edits` into the `span` slice of `text` and returns the
+/// woven string, or `None` when two edits overlap. `edits` must be
+/// sorted by start and lie within `span`, the overlap being an edit
+/// whose start precedes the running cursor.
+fn weave<'a>(
+    text: &str,
+    span: TextRange,
+    edits: impl IntoIterator<Item = &'a Edit>,
+) -> Option<String> {
+    let mut out = String::with_capacity(span.len().to_usize());
+    let mut cursor = span.start();
+    for edit in edits {
+        if edit.start() < cursor {
+            return None;
+        }
+        out.push_str(&text[TextRange::new(cursor, edit.start())]);
+        out.push_str(edit.content().unwrap_or_default());
+        cursor = edit.end();
+    }
+    out.push_str(&text[TextRange::new(cursor, span.end())]);
+    Some(out)
 }
 
 #[cfg(test)]
 mod tests {
+    use assert_matches::assert_matches;
+
     use super::*;
-    use crate::test_support::range;
+    use crate::test_support::{parse, range};
+
+    #[test]
+    fn apply_edits_declines_overlapping_edits() {
+        let out = apply_edits(
+            "abcdef",
+            vec![
+                Edit::range_replacement("X".to_owned(), range(0, 3)),
+                Edit::range_replacement("Y".to_owned(), range(2, 4)),
+            ],
+        );
+
+        assert_matches!(out, None);
+    }
 
     #[test]
     fn apply_edits_handles_insertions_and_deletions() {
@@ -151,7 +175,7 @@ mod tests {
             ],
         );
 
-        assert_eq!(out, "<abd");
+        assert_eq!(out, Some("<abd".to_owned()));
     }
 
     #[test]
@@ -164,20 +188,20 @@ mod tests {
             ],
         );
 
-        assert_eq!(out, "XbcdYf");
+        assert_eq!(out, Some("XbcdYf".to_owned()));
     }
 
     #[test]
-    #[cfg(debug_assertions)]
-    #[should_panic(expected = "edits overlap")]
-    fn apply_edits_panics_on_overlap_in_debug() {
-        let _ = apply_edits(
+    fn apply_edits_keeps_adjacent_edits() {
+        let out = apply_edits(
             "abcdef",
             vec![
-                Edit::range_replacement("X".to_owned(), range(0, 3)),
+                Edit::range_replacement("X".to_owned(), range(0, 2)),
                 Edit::range_replacement("Y".to_owned(), range(2, 4)),
             ],
         );
+
+        assert_eq!(out, Some("XYef".to_owned()));
     }
 
     #[test]
@@ -190,7 +214,37 @@ mod tests {
             ],
         );
 
-        assert_eq!(out, "XbcdYf");
+        assert_eq!(out, Some("XbcdYf".to_owned()));
+    }
+
+    #[test]
+    fn apply_inline_edits_declines_overlapping_edits() {
+        let source = parse("abcdef\n");
+        let result = apply_inline_edits(
+            &source,
+            range(0, 6),
+            &[
+                Edit::range_replacement("X".to_owned(), range(0, 3)),
+                Edit::range_replacement("Y".to_owned(), range(2, 4)),
+            ],
+        );
+
+        assert_matches!(result, Cow::Borrowed("abcdef"));
+    }
+
+    #[test]
+    fn apply_inline_edits_keeps_adjacent_edits() {
+        let source = parse("abcdef\n");
+        let result = apply_inline_edits(
+            &source,
+            range(0, 6),
+            &[
+                Edit::range_replacement("X".to_owned(), range(0, 2)),
+                Edit::range_replacement("Y".to_owned(), range(2, 4)),
+            ],
+        );
+
+        assert_matches!(result, Cow::Owned(text) if text == "XYef");
     }
 
     #[test]

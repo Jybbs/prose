@@ -15,7 +15,10 @@ use ruff_python_ast::{
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::{binding::top_level_module, range::paren_aware_range},
+    primitives::{
+        binding::{from_import_bound_name, top_level_module},
+        range::paren_aware_range,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -159,7 +162,7 @@ fn collect_typing_aliases(body: &[Stmt]) -> HashMap<&str, QualifiedName<'_>> {
                     continue;
                 };
                 for alias in &import.names {
-                    let bound = alias.asname.as_ref().unwrap_or(&alias.name).as_str();
+                    let bound = from_import_bound_name(alias);
                     imports.insert(
                         bound,
                         QualifiedName::user_defined(module.as_str())

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Attribute Roots on Module-Local Bindings Stay Safe"
+title       = "A Subscripted Constant Tiers within the Leading Band"
 
 description = '''
-A run whose `Attribute` root names a module-local binding written above it **reorders normally**. `SETTINGS` is assigned before the run, so the attribute access does not taint it.
+A constant whose value subscripts a fellow module constant **tiers below it within the leading band**. `zebra` reads `SETTINGS`, so it settles a tier beneath the binding it indexes while the four constants merge into one adjacent band.
 '''

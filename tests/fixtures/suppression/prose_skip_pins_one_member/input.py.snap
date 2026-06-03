@@ -3,9 +3,9 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/suppression/prose_skip_pins_one_member/input.py
 ---
-x       = 1
-foo     = 2
 bar_baz = 3
+foo     = 2
+x       = 1
 short = 4  # prose: skip
 aa      = 5
 bbb     = 6

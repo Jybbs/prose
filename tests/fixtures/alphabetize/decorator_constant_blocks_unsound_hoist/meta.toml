@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Decorator Constant Blocks an Unsound Hoist"
+
+description = '''
+A constant naming a function would pool into the trailing band, yet a later definition decorates with it, so seating the constant last would move it past its user. The hoist **declines and the module keeps source order**, holding the import-safety invariant.
+'''
