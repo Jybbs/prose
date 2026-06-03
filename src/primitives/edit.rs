@@ -102,12 +102,6 @@ pub(crate) fn narrow_edit(
     Some((span.add_start(prefix_len).sub_end(suffix_len), text))
 }
 
-/// Wraps each edit in its own single-edit fix group, the shape a rule
-/// whose edits are mutually independent returns from `apply`.
-pub(crate) fn singleton_groups(edits: impl IntoIterator<Item = Edit>) -> Vec<Vec<Edit>> {
-    edits.into_iter().map(|edit| vec![edit]).collect()
-}
-
 /// Narrows `text` against the source slice covered by `span` and
 /// shapes the result as either a deletion or replacement Edit.
 /// Returns `None` when the text already matches the source slice.
@@ -118,6 +112,12 @@ pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: Strin
     } else {
         Edit::range_replacement(narrowed_text, narrowed_span)
     })
+}
+
+/// Wraps each edit in its own single-edit fix group, the shape a rule
+/// whose edits are mutually independent returns from `apply`.
+pub(crate) fn singleton_groups(edits: impl IntoIterator<Item = Edit>) -> Vec<Vec<Edit>> {
+    edits.into_iter().map(|edit| vec![edit]).collect()
 }
 
 /// Reassembles the text spanning `outer` with the slice at `inner`

@@ -110,7 +110,7 @@ impl Layout<'_> {
         let replacement_range = self.replacement_range(fd);
         let inline = self.build_inline(fd);
         let count_trips = self.max_inline_params.is_some_and(|cap| params.len() > cap);
-        let first_line = inline.split('\n').next().unwrap_or(&inline);
+        let first_line = inline.lines().next().unwrap_or(&inline);
         let length_trips = self.source.column_of(params.range().start()) + first_line.width()
             > self.code_line_length;
         let replacement = if count_trips || length_trips {

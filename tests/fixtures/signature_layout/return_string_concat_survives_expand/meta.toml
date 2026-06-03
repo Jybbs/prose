@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Implicit String-Concatenation Return Keeps Its Parentheses When Parameters Expand"
+
+description = '''
+A signature whose parameters overflow the line budget expands to one per line, while the parenthesized implicit string-concatenation return annotation passes through with **its grouping parentheses intact**. Those parentheses hold the adjacent string literals together as a single expression, so dropping them would leave output that no longer parses.
+'''
