@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Field Gaps Stay, Only the Method Pair Normalizes"
+title       = "Class Header Cushions and Oversized Gaps Collapse to One Blank"
 
 description = '''
-The class-scope rule fires **only on adjacent `(method, method)` pairs**. A field-to-field or field-to-method gap carries no canonical count, so only the inter-method gap normalizes to one blank line.
+A class body opens with a one-blank header cushion after `class Posting:`, then **collapses the oversized field-to-method and method-to-method gaps to a single blank line each**. The adjacent field pair stays tight.
 '''

@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/docstring_wrap/prewrapped_entry_untouched/input.py
 ---
-docstring-wrap@198..219
+

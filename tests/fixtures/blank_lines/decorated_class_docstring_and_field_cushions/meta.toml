@@ -3,5 +3,5 @@ previewable = false
 title       = "Decorated Class Threads Docstring and Field Cushions"
 
 description = '''
-A decorated class with a first-member docstring binds that docstring tight against `class Posting:` (zero blanks), with the **two-blank cushion measured above the topmost decorator**. The docstring then cushions the next member by one blank, and the field block cushions the following method by one.
+A decorated class with a first-member docstring binds that docstring tight against `class Posting:` *(zero blanks)*. The docstring then **cushions the next member by one blank**, and the field block cushions the following method by one.
 '''

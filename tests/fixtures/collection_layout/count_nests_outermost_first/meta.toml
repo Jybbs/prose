@@ -3,5 +3,5 @@ previewable = false
 title       = "The Count Trigger Resolves Each Dict Level on Its Own Entries"
 
 description = '''
-The count trigger fires per dict, so an outer dict past the cap expands while an inner dict at or under it stays inline, and an inner dict past the cap expands even when its parent stays inline.
+The count trigger fires per dict, so an outer dict past the cap expands while a small inner dict stays inline, and an inner dict past the cap expands and **forces its enclosing parent multiline** as well.
 '''

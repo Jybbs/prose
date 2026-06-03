@@ -3,5 +3,5 @@ previewable = false
 title       = "A Multi-Line Target Skips the Member"
 
 description = '''
-A target spanning multiple lines leaves the surrounding group intact, but the **multi-line entry itself does not participate** in the alignment.
+A target spanning multiple lines does not participate in the alignment and breaks the run, **leaving `alpha` and `beta` on either side as separate singletons** rather than one aligned group.
 '''

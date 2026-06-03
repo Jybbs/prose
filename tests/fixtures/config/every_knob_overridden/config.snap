@@ -51,7 +51,7 @@ Config {
             enabled: false,
         },
         unused_future_annotations: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
         blank_lines: ToggleOnly {
             enabled: false,
@@ -88,7 +88,7 @@ Config {
             max_shift_policy: Split,
         },
         docstring_wrap: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
         align_equals: AlignmentConfig {
             enabled: false,
@@ -96,7 +96,7 @@ Config {
             max_shift_policy: Split,
         },
         align_comparisons: AlignmentConfig {
-            enabled: true,
+            enabled: false,
             max_shift: 8,
             max_shift_policy: Split,
         },

@@ -1,2 +1,2 @@
-def render(layout: tuple[int, int], palette: str, spread: float, target: int, verbose: bool):
-    return (layout, palette, spread, target, verbose)
+def render(width: int, height: int, depth: int, scale: int, fast: bool):
+    return (width, height, depth, scale, fast)
