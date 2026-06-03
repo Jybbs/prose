@@ -4,6 +4,8 @@
 //! knobs travel through `Settings`. Aligned rows always carry a
 //! one-space buffer between content and the aligned token.
 
+use std::num::NonZeroUsize;
+
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     AnyParameterRef, Parameters, Stmt,
@@ -15,7 +17,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    config::{AlignmentConfig, MaxAlignShiftPolicy},
+    config::{AlignImportsConfig, AlignmentConfig, MaxAlignShiftPolicy},
     rule::RuleId,
     source::Source,
 };
@@ -126,6 +128,16 @@ pub(crate) struct Settings {
 }
 
 impl Settings {
+    /// Builds the alignment settings carried by an alignment rule, with
+    /// `strip_singleton_subgroup` off until a rule opts in.
+    fn aligned(max_shift: NonZeroUsize, policy: MaxAlignShiftPolicy) -> Self {
+        Self {
+            max_shift: max_shift.get(),
+            policy,
+            strip_singleton_subgroup: false,
+        }
+    }
+
     /// Returns a copy of `self` with `strip_singleton_subgroup` enabled.
     pub(crate) fn with_singleton_subgroup_strip(mut self) -> Self {
         self.strip_singleton_subgroup = true;
@@ -133,13 +145,15 @@ impl Settings {
     }
 }
 
+impl From<&AlignImportsConfig> for Settings {
+    fn from(c: &AlignImportsConfig) -> Self {
+        Self::aligned(c.max_shift, c.max_shift_policy)
+    }
+}
+
 impl From<&AlignmentConfig> for Settings {
     fn from(c: &AlignmentConfig) -> Self {
-        Self {
-            max_shift: c.max_shift.get(),
-            policy: c.max_shift_policy,
-            strip_singleton_subgroup: false,
-        }
+        Self::aligned(c.max_shift, c.max_shift_policy)
     }
 }
 

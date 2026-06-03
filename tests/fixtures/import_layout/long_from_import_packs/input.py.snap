@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/import_layout/long_from_import_packs/input.py
+---
+from pkg.sub import alpha, beta, delta
+from pkg.sub import epsilon, gamma

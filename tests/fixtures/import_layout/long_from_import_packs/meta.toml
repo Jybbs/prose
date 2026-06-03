@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Long From-Import Packs into Repeated-Prefix Lines"
+
+description = '''
+A `from ... import ...` whose names overrun `import-line-length` **splits into a run of repeated-prefix statements**, each greedily packing the alphabetized names up to the budget before the next line opens.
+'''

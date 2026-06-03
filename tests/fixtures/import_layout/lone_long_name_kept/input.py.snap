@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/import_layout/lone_long_name_kept/input.py
+---
+from verylongpackagename import singleverylongmembername

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Relative Import Repeats Its Leading Dots"
+
+description = '''
+A relative import folds its **leading dots into the repeated prefix**, so every split line opens with the same `from ..pkg import` anchor.
+'''

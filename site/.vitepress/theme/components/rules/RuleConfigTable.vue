@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { data as configs }       from '../../../data/rule-configs.data'
-import { useCurrentRule }        from '../../../lib/composables/route'
-import type { RuleConfigPreset } from '../../../lib/rules/config-presets'
+import { data as configs } from '../../../data/rule-configs.data'
+import { useCurrentRule }  from '../../../lib/composables/route'
 
 const current = useCurrentRule()
 
 const rows = computed(() => {
-  const preset: RuleConfigPreset = current.value?.family === 'alignment' ? 'alignment' : 'toggle'
-  return configs[preset]
+  const rule = current.value
+  if (rule?.slug === 'align-imports') return configs['align-imports']
+  if (rule?.family === 'alignment') return configs.alignment
+  return configs.toggle
 })
 </script>
 

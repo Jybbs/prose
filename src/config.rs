@@ -37,24 +37,45 @@ const PROSE_TOML: &str = "prose.toml";
 /// table.
 const PYPROJECT_TOML: &str = "pyproject.toml";
 
-/// Configuration shared by the alignment rules (`align_colons`, `align_equals`).
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct AlignmentConfig {
-    pub enabled: bool,
-    pub max_shift: NonZeroUsize,
-    pub max_shift_policy: MaxAlignShiftPolicy,
+/// Stamps an alignment-rule config struct whose `max_shift` defaults
+/// to `$shift`. Each alignment rule binds one of these, so a rule
+/// warranting a wider starting cap seeds its own default off the same
+/// shape rather than a hand-copied parallel struct.
+macro_rules! alignment_config {
+    ($name:ident, $shift:literal) => {
+        #[doc = concat!("Alignment config seeding `max_shift` to `", stringify!($shift), "`.")]
+        #[derive(Debug, Deserialize, Serialize)]
+        #[serde(default, rename_all = "kebab-case")]
+        pub struct $name {
+            pub enabled: bool,
+            pub max_shift: NonZeroUsize,
+            pub max_shift_policy: MaxAlignShiftPolicy,
+        }
+
+        impl Default for $name {
+            fn default() -> Self {
+                Self {
+                    enabled: true,
+                    max_shift: NonZeroUsize::new($shift)
+                        .expect("alignment max-shift seed is non-zero"),
+                    max_shift_policy: MaxAlignShiftPolicy::default(),
+                }
+            }
+        }
+
+        impl RuleToggle for $name {
+            fn with_enabled(enabled: bool) -> Self {
+                Self {
+                    enabled,
+                    ..Self::default()
+                }
+            }
+        }
+    };
 }
 
-impl Default for AlignmentConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            max_shift: NonZeroUsize::new(8).expect("8 is non-zero"),
-            max_shift_policy: MaxAlignShiftPolicy::default(),
-        }
-    }
-}
+alignment_config!(AlignImportsConfig, 16);
+alignment_config!(AlignmentConfig, 8);
 
 /// Configuration for the `alphabetize` rule. `docstring_entries`
 /// gates the Google-style entry-section reorder pass, leaving the
@@ -163,10 +184,11 @@ impl Default for CollectionLayoutConfig {
 /// or a `pyproject.toml` `[tool.prose]` table.
 ///
 /// `code_line_length` defaults to `Some(88)`. `docstring_line_length`
-/// defaults to `Some(76)`. `docstring_structured_policy` defaults
-/// to `CodeLineLength`. `imports.first_party` defaults to empty.
-/// `target_version` defaults to `None`. Per-rule settings live under
-/// `rules`.
+/// defaults to `Some(76)`. `import_line_length` defaults to `Some(120)`,
+/// falling back to `code_line_length` when `false`.
+/// `docstring_structured_policy` defaults to `CodeLineLength`.
+/// `imports.first_party` defaults to empty. `target_version` defaults
+/// to `None`. Per-rule settings live under `rules`.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
@@ -174,6 +196,8 @@ pub struct Config {
     pub code_line_length: Option<NonZeroUsize>,
     pub docstring_line_length: Option<NonZeroUsize>,
     pub docstring_structured_policy: DocstringStructuredPolicy,
+    #[serde(deserialize_with = "deserialize_import_line_length")]
+    pub import_line_length: Option<NonZeroUsize>,
     pub imports: ImportsConfig,
     pub rules: RuleConfigs,
     pub target_version: Option<PythonVersion>,
@@ -186,6 +210,7 @@ impl Default for Config {
             code_line_length: NonZeroUsize::new(88),
             docstring_line_length: NonZeroUsize::new(76),
             docstring_structured_policy: DocstringStructuredPolicy::default(),
+            import_line_length: NonZeroUsize::new(120),
             imports: ImportsConfig::default(),
             rules: RuleConfigs::default(),
             target_version: None,
@@ -272,6 +297,13 @@ impl Config {
 
     pub(crate) fn first_party(&self) -> Vec<String> {
         self.imports.first_party.clone()
+    }
+
+    /// The budget governing import wrapping, falling back to the code
+    /// budget when `import_line_length` is `None`.
+    pub(crate) fn import_width(&self) -> usize {
+        self.import_line_length
+            .map_or_else(|| self.code_width(), NonZeroUsize::get)
     }
 }
 
@@ -421,7 +453,6 @@ macro_rules! impl_rule_toggle {
 }
 
 impl_rule_toggle!(
-    AlignmentConfig,
     AlphabetizeConfig,
     BareImportsConfig,
     CallLayoutConfig,
@@ -471,8 +502,8 @@ where
     deserializer.deserialize_any(RuleVisitor(PhantomData))
 }
 
-/// Deserializes an optional count cap a positive integer sets and
-/// `false` disables. `true` is rejected so the disable spelling stays
+/// Deserializes an optional cap a positive integer sets and `false`
+/// disables. `true` is rejected so the disable spelling stays
 /// unambiguous.
 fn deserialize_optional_cap<'de, D>(
     deserializer: D,
@@ -509,6 +540,7 @@ macro_rules! optional_cap {
     };
 }
 
+optional_cap!(deserialize_import_line_length, "import-line-length");
 optional_cap!(deserialize_max_atomics_per_line, "max-atomics-per-line");
 optional_cap!(deserialize_max_inline_args, "max-inline-args");
 optional_cap!(
@@ -687,6 +719,53 @@ mod tests {
         .expect("parses");
 
         assert_eq!(config.code_line_length, NonZeroUsize::new(100));
+    }
+
+    #[test]
+    fn import_line_length_defaults_to_120_when_field_absent() {
+        let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+
+        assert_eq!(config.import_line_length, NonZeroUsize::new(120));
+    }
+
+    #[test]
+    fn import_line_length_explicit_override_takes_effect() {
+        let config =
+            Config::from_pyproject_str("[tool.prose]\nimport-line-length = 100\n").expect("parses");
+
+        assert_eq!(config.import_line_length, NonZeroUsize::new(100));
+    }
+
+    #[test]
+    fn import_line_length_false_falls_back_to_code_line_length() {
+        let config = Config::from_pyproject_str("[tool.prose]\nimport-line-length = false\n")
+            .expect("parses");
+
+        assert!(config.import_line_length.is_none());
+        assert_eq!(config.import_width(), config.code_width());
+    }
+
+    #[test]
+    fn import_line_length_negative_returns_toml_error() {
+        assert_toml_error("[tool.prose]\nimport-line-length = -1\n");
+    }
+
+    #[test]
+    fn import_line_length_true_returns_toml_error() {
+        assert_toml_error("[tool.prose]\nimport-line-length = true\n");
+    }
+
+    #[test]
+    fn import_line_length_zero_returns_toml_error() {
+        assert_toml_error("[tool.prose]\nimport-line-length = 0\n");
+    }
+
+    #[test]
+    fn import_width_uses_import_line_length_when_set() {
+        let config =
+            Config::from_pyproject_str("[tool.prose]\nimport-line-length = 100\n").expect("parses");
+
+        assert_eq!(config.import_width(), 100);
     }
 
     #[test]

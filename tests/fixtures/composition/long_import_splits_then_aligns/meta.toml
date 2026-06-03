@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Split Run Needs No Realignment"
+
+description = '''
+`import-layout` splits a long import into repeated-prefix lines, and `align-imports` **leaves the run untouched** because every line already opens with the same `from ... import` prefix.
+'''

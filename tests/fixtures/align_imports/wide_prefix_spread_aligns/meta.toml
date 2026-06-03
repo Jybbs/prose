@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Wide Prefix Spread Still Aligns under the Import Default"
+
+description = '''
+A run of `from ... import ...` statements whose module prefixes spread past the operator-alignment default **still aligns on the `import` keyword**, because `align-imports` seeds a wider `max-shift` than the operator rules.
+'''

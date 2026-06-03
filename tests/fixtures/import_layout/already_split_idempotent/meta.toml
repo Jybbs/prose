@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Already-Split Output Round-Trips with No Edit"
+
+description = '''
+A run already in repeated-prefix form, each line within budget, **passes through unchanged**, so a second pass leaves it where the first did.
+'''

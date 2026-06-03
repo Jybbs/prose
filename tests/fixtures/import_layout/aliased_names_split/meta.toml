@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An `as`-Aliased Name Carries Its Alias across the Split"
+
+description = '''
+An `as`-aliased name **keeps its alias when the line splits**, so each packed statement repeats the module prefix and holds every `name as alias` pair intact.
+'''

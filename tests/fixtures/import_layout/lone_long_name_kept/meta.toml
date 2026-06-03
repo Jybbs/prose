@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Lone Over-Budget Name Keeps Its Line"
+
+description = '''
+A single name whose own `from ... import ...` line still overruns the budget **stays in place rather than splitting further**, since one name has nowhere left to break.
+'''
