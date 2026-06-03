@@ -2,7 +2,11 @@ import path from 'node:path'
 
 import { defineLoader } from 'vitepress'
 
-import { FIXTURES_DIR, META_FILE, readFixtureDocs, walkFixtures } from '../lib/fixtures/walker'
+import { LINT_FINDINGS_FILE } from '../lib/fixtures/lint-findings'
+import { readFixtureToggle }  from '../lib/fixtures/toggle'
+import {
+  FIXTURES_DIR, INPUT_FILE, META_FILE, SNAPSHOT_FILE, readFixtureDocs, walkFixtures
+} from '../lib/fixtures/walker'
 import { repoRoot } from '../lib/shared/paths'
 
 interface RuleExample {
@@ -26,9 +30,15 @@ declare const data: RuleFixturesData
 export { data }
 
 export default defineLoader({
-  watch: [`${fixturesDir}/*/*/${META_FILE}`],
+  watch: [
+    `${fixturesDir}/**/${INPUT_FILE}`,
+    `${fixturesDir}/**/${SNAPSHOT_FILE}`,
+    `${fixturesDir}/*/*/${LINT_FINDINGS_FILE}`,
+    `${fixturesDir}/*/*/${META_FILE}`
+  ],
   async load(): Promise<RuleFixturesData> {
-    type Pending = { canonical: string | null, examples: RuleExample[] }
+    type Pending        = { canonical: string | null, examples: PendingExample[] }
+    type PendingExample = RuleExample & { inputPath: string }
 
     const byRule: Record<string, Pending> = {}
     for (const { rule, caseName, inputPath } of walkFixtures(root)) {
@@ -39,16 +49,23 @@ export default defineLoader({
       if (docs.canonical === true) {
         set.canonical = caseName
       } else if (docs.previewable === true && title) {
-        set.examples.push({ case: caseName, title })
+        set.examples.push({ case: caseName, inputPath, title })
       }
     }
 
     const out: RuleFixturesData = {}
-    for (const [rule, set] of Object.entries(byRule)) {
-      if (set.canonical === null) continue
+    for (const [rule, { canonical, examples }] of Object.entries(byRule)) {
+      if (canonical === null) continue
+      const ranked = await Promise.all(examples.map(async ex => ({
+        ex,
+        hasToggle: (await readFixtureToggle(ex.inputPath)).hasToggle
+      })))
+      ranked.sort((a, b) =>
+        Number(b.hasToggle) - Number(a.hasToggle) ||
+        sortKey(a.ex.title).localeCompare(sortKey(b.ex.title)))
       out[rule] = {
-        canonical : set.canonical,
-        examples  : set.examples.sort((a, b) => sortKey(a.title).localeCompare(sortKey(b.title)))
+        canonical,
+        examples: ranked.map(({ ex }) => ({ case: ex.case, title: ex.title }))
       }
     }
     return out
