@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/parenthesized_value_keeps_parens/input.py
+---
+x = {
+    "a": 2,
+
+    "b": (
+        1
+    ),
+}

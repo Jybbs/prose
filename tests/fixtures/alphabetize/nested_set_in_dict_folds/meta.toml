@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested Reorder Folds into Its Enclosing Edit"
+
+description = '''
+A dict whose value is an out-of-order set reorders at both levels in one pass. The set's sort folds into the dict's edit rather than emitting a second edit overlapping the first, so the keys land alphabetized and the set sorts inside them without the two edits colliding.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested Keyword Run Folds into Its Outer Call"
+
+description = '''
+A call whose keyword arguments are out of order, one of whose values is a nested call with its own out-of-order keywords, reorders at both levels in one pass. The inner keyword run folds into the outer call's edit rather than emitting a second edit overlapping it.
+'''

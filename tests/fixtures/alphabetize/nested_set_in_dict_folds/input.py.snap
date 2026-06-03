@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/nested_set_in_dict_folds/input.py
+---
+d = {"k": 1, "z": {"a", "b"}}
