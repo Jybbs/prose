@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/import_layout/aliased_names_split/input.py
+---
+from pkg import alpha as a, beta as b
+from pkg import gamma as g

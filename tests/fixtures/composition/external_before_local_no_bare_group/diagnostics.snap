@@ -3,7 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/composition/external_before_local_no_bare_group/input.py
 ---
-align-imports@63..87
+align-imports@6..87
 alphabetize@5..97
 blank-lines@20..21
 blank-lines@52..53

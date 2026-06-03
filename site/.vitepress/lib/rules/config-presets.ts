@@ -1,4 +1,4 @@
-export type RuleConfigPreset = 'alignment' | 'toggle'
+export type RuleConfigPreset = 'align-imports' | 'alignment' | 'toggle'
 
 interface RuleConfigRowSource {
   default : string
@@ -32,9 +32,16 @@ const ALIGNMENT_ROWS: RuleConfigRowSource[] = [
   }
 ]
 
+// `align-imports` seeds a wider `max-shift` default than the
+// operator-alignment rules, so its preset overrides that one cell.
+const ALIGN_IMPORTS_ROWS: RuleConfigRowSource[] = ALIGNMENT_ROWS.map(row =>
+  row.key === 'max-shift' ? { ...row, default: '16' } : row
+)
+
 const TOGGLE_ROWS: RuleConfigRowSource[] = [ENABLED_ROW]
 
 export const RULE_CONFIG_PRESETS: Record<RuleConfigPreset, RuleConfigRowSource[]> = {
-  alignment : ALIGNMENT_ROWS,
-  toggle    : TOGGLE_ROWS
+  'align-imports' : ALIGN_IMPORTS_ROWS,
+  alignment       : ALIGNMENT_ROWS,
+  toggle          : TOGGLE_ROWS
 }

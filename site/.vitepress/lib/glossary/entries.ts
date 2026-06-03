@@ -344,6 +344,14 @@ export const glossary: Record<string, GlossaryEntry> = {
     families  : ['engine']
   },
 
+  'import-line-length': {
+    definition: '`import-line-length` is the top-level config key for the wrap budget '
+              + '`import-layout` holds long from-imports to. It defaults to **120** and '
+              + 'falls back to `code-line-length` when set to `false`.',
+    families  : ['cli', 'formatting'],
+    href      : '/reference/configuration#top-level-keys'
+  },
+
   'kebab-case': {
     definition: 'Kebab-case is the lowercase-with-hyphens naming convention *Prose* uses for '
               + 'every rule slug (`align-equals`, `single-use-variables`). The form is '

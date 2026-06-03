@@ -1,6 +1,7 @@
 code-line-length            = 100
 docstring-line-length       = 60
 docstring-structured-policy = "docstring-line-length"
+import-line-length          = 99
 target-version              = "3.14"
 
 [cache]
@@ -16,6 +17,7 @@ bare-imports          = { allow = ["scipy", "torch"], allow-aliased = false, ena
 blank-lines           = false
 call-layout           = { enabled = false, max-inline-args = 6 }
 collection-layout     = { enabled = false, max-atomics-per-line = 3, max-inline-dict-entries = 5 }
+import-layout         = false
 legacy-union-syntax   = false
 reassigned-constants       = { allow = ["LOG_LEVEL"], enabled = false }
 align-match-case      = false

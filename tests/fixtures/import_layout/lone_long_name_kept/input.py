@@ -1,0 +1,1 @@
+from verylongpackagename import singleverylongmembername

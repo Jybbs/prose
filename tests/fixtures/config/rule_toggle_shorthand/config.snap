@@ -15,6 +15,9 @@ Config {
         76,
     ),
     docstring_structured_policy: CodeLineLength,
+    import_line_length: Some(
+        120,
+    ),
     imports: ImportsConfig {
         first_party: [],
     },
@@ -68,9 +71,12 @@ Config {
             enabled: true,
             max_inline_params: None,
         },
-        align_imports: AlignmentConfig {
+        import_layout: ToggleOnly {
             enabled: true,
-            max_shift: 8,
+        },
+        align_imports: AlignImportsConfig {
+            enabled: true,
+            max_shift: 16,
             max_shift_policy: Split,
         },
         align_colons: AlignmentConfig {

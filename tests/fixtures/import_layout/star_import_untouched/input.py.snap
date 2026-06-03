@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/import_layout/star_import_untouched/input.py
+---
+from collections import *

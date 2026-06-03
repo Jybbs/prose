@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_imports/wide_prefix_spread_aligns/input.py
+---
+align-imports@7..8
