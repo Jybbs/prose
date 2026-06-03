@@ -1,18 +1,14 @@
 import { existsSync } from 'node:fs'
-import path          from 'node:path'
 
 import { defineLoader } from 'vitepress'
 
-import { LINT_FINDINGS_FILE, lintDecorations } from '../lib/fixtures/lint-findings'
-import { readFixtureToggle }                   from '../lib/fixtures/toggle'
-import {
-  FIXTURES_DIR, INPUT_FILE, META_FILE, SNAPSHOT_FILE, readFixtureDocs, walkFixtures
-} from '../lib/fixtures/walker'
+import { lintDecorations }               from '../lib/fixtures/lint-findings'
+import { readFixtureToggle }             from '../lib/fixtures/toggle'
+import { fixtureWatchGlobs, readFixtureDocs, walkFixtures } from '../lib/fixtures/walker'
 import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
 import { repoRoot }                      from '../lib/shared/paths'
 
-const root         = repoRoot(import.meta.url)
-const fixturesRoot = path.join(root, FIXTURES_DIR)
+const root = repoRoot(import.meta.url)
 
 interface FixtureEntry {
   changesSource    : boolean
@@ -45,12 +41,7 @@ function descriptionHtml(
 }
 
 export default defineLoader({
-  watch: [
-    `${fixturesRoot}/**/${INPUT_FILE}`,
-    `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
-    `${fixturesRoot}/*/*/${LINT_FINDINGS_FILE}`,
-    `${fixturesRoot}/*/*/${META_FILE}`
-  ],
+  watch: fixtureWatchGlobs(root),
   async load(): Promise<FixtureData> {
     const md      = await getRenderer()
     const entries = [...walkFixtures(root)].filter(({ inputPath }) => existsSync(`${inputPath}.snap`))

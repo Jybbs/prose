@@ -14,10 +14,9 @@ interface FixtureToggleState {
 }
 
 // Reads a fixture's input/snapshot pair and lint findings, deriving the
-// `BEFORE|AFTER` toggle signal both fixture loaders key on. A card carries a
-// toggle when the rule rewrites the source or flags it, and is otherwise a
-// no-op marker. The snapshot strips its insta frontmatter and normalizes
-// trailing whitespace before the byte compare against the input.
+// before/after toggle signal both fixture loaders key on. The snapshot
+// strips its insta frontmatter and normalizes trailing whitespace before
+// the byte compare against the input.
 export async function readFixtureToggle(inputPath: string): Promise<FixtureToggleState> {
   const [inputRaw, snapRaw] = await Promise.all([
     fs.readFile(inputPath,           'utf8'),

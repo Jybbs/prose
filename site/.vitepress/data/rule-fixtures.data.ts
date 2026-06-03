@@ -1,13 +1,8 @@
-import path from 'node:path'
-
 import { defineLoader } from 'vitepress'
 
-import { LINT_FINDINGS_FILE } from '../lib/fixtures/lint-findings'
-import { readFixtureToggle }  from '../lib/fixtures/toggle'
-import {
-  FIXTURES_DIR, INPUT_FILE, META_FILE, SNAPSHOT_FILE, readFixtureDocs, walkFixtures
-} from '../lib/fixtures/walker'
-import { repoRoot } from '../lib/shared/paths'
+import { readFixtureToggle } from '../lib/fixtures/toggle'
+import { fixtureWatchGlobs, readFixtureDocs, walkFixtures } from '../lib/fixtures/walker'
+import { repoRoot }          from '../lib/shared/paths'
 
 interface RuleExample {
   case  : string
@@ -21,8 +16,7 @@ interface RuleFixtureSet {
 
 type RuleFixturesData = Record<string, RuleFixtureSet>
 
-const root        = repoRoot(import.meta.url)
-const fixturesDir = path.join(root, FIXTURES_DIR)
+const root = repoRoot(import.meta.url)
 
 const sortKey = (title: string): string => title.replace(/^`+/, '')
 
@@ -30,12 +24,7 @@ declare const data: RuleFixturesData
 export { data }
 
 export default defineLoader({
-  watch: [
-    `${fixturesDir}/**/${INPUT_FILE}`,
-    `${fixturesDir}/**/${SNAPSHOT_FILE}`,
-    `${fixturesDir}/*/*/${LINT_FINDINGS_FILE}`,
-    `${fixturesDir}/*/*/${META_FILE}`
-  ],
+  watch: fixtureWatchGlobs(root),
   async load(): Promise<RuleFixturesData> {
     type Pending        = { canonical: string | null, examples: PendingExample[] }
     type PendingExample = RuleExample & { inputPath: string }
