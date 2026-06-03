@@ -32,11 +32,11 @@ Three helpers at `src/primitives/edit.rs` cover the common shaping needs.
 
 ### `apply_edits(text, edits) -> String`
 
-Splices a sorted edit list into a source string, serving as the [[pipeline]]'s transform between rules. Linear in source length regardless of edit count, since the function walks the list once. Debug builds assert the sorted edits are non-overlapping, a rule-authoring invariant.
+Splices a sorted edit list into a source string, serving as the [[pipeline]]'s transform between rules. Linear in source length regardless of edit count, since the function walks the list once. When the sorted edits overlap, it returns `text` unchanged rather than splicing them, so an overlapping group degrades to a skipped reformat on that span.
 
 ### `apply_inline_edits(source, range, edits) -> Cow<'src, str>`
 
-Folds a list of edits into a source range, returning `Cow::Borrowed` when no edit applies. Used by [[orderer]] when rendering each block's text, wherein blocks that don't themselves rewrite can reference the source slice directly.
+Folds a list of edits into a source range, returning `Cow::Borrowed` when no edit applies or the in-range edits overlap. Used by [[orderer]] when rendering each block's text, wherein blocks that don't themselves rewrite can reference the source slice directly.
 
 ### `narrow_edit(source, range, content) -> Edit`
 
@@ -46,7 +46,7 @@ Trims a candidate replacement to its minimal divergent range against the source.
 
 The [[pipeline]] applies each rule's edits sequentially, reparsing between rules so the next rule reads against a settled AST. Two rules emitting edits to overlapping ranges within the same pass would conflict, but the pipeline structure prevents this, because each rule sees the rewritten source from previous rules and the second rule's edits land against the first rule's output rather than against the original.
 
-Within one rule, debug assertions catch overlapping edits at `apply_edits` time. Release builds skip the assertion, which means overlapping edits in release silently produce wrong output, so the debug-build check is the load-bearing gate authors rely on. Test every new rule under debug builds against fixture sources that exercise the rule's edge cases before shipping, since an overlap that escapes the test suite will mis-format real user code. A rule that produces overlapping edits is a rule-authoring bug, caught early via the debug assertion and never expected to ship.
+Within one rule, the applicator guards against overlapping edits in every build. When a rule's sorted edits overlap, `apply_edits` and `apply_inline_edits` decline the transform and return the source unchanged, so the overlap degrades to a skipped reformat on that span rather than aborting the run or corrupting the output. The guard is a floor rather than a license, in that a rule emitting overlapping edits is still a rule-authoring bug whose affected construct silently goes unformatted, so test every new rule against fixture sources that exercise its edge cases and keep each rule's edits non-overlapping by construction.
 
 ## Build Pattern
 
