@@ -37,9 +37,9 @@ pub(super) fn format_edits(
     let source = Source::from_str(original).ok()?;
     let range = full_document_range(&source, encoding);
     let (formatted, _) = Pipeline::with_defaults(config).run(source).ok()?;
-    (formatted.text() != original).then(|| {
+    formatted.changed_from(original).map(|new_text| {
         vec![TextEdit {
-            new_text: formatted.text().to_owned(),
+            new_text: new_text.to_owned(),
             range,
         }]
     })

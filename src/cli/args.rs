@@ -48,6 +48,11 @@ pub(crate) struct CheckArgs {
     /// to passing `-` as the sole path.
     #[arg(long)]
     pub(crate) stdin: bool,
+
+    /// Confirm each file's would-be rewrite re-parses, surfacing an
+    /// unparseable rule output as a failure. Off by default.
+    #[arg(long)]
+    pub(crate) validate: bool,
 }
 
 #[derive(Debug, Parser)]
@@ -417,6 +422,13 @@ mod tests {
         let rendered = err.to_string();
         assert!(rendered.contains("not-a-rule"));
         assert!(rendered.contains("align-equals"));
+    }
+
+    #[test]
+    fn check_validate_defaults_off_and_parses_when_set() {
+        assert!(!check_command(Cli::try_parse_from(["prose", "check"]).expect("parses")).validate);
+        let on = Cli::try_parse_from(["prose", "check", "--validate"]).expect("parses");
+        assert!(check_command(on).validate);
     }
 
     #[test]

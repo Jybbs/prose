@@ -79,6 +79,12 @@ impl Source {
         &self.binding_analysis
     }
 
+    /// Returns this source's text when it differs from `original`, or
+    /// `None` when they match.
+    pub fn changed_from(&self, original: &str) -> Option<&str> {
+        (self.text() != original).then_some(self.text())
+    }
+
     /// Returns the zero-indexed character column of `offset` on its line.
     pub fn column_of(&self, offset: TextSize) -> usize {
         self.line_column(offset).column.to_zero_indexed()
@@ -270,6 +276,18 @@ mod tests {
             line: OneIndexed::from_zero_indexed(line),
             column: OneIndexed::from_zero_indexed(column),
         }
+    }
+
+    #[test]
+    fn changed_from_returns_none_when_text_matches() {
+        let s = Source::from_str("x = 1\n").expect("parses");
+        assert!(s.changed_from("x = 1\n").is_none());
+    }
+
+    #[test]
+    fn changed_from_returns_text_when_it_differs() {
+        let s = Source::from_str("x = 1\n").expect("parses");
+        assert_eq!(s.changed_from("y = 2\n"), Some("x = 1\n"));
     }
 
     #[test]

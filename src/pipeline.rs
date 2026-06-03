@@ -130,6 +130,36 @@ impl Pipeline {
         drop_suppressed_lints(&mut diagnostics, &source, source.suppression_map());
         Ok((source, diagnostics))
     }
+
+    /// Replays the editing rules to surface a rule whose output fails to
+    /// re-parse, discarding the rewritten text and the diagnostics
+    /// [`run`](Self::run) would build. `check` calls this when
+    /// [`diagnose`](Self::diagnose) flags format work, in place of the
+    /// full `run`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `PipelineError::Reparse` when a rule's edit list produces
+    /// text that does not re-parse as Python.
+    pub(crate) fn validate(&self, source: Source) -> Result<(), PipelineError> {
+        self.rules
+            .iter()
+            .try_fold(source, |source, rule| {
+                let rule_id = rule.id();
+                let groups = prepared_groups(&**rule, &source, source.suppression_map(), rule_id);
+                if groups.is_empty() {
+                    return Ok(source);
+                }
+                let new_text = apply_edits(source.text(), groups.concat());
+                source
+                    .reparse(new_text)
+                    .map_err(|source| PipelineError::Reparse {
+                        rule: rule_id,
+                        source,
+                    })
+            })
+            .map(drop)
+    }
 }
 
 /// Failure modes surfaced by the pipeline itself.
@@ -207,6 +237,7 @@ fn unsuppressed_lints<'a>(
 mod tests {
     use std::sync::{Arc, Mutex};
 
+    use assert_matches::assert_matches;
     use ruff_diagnostics::Edit;
     use ruff_text_size::TextRange;
 
@@ -633,6 +664,45 @@ mod tests {
 
         assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\n");
         assert!(diagnostics.is_empty());
+    }
+
+    #[test]
+    fn validate_passes_a_clean_rewrite() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
+            id: RuleId::from("rewrite-x-to-y"),
+        })]);
+        let source = parse("x = 1\n");
+
+        assert!(pipeline.validate(source).is_ok());
+    }
+
+    #[test]
+    fn validate_passes_when_no_rule_edits() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![Vec::new()],
+            id: RuleId::from("emits-empty-group"),
+        })]);
+        let source = parse("x = 1\n");
+
+        assert!(pipeline.validate(source).is_ok());
+    }
+
+    #[test]
+    fn validate_surfaces_unparseable_rule_output() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement(
+                "def foo(".to_owned(),
+                range(0, 5),
+            )]],
+            id: RuleId::from("breaks-parse"),
+        })]);
+        let source = parse("x = 1\n");
+
+        assert_matches!(
+            pipeline.validate(source),
+            Err(PipelineError::Reparse { rule, .. }) if rule.as_str() == "breaks-parse"
+        );
     }
 
     #[test]

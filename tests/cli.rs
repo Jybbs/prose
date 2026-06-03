@@ -154,6 +154,21 @@ fn check_json_closes_clean_run_with_summary_envelope() {
 }
 
 #[test]
+fn check_json_counts_a_collapsing_literal_as_changed() {
+    let (_dir, path) = fixture("collapse.py", "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["check", "--output-format", "json"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let summary: serde_json::Value =
+        serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses");
+    assert_eq!(summary["files_changed"], 1);
+}
+
+#[test]
 fn check_json_summary_counts_a_changed_file() {
     let (_dir, path) = fixture("misaligned.py", "ab = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
@@ -273,6 +288,16 @@ fn check_unaligned_fixture_exits_format_change() {
 fn check_unparseable_fixture_exits_parse_error() {
     let (_dir, path) = fixture("broken.py", "def x(:");
     prose().arg("check").arg(&path).assert().code(3);
+}
+
+#[test]
+fn check_validate_flag_accepts_a_valid_rewrite() {
+    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    cmd.args(["check", "--validate"])
+        .arg(&path)
+        .assert()
+        .code(1);
 }
 
 #[rstest]
@@ -439,6 +464,26 @@ fn format_json_renders_collapsing_literal_without_aborting() {
 }
 
 #[test]
+fn format_json_rewrites_over_a_check_cache_entry() {
+    let (_dir, path) = fixture("misaligned.py", "ab = 1\nx = 2\n");
+    let (mut check_cmd, cache_dir) = prose_isolated();
+    check_cmd.arg("check").arg(&path).assert().code(1);
+    let assert = prose()
+        .args(["format", "--output-format", "json"])
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+    let after = std::fs::read_to_string(&path).expect("reads");
+    assert_ne!(after, "ab = 1\nx = 2\n");
+    let stdout = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    assert!(
+        stdout.contains("align-equals"),
+        "json missing the diagnostic: {stdout}"
+    );
+}
+
+#[test]
 fn format_no_cache_flag_rewrites_when_needed() {
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     prose()
@@ -457,6 +502,21 @@ fn format_rewrite_summary_reports_reformatted() {
     let assert = cmd.arg("format").arg(&path).assert().success();
     let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
     assert!(err.contains("🗞️ Reformatted 1 file."), "stderr was {err:?}");
+}
+
+#[test]
+fn format_rewrites_after_check_populated_the_cache() {
+    let (_dir, path) = fixture("misaligned.py", "ab = 1\nx = 2\n");
+    let (mut check_cmd, cache_dir) = prose_isolated();
+    check_cmd.arg("check").arg(&path).assert().code(1);
+    prose()
+        .arg("format")
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .success();
+    let after = std::fs::read_to_string(&path).expect("reads");
+    assert_ne!(after, "ab = 1\nx = 2\n");
 }
 
 #[test]

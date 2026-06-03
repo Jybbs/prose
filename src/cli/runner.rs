@@ -15,9 +15,9 @@ use super::{
     output::{self, Presentation, Summary},
 };
 use crate::{
-    cache::{Cache, CacheEntry, CacheKey},
+    cache::{Cache, CacheEntry, CacheKey, Rewrite},
     config::Config,
-    diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Text},
+    diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Severity, Text},
     pipeline::Pipeline,
     source::Source,
     walker,
@@ -43,6 +43,19 @@ enum Mode {
     Reformat,
 }
 
+/// Which pipeline passes a CLI mode reads from a file.
+#[derive(Clone, Copy, Debug)]
+enum Pass {
+    /// `format` with a `json`, `sarif`, or `github` output format: the
+    /// as-written diagnostics and the rewrite.
+    Both,
+    /// `check`: the as-written diagnostics, no rewrite. `validate` adds
+    /// the opt-in reparse guard that fails on an unparseable rule output.
+    Diagnose { validate: bool },
+    /// Plain `format` and `--diff`: the rewrite alone.
+    Rewrite,
+}
+
 /// Per-run setup shared across every path the walker yields.
 struct RunSetup {
     cache: Option<Cache>,
@@ -62,10 +75,13 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
         Ok(s) => s,
         Err(s) => return Ok(s),
     };
+    let pass = Pass::Diagnose {
+        validate: args.validate,
+    };
     let outcomes = if args.stdin {
-        vec![process_stdin(stdin, &setup.pipeline)]
+        vec![process_stdin(stdin, &setup.pipeline, pass)]
     } else {
-        process_paths(&args.paths, |path| process_path(path, &setup))
+        process_paths(&args.paths, |path| process_path(path, &setup, pass))
     };
     let summary = emitter_summary(&outcomes);
     emit_outcomes(&outcomes, args.output_format, &mut stdout, &summary)?;
@@ -150,6 +166,19 @@ fn build_run(rules: &RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus>
     })
 }
 
+/// Records what a cached entry knows about the rewrite. A mode that
+/// skipped `run` stores `Skipped`, whereas one that ran it records
+/// whether the text changed.
+fn cache_rewrite(needs_rewrite: bool, formatted_text: &Option<String>) -> Rewrite {
+    if !needs_rewrite {
+        return Rewrite::Skipped;
+    }
+    match formatted_text {
+        Some(text) => Rewrite::Changed(text.clone()),
+        None => Rewrite::Unchanged,
+    }
+}
+
 fn emit_outcomes<W: Write>(
     outcomes: &[FileOutcome],
     format: OutputFormat,
@@ -190,7 +219,7 @@ fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
             EmitterSummary::default(),
             |mut summary, (diagnostics, formatted_text)| {
                 summary.files_visited += 1;
-                summary.files_changed += usize::from(formatted_text.is_some());
+                summary.files_changed += usize::from(file_changed(diagnostics, formatted_text));
                 summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
                 summary.diagnostics_total += diagnostics.len();
                 for diag in diagnostics {
@@ -199,6 +228,13 @@ fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
                 summary
             },
         )
+}
+
+/// A file counts as changed when `run` produced a rewrite, or, on the
+/// `check` path that skips the rewrite, when `diagnose` emitted a format
+/// diagnostic.
+fn file_changed(diagnostics: &[Diagnostic], formatted_text: &Option<String>) -> bool {
+    formatted_text.is_some() || diagnostics.iter().any(|d| d.severity == Severity::Format)
 }
 
 fn finish(
@@ -213,6 +249,18 @@ fn finish(
     status_from_outcomes(outcomes, demote_format_change)
 }
 
+/// Resolves which pipeline passes a `format` invocation reads. Plain
+/// text rewrites and `--diff` need `run` alone, whereas a `json`,
+/// `sarif`, or `github` output format also renders the as-written
+/// diagnostics.
+fn format_pass(diff: bool, format: OutputFormat) -> Pass {
+    if diff || format.is_text() {
+        Pass::Rewrite
+    } else {
+        Pass::Both
+    }
+}
+
 fn format_paths_diff<O: Write, E: Write>(
     paths: &[PathBuf],
     setup: &RunSetup,
@@ -221,7 +269,7 @@ fn format_paths_diff<O: Write, E: Write>(
     stdout: &mut O,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
-    let outcomes = process_paths(paths, |path| process_path(path, setup));
+    let outcomes = process_paths(paths, |path| process_path(path, setup, Pass::Rewrite));
     for outcome in &outcomes {
         if let FileOutcome::Done {
             file,
@@ -257,7 +305,10 @@ fn format_paths_rewrite<O: Write, E: Write>(
     stdout: &mut O,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
-    let outcomes = process_paths(paths, |path| apply_rewrite(path, process_path(path, setup)));
+    let pass = format_pass(false, format);
+    let outcomes = process_paths(paths, |path| {
+        apply_rewrite(path, process_path(path, setup, pass))
+    });
     let summary = emitter_summary(&outcomes);
     if !format.is_text() {
         emit_outcomes(&outcomes, format, stdout, &summary)?;
@@ -280,7 +331,7 @@ fn format_stdin<R: Read, O: Write, E: Write>(
     writer: &mut O,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
-    let outcome = process_stdin(stdin, pipeline);
+    let outcome = process_stdin(stdin, pipeline, format_pass(diff, format));
     let outcomes = std::slice::from_ref(&outcome);
     let summary = emitter_summary(outcomes);
     if let FileOutcome::Done {
@@ -324,7 +375,7 @@ fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
         .ok()
 }
 
-fn process_path(path: &Path, setup: &RunSetup) -> FileOutcome {
+fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOutcome {
     let bytes = match fs_err::read(path) {
         Ok(b) => b,
         Err(e) => {
@@ -332,14 +383,21 @@ fn process_path(path: &Path, setup: &RunSetup) -> FileOutcome {
             return FileOutcome::Failed(ExitStatus::ConfigError);
         }
     };
-    let cached = setup
+    // A plain `format` rewrite churns the key it would write, and a
+    // `--validate` check must re-confirm the rewrite parses rather than
+    // trust an entry an earlier unvalidated run wrote, so both bypass the
+    // cache. The diagnosing entries that remain carry as-written
+    // diagnostics, so a `check` hit never replays a `run`'s.
+    let needs_rewrite = matches!(pass, Pass::Both);
+    let keyed = setup
         .cache
         .as_ref()
+        .filter(|_| !matches!(pass, Pass::Rewrite | Pass::Diagnose { validate: true }))
         .map(|c| (c, CacheKey::compute(&bytes, &setup.config_toml)));
-    if let Some(outcome) = cached
+    if let Some(outcome) = keyed
         .as_ref()
         .and_then(|(c, k)| c.lookup(k))
-        .and_then(|entry| rehydrate(path, &bytes, entry))
+        .and_then(|entry| rehydrate(path, &bytes, entry, needs_rewrite))
     {
         return outcome;
     }
@@ -357,7 +415,7 @@ fn process_path(path: &Path, setup: &RunSetup) -> FileOutcome {
             return FileOutcome::Failed(ExitStatus::ParseError);
         }
     };
-    let outcome = run_pipeline(source, &setup.pipeline);
+    let outcome = run_pipeline(source, &setup.pipeline, pass);
     if let (
         Some((c, k)),
         FileOutcome::Done {
@@ -365,13 +423,13 @@ fn process_path(path: &Path, setup: &RunSetup) -> FileOutcome {
             formatted_text,
             ..
         },
-    ) = (&cached, &outcome)
+    ) = (&keyed, &outcome)
     {
         c.insert(
             k,
             &CacheEntry {
                 diagnostics: diagnostics.clone(),
-                formatted_source: formatted_text.clone(),
+                rewrite: cache_rewrite(needs_rewrite, formatted_text),
             },
         );
     }
@@ -388,7 +446,7 @@ where
         .collect()
 }
 
-fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline) -> FileOutcome {
+fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
     let Ok(text) =
         io::read_to_string(stdin).inspect_err(|e| eprintln!("error: reading stdin: {e}"))
     else {
@@ -398,18 +456,33 @@ fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline) -> FileOutcome {
         .inspect_err(|e| eprintln!("error: parse error in stdin: {e}"))
         .map_or_else(
             |_| FileOutcome::Failed(ExitStatus::ParseError),
-            |source| run_pipeline(source, pipeline),
+            |source| run_pipeline(source, pipeline, pass),
         )
 }
 
-fn rehydrate(path: &Path, original_bytes: &[u8], entry: CacheEntry) -> Option<FileOutcome> {
+fn rehydrate(
+    path: &Path,
+    original_bytes: &[u8],
+    entry: CacheEntry,
+    needs_rewrite: bool,
+) -> Option<FileOutcome> {
+    let formatted_text = if needs_rewrite {
+        match entry.rewrite {
+            Rewrite::Changed(text) => Some(text),
+            // A `check` entry skipped the rewrite this mode needs.
+            Rewrite::Skipped => return None,
+            Rewrite::Unchanged => None,
+        }
+    } else {
+        None
+    };
     let original_text = std::str::from_utf8(original_bytes).ok()?.to_owned();
     let file = SourceFileBuilder::new(path.display().to_string(), original_text).finish();
     Some(FileOutcome::Done {
         cached: true,
         diagnostics: entry.diagnostics,
         file,
-        formatted_text: entry.formatted_source,
+        formatted_text,
     })
 }
 
@@ -441,18 +514,40 @@ fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, write
     );
 }
 
-/// Collects diagnostics from `diagnose`, anchored to the source as
-/// written, and the rewritten text from `run`.
-fn run_pipeline(source: Source, pipeline: &Pipeline) -> FileOutcome {
-    let diagnostics = pipeline.diagnose(&source);
+/// Computes only the passes `pass` reads. `check` collects the
+/// as-written diagnostics, and with `--validate` set it also guards the
+/// would-be rewrite against an unparseable rule output without rebuilding
+/// diagnostics. A `format` run rewrites through `run`, pairing the
+/// rewrite with `diagnose`'s as-written diagnostics when an output format
+/// will render them, or `run`'s own otherwise.
+fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
+    if let Pass::Diagnose { validate } = pass {
+        let diagnostics = pipeline.diagnose(&source);
+        let file = source.source_file().clone();
+        if validate
+            && diagnostics.iter().any(|d| d.severity == Severity::Format)
+            && let Err(e) = pipeline.validate(source)
+        {
+            eprintln!("error: {e}");
+            return FileOutcome::Failed(ExitStatus::ConfigError);
+        }
+        return FileOutcome::Done {
+            cached: false,
+            diagnostics,
+            file,
+            formatted_text: None,
+        };
+    }
+    let diagnosed = matches!(pass, Pass::Both).then(|| pipeline.diagnose(&source));
     let file = source.source_file().clone();
     match pipeline.run(source) {
-        Ok((formatted, _)) => {
-            let formatted_text =
-                (formatted.text() != file.source_text()).then(|| formatted.text().to_owned());
+        Ok((formatted, run_diagnostics)) => {
+            let formatted_text = formatted
+                .changed_from(file.source_text())
+                .map(str::to_owned);
             FileOutcome::Done {
                 cached: false,
-                diagnostics,
+                diagnostics: diagnosed.unwrap_or(run_diagnostics),
                 file,
                 formatted_text,
             }
@@ -547,7 +642,28 @@ mod tests {
 
     use super::*;
     use crate::diagnostics::Severity;
-    use crate::rule::RuleId;
+    use crate::rule::{Rule, RuleId};
+
+    /// Test-only rule whose single edit rewrites the leading statement
+    /// into unparseable source, exercising the reparse guard.
+    struct BreaksParse;
+
+    impl Rule for BreaksParse {
+        fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
+            vec![vec![Edit::range_replacement(
+                "def foo(".to_owned(),
+                TextRange::new(0.into(), 5.into()),
+            )]]
+        }
+
+        fn id(&self) -> RuleId {
+            RuleId::from("breaks-parse")
+        }
+
+        fn message(&self) -> &'static str {
+            "breaks parse"
+        }
+    }
 
     struct ErrorReader;
 
@@ -613,6 +729,16 @@ mod tests {
             quiet: false,
             stdout_tty: false,
         }
+    }
+
+    #[test]
+    fn cache_rewrite_marks_skipped_unless_run_supplied_text() {
+        assert_matches!(cache_rewrite(false, &None), Rewrite::Skipped);
+        assert_matches!(cache_rewrite(true, &None), Rewrite::Unchanged);
+        assert_matches!(
+            cache_rewrite(true, &Some("y = 1\n".to_owned())),
+            Rewrite::Changed(text) if text == "y = 1\n"
+        );
     }
 
     #[test]
@@ -764,6 +890,26 @@ mod tests {
     }
 
     #[test]
+    fn check_validate_fails_on_unparseable_rule_output() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(BreaksParse)]);
+        let source = "x = 1\n".parse::<Source>().expect("parses");
+
+        let outcome = run_pipeline(source, &pipeline, Pass::Diagnose { validate: true });
+
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+    }
+
+    #[test]
+    fn check_without_validate_ignores_unparseable_rule_output() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(BreaksParse)]);
+        let source = "x = 1\n".parse::<Source>().expect("parses");
+
+        let outcome = run_pipeline(source, &pipeline, Pass::Diagnose { validate: false });
+
+        assert_matches!(outcome, FileOutcome::Done { .. });
+    }
+
+    #[test]
     fn emit_outcomes_propagates_writer_failure() {
         let source = "x = 1\n".parse::<Source>().expect("parses");
         let diags = vec![diagnostic(
@@ -843,6 +989,18 @@ mod tests {
     }
 
     #[test]
+    fn file_changed_counts_a_rewrite_or_a_format_diagnostic() {
+        let range = TextRange::new(0.into(), 1.into());
+        let format = vec![diagnostic(Severity::Format, range, "synthetic-format")];
+        let lint = vec![diagnostic(Severity::Lint, range, "synthetic-lint")];
+
+        assert!(file_changed(&[], &Some("x = 1\n".to_owned())));
+        assert!(file_changed(&format, &None));
+        assert!(!file_changed(&lint, &None));
+        assert!(!file_changed(&[], &None));
+    }
+
+    #[test]
     fn format_diff_returns_clean_for_already_canonical_file() {
         let tmp = TempDir::new().expect("tempdir");
         let file = tmp.path().join("a.py");
@@ -896,6 +1054,13 @@ mod tests {
         .expect("runs successfully");
 
         assert_eq!(status, ExitStatus::FormatChange);
+    }
+
+    #[test]
+    fn format_pass_needs_both_only_for_a_diagnostic_format() {
+        assert_matches!(format_pass(false, OutputFormat::Json), Pass::Both);
+        assert_matches!(format_pass(false, OutputFormat::Text), Pass::Rewrite);
+        assert_matches!(format_pass(true, OutputFormat::Json), Pass::Rewrite);
     }
 
     #[test]
@@ -1075,8 +1240,41 @@ mod tests {
             config_toml: String::new(),
             pipeline: Pipeline::with_filters(&config, &[], &[]),
         };
-        let outcome = process_path(&tmp.path().join("does_not_exist.py"), &setup);
+        let outcome = process_path(
+            &tmp.path().join("does_not_exist.py"),
+            &setup,
+            Pass::Diagnose { validate: false },
+        );
         assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+    }
+
+    #[test]
+    fn rehydrate_serves_a_changed_rewrite_to_a_format_mode() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::Changed("y = 1\n".to_owned()),
+        };
+        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, true);
+        assert_matches!(
+            outcome,
+            Some(FileOutcome::Done { formatted_text: Some(text), .. }) if text == "y = 1\n"
+        );
+    }
+
+    #[test]
+    fn rehydrate_serves_an_unchanged_rewrite_as_no_edit() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::Unchanged,
+        };
+        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, true);
+        assert_matches!(
+            outcome,
+            Some(FileOutcome::Done {
+                formatted_text: None,
+                ..
+            })
+        );
     }
 
     #[test]
@@ -1108,6 +1306,16 @@ mod tests {
             String::from_utf8(buf).expect("utf-8"),
             "cache: 2 hits, 1 misses, 3 files\n",
         );
+    }
+
+    #[test]
+    fn rewrite_pass_fails_on_unparseable_rule_output() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(BreaksParse)]);
+        let source = "x = 1\n".parse::<Source>().expect("parses");
+
+        let outcome = run_pipeline(source, &pipeline, Pass::Rewrite);
+
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
     }
 
     #[test]

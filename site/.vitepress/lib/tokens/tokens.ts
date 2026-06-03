@@ -46,6 +46,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: '--quiet',         href: '/reference/cli#run-summary',          blurb: 'Reduce the closing summary to a bare count line.' },
     { key: '--select <slug>', href: '/reference/cli#precedence',           blurb: 'Restrict the run to the listed rule.' },
     { key: '--stdin',         href: '/reference/cli#prose-format',         blurb: 'Read source from stdin, write the rewrite to stdout.' },
+    { key: '--validate',      href: '/reference/cli#prose-check',          blurb: 'Confirm the would-be rewrite re-parses, surfacing an unparseable rule output.' },
     { key: '--verbose',       href: '/reference/cache#hit-miss-telemetry', blurb: 'Print a one-line cache summary to stderr at the end of the run.' }
   ],
   'config-key': [
