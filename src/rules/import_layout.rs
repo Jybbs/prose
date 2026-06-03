@@ -12,11 +12,11 @@ use std::ops::Range;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Alias, Stmt, StmtImportFrom,
+    Stmt, StmtImportFrom,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
-use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_python_trivia::indentation_at_offset;
+use ruff_text_size::Ranged;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
@@ -68,9 +68,7 @@ impl<'a> Layout<'a> {
     /// (a `;`-joined simple statement), where splitting would strand a
     /// continuation line at the wrong indent.
     fn line_indent(&self, node: &StmtImportFrom) -> Option<&'a str> {
-        let line_start = self.source.text().line_start(node.start());
-        let indent = self.source.slice(TextRange::new(line_start, node.start()));
-        indent.chars().all(char::is_whitespace).then_some(indent)
+        indentation_at_offset(node.start(), self.source.text())
     }
 
     /// Emits the packed multi-line rewrite of `node` when its canonical
@@ -86,9 +84,13 @@ impl<'a> Layout<'a> {
             return;
         };
         let prefix = import_prefix(node);
-        let names: Vec<String> = node.names.iter().map(render_alias).collect();
+        let names: Vec<&str> = node
+            .names
+            .iter()
+            .map(|alias| self.source.slice(alias.range()))
+            .collect();
         let widths: Vec<usize> = names.iter().map(|name| name.width()).collect();
-        let prefix_width = self.source.column_of(node.start()) + prefix.width();
+        let prefix_width = indent.chars().count() + prefix.width();
         let single_line = prefix_width + widths.iter().sum::<usize>() + 2 * (widths.len() - 1);
         if single_line <= self.import_line_length {
             return;
@@ -146,14 +148,6 @@ fn pack(widths: &[usize], prefix_width: usize, budget: usize) -> Vec<Range<usize
     lines
 }
 
-/// Renders one imported name, carrying its `as` alias across the split.
-fn render_alias(alias: &Alias) -> String {
-    match &alias.asname {
-        Some(asname) => format!("{} as {}", alias.name, asname),
-        None => alias.name.to_string(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -203,17 +197,6 @@ mod tests {
     #[test]
     fn pack_keeps_one_line_when_every_name_fits() {
         assert_eq!(pack(&[1, 1, 1], 5, 80), vec![0..3]);
-    }
-
-    #[rstest]
-    #[case("from m import plain\n", "plain")]
-    #[case("from m import name as alias\n", "name as alias")]
-    fn render_alias_carries_the_as_clause(#[case] src: &str, #[case] expected: &str) {
-        let source = parse(src);
-        let node = source.ast().body[0]
-            .as_import_from_stmt()
-            .expect("first statement is a from-import");
-        assert_eq!(render_alias(&node.names[0]), expected);
     }
 
     #[test]
