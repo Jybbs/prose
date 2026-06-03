@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/long_import_splits_then_aligns/input.py
+---
+from package import alpha, beta, delta
+from package import epsilon, gamma

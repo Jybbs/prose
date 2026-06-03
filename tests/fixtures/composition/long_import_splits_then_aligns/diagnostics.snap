@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/long_import_splits_then_aligns/input.py
+---
+import-layout@38..39

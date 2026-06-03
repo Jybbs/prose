@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/inline_statement_join_pins_run/input.py
+---
+import b
+import a; x = 1

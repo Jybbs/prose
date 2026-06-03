@@ -56,6 +56,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'docstring-line-length',       href: '/reference/configuration#docstring-budgets', blurb: 'Maximum column budget for docstring prose.' },
     { key: 'docstring-structured-policy', href: '/reference/configuration#docstring-budgets', blurb: 'Budget policy for docstring structured sections.' },
     { key: 'enabled',                     href: '/reference/configuration#per-rule-knobs',    blurb: 'Per-rule toggle, the bare bool in `[rules]`.' },
+    { key: 'import-line-length',          href: '/reference/configuration#top-level-keys',    blurb: 'Import-wrap column budget, falls back to `code-line-length`.' },
     { key: 'imports.first-party',         href: '/reference/configuration#imports',           blurb: 'Package names lifted into the local-package import group.' },
     { key: 'max-shift',                   href: '/reference/configuration#per-rule-knobs',    blurb: 'Per-rule alignment-shift bound.' },
     { key: 'max-shift-policy',            href: '/reference/configuration#per-rule-knobs',    blurb: 'Fallback (`split` / `drop`) when the widest member overflows `max-shift`.' },

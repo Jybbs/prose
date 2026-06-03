@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/import_layout/indented_split_keeps_indent/input.py
+---
+def load():
+    from pkg.sub import alpha, beta, delta
+    from pkg.sub import epsilon, gamma

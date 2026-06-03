@@ -34,6 +34,7 @@ The top-level keys carry settings that span multiple rules. They sit at the docu
 | `code-line-length` | positive int | `88` | Honored by line-length-aware rules |
 | `docstring-line-length` | positive int | `76` | Description-prose budget for [[docstring-wrap]] |
 | `docstring-structured-policy` | `"code-line-length"` \| `"docstring-line-length"` | `"code-line-length"` | Source budget for structured docstring sections |
+| `import-line-length` | positive int \| `false` | `120` | Import-wrap budget for [[import-layout]], falling back to `code-line-length` when `false` |
 | `target-version` | `"3.X"` version string | unset | Python runtime the project ships to, consumed by version-gated rules |
 
 `target-version` names the Python runtime a project ships to, taking the bare `major.minor` form (*`"3.13"`, `"3.14"`*) used by `mypy`'s `python_version` setting. Rules whose safety depends on the runtime read this field directly. [[legacy-union-syntax]] and [[unused-future-annotations]] are the two current consumers.
@@ -79,7 +80,7 @@ The `[rules]` table holds one entry per rule you change. A bare bool is the shor
 | Key | Type | Where | Default | Meaning |
 |---|---|---|---|---|
 | `enabled` | bool | every rule | `true` | Toggle the rule on or off |
-| `max-shift` | positive int | alignment rules | `8` | Ceiling on per-line padding |
+| `max-shift` | positive int | alignment rules | `8` *(`16` for [[align-imports]])* | Ceiling on per-line padding |
 | `max-shift-policy` | `"split"` \| `"drop"` | alignment rules | `"split"` | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation. To leave one row out of an otherwise-aligned group, hold it with `# prose: skip` rather than abandoning the alignment |
 | `docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within every Title-case-headed docstring section alongside the AST-level sorts. Set `false` to keep narrative-curated entry order while still sorting every other surface |
 | `max-atomics-per-line` | positive int \| `false` | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. `false` removes the cap and packs by width alone |

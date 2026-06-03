@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Import within Budget Stays on One Line"
+
+description = '''
+A `from ... import ...` that already fits the import budget **keeps its single line**, leaving the split for the genuinely long rosters.
+'''

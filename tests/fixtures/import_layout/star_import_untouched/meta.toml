@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Star Import Passes Through Untouched"
+
+description = '''
+A `from ... import *` carries one name and **passes through unchanged**, even past the budget, because a star import has nothing to pack.
+'''

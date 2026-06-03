@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Indented From-Import Splits at Its Block Indent"
+
+description = '''
+A from-import nested in a block **splits with every continuation line carrying the block indent**, and the budget counts the indent column so each packed line still fits.
+'''
