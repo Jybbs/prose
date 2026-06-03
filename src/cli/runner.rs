@@ -389,10 +389,10 @@ fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOutcome {
         Ok(b) => b,
         Err(e) => return config_error(e),
     };
-    // A plain `format` rewrite churns the key it would write, and a
-    // `--validate` check must re-confirm the rewrite parses rather than
+    // Plain `format` would persist only `run`'s post-edit diagnostics, and
+    // a `--validate` check must re-confirm the rewrite parses rather than
     // trust an entry an earlier unvalidated run wrote, so both bypass the
-    // cache. The diagnosing entries that remain carry as-written
+    // cache. Every entry that remains carries `diagnose`'s as-written
     // diagnostics, so a `check` hit never replays a `run`'s.
     let needs_rewrite = matches!(pass, Pass::Both);
     let keyed = setup

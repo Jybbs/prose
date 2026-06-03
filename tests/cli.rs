@@ -291,6 +291,24 @@ fn check_unparseable_fixture_exits_parse_error() {
 }
 
 #[test]
+fn check_validate_bypasses_a_check_populated_cache_entry() {
+    let (_dir, path) = fixture("misaligned.py", "ab = 1\nx = 2\n");
+    let (mut check_cmd, cache_dir) = prose_isolated();
+    check_cmd.arg("check").arg(&path).assert().code(1);
+    let assert = prose()
+        .args(["check", "--validate", "--verbose"])
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .code(1);
+    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    assert!(
+        err.contains("0 hits, 1 misses"),
+        "validate must bypass the cache, stderr was {err:?}"
+    );
+}
+
+#[test]
 fn check_validate_flag_accepts_a_valid_rewrite() {
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
