@@ -65,8 +65,7 @@ impl Visitor<'_> {
             };
             let extends = active.is_some_and(|prev| {
                 !self.walker.source.contains_line_break(prev)
-                    && self.walker.source.line_index(operand.start())
-                        == self.walker.source.line_index(prev.end()).saturating_add(1)
+                    && aligner::consecutive_lines(self.walker.source, prev.end(), operand.start())
             });
             if extends {
                 groups

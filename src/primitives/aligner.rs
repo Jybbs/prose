@@ -448,15 +448,15 @@ fn emit_with_paddings(
     }));
 }
 
-/// Returns the half-open `(start, end, max_width)` sub-group ranges
-/// into `members` produced by greedily extending each sub-group while
-/// the running `max_width - min_width` stays at or below `max_shift`.
 /// Returns the widest `op_width` in `members`, or `0` when the slice
 /// is empty.
 fn max_op_width(members: &[Member]) -> usize {
     members.iter().map(|m| m.op_width).max().unwrap_or(0)
 }
 
+/// Returns the half-open `(start, end, max_width)` sub-group ranges
+/// into `members` produced by greedily extending each sub-group while
+/// the running `max_width - min_width` stays at or below `max_shift`.
 fn partition_by_spread(members: &[Member], max_shift: usize) -> Vec<(usize, usize, usize)> {
     let mut subs = Vec::new();
     let mut cursor = 0;

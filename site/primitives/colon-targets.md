@@ -27,14 +27,10 @@ Each context resolves a `Member` for the alignment math, with `width` being the 
 
 ## Internal Surface
 
-The receiver trait carries the per-context handlers, where only `handle` is required with an empty default body and the other three are provided methods a consuming rule overrides on a need-by-need basis:
+The receiver trait carries the per-context handlers, where only `handle` is required with an empty default body and the others are provided methods a consuming rule overrides on a need-by-need basis:
 
 ```rust
 pub(crate) trait ColonEmitter {
-    fn dict(&mut self, d: &ExprDict, members: &[aligner::Member]) {
-        self.handle(members);
-    }
-
     fn handle(&mut self, members: &[aligner::Member]) {}
 
     fn match_arms(&mut self, members: &[aligner::Member]) {
@@ -45,7 +41,7 @@ pub(crate) trait ColonEmitter {
 }
 ```
 
-`handle` is the catch-all for class fields, docstring args, and parameters. `dict` carries the surrounding `ExprDict` for consumers that need its range *(e.g., the `# prose: keep` suppression check on dict literals)*, with the default delegating to `handle` so a rule that does not care about the surrounding dict gets the same callback. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[align-match-case]] owns the match-arm context)*, with its default also delegating to `handle` for any rule that wants the unified callback.
+`handle` is the catch-all for class fields, docstring args, dict entries, and parameters. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[align-match-case]] owns the match-arm context)*, with its default delegating to `handle` for any rule that wants the unified callback.
 
 `walk(source)` is the provided driver across `source`'s module body, recursing into nested classes, functions, matches, and expressions so a single call covers the whole tree. A consuming rule never overrides `walk`, because calling the provided method is enough to drive the receiver across every relevant context.
 
