@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parenthesized Yield Annotation Aligns"
+
+description = '''
+A field annotated with a parenthesized `yield from` expression aligns inside a generator body, the paren-aware measurement keeping the `yield from` and its closing `)` clear of the rewritten gap.
+'''

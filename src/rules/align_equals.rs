@@ -11,7 +11,7 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyParameterRef, Parameters, Stmt,
+    AnyNodeRef, AnyParameterRef, ExprRef, Parameters, Stmt,
     statement_visitor::{StatementVisitor, walk_body, walk_stmt},
     token::TokenKind,
 };
@@ -19,7 +19,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
-    primitives::aligner,
+    primitives::{aligner, range::paren_aware_range},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -67,6 +67,13 @@ impl Visitor<'_> {
         )
     }
 
+    /// `expr`'s range widened to its explicit parentheses, recovered
+    /// against `parent`, so a parenthesized left-hand side ends past
+    /// its closing `)` instead of leaving the paren inside the gap.
+    fn paren_aware(&self, expr: ExprRef, parent: AnyNodeRef) -> TextRange {
+        paren_aware_range(expr, parent, self.walker.source.tokens())
+    }
+
     fn process_body(&mut self, body: &[Stmt]) {
         let rule = self.walker.rule;
         for members in
@@ -93,22 +100,25 @@ impl Visitor<'_> {
     /// augmented `x += 1` (`Stmt::AugAssign`). For each, the `width` is
     /// the display-column distance from `target.start()` to the `=`
     /// character, and the `gap` is the whitespace the rule may rewrite.
-    /// Returns `None` when the region between `target.start()` and the
-    /// `=` contains a line break.
+    /// The left-hand side is measured [paren-aware](Self::paren_aware),
+    /// so a parenthesized target or annotation keeps its closing `)`
+    /// left of the gap. Returns `None` when the region between
+    /// `target.start()` and the `=` contains a line break.
     fn qualify(&self, stmt: &Stmt) -> Option<aligner::Member> {
         match stmt {
             Stmt::AnnAssign(a) => {
                 let value = a.value.as_deref()?;
-                self.equal_member(a.target.range().cover(a.annotation.range()), value.start())
+                let annotation = self.paren_aware(a.annotation.as_ref().into(), a.into());
+                self.equal_member(a.target.range().cover(annotation), value.start())
             }
             Stmt::Assign(a) => {
                 let [target] = a.targets.as_slice() else {
                     return None;
                 };
-                self.equal_member(target.range(), a.value.start())
+                self.equal_member(self.paren_aware(target.into(), a.into()), a.value.start())
             }
             Stmt::AugAssign(a) => {
-                let target_range = a.target.range();
+                let target_range = self.paren_aware(a.target.as_ref().into(), a.into());
                 aligner::range_anchored_member_single_line(
                     self.walker.source,
                     target_range,
@@ -123,13 +133,17 @@ impl Visitor<'_> {
 
     /// Returns the alignment member for an annotated function parameter
     /// carrying a default value, or `None` for any other shape. Width
-    /// spans the parameter name through the annotation end, and the
-    /// gap is the whitespace between annotation end and the `=` token.
+    /// spans the parameter name through the annotation's
+    /// [paren-aware](Self::paren_aware) end, and the gap is the
+    /// whitespace between that end and the `=` token.
     fn qualify_parameter(&self, param: AnyParameterRef<'_>) -> Option<aligner::Member> {
         let annotation = param.annotation()?;
         let default = param.default()?;
+        let annotation_end = self
+            .paren_aware(annotation.into(), param.as_parameter().into())
+            .end();
         self.equal_member(
-            TextRange::new(param.name().start(), annotation.end()),
+            TextRange::new(param.name().start(), annotation_end),
             default.start(),
         )
     }
