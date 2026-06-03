@@ -182,12 +182,7 @@ impl<'a> LeafCollector<'a> {
     }
 
     fn emit_dict(&mut self, d: &'a ExprDict) {
-        let source = self.source;
-        let rewritten = {
-            let edits = &self.edits;
-            rewrite_dict_text(source, d, edits)
-        };
-        if let Some((span, text)) = rewritten {
+        if let Some((span, text)) = rewrite_dict_text(self.source, d, &self.edits) {
             self.fold_into(span, text);
         }
     }
@@ -241,10 +236,7 @@ impl<'a> LeafCollector<'a> {
             return;
         };
         self.edits.retain(|e| !span.contains_range(e.range()));
-        let slot = self
-            .edits
-            .partition_point(|e| e.range().start() < span.start());
-        self.edits.insert(slot, Edit::range_replacement(text, span));
+        insert_by_start(&mut self.edits, Edit::range_replacement(text, span));
     }
 
     fn try_emit_inline_reorder<T, S>(
@@ -259,13 +251,9 @@ impl<'a> LeafCollector<'a> {
             return;
         };
         let span = first.range().cover(last.range());
-        let source = self.source;
-        let folded = {
-            let edits = &self.edits;
-            reorder_text(source, items, classify, |i, _| {
-                apply_inline_edits(source, items[i].range(), edits)
-            })
-        };
+        let folded = reorder_text(self.source, items, classify, |i, _| {
+            apply_inline_edits(self.source, items[i].range(), &self.edits)
+        });
         self.fold_into(span, folded);
     }
 
@@ -541,8 +529,7 @@ fn collect_leaf_edits<'a>(
                 .intersect(rewrite.range())
                 .is_none_or(|i| i.is_empty())
         }) {
-            let slot = edits.partition_point(|e| e.range().start() < rewrite.range().start());
-            edits.insert(slot, rewrite);
+            insert_by_start(&mut edits, rewrite);
         }
     }
     edits
@@ -728,6 +715,13 @@ fn import_sort_key<'a>(
         Stmt::ImportFrom(i) => (group, 1, i.level, i.module.as_deref().unwrap_or_default()),
         _ => unreachable!("import_group returns Some only for import statements"),
     })
+}
+
+/// Inserts `edit` into a `Vec<Edit>` kept sorted by `range().start()`,
+/// preserving that order.
+fn insert_by_start(edits: &mut Vec<Edit>, edit: Edit) {
+    let slot = edits.partition_point(|e| e.range().start() < edit.range().start());
+    edits.insert(slot, edit);
 }
 
 /// The end offset of a dict item's value, widened past any parentheses
@@ -1431,6 +1425,22 @@ mod tests {
             .into_iter()
             .collect();
         assert_eq!(collected, HashSet::from(["BaseRef", "DefaultRef"]));
+    }
+
+    #[rstest]
+    #[case("import b\nimport a; x = 1\n", true)]
+    #[case("import b\nimport a\n", false)]
+    #[case("a = 1; b = 2\n", true)]
+    #[case("x = 1\n", false)]
+    fn has_inline_statement_join_detects_semicolon_joined_siblings(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        assert_eq!(
+            has_inline_statement_join(&source, &source.ast().body),
+            expected
+        );
     }
 
     #[test]
