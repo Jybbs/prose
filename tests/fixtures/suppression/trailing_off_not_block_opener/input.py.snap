@@ -3,9 +3,9 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/suppression/trailing_off_not_block_opener/input.py
 ---
-x     = 1
+aa    = 4
+bbb   = 5
+cccc  = 6
 foo   = 2
 short = 3  # fmt: off
-aa   = 4
-bbb  = 5
-cccc = 6
+x = 1

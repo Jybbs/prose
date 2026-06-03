@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Derived Constant Pools into the Trailing Band"
+
+description = '''
+A constant naming a module-level function **pools into the trailing band beneath the definitions**, never rising above the `make` it names, because evaluating its right-hand side reaches that definition at once.
+'''

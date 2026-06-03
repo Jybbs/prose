@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Module Dunder Rides the Leading Band"
+
+description = '''
+A module dunder such as `__all__` **rides the leading band as a plain dependency-clean entry**, since its string-literal value names no definition and reaches only the front of the module.
+'''

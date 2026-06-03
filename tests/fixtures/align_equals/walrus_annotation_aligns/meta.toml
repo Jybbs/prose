@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parenthesized Walrus Annotation Aligns"
+
+description = '''
+A row whose annotation parenthesizes an assignment expression aligns like any other, because the rule measures the annotation through its explicit parentheses so the closing `)` stays left of the rewritten gap.
+'''

@@ -4,7 +4,6 @@ expression: output
 input_file: tests/fixtures/alphabetize/assigns_module_local_attr_safe/input.py
 ---
 SETTINGS = {"timeout": 30}
-
 alpha = 1
 beta = 2
 zebra = SETTINGS["timeout"]

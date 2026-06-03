@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Derived Call Reaching a Class Pools Last"
+
+description = '''
+A constant calling a function that reaches a class through a default argument **pools beneath both the function and the class**, since the call's eval-time surface threads `CONFIG` past `build` and the `Widget` its default names.
+'''

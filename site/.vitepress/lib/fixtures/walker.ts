@@ -3,10 +3,12 @@ import path from 'node:path'
 
 import { parse } from 'smol-toml'
 
-export const FIXTURES_DIR  = 'tests/fixtures'
-export const INPUT_FILE    = 'input.py'
-export const META_FILE     = 'meta.toml'
-export const SNAPSHOT_FILE = 'input.py.snap'
+import { LINT_FINDINGS_FILE } from './lint-findings'
+
+const FIXTURES_DIR  = 'tests/fixtures'
+const INPUT_FILE    = 'input.py'
+const META_FILE     = 'meta.toml'
+const SNAPSHOT_FILE = 'input.py.snap'
 
 interface FixtureDocs {
   canonical   ?: boolean
@@ -19,6 +21,16 @@ interface FixtureWalkEntry {
   caseName  : string
   inputPath : string
   rule      : string
+}
+
+export function fixtureWatchGlobs(repoRoot: string): string[] {
+  const fixturesRoot = path.join(repoRoot, FIXTURES_DIR)
+  return [
+    `${fixturesRoot}/**/${INPUT_FILE}`,
+    `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
+    `${fixturesRoot}/*/*/${LINT_FINDINGS_FILE}`,
+    `${fixturesRoot}/*/*/${META_FILE}`
+  ]
 }
 
 export function readFixtureDocs(inputPath: string): FixtureDocs | undefined {

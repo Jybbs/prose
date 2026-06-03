@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dependency-Clean Constant Hoists above Its Body Reader"
+
+description = '''
+A constant whose value touches only literals **rides the leading band directly below the imports**, hoisting above a function that reads it inside its body, because a body reference defers to call time and constrains no order.
+'''

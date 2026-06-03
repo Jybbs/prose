@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Builtin-Call Constant Rides the Leading Band"
+
+description = '''
+A constant whose value calls a builtin names no module definition, so it is dependency-clean and **rides the leading band** above the function that reads it, the same as a literal-valued constant.
+'''
