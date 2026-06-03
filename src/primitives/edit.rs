@@ -104,20 +104,22 @@ pub(crate) fn singleton_groups(edits: impl IntoIterator<Item = Edit>) -> Vec<Vec
     edits.into_iter().map(|edit| vec![edit]).collect()
 }
 
-/// Reassembles the text spanning `outer` with the slice at `inner`
-/// swapped for `replacement`, leaving the rest of `outer` intact. The
-/// parse round-trip a rule runs before committing a rewrite.
-pub(crate) fn splice(
+/// Reports whether splicing `replacement` into `outer` at `inner`
+/// yields source that `parse` accepts, the round-trip a rule runs
+/// before committing a rewrite it cannot otherwise validate.
+pub(crate) fn splice_parses<T, E>(
     source: &Source,
     outer: TextRange,
     inner: TextRange,
     replacement: &str,
-) -> String {
-    format!(
+    parse: impl Fn(&str) -> Result<T, E>,
+) -> bool {
+    let candidate = format!(
         "{}{replacement}{}",
         source.slice(TextRange::new(outer.start(), inner.start())),
         source.slice(TextRange::new(inner.end(), outer.end())),
-    )
+    );
+    parse(&candidate).is_ok()
 }
 
 /// Weaves `edits` into the `span` slice of `text` and returns the

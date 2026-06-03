@@ -44,7 +44,7 @@ use crate::{
     primitives::{
         call_keywords::{keyword_args, module_call_params, pins_positional_params},
         docstring::{entry_carrying_sections, rewrite_docstrings},
-        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, splice},
+        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, splice_parses},
         imports::{ImportGroup, future_annotations_alias, import_group},
         orderer::{
             assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
@@ -1028,8 +1028,7 @@ fn rewrite_dict_text<'src>(
     // safety net for irregular layouts (entries sharing a line, comments
     // inside a `**`-spread's parentheses) the block model cannot shuffle
     // cleanly.
-    let reassembled = splice(source, d.range(), span, &assembled);
-    if parse_expression(&reassembled).is_err() {
+    if !splice_parses(source, d.range(), span, &assembled, parse_expression) {
         return None;
     }
     Some((span, Cow::Owned(assembled)))
