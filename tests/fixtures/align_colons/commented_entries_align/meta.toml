@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Commented Dict Entries Align on the Shared Column"
+
+description = '''
+A dict whose entries each carry a trailing comment aligns its `:` separators on the shared column, with each comment left riding after its value. The comment is an annotation on the entry, so it never blocks the alignment.
+'''

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/skip_held_entry_bridges_run/input.py
+---
+align-colons@21..96

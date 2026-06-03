@@ -157,6 +157,15 @@ impl From<&AlignmentConfig> for Settings {
     }
 }
 
+/// Returns `true` when `next_start` sits on the source line directly
+/// after `prev_end`'s line. A trailing comment on `prev_end`'s line
+/// keeps the two consecutive, whereas a standalone comment line or a
+/// blank line pushes `next_start` two or more lines down and breaks
+/// adjacency.
+pub(crate) fn consecutive_lines(source: &Source, prev_end: TextSize, next_start: TextSize) -> bool {
+    source.line_index(next_start) == source.line_index(prev_end).saturating_add(1)
+}
+
 /// Moves the in-progress run into `groups` when it holds at least one
 /// member, leaving `current` empty for the next run.
 pub(crate) fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {
@@ -335,25 +344,6 @@ where
     Some(range_anchored_member(source, target, anchor, extra_width))
 }
 
-/// Returns whether a run continues from a row ending at `prev_end` to
-/// the next row starting at `next_start`. A non-held predecessor uses
-/// the standard inter-statement adjacency. A [held](is_held)
-/// predecessor relaxes to a consecutive-line check, so the held row's
-/// own trailing skip comment does not break the run while a standalone
-/// comment or blank line between rows still does.
-pub(crate) fn run_continues(
-    source: &Source,
-    prev_end: TextSize,
-    prev_held: bool,
-    next_start: TextSize,
-) -> bool {
-    if prev_held {
-        source.line_index(next_start) == source.line_index(prev_end).saturating_add(1)
-    } else {
-        source.is_line_adjacent(TextRange::new(prev_end, next_start))
-    }
-}
-
 /// Returns the edit needed to make `range` carry exactly `n` ASCII
 /// spaces, or `None` if it already does. Emits `Edit::range_deletion`
 /// when `n` is zero.
@@ -512,8 +502,28 @@ fn range_anchored_member(
     }
 }
 
+/// Returns whether a run continues from a row ending at `prev_end` to
+/// the next row starting at `next_start`. A non-held predecessor uses
+/// the standard inter-statement adjacency. A [held](is_held)
+/// predecessor relaxes to a consecutive-line check, so the held row's
+/// own trailing skip comment does not break the run while a standalone
+/// comment or blank line between rows still does.
+fn run_continues(
+    source: &Source,
+    prev_end: TextSize,
+    prev_held: bool,
+    next_start: TextSize,
+) -> bool {
+    if prev_held {
+        consecutive_lines(source, prev_end, next_start)
+    } else {
+        source.is_line_adjacent(TextRange::new(prev_end, next_start))
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use ruff_text_size::TextSize;
 
     use super::*;
@@ -590,6 +600,23 @@ mod tests {
             edit.end().to_u32(),
             edit.content().unwrap_or_default().to_owned(),
         )
+    }
+
+    #[rstest]
+    #[case("a = 1\nb = 2\n", true)]
+    #[case("a = 1  # trailing\nb = 2\n", true)]
+    #[case("a = 1\n\nb = 2\n", false)]
+    #[case("a = 1\n# standalone\nb = 2\n", false)]
+    fn consecutive_lines_tolerates_trailing_comment_but_breaks_on_gap(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let body = &source.ast().body;
+        assert_eq!(
+            consecutive_lines(&source, body[0].end(), body[1].start()),
+            expected,
+        );
     }
 
     #[test]

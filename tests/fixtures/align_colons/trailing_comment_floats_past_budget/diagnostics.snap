@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/trailing_comment_floats_past_budget/input.py
+---
+align-colons@24..144
