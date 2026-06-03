@@ -3,5 +3,5 @@ previewable = false
 title       = "NewType Bindings Pass Through Untouched"
 
 description = '''
-A `NewType("UserId", int)` binding is `SCREAMING_CASE` by Python convention and **structural by definition**, so it passes through the rule without a diagnostic.
+A `NewType("UserId", int)` binding uses a `PascalCase` name rather than the `SCREAMING_CASE` the rule targets and is **structural by definition**, so it passes through the rule without a diagnostic.
 '''

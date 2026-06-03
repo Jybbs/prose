@@ -89,6 +89,16 @@ impl Source {
         &self.comment_ranges
     }
 
+    /// Returns `true` when `next_start` sits on the source line directly
+    /// after `prev_end`'s line. A trailing comment on `prev_end`'s line
+    /// keeps the two consecutive, whereas a standalone comment line or a
+    /// blank line pushes `next_start` two or more lines down and breaks
+    /// adjacency. Contrast [`Self::is_line_adjacent`], which breaks on any
+    /// comment in the gap.
+    pub fn consecutive_lines(&self, prev_end: TextSize, next_start: TextSize) -> bool {
+        self.line_index(next_start) == self.line_index(prev_end).saturating_add(1)
+    }
+
     /// Returns `true` when the source text in `ranged` carries at
     /// least one line break.
     pub fn contains_line_break<R: Ranged>(&self, ranged: R) -> bool {
@@ -134,7 +144,9 @@ impl Source {
 
     /// Returns `true` when the gap between two AST nodes carries
     /// exactly one newline and no comment, meaning the surrounding
-    /// nodes sit on directly adjacent source lines.
+    /// nodes sit on directly adjacent source lines. Contrast
+    /// [`Self::consecutive_lines`], which rides a trailing comment on the
+    /// preceding line.
     pub fn is_line_adjacent(&self, gap: TextRange) -> bool {
         !self.slice(gap).contains('#') && lines_before(gap.end(), self.text()) == 1
     }
@@ -258,12 +270,13 @@ pub enum SourceError {
 #[cfg(test)]
 mod tests {
     use assert_matches::assert_matches;
+    use rstest::rstest;
     use ruff_python_ast::token::TokenKind;
     use ruff_source_file::OneIndexed;
     use ruff_text_size::TextRange;
 
     use super::*;
-    use crate::test_support::{assert_send_sync, range};
+    use crate::test_support::{assert_send_sync, parse, range};
 
     fn line_column(line: usize, column: usize) -> LineColumn {
         LineColumn {
@@ -278,6 +291,23 @@ mod tests {
         let ranges = s.comment_ranges();
         assert!(ranges.intersects(range(0, 1)));
         assert!(ranges.intersects(range(13, 14)));
+    }
+
+    #[rstest]
+    #[case("a = 1\nb = 2\n", true)]
+    #[case("a = 1  # trailing\nb = 2\n", true)]
+    #[case("a = 1\n\nb = 2\n", false)]
+    #[case("a = 1\n# standalone\nb = 2\n", false)]
+    fn consecutive_lines_tolerates_trailing_comment_but_breaks_on_gap(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let body = &source.ast().body;
+        assert_eq!(
+            source.consecutive_lines(body[0].end(), body[1].start()),
+            expected,
+        );
     }
 
     #[test]

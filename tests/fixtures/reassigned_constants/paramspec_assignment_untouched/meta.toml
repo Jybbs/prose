@@ -3,5 +3,5 @@ previewable = false
 title       = "ParamSpec Bindings Pass Through Untouched"
 
 description = '''
-A `ParamSpec("P")` binding is `SCREAMING_CASE` by Python convention and **structural by definition**, so the rule leaves it untouched and emits no diagnostic.
+A `ParamSpec("P")` binding uses a single-letter type-parameter name rather than `SCREAMING_CASE` and is **structural by definition**, so the rule leaves it untouched and emits no diagnostic.
 '''

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Variadic Prefixes Push the Target Column Out"
+title       = "Variadic Prefixes Count Toward the Aligned Width"
 
 description = '''
-A signature annotates `*args` and `**kwargs` beside named parameters. The `*` and `**` prefixes count toward each variadic's display width, so **`**kwargs` pushes the `:` column out** and the named parameters pad to match.
+A signature annotates `*args` and `**kwargs` beside named parameters, where the `*` and `**` prefixes count toward each variadic's display width. **The widest member `event_name` sets the `:` column**, and the variadic and named parameters alike pad to reach it.
 '''

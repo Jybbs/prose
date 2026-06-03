@@ -3,4 +3,4 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/all_directives_preformatted_noop/input.py
 ---
-alphabetize@0..35
+

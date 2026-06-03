@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/mixed_commented_bare_align/input.py
+---
+limits = {
+    "cpu"    : 4,  # cores
+    "memory" : 8192,
+    "disk"   : 100,  # gigabytes
+    "gpus"   : 2,
+}

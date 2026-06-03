@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_align_padding/commented_multiline_dict_keeps_padding/input.py
+---
+multiline = {
+    "first"  : 1,  # leading entry note
+    "second" : 2,  # trailing entry note
+}

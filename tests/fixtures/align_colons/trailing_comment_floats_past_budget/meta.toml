@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Trailing Comment Floats Past the Line Budget"
+
+description = '''
+The alignment decision reads code width alone. An aligned row whose trailing comment runs past the line-length budget keeps aligning, because the comment floats past the budget without counting toward the column math or blocking the group.
+'''

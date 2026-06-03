@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Own-Line Comment Splits the Alignment Run"
+
+description = '''
+An own-line comment between two entries closes the run and starts a fresh one, so the entries above and below the comment align on their own columns rather than one shared column. A trailing comment rides with its entry, whereas a standalone comment line breaks the run.
+'''

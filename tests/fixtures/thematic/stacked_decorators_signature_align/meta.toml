@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Stacked Decorators Keep, Docstring Reshapes, Signature Aligns"
+title       = "Stacked Decorators Keep, Docstring Reshapes, Cushions Normalize"
 
 description = '''
-Three stacked decorators sit above a function whose docstring opener and closer share their prose lines and whose typed parameters vary in width. **The pipeline lifts the docstring delimiters onto their own lines, wraps the prose, normalizes the cushion, and aligns the parameter `:` and default `=` columns.**
+Three stacked decorators sit above a function whose docstring opener and closer share their prose lines. **The pipeline lifts the docstring delimiters onto their own lines, wraps the prose, and normalizes the blank-line cushions** around the helper functions. The single-line signature carries no multi-line columns to align, so it passes through unchanged.
 '''

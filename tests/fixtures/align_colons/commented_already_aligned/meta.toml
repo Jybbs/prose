@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Already-Aligned Commented Dict Emits Zero Edits"
+
+description = '''
+A commented dict whose `:` columns already carry their target widths is **idempotent** under the rule. No gap needs adjusting, so the output matches the input byte-for-byte and the pipeline reports no change.
+'''

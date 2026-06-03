@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Commented and Bare Entries Share One Column"
+
+description = '''
+A run mixing commented and bare entries aligns to a single `:` column across the whole dict rather than splitting at the commented rows, because each comment attaches to its entry rather than to the alignment.
+'''

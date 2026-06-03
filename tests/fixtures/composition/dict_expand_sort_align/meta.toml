@@ -3,5 +3,5 @@ previewable = true
 title       = "Overflowing Dict Expands, Sorts, and Aligns"
 
 description = '''
-A long inline dict with out-of-order keys. The full dict cycle **expands the dict, sorts the keys, and aligns the `:` column** across the rows.
+A long inline dict with out-of-order keys. The full dict cycle **expands the dict, sorts the keys, and aligns the `:` column** across the wider rows, leaving the much shorter `"zeta"` row outside the shared column.
 '''

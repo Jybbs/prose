@@ -335,25 +335,6 @@ where
     Some(range_anchored_member(source, target, anchor, extra_width))
 }
 
-/// Returns whether a run continues from a row ending at `prev_end` to
-/// the next row starting at `next_start`. A non-held predecessor uses
-/// the standard inter-statement adjacency. A [held](is_held)
-/// predecessor relaxes to a consecutive-line check, so the held row's
-/// own trailing skip comment does not break the run while a standalone
-/// comment or blank line between rows still does.
-pub(crate) fn run_continues(
-    source: &Source,
-    prev_end: TextSize,
-    prev_held: bool,
-    next_start: TextSize,
-) -> bool {
-    if prev_held {
-        source.line_index(next_start) == source.line_index(prev_end).saturating_add(1)
-    } else {
-        source.is_line_adjacent(TextRange::new(prev_end, next_start))
-    }
-}
-
 /// Returns the edit needed to make `range` carry exactly `n` ASCII
 /// spaces, or `None` if it already does. Emits `Edit::range_deletion`
 /// when `n` is zero.
@@ -458,15 +439,15 @@ fn emit_with_paddings(
     }));
 }
 
-/// Returns the half-open `(start, end, max_width)` sub-group ranges
-/// into `members` produced by greedily extending each sub-group while
-/// the running `max_width - min_width` stays at or below `max_shift`.
 /// Returns the widest `op_width` in `members`, or `0` when the slice
 /// is empty.
 fn max_op_width(members: &[Member]) -> usize {
     members.iter().map(|m| m.op_width).max().unwrap_or(0)
 }
 
+/// Returns the half-open `(start, end, max_width)` sub-group ranges
+/// into `members` produced by greedily extending each sub-group while
+/// the running `max_width - min_width` stays at or below `max_shift`.
 fn partition_by_spread(members: &[Member], max_shift: usize) -> Vec<(usize, usize, usize)> {
     let mut subs = Vec::new();
     let mut cursor = 0;
@@ -509,6 +490,25 @@ fn range_anchored_member(
         line_start: source.text().line_start(anchor),
         op_width: 0,
         width: source.slice(target).width() + extra_width,
+    }
+}
+
+/// Returns whether a run continues from a row ending at `prev_end` to
+/// the next row starting at `next_start`. A non-held predecessor uses
+/// the standard inter-statement adjacency. A [held](is_held)
+/// predecessor relaxes to a consecutive-line check, so the held row's
+/// own trailing skip comment does not break the run while a standalone
+/// comment or blank line between rows still does.
+fn run_continues(
+    source: &Source,
+    prev_end: TextSize,
+    prev_held: bool,
+    next_start: TextSize,
+) -> bool {
+    if prev_held {
+        source.consecutive_lines(prev_end, next_start)
+    } else {
+        source.is_line_adjacent(TextRange::new(prev_end, next_start))
     }
 }
 
@@ -570,11 +570,10 @@ mod tests {
     /// Builds a `Settings` carrying the test's cap and policy with
     /// `strip_singleton_subgroup` defaulted off.
     fn settings(max_shift: usize, policy: MaxAlignShiftPolicy) -> Settings {
-        Settings {
-            max_shift,
+        Settings::aligned(
+            NonZeroUsize::new(max_shift).expect("test cap is non-zero"),
             policy,
-            strip_singleton_subgroup: false,
-        }
+        )
     }
 
     fn sorted_summaries(edits: &[Edit]) -> Vec<(u32, u32, String)> {
