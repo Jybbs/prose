@@ -52,7 +52,7 @@ prose format --select align-equals,align-colons src/
 
 ## `prose check`
 
-Reports violations without modifying source. Returns the canonical [**Exit Codes**](/reference/exit-codes) matrix so CI gates pick up `1` *(format would change)* or `2` *(lint violation)* alongside the pass / parse / config codes. The flag table matches `prose format`'s above, omitting `--diff` because no rewrite is being staged for preview:
+Reports violations without modifying source. Returns the canonical [**Exit Codes**](/reference/exit-codes) matrix so CI gates pick up `1` *(format would change)* or `2` *(lint violation)* alongside the pass / parse / config codes. The flag table matches `prose format`'s above, omitting `--diff` because no rewrite is being staged for preview and adding `--validate` to opt into a rewrite-soundness pass:
 
 | Flag | Type | Default | Description |
 |---|---|---|---|
@@ -60,6 +60,7 @@ Reports violations without modifying source. Returns the canonical [**Exit Codes
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. See [**Output Formats**](/reference/output-formats) for the per-format record layout |
 | `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor and color |
 | `--stdin` | bool | off | Read source from stdin instead of the filesystem |
+| `--validate` | bool | off | Confirm each file's would-be rewrite re-parses, surfacing an unparseable rule output as a config error |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to check, or `-` to read source from stdin |
@@ -71,6 +72,7 @@ prose check .
 prose check --output-format github .
 prose check --output-format sarif . > prose.sarif
 prose check --stdin < module.py
+prose check --validate .
 prose check - < module.py
 ```
 

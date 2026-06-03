@@ -27,7 +27,7 @@ use tempfile::NamedTempFile;
 
 use crate::diagnostics::Diagnostic;
 
-const CACHE_FORMAT_VERSION: &str = "1";
+const CACHE_FORMAT_VERSION: &str = "2";
 
 /// User-level on-disk cache.
 #[derive(Debug)]
@@ -182,11 +182,14 @@ impl Cache {
     }
 }
 
-/// Post-pipeline state cached per `(source, config, version)` key.
+/// Post-pipeline state cached per `(source, config, version)` key. The
+/// diagnostics are always anchored to the source as written, leaving any
+/// mode free to render them. The rewrite is present only when the writing
+/// mode ran [`Pipeline::run`](crate::pipeline::Pipeline::run).
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CacheEntry {
     pub diagnostics: Vec<Diagnostic>,
-    pub formatted_source: Option<String>,
+    pub rewrite: Rewrite,
 }
 
 /// Snapshot of the cache directory's contents at one point in time.
@@ -236,6 +239,19 @@ pub struct CleanReport {
     pub entries: usize,
 }
 
+/// What a cached entry holds for the file's rewrite. `Skipped` marks an
+/// entry a `check` run wrote without computing the rewrite, whereas the
+/// other two record a completed `run`.
+#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum Rewrite {
+    /// `run` produced text differing from the original.
+    Changed(String),
+    /// No rewrite was computed.
+    Skipped,
+    /// `run` produced text identical to the original.
+    Unchanged,
+}
+
 fn cache_root() -> Option<PathBuf> {
     std::env::var_os("PROSE_CACHE_DIR")
         .map(PathBuf::from)
@@ -280,7 +296,10 @@ mod tests {
                 rule: RuleId::from("align-equals"),
                 severity: Severity::Format,
             }],
-            formatted_source: formatted.map(str::to_owned),
+            rewrite: match formatted {
+                Some(text) => Rewrite::Changed(text.to_owned()),
+                None => Rewrite::Unchanged,
+            },
         }
     }
 
@@ -457,6 +476,19 @@ mod tests {
             .filter(|e| e.path().extension().is_some_and(|ext| ext == "tmp"))
             .count();
         assert_eq!(tmp_count, 0);
+    }
+
+    #[test]
+    fn insert_then_lookup_round_trips_a_skipped_rewrite() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
+        let original = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::Skipped,
+        };
+        cache.insert(&key, &original);
+        assert_eq!(cache.lookup(&key).expect("hit"), original);
     }
 
     #[test]
