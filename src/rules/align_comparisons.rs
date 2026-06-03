@@ -53,7 +53,8 @@ struct Visitor<'a> {
 
 impl Visitor<'_> {
     fn process_bool_op(&mut self, bool_op: &ExprBoolOp) {
-        if !self.walker.source.contains_line_break(bool_op) {
+        let source = self.walker.source;
+        if !source.contains_line_break(bool_op) {
             return;
         }
         let mut groups: Vec<Vec<aligner::Member>> = Vec::new();
@@ -64,8 +65,8 @@ impl Visitor<'_> {
                 continue;
             };
             let extends = active.is_some_and(|prev| {
-                !self.walker.source.contains_line_break(prev)
-                    && aligner::consecutive_lines(self.walker.source, prev.end(), operand.start())
+                !source.contains_line_break(prev)
+                    && source.consecutive_lines(prev.end(), operand.start())
             });
             if extends {
                 groups

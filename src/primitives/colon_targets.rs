@@ -160,8 +160,7 @@ fn dict_member_groups(
                 continue;
             }
         };
-        let extends =
-            prev_end.is_some_and(|end| aligner::consecutive_lines(source, end, item.start()));
+        let extends = prev_end.is_some_and(|end| source.consecutive_lines(end, item.start()));
         if !extends {
             aligner::flush_run(&mut groups, &mut current);
         }

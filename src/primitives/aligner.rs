@@ -157,15 +157,6 @@ impl From<&AlignmentConfig> for Settings {
     }
 }
 
-/// Returns `true` when `next_start` sits on the source line directly
-/// after `prev_end`'s line. A trailing comment on `prev_end`'s line
-/// keeps the two consecutive, whereas a standalone comment line or a
-/// blank line pushes `next_start` two or more lines down and breaks
-/// adjacency.
-pub(crate) fn consecutive_lines(source: &Source, prev_end: TextSize, next_start: TextSize) -> bool {
-    source.line_index(next_start) == source.line_index(prev_end).saturating_add(1)
-}
-
 /// Moves the in-progress run into `groups` when it holds at least one
 /// member, leaving `current` empty for the next run.
 pub(crate) fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {
@@ -515,7 +506,7 @@ fn run_continues(
     next_start: TextSize,
 ) -> bool {
     if prev_held {
-        consecutive_lines(source, prev_end, next_start)
+        source.consecutive_lines(prev_end, next_start)
     } else {
         source.is_line_adjacent(TextRange::new(prev_end, next_start))
     }
@@ -523,7 +514,6 @@ fn run_continues(
 
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
     use ruff_text_size::TextSize;
 
     use super::*;
@@ -580,11 +570,10 @@ mod tests {
     /// Builds a `Settings` carrying the test's cap and policy with
     /// `strip_singleton_subgroup` defaulted off.
     fn settings(max_shift: usize, policy: MaxAlignShiftPolicy) -> Settings {
-        Settings {
-            max_shift,
+        Settings::aligned(
+            NonZeroUsize::new(max_shift).expect("test cap is non-zero"),
             policy,
-            strip_singleton_subgroup: false,
-        }
+        )
     }
 
     fn sorted_summaries(edits: &[Edit]) -> Vec<(u32, u32, String)> {
@@ -600,23 +589,6 @@ mod tests {
             edit.end().to_u32(),
             edit.content().unwrap_or_default().to_owned(),
         )
-    }
-
-    #[rstest]
-    #[case("a = 1\nb = 2\n", true)]
-    #[case("a = 1  # trailing\nb = 2\n", true)]
-    #[case("a = 1\n\nb = 2\n", false)]
-    #[case("a = 1\n# standalone\nb = 2\n", false)]
-    fn consecutive_lines_tolerates_trailing_comment_but_breaks_on_gap(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        let source = parse(src);
-        let body = &source.ast().body;
-        assert_eq!(
-            consecutive_lines(&source, body[0].end(), body[1].start()),
-            expected,
-        );
     }
 
     #[test]
