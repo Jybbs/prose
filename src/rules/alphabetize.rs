@@ -1244,7 +1244,8 @@ mod tests {
         let rule = Alphabetize::from_config(&config);
         let source = parse(src);
         let edits = rule.apply(&source).into_iter().flatten().collect();
-        let text = crate::primitives::edit::apply_edits(source.text(), edits);
+        let text = crate::primitives::edit::apply_edits(source.text(), edits)
+            .expect("non-overlapping edits");
         let args_section_end = text.find("\"\"\"\n    pass").expect("closer follows args");
         let args_section = &text[..args_section_end];
         let bar_pos = args_section.find("bar: two").expect("bar still present");
@@ -1291,7 +1292,8 @@ mod tests {
             "def inner(b, a):\n    pass\n\n\ndef outer(d, c):\n    pass\n\n\nouter(inner(1, 2), 3)\n",
         );
         let edits = collect_leaf_edits(&source, &call_rewrite_targets(&source));
-        let text = crate::primitives::edit::apply_edits(source.text(), edits);
+        let text = crate::primitives::edit::apply_edits(source.text(), edits)
+            .expect("non-overlapping edits");
         assert_eq!(
             text,
             "def inner(a, b):\n    pass\n\n\ndef outer(c, d):\n    pass\n\n\nouter(c=3, d=inner(1, 2))\n",

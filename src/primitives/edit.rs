@@ -2,9 +2,10 @@
 //! a sorted edit list into a source string, the pipeline runner's
 //! transform between rules. `apply_inline_edits` folds a list of
 //! edits into a source range, returning `Cow::Borrowed` when no
-//! edit applies. Both return the source unchanged when their edits
-//! overlap. `narrow_edit` trims a candidate replacement to its
-//! minimal divergent range against the source.
+//! edit applies. Both decline overlapping edits, `apply_edits` with
+//! `None` and `apply_inline_edits` with `Cow::Borrowed`. `narrow_edit`
+//! trims a candidate replacement to its minimal divergent range
+//! against the source.
 
 use std::borrow::Cow;
 
@@ -13,28 +14,16 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::source::Source;
 
-/// Splices `edits` into `text` and returns the resulting string.
+/// Splices `edits` into `text` and returns the resulting string, or
+/// `None` when the sorted edits overlap.
 ///
-/// Sorts edits by start-then-end (via `Edit`'s `Ord` impl), then walks
-/// the list forward once, copying the unchanged spans between edits
-/// into a pre-sized buffer and substituting each edit's replacement
-/// at its position. Linear in the source length regardless of how
-/// many edits apply. Returns `text` unchanged when the sorted edits
-/// overlap, declining the splice instead of slicing an inverted range.
-pub(crate) fn apply_edits(text: &str, mut edits: Vec<Edit>) -> String {
+/// Sorts edits by start-then-end (via `Edit`'s `Ord` impl) and weaves
+/// them in one forward pass, linear in the source length regardless of
+/// how many edits apply. Declines with `None` rather than slicing an
+/// inverted range, leaving the caller to keep the source unchanged.
+pub(crate) fn apply_edits(text: &str, mut edits: Vec<Edit>) -> Option<String> {
     edits.sort_unstable();
-    if !edits.is_sorted_by(|a, b| a.end() <= b.start()) {
-        return text.to_owned();
-    }
-    let mut out = String::with_capacity(text.len());
-    let mut cursor = TextSize::default();
-    for edit in edits {
-        out.push_str(&text[TextRange::new(cursor, edit.start())]);
-        out.push_str(edit.content().unwrap_or_default());
-        cursor = edit.end();
-    }
-    out.push_str(&text[TextRange::new(cursor, text.text_len())]);
-    out
+    weave(text, TextRange::up_to(text.text_len()), &edits)
 }
 
 /// Folds any leaf edits whose range falls inside `range` into the
@@ -47,27 +36,19 @@ pub(crate) fn apply_inline_edits<'src>(
     range: TextRange,
     edits: &[Edit],
 ) -> Cow<'src, str> {
-    let lo = edits.partition_point(|e| e.range().start() < range.start());
-    let hi = lo + edits[lo..].partition_point(|e| e.range().start() <= range.end());
+    let lo = edits.partition_point(|e| e.start() < range.start());
+    let hi = lo + edits[lo..].partition_point(|e| e.start() <= range.end());
     let mut inside = edits[lo..hi]
         .iter()
-        .filter(|e| e.range().end() <= range.end())
+        .filter(|e| e.end() <= range.end())
         .peekable();
     if inside.peek().is_none() {
         return Cow::Borrowed(source.slice(range));
     }
-    let mut out = String::with_capacity(range.len().to_usize());
-    let mut cursor = range.start();
-    for edit in inside {
-        if edit.range().start() < cursor {
-            return Cow::Borrowed(source.slice(range));
-        }
-        out.push_str(source.slice(TextRange::new(cursor, edit.range().start())));
-        out.push_str(edit.content().unwrap_or_default());
-        cursor = edit.range().end();
+    match weave(source.text(), range, inside) {
+        Some(out) => Cow::Owned(out),
+        None => Cow::Borrowed(source.slice(range)),
     }
-    out.push_str(source.slice(TextRange::new(cursor, range.end())));
-    Cow::Owned(out)
 }
 
 /// Trims a candidate replacement to its minimal spanning range by
@@ -105,12 +86,6 @@ pub(crate) fn narrow_edit(
     Some((span.add_start(prefix_len).sub_end(suffix_len), text))
 }
 
-/// Wraps each edit in its own single-edit fix group, the shape a rule
-/// whose edits are mutually independent returns from `apply`.
-pub(crate) fn singleton_groups(edits: impl IntoIterator<Item = Edit>) -> Vec<Vec<Edit>> {
-    edits.into_iter().map(|edit| vec![edit]).collect()
-}
-
 /// Narrows `text` against the source slice covered by `span` and
 /// shapes the result as either a deletion or replacement Edit.
 /// Returns `None` when the text already matches the source slice.
@@ -121,6 +96,35 @@ pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: Strin
     } else {
         Edit::range_replacement(narrowed_text, narrowed_span)
     })
+}
+
+/// Wraps each edit in its own single-edit fix group, the shape a rule
+/// whose edits are mutually independent returns from `apply`.
+pub(crate) fn singleton_groups(edits: impl IntoIterator<Item = Edit>) -> Vec<Vec<Edit>> {
+    edits.into_iter().map(|edit| vec![edit]).collect()
+}
+
+/// Weaves `edits` into the `span` slice of `text` and returns the
+/// woven string, or `None` when two edits overlap. `edits` must be
+/// sorted by start and lie within `span`, the overlap being an edit
+/// whose start precedes the running cursor.
+fn weave<'a>(
+    text: &str,
+    span: TextRange,
+    edits: impl IntoIterator<Item = &'a Edit>,
+) -> Option<String> {
+    let mut out = String::with_capacity(span.len().to_usize());
+    let mut cursor = span.start();
+    for edit in edits {
+        if edit.start() < cursor {
+            return None;
+        }
+        out.push_str(&text[TextRange::new(cursor, edit.start())]);
+        out.push_str(edit.content().unwrap_or_default());
+        cursor = edit.end();
+    }
+    out.push_str(&text[TextRange::new(cursor, span.end())]);
+    Some(out)
 }
 
 #[cfg(test)]
@@ -140,7 +144,7 @@ mod tests {
             ],
         );
 
-        assert_eq!(out, "abcdef");
+        assert_matches!(out, None);
     }
 
     #[test]
@@ -153,7 +157,7 @@ mod tests {
             ],
         );
 
-        assert_eq!(out, "<abd");
+        assert_eq!(out, Some("<abd".to_owned()));
     }
 
     #[test]
@@ -166,7 +170,7 @@ mod tests {
             ],
         );
 
-        assert_eq!(out, "XbcdYf");
+        assert_eq!(out, Some("XbcdYf".to_owned()));
     }
 
     #[test]
@@ -179,7 +183,7 @@ mod tests {
             ],
         );
 
-        assert_eq!(out, "XYef");
+        assert_eq!(out, Some("XYef".to_owned()));
     }
 
     #[test]
@@ -192,7 +196,7 @@ mod tests {
             ],
         );
 
-        assert_eq!(out, "XbcdYf");
+        assert_eq!(out, Some("XbcdYf".to_owned()));
     }
 
     #[test]
