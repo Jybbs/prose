@@ -120,6 +120,22 @@ pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: Strin
     })
 }
 
+/// Reassembles the text spanning `outer` with the slice at `inner`
+/// swapped for `replacement`, leaving the rest of `outer` intact. The
+/// parse round-trip a rule runs before committing a rewrite.
+pub(crate) fn splice(
+    source: &Source,
+    outer: TextRange,
+    inner: TextRange,
+    replacement: &str,
+) -> String {
+    format!(
+        "{}{replacement}{}",
+        source.slice(TextRange::new(outer.start(), inner.start())),
+        source.slice(TextRange::new(inner.end(), outer.end())),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

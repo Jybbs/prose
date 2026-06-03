@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/zero_param_multiline_return_untouched/input.py
+---
+def render() -> (
+    PrimaryEnvelope
+    | SecondaryEnvelope
+    | DeferredEnvelope
+):
+    return None

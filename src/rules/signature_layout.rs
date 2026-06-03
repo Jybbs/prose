@@ -10,14 +10,16 @@ use ruff_python_ast::{
     statement_visitor::{StatementVisitor, walk_stmt},
     token::TokenKind,
 };
+use ruff_python_parser::parse_module;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
     primitives::{
-        edit::{narrowed_replacement, singleton_groups},
+        edit::{narrowed_replacement, singleton_groups, splice},
         layout::explode_parens,
+        range::paren_aware_range,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -108,8 +110,9 @@ impl Layout<'_> {
         let replacement_range = self.replacement_range(fd);
         let inline = self.build_inline(fd);
         let count_trips = self.max_inline_params.is_some_and(|cap| params.len() > cap);
-        let length_trips =
-            self.source.column_of(params.range().start()) + inline.width() > self.code_line_length;
+        let first_line = inline.split('\n').next().unwrap_or(&inline);
+        let length_trips = self.source.column_of(params.range().start()) + first_line.width()
+            > self.code_line_length;
         let replacement = if count_trips || length_trips {
             self.build_expanded(fd, self.source.line_indent_width(fd.start()))
         } else if self.source.contains_line_break(replacement_range) {
@@ -117,17 +120,23 @@ impl Layout<'_> {
         } else {
             return;
         };
-        self.edits.extend(narrowed_replacement(
-            self.source,
-            replacement_range,
-            replacement,
-        ));
+        // Emit the reshape only when the spliced signature re-parses, the
+        // safety net for return types the rewrite cannot reassemble.
+        let candidate = splice(self.source, fd.range(), replacement_range, &replacement);
+        if parse_module(&candidate).is_ok() {
+            self.edits.extend(narrowed_replacement(
+                self.source,
+                replacement_range,
+                replacement,
+            ));
+        }
     }
 
     fn push_return_and_colon(&self, out: &mut String, fd: &StmtFunctionDef) {
-        if let Some(ret) = &fd.returns {
+        if let Some(ret) = fd.returns.as_deref() {
             out.push_str(" -> ");
-            out.push_str(self.source.slice(ret.range()));
+            let range = paren_aware_range(ret.into(), fd.into(), self.source.tokens());
+            out.push_str(self.source.slice(range));
         }
         out.push(':');
     }

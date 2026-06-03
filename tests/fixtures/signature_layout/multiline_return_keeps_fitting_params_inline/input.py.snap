@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_layout/multiline_return_keeps_fitting_params_inline/input.py
+---
+def resolve(payload, fallback) -> (
+    PrimaryEnvelope
+    | SecondaryEnvelope
+    | DeferredEnvelope
+):
+    return payload
