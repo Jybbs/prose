@@ -18,9 +18,10 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use ruff_python_ast::{
-    Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed, ExprSetComp,
-    ExprTuple, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign,
-    StmtClassDef, StmtFor, StmtFunctionDef, StmtImport, StmtImportFrom, StmtTry, StmtWith,
+    Alias, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed,
+    ExprSetComp, ExprTuple, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign,
+    StmtAugAssign, StmtClassDef, StmtFor, StmtFunctionDef, StmtImport, StmtImportFrom, StmtTry,
+    StmtWith,
     visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -486,18 +487,15 @@ impl Builder {
 
     fn visit_import(&mut self, node: &StmtImport) {
         for alias in &node.names {
-            let bound = alias
-                .asname
-                .as_ref()
-                .map_or_else(|| top_level_module(alias.name.as_str()), |id| id.as_str());
+            let bound = bare_import_bound_name(alias);
             self.record_write(bound, alias.range().start(), BindingKind::Import);
         }
     }
 
     fn visit_import_from(&mut self, node: &StmtImportFrom) {
         for alias in &node.names {
-            let bound = alias.asname.as_ref().unwrap_or(&alias.name);
-            self.record_write(bound.as_str(), alias.range().start(), BindingKind::Import);
+            let bound = from_import_bound_name(alias);
+            self.record_write(bound, alias.range().start(), BindingKind::Import);
         }
     }
 
@@ -581,6 +579,21 @@ impl<'a> Visitor<'a> for Builder {
             _ => walk_stmt(self, stmt),
         }
     }
+}
+
+/// The module-scope name a bare `import a.b` alias binds: its `asname`,
+/// or the top-level segment of the dotted path.
+pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
+    alias
+        .asname
+        .as_ref()
+        .map_or_else(|| top_level_module(alias.name.as_str()), Identifier::as_str)
+}
+
+/// The name a `from m import x` alias binds: its `asname`, or the
+/// imported name itself.
+pub(crate) fn from_import_bound_name(alias: &Alias) -> &str {
+    alias.asname.as_ref().unwrap_or(&alias.name).as_str()
 }
 
 /// Returns the segment of `dotted` before the first `.`. Matches

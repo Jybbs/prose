@@ -30,19 +30,20 @@ use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Decorator, DictItem, ExceptHandler, Expr, ExprCall, ExprDict, ExprLambda, ExprSet,
-    Identifier, ParameterWithDefault, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtDelete,
-    StmtFunctionDef,
+    Identifier, ParameterWithDefault, Parameters, PythonVersion, Stmt, StmtAnnAssign, StmtAssign,
+    StmtClassDef, StmtDelete, StmtFunctionDef,
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
     visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_python_parser::parse_expression;
+use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{
     config::Config,
     primitives::{
-        binding::top_level_module,
+        binding::{bare_import_bound_name, from_import_bound_name},
         call_keywords::{keyword_args, module_call_params, pins_positional_params},
         docstring::{entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
@@ -60,6 +61,7 @@ use crate::{
 pub(crate) struct Alphabetize {
     docstring_entries: bool,
     first_party: Vec<String>,
+    target_version: Option<PythonVersion>,
 }
 
 impl Alphabetize {
@@ -67,6 +69,7 @@ impl Alphabetize {
         Self {
             docstring_entries: config.rules.alphabetize.docstring_entries,
             first_party: config.first_party(),
+            target_version: config.target_version,
         }
     }
 }
@@ -88,6 +91,7 @@ impl Rule for Alphabetize {
             first_party: &self.first_party,
             leaf_edits: &leaf_edits,
             source,
+            target_version: self.target_version,
         };
         let (body_text, body_span) = rewrite_body(
             ctx,
@@ -131,7 +135,7 @@ impl BandPlan<'_> {
         let mut leading = Vec::new();
         let mut skeleton = Vec::new();
         let mut trailing = Vec::new();
-        for &idx in region.iter() {
+        for idx in region.drain(..) {
             match self.ranks[&idx] {
                 1 => leading.push(idx),
                 3 => trailing.push(idx),
@@ -145,7 +149,6 @@ impl BandPlan<'_> {
         out.append(&mut leading);
         out.extend(skeleton[below_imports..].iter().copied());
         out.append(&mut trailing);
-        region.clear();
     }
 
     /// True when every eager reference seats its referent ahead of the
@@ -389,6 +392,7 @@ struct RewriteCtx<'a> {
     first_party: &'a [String],
     leaf_edits: &'a [Edit],
     source: &'a Source,
+    target_version: Option<PythonVersion>,
 }
 
 /// Returns the `StmtAnnAssign` and its target name when the target
@@ -474,9 +478,10 @@ fn band_module_constants<'src>(
     body: &'src [Stmt],
     blocks: &[TextRange],
     defer_annotations: bool,
+    target_version: Option<PythonVersion>,
     order: &mut Vec<usize>,
 ) -> Option<HashMap<usize, u8>> {
-    let plan = module_band_plan(source, body, blocks, defer_annotations)?;
+    let plan = module_band_plan(source, body, blocks, defer_annotations, target_version)?;
     let mut banded = Vec::with_capacity(order.len());
     let mut region = Vec::new();
     for &idx in order.iter() {
@@ -879,8 +884,10 @@ fn module_band_plan<'src>(
     body: &'src [Stmt],
     blocks: &[TextRange],
     defer_annotations: bool,
+    target_version: Option<PythonVersion>,
 ) -> Option<BandPlan<'src>> {
     let analysis = source.binding_analysis();
+    let builtins_minor = target_version.unwrap_or_default().minor;
     let suppression = source.suppression_map();
     let mut def_at: HashMap<&'src str, usize> = HashMap::new();
     let mut dup_defs: HashSet<&'src str> = HashSet::new();
@@ -909,33 +916,19 @@ fn module_band_plan<'src>(
             continue;
         }
         match stmt {
-            Stmt::ClassDef(node) => {
-                if def_at.insert(node.name.as_str(), idx).is_some() {
-                    dup_defs.insert(node.name.as_str());
-                }
-                ranks.insert(idx, 2);
-            }
-            Stmt::FunctionDef(node) => {
-                if def_at.insert(node.name.as_str(), idx).is_some() {
-                    dup_defs.insert(node.name.as_str());
+            Stmt::ClassDef(StmtClassDef { name, .. })
+            | Stmt::FunctionDef(StmtFunctionDef { name, .. }) => {
+                if def_at.insert(name.as_str(), idx).is_some() {
+                    dup_defs.insert(name.as_str());
                 }
                 ranks.insert(idx, 2);
             }
             Stmt::Import(node) => {
-                imports.extend(node.names.iter().map(|alias| {
-                    alias
-                        .asname
-                        .as_ref()
-                        .map_or_else(|| top_level_module(alias.name.as_str()), Identifier::as_str)
-                }));
+                imports.extend(node.names.iter().map(bare_import_bound_name));
                 ranks.insert(idx, 0);
             }
             Stmt::ImportFrom(node) => {
-                imports.extend(
-                    node.names
-                        .iter()
-                        .map(|alias| alias.asname.as_ref().unwrap_or(&alias.name).as_str()),
-                );
+                imports.extend(node.names.iter().map(from_import_bound_name));
                 ranks.insert(idx, 0);
             }
             _ => {
@@ -971,9 +964,10 @@ fn module_band_plan<'src>(
             anchored[s] = true;
             continue;
         }
-        // A value reference to an unresolved name pins the constant,
-        // whereas an annotation reference only ever constrains order, so
-        // `x: int = 1` rides the leading band the builtin never blocks.
+        // A value reference to an unresolved name pins the constant unless
+        // the name is an import or a builtin, both clean terminals, whereas
+        // an annotation reference only ever constrains order, so `x: int = 1`
+        // rides the leading band.
         for (refs, anchor_unresolved) in [(&site.value_refs, true), (&site.annot_refs, false)] {
             for &name in refs {
                 if name == site.name {
@@ -985,7 +979,10 @@ fn module_band_plan<'src>(
                     reaches_def[s] = true;
                 } else if let Some(&dep) = site_at.get(name) {
                     deps[s].push(dep);
-                } else if anchor_unresolved && !imports.contains(name) {
+                } else if anchor_unresolved
+                    && !imports.contains(name)
+                    && !is_python_builtin(name, builtins_minor, false)
+                {
                     anchored[s] = true;
                 }
             }
@@ -1100,6 +1097,7 @@ fn rewrite_body<'a>(
         defer_annotations,
         first_party,
         source,
+        target_version,
         ..
     } = ctx;
     let (blocks, rendered): (Vec<TextRange>, Vec<Cow<'a, str>>) = body
@@ -1147,8 +1145,14 @@ fn rewrite_body<'a>(
             });
         }
         if scope == BodyScope::Module {
-            band_ranks =
-                band_module_constants(source, body, &blocks, defer_annotations, &mut order);
+            band_ranks = band_module_constants(
+                source,
+                body,
+                &blocks,
+                defer_annotations,
+                target_version,
+                &mut order,
+            );
         }
         // A banded order reconstructs its own blank-line texture. Otherwise
         // same-group import neighbors collapse to one line, derived from the
@@ -1708,10 +1712,26 @@ mod tests {
         let blocks: Vec<TextRange> = (0..body.len())
             .map(|i| block_range(&source, body, i, TextRange::up_to(source.text().text_len())))
             .collect();
-        let plan = module_band_plan(&source, body, &blocks, false).expect("acyclic module plans");
+        let plan =
+            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&2),
             "ALIAS names an ambiguous f, so it pins in place"
+        );
+    }
+
+    #[test]
+    fn module_band_plan_bands_a_builtin_valued_constant_as_leading() {
+        let source = parse("def build():\n    return 1\n\n\nTABLE = dict(timeout=30)\n");
+        let body = &source.ast().body;
+        let blocks: Vec<TextRange> = (0..body.len())
+            .map(|i| block_range(&source, body, i, TextRange::up_to(source.text().text_len())))
+            .collect();
+        let plan =
+            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
+        assert_eq!(
+            plan.ranks[&1], 1,
+            "dict is a builtin, so TABLE rides the leading band"
         );
     }
 
@@ -1722,7 +1742,8 @@ mod tests {
         let blocks: Vec<TextRange> = (0..body.len())
             .map(|i| block_range(&source, body, i, TextRange::up_to(source.text().text_len())))
             .collect();
-        let plan = module_band_plan(&source, body, &blocks, false).expect("acyclic module plans");
+        let plan =
+            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
         assert_eq!(plan.ranks[&0], 1, "LEAD touches only a literal");
         assert_eq!(plan.ranks[&1], 2, "make is a definition");
         assert_eq!(plan.ranks[&2], 3, "TRAIL names make");
@@ -1735,7 +1756,7 @@ mod tests {
         let blocks: Vec<TextRange> = (0..body.len())
             .map(|i| block_range(&source, body, i, TextRange::up_to(source.text().text_len())))
             .collect();
-        assert!(module_band_plan(&source, body, &blocks, false).is_none());
+        assert!(module_band_plan(&source, body, &blocks, false, None).is_none());
     }
 
     #[test]
@@ -1745,8 +1766,8 @@ mod tests {
         let blocks: Vec<TextRange> = (0..body.len())
             .map(|i| block_range(&source, body, i, TextRange::up_to(source.text().text_len())))
             .collect();
-        let plan =
-            module_band_plan(&source, body, &blocks, false).expect("self-reference does not cycle");
+        let plan = module_band_plan(&source, body, &blocks, false, None)
+            .expect("self-reference does not cycle");
         assert_eq!(
             plan.ranks[&0], 1,
             "a self-reference constrains nothing, so X leads"
