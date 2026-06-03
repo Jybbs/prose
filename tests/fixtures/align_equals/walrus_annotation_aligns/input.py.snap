@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/walrus_annotation_aligns/input.py
+---
+named: (value := int) = 1
+other_field_xyz: int  = 2

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Expanded Parameters Collapse While the Multi-Line Return Annotation Stays Put"
+
+description = '''
+A signature whose parameters were spread one per line yet fit on a single line **collapses back inline**, while the parenthesized multi-line return annotation keeps its own layout and parentheses. The collapse path slices the return annotation verbatim rather than reflowing it.
+'''

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_equals/yield_from_annotation_aligns/input.py
+---
+align-equals@86..87

@@ -104,6 +104,22 @@ pub(crate) fn singleton_groups(edits: impl IntoIterator<Item = Edit>) -> Vec<Vec
     edits.into_iter().map(|edit| vec![edit]).collect()
 }
 
+/// Reassembles the text spanning `outer` with the slice at `inner`
+/// swapped for `replacement`, leaving the rest of `outer` intact. The
+/// parse round-trip a rule runs before committing a rewrite.
+pub(crate) fn splice(
+    source: &Source,
+    outer: TextRange,
+    inner: TextRange,
+    replacement: &str,
+) -> String {
+    format!(
+        "{}{replacement}{}",
+        source.slice(TextRange::new(outer.start(), inner.start())),
+        source.slice(TextRange::new(inner.end(), outer.end())),
+    )
+}
+
 /// Weaves `edits` into the `span` slice of `text` and returns the
 /// woven string, or `None` when two edits overlap. `edits` must be
 /// sorted by start and lie within `span`, the overlap being an edit

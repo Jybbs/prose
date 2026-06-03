@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Zero-Parameter Signature With a Multi-Line Return Annotation Is Left Alone"
+
+description = '''
+A zero-parameter signature whose return annotation spans several parenthesized lines is **left untouched**, its empty parameter list never split across its own lines. The grouping parentheses around the return type survive, so the output parses and matches the input.
+'''
