@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Banded Module Is a Fixed Point"
+
+description = '''
+A module already sitting in canonical band order **passes through untouched**, the leading band, the definitions, and the trailing band each already in place, so a second pass leaves the layout identical.
+'''

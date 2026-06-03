@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Leading Band Orders Its Chain by Tier"
+
+description = '''
+A constant-on-constant chain **orders within the leading band by dependency tier before name**, so `AREA` settles beneath the `HEIGHT` and `WIDTH` it multiplies even though its name sorts first.
+'''

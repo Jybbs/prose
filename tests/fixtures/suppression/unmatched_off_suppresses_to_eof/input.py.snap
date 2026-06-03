@@ -3,9 +3,9 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/suppression/unmatched_off_suppresses_to_eof/input.py
 ---
-x       = 1
-foo     = 2
 bar_baz = 3
+foo     = 2
+x       = 1
 
 # fmt: off
 short = 1

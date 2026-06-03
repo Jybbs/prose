@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/future_import_held_above_leading_band/input.py
+---
+alphabetize@36..90
