@@ -1,17 +1,25 @@
-//! The `register_rules!` macro and the registry table binding each
-//! rule slug to its config sub-table, struct, and message.
+//! Rule abstraction, identifier types, and the registry that ties
+//! concrete rule structs to the pipeline orchestrator.
+//!
+//! Each concrete rule lives under `crate::rules`. The [`Rule`] trait
+//! and the [`RuleId`] newtype defined here are the canonical handles.
+//! The `register_rules!` macro emits [`KNOWN_IDS`], [`RuleConfigs`],
+//! [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
+//! [`Pipeline::with_filters`] from a registry table.
 
+use std::{fmt, str::FromStr};
+
+use ruff_diagnostics::Edit;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-use super::id::RuleId;
-use super::slug::{is_valid_slug, slug_bytes_equal};
-use super::trait_::Rule;
 use crate::{
     config::{
         AlignImportsConfig, AlignmentConfig, AlphabetizeConfig, BareImportsConfig,
         CallLayoutConfig, CollectionLayoutConfig, Config, ReassignedConstantsConfig,
         SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
     },
+    diagnostics::Diagnostic,
     pipeline::Pipeline,
     rules::{
         align_colons::AlignColons, align_comparisons::AlignComparisons, align_equals::AlignEquals,
@@ -25,7 +33,148 @@ use crate::{
         strip_align_padding::StripAlignPadding, strip_trailing_commas::StripTrailingCommas,
         unused_future_annotations::UnusedFutureAnnotations,
     },
+    source::Source,
 };
+
+/// Returned when a string fails to match any registered rule slug.
+/// Carries the offending input so callers can surface it verbatim.
+#[derive(Debug, Error)]
+#[error("unknown rule id `{0}`")]
+pub struct ParseRuleIdError(pub String);
+
+/// Every rule in Prose implements this trait and nothing more.
+///
+/// Implementations inspect `source` and return the edits that would
+/// bring it into conformance, partitioned into fix groups, the
+/// `Severity::Lint` diagnostics they surface without an edit, or both.
+/// An empty outer `Vec` from `apply` skips the reparse for that rule.
+///
+/// Rules must be `Send + Sync` so that the pipeline can run across
+/// files in parallel without moving the rule list per worker.
+pub(crate) trait Rule: Send + Sync {
+    /// Computes the edits this rule would apply to `source`,
+    /// partitioned into fix groups. Each inner `Vec` is one fix that
+    /// the pipeline maps to a single diagnostic, and the edits across
+    /// all groups must not overlap after sorting. The pipeline's
+    /// applicator declines an overlapping group rather than splicing it.
+    fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
+        Vec::new()
+    }
+
+    /// Stable, kebab-case identifier matching the rule's
+    /// `[tool.prose.rules]` key. Surfaces in `--select`,
+    /// `# prose: ignore`, and diagnostic output.
+    fn id(&self) -> RuleId;
+
+    /// Lint-only side channel emitting `Severity::Lint` diagnostics
+    /// the pipeline cannot derive from an edit. The default returns
+    /// no diagnostics, so auto-fix rules need not override.
+    fn lint(&self, _source: &Source) -> Vec<Diagnostic> {
+        Vec::new()
+    }
+
+    /// One-line imperative carried as `Diagnostic.message`. Defaults
+    /// to the registry-supplied string for `self.id()`.
+    fn message(&self) -> &'static str {
+        message_for_id(self.id())
+    }
+}
+
+/// Stable, parseable rule identifier wrapping a kebab-case slug.
+/// Returned by [`Rule::id`] and parsed from CLI / pragma input via
+/// [`FromStr`]. The canonical handle in `--select` / `--ignore`,
+/// `# prose: ignore[...]`, JSON `"rule"` fields, and `github`
+/// annotations.
+#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct RuleId(&'static str);
+
+impl RuleId {
+    pub const fn as_str(&self) -> &'static str {
+        self.0
+    }
+}
+
+impl fmt::Debug for RuleId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.0)
+    }
+}
+
+impl<'de> Deserialize<'de> for RuleId {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(serde::de::Error::custom)
+    }
+}
+
+impl fmt::Display for RuleId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.0)
+    }
+}
+
+impl From<&'static str> for RuleId {
+    fn from(slug: &'static str) -> Self {
+        Self(slug)
+    }
+}
+
+impl FromStr for RuleId {
+    type Err = ParseRuleIdError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        KNOWN_IDS
+            .iter()
+            .copied()
+            .find(|id| id.0 == s)
+            .ok_or_else(|| ParseRuleIdError(s.to_owned()))
+    }
+}
+
+impl Serialize for RuleId {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.0)
+    }
+}
+
+/// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,
+/// starts and ends with a lowercase ASCII letter or digit, contains
+/// only lowercase ASCII letters, digits, and dashes, and has no `--`
+/// substring.
+const fn is_valid_slug(bytes: &[u8]) -> bool {
+    let mut i = 0;
+    let mut prev_was_dash = true;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b == b'-' {
+            if prev_was_dash {
+                return false;
+            }
+            prev_was_dash = true;
+        } else if b.is_ascii_lowercase() || b.is_ascii_digit() {
+            prev_was_dash = false;
+        } else {
+            return false;
+        }
+        i += 1;
+    }
+    !prev_was_dash
+}
+
+/// Byte-wise equality on `&[u8]` usable from const contexts.
+const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut i = 0;
+    while i < a.len() {
+        if a[i] != b[i] {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
 
 /// Generates [`KNOWN_IDS`], [`RuleConfigs`], [`message_for_id`],
 /// [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
@@ -94,7 +243,7 @@ macro_rules! register_rules {
 
         /// Default backing for [`Rule::message`]. Matches each
         /// registered slug to its registry-supplied imperative.
-        pub(super) fn message_for_id(id: RuleId) -> &'static str {
+        fn message_for_id(id: RuleId) -> &'static str {
             match id.as_str() {
                 $($slug => $msg,)*
                 _ => unreachable!("rule id must be registered"),
@@ -175,4 +324,63 @@ register_rules! {
     "step-narration":            step_narration:            ToggleOnly                => StepNarration           => "numbered-step comment found. Consider extracting each step as a named function",
     "legacy-union-syntax":       legacy_union_syntax:       ToggleOnly                => LegacyUnionSyntax       => "rewrite legacy `Optional`/`Union` to PEP 604 union syntax",
     "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables      => "binding is assigned and used once. Consider inlining",
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    fn is_valid_slug_accepts_canonical_kebab_shapes(
+        #[values("a", "a-b", "abc123", "single-use-variables")] valid: &str,
+    ) {
+        assert!(is_valid_slug(valid.as_bytes()));
+    }
+
+    #[rstest]
+    fn is_valid_slug_rejects_invalid_shapes(
+        #[values("", "-foo", "foo-", "a--b", "Foo", "abc!")] invalid: &str,
+    ) {
+        assert!(!is_valid_slug(invalid.as_bytes()));
+    }
+
+    #[test]
+    fn rule_id_display_and_debug_print_bare_slug() {
+        let id = RuleId("align-equals");
+        assert_eq!(format!("{id}"), "align-equals");
+        assert_eq!(format!("{id:?}"), "align-equals");
+    }
+
+    #[test]
+    fn rule_id_from_str_rejects_prose_prefixed_slug() {
+        let err = "PROSE-align-equals"
+            .parse::<RuleId>()
+            .expect_err("prefixed form is not the canonical");
+        assert_eq!(err.0, "PROSE-align-equals");
+    }
+
+    #[test]
+    fn rule_id_from_str_rejects_unknown_slug() {
+        let err = "not-a-rule"
+            .parse::<RuleId>()
+            .expect_err("unknown rejected");
+        assert_eq!(err.0, "not-a-rule");
+    }
+
+    #[test]
+    fn rule_id_round_trips_through_display_and_from_str() {
+        for id in KNOWN_IDS {
+            let parsed: RuleId = id.to_string().parse().expect("known id parses");
+            assert_eq!(parsed, *id);
+        }
+    }
+
+    #[test]
+    fn slug_bytes_equal_matches_only_identical_slices() {
+        assert!(slug_bytes_equal(b"foo", b"foo"));
+        assert!(!slug_bytes_equal(b"foo", b"food"));
+        assert!(!slug_bytes_equal(b"foo", b"bar"));
+    }
 }

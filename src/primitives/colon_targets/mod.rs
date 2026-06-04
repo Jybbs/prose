@@ -15,9 +15,9 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{primitives::aligner, rule::RuleId, source::Source};
 
-mod docstring;
+mod docstring_args;
 
-use docstring::docstring_args;
+use docstring_args::docstring_args;
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
 /// for class fields, docstring args, dict entries, and parameters.
