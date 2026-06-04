@@ -14,7 +14,7 @@ mod server;
 pub mod source;
 pub(crate) mod suppression;
 #[cfg(test)]
-mod test_support;
+mod testing;
 mod walker;
 
 pub use primitives::binding::BindingAnalysis;

@@ -105,7 +105,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn main_guard_src() -> &'static str {
         "if __name__ == \"__main__\":\n    main()\n"

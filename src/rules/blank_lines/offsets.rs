@@ -26,7 +26,7 @@ pub(super) fn whitespace_start_before(text: &str, offset: TextSize) -> TextSize 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[test]
     fn header_signature_end_handles_multi_line_function_signature() {

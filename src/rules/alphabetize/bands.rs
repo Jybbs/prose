@@ -346,7 +346,7 @@ mod tests {
 
     use super::*;
     use crate::primitives::orderer::block_range;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[test]
     fn assign_run_target_unwraps_both_assign_kinds_and_filters_non_names() {

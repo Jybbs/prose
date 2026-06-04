@@ -201,7 +201,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn class_member(stmt: &Stmt) -> Option<(&str, &str)> {
         stmt.as_class_def_stmt().map(|class| {

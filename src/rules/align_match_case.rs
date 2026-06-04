@@ -176,7 +176,7 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     /// Parses `src` as a module and tests whether its first top-level
     /// statement would qualify a `match` arm.

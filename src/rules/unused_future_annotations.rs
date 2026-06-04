@@ -173,7 +173,7 @@ fn surgical_alias_range(node: &StmtImportFrom, alias_idx: usize) -> TextRange {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[test]
     fn empty_file_emits_no_edits() {

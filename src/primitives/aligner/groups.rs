@@ -236,7 +236,7 @@ fn run_continues(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[test]
     fn keyed_line_adjacent_groups_breaks_on_blank_line_after_held() {

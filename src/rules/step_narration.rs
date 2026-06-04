@@ -100,7 +100,7 @@ fn matches_step_word(body: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[test]
     fn apply_never_produces_edits() {

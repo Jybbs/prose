@@ -107,7 +107,7 @@ mod tests {
     use ruff_text_size::Ranged;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[derive(Default)]
     struct Probe<'a> {

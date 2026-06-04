@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyNodeRef, Expr, ExprSubscript, PythonVersion, Stmt,
+    AnyNodeRef, Expr, ExprSubscript, Identifier, PythonVersion, Stmt,
     name::{QualifiedName, UnqualifiedName},
     visitor::{Visitor, walk_expr, walk_stmt},
 };
@@ -15,14 +15,13 @@ use ruff_python_ast::{
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::range::paren_aware_range,
+    primitives::{
+        binding::{from_import_bound_name, top_level_module},
+        range::paren_aware_range,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
-
-mod aliases;
-
-use aliases::collect_typing_aliases;
 
 pub(crate) struct LegacyUnionSyntax {
     target_version: Option<PythonVersion>,
@@ -136,18 +135,93 @@ impl<'a> Visitor<'a> for Walker<'a> {
     }
 }
 
+/// Walks every top-level `Stmt::Import` and `Stmt::ImportFrom`,
+/// recording the bound name and qualified path for each alias whose
+/// source is `typing` or `typing_extensions`. Imports nested below
+/// module scope are skipped.
+fn collect_typing_aliases(body: &[Stmt]) -> HashMap<&str, QualifiedName<'_>> {
+    let mut imports = HashMap::new();
+    for stmt in body {
+        match stmt {
+            Stmt::Import(import) => {
+                for alias in &import.names {
+                    let name = alias.name.as_str();
+                    if !is_typing_root(top_level_module(name)) {
+                        continue;
+                    }
+                    let bound = alias.asname.as_ref().map_or(name, Identifier::as_str);
+                    imports.insert(bound, QualifiedName::user_defined(name));
+                }
+            }
+            Stmt::ImportFrom(import) => {
+                let Some(module) = import
+                    .module
+                    .as_ref()
+                    .filter(|m| is_typing_root(m.as_str()))
+                else {
+                    continue;
+                };
+                for alias in &import.names {
+                    let bound = from_import_bound_name(alias);
+                    imports.insert(
+                        bound,
+                        QualifiedName::user_defined(module.as_str())
+                            .append_member(alias.name.as_str()),
+                    );
+                }
+            }
+            _ => {}
+        }
+    }
+    imports
+}
+
+fn is_typing_root(module: &str) -> bool {
+    matches!(module, "typing" | "typing_extensions")
+}
+
 #[cfg(test)]
 mod tests {
     use ruff_diagnostics::Applicability;
 
     use super::*;
     use crate::diagnostics::Severity;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn rule(version: Option<PythonVersion>) -> LegacyUnionSyntax {
         LegacyUnionSyntax {
             target_version: version,
         }
+    }
+
+    #[test]
+    fn collects_aliased_from_import() {
+        let source = parse("from typing import Optional as Opt\n");
+        let imports = collect_typing_aliases(&source.ast().body);
+        assert_eq!(
+            imports.get("Opt").map(QualifiedName::segments),
+            Some(["typing", "Optional"].as_slice()),
+        );
+    }
+
+    #[test]
+    fn collects_aliased_module_import() {
+        let source = parse("import typing as t\n");
+        let imports = collect_typing_aliases(&source.ast().body);
+        assert_eq!(
+            imports.get("t").map(QualifiedName::segments),
+            Some(["typing"].as_slice()),
+        );
+    }
+
+    #[test]
+    fn collects_typing_extensions_alias() {
+        let source = parse("from typing_extensions import Union\n");
+        let imports = collect_typing_aliases(&source.ast().body);
+        assert_eq!(
+            imports.get("Union").map(QualifiedName::segments),
+            Some(["typing_extensions", "Union"].as_slice()),
+        );
     }
 
     #[test]
@@ -163,6 +237,12 @@ mod tests {
     }
 
     #[test]
+    fn ignores_non_typing_imports() {
+        let source = parse("from collections import OrderedDict\n");
+        assert!(collect_typing_aliases(&source.ast().body).is_empty());
+    }
+
+    #[test]
     fn pins_severity_display_only_fix_and_message_format() {
         let source = parse("from typing import Optional\nx: Optional[int]\n");
         let diagnostics = rule(Some(PythonVersion::PY310)).lint(&source);
@@ -174,5 +254,11 @@ mod tests {
         assert_eq!(fix.edits()[0].content(), Some("int | None"));
         assert!(only.message.contains("`Optional[int]`"));
         assert!(only.message.contains("`int | None`"));
+    }
+
+    #[test]
+    fn rejects_non_typing_bare_import() {
+        let source = parse("import os\n");
+        assert!(collect_typing_aliases(&source.ast().body).is_empty());
     }
 }

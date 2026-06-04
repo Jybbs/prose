@@ -165,7 +165,7 @@ mod tests {
     use ruff_source_file::OneIndexed;
 
     use crate::rule::RuleId;
-    use crate::test_support::{parse, range};
+    use crate::testing::{parse, range};
 
     fn align_equals() -> RuleId {
         "align-equals".parse().expect("align-equals is registered")

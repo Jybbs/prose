@@ -100,7 +100,7 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 mod tests {
     use super::*;
     use crate::diagnostics::Severity;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[test]
     fn diagnostic_shape_pins_severity_no_fix_and_message_format() {

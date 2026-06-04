@@ -168,7 +168,7 @@ mod tests {
     use crate::config::Config;
     use crate::diagnostics::Severity;
     use crate::primitives::edit::singleton_groups;
-    use crate::test_support::{assert_send_sync, parse, range};
+    use crate::testing::{assert_send_sync, parse, range};
 
     /// Test-only lint-only rule that returns the range list supplied
     /// at construction and never produces edits.

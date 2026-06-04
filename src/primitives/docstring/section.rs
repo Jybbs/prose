@@ -179,7 +179,7 @@ mod tests {
     use ruff_python_ast::ExprStringLiteral;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn entry_names<'a>(sections: &[Vec<SectionEntry<'a>>]) -> Vec<Vec<&'a str>> {
         sections

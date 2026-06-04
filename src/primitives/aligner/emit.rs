@@ -156,7 +156,7 @@ mod tests {
     use ruff_text_size::{Ranged, TextSize};
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     /// Builds the expected summary tuple for an `Edit::range_deletion`
     /// over a member's gap.

@@ -47,7 +47,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[test]
     fn is_banner_block_detects_block_with_any_rule_line() {

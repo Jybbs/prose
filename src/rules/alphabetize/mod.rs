@@ -772,7 +772,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[test]
     fn ann_assign_with_named_field_filters_to_name_targets() {

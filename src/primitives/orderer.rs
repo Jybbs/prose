@@ -180,7 +180,7 @@ mod tests {
     use ruff_text_size::TextLen;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn body_range(source: &Source) -> TextRange {
         TextRange::up_to(source.text().text_len())

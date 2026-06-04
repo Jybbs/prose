@@ -18,17 +18,14 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use ruff_python_ast::{
-    Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed, ExprSetComp,
-    ExprTuple, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign,
-    StmtClassDef, StmtFor, StmtFunctionDef, StmtImport, StmtImportFrom, StmtTry, StmtWith,
+    Alias, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed,
+    ExprSetComp, ExprTuple, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign,
+    StmtAugAssign, StmtClassDef, StmtFor, StmtFunctionDef, StmtImport, StmtImportFrom, StmtTry,
+    StmtWith,
     visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use serde::Serialize;
-
-mod bound_names;
-
-pub(crate) use bound_names::{bare_import_bound_name, from_import_bound_name, top_level_module};
 
 /// Stable handle to a binding in `BindingAnalysis`. Cheap to copy.
 #[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
@@ -584,6 +581,28 @@ impl<'a> Visitor<'a> for Builder {
     }
 }
 
+/// The module-scope name a bare `import a.b` alias binds: its `asname`,
+/// or the top-level segment of the dotted path.
+pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
+    alias
+        .asname
+        .as_ref()
+        .map_or_else(|| top_level_module(alias.name.as_str()), Identifier::as_str)
+}
+
+/// The name a `from m import x` alias binds: its `asname`, or the
+/// imported name itself.
+pub(crate) fn from_import_bound_name(alias: &Alias) -> &str {
+    alias.asname.as_ref().unwrap_or(&alias.name).as_str()
+}
+
+/// Returns the segment of `dotted` before the first `.`. Matches
+/// Python's `import a.b.c` shape, which binds `a` rather than the
+/// full dotted path.
+pub(crate) fn top_level_module(dotted: &str) -> &str {
+    dotted.split_once('.').map_or(dotted, |(head, _)| head)
+}
+
 #[cfg(test)]
 mod tests {
     use proptest::prelude::*;
@@ -591,7 +610,7 @@ mod tests {
     use ruff_text_size::TextSize;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn analyze(src: &str) -> BindingAnalysis {
         BindingAnalysis::new(parse(src).ast())
@@ -724,6 +743,14 @@ mod tests {
     #[case("X += 1\n")]
     fn module_reassigned_is_true_when_written_twice_or_augmented(#[case] src: &str) {
         assert!(analyze(src).module_reassigned("X"));
+    }
+
+    #[test]
+    fn top_level_module_returns_first_segment() {
+        assert_eq!(top_level_module("a"), "a");
+        assert_eq!(top_level_module("a.b"), "a");
+        assert_eq!(top_level_module("a.b.c"), "a");
+        assert_eq!(top_level_module(""), "");
     }
 
     proptest! {
