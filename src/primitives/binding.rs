@@ -610,7 +610,7 @@ mod tests {
     use ruff_text_size::TextSize;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn analyze(src: &str) -> BindingAnalysis {
         BindingAnalysis::new(parse(src).ast())

@@ -282,7 +282,7 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::*;
-    use crate::test_support::{assert_send_sync, parse, range};
+    use crate::testing::{assert_send_sync, parse, range};
 
     fn line_column(line: usize, column: usize) -> LineColumn {
         LineColumn {

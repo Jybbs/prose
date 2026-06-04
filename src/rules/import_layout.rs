@@ -153,7 +153,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[rstest]
     #[case("from a.b.c import x\n", "from a.b.c import ")]

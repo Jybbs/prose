@@ -1,16 +1,17 @@
 //! Clap-derived argument types and parse-time validation.
 
-use std::{path::PathBuf, process::ExitCode};
-
-use clap::{
-    ColorChoice, CommandFactory, Parser, Subcommand,
-    builder::{PossibleValuesParser, TypedValueParser},
-    error::ErrorKind,
-};
+use clap::{ColorChoice, Parser, Subcommand};
 use clap_complete::Shell;
 
-use super::exit_status::ExitStatus;
-use crate::{pipeline::Pipeline, rule::RuleId};
+mod rule_args;
+mod server_args;
+mod validation;
+
+pub(crate) use rule_args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter};
+pub(crate) use server_args::{ServerArgs, Transport};
+pub(crate) use validation::{
+    normalize_stdin_dash, report_clap_error, validate_diff_format_combination,
+};
 
 /// Matrix appended to `prose --help` via `after_long_help`.
 const EXIT_CODE_TABLE: &str = "\
@@ -20,40 +21,6 @@ Exit codes:
   2    Lint violation: at least one Severity::Lint diagnostic
   3    Parse error: input could not be parsed as Python
   4    Config error: pyproject.toml, --select / --ignore, or arg validation";
-
-#[derive(Debug, Default, clap::Args)]
-pub(crate) struct CheckArgs {
-    /// Bypass the user-level cache for this invocation.
-    #[arg(long)]
-    pub(crate) no_cache: bool,
-
-    /// Output format for diagnostics.
-    #[arg(long, value_enum, default_value_t)]
-    pub(crate) output_format: OutputFormat,
-
-    /// Files or directories to check, or `-` to read source from
-    /// stdin. Omit when using `--stdin`.
-    #[arg(conflicts_with = "stdin", value_name = "PATH")]
-    pub(crate) paths: Vec<PathBuf>,
-
-    /// Reduce the summary to a bare count line, dropping the section
-    /// anchors and color.
-    #[arg(short, long)]
-    pub(crate) quiet: bool,
-
-    #[command(flatten)]
-    pub(crate) rules: RuleFilter,
-
-    /// Read source from stdin instead of the filesystem. Equivalent
-    /// to passing `-` as the sole path.
-    #[arg(long)]
-    pub(crate) stdin: bool,
-
-    /// Confirm each file's would-be rewrite re-parses, surfacing an
-    /// unparseable rule output as a failure. Off by default.
-    #[arg(long)]
-    pub(crate) validate: bool,
-}
 
 #[derive(Debug, Parser)]
 #[command(
@@ -113,150 +80,18 @@ pub(crate) enum CacheAction {
     Info,
 }
 
-#[derive(Debug, Default, clap::Args)]
-pub(crate) struct FormatArgs {
-    /// Show a unified diff instead of writing changes.
-    #[arg(long)]
-    pub(crate) diff: bool,
-
-    /// Bypass the user-level cache for this invocation.
-    #[arg(long)]
-    pub(crate) no_cache: bool,
-
-    /// Output format for diagnostics.
-    #[arg(long, value_enum, default_value_t)]
-    pub(crate) output_format: OutputFormat,
-
-    /// Files or directories to format, or `-` to read source from
-    /// stdin. Omit when using `--stdin`.
-    #[arg(conflicts_with = "stdin", value_name = "PATH")]
-    pub(crate) paths: Vec<PathBuf>,
-
-    /// Reduce the summary to a bare count line, dropping the section
-    /// anchors and color.
-    #[arg(short, long)]
-    pub(crate) quiet: bool,
-
-    #[command(flatten)]
-    pub(crate) rules: RuleFilter,
-
-    /// Read source from stdin instead of the filesystem. Equivalent
-    /// to passing `-` as the sole path.
-    #[arg(long)]
-    pub(crate) stdin: bool,
-}
-
-#[derive(Clone, Copy, Debug, Default, clap::ValueEnum)]
-pub(crate) enum OutputFormat {
-    Github,
-    Json,
-    Sarif,
-    #[default]
-    Text,
-}
-
-impl OutputFormat {
-    pub(crate) fn is_text(self) -> bool {
-        matches!(self, Self::Text)
-    }
-}
-
-/// Subset of registered rules to run, applied as `select - ignore`.
-#[derive(Debug, Default, clap::Args)]
-pub(crate) struct RuleFilter {
-    /// Comma-separated rule slugs to skip, subtracted from
-    /// whichever set would otherwise have run.
-    #[arg(long, value_delimiter = ',', value_name = "RULES", value_parser = rule_id_parser())]
-    pub(crate) ignore: Vec<RuleId>,
-
-    /// Comma-separated rule slugs to run, replacing the
-    /// configured-enabled set.
-    #[arg(long, value_delimiter = ',', value_name = "RULES", value_parser = rule_id_parser())]
-    pub(crate) select: Vec<RuleId>,
-}
-
-#[derive(Debug, Default, clap::Args)]
-pub(crate) struct ServerArgs {
-    /// Transport the server speaks over. Only stdio is supported.
-    #[arg(long, value_enum, default_value_t)]
-    pub(crate) transport: Transport,
-}
-
-/// Transport the language server speaks over.
-#[derive(Clone, Copy, Debug, Default, clap::ValueEnum)]
-pub(crate) enum Transport {
-    /// Communicate over stdin and stdout.
-    #[default]
-    Stdio,
-}
-
-/// Resolves a `-` positional into stdin mode, surfacing a clap
-/// error when `-` appears alongside other paths.
-pub(crate) fn normalize_stdin_dash(cli: &mut Cli) -> Option<clap::Error> {
-    let (paths, stdin) = match &mut cli.command {
-        Command::Cache { .. } | Command::Completions { .. } | Command::Server(_) => return None,
-        Command::Check(args) => (&mut args.paths, &mut args.stdin),
-        Command::Format(args) => (&mut args.paths, &mut args.stdin),
-    };
-    if !paths.iter().any(|p| p.as_os_str() == "-") {
-        return None;
-    }
-    if paths.len() > 1 {
-        return Some(Cli::command().error(
-            ErrorKind::ArgumentConflict,
-            "`-` cannot appear alongside other paths",
-        ));
-    }
-    paths.clear();
-    *stdin = true;
-    None
-}
-
-/// Prints a clap parse failure and resolves the exit code.
-pub(crate) fn report_clap_error(err: clap::Error) -> ExitCode {
-    let _ = err.print();
-    clap_error_status(err.kind()).into()
-}
-
-/// Returns a config error when `--diff` pairs with a non-text
-/// `--output-format`. Routed through [`report_clap_error`] so the
-/// exit code lands at 4 alongside other config errors.
-pub(crate) fn validate_diff_format_combination(cli: &Cli) -> Option<clap::Error> {
-    let Command::Format(args) = &cli.command else {
-        return None;
-    };
-    (args.diff && !args.output_format.is_text()).then(|| {
-        Cli::command().error(
-            ErrorKind::InvalidValue,
-            "`--diff` requires `--output-format text`",
-        )
-    })
-}
-
-/// Help / version land at `Clean`, every other clap error at `ConfigError`.
-fn clap_error_status(kind: ErrorKind) -> ExitStatus {
-    match kind {
-        ErrorKind::DisplayHelp
-        | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand
-        | ErrorKind::DisplayVersion => ExitStatus::Clean,
-        _ => ExitStatus::ConfigError,
-    }
-}
-
-/// Returns a value parser that accepts any registered rule slug and
-/// produces a [`RuleId`]. Errors render with clap's `[possible
-/// values: ...]` suffix listing every known slug.
-fn rule_id_parser() -> impl TypedValueParser<Value = RuleId> {
-    PossibleValuesParser::new(Pipeline::known_ids().iter().map(RuleId::as_str))
-        .try_map(|s| s.parse::<RuleId>())
-}
-
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use assert_matches::assert_matches;
+    use clap::{CommandFactory, error::ErrorKind};
     use rstest::{fixture, rstest};
 
+    use super::validation::clap_error_status;
     use super::*;
+    use crate::cli::exit_status::ExitStatus;
+    use crate::rule::RuleId;
 
     fn check_command(cli: Cli) -> CheckArgs {
         let Command::Check(args) = cli.command else {

@@ -54,7 +54,7 @@ impl Rule for DocstringFrame {
 mod tests {
     use super::*;
     use crate::pipeline::Pipeline;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn run(src: &str) -> String {
         let source = parse(src);

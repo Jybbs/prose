@@ -1,28 +1,18 @@
-//! Shared walker for PEP 257 docstring statements, the first
-//! body-statement of the module, each class, and each function that
-//! holds a string literal as its first expression statement.
-//! Implementors of [`DocstringHandler`] receive every such docstring
-//! literal in source order via the trait's `walk` method. Implicitly
-//! concatenated docstring expressions are skipped. The section
-//! helpers `section_heading`, `entry_description_col`, and
-//! `entry_carrying_sections` parse a docstring body's Title-case-headed
-//! sections for consumers that walk text rather than the AST,
-//! recognizing entry-carrying sections by content shape rather than
-//! against a closed name list.
+//! Google-style section parsing: Title-case headings and their
+//! `name: description` entries grouped per section.
 
 use std::sync::LazyLock;
 
 use regex_lite::Regex;
-use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    ExprStringLiteral, Stmt, StringFlags, StringLiteral,
-    statement_visitor::{StatementVisitor, walk_stmt},
-};
-use ruff_python_trivia::{has_leading_content, leading_indentation};
-use ruff_source_file::{Line, LineRanges, UniversalNewlineIterator};
+use ruff_python_ast::StringLiteral;
+use ruff_python_trivia::leading_indentation;
+use ruff_source_file::{Line, UniversalNewlineIterator};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::source::Source;
+
+use super::body::{indent_prefix, triple_quoted_body};
+use super::scan::{LineScan, LineScanner};
 
 static ENTRY_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^\w[\w.]*\s*:\s+\S").expect("static pattern compiles"));
@@ -30,98 +20,6 @@ static ENTRY_PATTERN: LazyLock<Regex> =
 static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[A-Z][A-Za-z]*( [A-Z][A-Za-z]*)*:").expect("static pattern compiles")
 });
-
-/// Body slice between a triple-quoted docstring's opener and closer,
-/// paired with the source range that slice covers.
-pub(crate) struct DocstringBody<'a> {
-    pub(crate) range: TextRange,
-    pub(crate) text: &'a str,
-}
-
-impl DocstringBody<'_> {
-    /// True when the body spans more than one line.
-    pub(crate) fn is_multiline(&self) -> bool {
-        self.text.contains('\n')
-    }
-}
-
-/// Receiver for the docstring walker. Implementors handle each
-/// docstring `StringLiteral` reached in source order. Call `walk`
-/// to drive the receiver across `source`'s module body.
-pub(crate) trait DocstringHandler {
-    fn handle(&mut self, lit: &StringLiteral);
-
-    fn walk(&mut self, source: &Source)
-    where
-        Self: Sized,
-    {
-        let mut visitor = Visitor { handler: self };
-        let body = &source.ast().body;
-        visitor.consider(body);
-        visitor.visit_body(body);
-    }
-}
-
-/// The classification of a docstring body line by the shared fence,
-/// blank, and list scanner. Every variant but `Body` is terminal for
-/// the line; `Body` hands the line to the walker's own dispatch.
-pub(crate) enum LineScan {
-    Blank,
-    Body,
-    Fence,
-    InFence,
-    ListContinuation,
-    ListMarker,
-}
-
-/// The fence and list state a docstring walker carries across lines.
-/// [`LineScanner::classify`] advances the state per line and returns
-/// its [`LineScan`], leaving each walker to dispatch its own effect.
-pub(crate) struct LineScanner {
-    body_indent_chars: usize,
-    in_fence: bool,
-    list_indent: Option<usize>,
-}
-
-impl LineScanner {
-    pub(crate) fn new(body_indent_chars: usize) -> Self {
-        Self {
-            body_indent_chars,
-            in_fence: false,
-            list_indent: None,
-        }
-    }
-
-    pub(crate) fn body_indent_chars(&self) -> usize {
-        self.body_indent_chars
-    }
-
-    pub(crate) fn classify(&mut self, trimmed: &str, indent_chars: usize) -> LineScan {
-        if trimmed.starts_with("```") {
-            self.in_fence = !self.in_fence;
-            self.list_indent = None;
-            return LineScan::Fence;
-        }
-        if self.in_fence {
-            return LineScan::InFence;
-        }
-        if trimmed.is_empty() {
-            self.list_indent = None;
-            return LineScan::Blank;
-        }
-        if let Some(marker) = self.list_indent {
-            if indent_chars > marker {
-                return LineScan::ListContinuation;
-            }
-            self.list_indent = None;
-        }
-        if indent_chars >= self.body_indent_chars && is_list_marker(trimmed) {
-            self.list_indent = Some(indent_chars);
-            return LineScan::ListMarker;
-        }
-        LineScan::Body
-    }
-}
 
 /// One `name: description` entry inside a Google-style section. The
 /// range covers the entry's head line through the last continuation
@@ -229,34 +127,6 @@ impl<'src> EntryWalker<'src> {
     }
 }
 
-struct Visitor<'a, H: DocstringHandler> {
-    handler: &'a mut H,
-}
-
-impl<H: DocstringHandler> Visitor<'_, H> {
-    fn consider(&mut self, body: &[Stmt]) {
-        let docstring = body
-            .first()
-            .and_then(Stmt::as_expr_stmt)
-            .and_then(|e| e.value.as_string_literal_expr())
-            .and_then(ExprStringLiteral::as_single_part_string);
-        if let Some(lit) = docstring {
-            self.handler.handle(lit);
-        }
-    }
-}
-
-impl<'a, H: DocstringHandler> StatementVisitor<'a> for Visitor<'_, H> {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        match stmt {
-            Stmt::ClassDef(c) => self.consider(&c.body),
-            Stmt::FunctionDef(f) => self.consider(&f.body),
-            _ => {}
-        }
-        walk_stmt(self, stmt);
-    }
-}
-
 /// Walks the entry-carrying Google-style sections in `lit`'s body
 /// and returns each section's entries with source-relative byte
 /// ranges. Returns an empty vector when `lit` carries no body
@@ -288,68 +158,11 @@ pub(crate) fn entry_description_col(trimmed: &str) -> Option<usize> {
     Some(trimmed[..m.end() - 1].chars().count())
 }
 
-/// Returns the line indent prefix of the docstring at `lit.start()`,
-/// preserving the source's mix of tabs and spaces verbatim.
-pub(crate) fn indent_prefix<'a>(source: &'a Source, lit: &StringLiteral) -> &'a str {
-    leading_indentation(source.text().line_str(lit.start()))
-}
-
-/// Walks every docstring in `source` and collects the edits produced
-/// by `f` against each. The closure receives `source`, the docstring
-/// literal, and the running edit buffer. Returns the accumulated edits.
-pub(crate) fn rewrite_docstrings<F>(source: &Source, f: F) -> Vec<Edit>
-where
-    F: FnMut(&Source, &StringLiteral, &mut Vec<Edit>),
-{
-    struct Collector<'a, F> {
-        edits: Vec<Edit>,
-        f: F,
-        source: &'a Source,
-    }
-
-    impl<F> DocstringHandler for Collector<'_, F>
-    where
-        F: FnMut(&Source, &StringLiteral, &mut Vec<Edit>),
-    {
-        fn handle(&mut self, lit: &StringLiteral) {
-            (self.f)(self.source, lit, &mut self.edits);
-        }
-    }
-
-    let mut collector = Collector {
-        edits: Vec::new(),
-        f,
-        source,
-    };
-    collector.walk(source);
-    collector.edits
-}
-
 /// True when `trimmed` opens with a Title-case word or multi-word
 /// run with every word capitalized, immediately followed by `:`.
 /// Trailing content after the `:` is permitted.
 pub(crate) fn section_heading(trimmed: &str) -> bool {
     SECTION_HEADING.is_match(trimmed)
-}
-
-/// Returns the body slice and source range when `lit` is triple-quoted
-/// and sits at the start of its own line. Returns `None` for
-/// non-triple-quoted literals and inline `def f(): """..."""` shapes.
-pub(crate) fn triple_quoted_body<'a>(
-    source: &'a Source,
-    lit: &StringLiteral,
-) -> Option<DocstringBody<'a>> {
-    if !lit.flags.is_triple_quoted() || has_leading_content(lit.start(), source.text()) {
-        return None;
-    }
-    let range = TextRange::new(
-        lit.start() + lit.flags.opener_len(),
-        lit.end() - lit.flags.closer_len(),
-    );
-    Some(DocstringBody {
-        range,
-        text: source.slice(range),
-    })
 }
 
 /// Returns the entry-name prefix of `trimmed` for a line already
@@ -360,54 +173,13 @@ fn entry_name(trimmed: &str) -> &str {
     trimmed[..colon].trim_end()
 }
 
-/// True when `trimmed` opens with a Markdown list marker (`-`, `*`,
-/// or `+` followed by a space) or a numeric marker (one or more
-/// digits followed by `. `). Used by the shared line scanner to
-/// recognize verbatim-passthrough list items.
-fn is_list_marker(trimmed: &str) -> bool {
-    if trimmed
-        .strip_prefix(['-', '*', '+'])
-        .is_some_and(|rest| rest.starts_with(' '))
-    {
-        return true;
-    }
-    let after_digits = trimmed.trim_start_matches(|c: char| c.is_ascii_digit());
-    after_digits.len() < trimmed.len() && after_digits.starts_with(". ")
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use ruff_python_ast::ExprStringLiteral;
 
     use super::*;
-    use crate::test_support::parse;
-
-    #[derive(Default)]
-    struct Probe<'a> {
-        source: Option<&'a Source>,
-        values: Vec<String>,
-        bodies: Vec<String>,
-        indents: Vec<String>,
-    }
-
-    impl Probe<'_> {
-        fn run(source: &Source) -> Vec<String> {
-            let mut probe = Probe::default();
-            probe.walk(source);
-            probe.values
-        }
-    }
-
-    impl DocstringHandler for Probe<'_> {
-        fn handle(&mut self, lit: &StringLiteral) {
-            self.values.push(lit.value.to_string());
-            if let Some(source) = self.source {
-                self.indents.push(indent_prefix(source, lit).to_owned());
-                self.bodies
-                    .extend(triple_quoted_body(source, lit).map(|b| b.text.to_owned()));
-            }
-        }
-    }
+    use crate::testing::parse;
 
     fn entry_names<'a>(sections: &[Vec<SectionEntry<'a>>]) -> Vec<Vec<&'a str>> {
         sections
@@ -425,31 +197,6 @@ mod tests {
             .and_then(|e| e.value.as_string_literal_expr())
             .and_then(ExprStringLiteral::as_single_part_string)
             .expect("function body starts with a docstring literal")
-    }
-
-    fn probe_with_source(source: &Source) -> Probe<'_> {
-        let mut probe = Probe {
-            source: Some(source),
-            ..Probe::default()
-        };
-        probe.walk(source);
-        probe
-    }
-
-    #[test]
-    fn collects_class_function_and_method_docstrings_in_source_order() {
-        let s = parse(
-            "\"\"\"M\"\"\"\nclass C:\n    \"\"\"C\"\"\"\n    def m(self):\n        \"\"\"m\"\"\"\n        pass\n",
-        );
-        assert_eq!(Probe::run(&s), ["M", "C", "m"]);
-    }
-
-    #[test]
-    fn collects_nested_function_docstrings() {
-        let s = parse(
-            "def outer():\n    \"\"\"o\"\"\"\n    def inner():\n        \"\"\"i\"\"\"\n        pass\n",
-        );
-        assert_eq!(Probe::run(&s), ["o", "i"]);
     }
 
     #[test]
@@ -564,41 +311,6 @@ mod tests {
         assert_eq!(entry_description_col("dotted.name: desc"), Some(13));
     }
 
-    #[test]
-    fn indent_prefix_preserves_source_indent_characters() {
-        let s = parse("class C:\n\t\"\"\"doc\"\"\"\n\tpass\n");
-        let probe = probe_with_source(&s);
-        assert_eq!(probe.indents, ["\t"]);
-    }
-
-    #[test]
-    fn is_list_marker_matches_dash_star_plus_and_numeric() {
-        assert!(is_list_marker("- foo"));
-        assert!(is_list_marker("* foo"));
-        assert!(is_list_marker("+ foo"));
-        assert!(is_list_marker("1. foo"));
-        assert!(is_list_marker("12. foo"));
-        assert!(!is_list_marker("foo"));
-        assert!(!is_list_marker("-foo"));
-        assert!(!is_list_marker(". foo"));
-    }
-
-    #[test]
-    fn returns_empty_for_module_with_no_docstrings() {
-        let s = parse("x = 1\ndef f():\n    return 1\n");
-        assert!(Probe::run(&s).is_empty());
-    }
-
-    #[test]
-    fn rewrite_docstrings_collects_edits_pushed_by_closure_per_docstring() {
-        let s = parse("\"\"\"M\"\"\"\ndef f():\n    \"\"\"f\"\"\"\n    pass\n");
-        let edits = rewrite_docstrings(&s, |_, lit, edits| {
-            edits.push(Edit::range_deletion(lit.range()));
-        });
-        assert_eq!(edits.len(), 2);
-        assert!(edits.windows(2).all(|w| w[0].start() < w[1].start()));
-    }
-
     #[rstest]
     fn section_heading_accepts_title_case_word_with_colon(
         #[values(
@@ -642,38 +354,5 @@ mod tests {
         assert!(!section_heading("Foo bar:"));
         assert!(!section_heading("1Args:"));
         assert!(!section_heading(": no name"));
-    }
-
-    #[test]
-    fn skips_implicitly_concatenated_docstring_expressions() {
-        let s = parse("\"\"\"a\"\"\" \"\"\"b\"\"\"\n");
-        assert!(Probe::run(&s).is_empty());
-    }
-
-    #[test]
-    fn skips_string_expression_that_is_not_first_statement() {
-        let s = parse("x = 1\n\"not a docstring\"\n");
-        assert!(Probe::run(&s).is_empty());
-    }
-
-    #[test]
-    fn triple_quoted_body_extracts_inner_body_text() {
-        let s = parse("'''hello'''\n");
-        let probe = probe_with_source(&s);
-        assert_eq!(probe.bodies, ["hello"]);
-    }
-
-    #[test]
-    fn triple_quoted_body_rejects_inline_with_def() {
-        let s = parse("def f(): \"\"\"doc\"\"\"\n");
-        let probe = probe_with_source(&s);
-        assert!(probe.bodies.is_empty());
-    }
-
-    #[test]
-    fn triple_quoted_body_rejects_non_triple_quoted_literal() {
-        let s = parse("\"hello\"\n");
-        let probe = probe_with_source(&s);
-        assert!(probe.bodies.is_empty());
     }
 }

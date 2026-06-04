@@ -7,13 +7,20 @@
 //! skip rule execution entirely when an unmatched off precedes every
 //! statement.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use ruff_python_trivia::{CommentLinePosition, CommentRanges, PythonWhitespace, SuppressionKind};
+use ruff_python_trivia::{CommentLinePosition, CommentRanges, SuppressionKind};
 use ruff_source_file::{LineRanges, OneIndexed, SourceCode};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::rule::RuleId;
+
+mod format_directive;
+mod lint_directive;
+mod parse_common;
+
+use format_directive::{FormatDirective, classify_format_directive};
+use lint_directive::{RuleEntry, find_prose_ignore};
 
 /// Sorted byte-range list for format-suppression spans paired with two
 /// per-line `OneIndexed` maps. `lints` carries `# prose: ignore` per-line
@@ -140,99 +147,6 @@ impl SuppressionMap {
     }
 }
 
-/// Result of `classify_format_directive`. `Kind` carries an upstream
-/// or `# prose:`-prefixed off/on/skip directive that drives the span
-/// machinery, whereas `SkipRules` carries the rule-id list parsed from
-/// `# prose: skip[<id>[, <id>...]]`.
-enum FormatDirective {
-    Kind(SuppressionKind),
-    SkipRules(HashSet<RuleId>),
-}
-
-/// One line's parsed `# prose: ignore` or `# prose: skip[<id>]`
-/// directive.
-#[derive(Debug)]
-enum RuleEntry {
-    /// Bare `# prose: ignore`. Suppresses every rule on the line.
-    All,
-    /// `# prose: ignore[<id>[, <id>...]]` or `# prose: skip[<id>[,
-    /// <id>...]]`. Unknown ids are dropped.
-    Specific(HashSet<RuleId>),
-}
-
-impl RuleEntry {
-    /// Returns `true` when `self` suppresses `rule`. `All` matches
-    /// every id, `Specific` matches only listed ids.
-    fn matches(&self, rule: RuleId) -> bool {
-        match self {
-            Self::All => true,
-            Self::Specific(rules) => rules.contains(&rule),
-        }
-    }
-
-    /// Folds `incoming` into `self`. `All` widens any prior `Specific`,
-    /// and a second `Specific` unions its ids into the first.
-    fn merge(&mut self, incoming: Self) {
-        match (&mut *self, incoming) {
-            (Self::All, _) => {}
-            (slot @ Self::Specific(_), Self::All) => *slot = Self::All,
-            (Self::Specific(rules), Self::Specific(more)) => rules.extend(more),
-        }
-    }
-}
-
-impl Default for RuleEntry {
-    fn default() -> Self {
-        Self::Specific(HashSet::new())
-    }
-}
-
-/// Strips the leading `prose:` marker from `after_hash` and returns
-/// the trimmed body. Returns `None` for any other shape.
-fn after_prose_prefix(after_hash: &str) -> Option<&str> {
-    after_hash
-        .trim_whitespace()
-        .strip_prefix("prose:")
-        .map(str::trim_whitespace)
-}
-
-/// Classifies `comment` against the three format-suppression
-/// namespaces. The `# prose:` namespace is tried first, falling
-/// through to `SuppressionKind::from_comment` for the `# fmt:` and
-/// `# yapf:` aliases. `# prose: skip[<id>...]` returns `SkipRules`,
-/// `# prose: off|on|skip` and the alias forms return `Kind`. Multiple
-/// `# prose: skip[<id>]` chunks on one comment range union their ids.
-fn classify_format_directive(comment: &str) -> Option<FormatDirective> {
-    comment
-        .split('#')
-        .skip(1)
-        .filter_map(parse_prose_format)
-        .reduce(|mut acc, next| {
-            if let (FormatDirective::SkipRules(a), FormatDirective::SkipRules(b)) = (&mut acc, next)
-            {
-                a.extend(b);
-            }
-            acc
-        })
-        .or_else(|| SuppressionKind::from_comment(comment).map(FormatDirective::Kind))
-}
-
-/// Splits `comment` at each `#` boundary, parsing each chunk as a
-/// `prose: ignore` directive and folding successful hits through
-/// `RuleEntry::merge`. Catches nested forms like `# my note # prose:
-/// ignore` and multi-directive lines like `# prose: ignore  # prose:
-/// ignore[align-equals]`.
-fn find_prose_ignore(comment: &str) -> Option<RuleEntry> {
-    comment
-        .split('#')
-        .skip(1)
-        .filter_map(parse_prose_ignore)
-        .reduce(|mut acc, next| {
-            acc.merge(next);
-            acc
-        })
-}
-
 fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
     spans.sort_unstable_by_key(|s| s.start());
     spans.dedup_by(|next, prev| {
@@ -245,59 +159,13 @@ fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
     spans
 }
 
-/// Parses the rule-id body of a `[<id>[, <id>...]]` suffix into a
-/// `RuleEntry::Specific`. Returns `None` when the brackets are missing
-/// or malformed. Unknown rule ids are silently dropped.
-fn parse_bracketed_rule_list(body: &str) -> Option<HashSet<RuleId>> {
-    Some(
-        body.strip_prefix('[')?
-            .strip_suffix(']')?
-            .split(',')
-            .filter_map(|part| part.trim_whitespace().parse::<RuleId>().ok())
-            .collect(),
-    )
-}
-
-/// Parses the post-`#` body of a `prose: off`, `prose: on`, `prose:
-/// skip`, or `prose: skip[<id>...]` directive. Returns `None` for any
-/// other shape, leaving the caller to try the `# fmt:` / `# yapf:`
-/// fallback.
-fn parse_prose_format(after_hash: &str) -> Option<FormatDirective> {
-    let body = after_prose_prefix(after_hash)?;
-    if let Some(rest) = body.strip_prefix("skip").map(str::trim_whitespace) {
-        if rest.is_empty() {
-            return Some(FormatDirective::Kind(SuppressionKind::Skip));
-        }
-        return parse_bracketed_rule_list(rest).map(FormatDirective::SkipRules);
-    }
-    match body {
-        "off" => Some(FormatDirective::Kind(SuppressionKind::Off)),
-        "on" => Some(FormatDirective::Kind(SuppressionKind::On)),
-        _ => None,
-    }
-}
-
-/// Parses the post-`#` body of a `prose: ignore`, `prose: ignore[<id>]`,
-/// or `prose: ignore[<id>, <id>...]` directive. Returns `None` for any
-/// other shape. Whitespace tolerated around `:`, `[`, `,`, and `]`.
-/// Unknown rule ids inside the brackets are dropped.
-fn parse_prose_ignore(after_hash: &str) -> Option<RuleEntry> {
-    let body = after_prose_prefix(after_hash)?
-        .strip_prefix("ignore")?
-        .trim_whitespace();
-    if body.is_empty() {
-        return Some(RuleEntry::All);
-    }
-    parse_bracketed_rule_list(body).map(RuleEntry::Specific)
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
 
     use crate::rule::RuleId;
-    use crate::test_support::{parse, range};
+    use crate::testing::{parse, range};
 
     fn align_equals() -> RuleId {
         "align-equals".parse().expect("align-equals is registered")

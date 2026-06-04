@@ -1,137 +1,9 @@
-//! Normalizes blank-line spacing between adjacent statements at module,
-//! class, and function scopes. The walker pairs each statement with its
-//! predecessor and emits edits to bring the gap to the canonical count
-//! returned by `canonical_blanks`. Own-line comments between adjacent
-//! statements carry 1 blank line above the comment block, 0 blank lines
-//! below a description block, and 1 blank line below a banner block.
+//! Canonical blank-line counts per scope. Dispatches a `(prev,
+//! curr)` pair to the class-, function-, or module-scope policy.
 
-use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    CmpOp, Expr, Stmt,
-    helpers::is_docstring_stmt,
-    statement_visitor::{StatementVisitor, walk_stmt},
-};
-use ruff_python_trivia::{CommentRanges, lines_after, lines_before};
-use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_python_ast::{CmpOp, Expr, Stmt, helpers::is_docstring_stmt};
 
-use crate::{
-    config::Config,
-    primitives::{edit::singleton_groups, imports::import_group, scope::BodyScope},
-    rule::{Rule, RuleId},
-    source::Source,
-};
-
-pub(crate) struct BlankLines {
-    first_party: Vec<String>,
-}
-
-impl BlankLines {
-    pub(crate) fn from_config(config: &Config) -> Self {
-        Self {
-            first_party: config.first_party(),
-        }
-    }
-}
-
-impl Rule for BlankLines {
-    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let body = &source.ast().body;
-        let mut walker = Walker {
-            edits: Vec::new(),
-            first_party: &self.first_party,
-            source,
-        };
-        walker.pair_siblings(body, BodyScope::Module);
-        walker.visit_body(body);
-        singleton_groups(walker.edits)
-    }
-
-    fn id(&self) -> RuleId {
-        Self::SLUG
-    }
-}
-
-struct Walker<'a> {
-    edits: Vec<Edit>,
-    first_party: &'a [String],
-    source: &'a Source,
-}
-
-impl Walker<'_> {
-    /// Places `target_newlines` line breaks immediately above
-    /// `line_start`. Emits a replacement edit when the actual count
-    /// differs. Preserves any indent that sits on `line_start`'s line.
-    fn normalize_above(&mut self, line_start: TextSize, target_newlines: u32) {
-        let text = self.source.text();
-        if lines_before(line_start, text) == target_newlines {
-            return;
-        }
-        let span_start = whitespace_start_before(text, line_start);
-        let replacement = self.source.newline_str().repeat(target_newlines as usize);
-        self.edits.push(Edit::range_replacement(
-            replacement,
-            TextRange::new(span_start, line_start),
-        ));
-    }
-
-    /// Places `target_newlines` line breaks between `block_end` and
-    /// `curr_line_start`. Emits a replacement edit when the actual
-    /// count differs.
-    fn normalize_below_block(
-        &mut self,
-        block_end: TextSize,
-        curr_line_start: TextSize,
-        target_newlines: u32,
-    ) {
-        if lines_after(block_end, self.source.text()) == target_newlines {
-            return;
-        }
-        self.edits.push(Edit::range_replacement(
-            self.source.newline_str().repeat(target_newlines as usize),
-            TextRange::new(block_end, curr_line_start),
-        ));
-    }
-
-    fn pair_in_scope(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
-        if let Some(first) = body.first() {
-            let prev_end = header_signature_end(self.source, first.start());
-            self.pair_with_end(header, prev_end, first, scope);
-        }
-        self.pair_siblings(body, scope);
-    }
-
-    fn pair_siblings(&mut self, body: &[Stmt], scope: BodyScope) {
-        for (prev, curr) in body.iter().zip(body.iter().skip(1)) {
-            self.pair_with_end(prev, prev.end(), curr, scope);
-        }
-    }
-
-    fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
-        let Some(canonical) = canonical_blanks(prev, curr, scope, self.first_party) else {
-            return;
-        };
-        let block = leading_block_of(self.source, prev_end, curr);
-        let curr_line_start = self.source.text().line_start(curr.start());
-        let above_line_start = block.map_or(curr_line_start, TextRange::start);
-        self.normalize_above(above_line_start, canonical + 1);
-        if let Some(b) = block {
-            let below_target = 1 + u32::from(is_banner_block(self.source, b));
-            self.normalize_below_block(b.end(), curr_line_start, below_target);
-        }
-    }
-}
-
-impl<'a> StatementVisitor<'a> for Walker<'a> {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        match stmt {
-            Stmt::ClassDef(c) => self.pair_in_scope(stmt, &c.body, BodyScope::Class),
-            Stmt::FunctionDef(f) => self.pair_in_scope(stmt, &f.body, BodyScope::Function),
-            _ => {}
-        }
-        walk_stmt(self, stmt);
-    }
-}
+use crate::primitives::{imports::import_group, scope::BodyScope};
 
 /// Returns the canonical blank-line count for the pair `(prev, curr)`
 /// at `scope`. `None` means no case applies and the pair is skipped,
@@ -139,7 +11,7 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
 /// and `Function` scopes, the pair includes the scope-entry transition
 /// wherein `prev` is the enclosing `ClassDef` or `FunctionDef` itself
 /// and `curr` is the first body member.
-fn canonical_blanks(
+pub(super) fn canonical_blanks(
     prev: &Stmt,
     curr: &Stmt,
     scope: BodyScope,
@@ -185,22 +57,6 @@ fn function_scope_blanks(prev: &Stmt, curr: &Stmt) -> Option<u32> {
     }
 }
 
-/// Returns the position immediately after the `:` that introduces a
-/// class or function body whose first statement starts at `body_start`.
-/// Scans backward from `body_start` through whitespace and comments,
-/// landing on the first non-trivia token. Falls back to `body_start`
-/// when the scan finds none.
-fn header_signature_end(source: &Source, body_start: TextSize) -> TextSize {
-    source
-        .prev_non_trivia_token(body_start)
-        .map_or(body_start, |t| t.end())
-}
-
-/// True when any line in the comment block is a decorative rule line.
-fn is_banner_block(source: &Source, block: TextRange) -> bool {
-    source.slice(block).lines().any(is_rule_line)
-}
-
 /// True when `stmt` is `if __name__ == "__main__":`.
 fn is_main_guard(stmt: &Stmt) -> bool {
     let Some(if_stmt) = stmt.as_if_stmt() else {
@@ -219,32 +75,6 @@ fn is_main_guard(stmt: &Stmt) -> bool {
         return false;
     };
     left.id == "__name__" && right.value.to_str() == "__main__"
-}
-
-/// True when `line` is a comment whose body, after stripping the
-/// leading `#` and surrounding whitespace, consists of 5 or more
-/// identical non-alphanumeric characters.
-fn is_rule_line(line: &str) -> bool {
-    let stripped = line.trim_start().strip_prefix('#').map_or("", str::trim);
-    let bytes = stripped.as_bytes();
-    bytes.len() >= 5 && !bytes[0].is_ascii_alphanumeric() && bytes.iter().all(|&b| b == bytes[0])
-}
-
-/// Returns the contiguous range of own-line comments lying between
-/// `prev_end` and `curr.start()`. `None` when no own-line comment
-/// sits in that gap. End-of-line comments on the predecessor's line
-/// are excluded.
-fn leading_block_of(source: &Source, prev_end: TextSize, curr: &Stmt) -> Option<TextRange> {
-    let text = source.text();
-    let mut own_lines = source
-        .comment_ranges()
-        .comments_in_range(TextRange::new(prev_end, curr.start()))
-        .iter()
-        .copied()
-        .filter(|r| CommentRanges::is_own_line(r.start(), text));
-    let first = own_lines.next()?;
-    let last = own_lines.next_back().unwrap_or(first);
-    Some(TextRange::new(text.line_start(first.start()), last.end()))
 }
 
 /// Module-scope pair dispatch. A statement following an
@@ -270,19 +100,12 @@ fn module_scope_blanks(prev: &Stmt, curr: &Stmt, first_party: &[String]) -> Opti
     }
 }
 
-/// Returns the start of the contiguous ASCII-whitespace run immediately
-/// preceding `offset` in `text`.
-fn whitespace_start_before(text: &str, offset: TextSize) -> TextSize {
-    let trimmed = text[..offset.to_usize()].trim_end_matches(|c: char| c.is_ascii_whitespace());
-    TextSize::of(trimmed)
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn main_guard_src() -> &'static str {
         "if __name__ == \"__main__\":\n    main()\n"
@@ -514,64 +337,6 @@ mod tests {
     }
 
     #[test]
-    fn header_signature_end_handles_multi_line_function_signature() {
-        let s = parse("def f(\n    x,\n    y,\n):\n    pass\n");
-        let func = s.ast().body[0].as_function_def_stmt().expect("def");
-        let end = header_signature_end(&s, func.body[0].start());
-        assert!(s.text()[..end.to_usize()].ends_with("):"));
-    }
-
-    #[test]
-    fn header_signature_end_points_after_colon_in_simple_class() {
-        let s = parse("class C:\n    pass\n");
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
-        let end = header_signature_end(&s, class.body[0].start());
-        assert_eq!(&s.text()[..end.to_usize()], "class C:");
-    }
-
-    #[test]
-    fn header_signature_end_points_after_colon_in_simple_function() {
-        let s = parse("def f():\n    pass\n");
-        let func = s.ast().body[0].as_function_def_stmt().expect("def");
-        let end = header_signature_end(&s, func.body[0].start());
-        assert_eq!(&s.text()[..end.to_usize()], "def f():");
-    }
-
-    #[test]
-    fn header_signature_end_skips_eol_comment_on_header_line() {
-        let s = parse("class C:  # eol\n    pass\n");
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
-        let end = header_signature_end(&s, class.body[0].start());
-        assert_eq!(&s.text()[..end.to_usize()], "class C:");
-    }
-
-    #[test]
-    fn header_signature_end_skips_own_line_comment_above_body() {
-        let s = parse("class C:\n    # comment\n    pass\n");
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
-        let end = header_signature_end(&s, class.body[0].start());
-        assert_eq!(&s.text()[..end.to_usize()], "class C:");
-    }
-
-    #[test]
-    fn is_banner_block_detects_block_with_any_rule_line() {
-        let s = parse(
-            "x = 1\n# ========================\n# Section: helpers\n# ========================\ndef f(): pass\n",
-        );
-        let body = &s.ast().body;
-        let block = leading_block_of(&s, body[0].end(), &body[1]).expect("block");
-        assert!(is_banner_block(&s, block));
-    }
-
-    #[test]
-    fn is_banner_block_returns_false_for_all_prose_block() {
-        let s = parse("x = 1\n# describes f\n# helper\ndef f(): pass\n");
-        let body = &s.ast().body;
-        let block = leading_block_of(&s, body[0].end(), &body[1]).expect("block");
-        assert!(!is_banner_block(&s, block));
-    }
-
-    #[test]
     fn is_main_guard_accepts_canonical_form() {
         let s = parse(main_guard_src());
         assert!(is_main_guard(&s.ast().body[0]));
@@ -597,79 +362,5 @@ mod tests {
     ) {
         let s = parse(src);
         assert!(!is_main_guard(&s.ast().body[0]));
-    }
-
-    #[rstest]
-    fn is_rule_line_accepts_canonical_decorative_runs(
-        #[values("# =====", "# -----", "# *****", "# _____", "# ~~~~~", "##########")] line: &str,
-    ) {
-        assert!(is_rule_line(line));
-    }
-
-    #[rstest]
-    fn is_rule_line_rejects_alpha_prose(
-        #[values("# describes f", "# Section: helpers", "# x")] line: &str,
-    ) {
-        assert!(!is_rule_line(line));
-    }
-
-    #[rstest]
-    fn is_rule_line_rejects_mixed_characters(
-        #[values("# = = = =", "# -=-=-=", "# - - -")] line: &str,
-    ) {
-        assert!(!is_rule_line(line));
-    }
-
-    #[rstest]
-    fn is_rule_line_rejects_short_runs(#[values("# ====", "# ---", "# ", "#")] line: &str) {
-        assert!(!is_rule_line(line));
-    }
-
-    #[test]
-    fn leading_block_of_returns_block_for_chain_of_own_line_comments() {
-        let s = parse("x = 1\n# a\n# b\ndef f(): pass\n");
-        let body = &s.ast().body;
-        let block = leading_block_of(&s, body[0].end(), &body[1]).expect("block");
-        let comments = s.comment_ranges();
-        assert_eq!(block.start(), s.text().line_start(comments[0].start()));
-        assert_eq!(block.end(), comments[1].end());
-    }
-
-    #[test]
-    fn leading_block_of_returns_none_when_no_own_line_comments_between() {
-        let s = parse("x = 1\ndef f(): pass\n");
-        let body = &s.ast().body;
-        assert!(leading_block_of(&s, body[0].end(), &body[1]).is_none());
-    }
-
-    #[test]
-    fn leading_block_of_skips_trailing_end_of_line_comments() {
-        let s = parse("x = 1  # trail\ndef f(): pass\n");
-        let body = &s.ast().body;
-        assert!(leading_block_of(&s, body[0].end(), &body[1]).is_none());
-    }
-
-    #[test]
-    fn whitespace_start_before_handles_crlf() {
-        assert_eq!(
-            whitespace_start_before("a\r\n\r\nb", TextSize::new(5)),
-            TextSize::new(1),
-        );
-    }
-
-    #[test]
-    fn whitespace_start_before_returns_zero_for_leading_whitespace() {
-        assert_eq!(
-            whitespace_start_before("   \n\n\nx", TextSize::new(6)),
-            TextSize::new(0),
-        );
-    }
-
-    #[test]
-    fn whitespace_start_before_stops_at_non_whitespace() {
-        assert_eq!(
-            whitespace_start_before("ab\n\ncd", TextSize::new(4)),
-            TextSize::new(2),
-        );
     }
 }

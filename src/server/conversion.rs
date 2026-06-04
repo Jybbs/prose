@@ -63,7 +63,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     #[test]
     fn full_document_range_covers_a_multiline_buffer() {

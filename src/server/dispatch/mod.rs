@@ -2,24 +2,30 @@
 //! requests and notifications to the formatting and diagnostic passes.
 
 use anyhow::Context;
-use lsp_server::{
-    Connection, ErrorCode, ExtractError, Message, Notification, Request, RequestId, Response,
-};
+use lsp_server::{Connection, Message, Request, RequestId};
 use lsp_types::{
-    ClientCapabilities, DidChangeTextDocumentParams, DidChangeWatchedFilesRegistrationOptions,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentFormattingParams,
-    FileSystemWatcher, GlobPattern, InitializeParams, InitializeResult, PublishDiagnosticsParams,
-    Registration, RegistrationParams, ServerInfo, Uri,
-    notification::{
-        DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument, DidOpenTextDocument,
-        Exit, Notification as NotificationTrait, PublishDiagnostics,
-    },
-    request::{Formatting, RegisterCapability, Request as RequestTrait},
+    ClientCapabilities, DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern,
+    InitializeParams, InitializeResult, Registration, RegistrationParams, ServerInfo,
+    notification::{DidChangeWatchedFiles, Exit, Notification as NotificationTrait},
+    request::{RegisterCapability, Request as RequestTrait},
 };
 use ruff_source_file::PositionEncoding;
-use serde::de::DeserializeOwned;
 
-use super::{analysis, capabilities, config_cache::ConfigCache, documents::DocumentStore};
+use super::{capabilities, config_cache::ConfigCache, documents::DocumentStore};
+
+mod notifications;
+mod requests;
+
+use notifications::handle_notification;
+use requests::handle_request;
+
+/// Sends one message to the client, contextualizing a closed channel.
+pub(super) fn send(connection: &Connection, message: Message) -> anyhow::Result<()> {
+    connection
+        .sender
+        .send(message)
+        .context("sending message to client")
+}
 
 /// Completes the `initialize` handshake, negotiating position encoding
 /// from the client's capabilities before advertising the server's, then
@@ -48,97 +54,6 @@ pub(super) fn serve(connection: Connection) -> anyhow::Result<()> {
         .context("finishing language-server handshake")?;
     let watching = register_config_watchers(&connection, &params.capabilities)?;
     main_loop(&connection, encoding, watching)
-}
-
-/// Deserializes a notification's params, contextualizing a decode
-/// failure with the method that carried the malformed payload.
-fn decode<P: DeserializeOwned>(notification: Notification) -> anyhow::Result<P> {
-    serde_json::from_value(notification.params)
-        .with_context(|| format!("decoding `{}` params", notification.method))
-}
-
-/// Routes one notification by method, updating the document store and
-/// republishing the affected document's diagnostics. An open or change
-/// replaces the buffer, a close drops it. Unknown methods are ignored
-/// (the protocol leaves notifications unanswered), and malformed params
-/// surface as an error.
-fn handle_notification(
-    connection: &Connection,
-    documents: &mut DocumentStore,
-    configs: &mut ConfigCache,
-    notification: Notification,
-    encoding: PositionEncoding,
-) -> anyhow::Result<()> {
-    if notification.method == DidChangeWatchedFiles::METHOD {
-        configs.clear();
-        return republish_all(connection, documents, configs, encoding);
-    }
-    let uri = if notification.method == DidOpenTextDocument::METHOD {
-        let params: DidOpenTextDocumentParams = decode(notification)?;
-        let version = params.text_document.version;
-        documents.set(
-            params.text_document.uri.clone(),
-            params.text_document.text,
-            version,
-        );
-        params.text_document.uri
-    } else if notification.method == DidChangeTextDocument::METHOD {
-        let mut params: DidChangeTextDocumentParams = decode(notification)?;
-        let version = params.text_document.version;
-        let uri = params.text_document.uri;
-        if let Some(change) = params.content_changes.pop() {
-            documents.set(uri.clone(), change.text, version);
-        }
-        uri
-    } else if notification.method == DidCloseTextDocument::METHOD {
-        let params: DidCloseTextDocumentParams = decode(notification)?;
-        documents.remove(&params.text_document.uri);
-        params.text_document.uri
-    } else {
-        return Ok(());
-    };
-    publish(connection, documents, configs, &uri, encoding)
-}
-
-/// Routes one request, answering formatting and rejecting any other
-/// method so the client never blocks waiting for a response.
-fn handle_request(
-    connection: &Connection,
-    documents: &DocumentStore,
-    configs: &mut ConfigCache,
-    request: Request,
-    encoding: PositionEncoding,
-) -> anyhow::Result<()> {
-    let id = request.id.clone();
-    match request.extract::<DocumentFormattingParams>(Formatting::METHOD) {
-        Ok((id, params)) => {
-            // The client's `FormattingOptions` (tab size, spaces) go unused
-            // because prose formats to its own `[tool.prose]` config, not
-            // editor settings.
-            let uri = &params.text_document.uri;
-            let config = configs.resolve(uri);
-            let edits = documents
-                .get(uri)
-                .and_then(|doc| analysis::format_edits(&doc.text, encoding, config));
-            send(connection, Message::Response(Response::new_ok(id, edits)))
-        }
-        Err(ExtractError::MethodMismatch(request)) => send(
-            connection,
-            Message::Response(Response::new_err(
-                request.id,
-                ErrorCode::MethodNotFound as i32,
-                format!("unsupported request `{}`", request.method),
-            )),
-        ),
-        Err(ExtractError::JsonError { method, error }) => send(
-            connection,
-            Message::Response(Response::new_err(
-                id,
-                ErrorCode::InvalidParams as i32,
-                format!("malformed `{method}` request: {error}"),
-            )),
-        ),
-    }
 }
 
 /// Reads each message until the client requests shutdown or sends a bare
@@ -187,34 +102,6 @@ fn main_loop(
     Ok(())
 }
 
-/// Recomputes and publishes the tracked buffer's diagnostics, sending an
-/// empty list when no buffer is tracked so the editor clears stale marks.
-fn publish(
-    connection: &Connection,
-    documents: &DocumentStore,
-    configs: &mut ConfigCache,
-    uri: &Uri,
-    encoding: PositionEncoding,
-) -> anyhow::Result<()> {
-    let config = configs.resolve(uri);
-    let doc = documents.get(uri);
-    let diagnostics = doc
-        .map(|doc| analysis::diagnostics(&doc.text, encoding, config))
-        .unwrap_or_default();
-    let params = PublishDiagnosticsParams {
-        diagnostics,
-        uri: uri.clone(),
-        version: doc.map(|doc| doc.version),
-    };
-    send(
-        connection,
-        Message::Notification(Notification::new(
-            PublishDiagnostics::METHOD.to_owned(),
-            params,
-        )),
-    )
-}
-
 /// Registers a `workspace/didChangeWatchedFiles` watcher for prose's config
 /// files when the client supports dynamic registration, so a `pyproject.toml`
 /// or `prose.toml` edit refreshes every open buffer. Clients without dynamic
@@ -261,33 +148,11 @@ fn register_config_watchers(
     Ok(true)
 }
 
-/// Recomputes and republishes diagnostics for every open buffer, after a
-/// config change invalidates their cached settings.
-fn republish_all(
-    connection: &Connection,
-    documents: &DocumentStore,
-    configs: &mut ConfigCache,
-    encoding: PositionEncoding,
-) -> anyhow::Result<()> {
-    for uri in documents.uris() {
-        publish(connection, documents, configs, &uri, encoding)?;
-    }
-    Ok(())
-}
-
-/// Sends one message to the client, contextualizing a closed channel.
-fn send(connection: &Connection, message: Message) -> anyhow::Result<()> {
-    connection
-        .sender
-        .send(message)
-        .context("sending message to client")
-}
-
 #[cfg(test)]
 mod tests {
     use std::{str::FromStr, thread};
 
-    use lsp_server::RequestId;
+    use lsp_server::{ErrorCode, Notification, RequestId, Response};
     use lsp_types::{
         DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
         DocumentFormattingParams, FormattingOptions, HoverParams, InitializeParams,

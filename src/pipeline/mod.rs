@@ -6,18 +6,19 @@
 //! rule. Alignment rules run last so earlier rewrites settle before
 //! padding widths are computed.
 
-use ruff_diagnostics::Edit;
-use ruff_python_parser::ParseError;
-use ruff_text_size::Ranged;
-use thiserror::Error;
-
 use crate::{
-    diagnostics::{Diagnostic, Severity},
+    diagnostics::Diagnostic,
     primitives::edit::apply_edits,
     rule::{Rule, RuleId},
     source::Source,
-    suppression::SuppressionMap,
 };
+
+mod error;
+mod filter;
+
+pub use error::PipelineError;
+use error::reparse_or_reject;
+use filter::{drop_suppressed_lints, prepared_groups, unsuppressed_lints};
 
 /// Ordered sequence of enabled rules, run against each source file.
 pub struct Pipeline {
@@ -155,89 +156,6 @@ impl Pipeline {
     }
 }
 
-/// Failure modes surfaced by the pipeline itself.
-#[derive(Debug, Error)]
-pub enum PipelineError {
-    #[error("rule `{rule}` produced output that did not parse")]
-    Reparse {
-        rule: RuleId,
-        #[source]
-        source: ParseError,
-    },
-}
-
-/// Drops the lint diagnostics a `# prose: ignore[<id>]` directive
-/// covers, matched per line and rule.
-fn drop_suppressed_lints(
-    diagnostics: &mut Vec<Diagnostic>,
-    source: &Source,
-    suppression: &SuppressionMap,
-) {
-    if suppression.has_lint_suppression() {
-        diagnostics.retain(|d| {
-            d.severity != Severity::Lint
-                || !suppression.is_lint_suppressed_at(source.line_index(d.start()), d.rule)
-        });
-    }
-}
-
-/// Applies `rule` to `source` and returns its fix groups with the
-/// suppressed edits and the groups they emptied removed.
-fn prepared_groups(
-    rule: &dyn Rule,
-    source: &Source,
-    suppression: &SuppressionMap,
-    rule_id: RuleId,
-) -> Vec<Vec<Edit>> {
-    let mut groups = rule.apply(source);
-    retain_unsuppressed(&mut groups, source, suppression, rule_id);
-    groups.retain(|group| !group.is_empty());
-    groups
-}
-
-/// Reparses `new_text`, tagging a parse failure with the `rule` whose
-/// edits produced it.
-fn reparse_or_reject(
-    source: &Source,
-    new_text: String,
-    rule: RuleId,
-) -> Result<Source, PipelineError> {
-    source
-        .reparse(new_text)
-        .map_err(|source| PipelineError::Reparse { rule, source })
-}
-
-/// Drops the edits a format-suppression directive covers from each
-/// group, per rule. A `# fmt: off` span or `# prose: skip[<id>]`
-/// removes the edits it overlaps, leaving the rest of the group intact.
-fn retain_unsuppressed(
-    groups: &mut [Vec<Edit>],
-    source: &Source,
-    suppression: &SuppressionMap,
-    rule: RuleId,
-) {
-    if suppression.has_format_suppression() || suppression.has_skip_suppression() {
-        for group in groups.iter_mut() {
-            group.retain(|edit| {
-                !suppression.intersects(edit)
-                    && !suppression.is_format_suppressed_at(source.line_index(edit.start()), rule)
-            });
-        }
-    }
-}
-
-/// Yields `rule`'s lint diagnostics, dropping the ones whose range
-/// falls within a format-suppressed span.
-fn unsuppressed_lints<'a>(
-    rule: &dyn Rule,
-    source: &Source,
-    suppression: &'a SuppressionMap,
-) -> impl Iterator<Item = Diagnostic> + 'a {
-    rule.lint(source)
-        .into_iter()
-        .filter(move |d| !suppression.intersects(d.range))
-}
-
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
@@ -248,8 +166,9 @@ mod tests {
 
     use super::*;
     use crate::config::Config;
+    use crate::diagnostics::Severity;
     use crate::primitives::edit::singleton_groups;
-    use crate::test_support::{assert_send_sync, parse, range};
+    use crate::testing::{assert_send_sync, parse, range};
 
     /// Test-only lint-only rule that returns the range list supplied
     /// at construction and never produces edits.

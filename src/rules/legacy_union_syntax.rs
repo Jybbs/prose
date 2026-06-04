@@ -186,7 +186,7 @@ mod tests {
 
     use super::*;
     use crate::diagnostics::Severity;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn rule(version: Option<PythonVersion>) -> LegacyUnionSyntax {
         LegacyUnionSyntax {

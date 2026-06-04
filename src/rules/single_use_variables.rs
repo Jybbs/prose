@@ -150,7 +150,7 @@ fn body_uses_scope_modifier(body: &[Stmt]) -> bool {
 mod tests {
     use super::*;
     use crate::diagnostics::Severity;
-    use crate::test_support::parse;
+    use crate::testing::parse;
 
     fn first_function_body(source: &Source) -> &[Stmt] {
         &source.ast().body[0]

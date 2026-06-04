@@ -1,26 +1,33 @@
 //! Pipeline orchestration: load source, run, emit diagnostics, classify outcome.
 
 use std::{
-    io::{self, Read, Write},
-    path::{Path, PathBuf},
+    io::{Read, Write},
+    path::PathBuf,
 };
 
 use anyhow::Context;
-use rayon::iter::{ParallelBridge, ParallelIterator};
-use ruff_source_file::{SourceFile, SourceFileBuilder};
+use ruff_source_file::SourceFile;
 
 use super::{
     args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter},
     exit_status::ExitStatus,
-    output::{self, Presentation, Summary},
+    output::Presentation,
 };
 use crate::{
-    cache::{Cache, CacheEntry, CacheKey, Rewrite},
+    cache::Cache,
     config::Config,
-    diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Severity, Text},
+    diagnostics::{Diagnostic, Severity},
     pipeline::Pipeline,
-    source::Source,
-    walker,
+};
+
+mod diff;
+mod process;
+mod report;
+
+use diff::write_diff;
+use process::{apply_rewrite, process_path, process_paths, process_stdin};
+use report::{
+    emit_outcomes, emitter_summary, finish, render_summary, status_from_outcomes, summarize,
 };
 
 /// One file's contribution to the run.
@@ -139,20 +146,6 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
     }
 }
 
-fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
-    let FileOutcome::Done {
-        formatted_text: Some(text),
-        ..
-    } = &outcome
-    else {
-        return outcome;
-    };
-    if let Err(e) = fs_err::write(path, text) {
-        return config_error(e);
-    }
-    outcome
-}
-
 fn build_run(rules: &RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> {
     let config = super::load_config_or_status()?;
     let pipeline = Pipeline::with_filters(&config, &rules.select, &rules.ignore);
@@ -163,95 +156,6 @@ fn build_run(rules: &RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus>
         config_toml,
         pipeline,
     })
-}
-
-/// Records what a cached entry knows about the rewrite. A mode that
-/// skipped `run` stores `Skipped`, whereas one that ran it records
-/// whether the text changed.
-fn cache_rewrite(needs_rewrite: bool, formatted_text: Option<&str>) -> Rewrite {
-    if !needs_rewrite {
-        return Rewrite::Skipped;
-    }
-    match formatted_text {
-        Some(text) => Rewrite::Changed(text.to_owned()),
-        None => Rewrite::Unchanged,
-    }
-}
-
-fn config_error(e: impl std::fmt::Display) -> FileOutcome {
-    eprintln!("error: {e}");
-    FileOutcome::Failed(ExitStatus::ConfigError)
-}
-
-fn emit_outcomes<W: Write>(
-    outcomes: &[FileOutcome],
-    format: OutputFormat,
-    writer: &mut W,
-    summary: &EmitterSummary,
-) -> anyhow::Result<()> {
-    let view: Vec<Run<'_>> = outcomes
-        .iter()
-        .filter_map(|o| match o {
-            FileOutcome::Done {
-                file, diagnostics, ..
-            } => Some((file, diagnostics.as_slice())),
-            FileOutcome::Failed(_) => None,
-        })
-        .collect();
-    match format {
-        OutputFormat::Github => Github.emit(writer, &view, summary),
-        OutputFormat::Json => Json.emit(writer, &view, summary),
-        OutputFormat::Sarif => Sarif.emit(writer, &view, summary),
-        OutputFormat::Text => Text::new().emit(writer, &view, summary),
-    }?;
-    writer.flush().context("flushing stdout")?;
-    Ok(())
-}
-
-fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
-    outcomes
-        .iter()
-        .filter_map(|o| match o {
-            FileOutcome::Done {
-                diagnostics,
-                formatted_text,
-                ..
-            } => Some((diagnostics, formatted_text)),
-            FileOutcome::Failed(_) => None,
-        })
-        .fold(
-            EmitterSummary::default(),
-            |mut summary, (diagnostics, formatted_text)| {
-                summary.files_visited += 1;
-                summary.files_changed +=
-                    usize::from(file_changed(diagnostics, formatted_text.as_deref()));
-                summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
-                summary.diagnostics_total += diagnostics.len();
-                for diag in diagnostics {
-                    *summary.rules_fired.entry(diag.rule).or_default() += 1;
-                }
-                summary
-            },
-        )
-}
-
-/// A file counts as changed when `run` produced a rewrite, or, on the
-/// `check` path that skips the rewrite, when `diagnose` emitted a format
-/// diagnostic.
-fn file_changed(diagnostics: &[Diagnostic], formatted_text: Option<&str>) -> bool {
-    formatted_text.is_some() || has_format_change(diagnostics)
-}
-
-fn finish(
-    outcomes: &[FileOutcome],
-    setup: &RunSetup,
-    verbose: bool,
-    demote_format_change: bool,
-) -> ExitStatus {
-    if verbose {
-        report_verbose(outcomes, setup.cache.is_some(), &mut io::stderr());
-    }
-    status_from_outcomes(outcomes, demote_format_change)
 }
 
 /// Resolves which pipeline passes a `format` invocation reads. Plain
@@ -384,256 +288,10 @@ fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
         .ok()
 }
 
-fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOutcome {
-    let bytes = match fs_err::read(path) {
-        Ok(b) => b,
-        Err(e) => return config_error(e),
-    };
-    // Plain `format` would persist only `run`'s post-edit diagnostics, and
-    // a `--validate` check must re-confirm the rewrite parses rather than
-    // trust an entry an earlier unvalidated run wrote, so both bypass the
-    // cache. Every entry that remains carries `diagnose`'s as-written
-    // diagnostics, so a `check` hit never replays a `run`'s.
-    let needs_rewrite = matches!(pass, Pass::Both);
-    let keyed = setup
-        .cache
-        .as_ref()
-        .filter(|_| !matches!(pass, Pass::Rewrite | Pass::Diagnose { validate: true }))
-        .map(|c| (c, CacheKey::compute(&bytes, &setup.config_toml)));
-    if let Some(outcome) = keyed
-        .as_ref()
-        .and_then(|(c, k)| c.lookup(k))
-        .and_then(|entry| rehydrate(path, &bytes, entry, needs_rewrite))
-    {
-        return outcome;
-    }
-    let text = match String::from_utf8(bytes) {
-        Ok(t) => t,
-        Err(e) => {
-            eprintln!("error: {} is not valid UTF-8: {e}", path.display());
-            return FileOutcome::Failed(ExitStatus::ConfigError);
-        }
-    };
-    let source = match Source::build(text, path.display().to_string()) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("error: parse error in `{}`: {e}", path.display());
-            return FileOutcome::Failed(ExitStatus::ParseError);
-        }
-    };
-    let outcome = run_pipeline(source, &setup.pipeline, pass);
-    if let (
-        Some((c, k)),
-        FileOutcome::Done {
-            diagnostics,
-            formatted_text,
-            ..
-        },
-    ) = (&keyed, &outcome)
-    {
-        c.insert(
-            k,
-            &CacheEntry {
-                diagnostics: diagnostics.clone(),
-                rewrite: cache_rewrite(needs_rewrite, formatted_text.as_deref()),
-            },
-        );
-    }
-    outcome
-}
-
-fn process_paths<F>(paths: &[PathBuf], handle: F) -> Vec<FileOutcome>
-where
-    F: Fn(&Path) -> FileOutcome + Send + Sync,
-{
-    walker::walk(paths)
-        .par_bridge()
-        .map(|entry| entry.map_or_else(walk_error, |path| handle(&path)))
-        .collect()
-}
-
-fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
-    let Ok(text) =
-        io::read_to_string(stdin).inspect_err(|e| eprintln!("error: reading stdin: {e}"))
-    else {
-        return FileOutcome::Failed(ExitStatus::ConfigError);
-    };
-    text.parse::<Source>()
-        .inspect_err(|e| eprintln!("error: parse error in stdin: {e}"))
-        .map_or_else(
-            |_| FileOutcome::Failed(ExitStatus::ParseError),
-            |source| run_pipeline(source, pipeline, pass),
-        )
-}
-
-fn rehydrate(
-    path: &Path,
-    original_bytes: &[u8],
-    entry: CacheEntry,
-    needs_rewrite: bool,
-) -> Option<FileOutcome> {
-    let formatted_text = if needs_rewrite {
-        match entry.rewrite {
-            Rewrite::Changed(text) => Some(text),
-            // A `check` entry skipped the rewrite this mode needs.
-            Rewrite::Skipped => return None,
-            Rewrite::Unchanged => None,
-        }
-    } else {
-        None
-    };
-    let original_text = std::str::from_utf8(original_bytes).ok()?.to_owned();
-    let file = SourceFileBuilder::new(path.display().to_string(), original_text).finish();
-    Some(FileOutcome::Done {
-        cached: true,
-        diagnostics: entry.diagnostics,
-        file,
-        formatted_text,
-    })
-}
-
-fn render_summary<E: Write>(stderr: &mut E, present: &Presentation, summary: Option<Summary>) {
-    if let Some(summary) = summary {
-        let _ = output::report(stderr, present, &summary);
-    }
-}
-
-fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, writer: &mut W) {
-    if !cache_enabled {
-        let _ = writeln!(writer, "cache: bypassed");
-        return;
-    }
-    let (hits, misses) = outcomes
-        .iter()
-        .filter_map(|o| match o {
-            FileOutcome::Done { cached, .. } => Some(*cached),
-            FileOutcome::Failed(_) => None,
-        })
-        .fold(
-            (0_usize, 0_usize),
-            |(h, m), c| if c { (h + 1, m) } else { (h, m + 1) },
-        );
-    let _ = writeln!(
-        writer,
-        "cache: {hits} hits, {misses} misses, {total} files",
-        total = hits + misses,
-    );
-}
-
-/// Computes only the passes `pass` reads. `check` collects the
-/// as-written diagnostics, and with `--validate` set it also guards the
-/// would-be rewrite against an unparseable rule output without rebuilding
-/// diagnostics. A `format` run rewrites through `run`, pairing the
-/// rewrite with `diagnose`'s as-written diagnostics when an output format
-/// will render them, or `run`'s own otherwise.
-fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
-    let file = source.source_file().clone();
-    if let Pass::Diagnose { validate } = pass {
-        let diagnostics = pipeline.diagnose(&source);
-        if validate
-            && has_format_change(&diagnostics)
-            && let Err(e) = pipeline.validate(source)
-        {
-            return config_error(e);
-        }
-        return FileOutcome::Done {
-            cached: false,
-            diagnostics,
-            file,
-            formatted_text: None,
-        };
-    }
-    let diagnosed = matches!(pass, Pass::Both).then(|| pipeline.diagnose(&source));
-    match pipeline.run(source) {
-        Ok((formatted, run_diagnostics)) => {
-            let formatted_text = formatted
-                .changed_from(file.source_text())
-                .map(str::to_owned);
-            FileOutcome::Done {
-                cached: false,
-                diagnostics: diagnosed.unwrap_or(run_diagnostics),
-                file,
-                formatted_text,
-            }
-        }
-        Err(e) => config_error(e),
-    }
-}
-
-fn status_from_outcomes(outcomes: &[FileOutcome], demote_format_change: bool) -> ExitStatus {
-    outcomes
-        .iter()
-        .map(|outcome| match outcome {
-            FileOutcome::Done { diagnostics, .. } => diagnostics
-                .iter()
-                .map(|d| ExitStatus::from(d.severity))
-                .filter(|s| !demote_format_change || *s != ExitStatus::FormatChange)
-                .max()
-                .unwrap_or_default(),
-            FileOutcome::Failed(s) => *s,
-        })
-        .max()
-        .unwrap_or_default()
-}
-
-/// Resolves an outcome set into its closing [`Summary`], or `None`
-/// when a clean run is shadowed by a per-file failure already logged
-/// to stderr.
-fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> Option<Summary> {
-    let failed = outcomes.iter().any(|o| matches!(o, FileOutcome::Failed(_)));
-    let resolved = match mode {
-        Mode::Check => match summary.diagnostics_total {
-            0 => Summary::Clean,
-            total => Summary::Diagnostics {
-                files: summary.files_with_diagnostics,
-                total,
-            },
-        },
-        Mode::Preview => match summary.files_changed {
-            0 => Summary::Clean,
-            files => Summary::WouldReformat { files },
-        },
-        Mode::Reformat => match summary.files_changed {
-            0 => Summary::Clean,
-            files => Summary::Reformatted { files },
-        },
-    };
-    match resolved {
-        Summary::Clean if failed => None,
-        resolved => Some(resolved),
-    }
-}
-
-fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
-    eprintln!("error: cannot walk: {err}");
-    FileOutcome::Failed(ExitStatus::ConfigError)
-}
-
-/// Writes a unified diff between `before` and `after`. When
-/// `decorate`, a Ube `🧵 <name>` heading stands in for the plain
-/// `---`/`+++` header, which is reserved for off-TTY runs so the diff
-/// stays a valid patch.
-fn write_diff<W: Write>(
-    writer: &mut W,
-    name: &str,
-    before: &str,
-    after: &str,
-    decorate: bool,
-) -> anyhow::Result<()> {
-    let diff = similar::TextDiff::from_lines(before, after);
-    let mut unified = diff.unified_diff();
-    if decorate {
-        writeln!(writer, "{}", output::ube(&format!("🧵 {name}"))).context("writing diff")?;
-    } else {
-        unified.header(name, name);
-    }
-    unified.to_writer(writer).context("writing diff")?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use std::io::{self, Cursor};
+    use std::path::Path;
 
     use assert_matches::assert_matches;
     use rstest::rstest;
@@ -641,9 +299,14 @@ mod tests {
     use ruff_text_size::TextRange;
     use tempfile::TempDir;
 
+    use super::process::{cache_rewrite, rehydrate, run_pipeline, walk_error};
+    use super::report::{file_changed, report_verbose};
     use super::*;
-    use crate::diagnostics::Severity;
+    use crate::cache::{CacheEntry, Rewrite};
+    use crate::cli::output::Summary;
+    use crate::diagnostics::{EmitterSummary, Severity};
     use crate::rule::{Rule, RuleId};
+    use crate::source::Source;
 
     /// Test-only rule whose single edit rewrites the leading statement
     /// into unparseable source, exercising the reparse guard.

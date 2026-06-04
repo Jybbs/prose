@@ -150,7 +150,7 @@ mod tests {
     use assert_matches::assert_matches;
 
     use super::*;
-    use crate::test_support::{parse, range};
+    use crate::testing::{parse, range};
 
     #[test]
     fn apply_edits_declines_overlapping_edits() {
