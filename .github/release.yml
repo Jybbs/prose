@@ -1,5 +1,8 @@
 changelog:
   categories:
+    - title: 🐞 Bugs
+      labels:
+        - 🐞 bug
     - title: ✨ Features
       labels:
         - 🦉 engine
@@ -7,22 +10,18 @@ changelog:
         - 🪉 ordering
         - 🪶 formatting
         - 🧶 lint
-    - title: 🐞 Bugs
-      labels:
-        - 🐞 bug
     - title: 🪄 CLI
       labels:
         - 🪄 cli
-    - title: 📰 Docs
+    - title: 📻 FYI
       labels:
         - 📰 docs
-    - title: 🗜️ Build
-      labels:
-        - 🗜️ build
+        - 🗝️ site
     - title: 🧱 Internals
       labels:
         - ⚖️ tests
         - 🗺️ architecture
+        - 🗜️ build
     - title: Other
       labels:
         - "*"
