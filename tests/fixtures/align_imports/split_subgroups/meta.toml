@@ -3,5 +3,5 @@ previewable = false
 title       = "A Widest Member past the Default `max-shift` Splits the Group"
 
 description = '''
-A run whose widest module overshoots the default `max-shift = 8` **greedily partitions into contiguous sub-groups** under the default `split` policy. Each sub-group aligns `import` at its own column, so a single wide outlier does not drag its short neighbors across the page.
+A run whose widest module overshoots the default `max-shift = 16` **partitions into width bands seeded from the widest member down** under the default `split` policy. Each band aligns `import` at its own column, so a single wide outlier does not drag its short neighbors across the page.
 '''

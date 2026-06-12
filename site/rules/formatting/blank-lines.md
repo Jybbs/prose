@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : formatting
-caption  : "normalizes blank-line counts to canonical values between thematically adjacent statements."
-related  : [alphabetize, align-imports, bare-imports]
-layout   : doc
+caption : "normalizes blank-line counts to canonical values between thematically adjacent statements."
+related : [alphabetize, align-imports, bare-imports]
+layout  : doc
 ---
 
 # blank-lines

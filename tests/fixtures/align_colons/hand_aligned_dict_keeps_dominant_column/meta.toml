@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Hand-Aligned Dict Keeps Its Dominant Column"
+
+description = '''
+A dict hand-aligned at its widest key, with key widths spanning just past `max-shift`. The width partition seeds at the widest key and claims every key within the cap, so **the dominant column survives** and only the short outlier strips flush against its `:`.
+'''

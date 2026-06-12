@@ -5,6 +5,7 @@ export interface GlossaryEntry {
   definition : string
   families   : readonly [GlossaryFamily, ...GlossaryFamily[]]
   href      ?: string
+  rule      ?: string
 }
 
 export const glossary: Record<string, GlossaryEntry> = {
@@ -178,7 +179,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'single name) that `collection-layout` can safely keep on one line without '
               + 'readability loss.',
     families  : ['formatting'],
-    href      : '/rules/collection-layout'
+    rule      : 'collection-layout'
   },
 
   'auto-fix': {
@@ -196,7 +197,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'comment blocks tight against the following statement while leaving '
               + 'banner-shaped blocks separated by 1 blank line below.',
     families  : ['formatting'],
-    href      : '/rules/blank-lines'
+    rule      : 'blank-lines'
   },
 
   'cache': {
@@ -237,7 +238,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`max-inline-dict-entries`, and `false` disables either. It replaces the magic '
               + 'trailing comma that Black and Ruff read with an explicit, configurable count.',
     families  : ['formatting'],
-    href      : '/rules/collection-layout'
+    rule      : 'collection-layout'
   },
 
   'dataclass': {
@@ -323,7 +324,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'at evaluation time so the reorder cannot lift a definition above a name it '
               + 'depends on.',
     families  : ['lint', 'ordering'],
-    href      : '/rules/unused-future-annotations'
+    rule      : 'unused-future-annotations'
   },
 
   'gitignore': {
@@ -374,7 +375,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'comment either way. The orderer primitive\'s `block_range` carries the '
               + 'block with its item when reordering siblings.',
     families  : ['formatting', 'ordering'],
-    href      : '/rules/blank-lines'
+    rule      : 'blank-lines'
   },
 
   'lexical scope': {
@@ -402,7 +403,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'shares a column for the post-pattern `:` separator across consecutive '
               + 'single-expression arms.',
     families  : ['alignment'],
-    href      : '/rules/align-match-case'
+    rule      : 'align-match-case'
   },
 
   'max-shift': {
@@ -456,7 +457,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`legacy-union-syntax` surfaces the legacy `typing` forms on projects whose '
               + '`target-version` allows the pipe form.',
     families  : ['lint'],
-    href      : '/rules/legacy-union-syntax'
+    rule      : 'legacy-union-syntax'
   },
 
   'PEP 749': {
@@ -466,7 +467,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`from __future__ import annotations` becomes redundant and '
               + '`unused-future-annotations` removes it on 3.14+.',
     families  : ['lint'],
-    href      : '/rules/unused-future-annotations'
+    rule      : 'unused-future-annotations'
   },
 
   'Pydantic': {
@@ -527,7 +528,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'column to align to, either a single-member group or a multi-member group '
               + 'whose colons all share one source line, so a one-key dict reads as plain code.',
     families  : ['alignment'],
-    href      : '/rules/strip-align-padding'
+    rule      : 'strip-align-padding'
   },
 
   'structured section': {
@@ -539,7 +540,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`docstring-wrap` budgets these against `code-line-length` by default, so '
               + 'argument lines align with surrounding code.',
     families  : ['docs', 'alignment'],
-    href      : '/rules/docstring-wrap'
+    rule      : 'docstring-wrap'
   },
 
   'target-version': {

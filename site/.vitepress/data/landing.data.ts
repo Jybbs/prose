@@ -14,7 +14,6 @@ export interface Step {
 export interface Surface {
   bodyHtml : string
   family   : RuleFamily
-  icon     : string
   number   : string
 }
 
@@ -33,7 +32,6 @@ const SURFACE_SOURCES: readonly SurfaceSource[] = [
     body   : 'Equals signs, colons, the `import` keyword, and match arrows line up across '
            + 'consecutive lines. The eye drops down the column.',
     family : 'alignment',
-    icon   : '🪜',
     number : '01'
   },
   {
@@ -41,7 +39,6 @@ const SURFACE_SOURCES: readonly SurfaceSource[] = [
            + 'set members read top-to-bottom by name, so a reader looking for an entry '
            + 'already knows where it sits.',
     family : 'ordering',
-    icon   : '🪉',
     number : '02'
   },
   {
@@ -49,7 +46,6 @@ const SURFACE_SOURCES: readonly SurfaceSource[] = [
            + 'collections drop their trailing comma, blank lines snap to canonical counts, '
            + 'and singletons collapse to their natural form.',
     family : 'formatting',
-    icon   : '🪶',
     number : '03'
   },
   {
@@ -57,7 +53,6 @@ const SURFACE_SOURCES: readonly SurfaceSource[] = [
            + 'line length, keep single-line shapes single-line, multi-line shapes '
            + 'multi-line, and quote style consistent throughout.',
     family : 'docs',
-    icon   : '📰',
     number : '04'
   },
   {
@@ -65,7 +60,6 @@ const SURFACE_SOURCES: readonly SurfaceSource[] = [
            + 'patterns, and single-use bindings surface as diagnostics. The formatter never '
            + 'rewrites these, because the fix belongs to the reader.',
     family : 'lint',
-    icon   : '🧶',
     number : '05'
   }
 ]

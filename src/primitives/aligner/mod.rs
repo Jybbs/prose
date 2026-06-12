@@ -122,8 +122,8 @@ impl Member {
 
 /// Emission knobs shared by every alignment rule.
 ///
-/// `strip_singleton_subgroup` collapses size-one sub-groups in
-/// `emit_split` to a zero-width gap.
+/// `strip_singleton_subgroup` collapses a size-one group's or
+/// sub-group's gap to zero width.
 #[derive(Clone, Copy)]
 pub(crate) struct Settings {
     max_shift: usize,
@@ -140,6 +140,13 @@ impl Settings {
             policy,
             strip_singleton_subgroup: false,
         }
+    }
+
+    /// Returns the gap width before the aligned token for a group of
+    /// `member_count` rows, zero for a stripped singleton and one
+    /// space otherwise.
+    fn suffix_len(self, member_count: usize) -> usize {
+        usize::from(member_count != 1 || !self.strip_singleton_subgroup)
     }
 
     /// Returns a copy of `self` with `strip_singleton_subgroup` enabled.

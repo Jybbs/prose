@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : alignment
-caption  : "aligns the post-pattern `:` across single-expression case bodies inside a `match` statement."
-related  : [align-colons, align-equals, align-imports, strip-align-padding]
-layout   : doc
+caption : "aligns the post-pattern `:` across single-expression case bodies inside a `match` statement."
+related : [align-colons, align-equals, align-imports, strip-align-padding]
+layout  : doc
 ---
 
 # align-match-case

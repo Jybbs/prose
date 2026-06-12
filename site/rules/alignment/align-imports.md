@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : alignment
-caption  : "aligns the `import` and `as` keywords across consecutive import statements."
-related  : [align-colons, align-equals, alphabetize, bare-imports, blank-lines, align-match-case]
-layout   : doc
+caption : "aligns the `import` and `as` keywords across consecutive import statements."
+related : [align-colons, align-equals, alphabetize, bare-imports, blank-lines, align-match-case]
+layout  : doc
 ---
 
 # align-imports

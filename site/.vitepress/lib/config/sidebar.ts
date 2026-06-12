@@ -1,14 +1,14 @@
 import type { DefaultTheme } from 'vitepress'
 
-import { type DiscoveredPrimitive }                   from '../primitives/discovery'
-import { type DiscoveredRule }                        from '../rules/discovery'
-import { FAMILY_META, FAMILY_ORDER, type RuleFamily } from '../shared/registries'
+import { type DiscoveredPrimitive }  from '../primitives/discovery'
+import { type DiscoveredRule }       from '../rules/discovery'
+import { FAMILY_META, FAMILY_ORDER } from '../shared/registries'
 
 const primLink = (slug: string, text: string): DefaultTheme.SidebarItem =>
   ({ link: `/primitives/${slug}`, text })
 
-const ruleLink = (slug: string): DefaultTheme.SidebarItem =>
-  ({ link: `/rules/${slug}`, text: slug })
+const ruleLink = (rule: DiscoveredRule): DefaultTheme.SidebarItem =>
+  ({ link: rule.href, text: rule.slug })
 
 const USAGE_SIDEBAR: DefaultTheme.SidebarItem[] = [
   {
@@ -60,7 +60,7 @@ export function buildSidebar(
   const familySections: DefaultTheme.SidebarItem[] = FAMILY_ORDER.map(family => ({
     items : rules
       .filter(r => r.family === family)
-      .map(r => ruleLink(r.slug)),
+      .map(ruleLink),
     link  : `/rules/${family}/`,
     text  : FAMILY_META[family].label
   }))

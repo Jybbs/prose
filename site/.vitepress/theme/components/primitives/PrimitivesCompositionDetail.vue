@@ -84,7 +84,7 @@ watch(focusedEntry, scheduleUpdate, { immediate: true })
                 <span class="primitives-composition-card-mention-text">{{ dep }}</span>
               </a>
               <RuleTooltipPopper v-else-if="ruleOf(dep)" :rule="ruleOf(dep)!">
-                <a class="rule-chip" :href="`/rules/${dep}`" :data-family="ruleOf(dep)!.family">
+                <a class="rule-chip" :href="ruleOf(dep)!.href" :data-family="ruleOf(dep)!.family">
                   <span class="rule-chip-badge" aria-hidden="true">{{ ruleOf(dep)!.familyBadge }}</span>
                   <span class="rule-chip-slug">{{ dep }}</span>
                 </a>

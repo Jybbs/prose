@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import FixtureNoChange from '../fixtures/FixtureNoChange.vue'
 import FixturePairDoc  from '../fixtures/FixturePairDoc.vue'
 import FixtureToggle   from '../fixtures/FixtureToggle.vue'
+import RuleSegmentChip from './RuleSegmentChip.vue'
 
 import { data as composition }  from '../../../data/composition.data'
 import { data as fixturesData } from '../../../data/fixtures.data'
@@ -104,16 +105,7 @@ function toggle(row: CardRow): void {
               class="composition-cards-tick-item"
               @click.stop
             >
-              <a
-                :href="`/rules/${seg.slug}`"
-                class="composition-cards-chip"
-                :data-family="seg.family"
-                :title="seg.rule ? undefined : `${seg.slug} (${seg.family ?? 'undocumented'})`"
-              >
-                <span class="composition-cards-chip-label">
-                  <span class="composition-cards-chip-slug">{{ seg.slug }}</span>
-                </span>
-              </a>
+              <RuleSegmentChip :segment="seg" :with-tooltip="false" />
             </li>
           </ol>
           <div v-show="activeCase === row.case" class="composition-cards-toggle-slot" @click.stop>
@@ -153,18 +145,7 @@ function toggle(row: CardRow): void {
                 class="composition-cards-bar-cell"
                 @click.stop
               >
-                <RuleTooltipPopper :rule="seg.rule">
-                  <a
-                    :href="`/rules/${seg.slug}`"
-                    class="composition-cards-chip"
-                    :data-family="seg.family"
-                    :title="seg.rule ? undefined : `${seg.slug} (${seg.family ?? 'undocumented'})`"
-                  >
-                    <span class="composition-cards-chip-label">
-                      <span class="composition-cards-chip-slug">{{ seg.slug }}</span>
-                    </span>
-                  </a>
-                </RuleTooltipPopper>
+                <RuleSegmentChip :segment="seg" :with-tooltip="true" />
               </li>
             </ol>
           </div>

@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/over_cap_pair_stays_natural/input.py
+---
+ttl = 60
+maximum_connection_backoff_seconds = 30.0

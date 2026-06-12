@@ -1,9 +1,7 @@
 ---
-category : lint
-family   : lint
-caption  : "surfaces a narrowly-used bare import that `from x import …` would replace."
-related  : [alphabetize, align-imports, blank-lines]
-layout   : doc
+caption : "surfaces a narrowly-used bare import that `from x import …` would replace."
+related : [alphabetize, align-imports, blank-lines]
+layout  : doc
 ---
 
 # bare-imports

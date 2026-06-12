@@ -83,7 +83,6 @@ const trackStyle = computed(() => ({
             :key="`${copy}-${card.family}`"
             :body-html="card.bodyHtml"
             :family="card.family"
-            :icon="card.icon"
             :number="card.number"
             :rules="card.rules"
             :aria-hidden="copy === 2 ? 'true' : undefined"

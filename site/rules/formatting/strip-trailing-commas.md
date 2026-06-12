@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : formatting
-caption  : "removes trailing commas from collections, signatures, calls, and every other bracketed container."
-related  : [collection-layout, align-colons]
-layout   : doc
+caption : "removes trailing commas from collections, signatures, calls, and every other bracketed container."
+related : [collection-layout, align-colons]
+layout  : doc
 ---
 
 # strip-trailing-commas

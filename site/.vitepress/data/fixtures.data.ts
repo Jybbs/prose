@@ -6,9 +6,11 @@ import { lintDecorations }               from '../lib/fixtures/lint-findings'
 import { readFixtureToggle }             from '../lib/fixtures/toggle'
 import { fixtureWatchGlobs, readFixtureDocs, walkFixtures } from '../lib/fixtures/walker'
 import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
-import { repoRoot }                      from '../lib/shared/paths'
+import { discoverRuleSlugs }             from '../lib/rules/discovery'
+import { repoRoot, rulesDir }            from '../lib/shared/paths'
 
-const root = repoRoot(import.meta.url)
+const root      = repoRoot(import.meta.url)
+const ruleHrefs = new Map(discoverRuleSlugs(rulesDir(import.meta.url)).map(r => [r.slug, r.href]))
 
 interface FixtureEntry {
   changesSource    : boolean
@@ -36,7 +38,7 @@ function descriptionHtml(
   // already use on this surface.
   return md.render(text).replace(
     /<InlineRuleLink slug="([^"]+)" \/>/g,
-    (_, slug) => `<a class="body-link" href="/rules/${slug}"><code>${slug}</code></a>`
+    (_, slug) => `<a class="body-link" href="${ruleHrefs.get(slug)!}"><code>${slug}</code></a>`
   )
 }
 

@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : formatting
-caption  : "splits list, tuple, dict, and set literals into one-entry-per-line layout once they overflow their width, or a dict crosses an entry-count cap."
-related  : [align-colons, alphabetize, signature-layout, strip-align-padding, strip-trailing-commas]
-layout   : doc
+caption : "splits list, tuple, dict, and set literals into one-entry-per-line layout once they overflow their width, or a dict crosses an entry-count cap."
+related : [align-colons, alphabetize, signature-layout, strip-align-padding, strip-trailing-commas]
+layout  : doc
 ---
 
 # collection-layout

@@ -23,7 +23,7 @@ import MiddleEllipsis from '../base/MiddleEllipsis.vue'
         <RuleTooltipPopper :rule="rule.documented ? rules.bySlug[rule.slug] : null">
           <a
             class="pipeline-order-link"
-            :href="rule.documented ? `/rules/${rule.slug}` : undefined"
+            :href="rule.documented ? rules.bySlug[rule.slug].href : undefined"
             :title="`${rule.slug}${rule.family ? ` (${rule.family})` : ''}`"
           >
             <span class="folio">№ {{ formatFolio(rule.position) }}</span>

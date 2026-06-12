@@ -55,7 +55,7 @@ fn every_case_directory_is_well_formed() {
     let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let rule_slugs: BTreeSet<String> = Pipeline::known_ids()
         .iter()
-        .map(|id| id.to_string())
+        .map(ToString::to_string)
         .collect();
     let mut violations = Vec::new();
     let mut canonical = BTreeMap::<String, usize>::new();
@@ -176,11 +176,13 @@ fn every_fixture_invocation_resolves() {
 #[test]
 fn every_registered_rule_has_a_page() {
     let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("site/rules");
+    let families = subdirs(&rules);
     for id in Pipeline::known_ids() {
-        let page = rules.join(format!("{id}.md"));
         assert!(
-            page.is_file(),
-            "rule `{id}` registered in `KNOWN_IDS` has no page at `site/rules/{id}.md`"
+            families
+                .iter()
+                .any(|dir| dir.join(format!("{id}.md")).is_file()),
+            "rule `{id}` registered in `KNOWN_IDS` has no page under `site/rules/<family>/{id}.md`"
         );
     }
 }

@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : docs
-caption  : "drops a multi-line docstring's opener and closer onto their own lines."
-related  : [docstring-wrap, docstring-expand]
-layout   : doc
+caption : "drops a multi-line docstring's opener and closer onto their own lines."
+related : [docstring-wrap, docstring-expand]
+layout  : doc
 ---
 
 # docstring-frame

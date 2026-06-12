@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : ordering
-caption  : "alphabetizes import siblings, dict-key blocks, and dataclass field runs."
-related  : [align-colons, align-imports, bare-imports, blank-lines]
-layout   : doc
+caption : "alphabetizes import siblings, dict-key blocks, and dataclass field runs."
+related : [align-colons, align-imports, bare-imports, blank-lines]
+layout  : doc
 ---
 
 # alphabetize
