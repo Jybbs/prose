@@ -1,10 +1,13 @@
 //! Config-file discovery: the upward walk, TOML reads, and the
 //! precedence / unknown-key notices.
 
-use std::path::{Path, PathBuf};
+use std::{
+    io::ErrorKind,
+    path::{Path, PathBuf},
+};
 
-use super::de::deserialize_prose;
-use super::{Config, ConfigError, PYPROJECT_TOML};
+use super::{Config, ConfigError, PYPROJECT_TOML, de::deserialize_prose};
+
 /// A diagnostic surfaced while resolving configuration.
 pub(super) enum ConfigNotice<'a> {
     /// A `prose.toml` outranked a `[tool.prose]` table in a
@@ -55,10 +58,13 @@ pub(super) fn pyproject_declares_prose(dir: &Path) -> bool {
         .is_some_and(|value| prose_table(&value).is_some())
 }
 
+/// Reads a config file that may not exist. `NotADirectory` reads as
+/// absent too, so a walk whose starting path is itself a file skips
+/// the join through that file rather than erroring.
 pub(super) fn read_optional(path: PathBuf) -> Result<Option<String>, ConfigError> {
     match fs_err::read_to_string(path) {
         Ok(contents) => Ok(Some(contents)),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) if matches!(e.kind(), ErrorKind::NotADirectory | ErrorKind::NotFound) => Ok(None),
         Err(e) => Err(e.into()),
     }
 }

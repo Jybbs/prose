@@ -5,7 +5,7 @@ use std::io::{self, Write};
 
 use anyhow::Context;
 
-use super::{FileOutcome, Mode, RunSetup, has_format_change};
+use super::{FileOutcome, Mode, has_format_change};
 use crate::{
     cache::Rewrite,
     cli::{
@@ -80,12 +80,12 @@ pub(super) fn file_changed(diagnostics: &[Diagnostic], rewrite: &Rewrite) -> boo
 
 pub(super) fn finish(
     outcomes: &[FileOutcome],
-    setup: &RunSetup,
+    cache_enabled: bool,
     verbose: bool,
     demote_format_change: bool,
 ) -> ExitStatus {
     if verbose {
-        report_verbose(outcomes, setup.cache.is_some(), &mut io::stderr());
+        report_verbose(outcomes, cache_enabled, &mut io::stderr());
     }
     status_from_outcomes(outcomes, demote_format_change)
 }
