@@ -15,7 +15,7 @@ stability: public
 ### Constructors
 
 1. `Pipeline::empty() -> Self` returns a pipeline with no rules registered, for tests or callers building a custom rule set.
-2. `Pipeline::with_defaults(config: &Config) -> Self` builds the canonical pipeline from every rule whose `enabled` flag is set in `[tool.prose]`. The `prose format` and `prose check` paths both reach for this.
+2. `Pipeline::with_defaults(config: &Config) -> Self` builds the canonical pipeline from every rule whose `enabled` flag is set in `[tool.prose]`. The `prose server` formatting and diagnostics paths reach for this, and the CLI reaches the same set through `with_filters` with no flags.
 3. `Pipeline::with_filters(config: &Config, select: &[RuleId], ignore: &[RuleId]) -> Self` applies the CLI's `--select` and `--ignore` semantics. A non-empty `select` replaces the configured-enabled set, an empty `select` falls back to it, and `ignore` subtracts from the base to yield `select - ignore`.
 4. `Pipeline::for_rule(name: &str, config: &Config) -> Option<Self>` builds a single-rule pipeline for diagnostic isolation and `prose check --select <rule>` exact-rule paths. Returns `None` for an unrecognized slug.
 

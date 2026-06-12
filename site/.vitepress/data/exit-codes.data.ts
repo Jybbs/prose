@@ -63,7 +63,8 @@ const SOURCES: readonly ExitCodeSource[] = [
     detail : [
       'Surfaces from config-file parse errors, malformed `--select` / '
       + '`--ignore` flags, or unknown CLI options.',
-      'Pre-empts every other code (the run never reaches the pipeline).'
+      'A malformed flag pre-empts the whole run, whereas a broken ancestor '
+      + 'config fails only the files it governs while the rest proceed.'
     ],
     label  : 'Config error',
     summary: 'Config file or argument validation failed.'
