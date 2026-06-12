@@ -70,9 +70,10 @@ impl ColonEmitter for Emitter {
 
 #[cfg(test)]
 mod tests {
-    use ruff_text_size::{Ranged, TextRange, TextSize};
+    use ruff_text_size::{Ranged, TextSize};
 
     use super::*;
+    use crate::testing::range;
 
     fn run_strip(members: &[aligner::Member]) -> Vec<Edit> {
         let mut emitter = Emitter { edits: Vec::new() };
@@ -89,13 +90,13 @@ mod tests {
     fn strip_skips_multi_member_groups_on_distinct_lines() {
         let members = [
             aligner::Member {
-                gap: TextRange::new(TextSize::new(2), TextSize::new(2)),
+                gap: range(2, 2),
                 line_start: TextSize::new(0),
                 op_width: 0,
                 width: 2,
             },
             aligner::Member {
-                gap: TextRange::new(TextSize::new(8), TextSize::new(8)),
+                gap: range(8, 8),
                 line_start: TextSize::new(6),
                 op_width: 0,
                 width: 2,
@@ -107,7 +108,7 @@ mod tests {
     #[test]
     fn strip_skips_zero_width_member_with_empty_gap() {
         let member = aligner::Member {
-            gap: TextRange::new(TextSize::new(0), TextSize::new(0)),
+            gap: range(0, 0),
             line_start: TextSize::new(0),
             op_width: 0,
             width: 0,
@@ -118,7 +119,7 @@ mod tests {
     #[test]
     fn strip_skips_zero_width_member_with_indent_gap() {
         let member = aligner::Member {
-            gap: TextRange::new(TextSize::new(0), TextSize::new(4)),
+            gap: range(0, 4),
             line_start: TextSize::new(0),
             op_width: 0,
             width: 0,
@@ -130,13 +131,13 @@ mod tests {
     fn strip_strips_every_member_when_colons_share_a_line() {
         let members = [
             aligner::Member {
-                gap: TextRange::new(TextSize::new(3), TextSize::new(5)),
+                gap: range(3, 5),
                 line_start: TextSize::new(0),
                 op_width: 0,
                 width: 3,
             },
             aligner::Member {
-                gap: TextRange::new(TextSize::new(8), TextSize::new(10)),
+                gap: range(8, 10),
                 line_start: TextSize::new(0),
                 op_width: 0,
                 width: 5,
@@ -148,7 +149,7 @@ mod tests {
     #[test]
     fn strip_strips_singleton_with_content_and_gap() {
         let member = aligner::Member {
-            gap: TextRange::new(TextSize::new(3), TextSize::new(5)),
+            gap: range(3, 5),
             line_start: TextSize::new(0),
             op_width: 0,
             width: 3,
