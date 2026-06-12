@@ -185,17 +185,10 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+    use crate::testing::{write_prose_toml, write_pyproject};
 
     fn assert_toml_error(toml: &str) {
         assert_matches!(Config::from_pyproject_str(toml), Err(ConfigError::Toml(_)));
-    }
-
-    fn write_prose_toml(dir: &Path, contents: &str) {
-        std::fs::write(dir.join("prose.toml"), contents).expect("prose.toml writes");
-    }
-
-    fn write_pyproject(dir: &Path, contents: &str) {
-        std::fs::write(dir.join("pyproject.toml"), contents).expect("pyproject writes");
     }
 
     #[test]
@@ -364,6 +357,49 @@ mod tests {
     }
 
     #[test]
+    fn load_emits_precedence_notice_when_both_present() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_prose_toml(tmp.path(), "code-line-length = 120\n");
+        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+
+        let mut precedence_notices = 0;
+        let config = Config::load_with_notices(tmp.path(), |notice| {
+            if matches!(notice, ConfigNotice::ProseTomlPrecedence(_)) {
+                precedence_notices += 1;
+            }
+        })
+        .expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+        assert_eq!(precedence_notices, 1);
+    }
+
+    #[test]
+    fn load_empty_prose_toml_returns_defaults_and_stops_walk() {
+        let tmp = TempDir::new().expect("tempdir");
+        let nested = tmp.path().join("child");
+        std::fs::create_dir_all(&nested).expect("nested dirs create");
+        write_prose_toml(&nested, "");
+        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+
+        let config = Config::load(&nested).expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(88));
+    }
+
+    #[test]
+    fn load_from_a_file_path_walks_from_its_directory() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_prose_toml(tmp.path(), "code-line-length = 120\n");
+        let file = tmp.path().join("mod.py");
+        std::fs::write(&file, "x = 1\n").expect("writes");
+
+        let config = Config::load(&file).expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    }
+
+    #[test]
     fn load_malformed_toml_returns_toml_error() {
         let tmp = TempDir::new().expect("tempdir");
         write_pyproject(tmp.path(), "[this is not valid TOML");
@@ -429,37 +465,6 @@ mod tests {
     }
 
     #[test]
-    fn load_emits_precedence_notice_when_both_present() {
-        let tmp = TempDir::new().expect("tempdir");
-        write_prose_toml(tmp.path(), "code-line-length = 120\n");
-        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
-
-        let mut precedence_notices = 0;
-        let config = Config::load_with_notices(tmp.path(), |notice| {
-            if matches!(notice, ConfigNotice::ProseTomlPrecedence(_)) {
-                precedence_notices += 1;
-            }
-        })
-        .expect("loads");
-
-        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
-        assert_eq!(precedence_notices, 1);
-    }
-
-    #[test]
-    fn load_empty_prose_toml_returns_defaults_and_stops_walk() {
-        let tmp = TempDir::new().expect("tempdir");
-        let nested = tmp.path().join("child");
-        std::fs::create_dir_all(&nested).expect("nested dirs create");
-        write_prose_toml(&nested, "");
-        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
-
-        let config = Config::load(&nested).expect("loads");
-
-        assert_eq!(config.code_line_length, NonZeroUsize::new(88));
-    }
-
-    #[test]
     fn load_picks_nearest_prose_toml_over_ancestor_pyproject() {
         let tmp = TempDir::new().expect("tempdir");
         let nested = tmp.path().join("child");
@@ -489,19 +494,6 @@ mod tests {
         write_prose_toml(tmp.path(), "code-line-length = 120\n");
 
         let config = Config::load(tmp.path()).expect("loads");
-
-        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
-    }
-
-    #[test]
-    fn load_walks_past_sectionless_pyproject_to_ancestor_prose_toml() {
-        let tmp = TempDir::new().expect("tempdir");
-        let nested = tmp.path().join("child");
-        std::fs::create_dir_all(&nested).expect("nested dirs create");
-        write_pyproject(&nested, "[project]\nname = \"x\"\n");
-        write_prose_toml(tmp.path(), "code-line-length = 120\n");
-
-        let config = Config::load(&nested).expect("loads");
 
         assert_eq!(config.code_line_length, NonZeroUsize::new(120));
     }
@@ -542,6 +534,19 @@ mod tests {
         std::fs::create_dir(tmp.path().join("prose.toml")).expect("dir at config path");
 
         assert_matches!(Config::load(tmp.path()), Err(ConfigError::Io(_)));
+    }
+
+    #[test]
+    fn load_walks_past_sectionless_pyproject_to_ancestor_prose_toml() {
+        let tmp = TempDir::new().expect("tempdir");
+        let nested = tmp.path().join("child");
+        std::fs::create_dir_all(&nested).expect("nested dirs create");
+        write_pyproject(&nested, "[project]\nname = \"x\"\n");
+        write_prose_toml(tmp.path(), "code-line-length = 120\n");
+
+        let config = Config::load(&nested).expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
     }
 
     #[test]
@@ -667,6 +672,15 @@ mod tests {
         assert_toml_error("[tool.prose.rules.signature-layout]\nmax-inline-params = 0\n");
     }
 
+    #[test]
+    fn rules_bare_bool_false_leaves_other_knobs_default() {
+        let config = Config::from_pyproject_str("[tool.prose.rules]\nalphabetize = false\n")
+            .expect("parses");
+
+        assert!(!config.rules.alphabetize.enabled);
+        assert!(config.rules.alphabetize.docstring_entries);
+    }
+
     #[rstest]
     #[case("false", false)]
     #[case("true", true)]
@@ -677,15 +691,6 @@ mod tests {
 
         assert_eq!(config.rules.alphabetize.enabled, expected);
         assert!(config.rules.align_equals.enabled);
-    }
-
-    #[test]
-    fn rules_bare_bool_false_leaves_other_knobs_default() {
-        let config = Config::from_pyproject_str("[tool.prose.rules]\nalphabetize = false\n")
-            .expect("parses");
-
-        assert!(!config.rules.alphabetize.enabled);
-        assert!(config.rules.alphabetize.docstring_entries);
     }
 
     #[test]

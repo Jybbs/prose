@@ -1,5 +1,5 @@
 ---
-caption : "removes trailing commas from inside single-line collections."
+caption : "removes trailing commas from collections, signatures, calls, and every other bracketed container."
 related : [collection-layout, align-colons]
 layout  : doc
 ---

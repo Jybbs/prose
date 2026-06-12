@@ -1,6 +1,6 @@
 # Configuration
 
-*Prose* loads its configuration from a `prose.toml` file or the `[tool.prose]` table of a `pyproject.toml`, walking upward from the working directory to the nearest one. With no configuration, every rule runs at its default, in that a project that writes no config gets the canonical *Prose* shape automatically.
+*Prose* loads its configuration from a `prose.toml` file or the `[tool.prose]` table of a `pyproject.toml`, walking upward from each input file's directory to the nearest one. With no configuration, every rule runs at its default, in that a project that writes no config gets the canonical *Prose* shape automatically.
 
 A `prose.toml` keeps its keys at the document root, the form this page shows throughout. A `pyproject.toml` carries the same keys under a `[tool.prose]` prefix so the manifest can house other tools too, leaving every key below a `[tool.prose.<…>]` equivalent for projects that prefer one file.
 
@@ -21,7 +21,7 @@ A bare `false` disables a rule, an inline table sets its knobs while leaving the
 
 ## Where *Prose* Looks
 
-*Prose* walks upward from the working directory toward the filesystem root. In each directory a `prose.toml` outranks a `pyproject.toml`, and the nearest directory carrying either wins, in that *Prose* reads only that one file and never merges across matches up the tree. A `pyproject.toml` lacking a `[tool.prose]` table is passed over, leaving the walk to continue upward. When no ancestor carries either, every default applies as if the config were empty.
+*Prose* walks upward from each input file's own directory toward the filesystem root, so a file answers to its own project's config even when one invocation names files across several projects. Stdin input walks from the working directory, the one input with no path of its own. In each directory a `prose.toml` outranks a `pyproject.toml`, and the nearest directory carrying either wins, in that *Prose* reads only that one file and never merges across matches up the tree. A `pyproject.toml` lacking a `[tool.prose]` table is passed over, leaving the walk to continue upward. When no ancestor carries either, every default applies as if the config were empty.
 
 When a `prose.toml` and a `pyproject.toml` `[tool.prose]` table share a directory, the `prose.toml` wins and *Prose* notes the precedence to stderr, so the file that took effect is never ambiguous.
 

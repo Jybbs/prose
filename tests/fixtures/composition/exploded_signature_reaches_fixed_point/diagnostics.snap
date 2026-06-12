@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/exploded_signature_reaches_fixed_point/input.py
+---
+signature-layout@114..115
+strip-trailing-commas@114..115

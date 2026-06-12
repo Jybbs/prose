@@ -71,7 +71,7 @@ Repeat runs hit the user-level [**cache**](/reference/cache) on by default, but 
 - run: prose check .
 ```
 
-Keying off the config files invalidates the cache whenever configuration changes, since the key already digests the active config and an upstream change to it produces a fresh set of entries. macOS runners use `~/Library/Caches/prose` and Windows runners use `%LOCALAPPDATA%\prose\cache`, both [documented on the cache page](/reference/cache#location).
+Keying off the config files invalidates the cache whenever configuration changes, since the key already digests each file's governing config and an upstream change to it produces a fresh set of entries. macOS runners use `~/Library/Caches/prose` and Windows runners use `%LOCALAPPDATA%\prose\cache`, both [documented on the cache page](/reference/cache#location).
 
 ## Pairing With Ruff in CI
 

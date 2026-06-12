@@ -1,13 +1,13 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/signature_layout/missing_trailing_comma_added/input.py
+input_file: tests/fixtures/signature_layout/expanded_trailing_comma_dropped/input.py
 ---
 def render(
     layout: tuple[int, int],
     palette: str,
     spread: float,
     target: int,
-    verbose: bool,
+    verbose: bool
 ):
     return (layout, palette, spread, target, verbose)

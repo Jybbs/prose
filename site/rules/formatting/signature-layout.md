@@ -10,7 +10,7 @@ layout  : doc
 
 A function signature reads as either a one-line declaration or a stacked column of parameters. Mixed shapes (*part on the `def` line, the rest indented underneath*) force the reader to track two layout idioms at once. `signature-layout` collapses every signature to the binary canonical form, deciding the shape from `code-line-length` and `max-inline-params`.
 
-The rule expands a signature when its inline form overflows the configured `code-line-length`, or when its parameter count exceeds `max-inline-params`. Otherwise the signature collapses to a single line. A comment inside the parameter list pins the existing shape, because moving the parameters would orphan the comment from its anchor. The expanded form lays each parameter on its own line, indented one step past the `def`, with the closing `)` flush left and the return annotation trailing on the same line.
+The rule expands a signature when its inline form overflows the configured `code-line-length`, or when its parameter count exceeds `max-inline-params`. Otherwise the signature collapses to a single line. A comment inside the parameter list pins the existing shape, because moving the parameters would orphan the comment from its anchor. The expanded form lays each parameter on its own line, indented one step past the `def`, with the closing `)` flush left, the return annotation trailing on the same line, and the final parameter ending bare, the shape [[strip-trailing-commas]] accepts.
 
 <template #configuration>
 

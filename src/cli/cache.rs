@@ -22,7 +22,7 @@ pub(crate) fn clean<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
 
 pub(crate) fn compact<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
     let config = match load_config_or_status() {
-        Ok(c) => c,
+        Ok((_, c)) => c,
         Err(s) => return Ok(s),
     };
     let cache = match open_or_status() {

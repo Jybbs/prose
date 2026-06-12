@@ -173,25 +173,14 @@ pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Optio
 
 #[cfg(test)]
 mod tests {
-    use ruff_text_size::TextRange;
     use serde_json::{Value, json};
 
     use super::*;
-    use crate::diagnostics::Severity;
     use crate::source::Source;
+    use crate::testing::{format_diagnostic, parse, range};
 
     fn diag() -> Diagnostic {
-        let range = TextRange::new(0.into(), 1.into());
-        Diagnostic {
-            fix: Some(Fix::safe_edit(Edit::range_replacement(
-                "y".to_owned(),
-                range,
-            ))),
-            message: "rewrite x to y".to_owned(),
-            range,
-            rule: RuleId::from("rewrite-x"),
-            severity: Severity::Format,
-        }
+        format_diagnostic(range(0, 1))
     }
 
     fn emit_records(
@@ -217,7 +206,7 @@ mod tests {
 
     #[test]
     fn closes_stream_with_a_summary_record_after_each_diagnostic() {
-        let source: Source = "x = 1\n".parse().expect("parses");
+        let source = parse("x = 1\n");
         let records = emit_records(
             &source,
             std::slice::from_ref(&diag()),
@@ -230,17 +219,14 @@ mod tests {
 
     #[test]
     fn edit_before_carries_original_multi_line_substring() {
-        let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
-        let range = TextRange::new(0.into(), 11.into());
+        let source = parse("x = 1\ny = 2\n");
+        let range = range(0, 11);
         let diag = Diagnostic {
             fix: Some(Fix::safe_edit(Edit::range_replacement(
                 "z = 3".to_owned(),
                 range,
             ))),
-            message: "collapse".to_owned(),
-            range,
-            rule: RuleId::from("rewrite-x"),
-            severity: Severity::Format,
+            ..format_diagnostic(range)
         };
         let records = emit_records(
             &source,
@@ -252,19 +238,13 @@ mod tests {
 
     #[test]
     fn fix_carries_one_edit_entry_per_group_member() {
-        let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
+        let source = parse("x = 1\ny = 2\n");
         let diag = Diagnostic {
             fix: Some(Fix::safe_edits(
-                Edit::range_replacement("a".to_owned(), TextRange::new(0.into(), 1.into())),
-                [Edit::range_replacement(
-                    "b".to_owned(),
-                    TextRange::new(6.into(), 7.into()),
-                )],
+                Edit::range_replacement("a".to_owned(), range(0, 1)),
+                [Edit::range_replacement("b".to_owned(), range(6, 7))],
             )),
-            message: "align".to_owned(),
-            range: TextRange::new(0.into(), 7.into()),
-            rule: RuleId::from("align-equals"),
-            severity: Severity::Format,
+            ..format_diagnostic(range(0, 7))
         };
         let records = emit_records(
             &source,
@@ -279,7 +259,7 @@ mod tests {
 
     #[test]
     fn kind_leads_every_serialized_object() {
-        let source: Source = "x = 1\n".parse().expect("parses");
+        let source = parse("x = 1\n");
         let text = emit_text(
             &source,
             std::slice::from_ref(&diag()),
@@ -302,7 +282,7 @@ mod tests {
 
     #[test]
     fn populates_fix_payload_with_safe_applicability_and_edit() {
-        let source: Source = "x = 1\n".parse().expect("parses");
+        let source = parse("x = 1\n");
         let records = emit_records(
             &source,
             std::slice::from_ref(&diag()),
@@ -320,8 +300,8 @@ mod tests {
 
     #[test]
     fn roundtrips_full_stream_with_deterministic_per_rule_counts() {
-        let source: Source = "x = 1\n".parse().expect("parses");
-        let range = TextRange::new(0.into(), 1.into());
+        let source = parse("x = 1\n");
+        let range = range(0, 1);
         let diagnostics = vec![
             diag(),
             Diagnostic::lint(RuleId::from("align-equals"), range, "name it".to_owned()),
@@ -362,7 +342,7 @@ mod tests {
 
     #[test]
     fn summary_closes_zero_diagnostic_stream_with_zero_counts() {
-        let source: Source = "x = 1\n".parse().expect("parses");
+        let source = parse("x = 1\n");
         let summary = EmitterSummary {
             files_visited: 1,
             ..Default::default()

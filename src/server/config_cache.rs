@@ -1,6 +1,6 @@
 //! Per-document `[tool.prose]` resolution. With a `didChangeWatchedFiles`
-//! watcher registered, each path's config is memoized and cleared on a
-//! watched change. Without one, resolution re-reads on every call.
+//! watcher registered, each directory's config is memoized and cleared on
+//! a watched change. Without one, resolution re-reads on every call.
 
 use std::{
     collections::HashMap,
@@ -11,11 +11,12 @@ use lsp_types::Uri;
 
 use crate::config::Config;
 
-/// Resolves the configuration governing each document, memoizing by path
-/// only when a watcher can invalidate the cache on a config change.
+/// Resolves the configuration governing each document, memoizing per
+/// parent directory only when a watcher can invalidate the cache on a
+/// config change.
 #[derive(Default)]
 pub(super) struct ConfigCache {
-    by_path: HashMap<PathBuf, Config>,
+    by_dir: HashMap<PathBuf, Config>,
     default: Config,
     enabled: bool,
     fresh: Config,
@@ -34,22 +35,23 @@ impl ConfigCache {
     /// Drops every cached config, forcing the next resolve to re-read from
     /// disk.
     pub(super) fn clear(&mut self) {
-        self.by_path.clear();
+        self.by_dir.clear();
     }
 
     /// Returns the configuration governing `uri`. A watched session
-    /// memoizes by path; an unwatched one re-reads each call. An unsaved
-    /// buffer whose URI names no file falls back to the defaults.
+    /// memoizes per parent directory so sibling documents share one
+    /// resolution, whereas an unwatched one re-reads each call. An
+    /// unsaved buffer whose URI names no file falls back to the
+    /// defaults.
     pub(super) fn resolve(&mut self, uri: &Uri) -> &Config {
         let Some(path) = file_path(uri) else {
             return &self.default;
         };
+        let dir = path.parent().unwrap_or(&path).to_path_buf();
         if self.enabled {
-            self.by_path
-                .entry(path)
-                .or_insert_with_key(|path| load(path))
+            self.by_dir.entry(dir).or_insert_with_key(|dir| load(dir))
         } else {
-            self.fresh = load(&path);
+            self.fresh = load(&dir);
             &self.fresh
         }
     }
@@ -93,20 +95,20 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-
-    fn uri(s: &str) -> Uri {
-        Uri::from_str(s).expect("valid uri")
-    }
+    use crate::testing::write_prose_toml;
 
     fn line_length(config: &Config) -> Option<usize> {
         config.code_line_length.map(std::num::NonZeroUsize::get)
     }
 
+    fn uri(s: &str) -> Uri {
+        Uri::from_str(s).expect("valid uri")
+    }
+
     #[test]
     fn broken_config_logs_and_falls_back_to_defaults() {
         let dir = tempfile::tempdir().expect("tempdir");
-        std::fs::write(dir.path().join("prose.toml"), "code-line-length = = oops\n")
-            .expect("writes");
+        write_prose_toml(dir.path(), "code-line-length = = oops\n");
         let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
 
         let mut cache = ConfigCache::new(true);
@@ -120,14 +122,13 @@ mod tests {
     #[test]
     fn disabled_cache_re_reads_on_each_resolve() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let toml = dir.path().join("prose.toml");
-        std::fs::write(&toml, "code-line-length = 100\n").expect("writes");
+        write_prose_toml(dir.path(), "code-line-length = 100\n");
         let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
 
         let mut cache = ConfigCache::new(false);
         assert_eq!(line_length(cache.resolve(&file)), Some(100));
 
-        std::fs::write(&toml, "code-line-length = 80\n").expect("rewrites");
+        write_prose_toml(dir.path(), "code-line-length = 80\n");
         assert_eq!(
             line_length(cache.resolve(&file)),
             Some(80),
@@ -138,14 +139,13 @@ mod tests {
     #[test]
     fn enabled_cache_is_stale_until_cleared() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let toml = dir.path().join("prose.toml");
-        std::fs::write(&toml, "code-line-length = 100\n").expect("writes");
+        write_prose_toml(dir.path(), "code-line-length = 100\n");
         let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
 
         let mut cache = ConfigCache::new(true);
         assert_eq!(line_length(cache.resolve(&file)), Some(100));
 
-        std::fs::write(&toml, "code-line-length = 80\n").expect("rewrites");
+        write_prose_toml(dir.path(), "code-line-length = 80\n");
         assert_eq!(
             line_length(cache.resolve(&file)),
             Some(100),
@@ -187,13 +187,44 @@ mod tests {
     }
 
     #[test]
+    fn resolve_reads_config_for_an_on_disk_document() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_prose_toml(dir.path(), "code-line-length = 100\n");
+        let doc = dir.path().join("mod.py");
+        std::fs::write(&doc, "x = 1\n").expect("writes");
+        let file = uri(&format!("file://{}", doc.display()));
+
+        let mut cache = ConfigCache::new(true);
+
+        assert_eq!(line_length(cache.resolve(&file)), Some(100));
+    }
+
+    #[test]
     fn resolve_reads_prose_toml_beside_the_document() {
         let dir = tempfile::tempdir().expect("tempdir");
-        std::fs::write(dir.path().join("prose.toml"), "code-line-length = 100\n").expect("writes");
+        write_prose_toml(dir.path(), "code-line-length = 100\n");
         let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
 
         let mut cache = ConfigCache::new(true);
 
         assert_eq!(line_length(cache.resolve(&file)), Some(100));
+    }
+
+    #[test]
+    fn sibling_documents_share_one_resolution() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_prose_toml(dir.path(), "code-line-length = 100\n");
+        let first = uri(&format!("file://{}", dir.path().join("a.py").display()));
+        let second = uri(&format!("file://{}", dir.path().join("b.py").display()));
+
+        let mut cache = ConfigCache::new(true);
+        assert_eq!(line_length(cache.resolve(&first)), Some(100));
+
+        write_prose_toml(dir.path(), "code-line-length = 80\n");
+        assert_eq!(
+            line_length(cache.resolve(&second)),
+            Some(100),
+            "sibling serves the memoized entry",
+        );
     }
 }
