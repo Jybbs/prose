@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/exploded_signature_reaches_fixed_point/input.py
+---
+def compose(
+    channel: str,
+    layout: tuple[int, int],
+    palette: str,
+    spread: float,
+    verbose: bool
+):
+    return (channel, layout, palette, spread, verbose)

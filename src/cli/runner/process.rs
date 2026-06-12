@@ -10,16 +10,16 @@ use rayon::iter::{ParallelBridge, ParallelIterator};
 use ruff_source_file::SourceFileBuilder;
 
 use super::{FileOutcome, Pass, RunSetup, has_format_change};
-use crate::cli::exit_status::ExitStatus;
 use crate::{
     cache::{CacheEntry, CacheKey, Rewrite},
+    cli::exit_status::ExitStatus,
     pipeline::Pipeline,
     source::Source,
     walker,
 };
 pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
     let FileOutcome::Done {
-        formatted_text: Some(text),
+        rewrite: Rewrite::Changed(text),
         ..
     } = &outcome
     else {
@@ -29,19 +29,6 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
         return config_error(e);
     }
     outcome
-}
-
-/// Records what a cached entry knows about the rewrite. A mode that
-/// skipped `run` stores `Skipped`, whereas one that ran it records
-/// whether the text changed.
-pub(super) fn cache_rewrite(needs_rewrite: bool, formatted_text: Option<&str>) -> Rewrite {
-    if !needs_rewrite {
-        return Rewrite::Skipped;
-    }
-    match formatted_text {
-        Some(text) => Rewrite::Changed(text.to_owned()),
-        None => Rewrite::Unchanged,
-    }
 }
 
 pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOutcome {
@@ -86,7 +73,7 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
         Some((c, k)),
         FileOutcome::Done {
             diagnostics,
-            formatted_text,
+            rewrite,
             ..
         },
     ) = (&keyed, &outcome)
@@ -95,7 +82,7 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
             k,
             &CacheEntry {
                 diagnostics: diagnostics.clone(),
-                rewrite: cache_rewrite(needs_rewrite, formatted_text.as_deref()),
+                rewrite: rewrite.clone(),
             },
         );
     }
@@ -132,15 +119,14 @@ pub(super) fn rehydrate(
     entry: CacheEntry,
     needs_rewrite: bool,
 ) -> Option<FileOutcome> {
-    let formatted_text = if needs_rewrite {
+    let rewrite = if needs_rewrite {
         match entry.rewrite {
-            Rewrite::Changed(text) => Some(text),
             // A `check` entry skipped the rewrite this mode needs.
             Rewrite::Skipped => return None,
-            Rewrite::Unchanged => None,
+            rewrite => rewrite,
         }
     } else {
-        None
+        Rewrite::Skipped
     };
     let original_text = std::str::from_utf8(original_bytes).ok()?.to_owned();
     let file = SourceFileBuilder::new(path.display().to_string(), original_text).finish();
@@ -148,7 +134,7 @@ pub(super) fn rehydrate(
         cached: true,
         diagnostics: entry.diagnostics,
         file,
-        formatted_text,
+        rewrite,
     })
 }
 
@@ -172,20 +158,20 @@ pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> F
             cached: false,
             diagnostics,
             file,
-            formatted_text: None,
+            rewrite: Rewrite::Skipped,
         };
     }
     let diagnosed = matches!(pass, Pass::Both).then(|| pipeline.diagnose(&source));
     match pipeline.run(source) {
         Ok((formatted, run_diagnostics)) => {
-            let formatted_text = formatted
+            let rewrite = formatted
                 .changed_from(file.source_text())
-                .map(str::to_owned);
+                .map_or(Rewrite::Unchanged, |text| Rewrite::Changed(text.to_owned()));
             FileOutcome::Done {
                 cached: false,
                 diagnostics: diagnosed.unwrap_or(run_diagnostics),
                 file,
-                formatted_text,
+                rewrite,
             }
         }
         Err(e) => config_error(e),

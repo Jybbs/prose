@@ -10,6 +10,6 @@ def render(
     *,
     layout: tuple[int, int],
     spread: float,
-    verbose: bool = False,
+    verbose: bool = False
 ) -> tuple[int, str]:
     return (palette, target, layout, spread, verbose)

@@ -8,7 +8,7 @@ use crate::diagnostics::Diagnostic;
 
 /// Post-pipeline state cached per `(source, config, version)` key. The
 /// diagnostics are always anchored to the source as written, leaving any
-/// mode free to render them. The rewrite is present only when the writing
+/// mode free to render them. The rewrite is `Skipped` unless the writing
 /// mode ran [`Pipeline::run`](crate::pipeline::Pipeline::run).
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CacheEntry {
@@ -33,10 +33,10 @@ pub struct CleanReport {
     pub entries: usize,
 }
 
-/// What a cached entry holds for the file's rewrite. `Skipped` marks an
-/// entry a `check` run wrote without computing the rewrite, whereas the
-/// other two record a completed `run`.
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+/// What a mode knows about the file's rewrite. `Skipped` marks a mode
+/// that never computed the rewrite, whereas the other two record a
+/// completed `run`.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Rewrite {
     /// `run` produced text differing from the original.
     Changed(String),

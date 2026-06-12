@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Expansion Drops the Trailing Comma"
+
+description = '''
+A multi-line signature whose last parameter carries a trailing `,` **loses it in the canonical expansion**. The exploded emission ends its final parameter bare, the shape `strip-trailing-commas` accepts.
+'''

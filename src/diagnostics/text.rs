@@ -66,6 +66,7 @@ mod tests {
     use crate::diagnostics::{Diagnostic, Severity};
     use crate::rule::RuleId;
     use crate::source::Source;
+    use crate::testing::{parse, range};
 
     fn diag(range: TextRange, fix: Option<Fix>) -> Diagnostic {
         Diagnostic {
@@ -94,8 +95,8 @@ mod tests {
 
     #[test]
     fn appends_help_block_when_fix_is_available() {
-        let source: Source = "x = 1\n".parse().expect("parses");
-        let range = TextRange::new(0.into(), 1.into());
+        let source = parse("x = 1\n");
+        let range = range(0, 1);
         let rendered = render_to_string(
             &source,
             &diag(
@@ -113,17 +114,14 @@ mod tests {
 
     #[test]
     fn help_block_renders_every_edit_in_a_group() {
-        let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
+        let source = parse("x = 1\ny = 2\n");
         let rendered = render_to_string(
             &source,
             &diag(
-                TextRange::new(0.into(), 7.into()),
+                range(0, 7),
                 Some(Fix::safe_edits(
-                    Edit::range_replacement("aaa".to_owned(), TextRange::new(0.into(), 1.into())),
-                    [Edit::range_replacement(
-                        "bbb".to_owned(),
-                        TextRange::new(6.into(), 7.into()),
-                    )],
+                    Edit::range_replacement("aaa".to_owned(), range(0, 1)),
+                    [Edit::range_replacement("bbb".to_owned(), range(6, 7))],
                 )),
             ),
         );
@@ -134,8 +132,8 @@ mod tests {
 
     #[test]
     fn renders_path_line_column_message_and_caret() {
-        let source: Source = "x = 1\n".parse().expect("parses");
-        let range = TextRange::new(0.into(), 1.into());
+        let source = parse("x = 1\n");
+        let range = range(0, 1);
         let rendered = render_to_string(&source, &diag(range, None));
         assert!(rendered.contains("warning: rewrite x to y"));
         assert!(rendered.contains("--> <source>:1:1"));

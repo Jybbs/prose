@@ -6,10 +6,15 @@ use std::io::{self, Write};
 use anyhow::Context;
 
 use super::{FileOutcome, Mode, RunSetup, has_format_change};
-use crate::cli::args::OutputFormat;
-use crate::cli::exit_status::ExitStatus;
-use crate::cli::output::{self, Presentation, Summary};
-use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Text};
+use crate::{
+    cache::Rewrite,
+    cli::{
+        args::OutputFormat,
+        exit_status::ExitStatus,
+        output::{self, Presentation, Summary},
+    },
+    diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Text},
+};
 
 pub(super) fn emit_outcomes<W: Write>(
     outcomes: &[FileOutcome],
@@ -42,17 +47,16 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
         .filter_map(|o| match o {
             FileOutcome::Done {
                 diagnostics,
-                formatted_text,
+                rewrite,
                 ..
-            } => Some((diagnostics, formatted_text)),
+            } => Some((diagnostics, rewrite)),
             FileOutcome::Failed(_) => None,
         })
         .fold(
             EmitterSummary::default(),
-            |mut summary, (diagnostics, formatted_text)| {
+            |mut summary, (diagnostics, rewrite)| {
                 summary.files_visited += 1;
-                summary.files_changed +=
-                    usize::from(file_changed(diagnostics, formatted_text.as_deref()));
+                summary.files_changed += usize::from(file_changed(diagnostics, rewrite));
                 summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
                 summary.diagnostics_total += diagnostics.len();
                 for diag in diagnostics {
@@ -63,11 +67,15 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
         )
 }
 
-/// A file counts as changed when `run` produced a rewrite, or, on the
-/// `check` path that skips the rewrite, when `diagnose` emitted a format
-/// diagnostic.
-pub(super) fn file_changed(diagnostics: &[Diagnostic], formatted_text: Option<&str>) -> bool {
-    formatted_text.is_some() || has_format_change(diagnostics)
+/// A file counts as changed when `run` produced text differing from the
+/// original. A mode that skipped the rewrite falls back to whether
+/// `diagnose` emitted a format diagnostic.
+pub(super) fn file_changed(diagnostics: &[Diagnostic], rewrite: &Rewrite) -> bool {
+    match rewrite {
+        Rewrite::Changed(_) => true,
+        Rewrite::Skipped => has_format_change(diagnostics),
+        Rewrite::Unchanged => false,
+    }
 }
 
 pub(super) fn finish(
@@ -125,12 +133,21 @@ pub(super) fn status_from_outcomes(
     outcomes
         .iter()
         .map(|outcome| match outcome {
-            FileOutcome::Done { diagnostics, .. } => diagnostics
-                .iter()
-                .map(|d| ExitStatus::from(d.severity))
-                .filter(|s| !demote_format_change || *s != ExitStatus::FormatChange)
-                .max()
-                .unwrap_or_default(),
+            FileOutcome::Done {
+                diagnostics,
+                rewrite,
+                ..
+            } => {
+                // A rewrite that settled back to the input byte-for-byte
+                // reports clean, its cancelling edits notwithstanding.
+                let demote = demote_format_change || matches!(rewrite, Rewrite::Unchanged);
+                diagnostics
+                    .iter()
+                    .map(|d| ExitStatus::from(d.severity))
+                    .filter(|s| !demote || *s != ExitStatus::FormatChange)
+                    .max()
+                    .unwrap_or_default()
+            }
             FileOutcome::Failed(s) => *s,
         })
         .max()

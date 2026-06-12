@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Trailing Positional-Only Slash Ends Bare"
+
+description = '''
+A signature whose parameter list ends on the positional-only `/` separator **leaves the separator bare** as the final exploded line, so the emission re-parses cleanly.
+'''

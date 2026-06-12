@@ -130,15 +130,14 @@ fn sarif_run(runs: &[Run<'_>]) -> SarifRun {
 mod tests {
     use ruff_diagnostics::{Edit, Fix};
     use ruff_source_file::SourceFileBuilder;
-    use ruff_text_size::TextRange;
     use serde_json::Value;
 
     use super::*;
     use crate::diagnostics::Severity;
-    use crate::source::Source;
+    use crate::testing::{parse, range};
 
     fn diag() -> Diagnostic {
-        let range = TextRange::new(0.into(), 1.into());
+        let range = range(0, 1);
         Diagnostic {
             fix: Some(Fix::safe_edit(Edit::range_replacement(
                 "y".to_owned(),
@@ -161,7 +160,7 @@ mod tests {
 
     #[test]
     fn deduplicates_rule_descriptors_across_diagnostics() {
-        let source: Source = "x = 1\n".parse().expect("parses");
+        let source = parse("x = 1\n");
         let diags = vec![diag(), diag()];
         let v = emit_value(source.source_file(), &diags);
         let rules = v["runs"][0]["tool"]["driver"]["rules"]
@@ -176,7 +175,7 @@ mod tests {
 
     #[test]
     fn emits_a_single_sarif_run_per_invocation() {
-        let source: Source = "x = 1\n".parse().expect("parses");
+        let source = parse("x = 1\n");
         let diag = diag();
         let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
         assert_eq!(v["version"], "2.1.0");
@@ -197,17 +196,14 @@ mod tests {
 
     #[test]
     fn fix_carries_one_replacement_per_group_edit() {
-        let source: Source = "x = 1\ny = 2\n".parse().expect("parses");
+        let source = parse("x = 1\ny = 2\n");
         let diag = Diagnostic {
             fix: Some(Fix::safe_edits(
-                Edit::range_replacement("a".to_owned(), TextRange::new(0.into(), 1.into())),
-                [Edit::range_replacement(
-                    "b".to_owned(),
-                    TextRange::new(6.into(), 7.into()),
-                )],
+                Edit::range_replacement("a".to_owned(), range(0, 1)),
+                [Edit::range_replacement("b".to_owned(), range(6, 7))],
             )),
             message: "align".to_owned(),
-            range: TextRange::new(0.into(), 7.into()),
+            range: range(0, 7),
             rule: RuleId::from("align-equals"),
             severity: Severity::Format,
         };
@@ -223,7 +219,7 @@ mod tests {
 
     #[test]
     fn omits_fixes_payload_when_diagnostic_has_no_edit() {
-        let source: Source = "x = 1\n".parse().expect("parses");
+        let source = parse("x = 1\n");
         let diag = Diagnostic {
             fix: None,
             ..diag()
@@ -243,7 +239,7 @@ mod tests {
 
     #[test]
     fn passes_the_stdin_placeholder_name_through_unchanged() {
-        let source: Source = "x = 1\n".parse().expect("parses");
+        let source = parse("x = 1\n");
         let v = emit_value(source.source_file(), std::slice::from_ref(&diag()));
         let uri = &v["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]
             ["uri"];
@@ -252,7 +248,7 @@ mod tests {
 
     #[test]
     fn populates_fixes_payload_when_diagnostic_carries_an_edit() {
-        let source: Source = "x = 1\n".parse().expect("parses");
+        let source = parse("x = 1\n");
         let diag = diag();
         let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
         let fix = &v["runs"][0]["results"][0]["fixes"][0];

@@ -14,7 +14,7 @@ use super::{
     output::Presentation,
 };
 use crate::{
-    cache::Cache,
+    cache::{Cache, Rewrite},
     config::Config,
     diagnostics::{Diagnostic, Severity},
     pipeline::Pipeline,
@@ -37,7 +37,7 @@ enum FileOutcome {
         cached: bool,
         diagnostics: Vec<Diagnostic>,
         file: SourceFile,
-        formatted_text: Option<String>,
+        rewrite: Rewrite,
     },
     Failed(ExitStatus),
 }
@@ -182,7 +182,7 @@ fn format_paths_diff<O: Write, E: Write>(
     for outcome in &outcomes {
         if let FileOutcome::Done {
             file,
-            formatted_text: Some(formatted),
+            rewrite: Rewrite::Changed(formatted),
             ..
         } = outcome
         {
@@ -243,14 +243,9 @@ fn format_stdin<R: Read, O: Write, E: Write>(
     let outcome = process_stdin(stdin, pipeline, format_pass(diff, format));
     let outcomes = std::slice::from_ref(&outcome);
     let summary = emitter_summary(outcomes);
-    if let FileOutcome::Done {
-        file,
-        formatted_text,
-        ..
-    } = &outcome
-    {
+    if let FileOutcome::Done { file, rewrite, .. } = &outcome {
         if diff {
-            if let Some(formatted) = formatted_text {
+            if let Rewrite::Changed(formatted) = rewrite {
                 write_diff(
                     writer,
                     "<stdin>",
@@ -260,7 +255,11 @@ fn format_stdin<R: Read, O: Write, E: Write>(
                 )?;
             }
         } else if format.is_text() {
-            let to_write = formatted_text.as_deref().unwrap_or(file.source_text());
+            let to_write = match rewrite {
+                Rewrite::Changed(formatted) => formatted.as_str(),
+                Rewrite::Skipped => unreachable!("format passes compute the rewrite"),
+                Rewrite::Unchanged => file.source_text(),
+            };
             writer
                 .write_all(to_write.as_bytes())
                 .context("writing stdout")?;
@@ -299,35 +298,15 @@ mod tests {
     use ruff_text_size::TextRange;
     use tempfile::TempDir;
 
-    use super::process::{cache_rewrite, rehydrate, run_pipeline, walk_error};
+    use super::process::{rehydrate, run_pipeline, walk_error};
     use super::report::{file_changed, report_verbose};
     use super::*;
     use crate::cache::{CacheEntry, Rewrite};
     use crate::cli::output::Summary;
     use crate::diagnostics::{EmitterSummary, Severity};
-    use crate::rule::{Rule, RuleId};
+    use crate::rule::RuleId;
     use crate::source::Source;
-
-    /// Test-only rule whose single edit rewrites the leading statement
-    /// into unparseable source, exercising the reparse guard.
-    struct BreaksParse;
-
-    impl Rule for BreaksParse {
-        fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
-            vec![vec![Edit::range_replacement(
-                "def foo(".to_owned(),
-                TextRange::new(0.into(), 5.into()),
-            )]]
-        }
-
-        fn id(&self) -> RuleId {
-            RuleId::from("breaks-parse")
-        }
-
-        fn message(&self) -> &'static str {
-            "breaks parse"
-        }
-    }
+    use crate::testing::{GroupSentinelRule, breaks_parse, parse, range};
 
     struct ErrorReader;
 
@@ -384,7 +363,7 @@ mod tests {
             cached: false,
             diagnostics,
             file: source.source_file().clone(),
-            formatted_text: None,
+            rewrite: Rewrite::Skipped,
         }
     }
 
@@ -393,16 +372,6 @@ mod tests {
             quiet: false,
             stdout_tty: false,
         }
-    }
-
-    #[test]
-    fn cache_rewrite_marks_skipped_unless_run_supplied_text() {
-        assert_matches!(cache_rewrite(false, None), Rewrite::Skipped);
-        assert_matches!(cache_rewrite(true, None), Rewrite::Unchanged);
-        assert_matches!(
-            cache_rewrite(true, Some("y = 1\n")),
-            Rewrite::Changed(text) if text == "y = 1\n"
-        );
     }
 
     #[test]
@@ -426,8 +395,8 @@ mod tests {
 
     #[test]
     fn check_outcomes_with_failed_parse_takes_higher_status() {
-        let source = "x = 1\n".parse::<Source>().expect("parses");
-        let range = TextRange::new(0.into(), 1.into());
+        let source = parse("x = 1\n");
+        let range = range(0, 1);
         let outcomes = vec![
             outcome_with(
                 source,
@@ -443,8 +412,8 @@ mod tests {
 
     #[test]
     fn check_outcomes_with_lint_and_format_returns_lint_violation() {
-        let source = "x = 1\n".parse::<Source>().expect("parses");
-        let range = TextRange::new(0.into(), 1.into());
+        let source = parse("x = 1\n");
+        let range = range(0, 1);
         let diagnostics = vec![
             diagnostic(Severity::Format, range, "synthetic-format"),
             diagnostic(Severity::Lint, range, "synthetic-lint"),
@@ -458,12 +427,8 @@ mod tests {
 
     #[test]
     fn check_outcomes_with_synthetic_lint_returns_lint_violation() {
-        let source = "x = 1\n".parse::<Source>().expect("parses");
-        let diagnostics = vec![diagnostic(
-            Severity::Lint,
-            TextRange::new(0.into(), 1.into()),
-            "synthetic-lint",
-        )];
+        let source = parse("x = 1\n");
+        let diagnostics = vec![diagnostic(Severity::Lint, range(0, 1), "synthetic-lint")];
         let outcomes = vec![outcome_with(source, diagnostics)];
 
         let status = status_from_outcomes(&outcomes, false);
@@ -555,8 +520,8 @@ mod tests {
 
     #[test]
     fn check_validate_fails_on_unparseable_rule_output() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(BreaksParse)]);
-        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
+        let source = parse("x = 1\n");
 
         let outcome = run_pipeline(source, &pipeline, Pass::Diagnose { validate: true });
 
@@ -565,20 +530,26 @@ mod tests {
 
     #[test]
     fn check_without_validate_ignores_unparseable_rule_output() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(BreaksParse)]);
-        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
+        let source = parse("x = 1\n");
 
         let outcome = run_pipeline(source, &pipeline, Pass::Diagnose { validate: false });
 
-        assert_matches!(outcome, FileOutcome::Done { .. });
+        assert_matches!(
+            outcome,
+            FileOutcome::Done {
+                rewrite: Rewrite::Skipped,
+                ..
+            }
+        );
     }
 
     #[test]
     fn emit_outcomes_propagates_writer_failure() {
-        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let source = parse("x = 1\n");
         let diags = vec![diagnostic(
             Severity::Format,
-            TextRange::new(0.into(), 1.into()),
+            range(0, 1),
             "synthetic-format",
         )];
         let outcomes = vec![outcome_with(source, diags)];
@@ -601,7 +572,7 @@ mod tests {
         )]
         format: OutputFormat,
     ) {
-        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let source = parse("x = 1\n");
         let outcomes = vec![outcome_with(source, Vec::new())];
         let mut buf = Vec::new();
         emit_outcomes(&outcomes, format, &mut buf, &EmitterSummary::default()).expect("emits");
@@ -609,18 +580,18 @@ mod tests {
 
     #[test]
     fn emitter_summary_counts_visited_changed_diagnostics_and_rules() {
-        let range = TextRange::new(0.into(), 1.into());
+        let range = range(0, 1);
         let mut changed = outcome_with(
-            "x = 1\n".parse::<Source>().expect("parses"),
+            parse("x = 1\n"),
             vec![
                 diagnostic(Severity::Format, range, "align-equals"),
                 diagnostic(Severity::Lint, range, "reassigned-constants"),
             ],
         );
-        if let FileOutcome::Done { formatted_text, .. } = &mut changed {
-            *formatted_text = Some("x   = 1\n".to_owned());
+        if let FileOutcome::Done { rewrite, .. } = &mut changed {
+            *rewrite = Rewrite::Changed("x   = 1\n".to_owned());
         }
-        let clean = outcome_with("y = 2\n".parse::<Source>().expect("parses"), Vec::new());
+        let clean = outcome_with(parse("y = 2\n"), Vec::new());
         let outcomes = vec![changed, clean, FileOutcome::Failed(ExitStatus::ParseError)];
 
         let summary = emitter_summary(&outcomes);
@@ -638,9 +609,9 @@ mod tests {
 
     #[test]
     fn emitter_summary_tallies_repeated_rule_occurrences() {
-        let range = TextRange::new(0.into(), 1.into());
+        let range = range(0, 1);
         let outcome = outcome_with(
-            "x = 1\n".parse::<Source>().expect("parses"),
+            parse("x = 1\n"),
             vec![
                 diagnostic(Severity::Format, range, "align-equals"),
                 diagnostic(Severity::Format, range, "align-equals"),
@@ -653,15 +624,16 @@ mod tests {
     }
 
     #[test]
-    fn file_changed_counts_a_rewrite_or_a_format_diagnostic() {
-        let range = TextRange::new(0.into(), 1.into());
+    fn file_changed_counts_a_changed_rewrite_or_a_skipped_format_diagnostic() {
+        let range = range(0, 1);
         let format = vec![diagnostic(Severity::Format, range, "synthetic-format")];
         let lint = vec![diagnostic(Severity::Lint, range, "synthetic-lint")];
 
-        assert!(file_changed(&[], Some("x = 1\n")));
-        assert!(file_changed(&format, None));
-        assert!(!file_changed(&lint, None));
-        assert!(!file_changed(&[], None));
+        assert!(file_changed(&[], &Rewrite::Changed("x = 1\n".to_owned())));
+        assert!(file_changed(&format, &Rewrite::Skipped));
+        assert!(!file_changed(&format, &Rewrite::Unchanged));
+        assert!(!file_changed(&lint, &Rewrite::Skipped));
+        assert!(!file_changed(&[], &Rewrite::Skipped));
     }
 
     #[test]
@@ -913,6 +885,22 @@ mod tests {
     }
 
     #[test]
+    fn rehydrate_marks_a_check_mode_outcome_skipped() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::Changed("y = 1\n".to_owned()),
+        };
+        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, false);
+        assert_matches!(
+            outcome,
+            Some(FileOutcome::Done {
+                rewrite: Rewrite::Skipped,
+                ..
+            })
+        );
+    }
+
+    #[test]
     fn rehydrate_returns_none_for_a_skipped_entry() {
         let entry = CacheEntry {
             diagnostics: Vec::new(),
@@ -930,7 +918,7 @@ mod tests {
         let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, true);
         assert_matches!(
             outcome,
-            Some(FileOutcome::Done { formatted_text: Some(text), .. }) if text == "y = 1\n"
+            Some(FileOutcome::Done { rewrite: Rewrite::Changed(text), .. }) if text == "y = 1\n"
         );
     }
 
@@ -944,7 +932,7 @@ mod tests {
         assert_matches!(
             outcome,
             Some(FileOutcome::Done {
-                formatted_text: None,
+                rewrite: Rewrite::Unchanged,
                 ..
             })
         );
@@ -960,7 +948,7 @@ mod tests {
     #[test]
     fn report_verbose_prints_hit_and_miss_counts() {
         let make = |cached: bool| {
-            let source: Source = "x = 1\n".parse().expect("parses");
+            let source = parse("x = 1\n");
             let mut o = outcome_with(source, Vec::new());
             if let FileOutcome::Done { cached: c, .. } = &mut o {
                 *c = cached;
@@ -983,8 +971,8 @@ mod tests {
 
     #[test]
     fn rewrite_pass_fails_on_unparseable_rule_output() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(BreaksParse)]);
-        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
+        let source = parse("x = 1\n");
 
         let outcome = run_pipeline(source, &pipeline, Pass::Rewrite);
 
@@ -992,13 +980,66 @@ mod tests {
     }
 
     #[test]
+    fn run_pipeline_reports_unchanged_when_edits_cancel() {
+        let range = range(0, 1);
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("y".to_owned(), range)]],
+                id: RuleId::from("x-to-y"),
+            }),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("x".to_owned(), range)]],
+                id: RuleId::from("y-to-x"),
+            }),
+        ]);
+        let source = parse("x = 1\n");
+
+        let outcome = run_pipeline(source, &pipeline, Pass::Rewrite);
+
+        assert_matches!(
+            &outcome,
+            FileOutcome::Done {
+                diagnostics,
+                rewrite: Rewrite::Unchanged,
+                ..
+            } if diagnostics.len() == 2
+        );
+        assert_eq!(
+            status_from_outcomes(std::slice::from_ref(&outcome), false),
+            ExitStatus::Clean,
+        );
+    }
+
+    #[test]
+    fn status_from_outcomes_clears_format_change_for_an_unchanged_rewrite() {
+        let source = parse("x = 1\n");
+        let range = range(0, 1);
+        let mut outcome = outcome_with(
+            source,
+            vec![
+                diagnostic(Severity::Format, range, "synthetic-format"),
+                diagnostic(Severity::Lint, range, "synthetic-lint"),
+            ],
+        );
+        if let FileOutcome::Done { rewrite, .. } = &mut outcome {
+            *rewrite = Rewrite::Unchanged;
+        }
+        let outcomes = vec![outcome];
+
+        assert_eq!(
+            status_from_outcomes(&outcomes, false),
+            ExitStatus::LintViolation,
+        );
+    }
+
+    #[test]
     fn status_from_outcomes_demotes_format_change_when_demoted() {
-        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let source = parse("x = 1\n");
         let outcomes = vec![outcome_with(
             source,
             vec![diagnostic(
                 Severity::Format,
-                TextRange::new(0.into(), 1.into()),
+                range(0, 1),
                 "synthetic-format",
             )],
         )];
@@ -1011,15 +1052,11 @@ mod tests {
 
     #[test]
     fn summarize_reports_diagnostics_alongside_a_failure() {
-        let source = "x = 1\n".parse::<Source>().expect("parses");
+        let source = parse("x = 1\n");
         let outcomes = vec![
             outcome_with(
                 source,
-                vec![diagnostic(
-                    Severity::Lint,
-                    TextRange::new(0.into(), 1.into()),
-                    "synthetic-lint",
-                )],
+                vec![diagnostic(Severity::Lint, range(0, 1), "synthetic-lint")],
             ),
             FileOutcome::Failed(ExitStatus::ParseError),
         ];

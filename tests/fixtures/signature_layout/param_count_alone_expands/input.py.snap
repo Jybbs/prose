@@ -8,6 +8,6 @@ def render(
     height: int,
     depth: int,
     scale: int,
-    fast: bool,
+    fast: bool
 ):
     return (width, height, depth, scale, fast)

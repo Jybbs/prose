@@ -168,7 +168,7 @@ mod tests {
     use crate::config::Config;
     use crate::diagnostics::Severity;
     use crate::primitives::edit::singleton_groups;
-    use crate::testing::{assert_send_sync, parse, range};
+    use crate::testing::{GroupSentinelRule, assert_send_sync, breaks_parse, parse, range};
 
     /// Test-only lint-only rule that returns the range list supplied
     /// at construction and never produces edits.
@@ -246,28 +246,6 @@ mod tests {
         }
     }
 
-    /// Test-only rule that returns the fix groups supplied at
-    /// construction, exercising the multi-edit groups the singleton
-    /// wrappers cannot produce.
-    struct GroupSentinelRule {
-        groups: Vec<Vec<Edit>>,
-        id: RuleId,
-    }
-
-    impl Rule for GroupSentinelRule {
-        fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
-            self.groups.clone()
-        }
-
-        fn id(&self) -> RuleId {
-            self.id
-        }
-
-        fn message(&self) -> &'static str {
-            "group test rule"
-        }
-    }
-
     fn registered_slugs(pipeline: &Pipeline) -> Vec<&'static str> {
         pipeline.rules.iter().map(|r| r.id().as_str()).collect()
     }
@@ -279,10 +257,9 @@ mod tests {
         // rule's edit, so the lint range stays valid against the
         // untouched buffer and both findings surface together.
         let pipeline = Pipeline::from_rules(vec![
-            Box::new(SentinelRule {
-                edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
                 id: RuleId::from("rewrite-x-to-y"),
-                log: Arc::new(Mutex::new(Vec::new())),
             }),
             Box::new(LintSentinelRule {
                 id: RuleId::from("flag-x"),
@@ -385,12 +362,7 @@ mod tests {
 
     #[test]
     fn reparse_failure_surfaces_rule_id() {
-        let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
-        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![Edit::range_replacement("def foo(".to_owned(), range(0, 5))],
-            id: RuleId::from("breaks-parse"),
-            log: log.clone(),
-        })]);
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
         let source = parse("x = 1\n");
 
         let err = pipeline.run(source).expect_err("reparse should fail");
@@ -453,13 +425,12 @@ mod tests {
         // Edit at 11..16 (`x = 1`) sits inside the suppressed
         // [0..17) span and must be dropped, leaving the unsuppressed
         // edit at 27..32 (`z = 9`) to apply.
-        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: singleton_groups(vec![
                 Edit::range_replacement("y".to_owned(), range(11, 16)),
                 Edit::range_replacement("Z".to_owned(), range(27, 32)),
-            ],
+            ]),
             id: RuleId::from("rewrite-x-and-z"),
-            log: Arc::new(Mutex::new(Vec::new())),
         })]);
         let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
 
@@ -547,10 +518,9 @@ mod tests {
 
     #[test]
     fn run_emits_one_diagnostic_per_surviving_edit() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
             id: RuleId::from("rewrite-x-to-y"),
-            log: Arc::new(Mutex::new(Vec::new())),
         })]);
         let source = parse("x = 1\n");
 
@@ -596,10 +566,9 @@ mod tests {
 
     #[test]
     fn run_skips_reparse_when_every_edit_is_suppressed() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(11, 16))],
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(11, 16))]],
             id: RuleId::from("rewrite-x-to-y"),
-            log: Arc::new(Mutex::new(Vec::new())),
         })]);
         let source = parse("# fmt: off\nx = 1\n# fmt: on\n");
 
@@ -633,13 +602,7 @@ mod tests {
 
     #[test]
     fn validate_surfaces_unparseable_rule_output() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-            groups: vec![vec![Edit::range_replacement(
-                "def foo(".to_owned(),
-                range(0, 5),
-            )]],
-            id: RuleId::from("breaks-parse"),
-        })]);
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
         let source = parse("x = 1\n");
 
         assert_matches!(

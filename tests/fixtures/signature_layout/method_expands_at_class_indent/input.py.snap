@@ -9,6 +9,6 @@ class Renderer:
         layout: tuple[int, int],
         palette: str,
         spread: float,
-        target: int,
+        target: int
     ):
         return (self, layout, palette, spread, target)

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lone Parameter Expands Bare"
+
+description = '''
+A single parameter that overflows `code-line-length` **expands to one bare line**. With the only parameter also the last, the canonical emission carries no comma at all.
+'''

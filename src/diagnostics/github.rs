@@ -55,7 +55,7 @@ mod tests {
     use super::*;
     use crate::diagnostics::Severity;
     use crate::rule::RuleId;
-    use crate::source::Source;
+    use crate::testing::{parse, range};
 
     fn diag(range: TextRange) -> Diagnostic {
         Diagnostic {
@@ -84,8 +84,8 @@ mod tests {
 
     #[test]
     fn drops_endline_and_endcolumn_for_multi_line_ranges() {
-        let source: Source = "x = (\n  1\n)\n".parse().expect("parses");
-        let diag = diag(TextRange::new(0.into(), 11.into()));
+        let source = parse("x = (\n  1\n)\n");
+        let diag = diag(range(0, 11));
         assert_eq!(
             emit_to_string(source.source_file(), &diag),
             "::warning file=<source>,line=1,col=1::rewrite x to y\n",
@@ -94,8 +94,8 @@ mod tests {
 
     #[test]
     fn emits_endline_and_endcolumn_when_range_stays_on_one_line() {
-        let source: Source = "x = 1\n".parse().expect("parses");
-        let diag = diag(TextRange::new(0.into(), 1.into()));
+        let source = parse("x = 1\n");
+        let diag = diag(range(0, 1));
         assert_eq!(
             emit_to_string(source.source_file(), &diag),
             "::warning file=<source>,line=1,col=1,endLine=1,endColumn=2::rewrite x to y\n",
