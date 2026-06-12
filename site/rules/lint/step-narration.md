@@ -1,9 +1,7 @@
 ---
-category : lint
-family   : lint
-caption  : "surfaces comments that narrate the next line."
-related  : [reassigned-constants, single-use-variables]
-layout   : doc
+caption : "surfaces comments that narrate the next line."
+related : [reassigned-constants, single-use-variables]
+layout  : doc
 ---
 
 # step-narration

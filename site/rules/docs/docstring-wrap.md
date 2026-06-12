@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : docs
-caption  : "wraps multi-line docstring bodies at the configured measure."
-related  : [docstring-frame, docstring-expand]
-layout   : doc
+caption : "wraps multi-line docstring bodies at the configured measure."
+related : [docstring-frame, docstring-expand]
+layout  : doc
 ---
 
 # docstring-wrap

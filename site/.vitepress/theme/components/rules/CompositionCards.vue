@@ -105,7 +105,7 @@ function toggle(row: CardRow): void {
               @click.stop
             >
               <a
-                :href="`/rules/${seg.slug}`"
+                :href="seg.rule?.href"
                 class="composition-cards-chip"
                 :data-family="seg.family"
                 :title="seg.rule ? undefined : `${seg.slug} (${seg.family ?? 'undocumented'})`"
@@ -155,7 +155,7 @@ function toggle(row: CardRow): void {
               >
                 <RuleTooltipPopper :rule="seg.rule">
                   <a
-                    :href="`/rules/${seg.slug}`"
+                    :href="seg.rule?.href"
                     class="composition-cards-chip"
                     :data-family="seg.family"
                     :title="seg.rule ? undefined : `${seg.slug} (${seg.family ?? 'undocumented'})`"

@@ -52,7 +52,7 @@ if (!props.clickable) {
     :data-category="rule.category"
     :data-family="rule.family"
   >
-    <a v-if="clickable" class="rule-card-cover" :href="`/rules/${rule.slug}`" :aria-label="rule.name" />
+    <a v-if="clickable" class="rule-card-cover" :href="rule.href" :aria-label="rule.name" />
     <div v-if="$slots.header" class="rule-card-header"><slot name="header" /></div>
     <span
       class="rule-card-badge"

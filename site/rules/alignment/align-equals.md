@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : alignment
-caption  : "aligns the `=` separator across consecutive single-target assignments and annotated function-parameter defaults."
-related  : [align-colons, align-imports, align-match-case, strip-align-padding]
-layout   : doc
+caption : "aligns the `=` separator across consecutive single-target assignments and annotated function-parameter defaults."
+related : [align-colons, align-imports, align-match-case, strip-align-padding]
+layout  : doc
 ---
 
 # align-equals

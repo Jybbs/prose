@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : docs
-caption  : "expands a one-line docstring into the multi-line block shape."
-related  : [docstring-wrap, docstring-frame]
-layout   : doc
+caption : "expands a one-line docstring into the multi-line block shape."
+related : [docstring-wrap, docstring-frame]
+layout  : doc
 ---
 
 # docstring-expand

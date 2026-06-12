@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : formatting
-caption  : "removes trailing commas from inside single-line collections."
-related  : [collection-layout, align-colons]
-layout   : doc
+caption : "removes trailing commas from inside single-line collections."
+related : [collection-layout, align-colons]
+layout  : doc
 ---
 
 # strip-trailing-commas

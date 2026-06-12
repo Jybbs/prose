@@ -44,7 +44,7 @@ declare const data: RulesData
 export { data }
 
 export default defineLoader({
-  watch: [`${rulesDirectory}/*.md`],
+  watch: [`${rulesDirectory}/*/*.md`],
   async load(): Promise<RulesData> {
     const md         = await getRenderer()
     const list       = discoverRuleSlugs(rulesDirectory).map(r => ({

@@ -1,9 +1,7 @@
 ---
-category : lint
-family   : lint
-caption  : "surfaces single-use local bindings that could inline cleanly."
-related  : [reassigned-constants, step-narration]
-layout   : doc
+caption : "surfaces single-use local bindings that could inline cleanly."
+related : [reassigned-constants, step-narration]
+layout  : doc
 ---
 
 # single-use-variables

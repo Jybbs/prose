@@ -24,7 +24,7 @@ const clusters = computed(() =>
       <ul class="rules-cluster-specimens">
         <li v-for="rule in cluster.rules" :key="rule.slug">
           <RuleTooltipPopper :rule="rule">
-            <a class="specimen" :href="`/rules/${rule.slug}`">
+            <a class="specimen" :href="rule.href">
               <span class="specimen-slug">{{ rule.slug }}</span>
             </a>
           </RuleTooltipPopper>

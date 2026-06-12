@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : formatting
-caption  : "removes `from __future__ import annotations` lines that no longer carry their weight on the target Python version."
-related  : [legacy-union-syntax]
-layout   : doc
+caption : "removes `from __future__ import annotations` lines that no longer carry their weight on the target Python version."
+related : [legacy-union-syntax]
+layout  : doc
 ---
 
 # unused-future-annotations

@@ -176,11 +176,18 @@ fn every_fixture_invocation_resolves() {
 #[test]
 fn every_registered_rule_has_a_page() {
     let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("site/rules");
+    let families: Vec<PathBuf> = fs_err::read_dir(&rules)
+        .expect("site/rules reads")
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir())
+        .collect();
     for id in Pipeline::known_ids() {
-        let page = rules.join(format!("{id}.md"));
         assert!(
-            page.is_file(),
-            "rule `{id}` registered in `KNOWN_IDS` has no page at `site/rules/{id}.md`"
+            families
+                .iter()
+                .any(|dir| dir.join(format!("{id}.md")).is_file()),
+            "rule `{id}` registered in `KNOWN_IDS` has no page under `site/rules/<family>/{id}.md`"
         );
     }
 }

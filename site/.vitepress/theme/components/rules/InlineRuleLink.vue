@@ -9,6 +9,6 @@ const rule = lookup(rules.bySlug, props.slug, 'Inline rule link')
 
 <template>
   <RuleTooltipPopper :rule="rule">
-    <a class="rule-link" :data-family="rule.family" :href="`/rules/${slug}`">{{ slug }}</a>
+    <a class="rule-link" :data-family="rule.family" :href="rule.href">{{ slug }}</a>
   </RuleTooltipPopper>
 </template>

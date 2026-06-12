@@ -1,9 +1,7 @@
 ---
-category : lint
-family   : lint
-caption  : "surfaces `Union[A, B]` and `Optional[T]` patterns that should read as modern `A | B` and `T | None`."
-related  : [unused-future-annotations]
-layout   : doc
+caption : "surfaces `Union[A, B]` and `Optional[T]` patterns that should read as modern `A | B` and `T | None`."
+related : [unused-future-annotations]
+layout  : doc
 ---
 
 # legacy-union-syntax

@@ -1,9 +1,7 @@
 ---
-category : auto-fix
-family   : formatting
-caption  : "strips padding from alignment groups that resolve to a single member."
-related  : [align-colons, align-equals, align-imports, align-match-case]
-layout   : doc
+caption : "strips padding from alignment groups that resolve to a single member."
+related : [align-colons, align-equals, align-imports, align-match-case]
+layout  : doc
 ---
 
 # strip-align-padding

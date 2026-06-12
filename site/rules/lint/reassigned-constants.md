@@ -1,9 +1,7 @@
 ---
-category : lint
-family   : lint
-caption  : "surfaces a module-level constant reassigned despite its `UPPER_SNAKE_CASE` casing."
-related  : [step-narration, single-use-variables]
-layout   : doc
+caption : "surfaces a module-level constant reassigned despite its `UPPER_SNAKE_CASE` casing."
+related : [step-narration, single-use-variables]
+layout  : doc
 ---
 
 # reassigned-constants

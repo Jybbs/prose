@@ -65,7 +65,7 @@ const activeRule = computed(() => props.rules[activeIdx.value])
             :key="rule.slug"
             class="tab"
             :class="{ active: idx === activeIdx }"
-            :href="`/rules/${rule.slug}`"
+            :href="rule.href"
             :aria-label="rule.slug"
             @mouseenter="hoveredIdx = idx"
             @focus="hoveredIdx = idx"
@@ -78,7 +78,7 @@ const activeRule = computed(() => props.rules[activeIdx.value])
             <a
               :key="activeIdx"
               class="tab-label-link"
-              :href="`/rules/${activeRule?.slug}`"
+              :href="activeRule?.href"
               :aria-label="activeRule?.slug"
             >{{ activeRule?.slug }}</a>
           </Transition>
