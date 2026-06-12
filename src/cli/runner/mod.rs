@@ -81,7 +81,7 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
     mut stdout: O,
     mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
-    let setup = match build_run(&args.rules, args.no_cache) {
+    let setup = match build_run(args.rules, args.no_cache) {
         Ok(s) => s,
         Err(s) => return Ok(s),
     };
@@ -95,7 +95,7 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
     };
     let summary = emitter_summary(&outcomes);
     emit_outcomes(&outcomes, args.output_format, &mut stdout, &summary)?;
-    let status = finish(&outcomes, &setup, verbose, false);
+    let status = finish(&outcomes, setup.cache.is_some(), verbose, false);
     render_summary(
         &mut stderr,
         present,
@@ -112,7 +112,7 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
     mut stdout: O,
     mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
-    let setup = match build_run(&args.rules, args.no_cache) {
+    let setup = match build_run(args.rules, args.no_cache) {
         Ok(s) => s,
         Err(s) => return Ok(s),
     };
@@ -152,10 +152,10 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
 /// Builds the run-level setup. The cwd's own config governs stdin
 /// input and the cache settings, while each path input re-resolves
 /// from its own ancestors through the seeded resolver.
-fn build_run(rules: &RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> {
+fn build_run(rules: RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> {
     let (cwd_dir, config) = super::load_config_or_status()?;
     let cache = open_cache(&config, no_cache);
-    let resolver = ConfigResolver::new(rules.select.clone(), rules.ignore.clone());
+    let resolver = ConfigResolver::new(rules.select, rules.ignore);
     let cwd = resolver.seed(cwd_dir, &config);
     Ok(RunSetup {
         cache,
@@ -202,7 +202,7 @@ fn format_paths_diff<O: Write, E: Write>(
         }
     }
     let summary = emitter_summary(&outcomes);
-    let status = finish(&outcomes, setup, verbose, false);
+    let status = finish(&outcomes, setup.cache.is_some(), verbose, false);
     render_summary(
         stderr,
         present,
@@ -228,7 +228,7 @@ fn format_paths_rewrite<O: Write, E: Write>(
     if !format.is_text() {
         emit_outcomes(&outcomes, format, stdout, &summary)?;
     }
-    let status = finish(&outcomes, setup, verbose, true);
+    let status = finish(&outcomes, setup.cache.is_some(), verbose, true);
     render_summary(
         stderr,
         present,
@@ -376,6 +376,13 @@ mod tests {
         }
     }
 
+    fn fixture(source: &str) -> (TempDir, PathBuf) {
+        let tmp = TempDir::new().expect("tempdir");
+        let file = tmp.path().join("a.py");
+        std::fs::write(&file, source).expect("writes");
+        (tmp, file)
+    }
+
     fn format_args(paths: Vec<PathBuf>, stdin: bool, diff: bool) -> FormatArgs {
         FormatArgs {
             diff,
@@ -393,6 +400,30 @@ mod tests {
             file: source.source_file().clone(),
             formatted_text: None,
         }
+    }
+
+    fn run_check(args: CheckArgs) -> ExitStatus {
+        check_with_io(
+            args,
+            false,
+            &windowed(),
+            io::empty(),
+            Vec::<u8>::new(),
+            io::sink(),
+        )
+        .expect("runs without anyhow")
+    }
+
+    fn run_format(args: FormatArgs) -> ExitStatus {
+        format_with_io(
+            args,
+            false,
+            &windowed(),
+            io::empty(),
+            Vec::<u8>::new(),
+            io::sink(),
+        )
+        .expect("runs without anyhow")
     }
 
     fn windowed() -> Presentation {
@@ -445,42 +476,21 @@ mod tests {
 
     #[test]
     fn check_clean_returns_clean() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "x = 1\n").expect("writes");
+        let (tmp, _file) = fixture("x = 1\n");
 
-        let status = check_with_io(
-            check_args(vec![tmp.path().to_path_buf()], false),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
+        let status = run_check(check_args(vec![tmp.path().to_path_buf()], false));
 
         assert_eq!(status, ExitStatus::Clean);
     }
 
     #[test]
     fn check_ignore_overrides_the_files_own_config() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+        let (_tmp, file) = fixture("alpha = 1\nb = 22\n");
 
         let mut args = check_args(vec![file], false);
         args.rules.ignore = vec![RuleId::from("align-equals")];
-        let status = check_with_io(
-            args,
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
 
-        assert_eq!(status, ExitStatus::Clean);
+        assert_eq!(run_check(args), ExitStatus::Clean);
     }
 
     #[test]
@@ -532,63 +542,30 @@ mod tests {
 
     #[test]
     fn check_pending_format_returns_format_change() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+        let (tmp, _file) = fixture("alpha = 1\nb = 22\n");
 
-        let status = check_with_io(
-            check_args(vec![tmp.path().to_path_buf()], false),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
+        let status = run_check(check_args(vec![tmp.path().to_path_buf()], false));
 
         assert_eq!(status, ExitStatus::FormatChange);
     }
 
     #[test]
     fn check_resolves_config_from_the_files_own_ancestors() {
-        let tmp = TempDir::new().expect("tempdir");
+        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
         write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
 
-        let status = check_with_io(
-            check_args(vec![file], false),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
-
-        assert_eq!(status, ExitStatus::Clean);
+        assert_eq!(run_check(check_args(vec![file], false)), ExitStatus::Clean);
     }
 
     #[test]
     fn check_select_overrides_the_files_own_config() {
-        let tmp = TempDir::new().expect("tempdir");
+        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
         write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
 
         let mut args = check_args(vec![file], false);
         args.rules.select = vec![RuleId::from("align-equals")];
-        let status = check_with_io(
-            args,
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
 
-        assert_eq!(status, ExitStatus::FormatChange);
+        assert_eq!(run_check(args), ExitStatus::FormatChange);
     }
 
     #[test]
@@ -622,19 +599,9 @@ mod tests {
 
     #[test]
     fn check_unparseable_path_returns_parse_error() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "def foo(").expect("writes");
+        let (tmp, _file) = fixture("def foo(");
 
-        let status = check_with_io(
-            check_args(vec![tmp.path().to_path_buf()], false),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs without anyhow");
+        let status = run_check(check_args(vec![tmp.path().to_path_buf()], false));
 
         assert_eq!(status, ExitStatus::ParseError);
     }
@@ -767,39 +734,19 @@ mod tests {
 
     #[test]
     fn format_diff_resolves_config_from_the_files_own_ancestors() {
-        let tmp = TempDir::new().expect("tempdir");
+        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
         write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
 
-        let status = format_with_io(
-            format_args(vec![file], false, true),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
+        let status = run_format(format_args(vec![file], false, true));
 
         assert_eq!(status, ExitStatus::Clean);
     }
 
     #[test]
     fn format_diff_returns_clean_for_already_canonical_file() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "x = 1\n").expect("writes");
+        let (tmp, _file) = fixture("x = 1\n");
 
-        let status = format_with_io(
-            format_args(vec![tmp.path().to_path_buf()], false, true),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
+        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, true));
 
         assert_eq!(status, ExitStatus::Clean);
     }
@@ -809,34 +756,16 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         let missing = tmp.path().join("does_not_exist");
 
-        let status = format_with_io(
-            format_args(vec![missing], false, true),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs without anyhow");
+        let status = run_format(format_args(vec![missing], false, true));
 
         assert_eq!(status, ExitStatus::ConfigError);
     }
 
     #[test]
     fn format_diff_returns_format_change_for_pending_change() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+        let (tmp, _file) = fixture("alpha = 1\nb = 22\n");
 
-        let status = format_with_io(
-            format_args(vec![tmp.path().to_path_buf()], false, true),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
+        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, true));
 
         assert_eq!(status, ExitStatus::FormatChange);
     }
@@ -850,19 +779,9 @@ mod tests {
 
     #[test]
     fn format_paths_does_not_rewrite_when_pipeline_is_empty() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "x = 1\n").expect("writes");
+        let (tmp, file) = fixture("x = 1\n");
 
-        let status = format_with_io(
-            format_args(vec![tmp.path().to_path_buf()], false, false),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
+        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
 
         assert_eq!(status, ExitStatus::Clean);
         let contents = std::fs::read_to_string(&file).expect("reads");
@@ -871,9 +790,7 @@ mod tests {
 
     #[test]
     fn format_paths_rewrite_emits_json_when_format_is_non_text() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+        let (tmp, _file) = fixture("alpha = 1\nb = 22\n");
 
         let mut args = format_args(vec![tmp.path().to_path_buf()], false, false);
         args.output_format = OutputFormat::Json;
@@ -890,6 +807,18 @@ mod tests {
 
         assert_eq!(status, ExitStatus::Clean);
         assert!(!stdout.is_empty());
+    }
+
+    #[test]
+    fn format_rewrite_resolves_config_from_the_files_own_ancestors() {
+        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
+        write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
+
+        let status = run_format(format_args(vec![file.clone()], false, false));
+
+        assert_eq!(status, ExitStatus::Clean);
+        let after = std::fs::read_to_string(&file).expect("reads");
+        assert_eq!(after, "alpha = 1\nb = 22\n");
     }
 
     #[test]
@@ -956,38 +885,18 @@ mod tests {
 
     #[test]
     fn format_unparseable_returns_parse_error() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "def foo(").expect("writes");
+        let (tmp, _file) = fixture("def foo(");
 
-        let status = format_with_io(
-            format_args(vec![tmp.path().to_path_buf()], false, false),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs without anyhow");
+        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
 
         assert_eq!(status, ExitStatus::ParseError);
     }
 
     #[test]
     fn format_writes_and_returns_clean_for_pending_change() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
 
-        let status = format_with_io(
-            format_args(vec![tmp.path().to_path_buf()], false, false),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
+        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
 
         assert_eq!(status, ExitStatus::Clean);
         let after = std::fs::read_to_string(&file).expect("reads");
@@ -996,22 +905,12 @@ mod tests {
 
     #[test]
     fn format_writes_return_config_error_when_target_is_readonly() {
-        let tmp = TempDir::new().expect("tempdir");
-        let file = tmp.path().join("a.py");
-        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
         let mut perms = std::fs::metadata(&file).expect("metadata").permissions();
         perms.set_readonly(true);
         std::fs::set_permissions(&file, perms).expect("set_permissions");
 
-        let status = format_with_io(
-            format_args(vec![tmp.path().to_path_buf()], false, false),
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
+        let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
 
         assert_eq!(status, ExitStatus::ConfigError);
     }

@@ -10,9 +10,9 @@ use rayon::iter::{ParallelBridge, ParallelIterator};
 use ruff_source_file::SourceFileBuilder;
 
 use super::{FileOutcome, Pass, RunSetup, has_format_change};
-use crate::cli::exit_status::ExitStatus;
 use crate::{
     cache::{CacheEntry, CacheKey, Rewrite},
+    cli::exit_status::ExitStatus,
     pipeline::Pipeline,
     source::Source,
     walker,
@@ -39,10 +39,7 @@ pub(super) fn cache_rewrite(needs_rewrite: bool, formatted_text: Option<&str>) -
     if !needs_rewrite {
         return Rewrite::Skipped;
     }
-    match formatted_text {
-        Some(text) => Rewrite::Changed(text.to_owned()),
-        None => Rewrite::Unchanged,
-    }
+    formatted_text.map_or(Rewrite::Unchanged, |text| Rewrite::Changed(text.to_owned()))
 }
 
 pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOutcome {
@@ -73,10 +70,7 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
     }
     let text = match String::from_utf8(bytes) {
         Ok(t) => t,
-        Err(e) => {
-            eprintln!("error: {} is not valid UTF-8: {e}", path.display());
-            return FileOutcome::Failed(ExitStatus::ConfigError);
-        }
+        Err(e) => return config_error(format_args!("{} is not valid UTF-8: {e}", path.display())),
     };
     let source = match Source::build(text, path.display().to_string()) {
         Ok(s) => s,

@@ -6,8 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use super::de::deserialize_prose;
-use super::{Config, ConfigError, PYPROJECT_TOML};
+use super::{Config, ConfigError, PYPROJECT_TOML, de::deserialize_prose};
 
 /// A diagnostic surfaced while resolving configuration.
 pub(super) enum ConfigNotice<'a> {

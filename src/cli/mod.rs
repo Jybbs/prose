@@ -115,18 +115,16 @@ fn is_broken_pipe(err: &anyhow::Error) -> bool {
 
 /// Loads the cwd's own config, returning the cwd beside it.
 fn load_config_or_status() -> Result<(PathBuf, Config), ExitStatus> {
+    let fail = |e: anyhow::Error| {
+        log_error_chain(&e);
+        ExitStatus::ConfigError
+    };
     let cwd = std::env::current_dir()
         .context("reading current working directory")
-        .map_err(|e| {
-            log_error_chain(&e);
-            ExitStatus::ConfigError
-        })?;
+        .map_err(fail)?;
     let config = Config::load(&cwd)
         .context("loading [tool.prose] config")
-        .map_err(|e| {
-            log_error_chain(&e);
-            ExitStatus::ConfigError
-        })?;
+        .map_err(fail)?;
     Ok((cwd, config))
 }
 

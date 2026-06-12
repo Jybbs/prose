@@ -30,7 +30,7 @@ impl ConfigResolver {
 
     fn build(&self, config: &Config) -> Resolved {
         Resolved {
-            config_toml: toml::to_string(config).unwrap_or_default(),
+            config_toml: toml::to_string(config).expect("Config serializes"),
             pipeline: Pipeline::with_filters(config, &self.select, &self.ignore),
         }
     }
@@ -140,6 +140,20 @@ mod tests {
             .expect("resolves");
 
         assert!(Arc::ptr_eq(&first, &second));
+    }
+
+    #[test]
+    fn resolve_walks_past_the_parent_to_an_ancestor_config() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 120\n");
+        let nested = tmp.path().join("pkg/inner");
+        std::fs::create_dir_all(&nested).expect("nested dirs create");
+
+        let resolved = resolver()
+            .resolve(&nested.join("mod.py"))
+            .expect("resolves");
+
+        assert!(resolved.config_toml.contains("code-line-length = 120"));
     }
 
     #[test]

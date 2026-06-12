@@ -5,11 +5,15 @@ use std::io::{self, Write};
 
 use anyhow::Context;
 
-use super::{FileOutcome, Mode, RunSetup, has_format_change};
-use crate::cli::args::OutputFormat;
-use crate::cli::exit_status::ExitStatus;
-use crate::cli::output::{self, Presentation, Summary};
-use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Text};
+use super::{FileOutcome, Mode, has_format_change};
+use crate::{
+    cli::{
+        args::OutputFormat,
+        exit_status::ExitStatus,
+        output::{self, Presentation, Summary},
+    },
+    diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Text},
+};
 
 pub(super) fn emit_outcomes<W: Write>(
     outcomes: &[FileOutcome],
@@ -72,12 +76,12 @@ pub(super) fn file_changed(diagnostics: &[Diagnostic], formatted_text: Option<&s
 
 pub(super) fn finish(
     outcomes: &[FileOutcome],
-    setup: &RunSetup,
+    cache_enabled: bool,
     verbose: bool,
     demote_format_change: bool,
 ) -> ExitStatus {
     if verbose {
-        report_verbose(outcomes, setup.cache.is_some(), &mut io::stderr());
+        report_verbose(outcomes, cache_enabled, &mut io::stderr());
     }
     status_from_outcomes(outcomes, demote_format_change)
 }

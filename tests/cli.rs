@@ -93,6 +93,14 @@ fn summary_line(out: &str) -> serde_json::Value {
     serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses")
 }
 
+/// A project directory whose config disables the rule the shared
+/// fixture content fires.
+fn suppressed_project() -> TempDir {
+    let dir = tempdir().expect("tempdir");
+    write(dir.path().join("pyproject.toml"), SUPPRESSING_PYPROJECT).expect("writes pyproject");
+    dir
+}
+
 #[test]
 fn cache_clean_subcommand_exits_zero_and_reports_count() {
     let (mut cmd, _cache_dir) = prose_isolated();
@@ -208,12 +216,7 @@ fn check_dash_unaligned_exits_format_change() {
 
 #[test]
 fn check_file_in_another_project_draws_its_own_config() {
-    let cwd_project = tempdir().expect("tempdir");
-    write(
-        cwd_project.path().join("pyproject.toml"),
-        SUPPRESSING_PYPROJECT,
-    )
-    .expect("writes pyproject");
+    let cwd_project = suppressed_project();
     let (_dir, path) = fixture("unaligned.py", "alpha = 1\nb = 22\n");
 
     prose()
@@ -296,8 +299,7 @@ fn check_no_cache_flag_runs_clean() {
 
 #[test]
 fn check_relative_path_resolves_its_ancestor_config() {
-    let project = tempdir().expect("tempdir");
-    write(project.path().join("pyproject.toml"), SUPPRESSING_PYPROJECT).expect("writes pyproject");
+    let project = suppressed_project();
     write(project.path().join("unaligned.py"), "alpha = 1\nb = 22\n").expect("writes");
 
     prose()
@@ -363,8 +365,7 @@ fn check_stdin_clean_exits_zero() {
 
 #[test]
 fn check_stdin_resolves_config_from_the_cwd() {
-    let project = tempdir().expect("tempdir");
-    write(project.path().join("pyproject.toml"), SUPPRESSING_PYPROJECT).expect("writes pyproject");
+    let project = suppressed_project();
 
     prose()
         .args(["check", "--stdin"])
@@ -653,6 +654,19 @@ fn format_rewrites_after_check_populated_the_cache() {
         .success();
     let after = std::fs::read_to_string(&path).expect("reads");
     assert_ne!(after, "ab = 1\nx = 2\n");
+}
+
+#[test]
+fn format_stdin_resolves_config_from_the_cwd() {
+    let project = suppressed_project();
+
+    prose()
+        .args(["format", "--stdin"])
+        .write_stdin("alpha = 1\nb = 22\n")
+        .current_dir(project.path())
+        .assert()
+        .success()
+        .stdout("alpha = 1\nb = 22\n");
 }
 
 #[test]

@@ -1,6 +1,6 @@
 //! Per-document `[tool.prose]` resolution. With a `didChangeWatchedFiles`
-//! watcher registered, each path's config is memoized and cleared on a
-//! watched change. Without one, resolution re-reads on every call.
+//! watcher registered, each directory's config is memoized and cleared on
+//! a watched change. Without one, resolution re-reads on every call.
 
 use std::{
     collections::HashMap,
@@ -11,11 +11,12 @@ use lsp_types::Uri;
 
 use crate::config::Config;
 
-/// Resolves the configuration governing each document, memoizing by path
-/// only when a watcher can invalidate the cache on a config change.
+/// Resolves the configuration governing each document, memoizing per
+/// parent directory only when a watcher can invalidate the cache on a
+/// config change.
 #[derive(Default)]
 pub(super) struct ConfigCache {
-    by_path: HashMap<PathBuf, Config>,
+    by_dir: HashMap<PathBuf, Config>,
     default: Config,
     enabled: bool,
     fresh: Config,
@@ -34,23 +35,23 @@ impl ConfigCache {
     /// Drops every cached config, forcing the next resolve to re-read from
     /// disk.
     pub(super) fn clear(&mut self) {
-        self.by_path.clear();
+        self.by_dir.clear();
     }
 
     /// Returns the configuration governing `uri`. A watched session
-    /// memoizes by path, whereas an unwatched one re-reads each call.
-    /// An unsaved buffer whose URI names no file falls back to the
+    /// memoizes per parent directory so sibling documents share one
+    /// resolution, whereas an unwatched one re-reads each call. An
+    /// unsaved buffer whose URI names no file falls back to the
     /// defaults.
     pub(super) fn resolve(&mut self, uri: &Uri) -> &Config {
         let Some(path) = file_path(uri) else {
             return &self.default;
         };
+        let dir = path.parent().unwrap_or(&path).to_path_buf();
         if self.enabled {
-            self.by_path
-                .entry(path)
-                .or_insert_with_key(|path| load(path))
+            self.by_dir.entry(dir).or_insert_with_key(|dir| load(dir))
         } else {
-            self.fresh = load(&path);
+            self.fresh = load(&dir);
             &self.fresh
         }
     }
@@ -207,5 +208,23 @@ mod tests {
         let mut cache = ConfigCache::new(true);
 
         assert_eq!(line_length(cache.resolve(&file)), Some(100));
+    }
+
+    #[test]
+    fn sibling_documents_share_one_resolution() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_prose_toml(dir.path(), "code-line-length = 100\n");
+        let first = uri(&format!("file://{}", dir.path().join("a.py").display()));
+        let second = uri(&format!("file://{}", dir.path().join("b.py").display()));
+
+        let mut cache = ConfigCache::new(true);
+        assert_eq!(line_length(cache.resolve(&first)), Some(100));
+
+        write_prose_toml(dir.path(), "code-line-length = 80\n");
+        assert_eq!(
+            line_length(cache.resolve(&second)),
+            Some(100),
+            "sibling serves the memoized entry",
+        );
     }
 }
