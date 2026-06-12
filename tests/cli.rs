@@ -7,22 +7,33 @@ use assert_cmd::Command;
 use rstest::rstest;
 use tempfile::{TempDir, tempdir};
 
+/// A `[tool.prose]` table disabling the rule the shared fixture
+/// content fires, so a file governed by it checks clean.
+const SUPPRESSING_PYPROJECT: &str = "[tool.prose.rules]\nalign-equals = false\n";
+
 fn assert_cache_hit_matches_miss(name: &str, source: &str) {
     let (_dir, path) = fixture(name, source);
-    let (mut miss_cmd, cache_dir) = prose_isolated();
-    let miss = miss_cmd
+    assert_warm_run_matches_cold(&[&path]);
+}
+
+/// Runs `check` twice against one isolated cache, asserts the warm
+/// run reproduces the cold stdout byte for byte, and returns it.
+fn assert_warm_run_matches_cold(paths: &[&PathBuf]) -> String {
+    let (mut cold_cmd, cache_dir) = prose_isolated();
+    let cold = cold_cmd
         .args(["check", "--output-format", "json"])
-        .arg(&path)
+        .args(paths)
         .assert()
         .code(1);
-    let hit = prose()
+    let warm = prose()
         .args(["check", "--output-format", "json"])
-        .arg(&path)
+        .args(paths)
         .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .code(1);
 
-    assert_eq!(miss.get_output().stdout, hit.get_output().stdout);
+    assert_eq!(cold.get_output().stdout, warm.get_output().stdout);
+    String::from_utf8(warm.get_output().stdout.clone()).expect("utf-8")
 }
 
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
@@ -50,6 +61,21 @@ fn prose_isolated() -> (Command, TempDir) {
     let mut cmd = prose();
     cmd.env("PROSE_CACHE_DIR", dir.path());
     (cmd, dir)
+}
+
+/// Two sibling projects holding identical `source`: `suppressed/x.py`
+/// under a config disabling `align-equals`, `flagged/y.py` under none.
+fn sibling_projects(parent: &TempDir, source: &str) -> (PathBuf, PathBuf) {
+    let suppressed = parent.path().join("suppressed");
+    let flagged = parent.path().join("flagged");
+    std::fs::create_dir_all(&suppressed).expect("dirs create");
+    std::fs::create_dir_all(&flagged).expect("dirs create");
+    write(suppressed.join("pyproject.toml"), SUPPRESSING_PYPROJECT).expect("writes pyproject");
+    let x = suppressed.join("x.py");
+    let y = flagged.join("y.py");
+    write(&x, source).expect("writes");
+    write(&y, source).expect("writes");
+    (x, y)
 }
 
 #[test]
@@ -107,6 +133,19 @@ fn cache_invalidates_on_config_change() {
         .success();
     let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
     assert!(err.contains("0 hits, 1 misses"), "stderr was {err:?}");
+}
+
+#[test]
+fn cache_keys_each_file_against_its_governing_config() {
+    let parent = tempdir().expect("tempdir");
+    let (suppressed, flagged) = sibling_projects(&parent, "alpha = 1\nb = 22\n");
+
+    let out = assert_warm_run_matches_cold(&[&suppressed, &flagged]);
+
+    let summary: serde_json::Value =
+        serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses");
+    assert_eq!(summary["files_visited"], 2);
+    assert_eq!(summary["files_changed"], 1);
 }
 
 #[test]
@@ -239,6 +278,74 @@ fn check_respects_cache_disabled_in_pyproject() {
         .success();
     let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
     assert!(err.contains("cache: bypassed"), "stderr was {err:?}");
+}
+
+#[test]
+fn check_file_in_another_project_draws_its_own_config() {
+    let cwd_project = tempdir().expect("tempdir");
+    write(
+        cwd_project.path().join("pyproject.toml"),
+        SUPPRESSING_PYPROJECT,
+    )
+    .expect("writes pyproject");
+    let (_dir, path) = fixture("unaligned.py", "alpha = 1\nb = 22\n");
+
+    prose()
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .current_dir(cwd_project.path())
+        .assert()
+        .code(1);
+}
+
+#[test]
+fn check_relative_path_resolves_its_ancestor_config() {
+    let project = tempdir().expect("tempdir");
+    write(project.path().join("pyproject.toml"), SUPPRESSING_PYPROJECT).expect("writes pyproject");
+    write(project.path().join("unaligned.py"), "alpha = 1\nb = 22\n").expect("writes");
+
+    prose()
+        .args(["check", "--no-cache", "unaligned.py"])
+        .current_dir(project.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn check_resolves_each_files_config_from_its_own_project() {
+    let parent = tempdir().expect("tempdir");
+    let (suppressed, flagged) = sibling_projects(&parent, "alpha = 1\nb = 22\n");
+
+    let assert = prose()
+        .args(["check", "--no-cache", "--output-format", "json"])
+        .args([&suppressed, &flagged])
+        .assert()
+        .code(1);
+
+    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let diagnostics: Vec<serde_json::Value> = out
+        .lines()
+        .map(|line| serde_json::from_str(line).expect("parses"))
+        .filter(|record: &serde_json::Value| record["kind"] != "summary")
+        .collect();
+    assert!(!diagnostics.is_empty(), "stdout was {out:?}");
+    for diagnostic in &diagnostics {
+        let filename = diagnostic["filename"].as_str().expect("a filename");
+        assert!(filename.ends_with("y.py"), "flagged {filename:?}");
+    }
+}
+
+#[test]
+fn check_stdin_resolves_config_from_the_cwd() {
+    let project = tempdir().expect("tempdir");
+    write(project.path().join("pyproject.toml"), SUPPRESSING_PYPROJECT).expect("writes pyproject");
+
+    prose()
+        .args(["check", "--stdin"])
+        .write_stdin("alpha = 1\nb = 22\n")
+        .current_dir(project.path())
+        .assert()
+        .success();
 }
 
 #[test]

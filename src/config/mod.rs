@@ -185,6 +185,7 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+    use crate::testing::write_pyproject;
 
     fn assert_toml_error(toml: &str) {
         assert_matches!(Config::from_pyproject_str(toml), Err(ConfigError::Toml(_)));
@@ -192,10 +193,6 @@ mod tests {
 
     fn write_prose_toml(dir: &Path, contents: &str) {
         std::fs::write(dir.join("prose.toml"), contents).expect("prose.toml writes");
-    }
-
-    fn write_pyproject(dir: &Path, contents: &str) {
-        std::fs::write(dir.join("pyproject.toml"), contents).expect("pyproject writes");
     }
 
     #[test]
@@ -361,6 +358,18 @@ mod tests {
 
         assert_eq!(config.code_line_length, NonZeroUsize::new(88));
         assert!(config.rules.align_equals.enabled);
+    }
+
+    #[test]
+    fn load_from_a_file_path_walks_from_its_directory() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_prose_toml(tmp.path(), "code-line-length = 120\n");
+        let file = tmp.path().join("mod.py");
+        std::fs::write(&file, "x = 1\n").expect("writes");
+
+        let config = Config::load(&file).expect("loads");
+
+        assert_eq!(config.code_line_length, NonZeroUsize::new(120));
     }
 
     #[test]

@@ -1,5 +1,5 @@
-//! Per-file processing: read, cache-lookup, run the pipeline, and
-//! classify the outcome.
+//! Per-file processing: read, resolve config, cache-lookup, run the
+//! pipeline, and classify the outcome.
 
 use std::{
     io::{self, Read},
@@ -49,6 +49,9 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
         Ok(b) => b,
         Err(e) => return config_error(e),
     };
+    let Some(resolved) = setup.resolver.resolve(path) else {
+        return FileOutcome::Failed(ExitStatus::ConfigError);
+    };
     // Plain `format` would persist only `run`'s post-edit diagnostics, and
     // a `--validate` check must re-confirm the rewrite parses rather than
     // trust an entry an earlier unvalidated run wrote, so both bypass the
@@ -59,7 +62,7 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
         .cache
         .as_ref()
         .filter(|_| !matches!(pass, Pass::Rewrite | Pass::Diagnose { validate: true }))
-        .map(|c| (c, CacheKey::compute(&bytes, &setup.config_toml)));
+        .map(|c| (c, CacheKey::compute(&bytes, &resolved.config_toml)));
     if let Some(outcome) = keyed
         .as_ref()
         .and_then(|(c, k)| c.lookup(k))
@@ -81,7 +84,7 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
             return FileOutcome::Failed(ExitStatus::ParseError);
         }
     };
-    let outcome = run_pipeline(source, &setup.pipeline, pass);
+    let outcome = run_pipeline(source, &resolved.pipeline, pass);
     if let (
         Some((c, k)),
         FileOutcome::Done {

@@ -3,6 +3,7 @@
 use std::{
     io::{Read, Write},
     path::PathBuf,
+    sync::Arc,
 };
 
 use anyhow::Context;
@@ -23,12 +24,14 @@ use crate::{
 mod diff;
 mod process;
 mod report;
+mod resolve;
 
 use diff::write_diff;
 use process::{apply_rewrite, process_path, process_paths, process_stdin};
 use report::{
     emit_outcomes, emitter_summary, finish, render_summary, status_from_outcomes, summarize,
 };
+use resolve::{ConfigResolver, Resolved};
 
 /// One file's contribution to the run.
 #[derive(Debug)]
@@ -66,8 +69,8 @@ enum Pass {
 /// Per-run setup shared across every path the walker yields.
 struct RunSetup {
     cache: Option<Cache>,
-    config_toml: String,
-    pipeline: Pipeline,
+    cwd: Arc<Resolved>,
+    resolver: ConfigResolver,
 }
 
 pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
@@ -86,7 +89,7 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
         validate: args.validate,
     };
     let outcomes = if args.stdin {
-        vec![process_stdin(stdin, &setup.pipeline, pass)]
+        vec![process_stdin(stdin, &setup.cwd.pipeline, pass)]
     } else {
         process_paths(&args.paths, |path| process_path(path, &setup, pass))
     };
@@ -119,7 +122,7 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
             args.diff,
             args.output_format,
             present,
-            &setup.pipeline,
+            &setup.cwd.pipeline,
             &mut stdout,
             &mut stderr,
         );
@@ -146,15 +149,18 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
     }
 }
 
+/// Builds the run-level setup. The cwd's own config governs stdin
+/// input and the cache settings, while each path input re-resolves
+/// from its own ancestors through the seeded resolver.
 fn build_run(rules: &RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> {
-    let config = super::load_config_or_status()?;
-    let pipeline = Pipeline::with_filters(&config, &rules.select, &rules.ignore);
+    let (cwd_dir, config) = super::load_config_or_status()?;
     let cache = open_cache(&config, no_cache);
-    let config_toml = toml::to_string(&config).unwrap_or_default();
+    let resolver = ConfigResolver::new(rules.select.clone(), rules.ignore.clone());
+    let cwd = resolver.seed(cwd_dir, &config);
     Ok(RunSetup {
         cache,
-        config_toml,
-        pipeline,
+        cwd,
+        resolver,
     })
 }
 
@@ -307,6 +313,7 @@ mod tests {
     use crate::diagnostics::{EmitterSummary, Severity};
     use crate::rule::{Rule, RuleId};
     use crate::source::Source;
+    use crate::testing::write_pyproject;
 
     /// Test-only rule whose single edit rewrites the leading statement
     /// into unparseable source, exercising the reparse guard.
@@ -406,6 +413,37 @@ mod tests {
     }
 
     #[test]
+    fn check_broken_ancestor_config_fails_the_file_and_continues() {
+        let tmp = TempDir::new().expect("tempdir");
+        let broken = tmp.path().join("broken");
+        let plain = tmp.path().join("plain");
+        std::fs::create_dir_all(&broken).expect("dirs create");
+        std::fs::create_dir_all(&plain).expect("dirs create");
+        write_pyproject(&broken, "[this is not valid TOML");
+        std::fs::write(broken.join("a.py"), "x = 1\n").expect("writes");
+        std::fs::write(plain.join("b.py"), "x = 1\n").expect("writes");
+
+        let mut args = check_args(vec![broken.join("a.py"), plain.join("b.py")], false);
+        args.output_format = OutputFormat::Json;
+        let mut stdout = Vec::new();
+        let status = check_with_io(
+            args,
+            false,
+            &windowed(),
+            io::empty(),
+            &mut stdout,
+            io::sink(),
+        )
+        .expect("runs without anyhow");
+
+        assert_eq!(status, ExitStatus::ConfigError);
+        let out = String::from_utf8(stdout).expect("utf-8");
+        let summary: serde_json::Value =
+            serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses");
+        assert_eq!(summary["files_visited"], 1);
+    }
+
+    #[test]
     fn check_clean_returns_clean() {
         let tmp = TempDir::new().expect("tempdir");
         let file = tmp.path().join("a.py");
@@ -479,6 +517,48 @@ mod tests {
 
         let status = check_with_io(
             check_args(vec![tmp.path().to_path_buf()], false),
+            false,
+            &windowed(),
+            io::empty(),
+            Vec::<u8>::new(),
+            io::sink(),
+        )
+        .expect("runs successfully");
+
+        assert_eq!(status, ExitStatus::FormatChange);
+    }
+
+    #[test]
+    fn check_resolves_config_from_the_files_own_ancestors() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
+        let file = tmp.path().join("a.py");
+        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+
+        let status = check_with_io(
+            check_args(vec![file], false),
+            false,
+            &windowed(),
+            io::empty(),
+            Vec::<u8>::new(),
+            io::sink(),
+        )
+        .expect("runs successfully");
+
+        assert_eq!(status, ExitStatus::Clean);
+    }
+
+    #[test]
+    fn check_select_overrides_the_files_own_config() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
+        let file = tmp.path().join("a.py");
+        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+
+        let mut args = check_args(vec![file], false);
+        args.rules.select = vec![RuleId::from("align-equals")];
+        let status = check_with_io(
+            args,
             false,
             &windowed(),
             io::empty(),
@@ -662,6 +742,26 @@ mod tests {
         assert!(file_changed(&format, None));
         assert!(!file_changed(&lint, None));
         assert!(!file_changed(&[], None));
+    }
+
+    #[test]
+    fn format_diff_resolves_config_from_the_files_own_ancestors() {
+        let tmp = TempDir::new().expect("tempdir");
+        write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
+        let file = tmp.path().join("a.py");
+        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+
+        let status = format_with_io(
+            format_args(vec![file], false, true),
+            false,
+            &windowed(),
+            io::empty(),
+            Vec::<u8>::new(),
+            io::sink(),
+        )
+        .expect("runs successfully");
+
+        assert_eq!(status, ExitStatus::Clean);
     }
 
     #[test]
@@ -898,11 +998,12 @@ mod tests {
     #[test]
     fn process_path_returns_config_error_on_missing_file() {
         let tmp = TempDir::new().expect("tempdir");
-        let config = Config::default();
+        let resolver = ConfigResolver::new(Vec::new(), Vec::new());
+        let cwd = resolver.seed(tmp.path().to_path_buf(), &Config::default());
         let setup = RunSetup {
             cache: None,
-            config_toml: String::new(),
-            pipeline: Pipeline::with_filters(&config, &[], &[]),
+            cwd,
+            resolver,
         };
         let outcome = process_path(
             &tmp.path().join("does_not_exist.py"),
