@@ -60,23 +60,11 @@ impl Emitter for Text {
 #[cfg(test)]
 mod tests {
     use ruff_diagnostics::{Edit, Fix};
-    use ruff_text_size::TextRange;
 
     use super::*;
-    use crate::diagnostics::{Diagnostic, Severity};
-    use crate::rule::RuleId;
+    use crate::diagnostics::Diagnostic;
     use crate::source::Source;
-    use crate::testing::{parse, range};
-
-    fn diag(range: TextRange, fix: Option<Fix>) -> Diagnostic {
-        Diagnostic {
-            fix,
-            message: "rewrite x to y".to_owned(),
-            range,
-            rule: RuleId::from("rewrite-x"),
-            severity: Severity::Format,
-        }
-    }
+    use crate::testing::{format_diagnostic, parse, range};
 
     fn render_to_string(source: &Source, diag: &Diagnostic) -> String {
         let mut buf = Vec::<u8>::new();
@@ -96,17 +84,7 @@ mod tests {
     #[test]
     fn appends_help_block_when_fix_is_available() {
         let source = parse("x = 1\n");
-        let range = range(0, 1);
-        let rendered = render_to_string(
-            &source,
-            &diag(
-                range,
-                Some(Fix::safe_edit(Edit::range_replacement(
-                    "y".to_owned(),
-                    range,
-                ))),
-            ),
-        );
+        let rendered = render_to_string(&source, &format_diagnostic(range(0, 1)));
         assert!(rendered.contains("warning: rewrite x to y"));
         assert!(rendered.contains("help: replace with"));
         assert!(rendered.contains('y'));
@@ -117,13 +95,13 @@ mod tests {
         let source = parse("x = 1\ny = 2\n");
         let rendered = render_to_string(
             &source,
-            &diag(
-                range(0, 7),
-                Some(Fix::safe_edits(
+            &Diagnostic {
+                fix: Some(Fix::safe_edits(
                     Edit::range_replacement("aaa".to_owned(), range(0, 1)),
                     [Edit::range_replacement("bbb".to_owned(), range(6, 7))],
                 )),
-            ),
+                ..format_diagnostic(range(0, 7))
+            },
         );
         assert!(rendered.contains("help: replace with"));
         assert!(rendered.contains("aaa"));
@@ -133,8 +111,13 @@ mod tests {
     #[test]
     fn renders_path_line_column_message_and_caret() {
         let source = parse("x = 1\n");
-        let range = range(0, 1);
-        let rendered = render_to_string(&source, &diag(range, None));
+        let rendered = render_to_string(
+            &source,
+            &Diagnostic {
+                fix: None,
+                ..format_diagnostic(range(0, 1))
+            },
+        );
         assert!(rendered.contains("warning: rewrite x to y"));
         assert!(rendered.contains("--> <source>:1:1"));
         assert!(rendered.contains("rewrite-x"));

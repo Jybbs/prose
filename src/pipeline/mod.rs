@@ -350,7 +350,7 @@ mod tests {
             pipeline.rules.iter().map(|r| r.id().as_str()).collect();
         registered.sort_unstable();
         let mut known: Vec<&'static str> =
-            Pipeline::known_ids().iter().map(|id| id.as_str()).collect();
+            Pipeline::known_ids().iter().map(RuleId::as_str).collect();
         known.sort_unstable();
         assert_eq!(registered, known);
     }
@@ -670,23 +670,7 @@ mod tests {
     #[test]
     fn with_filters_select_overrides_disabled_config() {
         let mut config = Config::default();
-        config.rules.align_colons.enabled = false;
-        config.rules.align_comparisons.enabled = false;
         config.rules.align_equals.enabled = false;
-        config.rules.align_imports.enabled = false;
-        config.rules.align_match_case.enabled = false;
-        config.rules.alphabetize.enabled = false;
-        config.rules.bare_imports.enabled = false;
-        config.rules.blank_lines.enabled = false;
-        config.rules.collection_layout.enabled = false;
-        config.rules.legacy_union_syntax.enabled = false;
-        config.rules.reassigned_constants.enabled = false;
-        config.rules.signature_layout.enabled = false;
-        config.rules.single_use_variables.enabled = false;
-        config.rules.step_narration.enabled = false;
-        config.rules.strip_align_padding.enabled = false;
-        config.rules.strip_trailing_commas.enabled = false;
-        config.rules.unused_future_annotations.enabled = false;
 
         let pipeline = Pipeline::with_filters(&config, &[RuleId::from("align-equals")], &[]);
         assert_eq!(registered_slugs(&pipeline), ["align-equals"]);

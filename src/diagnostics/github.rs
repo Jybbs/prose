@@ -49,26 +49,8 @@ fn emit_one(writer: &mut dyn Write, file: &SourceFile, diag: &Diagnostic) -> io:
 
 #[cfg(test)]
 mod tests {
-    use ruff_diagnostics::{Edit, Fix};
-    use ruff_text_size::TextRange;
-
     use super::*;
-    use crate::diagnostics::Severity;
-    use crate::rule::RuleId;
-    use crate::testing::{parse, range};
-
-    fn diag(range: TextRange) -> Diagnostic {
-        Diagnostic {
-            fix: Some(Fix::safe_edit(Edit::range_replacement(
-                "y".to_owned(),
-                range,
-            ))),
-            message: "rewrite x to y".to_owned(),
-            range,
-            rule: RuleId::from("rewrite-x"),
-            severity: Severity::Format,
-        }
-    }
+    use crate::testing::{format_diagnostic, parse, range};
 
     fn emit_to_string(file: &SourceFile, diag: &Diagnostic) -> String {
         let mut buf = Vec::<u8>::new();
@@ -85,7 +67,7 @@ mod tests {
     #[test]
     fn drops_endline_and_endcolumn_for_multi_line_ranges() {
         let source = parse("x = (\n  1\n)\n");
-        let diag = diag(range(0, 11));
+        let diag = format_diagnostic(range(0, 11));
         assert_eq!(
             emit_to_string(source.source_file(), &diag),
             "::warning file=<source>,line=1,col=1::rewrite x to y\n",
@@ -95,7 +77,7 @@ mod tests {
     #[test]
     fn emits_endline_and_endcolumn_when_range_stays_on_one_line() {
         let source = parse("x = 1\n");
-        let diag = diag(range(0, 1));
+        let diag = format_diagnostic(range(0, 1));
         assert_eq!(
             emit_to_string(source.source_file(), &diag),
             "::warning file=<source>,line=1,col=1,endLine=1,endColumn=2::rewrite x to y\n",

@@ -176,22 +176,11 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::*;
-    use crate::diagnostics::Severity;
     use crate::source::Source;
-    use crate::testing::{parse, range};
+    use crate::testing::{format_diagnostic, parse, range};
 
     fn diag() -> Diagnostic {
-        let range = range(0, 1);
-        Diagnostic {
-            fix: Some(Fix::safe_edit(Edit::range_replacement(
-                "y".to_owned(),
-                range,
-            ))),
-            message: "rewrite x to y".to_owned(),
-            range,
-            rule: RuleId::from("rewrite-x"),
-            severity: Severity::Format,
-        }
+        format_diagnostic(range(0, 1))
     }
 
     fn emit_records(
@@ -237,10 +226,7 @@ mod tests {
                 "z = 3".to_owned(),
                 range,
             ))),
-            message: "collapse".to_owned(),
-            range,
-            rule: RuleId::from("rewrite-x"),
-            severity: Severity::Format,
+            ..format_diagnostic(range)
         };
         let records = emit_records(
             &source,
@@ -258,10 +244,7 @@ mod tests {
                 Edit::range_replacement("a".to_owned(), range(0, 1)),
                 [Edit::range_replacement("b".to_owned(), range(6, 7))],
             )),
-            message: "align".to_owned(),
-            range: range(0, 7),
-            rule: RuleId::from("align-equals"),
-            severity: Severity::Format,
+            ..format_diagnostic(range(0, 7))
         };
         let records = emit_records(
             &source,

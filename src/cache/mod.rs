@@ -21,13 +21,13 @@ pub use records::{CacheEntry, CacheInfo, CleanReport, Rewrite};
 #[cfg(test)]
 mod tests {
     use ruff_diagnostics::{Edit, Fix};
-    use ruff_text_size::TextRange;
     use tempfile::TempDir;
 
     use super::key::CACHE_FORMAT_VERSION;
     use super::*;
     use crate::diagnostics::{Diagnostic, Severity};
     use crate::rule::RuleId;
+    use crate::testing::range;
 
     const CONFIG_A: &str = "code-line-length = 88\n";
     const CONFIG_B: &str = "code-line-length = 100\n";
@@ -43,6 +43,9 @@ mod tests {
 
     fn entry(formatted: Option<&str>) -> CacheEntry {
         CacheEntry {
+            // The rule must be a registered slug, because `RuleId`
+            // deserializes through the registry and an unknown slug
+            // fails the entry's round-trip.
             diagnostics: vec![Diagnostic {
                 fix: Some(Fix::safe_edit(Edit::range_replacement(
                     "y".into(),
@@ -58,10 +61,6 @@ mod tests {
                 None => Rewrite::Unchanged,
             },
         }
-    }
-
-    fn range(start: u32, end: u32) -> TextRange {
-        TextRange::new(start.into(), end.into())
     }
 
     #[test]

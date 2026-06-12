@@ -17,6 +17,7 @@ use crate::{
     source::Source,
     walker,
 };
+
 pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
     let FileOutcome::Done {
         rewrite: Rewrite::Changed(text),
@@ -57,8 +58,7 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
     let text = match String::from_utf8(bytes) {
         Ok(t) => t,
         Err(e) => {
-            eprintln!("error: {} is not valid UTF-8: {e}", path.display());
-            return FileOutcome::Failed(ExitStatus::ConfigError);
+            return config_error(format_args!("{} is not valid UTF-8: {e}", path.display()));
         }
     };
     let source = match Source::build(text, path.display().to_string()) {
@@ -100,10 +100,9 @@ where
 }
 
 pub(super) fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
-    let Ok(text) =
-        io::read_to_string(stdin).inspect_err(|e| eprintln!("error: reading stdin: {e}"))
-    else {
-        return FileOutcome::Failed(ExitStatus::ConfigError);
+    let text = match io::read_to_string(stdin) {
+        Ok(t) => t,
+        Err(e) => return config_error(format_args!("reading stdin: {e}")),
     };
     text.parse::<Source>()
         .inspect_err(|e| eprintln!("error: parse error in stdin: {e}"))
@@ -179,8 +178,7 @@ pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> F
 }
 
 pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
-    eprintln!("error: cannot walk: {err}");
-    FileOutcome::Failed(ExitStatus::ConfigError)
+    config_error(format_args!("cannot walk: {err}"))
 }
 
 fn config_error(e: impl std::fmt::Display) -> FileOutcome {

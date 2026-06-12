@@ -133,21 +133,10 @@ mod tests {
     use serde_json::Value;
 
     use super::*;
-    use crate::diagnostics::Severity;
-    use crate::testing::{parse, range};
+    use crate::testing::{format_diagnostic, parse, range};
 
     fn diag() -> Diagnostic {
-        let range = range(0, 1);
-        Diagnostic {
-            fix: Some(Fix::safe_edit(Edit::range_replacement(
-                "y".to_owned(),
-                range,
-            ))),
-            message: "rewrite x to y".to_owned(),
-            range,
-            rule: RuleId::from("rewrite-x"),
-            severity: Severity::Format,
-        }
+        format_diagnostic(range(0, 1))
     }
 
     fn emit_value(file: &SourceFile, diagnostics: &[Diagnostic]) -> Value {
@@ -195,6 +184,15 @@ mod tests {
     }
 
     #[test]
+    fn emits_an_absolute_path_unchanged() {
+        let file = SourceFileBuilder::new("/tmp/My Project/mod.py", "x = 1\n").finish();
+        let v = emit_value(&file, std::slice::from_ref(&diag()));
+        let uri = &v["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]
+            ["uri"];
+        assert_eq!(uri, "/tmp/My Project/mod.py");
+    }
+
+    #[test]
     fn fix_carries_one_replacement_per_group_edit() {
         let source = parse("x = 1\ny = 2\n");
         let diag = Diagnostic {
@@ -202,10 +200,7 @@ mod tests {
                 Edit::range_replacement("a".to_owned(), range(0, 1)),
                 [Edit::range_replacement("b".to_owned(), range(6, 7))],
             )),
-            message: "align".to_owned(),
-            range: range(0, 7),
-            rule: RuleId::from("align-equals"),
-            severity: Severity::Format,
+            ..format_diagnostic(range(0, 7))
         };
         let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
         let replacements =
@@ -226,15 +221,6 @@ mod tests {
         };
         let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
         assert!(v["runs"][0]["results"][0]["fixes"].is_null());
-    }
-
-    #[test]
-    fn emits_an_absolute_path_unchanged() {
-        let file = SourceFileBuilder::new("/tmp/My Project/mod.py", "x = 1\n").finish();
-        let v = emit_value(&file, std::slice::from_ref(&diag()));
-        let uri = &v["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]
-            ["uri"];
-        assert_eq!(uri, "/tmp/My Project/mod.py");
     }
 
     #[test]
