@@ -8,6 +8,6 @@ def configure(
     beta  : float,
     zebra : str,
     delta : float = 0.5,
-    mango : bool  = False,
+    mango : bool  = False
 ):
     return (zebra, alpha, beta, mango, delta)

@@ -9,6 +9,6 @@ def dispatch(
     *args: int,
     layout: tuple[int, int],
     spread: float = 0.0,
-    **kwargs: object,
+    **kwargs: object
 ):
     return (palette, target, layout, spread, args, kwargs)

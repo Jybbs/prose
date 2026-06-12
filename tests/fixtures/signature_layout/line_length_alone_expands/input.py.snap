@@ -6,6 +6,6 @@ input_file: tests/fixtures/signature_layout/line_length_alone_expands/input.py
 def render(
     left_descriptor: LayoutLayer,
     palette_descriptor: PaletteSpec,
-    right_descriptor: LayoutLayer,
+    right_descriptor: LayoutLayer
 ):
     return (left_descriptor, palette_descriptor, right_descriptor)

@@ -8,14 +8,14 @@ async def outer(
     palette: str,
     spread: float,
     target: int,
-    verbose: bool,
+    verbose: bool
 ):
     def inner(
         host: str,
         port: int,
         retries: int,
         timeout: float,
-        verbose: bool,
+        verbose: bool
     ):
         return (host, port, retries, timeout, verbose)
     return await inner(palette, 8080, 3, 10.0, verbose)

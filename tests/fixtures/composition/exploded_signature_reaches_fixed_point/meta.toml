@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Exploded Signature Settles at Its Fixed Point"
+
+description = '''
+An exploded signature carrying a trailing `,` **strips to a shape both rules accept**. `strip-trailing-commas` removes the comma and `signature-layout` recognizes the bare emission as canonical, so a second pass leaves the output byte-identical.
+'''

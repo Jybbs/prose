@@ -156,7 +156,7 @@ mod tests {
     use ruff_text_size::{Ranged, TextSize};
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{parse, range};
 
     /// Builds the expected summary tuple for an `Edit::range_deletion`
     /// over a member's gap.
@@ -197,7 +197,7 @@ mod tests {
             let gap_end = u32::try_from(text.len()).expect("test source fits in u32");
             text.push_str("= 0\n");
             members.push(Member {
-                gap: TextRange::new(TextSize::new(gap_start), TextSize::new(gap_end)),
+                gap: range(gap_start, gap_end),
                 line_start: TextSize::new(line_start),
                 op_width: 0,
                 width,
@@ -445,7 +445,7 @@ mod tests {
     #[test]
     fn space_padding_edit_inserts_when_range_empty_and_n_positive() {
         let source = parse("xy\n");
-        let range = TextRange::new(TextSize::new(1), TextSize::new(1));
+        let range = range(1, 1);
         let edit = space_padding_edit(&source, range, 2).expect("0-vs-2 spaces emits");
         assert_eq!(summary(&edit), (1, 1, "  ".to_owned()));
     }
@@ -453,7 +453,7 @@ mod tests {
     #[test]
     fn space_padding_edit_replaces_when_text_has_non_space_chars() {
         let source = parse("a:b\n");
-        let range = TextRange::new(TextSize::new(1), TextSize::new(2));
+        let range = range(1, 2);
         let edit = space_padding_edit(&source, range, 1).expect("non-space content emits");
         assert_eq!(summary(&edit), (1, 2, " ".to_owned()));
     }
@@ -461,7 +461,7 @@ mod tests {
     #[test]
     fn space_padding_edit_returns_none_for_empty_range_at_zero() {
         let source = parse("xy\n");
-        let range = TextRange::new(TextSize::new(1), TextSize::new(1));
+        let range = range(1, 1);
         assert!(space_padding_edit(&source, range, 0).is_none());
     }
 }
