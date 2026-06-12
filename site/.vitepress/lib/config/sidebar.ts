@@ -1,8 +1,8 @@
 import type { DefaultTheme } from 'vitepress'
 
-import { type DiscoveredPrimitive }                   from '../primitives/discovery'
-import { type DiscoveredRule }                        from '../rules/discovery'
-import { FAMILY_META, FAMILY_ORDER, type RuleFamily } from '../shared/registries'
+import { type DiscoveredPrimitive }  from '../primitives/discovery'
+import { type DiscoveredRule }       from '../rules/discovery'
+import { FAMILY_META, FAMILY_ORDER } from '../shared/registries'
 
 const primLink = (slug: string, text: string): DefaultTheme.SidebarItem =>
   ({ link: `/primitives/${slug}`, text })
