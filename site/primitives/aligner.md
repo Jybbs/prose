@@ -49,7 +49,7 @@ Aligners always carry a **one-space buffer** between content and the aligned tok
 
 When the widest member exceeds `max_shift`, the policy decides what happens next.
 
-The `split` policy partitions the group into sub-groups of contiguous rows where the within-group widest is under `max_shift`, resolving each sub-group independently. The `drop` policy excludes the widest members from the padding calculation, leaving the group aligned to the widest non-overflow row.
+The `split` policy partitions the group into width bands, seeding each band at the widest unassigned member and claiming every member within `max_shift` of it, so the dominant column is sized by the rows that need it and a row sits alone only as a genuine width outlier. The `drop` policy excludes the widest members from the padding calculation, leaving the group aligned to the widest non-overflow row.
 
 A row carrying a line-level skip directive *(`# prose: skip`, `# fmt: skip`, or `# prose: skip[<rule>]`)* is **held** out of its group: excluded from the column math, emitting no edit, and transparent to the run so the rows on either side align as one block around it. The grouping treats a held row's own trailing skip comment as not breaking the run, while a standalone comment or blank line between rows still does. This is the same exclude-then-align shape as the `drop` policy, chosen by the author rather than by width.
 
