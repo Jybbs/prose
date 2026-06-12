@@ -16,6 +16,10 @@ pub(crate) fn range(start: u32, end: u32) -> TextRange {
     TextRange::new(start.into(), end.into())
 }
 
+pub(crate) fn write_prose_toml(dir: &Path, contents: &str) {
+    std::fs::write(dir.join("prose.toml"), contents).expect("prose.toml writes");
+}
+
 pub(crate) fn write_pyproject(dir: &Path, contents: &str) {
     std::fs::write(dir.join("pyproject.toml"), contents).expect("pyproject writes");
 }

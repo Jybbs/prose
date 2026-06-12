@@ -1,9 +1,12 @@
 //! End-to-end tests against the `prose` binary, exercising
 //! `cli::run` and the exit-code matrix.
 
-use std::{fs::write, path::PathBuf};
+use std::{
+    fs::write,
+    path::{Path, PathBuf},
+};
 
-use assert_cmd::Command;
+use assert_cmd::{Command, assert::Assert};
 use rstest::rstest;
 use tempfile::{TempDir, tempdir};
 
@@ -18,7 +21,7 @@ fn assert_cache_hit_matches_miss(name: &str, source: &str) {
 
 /// Runs `check` twice against one isolated cache, asserts the warm
 /// run reproduces the cold stdout byte for byte, and returns it.
-fn assert_warm_run_matches_cold(paths: &[&PathBuf]) -> String {
+fn assert_warm_run_matches_cold(paths: &[&Path]) -> String {
     let (mut cold_cmd, cache_dir) = prose_isolated();
     let cold = cold_cmd
         .args(["check", "--output-format", "json"])
@@ -33,7 +36,7 @@ fn assert_warm_run_matches_cold(paths: &[&PathBuf]) -> String {
         .code(1);
 
     assert_eq!(cold.get_output().stdout, warm.get_output().stdout);
-    String::from_utf8(warm.get_output().stdout.clone()).expect("utf-8")
+    stdout_utf8(&warm)
 }
 
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
@@ -78,11 +81,23 @@ fn sibling_projects(parent: &TempDir, source: &str) -> (PathBuf, PathBuf) {
     (x, y)
 }
 
+fn stderr_utf8(assert: &Assert) -> String {
+    String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8")
+}
+
+fn stdout_utf8(assert: &Assert) -> String {
+    String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8")
+}
+
+fn summary_line(out: &str) -> serde_json::Value {
+    serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses")
+}
+
 #[test]
 fn cache_clean_subcommand_exits_zero_and_reports_count() {
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(["cache", "clean"]).assert().success();
-    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let out = stdout_utf8(&assert);
     assert!(out.starts_with("removed "), "stdout was {out:?}");
     assert!(out.contains("entries"));
     assert!(out.contains("bytes"));
@@ -92,7 +107,7 @@ fn cache_clean_subcommand_exits_zero_and_reports_count() {
 fn cache_compact_subcommand_exits_zero_and_reports_count() {
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(["cache", "compact"]).assert().success();
-    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let out = stdout_utf8(&assert);
     assert!(out.starts_with("removed "), "stdout was {out:?}");
 }
 
@@ -104,6 +119,16 @@ fn cache_hit_produces_identical_diagnostics_to_miss() {
 #[test]
 fn cache_hit_renders_collapsing_literal_like_a_cold_run() {
     assert_cache_hit_matches_miss("collapse.py", "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n");
+}
+
+#[test]
+fn cache_info_subcommand_prints_path_and_counts() {
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.args(["cache", "info"]).assert().success();
+    let out = stdout_utf8(&assert);
+    assert!(out.contains("path:"), "stdout was {out:?}");
+    assert!(out.contains("entries: 0"));
+    assert!(out.contains("bytes: 0"));
 }
 
 #[test]
@@ -131,7 +156,7 @@ fn cache_invalidates_on_config_change() {
         .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .success();
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    let err = stderr_utf8(&assert);
     assert!(err.contains("0 hits, 1 misses"), "stderr was {err:?}");
 }
 
@@ -142,20 +167,9 @@ fn cache_keys_each_file_against_its_governing_config() {
 
     let out = assert_warm_run_matches_cold(&[&suppressed, &flagged]);
 
-    let summary: serde_json::Value =
-        serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses");
+    let summary = summary_line(&out);
     assert_eq!(summary["files_visited"], 2);
     assert_eq!(summary["files_changed"], 1);
-}
-
-#[test]
-fn cache_info_subcommand_prints_path_and_counts() {
-    let (mut cmd, _cache_dir) = prose_isolated();
-    let assert = cmd.args(["cache", "info"]).assert().success();
-    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
-    assert!(out.contains("path:"), "stdout was {out:?}");
-    assert!(out.contains("entries: 0"));
-    assert!(out.contains("bytes: 0"));
 }
 
 #[test]
@@ -170,8 +184,44 @@ fn check_clean_summary_anchors_with_hyacinth() {
     let (_dir, path) = fixture("clean.py", "x = 1\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.arg("check").arg(&path).assert().success();
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    let err = stderr_utf8(&assert);
     assert_eq!(err.trim(), "🪻 All clean.");
+}
+
+#[test]
+fn check_dash_clean_exits_zero() {
+    prose()
+        .args(["check", "-"])
+        .write_stdin("x = 1\n")
+        .assert()
+        .success();
+}
+
+#[test]
+fn check_dash_unaligned_exits_format_change() {
+    prose()
+        .args(["check", "-"])
+        .write_stdin("ab = 1\nx = 2\n")
+        .assert()
+        .code(1);
+}
+
+#[test]
+fn check_file_in_another_project_draws_its_own_config() {
+    let cwd_project = tempdir().expect("tempdir");
+    write(
+        cwd_project.path().join("pyproject.toml"),
+        SUPPRESSING_PYPROJECT,
+    )
+    .expect("writes pyproject");
+    let (_dir, path) = fixture("unaligned.py", "alpha = 1\nb = 22\n");
+
+    prose()
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .current_dir(cwd_project.path())
+        .assert()
+        .code(1);
 }
 
 #[test]
@@ -183,9 +233,8 @@ fn check_json_closes_clean_run_with_summary_envelope() {
         .arg(&path)
         .assert()
         .success();
-    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
-    let summary: serde_json::Value =
-        serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses");
+    let out = stdout_utf8(&assert);
+    let summary = summary_line(&out);
     assert_eq!(summary["kind"], "summary");
     assert_eq!(summary["diagnostics_total"], 0);
     assert_eq!(summary["files_visited"], 1);
@@ -201,9 +250,8 @@ fn check_json_counts_a_collapsing_literal_as_changed() {
         .arg(&path)
         .assert()
         .code(1);
-    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
-    let summary: serde_json::Value =
-        serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses");
+    let out = stdout_utf8(&assert);
+    let summary = summary_line(&out);
     assert_eq!(summary["files_changed"], 1);
 }
 
@@ -216,9 +264,8 @@ fn check_json_summary_counts_a_changed_file() {
         .arg(&path)
         .assert()
         .code(1);
-    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
-    let summary: serde_json::Value =
-        serde_json::from_str(out.lines().last().expect("a summary line")).expect("parses");
+    let out = stdout_utf8(&assert);
+    let summary = summary_line(&out);
     assert_eq!(summary["kind"], "summary");
     assert_eq!(summary["files_visited"], 1);
     assert_eq!(summary["files_changed"], 1);
@@ -238,18 +285,6 @@ fn check_json_summary_counts_a_changed_file() {
 }
 
 #[test]
-fn check_violation_summary_anchors_with_bookmark() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
-    let (mut cmd, _cache_dir) = prose_isolated();
-    let assert = cmd.arg("check").arg(&path).assert().code(1);
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
-    assert!(
-        err.contains("🔖 1 diagnostic in 1 file."),
-        "stderr was {err:?}"
-    );
-}
-
-#[test]
 fn check_no_cache_flag_runs_clean() {
     let (_dir, path) = fixture("clean.py", "x = 1\n");
     prose()
@@ -257,45 +292,6 @@ fn check_no_cache_flag_runs_clean() {
         .arg(&path)
         .assert()
         .success();
-}
-
-#[test]
-fn check_respects_cache_disabled_in_pyproject() {
-    let project = tempdir().expect("tempdir");
-    std::fs::write(
-        project.path().join("pyproject.toml"),
-        "[tool.prose.cache]\nenabled = false\n",
-    )
-    .expect("writes pyproject");
-    let py = project.path().join("clean.py");
-    std::fs::write(&py, "x = 1\n").expect("writes");
-    let (mut cmd, _cache_dir) = prose_isolated();
-    let assert = cmd
-        .args(["--verbose", "check"])
-        .arg(&py)
-        .current_dir(project.path())
-        .assert()
-        .success();
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
-    assert!(err.contains("cache: bypassed"), "stderr was {err:?}");
-}
-
-#[test]
-fn check_file_in_another_project_draws_its_own_config() {
-    let cwd_project = tempdir().expect("tempdir");
-    write(
-        cwd_project.path().join("pyproject.toml"),
-        SUPPRESSING_PYPROJECT,
-    )
-    .expect("writes pyproject");
-    let (_dir, path) = fixture("unaligned.py", "alpha = 1\nb = 22\n");
-
-    prose()
-        .args(["check", "--no-cache"])
-        .arg(&path)
-        .current_dir(cwd_project.path())
-        .assert()
-        .code(1);
 }
 
 #[test]
@@ -322,7 +318,7 @@ fn check_resolves_each_files_config_from_its_own_project() {
         .assert()
         .code(1);
 
-    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let out = stdout_utf8(&assert);
     let diagnostics: Vec<serde_json::Value> = out
         .lines()
         .map(|line| serde_json::from_str(line).expect("parses"))
@@ -336,6 +332,36 @@ fn check_resolves_each_files_config_from_its_own_project() {
 }
 
 #[test]
+fn check_respects_cache_disabled_in_pyproject() {
+    let project = tempdir().expect("tempdir");
+    std::fs::write(
+        project.path().join("pyproject.toml"),
+        "[tool.prose.cache]\nenabled = false\n",
+    )
+    .expect("writes pyproject");
+    let py = project.path().join("clean.py");
+    std::fs::write(&py, "x = 1\n").expect("writes");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["--verbose", "check"])
+        .arg(&py)
+        .current_dir(project.path())
+        .assert()
+        .success();
+    let err = stderr_utf8(&assert);
+    assert!(err.contains("cache: bypassed"), "stderr was {err:?}");
+}
+
+#[test]
+fn check_stdin_clean_exits_zero() {
+    prose()
+        .args(["check", "--stdin"])
+        .write_stdin("x = 1\n")
+        .assert()
+        .success();
+}
+
+#[test]
 fn check_stdin_resolves_config_from_the_cwd() {
     let project = tempdir().expect("tempdir");
     write(project.path().join("pyproject.toml"), SUPPRESSING_PYPROJECT).expect("writes pyproject");
@@ -344,33 +370,6 @@ fn check_stdin_resolves_config_from_the_cwd() {
         .args(["check", "--stdin"])
         .write_stdin("alpha = 1\nb = 22\n")
         .current_dir(project.path())
-        .assert()
-        .success();
-}
-
-#[test]
-fn check_dash_clean_exits_zero() {
-    prose()
-        .args(["check", "-"])
-        .write_stdin("x = 1\n")
-        .assert()
-        .success();
-}
-
-#[test]
-fn check_dash_unaligned_exits_format_change() {
-    prose()
-        .args(["check", "-"])
-        .write_stdin("ab = 1\nx = 2\n")
-        .assert()
-        .code(1);
-}
-
-#[test]
-fn check_stdin_clean_exits_zero() {
-    prose()
-        .args(["check", "--stdin"])
-        .write_stdin("x = 1\n")
         .assert()
         .success();
 }
@@ -408,7 +407,7 @@ fn check_validate_bypasses_a_check_populated_cache_entry() {
         .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .code(1);
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    let err = stderr_utf8(&assert);
     assert!(
         err.contains("0 hits, 1 misses"),
         "validate must bypass the cache, stderr was {err:?}"
@@ -425,14 +424,16 @@ fn check_validate_flag_accepts_a_valid_rewrite() {
         .code(1);
 }
 
-#[rstest]
-fn color_arms_exit_zero(#[values("always", "never")] arm: &str) {
-    let (_dir, path) = fixture("clean.py", "x = 1\n");
+#[test]
+fn check_violation_summary_anchors_with_bookmark() {
+    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
-    cmd.args(["--color", arm, "check"])
-        .arg(&path)
-        .assert()
-        .success();
+    let assert = cmd.arg("check").arg(&path).assert().code(1);
+    let err = stderr_utf8(&assert);
+    assert!(
+        err.contains("🔖 1 diagnostic in 1 file."),
+        "stderr was {err:?}"
+    );
 }
 
 #[test]
@@ -445,7 +446,7 @@ fn color_always_summary_emits_truecolor_when_colorterm_set() {
         .arg(&path)
         .assert()
         .success();
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    let err = stderr_utf8(&assert);
     assert!(
         err.contains("\u{1b}[38;2;138;128;203m"),
         "stderr was {err:?}"
@@ -462,9 +463,19 @@ fn color_always_summary_falls_back_to_ansi_without_colorterm() {
         .arg(&path)
         .assert()
         .success();
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    let err = stderr_utf8(&assert);
     assert!(err.contains("\u{1b}[35m"), "stderr was {err:?}");
     assert!(!err.contains("38;2;"), "stderr was {err:?}");
+}
+
+#[rstest]
+fn color_arms_exit_zero(#[values("always", "never")] arm: &str) {
+    let (_dir, path) = fixture("clean.py", "x = 1\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    cmd.args(["--color", arm, "check"])
+        .arg(&path)
+        .assert()
+        .success();
 }
 
 #[test]
@@ -476,7 +487,7 @@ fn color_never_summary_stays_plain() {
         .arg(&path)
         .assert()
         .success();
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    let err = stderr_utf8(&assert);
     assert!(!err.contains('\u{1b}'), "stderr was {err:?}");
 }
 
@@ -529,11 +540,24 @@ fn format_dash_writes_rewrite_to_stdout() {
 }
 
 #[test]
+fn format_diff_off_tty_leaves_a_plain_patch() {
+    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
+    let stdout = stdout_utf8(&assert);
+    assert!(stdout.contains("--- "), "patch header missing: {stdout:?}");
+    assert!(
+        !stdout.contains('🧵'),
+        "decoration leaked off a TTY: {stdout:?}"
+    );
+}
+
+#[test]
 fn format_diff_renders_diff_and_leaves_file_unchanged() {
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
-    let stdout = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let stdout = stdout_utf8(&assert);
     assert!(stdout.contains("@@"), "diff missing hunks: {stdout:?}");
     assert!(
         stdout.contains("-x = 2"),
@@ -548,24 +572,11 @@ fn format_diff_renders_diff_and_leaves_file_unchanged() {
 }
 
 #[test]
-fn format_diff_off_tty_leaves_a_plain_patch() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
-    let (mut cmd, _cache_dir) = prose_isolated();
-    let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
-    let stdout = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
-    assert!(stdout.contains("--- "), "patch header missing: {stdout:?}");
-    assert!(
-        !stdout.contains('🧵'),
-        "decoration leaked off a TTY: {stdout:?}"
-    );
-}
-
-#[test]
 fn format_diff_summary_reports_would_reformat() {
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    let err = stderr_utf8(&assert);
     assert!(
         err.contains("🗞️ 1 file would be reformatted."),
         "stderr was {err:?}"
@@ -581,7 +592,7 @@ fn format_json_renders_collapsing_literal_without_aborting() {
         .arg(&path)
         .assert()
         .success();
-    let stdout = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let stdout = stdout_utf8(&assert);
     assert!(
         stdout.contains("collection-layout"),
         "json missing the format diagnostic: {stdout:?}"
@@ -601,7 +612,7 @@ fn format_json_rewrites_over_a_check_cache_entry() {
         .success();
     let after = std::fs::read_to_string(&path).expect("reads");
     assert_ne!(after, "ab = 1\nx = 2\n");
-    let stdout = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let stdout = stdout_utf8(&assert);
     assert!(
         stdout.contains("align-equals"),
         "json missing the diagnostic: {stdout}"
@@ -625,7 +636,7 @@ fn format_rewrite_summary_reports_reformatted() {
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.arg("format").arg(&path).assert().success();
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    let err = stderr_utf8(&assert);
     assert!(err.contains("🗞️ Reformatted 1 file."), "stderr was {err:?}");
 }
 
@@ -668,6 +679,22 @@ fn no_args_prints_help_and_exits_clean() {
 }
 
 #[test]
+fn quiet_check_reduces_summary_to_a_bare_count() {
+    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .env("COLORTERM", "truecolor")
+        .args(["--color", "always", "check", "--quiet"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let err = stderr_utf8(&assert);
+    assert_eq!(err.trim(), "1 diagnostic in 1 file.");
+    assert!(!err.contains('🔖'), "quiet kept the anchor: {err:?}");
+    assert!(!err.contains('\u{1b}'), "quiet kept color: {err:?}");
+}
+
+#[test]
 fn server_completes_a_stdio_session_over_the_real_binary() {
     let session = lsp_session(&[
         r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}"#,
@@ -682,7 +709,7 @@ fn server_completes_a_stdio_session_over_the_real_binary() {
         .write_stdin(session)
         .assert()
         .success();
-    let out = String::from_utf8(assert.get_output().stdout.clone()).expect("utf-8");
+    let out = stdout_utf8(&assert);
     assert!(
         out.contains("documentFormattingProvider"),
         "initialize result missing capabilities: {out:?}",
@@ -694,22 +721,6 @@ fn server_completes_a_stdio_session_over_the_real_binary() {
 }
 
 #[test]
-fn quiet_check_reduces_summary_to_a_bare_count() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
-    let (mut cmd, _cache_dir) = prose_isolated();
-    let assert = cmd
-        .env("COLORTERM", "truecolor")
-        .args(["--color", "always", "check", "--quiet"])
-        .arg(&path)
-        .assert()
-        .code(1);
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
-    assert_eq!(err.trim(), "1 diagnostic in 1 file.");
-    assert!(!err.contains('🔖'), "quiet kept the anchor: {err:?}");
-    assert!(!err.contains('\u{1b}'), "quiet kept color: {err:?}");
-}
-
-#[test]
 fn verbose_flag_prints_cache_telemetry_to_stderr() {
     let (_dir, path) = fixture("clean.py", "x = 1\n");
     let (mut cmd, _cache_dir) = prose_isolated();
@@ -718,7 +729,7 @@ fn verbose_flag_prints_cache_telemetry_to_stderr() {
         .arg(&path)
         .assert()
         .success();
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    let err = stderr_utf8(&assert);
     assert!(err.contains("cache:"), "stderr was {err:?}");
     assert!(err.contains("files"));
 }
@@ -731,7 +742,7 @@ fn verbose_flag_with_no_cache_reports_bypassed() {
         .arg(&path)
         .assert()
         .success();
-    let err = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8");
+    let err = stderr_utf8(&assert);
     assert!(err.contains("cache: bypassed"), "stderr was {err:?}");
 }
 

@@ -17,6 +17,7 @@ use crate::{
     source::Source,
     walker,
 };
+
 pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
     let FileOutcome::Done {
         formatted_text: Some(text),
@@ -196,8 +197,7 @@ pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> F
 }
 
 pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
-    eprintln!("error: cannot walk: {err}");
-    FileOutcome::Failed(ExitStatus::ConfigError)
+    config_error(format_args!("cannot walk: {err}"))
 }
 
 fn config_error(e: impl std::fmt::Display) -> FileOutcome {

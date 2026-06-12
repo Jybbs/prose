@@ -41,12 +41,11 @@ impl ConfigResolver {
         let file = std::path::absolute(path)
             .inspect_err(|e| eprintln!("error: cannot resolve `{}`: {e}", path.display()))
             .ok()?;
-        let dir = file.parent().unwrap_or(&file);
         self.by_dir
             .lock()
             .expect("resolver lock")
-            .entry(dir.to_path_buf())
-            .or_insert_with(|| match Config::load(dir) {
+            .entry(file.parent().unwrap_or(&file).to_path_buf())
+            .or_insert_with_key(|dir| match Config::load(dir) {
                 Ok(config) => Some(Arc::new(self.build(&config))),
                 Err(e) => {
                     eprintln!("error: loading config for `{}`: {e}", dir.display());

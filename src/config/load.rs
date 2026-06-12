@@ -8,6 +8,7 @@ use std::{
 
 use super::de::deserialize_prose;
 use super::{Config, ConfigError, PYPROJECT_TOML};
+
 /// A diagnostic surfaced while resolving configuration.
 pub(super) enum ConfigNotice<'a> {
     /// A `prose.toml` outranked a `[tool.prose]` table in a

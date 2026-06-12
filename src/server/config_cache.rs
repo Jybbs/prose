@@ -38,8 +38,9 @@ impl ConfigCache {
     }
 
     /// Returns the configuration governing `uri`. A watched session
-    /// memoizes by path; an unwatched one re-reads each call. An unsaved
-    /// buffer whose URI names no file falls back to the defaults.
+    /// memoizes by path, whereas an unwatched one re-reads each call.
+    /// An unsaved buffer whose URI names no file falls back to the
+    /// defaults.
     pub(super) fn resolve(&mut self, uri: &Uri) -> &Config {
         let Some(path) = file_path(uri) else {
             return &self.default;
@@ -93,20 +94,20 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-
-    fn uri(s: &str) -> Uri {
-        Uri::from_str(s).expect("valid uri")
-    }
+    use crate::testing::write_prose_toml;
 
     fn line_length(config: &Config) -> Option<usize> {
         config.code_line_length.map(std::num::NonZeroUsize::get)
     }
 
+    fn uri(s: &str) -> Uri {
+        Uri::from_str(s).expect("valid uri")
+    }
+
     #[test]
     fn broken_config_logs_and_falls_back_to_defaults() {
         let dir = tempfile::tempdir().expect("tempdir");
-        std::fs::write(dir.path().join("prose.toml"), "code-line-length = = oops\n")
-            .expect("writes");
+        write_prose_toml(dir.path(), "code-line-length = = oops\n");
         let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
 
         let mut cache = ConfigCache::new(true);
@@ -120,14 +121,13 @@ mod tests {
     #[test]
     fn disabled_cache_re_reads_on_each_resolve() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let toml = dir.path().join("prose.toml");
-        std::fs::write(&toml, "code-line-length = 100\n").expect("writes");
+        write_prose_toml(dir.path(), "code-line-length = 100\n");
         let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
 
         let mut cache = ConfigCache::new(false);
         assert_eq!(line_length(cache.resolve(&file)), Some(100));
 
-        std::fs::write(&toml, "code-line-length = 80\n").expect("rewrites");
+        write_prose_toml(dir.path(), "code-line-length = 80\n");
         assert_eq!(
             line_length(cache.resolve(&file)),
             Some(80),
@@ -138,14 +138,13 @@ mod tests {
     #[test]
     fn enabled_cache_is_stale_until_cleared() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let toml = dir.path().join("prose.toml");
-        std::fs::write(&toml, "code-line-length = 100\n").expect("writes");
+        write_prose_toml(dir.path(), "code-line-length = 100\n");
         let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
 
         let mut cache = ConfigCache::new(true);
         assert_eq!(line_length(cache.resolve(&file)), Some(100));
 
-        std::fs::write(&toml, "code-line-length = 80\n").expect("rewrites");
+        write_prose_toml(dir.path(), "code-line-length = 80\n");
         assert_eq!(
             line_length(cache.resolve(&file)),
             Some(100),
@@ -187,9 +186,22 @@ mod tests {
     }
 
     #[test]
+    fn resolve_reads_config_for_an_on_disk_document() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_prose_toml(dir.path(), "code-line-length = 100\n");
+        let doc = dir.path().join("mod.py");
+        std::fs::write(&doc, "x = 1\n").expect("writes");
+        let file = uri(&format!("file://{}", doc.display()));
+
+        let mut cache = ConfigCache::new(true);
+
+        assert_eq!(line_length(cache.resolve(&file)), Some(100));
+    }
+
+    #[test]
     fn resolve_reads_prose_toml_beside_the_document() {
         let dir = tempfile::tempdir().expect("tempdir");
-        std::fs::write(dir.path().join("prose.toml"), "code-line-length = 100\n").expect("writes");
+        write_prose_toml(dir.path(), "code-line-length = 100\n");
         let file = uri(&format!("file://{}", dir.path().join("mod.py").display()));
 
         let mut cache = ConfigCache::new(true);

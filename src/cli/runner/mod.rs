@@ -463,6 +463,27 @@ mod tests {
     }
 
     #[test]
+    fn check_ignore_overrides_the_files_own_config() {
+        let tmp = TempDir::new().expect("tempdir");
+        let file = tmp.path().join("a.py");
+        std::fs::write(&file, "alpha = 1\nb = 22\n").expect("writes");
+
+        let mut args = check_args(vec![file], false);
+        args.rules.ignore = vec![RuleId::from("align-equals")];
+        let status = check_with_io(
+            args,
+            false,
+            &windowed(),
+            io::empty(),
+            Vec::<u8>::new(),
+            io::sink(),
+        )
+        .expect("runs successfully");
+
+        assert_eq!(status, ExitStatus::Clean);
+    }
+
+    #[test]
     fn check_outcomes_with_failed_parse_takes_higher_status() {
         let source = "x = 1\n".parse::<Source>().expect("parses");
         let range = TextRange::new(0.into(), 1.into());
