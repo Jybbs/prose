@@ -27,7 +27,7 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
         return outcome;
     };
     if let Err(e) = fs_err::write(path, text) {
-        return config_error(e);
+        return failed(ExitStatus::ConfigError, e);
     }
     outcome
 }
@@ -35,7 +35,7 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
 pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOutcome {
     let bytes = match fs_err::read(path) {
         Ok(b) => b,
-        Err(e) => return config_error(e),
+        Err(e) => return failed(ExitStatus::ConfigError, e),
     };
     // Plain `format` would persist only `run`'s post-edit diagnostics, and
     // a `--validate` check must re-confirm the rewrite parses rather than
@@ -58,14 +58,19 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
     let text = match String::from_utf8(bytes) {
         Ok(t) => t,
         Err(e) => {
-            return config_error(format_args!("{} is not valid UTF-8: {e}", path.display()));
+            return failed(
+                ExitStatus::ConfigError,
+                format_args!("{} is not valid UTF-8: {e}", path.display()),
+            );
         }
     };
     let source = match Source::build(text, path.display().to_string()) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("error: parse error in `{}`: {e}", path.display());
-            return FileOutcome::Failed(ExitStatus::ParseError);
+            return failed(
+                ExitStatus::ParseError,
+                format_args!("parse error in `{}`: {e}", path.display()),
+            );
         }
     };
     let outcome = run_pipeline(source, &setup.pipeline, pass);
@@ -102,14 +107,15 @@ where
 pub(super) fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
     let text = match io::read_to_string(stdin) {
         Ok(t) => t,
-        Err(e) => return config_error(format_args!("reading stdin: {e}")),
+        Err(e) => return failed(ExitStatus::ConfigError, format_args!("reading stdin: {e}")),
     };
-    text.parse::<Source>()
-        .inspect_err(|e| eprintln!("error: parse error in stdin: {e}"))
-        .map_or_else(
-            |_| FileOutcome::Failed(ExitStatus::ParseError),
-            |source| run_pipeline(source, pipeline, pass),
-        )
+    match text.parse::<Source>() {
+        Ok(source) => run_pipeline(source, pipeline, pass),
+        Err(e) => failed(
+            ExitStatus::ParseError,
+            format_args!("parse error in stdin: {e}"),
+        ),
+    }
 }
 
 pub(super) fn rehydrate(
@@ -151,7 +157,7 @@ pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> F
             && has_format_change(&diagnostics)
             && let Err(e) = pipeline.validate(source)
         {
-            return config_error(e);
+            return failed(ExitStatus::ConfigError, e);
         }
         return FileOutcome::Done {
             cached: false,
@@ -173,15 +179,172 @@ pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> F
                 rewrite,
             }
         }
-        Err(e) => config_error(e),
+        Err(e) => failed(ExitStatus::ConfigError, e),
     }
 }
 
 pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
-    config_error(format_args!("cannot walk: {err}"))
+    failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
 }
 
-fn config_error(e: impl std::fmt::Display) -> FileOutcome {
+fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
     eprintln!("error: {e}");
-    FileOutcome::Failed(ExitStatus::ConfigError)
+    FileOutcome::Failed(status)
+}
+
+#[cfg(test)]
+mod tests {
+    use assert_matches::assert_matches;
+    use ruff_diagnostics::Edit;
+    use tempfile::TempDir;
+
+    use super::super::report::status_from_outcomes;
+    use super::*;
+    use crate::config::Config;
+    use crate::rule::RuleId;
+    use crate::testing::{GroupSentinelRule, breaks_parse, parse, range};
+
+    #[test]
+    fn check_validate_fails_on_unparseable_rule_output() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
+        let source = parse("x = 1\n");
+
+        let outcome = run_pipeline(source, &pipeline, Pass::Diagnose { validate: true });
+
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+    }
+
+    #[test]
+    fn check_without_validate_ignores_unparseable_rule_output() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
+        let source = parse("x = 1\n");
+
+        let outcome = run_pipeline(source, &pipeline, Pass::Diagnose { validate: false });
+
+        assert_matches!(
+            outcome,
+            FileOutcome::Done {
+                rewrite: Rewrite::Skipped,
+                ..
+            }
+        );
+    }
+
+    #[test]
+    fn process_path_returns_config_error_on_missing_file() {
+        let tmp = TempDir::new().expect("tempdir");
+        let config = Config::default();
+        let setup = RunSetup {
+            cache: None,
+            config_toml: String::new(),
+            pipeline: Pipeline::with_filters(&config, &[], &[]),
+        };
+        let outcome = process_path(
+            &tmp.path().join("does_not_exist.py"),
+            &setup,
+            Pass::Diagnose { validate: false },
+        );
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+    }
+
+    #[test]
+    fn rehydrate_marks_a_check_mode_outcome_skipped() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::Changed("y = 1\n".to_owned()),
+        };
+        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, false);
+        assert_matches!(
+            outcome,
+            Some(FileOutcome::Done {
+                rewrite: Rewrite::Skipped,
+                ..
+            })
+        );
+    }
+
+    #[test]
+    fn rehydrate_returns_none_for_a_skipped_entry() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::Skipped,
+        };
+        assert!(rehydrate(Path::new("a.py"), b"x = 1\n", entry, true).is_none());
+    }
+
+    #[test]
+    fn rehydrate_serves_a_changed_rewrite_to_a_format_mode() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::Changed("y = 1\n".to_owned()),
+        };
+        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, true);
+        assert_matches!(
+            outcome,
+            Some(FileOutcome::Done { rewrite: Rewrite::Changed(text), .. }) if text == "y = 1\n"
+        );
+    }
+
+    #[test]
+    fn rehydrate_serves_an_unchanged_rewrite_as_no_edit() {
+        let entry = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::Unchanged,
+        };
+        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, true);
+        assert_matches!(
+            outcome,
+            Some(FileOutcome::Done {
+                rewrite: Rewrite::Unchanged,
+                ..
+            })
+        );
+    }
+
+    #[test]
+    fn rewrite_pass_fails_on_unparseable_rule_output() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
+        let source = parse("x = 1\n");
+
+        let outcome = run_pipeline(source, &pipeline, Pass::Rewrite);
+
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+    }
+
+    #[test]
+    fn run_pipeline_reports_unchanged_when_edits_cancel() {
+        let range = range(0, 1);
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("y".to_owned(), range)]],
+                id: RuleId::from("x-to-y"),
+            }),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("x".to_owned(), range)]],
+                id: RuleId::from("y-to-x"),
+            }),
+        ]);
+        let source = parse("x = 1\n");
+
+        let outcome = run_pipeline(source, &pipeline, Pass::Rewrite);
+
+        assert_matches!(
+            &outcome,
+            FileOutcome::Done {
+                diagnostics,
+                rewrite: Rewrite::Unchanged,
+                ..
+            } if diagnostics.len() == 2
+        );
+        assert_eq!(
+            status_from_outcomes(std::slice::from_ref(&outcome), false),
+            ExitStatus::Clean,
+        );
+    }
+
+    #[test]
+    fn walk_error_returns_failed_with_config_error() {
+        let outcome = walk_error("synthetic walk failure");
+        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
+    }
 }

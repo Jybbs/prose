@@ -27,3 +27,47 @@ pub(super) fn write_diff<W: Write>(
     unified.to_writer(writer).context("writing diff")?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn write_diff_decorates_with_thread_anchor() {
+        let mut buf = Vec::new();
+        {
+            let mut writer = anstream::AutoStream::never(&mut buf);
+            write_diff(
+                &mut writer,
+                "sample.py",
+                "ab = 1\nx = 2\n",
+                "ab = 1\nx  = 2\n",
+                true,
+            )
+            .expect("writes");
+        }
+        let out = String::from_utf8(buf).expect("utf-8");
+        assert!(out.contains("🧵 sample.py"), "anchor missing: {out:?}");
+        assert!(!out.contains("--- "), "plain header leaked: {out:?}");
+        assert!(out.contains("@@"), "hunks missing: {out:?}");
+    }
+
+    #[test]
+    fn write_diff_plain_keeps_the_patch_header() {
+        let mut buf = Vec::new();
+        write_diff(
+            &mut buf,
+            "sample.py",
+            "ab = 1\nx = 2\n",
+            "ab = 1\nx  = 2\n",
+            false,
+        )
+        .expect("writes");
+        let out = String::from_utf8(buf).expect("utf-8");
+        assert!(
+            out.contains("--- sample.py"),
+            "patch header missing: {out:?}"
+        );
+        assert!(!out.contains('🧵'), "decoration leaked: {out:?}");
+    }
+}

@@ -201,9 +201,8 @@ mod tests {
     }
 
     /// Test-only rule that records its own id into a shared log and
-    /// returns the edit list supplied at construction time.
+    /// never produces edits.
     struct SentinelRule {
-        edits: Vec<Edit>,
         id: RuleId,
         log: Arc<Mutex<Vec<&'static str>>>,
     }
@@ -211,7 +210,7 @@ mod tests {
     impl Rule for SentinelRule {
         fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
             self.log.lock().expect("log mutex").push(self.id.as_str());
-            singleton_groups(self.edits.clone())
+            Vec::new()
         }
 
         fn id(&self) -> RuleId {
@@ -377,17 +376,14 @@ mod tests {
         let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
         let pipeline = Pipeline::from_rules(vec![
             Box::new(SentinelRule {
-                edits: Vec::new(),
                 id: RuleId::from("first"),
                 log: log.clone(),
             }),
             Box::new(SentinelRule {
-                edits: Vec::new(),
                 id: RuleId::from("second"),
                 log: log.clone(),
             }),
             Box::new(SentinelRule {
-                edits: Vec::new(),
                 id: RuleId::from("third"),
                 log: log.clone(),
             }),
@@ -537,7 +533,6 @@ mod tests {
     fn run_short_circuits_when_file_is_suppressed() {
         let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(13, 14))],
             id: RuleId::from("never-called"),
             log: log.clone(),
         })]);

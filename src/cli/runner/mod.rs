@@ -290,41 +290,17 @@ fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
 #[cfg(test)]
 mod tests {
     use std::io::{self, Cursor};
-    use std::path::Path;
 
     use assert_matches::assert_matches;
-    use rstest::rstest;
-    use ruff_diagnostics::{Edit, Fix};
-    use ruff_text_size::TextRange;
     use tempfile::TempDir;
 
-    use super::process::{rehydrate, run_pipeline, walk_error};
-    use super::report::{file_changed, report_verbose};
     use super::*;
-    use crate::cache::{CacheEntry, Rewrite};
-    use crate::cli::output::Summary;
-    use crate::diagnostics::{EmitterSummary, Severity};
-    use crate::rule::RuleId;
-    use crate::source::Source;
-    use crate::testing::{GroupSentinelRule, breaks_parse, parse, range};
 
     struct ErrorReader;
 
     impl Read for ErrorReader {
         fn read(&mut self, _: &mut [u8]) -> io::Result<usize> {
             Err(io::Error::other("simulated stdin failure"))
-        }
-    }
-
-    struct FailingWriter;
-
-    impl Write for FailingWriter {
-        fn flush(&mut self) -> io::Result<()> {
-            Ok(())
-        }
-
-        fn write(&mut self, _: &[u8]) -> io::Result<usize> {
-            Err(io::Error::other("simulated write failure"))
         }
     }
 
@@ -337,17 +313,6 @@ mod tests {
         }
     }
 
-    fn diagnostic(severity: Severity, range: TextRange, slug: &'static str) -> Diagnostic {
-        Diagnostic {
-            fix: matches!(severity, Severity::Format)
-                .then(|| Fix::safe_edit(Edit::range_replacement("y".into(), range))),
-            message: "test".into(),
-            range,
-            rule: RuleId::from(slug),
-            severity,
-        }
-    }
-
     fn format_args(paths: Vec<PathBuf>, stdin: bool, diff: bool) -> FormatArgs {
         FormatArgs {
             diff,
@@ -355,15 +320,6 @@ mod tests {
             paths,
             stdin,
             ..Default::default()
-        }
-    }
-
-    fn outcome_with(source: Source, diagnostics: Vec<Diagnostic>) -> FileOutcome {
-        FileOutcome::Done {
-            cached: false,
-            diagnostics,
-            file: source.source_file().clone(),
-            rewrite: Rewrite::Skipped,
         }
     }
 
@@ -391,49 +347,6 @@ mod tests {
         .expect("runs successfully");
 
         assert_eq!(status, ExitStatus::Clean);
-    }
-
-    #[test]
-    fn check_outcomes_with_failed_parse_takes_higher_status() {
-        let source = parse("x = 1\n");
-        let range = range(0, 1);
-        let outcomes = vec![
-            outcome_with(
-                source,
-                vec![diagnostic(Severity::Format, range, "synthetic-format")],
-            ),
-            FileOutcome::Failed(ExitStatus::ParseError),
-        ];
-
-        let status = status_from_outcomes(&outcomes, false);
-
-        assert_eq!(status, ExitStatus::ParseError);
-    }
-
-    #[test]
-    fn check_outcomes_with_lint_and_format_returns_lint_violation() {
-        let source = parse("x = 1\n");
-        let range = range(0, 1);
-        let diagnostics = vec![
-            diagnostic(Severity::Format, range, "synthetic-format"),
-            diagnostic(Severity::Lint, range, "synthetic-lint"),
-        ];
-        let outcomes = vec![outcome_with(source, diagnostics)];
-
-        let status = status_from_outcomes(&outcomes, false);
-
-        assert_eq!(status, ExitStatus::LintViolation);
-    }
-
-    #[test]
-    fn check_outcomes_with_synthetic_lint_returns_lint_violation() {
-        let source = parse("x = 1\n");
-        let diagnostics = vec![diagnostic(Severity::Lint, range(0, 1), "synthetic-lint")];
-        let outcomes = vec![outcome_with(source, diagnostics)];
-
-        let status = status_from_outcomes(&outcomes, false);
-
-        assert_eq!(status, ExitStatus::LintViolation);
     }
 
     #[test]
@@ -516,124 +429,6 @@ mod tests {
         )
         .expect("runs without anyhow");
         assert_eq!(status, ExitStatus::ParseError);
-    }
-
-    #[test]
-    fn check_validate_fails_on_unparseable_rule_output() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
-        let source = parse("x = 1\n");
-
-        let outcome = run_pipeline(source, &pipeline, Pass::Diagnose { validate: true });
-
-        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
-    }
-
-    #[test]
-    fn check_without_validate_ignores_unparseable_rule_output() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
-        let source = parse("x = 1\n");
-
-        let outcome = run_pipeline(source, &pipeline, Pass::Diagnose { validate: false });
-
-        assert_matches!(
-            outcome,
-            FileOutcome::Done {
-                rewrite: Rewrite::Skipped,
-                ..
-            }
-        );
-    }
-
-    #[test]
-    fn emit_outcomes_propagates_writer_failure() {
-        let source = parse("x = 1\n");
-        let diags = vec![diagnostic(
-            Severity::Format,
-            range(0, 1),
-            "synthetic-format",
-        )];
-        let outcomes = vec![outcome_with(source, diags)];
-        let result = emit_outcomes(
-            &outcomes,
-            OutputFormat::Json,
-            &mut FailingWriter,
-            &EmitterSummary::default(),
-        );
-        assert!(result.is_err());
-    }
-
-    #[rstest]
-    fn emit_outcomes_renders_each_output_format(
-        #[values(
-            OutputFormat::Github,
-            OutputFormat::Json,
-            OutputFormat::Sarif,
-            OutputFormat::Text
-        )]
-        format: OutputFormat,
-    ) {
-        let source = parse("x = 1\n");
-        let outcomes = vec![outcome_with(source, Vec::new())];
-        let mut buf = Vec::new();
-        emit_outcomes(&outcomes, format, &mut buf, &EmitterSummary::default()).expect("emits");
-    }
-
-    #[test]
-    fn emitter_summary_counts_visited_changed_diagnostics_and_rules() {
-        let range = range(0, 1);
-        let mut changed = outcome_with(
-            parse("x = 1\n"),
-            vec![
-                diagnostic(Severity::Format, range, "align-equals"),
-                diagnostic(Severity::Lint, range, "reassigned-constants"),
-            ],
-        );
-        if let FileOutcome::Done { rewrite, .. } = &mut changed {
-            *rewrite = Rewrite::Changed("x   = 1\n".to_owned());
-        }
-        let clean = outcome_with(parse("y = 2\n"), Vec::new());
-        let outcomes = vec![changed, clean, FileOutcome::Failed(ExitStatus::ParseError)];
-
-        let summary = emitter_summary(&outcomes);
-
-        assert_eq!(summary.files_visited, 2);
-        assert_eq!(summary.files_changed, 1);
-        assert_eq!(summary.files_with_diagnostics, 1);
-        assert_eq!(summary.diagnostics_total, 2);
-        assert_eq!(summary.rules_fired[&RuleId::from("align-equals")], 1);
-        assert_eq!(
-            summary.rules_fired[&RuleId::from("reassigned-constants")],
-            1
-        );
-    }
-
-    #[test]
-    fn emitter_summary_tallies_repeated_rule_occurrences() {
-        let range = range(0, 1);
-        let outcome = outcome_with(
-            parse("x = 1\n"),
-            vec![
-                diagnostic(Severity::Format, range, "align-equals"),
-                diagnostic(Severity::Format, range, "align-equals"),
-            ],
-        );
-
-        let summary = emitter_summary(std::slice::from_ref(&outcome));
-
-        assert_eq!(summary.rules_fired[&RuleId::from("align-equals")], 2);
-    }
-
-    #[test]
-    fn file_changed_counts_a_changed_rewrite_or_a_skipped_format_diagnostic() {
-        let range = range(0, 1);
-        let format = vec![diagnostic(Severity::Format, range, "synthetic-format")];
-        let lint = vec![diagnostic(Severity::Lint, range, "synthetic-lint")];
-
-        assert!(file_changed(&[], &Rewrite::Changed("x = 1\n".to_owned())));
-        assert!(file_changed(&format, &Rewrite::Skipped));
-        assert!(!file_changed(&format, &Rewrite::Unchanged));
-        assert!(!file_changed(&lint, &Rewrite::Skipped));
-        assert!(!file_changed(&[], &Rewrite::Skipped));
     }
 
     #[test]
@@ -865,255 +660,5 @@ mod tests {
         .expect("runs successfully");
 
         assert_eq!(status, ExitStatus::ConfigError);
-    }
-
-    #[test]
-    fn process_path_returns_config_error_on_missing_file() {
-        let tmp = TempDir::new().expect("tempdir");
-        let config = Config::default();
-        let setup = RunSetup {
-            cache: None,
-            config_toml: String::new(),
-            pipeline: Pipeline::with_filters(&config, &[], &[]),
-        };
-        let outcome = process_path(
-            &tmp.path().join("does_not_exist.py"),
-            &setup,
-            Pass::Diagnose { validate: false },
-        );
-        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
-    }
-
-    #[test]
-    fn rehydrate_marks_a_check_mode_outcome_skipped() {
-        let entry = CacheEntry {
-            diagnostics: Vec::new(),
-            rewrite: Rewrite::Changed("y = 1\n".to_owned()),
-        };
-        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, false);
-        assert_matches!(
-            outcome,
-            Some(FileOutcome::Done {
-                rewrite: Rewrite::Skipped,
-                ..
-            })
-        );
-    }
-
-    #[test]
-    fn rehydrate_returns_none_for_a_skipped_entry() {
-        let entry = CacheEntry {
-            diagnostics: Vec::new(),
-            rewrite: Rewrite::Skipped,
-        };
-        assert!(rehydrate(Path::new("a.py"), b"x = 1\n", entry, true).is_none());
-    }
-
-    #[test]
-    fn rehydrate_serves_a_changed_rewrite_to_a_format_mode() {
-        let entry = CacheEntry {
-            diagnostics: Vec::new(),
-            rewrite: Rewrite::Changed("y = 1\n".to_owned()),
-        };
-        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, true);
-        assert_matches!(
-            outcome,
-            Some(FileOutcome::Done { rewrite: Rewrite::Changed(text), .. }) if text == "y = 1\n"
-        );
-    }
-
-    #[test]
-    fn rehydrate_serves_an_unchanged_rewrite_as_no_edit() {
-        let entry = CacheEntry {
-            diagnostics: Vec::new(),
-            rewrite: Rewrite::Unchanged,
-        };
-        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, true);
-        assert_matches!(
-            outcome,
-            Some(FileOutcome::Done {
-                rewrite: Rewrite::Unchanged,
-                ..
-            })
-        );
-    }
-
-    #[test]
-    fn report_verbose_prints_bypassed_when_cache_disabled() {
-        let mut buf = Vec::new();
-        report_verbose(&[], false, &mut buf);
-        assert_eq!(String::from_utf8(buf).expect("utf-8"), "cache: bypassed\n");
-    }
-
-    #[test]
-    fn report_verbose_prints_hit_and_miss_counts() {
-        let make = |cached: bool| {
-            let source = parse("x = 1\n");
-            let mut o = outcome_with(source, Vec::new());
-            if let FileOutcome::Done { cached: c, .. } = &mut o {
-                *c = cached;
-            }
-            o
-        };
-        let outcomes = vec![
-            make(true),
-            make(true),
-            make(false),
-            FileOutcome::Failed(ExitStatus::Clean),
-        ];
-        let mut buf = Vec::new();
-        report_verbose(&outcomes, true, &mut buf);
-        assert_eq!(
-            String::from_utf8(buf).expect("utf-8"),
-            "cache: 2 hits, 1 misses, 3 files\n",
-        );
-    }
-
-    #[test]
-    fn rewrite_pass_fails_on_unparseable_rule_output() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
-        let source = parse("x = 1\n");
-
-        let outcome = run_pipeline(source, &pipeline, Pass::Rewrite);
-
-        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
-    }
-
-    #[test]
-    fn run_pipeline_reports_unchanged_when_edits_cancel() {
-        let range = range(0, 1);
-        let pipeline = Pipeline::from_rules(vec![
-            Box::new(GroupSentinelRule {
-                groups: vec![vec![Edit::range_replacement("y".to_owned(), range)]],
-                id: RuleId::from("x-to-y"),
-            }),
-            Box::new(GroupSentinelRule {
-                groups: vec![vec![Edit::range_replacement("x".to_owned(), range)]],
-                id: RuleId::from("y-to-x"),
-            }),
-        ]);
-        let source = parse("x = 1\n");
-
-        let outcome = run_pipeline(source, &pipeline, Pass::Rewrite);
-
-        assert_matches!(
-            &outcome,
-            FileOutcome::Done {
-                diagnostics,
-                rewrite: Rewrite::Unchanged,
-                ..
-            } if diagnostics.len() == 2
-        );
-        assert_eq!(
-            status_from_outcomes(std::slice::from_ref(&outcome), false),
-            ExitStatus::Clean,
-        );
-    }
-
-    #[test]
-    fn status_from_outcomes_clears_format_change_for_an_unchanged_rewrite() {
-        let source = parse("x = 1\n");
-        let range = range(0, 1);
-        let mut outcome = outcome_with(
-            source,
-            vec![
-                diagnostic(Severity::Format, range, "synthetic-format"),
-                diagnostic(Severity::Lint, range, "synthetic-lint"),
-            ],
-        );
-        if let FileOutcome::Done { rewrite, .. } = &mut outcome {
-            *rewrite = Rewrite::Unchanged;
-        }
-        let outcomes = vec![outcome];
-
-        assert_eq!(
-            status_from_outcomes(&outcomes, false),
-            ExitStatus::LintViolation,
-        );
-    }
-
-    #[test]
-    fn status_from_outcomes_demotes_format_change_when_demoted() {
-        let source = parse("x = 1\n");
-        let outcomes = vec![outcome_with(
-            source,
-            vec![diagnostic(
-                Severity::Format,
-                range(0, 1),
-                "synthetic-format",
-            )],
-        )];
-        assert_eq!(status_from_outcomes(&outcomes, true), ExitStatus::Clean);
-        assert_eq!(
-            status_from_outcomes(&outcomes, false),
-            ExitStatus::FormatChange,
-        );
-    }
-
-    #[test]
-    fn summarize_reports_diagnostics_alongside_a_failure() {
-        let source = parse("x = 1\n");
-        let outcomes = vec![
-            outcome_with(
-                source,
-                vec![diagnostic(Severity::Lint, range(0, 1), "synthetic-lint")],
-            ),
-            FileOutcome::Failed(ExitStatus::ParseError),
-        ];
-        assert_matches!(
-            summarize(&outcomes, &emitter_summary(&outcomes), Mode::Check),
-            Some(Summary::Diagnostics { files: 1, total: 1 })
-        );
-    }
-
-    #[test]
-    fn summarize_suppresses_clean_summary_when_a_file_failed() {
-        let outcomes = vec![FileOutcome::Failed(ExitStatus::ParseError)];
-        assert!(summarize(&outcomes, &emitter_summary(&outcomes), Mode::Check).is_none());
-    }
-
-    #[test]
-    fn walk_error_returns_failed_with_config_error() {
-        let outcome = walk_error("synthetic walk failure");
-        assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
-    }
-
-    #[test]
-    fn write_diff_decorates_with_thread_anchor() {
-        let mut buf = Vec::new();
-        {
-            let mut writer = anstream::AutoStream::never(&mut buf);
-            write_diff(
-                &mut writer,
-                "sample.py",
-                "ab = 1\nx = 2\n",
-                "ab = 1\nx  = 2\n",
-                true,
-            )
-            .expect("writes");
-        }
-        let out = String::from_utf8(buf).expect("utf-8");
-        assert!(out.contains("🧵 sample.py"), "anchor missing: {out:?}");
-        assert!(!out.contains("--- "), "plain header leaked: {out:?}");
-        assert!(out.contains("@@"), "hunks missing: {out:?}");
-    }
-
-    #[test]
-    fn write_diff_plain_keeps_the_patch_header() {
-        let mut buf = Vec::new();
-        write_diff(
-            &mut buf,
-            "sample.py",
-            "ab = 1\nx = 2\n",
-            "ab = 1\nx  = 2\n",
-            false,
-        )
-        .expect("writes");
-        let out = String::from_utf8(buf).expect("utf-8");
-        assert!(
-            out.contains("--- sample.py"),
-            "patch header missing: {out:?}"
-        );
-        assert!(!out.contains('🧵'), "decoration leaked: {out:?}");
     }
 }

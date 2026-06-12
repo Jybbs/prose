@@ -1,10 +1,10 @@
 //! Helpers shared across `#[cfg(test)] mod tests` blocks.
 
-use ruff_diagnostics::{Edit, Fix};
+use ruff_diagnostics::Edit;
 use ruff_text_size::TextRange;
 
 use crate::{
-    diagnostics::{Diagnostic, Severity},
+    diagnostics::Diagnostic,
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -33,7 +33,7 @@ impl Rule for GroupSentinelRule {
 pub(crate) fn assert_send_sync<T: Send + Sync>() {}
 
 /// Returns a rule whose single edit rewrites the leading statement
-/// into unparseable source, exercising the reparse guard.
+/// into unparseable source.
 pub(crate) fn breaks_parse() -> GroupSentinelRule {
     GroupSentinelRule {
         groups: vec![vec![Edit::range_replacement(
@@ -44,19 +44,13 @@ pub(crate) fn breaks_parse() -> GroupSentinelRule {
     }
 }
 
-/// Format diagnostic with a safe single-edit fix, the shape emitter
-/// tests render.
+/// Format diagnostic with a safe single-edit fix.
 pub(crate) fn format_diagnostic(range: TextRange) -> Diagnostic {
-    Diagnostic {
-        fix: Some(Fix::safe_edit(Edit::range_replacement(
-            "y".to_owned(),
-            range,
-        ))),
-        message: "rewrite x to y".to_owned(),
-        range,
-        rule: RuleId::from("rewrite-x"),
-        severity: Severity::Format,
-    }
+    Diagnostic::format(
+        RuleId::from("rewrite-x"),
+        vec![Edit::range_replacement("y".to_owned(), range)],
+        "rewrite x to y".to_owned(),
+    )
 }
 
 pub(crate) fn parse(src: &str) -> Source {
