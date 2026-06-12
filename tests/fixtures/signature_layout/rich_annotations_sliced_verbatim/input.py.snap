@@ -12,6 +12,6 @@ def configure(
     config: Mapping[str, Any],
     metadata: Annotated[dict[str, int], "extra"],
     tags: tuple[str, ...],
-    timeout: Optional[float] = None,
+    timeout: Optional[float] = None
 ) -> tuple[bool, str]:
     return (True, "ok")

@@ -3,6 +3,6 @@ def render(
     palette: str,
     spread: float,
     target: int,
-    verbose: bool
+    verbose: bool,
 ):
     return (layout, palette, spread, target, verbose)

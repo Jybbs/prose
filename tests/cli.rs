@@ -531,6 +531,16 @@ fn emitters_render_shrinking_literals_without_aborting(
 }
 
 #[test]
+fn format_dash_rewrites_unaligned_stdin_to_stdout() {
+    prose()
+        .args(["format", "-"])
+        .write_stdin("ab = 1\nx = 2\n")
+        .assert()
+        .success()
+        .stdout("ab = 1\nx  = 2\n");
+}
+
+#[test]
 fn format_dash_writes_rewrite_to_stdout() {
     prose()
         .args(["format", "-"])

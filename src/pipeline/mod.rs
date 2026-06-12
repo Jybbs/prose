@@ -168,7 +168,7 @@ mod tests {
     use crate::config::Config;
     use crate::diagnostics::Severity;
     use crate::primitives::edit::singleton_groups;
-    use crate::testing::{assert_send_sync, parse, range};
+    use crate::testing::{GroupSentinelRule, assert_send_sync, breaks_parse, parse, range};
 
     /// Test-only lint-only rule that returns the range list supplied
     /// at construction and never produces edits.
@@ -201,9 +201,8 @@ mod tests {
     }
 
     /// Test-only rule that records its own id into a shared log and
-    /// returns the edit list supplied at construction time.
+    /// never produces edits.
     struct SentinelRule {
-        edits: Vec<Edit>,
         id: RuleId,
         log: Arc<Mutex<Vec<&'static str>>>,
     }
@@ -211,7 +210,7 @@ mod tests {
     impl Rule for SentinelRule {
         fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
             self.log.lock().expect("log mutex").push(self.id.as_str());
-            singleton_groups(self.edits.clone())
+            Vec::new()
         }
 
         fn id(&self) -> RuleId {
@@ -246,28 +245,6 @@ mod tests {
         }
     }
 
-    /// Test-only rule that returns the fix groups supplied at
-    /// construction, exercising the multi-edit groups the singleton
-    /// wrappers cannot produce.
-    struct GroupSentinelRule {
-        groups: Vec<Vec<Edit>>,
-        id: RuleId,
-    }
-
-    impl Rule for GroupSentinelRule {
-        fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
-            self.groups.clone()
-        }
-
-        fn id(&self) -> RuleId {
-            self.id
-        }
-
-        fn message(&self) -> &'static str {
-            "group test rule"
-        }
-    }
-
     fn registered_slugs(pipeline: &Pipeline) -> Vec<&'static str> {
         pipeline.rules.iter().map(|r| r.id().as_str()).collect()
     }
@@ -279,10 +256,9 @@ mod tests {
         // rule's edit, so the lint range stays valid against the
         // untouched buffer and both findings surface together.
         let pipeline = Pipeline::from_rules(vec![
-            Box::new(SentinelRule {
-                edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
                 id: RuleId::from("rewrite-x-to-y"),
-                log: Arc::new(Mutex::new(Vec::new())),
             }),
             Box::new(LintSentinelRule {
                 id: RuleId::from("flag-x"),
@@ -373,7 +349,7 @@ mod tests {
             pipeline.rules.iter().map(|r| r.id().as_str()).collect();
         registered.sort_unstable();
         let mut known: Vec<&'static str> =
-            Pipeline::known_ids().iter().map(|id| id.as_str()).collect();
+            Pipeline::known_ids().iter().map(RuleId::as_str).collect();
         known.sort_unstable();
         assert_eq!(registered, known);
     }
@@ -385,12 +361,7 @@ mod tests {
 
     #[test]
     fn reparse_failure_surfaces_rule_id() {
-        let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
-        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![Edit::range_replacement("def foo(".to_owned(), range(0, 5))],
-            id: RuleId::from("breaks-parse"),
-            log: log.clone(),
-        })]);
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
         let source = parse("x = 1\n");
 
         let err = pipeline.run(source).expect_err("reparse should fail");
@@ -405,17 +376,14 @@ mod tests {
         let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
         let pipeline = Pipeline::from_rules(vec![
             Box::new(SentinelRule {
-                edits: Vec::new(),
                 id: RuleId::from("first"),
                 log: log.clone(),
             }),
             Box::new(SentinelRule {
-                edits: Vec::new(),
                 id: RuleId::from("second"),
                 log: log.clone(),
             }),
             Box::new(SentinelRule {
-                edits: Vec::new(),
                 id: RuleId::from("third"),
                 log: log.clone(),
             }),
@@ -453,13 +421,12 @@ mod tests {
         // Edit at 11..16 (`x = 1`) sits inside the suppressed
         // [0..17) span and must be dropped, leaving the unsuppressed
         // edit at 27..32 (`z = 9`) to apply.
-        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: singleton_groups(vec![
                 Edit::range_replacement("y".to_owned(), range(11, 16)),
                 Edit::range_replacement("Z".to_owned(), range(27, 32)),
-            ],
+            ]),
             id: RuleId::from("rewrite-x-and-z"),
-            log: Arc::new(Mutex::new(Vec::new())),
         })]);
         let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
 
@@ -547,10 +514,9 @@ mod tests {
 
     #[test]
     fn run_emits_one_diagnostic_per_surviving_edit() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
             id: RuleId::from("rewrite-x-to-y"),
-            log: Arc::new(Mutex::new(Vec::new())),
         })]);
         let source = parse("x = 1\n");
 
@@ -567,7 +533,6 @@ mod tests {
     fn run_short_circuits_when_file_is_suppressed() {
         let log = Arc::new(Mutex::new(Vec::<&'static str>::new()));
         let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(13, 14))],
             id: RuleId::from("never-called"),
             log: log.clone(),
         })]);
@@ -596,10 +561,9 @@ mod tests {
 
     #[test]
     fn run_skips_reparse_when_every_edit_is_suppressed() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(SentinelRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(11, 16))],
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(11, 16))]],
             id: RuleId::from("rewrite-x-to-y"),
-            log: Arc::new(Mutex::new(Vec::new())),
         })]);
         let source = parse("# fmt: off\nx = 1\n# fmt: on\n");
 
@@ -633,13 +597,7 @@ mod tests {
 
     #[test]
     fn validate_surfaces_unparseable_rule_output() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-            groups: vec![vec![Edit::range_replacement(
-                "def foo(".to_owned(),
-                range(0, 5),
-            )]],
-            id: RuleId::from("breaks-parse"),
-        })]);
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
         let source = parse("x = 1\n");
 
         assert_matches!(
@@ -707,23 +665,7 @@ mod tests {
     #[test]
     fn with_filters_select_overrides_disabled_config() {
         let mut config = Config::default();
-        config.rules.align_colons.enabled = false;
-        config.rules.align_comparisons.enabled = false;
         config.rules.align_equals.enabled = false;
-        config.rules.align_imports.enabled = false;
-        config.rules.align_match_case.enabled = false;
-        config.rules.alphabetize.enabled = false;
-        config.rules.bare_imports.enabled = false;
-        config.rules.blank_lines.enabled = false;
-        config.rules.collection_layout.enabled = false;
-        config.rules.legacy_union_syntax.enabled = false;
-        config.rules.reassigned_constants.enabled = false;
-        config.rules.signature_layout.enabled = false;
-        config.rules.single_use_variables.enabled = false;
-        config.rules.step_narration.enabled = false;
-        config.rules.strip_align_padding.enabled = false;
-        config.rules.strip_trailing_commas.enabled = false;
-        config.rules.unused_future_annotations.enabled = false;
 
         let pipeline = Pipeline::with_filters(&config, &[RuleId::from("align-equals")], &[]);
         assert_eq!(registered_slugs(&pipeline), ["align-equals"]);
