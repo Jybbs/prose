@@ -4,18 +4,17 @@ import { computed, ref, useTemplateRef }                      from 'vue'
 
 import type { RenderedRule }            from '../../../../data/rules.data'
 import { formatFolio }                  from '../../../../lib/shared/numerals'
-import { FAMILY_META, type RuleFamily } from '../../../../lib/shared/registries'
+import { categoryOf, FAMILY_META, type RuleFamily } from '../../../../lib/shared/registries'
 
 const props = defineProps<{
   bodyHtml : string
   family   : RuleFamily
-  icon     : string
   number   : string
   rules    : readonly RenderedRule[]
 }>()
 
 const meta     = computed(() => FAMILY_META[props.family])
-const category = computed(() => props.family === 'lint' ? 'lint' : 'auto-fix')
+const category = computed(() => categoryOf(props.family))
 const href     = computed(() => `/rules/${props.family}/`)
 
 const rootRef = useTemplateRef<HTMLElement>('root')
@@ -54,7 +53,7 @@ const activeRule = computed(() => props.rules[activeIdx.value])
       :aria-label="`See all ${meta.label.toLowerCase()} rules`"
     />
     <span class="surface-card-number">— {{ number }}</span>
-    <span class="surface-card-icon" aria-hidden="true">{{ icon }}</span>
+    <span class="surface-card-icon" aria-hidden="true">{{ meta.badge }}</span>
     <h3 class="surface-card-label">{{ meta.label }}</h3>
     <p class="surface-card-blurb" v-html="bodyHtml" />
     <div class="surface-card-chips">

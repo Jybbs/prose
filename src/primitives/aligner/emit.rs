@@ -4,6 +4,7 @@
 
 use std::cmp::Reverse;
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_text_size::TextRange;
 
@@ -21,18 +22,12 @@ pub(super) fn emit_group(
     settings: Settings,
     edits: &mut Vec<Edit>,
 ) {
-    let Some(first) = members.first() else {
+    let Some((min_w, max_w)) = members.iter().map(|m| m.width).minmax().into_option() else {
         return;
     };
-    let (min_w, max_w) = members
-        .iter()
-        .fold((first.width, first.width), |(mn, mx), m| {
-            (mn.min(m.width), mx.max(m.width))
-        });
-    let max_op_w = max_op_width(members);
     if max_w - min_w <= settings.max_shift {
         let suffix = settings.suffix_len(members.len());
-        emit_with_paddings(source, members, max_w, max_op_w, suffix, edits);
+        emit_with_paddings(source, members, max_w, max_op_width(members), suffix, edits);
         return;
     }
     match settings.policy {
@@ -166,18 +161,19 @@ mod tests {
     /// row pointing at that row's pre-`=` whitespace. `gap_chars` seeds
     /// the existing pre-`=` whitespace.
     fn rows(specs: &[(usize, usize)]) -> (Source, Vec<Member>) {
+        let offset = |t: &str| TextSize::try_from(t.len()).expect("test source fits in u32");
         let mut text = String::new();
         let mut members = Vec::new();
         for &(width, gap_chars) in specs {
-            let line_start = u32::try_from(text.len()).expect("test source fits in u32");
+            let line_start = offset(&text);
             text.push_str(&"x".repeat(width));
-            let gap_start = u32::try_from(text.len()).expect("test source fits in u32");
+            let gap_start = offset(&text);
             text.push_str(&" ".repeat(gap_chars));
-            let gap_end = u32::try_from(text.len()).expect("test source fits in u32");
+            let gap_end = offset(&text);
             text.push_str("= 0\n");
             members.push(Member {
-                gap: TextRange::new(TextSize::new(gap_start), TextSize::new(gap_end)),
-                line_start: TextSize::new(line_start),
+                gap: TextRange::new(gap_start, gap_end),
+                line_start,
                 op_width: 0,
                 width,
             });
@@ -283,6 +279,23 @@ mod tests {
             sorted_summaries(&edits),
             vec![fill(&members[0], 3), fill(&members[1], 2)],
         );
+    }
+
+    #[test]
+    fn emit_group_drop_keeps_member_exactly_at_cap_boundary() {
+        // Width 9 sits exactly max_shift=8 from the width-1 minimum, so
+        // the inclusive band keeps it and the pair aligns at 9.
+        let (source, members) = rows(&[(1, 1), (9, 1), (30, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            settings(8, MaxAlignShiftPolicy::Drop),
+            &mut edits,
+        );
+
+        assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 9)]);
     }
 
     #[test]
@@ -393,6 +406,29 @@ mod tests {
                 fill(&members[0], 4),
                 fill(&members[1], 3),
                 fill(&members[3], 2),
+            ],
+        );
+    }
+
+    #[test]
+    fn emit_group_split_partitions_into_three_bands() {
+        // Widths 30/25 band at the cap, 15/10 band next, and 1 lands
+        // alone: the loop must keep seeding past the second band.
+        let (source, members) = rows(&[(30, 1), (25, 1), (15, 1), (10, 1), (1, 1)]);
+        let mut edits = Vec::new();
+
+        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
+        emit_group(&source, &members, settings, &mut edits);
+
+        // Band [30, 25] aligns at 30, band [15, 10] aligns at 15, and
+        // [1] is the stripped singleton. Members 0 and 2 are seeds
+        // already at gap=1.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![
+                fill(&members[1], 6),
+                fill(&members[3], 6),
+                delete(&members[4]),
             ],
         );
     }

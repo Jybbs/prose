@@ -37,6 +37,10 @@ export const FAMILY_ORDER: readonly RuleFamily[] = [
   'alignment', 'ordering', 'formatting', 'docs', 'lint'
 ]
 
+export function categoryOf(family: RuleFamily): RuleCategory {
+  return family === 'lint' ? 'lint' : 'auto-fix'
+}
+
 export type PrimitiveSlug =
   | 'aligner' | 'binding-analysis' | 'cache' | 'colon-targets' | 'docstring' | 'edit'
   | 'orderer' | 'pipeline' | 'rule-id' | 'source' | 'suppression-map' | 'walker'

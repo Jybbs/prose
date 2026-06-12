@@ -11,7 +11,7 @@ stability: internal
 
 ## Public Surface
 
-*Aligner* lives at `src/primitives/aligner.rs` and is `pub(crate)`, so the type is reachable from inside the *Prose* crate but not from a downstream Rust caller in `0.2.x`. The downstream-visible consequence is the diagnostic stream the alignment rules emit, with the resolved column landing in the `Edit` each rule produces.
+*Aligner* lives at `src/primitives/aligner/` and is `pub(crate)`, so the type is reachable from inside the *Prose* crate but not from a downstream Rust caller in `0.2.x`. The downstream-visible consequence is the diagnostic stream the alignment rules emit, with the resolved column landing in the `Edit` each rule produces.
 
 A downstream consumer in `0.2.x` can:
 
@@ -32,7 +32,7 @@ The entry point `emit_group(source: &Source, members: &[Member], settings: Setti
 
 ### Supporting Helpers
 
-A consuming rule rarely hand-builds the walker from raw AST traversal, since `aligner.rs` exposes a set of `pub(crate)` helpers covering the common shapes a new alignment rule needs:
+A consuming rule rarely hand-builds the walker from raw AST traversal, since the aligner module exposes a set of `pub(crate)` helpers covering the common shapes a new alignment rule needs:
 
 1. `line_adjacent_groups(items, member_of)` partitions `items` into runs of line-adjacent siblings via `Source::is_line_adjacent`, then maps each item through `member_of`. Single-member runs drop out.
 2. `keyed_line_adjacent_groups(items, key_of, member_of)` is the same shape with a per-item key that further partitions adjacent items into sub-groups by key.
@@ -85,7 +85,7 @@ impl Visitor<'_> {
 }
 ```
 
-`line_adjacent_groups` handles the grouping for the common contiguous-statements shape, with the per-item qualifier folding through `line_anchored_member` or `line_anchored_member_at_kind` depending on whether the gap anchors at a known offset or at a specific token. `walker.emit_group(&members)` pushes per-row edits into `self.edits`, so the rule never has to thread a returned `Vec<Edit>` per group, and `apply` drains the accumulator from `visitor.walker.edits` at the end.
+`line_adjacent_groups` handles the grouping for the common contiguous-statements shape, with the per-item qualifier folding through `line_anchored_member` or `line_anchored_member_at_kind` depending on whether the gap anchors at a known offset or at a specific token. `walker.emit_group(&members)` records each group's edits in the walker's `groups` accumulator, so the rule never has to thread a returned `Vec<Edit>` per group, and `apply` returns `visitor.walker.groups` at the end.
 
 When the alignment context is `:`-shaped *(dict items, class fields, annotated parameters, docstring args, match arms)*, the grouping logic lives in [[colon-targets]] instead. A new colon-shaped rule implements `ColonEmitter`'s `handle` and `dict`/`match_arms` overrides, calls `walk(source)`, and forwards each yielded `&[Member]` slice to `walker.emit_group(&members)`.
 

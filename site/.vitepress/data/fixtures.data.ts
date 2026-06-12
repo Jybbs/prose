@@ -38,7 +38,7 @@ function descriptionHtml(
   // already use on this surface.
   return md.render(text).replace(
     /<InlineRuleLink slug="([^"]+)" \/>/g,
-    (_, slug) => `<a class="body-link" href="${ruleHrefs.get(slug)}"><code>${slug}</code></a>`
+    (_, slug) => `<a class="body-link" href="${ruleHrefs.get(slug)!}"><code>${slug}</code></a>`
   )
 }
 

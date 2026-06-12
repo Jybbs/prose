@@ -8,6 +8,7 @@ import { FAMILY_META }     from '../../../lib/shared/registries'
 const clusters = computed(() =>
   landing.surfaces.map(s => ({
     ...s,
+    icon  : FAMILY_META[s.family].badge,
     label : FAMILY_META[s.family].label,
     rules : rules.byFamily[s.family] ?? []
   }))

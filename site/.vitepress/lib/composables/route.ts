@@ -6,17 +6,16 @@ import { FAMILY_META, type RuleFamily }     from '../shared/registries'
 
 const CURRENT_RULE_KEY: InjectionKey<ComputedRef<RenderedRule | null>> = Symbol('currentRule')
 
-function ruleSlug(rel: string): string | null {
-  if (!rel.startsWith('rules/')) return null
-  const slug = rel.slice('rules/'.length).replace(/\.md$/, '')
-  return slug && slug !== 'index' ? slug : null
+function routeSegments(rel: string): readonly string[] {
+  if (!rel.startsWith('rules/')) return []
+  return rel.slice('rules/'.length).replace(/\.md$/, '').split('/')
 }
 
 function buildCurrentRule(): ComputedRef<RenderedRule | null> {
   const { page } = useData()
   return computed(() => {
-    const slug = ruleSlug(page.value.relativePath)
-    return slug ? rules.bySlug[slug] ?? null : null
+    const slug = routeSegments(page.value.relativePath).at(-1)
+    return slug && slug !== 'index' ? rules.bySlug[slug] ?? null : null
   })
 }
 
@@ -33,11 +32,7 @@ export function useCurrentRule(): ComputedRef<RenderedRule | null> {
 export function useCurrentFamily(): ComputedRef<RuleFamily | null> {
   const { page } = useData()
   return computed(() => {
-    const slug = ruleSlug(page.value.relativePath)
-    if (slug === null) return null
-    const ruleHit = rules.bySlug[slug]
-    if (ruleHit) return ruleHit.family
-    const family = slug.split('/')[0]
-    return family in FAMILY_META ? family as RuleFamily : null
+    const family = routeSegments(page.value.relativePath)[0]
+    return family && family in FAMILY_META ? family as RuleFamily : null
   })
 }
