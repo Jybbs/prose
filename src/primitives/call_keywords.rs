@@ -1,8 +1,9 @@
 //! Renders a call's arguments in keyword form for the rules that
 //! reshape call sites. [`keyword_args`] names each argument when the
 //! whole call can take keyword form, [`module_call_params`] maps
-//! in-module call sites to the signature they bind, and
-//! [`pins_positional_params`] flags a positional-binding decorator.
+//! in-module call sites to the signature they bind, [`callee_params`]
+//! resolves one call against that map, and [`pins_positional_params`]
+//! flags a positional-binding decorator.
 
 use std::{borrow::Cow, collections::HashMap};
 
@@ -31,6 +32,17 @@ pub(crate) struct KeywordArg<'src> {
     /// The argument's value expression, the recursion point for a
     /// consumer that reshapes a nested call.
     pub value: &'src Expr,
+}
+
+/// Looks up the parameters `targets` resolves for `call`'s callee.
+/// `None` when the callee is not a plain name or is not in the map.
+pub(crate) fn callee_params<'src>(
+    targets: &HashMap<TextSize, &'src Parameters>,
+    call: &ExprCall,
+) -> Option<&'src Parameters> {
+    targets
+        .get(&call.func.as_name_expr()?.range().start())
+        .copied()
 }
 
 /// Renders `call`'s arguments past any positional-only prefix as

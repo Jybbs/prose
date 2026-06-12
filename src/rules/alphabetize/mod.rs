@@ -4,8 +4,9 @@
 //! runs with simple `Name` targets, function and lambda parameters
 //! with `self` / `cls`, positional-only params, parameters under a
 //! positional-binding decorator, and the positional-or-keyword
-//! parameters of class-body functions pinned, call kwargs, set literal
-//! elements, consecutive `import` blocks reordered into canonical bare
+//! parameters of class-body functions and lambdas pinned, call kwargs,
+//! set literal elements, consecutive `import` blocks reordered into
+//! canonical bare
 //! / external-`from` / local-package groups plus their alias lists,
 //! `global` and `nonlocal` name lists, `del` target lists, and the
 //! string literals inside `__all__` / `__slots__`.
@@ -37,14 +38,14 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use crate::{
     config::Config,
     primitives::{
-        call_keywords::{keyword_args, module_call_params, pins_positional_params},
+        call_keywords::{callee_params, keyword_args, module_call_params, pins_positional_params},
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
         imports::{ImportGroup, future_annotations_alias, import_group},
         orderer::{
             assemble_blocks, block_range, blocks_span, permute_full, permute_in_place, reorder_text,
         },
-        scope::BodyScope,
+        scope::{BodyScope, scoped_body},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -169,7 +170,9 @@ impl<'a> LeafCollector<'a> {
 
     fn emit_lambda(&mut self, l: &'a ExprLambda) {
         if let Some(params) = l.parameters.as_deref() {
-            self.emit_parameters(params, false);
+            // A class-body lambda is a method in everything but spelling,
+            // so its positional-or-keyword order pins like a `def`'s.
+            self.emit_parameters(params, self.scope == BodyScope::Class);
         }
     }
 
@@ -223,10 +226,7 @@ impl<'a> LeafCollector<'a> {
     /// the keyword run alphabetized. Returns `false` when the call cannot
     /// take that form, leaving the caller to fall back on the keyword reorder.
     fn try_emit_keyword_rewrite(&mut self, c: &'a ExprCall) -> bool {
-        let Expr::Name(callee) = c.func.as_ref() else {
-            return false;
-        };
-        let Some(&params) = self.rewrite_targets.get(&callee.range().start()) else {
+        let Some(params) = callee_params(self.rewrite_targets, c) else {
             return false;
         };
         let Some(keywords) = keyword_args(self.source, c, Some(params)) else {
@@ -265,13 +265,9 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         let enclosing = self.scope;
-        self.scope = match stmt {
-            Stmt::ClassDef(_) => BodyScope::Class,
-            Stmt::FunctionDef(_) => BodyScope::Function,
-            // A compound statement's arms inherit the enclosing scope,
-            // matching the `rewrite_stmt` recursion.
-            _ => enclosing,
-        };
+        // A compound statement's arms inherit the enclosing scope,
+        // matching the `rewrite_stmt` recursion.
+        self.scope = scoped_body(stmt).map_or(enclosing, |(_, scope)| scope);
         walk_stmt(self, stmt);
         self.scope = enclosing;
         match stmt {
@@ -328,7 +324,7 @@ fn call_rewrite_targets(source: &Source) -> HashMap<TextSize, &Parameters> {
 
 /// Returns the slot ranges of consecutive items whose pairwise
 /// neighbors satisfy `adjacent`. Singleton runs drop.
-fn chunk_runs<T>(items: &[T], mut adjacent: impl FnMut(&T, &T) -> bool) -> Vec<Range<usize>> {
+fn chunk_runs(items: &[Stmt], mut adjacent: impl FnMut(&Stmt, &Stmt) -> bool) -> Vec<Range<usize>> {
     let mut start = 0;
     items
         .chunk_by(|a, b| adjacent(a, b))
@@ -424,14 +420,17 @@ fn collect_leaf_edits<'a>(
         source,
     };
     collector.visit_body(&source.ast().body);
-    let pinned_param_docs = collector.pinned_param_docs;
-    let mut edits = collector.edits;
+    let LeafCollector {
+        mut edits,
+        pinned_param_docs,
+        rewrite_edits: mut rewrites,
+        ..
+    } = collector;
     // Keyword rewrites are pure additions over the existing leaf edits,
     // so drop any that would overlap one, sidestepping the leaf-edit
     // applicator's non-overlap invariant on nested reorder spans. An
     // enclosing rewrite outranks one it contains, so widest-first
     // ordering keeps the outer of a nested pair.
-    let mut rewrites = collector.rewrite_edits;
     rewrites.sort_by_key(|e| (e.start(), Reverse(e.end())));
     for rewrite in rewrites {
         if edits.iter().all(|e| {
@@ -660,7 +659,7 @@ fn rewrite_body<'a>(
             }
         }
         let is_import = |s: &Stmt| s.is_import_stmt() || s.is_import_from_stmt();
-        for Range { start, end } in statement_run_ranges(body, is_import) {
+        for Range { start, end } in chunk_runs(body, |a, b| is_import(a) && is_import(b)) {
             permute_in_place(&mut order, body, start..end, |s| {
                 import_sort_key(s, first_party)
             });
@@ -726,18 +725,16 @@ fn rewrite_stmt<'a>(
     block: TextRange,
     parent_scope: BodyScope,
 ) -> Cow<'a, str> {
-    let (body, body_outer, scope): (&[Stmt], TextRange, BodyScope) = match stmt {
-        Stmt::ClassDef(c) => (&c.body, c.range(), BodyScope::Class),
-        Stmt::FunctionDef(f) => (&f.body, f.range(), BodyScope::Function),
-        s if is_compound_statement(s) => {
+    let Some((body, scope)) = scoped_body(stmt) else {
+        if is_compound_statement(stmt) {
             return rewrite_compound(ctx, stmt, block, parent_scope);
         }
-        _ => return apply_inline_edits(ctx.source, block, ctx.leaf_edits),
+        return apply_inline_edits(ctx.source, block, ctx.leaf_edits);
     };
     if body.is_empty() {
         return apply_inline_edits(ctx.source, block, ctx.leaf_edits);
     }
-    let (body_text, body_span) = rewrite_body(ctx, body, body_outer, scope);
+    let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope);
     splice_bodies(ctx.source, block, [(body_text, body_span)], ctx.leaf_edits)
 }
 
@@ -792,27 +789,16 @@ where
     concat_or_borrow(&parts, source, block)
 }
 
-/// Builds a `Vec<Range<usize>>` of body slots whose statements all
-/// match `predicate`. Consecutive matching slots collapse into one
-/// run, and a non-matching statement between two matching ones breaks
-/// the run. Singleton runs drop.
-fn statement_run_ranges(
-    body: &[Stmt],
-    mut predicate: impl FnMut(&Stmt) -> bool,
-) -> Vec<Range<usize>> {
-    chunk_runs(body, |a, b| predicate(a) && predicate(b))
-}
-
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::{primitives::edit::apply_edits, testing::parse};
 
     fn applied_text(source: &Source, edits: Vec<Edit>) -> String {
-        crate::primitives::edit::apply_edits(source.text(), edits).expect("non-overlapping edits")
+        apply_edits(source.text(), edits).expect("non-overlapping edits")
     }
 
     #[test]
@@ -965,7 +951,11 @@ mod tests {
     )]
     #[case(
         "class C:\n    key = lambda b, a: 0\n",
-        "class C:\n    key = lambda a, b: 0\n"
+        "class C:\n    key = lambda b, a: 0\n"
+    )]
+    #[case(
+        "class C:\n    def m(self):\n        key = lambda b, a: 0\n",
+        "class C:\n    def m(self):\n        key = lambda a, b: 0\n"
     )]
     fn collect_leaf_edits_pins_class_body_function_params(
         #[case] src: &str,

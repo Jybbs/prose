@@ -19,7 +19,7 @@ use crate::{
     config::Config,
     primitives::{
         INDENT_STEP,
-        call_keywords::{keyword_args, module_call_params},
+        call_keywords::{callee_params, keyword_args, module_call_params},
         edit::{narrowed_replacement, singleton_groups},
         layout::explode_parens,
     },
@@ -84,10 +84,7 @@ impl<'a> Exploder<'a> {
         if self.source.intersects_comment(arguments.inner_range()) {
             return None;
         }
-        let params = call
-            .func
-            .as_name_expr()
-            .and_then(|callee| self.targets.get(&callee.range().start()).copied());
+        let params = callee_params(self.targets, call);
         let keywords = keyword_args(self.source, call, params)?;
         // A positional-only prefix cannot take keyword form, so the call
         // stays inline rather than exploding only part of its arguments.

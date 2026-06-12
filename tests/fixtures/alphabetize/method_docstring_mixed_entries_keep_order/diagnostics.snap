@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/method_docstring_mixed_entries_keep_order/input.py
+---
+alphabetize@55..70

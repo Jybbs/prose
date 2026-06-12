@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/method_docstring_mixed_entries_keep_order/input.py
+---
+class Catalog:
+    def update(self, target, source, *, mode, retries=3):
+        """Apply ``source`` onto ``target``.
+
+        Args:
+            target: Mapping receiving the update.
+            source: Mapping providing new values.
+            retries: Attempts before giving up.
+            mode: Merge strategy name.
+        """

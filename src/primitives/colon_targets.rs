@@ -7,7 +7,7 @@
 //! align to.
 
 use ruff_python_ast::{
-    AnyParameterRef, DictItem, Expr, ExprStringLiteral, MatchCase, Parameters, Stmt,
+    AnyParameterRef, DictItem, Expr, MatchCase, Parameters, Stmt,
     token::TokenKind,
     visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt},
 };
@@ -15,7 +15,11 @@ use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{primitives::aligner, rule::RuleId, source::Source};
+use crate::{
+    primitives::{aligner, docstring::body_docstring},
+    rule::RuleId,
+    source::Source,
+};
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
 /// for class fields, docstring args, dict entries, and parameters.
@@ -179,12 +183,7 @@ fn dict_member_groups(
 /// to a `:` before the line ends. Continuation lines, blank lines,
 /// and the next section header end the block.
 fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
-    let Some(string_literal) = body
-        .first()
-        .and_then(Stmt::as_expr_stmt)
-        .and_then(|s| s.value.as_string_literal_expr())
-        .and_then(ExprStringLiteral::as_single_part_string)
-    else {
+    let Some(string_literal) = body_docstring(body) else {
         return Vec::new();
     };
     let text = source.slice(string_literal);

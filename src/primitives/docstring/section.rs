@@ -176,10 +176,9 @@ fn entry_name(trimmed: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use ruff_python_ast::ExprStringLiteral;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::{primitives::docstring::body_docstring, testing::parse};
 
     fn entry_names<'a>(sections: &[Vec<SectionEntry<'a>>]) -> Vec<Vec<&'a str>> {
         sections
@@ -192,11 +191,7 @@ mod tests {
         let func = source.ast().body[0]
             .as_function_def_stmt()
             .expect("first stmt is a def");
-        func.body[0]
-            .as_expr_stmt()
-            .and_then(|e| e.value.as_string_literal_expr())
-            .and_then(ExprStringLiteral::as_single_part_string)
-            .expect("function body starts with a docstring literal")
+        body_docstring(&func.body).expect("function body starts with a docstring literal")
     }
 
     #[test]

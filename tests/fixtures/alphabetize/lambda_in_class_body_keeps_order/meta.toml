@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Class-Body Lambda Parameters Keep Their Order"
+
+description = '''
+A lambda assigned in a class body binds the instance to its first parameter exactly as a `def` does, so its positional-or-keyword parameters **keep source order** while module-level lambdas keep sorting.
+'''

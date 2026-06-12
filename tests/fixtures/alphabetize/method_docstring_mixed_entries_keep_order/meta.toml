@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Docstring Order Holds While Keyword-Only Parameters Sort"
+
+description = '''
+The docstring skip covers every parameter of a pinned signature, keyword-only ones included. A section naming both kinds **holds source order** even as the signature's keyword-only block re-sorts, leaving the docstring to follow the author rather than mirror a partially-sorted signature.
+'''
