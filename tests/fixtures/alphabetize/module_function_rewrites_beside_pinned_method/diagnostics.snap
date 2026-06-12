@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/module_function_rewrites_beside_pinned_method/input.py
+---
+alphabetize@10..147

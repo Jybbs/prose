@@ -49,12 +49,7 @@ struct Visitor<'a, H: DocstringHandler> {
 
 impl<H: DocstringHandler> Visitor<'_, H> {
     fn consider(&mut self, body: &[Stmt]) {
-        let docstring = body
-            .first()
-            .and_then(Stmt::as_expr_stmt)
-            .and_then(|e| e.value.as_string_literal_expr())
-            .and_then(ExprStringLiteral::as_single_part_string);
-        if let Some(lit) = docstring {
+        if let Some(lit) = body_docstring(body) {
             self.handler.handle(lit);
         }
     }
@@ -69,6 +64,15 @@ impl<'a, H: DocstringHandler> StatementVisitor<'a> for Visitor<'_, H> {
         }
         walk_stmt(self, stmt);
     }
+}
+
+/// Returns `body`'s PEP 257 docstring literal, its first statement
+/// when that is a single-part string expression.
+pub(crate) fn body_docstring(body: &[Stmt]) -> Option<&StringLiteral> {
+    body.first()
+        .and_then(Stmt::as_expr_stmt)
+        .and_then(|e| e.value.as_string_literal_expr())
+        .and_then(ExprStringLiteral::as_single_part_string)
 }
 
 /// Walks every docstring in `source` and collects the edits produced

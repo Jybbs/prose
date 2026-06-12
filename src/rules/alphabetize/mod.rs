@@ -2,8 +2,9 @@
 //! meaning. The covered shapes are classes and functions in a body,
 //! class-scope `Stmt::AnnAssign` field declarations and `Stmt::Assign`
 //! runs with simple `Name` targets, function and lambda parameters
-//! with `self` / `cls`, positional-only params, and parameters under a
-//! positional-binding decorator pinned, call kwargs, set literal
+//! with `self` / `cls`, positional-only params, parameters under a
+//! positional-binding decorator, and the positional-or-keyword
+//! parameters of class-body functions pinned, call kwargs, set literal
 //! elements, consecutive `import` blocks reordered into canonical bare
 //! / external-`from` / local-package groups plus their alias lists,
 //! `global` and `nonlocal` name lists, `del` target lists, and the
@@ -37,7 +38,7 @@ use crate::{
     config::Config,
     primitives::{
         call_keywords::{keyword_args, module_call_params, pins_positional_params},
-        docstring::{entry_carrying_sections, rewrite_docstrings},
+        docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
         imports::{ImportGroup, future_annotations_alias, import_group},
         orderer::{
@@ -82,9 +83,9 @@ impl Rule for Alphabetize {
             return Vec::new();
         }
         let rewrite_targets = call_rewrite_targets(source);
-        let mut leaf_edits = collect_leaf_edits(source, &rewrite_targets);
+        let (mut leaf_edits, pinned_param_docs) = collect_leaf_edits(source, &rewrite_targets);
         if self.docstring_entries {
-            leaf_edits.extend(collect_docstring_entry_edits(source));
+            leaf_edits.extend(collect_docstring_entry_edits(source, &pinned_param_docs));
             leaf_edits.sort_unstable();
         }
         let ctx = RewriteCtx {
@@ -116,8 +117,10 @@ impl Rule for Alphabetize {
 
 struct LeafCollector<'a> {
     edits: Vec<Edit>,
+    pinned_param_docs: HashMap<TextSize, &'a Parameters>,
     rewrite_edits: Vec<Edit>,
     rewrite_targets: &'a HashMap<TextSize, &'a Parameters>,
+    scope: BodyScope,
     source: &'a Source,
 }
 
@@ -261,11 +264,29 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
     }
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        let enclosing = self.scope;
+        self.scope = match stmt {
+            Stmt::ClassDef(_) => BodyScope::Class,
+            Stmt::FunctionDef(_) => BodyScope::Function,
+            // A compound statement's arms inherit the enclosing scope,
+            // matching the `rewrite_stmt` recursion.
+            _ => enclosing,
+        };
         walk_stmt(self, stmt);
+        self.scope = enclosing;
         match stmt {
             Stmt::Assign(a) => self.emit_dunder_list(a),
             Stmt::Delete(d) => self.emit_delete(d),
-            Stmt::FunctionDef(f) => self.emit_parameters(&f.parameters, pins_positional_params(f)),
+            // A class-body function's callers routinely live outside the
+            // module, where no call-site rewrite can preserve their
+            // positional bindings, so its positional-or-keyword order pins.
+            Stmt::FunctionDef(f) => {
+                let pinned = self.scope == BodyScope::Class || pins_positional_params(f);
+                if pinned && let Some(lit) = body_docstring(&f.body) {
+                    self.pinned_param_docs.insert(lit.start(), &f.parameters);
+                }
+                self.emit_parameters(&f.parameters, pinned);
+            }
             Stmt::Global(g) => self.emit_id_run(&g.names),
             Stmt::Import(i) => self.emit_alias_run(&i.names),
             Stmt::ImportFrom(i) => self.emit_alias_run(&i.names),
@@ -347,12 +368,23 @@ fn classify_param(p: &ParameterWithDefault) -> Option<(u8, &str)> {
 
 /// Walks every docstring in `source` and emits one edit per
 /// entry-carrying Google-style section whose `name: description`
-/// entries are out of alphabetical order. Each edit replaces the
-/// section's entries-span with the reordered text. Returns an empty
-/// list when no docstring carries a sortable section.
-fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
+/// entries are out of alphabetical order. In a pinned signature's
+/// docstring, a section whose every entry names a parameter keeps
+/// source order, mirroring the signature it documents. Each edit
+/// replaces the section's entries-span with the reordered text.
+/// Returns an empty list when no docstring carries a sortable section.
+fn collect_docstring_entry_edits(
+    source: &Source,
+    pinned_param_docs: &HashMap<TextSize, &Parameters>,
+) -> Vec<Edit> {
     rewrite_docstrings(source, |source, lit, edits| {
+        let pinned_params = pinned_param_docs.get(&lit.start());
         for entries in entry_carrying_sections(source, lit) {
+            if let Some(params) = pinned_params
+                && entries.iter().all(|e| params.includes(e.name))
+            {
+                continue;
+            }
             let cow = reorder_text(
                 source,
                 &entries,
@@ -376,18 +408,23 @@ fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
 
 /// Walks the AST collecting one non-overlapping leaf edit per outermost
 /// reordering structure, each folding its nested reorders in, then folds
-/// in every call-site keyword rewrite that does not overlap one.
+/// in every call-site keyword rewrite that does not overlap one. Also
+/// returns each pinned signature's docstring start mapped to its
+/// parameters, the skip set for docstring-entry sorting.
 fn collect_leaf_edits<'a>(
     source: &'a Source,
     rewrite_targets: &'a HashMap<TextSize, &'a Parameters>,
-) -> Vec<Edit> {
+) -> (Vec<Edit>, HashMap<TextSize, &'a Parameters>) {
     let mut collector = LeafCollector {
         edits: Vec::new(),
+        pinned_param_docs: HashMap::new(),
         rewrite_edits: Vec::new(),
         rewrite_targets,
+        scope: BodyScope::Module,
         source,
     };
     collector.visit_body(&source.ast().body);
+    let pinned_param_docs = collector.pinned_param_docs;
     let mut edits = collector.edits;
     // Keyword rewrites are pure additions over the existing leaf edits,
     // so drop any that would overlap one, sidestepping the leaf-edit
@@ -405,7 +442,7 @@ fn collect_leaf_edits<'a>(
             insert_by_start(&mut edits, rewrite);
         }
     }
-    edits
+    (edits, pinned_param_docs)
 }
 
 /// Returns one `(body, outer)` pair per sub-body of a compound
@@ -774,6 +811,10 @@ mod tests {
     use super::*;
     use crate::testing::parse;
 
+    fn applied_text(source: &Source, edits: Vec<Edit>) -> String {
+        crate::primitives::edit::apply_edits(source.text(), edits).expect("non-overlapping edits")
+    }
+
     #[test]
     fn ann_assign_with_named_field_filters_to_name_targets() {
         let s = parse("x: int = 1\nself.x: int = 1\n");
@@ -803,8 +844,7 @@ mod tests {
         let rule = Alphabetize::from_config(&config);
         let source = parse(src);
         let edits = rule.apply(&source).into_iter().flatten().collect();
-        let text = crate::primitives::edit::apply_edits(source.text(), edits)
-            .expect("non-overlapping edits");
+        let text = applied_text(&source, edits);
         let args_section_end = text.find("\"\"\"\n    pass").expect("closer follows args");
         let args_section = &text[..args_section_end];
         let bar_pos = args_section.find("bar: two").expect("bar still present");
@@ -833,18 +873,107 @@ mod tests {
         assert_eq!(args_reorder(&f.parameters), expected);
     }
 
+    #[rstest]
+    #[case(indoc! {"
+        class C:
+            def m(self, b, a):
+                \"\"\"Summary.
+
+                Args:
+                    b: two
+                    a: one
+
+                Raises:
+                    ValueError: bad
+                    KeyError: missing
+                \"\"\"
+    "})]
+    #[case(indoc! {"
+        @pytest.mark.parametrize('x', [1])
+        def f(b, a):
+            \"\"\"Summary.
+
+            Args:
+                b: two
+                a: one
+
+            Raises:
+                ValueError: bad
+                KeyError: missing
+            \"\"\"
+    "})]
+    fn collect_docstring_entry_edits_pins_param_sections_of_pinned_signatures(#[case] src: &str) {
+        let source = parse(src);
+        let targets = call_rewrite_targets(&source);
+        let (_, pinned) = collect_leaf_edits(&source, &targets);
+        let edits = collect_docstring_entry_edits(&source, &pinned);
+        let text = applied_text(&source, edits);
+        let b = text.find("b: two").expect("b entry present");
+        let a = text.find("a: one").expect("a entry present");
+        let value_error = text
+            .find("ValueError: bad")
+            .expect("ValueError entry present");
+        let key_error = text
+            .find("KeyError: missing")
+            .expect("KeyError entry present");
+        assert!(b < a, "parameter entries keep source order");
+        assert!(key_error < value_error, "non-parameter entries still sort");
+    }
+
     #[test]
     fn collect_leaf_edits_drops_a_keyword_rewrite_overlapping_another_edit() {
         let source = parse(
             "def inner(b, a):\n    pass\n\n\ndef outer(d, c):\n    pass\n\n\nouter(inner(1, 2), 3)\n",
         );
-        let edits = collect_leaf_edits(&source, &call_rewrite_targets(&source));
-        let text = crate::primitives::edit::apply_edits(source.text(), edits)
-            .expect("non-overlapping edits");
+        let (edits, _) = collect_leaf_edits(&source, &call_rewrite_targets(&source));
+        let text = applied_text(&source, edits);
         assert_eq!(
             text,
             "def inner(a, b):\n    pass\n\n\ndef outer(c, d):\n    pass\n\n\nouter(c=3, d=inner(1, 2))\n",
         );
+    }
+
+    #[rstest]
+    #[case(
+        "class C:\n    def m(self, b, a): pass\n",
+        "class C:\n    def m(self, b, a): pass\n"
+    )]
+    #[case(
+        "class C:\n    if True:\n        def m(self, b, a): pass\n",
+        "class C:\n    if True:\n        def m(self, b, a): pass\n"
+    )]
+    #[case(
+        "class C:\n    async def m(self, b, a): pass\n",
+        "class C:\n    async def m(self, b, a): pass\n"
+    )]
+    #[case(
+        "class C:\n    class D:\n        def m(self, b, a): pass\n",
+        "class C:\n    class D:\n        def m(self, b, a): pass\n"
+    )]
+    #[case(
+        "class C:\n    def m(self, b, a, *, d=1, c=2): pass\n",
+        "class C:\n    def m(self, b, a, *, c=2, d=1): pass\n"
+    )]
+    #[case("def m(b, a): pass\n", "def m(a, b): pass\n")]
+    #[case(
+        "class C:\n    pass\n\n\ndef m(b, a): pass\n",
+        "class C:\n    pass\n\n\ndef m(a, b): pass\n"
+    )]
+    #[case(
+        "class C:\n    def m(self):\n        def inner(b, a): pass\n",
+        "class C:\n    def m(self):\n        def inner(a, b): pass\n"
+    )]
+    #[case(
+        "class C:\n    key = lambda b, a: 0\n",
+        "class C:\n    key = lambda a, b: 0\n"
+    )]
+    fn collect_leaf_edits_pins_class_body_function_params(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        let source = parse(src);
+        let (edits, _) = collect_leaf_edits(&source, &call_rewrite_targets(&source));
+        assert_eq!(applied_text(&source, edits), expected);
     }
 
     #[test]
@@ -857,7 +986,7 @@ mod tests {
             def f(b, a): foo(b=2, a=1)
         "};
         let source = parse(src);
-        let edits = collect_leaf_edits(&source, &call_rewrite_targets(&source));
+        let (edits, _) = collect_leaf_edits(&source, &call_rewrite_targets(&source));
         assert!(edits.len() >= 5, "fixture must trigger multiple producers");
         assert!(
             edits.is_sorted(),

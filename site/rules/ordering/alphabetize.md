@@ -17,7 +17,7 @@ A reader who already knows the codebase carries a **mental map** of where things
 | **Methods in a class** | Dunders, properties, private, public |
 | **Enum members** | Alphabetical |
 | **Dataclass and Pydantic fields** | Required before optional |
-| **Parameters and keyword arguments** | Alphabetical |
+| **Parameters and keyword arguments** | Alphabetical, method positionals pinned |
 | **Imports** | Canonical groups, alphabetical within each |
 | **Docstring entries** | Alphabetical within each Title-case section |
 
@@ -28,6 +28,8 @@ A class or function definition also holds its place behind any sibling it names 
 At module scope, a constant lifts out of arrival order into a band. One whose value reaches only imports, builtins, literals, or fellow leading constants **rides a leading band directly below the imports**, and one that names a function or class **pools into a trailing band beneath the definitions**, so a module reads as its imports, its leading constants, its definitions, then the constants derived from them. Each band alphabetizes within its dependency tier, and a constant a function reads only inside its body still hoists above it, because only an eval-time reference *(a right-hand side, a decorator, a default argument, a base class, a non-deferred annotation)* binds the order. A constant the rule cannot place safely (*a reassigned name, an unresolved reference, a line a suppression directive or a `# prose: keep` marker covers*) pins where the author left it.
 
 When a function's parameters reorder, `alphabetize` rewrites each in-module call's positional arguments to keyword form, keyed to the parameter each bound to under the original order, so the reorder never silently rebinds a caller. Calls that forward `*args`, unpack `**`, or reach the function through a reassigned name stay as they read.
+
+A function defined in a class body never reorders its positional-or-keyword parameters, whatever its decorators or in-module call sites, because a method's callers routinely live outside the module (*a framework invoking an overridden hook positionally, external code calling through the class's contract*) where no call-site rewrite can reach. A docstring section whose every entry names a parameter of such a pinned signature holds the same order, mirroring the signature it documents. Keyword-only parameters keep sorting wherever they appear, since they bind by name at every call site.
 
 Pair with [[align-imports]] to align the `import` keyword across the freshly-sorted block, with [[align-colons]] to align dataclass-field annotations after the sort, and with [[blank-lines]] for the blank-line discipline around class members and the single blank line between the import groups.
 

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Method Parameters Keep Their Order"
+
+description = '''
+A method's positional-or-keyword parameters **never reorder**, whatever its decorators or in-module call sites. Callers of a method routinely live outside the module, a framework invoking an overridden hook positionally or external code calling through the class's contract, so no call-site rewrite can keep a reorder behavior-preserving.
+'''
