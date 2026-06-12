@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/docstring_args_mirror_optional_partition/input.py
+---
+def merge(source, target, retries=3):
+    """Apply ``source`` onto ``target``.
+
+    Args:
+        source: Mapping providing new values.
+        target: Mapping receiving the update.
+        retries: Attempts before giving up.
+    """

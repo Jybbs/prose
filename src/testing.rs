@@ -3,10 +3,14 @@
 use std::path::Path;
 
 use ruff_diagnostics::Edit;
+use ruff_python_ast::{StmtClassDef, StmtFunctionDef};
 use ruff_text_size::TextRange;
 
 use crate::{
+    config::Config,
     diagnostics::Diagnostic,
+    pipeline::Pipeline,
+    primitives::edit::apply_edits,
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -32,6 +36,10 @@ impl Rule for GroupSentinelRule {
     }
 }
 
+pub(crate) fn applied_text(source: &Source, edits: Vec<Edit>) -> String {
+    apply_edits(source.text(), edits).expect("non-overlapping edits")
+}
+
 pub(crate) fn assert_send_sync<T: Send + Sync>() {}
 
 /// Returns a rule whose single edit rewrites the leading statement
@@ -44,6 +52,18 @@ pub(crate) fn breaks_parse() -> GroupSentinelRule {
         )]],
         id: RuleId::from("breaks-parse"),
     }
+}
+
+pub(crate) fn first_class(source: &Source) -> &StmtClassDef {
+    source.ast().body[0]
+        .as_class_def_stmt()
+        .expect("first statement is a class")
+}
+
+pub(crate) fn first_def(source: &Source) -> &StmtFunctionDef {
+    source.ast().body[0]
+        .as_function_def_stmt()
+        .expect("first statement is a def")
 }
 
 /// Format diagnostic with a safe single-edit fix.
@@ -61,6 +81,16 @@ pub(crate) fn parse(src: &str) -> Source {
 
 pub(crate) fn range(start: u32, end: u32) -> TextRange {
     TextRange::new(start.into(), end.into())
+}
+
+pub(crate) fn run_rule(slug: &str, src: &str) -> String {
+    let pipeline = Pipeline::for_rule(slug, &Config::default()).expect("rule is registered");
+    pipeline
+        .run(parse(src))
+        .expect("pipeline runs")
+        .0
+        .text()
+        .to_owned()
 }
 
 pub(crate) fn write_prose_toml(dir: &Path, contents: &str) {

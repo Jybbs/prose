@@ -9,10 +9,9 @@ use ruff_python_trivia::leading_indentation;
 use ruff_source_file::{Line, UniversalNewlineIterator};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::source::Source;
-
-use super::body::{indent_prefix, triple_quoted_body};
+use super::body::{DocstringBody, indent_prefix, triple_quoted_body};
 use super::scan::{LineScan, LineScanner};
+use crate::source::Source;
 
 static ENTRY_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^\w[\w.]*\s*:\s+\S").expect("static pattern compiles"));
@@ -139,7 +138,7 @@ pub(crate) fn entry_carrying_sections<'src>(
     source: &'src Source,
     lit: &StringLiteral,
 ) -> Vec<Vec<SectionEntry<'src>>> {
-    let Some(body) = triple_quoted_body(source, lit).filter(|b| b.is_multiline()) else {
+    let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline) else {
         return Vec::new();
     };
     let mut walker = EntryWalker::new(indent_prefix(source, lit).chars().count());
@@ -178,7 +177,10 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::{primitives::docstring::body_docstring, testing::parse};
+    use crate::{
+        primitives::docstring::body_docstring,
+        testing::{first_def, parse},
+    };
 
     fn entry_names<'a>(sections: &[Vec<SectionEntry<'a>>]) -> Vec<Vec<&'a str>> {
         sections
@@ -188,10 +190,8 @@ mod tests {
     }
 
     fn first_function_docstring(source: &Source) -> &StringLiteral {
-        let func = source.ast().body[0]
-            .as_function_def_stmt()
-            .expect("first stmt is a def");
-        body_docstring(&func.body).expect("function body starts with a docstring literal")
+        body_docstring(&first_def(source).body)
+            .expect("function body starts with a docstring literal")
     }
 
     #[test]

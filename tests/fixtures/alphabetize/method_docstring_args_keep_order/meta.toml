@@ -3,5 +3,5 @@ previewable = true
 title       = "Method Docstring Parameter Entries Keep Their Order"
 
 description = '''
-A pinned signature carries its docstring along. A docstring section whose every entry names a parameter **keeps source order**, mirroring the pinned signature it documents, while sections naming other things (*`Raises:` here*) keep sorting.
+A pinned signature carries its docstring along. Parameter entries **mirror the signature's held order**, while sections naming other things (*`Raises:` here*) keep sorting alphabetically.
 '''

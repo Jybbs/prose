@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Docstring Entries Mirror the Required-Then-Optional Partition"
+
+description = '''
+An unpinned signature sorts **required before optional**, and its docstring entries follow the same partition rather than the bare alphabet, so `retries` sits last in both the signature and the section.
+'''

@@ -87,7 +87,7 @@ impl Visitor<'_> {
 
 `line_adjacent_groups` handles the grouping for the common contiguous-statements shape, with the per-item qualifier folding through `line_anchored_member` or `line_anchored_member_at_kind` depending on whether the gap anchors at a known offset or at a specific token. `walker.emit_group(&members)` records each group's edits in the walker's `groups` accumulator, so the rule never has to thread a returned `Vec<Edit>` per group, and `apply` returns `visitor.walker.groups` at the end.
 
-When the alignment context is `:`-shaped *(dict items, class fields, annotated parameters, docstring args, match arms)*, the grouping logic lives in [[colon-targets]] instead. A new colon-shaped rule implements `ColonEmitter`'s `handle` and `dict`/`match_arms` overrides, calls `walk(source)`, and forwards each yielded `&[Member]` slice to `walker.emit_group(&members)`.
+When the alignment context is `:`-shaped *(dict items, class fields, annotated parameters, docstring args, match arms)*, the grouping logic lives in [[colon-targets]] instead. A new colon-shaped rule implements `ColonEmitter`'s required `rule` method plus the `handle` and `match_arms` overrides it cares about, calls `walk(source)`, and forwards each yielded `&[Member]` slice to `walker.emit_group(&members)`.
 
 ## Re-Using This Primitive
 

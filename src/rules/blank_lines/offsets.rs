@@ -26,12 +26,12 @@ pub(super) fn whitespace_start_before(text: &str, offset: TextSize) -> TextSize 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_class, first_def, parse};
 
     #[test]
     fn header_signature_end_handles_multi_line_function_signature() {
         let s = parse("def f(\n    x,\n    y,\n):\n    pass\n");
-        let func = s.ast().body[0].as_function_def_stmt().expect("def");
+        let func = first_def(&s);
         let end = header_signature_end(&s, func.body[0].start());
         assert!(s.text()[..end.to_usize()].ends_with("):"));
     }
@@ -39,7 +39,7 @@ mod tests {
     #[test]
     fn header_signature_end_points_after_colon_in_simple_class() {
         let s = parse("class C:\n    pass\n");
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let class = first_class(&s);
         let end = header_signature_end(&s, class.body[0].start());
         assert_eq!(&s.text()[..end.to_usize()], "class C:");
     }
@@ -47,7 +47,7 @@ mod tests {
     #[test]
     fn header_signature_end_points_after_colon_in_simple_function() {
         let s = parse("def f():\n    pass\n");
-        let func = s.ast().body[0].as_function_def_stmt().expect("def");
+        let func = first_def(&s);
         let end = header_signature_end(&s, func.body[0].start());
         assert_eq!(&s.text()[..end.to_usize()], "def f():");
     }
@@ -55,7 +55,7 @@ mod tests {
     #[test]
     fn header_signature_end_skips_eol_comment_on_header_line() {
         let s = parse("class C:  # eol\n    pass\n");
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let class = first_class(&s);
         let end = header_signature_end(&s, class.body[0].start());
         assert_eq!(&s.text()[..end.to_usize()], "class C:");
     }
@@ -63,7 +63,7 @@ mod tests {
     #[test]
     fn header_signature_end_skips_own_line_comment_above_body() {
         let s = parse("class C:\n    # comment\n    pass\n");
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let class = first_class(&s);
         let end = header_signature_end(&s, class.body[0].start());
         assert_eq!(&s.text()[..end.to_usize()], "class C:");
     }

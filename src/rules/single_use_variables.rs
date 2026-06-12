@@ -149,14 +149,13 @@ fn body_uses_scope_modifier(body: &[Stmt]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostics::Severity;
-    use crate::testing::parse;
+    use crate::{
+        diagnostics::Severity,
+        testing::{first_def, parse},
+    };
 
     fn first_function_body(source: &Source) -> &[Stmt] {
-        &source.ast().body[0]
-            .as_function_def_stmt()
-            .expect("function def")
-            .body
+        &first_def(source).body
     }
 
     #[test]

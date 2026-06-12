@@ -52,19 +52,13 @@ impl Rule for DocstringExpand {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pipeline::Pipeline;
-    use crate::testing::parse;
+    use crate::{
+        pipeline::Pipeline,
+        testing::{parse, run_rule},
+    };
 
     fn run(src: &str) -> String {
-        let source = parse(src);
-        let pipeline =
-            Pipeline::for_rule("docstring-expand", &Config::default()).expect("rule registered");
-        pipeline
-            .run(source)
-            .expect("pipeline runs")
-            .0
-            .text()
-            .to_owned()
+        run_rule("docstring-expand", src)
     }
 
     #[test]

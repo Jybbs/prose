@@ -16,7 +16,7 @@ use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
-    primitives::{aligner, docstring::body_docstring},
+    primitives::{aligner, docstring::body_docstring, scope::scoped_body},
     rule::RuleId,
     source::Source,
 };
@@ -79,16 +79,15 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
                 for group in class_field_groups(self.source, self.emitter.rule(), &cd.body) {
                     self.emitter.handle(&group);
                 }
-                self.emitter.handle(&docstring_args(self.source, &cd.body));
-            }
-            Stmt::FunctionDef(fd) => {
-                self.emitter.handle(&docstring_args(self.source, &fd.body));
             }
             Stmt::Match(m) => {
                 self.emitter
                     .match_arms(&match_case_members(self.source, &m.cases));
             }
             _ => {}
+        }
+        if let Some((body, _)) = scoped_body(stmt) {
+            self.emitter.handle(&docstring_args(self.source, body));
         }
         walk_stmt(self, stmt);
     }

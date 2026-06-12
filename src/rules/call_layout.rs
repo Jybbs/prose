@@ -71,7 +71,7 @@ struct Exploder<'a> {
     targets: &'a HashMap<TextSize, &'a Parameters>,
 }
 
-impl<'a> Exploder<'a> {
+impl Exploder<'_> {
     /// Returns the exploded `(...)` text for `call` when it carries more
     /// than `cap` keyword-expressible arguments, the closing `)` landing
     /// at `indent`. A nested call in an argument value explodes in the

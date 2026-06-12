@@ -19,8 +19,8 @@ use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            LineScan, LineScanner, entry_description_col, indent_prefix, rewrite_docstrings,
-            section_heading, triple_quoted_body,
+            DocstringBody, LineScan, LineScanner, entry_description_col, indent_prefix,
+            rewrite_docstrings, section_heading, triple_quoted_body,
         },
         edit::{narrowed_replacement, singleton_groups},
     },
@@ -50,7 +50,8 @@ impl DocstringWrap {
 impl Rule for DocstringWrap {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
-            let Some(body) = triple_quoted_body(source, lit).filter(|b| b.is_multiline()) else {
+            let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline)
+            else {
                 return;
             };
             let indent = indent_prefix(source, lit);
@@ -250,20 +251,10 @@ fn rewrite_body(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::pipeline::Pipeline;
-    use crate::testing::parse;
+    use crate::testing::run_rule;
 
     fn run(src: &str) -> String {
-        let source = parse(src);
-        let pipeline =
-            Pipeline::for_rule("docstring-wrap", &Config::default()).expect("rule is registered");
-        pipeline
-            .run(source)
-            .expect("pipeline runs")
-            .0
-            .text()
-            .to_owned()
+        run_rule("docstring-wrap", src)
     }
 
     #[test]

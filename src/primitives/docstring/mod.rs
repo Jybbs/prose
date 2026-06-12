@@ -18,13 +18,13 @@ use ruff_python_ast::{
     statement_visitor::{StatementVisitor, walk_stmt},
 };
 
-use crate::source::Source;
+use crate::{primitives::scope::scoped_body, source::Source};
 
 mod body;
 mod scan;
 mod section;
 
-pub(crate) use body::{indent_prefix, triple_quoted_body};
+pub(crate) use body::{DocstringBody, indent_prefix, triple_quoted_body};
 pub(crate) use scan::{LineScan, LineScanner};
 pub(crate) use section::{entry_carrying_sections, entry_description_col, section_heading};
 
@@ -59,10 +59,8 @@ impl<H: DocstringHandler> Visitor<'_, H> {
 
 impl<'a, H: DocstringHandler> StatementVisitor<'a> for Visitor<'_, H> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        match stmt {
-            Stmt::ClassDef(c) => self.consider(&c.body),
-            Stmt::FunctionDef(f) => self.consider(&f.body),
-            _ => {}
+        if let Some((body, _)) = scoped_body(stmt) {
+            self.consider(body);
         }
         walk_stmt(self, stmt);
     }
@@ -117,10 +115,10 @@ mod tests {
 
     #[derive(Default)]
     struct Probe<'a> {
-        source: Option<&'a Source>,
-        values: Vec<String>,
         bodies: Vec<String>,
         indents: Vec<String>,
+        source: Option<&'a Source>,
+        values: Vec<String>,
     }
 
     impl Probe<'_> {
