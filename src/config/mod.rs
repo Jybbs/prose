@@ -191,6 +191,11 @@ mod tests {
         assert_matches!(Config::from_pyproject_str(toml), Err(ConfigError::Toml(_)));
     }
 
+    /// Builds a `MaxShift::Cap` from a non-zero literal.
+    fn cap(n: usize) -> MaxShift {
+        MaxShift::Cap(NonZeroUsize::new(n).expect("test cap is non-zero"))
+    }
+
     #[test]
     fn docstring_line_length_defaults_to_76_when_field_absent() {
         let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
@@ -670,10 +675,7 @@ mod tests {
     fn max_shift_default_is_sixteen() {
         let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
 
-        assert_eq!(
-            config.rules.align_equals.max_shift,
-            MaxShift::Cap(NonZeroUsize::new(16).expect("16 is non-zero")),
-        );
+        assert_eq!(config.rules.align_equals.max_shift, cap(16));
     }
 
     #[test]
@@ -682,7 +684,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case("4", MaxShift::Cap(NonZeroUsize::new(4).expect("4 is non-zero")))]
+    #[case("4", cap(4))]
     #[case("false", MaxShift::Unlimited)]
     #[case("0", MaxShift::NoShift)]
     fn max_shift_reads_each_value_form(#[case] value: &str, #[case] expected: MaxShift) {
@@ -773,10 +775,7 @@ mod tests {
                 .expect("parses");
 
         assert!(config.rules.align_equals.enabled);
-        assert_eq!(
-            config.rules.align_equals.max_shift,
-            MaxShift::Cap(NonZeroUsize::new(4).expect("4 is non-zero")),
-        );
+        assert_eq!(config.rules.align_equals.max_shift, cap(4));
     }
 
     #[test]
@@ -792,10 +791,7 @@ mod tests {
         .expect("parses");
 
         assert!(!config.rules.align_equals.enabled);
-        assert_eq!(
-            config.rules.align_equals.max_shift,
-            MaxShift::Cap(NonZeroUsize::new(4).expect("4 is non-zero")),
-        );
+        assert_eq!(config.rules.align_equals.max_shift, cap(4));
     }
 
     #[test]
