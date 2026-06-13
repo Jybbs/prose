@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/single_use_variables/starred_target_flags_without_subscript/input.py
+---
+[
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 9,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`head` is assigned and used once. Consider inlining"
+  },
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 16,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 2
+    },
+    "message": "`rest` is assigned and used once. Consider inlining"
+  }
+]

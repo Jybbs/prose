@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Every Target Read Once Names Its Subscript Rewrite"
+
+description = '''
+When every target of `first, second = batch` reads exactly once, the whole statement can dissolve into subscripts, so the lint flags each target and names the rewrite (*`batch[0]` for the first, `batch[1]` for the second*).
+'''

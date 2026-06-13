@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Starred Target Flags Without a Suggestion"
+
+description = '''
+A starred target like `*rest` shifts the positions of the names around it, so a fixed `items[0]` subscript no longer lines up. The lint flags each single-use target without naming a rewrite whenever the unpack carries a star.
+'''
