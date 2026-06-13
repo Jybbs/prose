@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Wide Module Breaks the `from`-Import Run"
+
+description = '''
+A module whose `from M` prefix overshoots `max-shift` **breaks the run in reading order**, landing its `import` flush. The imports before it and after it each align the keyword at their own column.
+'''

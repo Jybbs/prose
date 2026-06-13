@@ -4,13 +4,11 @@
 //! knobs travel through `Settings`. Aligned rows always carry a
 //! one-space buffer between content and the aligned token.
 
-use std::num::NonZeroUsize;
-
 use ruff_diagnostics::Edit;
 use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
-    config::{AlignImportsConfig, AlignmentConfig, MaxAlignShiftPolicy},
+    config::{AlignmentConfig, MaxShift},
     rule::RuleId,
     source::Source,
 };
@@ -122,23 +120,21 @@ impl Member {
 
 /// Emission knobs shared by every alignment rule.
 ///
-/// `strip_singleton_subgroup` collapses a size-one group's or
-/// sub-group's gap to zero width.
+/// `max_shift` caps the run's width spread. `strip_singleton`
+/// collapses a size-one group's gap to zero width.
 #[derive(Clone, Copy)]
 pub(crate) struct Settings {
-    max_shift: usize,
-    policy: MaxAlignShiftPolicy,
-    strip_singleton_subgroup: bool,
+    max_shift: MaxShift,
+    strip_singleton: bool,
 }
 
 impl Settings {
     /// Builds the alignment settings carried by an alignment rule, with
-    /// `strip_singleton_subgroup` off until a rule opts in.
-    fn aligned(max_shift: NonZeroUsize, policy: MaxAlignShiftPolicy) -> Self {
+    /// `strip_singleton` off until a rule opts in.
+    fn aligned(max_shift: MaxShift) -> Self {
         Self {
-            max_shift: max_shift.get(),
-            policy,
-            strip_singleton_subgroup: false,
+            max_shift,
+            strip_singleton: false,
         }
     }
 
@@ -146,24 +142,18 @@ impl Settings {
     /// `member_count` rows, zero for a stripped singleton and one
     /// space otherwise.
     fn suffix_len(self, member_count: usize) -> usize {
-        usize::from(member_count != 1 || !self.strip_singleton_subgroup)
+        usize::from(member_count != 1 || !self.strip_singleton)
     }
 
-    /// Returns a copy of `self` with `strip_singleton_subgroup` enabled.
-    pub(crate) fn with_singleton_subgroup_strip(mut self) -> Self {
-        self.strip_singleton_subgroup = true;
+    /// Returns a copy of `self` with `strip_singleton` enabled.
+    pub(crate) fn with_singleton_strip(mut self) -> Self {
+        self.strip_singleton = true;
         self
-    }
-}
-
-impl From<&AlignImportsConfig> for Settings {
-    fn from(c: &AlignImportsConfig) -> Self {
-        Self::aligned(c.max_shift, c.max_shift_policy)
     }
 }
 
 impl From<&AlignmentConfig> for Settings {
     fn from(c: &AlignmentConfig) -> Self {
-        Self::aligned(c.max_shift, c.max_shift_policy)
+        Self::aligned(c.max_shift)
     }
 }

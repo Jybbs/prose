@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Narrow Singleton Sub-Group Strips to Zero"
-
-description = '''
-Class-field widths partition from the widest field down under `max-shift`. A lone narrow field outside the dominant band's cap **collapses its gap to zero**, leaving its `:` flush against the name while every other field shares the dominant column.
-'''

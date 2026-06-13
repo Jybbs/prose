@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Widest Member past `max-shift` Splits the Group"
-
-description = '''
-An outlier target **partitions the group** under the default `split` policy. The width bands seed from the widest member down, so the outlier sits alone collapsed to one space while every other member shares the dominant `=` column.
-'''

@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "The `drop` Policy Excludes the Widest Members"
-
-description = '''
-Under `max-shift-policy = "drop"`, an `import M as A` run whose widest module overshoots the cap **drops that outlier from the aligned set**. The remaining members tighten onto their own column while the dropped line keeps its original single-space spacing.
-'''

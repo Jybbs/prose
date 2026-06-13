@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Leading Group Aligns While the Trailing Outlier Stays Flush"
+
+description = '''
+The first three keys sit within `max-shift` of each other and **align as one column**. The trailing key overshoots the cap against them, so it breaks off with its `:` flush against the name.
+'''

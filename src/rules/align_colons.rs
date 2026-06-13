@@ -21,8 +21,7 @@ pub(crate) struct AlignColons {
 impl AlignColons {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: aligner::Settings::from(&config.rules.align_colons)
-                .with_singleton_subgroup_strip(),
+            settings: aligner::Settings::from(&config.rules.align_colons).with_singleton_strip(),
         }
     }
 }

@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/false_cap_folds_over_cap_spread/input.py
+---
+config = {
+    "id"                                       : 1,
+    "name"                                     : 2,
+    "a_substantially_longer_configuration_key" : 3,
+}

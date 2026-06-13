@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Widest Member past `max-shift` Splits the Group"
-
-description = '''
-The shift-limit policy reaches `import M as A` runs by the same distance rules as `from`-imports. A widest module overshooting `max-shift = 16` **seeds its own width band and claims no neighbor**, leaving the rest to align the `as` keyword at one shared column.
-'''

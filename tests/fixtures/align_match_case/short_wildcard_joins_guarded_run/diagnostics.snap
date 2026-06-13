@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_match_case/short_wildcard_joins_guarded_run/input.py
+---
+align-match-case@38..191
