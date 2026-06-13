@@ -22,9 +22,7 @@ pub(crate) fn from_path(name: &str) -> String {
 /// Turns a `file://` URI into a filesystem path, or `None` for a URI that
 /// names no local file.
 pub(crate) fn to_path(uri: &Uri) -> Option<PathBuf> {
-    if uri.scheme().map(|scheme| scheme.as_str()) != Some(SCHEME) {
-        return None;
-    }
+    uri.scheme().filter(|scheme| scheme.as_str() == SCHEME)?;
     let decoded = uri.path().as_estr().decode().into_string().ok()?;
     // A Windows drive arrives as `/C:/dir`, so drop its leading slash.
     let path = match decoded.strip_prefix('/') {
@@ -36,8 +34,7 @@ pub(crate) fn to_path(uri: &Uri) -> Option<PathBuf> {
 
 /// Returns `true` when `s` opens with a `C:`-style Windows drive letter.
 fn has_drive_prefix(s: &str) -> bool {
-    let bytes = s.as_bytes();
-    bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':'
+    matches!(s.as_bytes(), [drive, b':', ..] if drive.is_ascii_alphabetic())
 }
 
 #[cfg(test)]
@@ -73,6 +70,11 @@ mod tests {
     #[test]
     fn to_path_rejects_a_non_file_scheme() {
         assert!(to_path(&uri("untitled:Untitled-1")).is_none());
+    }
+
+    #[test]
+    fn to_path_rejects_a_non_utf8_percent_escape() {
+        assert!(to_path(&uri("file:///%FF.py")).is_none());
     }
 
     #[test]
