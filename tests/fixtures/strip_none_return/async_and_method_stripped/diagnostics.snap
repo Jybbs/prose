@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_none_return/async_and_method_stripped/input.py
+---
+strip-none-return@37..45
+strip-none-return@96..104

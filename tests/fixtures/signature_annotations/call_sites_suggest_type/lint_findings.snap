@@ -1,0 +1,41 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/signature_annotations/call_sites_suggest_type/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 16,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "",
+          "content": ": int"
+        }
+      ]
+    },
+    "location": {
+      "column": 11,
+      "row": 1
+    },
+    "message": "parameter `count` has no type annotation. Consider `count: int`"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 10,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 1
+    },
+    "message": "`total` returns a value but has no return type annotation"
+  }
+]

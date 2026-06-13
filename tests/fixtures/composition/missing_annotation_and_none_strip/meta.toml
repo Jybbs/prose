@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Signature Draws the Report and the Strip Together"
+
+description = '''
+One signature loses its redundant `-> None` to `strip-none-return` while `signature-annotations` flags its unannotated parameter, the two rules acting on the same `def` in a single pass.
+'''

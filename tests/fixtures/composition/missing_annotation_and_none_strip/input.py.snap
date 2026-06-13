@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/missing_annotation_and_none_strip/input.py
+---
+def emit(event):
+    log(event)

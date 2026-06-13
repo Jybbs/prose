@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Literal-Only Call Sites Suggest the Parameter Type"
+
+description = '''
+An unannotated parameter whose in-module call sites pass only `int` literals draws a display-only `int` suggestion, resolved through the call-resolution machinery the reorder rules already share.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Bare None Default Contributes a None Arm"
+
+description = '''
+A parameter defaulting to `None` carries no suggestion on its own, yet a literal-only call site passing a `str` lifts it to a `str | None` suggestion, the `None` riding as the optional arm.
+'''

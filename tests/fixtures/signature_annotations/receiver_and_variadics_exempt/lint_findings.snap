@@ -1,0 +1,46 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/signature_annotations/receiver_and_variadics_exempt/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 28,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 24,
+      "row": 2
+    },
+    "message": "parameter `name` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 14,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 6
+    },
+    "message": "`empty` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 12,
+      "row": 10
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 10
+    },
+    "message": "`forward` returns a value but has no return type annotation"
+  }
+]

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Conflicting Call Signals Leave the Report Unsuggested"
+
+description = '''
+A parameter that one call site passes an `int` and another a `str` reports without a suggestion, because the conflicting signals leave no confident type to offer.
+'''

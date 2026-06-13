@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_annotations/receiver_and_variadics_exempt/input.py
+---
+class Registry:
+    def register(self, name):
+        self.entries.append(name)
+
+    @classmethod
+    def empty(cls):
+        return cls()
+
+
+def forward(*args, **kwargs):
+    return helper(*args, **kwargs)

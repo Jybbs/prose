@@ -1,0 +1,59 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 19,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 1
+    },
+    "message": "parameter `context` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 29,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 1
+    },
+    "message": "parameter `encoding` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 39,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 31,
+      "row": 1
+    },
+    "message": "parameter `template` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 11,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 1
+    },
+    "message": "`render` returns a value but has no return type annotation"
+  }
+]

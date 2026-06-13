@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_annotations/call_sites_suggest_type/input.py
+---
+def total(count):
+    return count * 10
+
+
+total(3)
+total(7)

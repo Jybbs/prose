@@ -10,6 +10,10 @@ align-match-case@65..66
 alphabetize@0..403
 blank-lines@20..21
 collection-layout@370..402
+signature-annotations@13..18
+signature-annotations@4..12
+signature-annotations@410..423
+signature-annotations@424..428
 strip-align-padding@391..392
 strip-trailing-commas@400..401
 strip-trailing-commas@447..448
