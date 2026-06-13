@@ -16,5 +16,70 @@ input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
       "row": 1
     },
     "message": "bare import `functools` reaches 1 of its attributes. Rewrite as `from functools import ...` naming only the symbols this module uses"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 15,
+      "row": 4
+    },
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 4
+    },
+    "message": "parameter `fn` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 12,
+      "row": 4
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 4
+    },
+    "message": "`memoize` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 13,
+      "row": 8
+    },
+    "fix": null,
+    "location": {
+      "column": 11,
+      "row": 8
+    },
+    "message": "parameter `fn` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 10,
+      "row": 8
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 8
+    },
+    "message": "`trace` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 11,
+      "row": 15
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 15
+    },
+    "message": "`lookup` returns a value but has no return type annotation"
   }
 ]

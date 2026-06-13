@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/signature_annotations/receiver_and_variadics_exempt/input.py
+---
+signature-annotations@106..111
+signature-annotations@145..152
+signature-annotations@39..43

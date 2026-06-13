@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/composition/missing_annotation_and_none_strip/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 15,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 10,
+      "row": 1
+    },
+    "message": "parameter `event` has no type annotation"
+  }
+]

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_none_return/nested_none_preserved/input.py
+---
+def lookup(key) -> int | None:
+    return registry.get(key)
+
+
+def make_handler() -> Callable[..., None]:
+    return default_handler

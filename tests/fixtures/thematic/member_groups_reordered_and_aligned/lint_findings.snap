@@ -1,0 +1,72 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/member_groups_reordered_and_aligned/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 13,
+      "row": 8
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 8
+    },
+    "message": "`size` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 24,
+      "row": 14
+    },
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 14
+    },
+    "message": "parameter `key` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 14,
+      "row": 14
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 14
+    },
+    "message": "`evict` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 22,
+      "row": 17
+    },
+    "fix": null,
+    "location": {
+      "column": 19,
+      "row": 17
+    },
+    "message": "parameter `key` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 12,
+      "row": 17
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 17
+    },
+    "message": "`get` returns a value but has no return type annotation"
+  }
+]

@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/signature_annotations/conflicting_signal_unsuggested/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 17,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 1
+    },
+    "message": "parameter `width` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 11,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 1
+    },
+    "message": "`render` returns a value but has no return type annotation"
+  }
+]

@@ -1,8 +1,9 @@
 //! Renders a call's arguments in keyword form for the rules that
 //! reshape call sites. [`keyword_args`] names each argument when the
 //! whole call can take keyword form, [`module_call_params`] maps
-//! in-module call sites to the signature they bind, and
-//! [`pins_positional_params`] flags a positional-binding decorator.
+//! in-module call sites to the signature they bind,
+//! [`resolve_call_params`] resolves one call's callee against that map,
+//! and [`pins_positional_params`] flags a positional-binding decorator.
 
 use std::{borrow::Cow, collections::HashMap};
 
@@ -117,4 +118,16 @@ pub(crate) fn pins_positional_params(f: &StmtFunctionDef) -> bool {
             .as_call_expr()
             .is_some_and(|c| !c.arguments.args.is_empty())
     })
+}
+
+/// Resolves `call`'s callee to the parameters it binds via `targets`, the
+/// offset map [`module_call_params`] returns. `None` for an attribute
+/// call, an unresolved name, or a callee outside the map.
+pub(crate) fn resolve_call_params<'src>(
+    call: &ExprCall,
+    targets: &HashMap<TextSize, &'src Parameters>,
+) -> Option<&'src Parameters> {
+    targets
+        .get(&call.func.as_name_expr()?.range().start())
+        .copied()
 }

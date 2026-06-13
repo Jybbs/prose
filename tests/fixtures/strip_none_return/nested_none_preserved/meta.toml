@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A None Nested in a Larger Annotation Survives"
+
+description = '''
+A `-> int | None` and a `-> Callable[..., None]` keep their annotations untouched, because the rule strips only a return annotation that is a bare `None`.
+'''

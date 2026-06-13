@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_annotations/annotated_members_pass/input.py
+---
+def configured(name: str, count) -> int:
+    return len(name) * count

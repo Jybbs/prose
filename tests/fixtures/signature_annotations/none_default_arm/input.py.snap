@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_annotations/none_default_arm/input.py
+---
+def connect(host=None):
+    return open_socket(host)
+
+
+connect(host="localhost")

@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/mixed_operators_share_column/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 17,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 1
+    },
+    "message": "parameter `rec` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 13,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 1
+    },
+    "message": "`is_ready` returns a value but has no return type annotation"
+  }
+]

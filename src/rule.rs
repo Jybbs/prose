@@ -28,9 +28,10 @@ use crate::{
         collection_layout::CollectionLayout, docstring_expand::DocstringExpand,
         docstring_frame::DocstringFrame, docstring_wrap::DocstringWrap,
         import_layout::ImportLayout, legacy_union_syntax::LegacyUnionSyntax,
-        reassigned_constants::ReassignedConstants, signature_layout::SignatureLayout,
-        single_use_variables::SingleUseVariables, step_narration::StepNarration,
-        strip_align_padding::StripAlignPadding, strip_trailing_commas::StripTrailingCommas,
+        reassigned_constants::ReassignedConstants, signature_annotations::SignatureAnnotations,
+        signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
+        step_narration::StepNarration, strip_align_padding::StripAlignPadding,
+        strip_none_return::StripNoneReturn, strip_trailing_commas::StripTrailingCommas,
         unused_future_annotations::UnusedFutureAnnotations,
     },
     source::Source,
@@ -312,6 +313,7 @@ register_rules! {
     "blank-lines":               blank_lines:               ToggleOnly                => BlankLines              => "normalize blank-line spacing",
     "bare-imports":              bare_imports:              BareImportsConfig         => BareImports             => "flag a bare import a `from` import could replace",
     "align-match-case":          align_match_case:          AlignmentConfig           => AlignMatchCase          => "align match-case colons",
+    "strip-none-return":         strip_none_return:         ToggleOnly                => StripNoneReturn         => "drop a redundant `-> None` return annotation",
     "signature-layout":          signature_layout:          SignatureLayoutConfig     => SignatureLayout         => "normalize function signature to one-line or one-per-line shape",
     "import-layout":             import_layout:             ToggleOnly                => ImportLayout            => "split an over-long `from` import into repeated-prefix lines",
     "align-imports":             align_imports:             AlignmentConfig           => AlignImports            => "align consecutive `import`s",
@@ -324,6 +326,7 @@ register_rules! {
     "step-narration":            step_narration:            ToggleOnly                => StepNarration           => "numbered-step comment found. Consider extracting each step as a named function",
     "legacy-union-syntax":       legacy_union_syntax:       ToggleOnly                => LegacyUnionSyntax       => "rewrite legacy `Optional`/`Union` to PEP 604 union syntax",
     "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables      => "binding is assigned and used once. Consider inlining",
+    "signature-annotations":     signature_annotations:     ToggleOnly                => SignatureAnnotations    => "flag a missing parameter or return type annotation",
 }
 
 #[cfg(test)]
