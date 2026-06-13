@@ -18,6 +18,7 @@ use crate::{
     diagnostics::{
         Diagnostic, Emitter, EmitterSummary, Run, diagnostics, line_columns, write_json_line,
     },
+    file_uri,
     rule::RuleId,
 };
 
@@ -39,7 +40,9 @@ impl Emitter for Sarif {
 }
 
 fn artifact_location(file: &SourceFile) -> ArtifactLocation {
-    ArtifactLocation::builder().uri(file.name()).build()
+    ArtifactLocation::builder()
+        .uri(file_uri::from_path(file.name()))
+        .build()
 }
 
 fn collect_rule_ids(runs: &[Run<'_>]) -> Vec<RuleId> {
@@ -184,12 +187,12 @@ mod tests {
     }
 
     #[test]
-    fn emits_an_absolute_path_unchanged() {
+    fn encodes_the_absolute_artifact_uri() {
         let file = SourceFileBuilder::new("/tmp/My Project/mod.py", "x = 1\n").finish();
         let v = emit_value(&file, std::slice::from_ref(&diag()));
         let uri = &v["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]
             ["uri"];
-        assert_eq!(uri, "/tmp/My Project/mod.py");
+        assert_eq!(uri, "file:///tmp/My%20Project/mod.py");
     }
 
     #[test]
