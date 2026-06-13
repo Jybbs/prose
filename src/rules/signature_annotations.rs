@@ -194,21 +194,17 @@ impl Walker<'_> {
         {
             signals.add(arg);
         }
-        match signals.suggestion() {
-            Some(annotation) => {
-                let edit = Edit::insertion(format!(": {annotation}"), range.end());
-                let message = format!(
-                    "parameter `{name}` has no type annotation. Consider `{name}: {annotation}`",
-                );
-                self.diagnostics
-                    .push(Diagnostic::suggestion(self.rule, range, message, edit));
-            }
-            None => self.diagnostics.push(Diagnostic::lint(
+        let base = format!("parameter `{name}` has no type annotation");
+        let diagnostic = match signals.suggestion() {
+            Some(annotation) => Diagnostic::suggestion(
                 self.rule,
                 range,
-                format!("parameter `{name}` has no type annotation"),
-            )),
-        }
+                format!("{base}. Consider `{name}: {annotation}`"),
+                Edit::insertion(format!(": {annotation}"), range.end()),
+            ),
+            None => Diagnostic::lint(self.rule, range, base),
+        };
+        self.diagnostics.push(diagnostic);
     }
 }
 
@@ -261,6 +257,13 @@ mod tests {
             .expect("function def")
     }
 
+    fn param_report<'a>(diagnostics: &'a [Diagnostic], name: &str) -> &'a Diagnostic {
+        diagnostics
+            .iter()
+            .find(|d| d.message.contains(&format!("`{name}`")))
+            .expect("a report for the named parameter")
+    }
+
     fn suggestion_for(values: &[&str]) -> Option<String> {
         let mut signals = SignalSet::default();
         for value in values {
@@ -276,11 +279,51 @@ mod tests {
         signals.suggestion()
     }
 
-    fn param_report<'a>(diagnostics: &'a [Diagnostic], name: &str) -> &'a Diagnostic {
-        diagnostics
-            .iter()
-            .find(|d| d.message.contains(&format!("`{name}`")))
-            .expect("a report for the named parameter")
+    #[test]
+    fn a_confident_signal_rides_a_display_only_suggestion() {
+        let source = parse("def f(threshold=0.5):\n    return threshold\n");
+        let rule = SignatureAnnotations::from_config(&Config::default());
+        let diagnostics = rule.lint(&source);
+        let report = param_report(&diagnostics, "threshold");
+
+        assert_eq!(report.severity, Severity::Lint);
+        let fix = report.fix.as_ref().expect("display-only suggestion");
+        assert_eq!(fix.applicability(), Applicability::DisplayOnly);
+        assert_eq!(fix.edits()[0].content(), Some(": float"));
+        assert!(report.message.ends_with("Consider `threshold: float`"));
+    }
+
+    #[test]
+    fn a_keyword_only_self_is_not_treated_as_a_receiver() {
+        let source = parse("def f(*, self):\n    return self\n");
+        let rule = SignatureAnnotations::from_config(&Config::default());
+        let diagnostics = rule.lint(&source);
+        let report = param_report(&diagnostics, "self");
+
+        assert!(report.message.starts_with("parameter"));
+    }
+
+    #[test]
+    fn a_receiver_and_the_variadics_stay_unreported() {
+        let source = parse("class C:\n    def m(self, *args, **kwargs):\n        return args\n");
+        let rule = SignatureAnnotations::from_config(&Config::default());
+        let diagnostics = rule.lint(&source);
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| !d.message.starts_with("parameter"))
+        );
+    }
+
+    #[test]
+    fn an_unsuggested_report_carries_no_fix() {
+        let source = parse("def f(opt=None):\n    return opt\n");
+        let rule = SignatureAnnotations::from_config(&Config::default());
+        let diagnostics = rule.lint(&source);
+        let report = param_report(&diagnostics, "opt");
+
+        assert_eq!(report.severity, Severity::Lint);
+        assert!(report.fix.is_none());
     }
 
     #[rstest]
@@ -316,42 +359,5 @@ mod tests {
         #[case] expected: Option<&str>,
     ) {
         assert_eq!(suggestion_for(values).as_deref(), expected);
-    }
-
-    #[test]
-    fn a_confident_signal_rides_a_display_only_suggestion() {
-        let source = parse("def f(threshold=0.5):\n    return threshold\n");
-        let rule = SignatureAnnotations::from_config(&Config::default());
-        let diagnostics = rule.lint(&source);
-        let report = param_report(&diagnostics, "threshold");
-
-        assert_eq!(report.severity, Severity::Lint);
-        let fix = report.fix.as_ref().expect("display-only suggestion");
-        assert_eq!(fix.applicability(), Applicability::DisplayOnly);
-        assert_eq!(fix.edits()[0].content(), Some(": float"));
-        assert!(report.message.ends_with("Consider `threshold: float`"));
-    }
-
-    #[test]
-    fn an_unsuggested_report_carries_no_fix() {
-        let source = parse("def f(opt=None):\n    return opt\n");
-        let rule = SignatureAnnotations::from_config(&Config::default());
-        let diagnostics = rule.lint(&source);
-        let report = param_report(&diagnostics, "opt");
-
-        assert_eq!(report.severity, Severity::Lint);
-        assert!(report.fix.is_none());
-    }
-
-    #[test]
-    fn a_receiver_and_the_variadics_stay_unreported() {
-        let source = parse("class C:\n    def m(self, *args, **kwargs):\n        return args\n");
-        let rule = SignatureAnnotations::from_config(&Config::default());
-        let diagnostics = rule.lint(&source);
-        assert!(
-            diagnostics
-                .iter()
-                .all(|d| !d.message.starts_with("parameter"))
-        );
     }
 }

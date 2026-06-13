@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_none_return/parenthesized_none_stripped/input.py
+---
+def configure():
+    load_settings()
