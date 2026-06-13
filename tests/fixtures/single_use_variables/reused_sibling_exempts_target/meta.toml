@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Reused Sibling Exempts Its Unpack Partner"
+
+description = '''
+When one target of a tuple unpack reads more than once, its single-use partner stays **silent**. Removing the partner would split the unpack into an indexed read plus a one-name remainder, a strictly worse shape than the idiom it replaces.
+'''

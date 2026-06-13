@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/single_use_variables/starred_target_flags_without_subscript/input.py
+---
+single-use-variables@21..25
+single-use-variables@28..32
