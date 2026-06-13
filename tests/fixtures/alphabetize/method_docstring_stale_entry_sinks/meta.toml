@@ -1,6 +1,6 @@
 [docs]
 previewable = true
-title       = "A Stale Docstring Entry Sinks Below the Signature's"
+title       = "A Stale Docstring Entry Sinks Below the Signature's Parameters"
 
 description = '''
 Parameter entries **mirror the signature's order** even when a stale entry rides along. The entry naming a parameter the signature no longer carries (*`retries` here*) sinks below the mirrored parameters, stragglers alphabetizing among themselves.

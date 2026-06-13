@@ -127,7 +127,7 @@ Config {
             enabled: false,
         },
         unsorted_parameters: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
     },
     target_version: Some(

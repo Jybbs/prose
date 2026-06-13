@@ -3,5 +3,5 @@ previewable = true
 title       = "Signature and Args Share One Source Order"
 
 description = '''
-A signature holds its parameter order, and its `Args:` entries follow. **`alphabetize` mirrors the entries against the signature's source order, `align_colons` aligns both `:` columns, and `docstring_wrap` wraps each description** at its post-align hanging column.
+A signature holds its parameter order, and its `Args:` entries follow. **`alphabetize` mirrors the entries against the signature's source order, `align_colons` aligns the `Args:` entries' `:` column, and `docstring_wrap` wraps each description** at its post-align hanging column.
 '''

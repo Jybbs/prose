@@ -3,5 +3,5 @@ previewable = true
 title       = "Decorated Functions Sort, Their Positionals Hold"
 
 description = '''
-Three module-level functions each sit under a value-binding decorator (*`pytest.mark.parametrize`, `hypothesis.given`, `click.argument`*). The function definitions **sort alphabetically among themselves**, while every signature holds its positional order, since positional-or-keyword parameters never reorder whatever decorator sits above them.
+Three module-level functions each sit under a value-binding decorator (*`pytest.mark.parametrize`, `hypothesis.given`, `click.argument`*). The function definitions **sort alphabetically among themselves**, while every signature holds its positional order. The hold owes nothing to the decorator each function carries, because reordering positionals would rebind callers a single-file pass cannot see.
 '''
