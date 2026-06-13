@@ -150,7 +150,7 @@ fn register_config_watchers(
 
 #[cfg(test)]
 mod tests {
-    use std::{str::FromStr, thread};
+    use std::thread;
 
     use lsp_server::{ErrorCode, Notification, RequestId, Response};
     use lsp_types::{
@@ -166,6 +166,7 @@ mod tests {
     use serde_json::Value;
 
     use super::*;
+    use crate::testing;
 
     const DID_CHANGE: &str = "textDocument/didChange";
     const DID_CLOSE: &str = "textDocument/didClose";
@@ -179,7 +180,7 @@ mod tests {
     const SHUTDOWN: &str = "shutdown";
 
     fn uri() -> Uri {
-        Uri::from_str("file:///module.py").expect("valid uri")
+        testing::uri("file:///module.py")
     }
 
     fn note<P: Serialize>(method: &str, params: P) -> Message {

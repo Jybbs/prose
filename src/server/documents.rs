@@ -39,13 +39,8 @@ impl DocumentStore {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use super::*;
-
-    fn uri(s: &str) -> Uri {
-        Uri::from_str(s).expect("valid uri")
-    }
+    use crate::testing::uri;
 
     #[test]
     fn get_returns_none_for_absent_uri() {

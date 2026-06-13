@@ -1,7 +1,8 @@
 //! Helpers shared across `#[cfg(test)] mod tests` blocks.
 
-use std::path::Path;
+use std::{path::Path, str::FromStr};
 
+use lsp_types::Uri;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{StmtClassDef, StmtFunctionDef};
 use ruff_text_size::TextRange;
@@ -91,6 +92,10 @@ pub(crate) fn run_rule(slug: &str, src: &str) -> String {
         .0
         .text()
         .to_owned()
+}
+
+pub(crate) fn uri(s: &str) -> Uri {
+    Uri::from_str(s).expect("valid uri")
 }
 
 pub(crate) fn write_prose_toml(dir: &Path, contents: &str) {
