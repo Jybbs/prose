@@ -78,10 +78,12 @@ fn publish(
     uri: &Uri,
     encoding: PositionEncoding,
 ) -> anyhow::Result<()> {
-    let config = configs.resolve(uri);
     let doc = documents.get(uri);
     let diagnostics = doc
-        .map(|doc| analysis::diagnostics(&doc.text, encoding, config))
+        .map(|doc| {
+            let config = configs.resolve(uri, &doc.text);
+            analysis::diagnostics(&doc.text, encoding, &config)
+        })
         .unwrap_or_default();
     let params = PublishDiagnosticsParams {
         diagnostics,

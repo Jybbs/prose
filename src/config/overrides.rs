@@ -5,7 +5,10 @@
 use std::path::Path;
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
-use serde::{Deserialize, de::IntoDeserializer};
+use serde::{
+    Deserialize,
+    de::{Error as _, IntoDeserializer},
+};
 
 use super::de::deserialize_prose;
 use super::load::ConfigNotice;
@@ -31,13 +34,6 @@ impl Override {
         file.strip_prefix(anchor)
             .is_ok_and(|relative| self.paths.is_match(relative))
     }
-}
-
-/// Captures the required `paths` field, ignoring the body knobs that
-/// share the entry table.
-#[derive(Deserialize)]
-struct OverridePaths {
-    paths: Vec<String>,
 }
 
 /// Removes `overrides` from `table` and compiles each entry, validating
@@ -69,8 +65,10 @@ fn compile<F>(mut entry: toml::Table, on_notice: &mut F) -> Result<Override, Con
 where
     F: FnMut(ConfigNotice<'_>),
 {
-    let OverridePaths { paths } = OverridePaths::deserialize(entry.clone().into_deserializer())?;
-    entry.remove("paths");
+    let paths = entry
+        .remove("paths")
+        .ok_or_else(|| toml::de::Error::missing_field("paths"))?;
+    let paths = Vec::<String>::deserialize(paths.into_deserializer())?;
     let _: Config = deserialize_prose(entry.clone(), on_notice)?;
     Ok(Override {
         body: entry,
@@ -164,5 +162,13 @@ mod tests {
         let parsed = overrides("[[overrides]]\npaths = [\"**\"]\n").expect("parses");
 
         assert!(!parsed[0].matches(Path::new("/other/mod.py"), Path::new("/proj")));
+    }
+
+    #[test]
+    fn non_list_paths_is_an_error() {
+        assert_matches!(
+            overrides("[[overrides]]\npaths = 5\n"),
+            Err(ConfigError::Toml(_))
+        );
     }
 }

@@ -28,10 +28,10 @@ pub(super) fn handle_request(
             // because prose formats to its own `[tool.prose]` config, not
             // editor settings.
             let uri = &params.text_document.uri;
-            let config = configs.resolve(uri);
-            let edits = documents
-                .get(uri)
-                .and_then(|doc| analysis::format_edits(&doc.text, encoding, config));
+            let edits = documents.get(uri).and_then(|doc| {
+                let config = configs.resolve(uri, &doc.text);
+                analysis::format_edits(&doc.text, encoding, &config)
+            });
             send(connection, Message::Response(Response::new_ok(id, edits)))
         }
         Err(ExtractError::MethodMismatch(request)) => send(
