@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Wide Target Breaks the Assignment Run"
+
+description = '''
+A wide assignment target overshoots `max-shift` against the rows that read before it, so it **breaks the run** and keeps its one-space gap. The rows on each side align their `=` in their own column.
+'''

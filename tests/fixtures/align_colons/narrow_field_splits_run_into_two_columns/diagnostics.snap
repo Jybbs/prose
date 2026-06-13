@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/narrow_field_splits_run_into_two_columns/input.py
+---
+align-colons@47..112

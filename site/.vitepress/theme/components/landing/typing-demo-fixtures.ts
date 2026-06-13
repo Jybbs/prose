@@ -17,11 +17,11 @@ class Config:
     timeout: int | None = None
     name: str = "service"
     debug: bool = False
-    def build_request(self, db: str, full_endpoint_url: str, body: dict, timeout: int = 30, headers: dict | None = None,) -> dict:
+    def build_request(self, db: str, fully_qualified_endpoint_url: str, body: dict, timeout: int = 30, headers: dict | None = None,) -> dict:
         """Build a configured request with per-call overrides."""
-        headers_map = {"x-api-key": "secret", "accept": "application/json", "x-trace-id": "abc-123"}
+        headers_map = {"x-api-key": "secret", "accept": "application/json", "x-request-correlation-id": "abc-123"}
         base_url = "https://example.com"
-        return {"url": f"{base_url}/{full_endpoint_url}"}
+        return {"url": f"{base_url}/{fully_qualified_endpoint_url}"}
 `
 
 export const RULES = [
@@ -92,24 +92,16 @@ export const ENTRIES: readonly LandingTypingDemoEntry[] = [
     anchor : ruleAnchor('align-colons'),
     from   : 'true',
     kind   : 'edit',
-    slug   : 'max-shift-policy',
-    tail   : tail({ alignColons: '{ max-shift-policy = "drop" }', alignEquals: 6, docstringLineLength: 76 }),
-    to     : '{ max-shift-policy = "drop" }'
-  },
-  {
-    anchor : ruleAnchor('align-colons'),
-    from   : '{ max-shift-policy = "drop" }',
-    kind   : 'edit',
     slug   : 'max-shift',
-    tail   : tail({ alignColons: '{ max-shift = 16 }', alignEquals: 6, docstringLineLength: 76 }),
-    to     : '{ max-shift = 16 }'
+    tail   : tail({ alignColons: '{ max-shift = false }', alignEquals: 6, docstringLineLength: 76 }),
+    to     : '{ max-shift = false }'
   },
   {
     anchor : 'docstring-line-length = ',
     from   : '76',
     kind   : 'edit',
     slug   : 'docstring-line-length',
-    tail   : tail({ alignColons: '{ max-shift = 16 }', alignEquals: 6, docstringLineLength: 60 }),
+    tail   : tail({ alignColons: '{ max-shift = false }', alignEquals: 6, docstringLineLength: 60 }),
     to     : '60'
   }
 ]

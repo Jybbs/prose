@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_imports/wide_module_breaks_run/input.py
+---
+from io import BytesIO
+from re import sub
+from os import getenv
+from collections.abc.mapping_helpers.namespaced import OrderedDict
+from sys     import path
+from os.path import join

@@ -34,7 +34,7 @@ impl AlignMatchCase {
         Self {
             code_line_length: config.code_width(),
             settings: aligner::Settings::from(&config.rules.align_match_case)
-                .with_singleton_subgroup_strip(),
+                .with_singleton_strip(),
         }
     }
 }
