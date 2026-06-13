@@ -6,6 +6,7 @@ pub(crate) mod cache;
 pub mod cli;
 pub mod config;
 pub mod diagnostics;
+mod file_uri;
 pub mod pipeline;
 mod primitives;
 pub mod rule;

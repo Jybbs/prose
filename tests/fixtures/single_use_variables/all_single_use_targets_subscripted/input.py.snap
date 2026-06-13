@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/all_single_use_targets_subscripted/input.py
+---
+def split(batch):
+    first, second = batch
+    return combine(first, second)

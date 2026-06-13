@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Right-Hand Side Flags Without a Suggestion"
+
+description = '''
+A subscript rewrite is named only when the right-hand side is a plain name or attribute. Subscripting a call as `lookup()[0]` and `lookup()[1]` would evaluate it twice, so the lint flags each target without naming a rewrite.
+'''

@@ -15,6 +15,9 @@
 //! - Only `Assignment` and `Walrus` writes flag, leaving parameters,
 //!   loop targets, `with`-targets, exception handlers, and nested
 //!   `def`/`class` bindings out of the diagnostic surface.
+//! - A single-use tuple-unpack target is exempt when a sibling reads
+//!   more than once, since removing it would split the unpack into an
+//!   indexed read.
 
 use regex_lite::Regex;
 use ruff_python_ast::{
@@ -26,7 +29,7 @@ use ruff_text_size::{TextRange, TextSize};
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::binding::{BindingAnalysis, BindingId, BindingKind},
+    primitives::binding::{BindingAnalysis, BindingId, BindingKind, UnpackKind},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -101,11 +104,18 @@ impl Visitor<'_> {
             return None;
         }
         let write_offset = self.analysis.first_write_offset(binding);
-        let value = self
-            .analysis
-            .assignment_value_range(write_offset)
-            .map(|range| format!(" `{}`", &self.text[range]))
-            .unwrap_or_default();
+        let value = match self.analysis.unpack_target(binding) {
+            Some(UnpackKind::Exempt) => return None,
+            Some(UnpackKind::Suggested(range, index)) => {
+                format!(" `{}[{index}]`", &self.text[range])
+            }
+            Some(UnpackKind::Bare) => String::new(),
+            None => self
+                .analysis
+                .assignment_value_range(write_offset)
+                .map(|range| format!(" `{}`", &self.text[range]))
+                .unwrap_or_default(),
+        };
         Some(Diagnostic::lint(
             self.rule,
             TextRange::at(write_offset, TextSize::of(name)),
@@ -199,17 +209,6 @@ mod tests {
         let only = diagnostics.first().expect("one diagnostic");
 
         assert!(only.message.ends_with("Consider inlining `g() + 1`"));
-    }
-
-    #[test]
-    fn tuple_unpacked_binding_message_omits_value() {
-        let source = parse("def f(pair):\n    a, b = pair\n    log(b)\n    return a + b\n");
-        let rule = SingleUseVariables::from_config(&Config::default());
-        let diagnostics = rule.lint(&source);
-        let only = diagnostics.first().expect("one diagnostic");
-
-        assert!(only.message.ends_with("Consider inlining"));
-        assert!(!only.message.contains("inlining `"));
     }
 
     #[test]

@@ -1,7 +1,8 @@
 //! Helpers shared across `#[cfg(test)] mod tests` blocks.
 
-use std::path::Path;
+use std::{path::Path, str::FromStr};
 
+use lsp_types::Uri;
 use ruff_diagnostics::Edit;
 use ruff_text_size::TextRange;
 
@@ -61,6 +62,10 @@ pub(crate) fn parse(src: &str) -> Source {
 
 pub(crate) fn range(start: u32, end: u32) -> TextRange {
     TextRange::new(start.into(), end.into())
+}
+
+pub(crate) fn uri(s: &str) -> Uri {
+    Uri::from_str(s).expect("valid uri")
 }
 
 pub(crate) fn write_prose_toml(dir: &Path, contents: &str) {

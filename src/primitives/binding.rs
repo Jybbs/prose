@@ -62,6 +62,20 @@ pub(crate) enum ScopeKind {
     Module,
 }
 
+/// Disposition of a multi-name unpack target for the single-use lint.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub(crate) enum UnpackKind {
+    /// Flagged with no subscript rewrite, because the right-hand side
+    /// is a call or a starred target shifts the indices.
+    Bare,
+    /// A sibling target reads more than once, so removing this target
+    /// would split the unpack into an indexed read.
+    Exempt,
+    /// Flagged with a subscript rewrite: the right-hand-side range and
+    /// this target's index.
+    Suggested(TextRange, usize),
+}
+
 /// One named binding in some scope, with every observed write and read.
 /// `attributes` collects the distinct attribute names read off the
 /// binding (`os.environ` records `environ`), and `bare_read` flips when
@@ -94,6 +108,8 @@ pub struct BindingAnalysis {
     #[serde(skip)]
     function_scope_at: HashMap<TextSize, ScopeId>,
     scopes: Vec<Scope>,
+    #[serde(skip)]
+    unpack_targets: HashMap<BindingId, UnpackKind>,
 }
 
 impl BindingAnalysis {
@@ -201,6 +217,12 @@ impl BindingAnalysis {
             .is_some_and(|binding| binding.bare_read)
     }
 
+    /// Returns the unpack disposition of `binding` when its sole write
+    /// is a multi-name tuple or list unpack target, `None` otherwise.
+    pub(crate) fn unpack_target(&self, binding: BindingId) -> Option<UnpackKind> {
+        self.unpack_targets.get(&binding).copied()
+    }
+
     /// Returns the number of read events recorded for `binding`.
     pub(crate) fn usage_count(&self, binding: BindingId) -> usize {
         self.binding(binding).read_offsets.len()
@@ -213,6 +235,7 @@ struct Builder {
     function_scope_at: HashMap<TextSize, ScopeId>,
     scope_stack: Vec<ScopeId>,
     scopes: Vec<Scope>,
+    unpack_groups: Vec<UnpackGroup>,
 }
 
 impl Builder {
@@ -223,6 +246,7 @@ impl Builder {
             function_scope_at: HashMap::new(),
             scope_stack: Vec::new(),
             scopes: Vec::new(),
+            unpack_groups: Vec::new(),
         };
         builder.push_scope(ScopeKind::Module, None);
         builder
@@ -310,11 +334,46 @@ impl Builder {
     }
 
     fn finish(self) -> BindingAnalysis {
+        let mut unpack_targets = HashMap::new();
+        for group in &self.unpack_groups {
+            let reused = group
+                .members
+                .iter()
+                .any(|&member| self.bindings[member.0 as usize].read_offsets.len() > 1);
+            for (index, &member) in group.members.iter().enumerate() {
+                let kind = if reused {
+                    UnpackKind::Exempt
+                } else if group.suggestible {
+                    UnpackKind::Suggested(group.value, index)
+                } else {
+                    UnpackKind::Bare
+                };
+                unpack_targets.insert(member, kind);
+            }
+        }
         BindingAnalysis {
             assignment_values: self.assignment_values,
-            scopes: self.scopes,
             bindings: self.bindings,
             function_scope_at: self.function_scope_at,
+            scopes: self.scopes,
+            unpack_targets,
+        }
+    }
+
+    fn for_each_target_name(
+        &mut self,
+        target: &Expr,
+        f: &mut impl FnMut(&mut Self, &str, TextSize),
+    ) {
+        match target {
+            Expr::Name(name) => f(self, name.id.as_str(), name.range().start()),
+            Expr::Tuple(ExprTuple { elts, .. }) | Expr::List(ExprList { elts, .. }) => {
+                for element in elts {
+                    self.for_each_target_name(element, f);
+                }
+            }
+            Expr::Starred(starred) => self.for_each_target_name(&starred.value, f),
+            _ => walk_expr(self, target),
         }
     }
 
@@ -354,16 +413,28 @@ impl Builder {
     }
 
     fn record_target(&mut self, target: &Expr, kind: BindingKind) {
-        match target {
-            Expr::Name(name) => self.record_write(name.id.as_str(), name.range().start(), kind),
-            Expr::Tuple(ExprTuple { elts, .. }) | Expr::List(ExprList { elts, .. }) => {
-                for element in elts {
-                    self.record_target(element, kind);
-                }
-            }
-            Expr::Starred(starred) => self.record_target(&starred.value, kind),
-            _ => walk_expr(self, target),
+        self.for_each_target_name(target, &mut |builder, name, offset| {
+            builder.record_write(name, offset, kind);
+        });
+    }
+
+    fn record_unpack(&mut self, elts: &[Expr], value: &Expr) {
+        let mut members = Vec::new();
+        for element in elts {
+            self.for_each_target_name(element, &mut |builder, name, offset| {
+                members.push(builder.record_write(name, offset, BindingKind::Assignment));
+            });
         }
+        if members.len() < 2 {
+            return;
+        }
+        let suggestible = elts.iter().all(Expr::is_name_expr)
+            && (value.is_name_expr() || value.is_attribute_expr());
+        self.unpack_groups.push(UnpackGroup {
+            members,
+            suggestible,
+            value: value.range(),
+        });
     }
 
     fn record_use(&mut self, name: &str, offset: TextSize, attribute: Option<&str>) {
@@ -407,12 +478,18 @@ impl Builder {
         );
     }
 
-    fn record_write(&mut self, name: &str, offset: TextSize, kind: BindingKind) {
+    fn record_write(&mut self, name: &str, offset: TextSize, kind: BindingKind) -> BindingId {
         let scope = self.current_scope();
-        self.record_write_in(scope, name, offset, kind);
+        self.record_write_in(scope, name, offset, kind)
     }
 
-    fn record_write_in(&mut self, scope: ScopeId, name: &str, offset: TextSize, kind: BindingKind) {
+    fn record_write_in(
+        &mut self,
+        scope: ScopeId,
+        name: &str,
+        offset: TextSize,
+        kind: BindingKind,
+    ) -> BindingId {
         let scope_data = &mut self.scopes[scope.0 as usize];
         let binding_id = if let Some(&id) = scope_data.bindings.get(name) {
             id
@@ -436,6 +513,7 @@ impl Builder {
             binding.kinds.push(kind);
         }
         binding.write_offsets.push(offset);
+        binding_id
     }
 
     fn visit_ann_assign(&mut self, node: &StmtAnnAssign) {
@@ -459,7 +537,12 @@ impl Builder {
                 self.assignment_values
                     .insert(name.range().start(), node.value.range());
             }
-            self.record_target(target, BindingKind::Assignment);
+            match target {
+                Expr::Tuple(ExprTuple { elts, .. }) | Expr::List(ExprList { elts, .. }) => {
+                    self.record_unpack(elts, &node.value);
+                }
+                _ => self.record_target(target, BindingKind::Assignment),
+            }
         }
     }
 
@@ -581,6 +664,14 @@ impl<'a> Visitor<'a> for Builder {
     }
 }
 
+/// One multi-name unpack assignment, retained until `finish` reads the
+/// final sibling read counts.
+struct UnpackGroup {
+    members: Vec<BindingId>,
+    suggestible: bool,
+    value: TextRange,
+}
+
 /// The module-scope name a bare `import a.b` alias binds: its `asname`,
 /// or the top-level segment of the dotted path.
 pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
@@ -605,6 +696,7 @@ pub(crate) fn top_level_module(dotted: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
+    use assert_matches::assert_matches;
     use proptest::prelude::*;
     use rstest::rstest;
     use ruff_text_size::TextSize;
@@ -751,6 +843,69 @@ mod tests {
         assert_eq!(top_level_module("a.b"), "a");
         assert_eq!(top_level_module("a.b.c"), "a");
         assert_eq!(top_level_module(""), "");
+    }
+
+    #[rstest]
+    #[case::reused_sibling(
+        "head, tail = pair\nuse(tail)\nuse(tail)\nuse(head)\n",
+        "head",
+        Some(UnpackKind::Exempt)
+    )]
+    #[case::call_value(
+        "name, value = lookup()\nuse(name)\nuse(value)\n",
+        "name",
+        Some(UnpackKind::Bare)
+    )]
+    #[case::starred_target(
+        "head, *rest = items\nuse(head)\nuse(rest)\n",
+        "head",
+        Some(UnpackKind::Bare)
+    )]
+    #[case::nested_unpack(
+        "(a, b), c = pair\nuse(a)\nuse(b)\nuse(c)\n",
+        "a",
+        Some(UnpackKind::Bare)
+    )]
+    #[case::direct_assignment("x = 1\nuse(x)\n", "x", None)]
+    #[case::single_name_unpack("(only,) = pair\nuse(only)\n", "only", None)]
+    fn unpack_target_disposition(
+        #[case] src: &str,
+        #[case] name: &str,
+        #[case] expected: Option<UnpackKind>,
+    ) {
+        let source = parse(src);
+        let analysis = source.binding_analysis();
+        assert_eq!(
+            analysis.unpack_target(module_binding_id(analysis, name)),
+            expected
+        );
+    }
+
+    #[test]
+    fn unpack_target_names_the_subscript_for_all_single_use() {
+        let source = parse("first, second = batch\nuse(first)\nuse(second)\n");
+        let analysis = source.binding_analysis();
+        let first = module_binding_id(analysis, "first");
+        let second = module_binding_id(analysis, "second");
+        assert_matches!(
+            analysis.unpack_target(first),
+            Some(UnpackKind::Suggested(range, 0)) if &source.text()[range] == "batch"
+        );
+        assert_matches!(
+            analysis.unpack_target(second),
+            Some(UnpackKind::Suggested(_, 1))
+        );
+    }
+
+    #[test]
+    fn unpack_target_subscript_handles_an_attribute_value() {
+        let source = parse("x, y = box.pair\nuse(x)\nuse(y)\n");
+        let analysis = source.binding_analysis();
+        let x = module_binding_id(analysis, "x");
+        assert_matches!(
+            analysis.unpack_target(x),
+            Some(UnpackKind::Suggested(range, 0)) if &source.text()[range] == "box.pair"
+        );
     }
 
     proptest! {
