@@ -1,10 +1,10 @@
-//! The per-rule config sub-tables, the alignment-config and
-//! rule-toggle macros, and the shared policy enums.
+//! The per-rule config sub-tables, the rule-toggle macro, and the
+//! shared `MaxShift` and docstring-policy enums.
 
 use std::num::NonZeroUsize;
 
 use regex_lite::Regex;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::de::{
     deserialize_max_atomics_per_line, deserialize_max_inline_args,
@@ -12,46 +12,24 @@ use super::de::{
     serialize_regex,
 };
 
-/// Stamps an alignment-rule config struct whose `max_shift` defaults
-/// to `$shift`. Each alignment rule binds one of these, so a rule
-/// warranting a wider starting cap seeds its own default off the same
-/// shape rather than a hand-copied parallel struct.
-macro_rules! alignment_config {
-    ($name:ident, $shift:literal) => {
-        #[doc = concat!("Alignment config seeding `max_shift` to `", stringify!($shift), "`.")]
-        #[derive(Debug, Deserialize, Serialize)]
-        #[serde(default, rename_all = "kebab-case")]
-        pub struct $name {
-            pub enabled: bool,
-            pub max_shift: NonZeroUsize,
-            pub max_shift_policy: MaxAlignShiftPolicy,
-        }
-
-        impl Default for $name {
-            fn default() -> Self {
-                Self {
-                    enabled: true,
-                    max_shift: NonZeroUsize::new($shift)
-                        .expect("alignment max-shift seed is non-zero"),
-                    max_shift_policy: MaxAlignShiftPolicy::default(),
-                }
-            }
-        }
-
-        impl RuleToggle for $name {
-            fn with_enabled(enabled: bool) -> Self {
-                Self {
-                    enabled,
-                    ..Self::default()
-                }
-            }
-        }
-    };
+/// Alignment-rule config shared by every rule that aligns a token
+/// across consecutive lines. `max_shift` caps how far a row may shift
+/// to reach the column.
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct AlignmentConfig {
+    pub enabled: bool,
+    pub max_shift: MaxShift,
 }
 
-alignment_config!(AlignImportsConfig, 16);
-
-alignment_config!(AlignmentConfig, 8);
+impl Default for AlignmentConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_shift: MaxShift::default(),
+        }
+    }
+}
 
 /// Configuration for the `alphabetize` rule. `docstring_entries`
 /// gates the Google-style entry-section reorder pass, leaving the
@@ -177,6 +155,52 @@ pub struct ImportsConfig {
     pub first_party: Vec<String>,
 }
 
+/// How far a row may shift to align, read from `max-shift`.
+/// `Unlimited` lifts the cap so a contiguous run always aligns to its
+/// widest member. `NoShift` forbids any shift, collapsing every row to
+/// its minimal spacing. `Cap(n)` aligns a run while its width spread
+/// stays within `n`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MaxShift {
+    Cap(NonZeroUsize),
+    NoShift,
+    Unlimited,
+}
+
+impl Default for MaxShift {
+    fn default() -> Self {
+        Self::Cap(NonZeroUsize::new(16).expect("16 is non-zero"))
+    }
+}
+
+impl<'de> Deserialize<'de> for MaxShift {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Repr {
+            Cap(usize),
+            Switch(bool),
+        }
+        match Repr::deserialize(deserializer)? {
+            Repr::Cap(n) => Ok(NonZeroUsize::new(n).map_or(Self::NoShift, Self::Cap)),
+            Repr::Switch(false) => Ok(Self::Unlimited),
+            Repr::Switch(true) => Err(serde::de::Error::custom(
+                "`max-shift` accepts a non-negative integer or `false`, not `true`",
+            )),
+        }
+    }
+}
+
+impl Serialize for MaxShift {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match *self {
+            Self::Cap(n) => serializer.serialize_u64(n.get() as u64),
+            Self::NoShift => serializer.serialize_u64(0),
+            Self::Unlimited => serializer.serialize_bool(false),
+        }
+    }
+}
+
 /// Configuration for the `reassigned_constants` rule.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -192,23 +216,6 @@ impl Default for ReassignedConstantsConfig {
             enabled: true,
         }
     }
-}
-
-/// What to do when an alignment group's widest padding exceeds the
-/// rule's `max-shift`.
-///
-/// `Split` greedily partitions the group so each contiguous
-/// sub-group satisfies the cap, and each sub-group of size `>= 2`
-/// aligns independently. `Drop` excludes the widest member(s) from
-/// the padding calculation until the cap is satisfied, leaving those
-/// members at their original spacing while neighbors align around
-/// them.
-#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum MaxAlignShiftPolicy {
-    Drop,
-    #[default]
-    Split,
 }
 
 /// Configuration for the `signature_layout` rule.
@@ -292,6 +299,7 @@ macro_rules! impl_rule_toggle {
 }
 
 impl_rule_toggle!(
+    AlignmentConfig,
     AlphabetizeConfig,
     BareImportsConfig,
     CallLayoutConfig,

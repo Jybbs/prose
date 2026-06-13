@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/width_chain_breaks_after_first_rows/input.py
+---
+class Metrics:
+    cpu    : int
+    disk   : str
+    memory : bytes
+    network_throughput_gauge : list
+    persistent_storage_quota : dict

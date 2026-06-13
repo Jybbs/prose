@@ -4,4 +4,4 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/composition/varied_param_colons_and_defaults_align/input.py
 ---
 align-colons@23..112
-align-equals@28..58
+align-equals@28..118

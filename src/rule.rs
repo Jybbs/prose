@@ -15,9 +15,9 @@ use thiserror::Error;
 
 use crate::{
     config::{
-        AlignImportsConfig, AlignmentConfig, AlphabetizeConfig, BareImportsConfig,
-        CallLayoutConfig, CollectionLayoutConfig, Config, ReassignedConstantsConfig,
-        SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
+        AlignmentConfig, AlphabetizeConfig, BareImportsConfig, CallLayoutConfig,
+        CollectionLayoutConfig, Config, ReassignedConstantsConfig, SignatureLayoutConfig,
+        SingleUseVariablesConfig, ToggleOnly,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -316,7 +316,7 @@ register_rules! {
     "strip-none-return":         strip_none_return:         ToggleOnly                => StripNoneReturn         => "drop a redundant `-> None` return annotation",
     "signature-layout":          signature_layout:          SignatureLayoutConfig     => SignatureLayout         => "normalize function signature to one-line or one-per-line shape",
     "import-layout":             import_layout:             ToggleOnly                => ImportLayout            => "split an over-long `from` import into repeated-prefix lines",
-    "align-imports":             align_imports:             AlignImportsConfig        => AlignImports            => "align consecutive `import`s",
+    "align-imports":             align_imports:             AlignmentConfig           => AlignImports            => "align consecutive `import`s",
     "align-colons":              align_colons:              AlignmentConfig           => AlignColons             => "align consecutive `:` separators",
     "docstring-wrap":            docstring_wrap:            ToggleOnly                => DocstringWrap           => "wrap docstring prose to the configured budget",
     "align-equals":              align_equals:              AlignmentConfig           => AlignEquals             => "align consecutive `=` operators",

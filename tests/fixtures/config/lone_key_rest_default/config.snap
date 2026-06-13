@@ -64,8 +64,9 @@ Config {
         },
         align_match_case: AlignmentConfig {
             enabled: true,
-            max_shift: 8,
-            max_shift_policy: Split,
+            max_shift: Cap(
+                16,
+            ),
         },
         strip_none_return: ToggleOnly {
             enabled: true,
@@ -79,28 +80,32 @@ Config {
         import_layout: ToggleOnly {
             enabled: true,
         },
-        align_imports: AlignImportsConfig {
+        align_imports: AlignmentConfig {
             enabled: true,
-            max_shift: 16,
-            max_shift_policy: Split,
+            max_shift: Cap(
+                16,
+            ),
         },
         align_colons: AlignmentConfig {
             enabled: true,
-            max_shift: 8,
-            max_shift_policy: Split,
+            max_shift: Cap(
+                16,
+            ),
         },
         docstring_wrap: ToggleOnly {
             enabled: true,
         },
         align_equals: AlignmentConfig {
             enabled: true,
-            max_shift: 8,
-            max_shift_policy: Split,
+            max_shift: Cap(
+                16,
+            ),
         },
         align_comparisons: AlignmentConfig {
             enabled: true,
-            max_shift: 8,
-            max_shift_policy: Split,
+            max_shift: Cap(
+                16,
+            ),
         },
         strip_align_padding: ToggleOnly {
             enabled: true,

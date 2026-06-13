@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/zero_cap_collapses_every_row/input.py
+---
+config = {
+    "alpha": 1,
+    "gamma": 2,
+    "beta": 3,
+}

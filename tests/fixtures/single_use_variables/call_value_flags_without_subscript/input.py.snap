@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/call_value_flags_without_subscript/input.py
+---
+def fetch():
+    name, value = lookup()
+    return render(name, value)

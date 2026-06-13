@@ -407,17 +407,10 @@ export const glossary: Record<string, GlossaryEntry> = {
   },
 
   'max-shift': {
-    definition: '`max-shift` is the per-alignment-rule config key capping per-line padding. It '
-              + 'defaults to **8**, and groups whose widest member exceeds the cap fall back '
-              + 'to `max-shift-policy`.',
-    families  : ['alignment', 'cli'],
-    href      : '/reference/configuration#per-rule-knobs'
-  },
-
-  'max-shift-policy': {
-    definition: '`max-shift-policy` decides how an alignment group overflowing `max-shift` '
-              + 'resolves. `split` partitions the group, and `drop` excludes the widest '
-              + 'members from the padding calculation.',
+    definition: '`max-shift` is the per-alignment-rule config key bounding how far a row may '
+              + 'shift to align. It defaults to **16**. A positive `N` caps the width spread '
+              + 'of a run, `0` forbids any shift, and `false` lifts the cap so a contiguous '
+              + 'run folds into one column.',
     families  : ['alignment', 'cli'],
     href      : '/reference/configuration#per-rule-knobs'
   },

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_colons/false_cap_folds_over_cap_spread/input.py
+---
+align-colons@19..85
