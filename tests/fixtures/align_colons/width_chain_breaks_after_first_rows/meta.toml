@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Width Chain Breaks After the Rows That Read First"
+
+description = '''
+Field widths climb in source order. The walk grows one column through the narrow rows that read first, then **breaks when the next field clears `max-shift`** of the group, gathering the wide tail into its own column.
+'''

@@ -3,5 +3,5 @@ previewable = true
 title       = "A Hand-Aligned Dict Keeps Its Dominant Column"
 
 description = '''
-A dict hand-aligned at its widest key, with key widths spanning just past `max-shift`. The width partition seeds at the widest key and claims every key within the cap, so **the dominant column survives** and only the short outlier strips flush against its `:`.
+A dict hand-aligned at its widest key, its key widths spanning exactly `max-shift`. The reading-order walk gathers the whole run into one group, so the hand-alignment **round-trips unchanged** and every `:` holds its column.
 '''

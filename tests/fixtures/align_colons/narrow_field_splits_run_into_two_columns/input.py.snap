@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/narrow_field_splits_run_into_two_columns/input.py
+---
+class Settings:
+    primary_database_connection : int
+    backup_database_connection  : str
+    id    : bytes
+    short : list

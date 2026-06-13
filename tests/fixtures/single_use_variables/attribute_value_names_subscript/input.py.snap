@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/attribute_value_names_subscript/input.py
+---
+def place(point):
+    x, y = point.coords
+    return render(x, y)

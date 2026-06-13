@@ -1,0 +1,2 @@
+[rules]
+align-colons = { max-shift = 0 }

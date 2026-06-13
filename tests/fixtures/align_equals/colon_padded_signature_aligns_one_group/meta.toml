@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Colon-Padded Signature Aligns the `=` in One Group"
+
+description = '''
+A typed signature already carrying colon padding aligns its `=` in **one group**, because the parameter widths span within `max-shift`. The reading-order walk holds all four parameters together rather than splitting them.
+'''

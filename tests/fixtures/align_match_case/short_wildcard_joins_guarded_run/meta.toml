@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Short Wildcard Joins the Guarded Run"
+
+description = '''
+Arms carry an `if` guard between the pattern and the `:`. The short `case _` sits within `max-shift` of the guarded trio, so the reading-order walk **gathers all four into one group** and the wildcard's `:` joins the shared column.
+'''

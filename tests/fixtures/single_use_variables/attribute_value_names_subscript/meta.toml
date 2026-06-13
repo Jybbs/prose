@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Attribute Right-Hand Side Names Its Subscript Rewrite"
+
+description = '''
+A subscript rewrite is named when the right-hand side is a plain name or an attribute access. With `x, y = point.coords` the lint flags each target and names the rewrite off the attribute (*`point.coords[0]` for the first, `point.coords[1]` for the second*).
+'''

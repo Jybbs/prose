@@ -12,7 +12,7 @@ To turn rules off or tune them, write the `[rules]` table:
 code-line-length = 88
 
 [rules]
-align-colons      = { max-shift = 12, max-shift-policy = "drop" }
+align-colons      = { max-shift = false }
 align-equals      = false
 collection-layout = { max-atomics-per-line = 3 }
 ```
@@ -75,13 +75,12 @@ A list entry names a root package, so `myapp` matches `import myapp.db` and `fro
 
 ## Per-Rule Knobs
 
-The `[rules]` table holds one entry per rule you change. A bare bool is the shorthand for `enabled` (*`alphabetize = false`*), an inline table sets a rule's knobs (*`align-equals = { max-shift = 4 }`*), and a rule you do not name stays enabled at its defaults. The table below lists the knobs each rule accepts, with the *Where* column resolving which rules share a knob. Generic knobs *(`enabled`, `max-shift`, `max-shift-policy`)* apply to every rule in their column's named category. Rule-specific knobs read inputs scoped to the named rule, even when two rules happen to spell their knob the same way *(the two `allow` rows are distinct, scoped to different rules and reading different inputs)*.
+The `[rules]` table holds one entry per rule you change. A bare bool is the shorthand for `enabled` (*`alphabetize = false`*), an inline table sets a rule's knobs (*`align-equals = { max-shift = 4 }`*), and a rule you do not name stays enabled at its defaults. The table below lists the knobs each rule accepts, with the *Where* column resolving which rules share a knob. Generic knobs *(`enabled`, `max-shift`)* apply to every rule in their column's named category. Rule-specific knobs read inputs scoped to the named rule, even when two rules happen to spell their knob the same way *(the two `allow` rows are distinct, scoped to different rules and reading different inputs)*.
 
 | Key | Type | Where | Default | Meaning |
 |---|---|---|---|---|
 | `enabled` | bool | every rule | `true` | Toggle the rule on or off |
-| `max-shift` | positive int | alignment rules | `8` *(`16` for [[align-imports]])* | Ceiling on per-line padding |
-| `max-shift-policy` | `"split"` \| `"drop"` | alignment rules | `"split"` | How to handle a group whose widest member exceeds `max-shift`. `split` partitions the group, `drop` excludes the widest members from the padding calculation. To leave one row out of an otherwise-aligned group, hold it with `# prose: skip` rather than abandoning the alignment |
+| `max-shift` | positive int \| `0` \| `false` | alignment rules | `16` | Width-spread budget for an alignment run. A positive `N` caps the spread, `0` forbids any shift so every row sits flush, and `false` lifts the cap so a contiguous run folds into one column. To leave one row out of an otherwise-aligned group, hold it with `# prose: skip` |
 | `docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within Title-case-headed docstring sections, parameter entries mirroring the signature as the rule leaves it and stragglers alphabetizing below. Set `false` to keep narrative-curated entry order while still sorting every other surface |
 | `max-atomics-per-line` | positive int \| `false` | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. `false` removes the cap and packs by width alone |
 | `max-inline-dict-entries` | positive int \| `false` | [[collection-layout]] | `3` | Expand a dict once its entry count exceeds the cap, whatever its width. `false` disables the count trigger |
@@ -98,7 +97,7 @@ Rules sit in configuration buckets, with each bucket carrying a distinct knob sh
 
 ### Alignment Rules
 
-The rules that line columns vertically share one structural question, which is what happens when the widest member would push the alignment column past `code-line-length`. `max-shift` caps the leftward shift and `max-shift-policy` names the fallback the rule reaches for when the cap binds. [[align-colons]] aligns `:` across its Python contexts, [[align-equals]] does the same for `=` in keyword arguments and assignments, [[align-comparisons]] lines up comparison operators across consecutive lines, [[align-imports]] lines up `as` aliases in `from … import` blocks, and [[align-match-case]] aligns the post-pattern `:` of match arms.
+The rules that line columns vertically share one structural question, which is how far a row may shift to reach a shared column. `max-shift` answers it as a width-spread budget, wherein an alignment rule walks each run in source order and grows a group while its spread stays within the cap, breaking a fresh group at the first row that would exceed it. A positive `N` sets the budget, `0` forbids any shift so every row sits flush, and `false` lifts the cap so a contiguous run folds into one column. [[align-colons]] aligns `:` across its Python contexts, [[align-equals]] does the same for `=` in keyword arguments and assignments, [[align-comparisons]] lines up comparison operators across consecutive lines, [[align-imports]] lines up `as` aliases in `from … import` blocks, and [[align-match-case]] aligns the post-pattern `:` of match arms.
 
 ### Toggle-Only Rules
 

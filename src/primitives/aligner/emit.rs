@@ -1,38 +1,27 @@
 //! Padding-width math and edit emission for the alignment rules.
-//! Dispatches a group through its `max-shift` policy and rewrites each
-//! member's gap to the computed column.
+//! Splits each source-ordered run into the contiguous groups the
+//! `max-shift` cap allows and rewrites each member's gap to its
+//! group's column.
 
-use std::cmp::Reverse;
-
-use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_text_size::TextRange;
 
 use super::{Member, Settings};
-use crate::{config::MaxAlignShiftPolicy, source::Source};
+use crate::{config::MaxShift, source::Source};
 
-/// Aligns the members of a group, dispatching through `settings.policy`
-/// when the widest padding exceeds `settings.max_shift`. A singleton
-/// group collapses its gap to one space, or to zero when
-/// `settings.strip_singleton_subgroup` is set, matching the
-/// singleton-from-split treatment in `emit_split`.
+/// Aligns `members` by splitting the source-ordered run into the
+/// contiguous groups `reading_order_groups` yields and emitting each at
+/// its widest member. A singleton group collapses its gap to one space,
+/// or to zero when `settings.strip_singleton` is set.
 pub(super) fn emit_group(
     source: &Source,
     members: &[Member],
     settings: Settings,
     edits: &mut Vec<Edit>,
 ) {
-    let Some((min_w, max_w)) = members.iter().map(|m| m.width).minmax().into_option() else {
-        return;
-    };
-    if max_w - min_w <= settings.max_shift {
-        let suffix = settings.suffix_len(members.len());
-        emit_with_paddings(source, members, max_w, max_op_width(members), suffix, edits);
-        return;
-    }
-    match settings.policy {
-        MaxAlignShiftPolicy::Drop => emit_drop(source, members, settings, edits),
-        MaxAlignShiftPolicy::Split => emit_split(source, members, settings, edits),
+    for (group, max_w) in reading_order_groups(members, settings.max_shift) {
+        let suffix = settings.suffix_len(group.len());
+        emit_with_paddings(source, group, max_w, max_op_width(group), suffix, edits);
     }
 }
 
@@ -48,54 +37,6 @@ pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) ->
         return Some(Edit::range_deletion(range));
     }
     Some(Edit::range_replacement(" ".repeat(n), range))
-}
-
-/// Returns the length of the prefix of `members` whose widths sit
-/// within `max_shift` of `anchor_width`. The slice must be sorted so
-/// distance from the anchor grows monotonically.
-fn band_len(members: &[Member], anchor_width: usize, max_shift: usize) -> usize {
-    members.partition_point(|m| m.width.abs_diff(anchor_width) <= max_shift)
-}
-
-/// Sorts by width, keeps only the members whose width sits within
-/// `max_shift` of the minimum, and aligns that subset. Excluded
-/// members retain their original spacing. A kept set of fewer than
-/// two members emits nothing.
-fn emit_drop(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>) {
-    let mut sorted = members.to_vec();
-    sorted.sort_unstable_by_key(|m| m.width);
-    let min = sorted
-        .first()
-        .expect("emit_drop invariant: members is non-empty")
-        .width;
-    let kept_end = band_len(&sorted, min, settings.max_shift);
-    let kept = &sorted[..kept_end];
-    if kept.len() < 2 {
-        return;
-    }
-    let max_w = kept.last().expect("kept non-empty").width;
-    emit_with_paddings(source, kept, max_w, max_op_width(kept), 1, edits);
-}
-
-/// Partitions into width bands, seeding each at the widest unassigned
-/// member and claiming every member whose width sits within
-/// `settings.max_shift` of the seed, so the dominant column is sized
-/// by the members that need it and a member lands alone only as a
-/// width outlier among the members not yet claimed by a wider band.
-/// Each band aligns at its seed's width. A singleton collapses its
-/// gap to one space, or to zero when
-/// `settings.strip_singleton_subgroup` is set.
-fn emit_split(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>) {
-    let mut sorted = members.to_vec();
-    sorted.sort_unstable_by_key(|m| Reverse(m.width));
-    let mut rest = sorted.as_slice();
-    while let Some(seed) = rest.first() {
-        let end = band_len(rest, seed.width, settings.max_shift);
-        let (band, tail) = rest.split_at(end);
-        let suffix = settings.suffix_len(band.len());
-        emit_with_paddings(source, band, seed.width, max_op_width(band), suffix, edits);
-        rest = tail;
-    }
 }
 
 /// Rewrites each member's gap to
@@ -127,6 +68,43 @@ fn max_op_width(members: &[Member]) -> usize {
     members.iter().map(|m| m.op_width).max().unwrap_or(0)
 }
 
+/// Splits the source-ordered `members` into the contiguous groups the
+/// aligner emits independently, each paired with its widest member's
+/// width. `Unlimited` gathers the whole run into one group, `NoShift`
+/// leaves every row its own singleton, and `Cap(n)` grows a group while
+/// its width spread stays within `n`, cutting a fresh group at the first
+/// row that would push the spread past it. Each group is a sub-slice, so
+/// a column never jumps a row it skipped.
+fn reading_order_groups(members: &[Member], max_shift: MaxShift) -> Vec<(&[Member], usize)> {
+    let cap = match max_shift {
+        MaxShift::NoShift => {
+            return members
+                .iter()
+                .map(|m| (std::slice::from_ref(m), m.width))
+                .collect();
+        }
+        MaxShift::Unlimited => usize::MAX,
+        MaxShift::Cap(n) => n.get(),
+    };
+    let mut groups = Vec::new();
+    let mut start = 0;
+    let (mut min_w, mut max_w) = (usize::MAX, usize::MIN);
+    for (i, member) in members.iter().enumerate() {
+        let lo = min_w.min(member.width);
+        let hi = max_w.max(member.width);
+        if hi - lo > cap {
+            groups.push((&members[start..i], max_w));
+            (start, min_w, max_w) = (i, member.width, member.width);
+        } else {
+            (min_w, max_w) = (lo, hi);
+        }
+    }
+    if start < members.len() {
+        groups.push((&members[start..], max_w));
+    }
+    groups
+}
+
 #[cfg(test)]
 mod tests {
     use std::num::NonZeroUsize;
@@ -135,6 +113,11 @@ mod tests {
 
     use super::*;
     use crate::testing::{parse, range};
+
+    /// Builds a `MaxShift::Cap` from a non-zero literal.
+    fn cap(n: usize) -> MaxShift {
+        MaxShift::Cap(NonZeroUsize::new(n).expect("test cap is non-zero"))
+    }
 
     /// Builds the expected summary tuple for an `Edit::range_deletion`
     /// over a member's gap.
@@ -181,15 +164,6 @@ mod tests {
         (parse(&text), members)
     }
 
-    /// Builds a `Settings` carrying the test's cap and policy with
-    /// `strip_singleton_subgroup` defaulted off.
-    fn settings(max_shift: usize, policy: MaxAlignShiftPolicy) -> Settings {
-        Settings::aligned(
-            NonZeroUsize::new(max_shift).expect("test cap is non-zero"),
-            policy,
-        )
-    }
-
     fn sorted_summaries(edits: &[Edit]) -> Vec<(u32, u32, String)> {
         let mut out: Vec<_> = edits.iter().map(summary).collect();
         out.sort();
@@ -210,12 +184,7 @@ mod tests {
         let (source, members) = rows(&[(1, 1), (2, 1), (3, 1)]);
         let mut edits = Vec::new();
 
-        emit_group(
-            &source,
-            &members,
-            settings(10, MaxAlignShiftPolicy::Split),
-            &mut edits,
-        );
+        emit_group(&source, &members, Settings::aligned(cap(10)), &mut edits);
 
         // max_w=3, paddings 2/1/0, suffix=1 → targets 3/2/1 spaces.
         // member[2] already has 1 space, so it is skipped.
@@ -230,12 +199,7 @@ mod tests {
         let (source, members) = rows(&[(3, 5)]);
         let mut edits = Vec::new();
 
-        emit_group(
-            &source,
-            &members,
-            settings(8, MaxAlignShiftPolicy::Split),
-            &mut edits,
-        );
+        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
 
         // single member fits any cap. max_w=3, padding=0, suffix=1 →
         // target 1 space, currently 5.
@@ -243,239 +207,13 @@ mod tests {
     }
 
     #[test]
-    fn emit_group_drop_emits_nothing_when_kept_set_under_two() {
-        let (source, members) = rows(&[(1, 1), (15, 1), (30, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            settings(4, MaxAlignShiftPolicy::Drop),
-            &mut edits,
-        );
-
-        assert!(
-            edits.is_empty(),
-            "drop policy must emit nothing when fewer than two members fit the cap",
-        );
-    }
-
-    #[test]
-    fn emit_group_drop_excludes_outliers_and_aligns_remainder() {
-        let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            settings(8, MaxAlignShiftPolicy::Drop),
-            &mut edits,
-        );
-
-        // widths sort to 1/2/3/15. cap=8, so kept = widths 1/2/3 (the
-        // width-15 outlier drops). max_w of kept = 3, paddings 2/1/0,
-        // targets 3/2/1 spaces. member[3] (width 3) already has 1 space.
-        assert_eq!(
-            sorted_summaries(&edits),
-            vec![fill(&members[0], 3), fill(&members[1], 2)],
-        );
-    }
-
-    #[test]
-    fn emit_group_drop_keeps_member_exactly_at_cap_boundary() {
-        // Width 9 sits exactly max_shift=8 from the width-1 minimum, so
-        // the inclusive band keeps it and the pair aligns at 9.
-        let (source, members) = rows(&[(1, 1), (9, 1), (30, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            settings(8, MaxAlignShiftPolicy::Drop),
-            &mut edits,
-        );
-
-        assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 9)]);
-    }
-
-    #[test]
     fn emit_group_handles_empty_member_slice() {
         let source = parse("x = 0\n");
         let mut edits = Vec::new();
 
-        emit_group(
-            &source,
-            &[],
-            settings(8, MaxAlignShiftPolicy::Split),
-            &mut edits,
-        );
+        emit_group(&source, &[], Settings::aligned(cap(8)), &mut edits);
 
         assert!(edits.is_empty());
-    }
-
-    #[test]
-    fn emit_group_split_aligns_band_across_interleaved_outlier() {
-        // Widths span 13 → 4, a 9-wide spread that exceeds max_shift=8.
-        // The width-13 seed claims 11 and 7, so the band aligns at 13
-        // around the interleaved width-4 outlier, which strips to a
-        // zero-width gap.
-        let (source, members) = rows(&[(13, 1), (4, 1), (11, 1), (7, 1)]);
-        let mut edits = Vec::new();
-
-        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
-        emit_group(&source, &members, settings, &mut edits);
-
-        // member[0] is the seed, already at gap=1.
-        assert_eq!(
-            sorted_summaries(&edits),
-            vec![
-                delete(&members[1]),
-                fill(&members[2], 3),
-                fill(&members[3], 7),
-            ],
-        );
-    }
-
-    #[test]
-    fn emit_group_split_bands_equal_widths_and_strips_outlier() {
-        // The two width-13 members band together regardless of the
-        // width-4 row between them, leaving that row the lone stripped
-        // singleton.
-        let (source, members) = rows(&[(13, 1), (4, 1), (13, 1)]);
-        let mut edits = Vec::new();
-
-        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
-        emit_group(&source, &members, settings, &mut edits);
-
-        // Both width-13 gaps already sit at one space.
-        assert_eq!(sorted_summaries(&edits), vec![delete(&members[1])]);
-    }
-
-    #[test]
-    fn emit_group_split_claims_mid_width_into_widest_band() {
-        // The width-20 seed claims 12 (spread 8 fits the cap), so 4
-        // lands alone even though 12 sits within the cap of its own
-        // width: banding is greedy from the widest unassigned member.
-        let (source, members) = rows(&[(20, 1), (12, 1), (4, 1)]);
-        let mut edits = Vec::new();
-
-        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
-        emit_group(&source, &members, settings, &mut edits);
-
-        assert_eq!(
-            sorted_summaries(&edits),
-            vec![fill(&members[1], 9), delete(&members[2])],
-        );
-    }
-
-    #[test]
-    fn emit_group_split_leaves_over_cap_pair_natural() {
-        let (source, members) = rows(&[(20, 1), (4, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            settings(8, MaxAlignShiftPolicy::Split),
-            &mut edits,
-        );
-
-        // Each member is its own band. Without strip, both singleton
-        // targets are the one-space gap each row already carries.
-        assert!(edits.is_empty());
-    }
-
-    #[test]
-    fn emit_group_split_partitions_by_width_not_source_order() {
-        let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            settings(8, MaxAlignShiftPolicy::Split),
-            &mut edits,
-        );
-
-        // bands: [15] singleton at its natural one-space gap, then
-        // [4, 3, 2, 1] aligns at 4. Targets are 4/3/1/2/1 spaces, and
-        // members 2 and 4 already carry theirs.
-        assert_eq!(
-            sorted_summaries(&edits),
-            vec![
-                fill(&members[0], 4),
-                fill(&members[1], 3),
-                fill(&members[3], 2),
-            ],
-        );
-    }
-
-    #[test]
-    fn emit_group_split_partitions_into_three_bands() {
-        // Widths 30/25 band at the cap, 15/10 band next, and 1 lands
-        // alone: the loop must keep seeding past the second band.
-        let (source, members) = rows(&[(30, 1), (25, 1), (15, 1), (10, 1), (1, 1)]);
-        let mut edits = Vec::new();
-
-        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
-        emit_group(&source, &members, settings, &mut edits);
-
-        // Band [30, 25] aligns at 30, band [15, 10] aligns at 15, and
-        // [1] is the stripped singleton. Members 0 and 2 are seeds
-        // already at gap=1.
-        assert_eq!(
-            sorted_summaries(&edits),
-            vec![
-                fill(&members[1], 6),
-                fill(&members[3], 6),
-                delete(&members[4]),
-            ],
-        );
-    }
-
-    #[test]
-    fn emit_group_split_right_aligns_operators_within_band() {
-        let (source, members) = rows(&[(12, 1), (11, 1), (1, 1)]);
-        let members = [
-            members[0].with_op_width(2),
-            members[1].with_op_width(1),
-            members[2].with_op_width(1),
-        ];
-        let mut edits = Vec::new();
-
-        emit_group(
-            &source,
-            &members,
-            settings(8, MaxAlignShiftPolicy::Split),
-            &mut edits,
-        );
-
-        // Band [12, 11] right-aligns on its own widest operator, so
-        // member[1] targets 1+1+1=3 spaces while member[0] keeps its
-        // one-space gap and the [1] singleton takes no operator padding
-        // from the wide band.
-        assert_eq!(sorted_summaries(&edits), vec![fill(&members[1], 3)]);
-    }
-
-    #[test]
-    fn emit_group_split_strips_singleton_subgroup_when_flag_is_set() {
-        let (source, members) = rows(&[(10, 1), (11, 1), (1, 1), (12, 1), (13, 1)]);
-        let mut edits = Vec::new();
-
-        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
-        emit_group(&source, &members, settings, &mut edits);
-
-        // The width-13 seed claims 12, 11, and 10 into one band aligned
-        // at 13, while [1] is the stripped singleton.
-        assert_eq!(
-            sorted_summaries(&edits),
-            vec![
-                fill(&members[0], 4),
-                fill(&members[1], 3),
-                delete(&members[2]),
-                fill(&members[3], 2),
-            ],
-        );
     }
 
     #[test]
@@ -483,8 +221,12 @@ mod tests {
         let (source, members) = rows(&[(3, 5)]);
         let mut edits = Vec::new();
 
-        let settings = settings(8, MaxAlignShiftPolicy::Split).with_singleton_subgroup_strip();
-        emit_group(&source, &members, settings, &mut edits);
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)).with_singleton_strip(),
+            &mut edits,
+        );
 
         // A lone member is its own group, so strip collapses the
         // five-space gap to zero rather than the one-space suffix.
@@ -523,6 +265,162 @@ mod tests {
         assert!(
             edits.is_empty(),
             "gap that already matches the target width must not emit",
+        );
+    }
+
+    #[test]
+    fn no_shift_collapses_every_row_to_one_space() {
+        let (source, members) = rows(&[(1, 3), (2, 3), (3, 3)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(MaxShift::NoShift),
+            &mut edits,
+        );
+
+        // Every row stands alone, so each collapses to its one-space
+        // suffix regardless of its neighbors' widths.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![
+                fill(&members[0], 1),
+                fill(&members[1], 1),
+                fill(&members[2], 1)
+            ],
+        );
+    }
+
+    #[test]
+    fn no_shift_keeps_equal_width_rows_flush() {
+        let (source, members) = rows(&[(5, 3), (5, 3)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(MaxShift::NoShift).with_singleton_strip(),
+            &mut edits,
+        );
+
+        // Equal widths would group under any positive cap, but NoShift
+        // leaves each row its own singleton, so both strip flush rather
+        // than taking the grouped one-space buffer.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![delete(&members[0]), delete(&members[1])],
+        );
+    }
+
+    #[test]
+    fn unlimited_folds_over_cap_spread_into_one_column() {
+        let (source, members) = rows(&[(1, 1), (50, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(MaxShift::Unlimited),
+            &mut edits,
+        );
+
+        // A 49-wide spread that would break under any cap folds into one
+        // column aligned at the width-50 member.
+        assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 50)]);
+    }
+
+    #[test]
+    fn walk_breaks_run_at_first_over_cap_row() {
+        let (source, members) = rows(&[(1, 1), (2, 1), (3, 1), (15, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+
+        // Widths 1/2/3 grow one group (spread 2), then width 15 pushes
+        // the spread to 14 and breaks off as a natural singleton. The
+        // leading group aligns at 3.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![fill(&members[0], 3), fill(&members[1], 2)],
+        );
+    }
+
+    #[test]
+    fn walk_groups_in_source_order_not_by_width() {
+        let (source, members) = rows(&[(1, 1), (2, 1), (15, 1), (3, 1), (4, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+
+        // The width-15 row sits mid-run, so it breaks [1, 2] from [3, 4]
+        // and stands alone rather than dragging the narrow rows into one
+        // width band. [1, 2] aligns at 2 and [3, 4] aligns at 4.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![fill(&members[0], 2), fill(&members[3], 2)],
+        );
+    }
+
+    #[test]
+    fn walk_keeps_row_at_exact_cap_boundary() {
+        let (source, members) = rows(&[(1, 1), (9, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+
+        // Spread 8 sits exactly at the cap, so the pair aligns at 9.
+        assert_eq!(sorted_summaries(&edits), vec![fill(&members[0], 9)]);
+    }
+
+    #[test]
+    fn walk_leaves_over_cap_pair_natural() {
+        let (source, members) = rows(&[(20, 1), (4, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+
+        // Each member is its own group. Without strip, both singleton
+        // targets are the one-space gap each row already carries.
+        assert!(edits.is_empty());
+    }
+
+    #[test]
+    fn walk_right_aligns_operators_within_a_group() {
+        let (source, members) = rows(&[(12, 1), (11, 1), (1, 1)]);
+        let members = [
+            members[0].with_op_width(2),
+            members[1].with_op_width(1),
+            members[2].with_op_width(1),
+        ];
+        let mut edits = Vec::new();
+
+        emit_group(&source, &members, Settings::aligned(cap(8)), &mut edits);
+
+        // Widths 12/11 group and right-align on their widest operator, so
+        // member[1] targets 1+1+1=3 spaces while member[0] keeps its
+        // one-space gap. The width-1 row breaks off and takes no operator
+        // padding from the wide group.
+        assert_eq!(sorted_summaries(&edits), vec![fill(&members[1], 3)]);
+    }
+
+    #[test]
+    fn walk_strips_a_singleton_broken_off_mid_run() {
+        let (source, members) = rows(&[(20, 1), (2, 1), (3, 1)]);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(8)).with_singleton_strip(),
+            &mut edits,
+        );
+
+        // Width 20 breaks off first and strips to a zero-width gap, then
+        // [2, 3] aligns at 3.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![delete(&members[0]), fill(&members[1], 2)],
         );
     }
 

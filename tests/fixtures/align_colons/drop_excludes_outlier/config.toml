@@ -1,2 +1,0 @@
-[rules]
-align-colons = { max-shift-policy = "drop" }
