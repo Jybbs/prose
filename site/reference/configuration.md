@@ -21,7 +21,7 @@ A bare `false` disables a rule, an inline table sets its knobs while leaving the
 
 ## Where *Prose* Looks
 
-*Prose* walks upward from each input file's own directory toward the filesystem root, so a file answers to its own project's config even when one invocation names files across several projects. Stdin input walks from the working directory, the one input with no path of its own. In each directory a `prose.toml` outranks a `pyproject.toml`, and the nearest directory carrying either wins, in that *Prose* reads only that one file and never merges across matches up the tree. A `pyproject.toml` lacking a `[tool.prose]` table is passed over, leaving the walk to continue upward. When no ancestor carries either, every default applies as if the config were empty.
+*Prose* walks upward from each input file's own directory toward the filesystem root, so a file answers to its own project's config even when one invocation names files across several projects. Stdin input walks from the working directory, the one input with no path of its own. In each directory a `prose.toml` outranks a `pyproject.toml`, and the nearest directory carrying either wins, in that *Prose* reads only that one file and never merges across matches up the tree. A `pyproject.toml` lacking a `[tool.prose]` table is passed over, leaving the walk to continue upward. A standalone script the walk never resolves to a project reads its own `[tool.prose]` from a leading PEP 723 `# /// script` block, the one configuration home a single-file script has, whereas a script under a project ignores its block and answers to the project. When neither an ancestor nor a block carries config, every default applies as if the config were empty.
 
 When a `prose.toml` and a `pyproject.toml` `[tool.prose]` table share a directory, the `prose.toml` wins and *Prose* notes the precedence to stderr, so the file that took effect is never ambiguous.
 
@@ -111,6 +111,26 @@ Other rules read a project-specific input that *Prose* cannot guess from source 
 ## Docstring Budgets
 
 Docstrings carry two readings inside one triple-quoted region. Description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Every Title-case-headed section that follows reads as a code-shaped table and reuses `code-line-length` (*88 by default*) to match surrounding indentation. `docstring-structured-policy` switches them to `docstring-line-length` if a project prefers a single narrower budget across the whole docstring. The [[docstring-wrap]] rule consumes both budgets.
+
+## Per-Pattern Overrides
+
+A single config carves out per-pattern exceptions through a `[[tool.prose.overrides]]` array-of-tables. Each entry names a `paths` glob list and the partial `[tool.prose]` body its matched files receive, deep-merged per knob over the file's base so the override wins the knobs it sets and leaves the rest. A generated directory can relax a budget, or a test suite can drop a lint, without a nested config file at every boundary.
+
+```toml
+code-line-length = 88
+
+[[overrides]]
+paths            = ["generated/**", "**/_pb2.py"]
+code-line-length = 200
+
+[[overrides]]
+paths = ["tests/**"]
+
+[overrides.rules]
+single-use-variables = false
+```
+
+Globs anchor to the declaring config's directory, so `tests/**` matches the `tests/` beside the config rather than at any depth below it. The array-of-tables shape keeps a multi-knob override readable across lines, where a glob-keyed inline table would crowd it onto one against *Prose*'s legibility mandate. When several entries match one file, *Prose* layers their bodies in document order, leaving the last matching entry to win each knob it sets while the earlier entries' other knobs stay in place.
 
 ## Subset by Invocation
 

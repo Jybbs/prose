@@ -1310,6 +1310,7 @@ dependencies = [
  "clap_complete",
  "dirs",
  "fs-err",
+ "globset",
  "ignore",
  "indoc",
  "insta",

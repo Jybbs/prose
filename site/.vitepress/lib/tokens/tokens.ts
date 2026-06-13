@@ -50,17 +50,18 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: '--verbose',       href: '/reference/cache#hit-miss-telemetry', blurb: 'Print a one-line cache summary to stderr at the end of the run.' }
   ],
   'config-key': [
-    { key: 'cache.enabled',               href: '/reference/cache#configuration',             blurb: 'Toggle the user-level cache globally.' },
-    { key: 'cache.max-size-mib',          href: '/reference/cache#configuration',             blurb: 'LRU eviction cap on the cache directory.' },
-    { key: 'code-line-length',            href: '/reference/configuration#top-level-keys',    blurb: 'Maximum column budget for code lines.' },
-    { key: 'docstring-line-length',       href: '/reference/configuration#docstring-budgets', blurb: 'Maximum column budget for docstring prose.' },
-    { key: 'docstring-structured-policy', href: '/reference/configuration#docstring-budgets', blurb: 'Budget policy for docstring structured sections.' },
-    { key: 'enabled',                     href: '/reference/configuration#per-rule-knobs',    blurb: 'Per-rule toggle, the bare bool in `[rules]`.' },
-    { key: 'import-line-length',          href: '/reference/configuration#top-level-keys',    blurb: 'Import-wrap column budget, falls back to `code-line-length`.' },
-    { key: 'imports.first-party',         href: '/reference/configuration#imports',           blurb: 'Package names lifted into the local-package import group.' },
-    { key: 'max-shift',                   href: '/reference/configuration#per-rule-knobs',    blurb: 'Per-rule alignment-shift bound.' },
-    { key: 'max-shift-policy',            href: '/reference/configuration#per-rule-knobs',    blurb: 'Fallback (`split` / `drop`) when the widest member overflows `max-shift`.' },
-    { key: 'target-version',              href: '/reference/configuration#top-level-keys',    blurb: 'Python version the parser reads against.' }
+    { key: 'cache.enabled',               href: '/reference/cache#configuration',                 blurb: 'Toggle the user-level cache globally.' },
+    { key: 'cache.max-size-mib',          href: '/reference/cache#configuration',                 blurb: 'LRU eviction cap on the cache directory.' },
+    { key: 'code-line-length',            href: '/reference/configuration#top-level-keys',        blurb: 'Maximum column budget for code lines.' },
+    { key: 'docstring-line-length',       href: '/reference/configuration#docstring-budgets',     blurb: 'Maximum column budget for docstring prose.' },
+    { key: 'docstring-structured-policy', href: '/reference/configuration#docstring-budgets',     blurb: 'Budget policy for docstring structured sections.' },
+    { key: 'enabled',                     href: '/reference/configuration#per-rule-knobs',        blurb: 'Per-rule toggle, the bare bool in `[rules]`.' },
+    { key: 'import-line-length',          href: '/reference/configuration#top-level-keys',        blurb: 'Import-wrap column budget, falls back to `code-line-length`.' },
+    { key: 'imports.first-party',         href: '/reference/configuration#imports',               blurb: 'Package names lifted into the local-package import group.' },
+    { key: 'max-shift',                   href: '/reference/configuration#per-rule-knobs',        blurb: 'Per-rule alignment-shift bound.' },
+    { key: 'max-shift-policy',            href: '/reference/configuration#per-rule-knobs',        blurb: 'Fallback (`split` / `drop`) when the widest member overflows `max-shift`.' },
+    { key: 'overrides.paths',             href: '/reference/configuration#per-pattern-overrides', blurb: 'Glob list selecting the files an override entry applies its partial config to.' },
+    { key: 'target-version',              href: '/reference/configuration#top-level-keys',        blurb: 'Python version the parser reads against.' }
   ],
   'exit-code': [
     { key: '0', href: '/reference/exit-codes', blurb: 'Clean run, every rewrite applied.' },
