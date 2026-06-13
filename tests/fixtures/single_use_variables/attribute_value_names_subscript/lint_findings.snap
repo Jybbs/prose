@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/single_use_variables/attribute_value_names_subscript/input.py
+---
+[
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 6,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`x` is assigned and used once. Consider inlining `point.coords[0]`"
+  },
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 9,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 2
+    },
+    "message": "`y` is assigned and used once. Consider inlining `point.coords[1]`"
+  }
+]
