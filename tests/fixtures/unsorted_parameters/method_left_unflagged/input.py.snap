@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unsorted_parameters/method_left_unflagged/input.py
+---
+class Catalog:
+    def update(self, target, source):
+        return target

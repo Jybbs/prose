@@ -4,5 +4,5 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
 ---
 align-colons@187..273
-alphabetize@11..290
 docstring-frame@48..48
+unsorted-parameters@10..39

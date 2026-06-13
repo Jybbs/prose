@@ -31,15 +31,15 @@ Config {
                 3,
             ),
         },
-        alphabetize: AlphabetizeConfig {
-            docstring_entries: true,
-            enabled: true,
-        },
         call_layout: CallLayoutConfig {
             enabled: true,
             max_inline_args: Some(
                 3,
             ),
+        },
+        alphabetize: AlphabetizeConfig {
+            docstring_entries: true,
+            enabled: true,
         },
         strip_trailing_commas: ToggleOnly {
             enabled: true,
@@ -116,6 +116,9 @@ Config {
             allow_pattern: Regex(
                 "^_",
             ),
+            enabled: true,
+        },
+        unsorted_parameters: ToggleOnly {
             enabled: true,
         },
     },

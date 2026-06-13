@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Docstring Entries Mirror the Signature's Source Order"
+
+description = '''
+A signature holds its parameter order, so its `Args:` entries **reorder to mirror that source order** rather than the bare alphabet. The scrambled entries settle into `target`, `source`, `retries`, matching the signature the reader sees.
+'''

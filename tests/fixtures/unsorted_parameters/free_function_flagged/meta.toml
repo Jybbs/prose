@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "An Out-of-Order Free Function Is Flagged"
+
+description = '''
+A module-level function whose positional-or-keyword parameters sit out of alphabetical order **draws a report-only diagnostic**. The rule never reorders them, because doing so would rebind every positional call site, so it points the reorder out and leaves the call where the author can weigh the callers.
+'''

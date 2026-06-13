@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Typed Signature Expands and Aligns Its Columns"
+
+description = '''
+A five-parameter typed signature holds its source order, since the parameters never reorder. **It expands to one per line, aligns the annotation `:` column, and aligns the default `=` column** across the optional run.
+'''

@@ -3,5 +3,5 @@ previewable = true
 title       = "Method Parameters Keep Their Order"
 
 description = '''
-A method's positional-or-keyword parameters **never reorder**, whatever its decorators or in-module call sites. Callers of a method routinely live outside the module, a framework invoking an overridden hook positionally or external code calling through the class's contract, so no call-site rewrite can keep a reorder behavior-preserving.
+A method's positional-or-keyword parameters **never reorder**, exactly as a free function's do not, because reordering them would rebind callers a single-file pass cannot see. The hold is universal across `def` and `lambda` at every scope, owing nothing to a method's decorators or call sites.
 '''

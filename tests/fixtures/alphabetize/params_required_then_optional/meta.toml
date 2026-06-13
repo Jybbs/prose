@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Function Parameters with Defaults Sort"
-
-description = '''
-Function parameters **alphabetize within two sub-groups**: required (*no default*) before optional (*has default*).
-'''

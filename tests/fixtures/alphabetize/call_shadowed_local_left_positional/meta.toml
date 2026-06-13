@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Shadowed Local Reference Stays Positional"
-
-description = '''
-When a local binding shadows the module function's name, the call resolves to the local rather than the reordered definition, so its positional arguments stay as they read.
-'''

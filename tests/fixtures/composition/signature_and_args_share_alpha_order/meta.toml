@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Signature and Args Share One Alphabetical Order"
-
-description = '''
-Parameters and matching `Args:` entries both in non-alphabetical order. **`alphabetize` reorders the signature and the Args entries against the same key, `align_colons` aligns both `:` columns, and `docstring_wrap` wraps each description** at its post-align hanging column.
-'''

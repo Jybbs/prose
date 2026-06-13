@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Rebound Function Name Pins Its Call"
-
-description = '''
-When a function's name is reassigned after its definition, the call no longer resolves to one definition with in-module certainty, so the rewrite leaves the call verbatim even as the signature reorders.
-'''

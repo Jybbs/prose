@@ -1,7 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/alphabetize/params_required_then_optional/input.py
----
-def merge(source, target, fallback=None, key=None, strict=True):
-    pass

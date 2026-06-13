@@ -48,7 +48,7 @@ impl Rule for CallLayout {
         let Some(cap) = self.max_inline_args else {
             return Vec::new();
         };
-        let targets = module_call_params(source, |_| true);
+        let targets = module_call_params(source);
         let mut exploder = Exploder {
             cap,
             edits: Vec::new(),
@@ -88,7 +88,7 @@ impl Exploder<'_> {
         let keywords = keyword_args(self.source, call, params)?;
         // A positional-only prefix cannot take keyword form, so the call
         // stays inline rather than exploding only part of its arguments.
-        if keywords.posonly_prefix != 0 {
+        if keywords.has_posonly_prefix {
             return None;
         }
         let item_indent = indent + INDENT_STEP;

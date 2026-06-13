@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Method Draws No Diagnostic"
+
+description = '''
+A class-body method draws **no diagnostic**, even with out-of-order parameters. A method's callers routinely live outside the module, so the lint stays silent rather than suggest a reorder no single-file pass can vet.
+'''

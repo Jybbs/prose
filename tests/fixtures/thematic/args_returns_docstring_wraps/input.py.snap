@@ -3,15 +3,15 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
 ---
-def render(context, encoding, template):
+def render(template, context, encoding):
     """
     Render a template against the provided context, applying the configured
     fallback when context is missing a key.
 
     Args:
+        template : The compiled template.
         context  : Mapping of names to values.
         encoding : Output encoding.
-        template : The compiled template.
 
     Returns:
         The rendered string in the requested encoding.

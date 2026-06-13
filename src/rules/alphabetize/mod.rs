@@ -1,12 +1,9 @@
 //! Alphabetizes sibling AST nodes wherever order does not carry
 //! meaning. The covered shapes are classes and functions in a body,
 //! class-scope `Stmt::AnnAssign` field declarations and `Stmt::Assign`
-//! runs with simple `Name` targets, function and lambda parameters
-//! with `self` / `cls`, positional-only params, parameters under a
-//! positional-binding decorator, and the positional-or-keyword
-//! parameters of class-body functions and lambdas pinned, call kwargs,
-//! set literal elements, consecutive `import` blocks reordered into
-//! canonical bare
+//! runs with simple `Name` targets, function and lambda keyword-only
+//! parameters, call kwargs, set literal elements, consecutive `import`
+//! blocks reordered into canonical bare
 //! / external-`from` / local-package groups plus their alias lists,
 //! `global` and `nonlocal` name lists, `del` target lists, and the
 //! string literals inside `__all__` / `__slots__`.
@@ -16,10 +13,9 @@
 //! outer scope's replacement text, so each outermost reordering scope
 //! emits a single edit covering its descendants.
 //!
-//! When a top-level function's positional parameters reorder, every
-//! in-module call resolved through `BindingAnalysis` rewrites its
-//! keyword-eligible positional arguments to `name=value`, alphabetized,
-//! leaving positional-only prefixes and `*` / `**` call sites in place.
+//! Positional-or-keyword parameters never reorder, free function and
+//! method alike, because no single-file rewrite can keep every caller's
+//! positional binding intact. Only the keyword-only block past `*` sorts.
 
 use std::{borrow::Cow, collections::HashMap, ops::Range};
 
@@ -35,10 +31,10 @@ use ruff_text_size::{Ranged, TextLen, TextRange};
 use crate::{
     config::Config,
     primitives::{
-        call_keywords::pins_positional_params,
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
         imports::{ImportGroup, future_annotations_alias, import_group},
         orderer::{assemble_blocks, block_range, blocks_span, permute_full, permute_in_place},
+        params::pins_positional_params,
         scope::{BodyScope, scoped_body},
     },
     rule::{Rule, RuleId},
@@ -52,7 +48,7 @@ mod tiering;
 
 use self::{
     bands::{band_module_constants, banded_gap},
-    leaves::{call_rewrite_targets, collect_docstring_entry_edits, collect_leaf_edits},
+    leaves::{collect_docstring_entry_edits, collect_leaf_edits},
     tiering::permute_defs,
 };
 
@@ -78,8 +74,7 @@ impl Rule for Alphabetize {
         if body.is_empty() {
             return Vec::new();
         }
-        let rewrite_targets = call_rewrite_targets(source);
-        let (mut leaf_edits, param_docs) = collect_leaf_edits(source, &rewrite_targets);
+        let (mut leaf_edits, param_docs) = collect_leaf_edits(source);
         if self.docstring_entries {
             leaf_edits.extend(collect_docstring_entry_edits(source, &param_docs));
             leaf_edits.sort_unstable();

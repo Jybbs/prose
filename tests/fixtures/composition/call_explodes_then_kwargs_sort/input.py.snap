@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/call_explodes_then_kwargs_sort/input.py
+---
+def draw(width, height, depth, color):
+    return width
+
+
+shape = draw(
+    color=c,
+    depth=d,
+    height=h,
+    width=w
+)

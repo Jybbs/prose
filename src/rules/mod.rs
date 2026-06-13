@@ -24,4 +24,5 @@ pub(crate) mod single_use_variables;
 pub(crate) mod step_narration;
 pub(crate) mod strip_align_padding;
 pub(crate) mod strip_trailing_commas;
+pub(crate) mod unsorted_parameters;
 pub(crate) mod unused_future_annotations;

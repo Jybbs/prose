@@ -1,16 +1,16 @@
 //! Leaf-edit collection for `alphabetize`. A single AST walk emits one
-//! non-overlapping edit per outermost reordering structure, folds in
-//! every call-site keyword rewrite that does not overlap one, and maps
-//! each function docstring to its signature-order names, the mirror
-//! key the docstring-entry sort consumes.
+//! non-overlapping edit per outermost reordering structure and maps
+//! each function docstring to its signature-order names, the mirror key
+//! the docstring-entry sort consumes. Positional-or-keyword parameters
+//! never reorder, since no single-file rewrite can keep every caller's
+//! positional binding intact. Only the keyword-only block sorts.
 
-use std::{borrow::Cow, cmp::Reverse, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap};
 
-use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Alias, Expr, ExprCall, ExprDict, ExprLambda, ExprSet, Identifier, ParameterWithDefault,
-    Parameters, Stmt, StmtAssign, StmtDelete,
+    Alias, Expr, ExprCall, ExprDict, ExprLambda, ExprSet, Identifier, Parameters, Stmt, StmtAssign,
+    StmtDelete,
     visitor::{Visitor as AstVisitor, walk_expr, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -18,11 +18,10 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use super::dict::rewrite_dict_text;
 use crate::{
     primitives::{
-        call_keywords::{callee_params, keyword_args, module_call_params, pins_positional_params},
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement},
-        orderer::{assemble_blocks, blocks_span, permute_full, reorder_text},
-        scope::{BodyScope, scoped_body},
+        orderer::{permute_full, reorder_text},
+        params::classify_param,
     },
     source::Source,
 };
@@ -30,9 +29,6 @@ use crate::{
 struct LeafCollector<'a> {
     edits: Vec<Edit>,
     param_docs: HashMap<TextSize, Vec<&'a str>>,
-    rewrite_edits: Vec<Edit>,
-    rewrite_targets: &'a HashMap<TextSize, &'a Parameters>,
-    scope: BodyScope,
     source: &'a Source,
 }
 
@@ -42,9 +38,6 @@ impl<'a> LeafCollector<'a> {
     }
 
     fn emit_call(&mut self, c: &'a ExprCall) {
-        if self.try_emit_keyword_rewrite(c) {
-            return;
-        }
         for chunk in c.arguments.keywords.split(|kw| kw.arg.is_none()) {
             self.try_emit_inline_reorder(chunk, |kw| kw.arg.as_deref());
         }
@@ -81,18 +74,15 @@ impl<'a> LeafCollector<'a> {
 
     fn emit_lambda(&mut self, l: &'a ExprLambda) {
         if let Some(params) = l.parameters.as_deref() {
-            // A class-body lambda is a method in everything but spelling,
-            // so its positional-or-keyword order pins like a `def`'s.
-            self.emit_parameters(params, self.scope == BodyScope::Class);
+            self.emit_parameters(params);
         }
     }
 
-    fn emit_parameters(&mut self, params: &'a Parameters, pin_positional: bool) {
-        // Positional-only params stay put, because no call-site keyword
-        // form can rebind the arguments a reorder would move.
-        if !pin_positional {
-            self.try_emit_inline_reorder(&params.args, classify_param);
-        }
+    /// Sorts only the keyword-only block. A keyword-only parameter
+    /// binds by name at every call site, so reordering it preserves
+    /// behavior, whereas a positional-or-keyword parameter does not and
+    /// holds its source slot.
+    fn emit_parameters(&mut self, params: &'a Parameters) {
         self.try_emit_inline_reorder(&params.kwonlyargs, classify_param);
     }
 
@@ -131,35 +121,6 @@ impl<'a> LeafCollector<'a> {
         });
         self.fold_into(span, folded);
     }
-
-    /// Rewrites a call to a reordered module function, converting each
-    /// keyword-eligible positional argument to `name=value` and emitting
-    /// the keyword run alphabetized. Returns `false` when the call cannot
-    /// take that form, leaving the caller to fall back on the keyword reorder.
-    fn try_emit_keyword_rewrite(&mut self, c: &'a ExprCall) -> bool {
-        let Some(params) = callee_params(self.rewrite_targets, c) else {
-            return false;
-        };
-        let Some(keywords) = keyword_args(self.source, c, Some(params)) else {
-            return false;
-        };
-        // A call whose positional arguments are all positional-only has
-        // nothing to convert, leaving the plain keyword reorder to sort it instead.
-        if c.arguments.args.len() <= keywords.posonly_prefix {
-            return false;
-        }
-        let (blocks, keys, rendered): (Vec<TextRange>, Vec<&str>, Vec<Cow<'a, str>>) = keywords
-            .args
-            .into_iter()
-            .map(|arg| (arg.block, arg.name, arg.rendered))
-            .multiunzip();
-        let mut order: Vec<usize> = (0..keys.len()).collect();
-        order.sort_unstable_by_key(|&i| keys[i]);
-        let assembled = assemble_blocks(self.source, &blocks, &rendered, &order, |_| None);
-        self.rewrite_edits
-            .push(Edit::range_replacement(assembled, blocks_span(&blocks)));
-        true
-    }
 }
 
 impl<'a> AstVisitor<'a> for LeafCollector<'a> {
@@ -175,25 +136,16 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
     }
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        let enclosing = self.scope;
-        // A compound statement's arms inherit the enclosing scope,
-        // matching the `rewrite_stmt` recursion.
-        self.scope = scoped_body(stmt).map_or(enclosing, |(_, scope)| scope);
         walk_stmt(self, stmt);
-        self.scope = enclosing;
         match stmt {
             Stmt::Assign(a) => self.emit_dunder_list(a),
             Stmt::Delete(d) => self.emit_delete(d),
-            // A class-body function's callers routinely live outside the
-            // module, where no call-site rewrite can preserve their
-            // positional bindings, so its positional-or-keyword order pins.
             Stmt::FunctionDef(f) => {
-                let pinned = self.scope == BodyScope::Class || pins_positional_params(f);
                 if let Some(lit) = body_docstring(&f.body) {
                     self.param_docs
-                        .insert(lit.start(), signature_order(&f.parameters, pinned));
+                        .insert(lit.start(), signature_order(&f.parameters));
                 }
-                self.emit_parameters(&f.parameters, pinned);
+                self.emit_parameters(&f.parameters);
             }
             Stmt::Global(g) => self.emit_id_run(&g.names),
             Stmt::Import(i) => self.emit_alias_run(&i.names),
@@ -202,13 +154,6 @@ impl<'a> AstVisitor<'a> for LeafCollector<'a> {
             _ => {}
         }
     }
-}
-
-/// Maps each in-module call's callee offset to the parameters of the
-/// top-level function it resolves to, restricted to functions whose
-/// positional `args` reorder under alphabetization.
-pub(super) fn call_rewrite_targets(source: &Source) -> HashMap<TextSize, &Parameters> {
-    module_call_params(source, |func| args_reorder(&func.parameters))
 }
 
 /// Walks every docstring in `source` and emits one edit per
@@ -249,62 +194,17 @@ pub(super) fn collect_docstring_entry_edits(
 }
 
 /// Walks the AST collecting one non-overlapping leaf edit per outermost
-/// reordering structure, each folding its nested reorders in, then folds
-/// in every call-site keyword rewrite that does not overlap one. Also
-/// returns each function docstring's start mapped to its
-/// signature-order names, the mirror key for docstring-entry sorting.
-pub(super) fn collect_leaf_edits<'a>(
-    source: &'a Source,
-    rewrite_targets: &'a HashMap<TextSize, &'a Parameters>,
-) -> (Vec<Edit>, HashMap<TextSize, Vec<&'a str>>) {
+/// reordering structure, each folding its nested reorders in, and maps
+/// each function docstring's start to its signature-order names, the
+/// mirror key for docstring-entry sorting.
+pub(super) fn collect_leaf_edits(source: &Source) -> (Vec<Edit>, HashMap<TextSize, Vec<&str>>) {
     let mut collector = LeafCollector {
         edits: Vec::new(),
         param_docs: HashMap::new(),
-        rewrite_edits: Vec::new(),
-        rewrite_targets,
-        scope: BodyScope::Module,
         source,
     };
     collector.visit_body(&source.ast().body);
-    let LeafCollector {
-        mut edits,
-        param_docs,
-        rewrite_edits: mut rewrites,
-        ..
-    } = collector;
-    // Keyword rewrites are pure additions over the existing leaf edits,
-    // so drop any that would overlap one, sidestepping the leaf-edit
-    // applicator's non-overlap invariant on nested reorder spans. An
-    // enclosing rewrite outranks one it contains, so widest-first
-    // ordering keeps the outer of a nested pair.
-    rewrites.sort_by_key(|e| (e.start(), Reverse(e.end())));
-    for rewrite in rewrites {
-        if edits.iter().all(|e| {
-            e.range()
-                .intersect(rewrite.range())
-                .is_none_or(TextRange::is_empty)
-        }) {
-            insert_by_start(&mut edits, rewrite);
-        }
-    }
-    (edits, param_docs)
-}
-
-/// True when sorting a function's positional-or-keyword `args` by the
-/// parameter sort key would change their order.
-fn args_reorder(params: &Parameters) -> bool {
-    !params.args.iter().filter_map(classify_param).is_sorted()
-}
-
-/// Composite parameter sort key. Required parameters (no default)
-/// sort before optional parameters (has default), each sub-group by
-/// name. `self` and `cls` pin in place.
-fn classify_param(p: &ParameterWithDefault) -> Option<(u8, &str)> {
-    let name = p.name().as_str();
-    if matches!(name, "cls" | "self") {
-        return None;
-    }
-    Some((u8::from(p.default.is_some()), name))
+    (collector.edits, collector.param_docs)
 }
 
 /// Composite docstring-entry sort key. An entry naming a signature
@@ -335,30 +235,22 @@ fn sequence_elts(expr: &Expr) -> Option<&[Expr]> {
 }
 
 /// Returns the parameter names in the order the rule leaves the
-/// signature: positional-only and `*args` / `**kwargs` in place,
-/// positional-or-keyword in source order when `pinned` and in
-/// sort-key order otherwise, keyword-only always in sort-key order.
-fn signature_order(params: &Parameters, pinned: bool) -> Vec<&str> {
+/// signature: positional-only and positional-or-keyword in source
+/// order, then `*args`, then the keyword-only block sorted, then
+/// `**kwargs`.
+fn signature_order(params: &Parameters) -> Vec<&str> {
     let mut names: Vec<&str> = params
         .posonlyargs
         .iter()
+        .chain(&params.args)
         .map(|p| p.name().as_str())
         .collect();
-    names.extend(sorted_names(&params.args, !pinned));
     names.extend(params.vararg.as_deref().map(|p| p.name.as_str()));
-    names.extend(sorted_names(&params.kwonlyargs, true));
+    let mut order: Vec<usize> = (0..params.kwonlyargs.len()).collect();
+    permute_full(&mut order, &params.kwonlyargs, classify_param);
+    names.extend(order.iter().map(|&i| params.kwonlyargs[i].name().as_str()));
     names.extend(params.kwarg.as_deref().map(|p| p.name.as_str()));
     names
-}
-
-/// Returns the names of `params` in source order, or permuted by the
-/// parameter sort key when `sorted`.
-fn sorted_names(params: &[ParameterWithDefault], sorted: bool) -> Vec<&str> {
-    let mut order: Vec<usize> = (0..params.len()).collect();
-    if sorted {
-        permute_full(&mut order, params, classify_param);
-    }
-    order.iter().map(|&i| params[i].name().as_str()).collect()
 }
 
 #[cfg(test)]
@@ -367,23 +259,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{applied_text, first_def, parse};
-
-    #[rstest]
-    #[case("def f(b, a): pass\n", true)]
-    #[case("def f(a, b): pass\n", false)]
-    #[case("def f(a): pass\n", false)]
-    #[case("def f(): pass\n", false)]
-    #[case("def f(self, b, a): pass\n", true)]
-    #[case("def f(b, a, /): pass\n", false)]
-    fn args_reorder_tracks_only_the_positional_or_keyword_args(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        let s = parse(src);
-        let f = first_def(&s);
-        assert_eq!(args_reorder(&f.parameters), expected);
-    }
+    use crate::testing::{applied_text, parse};
 
     #[rstest]
     #[case(indoc! {"
@@ -401,7 +277,6 @@ mod tests {
                 \"\"\"
     "})]
     #[case(indoc! {"
-        @pytest.mark.parametrize('x', [1])
         def f(b, a):
             \"\"\"Summary.
 
@@ -414,10 +289,9 @@ mod tests {
                 KeyError: missing
             \"\"\"
     "})]
-    fn collect_docstring_entry_edits_mirrors_pinned_signature_order(#[case] src: &str) {
+    fn collect_docstring_entry_edits_mirrors_source_order_signature(#[case] src: &str) {
         let source = parse(src);
-        let targets = call_rewrite_targets(&source);
-        let (_, param_docs) = collect_leaf_edits(&source, &targets);
+        let (_, param_docs) = collect_leaf_edits(&source);
         let edits = collect_docstring_entry_edits(&source, &param_docs);
         let text = applied_text(&source, edits);
         let pos = |needle: &str| {
@@ -426,11 +300,38 @@ mod tests {
         };
         assert!(
             pos("b: two") < pos("a: one"),
-            "parameter entries mirror the pinned signature"
+            "parameter entries mirror the un-reordered signature"
         );
         assert!(
             pos("KeyError: missing") < pos("ValueError: bad"),
             "non-parameter entries still sort"
+        );
+    }
+
+    #[test]
+    fn collect_docstring_entry_edits_mirrors_vararg_and_kwarg_positions() {
+        let src = indoc! {"
+            def f(beta, alpha, *zebra, **apple):
+                \"\"\"Summary.
+
+                Args:
+                    apple: d
+                    zebra: c
+                    beta: a
+                    alpha: b
+                \"\"\"
+        "};
+        let source = parse(src);
+        let (_, param_docs) = collect_leaf_edits(&source);
+        let edits = collect_docstring_entry_edits(&source, &param_docs);
+        let text = applied_text(&source, edits);
+        let pos = |needle: &str| {
+            text.find(needle)
+                .unwrap_or_else(|| panic!("{needle} present"))
+        };
+        assert!(
+            pos("zebra:") < pos("apple:"),
+            "the vararg mirrors ahead of the kwarg, both in signature order"
         );
     }
 
@@ -448,8 +349,7 @@ mod tests {
                     \"\"\"
         "};
         let source = parse(src);
-        let targets = call_rewrite_targets(&source);
-        let (_, param_docs) = collect_leaf_edits(&source, &targets);
+        let (_, param_docs) = collect_leaf_edits(&source);
         let edits = collect_docstring_entry_edits(&source, &param_docs);
         let text = applied_text(&source, edits);
         let pos = |needle: &str| {
@@ -462,63 +362,32 @@ mod tests {
         );
     }
 
-    #[test]
-    fn collect_leaf_edits_drops_a_keyword_rewrite_overlapping_another_edit() {
-        let source = parse(
-            "def inner(b, a):\n    pass\n\n\ndef outer(d, c):\n    pass\n\n\nouter(inner(1, 2), 3)\n",
-        );
-        let (edits, _) = collect_leaf_edits(&source, &call_rewrite_targets(&source));
-        let text = applied_text(&source, edits);
-        assert_eq!(
-            text,
-            "def inner(a, b):\n    pass\n\n\ndef outer(c, d):\n    pass\n\n\nouter(c=3, d=inner(1, 2))\n",
-        );
-    }
-
     #[rstest]
+    #[case("def m(b, a): pass\n", "def m(b, a): pass\n")]
     #[case(
         "class C:\n    def m(self, b, a): pass\n",
         "class C:\n    def m(self, b, a): pass\n"
     )]
     #[case(
-        "class C:\n    if True:\n        def m(self, b, a): pass\n",
-        "class C:\n    if True:\n        def m(self, b, a): pass\n"
-    )]
-    #[case(
-        "class C:\n    async def m(self, b, a): pass\n",
-        "class C:\n    async def m(self, b, a): pass\n"
-    )]
-    #[case(
-        "class C:\n    class D:\n        def m(self, b, a): pass\n",
-        "class C:\n    class D:\n        def m(self, b, a): pass\n"
+        "def m(self, b, a, *, d=1, c=2): pass\n",
+        "def m(self, b, a, *, c=2, d=1): pass\n"
     )]
     #[case(
         "class C:\n    def m(self, b, a, *, d=1, c=2): pass\n",
         "class C:\n    def m(self, b, a, *, c=2, d=1): pass\n"
     )]
-    #[case("def m(b, a): pass\n", "def m(a, b): pass\n")]
+    #[case("key = lambda b, a: 0\n", "key = lambda b, a: 0\n")]
+    #[case("key = lambda b, a, *, d, c: 0\n", "key = lambda b, a, *, c, d: 0\n")]
     #[case(
-        "class C:\n    pass\n\n\ndef m(b, a): pass\n",
-        "class C:\n    pass\n\n\ndef m(a, b): pass\n"
+        "def m(b, a):\n    foo(b=2, a=1)\n",
+        "def m(b, a):\n    foo(a=1, b=2)\n"
     )]
-    #[case(
-        "class C:\n    def m(self):\n        def inner(b, a): pass\n",
-        "class C:\n    def m(self):\n        def inner(a, b): pass\n"
-    )]
-    #[case(
-        "class C:\n    key = lambda b, a: 0\n",
-        "class C:\n    key = lambda b, a: 0\n"
-    )]
-    #[case(
-        "class C:\n    def m(self):\n        key = lambda b, a: 0\n",
-        "class C:\n    def m(self):\n        key = lambda a, b: 0\n"
-    )]
-    fn collect_leaf_edits_pins_class_body_function_params(
+    fn collect_leaf_edits_holds_positionals_and_sorts_keyword_only(
         #[case] src: &str,
         #[case] expected: &str,
     ) {
         let source = parse(src);
-        let (edits, _) = collect_leaf_edits(&source, &call_rewrite_targets(&source));
+        let (edits, _) = collect_leaf_edits(&source);
         assert_eq!(applied_text(&source, edits), expected);
     }
 
@@ -529,10 +398,10 @@ mod tests {
             from m import d, c
             __all__ = ['z', 'y']
             x = {z, y}
-            def f(b, a): foo(b=2, a=1)
+            foo(b=2, a=1)
         "};
         let source = parse(src);
-        let (edits, _) = collect_leaf_edits(&source, &call_rewrite_targets(&source));
+        let (edits, _) = collect_leaf_edits(&source);
         assert!(edits.len() >= 5, "fixture must trigger multiple producers");
         assert!(
             edits.is_sorted(),

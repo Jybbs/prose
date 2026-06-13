@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/free_function_params_keep_order/input.py
+---
+def merge(target, source, *, mode, atomic=True):
+    return target

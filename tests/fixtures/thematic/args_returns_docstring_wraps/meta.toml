@@ -3,5 +3,5 @@ previewable = false
 title       = "Args and Returns Docstring Wraps Beside Signature Colons"
 
 description = '''
-A function carrying a long-form docstring with `Args:` and `Returns:` sections meets a typed parameter list of varying widths. **The full pipeline lifts the docstring opener and closer onto their own lines, wraps the prose paragraph at the budget, sorts the parameters, and aligns the signature `:` columns.**
+A function carrying a long-form docstring with `Args:` and `Returns:` sections meets a typed parameter list of varying widths. **The full pipeline lifts the docstring opener and closer onto their own lines, wraps the prose paragraph at the budget, holds the parameters in source order, and aligns the signature `:` columns.**
 '''

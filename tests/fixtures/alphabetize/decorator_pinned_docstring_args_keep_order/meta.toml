@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Decorator-Pinned Function's Docstring Entries Keep Their Order"
+title       = "A Function's Docstring Entries Mirror Its Held Signature"
 
 description = '''
-The docstring hold rides the same pin the signature does. A module-level function under a positional-binding decorator keeps its parameter order, and an `Args:` section whose every entry names one of those parameters **holds the same order**, mirroring the held signature.
+A signature holds its positional parameter order, so an `Args:` section whose every entry names one of those parameters **holds the same order**, mirroring the held signature. The hold owes nothing to the decorator the function happens to carry.
 '''

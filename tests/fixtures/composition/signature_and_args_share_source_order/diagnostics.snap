@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/signature_and_args_share_source_order/input.py
+---
+align-colons@130..439
+docstring-wrap@186..550

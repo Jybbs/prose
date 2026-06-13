@@ -31,15 +31,15 @@ Config {
                 5,
             ),
         },
-        alphabetize: AlphabetizeConfig {
-            docstring_entries: false,
-            enabled: false,
-        },
         call_layout: CallLayoutConfig {
             enabled: false,
             max_inline_args: Some(
                 6,
             ),
+        },
+        alphabetize: AlphabetizeConfig {
+            docstring_entries: false,
+            enabled: false,
         },
         strip_trailing_commas: ToggleOnly {
             enabled: false,
@@ -120,6 +120,9 @@ Config {
                 "^tmp_",
             ),
             enabled: false,
+        },
+        unsorted_parameters: ToggleOnly {
+            enabled: true,
         },
     },
     target_version: Some(

@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "Decorated Functions Sort Together inside Framework Groups"
+title       = "Decorated Functions Sort, Their Positionals Hold"
 
 description = '''
-Three decorators bind values into the signature positionally and so **block parameter alphabetization**: `pytest.mark.parametrize`, `hypothesis.given`, and `click.argument`. Functions carrying any of them keep their parameter order intact.
+Three module-level functions each sit under a value-binding decorator (*`pytest.mark.parametrize`, `hypothesis.given`, `click.argument`*). The function definitions **sort alphabetically among themselves**, while every signature holds its positional order, since positional-or-keyword parameters never reorder whatever decorator sits above them.
 '''

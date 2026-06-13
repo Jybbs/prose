@@ -3,5 +3,5 @@ previewable = true
 title       = "Class-Body Lambda Parameters Keep Their Order"
 
 description = '''
-A lambda assigned in a class body binds the instance to its first parameter exactly as a `def` does, so its positional-or-keyword parameters **keep source order** while module-level lambdas keep sorting.
+A lambda's positional-or-keyword parameters **keep source order**, in a class body and at module scope alike, exactly as a `def`'s do, because reordering them would rebind callers a single-file pass cannot see. Only its keyword-only block past the `*` sorts, since those bind by name.
 '''

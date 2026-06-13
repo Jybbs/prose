@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Every Call Site of One Reordered Function Rewrites"
-
-description = '''
-A reordered function resolved through `BindingAnalysis` rewrites each of its in-module call sites independently, every positional argument keyed to its original parameter.
-'''

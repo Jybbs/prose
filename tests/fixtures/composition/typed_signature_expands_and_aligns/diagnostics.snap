@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/typed_signature_expands_and_aligns/input.py
+---
+signature-layout@14..90

@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/call_inside_function_resolves_to_module_def/input.py
----
-alphabetize@6..43

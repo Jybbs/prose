@@ -1,6 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/alphabetize/inline_params_separators_preserved/input.py
----
-def merge(fallback, source, target): pass

@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Inline Parameter Sort Preserves Separators"
-
-description = '''
-A single-line parameter list **reorders through inline block mode**. The splice writes raw item ranges in sorted order, preserving the original comma-and-space separators between adjacent positions.
-'''

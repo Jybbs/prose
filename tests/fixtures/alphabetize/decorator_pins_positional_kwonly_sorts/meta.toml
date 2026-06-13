@@ -3,5 +3,5 @@ previewable = false
 title       = "Pinned Positionals, Sorted Keyword-Only Parameters"
 
 description = '''
-A positional-binding decorator skips the positional sub-lists (`posonlyargs`, `args`) **but still sorts the keyword-only sub-list**. Keyword-only parameters sit past the `*` separator and cannot be bound positionally, so the decorator contract does not constrain their order.
+Positional-or-keyword parameters hold their source order while **the keyword-only sub-list still sorts**. Keyword-only parameters sit past the `*` separator and bind by name, so they reorder freely, whereas the positionals ahead of the `*` never move because reordering them would rebind callers a single-file pass cannot see.
 '''

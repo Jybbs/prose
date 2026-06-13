@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Positional-Binding Decorator Silences the Lint"
+
+description = '''
+A function under a decorator that binds arguments by position (*`click.argument` here*) draws **no diagnostic**. The decorator may hand values to the parameters by slot, so the lint treats the order as load-bearing and stays silent.
+'''

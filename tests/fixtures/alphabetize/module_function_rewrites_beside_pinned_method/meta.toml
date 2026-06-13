@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Module Functions Keep the Reorder-and-Rewrite Path"
-
-description = '''
-The method pin leaves the module-level path unchanged, in that a top-level signature still reorders and its in-module calls still rewrite to keyword form, while a sibling method holds its parameter order.
-'''

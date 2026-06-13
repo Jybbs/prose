@@ -35,7 +35,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `bindings_in_scope(stmt: &Stmt) -> impl Iterator<Item = BindingId>` lists every binding introduced in the lexical scope that contains the statement.
 - `first_write_offset(binding: BindingId) -> TextSize` returns the offset of the first write.
 - `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[unused-future-annotations]] when checking that every name appearing in an annotation resolves to a binding introduced earlier.
-- `module_function_reads(name: &str) -> Option<&[TextSize]>` returns the read offsets of a module-scope name bound exactly once as a function definition, which [[alphabetize]]'s call-site rewrite uses to resolve a reordered function's in-module call sites.
+- `module_function_reads(name: &str) -> Option<&[TextSize]>` returns the read offsets of a module-scope name bound exactly once as a function definition, which [[call-layout]] uses through `module_call_params` to resolve the signature a module-function call binds, so it names the call's positional arguments when exploding it.
 
 The supporting types `BindingId`, `ScopeId`, `BindingKind`, `ScopeKind`, `Binding`, and `Scope` are also `pub(crate)` in `0.2.x`. `BindingKind` enumerates the categories of write event the table records: `Assignment`, `AugAssign`, `ClassDef`, `Comprehension`, `ExceptHandler`, `For`, `FunctionDef`, `Import`, `Parameter`, `Walrus`, `With`. `ScopeKind` covers `Class`, `Comprehension`, `Function`, `Module`, matching Python's lexical-scope categories.
 

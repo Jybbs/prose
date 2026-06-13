@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Star-Args Forwarding Disqualifies the Call"
-
-description = '''
-A call forwarding `*args` cannot resolve its positional arguments to parameter names, so the rewrite leaves it untouched even as the signature reorders.
-'''

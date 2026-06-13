@@ -9,6 +9,7 @@ pub(crate) mod edit;
 pub(crate) mod imports;
 pub(crate) mod layout;
 pub(crate) mod orderer;
+pub(crate) mod params;
 pub(crate) mod range;
 pub(crate) mod scope;
 

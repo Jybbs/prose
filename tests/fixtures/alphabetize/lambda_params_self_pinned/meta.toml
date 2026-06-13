@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Lambda Parameters Sort With `self` / `cls` Pinned"
-
-description = '''
-Lambda parameters **alphabetize the same way function parameters do**, with `self` / `cls` pinned. These lambdas sit at module scope, outside any class body, so no pin engages and every parameter list sorts.
-'''

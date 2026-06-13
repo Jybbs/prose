@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
+---
+[
+  {
+    "code": "unsorted-parameters",
+    "end_location": {
+      "column": 40,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 11,
+      "row": 1
+    },
+    "message": "function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+  }
+]

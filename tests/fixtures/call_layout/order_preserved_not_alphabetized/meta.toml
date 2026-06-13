@@ -4,5 +4,5 @@ previewable = false
 title       = "The Explode Preserves Argument Order"
 
 description = '''
-The rule emits arguments in the order it receives them, leaving alphabetization to the `alphabetize` rule that runs ahead of it.
+The rule emits arguments in the order it receives them, leaving alphabetization to the `alphabetize` rule that runs after it.
 '''
