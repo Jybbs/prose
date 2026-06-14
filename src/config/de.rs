@@ -95,14 +95,14 @@ optional_cap!(
 optional_cap!(deserialize_max_inline_params, "max-inline-params");
 
 pub(super) fn deserialize_prose<F>(
-    value: toml::Value,
+    table: toml::Table,
     on_notice: &mut F,
 ) -> Result<Config, ConfigError>
 where
     F: FnMut(ConfigNotice<'_>),
 {
     Ok(serde_ignored::deserialize(
-        value.into_deserializer(),
+        toml::Value::Table(table).into_deserializer(),
         |path| {
             on_notice(ConfigNotice::UnknownKey(&path.to_string()));
         },

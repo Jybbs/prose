@@ -4,7 +4,7 @@
 
 ## Language Server
 
-`prose server` speaks the language-server protocol over stdio, so an editor connects the same way it connects to `ruff server` or any other language server. The server advertises full-document sync and a document-formatting provider, so format-on-save runs the [**pipeline**](/reference/pipeline-order) over the buffer and live diagnostics publish on every open and change. It resolves the workspace `[tool.prose]` [**configuration**](/reference/configuration) per document, so the editor and a `prose check` over the same tree agree on the active rules.
+`prose server` speaks the language-server protocol over stdio, so an editor connects the same way it connects to `ruff server` or any other language server. The server advertises full-document sync and a document-formatting provider, so format-on-save runs the [**pipeline**](/reference/pipeline-order) over the buffer and live diagnostics publish on every open and change. It resolves each document's [**configuration**](/reference/configuration) exactly as `prose check` does, walking the file's own ancestors for a project config, layering any matching [**per-pattern overrides**](/reference/configuration#per-pattern-overrides), and reading a standalone script's own PEP 723 block when no project governs it, so the editor and a `prose check` over the same tree resolve to the same effective config.
 
 An editor's language-server client launches the binary with the `server` subcommand and talks to it over stdin and stdout. A generic client configuration names the command and the language it serves:
 

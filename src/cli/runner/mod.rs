@@ -149,14 +149,14 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
     }
 }
 
-/// Builds the run-level setup. The cwd's own config governs stdin
-/// input and the cache settings, while each path input re-resolves
-/// from its own ancestors through the seeded resolver.
+/// Builds the run-level setup. The cwd's own config governs stdin input
+/// and the cache settings, while each path input re-resolves its own
+/// effective config through the resolver.
 fn build_run(rules: RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> {
-    let (cwd_dir, config) = super::load_config_or_status()?;
+    let config = super::load_config_or_status()?;
     let cache = open_cache(&config, no_cache);
     let resolver = ConfigResolver::new(rules.select, rules.ignore);
-    let cwd = resolver.seed(cwd_dir, &config);
+    let cwd = resolver.seed(&config);
     Ok(RunSetup {
         cache,
         cwd,

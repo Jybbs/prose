@@ -11,6 +11,10 @@
 //!
 //! Each rule's configuration lives under `[tool.prose.rules]`, where
 //! a bare bool toggles the rule and a sub-table carries its knobs.
+//!
+//! `Config::load` yields the base config. Per-file resolution, layering
+//! `[[tool.prose.overrides]]` globs and a standalone script's PEP 723
+//! block onto that base, lives in [`ConfigSource`].
 
 use std::{num::NonZeroUsize, path::Path};
 
@@ -22,15 +26,17 @@ pub use crate::rule::RuleConfigs;
 
 mod de;
 mod load;
+mod merge;
+mod overrides;
 mod schema;
+mod script;
+mod source;
 
-use de::deserialize_import_line_length;
 pub(crate) use de::deserialize_rule;
-use load::{
-    ConfigNotice, emit_notice, parse_prose_toml, parse_pyproject, pyproject_declares_prose,
-    read_optional,
-};
+use de::{deserialize_import_line_length, deserialize_prose};
+use load::{ConfigNotice, emit_notice, prose_table_from_str, walk_prose_table};
 pub use schema::*;
+pub(crate) use source::ConfigSource;
 
 /// Filename of the dedicated config, parsed with its keys at the
 /// document root.
@@ -86,7 +92,7 @@ impl Config {
     ///
     /// Returns `ConfigError::Toml` when `contents` is not valid TOML.
     pub fn from_prose_toml_str(contents: &str) -> Result<Self, ConfigError> {
-        parse_prose_toml(contents, &mut emit_notice)
+        Self::from_base_table(toml::from_str(contents)?, &mut emit_notice)
     }
 
     /// Parses a `pyproject.toml` snippet directly from a string.
@@ -99,7 +105,10 @@ impl Config {
     ///
     /// Returns `ConfigError::Toml` when `contents` is not valid TOML.
     pub fn from_pyproject_str(contents: &str) -> Result<Self, ConfigError> {
-        Ok(parse_pyproject(contents, &mut emit_notice)?.unwrap_or_default())
+        match prose_table_from_str(contents)? {
+            Some(table) => Self::from_base_table(table, &mut emit_notice),
+            None => Ok(Self::default()),
+        }
     }
 
     /// Walks upward from `from`, returning the config from the nearest
@@ -120,6 +129,17 @@ impl Config {
         Self::load_with_notices(from, emit_notice)
     }
 
+    /// Deserializes a prose table into a base config, dropping the
+    /// `overrides` array that only per-file resolution through
+    /// [`ConfigSource`] consults.
+    fn from_base_table<F>(mut table: toml::Table, on_notice: &mut F) -> Result<Self, ConfigError>
+    where
+        F: FnMut(ConfigNotice<'_>),
+    {
+        table.remove("overrides");
+        deserialize_prose(table, on_notice)
+    }
+
     /// Shared implementation backing `load`, factored out so tests can
     /// inspect the emitted notices without capturing stderr.
     fn load_with_notices<P, F>(from: P, mut on_notice: F) -> Result<Self, ConfigError>
@@ -127,20 +147,10 @@ impl Config {
         P: AsRef<Path>,
         F: FnMut(ConfigNotice<'_>),
     {
-        for dir in from.as_ref().ancestors() {
-            if let Some(contents) = read_optional(dir.join(PROSE_TOML))? {
-                if pyproject_declares_prose(dir) {
-                    on_notice(ConfigNotice::ProseTomlPrecedence(dir));
-                }
-                return parse_prose_toml(&contents, &mut on_notice);
-            }
-            if let Some(contents) = read_optional(dir.join(PYPROJECT_TOML))?
-                && let Some(config) = parse_pyproject(&contents, &mut on_notice)?
-            {
-                return Ok(config);
-            }
+        match walk_prose_table(from.as_ref(), &mut on_notice)? {
+            Some((_, table)) => Self::from_base_table(table, &mut on_notice),
+            None => Ok(Self::default()),
         }
-        Ok(Self::default())
     }
 
     pub(crate) fn code_width(&self) -> usize {
@@ -165,12 +175,19 @@ impl Config {
         self.import_line_length
             .map_or_else(|| self.code_width(), NonZeroUsize::get)
     }
+
+    /// The config serialized to TOML, the cache key for a file it governs.
+    pub(crate) fn to_toml(&self) -> String {
+        toml::to_string(self).expect("Config serializes")
+    }
 }
 
-/// Failure to load a `prose` configuration from a `prose.toml` or a
-/// `pyproject.toml`.
+/// Failure to load a `prose` configuration from a config file, a
+/// PEP 723 script block, or an override's globs.
 #[derive(Debug, Error)]
 pub enum ConfigError {
+    #[error(transparent)]
+    Glob(#[from] globset::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
