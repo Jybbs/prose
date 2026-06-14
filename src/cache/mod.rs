@@ -1,9 +1,10 @@
 //! User-level content-addressed cache for `prose check` and `prose format`.
 //!
 //! Keys are BLAKE3 digests over the source bytes, the canonical TOML
-//! serialization of the active `Config`, the Prose version, and a
-//! private `CACHE_FORMAT_VERSION` that bumps independently when the
-//! on-disk entry shape changes. Entries live one file per key under
+//! serialization of the active `Config`, the resolved rule selection
+//! the pipeline runs, the Prose version, and a private
+//! `CACHE_FORMAT_VERSION` that bumps independently when the on-disk
+//! entry shape changes. Entries live one file per key under
 //! the platform's cache directory, with the path resolving through
 //! `PROSE_CACHE_DIR` → `dirs::cache_dir()`. Inserts write to a
 //! temporary sibling then `rename` onto the final path, so a
@@ -53,43 +54,76 @@ mod tests {
         }
     }
 
+    fn rules() -> [RuleId; 2] {
+        [RuleId::from("align-equals"), RuleId::from("alphabetize")]
+    }
+
     #[test]
     fn cache_key_differs_when_cache_format_version_changes() {
-        let key_a =
-            CacheKey::compute_with_versions(b"x = 1\n", CONFIG_A, env!("CARGO_PKG_VERSION"), "1");
-        let key_b =
-            CacheKey::compute_with_versions(b"x = 1\n", CONFIG_A, env!("CARGO_PKG_VERSION"), "2");
+        let key_a = CacheKey::compute_with_versions(
+            b"x = 1\n",
+            CONFIG_A,
+            rules(),
+            env!("CARGO_PKG_VERSION"),
+            "1",
+        );
+        let key_b = CacheKey::compute_with_versions(
+            b"x = 1\n",
+            CONFIG_A,
+            rules(),
+            env!("CARGO_PKG_VERSION"),
+            "2",
+        );
         assert_ne!(key_a, key_b);
     }
 
     #[test]
     fn cache_key_differs_when_config_changes() {
-        let key_a = CacheKey::compute(b"x = 1\n", CONFIG_A);
-        let key_b = CacheKey::compute(b"x = 1\n", CONFIG_B);
+        let key_a = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
+        let key_b = CacheKey::compute(b"x = 1\n", CONFIG_B, rules());
         assert_ne!(key_a, key_b);
-        let key_c = CacheKey::compute(b"x = 1\n", CONFIG_B);
+        let key_c = CacheKey::compute(b"x = 1\n", CONFIG_B, rules());
         assert_eq!(key_b, key_c);
     }
 
     #[test]
     fn cache_key_differs_when_prose_version_changes() {
-        let key_a =
-            CacheKey::compute_with_versions(b"x = 1\n", CONFIG_A, "0.2.3", CACHE_FORMAT_VERSION);
-        let key_b =
-            CacheKey::compute_with_versions(b"x = 1\n", CONFIG_A, "0.3.0", CACHE_FORMAT_VERSION);
+        let key_a = CacheKey::compute_with_versions(
+            b"x = 1\n",
+            CONFIG_A,
+            rules(),
+            "0.2.3",
+            CACHE_FORMAT_VERSION,
+        );
+        let key_b = CacheKey::compute_with_versions(
+            b"x = 1\n",
+            CONFIG_A,
+            rules(),
+            "0.3.0",
+            CACHE_FORMAT_VERSION,
+        );
         assert_ne!(key_a, key_b);
     }
 
     #[test]
+    fn cache_key_differs_when_rule_selection_changes() {
+        let key_a = CacheKey::compute(b"x = 1\n", CONFIG_A, [RuleId::from("align-equals")]);
+        let key_b = CacheKey::compute(b"x = 1\n", CONFIG_A, [RuleId::from("alphabetize")]);
+        assert_ne!(key_a, key_b);
+        let key_c = CacheKey::compute(b"x = 1\n", CONFIG_A, [RuleId::from("align-equals")]);
+        assert_eq!(key_a, key_c);
+    }
+
+    #[test]
     fn cache_key_differs_when_source_changes() {
-        let key_a = CacheKey::compute(b"x = 1\n", CONFIG_A);
-        let key_b = CacheKey::compute(b"x = 2\n", CONFIG_A);
+        let key_a = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
+        let key_b = CacheKey::compute(b"x = 2\n", CONFIG_A, rules());
         assert_ne!(key_a, key_b);
     }
 
     #[test]
     fn cache_key_hex_renders_64_lowercase_chars() {
-        let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
         let hex = key.0.to_hex();
         assert_eq!(hex.len(), 64);
         assert!(
@@ -101,8 +135,8 @@ mod tests {
     #[test]
     fn cache_key_is_stable_across_runs() {
         assert_eq!(
-            CacheKey::compute(b"x = 1\n", CONFIG_A),
-            CacheKey::compute(b"x = 1\n", CONFIG_A),
+            CacheKey::compute(b"x = 1\n", CONFIG_A, rules()),
+            CacheKey::compute(b"x = 1\n", CONFIG_A, rules()),
         );
     }
 
@@ -110,7 +144,7 @@ mod tests {
     fn clean_clears_every_entry_and_returns_report() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
-        let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
         cache.insert(&key, &entry("y = 1\n"));
         let report = cache.clean().expect("cleans");
         assert_eq!(report.entries, 1);
@@ -131,8 +165,8 @@ mod tests {
     fn compact_evicts_until_under_cap() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
-        let key_old = CacheKey::compute(b"x = 1\n", CONFIG_A);
-        let key_new = CacheKey::compute(b"y = 2\n", CONFIG_A);
+        let key_old = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
+        let key_new = CacheKey::compute(b"y = 2\n", CONFIG_A, rules());
         cache.insert(&key_old, &entry("a = 1\n"));
         std::thread::sleep(std::time::Duration::from_millis(20));
         cache.insert(&key_new, &entry("b = 2\n"));
@@ -151,7 +185,7 @@ mod tests {
     fn compact_returns_zeros_when_under_cap() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
-        let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
         cache.insert(&key, &entry("y = 1\n"));
         let report = cache.compact();
         assert_eq!(report.entries, 0);
@@ -162,8 +196,14 @@ mod tests {
     fn info_counts_entries_and_byte_total() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
-        cache.insert(&CacheKey::compute(b"x = 1\n", CONFIG_A), &entry("y = 1\n"));
-        cache.insert(&CacheKey::compute(b"x = 2\n", CONFIG_A), &entry("y = 2\n"));
+        cache.insert(
+            &CacheKey::compute(b"x = 1\n", CONFIG_A, rules()),
+            &entry("y = 1\n"),
+        );
+        cache.insert(
+            &CacheKey::compute(b"x = 2\n", CONFIG_A, rules()),
+            &entry("y = 2\n"),
+        );
         let info = cache.info();
         assert_eq!(info.entries, 2);
         assert!(info.bytes > 0);
@@ -196,8 +236,8 @@ mod tests {
     fn insert_evicts_oldest_when_above_cap() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 0);
-        let key_old = CacheKey::compute(b"x = 1\n", CONFIG_A);
-        let key_new = CacheKey::compute(b"y = 2\n", CONFIG_A);
+        let key_old = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
+        let key_new = CacheKey::compute(b"y = 2\n", CONFIG_A, rules());
         cache.insert(&key_old, &entry("a = 1\n"));
         std::thread::sleep(std::time::Duration::from_millis(20));
         cache.insert(&key_new, &entry("b = 2\n"));
@@ -208,7 +248,7 @@ mod tests {
     fn insert_leaves_no_tmp_sidecar_on_success() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
-        let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
         cache.insert(&key, &entry("y = 1\n"));
         let tmp_count = fs_err::read_dir(&cache.root)
             .expect("read_dir")
@@ -222,7 +262,7 @@ mod tests {
     fn insert_then_lookup_round_trips_a_skipped_rewrite() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
-        let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
         let original = CacheEntry {
             diagnostics: Vec::new(),
             rewrite: Rewrite::Skipped,
@@ -235,7 +275,7 @@ mod tests {
     fn insert_then_lookup_round_trips_the_entry() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
-        let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
         let original = entry("y = 1\n");
         cache.insert(&key, &original);
         let recovered = cache.lookup(&key).expect("hit");
@@ -246,7 +286,7 @@ mod tests {
     fn lookup_returns_none_for_corrupt_entry() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
-        let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
         fs_err::write(cache.path_for(&key), b"not bincode bytes").expect("writes");
         assert!(cache.lookup(&key).is_none());
     }
@@ -255,7 +295,7 @@ mod tests {
     fn lookup_returns_none_for_missing_entry() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
-        let key = CacheKey::compute(b"x = 1\n", CONFIG_A);
+        let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
         assert!(cache.lookup(&key).is_none());
     }
 }

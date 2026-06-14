@@ -19,6 +19,37 @@ fn assert_cache_hit_matches_miss(name: &str, source: &str) {
     assert_warm_run_matches_cold(&[&path]);
 }
 
+/// Seeds an isolated cache by checking `path` under `seed_filter`, then
+/// re-checks it under `query_filter` against the warm cache and asserts
+/// the output matches a `--no-cache` run of the same query, so the
+/// seed's selection never replays under the query's.
+fn assert_reselect_misses(seed_filter: &[&str], query_filter: &[&str], path: &Path) {
+    let (mut seed, cache_dir) = prose_isolated();
+    let _ = seed
+        .args(["check", "--output-format", "json"])
+        .args(seed_filter)
+        .arg(path)
+        .assert();
+
+    let warm = prose()
+        .args(["check", "--output-format", "json"])
+        .args(query_filter)
+        .arg(path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert();
+    let cold = prose()
+        .args(["check", "--no-cache", "--output-format", "json"])
+        .args(query_filter)
+        .arg(path)
+        .assert();
+
+    assert_eq!(
+        warm.get_output().stdout,
+        cold.get_output().stdout,
+        "warm reselect must match a no-cache run",
+    );
+}
+
 /// Runs `check` twice against one isolated cache, asserts the warm
 /// run reproduces the cold stdout byte for byte, and returns it.
 fn assert_warm_run_matches_cold(paths: &[&Path]) -> String {
@@ -130,6 +161,25 @@ fn cache_hit_renders_collapsing_literal_like_a_cold_run() {
 }
 
 #[test]
+fn cache_hits_when_a_selection_is_repeated() {
+    let (_dir, path) = fixture("repeat.py", "ab = 1\nx = 2\n");
+    let (mut cold, cache_dir) = prose_isolated();
+    let _ = cold
+        .args(["check", "--select", "align-equals"])
+        .arg(&path)
+        .assert();
+    let warm = prose()
+        .args(["--verbose", "check", "--select", "align-equals"])
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert();
+    assert!(
+        stderr_utf8(&warm).contains("1 hits, 0 misses"),
+        "the repeated selection must stay warm",
+    );
+}
+
+#[test]
 fn cache_info_subcommand_prints_path_and_counts() {
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(["cache", "info"]).assert().success();
@@ -178,6 +228,18 @@ fn cache_keys_each_file_against_its_governing_config() {
     let summary = summary_line(&out);
     assert_eq!(summary["files_visited"], 2);
     assert_eq!(summary["files_changed"], 1);
+}
+
+#[rstest]
+#[case::narrow_select_after_full_set(&[], &["--select", "alphabetize"])]
+#[case::ignore_after_full_set(&[], &["--ignore", "align-equals"])]
+#[case::full_set_after_narrow_select(&["--select", "alphabetize"], &[])]
+fn cache_misses_when_selection_changes_between_runs(
+    #[case] seed_filter: &[&str],
+    #[case] query_filter: &[&str],
+) {
+    let (_dir, path) = fixture("reselect.py", "ab = 1\nx = 2\n");
+    assert_reselect_misses(seed_filter, query_filter, &path);
 }
 
 #[test]

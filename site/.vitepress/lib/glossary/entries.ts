@@ -204,7 +204,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases   : ['Cache', 'cached', 'caching'],
     definition: 'The user-level on-disk cache *Prose* keeps for repeat `prose check` and '
               + '`prose format` runs. Keyed by [[BLAKE3]] over '
-              + '`(source ++ config ++ prose_version)`, capped by the LRU eviction the '
+              + '`(source ++ config ++ rules ++ prose_version)`, capped by the LRU eviction the '
               + '`[cache] max-size-mib` knob configures, bypassable per invocation '
               + 'with `--no-cache`, and clearable with `prose cache clean`.',
     families  : ['engine', 'cli'],

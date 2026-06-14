@@ -79,6 +79,13 @@ impl Pipeline {
         crate::rule::KNOWN_IDS
     }
 
+    /// This pipeline's enabled rule ids in registration order, the
+    /// resolved selection that keys the check cache so two runs
+    /// differing only in `--select` / `--ignore` key separately.
+    pub(crate) fn rule_ids(&self) -> impl Iterator<Item = RuleId> + use<'_> {
+        self.rules.iter().map(|rule| rule.id())
+    }
+
     /// Runs each registered rule against `source` in order and
     /// returns the rewritten source paired with the diagnostics each
     /// rule emitted.
@@ -246,7 +253,7 @@ mod tests {
     }
 
     fn registered_slugs(pipeline: &Pipeline) -> Vec<&'static str> {
-        pipeline.rules.iter().map(|r| r.id().as_str()).collect()
+        pipeline.rule_ids().map(|id| id.as_str()).collect()
     }
 
     #[test]
