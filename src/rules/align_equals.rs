@@ -83,6 +83,7 @@ impl Visitor<'_> {
         aligner::adjacent_member_groups(
             self.walker.source,
             call.arguments.arguments_source_order(),
+            false,
             |arg| match self.qualify_keyword(arg) {
                 Some(keyword) if self.walker.is_held(keyword.member.line_start) => {
                     aligner::Slot::Bridge

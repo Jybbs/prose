@@ -31,10 +31,14 @@ pub(crate) enum Slot<M> {
 /// and gathering members into runs whose consecutive members sit on
 /// directly adjacent source lines. A `Bridge` extends the run's anchor
 /// without joining, a `Break` closes the run, and a standalone comment
-/// or blank line between two members closes it as well.
+/// or blank line between two members closes it as well. When
+/// `break_after_multiline` is set, a member whose own range spans more
+/// than one line also closes the run after it, so a run never extends
+/// past a multi-line row.
 pub(crate) fn adjacent_member_groups<T, M, F>(
     source: &Source,
     items: impl IntoIterator<Item = T>,
+    break_after_multiline: bool,
     mut classify: F,
 ) -> Vec<Vec<M>>
 where
@@ -43,25 +47,29 @@ where
 {
     let mut groups: Vec<Vec<M>> = Vec::new();
     let mut current: Vec<M> = Vec::new();
-    let mut prev_end: Option<TextSize> = None;
+    let mut prev: Option<TextRange> = None;
     for item in items {
         let range = item.range();
         match classify(item) {
             Slot::Member(member) => {
-                if !prev_end.is_some_and(|end| source.consecutive_lines(end, range.start())) {
+                let extends = prev.is_some_and(|p| {
+                    source.consecutive_lines(p.end(), range.start())
+                        && !(break_after_multiline && source.contains_line_break(p))
+                });
+                if !extends {
                     flush_run(&mut groups, &mut current);
                 }
                 current.push(member);
-                prev_end = Some(range.end());
+                prev = Some(range);
             }
             Slot::Bridge => {
-                if let Some(end) = prev_end.as_mut() {
-                    *end = range.end();
+                if let Some(p) = prev.as_mut() {
+                    *p = TextRange::new(p.start(), range.end());
                 }
             }
             Slot::Break => {
                 flush_run(&mut groups, &mut current);
-                prev_end = None;
+                prev = None;
             }
         }
     }
@@ -293,18 +301,35 @@ mod tests {
     use crate::testing::parse;
 
     #[test]
+    fn adjacent_member_groups_break_after_multiline_closes_run() {
+        let source = parse("a = 1\nx = [\n    1,\n]\nc = 3\n");
+        let mut index = 0usize;
+        let groups: Vec<Vec<usize>> =
+            adjacent_member_groups(&source, &source.ast().body, true, |_| {
+                let member = Slot::Member(index);
+                index += 1;
+                member
+            });
+
+        // The multi-line middle statement closes the run after it, so the
+        // trailing member starts a fresh group.
+        assert_eq!(groups, vec![vec![0, 1], vec![2]]);
+    }
+
+    #[test]
     fn adjacent_member_groups_break_ends_the_run() {
         let source = parse("a = 1\nb = 2\nc = 3\n");
         let mut index = 0usize;
-        let groups: Vec<Vec<usize>> = adjacent_member_groups(&source, &source.ast().body, |_| {
-            let slot = if index == 1 {
-                Slot::Break
-            } else {
-                Slot::Member(index)
-            };
-            index += 1;
-            slot
-        });
+        let groups: Vec<Vec<usize>> =
+            adjacent_member_groups(&source, &source.ast().body, false, |_| {
+                let slot = if index == 1 {
+                    Slot::Break
+                } else {
+                    Slot::Member(index)
+                };
+                index += 1;
+                slot
+            });
 
         // The Break at index 1 closes the run, leaving 0 and 2 in separate groups.
         assert_eq!(groups, vec![vec![0], vec![2]]);
@@ -314,15 +339,16 @@ mod tests {
     fn adjacent_member_groups_bridge_spans_neighbors() {
         let source = parse("a = 1\nb = 2\nc = 3\n");
         let mut index = 0usize;
-        let groups: Vec<Vec<usize>> = adjacent_member_groups(&source, &source.ast().body, |_| {
-            let slot = if index == 1 {
-                Slot::Bridge
-            } else {
-                Slot::Member(index)
-            };
-            index += 1;
-            slot
-        });
+        let groups: Vec<Vec<usize>> =
+            adjacent_member_groups(&source, &source.ast().body, false, |_| {
+                let slot = if index == 1 {
+                    Slot::Bridge
+                } else {
+                    Slot::Member(index)
+                };
+                index += 1;
+                slot
+            });
 
         // The Bridge at index 1 passes the run through, so 0 and 2 align as one block.
         assert_eq!(groups, vec![vec![0, 2]]);
@@ -332,11 +358,12 @@ mod tests {
     fn adjacent_member_groups_gathers_adjacent_members() {
         let source = parse("a = 1\nb = 2\nc = 3\n");
         let mut index = 0usize;
-        let groups: Vec<Vec<usize>> = adjacent_member_groups(&source, &source.ast().body, |_| {
-            let member = Slot::Member(index);
-            index += 1;
-            member
-        });
+        let groups: Vec<Vec<usize>> =
+            adjacent_member_groups(&source, &source.ast().body, false, |_| {
+                let member = Slot::Member(index);
+                index += 1;
+                member
+            });
 
         assert_eq!(groups, vec![vec![0, 1, 2]]);
     }
@@ -345,11 +372,12 @@ mod tests {
     fn adjacent_member_groups_splits_on_blank_line() {
         let source = parse("a = 1\n\nc = 3\n");
         let mut index = 0usize;
-        let groups: Vec<Vec<usize>> = adjacent_member_groups(&source, &source.ast().body, |_| {
-            let member = Slot::Member(index);
-            index += 1;
-            member
-        });
+        let groups: Vec<Vec<usize>> =
+            adjacent_member_groups(&source, &source.ast().body, false, |_| {
+                let member = Slot::Member(index);
+                index += 1;
+                member
+            });
 
         // The blank line breaks adjacency, so the two members do not share a group.
         assert_eq!(groups, vec![vec![0], vec![1]]);

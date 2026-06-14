@@ -147,12 +147,12 @@ fn dict_member_groups(
     rule: RuleId,
     items: &[DictItem],
 ) -> Vec<Vec<aligner::Member>> {
-    aligner::adjacent_member_groups(source, items, |item| match dict_item(source, item) {
-        // A `**spread` (no key) or a skip-held entry joins no group yet
-        // bridges the run, so the entries on either side align as one block.
+    aligner::adjacent_member_groups(source, items, false, |item| match dict_item(source, item) {
         Some(member) if !aligner::is_held(source, rule, item.start()) => {
             aligner::Slot::Member(member)
         }
+        // A `**spread` (no key) or a skip-held entry joins no group yet
+        // bridges the run, so the entries on either side align as one block.
         _ => aligner::Slot::Bridge,
     })
 }
