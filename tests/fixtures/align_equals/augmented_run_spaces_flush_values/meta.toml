@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Flush Augmented Run Spaces Its Values"
+
+description = '''
+Augmented assignments gain the one-space value-side buffer past the full operator, so `x+=1` reads as `x += 1` while the `+` still sits one column before the shared `=`.
+'''

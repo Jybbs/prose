@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Exploded Keyword's Parenthesized Value Keeps Its Parentheses"
+
+description = '''
+A keyword argument whose value is wrapped in parentheses keeps them through the value-side normalization, since the gap rewrite stops before the `(`.
+'''

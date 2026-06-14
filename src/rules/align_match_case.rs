@@ -74,13 +74,8 @@ impl Visitor<'_> {
     /// group and drains it.
     fn flush_subgroup(&mut self, group: &mut Vec<(aligner::Member, TextRange)>) {
         let (members, ranges): (Vec<aligner::Member>, Vec<TextRange>) = group.drain(..).unzip();
-        let mut edits = self.walker.group_edits(&members);
-        edits.extend(
-            ranges
-                .into_iter()
-                .filter_map(|r| aligner::space_padding_edit(self.walker.source, r, 1)),
-        );
-        self.walker.push_group(edits);
+        let name_edits = self.walker.group_edits(&members);
+        self.walker.push_with_gaps(name_edits, ranges);
     }
 
     /// Returns `Disqualify` when the `:`-to-body gap already carries

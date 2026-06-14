@@ -89,6 +89,23 @@ impl<'a> AlignWalker<'a> {
             self.groups.push(edits);
         }
     }
+
+    /// Records `name_edits` together with a one-space rewrite of each gap
+    /// in `gaps` as one fix group. A gap already holding one space emits
+    /// nothing. The gaps are the secondary spans a rule normalizes beside
+    /// its aligned column, like the `=`-to-value gap or the `:`-to-body
+    /// gap.
+    pub(crate) fn push_with_gaps(
+        &mut self,
+        mut name_edits: Vec<Edit>,
+        gaps: impl IntoIterator<Item = TextRange>,
+    ) {
+        name_edits.extend(
+            gaps.into_iter()
+                .filter_map(|r| space_padding_edit(self.source, r, 1)),
+        );
+        self.push_group(name_edits);
+    }
 }
 
 /// One row in an alignment group.

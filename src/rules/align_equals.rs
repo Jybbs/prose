@@ -4,12 +4,15 @@
 //! function-parameter defaults, and across an exploded call's keyword
 //! arguments. Chained assignments, initializer-less annotations,
 //! unannotated parameter defaults, and single-line signatures or calls
-//! are skipped. Lone assignment rows and singleton sub-groups still
-//! collapse their pre-`=` whitespace to one space, whereas a lone
-//! exploded keyword takes a one-space buffer on each side so it reads
-//! as `name = value`. `+=` rows place `+` one column
-//! before the shared `=` column rather than pushing the `=` right.
-//! Parameter widths reflect the post-`align_colons` source.
+//! are skipped. Each aligned row reads as `name = value`: the name side
+//! pads to the shared column, collapsing to one space for a lone row or
+//! singleton sub-group, and the value side collapses to one space after
+//! the operator. The value-side rewrite stops at the value's
+//! parenthesis-inclusive start and sits out when the value falls on a
+//! later line, so a wrapped or continued value keeps its placement.
+//! `+=` rows place `+` one column before the shared `=` column rather
+//! than pushing the `=` right. Parameter widths reflect the
+//! post-`align_colons` source.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -52,13 +55,24 @@ impl Rule for AlignEquals {
     }
 }
 
-/// A keyword argument's `=`-anchored alignment member paired with
-/// `value_gap`, the span between the `=` and the value that an aligned
-/// run rewrites to one space.
+/// An `=`-anchored alignment member paired with `value_gap`, the span
+/// between the operator and the value that an aligned run rewrites to
+/// one space.
 #[derive(Clone, Copy)]
-struct KeywordMember {
+struct EqualMember {
     member: aligner::Member,
     value_gap: TextRange,
+}
+
+impl EqualMember {
+    /// Pairs `member` with the value-side gap running from just past its
+    /// `op_len`-wide operator to the parenthesis-aware `value_start`.
+    fn new(member: aligner::Member, op_len: TextSize, value_start: TextSize) -> Self {
+        Self {
+            member,
+            value_gap: TextRange::new(member.gap.end() + op_len, value_start),
+        }
+    }
 }
 
 struct Visitor<'a> {
@@ -66,16 +80,63 @@ struct Visitor<'a> {
 }
 
 impl Visitor<'_> {
-    /// Builds an `=`-anchored member with `target` as the LHS span and
-    /// the search range running from `target.end()` to `value_start`.
-    fn equal_member(&self, target: TextRange, value_start: TextSize) -> Option<aligner::Member> {
-        aligner::range_anchored_member_single_line(
+    /// Emits the unheld members of `group` as one fix when at least two
+    /// survive to align, padding each name side to the shared column and
+    /// folding in the [value-side gaps](Self::value_gaps). A lone
+    /// surviving member emits nothing, leaving a single defaulted
+    /// parameter untouched.
+    fn emit_aligned(&mut self, group: &[EqualMember]) {
+        let kept: Vec<EqualMember> = group
+            .iter()
+            .copied()
+            .filter(|m| !self.walker.is_held(m.member.line_start))
+            .collect();
+        let members: Vec<aligner::Member> = kept.iter().map(|m| m.member).collect();
+        if aligner::is_alignment_candidate(&members) {
+            let name_edits = self.walker.group_edits(&members);
+            let gaps = self.value_gaps(&kept);
+            self.walker.push_with_gaps(name_edits, gaps);
+        }
+    }
+
+    /// Emits `group` as one fix: the aligner's column when the members
+    /// align on distinct lines, a one-space name-side buffer otherwise,
+    /// plus the [value-side gaps](Self::value_gaps) so every row reads as
+    /// `name = value`.
+    fn emit_equal_group(&mut self, group: &[EqualMember]) {
+        let source = self.walker.source;
+        let members: Vec<aligner::Member> = group.iter().map(|m| m.member).collect();
+        let name_edits = if aligner::is_alignment_candidate(&members) {
+            self.walker.group_edits(&members)
+        } else {
+            group
+                .iter()
+                .filter_map(|m| aligner::space_padding_edit(source, m.member.gap, 1))
+                .collect()
+        };
+        let gaps = self.value_gaps(group);
+        self.walker.push_with_gaps(name_edits, gaps);
+    }
+
+    /// Builds an `=`-anchored member with `target` as the LHS span,
+    /// anchoring the `=` between `target.end()` and `value`'s
+    /// parenthesis-aware start so the value-side gap stops before any
+    /// wrapping `(`.
+    fn equal_member(
+        &self,
+        target: TextRange,
+        value: ExprRef,
+        parent: AnyNodeRef,
+    ) -> Option<EqualMember> {
+        let value_start = self.paren_aware(value, parent).start();
+        let member = aligner::range_anchored_member_single_line(
             self.walker.source,
             target,
             TextRange::new(target.end(), value_start),
             |t| t.kind() == TokenKind::Equal,
             0,
-        )
+        )?;
+        Some(EqualMember::new(member, TextSize::of('='), value_start))
     }
 
     /// Splits `call`'s arguments into line-adjacent runs of keyword
@@ -83,7 +144,7 @@ impl Visitor<'_> {
     /// comment ends the active run. A keyword whose value spans lines
     /// joins the run, then closes it after itself, so the keywords past
     /// it align as a separate group.
-    fn keyword_groups(&self, call: &ExprCall) -> Vec<Vec<KeywordMember>> {
+    fn keyword_groups(&self, call: &ExprCall) -> Vec<Vec<EqualMember>> {
         aligner::adjacent_member_groups(
             self.walker.source,
             call.arguments.arguments_source_order(),
@@ -107,10 +168,10 @@ impl Visitor<'_> {
 
     fn process_body(&mut self, body: &[Stmt]) {
         let rule = self.walker.rule;
-        for members in
+        for group in
             aligner::line_adjacent_groups(self.walker.source, body, rule, |s| self.qualify(s))
         {
-            self.walker.emit_group(&members);
+            self.emit_equal_group(&group);
         }
     }
 
@@ -118,29 +179,15 @@ impl Visitor<'_> {
     /// padding before each `=` and rewriting the gap after it to one
     /// space. A keyword that stands alone in its group instead takes a
     /// one-space buffer on each side of its `=`, so every exploded
-    /// keyword reads as `name = value`. A single-line call and a held
-    /// row are left untouched.
+    /// keyword reads as `name = value`. A single-line call is left
+    /// untouched.
     fn process_call(&mut self, call: &ExprCall) {
         let source = self.walker.source;
         if !source.contains_line_break(call.arguments.range()) {
             return;
         }
         for group in self.keyword_groups(call) {
-            let members: Vec<aligner::Member> = group.iter().map(|k| k.member).collect();
-            let mut edits = if aligner::is_alignment_candidate(&members) {
-                self.walker.group_edits(&members)
-            } else {
-                group
-                    .iter()
-                    .filter_map(|k| aligner::space_padding_edit(source, k.member.gap, 1))
-                    .collect()
-            };
-            edits.extend(
-                group
-                    .iter()
-                    .filter_map(|k| aligner::space_padding_edit(source, k.value_gap, 1)),
-            );
-            self.walker.push_group(edits);
+            self.emit_equal_group(&group);
         }
     }
 
@@ -156,37 +203,46 @@ impl Visitor<'_> {
             true,
             |param| self.qualify_parameter(param).into(),
         );
-        for members in groups {
-            self.walker.emit_unheld(members);
+        for group in groups {
+            self.emit_aligned(&group);
         }
     }
 
     /// Returns the alignment member for an annotated `x: int = 1`, plain
     /// `x = 1`, or augmented `x += 1` statement, measuring the left-hand
     /// side [paren-aware](Self::paren_aware). `None` for any other shape
-    /// or when the span up to the `=` breaks across lines.
-    fn qualify(&self, stmt: &Stmt) -> Option<aligner::Member> {
+    /// or when the span up to the operator breaks across lines.
+    fn qualify(&self, stmt: &Stmt) -> Option<EqualMember> {
         match stmt {
             Stmt::AnnAssign(a) => {
                 let value = a.value.as_deref()?;
                 let annotation = self.paren_aware(a.annotation.as_ref().into(), a.into());
-                self.equal_member(a.target.range().cover(annotation), value.start())
+                self.equal_member(a.target.range().cover(annotation), value.into(), a.into())
             }
             Stmt::Assign(a) => {
                 let [target] = a.targets.as_slice() else {
                     return None;
                 };
-                self.equal_member(self.paren_aware(target.into(), a.into()), a.value.start())
+                self.equal_member(
+                    self.paren_aware(target.into(), a.into()),
+                    a.value.as_ref().into(),
+                    a.into(),
+                )
             }
             Stmt::AugAssign(a) => {
                 let target_range = self.paren_aware(a.target.as_ref().into(), a.into());
-                aligner::range_anchored_member_single_line(
+                let value_start = self.paren_aware(a.value.as_ref().into(), a.into()).start();
+                let member = aligner::range_anchored_member_single_line(
                     self.walker.source,
                     target_range,
-                    TextRange::new(target_range.end(), a.value.start()),
+                    TextRange::new(target_range.end(), value_start),
                     |t| t.kind().as_augmented_assign_operator().is_some(),
                     a.op.as_str().len(),
-                )
+                )?;
+                // `op.as_str()` is the binary form (`+`), so the augmented
+                // operator runs one column longer for its trailing `=`.
+                let op_len = TextSize::of(a.op.as_str()) + TextSize::of('=');
+                Some(EqualMember::new(member, op_len, value_start))
             }
             _ => None,
         }
@@ -196,22 +252,24 @@ impl Visitor<'_> {
     /// or `None` for a positional argument or a `**` unpacking. A keyword
     /// whose value spans lines still qualifies, since its `=` sits on the
     /// keyword's first line where [`Self::equal_member`] anchors it.
-    fn qualify_keyword(&self, arg: ArgOrKeyword<'_>) -> Option<KeywordMember> {
+    fn qualify_keyword(&self, arg: ArgOrKeyword<'_>) -> Option<EqualMember> {
         let ArgOrKeyword::Keyword(keyword) = arg else {
             return None;
         };
         let name = keyword.arg.as_ref()?;
-        let member = self.equal_member(name.range(), keyword.value.start())?;
-        let value_gap = TextRange::new(member.gap.end() + TextSize::of('='), keyword.value.start());
-        Some(KeywordMember { member, value_gap })
+        self.equal_member(name.range(), (&keyword.value).into(), keyword.into())
     }
 
     /// Returns the alignment member for an annotated function parameter
     /// carrying a default value, or `None` for any other shape. Width
     /// spans the parameter name through the annotation's
-    /// [paren-aware](Self::paren_aware) end, and the gap is the
-    /// whitespace between that end and the `=` token.
-    fn qualify_parameter(&self, param: AnyParameterRef<'_>) -> Option<aligner::Member> {
+    /// [paren-aware](Self::paren_aware) end, and the value-side gap is
+    /// recovered against the parameter-with-default node so a
+    /// parenthesized default keeps its `(`.
+    fn qualify_parameter(&self, param: AnyParameterRef<'_>) -> Option<EqualMember> {
+        let AnyParameterRef::NonVariadic(with_default) = param else {
+            return None;
+        };
         let annotation = param.annotation()?;
         let default = param.default()?;
         let annotation_end = self
@@ -219,8 +277,21 @@ impl Visitor<'_> {
             .end();
         self.equal_member(
             TextRange::new(param.name().start(), annotation_end),
-            default.start(),
+            default.into(),
+            with_default.into(),
         )
+    }
+
+    /// The value-side gaps for every member in `group` whose value
+    /// shares the operator's line. A gap spanning a line break is
+    /// dropped, leaving a continued value where the source placed it.
+    fn value_gaps(&self, group: &[EqualMember]) -> Vec<TextRange> {
+        let source = self.walker.source;
+        group
+            .iter()
+            .filter(|m| !source.contains_line_break(m.value_gap))
+            .map(|m| m.value_gap)
+            .collect()
     }
 }
 

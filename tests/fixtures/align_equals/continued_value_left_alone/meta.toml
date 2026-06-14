@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Value Continued Onto the Next Line Is Left Alone"
+
+description = '''
+A value carried onto a later line by a backslash keeps its placement, since the value-side rewrite sits out when its gap spans a line break.
+'''

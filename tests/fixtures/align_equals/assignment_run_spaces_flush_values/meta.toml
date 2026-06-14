@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Flush Assignment Run Aligns and Spaces Its Values"
+
+description = '''
+An adjacent run of assignments written with no space after `=` pads each name to the shared column and inserts the one-space value-side buffer, so every row reads as `name = value`.
+'''

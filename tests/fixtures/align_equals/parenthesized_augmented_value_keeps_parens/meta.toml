@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parenthesized Augmented Value Keeps Its Parentheses"
+
+description = '''
+An augmented assignment whose value is wrapped in parentheses keeps them, since the value-side gap stops before the `(` while the trailing `=` of `+=` stays intact.
+'''
