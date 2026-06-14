@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/multiline_value_breaks_run/input.py
+---
+render(
+    w     = 800,
+    title = "Home",
+    rows  = [
+        head,
+        tail,
+    ],
+    on_click = submit,
+    label    = "Save",
+)

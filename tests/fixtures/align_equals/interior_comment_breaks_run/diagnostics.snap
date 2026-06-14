@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_equals/interior_comment_breaks_run/input.py
+---
+align-equals@17..40
+align-equals@70..87

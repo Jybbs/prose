@@ -57,27 +57,9 @@ impl Visitor<'_> {
         if !source.contains_line_break(bool_op) {
             return;
         }
-        let mut groups: Vec<Vec<aligner::Member>> = Vec::new();
-        let mut active: Option<TextRange> = None;
-        for operand in &bool_op.values {
-            let Some(member) = self.qualify(operand) else {
-                active = None;
-                continue;
-            };
-            let extends = active.is_some_and(|prev| {
-                !source.contains_line_break(prev)
-                    && source.consecutive_lines(prev.end(), operand.start())
-            });
-            if extends {
-                groups
-                    .last_mut()
-                    .expect("active implies groups non-empty")
-                    .push(member);
-            } else {
-                groups.push(vec![member]);
-            }
-            active = Some(operand.range());
-        }
+        let groups = aligner::adjacent_member_groups(source, &bool_op.values, true, |operand| {
+            self.qualify(operand).into()
+        });
         for group in &groups {
             self.walker.emit_unheld(group.iter().copied());
         }

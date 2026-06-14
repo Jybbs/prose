@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Skip-Held Keyword Bridges Its Neighbors"
+
+description = '''
+A keyword carrying `# prose: skip[align-equals]` drops out of the column and **keeps its own spacing**, while the keywords on either side align across it.
+'''

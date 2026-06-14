@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Multi-Line Value Closes the Keyword Run"
+
+description = '''
+A keyword whose value spans several lines aligns with the keywords before it, then **closes the run**, so the keywords after it align as a separate group.
+'''

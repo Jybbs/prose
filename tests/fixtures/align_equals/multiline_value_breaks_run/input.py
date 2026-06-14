@@ -1,0 +1,10 @@
+render(
+    w=800,
+    title="Home",
+    rows=[
+        head,
+        tail,
+    ],
+    on_click=submit,
+    label="Save",
+)

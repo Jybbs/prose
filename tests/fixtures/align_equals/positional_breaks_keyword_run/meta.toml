@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Positional Argument Ends the Keyword Run"
+
+description = '''
+A leading positional argument ends the run the way an undefaulted parameter does, leaving only the trailing keyword block to align on its own column.
+'''

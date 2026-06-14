@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A `**` Unpacking Ends the Keyword Run"
+
+description = '''
+A `**` unpacking is not a keyword, so it **ends the run** the way a positional argument does, leaving the keywords before it to align and the lone keyword after it buffered to `name = value` on its own.
+'''

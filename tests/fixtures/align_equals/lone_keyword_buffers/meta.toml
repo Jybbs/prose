@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lone Exploded Keyword Still Buffers Its `=`"
+
+description = '''
+A single keyword on its own line has nothing to align against, yet its `=` still takes a one-space buffer on each side, so every exploded keyword reads as `name = value`.
+'''

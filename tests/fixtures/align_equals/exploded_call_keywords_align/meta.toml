@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Exploded Call's Keywords Align on One Column"
+
+description = '''
+A call written one keyword per line aligns its `=` the same way a multi-line signature aligns its defaults, with each row padded between the keyword name and the `=`.
+'''

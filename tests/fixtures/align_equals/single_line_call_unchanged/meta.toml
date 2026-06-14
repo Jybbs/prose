@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Single-Line Calls Pass Through Untouched"
+
+description = '''
+A call whose keywords sit on one line **passes through unchanged**, since the rule aligns `=` only across keywords on their own lines.
+'''

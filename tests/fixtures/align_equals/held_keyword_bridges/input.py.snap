@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/held_keyword_bridges/input.py
+---
+configure(
+    host  = "localhost",
+    port=8080,  # prose: skip[align-equals]
+    debug = True,
+)

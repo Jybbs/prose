@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Interior Comment Splits the Keyword Run"
+
+description = '''
+A comment between two keywords **closes the active run**, so the keywords on each side of it align as **two independent columns**.
+'''

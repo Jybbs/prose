@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/positional_breaks_keyword_run/input.py
+---
+record(
+    event,
+    name      = "click",
+    target_id = 42,
+    ok        = True,
+)

@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_equals/double_star_unpacking_breaks_run/input.py
+---
+align-equals@15..29
+align-equals@55..56

@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/exploded_call_keywords_align/input.py
+---
+connect(
+    host    = "localhost",
+    port    = 8080,
+    use_tls = True,
+)
