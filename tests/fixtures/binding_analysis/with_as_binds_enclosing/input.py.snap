@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/with_as_binds_enclosing/input.py
 bindings:
   - attributes: []
     bare_read: false
+    first_unconditional_write: 4
     kinds:
       - FunctionDef
     name: read_lines
@@ -15,6 +16,7 @@ bindings:
       - 4
   - attributes: []
     bare_read: true
+    first_unconditional_write: 15
     kinds:
       - Parameter
     name: path
@@ -26,6 +28,7 @@ bindings:
   - attributes:
       - readlines
     bare_read: false
+    first_unconditional_write: 45
     kinds:
       - With
     name: f

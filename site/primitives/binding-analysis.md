@@ -34,7 +34,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `binding_name(binding: BindingId) -> &str` returns the bound name.
 - `bindings_in_scope(stmt: &Stmt) -> impl Iterator<Item = BindingId>` lists every binding introduced in the lexical scope that contains the statement.
 - `first_write_offset(binding: BindingId) -> TextSize` returns the offset of the first write.
-- `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[unused-future-annotations]] when checking that every name appearing in an annotation resolves to a binding introduced earlier.
+- `is_defined_before(name: &str, offset: TextSize) -> bool` is the inverse-lookup convenience used by [[unused-future-annotations]] when checking that every name appearing in an annotation resolves to an unconditional binding introduced earlier *(a name written only inside an `if` branch reads as runtime-unavailable)*.
 - `module_attribute_count(name: &str) -> usize` counts the distinct attributes read off a module-scope name *(`os.environ` and `os.getcwd` count as two)*, which [[bare-imports]] reads to weigh how widely a bare import reaches.
 - `module_function_reads(name: &str) -> Option<&[TextSize]>` returns the read offsets of a module-scope name bound exactly once as a function definition, which [[call-layout]] uses through `module_call_params` to resolve the signature a module-function call binds, so it names the call's positional arguments when exploding it.
 - `module_reassigned(name: &str) -> bool` reports whether a module-scope name carries more than one write or an augmented assignment, which [[reassigned-constants]] and [[alphabetize]] read to skip names that are not write-once.

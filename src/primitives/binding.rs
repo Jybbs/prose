@@ -20,8 +20,8 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use ruff_python_ast::{
     Alias, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed,
     ExprSetComp, ExprTuple, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign,
-    StmtAugAssign, StmtClassDef, StmtFor, StmtFunctionDef, StmtImport, StmtImportFrom, StmtTry,
-    StmtWith,
+    StmtAugAssign, StmtClassDef, StmtFor, StmtFunctionDef, StmtIf, StmtImport, StmtImportFrom,
+    StmtTry, StmtWith,
     visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -78,12 +78,15 @@ pub(crate) enum UnpackKind {
 
 /// One named binding in some scope, with every observed write and read.
 /// `attributes` collects the distinct attribute names read off the
-/// binding (`os.environ` records `environ`), and `bare_read` flips when
-/// the name is read without an attribute access (`foo(os)`).
+/// binding (`os.environ` records `environ`), `bare_read` flips when the
+/// name is read without an attribute access (`foo(os)`), and
+/// `first_unconditional_write` holds the earliest write not nested in an
+/// `if` branch, or `None` when every write is conditional.
 #[derive(Debug, Serialize)]
 pub(crate) struct Binding {
     attributes: BTreeSet<String>,
     bare_read: bool,
+    first_unconditional_write: Option<TextSize>,
     kinds: Vec<BindingKind>,
     name: String,
     read_offsets: Vec<TextSize>,
@@ -173,12 +176,13 @@ impl BindingAnalysis {
         self.binding(binding).write_offsets[0]
     }
 
-    /// Returns `true` when `name` has a module-scope write event at
-    /// any offset strictly less than `offset`.
+    /// Returns `true` when `name` has an unconditional module-scope
+    /// write at an offset strictly less than `offset`. A write nested in
+    /// an `if` branch is conditional and excluded.
     pub(crate) fn is_defined_before(&self, name: &str, offset: TextSize) -> bool {
         self.module_binding(name)
-            .and_then(|binding| binding.write_offsets.first())
-            .is_some_and(|&first| first < offset)
+            .and_then(|binding| binding.first_unconditional_write)
+            .is_some_and(|first| first < offset)
     }
 
     /// Returns the number of distinct attributes read off the
@@ -232,6 +236,7 @@ impl BindingAnalysis {
 struct Builder {
     assignment_values: HashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
+    conditional_depth: usize,
     function_scope_at: HashMap<TextSize, ScopeId>,
     scope_stack: Vec<ScopeId>,
     scopes: Vec<Scope>,
@@ -243,6 +248,7 @@ impl Builder {
         let mut builder = Self {
             assignment_values: HashMap::new(),
             bindings: Vec::new(),
+            conditional_depth: 0,
             function_scope_at: HashMap::new(),
             scope_stack: Vec::new(),
             scopes: Vec::new(),
@@ -490,6 +496,7 @@ impl Builder {
         offset: TextSize,
         kind: BindingKind,
     ) -> BindingId {
+        let unconditional = self.conditional_depth == 0;
         let scope_data = &mut self.scopes[scope.0 as usize];
         let binding_id = if let Some(&id) = scope_data.bindings.get(name) {
             id
@@ -502,6 +509,7 @@ impl Builder {
                 scope,
                 attributes: BTreeSet::new(),
                 bare_read: false,
+                first_unconditional_write: None,
                 kinds: Vec::new(),
                 write_offsets: Vec::new(),
                 read_offsets: Vec::new(),
@@ -513,6 +521,9 @@ impl Builder {
             binding.kinds.push(kind);
         }
         binding.write_offsets.push(offset);
+        if unconditional {
+            binding.first_unconditional_write.get_or_insert(offset);
+        }
         binding_id
     }
 
@@ -566,6 +577,21 @@ impl Builder {
         self.record_target(&node.target, BindingKind::For);
         self.visit_body(&node.body);
         self.visit_body(&node.orelse);
+    }
+
+    /// Walks an `if`/`elif`/`else` chain with each branch body bracketed
+    /// as conditional, excluding its writes from `first_unconditional_write`.
+    fn visit_if(&mut self, node: &StmtIf) {
+        self.visit_expr(&node.test);
+        self.conditional_depth += 1;
+        self.visit_body(&node.body);
+        for clause in &node.elif_else_clauses {
+            if let Some(test) = &clause.test {
+                self.visit_expr(test);
+            }
+            self.visit_body(&clause.body);
+        }
+        self.conditional_depth -= 1;
     }
 
     fn visit_import(&mut self, node: &StmtImport) {
@@ -655,6 +681,7 @@ impl<'a> Visitor<'a> for Builder {
             Stmt::For(node) => self.visit_for(node),
             Stmt::FunctionDef(node) => self.enter_function(node, stmt.range().start()),
             Stmt::Global(_) | Stmt::Nonlocal(_) => {}
+            Stmt::If(node) => self.visit_if(node),
             Stmt::Import(node) => self.visit_import(node),
             Stmt::ImportFrom(node) => self.visit_import_from(node),
             Stmt::Try(node) => self.visit_try(node),
@@ -736,22 +763,38 @@ mod tests {
         assert!(analysis.bindings_in_scope(stmt).next().is_none());
     }
 
-    #[test]
-    fn is_defined_before_returns_false_for_undefined_name() {
-        let analysis = analyze("x = 1\n");
-        assert!(!analysis.is_defined_before("y", TextSize::new(100)));
+    #[rstest]
+    #[case::conditional_only_write("if flag:\n    Helper = int\n", "Helper", 100)]
+    #[case::elif_only_write("if a:\n    pass\nelif b:\n    Helper = int\n", "Helper", 100)]
+    #[case::nested_conditional("if a:\n    if b:\n        Helper = int\n", "Helper", 100)]
+    #[case::undefined_name("x = 1\n", "y", 100)]
+    #[case::write_after_offset("x = 1\n", "x", 0)]
+    fn is_defined_before_is_false_without_a_prior_unconditional_write(
+        #[case] src: &str,
+        #[case] name: &str,
+        #[case] offset: u32,
+    ) {
+        assert!(!analyze(src).is_defined_before(name, TextSize::new(offset)));
     }
 
-    #[test]
-    fn is_defined_before_returns_false_when_only_write_is_after_offset() {
-        let analysis = analyze("x = 1\n");
-        assert!(!analysis.is_defined_before("x", TextSize::new(0)));
-    }
-
-    #[test]
-    fn is_defined_before_returns_true_for_prior_module_write() {
-        let analysis = analyze("x = 1\nprint(x)\n");
-        assert!(analysis.is_defined_before("x", TextSize::new(10)));
+    #[rstest]
+    #[case::unconditional_after_conditional(
+        "if flag:\n    Helper = str\nHelper = int\n",
+        "Helper",
+        100
+    )]
+    #[case::unconditional_before_conditional(
+        "Helper = str\nif flag:\n    Helper = int\n",
+        "Helper",
+        100
+    )]
+    #[case::prior_module_write("x = 1\nprint(x)\n", "x", 10)]
+    fn is_defined_before_is_true_with_a_prior_unconditional_write(
+        #[case] src: &str,
+        #[case] name: &str,
+        #[case] offset: u32,
+    ) {
+        assert!(analyze(src).is_defined_before(name, TextSize::new(offset)));
     }
 
     #[test]

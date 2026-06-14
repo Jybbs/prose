@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/attr_subscript_destructure_targets/i
 bindings:
   - attributes: []
     bare_read: true
+    first_unconditional_write: 6
     kinds:
       - ClassDef
     name: Holder
@@ -16,6 +17,7 @@ bindings:
       - 6
   - attributes: []
     bare_read: true
+    first_unconditional_write: 25
     kinds:
       - Assignment
     name: obj
@@ -27,6 +29,7 @@ bindings:
       - 25
   - attributes: []
     bare_read: true
+    first_unconditional_write: 45
     kinds:
       - Assignment
     name: ix
@@ -37,6 +40,7 @@ bindings:
       - 45
   - attributes: []
     bare_read: true
+    first_unconditional_write: 58
     kinds:
       - Assignment
     name: xs
@@ -47,6 +51,7 @@ bindings:
       - 58
   - attributes: []
     bare_read: false
+    first_unconditional_write: 105
     kinds:
       - Assignment
     name: a
@@ -56,6 +61,7 @@ bindings:
       - 105
   - attributes: []
     bare_read: false
+    first_unconditional_write: 108
     kinds:
       - Assignment
     name: b
@@ -65,6 +71,7 @@ bindings:
       - 108
   - attributes: []
     bare_read: false
+    first_unconditional_write: 120
     kinds:
       - Assignment
     name: head
@@ -74,6 +81,7 @@ bindings:
       - 120
   - attributes: []
     bare_read: false
+    first_unconditional_write: 126
     kinds:
       - Assignment
     name: tail
@@ -83,6 +91,7 @@ bindings:
       - 126
   - attributes: []
     bare_read: false
+    first_unconditional_write: 137
     kinds:
       - Assignment
     name: c
@@ -92,6 +101,7 @@ bindings:
       - 137
   - attributes: []
     bare_read: false
+    first_unconditional_write: 140
     kinds:
       - Assignment
     name: d

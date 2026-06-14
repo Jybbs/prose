@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/lambda_params_shadow_outer/input.py
 bindings:
   - attributes: []
     bare_read: false
+    first_unconditional_write: 0
     kinds:
       - Assignment
     name: x
@@ -15,6 +16,7 @@ bindings:
       - 0
   - attributes: []
     bare_read: true
+    first_unconditional_write: 17
     kinds:
       - Parameter
     name: x
@@ -25,6 +27,7 @@ bindings:
       - 17
   - attributes: []
     bare_read: false
+    first_unconditional_write: 6
     kinds:
       - Assignment
     name: f

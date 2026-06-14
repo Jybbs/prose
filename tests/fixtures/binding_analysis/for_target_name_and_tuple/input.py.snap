@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/for_target_name_and_tuple/input.py
 bindings:
   - attributes: []
     bare_read: true
+    first_unconditional_write: 0
     kinds:
       - Assignment
     name: xs
@@ -17,6 +18,7 @@ bindings:
       - 0
   - attributes: []
     bare_read: true
+    first_unconditional_write: 26
     kinds:
       - For
     name: i
@@ -27,6 +29,7 @@ bindings:
       - 26
   - attributes: []
     bare_read: true
+    first_unconditional_write: 52
     kinds:
       - For
     name: a
@@ -37,6 +40,7 @@ bindings:
       - 52
   - attributes: []
     bare_read: true
+    first_unconditional_write: 55
     kinds:
       - For
     name: b
