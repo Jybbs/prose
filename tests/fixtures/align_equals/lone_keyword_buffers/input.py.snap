@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/lone_keyword_buffers/input.py
+---
+register(
+    handler = on_event,
+)

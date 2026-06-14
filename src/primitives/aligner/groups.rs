@@ -34,7 +34,9 @@ pub(crate) enum Slot<M> {
 /// or blank line between two members closes it as well. When
 /// `break_after_multiline` is set, a member whose own range spans more
 /// than one line also closes the run after it, so a run never extends
-/// past a multi-line row.
+/// past a multi-line row. The multi-line flag tracks the last member
+/// only, so a `Bridge` extends the run's reach without tripping the
+/// break for a held row.
 pub(crate) fn adjacent_member_groups<T, M, F>(
     source: &Source,
     items: impl IntoIterator<Item = T>,
@@ -47,29 +49,32 @@ where
 {
     let mut groups: Vec<Vec<M>> = Vec::new();
     let mut current: Vec<M> = Vec::new();
-    let mut prev: Option<TextRange> = None;
+    let mut prev_end: Option<TextSize> = None;
+    let mut prev_multiline = false;
     for item in items {
         let range = item.range();
         match classify(item) {
             Slot::Member(member) => {
-                let extends = prev.is_some_and(|p| {
-                    source.consecutive_lines(p.end(), range.start())
-                        && !(break_after_multiline && source.contains_line_break(p))
+                let extends = prev_end.is_some_and(|end| {
+                    source.consecutive_lines(end, range.start())
+                        && !(break_after_multiline && prev_multiline)
                 });
                 if !extends {
                     flush_run(&mut groups, &mut current);
                 }
                 current.push(member);
-                prev = Some(range);
+                prev_end = Some(range.end());
+                prev_multiline = source.contains_line_break(range);
             }
             Slot::Bridge => {
-                if let Some(p) = prev.as_mut() {
-                    *p = TextRange::new(p.start(), range.end());
+                if let Some(end) = prev_end.as_mut() {
+                    *end = range.end();
                 }
             }
             Slot::Break => {
                 flush_run(&mut groups, &mut current);
-                prev = None;
+                prev_end = None;
+                prev_multiline = false;
             }
         }
     }
@@ -333,6 +338,26 @@ mod tests {
 
         // The Break at index 1 closes the run, leaving 0 and 2 in separate groups.
         assert_eq!(groups, vec![vec![0], vec![2]]);
+    }
+
+    #[test]
+    fn adjacent_member_groups_bridge_does_not_trip_multiline_break() {
+        let source = parse("a = 1\nb = [\n    1,\n]\nc = 3\n");
+        let mut index = 0usize;
+        let groups: Vec<Vec<usize>> =
+            adjacent_member_groups(&source, &source.ast().body, true, |_| {
+                let slot = if index == 1 {
+                    Slot::Bridge
+                } else {
+                    Slot::Member(index)
+                };
+                index += 1;
+                slot
+            });
+
+        // The bridged middle statement spans lines, but a Bridge never sets
+        // the multi-line flag, so 0 and 2 still span it as one block.
+        assert_eq!(groups, vec![vec![0, 2]]);
     }
 
     #[test]

@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Multi-Line Value Ends the Keyword Run"
+title       = "A Multi-Line Value Closes the Keyword Run"
 
 description = '''
-A keyword whose value spans several lines **ends the run**, so the single-line keywords before it align while the multi-line keyword keeps its own spacing.
+A keyword whose value spans several lines aligns with the keywords before it, then **closes the run**, so the keywords after it align as a separate group.
 '''

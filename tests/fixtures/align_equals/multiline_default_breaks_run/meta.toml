@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Multi-Line Default Closes the Parameter Run"
+
+description = '''
+A parameter whose default value spans several lines aligns with the parameters before it, then **closes the run**, so the parameters after it align as a separate group, mirroring an exploded call's keyword runs.
+'''

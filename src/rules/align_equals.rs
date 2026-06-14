@@ -4,8 +4,10 @@
 //! function-parameter defaults, and across an exploded call's keyword
 //! arguments. Chained assignments, initializer-less annotations,
 //! unannotated parameter defaults, and single-line signatures or calls
-//! are skipped. Lone rows and singleton sub-groups still collapse their
-//! pre-`=` whitespace to one space. `+=` rows place `+` one column
+//! are skipped. Lone assignment rows and singleton sub-groups still
+//! collapse their pre-`=` whitespace to one space, whereas a lone
+//! exploded keyword takes a one-space buffer on each side so it reads
+//! as `name = value`. `+=` rows place `+` one column
 //! before the shared `=` column rather than pushing the `=` right.
 //! Parameter widths reflect the post-`align_colons` source.
 
@@ -77,13 +79,15 @@ impl Visitor<'_> {
     }
 
     /// Splits `call`'s arguments into line-adjacent runs of keyword
-    /// members. A positional argument, a `**` unpacking, a multi-line
-    /// value, or an interior comment ends the active run.
+    /// members. A positional argument, a `**` unpacking, or an interior
+    /// comment ends the active run. A keyword whose value spans lines
+    /// joins the run, then closes it after itself, so the keywords past
+    /// it align as a separate group.
     fn keyword_groups(&self, call: &ExprCall) -> Vec<Vec<KeywordMember>> {
         aligner::adjacent_member_groups(
             self.walker.source,
             call.arguments.arguments_source_order(),
-            false,
+            true,
             |arg| match self.qualify_keyword(arg) {
                 Some(keyword) if self.walker.is_held(keyword.member.line_start) => {
                     aligner::Slot::Bridge
@@ -110,18 +114,27 @@ impl Visitor<'_> {
         }
     }
 
-    /// Emits one alignment pass per line-adjacent run of `call`'s keyword
-    /// arguments, padding before each `=` and rewriting the gap after it
-    /// to one space. A held row drops out, and a run that no longer spans
-    /// two lines aligns nothing.
+    /// Aligns each line-adjacent run of `call`'s keyword arguments,
+    /// padding before each `=` and rewriting the gap after it to one
+    /// space. A keyword that stands alone in its group instead takes a
+    /// one-space buffer on each side of its `=`, so every exploded
+    /// keyword reads as `name = value`. A single-line call and a held
+    /// row are left untouched.
     fn process_call(&mut self, call: &ExprCall) {
         let source = self.walker.source;
+        if !source.contains_line_break(call.arguments.range()) {
+            return;
+        }
         for group in self.keyword_groups(call) {
             let members: Vec<aligner::Member> = group.iter().map(|k| k.member).collect();
-            if !aligner::is_alignment_candidate(&members) {
-                continue;
-            }
-            let mut edits = self.walker.group_edits(&members);
+            let mut edits = if aligner::is_alignment_candidate(&members) {
+                self.walker.group_edits(&members)
+            } else {
+                group
+                    .iter()
+                    .filter_map(|k| aligner::space_padding_edit(source, k.member.gap, 1))
+                    .collect()
+            };
             edits.extend(
                 group
                     .iter()
@@ -131,11 +144,22 @@ impl Visitor<'_> {
         }
     }
 
-    /// Walks `params` through [`aligner::parameter_split_groups`] with
-    /// [`Self::qualify_parameter`], emitting an alignment pass for
-    /// each sub-group that clears [`aligner::is_alignment_candidate`].
+    /// Walks `params` through [`aligner::adjacent_member_groups`] with
+    /// [`Self::qualify_parameter`], emitting an alignment pass for each
+    /// run of defaulted parameters. A multi-line default closes the run
+    /// after it, so the parameters past it align as a separate group,
+    /// mirroring an exploded call's keyword runs.
     fn process_parameters(&mut self, params: &Parameters) {
-        for members in aligner::parameter_split_groups(params, |p| self.qualify_parameter(p)) {
+        let groups = aligner::adjacent_member_groups(
+            self.walker.source,
+            params.iter_source_order(),
+            true,
+            |param| match self.qualify_parameter(param) {
+                Some(member) => aligner::Slot::Member(member),
+                None => aligner::Slot::Break,
+            },
+        );
+        for members in groups {
             self.walker.emit_unheld(members);
         }
     }
@@ -171,17 +195,15 @@ impl Visitor<'_> {
         }
     }
 
-    /// Returns the alignment member for a single-line `name=value`
-    /// keyword argument, or `None` for a positional argument, a `**`
-    /// unpacking, or a keyword spanning multiple lines.
+    /// Returns the alignment member for a `name=value` keyword argument,
+    /// or `None` for a positional argument or a `**` unpacking. A keyword
+    /// whose value spans lines still qualifies, since its `=` sits on the
+    /// keyword's first line where [`Self::equal_member`] anchors it.
     fn qualify_keyword(&self, arg: ArgOrKeyword<'_>) -> Option<KeywordMember> {
         let ArgOrKeyword::Keyword(keyword) = arg else {
             return None;
         };
         let name = keyword.arg.as_ref()?;
-        if self.walker.source.contains_line_break(keyword.range()) {
-            return None;
-        }
         let member = self.equal_member(name.range(), keyword.value.start())?;
         let value_gap = TextRange::new(member.gap.end() + TextSize::of('='), keyword.value.start());
         Some(KeywordMember { member, value_gap })

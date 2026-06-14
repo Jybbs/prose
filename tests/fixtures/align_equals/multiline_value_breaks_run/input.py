@@ -1,9 +1,10 @@
 render(
+    w=800,
     title="Home",
-    body="text",
-    items=[
-        1,
-        2,
+    rows=[
+        head,
+        tail,
     ],
-    footer="end",
+    on_click=submit,
+    label="Save",
 )
