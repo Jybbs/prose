@@ -1,14 +1,11 @@
-//! Aligns the `=` character vertically across runs of same-indent,
-//! line-adjacent `Stmt::Assign` (single-target), `Stmt::AugAssign`, and
-//! `Stmt::AnnAssign` (with initializer) statements, across annotated
-//! function-parameter defaults, and across an exploded call's keyword
-//! arguments. Chained assignments, initializer-less annotations,
-//! unannotated parameter defaults, and single-line signatures or calls
-//! are skipped. Lone assignment rows and singleton sub-groups still
-//! collapse their pre-`=` whitespace to one space, whereas a lone
-//! exploded keyword takes a one-space buffer on each side so it reads
-//! as `name = value`. `+=` rows place `+` one column
-//! before the shared `=` column rather than pushing the `=` right.
+//! Vertically aligns `=` across runs of same-indent, line-adjacent
+//! assignments (single-target `Stmt::Assign`, `Stmt::AugAssign`,
+//! initialized `Stmt::AnnAssign`), annotated parameter defaults, and
+//! an exploded call's keyword arguments, aligning a run only when its
+//! rows share a column baseline. A row that reaches no shared column
+//! (lone, singleton, or differing-baseline) collapses its pre-`=` gap
+//! to one space, an exploded keyword buffering both sides to read as
+//! `name = value`. `+=` places `+` one column before the shared `=`.
 //! Parameter widths reflect the post-`align_colons` source.
 
 use ruff_diagnostics::Edit;

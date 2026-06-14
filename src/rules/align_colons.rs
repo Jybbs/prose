@@ -1,9 +1,9 @@
 //! Aligns `:` vertically in dict/mapping literals, Pydantic-style
 //! class fields, annotated function parameters, and Google/numpy
-//! docstring `Args:` sections. Single-line groups and single-item
-//! groups pass through, leaving the latter to `strip_align_padding`
-//! downstream. Each aligned `:` keeps a one-space buffer before the
-//! colon.
+//! docstring `Args:` sections. Single-line groups, single-item groups,
+//! and groups whose rows open at differing column baselines pass
+//! through, leaving them to `strip_align_padding` downstream. Each
+//! aligned `:` keeps a one-space buffer before the colon.
 
 use ruff_diagnostics::Edit;
 
