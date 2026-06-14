@@ -19,18 +19,27 @@ use crate::{
             annotated_name_target, bare_import_bound_name, from_import_bound_name,
             single_name_target,
         },
+        comments::{is_banner_block, leading_comment_block},
         imports::{import_sort_key, same_import_group},
     },
     source::Source,
+    suppression::is_directive_comment,
 };
 
+/// The applied banding: a band rank per banded statement, and the prose
+/// comment each banded constant carries up with it.
+pub(super) struct Banding {
+    pub(super) carries: Vec<(usize, TextRange)>,
+    pub(super) ranks: HashMap<usize, u8>,
+}
+
 /// The module-scope hoist plan: a band rank per banded statement, the
-/// intra-band `(tier, name)` key for each leading and trailing
-/// constant, and the eager-reference edges the assembled order keeps
-/// backward. Ranks are `0` import, `1` leading constant, `2`
-/// definition, `3` trailing constant. A statement absent from `ranks`
-/// is an anchor, pinned in place and bounding the bands to its side.
+/// intra-band `(tier, name)` key per banded constant, the eager-reference
+/// edges the order keeps backward, and the comment each carries. Ranks
+/// are `0` import, `1` leading, `2` definition, `3` trailing. A statement
+/// absent from `ranks` is a pinned anchor.
 struct BandPlan<'src> {
+    carries: Vec<(usize, TextRange)>,
     edges: Vec<(usize, usize)>,
     keys: HashMap<usize, (usize, &'src str)>,
     ranks: HashMap<usize, u8>,
@@ -100,13 +109,9 @@ struct ConstSite<'src> {
 
 /// Hoists module-level constants into a leading band below the imports
 /// and a trailing band beneath the definitions, rewriting `order` in
-/// place. A constant rides the leading band when its eval-time surface
-/// reaches only imports and fellow leading constants, and the trailing
-/// band when it reaches a definition. A statement that is neither an
-/// import, a definition, nor a dependency-clean constant pins in place
-/// and bounds the bands to its side. Leaves `order` untouched when the
-/// plan declines or its assembled order would seat a reference ahead of
-/// its definition.
+/// place. Leaves `order` untouched when the plan declines or would seat
+/// a reference ahead of its definition. The returned [`Banding`] pairs
+/// the band ranks with the prose comment each banded constant carries.
 pub(super) fn band_module_constants<'src>(
     source: &'src Source,
     body: &'src [Stmt],
@@ -115,7 +120,7 @@ pub(super) fn band_module_constants<'src>(
     defer_annotations: bool,
     target_version: Option<PythonVersion>,
     order: &mut Vec<usize>,
-) -> Option<HashMap<usize, u8>> {
+) -> Option<Banding> {
     let plan = module_band_plan(source, body, blocks, defer_annotations, target_version)?;
     let mut banded = Vec::with_capacity(order.len());
     let mut region = Vec::new();
@@ -130,7 +135,10 @@ pub(super) fn band_module_constants<'src>(
     plan.drain_region(body, first_party, &mut region, &mut banded);
     (plan.is_sound(&banded) && banded != *order).then(|| {
         *order = banded;
-        plan.ranks
+        Banding {
+            carries: plan.carries,
+            ranks: plan.ranks,
+        }
     })
 }
 
@@ -165,15 +173,9 @@ fn assign_run_target(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
     }
 }
 
-/// Builds the module-scope hoist plan from `body`. Classifies each
-/// top-level statement into its band, resolving a single-name
-/// assignment's eval-time references against the module's imports,
-/// definitions, and fellow constants. A constant whose surface reaches
-/// a definition pools into the trailing band, one reaching only clean
-/// terminals rides the leading band, and one touching an unresolved
-/// name, a reassigned binding, or another anchored constant pins in
-/// place. Returns `None` when a constant band's intra-band reference
-/// graph carries a cycle, declining the hoist.
+/// Builds the module-scope hoist plan, ranking each statement and
+/// pairing each banded constant with the comment it carries. Returns
+/// `None` when a constant band's reference graph carries a cycle.
 fn module_band_plan<'src>(
     source: &'src Source,
     body: &'src [Stmt],
@@ -188,26 +190,36 @@ fn module_band_plan<'src>(
     let mut dup_defs: HashSet<&'src str> = HashSet::new();
     let mut imports: HashSet<&'src str> = HashSet::new();
     let mut ranks: HashMap<usize, u8> = HashMap::new();
+    let mut carries: Vec<(usize, TextRange)> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
-        // A suppressed statement, a `# fmt: skip`-style line, or one a
-        // detached comment trails pins in place and bounds the bands to
-        // its side, so a single-edit reorder never spans a `# fmt: off`
-        // block the pipeline drops the whole edit for, and a free-floating
-        // comment never strands away from the statement it sat above.
-        // A `#` in the inter-block gap is a detached own-line comment, since
-        // `block_range` folds a statement's trailing and attached comments into
-        // its own block. `intersects_comment` would over-count a trailing
-        // comment whose end touches the gap start.
-        let detached_comment = idx > 0
-            && source
-                .slice(TextRange::new(blocks[idx - 1].end(), blocks[idx].start()))
-                .contains('#');
-        if detached_comment
-            || suppression.intersects(stmt)
+        // A `# fmt: off` span or a `# prose: skip` line pins its
+        // statement, so a single-edit reorder never crosses a region the
+        // pipeline drops the whole edit for.
+        if suppression.intersects(stmt)
             || suppression
                 .is_format_suppressed_at(source.line_index(stmt.start()), Alphabetize::SLUG)
         {
+            continue;
+        }
+        // The own-line comment in the gap above the statement, if any.
+        // `block_range` folds a statement's trailing and attached comments
+        // into its own block, so a comment surviving in the gap is a
+        // free-floating own-line comment a blank line separates from below.
+        let gap_comment = idx.checked_sub(1).and_then(|prev| {
+            leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
+        });
+        let const_target = assign_run_target(stmt);
+        // A definition, class, import, or any non-constant pins beneath an
+        // own-line comment, bounding the bands to its side. A constant
+        // instead forward-attaches a prose comment the way `blank-lines`
+        // settles it, while a banner section divider or a suppression
+        // directive pins the constant too, since neither may relocate.
+        if gap_comment.is_some_and(|block| {
+            const_target.is_none()
+                || is_banner_block(source, block)
+                || source.slice(block).lines().any(is_directive_comment)
+        }) {
             continue;
         }
         match stmt {
@@ -227,13 +239,16 @@ fn module_band_plan<'src>(
                 ranks.insert(idx, 0);
             }
             _ => {
-                if let Some((name, value)) = assign_run_target(stmt) {
+                if let Some((name, value)) = const_target {
                     // A `# prose: keep` dict pins its statement, so the
                     // marker freezes module position as well as entry order.
                     if let Some(Expr::Dict(dict)) = value
                         && has_keep_marker(source, dict)
                     {
                         continue;
+                    }
+                    if let Some(block) = gap_comment {
+                        carries.push((idx, block));
                     }
                     sites.push(ConstSite {
                         annot_refs: stmt
@@ -329,7 +344,15 @@ fn module_band_plan<'src>(
             }
         }
     }
-    Some(BandPlan { edges, keys, ranks })
+    // A carried comment only travels when its constant bands, leaving an
+    // anchored constant's comment in its source gap.
+    carries.retain(|(idx, _)| ranks.contains_key(idx));
+    Some(BandPlan {
+        carries,
+        edges,
+        keys,
+        ranks,
+    })
 }
 
 /// Closes `state` over `deps` to a fixed point, flipping a slot true
@@ -413,6 +436,25 @@ mod tests {
     }
 
     #[test]
+    fn module_band_plan_carries_a_prose_comment_into_the_band() {
+        let source = parse("def f():\n    pass\n\n# note\n\nX = 1\n");
+        let body = &source.ast().body;
+        let blocks: Vec<TextRange> = (0..body.len())
+            .map(|i| block_range(&source, body, i, source.module_range()))
+            .collect();
+        let plan =
+            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
+        assert_eq!(plan.ranks[&1], 1, "X leads, hoisting above f");
+        let (idx, comment) = plan
+            .carries
+            .first()
+            .copied()
+            .expect("X carries its comment");
+        assert_eq!(idx, 1);
+        assert_eq!(source.slice(comment), "# note");
+    }
+
+    #[test]
     fn module_band_plan_declines_a_constant_cycle() {
         let source = parse("A = B\nB = A\n");
         let body = &source.ast().body;
@@ -435,6 +477,38 @@ mod tests {
             plan.ranks[&0], 1,
             "a self-reference constrains nothing, so X leads"
         );
+    }
+
+    #[test]
+    fn module_band_plan_pins_a_constant_below_a_banner() {
+        let source = parse("def f():\n    pass\n\n# =====\n\nX = 1\n");
+        let body = &source.ast().body;
+        let blocks: Vec<TextRange> = (0..body.len())
+            .map(|i| block_range(&source, body, i, source.module_range()))
+            .collect();
+        let plan =
+            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
+        assert!(
+            !plan.ranks.contains_key(&1),
+            "a banner divides sections, so X pins below it"
+        );
+        assert!(plan.carries.is_empty());
+    }
+
+    #[test]
+    fn module_band_plan_pins_a_constant_below_a_directive() {
+        let source = parse("def f():\n    pass\n\n# fmt: on\n\nX = 1\n");
+        let body = &source.ast().body;
+        let blocks: Vec<TextRange> = (0..body.len())
+            .map(|i| block_range(&source, body, i, source.module_range()))
+            .collect();
+        let plan =
+            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
+        assert!(
+            !plan.ranks.contains_key(&1),
+            "a format directive drives its own line, so X pins below it"
+        );
+        assert!(plan.carries.is_empty());
     }
 
     #[test]

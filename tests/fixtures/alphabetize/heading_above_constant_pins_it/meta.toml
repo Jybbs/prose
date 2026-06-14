@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Heading Above a Constant Pins It In Place"
+
+description = '''
+A `### ...` heading reads as a section divider, so banding leaves `PALETTE` beneath it rather than hoisting the tuple constant across the heading into the leading band.
+'''

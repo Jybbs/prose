@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Trailing-Band Constant Carries Its Comment Down"
+
+description = '''
+`REGISTRY` reaches the `build_default` definition, so it pools into the trailing band beneath the definitions, carrying its own-line prose comment down with it.
+'''

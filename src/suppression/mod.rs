@@ -147,6 +147,13 @@ impl SuppressionMap {
     }
 }
 
+/// True when `comment` is a recognized format or lint directive, so it
+/// drives suppression from its own line and must stay pinned there
+/// rather than ride a sibling reorder.
+pub(crate) fn is_directive_comment(comment: &str) -> bool {
+    classify_format_directive(comment).is_some() || find_prose_ignore(comment).is_some()
+}
+
 fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
     spans.sort_unstable_by_key(|s| s.start());
     spans.dedup_by(|next, prev| {

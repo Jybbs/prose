@@ -17,6 +17,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     config::Config,
     primitives::{
+        comments::{is_banner_block, leading_comment_block},
         edit::singleton_groups,
         scope::{BodyScope, scoped_body},
     },
@@ -24,11 +25,9 @@ use crate::{
     source::Source,
 };
 
-mod comment_block;
 mod offsets;
 mod policy;
 
-use comment_block::{is_banner_block, leading_block_of};
 use offsets::{header_signature_end, whitespace_start_before};
 use policy::canonical_blanks;
 
@@ -126,7 +125,7 @@ impl Walker<'_> {
         let Some(canonical) = canonical_blanks(prev, curr, scope, self.first_party) else {
             return;
         };
-        let block = leading_block_of(self.source, prev_end, curr);
+        let block = leading_comment_block(self.source, prev_end, curr.start());
         let curr_line_start = self.source.text().line_start(curr.start());
         let above_line_start = block.map_or(curr_line_start, TextRange::start);
         self.normalize_above(above_line_start, canonical + 1);

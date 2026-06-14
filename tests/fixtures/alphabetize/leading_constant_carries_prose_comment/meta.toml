@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Leading Constant Carries Its Prose Comment Up"
+
+description = '''
+Banding forward-attaches the own-line prose comment to `TTL_SECONDS` and hoists the pair into the leading band above `render`, **collapsing the blank line** the comment formerly sat above so the comment hugs the constant it describes.
+'''
