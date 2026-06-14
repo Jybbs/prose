@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Trailing-Band Splitter Leaves Its Imports Sorted"
+
+description = '''
+A constant that names a definition drains down to the trailing band, and **the two imports it had split merge into sorted order in the same pass**, so the consolidated run lands alphabetized even when the splitter pools below the definitions rather than into the leading band.
+'''

@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/trailing_band_split_imports_sort/input.py
+---
+import a
+import b
+
+
+def make():
+    return 1
+
+
+RESULT = make

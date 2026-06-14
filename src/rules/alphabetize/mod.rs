@@ -370,6 +370,7 @@ fn rewrite_body<'a>(
                 source,
                 body,
                 &blocks,
+                first_party,
                 defer_annotations,
                 target_version,
                 &mut order,
