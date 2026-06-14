@@ -6,10 +6,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::diagnostics::Diagnostic;
 
-/// Post-pipeline state cached per `(source, config, version)` key. The
-/// diagnostics are always anchored to the source as written, leaving any
-/// mode free to render them. The rewrite is `Skipped` unless the writing
-/// mode ran [`Pipeline::run`](crate::pipeline::Pipeline::run).
+/// Post-pipeline state cached per `(source, config, rules, version)`
+/// key. The diagnostics are always anchored to the source as written,
+/// leaving any mode free to render them. The rewrite is `Skipped` unless
+/// the writing mode ran [`Pipeline::run`](crate::pipeline::Pipeline::run).
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CacheEntry {
     pub diagnostics: Vec<Diagnostic>,
