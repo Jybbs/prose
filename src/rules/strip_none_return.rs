@@ -13,7 +13,7 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
-    primitives::{edit::singleton_groups, range::paren_aware_range},
+    primitives::{edit::singleton_groups, range::return_annotation_range},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -54,7 +54,7 @@ impl Walker<'_> {
             && returns.is_none_literal_expr()
             && !is_ellipsis_stub(&fd.body)
         {
-            let annotation = paren_aware_range(returns.into(), fd.into(), self.source.tokens());
+            let annotation = return_annotation_range(returns, fd, self.source.tokens());
             let span = TextRange::new(fd.parameters.range().end(), annotation.end());
             self.edits.push(Edit::range_deletion(span));
         }
@@ -129,6 +129,7 @@ mod tests {
     fn strips_when_the_body_is_not_a_lone_ellipsis(
         #[values(
             "def f() -> None:\n    x = 1\n    ...\n",
+            "def f() -> None:\n    print()\n",
             "def f() -> None:\n    \"\"\"doc\"\"\"\n"
         )]
         src: &str,
