@@ -15,6 +15,6 @@ input_file: tests/fixtures/signature_annotations/annotated_members_pass/input.py
       "column": 27,
       "row": 1
     },
-    "message": "parameter `count` has no type annotation"
+    "message": "Parameter `count` has no type annotation"
   }
 ]

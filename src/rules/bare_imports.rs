@@ -86,7 +86,7 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
                         self.rule,
                         alias.name.range,
                         format!(
-                            "bare import `{name}` reaches {attributes} of its attributes. Rewrite as `from {name} import ...` naming only the symbols this module uses",
+                            "Bare import `{name}` reaches {attributes} of its attributes. Rewrite as `from {name} import ...` naming only the symbols this module uses",
                         ),
                     ));
                 }

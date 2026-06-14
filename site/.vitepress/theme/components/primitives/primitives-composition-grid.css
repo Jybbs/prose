@@ -95,7 +95,7 @@
 
 .primitives-composition-tile-name {
   font-family : var(--prose-font-display);
-  font-size   : var(--prose-text-sm);
+  font-size   : var(--prose-text-xs);
   line-height : 1.15;
   color       : var(--vp-c-text-1);
 }

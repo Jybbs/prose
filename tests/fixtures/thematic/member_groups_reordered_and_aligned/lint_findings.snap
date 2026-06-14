@@ -28,7 +28,7 @@ input_file: tests/fixtures/thematic/member_groups_reordered_and_aligned/input.py
       "column": 21,
       "row": 14
     },
-    "message": "parameter `key` has no type annotation"
+    "message": "Parameter `key` has no type annotation"
   },
   {
     "code": "signature-annotations",
@@ -54,7 +54,7 @@ input_file: tests/fixtures/thematic/member_groups_reordered_and_aligned/input.py
       "column": 19,
       "row": 17
     },
-    "message": "parameter `key` has no type annotation"
+    "message": "Parameter `key` has no type annotation"
   },
   {
     "code": "signature-annotations",

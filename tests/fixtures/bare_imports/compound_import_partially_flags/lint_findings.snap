@@ -15,6 +15,6 @@ input_file: tests/fixtures/bare_imports/compound_import_partially_flags/input.py
       "column": 8,
       "row": 1
     },
-    "message": "bare import `os` reaches 1 of its attributes. Rewrite as `from os import ...` naming only the symbols this module uses"
+    "message": "Bare import `os` reaches 1 of its attributes. Rewrite as `from os import ...` naming only the symbols this module uses"
   }
 ]

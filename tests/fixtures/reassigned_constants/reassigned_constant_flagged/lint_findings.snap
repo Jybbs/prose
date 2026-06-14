@@ -15,7 +15,7 @@ input_file: tests/fixtures/reassigned_constants/reassigned_constant_flagged/inpu
       "column": 1,
       "row": 1
     },
-    "message": "module-level `RETRIES` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `RETRIES` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   },
   {
     "code": "reassigned-constants",
@@ -28,6 +28,6 @@ input_file: tests/fixtures/reassigned_constants/reassigned_constant_flagged/inpu
       "column": 1,
       "row": 2
     },
-    "message": "module-level `RETRIES` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `RETRIES` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   }
 ]

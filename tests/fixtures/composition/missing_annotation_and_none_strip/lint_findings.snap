@@ -15,6 +15,6 @@ input_file: tests/fixtures/composition/missing_annotation_and_none_strip/input.p
       "column": 10,
       "row": 1
     },
-    "message": "parameter `event` has no type annotation"
+    "message": "Parameter `event` has no type annotation"
   }
 ]
