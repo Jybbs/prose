@@ -21,7 +21,7 @@ pub(crate) use emit::space_padding_edit;
 pub(crate) use groups::{
     Slot, adjacent_member_groups, is_alignment_candidate, is_held, keyed_line_adjacent_groups,
     line_adjacent_groups, line_anchored_member, line_anchored_member_at_kind,
-    parameter_split_groups, range_anchored_member_single_line,
+    parameter_split_groups, range_anchored_member_single_line, retain_unheld,
 };
 
 /// Bundles the `groups` accumulator, `settings`, the owning `rule`, and
@@ -54,13 +54,24 @@ impl<'a> AlignWalker<'a> {
         self.push_group(edits);
     }
 
+    /// Aligns `members` to their shared column and folds in a one-space
+    /// rewrite of each gap in `gaps`, recording the combined fix as one
+    /// group. The members-level analog of [`Self::push_with_gaps`],
+    /// pairing the column math of [`Self::emit_group`] with the gap
+    /// normalization.
+    pub(crate) fn emit_group_with_gaps(
+        &mut self,
+        members: &[Member],
+        gaps: impl IntoIterator<Item = TextRange>,
+    ) {
+        let name_edits = self.group_edits(members);
+        self.push_with_gaps(name_edits, gaps);
+    }
+
     /// Drops the held rows from `members`, then emits the survivors as
     /// one group when they still form an alignment candidate.
     pub(crate) fn emit_unheld(&mut self, members: impl IntoIterator<Item = Member>) {
-        let kept: Vec<Member> = members
-            .into_iter()
-            .filter(|m| !self.is_held(m.line_start))
-            .collect();
+        let kept = self.retain_unheld(members, |m| m.line_start);
         if is_alignment_candidate(&kept) {
             self.emit_group(&kept);
         }
@@ -105,6 +116,16 @@ impl<'a> AlignWalker<'a> {
                 .filter_map(|r| space_padding_edit(self.source, r, 1)),
         );
         self.push_group(name_edits);
+    }
+
+    /// Returns the rows of `members` whose anchor line is not skip-held
+    /// for this rule. The walker-bound form of the free [`retain_unheld`].
+    pub(crate) fn retain_unheld<M>(
+        &self,
+        members: impl IntoIterator<Item = M>,
+        line_start: impl Fn(&M) -> TextSize,
+    ) -> Vec<M> {
+        retain_unheld(self.source, self.rule, members, line_start)
     }
 }
 

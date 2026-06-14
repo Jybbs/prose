@@ -261,6 +261,22 @@ where
     Some(range_anchored_member(source, target, anchor, extra_width))
 }
 
+/// Returns the rows of `members` whose anchor line is not skip-held for
+/// `rule`, dropping the held rows so neighbors align around them.
+/// `line_start` yields each row's anchor line, so a row type wrapping a
+/// `Member` filters by the same line the member carries.
+pub(crate) fn retain_unheld<M>(
+    source: &Source,
+    rule: RuleId,
+    members: impl IntoIterator<Item = M>,
+    line_start: impl Fn(&M) -> TextSize,
+) -> Vec<M> {
+    members
+        .into_iter()
+        .filter(|m| !is_held(source, rule, line_start(m)))
+        .collect()
+}
+
 /// Moves the in-progress run into `groups` when it holds at least one
 /// member, leaving `current` empty for the next run.
 fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {

@@ -254,12 +254,7 @@ fn parameter_groups(
 ) -> Vec<Vec<aligner::Member>> {
     aligner::parameter_split_groups(params, |p| parameter(source, p))
         .into_iter()
-        .map(|group| {
-            group
-                .into_iter()
-                .filter(|m| !aligner::is_held(source, rule, m.line_start))
-                .collect()
-        })
+        .map(|group| aligner::retain_unheld(source, rule, group, |m| m.line_start))
         .collect()
 }
 

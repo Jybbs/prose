@@ -86,16 +86,13 @@ impl Visitor<'_> {
     /// surviving member emits nothing, leaving a single defaulted
     /// parameter untouched.
     fn emit_aligned(&mut self, group: &[EqualMember]) {
-        let kept: Vec<EqualMember> = group
-            .iter()
-            .copied()
-            .filter(|m| !self.walker.is_held(m.member.line_start))
-            .collect();
+        let kept = self
+            .walker
+            .retain_unheld(group.iter().copied(), |m| m.member.line_start);
         let members: Vec<aligner::Member> = kept.iter().map(|m| m.member).collect();
         if aligner::is_alignment_candidate(&members) {
-            let name_edits = self.walker.group_edits(&members);
             let gaps = self.value_gaps(&kept);
-            self.walker.push_with_gaps(name_edits, gaps);
+            self.walker.emit_group_with_gaps(&members, gaps);
         }
     }
 
@@ -230,6 +227,7 @@ impl Visitor<'_> {
                 )
             }
             Stmt::AugAssign(a) => {
+                let op = a.op.as_str();
                 let target_range = self.paren_aware(a.target.as_ref().into(), a.into());
                 let value_start = self.paren_aware(a.value.as_ref().into(), a.into()).start();
                 let member = aligner::range_anchored_member_single_line(
@@ -237,11 +235,11 @@ impl Visitor<'_> {
                     target_range,
                     TextRange::new(target_range.end(), value_start),
                     |t| t.kind().as_augmented_assign_operator().is_some(),
-                    a.op.as_str().len(),
+                    op.len(),
                 )?;
-                // `op.as_str()` is the binary form (`+`), so the augmented
-                // operator runs one column longer for its trailing `=`.
-                let op_len = TextSize::of(a.op.as_str()) + TextSize::of('=');
+                // `op` is the binary form (`+`), so the augmented operator
+                // runs one column longer for its trailing `=`.
+                let op_len = TextSize::of(op) + TextSize::of('=');
                 Some(EqualMember::new(member, op_len, value_start))
             }
             _ => None,
