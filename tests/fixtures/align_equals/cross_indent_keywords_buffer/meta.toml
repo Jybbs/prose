@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Cross-Indent Keywords Take a Buffer"
+
+description = '''
+A multi-line call's keyword arguments sit at different line indents, so they cannot share a screen column. **The keywords fail the shared-baseline check**, each taking a one-space buffer around its `=` rather than padding to a phantom column.
+'''

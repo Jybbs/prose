@@ -131,12 +131,7 @@ fn class_field_groups(source: &Source, rule: RuleId, body: &[Stmt]) -> Vec<Vec<a
 /// a nested annotation) never anchors, and the member is rejected when
 /// the colon does not share `lhs`'s opening line.
 fn colon_member(source: &Source, lhs: TextRange, colon_end: TextSize) -> Option<aligner::Member> {
-    aligner::line_anchored_member_at_kind(
-        source,
-        lhs.start(),
-        TextRange::new(lhs.end(), colon_end),
-        TokenKind::Colon,
-    )
+    aligner::line_anchored_member_between(source, lhs, colon_end, TokenKind::Colon)
 }
 
 /// Builds an alignment member for a `key: value` dict entry, anchored

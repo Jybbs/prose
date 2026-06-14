@@ -12,7 +12,7 @@ use ruff_python_ast::{
     token::TokenKind,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
@@ -69,10 +69,10 @@ impl Visitor<'_> {
         let compare = operand.as_compare_expr()?;
         let op = *compare.ops.first()?;
         let comparator = compare.comparators.first()?;
-        let member = aligner::line_anchored_member_at_kind(
+        let member = aligner::line_anchored_member_between(
             self.walker.source,
-            compare.left.start(),
-            TextRange::new(compare.left.end(), comparator.start()),
+            compare.left.range(),
+            comparator.start(),
             cmp_op_anchor_token_kind(op),
         )?;
         Some(member.with_op_width(op.as_str().len()))

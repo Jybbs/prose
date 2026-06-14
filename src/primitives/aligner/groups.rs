@@ -229,6 +229,25 @@ pub(crate) fn line_anchored_member_at_kind(
         .map(|anchor| line_anchored_member(source, anchor))
 }
 
+/// Builds a `Member` anchored on the first `kind` token between
+/// `lhs.end()` and `rhs_start`, [confined to one line](single_line_anchor)
+/// with `lhs.start()`, so a left-hand side broken across lines stays
+/// unaligned. The scan opens past `lhs.end()`, so a `kind` token inside
+/// the left-hand side never anchors.
+pub(crate) fn line_anchored_member_between(
+    source: &Source,
+    lhs: TextRange,
+    rhs_start: TextSize,
+    kind: TokenKind,
+) -> Option<Member> {
+    line_anchored_member_at_kind(
+        source,
+        lhs.start(),
+        TextRange::new(lhs.end(), rhs_start),
+        kind,
+    )
+}
+
 /// Walks `params` in source order, qualifying each parameter through
 /// `qualify` and returning one group per run of contiguous qualified
 /// parameters. A parameter that fails to qualify breaks the current

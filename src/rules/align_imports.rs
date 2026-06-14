@@ -15,7 +15,7 @@ use ruff_python_ast::{
     statement_visitor::{StatementVisitor, walk_body},
     token::TokenKind,
 };
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
@@ -111,10 +111,10 @@ impl Visitor<'_> {
             return None;
         };
         let asname = alias.asname.as_ref()?;
-        aligner::line_anchored_member_at_kind(
+        aligner::line_anchored_member_between(
             self.walker.source,
-            alias.name.start(),
-            TextRange::new(alias.name.end(), asname.start()),
+            alias.name.range(),
+            asname.start(),
             TokenKind::As,
         )
     }
