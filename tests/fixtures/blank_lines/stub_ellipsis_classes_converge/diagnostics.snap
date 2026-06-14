@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/stub_ellipsis_classes_converge/input.py
+---
+blank-lines@12..14

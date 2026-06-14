@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/lone_single_line_class_unchanged/input.py
+---
+class A: pass

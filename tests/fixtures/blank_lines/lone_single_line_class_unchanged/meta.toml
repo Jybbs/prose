@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lone Single-Line-Suite Class Stays Untouched"
+
+description = '''
+A single top-level class with a single-line `pass` suite, the file's only statement, gains no leading blank lines and stays untouched.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Stub-Style Ellipsis Classes Converge on Two Blanks"
+
+description = '''
+Classes written as `...` stub suites (*the dominant shape in `.pyi` files*) normalize to **two blank lines** between top-level definitions, converging rather than oscillating across passes.
+'''

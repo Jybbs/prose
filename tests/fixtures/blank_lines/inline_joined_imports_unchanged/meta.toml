@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Imports Joined on One Line Stay Untouched"
+
+description = '''
+Two imports of different kinds joined on one physical line by `;` carry no blank-line gap to normalize, so the rule leaves them untouched.
+'''

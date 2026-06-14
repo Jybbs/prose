@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/inline_joined_imports_unchanged/input.py
+---
+import os; from sys import argv

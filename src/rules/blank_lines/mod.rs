@@ -118,6 +118,10 @@ impl Walker<'_> {
     }
 
     fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
+        // A pair sharing one physical line has no blank-line gap to normalize.
+        if self.source.same_line(prev_end, curr.start()) {
+            return;
+        }
         let Some(canonical) = canonical_blanks(prev, curr, scope, self.first_party) else {
             return;
         };

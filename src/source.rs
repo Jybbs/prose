@@ -206,6 +206,14 @@ impl Source {
         Self::build(text, self.file.name())
     }
 
+    /// Returns `true` when no line break separates `prev_end` from
+    /// `next_start`, so the two sit on one physical line. Contrast
+    /// [`Self::consecutive_lines`], which holds when `next_start` falls on
+    /// the line directly after `prev_end`.
+    pub fn same_line(&self, prev_end: TextSize, next_start: TextSize) -> bool {
+        !self.contains_line_break(TextRange::new(prev_end, next_start))
+    }
+
     /// Returns the byte slice spanned by anything `Ranged`.
     ///
     /// Accepts a raw `TextRange` or any AST node. The returned `&str`
@@ -449,6 +457,15 @@ mod tests {
         let s = Source::from_str("x = 1\n").expect("original parses");
         let result = s.reparse("def foo(".to_owned());
         assert!(result.is_err());
+    }
+
+    #[rstest]
+    #[case("x = 1; y = 2\n", true)]
+    #[case("x = 1\ny = 2\n", false)]
+    fn same_line_holds_within_a_line_breaks_across_one(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        let body = &source.ast().body;
+        assert_eq!(source.same_line(body[0].end(), body[1].start()), expected);
     }
 
     #[test]
