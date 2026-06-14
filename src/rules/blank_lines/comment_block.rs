@@ -79,6 +79,14 @@ mod tests {
     }
 
     #[test]
+    fn is_banner_block_detects_heading_on_non_leading_line() {
+        let s = parse("x = 1\n# see the module docs\n### API Reference\ndef f(): pass\n");
+        let body = &s.ast().body;
+        let block = leading_block_of(&s, body[0].end(), &body[1]).expect("block");
+        assert!(is_banner_block(&s, block));
+    }
+
+    #[test]
     fn is_banner_block_returns_false_for_all_prose_block() {
         let s = parse("x = 1\n# describes f\n# helper\ndef f(): pass\n");
         let body = &s.ast().body;
