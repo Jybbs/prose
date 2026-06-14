@@ -141,6 +141,23 @@ mod tests {
     }
 
     #[test]
+    fn cache_key_separates_selections_that_concatenate_alike() {
+        // Without the per-id delimiter both selections would feed the
+        // hasher the same `abc` bytes and collide.
+        let key_a = CacheKey::compute(
+            b"x = 1\n",
+            CONFIG_A,
+            [RuleId::from("ab"), RuleId::from("c")],
+        );
+        let key_b = CacheKey::compute(
+            b"x = 1\n",
+            CONFIG_A,
+            [RuleId::from("a"), RuleId::from("bc")],
+        );
+        assert_ne!(key_a, key_b);
+    }
+
+    #[test]
     fn clean_clears_every_entry_and_returns_report() {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
