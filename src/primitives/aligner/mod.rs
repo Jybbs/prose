@@ -19,9 +19,9 @@ mod groups;
 use emit::emit_group;
 pub(crate) use emit::space_padding_edit;
 pub(crate) use groups::{
-    flush_run, is_alignment_candidate, is_held, keyed_line_adjacent_groups, line_adjacent_groups,
-    line_anchored_member, line_anchored_member_at_kind, parameter_split_groups,
-    range_anchored_member_single_line,
+    Slot, adjacent_member_groups, is_alignment_candidate, is_held, keyed_line_adjacent_groups,
+    line_adjacent_groups, line_anchored_member, line_anchored_member_at_kind,
+    parameter_split_groups, range_anchored_member_single_line,
 };
 
 /// Bundles the `groups` accumulator, `settings`, the owning `rule`, and

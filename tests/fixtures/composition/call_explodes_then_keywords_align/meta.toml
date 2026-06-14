@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Explodes, Then Its Keywords Sort and Align"
+
+description = '''
+`call-layout` explodes a crowded call to keyword form, `alphabetize` sorts the keywords, and `align-equals` aligns their `=` on one column, all in the same `format` pass.
+'''

@@ -1,0 +1,9 @@
+render(
+    title="Home",
+    body="text",
+    items=[
+        1,
+        2,
+    ],
+    footer="end",
+)

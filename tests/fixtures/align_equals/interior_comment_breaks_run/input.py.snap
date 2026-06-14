@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/interior_comment_breaks_run/input.py
+---
+connect(
+    host = "localhost",
+    port = 8080,
+    # tuning
+    timeout = 30,
+    retries = 3,
+)

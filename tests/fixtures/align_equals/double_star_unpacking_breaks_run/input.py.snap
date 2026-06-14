@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/double_star_unpacking_breaks_run/input.py
+---
+build(
+    name = "x",
+    tag  = "y",
+    **base,
+    extra="z",
+)

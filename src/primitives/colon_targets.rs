@@ -147,31 +147,14 @@ fn dict_member_groups(
     rule: RuleId,
     items: &[DictItem],
 ) -> Vec<Vec<aligner::Member>> {
-    let mut groups: Vec<Vec<aligner::Member>> = Vec::new();
-    let mut current: Vec<aligner::Member> = Vec::new();
-    let mut prev_end: Option<TextSize> = None;
-    for item in items {
-        let member = match dict_item(source, item) {
-            Some(member) if !aligner::is_held(source, rule, item.start()) => member,
-            _ => {
-                // A `**spread` (no key) or a skip-held entry joins no
-                // group yet bridges the run, extending the anchor so the
-                // entries on either side still align as one block.
-                if let Some(end) = prev_end.as_mut() {
-                    *end = item.end();
-                }
-                continue;
-            }
-        };
-        let extends = prev_end.is_some_and(|end| source.consecutive_lines(end, item.start()));
-        if !extends {
-            aligner::flush_run(&mut groups, &mut current);
+    aligner::adjacent_member_groups(source, items, |item| match dict_item(source, item) {
+        // A `**spread` (no key) or a skip-held entry joins no group yet
+        // bridges the run, so the entries on either side align as one block.
+        Some(member) if !aligner::is_held(source, rule, item.start()) => {
+            aligner::Slot::Member(member)
         }
-        current.push(member);
-        prev_end = Some(item.end());
-    }
-    aligner::flush_run(&mut groups, &mut current);
-    groups
+        _ => aligner::Slot::Bridge,
+    })
 }
 
 /// Returns one alignment member per entry in the body's leading

@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/decorator_call_keywords_align/input.py
+---
+@register(
+    name     = "widget",
+    priority = 10,
+    enabled  = True,
+)
+def handler():
+    pass

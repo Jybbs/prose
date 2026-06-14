@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/multiline_value_breaks_run/input.py
+---
+render(
+    title = "Home",
+    body  = "text",
+    items=[
+        1,
+        2,
+    ],
+    footer="end",
+)

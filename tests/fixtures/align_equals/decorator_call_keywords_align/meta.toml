@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Decorator Call's Keywords Align"
+
+description = '''
+An exploded call in decorator position aligns its keyword `=` the same as any other call, since the rule descends into every call expression.
+'''
