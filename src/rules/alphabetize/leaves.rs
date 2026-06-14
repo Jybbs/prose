@@ -15,9 +15,10 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::{dict::rewrite_dict_text, single_name_target};
+use super::dict::rewrite_dict_text;
 use crate::{
     primitives::{
+        binding::single_name_target,
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement},
         orderer::{permute_full, reorder_text},

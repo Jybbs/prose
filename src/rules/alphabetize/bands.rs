@@ -10,12 +10,15 @@ use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
 
 use super::{
-    Alphabetize, has_keep_marker, single_name_target,
+    Alphabetize, has_keep_marker,
     tiering::{eval_refs, eval_time_refs, tier_levels},
 };
 use crate::{
     primitives::{
-        binding::{bare_import_bound_name, from_import_bound_name},
+        binding::{
+            annotated_name_target, bare_import_bound_name, from_import_bound_name,
+            single_name_target,
+        },
         imports::import_group,
     },
     source::Source,
@@ -146,7 +149,7 @@ pub(super) fn banded_gap(
 /// shape.
 fn assign_run_target(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
     match stmt {
-        Stmt::AnnAssign(a) => Some((a.target.as_name_expr()?.id.as_str(), a.value.as_deref())),
+        Stmt::AnnAssign(a) => Some((annotated_name_target(a)?, a.value.as_deref())),
         Stmt::Assign(a) => Some((single_name_target(a)?, Some(a.value.as_ref()))),
         _ => None,
     }

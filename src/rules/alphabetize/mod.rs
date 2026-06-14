@@ -22,7 +22,7 @@ use std::{borrow::Cow, collections::HashMap, ops::Range};
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Decorator, ExceptHandler, Expr, ExprDict, PythonVersion, Stmt, StmtAnnAssign,
-    StmtAssign, StmtFunctionDef,
+    StmtFunctionDef,
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
 };
 use ruff_source_file::LineRanges;
@@ -31,6 +31,7 @@ use ruff_text_size::{Ranged, TextLen, TextRange};
 use crate::{
     config::Config,
     primitives::{
+        binding::{annotated_name_target, single_name_target},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
         imports::{ImportGroup, future_annotations_alias, import_group},
         orderer::{assemble_blocks, block_range, blocks_span, permute_in_place},
@@ -49,7 +50,7 @@ mod tiering;
 use self::{
     bands::{band_module_constants, banded_gap},
     leaves::{collect_docstring_entry_edits, collect_leaf_edits},
-    tiering::permute_defs,
+    tiering::{eval_time_refs, permute_defs},
 };
 
 pub(crate) struct Alphabetize {
@@ -120,7 +121,17 @@ struct RewriteCtx<'a> {
 /// is a single `Name`.
 fn ann_assign_with_named_field(stmt: &Stmt) -> Option<(&StmtAnnAssign, &str)> {
     let ann = stmt.as_ann_assign_stmt()?;
-    Some((ann, ann.target.as_name_expr()?.id.as_str()))
+    Some((ann, annotated_name_target(ann)?))
+}
+
+/// Classifies a class-body statement as a single-name assignment,
+/// returning its target name and whether it is an annotated field
+/// (`true`) or a plain assignment (`false`). `None` for any other
+/// statement.
+fn assign_family(stmt: &Stmt) -> Option<(&str, bool)> {
+    ann_assign_with_named_field(stmt)
+        .map(|(_, name)| (name, true))
+        .or_else(|| simple_name_assign(stmt).map(|name| (name, false)))
 }
 
 /// Returns the slot ranges of consecutive items whose pairwise
@@ -136,6 +147,25 @@ fn chunk_runs(items: &[Stmt], mut adjacent: impl FnMut(&Stmt, &Stmt) -> bool) ->
             range
         })
         .collect()
+}
+
+/// True when the class body's annotated-field run and plain-assignment
+/// run share no eval-time reference across the family boundary, so each
+/// reorders soundly on its own. A reference crossing the boundary (a
+/// plain assignment reading an annotated field, or the reverse) is
+/// invisible to both runs, since each tiers only its own members, so one
+/// run's sort could hoist the reader above the sibling it names and
+/// raise `NameError`. The caller then declines both runs and keeps
+/// source order.
+fn class_assign_runs_separable(body: &[Stmt], defer_annotations: bool) -> bool {
+    let families: HashMap<&str, bool> = body.iter().filter_map(assign_family).collect();
+    !body.iter().any(|stmt| {
+        assign_family(stmt).is_some_and(|(_, annotated)| {
+            eval_time_refs(stmt, defer_annotations)
+                .iter()
+                .any(|name| families.get(name).is_some_and(|&other| other != annotated))
+        })
+    })
 }
 
 /// True when a class body has at least two `Stmt::AnnAssign` field
@@ -343,7 +373,7 @@ fn rewrite_body<'a>(
                     (name, name)
                 })
             });
-            if in_class {
+            if in_class && class_assign_runs_separable(body, defer_annotations) {
                 permute_defs(&mut order, body, defer_annotations, |s| {
                     ann_assign_with_named_field(s)
                         .map(|(ann, name)| (name, (u8::from(has_default(ann)), name)))
@@ -448,16 +478,6 @@ fn simple_name_assign(stmt: &Stmt) -> Option<&str> {
     single_name_target(stmt.as_assign_stmt()?)
 }
 
-/// Returns the single bare-`Name` target name of an `Stmt::Assign`.
-/// `None` for multi-target, destructuring, attribute, or subscript
-/// targets.
-fn single_name_target(assign: &StmtAssign) -> Option<&str> {
-    match assign.targets.as_slice() {
-        [Expr::Name(name)] => Some(name.id.as_str()),
-        _ => None,
-    }
-}
-
 /// Splices `bodies` back into `block`, folding leaf edits into the
 /// pre-, inter-, and post-body gaps. `bodies` must be in source
 /// order.
@@ -537,6 +557,26 @@ mod tests {
             bar_pos < alpha_pos,
             "docstring entries should keep source order when docstring-entries is off",
         );
+    }
+
+    #[rstest]
+    #[case(
+        "class C:\n    width: int = 10\n    HALF = width\n    height: int = 20\n",
+        false
+    )]
+    #[case("class C:\n    HALF = width\n    width: int = 10\n", false)]
+    #[case(
+        "class C:\n    A = 1\n    B = A\n    x: int = 1\n    y: int = x\n",
+        true
+    )]
+    #[case("class C:\n    GAMMA = 1\n    ALPHA = 2\n", true)]
+    fn class_assign_runs_separable_detects_cross_family_references(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let class = first_class(&source);
+        assert_eq!(class_assign_runs_separable(&class.body, false), expected);
     }
 
     #[rstest]

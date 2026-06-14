@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Class Constant Reading an Annotated Field Skips the Run"
+
+description = '''
+`HALF` reads the annotated field `width`, crossing from the plain-assignment run into the annotated-field run. The two runs sort independently, so reordering either could hoist `HALF` above the `width` it reads and raise `NameError`. The rule **declines both runs** and keeps source order.
+'''
