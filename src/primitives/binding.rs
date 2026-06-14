@@ -2,6 +2,9 @@
 //!
 //! Walks the module once and records, for every name introduced or
 //! shadowed in a lexical scope, the offsets of every write and read.
+//! A read that finds no binding mid-walk defers and resolves against
+//! the completed scope chain after the walk, so a forward reference to
+//! a name bound later in source order still records against it.
 //! Consuming rules query the table by `BindingId` or by `&Stmt`
 //! rather than driving their own walk.
 //!
@@ -232,6 +235,7 @@ impl BindingAnalysis {
 struct Builder {
     assignment_values: HashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
+    deferred_reads: Vec<DeferredRead>,
     function_scope_at: HashMap<TextSize, ScopeId>,
     scope_stack: Vec<ScopeId>,
     scopes: Vec<Scope>,
@@ -243,6 +247,7 @@ impl Builder {
         let mut builder = Self {
             assignment_values: HashMap::new(),
             bindings: Vec::new(),
+            deferred_reads: Vec::new(),
             function_scope_at: HashMap::new(),
             scope_stack: Vec::new(),
             scopes: Vec::new(),
@@ -333,7 +338,17 @@ impl Builder {
         self.pop_scope();
     }
 
-    fn finish(self) -> BindingAnalysis {
+    fn finish(mut self) -> BindingAnalysis {
+        for deferred in std::mem::take(&mut self.deferred_reads) {
+            if let Some(binding_id) = resolve_in_chain(&self.scopes, deferred.scope, &deferred.name)
+            {
+                self.record_resolved_read(
+                    binding_id,
+                    deferred.offset,
+                    deferred.attribute.as_deref(),
+                );
+            }
+        }
         let mut unpack_targets = HashMap::new();
         for group in &self.unpack_groups {
             let reused = group
@@ -412,6 +427,24 @@ impl Builder {
         self.record_use(name, offset, None);
     }
 
+    /// Records a read of `id` at `offset`, inserting into `read_offsets`
+    /// so they stay ascending whether the read arrives in source order
+    /// or as a deferred forward reference. Flags the read bare or under
+    /// the attribute it accessed.
+    fn record_resolved_read(&mut self, id: BindingId, offset: TextSize, attribute: Option<&str>) {
+        let binding = &mut self.bindings[id.0 as usize];
+        let slot = binding
+            .read_offsets
+            .partition_point(|&existing| existing < offset);
+        binding.read_offsets.insert(slot, offset);
+        match attribute {
+            Some(attribute) => {
+                binding.attributes.insert(attribute.to_owned());
+            }
+            None => binding.bare_read = true,
+        }
+    }
+
     fn record_target(&mut self, target: &Expr, kind: BindingKind) {
         self.for_each_target_name(target, &mut |builder, name, offset| {
             builder.record_write(name, offset, kind);
@@ -439,22 +472,14 @@ impl Builder {
 
     fn record_use(&mut self, name: &str, offset: TextSize, attribute: Option<&str>) {
         let innermost = self.current_scope();
-        for &scope_id in self.scope_stack.iter().rev() {
-            let scope = &self.scopes[scope_id.0 as usize];
-            if scope_id != innermost && matches!(scope.kind, ScopeKind::Class) {
-                continue;
-            }
-            if let Some(&binding_id) = scope.bindings.get(name) {
-                let binding = &mut self.bindings[binding_id.0 as usize];
-                binding.read_offsets.push(offset);
-                match attribute {
-                    Some(attribute) => {
-                        binding.attributes.insert(attribute.to_owned());
-                    }
-                    None => binding.bare_read = true,
-                }
-                return;
-            }
+        match resolve_in_chain(&self.scopes, innermost, name) {
+            Some(binding) => self.record_resolved_read(binding, offset, attribute),
+            None => self.deferred_reads.push(DeferredRead {
+                attribute: attribute.map(str::to_owned),
+                name: name.to_owned(),
+                offset,
+                scope: innermost,
+            }),
         }
     }
 
@@ -664,6 +689,15 @@ impl<'a> Visitor<'a> for Builder {
     }
 }
 
+/// A read left unresolved mid-walk, retained until `finish`
+/// re-resolves it against the completed scope chain.
+struct DeferredRead {
+    attribute: Option<String>,
+    name: String,
+    offset: TextSize,
+    scope: ScopeId,
+}
+
 /// One multi-name unpack assignment, retained until `finish` reads the
 /// final sibling read counts.
 struct UnpackGroup {
@@ -685,6 +719,16 @@ pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
 /// imported name itself.
 pub(crate) fn from_import_bound_name(alias: &Alias) -> &str {
     alias.asname.as_ref().unwrap_or(&alias.name).as_str()
+}
+
+/// Resolves `name` against the scope chain rooted at `innermost`,
+/// walking outward through `parent` links. A non-innermost class scope
+/// is skipped, since its names are invisible to nested functions and
+/// comprehensions. `None` when no scope in the chain binds `name`.
+fn resolve_in_chain(scopes: &[Scope], innermost: ScopeId, name: &str) -> Option<BindingId> {
+    std::iter::successors(Some(innermost), |&id| scopes[id.0 as usize].parent)
+        .filter(|&id| id == innermost || !matches!(scopes[id.0 as usize].kind, ScopeKind::Class))
+        .find_map(|id| scopes[id.0 as usize].bindings.get(name).copied())
 }
 
 /// Returns the segment of `dotted` before the first `.`. Matches
@@ -737,6 +781,24 @@ mod tests {
     }
 
     #[test]
+    fn deferred_read_resolves_to_an_enclosing_function_local() {
+        let analysis = analyze(
+            "def outer():\n    def inner():\n        return helper()\n    def helper():\n        return 1\n",
+        );
+        let outer = analysis
+            .scopes
+            .iter()
+            .find(|scope| scope.parent == Some(ScopeId(0)))
+            .expect("outer is the function scope under module");
+        let helper = *outer.bindings.get("helper").expect("helper bound in outer");
+        assert_eq!(
+            analysis.usage_count(helper),
+            1,
+            "the forward call resolves to outer's local",
+        );
+    }
+
+    #[test]
     fn is_defined_before_returns_false_for_undefined_name() {
         let analysis = analyze("x = 1\n");
         assert!(!analysis.is_defined_before("y", TextSize::new(100)));
@@ -770,6 +832,19 @@ mod tests {
                 .expect("unique def")
                 .is_empty(),
             "the call resolves to g's parameter, not module f",
+        );
+    }
+
+    #[test]
+    fn module_function_reads_includes_a_call_before_the_def() {
+        let analysis = analyze("def caller():\n    return helper()\n\n\ndef helper():\n    pass\n");
+        let reads = analysis
+            .module_function_reads("helper")
+            .expect("unique def");
+        assert_eq!(
+            reads.len(),
+            1,
+            "the forward reference resolves after the walk"
         );
     }
 
