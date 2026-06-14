@@ -3,7 +3,9 @@
 //! holds a string literal as its first expression statement.
 //! Implementors of [`DocstringHandler`] receive every such docstring
 //! literal in source order via the trait's `walk` method. Implicitly
-//! concatenated docstring expressions are skipped. The section
+//! concatenated docstring expressions are skipped. `body_docstring`
+//! returns one body's leading docstring literal for consumers that
+//! already hold the body. The section
 //! helpers `section_heading`, `entry_description_col`, and
 //! `entry_carrying_sections` parse a docstring body's Title-case-headed
 //! sections for consumers that walk text rather than the AST,
@@ -16,20 +18,20 @@ use ruff_python_ast::{
     statement_visitor::{StatementVisitor, walk_stmt},
 };
 
-use crate::source::Source;
+use crate::{primitives::scope::scoped_body, source::Source};
 
 mod body;
 mod scan;
 mod section;
 
-pub(crate) use body::{indent_prefix, triple_quoted_body};
+pub(crate) use body::{DocstringBody, indent_prefix, triple_quoted_body};
 pub(crate) use scan::{LineScan, LineScanner};
 pub(crate) use section::{entry_carrying_sections, entry_description_col, section_heading};
 
 /// Receiver for the docstring walker. Implementors handle each
 /// docstring `StringLiteral` reached in source order. Call `walk`
 /// to drive the receiver across `source`'s module body.
-pub(crate) trait DocstringHandler {
+trait DocstringHandler {
     fn handle(&mut self, lit: &StringLiteral);
 
     fn walk(&mut self, source: &Source)
@@ -49,12 +51,7 @@ struct Visitor<'a, H: DocstringHandler> {
 
 impl<H: DocstringHandler> Visitor<'_, H> {
     fn consider(&mut self, body: &[Stmt]) {
-        let docstring = body
-            .first()
-            .and_then(Stmt::as_expr_stmt)
-            .and_then(|e| e.value.as_string_literal_expr())
-            .and_then(ExprStringLiteral::as_single_part_string);
-        if let Some(lit) = docstring {
+        if let Some(lit) = body_docstring(body) {
             self.handler.handle(lit);
         }
     }
@@ -62,13 +59,20 @@ impl<H: DocstringHandler> Visitor<'_, H> {
 
 impl<'a, H: DocstringHandler> StatementVisitor<'a> for Visitor<'_, H> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        match stmt {
-            Stmt::ClassDef(c) => self.consider(&c.body),
-            Stmt::FunctionDef(f) => self.consider(&f.body),
-            _ => {}
+        if let Some((body, _)) = scoped_body(stmt) {
+            self.consider(body);
         }
         walk_stmt(self, stmt);
     }
+}
+
+/// Returns `body`'s PEP 257 docstring literal, its first statement
+/// when that is a single-part string expression.
+pub(crate) fn body_docstring(body: &[Stmt]) -> Option<&StringLiteral> {
+    body.first()
+        .and_then(Stmt::as_expr_stmt)
+        .and_then(|e| e.value.as_string_literal_expr())
+        .and_then(ExprStringLiteral::as_single_part_string)
 }
 
 /// Walks every docstring in `source` and collects the edits produced
@@ -111,10 +115,10 @@ mod tests {
 
     #[derive(Default)]
     struct Probe<'a> {
-        source: Option<&'a Source>,
-        values: Vec<String>,
         bodies: Vec<String>,
         indents: Vec<String>,
+        source: Option<&'a Source>,
+        values: Vec<String>,
     }
 
     impl Probe<'_> {

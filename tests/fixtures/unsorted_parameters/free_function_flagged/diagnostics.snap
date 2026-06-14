@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/unsorted_parameters/free_function_flagged/input.py
+---
+unsorted-parameters@9..40

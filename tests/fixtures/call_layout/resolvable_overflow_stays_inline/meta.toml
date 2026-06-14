@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Call Overflowing the Named Parameters Stays Inline"
+
+description = '''
+A call passing more positional arguments than the callee has named parameters (*the rest land in `*rest`*) cannot be rendered in keyword form, so it stays inline rather than exploding a partial keyword list.
+'''

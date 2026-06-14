@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unsorted_parameters/decorator_bound_unflagged/input.py
+---
+@click.argument("path")
+def run(target, source):
+    return target

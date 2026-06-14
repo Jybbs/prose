@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "An Already-Keyword Call Is Left Alone"
-
-description = '''
-A call already passing every argument by keyword binds order-independently, so the rewrite is a no-op even though the signature reorders.
-'''

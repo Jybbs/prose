@@ -222,7 +222,7 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
 fn call_argument_literals(source: &Source) -> CallArgs<'_> {
     let mut collector = LiteralCollector {
         map: HashMap::new(),
-        resolved: module_call_params(source, |_| true),
+        resolved: module_call_params(source),
         source,
     };
     collector.visit_body(&source.ast().body);

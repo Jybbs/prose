@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/decorator_pinned_docstring_args_keep_order/input.py
+---
+@pytest.mark.parametrize("value", [1])
+def normalize(target, source):
+    """Apply ``source`` onto ``target``.
+
+    Args:
+        target: Mapping receiving the update.
+        source: Mapping providing new values.
+    """

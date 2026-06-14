@@ -11,7 +11,7 @@ use ruff_python_trivia::has_leading_content;
 use crate::{
     config::Config,
     primitives::{
-        docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body},
+        docstring::{DocstringBody, indent_prefix, rewrite_docstrings, triple_quoted_body},
         edit::{narrowed_replacement, singleton_groups},
     },
     rule::{Rule, RuleId},
@@ -29,7 +29,8 @@ impl DocstringFrame {
 impl Rule for DocstringFrame {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
-            let Some(body) = triple_quoted_body(source, lit).filter(|b| b.is_multiline()) else {
+            let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline)
+            else {
                 return;
             };
             let leading_ok = body.text.starts_with(['\n', '\r']);
@@ -52,20 +53,10 @@ impl Rule for DocstringFrame {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::pipeline::Pipeline;
-    use crate::testing::parse;
+    use crate::testing::run_rule;
 
     fn run(src: &str) -> String {
-        let source = parse(src);
-        let pipeline =
-            Pipeline::for_rule("docstring-frame", &Config::default()).expect("rule registered");
-        pipeline
-            .run(source)
-            .expect("pipeline runs")
-            .0
-            .text()
-            .to_owned()
+        run_rule("docstring-frame", src)
     }
 
     #[test]

@@ -105,7 +105,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_class, first_def, parse};
 
     fn main_guard_src() -> &'static str {
         "if __name__ == \"__main__\":\n    main()\n"
@@ -114,7 +114,7 @@ mod tests {
     #[test]
     fn canonical_blanks_class_docstring_predecessor_returns_one() {
         let s = parse("class C:\n    '''doc'''\n    def m1(self): pass\n");
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let class = first_class(&s);
         assert_eq!(
             canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[]),
             Some(1),
@@ -130,7 +130,7 @@ mod tests {
         src: &str,
     ) {
         let s = parse(src);
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let class = first_class(&s);
         assert_eq!(
             canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[]),
             Some(1),
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn canonical_blanks_class_header_to_docstring_returns_zero() {
         let s = parse("class C:\n    '''doc'''\n    pass\n");
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let class = first_class(&s);
         assert_eq!(
             canonical_blanks(&s.ast().body[0], &class.body[0], BodyScope::Class, &[]),
             Some(0),
@@ -159,7 +159,7 @@ mod tests {
         src: &str,
     ) {
         let s = parse(src);
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let class = first_class(&s);
         assert_eq!(
             canonical_blanks(&s.ast().body[0], &class.body[0], BodyScope::Class, &[]),
             Some(1),
@@ -181,7 +181,7 @@ mod tests {
         src: &str,
     ) {
         let s = parse(src);
-        let func = s.ast().body[0].as_function_def_stmt().expect("def");
+        let func = first_def(&s);
         assert_eq!(
             canonical_blanks(&s.ast().body[0], &func.body[0], BodyScope::Function, &[]),
             Some(1),
@@ -199,7 +199,7 @@ mod tests {
         src: &str,
     ) {
         let s = parse(src);
-        let func = s.ast().body[0].as_function_def_stmt().expect("def");
+        let func = first_def(&s);
         assert_eq!(
             canonical_blanks(&s.ast().body[0], &func.body[0], BodyScope::Function, &[]),
             None,
@@ -209,7 +209,7 @@ mod tests {
     #[test]
     fn canonical_blanks_in_class_body_pairs_method_after_method_to_one() {
         let s = parse("class C:\n    def m1(self): pass\n    def m2(self): pass\n");
-        let class = s.ast().body[0].as_class_def_stmt().expect("class");
+        let class = first_class(&s);
         assert_eq!(
             canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[]),
             Some(1),
@@ -219,7 +219,7 @@ mod tests {
     #[test]
     fn canonical_blanks_in_function_body_returns_none() {
         let s = parse("def f():\n    x = 1\n    y = 2\n");
-        let func = s.ast().body[0].as_function_def_stmt().expect("def");
+        let func = first_def(&s);
         assert_eq!(
             canonical_blanks(&func.body[0], &func.body[1], BodyScope::Function, &[]),
             None,

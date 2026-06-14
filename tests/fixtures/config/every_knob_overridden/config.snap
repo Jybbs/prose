@@ -31,15 +31,15 @@ Config {
                 5,
             ),
         },
-        alphabetize: AlphabetizeConfig {
-            docstring_entries: false,
-            enabled: false,
-        },
         call_layout: CallLayoutConfig {
             enabled: false,
             max_inline_args: Some(
                 6,
             ),
+        },
+        alphabetize: AlphabetizeConfig {
+            docstring_entries: false,
+            enabled: false,
         },
         strip_trailing_commas: ToggleOnly {
             enabled: false,
@@ -72,7 +72,7 @@ Config {
             ),
         },
         strip_none_return: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
         signature_layout: SignatureLayoutConfig {
             enabled: false,
@@ -129,8 +129,11 @@ Config {
             ),
             enabled: false,
         },
+        unsorted_parameters: ToggleOnly {
+            enabled: false,
+        },
         signature_annotations: ToggleOnly {
-            enabled: true,
+            enabled: false,
         },
     },
     target_version: Some(

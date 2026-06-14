@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Method Parameters Keep Their Order"
+
+description = '''
+A method's positional-or-keyword parameters **never reorder**, exactly as a free function's do not, because reordering them would rebind callers a single-file pass cannot see. The hold is universal across `def` and `lambda` at every scope, owing nothing to a method's decorators or call sites.
+'''

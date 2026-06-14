@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/lambda_in_class_body_keeps_order/input.py
+---
+class Ranker:
+    score = lambda self, weight, bias: weight + bias

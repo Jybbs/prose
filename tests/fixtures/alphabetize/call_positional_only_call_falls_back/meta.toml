@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Call Reaching No Eligible Parameter Falls Back to the Keyword Sort"
-
-description = '''
-When a call passes nothing to the keyword-eligible parameters (*only the positional-only prefix and explicit keywords*), the rewrite disqualifies and the call's existing keywords sort through the ordinary path.
-'''

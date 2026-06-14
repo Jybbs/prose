@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/method_docstring_stale_entry_sinks/input.py
+---
+class Catalog:
+    def update(self, target, source):
+        """Apply ``source`` onto ``target``.
+
+        Args:
+            target: Mapping receiving the update.
+            source: Mapping providing new values.
+            retries: Attempts before giving up.
+        """

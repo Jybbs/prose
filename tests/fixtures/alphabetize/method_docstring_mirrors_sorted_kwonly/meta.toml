@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Docstring Entries Mirror the Sorted Keyword-Only Block"
+
+description = '''
+The docstring mirror tracks the signature **as the rule leaves it**. The keyword-only block re-sorts in the signature, and the docstring's matching entries follow it, keeping the docs aligned with the signature a reader scans.
+'''

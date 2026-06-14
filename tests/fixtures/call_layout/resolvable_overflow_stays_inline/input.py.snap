@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/resolvable_overflow_stays_inline/input.py
+---
+def f(b, a, *rest):
+    return rest
+
+
+f(one, two, three, four, five)

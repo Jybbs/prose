@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/resolvable_keyword_collision_stays_inline/input.py
+---
+def f(width, height, depth, color):
+    return color
+
+
+f(width, height, depth, c, color=1)

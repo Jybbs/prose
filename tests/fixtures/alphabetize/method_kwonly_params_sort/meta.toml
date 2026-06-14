@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Method Keyword-Only Parameters Sort"
+
+description = '''
+The positional hold covers only the positional-or-keyword sub-list. Keyword-only parameters bind by name at every call site, so they **keep sorting** with the required-before-optional partition, while the positional parameters ahead of the `*` hold their source order as they do in every function.
+'''

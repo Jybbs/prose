@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Resolvable Call Explodes, Then Its Keywords Sort"
+
+description = '''
+`call-layout` runs ahead of `alphabetize`, so **a crowded call to a module function explodes to keyword form and then its keywords alphabetize in the same pass**. The signature holds its source order, since positional parameters never reorder.
+'''

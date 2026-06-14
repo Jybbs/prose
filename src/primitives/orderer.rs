@@ -180,7 +180,7 @@ mod tests {
     use ruff_text_size::TextLen;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_def, parse};
 
     fn body_range(source: &Source) -> TextRange {
         TextRange::up_to(source.text().text_len())
@@ -329,7 +329,7 @@ mod tests {
     #[test]
     fn reorder_text_inline_swaps_two_items() {
         let source = parse("def f(b, a): pass\n");
-        let func = source.ast().body[0].as_function_def_stmt().expect("def");
+        let func = first_def(&source);
         let params = &func.parameters;
         let cow = reorder_text(
             &source,

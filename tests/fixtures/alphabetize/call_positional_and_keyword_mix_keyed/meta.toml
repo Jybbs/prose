@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Positional-and-Keyword Mix Folds Into One Sorted Run"
-
-description = '''
-A call mixing positional arguments with an explicit keyword rewrites each positional to `name=value` and folds the existing keyword into the same run, every argument carried verbatim, so the whole call sorts alphabetically and binds the same values after the reorder.
-'''

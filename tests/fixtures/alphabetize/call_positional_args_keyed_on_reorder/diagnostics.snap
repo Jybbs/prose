@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/call_positional_args_keyed_on_reorder/input.py
----
-alphabetize@6..30

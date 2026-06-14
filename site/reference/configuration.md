@@ -81,7 +81,7 @@ The `[rules]` table holds one entry per rule you change. A bare bool is the shor
 |---|---|---|---|---|
 | `enabled` | bool | every rule | `true` | Toggle the rule on or off |
 | `max-shift` | positive int \| `0` \| `false` | alignment rules | `16` | Width-spread budget for an alignment run. A positive `N` caps the spread, `0` forbids any shift so every row sits flush, and `false` lifts the cap so a contiguous run folds into one column. To leave one row out of an otherwise-aligned group, hold it with `# prose: skip` |
-| `docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within every Title-case-headed docstring section alongside the AST-level sorts. Set `false` to keep narrative-curated entry order while still sorting every other surface |
+| `docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within Title-case-headed docstring sections, parameter entries mirroring the signature as the rule leaves it and stragglers alphabetizing below. Set `false` to keep narrative-curated entry order while still sorting every other surface |
 | `max-atomics-per-line` | positive int \| `false` | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. `false` removes the cap and packs by width alone |
 | `max-inline-dict-entries` | positive int \| `false` | [[collection-layout]] | `3` | Expand a dict once its entry count exceeds the cap, whatever its width. `false` disables the count trigger |
 | `max-inline-args` | positive int \| `false` | [[call-layout]] | `3` | Explode a call to one keyword argument per line once its argument count exceeds the cap. `false` disables the count trigger and leaves every call inline |

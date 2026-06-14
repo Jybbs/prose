@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Method Docstring Parameter Entries Keep Their Order"
+
+description = '''
+A pinned signature carries its docstring along. Parameter entries **mirror the signature's held order**, while sections naming other things (*`Raises:` here*) keep sorting alphabetically.
+'''

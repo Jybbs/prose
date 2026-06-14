@@ -639,6 +639,7 @@ mod tests {
         config.rules.strip_align_padding.enabled = false;
         config.rules.strip_none_return.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
+        config.rules.unsorted_parameters.enabled = false;
         config.rules.unused_future_annotations.enabled = false;
         let pipeline = Pipeline::with_defaults(&config);
         assert!(pipeline.is_empty());

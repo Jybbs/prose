@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Positional Parameters Keep Their Order, Keyword-Only Sorts"
+
+description = '''
+A function's positional-or-keyword parameters **hold their source order**, free function and method alike, because reordering them would rebind callers a single-file pass cannot see. Only the keyword-only block past the `*` sorts, with its required-before-optional partition, since a keyword-only parameter binds by name at every call site. The companion [[unsorted-parameters]] lint reports the positional run when alphabetizing it would help.
+'''

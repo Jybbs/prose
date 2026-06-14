@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/method_kwonly_params_sort/input.py
+---
+class Catalog:
+    def update(self, target, source, *, mode, atomic=True, retries=3):
+        pass

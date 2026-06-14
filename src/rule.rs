@@ -32,6 +32,7 @@ use crate::{
         signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
         step_narration::StepNarration, strip_align_padding::StripAlignPadding,
         strip_none_return::StripNoneReturn, strip_trailing_commas::StripTrailingCommas,
+        unsorted_parameters::UnsortedParameters,
         unused_future_annotations::UnusedFutureAnnotations,
     },
     source::Source,
@@ -304,8 +305,8 @@ macro_rules! register_rules {
 
 register_rules! {
     "collection-layout":         collection_layout:         CollectionLayoutConfig    => CollectionLayout        => "lay out collection literal against the line budget",
-    "alphabetize":               alphabetize:               AlphabetizeConfig         => Alphabetize             => "alphabetize this group",
     "call-layout":               call_layout:               CallLayoutConfig          => CallLayout              => "explode call arguments to one keyword per line",
+    "alphabetize":               alphabetize:               AlphabetizeConfig         => Alphabetize             => "alphabetize this group",
     "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas     => "strip trailing comma",
     "docstring-expand":          docstring_expand:          ToggleOnly                => DocstringExpand         => "expand single-line docstring to multi-line form",
     "docstring-frame":           docstring_frame:           ToggleOnly                => DocstringFrame          => "place docstring opener and closer on their own lines",
@@ -326,6 +327,7 @@ register_rules! {
     "step-narration":            step_narration:            ToggleOnly                => StepNarration           => "numbered-step comment found. Consider extracting each step as a named function",
     "legacy-union-syntax":       legacy_union_syntax:       ToggleOnly                => LegacyUnionSyntax       => "rewrite legacy `Optional`/`Union` to PEP 604 union syntax",
     "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables      => "binding is assigned and used once. Consider inlining",
+    "unsorted-parameters":       unsorted_parameters:       ToggleOnly                => UnsortedParameters       => "function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword",
     "signature-annotations":     signature_annotations:     ToggleOnly                => SignatureAnnotations    => "flag a missing parameter or return type annotation",
 }
 

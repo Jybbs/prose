@@ -1,0 +1,17 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/method_docstring_args_keep_order/input.py
+---
+class Catalog:
+    def update(self, target, source):
+        """Apply ``source`` onto ``target``.
+
+        Args:
+            target: Mapping receiving the update.
+            source: Mapping providing new values.
+
+        Raises:
+            KeyError: A required key is missing.
+            ValueError: Mapping shapes disagree.
+        """

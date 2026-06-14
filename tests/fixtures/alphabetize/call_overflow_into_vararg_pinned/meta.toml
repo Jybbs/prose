@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Positional Arguments Overflowing into a Vararg Pin the Call"
-
-description = '''
-A call passing more positional arguments than the function's named parameters spills the surplus into `*args`, where no parameter name can key it, so the rewrite leaves the whole call verbatim.
-'''

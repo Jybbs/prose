@@ -48,7 +48,7 @@ impl Rule for CallLayout {
         let Some(cap) = self.max_inline_args else {
             return Vec::new();
         };
-        let targets = module_call_params(source, |_| true);
+        let targets = module_call_params(source);
         let mut exploder = Exploder {
             cap,
             edits: Vec::new(),
@@ -71,7 +71,7 @@ struct Exploder<'a> {
     targets: &'a HashMap<TextSize, &'a Parameters>,
 }
 
-impl<'a> Exploder<'a> {
+impl Exploder<'_> {
     /// Returns the exploded `(...)` text for `call` when it carries more
     /// than `cap` keyword-expressible arguments, the closing `)` landing
     /// at `indent`. A nested call in an argument value explodes in the
@@ -87,7 +87,7 @@ impl<'a> Exploder<'a> {
         let keywords = keyword_args(self.source, call, resolve_call_params(call, self.targets))?;
         // A positional-only prefix cannot take keyword form, so the call
         // stays inline rather than exploding only part of its arguments.
-        if keywords.posonly_prefix != 0 {
+        if keywords.has_posonly_prefix {
             return None;
         }
         let item_indent = indent + INDENT_STEP;

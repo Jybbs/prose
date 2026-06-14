@@ -5,9 +5,22 @@ input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
 ---
 [
   {
+    "code": "unsorted-parameters",
+    "end_location": {
+      "column": 40,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 11,
+      "row": 1
+    },
+    "message": "function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+  },
+  {
     "code": "signature-annotations",
     "end_location": {
-      "column": 19,
+      "column": 20,
       "row": 1
     },
     "fix": null,
@@ -15,7 +28,7 @@ input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
       "column": 12,
       "row": 1
     },
-    "message": "parameter `context` has no type annotation"
+    "message": "parameter `template` has no type annotation"
   },
   {
     "code": "signature-annotations",
@@ -25,10 +38,10 @@ input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
     },
     "fix": null,
     "location": {
-      "column": 21,
+      "column": 22,
       "row": 1
     },
-    "message": "parameter `encoding` has no type annotation"
+    "message": "parameter `context` has no type annotation"
   },
   {
     "code": "signature-annotations",
@@ -41,7 +54,7 @@ input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
       "column": 31,
       "row": 1
     },
-    "message": "parameter `template` has no type annotation"
+    "message": "parameter `encoding` has no type annotation"
   },
   {
     "code": "signature-annotations",

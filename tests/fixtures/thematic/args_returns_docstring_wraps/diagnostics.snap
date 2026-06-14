@@ -4,9 +4,9 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
 ---
 align-colons@187..273
-alphabetize@11..290
 docstring-frame@48..48
 signature-annotations@11..19
 signature-annotations@21..28
 signature-annotations@30..38
 signature-annotations@4..10
+unsorted-parameters@10..39

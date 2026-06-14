@@ -16,7 +16,10 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
-    primitives::{edit::singleton_groups, scope::BodyScope},
+    primitives::{
+        edit::singleton_groups,
+        scope::{BodyScope, scoped_body},
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -131,10 +134,8 @@ impl Walker<'_> {
 
 impl<'a> StatementVisitor<'a> for Walker<'a> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        match stmt {
-            Stmt::ClassDef(c) => self.pair_in_scope(stmt, &c.body, BodyScope::Class),
-            Stmt::FunctionDef(f) => self.pair_in_scope(stmt, &f.body, BodyScope::Function),
-            _ => {}
+        if let Some((body, scope)) = scoped_body(stmt) {
+            self.pair_in_scope(stmt, body, scope);
         }
         walk_stmt(self, stmt);
     }

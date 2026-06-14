@@ -27,7 +27,7 @@ Each context resolves a `Member` for the alignment math, with `width` being the 
 
 ## Internal Surface
 
-The receiver trait carries the per-context handlers, where only `handle` is required with an empty default body and the others are provided methods a consuming rule overrides on a need-by-need basis:
+The receiver trait carries the per-context handlers. `rule` is the one required method, naming the consuming rule so the group builders can hold its skip-suppressed rows out of alignment, while the handlers carry defaults a consuming rule overrides on a need-by-need basis:
 
 ```rust
 pub(crate) trait ColonEmitter {
@@ -36,6 +36,8 @@ pub(crate) trait ColonEmitter {
     fn match_arms(&mut self, members: &[aligner::Member]) {
         self.handle(members);
     }
+
+    fn rule(&self) -> RuleId;
 
     fn walk(&mut self, source: &Source) where Self: Sized { /* provided */ }
 }
@@ -61,7 +63,7 @@ Each context defines its own grouping shape, because what counts as *"adjacent"*
 4. **Match arms** group one per `match` statement, with every arm's colon contributing a member. Patterns may span multiple lines, so the alignment column is per-`match` rather than per-line-run.
 5. **Docstring `Args:` entries** group one per docstring, with the structured-section parser invoked inline to find the entries.
 
-Each group is handed to the receiver as one `&[Member]` slice, so the consumer aligns within the group without seeing cross-group state. The seam at the docstring-args context overlaps with [[docstring]]'s walker, where the leading-docstring detection lives in both primitives independently. The duplication is deliberate, because the colon walker reaches for the docstring body without standing up a separate `DocstringHandler`.
+Each group is handed to the receiver as one `&[Member]` slice, so the consumer aligns within the group without seeing cross-group state. The docstring-args context borrows [[docstring]]'s `body_docstring` to find a body's leading docstring literal, then runs its own line scan for each entry's `:` position, because the two primitives surface different shapes. [[docstring]] yields entry names with the byte range a reorder carries along, whereas the colon walker yields each line's colon anchor for the aligner's padding math.
 
 ## Re-Using This Primitive
 
