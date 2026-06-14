@@ -10,13 +10,13 @@ use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
 
 use super::{
-    Alphabetize, has_keep_marker, import_sort_key,
+    Alphabetize, has_keep_marker,
     tiering::{eval_refs, eval_time_refs, tier_levels},
 };
 use crate::{
     primitives::{
         binding::{bare_import_bound_name, from_import_bound_name},
-        imports::import_group,
+        imports::{import_sort_key, same_import_group},
     },
     source::Source,
 };
@@ -145,9 +145,7 @@ pub(super) fn banded_gap(
 ) -> Option<&'static str> {
     Some(match (*ranks.get(&a)?, *ranks.get(&b)?) {
         (1, 1) | (3, 3) => "\n",
-        (0, 0) if import_group(&body[a], first_party) == import_group(&body[b], first_party) => {
-            "\n"
-        }
+        (0, 0) if same_import_group(&body[a], &body[b], first_party) => "\n",
         (_, 2) | (2, _) => "\n\n\n",
         _ => "\n\n",
     })
