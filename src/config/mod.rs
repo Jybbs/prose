@@ -176,7 +176,8 @@ impl Config {
             .map_or_else(|| self.code_width(), NonZeroUsize::get)
     }
 
-    /// The config serialized to TOML, the cache key for a file it governs.
+    /// The config serialized to TOML, one component of the cache key
+    /// for a file it governs.
     pub(crate) fn to_toml(&self) -> String {
         toml::to_string(self).expect("Config serializes")
     }
