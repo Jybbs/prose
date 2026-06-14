@@ -1,5 +1,5 @@
 //! Detection of the own-line comment block between two statements
-//! and whether it reads as a decorative banner or as prose.
+//! and whether it reads as a banner or as prose.
 
 use ruff_python_ast::Stmt;
 use ruff_python_trivia::CommentRanges;
@@ -7,9 +7,14 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::source::Source;
-/// True when any line in the comment block is a decorative rule line.
+
+/// True when any line in the comment block reads as a divider, either a
+/// decorative rule line or a multi-hash heading.
 pub(super) fn is_banner_block(source: &Source, block: TextRange) -> bool {
-    source.slice(block).lines().any(is_rule_line)
+    source
+        .slice(block)
+        .lines()
+        .any(|line| is_rule_line(line) || is_heading_line(line))
 }
 
 /// Returns the contiguous range of own-line comments lying between
@@ -31,6 +36,12 @@ pub(super) fn leading_block_of(
     let first = own_lines.next()?;
     let last = own_lines.next_back().unwrap_or(first);
     Some(TextRange::new(text.line_start(first.start()), last.end()))
+}
+
+/// True when `line` opens with two or more `#`, the Markdown-style
+/// heading shape that reads as a section divider.
+fn is_heading_line(line: &str) -> bool {
+    line.trim_start().starts_with("##")
 }
 
 /// True when `line` is a comment whose body, after stripping the
@@ -60,11 +71,33 @@ mod tests {
     }
 
     #[test]
+    fn is_banner_block_detects_block_with_hash_heading() {
+        let s = parse("x = 1\n### Codec APIs\ndef f(): pass\n");
+        let body = &s.ast().body;
+        let block = leading_block_of(&s, body[0].end(), &body[1]).expect("block");
+        assert!(is_banner_block(&s, block));
+    }
+
+    #[test]
     fn is_banner_block_returns_false_for_all_prose_block() {
         let s = parse("x = 1\n# describes f\n# helper\ndef f(): pass\n");
         let body = &s.ast().body;
         let block = leading_block_of(&s, body[0].end(), &body[1]).expect("block");
         assert!(!is_banner_block(&s, block));
+    }
+
+    #[rstest]
+    fn is_heading_line_accepts_two_or_more_hashes(
+        #[values("## heading", "### Codec APIs", "#### deep", "  ## indented")] line: &str,
+    ) {
+        assert!(is_heading_line(line));
+    }
+
+    #[rstest]
+    fn is_heading_line_rejects_single_hash(
+        #[values("# describes f", "#", "#!/usr/bin/env python", "#%%")] line: &str,
+    ) {
+        assert!(!is_heading_line(line));
     }
 
     #[rstest]

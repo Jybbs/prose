@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Multi-Hash Heading Keeps Its Blank Below"
+
+description = '''
+A Markdown-style heading comment whose body opens with two or more `#` reads as a **section divider**, not a description of the definition below. The canonical gap lands above the heading, with one blank line between the heading and the definition it leads.
+'''

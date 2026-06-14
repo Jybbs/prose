@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/two_hash_heading_divides_def/input.py
+---
+blank-lines@22..25
