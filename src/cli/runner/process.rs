@@ -37,7 +37,7 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
         Ok(b) => b,
         Err(e) => return failed(ExitStatus::ConfigError, e),
     };
-    let Some(resolved) = setup.resolver.resolve(path) else {
+    let Some(resolved) = setup.resolver.resolve(path, &bytes) else {
         return FileOutcome::Failed(ExitStatus::ConfigError);
     };
     // Plain `format` would persist only `run`'s post-edit diagnostics, and
@@ -238,7 +238,7 @@ mod tests {
     fn process_path_returns_config_error_on_missing_file() {
         let tmp = TempDir::new().expect("tempdir");
         let resolver = ConfigResolver::new(Vec::new(), Vec::new());
-        let cwd = resolver.seed(tmp.path().to_path_buf(), &Config::default());
+        let cwd = resolver.seed(&Config::default());
         let setup = RunSetup {
             cache: None,
             cwd,

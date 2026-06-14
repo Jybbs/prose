@@ -20,7 +20,6 @@
 
 use std::{
     io::{self, IsTerminal, Write},
-    path::PathBuf,
     process::ExitCode,
 };
 
@@ -113,8 +112,9 @@ fn is_broken_pipe(err: &anyhow::Error) -> bool {
         .is_some_and(|e| e.kind() == io::ErrorKind::BrokenPipe)
 }
 
-/// Loads the cwd's own config, returning the cwd beside it.
-fn load_config_or_status() -> Result<(PathBuf, Config), ExitStatus> {
+/// Loads the config governing the current working directory, the base
+/// for stdin input and the run's cache settings.
+fn load_config_or_status() -> Result<Config, ExitStatus> {
     let fail = |e: anyhow::Error| {
         log_error_chain(&e);
         ExitStatus::ConfigError
@@ -122,10 +122,9 @@ fn load_config_or_status() -> Result<(PathBuf, Config), ExitStatus> {
     let cwd = std::env::current_dir()
         .context("reading current working directory")
         .map_err(fail)?;
-    let config = Config::load(&cwd)
+    Config::load(&cwd)
         .context("loading [tool.prose] config")
-        .map_err(fail)?;
-    Ok((cwd, config))
+        .map_err(fail)
 }
 
 fn log_error_chain(err: &anyhow::Error) {

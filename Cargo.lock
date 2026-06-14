@@ -1328,6 +1328,7 @@ dependencies = [
  "dirs",
  "fluent-uri 0.4.1",
  "fs-err",
+ "globset",
  "ignore",
  "indoc",
  "insta",
