@@ -857,6 +857,21 @@ mod tests {
         assert!(src[reads[0].to_usize()..].starts_with("f(1, 2)"));
     }
 
+    #[test]
+    fn module_function_reads_orders_a_forward_read_before_a_later_call() {
+        let analysis = analyze(
+            "def caller():\n    return helper()\n\n\ndef helper():\n    pass\n\n\nhelper()\n",
+        );
+        let reads = analysis
+            .module_function_reads("helper")
+            .expect("unique def");
+        assert_eq!(reads.len(), 2);
+        assert!(
+            reads[0] < reads[1],
+            "the deferred forward read sorts ahead of the later module-level call",
+        );
+    }
+
     #[rstest]
     #[case("def f():\n    pass\n\n\nf = 1\n")]
     #[case("f = lambda: 1\n")]
