@@ -9,7 +9,7 @@ use std::{borrow::Cow, ops::Range};
 
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{primitives::edit::splice_parses, source::Source};
 
@@ -146,9 +146,10 @@ where
 
 /// Reorders a comma-separated group laid out one member per line, the comma
 /// re-emitted per slot so each member's trailing comment travels with it. Each
-/// block spans its line start through any trailing comma and comment. Declines,
-/// returning a borrow, when nothing reorders or the reassembled group no longer
-/// parses.
+/// block reaches back over the own-line comments attached above its member and
+/// forward through any trailing comma and comment, so both ride with the member.
+/// Declines, returning a borrow, when nothing reorders or the reassembled group
+/// no longer parses.
 pub(crate) fn reorder_separated<'src, 'a, T, S, F>(
     source: &'src Source,
     items: &'a [T],
@@ -165,7 +166,11 @@ where
         .iter()
         .enumerate()
         .map(|(i, t)| {
-            let block = TextRange::new(text.line_start(t.start()), tail_end(source, t.end()));
+            let start = match items[..i].last() {
+                Some(prev) => leading_attached_start(source, t.start(), prev.end()),
+                None => text.line_start(t.start()),
+            };
+            let block = TextRange::new(start, tail_end(source, t.end()));
             (block, render_block(i, block))
         })
         .unzip();
@@ -184,7 +189,7 @@ where
         &[],
         last_member_has_comma(source, items),
     );
-    let module = TextRange::up_to(text.text_len());
+    let module = source.module_range();
     if assembled == source.slice(span)
         || !splice_parses(source, module, span, &assembled, str::parse::<Source>)
     {
@@ -289,14 +294,9 @@ fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
 mod tests {
     use assert_matches::assert_matches;
     use indoc::indoc;
-    use ruff_text_size::TextLen;
 
     use super::*;
     use crate::testing::{first_class, first_def, parse};
-
-    fn body_range(source: &Source) -> TextRange {
-        TextRange::up_to(source.text().text_len())
-    }
 
     fn set_elts(source: &Source) -> &[ruff_python_ast::Expr] {
         source.ast().body[0]
@@ -344,7 +344,7 @@ mod tests {
 
             def a(): pass
         "});
-        let block = block_range(&source, &source.ast().body, 0, body_range(&source));
+        let block = block_range(&source, &source.ast().body, 0, source.module_range());
         assert_eq!(source.slice(block), "def a(): pass");
     }
 
@@ -355,14 +355,14 @@ mod tests {
             # two
             def a(): pass
         "});
-        let block = block_range(&source, &source.ast().body, 0, body_range(&source));
+        let block = block_range(&source, &source.ast().body, 0, source.module_range());
         assert_eq!(source.slice(block), "# one\n# two\ndef a(): pass");
     }
 
     #[test]
     fn block_range_extends_forward_through_inline_trailing_comment() {
         let source = parse("def a(): pass  # trailing\n");
-        let block = block_range(&source, &source.ast().body, 0, body_range(&source));
+        let block = block_range(&source, &source.ast().body, 0, source.module_range());
         assert_eq!(source.slice(block), "def a(): pass  # trailing");
     }
 
@@ -374,7 +374,7 @@ mod tests {
                 y,
             ): pass  # trailing
         "});
-        let block = block_range(&source, &source.ast().body, 0, body_range(&source));
+        let block = block_range(&source, &source.ast().body, 0, source.module_range());
         assert_eq!(
             source.slice(block),
             "def a(\n    x,\n    y,\n): pass  # trailing"
@@ -393,14 +393,14 @@ mod tests {
     fn block_range_last_item_takes_trailing_comment_at_module_scope() {
         let source = parse("def a(): pass\ndef b(): pass  # trailing\n");
         let body = &source.ast().body;
-        let block = block_range(&source, body, body.len() - 1, body_range(&source));
+        let block = block_range(&source, body, body.len() - 1, source.module_range());
         assert_eq!(source.slice(block), "def b(): pass  # trailing");
     }
 
     #[test]
     fn block_range_lower_bound_blocks_back_extension_into_prior_item() {
         let source = parse("def a(): pass\ndef b(): pass\n");
-        let block = block_range(&source, &source.ast().body, 1, body_range(&source));
+        let block = block_range(&source, &source.ast().body, 1, source.module_range());
         assert_eq!(source.slice(block), "def b(): pass");
     }
 

@@ -15,7 +15,7 @@ use ruff_source_file::{
     LineColumn, LineEnding, LineRanges, OneIndexed, PositionEncoding, SourceFile,
     SourceFileBuilder, SourceLocation, find_newline,
 };
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use thiserror::Error;
 
 use crate::{primitives::binding::BindingAnalysis, suppression::SuppressionMap};
@@ -177,6 +177,11 @@ impl Source {
     /// Returns the one-indexed line number for `offset`.
     pub fn line_index(&self, offset: TextSize) -> OneIndexed {
         self.file.to_source_code().line_index(offset)
+    }
+
+    /// Returns the range spanning the entire source text.
+    pub fn module_range(&self) -> TextRange {
+        TextRange::up_to(self.text().text_len())
     }
 
     /// Returns the line-ending sequence used in this source, or

@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/set_own_line_comment_travels/input.py
+---
+flavors = {
+    # the rich one
+    chocolate,
+    vanilla,
+}

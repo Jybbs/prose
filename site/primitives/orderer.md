@@ -25,7 +25,7 @@ The high-level wrapper that covers the common case, rendering each item over its
 
 ### `reorder_separated(source, items, classify, render)`
 
-The variant for a comma-separated group laid out one member per line, where a trailing inline comment must travel with its member through the sort. The separating comma is re-emitted per slot rather than left in a verbatim gap, because a comment ends its line and a moved member that gained or lost its source comma would otherwise strand the comma after the comment. A reparse guard declines the rewrite when an irregular layout reassembles into source the parser rejects.
+The variant for a comma-separated group laid out one member per line, where a trailing inline comment must travel with its member through the sort. The separating comma is re-emitted per slot rather than left in a verbatim gap, because a comment ends its line and a moved member that gained or lost its source comma would otherwise strand the comma after the comment. An own-line comment sitting above a member rides with it as well, the block reaching back over the attached comment lines so an interstitial comment never strands in the slot the member vacated. A reparse guard declines the rewrite when an irregular layout reassembles into source the parser rejects.
 
 ### `permute_full(order, items, classify)`
 
