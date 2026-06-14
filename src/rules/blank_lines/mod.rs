@@ -106,7 +106,13 @@ impl Walker<'_> {
     fn pair_in_scope(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
         if let Some(first) = body.first() {
             let prev_end = header_signature_end(self.source, first.start());
-            self.pair_with_end(header, prev_end, first, scope);
+            let header_gap = TextRange::new(prev_end, first.start());
+            // A single-line suite opens its body on the header line, leaving no
+            // own-line gap above it to normalize. Pairing it would collide with
+            // the sibling pair over the gap above the header's own line.
+            if self.source.contains_line_break(header_gap) {
+                self.pair_with_end(header, prev_end, first, scope);
+            }
         }
         self.pair_siblings(body, scope);
     }

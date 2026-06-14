@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/single_line_class_docstring_cushions/input.py
+---
+class A:
+
+    pass
+
+
+class B: "doc"
+
+
+class C:
+
+    pass
