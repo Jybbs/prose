@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/signature_annotations/annotated_members_pass/input.py
+---
+signature-annotations@26..31

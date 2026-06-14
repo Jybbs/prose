@@ -71,6 +71,9 @@ Config {
                 16,
             ),
         },
+        strip_none_return: ToggleOnly {
+            enabled: false,
+        },
         signature_layout: SignatureLayoutConfig {
             enabled: false,
             max_inline_params: None,
@@ -127,6 +130,9 @@ Config {
             enabled: false,
         },
         unsorted_parameters: ToggleOnly {
+            enabled: false,
+        },
+        signature_annotations: ToggleOnly {
             enabled: false,
         },
     },

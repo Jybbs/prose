@@ -1,8 +1,8 @@
-//! Renders a call's arguments in keyword form for `call-layout`, the
-//! rule that reshapes call sites. [`keyword_args`] names each argument
-//! when the whole call can take keyword form, [`module_call_params`]
-//! maps in-module call sites to the signature they bind, and
-//! [`callee_params`] resolves one call against that map.
+//! Renders a call's arguments in keyword form for the rules that
+//! reshape call sites. [`keyword_args`] names each argument when the
+//! whole call can take keyword form, [`module_call_params`] maps
+//! in-module call sites to the signature they bind, and
+//! [`resolve_call_params`] resolves one call's callee against that map.
 
 use std::{borrow::Cow, collections::HashMap};
 
@@ -23,7 +23,7 @@ pub(crate) struct CallKeywords<'src> {
 pub(crate) struct KeywordArg<'src> {
     /// The bound parameter or keyword name, the key for the
     /// `all_unique` collision guard in `keyword_args`.
-    name: &'src str,
+    pub name: &'src str,
     /// The `name=value` text, borrowed for a keyword already in that
     /// form and owned for a positional argument named from its parameter.
     pub rendered: Cow<'src, str>,
@@ -32,11 +32,12 @@ pub(crate) struct KeywordArg<'src> {
     pub value: &'src Expr,
 }
 
-/// Looks up the parameters `targets` resolves for `call`'s callee.
-/// `None` when the callee is not a plain name or is not in the map.
-pub(crate) fn callee_params<'src>(
-    targets: &HashMap<TextSize, &'src Parameters>,
+/// Resolves `call`'s callee to the parameters it binds via `targets`, the
+/// offset map [`module_call_params`] returns. `None` for an attribute
+/// call, an unresolved name, or a callee outside the map.
+pub(crate) fn resolve_call_params<'src>(
     call: &ExprCall,
+    targets: &HashMap<TextSize, &'src Parameters>,
 ) -> Option<&'src Parameters> {
     targets
         .get(&call.func.as_name_expr()?.range().start())

@@ -4,3 +4,5 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/mixed_operators_share_column/input.py
 ---
 align-comparisons@48..166
+signature-annotations@13..16
+signature-annotations@4..12

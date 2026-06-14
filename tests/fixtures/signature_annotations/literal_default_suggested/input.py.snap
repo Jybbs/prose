@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_annotations/literal_default_suggested/input.py
+---
+def scale(factor=2.0):
+    return factor * 2

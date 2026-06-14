@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/signature_annotations/value_return_versus_procedure/input.py
+---
+signature-annotations@10..15
+signature-annotations@17..20
+signature-annotations@4..9
+signature-annotations@59..64
+signature-annotations@66..69
+signature-annotations@71..76

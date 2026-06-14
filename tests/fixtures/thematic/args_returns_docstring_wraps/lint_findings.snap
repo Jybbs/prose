@@ -16,5 +16,57 @@ input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
       "row": 1
     },
     "message": "function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 20,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 1
+    },
+    "message": "parameter `template` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 29,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 22,
+      "row": 1
+    },
+    "message": "parameter `context` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 39,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 31,
+      "row": 1
+    },
+    "message": "parameter `encoding` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 11,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 1
+    },
+    "message": "`render` returns a value but has no return type annotation"
   }
 ]

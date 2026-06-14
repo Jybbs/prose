@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value Return Is Flagged While a Procedure Passes"
+
+description = '''
+A function whose body returns a value draws the missing-return report, whereas a procedure that returns nothing stays silent, so the absent annotation reads as a function returning nothing.
+'''

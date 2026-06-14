@@ -1,0 +1,41 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/signature_annotations/literal_default_suggested/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 17,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "",
+          "content": ": float"
+        }
+      ]
+    },
+    "location": {
+      "column": 11,
+      "row": 1
+    },
+    "message": "parameter `factor` has no type annotation. Consider `factor: float`"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 10,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 1
+    },
+    "message": "`scale` returns a value but has no return type annotation"
+  }
+]

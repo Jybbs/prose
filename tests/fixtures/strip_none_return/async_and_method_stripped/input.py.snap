@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_none_return/async_and_method_stripped/input.py
+---
+class Service:
+    def __init__(self):
+        self.ready = False
+
+
+async def shutdown():
+    await cleanup()

@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 16,
+      "row": 10
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 10
+    },
+    "message": "parameter `text` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 11,
+      "row": 10
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 10
+    },
+    "message": "`render` returns a value but has no return type annotation"
+  }
+]

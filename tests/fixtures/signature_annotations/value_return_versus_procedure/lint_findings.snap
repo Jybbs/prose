@@ -1,0 +1,85 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/signature_annotations/value_return_versus_procedure/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 16,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 11,
+      "row": 1
+    },
+    "message": "parameter `store` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 21,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 18,
+      "row": 1
+    },
+    "message": "parameter `key` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 10,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 1
+    },
+    "message": "`fetch` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 18,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 5
+    },
+    "message": "parameter `store` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 23,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 20,
+      "row": 5
+    },
+    "message": "parameter `key` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 30,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 25,
+      "row": 5
+    },
+    "message": "parameter `value` has no type annotation"
+  }
+]

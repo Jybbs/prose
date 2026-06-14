@@ -32,3 +32,5 @@ align-comparisons     = false
 docstring-wrap        = false
 unused-future-annotations = false
 unsorted-parameters       = false
+strip-none-return         = false
+signature-annotations     = false

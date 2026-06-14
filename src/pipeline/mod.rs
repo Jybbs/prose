@@ -632,10 +632,12 @@ mod tests {
         config.rules.import_layout.enabled = false;
         config.rules.legacy_union_syntax.enabled = false;
         config.rules.reassigned_constants.enabled = false;
+        config.rules.signature_annotations.enabled = false;
         config.rules.signature_layout.enabled = false;
         config.rules.single_use_variables.enabled = false;
         config.rules.step_narration.enabled = false;
         config.rules.strip_align_padding.enabled = false;
+        config.rules.strip_none_return.enabled = false;
         config.rules.strip_trailing_commas.enabled = false;
         config.rules.unsorted_parameters.enabled = false;
         config.rules.unused_future_annotations.enabled = false;

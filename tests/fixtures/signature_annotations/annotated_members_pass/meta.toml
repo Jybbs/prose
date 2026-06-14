@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Already-Annotated Members Stay Silent"
+
+description = '''
+An annotated parameter and a return-annotated function draw no report, so only the unannotated `count` surfaces, the rule flagging the gap rather than the annotation already present.
+'''
