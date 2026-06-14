@@ -10,7 +10,7 @@ use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
 
 use super::{
-    Alphabetize, has_keep_marker,
+    Alphabetize, has_keep_marker, single_name_target,
     tiering::{eval_refs, eval_time_refs, tier_levels},
 };
 use crate::{
@@ -147,12 +147,7 @@ pub(super) fn banded_gap(
 fn assign_run_target(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
     match stmt {
         Stmt::AnnAssign(a) => Some((a.target.as_name_expr()?.id.as_str(), a.value.as_deref())),
-        Stmt::Assign(a) => {
-            let [Expr::Name(name)] = a.targets.as_slice() else {
-                return None;
-            };
-            Some((name.id.as_str(), Some(a.value.as_ref())))
-        }
+        Stmt::Assign(a) => Some((single_name_target(a)?, Some(a.value.as_ref()))),
         _ => None,
     }
 }

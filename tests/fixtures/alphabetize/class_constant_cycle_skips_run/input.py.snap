@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/class_constant_cycle_skips_run/input.py
+---
+class Knot:
+    FORWARD = BACKWARD
+    BACKWARD = FORWARD

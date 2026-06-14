@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Class-Body Dependency Cycle Skips the Whole Run"
+
+description = '''
+When a class-body assignment run's intra-run dependency graph carries a cycle, **the run skips entirely**. `FORWARD` reads `BACKWARD` and `BACKWARD` reads `FORWARD`, so no topological tier exists and source order survives.
+'''

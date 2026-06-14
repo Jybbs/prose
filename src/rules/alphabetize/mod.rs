@@ -22,7 +22,7 @@ use std::{borrow::Cow, collections::HashMap, ops::Range};
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Decorator, ExceptHandler, Expr, ExprDict, PythonVersion, Stmt, StmtAnnAssign,
-    StmtFunctionDef,
+    StmtAssign, StmtFunctionDef,
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
 };
 use ruff_source_file::LineRanges;
@@ -33,7 +33,7 @@ use crate::{
     primitives::{
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
         imports::{ImportGroup, future_annotations_alias, import_group},
-        orderer::{assemble_blocks, block_range, blocks_span, permute_full, permute_in_place},
+        orderer::{assemble_blocks, block_range, blocks_span, permute_in_place},
         params::pins_positional_params,
         scope::{BodyScope, scoped_body},
     },
@@ -344,11 +344,13 @@ fn rewrite_body<'a>(
                 })
             });
             if in_class {
-                permute_full(&mut order, body, |s| {
+                permute_defs(&mut order, body, defer_annotations, |s| {
                     ann_assign_with_named_field(s)
-                        .map(|(ann, name)| (u8::from(has_default(ann)), name))
+                        .map(|(ann, name)| (name, (u8::from(has_default(ann)), name)))
                 });
-                permute_full(&mut order, body, simple_name_assign);
+                permute_defs(&mut order, body, defer_annotations, |s| {
+                    simple_name_assign(s).map(|name| (name, name))
+                });
             }
             if !(in_class && class_pins_methods(body)) {
                 permute_defs(&mut order, body, defer_annotations, |s| {
@@ -443,7 +445,14 @@ fn rewrite_stmt<'a>(
 /// target is a single `Name`. `None` for multi-target,
 /// destructuring, attribute, or subscript targets.
 fn simple_name_assign(stmt: &Stmt) -> Option<&str> {
-    match stmt.as_assign_stmt()?.targets.as_slice() {
+    single_name_target(stmt.as_assign_stmt()?)
+}
+
+/// Returns the single bare-`Name` target name of an `Stmt::Assign`.
+/// `None` for multi-target, destructuring, attribute, or subscript
+/// targets.
+fn single_name_target(assign: &StmtAssign) -> Option<&str> {
+    match assign.targets.as_slice() {
         [Expr::Name(name)] => Some(name.id.as_str()),
         _ => None,
     }
