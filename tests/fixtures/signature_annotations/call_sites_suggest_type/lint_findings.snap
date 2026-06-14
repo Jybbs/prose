@@ -23,7 +23,7 @@ input_file: tests/fixtures/signature_annotations/call_sites_suggest_type/input.p
       "column": 11,
       "row": 1
     },
-    "message": "parameter `count` has no type annotation. Consider `count: int`"
+    "message": "Parameter `count` has no type annotation. Consider `count: int`"
   },
   {
     "code": "signature-annotations",

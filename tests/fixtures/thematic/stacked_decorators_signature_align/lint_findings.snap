@@ -15,7 +15,7 @@ input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
       "column": 8,
       "row": 1
     },
-    "message": "bare import `functools` reaches 1 of its attributes. Rewrite as `from functools import ...` naming only the symbols this module uses"
+    "message": "Bare import `functools` reaches 1 of its attributes. Rewrite as `from functools import ...` naming only the symbols this module uses"
   },
   {
     "code": "signature-annotations",
@@ -28,7 +28,7 @@ input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
       "column": 13,
       "row": 4
     },
-    "message": "parameter `fn` has no type annotation"
+    "message": "Parameter `fn` has no type annotation"
   },
   {
     "code": "signature-annotations",
@@ -54,7 +54,7 @@ input_file: tests/fixtures/thematic/stacked_decorators_signature_align/input.py
       "column": 11,
       "row": 8
     },
-    "message": "parameter `fn` has no type annotation"
+    "message": "Parameter `fn` has no type annotation"
   },
   {
     "code": "signature-annotations",

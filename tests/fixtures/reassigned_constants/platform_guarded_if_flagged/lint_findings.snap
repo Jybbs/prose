@@ -15,7 +15,7 @@ input_file: tests/fixtures/reassigned_constants/platform_guarded_if_flagged/inpu
       "column": 1,
       "row": 3
     },
-    "message": "module-level `DEFAULT_BACKEND` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `DEFAULT_BACKEND` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   },
   {
     "code": "reassigned-constants",
@@ -28,6 +28,6 @@ input_file: tests/fixtures/reassigned_constants/platform_guarded_if_flagged/inpu
       "column": 5,
       "row": 5
     },
-    "message": "module-level `DEFAULT_BACKEND` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `DEFAULT_BACKEND` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   }
 ]

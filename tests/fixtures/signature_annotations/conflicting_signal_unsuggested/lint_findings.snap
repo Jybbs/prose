@@ -15,7 +15,7 @@ input_file: tests/fixtures/signature_annotations/conflicting_signal_unsuggested/
       "column": 12,
       "row": 1
     },
-    "message": "parameter `width` has no type annotation"
+    "message": "Parameter `width` has no type annotation"
   },
   {
     "code": "signature-annotations",

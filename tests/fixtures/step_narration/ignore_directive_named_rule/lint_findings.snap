@@ -15,6 +15,6 @@ input_file: tests/fixtures/step_narration/ignore_directive_named_rule/input.py
       "column": 5,
       "row": 4
     },
-    "message": "numbered-step comment found. Consider extracting each step as a named function"
+    "message": "Numbered-step comment found. Consider extracting each step as a named function"
   }
 ]

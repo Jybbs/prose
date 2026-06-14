@@ -23,7 +23,7 @@ input_file: tests/fixtures/signature_annotations/literal_default_suggested/input
       "column": 11,
       "row": 1
     },
-    "message": "parameter `factor` has no type annotation. Consider `factor: float`"
+    "message": "Parameter `factor` has no type annotation. Consider `factor: float`"
   },
   {
     "code": "signature-annotations",

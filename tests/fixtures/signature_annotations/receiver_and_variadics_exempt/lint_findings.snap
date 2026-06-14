@@ -15,7 +15,7 @@ input_file: tests/fixtures/signature_annotations/receiver_and_variadics_exempt/i
       "column": 24,
       "row": 2
     },
-    "message": "parameter `name` has no type annotation"
+    "message": "Parameter `name` has no type annotation"
   },
   {
     "code": "signature-annotations",

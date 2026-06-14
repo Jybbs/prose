@@ -194,7 +194,7 @@ impl Walker<'_> {
         {
             signals.add(arg);
         }
-        let base = format!("parameter `{name}` has no type annotation");
+        let base = format!("Parameter `{name}` has no type annotation");
         let diagnostic = match signals.suggestion() {
             Some(annotation) => Diagnostic::suggestion(
                 self.rule,
@@ -300,7 +300,7 @@ mod tests {
         let diagnostics = rule.lint(&source);
         let report = param_report(&diagnostics, "self");
 
-        assert!(report.message.starts_with("parameter"));
+        assert!(report.message.starts_with("Parameter"));
     }
 
     #[test]
@@ -311,7 +311,7 @@ mod tests {
         assert!(
             diagnostics
                 .iter()
-                .all(|d| !d.message.starts_with("parameter"))
+                .all(|d| !d.message.starts_with("Parameter"))
         );
     }
 

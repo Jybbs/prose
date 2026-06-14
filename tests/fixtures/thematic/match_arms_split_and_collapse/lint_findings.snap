@@ -15,7 +15,7 @@ input_file: tests/fixtures/thematic/match_arms_split_and_collapse/input.py
       "column": 14,
       "row": 4
     },
-    "message": "parameter `event` has no type annotation"
+    "message": "Parameter `event` has no type annotation"
   },
   {
     "code": "signature-annotations",
@@ -41,7 +41,7 @@ input_file: tests/fixtures/thematic/match_arms_split_and_collapse/input.py
       "column": 19,
       "row": 16
     },
-    "message": "parameter `name` has no type annotation"
+    "message": "Parameter `name` has no type annotation"
   },
   {
     "code": "signature-annotations",
