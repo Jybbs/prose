@@ -154,10 +154,7 @@ impl Visitor<'_> {
             self.walker.source,
             params.iter_source_order(),
             true,
-            |param| match self.qualify_parameter(param) {
-                Some(member) => aligner::Slot::Member(member),
-                None => aligner::Slot::Break,
-            },
+            |param| self.qualify_parameter(param).into(),
         );
         for members in groups {
             self.walker.emit_unheld(members);

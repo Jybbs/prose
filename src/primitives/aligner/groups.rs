@@ -27,6 +27,15 @@ pub(crate) enum Slot<M> {
     Member(M),
 }
 
+/// A qualified row converts to [`Slot::Member`] and an unqualified row
+/// to [`Slot::Break`], the classification for a run with no passthrough
+/// rows.
+impl<M> From<Option<M>> for Slot<M> {
+    fn from(member: Option<M>) -> Self {
+        member.map_or(Self::Break, Self::Member)
+    }
+}
+
 /// Walks `items` in source order, classifying each through `classify`
 /// and gathering members into runs whose consecutive members sit on
 /// directly adjacent source lines. A `Bridge` extends the run's anchor

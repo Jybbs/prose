@@ -58,10 +58,7 @@ impl Visitor<'_> {
             return;
         }
         let groups = aligner::adjacent_member_groups(source, &bool_op.values, true, |operand| {
-            match self.qualify(operand) {
-                Some(member) => aligner::Slot::Member(member),
-                None => aligner::Slot::Break,
-            }
+            self.qualify(operand).into()
         });
         for group in &groups {
             self.walker.emit_unheld(group.iter().copied());
