@@ -1,6 +1,6 @@
 # Cache
 
-*Prose* caches per-file pipeline output keyed on the source bytes, the configuration governing the file, and the *Prose* version. A repeat `prose check` or `prose format` against an unchanged file collapses to a stat, a hash, and a deserialize, since the cache hit re-emits diagnostics from the cached entry without entering the pipeline.
+*Prose* caches per-file pipeline output keyed on the source bytes, the configuration governing the file, the rules the run selects, and the *Prose* version. A repeat `prose check` or `prose format` against an unchanged file collapses to a stat, a hash, and a deserialize, since the cache hit re-emits diagnostics from the cached entry without entering the pipeline.
 
 The cache is enabled by default. The `[cache]` table tunes it, `--no-cache` bypasses it for one invocation, and `prose cache clean` clears it.
 
@@ -20,10 +20,11 @@ Resolution chains through `PROSE_CACHE_DIR` → the platform default. `PROSE_CAC
 
 ## Key Shape
 
-The cache key is the **BLAKE3** digest of `(source_bytes ++ config_toml ++ prose_version ++ cache_format_version)`. The inputs:
+The cache key is the **BLAKE3** digest of `(source_bytes ++ config_toml ++ rule_ids ++ prose_version ++ cache_format_version)`. The inputs:
 
 - the source bytes of the file under formatting
 - the canonical TOML serialization of the `Config` governing the file, so a semantically-equivalent re-shuffling of the user's config file produces the same key
+- the resolved rule selection the run enables after config toggles and the `--select` / `--ignore` filters, so a run narrowing the rule set keys separately from a full run
 - the *Prose* version from `CARGO_PKG_VERSION`, so a version bump invalidates the cache wholesale
 - a private `CACHE_FORMAT_VERSION` constant that bumps independently when the on-disk entry shape changes, leaving the user-facing version free to ship semver-meaningful bumps without unrelated cache turnover
 

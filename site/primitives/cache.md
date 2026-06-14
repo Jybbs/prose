@@ -6,7 +6,7 @@ stability: internal
 
 <PrimitiveLayout primitive="cache">
 
-*Cache* is the user-level content-addressed cache that lets `prose check` and `prose format` skip the pipeline for unchanged source. Each entry is a bincode-serialized payload carrying the post-pipeline diagnostics and optional rewrite, keyed on the **BLAKE3** digest of `(source_bytes ++ config_toml ++ prose_version ++ cache_format_version)`. A repeat run against an unchanged file collapses to a stat plus a hash plus a deserialize, with no AST construction, no rule pipeline, and no rewrite computation.
+*Cache* is the user-level content-addressed cache that lets `prose check` and `prose format` skip the pipeline for unchanged source. Each entry is a bincode-serialized payload carrying the post-pipeline diagnostics and optional rewrite, keyed on the **BLAKE3** digest of `(source_bytes ++ config_toml ++ rule_ids ++ prose_version ++ cache_format_version)`. A repeat run against an unchanged file collapses to a stat plus a hash plus a deserialize, with no AST construction, no rule pipeline, and no rewrite computation.
 
 ## Consumer-Visible Surface
 
@@ -20,9 +20,9 @@ At `1.0` the cache surface stabilizes for downstream consumers integrating the p
 
 ## Key Shape
 
-The cache key is the **BLAKE3** digest of inputs concatenated in order: the source bytes, the canonical TOML serialization of the active `Config`, the *Prose* version from `CARGO_PKG_VERSION`, and a private `CACHE_FORMAT_VERSION` constant.
+The cache key is the **BLAKE3** digest of inputs concatenated in order: the source bytes, the canonical TOML serialization of the active `Config`, the resolved rule selection the pipeline runs, the *Prose* version from `CARGO_PKG_VERSION`, and a private `CACHE_FORMAT_VERSION` constant.
 
-A change to any one input produces a different key, so a config tweak invalidates only the entries it semantically affects, and a *Prose* release invalidates the entire cache. The `CACHE_FORMAT_VERSION` input lets the on-disk entry shape bump independently of the user-facing version, leaving a release that does not change the entry shape free to carry its existing cache forward.
+A change to any one input produces a different key, so a config tweak invalidates only the entries it semantically affects, a `--select` or `--ignore` run keys apart from a full one, and a *Prose* release invalidates the entire cache. The `CACHE_FORMAT_VERSION` input lets the on-disk entry shape bump independently of the user-facing version, leaving a release that does not change the entry shape free to carry its existing cache forward.
 
 The canonical TOML serialization runs through `toml::to_string`, so a semantically-equivalent re-shuffling of the user's config file produces the same key. Two workspaces editing identical files under matching configuration share a cache hit, because the key already disambiguates source content across projects.
 

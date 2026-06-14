@@ -54,7 +54,8 @@ const SOURCES: readonly PrimitiveEntrySource[] = [
     consumes   : ['source'],
     layer      : 'analysis',
     slug       : 'cache',
-    summary    : 'User-level on-disk cache keyed on `(source ++ config ++ version)`, collapsing repeat runs to a stat plus a hash plus a deserialize.',
+    summary    : 'User-level on-disk cache keyed on `(source ++ config ++ rules ++ version)`, '
+               + 'collapsing repeat runs to a stat plus a hash plus a deserialize.',
     tagline    : 'content-addressed result cache'
   },
   {

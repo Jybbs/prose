@@ -50,7 +50,12 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
         .cache
         .as_ref()
         .filter(|_| !matches!(pass, Pass::Rewrite | Pass::Diagnose { validate: true }))
-        .map(|c| (c, CacheKey::compute(&bytes, &resolved.config_toml)));
+        .map(|c| {
+            (
+                c,
+                CacheKey::compute(&bytes, &resolved.config_toml, resolved.pipeline.rule_ids()),
+            )
+        });
     if let Some(outcome) = keyed
         .as_ref()
         .and_then(|(c, k)| c.lookup(k))
