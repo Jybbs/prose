@@ -9,9 +9,9 @@ use std::{borrow::Cow, ops::Range};
 
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
-use crate::source::Source;
+use crate::{primitives::edit::splice_parses, source::Source};
 
 /// Splices each rendered child at its sorted position. `gap_override`
 /// returning `Some(text)` for new-order slot `i` substitutes that
@@ -38,12 +38,49 @@ pub(crate) fn assemble_blocks<'src>(
     out
 }
 
-/// Returns the source-level extent of `items[i]`, made of the
-/// item's own range plus any comment-only lines directly above it
-/// (no intervening blank line) and the rest of its last line.
-/// Bounded by the previous item's end (or `outer.start()` for the
-/// first item) and the next item's start (or `outer.end()` for the
-/// last).
+/// Concatenates `block_texts` in `order`, re-emitting each member's comma so
+/// it lands after the value and before any trailing comment. `value_ends`
+/// split the code from each comma-and-comment tail. Non-last slots carry a
+/// comma, the new-last slot matches `source_last_has_comma`, and a blank line
+/// follows every slot in `divider_slots`.
+pub(crate) fn assemble_separated(
+    value_ends: &[TextSize],
+    blocks: &[TextRange],
+    block_texts: &[Cow<'_, str>],
+    order: &[usize],
+    divider_slots: &[usize],
+    source_last_has_comma: bool,
+) -> String {
+    let mut out = String::with_capacity(blocks_span(blocks).len().to_usize());
+    for (slot, &idx) in order.iter().enumerate() {
+        let block_text = &block_texts[idx];
+        let tail_len = (blocks[idx].end() - value_ends[idx]).to_usize();
+        let (code, tail) = block_text.split_at(block_text.len() - tail_len);
+        let (separator, comment) = tail.split_at(tail.find('#').unwrap_or(tail.len()));
+        out.push_str(code);
+        let is_last = slot + 1 == order.len();
+        if !is_last || source_last_has_comma {
+            out.push(',');
+        }
+        if !comment.is_empty() {
+            out.extend(separator.chars().filter(|&c| c != ','));
+            out.push_str(comment);
+        }
+        if !is_last {
+            out.push('\n');
+            if divider_slots.binary_search(&slot).is_ok() {
+                out.push('\n');
+            }
+        }
+    }
+    out
+}
+
+/// Returns the source-level extent of `items[i]`: its own range, any
+/// comment-only lines directly above it (no intervening blank line), and the
+/// rest of its last line. Bounded below by the previous item's end (or
+/// `outer.start()` for the first) and forward by the next item's start (or
+/// its own line end for the last).
 pub(crate) fn block_range<T: Ranged>(
     source: &Source,
     items: &[T],
@@ -52,11 +89,11 @@ pub(crate) fn block_range<T: Ranged>(
 ) -> TextRange {
     let item = items[i].range();
     let lower = items[..i].last().map_or(outer.start(), Ranged::end);
-    let upper = items.get(i + 1).map_or(outer.end(), Ranged::start);
-    TextRange::new(
-        leading_attached_start(source, item.start(), lower),
-        source.text().line_end(item.end()).min(upper),
-    )
+    let line_end = source.text().line_end(item.end());
+    let forward = items
+        .get(i + 1)
+        .map_or(line_end, |next| line_end.min(next.start()));
+    TextRange::new(leading_attached_start(source, item.start(), lower), forward)
 }
 
 /// Total source extent covered by `blocks`. Requires non-empty input.
@@ -107,45 +144,104 @@ where
     true
 }
 
-/// Recursive sibling rewriter. Each item gets its block source slice
-/// passed to `render_block`, which returns either `Cow::Borrowed` (no
-/// internal change) or `Cow::Owned` (subtree rewrote itself, e.g.
-/// nested sort folded in). When the items don't need reordering at
-/// this scope *and* every rendered child is borrowed, the function
-/// returns `Cow::Borrowed(source.slice(blocks_span))` with no
-/// allocation. Any other case returns `Cow::Owned(rendered)` covering
-/// the same span, with each block's content placed by the sorted
-/// order and the gaps between blocks copied verbatim from source.
+/// Reorders a comma-separated group laid out one member per line, the comma
+/// re-emitted per slot so each member's trailing comment travels with it. Each
+/// block spans its line start through any trailing comma and comment. Declines,
+/// returning a borrow, when nothing reorders or the reassembled group no longer
+/// parses.
+pub(crate) fn reorder_separated<'src, 'a, T, S, F>(
+    source: &'src Source,
+    items: &'a [T],
+    classify: impl FnMut(&'a T) -> Option<S>,
+    mut render_block: F,
+) -> (Cow<'src, str>, TextRange)
+where
+    T: Ranged,
+    S: Ord,
+    F: FnMut(usize, TextRange) -> Cow<'src, str>,
+{
+    let text = source.text();
+    let (blocks, block_texts): (Vec<TextRange>, Vec<Cow<'src, str>>) = items
+        .iter()
+        .enumerate()
+        .map(|(i, t)| {
+            let block = TextRange::new(text.line_start(t.start()), tail_end(source, t.end()));
+            (block, render_block(i, block))
+        })
+        .unzip();
+    let span = blocks_span(&blocks);
+    let mut order: Vec<usize> = (0..items.len()).collect();
+    let permuted = permute_full(&mut order, items, classify);
+    if !permuted && block_texts.iter().all(|c| matches!(c, Cow::Borrowed(_))) {
+        return (Cow::Borrowed(source.slice(span)), span);
+    }
+    let value_ends: Vec<TextSize> = items.iter().map(Ranged::end).collect();
+    let assembled = assemble_separated(
+        &value_ends,
+        &blocks,
+        &block_texts,
+        &order,
+        &[],
+        last_member_has_comma(source, items),
+    );
+    let module = TextRange::up_to(text.text_len());
+    if assembled == source.slice(span)
+        || !splice_parses(source, module, span, &assembled, str::parse::<Source>)
+    {
+        return (Cow::Borrowed(source.slice(span)), span);
+    }
+    (Cow::Owned(assembled), span)
+}
+
+/// Reorders sibling members by `classify`, the separators kept in the
+/// verbatim gaps between bare member spans, `render_block` rewriting each
+/// member's slice. Returns the rewritten text and the span it covers. A
+/// multi-line group whose members carry trailing comments uses
+/// `reorder_separated` instead.
 pub(crate) fn reorder_text<'src, 'a, T, S, F>(
     source: &'src Source,
     items: &'a [T],
     classify: impl FnMut(&'a T) -> Option<S>,
     mut render_block: F,
-) -> Cow<'src, str>
+) -> (Cow<'src, str>, TextRange)
 where
     T: Ranged,
     S: Ord,
-    F: FnMut(usize, &'src str) -> Cow<'src, str>,
+    F: FnMut(usize, TextRange) -> Cow<'src, str>,
 {
     if items.is_empty() {
-        return Cow::Borrowed("");
+        return (Cow::Borrowed(""), TextRange::default());
     }
     let (blocks, rendered): (Vec<TextRange>, Vec<Cow<'src, str>>) = items
         .iter()
         .enumerate()
         .map(|(i, t)| {
             let block = t.range();
-            (block, render_block(i, source.slice(block)))
+            (block, render_block(i, block))
         })
         .unzip();
+    let span = blocks_span(&blocks);
     let mut order: Vec<usize> = (0..items.len()).collect();
     let permuted = permute_full(&mut order, items, classify);
     if !permuted && rendered.iter().all(|c| matches!(c, Cow::Borrowed(_))) {
-        return Cow::Borrowed(source.slice(blocks_span(&blocks)));
+        return (Cow::Borrowed(source.slice(span)), span);
     }
-    Cow::Owned(assemble_blocks(source, &blocks, &rendered, &order, |_| {
-        None
-    }))
+    (
+        Cow::Owned(assemble_blocks(source, &blocks, &rendered, &order, |_| {
+            None
+        })),
+        span,
+    )
+}
+
+/// True when the last member carries a trailing comma on its line.
+fn last_member_has_comma<T: Ranged>(source: &Source, items: &[T]) -> bool {
+    let last = items.last().expect("non-empty items");
+    let line_end = source.text().line_end(last.end());
+    source
+        .slice(TextRange::new(last.end(), line_end))
+        .trim_start()
+        .starts_with(',')
 }
 
 /// Walks backward through own-line comments preceding `item_start`,
@@ -173,6 +269,22 @@ fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize
     current
 }
 
+/// Extends `item_end` over a trailing comma and inline comment on its line,
+/// reached across only commas and whitespace. Stops at any other token, so a
+/// comment past a `}`, `)`, or `]` stays disowned.
+fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
+    let line_end = source.text().line_end(item_end);
+    let mut consumed = 0u32;
+    for &byte in source.slice(TextRange::new(item_end, line_end)).as_bytes() {
+        match byte {
+            b',' | b' ' | b'\t' => consumed += 1,
+            b'#' => return line_end,
+            _ => break,
+        }
+    }
+    item_end + TextSize::from(consumed)
+}
+
 #[cfg(test)]
 mod tests {
     use assert_matches::assert_matches;
@@ -180,14 +292,21 @@ mod tests {
     use ruff_text_size::TextLen;
 
     use super::*;
-    use crate::testing::{first_def, parse};
+    use crate::testing::{first_class, first_def, parse};
 
     fn body_range(source: &Source) -> TextRange {
         TextRange::up_to(source.text().text_len())
     }
 
-    fn borrow<'a>(_: usize, slice: &'a str) -> Cow<'a, str> {
-        Cow::Borrowed(slice)
+    fn set_elts(source: &Source) -> &[ruff_python_ast::Expr] {
+        source.ast().body[0]
+            .as_assign_stmt()
+            .expect("assign statement")
+            .value
+            .as_set_expr()
+            .expect("set value")
+            .elts
+            .as_slice()
     }
 
     #[test]
@@ -263,7 +382,15 @@ mod tests {
     }
 
     #[test]
-    fn block_range_last_item_uses_outer_end_as_upper_bound() {
+    fn block_range_last_item_keeps_trailing_comment_past_outer_end() {
+        let source = parse("class C:\n    a = 1\n    b = 2  # trailing\n");
+        let class = first_class(&source);
+        let block = block_range(&source, &class.body, class.body.len() - 1, class.range());
+        assert_eq!(source.slice(block), "    b = 2  # trailing");
+    }
+
+    #[test]
+    fn block_range_last_item_takes_trailing_comment_at_module_scope() {
         let source = parse("def a(): pass\ndef b(): pass  # trailing\n");
         let body = &source.ast().body;
         let block = block_range(&source, body, body.len() - 1, body_range(&source));
@@ -275,6 +402,18 @@ mod tests {
         let source = parse("def a(): pass\ndef b(): pass\n");
         let block = block_range(&source, &source.ast().body, 1, body_range(&source));
         assert_eq!(source.slice(block), "def b(): pass");
+    }
+
+    #[test]
+    fn last_member_has_comma_false_at_closing_delimiter() {
+        let source = parse("x = {\n    a,\n    b\n}\n");
+        assert!(!last_member_has_comma(&source, set_elts(&source)));
+    }
+
+    #[test]
+    fn last_member_has_comma_true_with_trailing_comma() {
+        let source = parse("x = {\n    a,\n    b,\n}\n");
+        assert!(last_member_has_comma(&source, set_elts(&source)));
     }
 
     #[test]
@@ -331,11 +470,11 @@ mod tests {
         let source = parse("def f(b, a): pass\n");
         let func = first_def(&source);
         let params = &func.parameters;
-        let cow = reorder_text(
+        let (cow, _) = reorder_text(
             &source,
             &params.args,
             |p| Some(p.parameter.name.as_str()),
-            borrow,
+            |_, block| Cow::Borrowed(source.slice(block)),
         );
         assert_matches!(cow, Cow::Owned(_));
         assert_eq!(&*cow, "a, b");
@@ -349,11 +488,11 @@ mod tests {
             def a(): pass
         "});
         let body = &source.ast().body;
-        let cow = reorder_text(
+        let (cow, _) = reorder_text(
             &source,
             body,
             |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
-            borrow,
+            |_, block| Cow::Borrowed(source.slice(block)),
         );
         assert_eq!(&*cow, "def a(): pass\nCONST = 1\ndef b(): pass");
     }
@@ -361,11 +500,11 @@ mod tests {
     #[test]
     fn reorder_text_returns_borrowed_when_already_sorted_and_no_render_change() {
         let source = parse("def a(): pass\ndef b(): pass\n");
-        let cow = reorder_text(
+        let (cow, _) = reorder_text(
             &source,
             &source.ast().body,
             |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
-            borrow,
+            |_, block| Cow::Borrowed(source.slice(block)),
         );
         assert_matches!(cow, Cow::Borrowed(_));
     }
@@ -374,11 +513,11 @@ mod tests {
     fn reorder_text_returns_empty_borrowed_for_empty_items() {
         let source = parse("");
         let body = &source.ast().body;
-        let cow = reorder_text(
+        let (cow, _) = reorder_text(
             &source,
             body.as_slice(),
             |stmt: &ruff_python_ast::Stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
-            borrow,
+            |_, block| Cow::Borrowed(source.slice(block)),
         );
         assert_matches!(cow, Cow::Borrowed(""));
     }
@@ -386,11 +525,12 @@ mod tests {
     #[test]
     fn reorder_text_returns_owned_when_render_block_owns_even_without_sort() {
         let source = parse("def a(): pass\ndef b(): pass\n");
-        let cow = reorder_text(
+        let (cow, _) = reorder_text(
             &source,
             &source.ast().body,
             |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
-            |i, slice| {
+            |i, block| {
+                let slice = source.slice(block);
                 if i == 0 {
                     Cow::Owned(slice.replace("def a", "def A"))
                 } else {
@@ -405,13 +545,39 @@ mod tests {
     #[test]
     fn reorder_text_returns_owned_when_sort_and_render_owned_combine() {
         let source = parse("def b(): pass\ndef a(): pass\n");
-        let cow = reorder_text(
+        let (cow, _) = reorder_text(
             &source,
             &source.ast().body,
             |stmt| stmt.as_function_def_stmt().map(|f| f.name.as_str()),
-            |_, slice| Cow::Owned(slice.replace("def ", "DEF ")),
+            |_, block| Cow::Owned(source.slice(block).replace("def ", "DEF ")),
         );
         assert_matches!(cow, Cow::Owned(_));
         assert_eq!(&*cow, "DEF a(): pass\nDEF b(): pass");
+    }
+
+    #[test]
+    fn tail_end_disowns_comment_past_closing_delimiter() {
+        let source = parse("x = {\n    a,\n    b}  # tail\n");
+        let last = set_elts(&source).last().expect("two elements");
+        assert_eq!(tail_end(&source, last.end()), last.end());
+    }
+
+    #[test]
+    fn tail_end_owns_comma_and_comment() {
+        let source = parse("x = {\n    a,  # keep\n    b,\n}\n");
+        let elts = set_elts(&source);
+        let end = tail_end(&source, elts[0].end());
+        assert_eq!(
+            source.slice(TextRange::new(elts[0].start(), end)),
+            "a,  # keep"
+        );
+    }
+
+    #[test]
+    fn tail_end_takes_comma_without_a_comment() {
+        let source = parse("x = {\n    a,\n    b,\n}\n");
+        let elts = set_elts(&source);
+        let end = tail_end(&source, elts[0].end());
+        assert_eq!(source.slice(TextRange::new(elts[0].start(), end)), "a,");
     }
 }

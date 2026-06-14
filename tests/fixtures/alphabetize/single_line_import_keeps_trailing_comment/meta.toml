@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Single-Line Import's Comment Stays Put"
+
+description = '''
+A trailing comment on a single-line `import` **stays in place** as the names sort, the comment sitting beyond the reordered span rather than attaching to any one name.
+'''

@@ -19,9 +19,13 @@ The shape settles at `1.0`, where a downstream can register its own ordering rul
 
 Composable entry points cover every reorder shape, layered so a rule reaches for the highest-level one that fits.
 
-### `reorder_text(source, items, span, classify, render)`
+### `reorder_text(source, items, classify, render)`
 
-The high-level wrapper that covers the common case, computing `blocks` via `block_range`, rendering each item, sorting with `permute_full`, and assembling the result in one call. Returns `Cow::Borrowed(source.slice(span))` when no permutation is needed and every render is borrowed, so a no-op rule pays no allocation. Most ordering rules should reach for this entry point first and drop to the lower-level helpers only when the inspection or rendering shape needs it.
+The high-level wrapper that covers the common case, rendering each item over its bare member span, sorting with `permute_full`, and assembling the result with the separators kept in the verbatim gaps between members. Returns the rewritten text alongside the block-extent span it covers, borrowing when no permutation is needed and every render is borrowed so a no-op rule pays no allocation. A one-member-per-line group whose members carry trailing comments reaches for `reorder_separated` instead.
+
+### `reorder_separated(source, items, classify, render)`
+
+The variant for a comma-separated group laid out one member per line, where a trailing inline comment must travel with its member through the sort. The separating comma is re-emitted per slot rather than left in a verbatim gap, because a comment ends its line and a moved member that gained or lost its source comma would otherwise strand the comma after the comment. A reparse guard declines the rewrite when an irregular layout reassembles into source the parser rejects.
 
 ### `permute_full(order, items, classify)`
 
@@ -35,13 +39,19 @@ The sub-slice variant for partitioned reorders, where part of the slice is held 
 
 Splices the reordered children into a final string the rule can emit as a single `Edit`. `blocks` is the source-extent of each item *(via `block_range`)*, `rendered` is each item's text, `order` is the new arrangement, and `gap_override` lets a caller substitute the gap between adjacent items in the **new** order *(the override's index parameter is the post-sort slot, not the source slot)*. Reach for this directly when a rule has already permuted and rendered through some other path.
 
+### `assemble_separated(value_ends, blocks, block_texts, order, divider_slots, source_last_has_comma)`
+
+The comma-aware counterpart to `assemble_blocks` for one-member-per-line groups. It splits each block into code, separator comma, and trailing comment at `value_ends`, then re-emits the comma after the value and before the comment per slot, so the comment rides with its member. Non-last slots always carry a comma, the new-last slot matches `source_last_has_comma`, and a blank line follows every slot in `divider_slots`. [[alphabetize]]'s dict and leaf reorders share it.
+
 ### Block-Geometry Helpers
 
-`block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line. `outer` clamps the leading-comment scan's lower bound and the trailing-line scan's upper bound to a parent extent. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, used to size the outer `Edit` that replaces the reordered region.
+`block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line. `outer` bounds the leading-comment scan's lower edge to a parent extent *(the previous item's end, or `outer.start()` for the first item)*, while the forward scan reaches the next item's start or, for the last item, its own line end. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, used to size the outer `Edit` that replaces the reordered region.
 
 ## How Comment Attachment Works
 
 `block_range` extends each item's source extent upward to absorb every comment-only line directly above it *(with no intervening blank line)* and downward to the end of its last line. A comment that hugs a function definition stays glued to that function when the function moves, because the comment is part of the function's *"block"*. A blank line acts as a divider, leaving comments above the blank line attached to whatever sits above them rather than to the next item.
+
+A member's trailing inline comment travels with it too. For a comma-separated group reordered through `reorder_separated`, the separating comma is re-emitted per slot so the comment stays on its member's line rather than pinning to the slot the member vacated. A comment reached only over a closing `}`, `)`, or `]` belongs to the whole group rather than the last member, so it stays in source position.
 
 The interstitial text between adjacent items *(blank lines, sectioning comments)* stays in source position by default. A caller wanting per-slot custom interstitials passes a `gap_override` closure that returns `Some(text)` for slot `i` to substitute the inter-slot gap.
 
