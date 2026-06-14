@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_none_return/protocol_method_none_preserved/input.py
+---
+class Reader(Protocol):
+    def close(self) -> None: ...

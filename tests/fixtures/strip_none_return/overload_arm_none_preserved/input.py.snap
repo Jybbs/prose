@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_none_return/overload_arm_none_preserved/input.py
+---
+@overload
+def f(x: int) -> None: ...
+
+
+@overload
+def f(x: str) -> str: ...
+
+
+def f(x):
+    return x

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Protocol Method Stub's None Return Annotation Survives"
+
+description = '''
+A `Protocol` method whose body is a single `...` keeps its `-> None`, because the placeholder carries the declared contract a structural type checker reads rather than a redundant annotation.
+'''

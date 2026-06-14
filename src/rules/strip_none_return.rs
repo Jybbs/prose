@@ -1,10 +1,12 @@
 //! Strips a function's `-> None` return annotation. Leaves a `None`
-//! nested in a larger annotation (`int | None`, `Callable[..., None]`)
-//! and every parameter annotation in place.
+//! nested in a larger annotation (`int | None`, `Callable[..., None]`),
+//! every parameter annotation, and a declaration-only `...` stub's own
+//! `-> None` in place.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Stmt, StmtFunctionDef,
+    helpers::body_without_leading_docstring,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextRange};
@@ -46,11 +48,11 @@ struct Walker<'a> {
 
 impl Walker<'_> {
     /// Deletes the ` -> None` span from `(`'s close through the
-    /// annotation, parens included, when `fd` annotates a bare `None`
-    /// return.
+    /// annotation, parens included.
     fn strip(&mut self, fd: &StmtFunctionDef) {
         if let Some(returns) = fd.returns.as_deref()
             && returns.is_none_literal_expr()
+            && !is_ellipsis_stub(&fd.body)
         {
             let annotation = paren_aware_range(returns.into(), fd.into(), self.source.tokens());
             let span = TextRange::new(fd.parameters.range().end(), annotation.end());
@@ -66,6 +68,15 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
         }
         walk_stmt(self, stmt);
     }
+}
+
+/// A declaration-only stub, a lone `...` statement past an optional
+/// leading docstring.
+fn is_ellipsis_stub(body: &[Stmt]) -> bool {
+    matches!(
+        body_without_leading_docstring(body),
+        [Stmt::Expr(stmt)] if stmt.value.is_ellipsis_literal_expr()
+    )
 }
 
 #[cfg(test)]
@@ -89,6 +100,19 @@ mod tests {
     }
 
     #[rstest]
+    fn keeps_none_on_a_declaration_stub(
+        #[values(
+            "def f() -> None: ...\n",
+            "@overload\ndef f(x: int) -> None: ...\n",
+            "class P:\n    def m(self) -> None: ...\n",
+            "def f() -> None:\n    \"\"\"doc\"\"\"\n    ...\n"
+        )]
+        src: &str,
+    ) {
+        assert!(strip_groups(src).is_empty());
+    }
+
+    #[rstest]
     fn leaves_a_non_bare_none_return_in_place(
         #[values(
             "def f() -> int | None:\n    return 1\n",
@@ -99,5 +123,16 @@ mod tests {
         src: &str,
     ) {
         assert!(strip_groups(src).is_empty());
+    }
+
+    #[rstest]
+    fn strips_when_the_body_is_not_a_lone_ellipsis(
+        #[values(
+            "def f() -> None:\n    x = 1\n    ...\n",
+            "def f() -> None:\n    \"\"\"doc\"\"\"\n"
+        )]
+        src: &str,
+    ) {
+        assert!(!strip_groups(src).is_empty());
     }
 }
