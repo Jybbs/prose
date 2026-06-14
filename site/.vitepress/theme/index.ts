@@ -68,7 +68,6 @@ import './components/layout/star-badge.css'
 import './components/primitives/primitives-composition-detail.css'
 import './components/primitives/primitives-composition-grid.css'
 import './components/primitives/primitives-composition.css'
-import './components/prototypes/rule-chips/rule-chips.css'
 import './components/rules/composition-cards.css'
 import './components/rules/pipeline-order.css'
 import './components/rules/rule-card-grid.css'
@@ -80,7 +79,6 @@ import './components/suppression/scope-specimen.css'
 const modules = import.meta.glob<{ default: Component }>(
   [
     './components/{exit-codes,fixtures,glossary,integrations,primitives,reference,rules,suppression}/*.vue',
-    './components/prototypes/**/*.vue',
     './components/base/Tool.vue'
   ],
   { eager: true }

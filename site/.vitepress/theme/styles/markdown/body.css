@@ -8,9 +8,7 @@
 }
 
 .vp-doc a.body-link,
-.vp-doc a.rule-link,
 .vp-doc a.tool-mark,
-.rule-card-caption a.rule-link,
 a.tool-mark {
   --link-underline : var(--vp-c-brand-1);
   text-decoration  : none;
@@ -21,17 +19,10 @@ a.tool-mark {
 }
 
 .vp-doc a.body-link:hover,
-.vp-doc a.rule-link:hover,
-.vp-doc a.tool-mark:hover,
-.rule-card-caption a.rule-link:hover,
-a.tool-mark:hover {
-  background-size : 100% 1px;
-}
-
-.vp-doc a.body-link:hover,
 .vp-doc a.tool-mark:hover,
 a.tool-mark:hover {
   --link-underline : var(--prose-link-hover);
+  background-size  : 100% 1px;
   color            : var(--prose-link-hover);
 }
 
@@ -41,10 +32,26 @@ a.tool-mark:hover {
 
 .vp-doc a.rule-link,
 .rule-card-caption a.rule-link {
-  --link-underline : var(--family-color);
-  font-family      : var(--vp-font-family-mono);
-  font-weight      : normal;
-  color            : var(--family-color);
+  color               : var(--vp-c-text-1);
+  font-family         : var(--vp-font-family-mono);
+  font-weight         : normal;
+  text-decoration     : none;
+  border-left         : 2px solid var(--family-color);
+  border-radius       : var(--prose-radius-sm);
+  padding             : 3px 6px;
+  background-color    : var(--vp-code-bg);
+  background-image    :
+    linear-gradient(var(--family-color), var(--family-color)),
+    linear-gradient(color-mix(in srgb, var(--family-color) 14%, transparent), color-mix(in srgb, var(--family-color) 14%, transparent));
+  background-repeat   : no-repeat;
+  background-position : left bottom, left center;
+  background-size     : 0% 1px, 0% 100%;
+  transition          : background-size var(--prose-transition-slow);
+}
+
+.vp-doc a.rule-link:hover,
+.rule-card-caption a.rule-link:hover {
+  background-size : 100% 1px, 100% 100%;
 }
 
 .vp-doc a.rule-link {

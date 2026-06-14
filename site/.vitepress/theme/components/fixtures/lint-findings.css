@@ -53,15 +53,17 @@
 }
 
 .lint-popover .rule-card {
-  min-height : auto;
-  overflow   : hidden;
+  min-height     : auto;
+  overflow       : hidden;
+  padding-bottom : 8px;
+  row-gap        : 8px;
 }
 
 .lint-popover .rule-card-header {
   background    : var(--vp-c-bg-alt);
   border-bottom : 1px solid var(--vp-c-divider);
   grid-column   : 1 / -1;
-  margin        : -12px -16px 12px;
+  margin        : -12px -16px 0;
   padding       : 8px 16px;
 }
 

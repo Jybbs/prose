@@ -12,27 +12,27 @@ The graph below traces how a source flows through the primitive set, with each n
 
 Reachable from a downstream Rust consumer in `0.2.x`:
 
-| # | Primitive | Role |
-|---|---|---|
-| 1 | [[pipeline]] | runs the registered rules in deterministic order against a *Source*, reparsing between rules |
-| 2 | [[rule-id]] | canonical kebab-case slug identifying each rule across CLI flags, config tables, suppression directives, and diagnostic output |
-| 3 | [[source]] | parsed-text wrapper bundling original text, AST, tokens, line index, and the suppression / binding tables. Every rule reads through this value |
+| Primitive | Role |
+|---|---|
+| [[pipeline]] | Runs the registered rules in deterministic order against a *Source*, reparsing between rules |
+| [[rule-id]] | Canonical kebab-case slug identifying each rule across CLI flags, config tables, suppression directives, and diagnostic output |
+| [[source]] | Parsed-text wrapper bundling original text, AST, tokens, line index, and the suppression / binding tables. Every rule reads through this value |
 
 ### Crate-Internal Primitives
 
 `pub(crate)` in `0.2.x` and stabilizing toward `1.0`, where consumer-implemented rules become reachable:
 
-| # | Primitive | Role |
-|---|---|---|
-| 1 | [[aligner]] | shared alignment math, consumed by [[align-colons]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[align-match-case]] |
-| 2 | [[binding-analysis]] | per-*Source* table indexing every write and read of every name in every lexical scope |
-| 3 | [[cache]] | user-level content-addressed cache, consumed by `prose check` and `prose format` to skip the pipeline on unchanged source |
-| 4 | [[colon-targets]] | walker that finds every `:` alignment context, consumed by [[align-colons]] and [[strip-align-padding]] |
-| 5 | [[docstring]] | PEP 257 docstring walker, consumed by [[docstring-wrap]], [[docstring-frame]], [[docstring-expand]] |
-| 6 | [[edit]] | the `Edit { range, content }` shape every rule emits and the *Pipeline* applies |
-| 7 | [[orderer]] | sibling reorder helper preserving attached comments, consumed by [[alphabetize]] |
-| 8 | [[suppression-map]] | per-*Source* index of `# fmt: off` / `# fmt: skip` / `# yapf` / `# prose: ignore[...]` directives |
-| 9 | [[walker]] | ignore-aware filesystem walker, consumed by the path-mode CLI |
+| Primitive | Role |
+|---|---|
+| [[aligner]] | Shared alignment math, consumed by [[align-colons]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[align-match-case]] |
+| [[binding-analysis]] | Per-*Source* table indexing every write and read of every name in every lexical scope |
+| [[cache]] | User-level content-addressed cache, consumed by `prose check` and `prose format` to skip the pipeline on unchanged source |
+| [[colon-targets]] | Walker that finds every `:` alignment context, consumed by [[align-colons]] and [[strip-align-padding]] |
+| [[docstring]] | PEP 257 docstring walker, consumed by [[docstring-wrap]], [[docstring-frame]], [[docstring-expand]] |
+| [[edit]] | The `Edit { range, content }` shape every rule emits and the *Pipeline* applies |
+| [[orderer]] | Sibling reorder helper preserving attached comments, consumed by [[alphabetize]] |
+| [[suppression-map]] | Per-*Source* index of `# fmt: off` / `# fmt: skip` / `# yapf` / `# prose: ignore[...]` directives |
+| [[walker]] | Ignore-aware filesystem walker, consumed by the path-mode CLI |
 
 ## Reading Order
 
