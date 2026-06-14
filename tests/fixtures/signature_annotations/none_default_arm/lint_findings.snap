@@ -1,0 +1,41 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/signature_annotations/none_default_arm/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 17,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "",
+          "content": ": str | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 13,
+      "row": 1
+    },
+    "message": "parameter `host` has no type annotation. Consider `host: str | None`"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 12,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 1
+    },
+    "message": "`connect` returns a value but has no return type annotation"
+  }
+]

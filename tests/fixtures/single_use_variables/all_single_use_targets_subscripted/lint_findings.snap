@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/single_use_variables/all_single_use_targets_subscripted/input.py
+---
+[
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 10,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`first` is assigned and used once. Consider inlining `batch[0]`"
+  },
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 18,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 2
+    },
+    "message": "`second` is assigned and used once. Consider inlining `batch[1]`"
+  }
+]

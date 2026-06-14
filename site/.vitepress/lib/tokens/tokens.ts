@@ -58,8 +58,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'enabled',                     href: '/reference/configuration#per-rule-knobs',        blurb: 'Per-rule toggle, the bare bool in `[rules]`.' },
     { key: 'import-line-length',          href: '/reference/configuration#top-level-keys',        blurb: 'Import-wrap column budget, falls back to `code-line-length`.' },
     { key: 'imports.first-party',         href: '/reference/configuration#imports',               blurb: 'Package names lifted into the local-package import group.' },
-    { key: 'max-shift',                   href: '/reference/configuration#per-rule-knobs',        blurb: 'Per-rule alignment-shift bound.' },
-    { key: 'max-shift-policy',            href: '/reference/configuration#per-rule-knobs',        blurb: 'Fallback (`split` / `drop`) when the widest member overflows `max-shift`.' },
+    { key: 'max-shift',                   href: '/reference/configuration#per-rule-knobs',        blurb: 'Per-rule width-spread budget for an alignment run.' },
     { key: 'overrides.paths',             href: '/reference/configuration#per-pattern-overrides', blurb: 'Glob list selecting the files an override entry applies its partial config to.' },
     { key: 'target-version',              href: '/reference/configuration#top-level-keys',        blurb: 'Python version the parser reads against.' }
   ],

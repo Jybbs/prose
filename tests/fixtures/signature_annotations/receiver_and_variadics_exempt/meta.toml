@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Receivers and Variadics Stay Outside the Report"
+
+description = '''
+A method's `self`, a classmethod's `cls`, and the `*args` and `**kwargs` variadics sit outside the parameter report, leaving only the genuinely annotatable parameters flagged.
+'''

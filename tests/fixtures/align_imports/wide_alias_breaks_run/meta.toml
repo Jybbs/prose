@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Wide Module Breaks the `import … as` Run"
+
+description = '''
+The reading-order break reaches `import M as A` runs by the same width-spread rule as `from`-imports. A wide module **breaks the run**, and the `as` keyword aligns within the surviving sub-run.
+'''

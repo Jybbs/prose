@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Wide Singleton Drops Out of the Run"
-
-description = '''
-Under the default `split` policy, the width partition seeds its first band at `really_really_long_field` and claims no neighbor within `max-shift`, leaving it a singleton. It **drops out of the alignment** with its `:` hugging the name, while the narrower fields share one column.
-'''

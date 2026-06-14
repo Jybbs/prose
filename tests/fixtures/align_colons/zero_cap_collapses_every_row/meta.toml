@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `max-shift = 0` Cap Collapses Every Row to Flush"
+
+description = '''
+Setting `max-shift` to `0` forbids any shift, so every row stands alone and its `:` collapses flush against the key. **Even equal-width neighbors stay flush** rather than sharing a column.
+'''

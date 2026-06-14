@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/reused_sibling_exempts_target/input.py
+---
+def settle(pair):
+    head, tail = pair
+    record(tail)
+    return head + tail

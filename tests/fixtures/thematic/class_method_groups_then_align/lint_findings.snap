@@ -1,0 +1,88 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/class_method_groups_then_align/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 17,
+      "row": 18
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 18
+    },
+    "message": "`__repr__` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 13,
+      "row": 22
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 22
+    },
+    "message": "`name` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 31,
+      "row": 28
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "",
+          "content": ": bool"
+        }
+      ]
+    },
+    "location": {
+      "column": 25,
+      "row": 28
+    },
+    "message": "parameter `atomic` has no type annotation. Consider `atomic: bool`"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 45,
+      "row": 28
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "",
+          "content": ": int"
+        }
+      ]
+    },
+    "location": {
+      "column": 38,
+      "row": 28
+    },
+    "message": "parameter `retries` has no type annotation. Consider `retries: int`"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 15,
+      "row": 28
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 28
+    },
+    "message": "`update` returns a value but has no return type annotation"
+  }
+]

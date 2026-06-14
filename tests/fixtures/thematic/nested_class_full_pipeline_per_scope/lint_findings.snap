@@ -1,0 +1,59 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/nested_class_full_pipeline_per_scope/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 21,
+      "row": 13
+    },
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 13
+    },
+    "message": "`subtotal` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 17,
+      "row": 16
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 16
+    },
+    "message": "`__repr__` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 34,
+      "row": 19
+    },
+    "fix": null,
+    "location": {
+      "column": 30,
+      "row": 19
+    },
+    "message": "parameter `rate` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 23,
+      "row": 19
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 19
+    },
+    "message": "`total_with_tax` returns a value but has no return type annotation"
+  }
+]

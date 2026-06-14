@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/single_use_variables/attribute_value_names_subscript/input.py
+---
+single-use-variables@22..23
+single-use-variables@25..26

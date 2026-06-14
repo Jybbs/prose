@@ -16,7 +16,7 @@ The rule walks consecutive single-target assignments at the same indentation lev
 
 <RuleConfigTable />
 
-`max-shift` caps the per-line padding the alignment can introduce. When a group's widest member would force more padding than the cap allows, `max-shift-policy` decides the fallback shape, which defaults to `"split"`. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the `"drop"` policy.
+`max-shift` bounds how far a row may shift to align. The rule walks each run of assignments in source order and grows a column while its width spread stays within the cap, breaking a fresh column at the first row that would exceed it. A `max-shift` of `false` lifts the cap so a contiguous run folds into one column, and `0` forbids any shift so every `=` sits flush. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the full semantics.
 
 </template>
 

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_none_return/redundant_none_dropped/input.py
+---
+def configure():
+    load_settings()
+
+
+def reset(state):
+    state.clear()

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Async Functions and Methods Drop the Annotation Alike"
+
+description = '''
+An `async def` and an `__init__` method each lose their redundant `-> None` return annotation, the strip reaching every function shape uniformly.
+'''

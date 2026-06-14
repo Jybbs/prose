@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/strip_none_return/redundant_none_dropped/input.py
+---
+strip-none-return@15..23
+strip-none-return@63..71

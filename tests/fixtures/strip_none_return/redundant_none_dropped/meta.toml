@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Redundant Return Annotation Is Dropped"
+
+description = '''
+An explicit `-> None` return annotation strips away, since an omitted return annotation already reads as a function that returns nothing.
+'''

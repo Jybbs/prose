@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/dataclass_fields_and_docstring_reshape/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 16,
+      "row": 13
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 13
+    },
+    "message": "`summary` returns a value but has no return type annotation"
+  }
+]

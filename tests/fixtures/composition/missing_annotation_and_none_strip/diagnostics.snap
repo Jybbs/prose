@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/missing_annotation_and_none_strip/input.py
+---
+signature-annotations@9..14
+strip-none-return@15..23

@@ -1,2 +1,0 @@
-[rules]
-align-imports = { max-shift-policy = "drop" }

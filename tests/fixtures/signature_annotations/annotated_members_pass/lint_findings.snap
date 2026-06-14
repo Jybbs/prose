@@ -1,0 +1,20 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/signature_annotations/annotated_members_pass/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 32,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 27,
+      "row": 1
+    },
+    "message": "parameter `count` has no type annotation"
+  }
+]

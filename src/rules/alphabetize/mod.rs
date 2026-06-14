@@ -36,7 +36,9 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use crate::{
     config::Config,
     primitives::{
-        call_keywords::{keyword_args, module_call_params, pins_positional_params},
+        call_keywords::{
+            keyword_args, module_call_params, pins_positional_params, resolve_call_params,
+        },
         docstring::{entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
         imports::{ImportGroup, future_annotations_alias, import_group},
@@ -220,10 +222,7 @@ impl<'a> LeafCollector<'a> {
     /// the keyword run alphabetized. Returns `false` when the call cannot
     /// take that form, leaving the caller to fall back on the keyword reorder.
     fn try_emit_keyword_rewrite(&mut self, c: &'a ExprCall) -> bool {
-        let Expr::Name(callee) = c.func.as_ref() else {
-            return false;
-        };
-        let Some(&params) = self.rewrite_targets.get(&callee.range().start()) else {
+        let Some(params) = resolve_call_params(c, self.rewrite_targets) else {
             return false;
         };
         let Some(keywords) = keyword_args(self.source, c, Some(params)) else {

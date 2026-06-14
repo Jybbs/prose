@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/starred_target_flags_without_subscript/input.py
+---
+def peel(items):
+    head, *rest = items
+    return wrap(head, rest)

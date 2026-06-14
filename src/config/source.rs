@@ -111,6 +111,7 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+    use crate::config::MaxShift;
     use crate::testing::write_pyproject;
 
     fn line_length(config: &Config) -> Option<usize> {
@@ -189,7 +190,10 @@ mod tests {
 
         let config = source.effective_config(&tmp.path().join("wide/x.py"));
 
-        assert_eq!(config.rules.align_equals.max_shift.get(), 2);
+        assert_eq!(
+            config.rules.align_equals.max_shift,
+            MaxShift::Cap(std::num::NonZeroUsize::new(2).expect("non-zero")),
+        );
         assert!(!config.rules.alphabetize.enabled);
     }
 

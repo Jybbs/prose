@@ -8,7 +8,6 @@ const current = useCurrentRule()
 
 const rows = computed(() => {
   const rule = current.value
-  if (rule?.slug === 'align-imports') return configs['align-imports']
   if (rule?.family === 'alignment') return configs.alignment
   return configs.toggle
 })

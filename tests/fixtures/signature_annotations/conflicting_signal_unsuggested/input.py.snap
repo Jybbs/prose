@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/signature_annotations/conflicting_signal_unsuggested/input.py
+---
+def render(width):
+    return str(width)
+
+
+render(80)
+render("full")

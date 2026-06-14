@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `false` Cap Folds an Over-Cap Spread into One Column"
+
+description = '''
+Setting `max-shift` to `false` lifts the cap, so a contiguous run always aligns to its widest key. A spread the default would break **folds into one column**.
+'''

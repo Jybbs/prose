@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Wide Field Breaks the Run in Reading Order"
+
+description = '''
+Reading in source order, `really_really_long_field` sits more than `max-shift` from the fields above it, so it **breaks the run** and its `:` lands flush against the name. The fields before it and the fields after it each align in their own column.
+'''

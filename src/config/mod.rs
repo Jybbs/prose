@@ -208,6 +208,11 @@ mod tests {
         assert_matches!(Config::from_pyproject_str(toml), Err(ConfigError::Toml(_)));
     }
 
+    /// Builds a `MaxShift::Cap` from a non-zero literal.
+    fn cap(n: usize) -> MaxShift {
+        MaxShift::Cap(NonZeroUsize::new(n).expect("test cap is non-zero"))
+    }
+
     #[test]
     fn docstring_line_length_defaults_to_76_when_field_absent() {
         let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
@@ -442,29 +447,23 @@ mod tests {
     }
 
     #[test]
-    fn load_per_rule_policy_overrides_are_independent() {
+    fn load_per_rule_max_shift_overrides_are_independent() {
         let tmp = TempDir::new().expect("tempdir");
         write_pyproject(
             tmp.path(),
             indoc! {r#"
                 [tool.prose.rules.align-colons]
-                max-shift-policy = "drop"
+                max-shift = false
 
                 [tool.prose.rules.align-equals]
-                max-shift-policy = "split"
+                max-shift = 0
             "#},
         );
 
         let config = Config::load(tmp.path()).expect("loads");
 
-        assert_eq!(
-            config.rules.align_colons.max_shift_policy,
-            MaxAlignShiftPolicy::Drop
-        );
-        assert_eq!(
-            config.rules.align_equals.max_shift_policy,
-            MaxAlignShiftPolicy::Split
-        );
+        assert_eq!(config.rules.align_colons.max_shift, MaxShift::Unlimited);
+        assert_eq!(config.rules.align_equals.max_shift, MaxShift::NoShift);
     }
 
     #[test]
@@ -690,6 +689,54 @@ mod tests {
     }
 
     #[test]
+    fn max_shift_default_is_sixteen() {
+        let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+
+        assert_eq!(config.rules.align_equals.max_shift, cap(16));
+    }
+
+    #[test]
+    fn max_shift_negative_returns_toml_error() {
+        assert_toml_error("[tool.prose.rules.align-equals]\nmax-shift = -1\n");
+    }
+
+    #[rstest]
+    #[case("4", cap(4))]
+    #[case("false", MaxShift::Unlimited)]
+    #[case("0", MaxShift::NoShift)]
+    fn max_shift_reads_each_value_form(#[case] value: &str, #[case] expected: MaxShift) {
+        let config = Config::from_pyproject_str(&format!(
+            "[tool.prose.rules.align-equals]\nmax-shift = {value}\n"
+        ))
+        .expect("parses");
+
+        assert_eq!(config.rules.align_equals.max_shift, expected);
+    }
+
+    #[rstest]
+    #[case("0")]
+    #[case("4")]
+    #[case("false")]
+    fn max_shift_round_trips_through_toml(#[case] value: &str) {
+        let config = Config::from_pyproject_str(&format!(
+            "[tool.prose.rules.align-equals]\nmax-shift = {value}\n"
+        ))
+        .expect("parses");
+        let dumped = toml::to_string(&config).expect("Config serializes");
+        let reparsed = Config::from_prose_toml_str(&dumped).expect("reparses");
+
+        assert_eq!(
+            reparsed.rules.align_equals.max_shift,
+            config.rules.align_equals.max_shift,
+        );
+    }
+
+    #[test]
+    fn max_shift_true_returns_toml_error() {
+        assert_toml_error("[tool.prose.rules.align-equals]\nmax-shift = true\n");
+    }
+
+    #[test]
     fn rules_bare_bool_false_leaves_other_knobs_default() {
         let config = Config::from_pyproject_str("[tool.prose.rules]\nalphabetize = false\n")
             .expect("parses");
@@ -745,7 +792,7 @@ mod tests {
                 .expect("parses");
 
         assert!(config.rules.align_equals.enabled);
-        assert_eq!(config.rules.align_equals.max_shift.get(), 4);
+        assert_eq!(config.rules.align_equals.max_shift, cap(4));
     }
 
     #[test]
@@ -761,7 +808,7 @@ mod tests {
         .expect("parses");
 
         assert!(!config.rules.align_equals.enabled);
-        assert_eq!(config.rules.align_equals.max_shift.get(), 4);
+        assert_eq!(config.rules.align_equals.max_shift, cap(4));
     }
 
     #[test]
