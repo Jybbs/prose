@@ -60,37 +60,38 @@ mod tests {
     use super::*;
     use crate::testing::parse;
 
+    fn gap_block(s: &Source) -> Option<TextRange> {
+        let body = &s.ast().body;
+        leading_comment_block(s, body[0].end(), body[1].start())
+    }
+
     #[test]
     fn is_banner_block_detects_block_with_any_rule_line() {
         let s = parse(
             "x = 1\n# ========================\n# Section: helpers\n# ========================\ndef f(): pass\n",
         );
-        let body = &s.ast().body;
-        let block = leading_comment_block(&s, body[0].end(), body[1].start()).expect("block");
+        let block = gap_block(&s).expect("block");
         assert!(is_banner_block(&s, block));
     }
 
     #[test]
     fn is_banner_block_detects_block_with_hash_heading() {
         let s = parse("x = 1\n### Codec APIs\ndef f(): pass\n");
-        let body = &s.ast().body;
-        let block = leading_comment_block(&s, body[0].end(), body[1].start()).expect("block");
+        let block = gap_block(&s).expect("block");
         assert!(is_banner_block(&s, block));
     }
 
     #[test]
     fn is_banner_block_detects_heading_on_non_leading_line() {
         let s = parse("x = 1\n# see the module docs\n### API Reference\ndef f(): pass\n");
-        let body = &s.ast().body;
-        let block = leading_comment_block(&s, body[0].end(), body[1].start()).expect("block");
+        let block = gap_block(&s).expect("block");
         assert!(is_banner_block(&s, block));
     }
 
     #[test]
     fn is_banner_block_returns_false_for_all_prose_block() {
         let s = parse("x = 1\n# describes f\n# helper\ndef f(): pass\n");
-        let body = &s.ast().body;
-        let block = leading_comment_block(&s, body[0].end(), body[1].start()).expect("block");
+        let block = gap_block(&s).expect("block");
         assert!(!is_banner_block(&s, block));
     }
 
@@ -137,8 +138,7 @@ mod tests {
     #[test]
     fn leading_comment_block_returns_block_for_chain_of_own_line_comments() {
         let s = parse("x = 1\n# a\n# b\ndef f(): pass\n");
-        let body = &s.ast().body;
-        let block = leading_comment_block(&s, body[0].end(), body[1].start()).expect("block");
+        let block = gap_block(&s).expect("block");
         let comments = s.comment_ranges();
         assert_eq!(block.start(), s.text().line_start(comments[0].start()));
         assert_eq!(block.end(), comments[1].end());
@@ -147,14 +147,12 @@ mod tests {
     #[test]
     fn leading_comment_block_returns_none_when_no_own_line_comments_between() {
         let s = parse("x = 1\ndef f(): pass\n");
-        let body = &s.ast().body;
-        assert!(leading_comment_block(&s, body[0].end(), body[1].start()).is_none());
+        assert!(gap_block(&s).is_none());
     }
 
     #[test]
     fn leading_comment_block_skips_trailing_end_of_line_comments() {
         let s = parse("x = 1  # trail\ndef f(): pass\n");
-        let body = &s.ast().body;
-        assert!(leading_comment_block(&s, body[0].end(), body[1].start()).is_none());
+        assert!(gap_block(&s).is_none());
     }
 }

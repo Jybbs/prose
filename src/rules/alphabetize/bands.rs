@@ -379,6 +379,14 @@ mod tests {
     use crate::primitives::orderer::block_range;
     use crate::testing::parse;
 
+    fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
+        let body = &source.ast().body;
+        let blocks: Vec<TextRange> = (0..body.len())
+            .map(|i| block_range(source, body, i, source.module_range()))
+            .collect();
+        module_band_plan(source, body, &blocks, false, None)
+    }
+
     #[test]
     fn assign_run_target_unwraps_both_assign_kinds_and_filters_non_names() {
         let s = parse("X = 1\nself.x = 1\ny: int = 2\nz: int\n(a, b) = (1, 2)\n");
@@ -394,12 +402,7 @@ mod tests {
     #[test]
     fn module_band_plan_anchors_a_constant_naming_a_duplicated_definition() {
         let source = parse("def f():\n    pass\n\n\ndef f():\n    pass\n\n\nALIAS = f\n");
-        let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, source.module_range()))
-            .collect();
-        let plan =
-            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&2),
             "ALIAS names an ambiguous f, so it pins in place"
@@ -409,12 +412,7 @@ mod tests {
     #[test]
     fn module_band_plan_bands_a_builtin_valued_constant_as_leading() {
         let source = parse("def build():\n    return 1\n\n\nTABLE = dict(timeout=30)\n");
-        let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, source.module_range()))
-            .collect();
-        let plan =
-            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert_eq!(
             plan.ranks[&1], 1,
             "dict is a builtin, so TABLE rides the leading band"
@@ -424,12 +422,7 @@ mod tests {
     #[test]
     fn module_band_plan_bands_leading_and_trailing_constants() {
         let source = parse("LEAD = 1\n\n\ndef make():\n    return 1\n\n\nTRAIL = make\n");
-        let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, source.module_range()))
-            .collect();
-        let plan =
-            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert_eq!(plan.ranks[&0], 1, "LEAD touches only a literal");
         assert_eq!(plan.ranks[&1], 2, "make is a definition");
         assert_eq!(plan.ranks[&2], 3, "TRAIL names make");
@@ -438,12 +431,7 @@ mod tests {
     #[test]
     fn module_band_plan_carries_a_prose_comment_into_the_band() {
         let source = parse("def f():\n    pass\n\n# note\n\nX = 1\n");
-        let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, source.module_range()))
-            .collect();
-        let plan =
-            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert_eq!(plan.ranks[&1], 1, "X leads, hoisting above f");
         let (idx, comment) = plan
             .carries
@@ -457,22 +445,13 @@ mod tests {
     #[test]
     fn module_band_plan_declines_a_constant_cycle() {
         let source = parse("A = B\nB = A\n");
-        let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, source.module_range()))
-            .collect();
-        assert!(module_band_plan(&source, body, &blocks, false, None).is_none());
+        assert!(plan_of(&source).is_none());
     }
 
     #[test]
     fn module_band_plan_ignores_a_constant_self_reference() {
         let source = parse("X = X\n");
-        let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, source.module_range()))
-            .collect();
-        let plan = module_band_plan(&source, body, &blocks, false, None)
-            .expect("self-reference does not cycle");
+        let plan = plan_of(&source).expect("self-reference does not cycle");
         assert_eq!(
             plan.ranks[&0], 1,
             "a self-reference constrains nothing, so X leads"
@@ -482,12 +461,7 @@ mod tests {
     #[test]
     fn module_band_plan_pins_a_constant_below_a_banner() {
         let source = parse("def f():\n    pass\n\n# =====\n\nX = 1\n");
-        let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, source.module_range()))
-            .collect();
-        let plan =
-            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&1),
             "a banner divides sections, so X pins below it"
@@ -498,12 +472,7 @@ mod tests {
     #[test]
     fn module_band_plan_pins_a_constant_below_a_directive() {
         let source = parse("def f():\n    pass\n\n# fmt: on\n\nX = 1\n");
-        let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, source.module_range()))
-            .collect();
-        let plan =
-            module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&1),
             "a format directive drives its own line, so X pins below it"

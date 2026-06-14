@@ -171,6 +171,7 @@ mod tests {
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
 
+    use super::is_directive_comment;
     use crate::rule::RuleId;
     use crate::testing::{parse, range};
 
@@ -279,6 +280,18 @@ mod tests {
         // Edit spanning the entire suppressed block (offsets 0..27)
         // overlaps the span and must be dropped.
         assert!(map.intersects(range(0, 27)));
+    }
+
+    #[rstest]
+    #[case("# fmt: off", true)]
+    #[case("# prose: skip[align-equals]", true)]
+    #[case("# prose: ignore", true)]
+    #[case("# a plain note", false)]
+    fn is_directive_comment_spots_format_and_lint_directives(
+        #[case] comment: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(is_directive_comment(comment), expected);
     }
 
     #[rstest]
