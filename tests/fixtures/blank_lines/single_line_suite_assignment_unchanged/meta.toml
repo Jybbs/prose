@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Assignment-Bodied Single-Line-Suite Class Stays Untouched"
+
+description = '''
+A single top-level class whose single-line suite is an assignment rather than `pass`, the file's only statement, gains no leading blank lines and stays untouched.
+'''
