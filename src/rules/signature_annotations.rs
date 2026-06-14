@@ -311,7 +311,7 @@ mod tests {
         assert!(
             diagnostics
                 .iter()
-                .all(|d| !d.message.starts_with("parameter"))
+                .all(|d| !d.message.starts_with("Parameter"))
         );
     }
 
