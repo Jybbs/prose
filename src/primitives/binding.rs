@@ -18,10 +18,10 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use ruff_python_ast::{
-    Alias, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed,
-    ExprSetComp, ExprTuple, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign,
-    StmtAugAssign, StmtClassDef, StmtFor, StmtFunctionDef, StmtIf, StmtImport, StmtImportFrom,
-    StmtTry, StmtWith,
+    Alias, ExceptHandler, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp,
+    ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, ModModule, Parameters, Stmt,
+    StmtAnnAssign, StmtAssign, StmtAugAssign, StmtClassDef, StmtFor, StmtFunctionDef, StmtIf,
+    StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith,
     visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -80,8 +80,9 @@ pub(crate) enum UnpackKind {
 /// `attributes` collects the distinct attribute names read off the
 /// binding (`os.environ` records `environ`), `bare_read` flips when the
 /// name is read without an attribute access (`foo(os)`), and
-/// `first_unconditional_write` holds the earliest write not nested in an
-/// `if` branch, or `None` when every write is conditional.
+/// `first_unconditional_write` holds the earliest write not nested in a
+/// conditional branch (`if`/`for`/`while`/`try`/`match`), or `None` when
+/// every write is conditional.
 #[derive(Debug, Serialize)]
 pub(crate) struct Binding {
     attributes: BTreeSet<String>,
@@ -178,7 +179,7 @@ impl BindingAnalysis {
 
     /// Returns `true` when `name` has an unconditional module-scope
     /// write at an offset strictly less than `offset`. A write nested in
-    /// an `if` branch is conditional and excluded.
+    /// a conditional branch (`if`/`for`/`while`/`try`/`match`) is excluded.
     pub(crate) fn is_defined_before(&self, name: &str, offset: TextSize) -> bool {
         self.module_binding(name)
             .and_then(|binding| binding.first_unconditional_write)
@@ -383,6 +384,15 @@ impl Builder {
         }
     }
 
+    /// Runs `f` with writes marked conditional, so a name bound only
+    /// inside a branch that may not run never sets
+    /// `first_unconditional_write`.
+    fn in_conditional(&mut self, f: impl FnOnce(&mut Self)) {
+        self.conditional_depth += 1;
+        f(self);
+        self.conditional_depth -= 1;
+    }
+
     fn pop_scope(&mut self) {
         self.scope_stack
             .pop()
@@ -574,24 +584,23 @@ impl Builder {
 
     fn visit_for(&mut self, node: &StmtFor) {
         self.visit_expr(&node.iter);
-        self.record_target(&node.target, BindingKind::For);
-        self.visit_body(&node.body);
-        self.visit_body(&node.orelse);
+        self.in_conditional(|b| {
+            b.record_target(&node.target, BindingKind::For);
+            b.visit_body(&node.body);
+            b.visit_body(&node.orelse);
+        });
     }
 
-    /// Walks an `if`/`elif`/`else` chain with each branch body bracketed
-    /// as conditional, excluding its writes from `first_unconditional_write`.
+    /// Walks an `if`/`elif`/`else` chain with each branch body conditional.
     fn visit_if(&mut self, node: &StmtIf) {
         self.visit_expr(&node.test);
-        self.conditional_depth += 1;
-        self.visit_body(&node.body);
+        self.in_conditional(|b| b.visit_body(&node.body));
         for clause in &node.elif_else_clauses {
             if let Some(test) = &clause.test {
                 self.visit_expr(test);
             }
-            self.visit_body(&clause.body);
+            self.in_conditional(|b| b.visit_body(&clause.body));
         }
-        self.conditional_depth -= 1;
     }
 
     fn visit_import(&mut self, node: &StmtImport) {
@@ -609,19 +618,29 @@ impl Builder {
     }
 
     fn visit_try(&mut self, node: &StmtTry) {
-        self.visit_body(&node.body);
-        for handler in &node.handlers {
-            let ruff_python_ast::ExceptHandler::ExceptHandler(eh) = handler;
-            if let Some(type_) = &eh.type_ {
-                self.visit_expr(type_);
+        self.in_conditional(|b| {
+            b.visit_body(&node.body);
+            for handler in &node.handlers {
+                let ExceptHandler::ExceptHandler(eh) = handler;
+                if let Some(type_) = &eh.type_ {
+                    b.visit_expr(type_);
+                }
+                if let Some(name) = &eh.name {
+                    b.record_identifier(name, BindingKind::ExceptHandler);
+                }
+                b.visit_body(&eh.body);
             }
-            if let Some(name) = &eh.name {
-                self.record_identifier(name, BindingKind::ExceptHandler);
-            }
-            self.visit_body(&eh.body);
-        }
-        self.visit_body(&node.orelse);
+            b.visit_body(&node.orelse);
+        });
         self.visit_body(&node.finalbody);
+    }
+
+    fn visit_while(&mut self, node: &StmtWhile) {
+        self.visit_expr(&node.test);
+        self.in_conditional(|b| {
+            b.visit_body(&node.body);
+            b.visit_body(&node.orelse);
+        });
     }
 
     fn visit_with(&mut self, node: &StmtWith) {
@@ -672,6 +691,14 @@ impl<'a> Visitor<'a> for Builder {
         }
     }
 
+    fn visit_match_case(&mut self, case: &'a MatchCase) {
+        self.visit_pattern(&case.pattern);
+        if let Some(guard) = &case.guard {
+            self.visit_expr(guard);
+        }
+        self.in_conditional(|b| b.visit_body(&case.body));
+    }
+
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         match stmt {
             Stmt::AnnAssign(node) => self.visit_ann_assign(node),
@@ -685,6 +712,7 @@ impl<'a> Visitor<'a> for Builder {
             Stmt::Import(node) => self.visit_import(node),
             Stmt::ImportFrom(node) => self.visit_import_from(node),
             Stmt::Try(node) => self.visit_try(node),
+            Stmt::While(node) => self.visit_while(node),
             Stmt::With(node) => self.visit_with(node),
             _ => walk_stmt(self, stmt),
         }
@@ -766,8 +794,13 @@ mod tests {
     #[rstest]
     #[case::conditional_only_write("if flag:\n    Helper = int\n", "Helper", 100)]
     #[case::elif_only_write("if a:\n    pass\nelif b:\n    Helper = int\n", "Helper", 100)]
+    #[case::except_only_write("try:\n    pass\nexcept E:\n    Helper = int\n", "Helper", 100)]
+    #[case::for_only_write("for _ in xs:\n    Helper = int\n", "Helper", 100)]
+    #[case::match_case_only_write("match x:\n    case 1:\n        Helper = int\n", "Helper", 100)]
     #[case::nested_conditional("if a:\n    if b:\n        Helper = int\n", "Helper", 100)]
+    #[case::try_only_write("try:\n    Helper = int\nexcept E:\n    pass\n", "Helper", 100)]
     #[case::undefined_name("x = 1\n", "y", 100)]
+    #[case::while_only_write("while flag:\n    Helper = int\n", "Helper", 100)]
     #[case::write_after_offset("x = 1\n", "x", 0)]
     fn is_defined_before_is_false_without_a_prior_unconditional_write(
         #[case] src: &str,
@@ -788,6 +821,12 @@ mod tests {
         "Helper",
         100
     )]
+    #[case::finally_write_is_unconditional(
+        "try:\n    pass\nfinally:\n    Helper = int\n",
+        "Helper",
+        100
+    )]
+    #[case::with_body_is_unconditional("with ctx() as _:\n    Helper = int\n", "Helper", 100)]
     #[case::prior_module_write("x = 1\nprint(x)\n", "x", 10)]
     fn is_defined_before_is_true_with_a_prior_unconditional_write(
         #[case] src: &str,

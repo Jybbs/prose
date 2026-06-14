@@ -6,7 +6,7 @@ input_file: tests/fixtures/binding_analysis/except_as_binds_enclosing/input.py
 bindings:
   - attributes: []
     bare_read: true
-    first_unconditional_write: 53
+    first_unconditional_write: ~
     kinds:
       - ExceptHandler
     name: e
