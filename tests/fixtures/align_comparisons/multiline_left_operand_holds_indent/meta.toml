@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Multi-Line Left Operand Holds Its Indent"
+
+description = '''
+A comparison's left operand spans two lines, so its `==` sits past the line where the operand opens. **The cross-line operand drops out of the run**, leaving the remaining single-line comparison alone and unpadded.
+'''

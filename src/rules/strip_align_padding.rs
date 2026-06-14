@@ -1,12 +1,7 @@
-//! Strips the pre-`:` padding on aligned contexts whose `:`s have no
-//! column to align to. The two cases are a singleton group (one
-//! member, so no neighbor row) and a multi-member group whose `:`s
-//! all share a source line (no column distinction across rows). Both
-//! reduce to "alignment is not happening here," at which point the
-//! pre-`:` gap is visual noise and the rule strips it. Multi-member
-//! groups whose `:`s sit on distinct lines belong to `align_colons`
-//! and pass through this rule untouched. Runs after the alignment
-//! rules in `Pipeline::with_defaults` so it sees their output.
+//! Strips pre-`:` padding from the colon groups `align_colons` leaves
+//! unaligned, where the gap before the `:` has no column to align to.
+//! Runs after the alignment rules in `Pipeline::with_defaults` so it
+//! sees their output.
 
 use ruff_diagnostics::Edit;
 
@@ -27,7 +22,10 @@ impl StripAlignPadding {
 
 impl Rule for StripAlignPadding {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let mut emitter = Emitter { edits: Vec::new() };
+        let mut emitter = Emitter {
+            edits: Vec::new(),
+            source,
+        };
         emitter.walk(source);
         singleton_groups(emitter.edits)
     }
@@ -37,22 +35,19 @@ impl Rule for StripAlignPadding {
     }
 }
 
-struct Emitter {
+struct Emitter<'a> {
     edits: Vec<Edit>,
+    source: &'a Source,
 }
 
-impl ColonEmitter for Emitter {
-    /// Emits a deletion edit per member when alignment is not
-    /// happening for the group. Singleton groups always qualify, since
-    /// a single row has nothing to align against. Multi-member groups
-    /// qualify when their `:`s share a source line, since no column
-    /// distinguishes the rows. Multi-member groups on distinct lines
-    /// belong to `align_colons` and emit nothing here. The `width > 0`
-    /// guard rejects the edge case where a `:` sits on its own
-    /// indented line and the "gap" is leading indent rather than
-    /// padding.
+impl ColonEmitter for Emitter<'_> {
+    /// Strips each member's gap when the group is not an
+    /// [alignment candidate](aligner::is_alignment_candidate), so the
+    /// groups `align_colons` owns emit nothing here. The `width > 0`
+    /// guard skips a `:` on its own indented line, where the gap is
+    /// leading indent rather than padding.
     fn handle(&mut self, members: &[aligner::Member]) {
-        if aligner::is_alignment_candidate(members) {
+        if aligner::is_alignment_candidate(self.source, members) {
             return;
         }
         self.edits.extend(
@@ -73,10 +68,17 @@ mod tests {
     use ruff_text_size::{Ranged, TextSize};
 
     use super::*;
-    use crate::testing::range;
+    use crate::testing::{parse, range};
 
     fn run_strip(members: &[aligner::Member]) -> Vec<Edit> {
-        let mut emitter = Emitter { edits: Vec::new() };
+        // Two flush lines starting at offsets 0 and 6 back the synthetic
+        // members' `line_start`s, so the baseline read sees one shared
+        // indent.
+        let source = parse("aa: 0\nbb: 1\n");
+        let mut emitter = Emitter {
+            edits: Vec::new(),
+            source: &source,
+        };
         emitter.handle(members);
         emitter.edits
     }

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_comparisons/backslash_split_skips_phantom_column/input.py
+---
+

@@ -61,7 +61,7 @@ impl<'a> AlignWalker<'a> {
             .into_iter()
             .filter(|m| !self.is_held(m.line_start))
             .collect();
-        if is_alignment_candidate(&kept) {
+        if is_alignment_candidate(self.source, &kept) {
             self.emit_group(&kept);
         }
     }

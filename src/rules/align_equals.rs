@@ -127,7 +127,7 @@ impl Visitor<'_> {
         }
         for group in self.keyword_groups(call) {
             let members: Vec<aligner::Member> = group.iter().map(|k| k.member).collect();
-            let mut edits = if aligner::is_alignment_candidate(&members) {
+            let mut edits = if aligner::is_alignment_candidate(source, &members) {
                 self.walker.group_edits(&members)
             } else {
                 group

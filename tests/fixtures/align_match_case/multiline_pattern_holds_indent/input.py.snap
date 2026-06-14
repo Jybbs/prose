@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_match_case/multiline_pattern_holds_indent/input.py
+---
+match command:
+    case (
+        1,
+        2,
+    ):
+        handle()
+    case other: handle2()

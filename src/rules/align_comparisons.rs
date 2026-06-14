@@ -71,6 +71,7 @@ impl Visitor<'_> {
         let comparator = compare.comparators.first()?;
         let member = aligner::line_anchored_member_at_kind(
             self.walker.source,
+            compare.left.start(),
             TextRange::new(compare.left.end(), comparator.start()),
             cmp_op_anchor_token_kind(op),
         )?;
