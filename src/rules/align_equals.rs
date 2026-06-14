@@ -116,7 +116,9 @@ impl Visitor<'_> {
 
     /// Aligns each line-adjacent run of `call`'s keyword arguments,
     /// padding before each `=` and rewriting the gap after it to one
-    /// space. A keyword that stands alone in its group instead takes a
+    /// space. A run pads its `=` only when its keywords each sit on
+    /// their own line at a shared column baseline. A lone keyword, or a
+    /// run whose rows open at differing columns, instead takes a
     /// one-space buffer on each side of its `=`, so every exploded
     /// keyword reads as `name = value`. A single-line call and a held
     /// row are left untouched.
@@ -127,7 +129,7 @@ impl Visitor<'_> {
         }
         for group in self.keyword_groups(call) {
             let members: Vec<aligner::Member> = group.iter().map(|k| k.member).collect();
-            let mut edits = if aligner::is_alignment_candidate(&members) {
+            let mut edits = if aligner::is_alignment_candidate(source, &members) {
                 self.walker.group_edits(&members)
             } else {
                 group

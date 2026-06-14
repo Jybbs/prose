@@ -46,9 +46,7 @@ struct Emitter<'a> {
 
 impl ColonEmitter for Emitter<'_> {
     fn handle(&mut self, members: &[aligner::Member]) {
-        if aligner::is_alignment_candidate(members) {
-            self.walker.emit_group(members);
-        }
+        self.walker.emit_if_candidate(members);
     }
 
     fn match_arms(&mut self, _: &[aligner::Member]) {}
