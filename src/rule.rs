@@ -312,7 +312,7 @@ register_rules! {
     "docstring-frame":           docstring_frame:           ToggleOnly                => DocstringFrame          => "place docstring opener and closer on their own lines",
     "unused-future-annotations": unused_future_annotations: ToggleOnly                => UnusedFutureAnnotations => "remove unused `from __future__ import annotations`",
     "blank-lines":               blank_lines:               ToggleOnly                => BlankLines              => "normalize blank-line spacing",
-    "bare-imports":              bare_imports:              BareImportsConfig         => BareImports             => "flag a bare import a `from` import could replace",
+    "bare-imports":              bare_imports:              BareImportsConfig         => BareImports             => "Flag a bare import a `from` import could replace",
     "align-match-case":          align_match_case:          AlignmentConfig           => AlignMatchCase          => "align match-case colons",
     "strip-none-return":         strip_none_return:         ToggleOnly                => StripNoneReturn         => "drop a redundant `-> None` return annotation",
     "signature-layout":          signature_layout:          SignatureLayoutConfig     => SignatureLayout         => "normalize function signature to one-line or one-per-line shape",
@@ -324,11 +324,11 @@ register_rules! {
     "align-comparisons":         align_comparisons:         AlignmentConfig           => AlignComparisons        => "align consecutive comparison operators",
     "strip-align-padding":       strip_align_padding:       ToggleOnly                => StripAlignPadding       => "drop padding from a group with no column to align to",
     "reassigned-constants":      reassigned_constants:      ReassignedConstantsConfig => ReassignedConstants     => "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once",
-    "step-narration":            step_narration:            ToggleOnly                => StepNarration           => "numbered-step comment found. Consider extracting each step as a named function",
-    "legacy-union-syntax":       legacy_union_syntax:       ToggleOnly                => LegacyUnionSyntax       => "rewrite legacy `Optional`/`Union` to PEP 604 union syntax",
-    "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables      => "binding is assigned and used once. Consider inlining",
-    "unsorted-parameters":       unsorted_parameters:       ToggleOnly                => UnsortedParameters       => "function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword",
-    "signature-annotations":     signature_annotations:     ToggleOnly                => SignatureAnnotations    => "flag a missing parameter or return type annotation",
+    "step-narration":            step_narration:            ToggleOnly                => StepNarration           => "Numbered-step comment found. Consider extracting each step as a named function",
+    "legacy-union-syntax":       legacy_union_syntax:       ToggleOnly                => LegacyUnionSyntax       => "Rewrite legacy `Optional`/`Union` to PEP 604 union syntax",
+    "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables      => "Binding is assigned and used once. Consider inlining",
+    "unsorted-parameters":       unsorted_parameters:       ToggleOnly                => UnsortedParameters       => "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword",
+    "signature-annotations":     signature_annotations:     ToggleOnly                => SignatureAnnotations    => "Flag a missing parameter or return type annotation",
 }
 
 #[cfg(test)]

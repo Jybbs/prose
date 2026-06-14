@@ -15,7 +15,7 @@ input_file: tests/fixtures/signature_annotations/value_return_versus_procedure/i
       "column": 11,
       "row": 1
     },
-    "message": "parameter `store` has no type annotation"
+    "message": "Parameter `store` has no type annotation"
   },
   {
     "code": "signature-annotations",
@@ -28,7 +28,7 @@ input_file: tests/fixtures/signature_annotations/value_return_versus_procedure/i
       "column": 18,
       "row": 1
     },
-    "message": "parameter `key` has no type annotation"
+    "message": "Parameter `key` has no type annotation"
   },
   {
     "code": "signature-annotations",
@@ -54,7 +54,7 @@ input_file: tests/fixtures/signature_annotations/value_return_versus_procedure/i
       "column": 13,
       "row": 5
     },
-    "message": "parameter `store` has no type annotation"
+    "message": "Parameter `store` has no type annotation"
   },
   {
     "code": "signature-annotations",
@@ -67,7 +67,7 @@ input_file: tests/fixtures/signature_annotations/value_return_versus_procedure/i
       "column": 20,
       "row": 5
     },
-    "message": "parameter `key` has no type annotation"
+    "message": "Parameter `key` has no type annotation"
   },
   {
     "code": "signature-annotations",
@@ -80,6 +80,6 @@ input_file: tests/fixtures/signature_annotations/value_return_versus_procedure/i
       "column": 25,
       "row": 5
     },
-    "message": "parameter `value` has no type annotation"
+    "message": "Parameter `value` has no type annotation"
   }
 ]

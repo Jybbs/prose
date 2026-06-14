@@ -49,7 +49,7 @@ input_file: tests/fixtures/thematic/class_method_groups_then_align/input.py
       "column": 25,
       "row": 28
     },
-    "message": "parameter `atomic` has no type annotation. Consider `atomic: bool`"
+    "message": "Parameter `atomic` has no type annotation. Consider `atomic: bool`"
   },
   {
     "code": "signature-annotations",
@@ -70,7 +70,7 @@ input_file: tests/fixtures/thematic/class_method_groups_then_align/input.py
       "column": 38,
       "row": 28
     },
-    "message": "parameter `retries` has no type annotation. Consider `retries: int`"
+    "message": "Parameter `retries` has no type annotation. Consider `retries: int`"
   },
   {
     "code": "signature-annotations",

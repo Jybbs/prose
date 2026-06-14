@@ -41,7 +41,7 @@ input_file: tests/fixtures/thematic/nested_class_full_pipeline_per_scope/input.p
       "column": 30,
       "row": 19
     },
-    "message": "parameter `rate` has no type annotation"
+    "message": "Parameter `rate` has no type annotation"
   },
   {
     "code": "signature-annotations",

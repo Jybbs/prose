@@ -1,0 +1,192 @@
+.rc-baseline {
+  display   : inline-flex;
+  flex-wrap : wrap;
+  gap       : 8px 14px;
+}
+
+.rc-baseline .rc-chip {
+  color          : var(--family-color);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-xs);
+  background     : linear-gradient(var(--family-color), var(--family-color)) no-repeat left bottom / 100% 1px;
+  padding-bottom : 1px;
+  transition     : color var(--prose-transition);
+}
+
+.rc-dot {
+  display    : flex;
+  flex-wrap  : wrap;
+  gap        : 8px 14px;
+  margin     : 0;
+  padding    : 0;
+  list-style : none;
+}
+
+.rc-dot .rc-chip {
+  display       : inline-flex;
+  align-items   : center;
+  gap           : 7px;
+  padding       : 3px 10px;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-c-bg-alt);
+  transition    : border-color var(--prose-transition), background var(--prose-transition);
+}
+
+.rc-dot .rc-chip:hover {
+  border-color : color-mix(in srgb, var(--family-color) 50%, var(--vp-c-divider));
+  background   : color-mix(in srgb, var(--family-color) 12%, transparent);
+}
+
+.rc-dot .rc-dot-mark {
+  flex          : 0 0 auto;
+  width         : 6px;
+  height        : 6px;
+  border-radius : 50%;
+  background    : var(--family-color);
+}
+
+.rc-dot .rc-slug {
+  color       : var(--vp-c-text-1);
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-xs);
+  line-height : 1.4;
+}
+
+.rc-underline {
+  display   : flex;
+  flex-wrap : wrap;
+  gap       : 8px 16px;
+}
+
+.rc-underline .rc-chip {
+  color          : var(--vp-c-text-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-xs);
+  line-height    : 1.6;
+  padding-bottom : 2px;
+  background     : linear-gradient(var(--family-color), var(--family-color)) no-repeat left bottom / 100% 1px;
+  transition     : background-size var(--prose-transition-slow);
+}
+
+.rc-underline .rc-chip:hover {
+  background-size : 100% 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-underline .rc-chip {
+    transition : none;
+  }
+}
+
+.rc-wash {
+  display    : flex;
+  flex-wrap  : wrap;
+  gap        : 8px 10px;
+  margin     : 0;
+  padding    : 0;
+  list-style : none;
+}
+
+.rc-wash .rc-chip {
+  display          : inline-flex;
+  align-items      : center;
+  padding          : 2px 8px;
+  border-radius    : var(--prose-radius-sm);
+  border-left      : 1px solid color-mix(in srgb, var(--family-color) 55%, transparent);
+  background-color : color-mix(in srgb, var(--family-color) 12%, transparent);
+  transition       : background-color var(--prose-transition);
+}
+
+.rc-wash .rc-chip:hover {
+  background-color : color-mix(in srgb, var(--family-color) 20%, transparent);
+}
+
+.rc-wash .rc-slug {
+  color       : var(--vp-c-text-1);
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-xs);
+  line-height : 1.4;
+}
+
+.rc-accent {
+  display   : flex;
+  flex-wrap : wrap;
+  gap       : 8px 14px;
+}
+
+.rc-accent .rc-chip {
+  color          : var(--vp-c-text-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-xs);
+  border-bottom  : 1.5px solid var(--vp-c-brand-1);
+  border-radius  : var(--prose-radius-sm) var(--prose-radius-sm) 0 0;
+  padding-bottom : 1px;
+  cursor         : default;
+  outline        : none;
+  transition     : border-color var(--prose-transition), background var(--prose-transition);
+}
+
+.rc-accent .rc-chip:hover,
+.rc-accent .rc-chip:focus-visible {
+  border-bottom-color : var(--family-color);
+  background          : color-mix(in srgb, var(--family-color) 12%, transparent);
+}
+
+.rc-grouped {
+  display        : flex;
+  flex-direction : column;
+  gap            : 18px;
+}
+
+.rc-grouped .rc-group {
+  display        : flex;
+  flex-direction : column;
+  gap            : 8px;
+}
+
+.rc-grouped .rc-group-head {
+  align-items : center;
+  display     : flex;
+  gap         : 8px;
+}
+
+.rc-grouped .rc-group-swatch {
+  background    : var(--family-color);
+  border-radius : var(--prose-radius-sm);
+  flex          : none;
+  height        : 10px;
+  width         : 10px;
+}
+
+.rc-grouped .rc-group-kicker {
+  color          : var(--family-color);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+}
+
+.rc-grouped .rc-group-chips {
+  display    : flex;
+  flex-wrap  : wrap;
+  gap        : 6px 10px;
+  list-style : none;
+  margin     : 0;
+  padding    : 0 0 0 18px;
+}
+
+.rc-grouped .rc-chip {
+  background    : var(--vp-c-bg-alt);
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius-sm);
+  color         : var(--vp-c-text-1);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--prose-text-xs);
+  padding       : 0.1rem 0.5rem;
+  transition    : border-color var(--prose-transition);
+}
+
+.rc-grouped .rc-chip:hover {
+  border-color : color-mix(in srgb, var(--family-color) 45%, var(--vp-c-divider));
+}

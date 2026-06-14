@@ -53,7 +53,8 @@
 }
 
 .lint-popover .rule-card {
-  overflow : hidden;
+  min-height : auto;
+  overflow   : hidden;
 }
 
 .lint-popover .rule-card-header {

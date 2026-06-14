@@ -15,7 +15,7 @@ input_file: tests/fixtures/thematic/mixed_operators_share_column/input.py
       "column": 14,
       "row": 1
     },
-    "message": "parameter `rec` has no type annotation"
+    "message": "Parameter `rec` has no type annotation"
   },
   {
     "code": "signature-annotations",

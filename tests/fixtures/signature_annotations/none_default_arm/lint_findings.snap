@@ -23,7 +23,7 @@ input_file: tests/fixtures/signature_annotations/none_default_arm/input.py
       "column": 13,
       "row": 1
     },
-    "message": "parameter `host` has no type annotation. Consider `host: str | None`"
+    "message": "Parameter `host` has no type annotation. Consider `host: str | None`"
   },
   {
     "code": "signature-annotations",

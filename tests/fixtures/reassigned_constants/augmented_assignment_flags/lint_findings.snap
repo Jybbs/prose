@@ -15,6 +15,6 @@ input_file: tests/fixtures/reassigned_constants/augmented_assignment_flags/input
       "column": 1,
       "row": 1
     },
-    "message": "module-level `COUNTER` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `COUNTER` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   }
 ]

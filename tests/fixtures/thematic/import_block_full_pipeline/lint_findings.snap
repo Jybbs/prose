@@ -15,7 +15,7 @@ input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
       "column": 12,
       "row": 10
     },
-    "message": "parameter `text` has no type annotation"
+    "message": "Parameter `text` has no type annotation"
   },
   {
     "code": "signature-annotations",

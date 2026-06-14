@@ -69,7 +69,7 @@ impl Walker<'_> {
             self.rule,
             stmt.range(),
             format!(
-                "module-level `{name}` is SCREAMING_CASE but reassigned. \
+                "Module-level `{name}` is SCREAMING_CASE but reassigned. \
                  Rename it to lowercase or keep it write-once",
             ),
         ));

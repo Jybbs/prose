@@ -15,7 +15,7 @@ input_file: tests/fixtures/reassigned_constants/allowlisted_name_passes/input.py
       "column": 1,
       "row": 3
     },
-    "message": "module-level `CACHE_DIR` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `CACHE_DIR` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   },
   {
     "code": "reassigned-constants",
@@ -28,6 +28,6 @@ input_file: tests/fixtures/reassigned_constants/allowlisted_name_passes/input.py
       "column": 1,
       "row": 4
     },
-    "message": "module-level `CACHE_DIR` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `CACHE_DIR` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   }
 ]

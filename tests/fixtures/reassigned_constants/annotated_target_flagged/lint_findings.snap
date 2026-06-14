@@ -15,7 +15,7 @@ input_file: tests/fixtures/reassigned_constants/annotated_target_flagged/input.p
       "column": 1,
       "row": 1
     },
-    "message": "module-level `FLAG` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `FLAG` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   },
   {
     "code": "reassigned-constants",
@@ -28,7 +28,7 @@ input_file: tests/fixtures/reassigned_constants/annotated_target_flagged/input.p
       "column": 1,
       "row": 2
     },
-    "message": "module-level `FLAG` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `FLAG` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   },
   {
     "code": "reassigned-constants",
@@ -41,7 +41,7 @@ input_file: tests/fixtures/reassigned_constants/annotated_target_flagged/input.p
       "column": 1,
       "row": 3
     },
-    "message": "module-level `MAX` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `MAX` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   },
   {
     "code": "reassigned-constants",
@@ -54,6 +54,6 @@ input_file: tests/fixtures/reassigned_constants/annotated_target_flagged/input.p
       "column": 1,
       "row": 4
     },
-    "message": "module-level `MAX` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+    "message": "Module-level `MAX` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
   }
 ]
