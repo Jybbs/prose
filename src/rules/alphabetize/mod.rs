@@ -235,7 +235,7 @@ fn has_default(ann: &StmtAnnAssign) -> bool {
 /// body carrying one keeps source order.
 fn has_inline_statement_join(source: &Source, body: &[Stmt]) -> bool {
     body.windows(2)
-        .any(|pair| !source.contains_line_break(TextRange::new(pair[0].end(), pair[1].start())))
+        .any(|pair| source.same_line(pair[0].end(), pair[1].start()))
 }
 
 /// True when the line containing the dict's opening `{` carries a

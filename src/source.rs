@@ -211,6 +211,12 @@ impl Source {
         Self::build(text, self.file.name())
     }
 
+    /// Returns `true` when `a` and `b` sit on one physical source line,
+    /// meaning no line break falls in the gap between them.
+    pub fn same_line(&self, a: TextSize, b: TextSize) -> bool {
+        !self.contains_line_break(TextRange::new(a, b))
+    }
+
     /// Returns the byte slice spanned by anything `Ranged`.
     ///
     /// Accepts a raw `TextRange` or any AST node. The returned `&str`
@@ -454,6 +460,18 @@ mod tests {
         let s = Source::from_str("x = 1\n").expect("original parses");
         let result = s.reparse("def foo(".to_owned());
         assert!(result.is_err());
+    }
+
+    #[rstest]
+    #[case("a = 1; b = 2\n", true)]
+    #[case("a = 1\nb = 2\n", false)]
+    fn same_line_holds_within_a_line_and_breaks_across_one(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let body = &source.ast().body;
+        assert_eq!(source.same_line(body[0].end(), body[1].start()), expected);
     }
 
     #[test]

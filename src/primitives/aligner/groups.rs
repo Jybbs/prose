@@ -256,7 +256,7 @@ where
     F: FnMut(&Token) -> bool,
 {
     let anchor = source.first_token_offset_in_range(search, predicate)?;
-    if source.contains_line_break(TextRange::new(target.start(), anchor)) {
+    if !source.same_line(target.start(), anchor) {
         return None;
     }
     Some(range_anchored_member(source, target, anchor, extra_width))

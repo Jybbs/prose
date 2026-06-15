@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Sandwiched Single-Line Stub Reorders and Keeps Two-Blank Cushions"
+
+description = '''
+An out-of-order single-line class stub sandwiched between block-bodied classes reorders into place, and `blank-lines` settles the canonical **two-blank-line** cushion on both sides of the stub, so `alphabetize` and `blank-lines` reach a fixed point in one pass rather than trading the gap back and forth.
+'''

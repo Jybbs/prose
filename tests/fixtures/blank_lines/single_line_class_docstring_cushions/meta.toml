@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Single-Line Class with a Docstring Body Gains Cushions"
+
+description = '''
+A single-line-suite class whose only member is a docstring settles the canonical **two-blank-line** cushion on both sides, the same as a single-line stub with a simple body, because the docstring opens on the header line and leaves no own-line gap to normalize.
+'''
