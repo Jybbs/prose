@@ -1,9 +1,9 @@
 //! Aligns `:` vertically in dict/mapping literals, Pydantic-style
 //! class fields, annotated function parameters, and Google/numpy
-//! docstring `Args:` sections. Single-line groups and single-item
-//! groups pass through, leaving the latter to `strip_align_padding`
-//! downstream. Each aligned `:` keeps a one-space buffer before the
-//! colon.
+//! docstring `Args:` sections. Single-line groups, single-item groups,
+//! and groups whose rows open at differing column baselines pass
+//! through, leaving them to `strip_align_padding` downstream. Each
+//! aligned `:` keeps a one-space buffer before the colon.
 
 use ruff_diagnostics::Edit;
 
@@ -46,9 +46,7 @@ struct Emitter<'a> {
 
 impl ColonEmitter for Emitter<'_> {
     fn handle(&mut self, members: &[aligner::Member]) {
-        if aligner::is_alignment_candidate(members) {
-            self.walker.emit_group(members);
-        }
+        self.walker.emit_if_candidate(members);
     }
 
     fn match_arms(&mut self, _: &[aligner::Member]) {}

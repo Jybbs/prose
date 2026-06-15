@@ -91,13 +91,14 @@ where
     groups
 }
 
-/// Returns `true` when `members` form a multi-row group whose
-/// aligned tokens sit on distinct source lines.
-pub(crate) fn is_alignment_candidate(members: &[Member]) -> bool {
+/// Returns `true` when `members` form a multi-row group whose aligned
+/// tokens sit on distinct source lines at a shared display-column
+/// baseline.
+pub(crate) fn is_alignment_candidate(source: &Source, members: &[Member]) -> bool {
     members.len() >= 2
-        && members
-            .windows(2)
-            .all(|w| w[0].line_start != w[1].line_start)
+        && members.windows(2).all(|w| {
+            w[0].line_start != w[1].line_start && baseline(source, w[0]) == baseline(source, w[1])
+        })
 }
 
 /// Returns `true` when the line containing `anchor` carries a skip
@@ -261,6 +262,15 @@ where
     Some(range_anchored_member(source, target, anchor, extra_width))
 }
 
+/// The display column where `member`'s left-hand side begins, the width
+/// of its line up to the gap less the member's own width.
+fn baseline(source: &Source, member: Member) -> usize {
+    source
+        .slice(TextRange::new(member.line_start, member.gap.start()))
+        .width()
+        - member.width
+}
+
 /// Moves the in-progress run into `groups` when it holds at least one
 /// member, leaving `current` empty for the next run.
 fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {
@@ -312,7 +322,7 @@ fn run_continues(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{parse, range};
 
     #[test]
     fn adjacent_member_groups_break_after_multiline_closes_run() {
@@ -415,6 +425,86 @@ mod tests {
 
         // The blank line breaks adjacency, so the two members do not share a group.
         assert_eq!(groups, vec![vec![0], vec![1]]);
+    }
+
+    #[test]
+    fn is_alignment_candidate_holds_for_shared_baseline() {
+        // Two `=` rows on distinct lines, each opening at column 0.
+        let source = parse("ab = 1\ncd = 2\n");
+        let members = [
+            Member {
+                gap: range(2, 3),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+            Member {
+                gap: range(9, 10),
+                line_start: TextSize::new(7),
+                op_width: 0,
+                width: 2,
+            },
+        ];
+
+        assert!(is_alignment_candidate(&source, &members));
+    }
+
+    #[test]
+    fn is_alignment_candidate_rejects_differing_baselines() {
+        // Distinct lines, but the `q.` prefix opens the second row two
+        // columns right, so a shared `=` column would land where no row sits.
+        let source = parse("ab = 1\nq.cd = 2\n");
+        let members = [
+            Member {
+                gap: range(2, 3),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+            Member {
+                gap: range(11, 12),
+                line_start: TextSize::new(7),
+                op_width: 0,
+                width: 2,
+            },
+        ];
+
+        assert!(!is_alignment_candidate(&source, &members));
+    }
+
+    #[test]
+    fn is_alignment_candidate_rejects_same_line() {
+        // Two rows sharing a source line never form a column.
+        let source = parse("ab = cd = 1\n");
+        let members = [
+            Member {
+                gap: range(2, 3),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+            Member {
+                gap: range(7, 8),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+        ];
+
+        assert!(!is_alignment_candidate(&source, &members));
+    }
+
+    #[test]
+    fn is_alignment_candidate_rejects_singleton() {
+        let source = parse("ab = 1\n");
+        let members = [Member {
+            gap: range(2, 3),
+            line_start: TextSize::new(0),
+            op_width: 0,
+            width: 2,
+        }];
+
+        assert!(!is_alignment_candidate(&source, &members));
     }
 
     #[test]
