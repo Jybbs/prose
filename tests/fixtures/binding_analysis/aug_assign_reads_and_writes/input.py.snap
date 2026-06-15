@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/aug_assign_reads_and_writes/input.py
 bindings:
   - attributes: []
     bare_read: true
+    first_unconditional_write: 0
     kinds:
       - Assignment
       - AugAssign

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Conditionally Bound Name Keeps the Directive"
+
+description = '''
+`Bar` is imported only under `if TYPE_CHECKING:` and `Alias` is bound only inside a version guard, leaving neither name guaranteed at runtime. Eager evaluation on Python 3.13 would raise `NameError`, so **the directive stays** to keep both annotations deferred.
+'''

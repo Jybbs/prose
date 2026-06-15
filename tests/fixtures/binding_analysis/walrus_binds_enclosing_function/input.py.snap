@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/walrus_binds_enclosing_function/inpu
 bindings:
   - attributes: []
     bare_read: false
+    first_unconditional_write: 4
     kinds:
       - FunctionDef
     name: first_one
@@ -15,6 +16,7 @@ bindings:
       - 4
   - attributes: []
     bare_read: true
+    first_unconditional_write: 14
     kinds:
       - Parameter
     name: items
@@ -25,6 +27,7 @@ bindings:
       - 14
   - attributes: []
     bare_read: true
+    first_unconditional_write: 30
     kinds:
       - Walrus
     name: n
