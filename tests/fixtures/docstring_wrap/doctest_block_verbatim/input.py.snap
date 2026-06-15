@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/docstring_wrap/doctest_block_verbatim/input.py
+---
+def add(a, b):
+    """
+    Add two numbers together and return the sum of them as a result value.
+
+    >>> add(2, 3)
+    5
+    >>> add(10, 20)
+    30
+    """
+    return a + b

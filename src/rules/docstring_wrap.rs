@@ -7,7 +7,7 @@
 //! `name: description` entries to `docstring_line_length` with a
 //! hanging indent at the description's start column. Verbatim regions
 //! (triple-backtick fences, blocks indented one step beyond the body,
-//! list items and their continuations) pass through unchanged.
+//! list items, and doctest blocks) pass through unchanged.
 //! reStructuredText markup, Sphinx directives, and Numpydoc style
 //! pass through unwrapped.
 
@@ -106,12 +106,12 @@ impl Walker<'_> {
         let indent_chars = indent_str.chars().count();
 
         match self.scanner.classify(trimmed, indent_chars) {
-            LineScan::Fence | LineScan::ListMarker => {
+            LineScan::Fence | LineScan::ListMarker | LineScan::VerbatimOpen => {
                 self.flush_paragraph();
                 self.emit_verbatim(line);
                 return;
             }
-            LineScan::InFence | LineScan::ListContinuation => {
+            LineScan::InFence | LineScan::ListContinuation | LineScan::Verbatim => {
                 self.emit_verbatim(line);
                 return;
             }

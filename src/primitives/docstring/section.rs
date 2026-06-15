@@ -67,7 +67,9 @@ impl<'src> EntryWalker<'src> {
             LineScan::Fence
             | LineScan::InFence
             | LineScan::ListContinuation
-            | LineScan::ListMarker => {
+            | LineScan::ListMarker
+            | LineScan::Verbatim
+            | LineScan::VerbatimOpen => {
                 self.extend_open_entry(line_end);
             }
         }
