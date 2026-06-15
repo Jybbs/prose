@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Condensed Keywords Stay Tight"
+
+description = '''
+Keywords condensed several to a physical line keep their tight `name=value` form the way PEP 8 writes a call-site keyword, rather than taking the exploded `=` buffer.
+'''

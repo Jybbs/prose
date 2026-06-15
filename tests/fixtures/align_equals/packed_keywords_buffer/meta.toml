@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Keywords Packed Across Lines Stay Buffered"
-
-description = '''
-Keywords that pack several to a line never share a column baseline, so each `=` keeps a single-space buffer rather than padding toward a column no row realizes.
-'''

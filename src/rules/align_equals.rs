@@ -3,10 +3,11 @@
 //! initialized `Stmt::AnnAssign`), annotated parameter defaults, and
 //! an exploded call's keyword arguments, aligning a run only when its
 //! rows share a column baseline. A row that reaches no shared column
-//! (lone, singleton, or differing-baseline) collapses its pre-`=` gap
-//! to one space, an exploded keyword buffering both sides to read as
-//! `name = value`. `+=` places `+` one column before the shared `=`.
-//! Parameter widths reflect the post-`align_colons` source.
+//! (lone, singleton, or differing-baseline) buffers its `=` to one
+//! space on each side, reading as `name = value`. A keyword condensed
+//! onto a line with another argument keeps its tight `name=value`, and
+//! `+=` places `+` one column before the shared `=`. Parameter widths
+//! reflect the post-`align_colons` source.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -76,21 +77,36 @@ impl Visitor<'_> {
     }
 
     /// Splits `call`'s arguments into line-adjacent runs of keyword
-    /// members. A positional argument, a `**` unpacking, or an interior
-    /// comment ends the active run. A keyword whose value spans lines
-    /// joins the run, then closes it after itself, so the keywords past
-    /// it align as a separate group.
+    /// members. A positional argument, a `**` unpacking, an interior
+    /// comment, or a keyword sharing its physical line with another
+    /// argument ends the active run, so a condensed keyword keeps its
+    /// tight `name=value` rather than taking the `=` buffer. A keyword
+    /// whose value spans lines joins the run, then closes it after
+    /// itself, so the keywords past it align as a separate group.
     fn keyword_groups(&self, call: &ExprCall) -> Vec<Vec<KeywordMember>> {
+        let source = self.walker.source;
+        let arg_lines: Vec<_> = call
+            .arguments
+            .arguments_source_order()
+            .map(|a| source.line_index(a.start()))
+            .collect();
         aligner::adjacent_member_groups(
-            self.walker.source,
+            source,
             call.arguments.arguments_source_order(),
             true,
-            |arg| match self.qualify_keyword(arg) {
-                Some(keyword) if self.walker.is_held(keyword.member.line_start) => {
-                    aligner::Slot::Bridge
+            |arg| {
+                let Some(keyword) = self.qualify_keyword(arg) else {
+                    return aligner::Slot::Break;
+                };
+                let line = source.line_index(keyword.member.line_start);
+                if arg_lines.iter().filter(|&&l| l == line).count() > 1 {
+                    return aligner::Slot::Break;
                 }
-                Some(keyword) => aligner::Slot::Member(keyword),
-                None => aligner::Slot::Break,
+                if self.walker.is_held(keyword.member.line_start) {
+                    aligner::Slot::Bridge
+                } else {
+                    aligner::Slot::Member(keyword)
+                }
             },
         )
     }
@@ -111,14 +127,15 @@ impl Visitor<'_> {
         }
     }
 
-    /// Aligns each line-adjacent run of `call`'s keyword arguments,
-    /// padding before each `=` and rewriting the gap after it to one
-    /// space. A run pads its `=` only when its keywords each sit on
-    /// their own line at a shared column baseline. A lone keyword, or a
+    /// Aligns each line-adjacent run of `call`'s keyword arguments that
+    /// sit alone on their physical line, padding before each `=` and
+    /// rewriting the gap after it to one space. A run pads its `=` only
+    /// when its keywords share a column baseline. A lone keyword, or a
     /// run whose rows open at differing columns, instead takes a
-    /// one-space buffer on each side of its `=`, so every exploded
-    /// keyword reads as `name = value`. A single-line call and a held
-    /// row are left untouched.
+    /// one-space buffer on each side of its `=`, so an exploded keyword
+    /// reads as `name = value`. A keyword sharing its line with another
+    /// argument keeps its tight `name=value`, and a single-line call or
+    /// a held row is left untouched.
     fn process_call(&mut self, call: &ExprCall) {
         let source = self.walker.source;
         if !source.contains_line_break(call.arguments.range()) {
