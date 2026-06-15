@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Parenthesized Value Keeps Its Parentheses"
+
+description = '''
+The value-side rewrite stops at the value's parenthesis-inclusive start, so a wrapped value keeps its `(` rather than surrendering it to the gap.
+'''

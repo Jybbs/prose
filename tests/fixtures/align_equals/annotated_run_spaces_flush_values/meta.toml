@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Flush Annotated Run Spaces Its Values"
+
+description = '''
+Annotated assignments gain the value-side space after `=` alongside the name-side column padding, so each row reads as `name: T = value`.
+'''

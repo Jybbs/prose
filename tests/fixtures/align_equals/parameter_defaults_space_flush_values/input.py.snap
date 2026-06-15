@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/parameter_defaults_space_flush_values/input.py
+---
+def connect(
+    host: str = "local",
+    port: int = 8080,
+):
+    ...

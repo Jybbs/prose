@@ -278,12 +278,31 @@ where
 }
 
 /// The display column where `member`'s left-hand side begins, the width
-/// of its line up to the gap less the member's own width.
+/// of its line up to the gap less the member's own width. An
+/// operator-widened row (a `+=` whose width counts the binary `+` that
+/// renders past the gap) can carry more width than the pre-gap span, so
+/// the subtraction saturates at the leftmost column rather than wrapping.
 fn baseline(source: &Source, member: Member) -> usize {
     source
         .slice(TextRange::new(member.line_start, member.gap.start()))
         .width()
-        - member.width
+        .saturating_sub(member.width)
+}
+
+/// Returns the rows of `members` whose anchor line is not skip-held for
+/// `rule`, dropping the held rows so neighbors align around them.
+/// `line_start` yields each row's anchor line, so a row type wrapping a
+/// `Member` filters by the same line the member carries.
+pub(crate) fn retain_unheld<M>(
+    source: &Source,
+    rule: RuleId,
+    members: impl IntoIterator<Item = M>,
+    line_start: impl Fn(&M) -> TextSize,
+) -> Vec<M> {
+    members
+        .into_iter()
+        .filter(|m| !is_held(source, rule, line_start(m)))
+        .collect()
 }
 
 /// Moves the in-progress run into `groups` when it holds at least one

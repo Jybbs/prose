@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/continued_value_left_alone/input.py
+---
+total = \
+    a + b

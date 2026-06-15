@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/annotated_run_spaces_flush_values/input.py
+---
+x: int    = 1
+name: str = 2

@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/assignment_run_spaces_flush_values/input.py
+---
+x   = 1
+yy  = 2
+zzz = 3
