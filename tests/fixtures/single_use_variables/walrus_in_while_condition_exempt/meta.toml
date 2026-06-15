@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Walrus in a While Test Is Exempt"
+
+description = '''
+A walrus bound in a `while` test is **not flagged**. The loop condition consumes the value on each iteration, so the body's single read is a second use, and inlining would recompute the expression in both the condition and the body.
+'''

@@ -18,6 +18,9 @@
 //! - A single-use tuple-unpack target is exempt when a sibling reads
 //!   more than once, since removing it would split the unpack into an
 //!   indexed read.
+//! - A walrus bound in the test of an `if`, `elif`, or `while` is
+//!   exempt, since the test consumes the value and the single later
+//!   read is the second use.
 
 use regex_lite::Regex;
 use ruff_python_ast::{
@@ -97,6 +100,9 @@ impl Visitor<'_> {
             return None;
         }
         if self.analysis.assignment_count(binding) != 1 || self.analysis.usage_count(binding) != 1 {
+            return None;
+        }
+        if self.analysis.walrus_in_condition(binding) {
             return None;
         }
         let name = self.analysis.binding_name(binding);
@@ -212,9 +218,7 @@ mod tests {
 
     #[test]
     fn walrus_binding_message_omits_unnameable_value() {
-        let source = parse(
-            "def f(items):\n    if (n := len(items)) == 1:\n        return n\n    return 0\n",
-        );
+        let source = parse("def f(items):\n    print(n := len(items))\n    return n\n");
         let rule = SingleUseVariables::from_config(&Config::default());
         let diagnostics = rule.lint(&source);
         let only = diagnostics.first().expect("one diagnostic");

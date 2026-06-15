@@ -18,7 +18,7 @@
 //! the nearest non-comprehension scope, and class-scope names are
 //! invisible to nested functions and comprehensions.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ruff_python_ast::{
     Alias, ExceptHandler, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp,
@@ -112,6 +112,8 @@ pub struct BindingAnalysis {
     #[serde(skip)]
     assignment_values: HashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
+    #[serde(skip)]
+    condition_test_walruses: HashSet<BindingId>,
     #[serde(skip)]
     function_scope_at: HashMap<TextSize, ScopeId>,
     scopes: Vec<Scope>,
@@ -235,11 +237,19 @@ impl BindingAnalysis {
     pub(crate) fn usage_count(&self, binding: BindingId) -> usize {
         self.binding(binding).read_offsets.len()
     }
+
+    /// Returns `true` when a walrus write of `binding` occurred in the
+    /// test of an `if`, `elif`, or `while`.
+    pub(crate) fn walrus_in_condition(&self, binding: BindingId) -> bool {
+        self.condition_test_walruses.contains(&binding)
+    }
 }
 
 struct Builder {
     assignment_values: HashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
+    condition_test_depth: usize,
+    condition_test_walruses: HashSet<BindingId>,
     conditional_depth: usize,
     deferred_reads: Vec<DeferredRead>,
     function_scope_at: HashMap<TextSize, ScopeId>,
@@ -253,6 +263,8 @@ impl Builder {
         let mut builder = Self {
             assignment_values: HashMap::new(),
             bindings: Vec::new(),
+            condition_test_depth: 0,
+            condition_test_walruses: HashSet::new(),
             conditional_depth: 0,
             deferred_reads: Vec::new(),
             function_scope_at: HashMap::new(),
@@ -370,6 +382,7 @@ impl Builder {
         BindingAnalysis {
             assignment_values: self.assignment_values,
             bindings: self.bindings,
+            condition_test_walruses: self.condition_test_walruses,
             function_scope_at: self.function_scope_at,
             scopes: self.scopes,
             unpack_targets,
@@ -391,6 +404,15 @@ impl Builder {
             Expr::Starred(starred) => self.for_each_target_name(&starred.value, f),
             _ => walk_expr(self, target),
         }
+    }
+
+    /// Runs `f` with walrus targets marked as bound in a condition
+    /// test, so a `:=` in an `if`/`elif`/`while` test records that the
+    /// branch decision already consumes its value.
+    fn in_condition_test(&mut self, f: impl FnOnce(&mut Self)) {
+        self.condition_test_depth += 1;
+        f(self);
+        self.condition_test_depth -= 1;
     }
 
     /// Runs `f` with writes marked conditional, so a name bound only
@@ -516,12 +538,15 @@ impl Builder {
             .copied()
             .find(|&id| !matches!(self.scopes[id.0 as usize].kind, ScopeKind::Comprehension))
             .expect("invariant: module scope is always present");
-        self.record_write_in(
+        let binding = self.record_write_in(
             scope,
             name.id.as_str(),
             name.range().start(),
             BindingKind::Walrus,
         );
+        if self.condition_test_depth > 0 {
+            self.condition_test_walruses.insert(binding);
+        }
     }
 
     fn record_write(&mut self, name: &str, offset: TextSize, kind: BindingKind) -> BindingId {
@@ -623,11 +648,11 @@ impl Builder {
 
     /// Walks an `if`/`elif`/`else` chain with each branch body conditional.
     fn visit_if(&mut self, node: &StmtIf) {
-        self.visit_expr(&node.test);
+        self.in_condition_test(|b| b.visit_expr(&node.test));
         self.in_conditional(|b| b.visit_body(&node.body));
         for clause in &node.elif_else_clauses {
             if let Some(test) = &clause.test {
-                self.visit_expr(test);
+                self.in_condition_test(|b| b.visit_expr(test));
             }
             self.in_conditional(|b| b.visit_body(&clause.body));
         }
@@ -666,7 +691,7 @@ impl Builder {
     }
 
     fn visit_while(&mut self, node: &StmtWhile) {
-        self.visit_expr(&node.test);
+        self.in_condition_test(|b| b.visit_expr(&node.test));
         self.in_conditional(|b| {
             b.visit_body(&node.body);
             b.visit_body(&node.orelse);
@@ -1121,6 +1146,24 @@ mod tests {
         assert_matches!(
             analysis.unpack_target(x),
             Some(UnpackKind::Suggested(range, 0)) if &source.text()[range] == "box.pair"
+        );
+    }
+
+    #[rstest]
+    #[case::if_test("if (n := f()):\n    pass\n", true)]
+    #[case::elif_test("if a:\n    pass\nelif (n := f()):\n    pass\n", true)]
+    #[case::while_test("while (n := f()):\n    pass\n", true)]
+    #[case::assignment_value("x = (n := f())\n", false)]
+    #[case::comprehension_guard("ys = [x for x in xs if (n := x)]\n", false)]
+    #[case::body_assignment("if a:\n    n = 1\n", false)]
+    fn walrus_in_condition_marks_only_condition_test_walruses(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let analysis = analyze(src);
+        assert_eq!(
+            analysis.walrus_in_condition(module_binding_id(&analysis, "n")),
+            expected,
         );
     }
 
