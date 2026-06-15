@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/walrus_lifts_to_module_scope/input.p
 bindings:
   - attributes: []
     bare_read: true
+    first_unconditional_write: 0
     kinds:
       - Assignment
     name: xs
@@ -16,6 +17,7 @@ bindings:
       - 0
   - attributes: []
     bare_read: true
+    first_unconditional_write: 29
     kinds:
       - Comprehension
     name: x
@@ -26,6 +28,7 @@ bindings:
       - 29
   - attributes: []
     bare_read: true
+    first_unconditional_write: 41
     kinds:
       - Walrus
     name: y
@@ -36,6 +39,7 @@ bindings:
       - 41
   - attributes: []
     bare_read: false
+    first_unconditional_write: 15
     kinds:
       - Assignment
     name: vals

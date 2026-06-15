@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/collection_layout/varying_widths_order_independent/input.py
+---
+__all__ = [
+    "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", "aa",
+    "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn", "bb",
+    "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz", "cc"
+]
