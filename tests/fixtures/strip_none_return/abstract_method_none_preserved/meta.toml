@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Abstract Method Stub's None Return Annotation Survives"
+
+description = '''
+An abstract method whose body is a single `...` keeps its `-> None`, because the placeholder stands in for an implementation rather than demonstrating a return of nothing.
+'''

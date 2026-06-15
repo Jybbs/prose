@@ -22,7 +22,7 @@ keep_this_block_exactly_as_written = (1,2,3)
 
 ## Line Markers
 
-Line-level directives split by severity. Rewrite suppression takes the `skip` family, lint suppression takes the `ignore` family, and the two are independent so a line can carry one of each.
+Line-level directives split by severity, with rewrite suppression taking the `skip` family, lint suppression taking the `ignore` family, and the two independent so a line can carry one of each.
 
 ### Rewrite Suppression
 

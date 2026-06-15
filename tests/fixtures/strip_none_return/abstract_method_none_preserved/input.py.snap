@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_none_return/abstract_method_none_preserved/input.py
+---
+class Base(ABC):
+    @abstractmethod
+    def run(self) -> None: ...
