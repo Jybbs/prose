@@ -18,6 +18,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use super::dict::rewrite_dict_text;
 use crate::{
     primitives::{
+        binding::single_name_target,
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement},
         orderer::{permute_full, reorder_separated, reorder_text},
@@ -54,10 +55,10 @@ impl<'a> LeafCollector<'a> {
     }
 
     fn emit_dunder_list(&mut self, assign: &'a StmtAssign) {
-        let [Expr::Name(target)] = assign.targets.as_slice() else {
+        let Some(name) = single_name_target(assign) else {
             return;
         };
-        if !matches!(target.id.as_str(), "__all__" | "__slots__") {
+        if !matches!(name, "__all__" | "__slots__") {
             return;
         }
         let Some(elements) = sequence_elts(&assign.value) else {

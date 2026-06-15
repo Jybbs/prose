@@ -766,6 +766,12 @@ struct UnpackGroup {
     value: TextRange,
 }
 
+/// The bare-`Name` target name of an `Stmt::AnnAssign`. `None` when the
+/// target is an attribute or subscript (`self.x: int`, `d[k]: int`).
+pub(crate) fn annotated_name_target(ann: &StmtAnnAssign) -> Option<&str> {
+    Some(ann.target.as_name_expr()?.id.as_str())
+}
+
 /// The module-scope name a bare `import a.b` alias binds: its `asname`,
 /// or the top-level segment of the dotted path.
 pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
@@ -789,6 +795,15 @@ fn resolve_in_chain(scopes: &[Scope], innermost: ScopeId, name: &str) -> Option<
     std::iter::successors(Some(innermost), |&id| scopes[id.0 as usize].parent)
         .filter(|&id| id == innermost || !matches!(scopes[id.0 as usize].kind, ScopeKind::Class))
         .find_map(|id| scopes[id.0 as usize].bindings.get(name).copied())
+}
+
+/// The single bare-`Name` target name of an `Stmt::Assign`. `None` for
+/// a multi-target, destructuring, attribute, or subscript assignment.
+pub(crate) fn single_name_target(assign: &StmtAssign) -> Option<&str> {
+    match assign.targets.as_slice() {
+        [Expr::Name(name)] => Some(name.id.as_str()),
+        _ => None,
+    }
 }
 
 /// Returns the segment of `dotted` before the first `.`. Matches
@@ -818,6 +833,18 @@ mod tests {
             .get(name)
             .copied()
             .unwrap_or_else(|| panic!("no module-scope binding for {name:?}"))
+    }
+
+    #[test]
+    fn annotated_name_target_keeps_only_name_targets() {
+        let source = parse("x: int = 1\nself.x: int = 1\n");
+        let targets: Vec<Option<&str>> = source
+            .ast()
+            .body
+            .iter()
+            .map(|stmt| annotated_name_target(stmt.as_ann_assign_stmt().expect("ann assign")))
+            .collect();
+        assert_eq!(targets, vec![Some("x"), None]);
     }
 
     #[test]
@@ -1012,6 +1039,18 @@ mod tests {
     #[case("X += 1\n")]
     fn module_reassigned_is_true_when_written_twice_or_augmented(#[case] src: &str) {
         assert!(analyze(src).module_reassigned("X"));
+    }
+
+    #[test]
+    fn single_name_target_keeps_only_single_name_assignments() {
+        let source = parse("X = 1\nself.x = 1\nx, y = 1, 2\n");
+        let targets: Vec<Option<&str>> = source
+            .ast()
+            .body
+            .iter()
+            .map(|stmt| single_name_target(stmt.as_assign_stmt().expect("assign")))
+            .collect();
+        assert_eq!(targets, vec![Some("X"), None, None]);
     }
 
     #[test]

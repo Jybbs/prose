@@ -7,7 +7,7 @@
 use std::collections::HashSet;
 
 use ruff_python_ast::{
-    Expr, ExprName, Stmt, StmtIf,
+    Expr, Stmt, StmtIf,
     name::UnqualifiedName,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
@@ -16,7 +16,7 @@ use ruff_text_size::Ranged;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::binding::BindingAnalysis,
+    primitives::binding::{BindingAnalysis, annotated_name_target, single_name_target},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -82,19 +82,19 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
             Stmt::FunctionDef(_) | Stmt::ClassDef(_) => return,
             Stmt::If(if_stmt) if is_type_checking_block(if_stmt) => return,
             Stmt::Assign(a) => {
-                if let [Expr::Name(target)] = a.targets.as_slice()
-                    && is_reassigned_constant_target(target, Some(a.value.as_ref()), self.allow)
-                    && self.analysis.module_reassigned(target.id.as_str())
+                if let Some(name) = single_name_target(a)
+                    && is_reassigned_constant_target(name, Some(a.value.as_ref()), self.allow)
+                    && self.analysis.module_reassigned(name)
                 {
-                    self.emit(stmt, &target.id);
+                    self.emit(stmt, name);
                 }
             }
             Stmt::AnnAssign(a) => {
-                if let Expr::Name(target) = a.target.as_ref()
-                    && is_reassigned_constant_target(target, a.value.as_deref(), self.allow)
-                    && self.analysis.module_reassigned(target.id.as_str())
+                if let Some(name) = annotated_name_target(a)
+                    && is_reassigned_constant_target(name, a.value.as_deref(), self.allow)
+                    && self.analysis.module_reassigned(name)
                 {
-                    self.emit(stmt, &target.id);
+                    self.emit(stmt, name);
                 }
             }
             _ => {}
@@ -103,18 +103,18 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
     }
 }
 
-/// Returns `true` when `target.id` matches `SCREAMING_CASE`, is not in
-/// the per-project allowlist, and (when present) the right-hand side is
-/// not a `TypeVar` / `ParamSpec` / `NewType` / `TypeAliasType`
-/// constructor. `value = None` covers the bare annotation form `X: int`.
+/// Returns `true` when `name` matches `SCREAMING_CASE`, is not in the
+/// per-project allowlist, and (when present) the right-hand side is not
+/// a `TypeVar` / `ParamSpec` / `NewType` / `TypeAliasType` constructor.
+/// `value = None` covers the bare annotation form `X: int`.
 /// `SCREAMING_CASE` already rejects dunder names, which lead with `_`.
 fn is_reassigned_constant_target(
-    target: &ExprName,
+    name: &str,
     value: Option<&Expr>,
     allow: &HashSet<String>,
 ) -> bool {
-    is_screaming_case(&target.id)
-        && !allow.contains(target.id.as_str())
+    is_screaming_case(name)
+        && !allow.contains(name)
         && !value.is_some_and(is_typing_constructor_call)
 }
 

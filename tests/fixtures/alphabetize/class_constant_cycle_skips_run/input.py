@@ -1,0 +1,3 @@
+class Knot:
+    FORWARD = BACKWARD
+    BACKWARD = FORWARD

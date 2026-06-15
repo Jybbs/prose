@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/cross_family_reference_skips_run/input.py
+---
+class Box:
+    width: int = 10
+    HALF = width
+    height: int = 20

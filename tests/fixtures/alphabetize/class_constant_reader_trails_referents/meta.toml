@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Class Constant Reading Its Siblings Sorts Below Them"
+
+description = '''
+`ACCOUNT_TYPE_CHOICES` reads `REGULAR`, `GOLD`, and `PLATINUM` while the class body runs, so the sort **holds it below the names it reads** rather than hoisting it above them. The three choices still alphabetize among themselves, and a tier-blind reorder would raise `NameError` at class-definition time.
+'''

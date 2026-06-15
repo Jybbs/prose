@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/annotated_field_reader_trails_referent/input.py
+---
+class Box:
+    width: int = 10
+    total: int = width * 2
