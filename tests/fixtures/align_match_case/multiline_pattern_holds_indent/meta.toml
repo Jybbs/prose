@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Multi-Line Pattern Holds Its Indent"
+
+description = '''
+One arm's `case` pattern spans several lines, so its `:` lands on a different line from where the pattern opens. **The multi-line pattern disqualifies the arm**, leaving it untouched, while the lone single-line sibling collapses without padding.
+'''
