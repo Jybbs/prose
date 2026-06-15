@@ -1,0 +1,33 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/thematic/args_type_entry_continuation_hangs/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 25,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 18,
+      "row": 1
+    },
+    "message": "Parameter `console` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 34,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 27,
+      "row": 1
+    },
+    "message": "Parameter `options` has no type annotation"
+  }
+]

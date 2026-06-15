@@ -314,4 +314,20 @@ mod tests {
         let src = "def f():\n    \"\"\"summary\"\"\"\n";
         assert_eq!(run(src), src);
     }
+
+    #[test]
+    fn type_bearing_entry_continuation_hangs_under_description_column() {
+        let src = "\"\"\"\nArgs:\n    markup (str): A string containing console markup that will overflow the line budget for sure yes.\n\"\"\"\n";
+        let out = run(src);
+        let continuation = out
+            .lines()
+            .skip_while(|l| !l.contains("markup (str):"))
+            .nth(1)
+            .expect("continuation line follows the wrapped entry head");
+        let indent = continuation.len() - continuation.trim_start().len();
+        assert_eq!(
+            indent, 18,
+            "continuation hangs under the description column"
+        );
+    }
 }

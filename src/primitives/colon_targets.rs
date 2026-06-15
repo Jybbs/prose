@@ -16,7 +16,11 @@ use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
-    primitives::{aligner, docstring::body_docstring, scope::scoped_body},
+    primitives::{
+        aligner,
+        docstring::{body_docstring, unbracketed_colon},
+        scope::scoped_body,
+    },
     rule::RuleId,
     source::Source,
 };
@@ -230,16 +234,7 @@ fn find_entry_colon(stripped: &str) -> Option<usize> {
     if !(first.is_ascii_alphabetic() || first == b'_' || first == b'*') {
         return None;
     }
-    let mut paren_depth = 0usize;
-    for (cursor, b) in stripped.bytes().enumerate() {
-        match b {
-            b'(' | b'[' => paren_depth += 1,
-            b')' | b']' => paren_depth = paren_depth.saturating_sub(1),
-            b':' if paren_depth == 0 => return Some(cursor),
-            _ => {}
-        }
-    }
-    None
+    unbracketed_colon(stripped)
 }
 
 /// Returns one alignment member per `case` arm in `cases`.

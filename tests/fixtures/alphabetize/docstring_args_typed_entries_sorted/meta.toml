@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Type-Bearing Args Entries Reorder to Signature Order"
+
+description = '''
+An `Args:` section lists type-bearing entries out of signature order. **The reorder reads the parenthesized type as part of the entry head and sorts each entry to its parameter's position**, mapping `port (int)` and `host (str)` onto the signature by their bare names.
+'''
