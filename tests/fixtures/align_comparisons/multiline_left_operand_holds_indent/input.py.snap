@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_comparisons/multiline_left_operand_holds_indent/input.py
+---
+if (
+    (a
+    + b) == c
+    and dd == e
+):
+    pass

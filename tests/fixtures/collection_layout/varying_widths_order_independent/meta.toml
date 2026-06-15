@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Pack Against the Widest Row, Not the Source Order"
+
+description = '''
+An expanded collection packs against the **widest items a row could hold** rather than the items in their current order, so the line distribution stays the same and within budget however `alphabetize` later reorders the entries.
+'''

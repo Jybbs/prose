@@ -1,18 +1,20 @@
-//! Aligns the `=` character vertically across runs of same-indent,
-//! line-adjacent `Stmt::Assign` (single-target), `Stmt::AugAssign`, and
-//! `Stmt::AnnAssign` (with initializer) statements, across annotated
-//! function-parameter defaults, and across an exploded call's keyword
-//! arguments. Chained assignments, initializer-less annotations,
-//! unannotated parameter defaults, and single-line signatures or calls
-//! are skipped. Each aligned row reads as `name = value`: the name side
-//! pads to the shared column, collapsing to one space for a lone row or
-//! singleton sub-group, and the value side collapses to one space after
-//! the operator. The value-side rewrite stops at the value's
-//! parenthesis-inclusive start and sits out when the value falls on a
-//! later line, so a wrapped or continued value keeps its placement.
-//! `+=` rows place `+` one column before the shared `=` column rather
-//! than pushing the `=` right. Parameter widths reflect the
-//! post-`align_colons` source.
+//! Vertically aligns `=` across runs of same-indent, line-adjacent
+//! assignments (single-target `Stmt::Assign`, `Stmt::AugAssign`,
+//! initialized `Stmt::AnnAssign`), annotated parameter defaults, and an
+//! exploded call's keyword arguments, aligning a run only when its rows
+//! share a column baseline. Chained assignments, initializer-less
+//! annotations, unannotated parameter defaults, and single-line
+//! signatures or calls are skipped. Every aligned row reads as
+//! `name = value`: the name side pads to the shared column, collapsing
+//! to one space for a row that reaches no shared column (lone,
+//! singleton, or differing-baseline), and the value side collapses to
+//! one space after the operator. The value-side rewrite stops at the
+//! value's parenthesis-inclusive start and sits out when the value
+//! falls on a later line, so a wrapped or continued value keeps its
+//! placement. A keyword condensed onto a line with another argument
+//! keeps its tight `name=value`, and `+=` places `+` one column before
+//! the shared `=`. Parameter widths reflect the post-`align_colons`
+//! source.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -90,7 +92,7 @@ impl Visitor<'_> {
             .walker
             .retain_unheld(group.iter().copied(), |m| m.member.line_start);
         let members: Vec<aligner::Member> = kept.iter().map(|m| m.member).collect();
-        if aligner::is_alignment_candidate(&members) {
+        if aligner::is_alignment_candidate(self.walker.source, &members) {
             let gaps = self.value_gaps(&kept);
             self.walker.emit_group_with_gaps(&members, gaps);
         }
@@ -103,7 +105,7 @@ impl Visitor<'_> {
     fn emit_equal_group(&mut self, group: &[EqualMember]) {
         let source = self.walker.source;
         let members: Vec<aligner::Member> = group.iter().map(|m| m.member).collect();
-        let name_edits = if aligner::is_alignment_candidate(&members) {
+        let name_edits = if aligner::is_alignment_candidate(source, &members) {
             self.walker.group_edits(&members)
         } else {
             group
@@ -136,22 +138,36 @@ impl Visitor<'_> {
         Some(EqualMember::new(member, TextSize::of('='), value_start))
     }
 
-    /// Splits `call`'s arguments into line-adjacent runs of keyword
-    /// members. A positional argument, a `**` unpacking, or an interior
-    /// comment ends the active run. A keyword whose value spans lines
-    /// joins the run, then closes it after itself, so the keywords past
-    /// it align as a separate group.
+    /// members. A positional argument, a `**` unpacking, an interior
+    /// comment, or a keyword sharing its physical line with another
+    /// argument ends the active run, so a condensed keyword keeps its
+    /// tight `name=value` rather than taking the `=` buffer. A keyword
+    /// whose value spans lines joins the run, then closes it after
+    /// itself, so the keywords past it align as a separate group.
     fn keyword_groups(&self, call: &ExprCall) -> Vec<Vec<EqualMember>> {
+        let source = self.walker.source;
+        let arg_lines: Vec<_> = call
+            .arguments
+            .arguments_source_order()
+            .map(|a| source.line_index(a.start()))
+            .collect();
         aligner::adjacent_member_groups(
-            self.walker.source,
+            source,
             call.arguments.arguments_source_order(),
             true,
-            |arg| match self.qualify_keyword(arg) {
-                Some(keyword) if self.walker.is_held(keyword.member.line_start) => {
-                    aligner::Slot::Bridge
+            |arg| {
+                let Some(keyword) = self.qualify_keyword(arg) else {
+                    return aligner::Slot::Break;
+                };
+                let line = source.line_index(keyword.member.line_start);
+                if arg_lines.iter().filter(|&&l| l == line).count() > 1 {
+                    return aligner::Slot::Break;
                 }
-                Some(keyword) => aligner::Slot::Member(keyword),
-                None => aligner::Slot::Break,
+                if self.walker.is_held(keyword.member.line_start) {
+                    aligner::Slot::Bridge
+                } else {
+                    aligner::Slot::Member(keyword)
+                }
             },
         )
     }
@@ -172,12 +188,15 @@ impl Visitor<'_> {
         }
     }
 
-    /// Aligns each line-adjacent run of `call`'s keyword arguments,
-    /// padding before each `=` and rewriting the gap after it to one
-    /// space. A keyword that stands alone in its group instead takes a
-    /// one-space buffer on each side of its `=`, so every exploded
-    /// keyword reads as `name = value`. A single-line call is left
-    /// untouched.
+    /// Aligns each line-adjacent run of `call`'s keyword arguments that
+    /// sit alone on their physical line, padding before each `=` and
+    /// rewriting the gap after it to one space. A run pads its `=` only
+    /// when its keywords share a column baseline. A lone keyword, or a
+    /// run whose rows open at differing columns, instead takes a
+    /// one-space buffer on each side of its `=`, so an exploded keyword
+    /// reads as `name = value`. A keyword sharing its line with another
+    /// argument keeps its tight `name=value`, and a single-line call or
+    /// a held row is left untouched.
     fn process_call(&mut self, call: &ExprCall) {
         let source = self.walker.source;
         if !source.contains_line_break(call.arguments.range()) {

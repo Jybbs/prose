@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/sorted_commented_set_unchanged/input.py
+---
+x = {
+    ant,  # the ant
+    bee,  # the bee
+    cat,  # the cat
+}

@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/method_skips_class_scope/input.py
 bindings:
   - attributes: []
     bare_read: true
+    first_unconditional_write: 0
     kinds:
       - Assignment
     name: x
@@ -16,6 +17,7 @@ bindings:
       - 0
   - attributes: []
     bare_read: false
+    first_unconditional_write: 20
     kinds:
       - ClassDef
     name: C
@@ -25,6 +27,7 @@ bindings:
       - 20
   - attributes: []
     bare_read: false
+    first_unconditional_write: 27
     kinds:
       - Assignment
     name: x
@@ -34,6 +37,7 @@ bindings:
       - 27
   - attributes: []
     bare_read: false
+    first_unconditional_write: 48
     kinds:
       - FunctionDef
     name: get
@@ -43,6 +47,7 @@ bindings:
       - 48
   - attributes: []
     bare_read: false
+    first_unconditional_write: 52
     kinds:
       - Parameter
     name: self

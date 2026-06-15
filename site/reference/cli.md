@@ -52,7 +52,7 @@ prose format --select align-equals,align-colons src/
 
 ## `prose check`
 
-Reports violations without modifying source. Returns the canonical [**Exit Codes**](/reference/exit-codes) matrix so CI gates pick up `1` *(format would change)* or `2` *(lint violation)* alongside the pass / parse / config codes. The flag table matches `prose format`'s above, omitting `--diff` because no rewrite is being staged for preview and adding `--validate` to opt into a rewrite-soundness pass:
+Reports violations without modifying source, returning the canonical [**Exit Codes**](/reference/exit-codes) matrix so CI gates pick up `1` *(format would change)* or `2` *(lint violation)* alongside the pass / parse / config codes. The flag table matches `prose format`'s above, omitting `--diff` because no rewrite is being staged for preview and adding `--validate` to opt into a rewrite-soundness pass:
 
 | Flag | Type | Default | Description |
 |---|---|---|---|
@@ -84,7 +84,7 @@ Removes every entry from the user-level cache and prints the freed bytes plus th
 prose cache clean
 ```
 
-Returns exit code 0 on success. The IO-error exit code applies on permission or filesystem failures.
+Returns exit code 0 on success, with the IO-error exit code applying on permission or filesystem failures.
 
 ## `prose cache compact`
 
@@ -104,7 +104,7 @@ prose cache info
 
 ## `prose completions`
 
-Prints a shell-completion script to stdout.
+Prints a shell-completion script to stdout for the shell named in the `<shell>` positional below.
 
 | Positional | Values | Description |
 |---|---|---|
@@ -169,6 +169,6 @@ prose check --select align-equals src/
 
 This runs `align-equals` against `src/` even when `[rules]` has `align-equals = false`. The [**Configuration**](/reference/configuration) reference covers the per-rule toggle.
 
-CLI flags are per-invocation only. None of the flags above *(including `--output-format`, `--color`, `--diff`, `--select`, `--ignore`)* can be set in `[tool.prose]`. The configuration file carries semantic knobs *(line lengths, per-rule toggles, rule-specific inputs)*, and the CLI carries invocation knobs *(input source, output shape, color)*.
+CLI flags are per-invocation only, so none of the flags above *(including `--output-format`, `--color`, `--diff`, `--select`, `--ignore`)* can be set in `[tool.prose]`. The configuration file carries semantic knobs *(line lengths, per-rule toggles, rule-specific inputs)*, and the CLI carries invocation knobs *(input source, output shape, color)*.
 
 The [**Quick Start**](/usage/quick-start) chapter walks through the most common invocations, and the [**Pipeline Order**](/reference/pipeline-order) reference covers the deterministic order rules fire in.

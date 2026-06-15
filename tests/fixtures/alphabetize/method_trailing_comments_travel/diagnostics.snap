@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/method_trailing_comments_travel/input.py
+---
+alphabetize@23..146

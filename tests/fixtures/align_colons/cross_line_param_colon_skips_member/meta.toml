@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Cross-Line Parameter Colon Skips the Member"
+
+description = '''
+An annotated parameter whose `:` opens the line after the name leaves the colon off the name's line. **The cross-line annotation disqualifies the parameter**, leaving it untouched while the flat-annotated parameters align.
+'''

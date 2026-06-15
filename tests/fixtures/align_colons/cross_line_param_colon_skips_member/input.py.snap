@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_colons/cross_line_param_colon_skips_member/input.py
+---
+def f(
+    a
+    : int,
+    bb   : str,
+    cccc : bool,
+):
+    pass

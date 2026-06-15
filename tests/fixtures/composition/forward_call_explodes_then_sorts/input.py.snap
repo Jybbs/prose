@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/forward_call_explodes_then_sorts/input.py
+---
+def build(red, green, blue, alpha):
+    return red
+
+
+def parse(value):
+    return build(
+        alpha=a,
+        blue=b,
+        green=g,
+        red=r
+    )

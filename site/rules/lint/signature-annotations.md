@@ -8,7 +8,7 @@ layout  : doc
 
 <RuleLayout rule="signature_annotations">
 
-An unannotated parameter is a legibility gap. The reader meets the function without knowing what it takes, while the annotated form lays out cleanly through the [[align-colons]] and [[align-equals]] columns. `signature-annotations` reports a parameter that carries no type annotation, leaving a method's `self`, a classmethod's `cls`, and the `*args` and `**kwargs` variadics outside the rule.
+An unannotated parameter is a legibility gap, leaving the reader to meet the function without knowing what it takes, whereas the annotated form lays out cleanly through the [[align-colons]] and [[align-equals]] columns. `signature-annotations` reports a parameter that carries no type annotation, leaving a method's `self`, a classmethod's `cls`, and the `*args` and `**kwargs` variadics outside the rule.
 
 The rule also reports a function whose body returns a value yet carries no return annotation. A procedure that returns nothing stays silent, so in a clean file a signature without a return annotation reads as a function that returns nothing. The companion [[strip-none-return]] rule enforces the other side of that convention, dropping an explicit `-> None` the omission already reads as visual weight.
 
