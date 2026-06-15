@@ -12,7 +12,7 @@
 //! pass through unwrapped.
 
 use ruff_diagnostics::Edit;
-use textwrap::Options;
+use textwrap::{Options, WordSeparator, WordSplitter};
 
 use crate::{
     config::{Config, DocstringStructuredPolicy},
@@ -177,10 +177,14 @@ impl Walker<'_> {
     }
 
     fn emit_wrapped(&mut self, initial: &str, subsequent: &str, text: &str, width: usize) {
+        // AsciiSpace and NoHyphenation keep a slash- or hyphen-bearing token
+        // atomic, so an over-budget URL or path overflows instead of splitting.
         let opts = Options::new(width)
             .break_words(false)
             .initial_indent(initial)
-            .subsequent_indent(subsequent);
+            .subsequent_indent(subsequent)
+            .word_separator(WordSeparator::AsciiSpace)
+            .word_splitter(WordSplitter::NoHyphenation);
         for piece in textwrap::wrap(text, opts) {
             self.emit_verbatim(&piece);
         }
@@ -253,6 +257,8 @@ fn rewrite_body(
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use crate::testing::run_rule;
 
     fn run(src: &str) -> String {
@@ -300,6 +306,23 @@ mod tests {
     fn non_triple_quoted_string_is_left_alone() {
         let src = "def f():\n    \"summary\"\n";
         assert_eq!(run(src), src);
+    }
+
+    #[rstest]
+    fn over_budget_token_with_embedded_break_overflows_unbroken(
+        #[values(
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy",
+            "config-loader/runtime-overrides/per-file-ancestors/resolution-and-precedence-order"
+        )]
+        token: &str,
+    ) {
+        let src = format!(
+            "\"\"\"\nThe canonical reference value lives at {token} for callers here.\n\"\"\"\n"
+        );
+        assert!(
+            run(&src).contains(token),
+            "atomic token was split at an embedded `/` or `-`"
+        );
     }
 
     #[test]
