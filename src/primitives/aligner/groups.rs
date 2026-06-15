@@ -92,16 +92,12 @@ where
 }
 
 /// Returns `true` when `members` form a multi-row group whose aligned
-/// tokens sit on distinct source lines that share one indentation
-/// baseline. Rows at differing indents cannot land their tokens in a
-/// common screen column, so a run spanning more than one indent fails
-/// the check and stays unaligned.
+/// tokens sit on distinct source lines at a shared display-column
+/// baseline.
 pub(crate) fn is_alignment_candidate(source: &Source, members: &[Member]) -> bool {
     members.len() >= 2
         && members.windows(2).all(|w| {
-            w[0].line_start != w[1].line_start
-                && source.line_indent_width(w[0].line_start)
-                    == source.line_indent_width(w[1].line_start)
+            w[0].line_start != w[1].line_start && baseline(source, w[0]) == baseline(source, w[1])
         })
 }
 
@@ -281,6 +277,15 @@ where
         .map(|anchor| range_anchored_member(source, target, anchor, extra_width))
 }
 
+/// The display column where `member`'s left-hand side begins, the width
+/// of its line up to the gap less the member's own width.
+fn baseline(source: &Source, member: Member) -> usize {
+    source
+        .slice(TextRange::new(member.line_start, member.gap.start()))
+        .width()
+        - member.width
+}
+
 /// Moves the in-progress run into `groups` when it holds at least one
 /// member, leaving `current` empty for the next run.
 fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {
@@ -350,20 +355,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::parse;
-
-    /// A zero-width member anchored at the start of the line beginning at
-    /// `line_start`, for the candidate-shape checks that read only
-    /// `line_start`.
-    fn member_on_line(line_start: u32) -> Member {
-        let at = TextSize::new(line_start);
-        Member {
-            gap: TextRange::empty(at),
-            line_start: at,
-            op_width: 0,
-            width: 0,
-        }
-    }
+    use crate::testing::{parse, range};
 
     #[test]
     fn adjacent_member_groups_break_after_multiline_closes_run() {
@@ -469,20 +461,82 @@ mod tests {
     }
 
     #[test]
-    fn is_alignment_candidate_admits_shared_indent() {
-        // Two rows on distinct lines at the same indent share a screen
-        // column, so they qualify.
-        let source = parse("x = 1\ny = 2\n");
-        let members = [member_on_line(0), member_on_line(6)];
+    fn is_alignment_candidate_holds_for_shared_baseline() {
+        // Two `=` rows on distinct lines, each opening at column 0.
+        let source = parse("ab = 1\ncd = 2\n");
+        let members = [
+            Member {
+                gap: range(2, 3),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+            Member {
+                gap: range(9, 10),
+                line_start: TextSize::new(7),
+                op_width: 0,
+                width: 2,
+            },
+        ];
+
         assert!(is_alignment_candidate(&source, &members));
     }
 
     #[test]
-    fn is_alignment_candidate_rejects_mismatched_indents() {
-        // The second row sits one block deeper, so the two cannot land
-        // their tokens in a common column.
-        let source = parse("if x:\n    y = 1\n");
-        let members = [member_on_line(0), member_on_line(6)];
+    fn is_alignment_candidate_rejects_differing_baselines() {
+        // Distinct lines, but the `q.` prefix opens the second row two
+        // columns right, so a shared `=` column would land where no row sits.
+        let source = parse("ab = 1\nq.cd = 2\n");
+        let members = [
+            Member {
+                gap: range(2, 3),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+            Member {
+                gap: range(11, 12),
+                line_start: TextSize::new(7),
+                op_width: 0,
+                width: 2,
+            },
+        ];
+
+        assert!(!is_alignment_candidate(&source, &members));
+    }
+
+    #[test]
+    fn is_alignment_candidate_rejects_same_line() {
+        // Two rows sharing a source line never form a column.
+        let source = parse("ab = cd = 1\n");
+        let members = [
+            Member {
+                gap: range(2, 3),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+            Member {
+                gap: range(7, 8),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+        ];
+
+        assert!(!is_alignment_candidate(&source, &members));
+    }
+
+    #[test]
+    fn is_alignment_candidate_rejects_singleton() {
+        let source = parse("ab = 1\n");
+        let members = [Member {
+            gap: range(2, 3),
+            line_start: TextSize::new(0),
+            op_width: 0,
+            width: 2,
+        }];
+
         assert!(!is_alignment_candidate(&source, &members));
     }
 

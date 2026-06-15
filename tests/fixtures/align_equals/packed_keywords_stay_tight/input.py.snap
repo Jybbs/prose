@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/packed_keywords_stay_tight/input.py
+---
+data = check_output(cmd, shell=True, text=True, stderr=STDOUT,
+                    encoding=encoding, errors=errors)

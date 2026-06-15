@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Trailing Comments Travel With Their Keyword Argument"
+
+description = '''
+Each keyword argument's trailing inline comment **moves with the argument as the call sorts its keywords**, so a comment documenting one keyword's value never drifts onto the keyword that takes its place.
+'''

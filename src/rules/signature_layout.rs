@@ -19,7 +19,7 @@ use crate::{
     primitives::{
         edit::{narrowed_replacement, singleton_groups, splice_parses},
         layout::explode_parens,
-        range::paren_aware_range,
+        range::return_annotation_range,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -140,7 +140,7 @@ impl Layout<'_> {
     fn push_return_and_colon(&self, out: &mut String, fd: &StmtFunctionDef) {
         if let Some(ret) = fd.returns.as_deref() {
             out.push_str(" -> ");
-            let range = paren_aware_range(ret.into(), fd.into(), self.source.tokens());
+            let range = return_annotation_range(ret, fd, self.source.tokens());
             out.push_str(self.source.slice(range));
         }
         out.push(':');

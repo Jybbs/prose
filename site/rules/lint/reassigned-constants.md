@@ -19,7 +19,7 @@ The rule weighs module-level `SCREAMING_CASE` assignments and annotated assignme
 | `enabled` | bool | `true` | Toggle the rule on or off |
 | `allow` | list of names | `[]` | Module-level names exempted from the lint |
 
-The `allow` list holds bare names. An entry never produces a lint, even when its shape would otherwise match.
+The `allow` list holds bare names, so an entry never produces a lint even when its shape would otherwise match.
 
 </template>
 

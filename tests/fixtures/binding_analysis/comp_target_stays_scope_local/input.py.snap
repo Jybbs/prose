@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/comp_target_stays_scope_local/input.
 bindings:
   - attributes: []
     bare_read: true
+    first_unconditional_write: 0
     kinds:
       - Assignment
     name: xs
@@ -16,6 +17,7 @@ bindings:
       - 0
   - attributes: []
     bare_read: false
+    first_unconditional_write: 17
     kinds:
       - Assignment
     name: x
@@ -25,6 +27,7 @@ bindings:
       - 17
   - attributes: []
     bare_read: true
+    first_unconditional_write: 46
     kinds:
       - Comprehension
     name: x
@@ -35,6 +38,7 @@ bindings:
       - 46
   - attributes: []
     bare_read: false
+    first_unconditional_write: 32
     kinds:
       - Assignment
     name: vals

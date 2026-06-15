@@ -342,7 +342,7 @@ fn propagate(state: &mut [bool], deps: &[Vec<usize>]) {
 
 #[cfg(test)]
 mod tests {
-    use ruff_text_size::{TextLen, TextRange};
+    use ruff_text_size::TextRange;
 
     use super::*;
     use crate::primitives::orderer::block_range;
@@ -365,7 +365,7 @@ mod tests {
         let source = parse("def f():\n    pass\n\n\ndef f():\n    pass\n\n\nALIAS = f\n");
         let body = &source.ast().body;
         let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, TextRange::up_to(source.text().text_len())))
+            .map(|i| block_range(&source, body, i, source.module_range()))
             .collect();
         let plan =
             module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
@@ -380,7 +380,7 @@ mod tests {
         let source = parse("def build():\n    return 1\n\n\nTABLE = dict(timeout=30)\n");
         let body = &source.ast().body;
         let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, TextRange::up_to(source.text().text_len())))
+            .map(|i| block_range(&source, body, i, source.module_range()))
             .collect();
         let plan =
             module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
@@ -395,7 +395,7 @@ mod tests {
         let source = parse("LEAD = 1\n\n\ndef make():\n    return 1\n\n\nTRAIL = make\n");
         let body = &source.ast().body;
         let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, TextRange::up_to(source.text().text_len())))
+            .map(|i| block_range(&source, body, i, source.module_range()))
             .collect();
         let plan =
             module_band_plan(&source, body, &blocks, false, None).expect("acyclic module plans");
@@ -409,7 +409,7 @@ mod tests {
         let source = parse("A = B\nB = A\n");
         let body = &source.ast().body;
         let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, TextRange::up_to(source.text().text_len())))
+            .map(|i| block_range(&source, body, i, source.module_range()))
             .collect();
         assert!(module_band_plan(&source, body, &blocks, false, None).is_none());
     }
@@ -419,7 +419,7 @@ mod tests {
         let source = parse("X = X\n");
         let body = &source.ast().body;
         let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, TextRange::up_to(source.text().text_len())))
+            .map(|i| block_range(&source, body, i, source.module_range()))
             .collect();
         let plan = module_band_plan(&source, body, &blocks, false, None)
             .expect("self-reference does not cycle");

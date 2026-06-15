@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Stub's None Return Annotation Survives a Leading Docstring"
+
+description = '''
+A `Protocol` method whose body is a docstring followed by a single `...` keeps its `-> None`, because a leading docstring does not disqualify a declaration-only stub.
+'''
