@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/set_elements_trailing_comments_travel/input.py
+---
+flavors = {
+    chocolate,  # the rich one
+    strawberry,  # the fruity one
+    vanilla,  # the classic base
+}

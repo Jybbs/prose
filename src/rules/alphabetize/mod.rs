@@ -25,7 +25,7 @@ use ruff_python_ast::{
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
 };
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextLen, TextRange};
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
@@ -85,12 +85,8 @@ impl Rule for Alphabetize {
             source,
             target_version: self.target_version,
         };
-        let (body_text, body_span) = rewrite_body(
-            ctx,
-            body,
-            TextRange::up_to(source.text().text_len()),
-            BodyScope::Module,
-        );
+        let (body_text, body_span) =
+            rewrite_body(ctx, body, source.module_range(), BodyScope::Module);
         let edits = match body_text {
             Cow::Borrowed(_) => leaf_edits,
             Cow::Owned(text) => narrowed_replacement(source, body_span, text)

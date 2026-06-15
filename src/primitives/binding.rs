@@ -2,6 +2,9 @@
 //!
 //! Walks the module once and records, for every name introduced or
 //! shadowed in a lexical scope, the offsets of every write and read.
+//! A read that finds no binding mid-walk defers and resolves against
+//! the completed scope chain after the walk, so a forward reference to
+//! a name bound later in source order still records against it.
 //! Consuming rules query the table by `BindingId` or by `&Stmt`
 //! rather than driving their own walk.
 //!
@@ -18,10 +21,10 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use ruff_python_ast::{
-    Alias, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp, ExprNamed,
-    ExprSetComp, ExprTuple, Identifier, ModModule, Parameters, Stmt, StmtAnnAssign, StmtAssign,
-    StmtAugAssign, StmtClassDef, StmtFor, StmtFunctionDef, StmtImport, StmtImportFrom, StmtTry,
-    StmtWith,
+    Alias, ExceptHandler, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp,
+    ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, ModModule, Parameters, Stmt,
+    StmtAnnAssign, StmtAssign, StmtAugAssign, StmtClassDef, StmtFor, StmtFunctionDef, StmtIf,
+    StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith,
     visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -78,12 +81,16 @@ pub(crate) enum UnpackKind {
 
 /// One named binding in some scope, with every observed write and read.
 /// `attributes` collects the distinct attribute names read off the
-/// binding (`os.environ` records `environ`), and `bare_read` flips when
-/// the name is read without an attribute access (`foo(os)`).
+/// binding (`os.environ` records `environ`), `bare_read` flips when the
+/// name is read without an attribute access (`foo(os)`), and
+/// `first_unconditional_write` holds the earliest write not nested in a
+/// conditional branch (`if`/`for`/`while`/`try`/`match`), or `None` when
+/// every write is conditional.
 #[derive(Debug, Serialize)]
 pub(crate) struct Binding {
     attributes: BTreeSet<String>,
     bare_read: bool,
+    first_unconditional_write: Option<TextSize>,
     kinds: Vec<BindingKind>,
     name: String,
     read_offsets: Vec<TextSize>,
@@ -173,12 +180,13 @@ impl BindingAnalysis {
         self.binding(binding).write_offsets[0]
     }
 
-    /// Returns `true` when `name` has a module-scope write event at
-    /// any offset strictly less than `offset`.
+    /// Returns `true` when `name` has an unconditional module-scope
+    /// write at an offset strictly less than `offset`. A write nested in
+    /// a conditional branch (`if`/`for`/`while`/`try`/`match`) is excluded.
     pub(crate) fn is_defined_before(&self, name: &str, offset: TextSize) -> bool {
         self.module_binding(name)
-            .and_then(|binding| binding.write_offsets.first())
-            .is_some_and(|&first| first < offset)
+            .and_then(|binding| binding.first_unconditional_write)
+            .is_some_and(|first| first < offset)
     }
 
     /// Returns the number of distinct attributes read off the
@@ -232,6 +240,8 @@ impl BindingAnalysis {
 struct Builder {
     assignment_values: HashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
+    conditional_depth: usize,
+    deferred_reads: Vec<DeferredRead>,
     function_scope_at: HashMap<TextSize, ScopeId>,
     scope_stack: Vec<ScopeId>,
     scopes: Vec<Scope>,
@@ -243,6 +253,8 @@ impl Builder {
         let mut builder = Self {
             assignment_values: HashMap::new(),
             bindings: Vec::new(),
+            conditional_depth: 0,
+            deferred_reads: Vec::new(),
             function_scope_at: HashMap::new(),
             scope_stack: Vec::new(),
             scopes: Vec::new(),
@@ -267,10 +279,7 @@ impl Builder {
             walk_arguments(self, arguments);
         }
         self.record_identifier(&class.name, BindingKind::ClassDef);
-        let parent = Some(self.current_scope());
-        self.push_scope(ScopeKind::Class, parent);
-        self.visit_body(&class.body);
-        self.pop_scope();
+        self.in_scope(ScopeKind::Class, |b| b.visit_body(&class.body));
     }
 
     fn enter_comprehension(
@@ -284,23 +293,22 @@ impl Builder {
             );
         };
         self.visit_expr(&first.iter);
-        let parent = Some(self.current_scope());
-        self.push_scope(ScopeKind::Comprehension, parent);
-        self.record_target(&first.target, BindingKind::Comprehension);
-        for guard in &first.ifs {
-            self.visit_expr(guard);
-        }
-        for generator in rest {
-            self.visit_expr(&generator.iter);
-            self.record_target(&generator.target, BindingKind::Comprehension);
-            for guard in &generator.ifs {
-                self.visit_expr(guard);
+        self.in_scope(ScopeKind::Comprehension, |b| {
+            b.record_target(&first.target, BindingKind::Comprehension);
+            for guard in &first.ifs {
+                b.visit_expr(guard);
             }
-        }
-        for element in elements {
-            self.visit_expr(element);
-        }
-        self.pop_scope();
+            for generator in rest {
+                b.visit_expr(&generator.iter);
+                b.record_target(&generator.target, BindingKind::Comprehension);
+                for guard in &generator.ifs {
+                    b.visit_expr(guard);
+                }
+            }
+            for element in elements {
+                b.visit_expr(element);
+            }
+        });
     }
 
     fn enter_function(&mut self, function: &StmtFunctionDef, stmt_start: TextSize) {
@@ -312,28 +320,36 @@ impl Builder {
             self.visit_expr(returns);
         }
         self.record_identifier(&function.name, BindingKind::FunctionDef);
-        let parent = Some(self.current_scope());
-        let function_scope = self.push_scope(ScopeKind::Function, parent);
+        let function_scope = self.in_scope(ScopeKind::Function, |b| {
+            b.record_parameters(&function.parameters);
+            b.visit_body(&function.body);
+        });
         self.function_scope_at.insert(stmt_start, function_scope);
-        self.record_parameters(&function.parameters);
-        self.visit_body(&function.body);
-        self.pop_scope();
     }
 
     fn enter_lambda(&mut self, lambda: &ExprLambda) {
         if let Some(parameters) = &lambda.parameters {
             walk_parameters(self, parameters);
         }
-        let parent = Some(self.current_scope());
-        self.push_scope(ScopeKind::Function, parent);
-        if let Some(parameters) = &lambda.parameters {
-            self.record_parameters(parameters);
-        }
-        self.visit_expr(&lambda.body);
-        self.pop_scope();
+        self.in_scope(ScopeKind::Function, |b| {
+            if let Some(parameters) = &lambda.parameters {
+                b.record_parameters(parameters);
+            }
+            b.visit_expr(&lambda.body);
+        });
     }
 
-    fn finish(self) -> BindingAnalysis {
+    fn finish(mut self) -> BindingAnalysis {
+        for deferred in std::mem::take(&mut self.deferred_reads) {
+            if let Some(binding_id) = resolve_in_chain(&self.scopes, deferred.scope, &deferred.name)
+            {
+                self.record_resolved_read(
+                    binding_id,
+                    deferred.offset,
+                    deferred.attribute.as_deref(),
+                );
+            }
+        }
         let mut unpack_targets = HashMap::new();
         for group in &self.unpack_groups {
             let reused = group
@@ -377,6 +393,26 @@ impl Builder {
         }
     }
 
+    /// Runs `f` with writes marked conditional, so a name bound only
+    /// inside a branch that may not run never sets
+    /// `first_unconditional_write`.
+    fn in_conditional(&mut self, f: impl FnOnce(&mut Self)) {
+        self.conditional_depth += 1;
+        f(self);
+        self.conditional_depth -= 1;
+    }
+
+    /// Runs `f` inside a freshly pushed scope of `kind` parented to the
+    /// current scope, popping it when `f` returns. Returns the new
+    /// scope's id for a caller that records it.
+    fn in_scope(&mut self, kind: ScopeKind, f: impl FnOnce(&mut Self)) -> ScopeId {
+        let parent = Some(self.current_scope());
+        let id = self.push_scope(kind, parent);
+        f(self);
+        self.pop_scope();
+        id
+    }
+
     fn pop_scope(&mut self) {
         self.scope_stack
             .pop()
@@ -412,6 +448,24 @@ impl Builder {
         self.record_use(name, offset, None);
     }
 
+    /// Records a read of `id` at `offset`, inserting into `read_offsets`
+    /// so they stay ascending whether the read arrives in source order
+    /// or as a deferred forward reference. Flags the read bare or under
+    /// the attribute it accessed.
+    fn record_resolved_read(&mut self, id: BindingId, offset: TextSize, attribute: Option<&str>) {
+        let binding = &mut self.bindings[id.0 as usize];
+        let slot = binding
+            .read_offsets
+            .partition_point(|&existing| existing < offset);
+        binding.read_offsets.insert(slot, offset);
+        match attribute {
+            Some(attribute) => {
+                binding.attributes.insert(attribute.to_owned());
+            }
+            None => binding.bare_read = true,
+        }
+    }
+
     fn record_target(&mut self, target: &Expr, kind: BindingKind) {
         self.for_each_target_name(target, &mut |builder, name, offset| {
             builder.record_write(name, offset, kind);
@@ -439,22 +493,14 @@ impl Builder {
 
     fn record_use(&mut self, name: &str, offset: TextSize, attribute: Option<&str>) {
         let innermost = self.current_scope();
-        for &scope_id in self.scope_stack.iter().rev() {
-            let scope = &self.scopes[scope_id.0 as usize];
-            if scope_id != innermost && matches!(scope.kind, ScopeKind::Class) {
-                continue;
-            }
-            if let Some(&binding_id) = scope.bindings.get(name) {
-                let binding = &mut self.bindings[binding_id.0 as usize];
-                binding.read_offsets.push(offset);
-                match attribute {
-                    Some(attribute) => {
-                        binding.attributes.insert(attribute.to_owned());
-                    }
-                    None => binding.bare_read = true,
-                }
-                return;
-            }
+        match resolve_in_chain(&self.scopes, innermost, name) {
+            Some(binding) => self.record_resolved_read(binding, offset, attribute),
+            None => self.deferred_reads.push(DeferredRead {
+                attribute: attribute.map(str::to_owned),
+                name: name.to_owned(),
+                offset,
+                scope: innermost,
+            }),
         }
     }
 
@@ -490,6 +536,7 @@ impl Builder {
         offset: TextSize,
         kind: BindingKind,
     ) -> BindingId {
+        let unconditional = self.conditional_depth == 0;
         let scope_data = &mut self.scopes[scope.0 as usize];
         let binding_id = if let Some(&id) = scope_data.bindings.get(name) {
             id
@@ -502,6 +549,7 @@ impl Builder {
                 scope,
                 attributes: BTreeSet::new(),
                 bare_read: false,
+                first_unconditional_write: None,
                 kinds: Vec::new(),
                 write_offsets: Vec::new(),
                 read_offsets: Vec::new(),
@@ -513,6 +561,9 @@ impl Builder {
             binding.kinds.push(kind);
         }
         binding.write_offsets.push(offset);
+        if unconditional {
+            binding.first_unconditional_write.get_or_insert(offset);
+        }
         binding_id
     }
 
@@ -563,9 +614,23 @@ impl Builder {
 
     fn visit_for(&mut self, node: &StmtFor) {
         self.visit_expr(&node.iter);
-        self.record_target(&node.target, BindingKind::For);
-        self.visit_body(&node.body);
-        self.visit_body(&node.orelse);
+        self.in_conditional(|b| {
+            b.record_target(&node.target, BindingKind::For);
+            b.visit_body(&node.body);
+            b.visit_body(&node.orelse);
+        });
+    }
+
+    /// Walks an `if`/`elif`/`else` chain with each branch body conditional.
+    fn visit_if(&mut self, node: &StmtIf) {
+        self.visit_expr(&node.test);
+        self.in_conditional(|b| b.visit_body(&node.body));
+        for clause in &node.elif_else_clauses {
+            if let Some(test) = &clause.test {
+                self.visit_expr(test);
+            }
+            self.in_conditional(|b| b.visit_body(&clause.body));
+        }
     }
 
     fn visit_import(&mut self, node: &StmtImport) {
@@ -583,19 +648,29 @@ impl Builder {
     }
 
     fn visit_try(&mut self, node: &StmtTry) {
-        self.visit_body(&node.body);
-        for handler in &node.handlers {
-            let ruff_python_ast::ExceptHandler::ExceptHandler(eh) = handler;
-            if let Some(type_) = &eh.type_ {
-                self.visit_expr(type_);
+        self.in_conditional(|b| {
+            b.visit_body(&node.body);
+            for handler in &node.handlers {
+                let ExceptHandler::ExceptHandler(eh) = handler;
+                if let Some(type_) = &eh.type_ {
+                    b.visit_expr(type_);
+                }
+                if let Some(name) = &eh.name {
+                    b.record_identifier(name, BindingKind::ExceptHandler);
+                }
+                b.visit_body(&eh.body);
             }
-            if let Some(name) = &eh.name {
-                self.record_identifier(name, BindingKind::ExceptHandler);
-            }
-            self.visit_body(&eh.body);
-        }
-        self.visit_body(&node.orelse);
+            b.visit_body(&node.orelse);
+        });
         self.visit_body(&node.finalbody);
+    }
+
+    fn visit_while(&mut self, node: &StmtWhile) {
+        self.visit_expr(&node.test);
+        self.in_conditional(|b| {
+            b.visit_body(&node.body);
+            b.visit_body(&node.orelse);
+        });
     }
 
     fn visit_with(&mut self, node: &StmtWith) {
@@ -646,6 +721,14 @@ impl<'a> Visitor<'a> for Builder {
         }
     }
 
+    fn visit_match_case(&mut self, case: &'a MatchCase) {
+        self.visit_pattern(&case.pattern);
+        if let Some(guard) = &case.guard {
+            self.visit_expr(guard);
+        }
+        self.in_conditional(|b| b.visit_body(&case.body));
+    }
+
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         match stmt {
             Stmt::AnnAssign(node) => self.visit_ann_assign(node),
@@ -655,13 +738,24 @@ impl<'a> Visitor<'a> for Builder {
             Stmt::For(node) => self.visit_for(node),
             Stmt::FunctionDef(node) => self.enter_function(node, stmt.range().start()),
             Stmt::Global(_) | Stmt::Nonlocal(_) => {}
+            Stmt::If(node) => self.visit_if(node),
             Stmt::Import(node) => self.visit_import(node),
             Stmt::ImportFrom(node) => self.visit_import_from(node),
             Stmt::Try(node) => self.visit_try(node),
+            Stmt::While(node) => self.visit_while(node),
             Stmt::With(node) => self.visit_with(node),
             _ => walk_stmt(self, stmt),
         }
     }
+}
+
+/// A read left unresolved mid-walk, retained until `finish`
+/// re-resolves it against the completed scope chain.
+struct DeferredRead {
+    attribute: Option<String>,
+    name: String,
+    offset: TextSize,
+    scope: ScopeId,
 }
 
 /// One multi-name unpack assignment, retained until `finish` reads the
@@ -685,6 +779,16 @@ pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
 /// imported name itself.
 pub(crate) fn from_import_bound_name(alias: &Alias) -> &str {
     alias.asname.as_ref().unwrap_or(&alias.name).as_str()
+}
+
+/// Resolves `name` against the scope chain rooted at `innermost`,
+/// walking outward through `parent` links. A non-innermost class scope
+/// is skipped, since its names are invisible to nested functions and
+/// comprehensions. `None` when no scope in the chain binds `name`.
+fn resolve_in_chain(scopes: &[Scope], innermost: ScopeId, name: &str) -> Option<BindingId> {
+    std::iter::successors(Some(innermost), |&id| scopes[id.0 as usize].parent)
+        .filter(|&id| id == innermost || !matches!(scopes[id.0 as usize].kind, ScopeKind::Class))
+        .find_map(|id| scopes[id.0 as usize].bindings.get(name).copied())
 }
 
 /// Returns the segment of `dotted` before the first `.`. Matches
@@ -737,21 +841,66 @@ mod tests {
     }
 
     #[test]
-    fn is_defined_before_returns_false_for_undefined_name() {
-        let analysis = analyze("x = 1\n");
-        assert!(!analysis.is_defined_before("y", TextSize::new(100)));
+    fn deferred_read_resolves_to_an_enclosing_function_local() {
+        let analysis = analyze(
+            "def outer():\n    def inner():\n        return helper()\n    def helper():\n        return 1\n",
+        );
+        let outer = analysis
+            .scopes
+            .iter()
+            .find(|scope| scope.parent == Some(ScopeId(0)))
+            .expect("outer is the function scope under module");
+        let helper = *outer.bindings.get("helper").expect("helper bound in outer");
+        assert_eq!(
+            analysis.usage_count(helper),
+            1,
+            "the forward call resolves to outer's local",
+        );
     }
 
-    #[test]
-    fn is_defined_before_returns_false_when_only_write_is_after_offset() {
-        let analysis = analyze("x = 1\n");
-        assert!(!analysis.is_defined_before("x", TextSize::new(0)));
+    #[rstest]
+    #[case::conditional_only_write("if flag:\n    Helper = int\n", "Helper", 100)]
+    #[case::elif_only_write("if a:\n    pass\nelif b:\n    Helper = int\n", "Helper", 100)]
+    #[case::except_only_write("try:\n    pass\nexcept E:\n    Helper = int\n", "Helper", 100)]
+    #[case::for_only_write("for _ in xs:\n    Helper = int\n", "Helper", 100)]
+    #[case::match_case_only_write("match x:\n    case 1:\n        Helper = int\n", "Helper", 100)]
+    #[case::nested_conditional("if a:\n    if b:\n        Helper = int\n", "Helper", 100)]
+    #[case::try_only_write("try:\n    Helper = int\nexcept E:\n    pass\n", "Helper", 100)]
+    #[case::undefined_name("x = 1\n", "y", 100)]
+    #[case::while_only_write("while flag:\n    Helper = int\n", "Helper", 100)]
+    #[case::write_after_offset("x = 1\n", "x", 0)]
+    fn is_defined_before_is_false_without_a_prior_unconditional_write(
+        #[case] src: &str,
+        #[case] name: &str,
+        #[case] offset: u32,
+    ) {
+        assert!(!analyze(src).is_defined_before(name, TextSize::new(offset)));
     }
 
-    #[test]
-    fn is_defined_before_returns_true_for_prior_module_write() {
-        let analysis = analyze("x = 1\nprint(x)\n");
-        assert!(analysis.is_defined_before("x", TextSize::new(10)));
+    #[rstest]
+    #[case::unconditional_after_conditional(
+        "if flag:\n    Helper = str\nHelper = int\n",
+        "Helper",
+        100
+    )]
+    #[case::unconditional_before_conditional(
+        "Helper = str\nif flag:\n    Helper = int\n",
+        "Helper",
+        100
+    )]
+    #[case::finally_write_is_unconditional(
+        "try:\n    pass\nfinally:\n    Helper = int\n",
+        "Helper",
+        100
+    )]
+    #[case::with_body_is_unconditional("with ctx() as _:\n    Helper = int\n", "Helper", 100)]
+    #[case::prior_module_write("x = 1\nprint(x)\n", "x", 10)]
+    fn is_defined_before_is_true_with_a_prior_unconditional_write(
+        #[case] src: &str,
+        #[case] name: &str,
+        #[case] offset: u32,
+    ) {
+        assert!(analyze(src).is_defined_before(name, TextSize::new(offset)));
     }
 
     #[test]
@@ -774,12 +923,40 @@ mod tests {
     }
 
     #[test]
+    fn module_function_reads_includes_a_call_before_the_def() {
+        let analysis = analyze("def caller():\n    return helper()\n\n\ndef helper():\n    pass\n");
+        let reads = analysis
+            .module_function_reads("helper")
+            .expect("unique def");
+        assert_eq!(
+            reads.len(),
+            1,
+            "the forward reference resolves after the walk"
+        );
+    }
+
+    #[test]
     fn module_function_reads_offset_points_at_the_call_callee() {
         let src = "def f(b, a):\n    pass\n\n\nf(1, 2)\n";
         let analysis = analyze(src);
         let reads = analysis.module_function_reads("f").expect("unique def");
         assert_eq!(reads.len(), 1);
         assert!(src[reads[0].to_usize()..].starts_with("f(1, 2)"));
+    }
+
+    #[test]
+    fn module_function_reads_orders_a_forward_read_before_a_later_call() {
+        let analysis = analyze(
+            "def caller():\n    return helper()\n\n\ndef helper():\n    pass\n\n\nhelper()\n",
+        );
+        let reads = analysis
+            .module_function_reads("helper")
+            .expect("unique def");
+        assert_eq!(reads.len(), 2);
+        assert!(
+            reads[0] < reads[1],
+            "the deferred forward read sorts ahead of the later module-level call",
+        );
     }
 
     #[rstest]

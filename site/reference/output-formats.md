@@ -2,7 +2,7 @@
 
 `--output-format` selects the diagnostic shape *Prose* emits, with named formats covering the common consumers. `text` is the human-readable default, rendering rustc-style snippets with carets and fix suggestions. `json` emits Ruff-shaped NDJSON for editor plugins and tooling, wherein the record shape mirrors what LSP-style diagnostic surfaces already consume. `github` emits workflow commands that <Tool slug="github" /> renders as inline annotations. `sarif` emits a [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) run document for upload into [**GitHub Code Scanning**](https://docs.github.com/en/code-security/code-scanning), persisting findings across runs in the repository's Security tab.
 
-The format selection is per-invocation. `text` is the default. All formats write diagnostics to stdout, and operational errors *(parse failures, IO errors, config errors)* go to stderr with an `error:` prefix, so a CI pipeline can split the two streams without inspecting exit codes.
+The format selection is per-invocation, defaulting to `text`. All formats write diagnostics to stdout, and operational errors *(parse failures, IO errors, config errors)* go to stderr with an `error:` prefix, so a CI pipeline can split the two streams without inspecting exit codes.
 
 ::: warning Diff Mode Is Text-Only
 `--diff` requires `text` *(the diff is the text-format presentation)*. Any other pairing surfaces exit code `4` at parse time.
@@ -10,7 +10,7 @@ The format selection is per-invocation. `text` is the default. All formats write
 
 ## `text`
 
-The default. Renders each diagnostic as a rustc-style snippet with a primary annotation marking the offending range, a label naming the rule, and *(when the rule auto-fixes)* a HELP block showing the replacement.
+The default format, rendering each diagnostic as a rustc-style snippet with a primary annotation marking the offending range, a label naming the rule, and *(when the rule auto-fixes)* a HELP block showing the replacement.
 
 ```
 warning: align consecutive `=` operators

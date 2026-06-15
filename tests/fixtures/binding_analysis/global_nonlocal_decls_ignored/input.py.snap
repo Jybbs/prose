@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/global_nonlocal_decls_ignored/input.
 bindings:
   - attributes: []
     bare_read: false
+    first_unconditional_write: 4
     kinds:
       - FunctionDef
     name: globalized
@@ -15,6 +16,7 @@ bindings:
       - 4
   - attributes: []
     bare_read: false
+    first_unconditional_write: 35
     kinds:
       - Assignment
     name: x
@@ -24,6 +26,7 @@ bindings:
       - 35
   - attributes: []
     bare_read: false
+    first_unconditional_write: 47
     kinds:
       - FunctionDef
     name: nested
@@ -33,6 +36,7 @@ bindings:
       - 47
   - attributes: []
     bare_read: false
+    first_unconditional_write: 61
     kinds:
       - Assignment
     name: y
@@ -42,6 +46,7 @@ bindings:
       - 61
   - attributes: []
     bare_read: true
+    first_unconditional_write: 75
     kinds:
       - FunctionDef
     name: inner
@@ -52,6 +57,7 @@ bindings:
       - 75
   - attributes: []
     bare_read: false
+    first_unconditional_write: 111
     kinds:
       - Assignment
     name: y

@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/forward_callee_explodes/input.py
+---
+def parse_str(value):
+    return ints_to_rgba(
+        red_channel=red_channel,
+        green_channel=green_channel,
+        blue_channel=blue_channel,
+        alpha_channel=alpha_channel
+    )
+
+
+def ints_to_rgba(red_channel, green_channel, blue_channel, alpha_channel):
+    return red_channel
