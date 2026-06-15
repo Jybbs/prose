@@ -2,7 +2,7 @@
 
 *Prose* caches per-file pipeline output keyed on the source bytes, the configuration governing the file, the rules the run selects, and the *Prose* version. A repeat `prose check` or `prose format` against an unchanged file collapses to a stat, a hash, and a deserialize, since the cache hit re-emits diagnostics from the cached entry without entering the pipeline.
 
-The cache is enabled by default. The `[cache]` table tunes it, `--no-cache` bypasses it for one invocation, and `prose cache clean` clears it.
+The cache is enabled by default, with the `[cache]` table tuning it, `--no-cache` bypassing it for one invocation, and `prose cache clean` clearing it.
 
 ## Location
 
@@ -32,7 +32,7 @@ Two workspaces editing identical files under matching configuration share a cach
 
 ## Eviction
 
-LRU eviction runs on every insert. The pass collects every entry's last-access mtime, sorts ascending, and removes entries until the directory total falls back under the configured cap *(default 100 MiB)*. The pass is best-effort and never blocks the insert, with permission failures and concurrent-eviction races logged to stderr as warnings.
+LRU eviction runs on every insert, the pass collecting every entry's last-access mtime, sorting ascending, and removing entries until the directory total falls back under the configured cap *(default 100 MiB)*. The pass is best-effort and never blocks the insert, with permission failures and concurrent-eviction races logged to stderr as warnings.
 
 Inserts write to a `.tmp`-suffixed sibling then `rename` onto the final path, so the rename's POSIX atomicity guarantees a concurrent reader never observes a partial entry. The sibling is cleaned up on drop when the rename fails, and `prose cache clean` sweeps any orphaned `.tmp` files alongside cache entries.
 
@@ -69,7 +69,7 @@ $ prose cache clean
 removed 142 entries (8124416 bytes)
 ```
 
-Returns exit code 0 on success. The IO-error exit code applies on permission or filesystem failures.
+Returns exit code 0 on success, with the IO-error exit code applying on permission or filesystem failures.
 
 ## `prose cache compact`
 

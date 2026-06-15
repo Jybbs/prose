@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Trailing Comments Travel With Their `__all__` Entry"
+
+description = '''
+A trailing inline comment on an `__all__` string item **stays attached to that string as the list sorts**, so a comment naming the export it annotates keeps describing the same name after the reorder.
+'''

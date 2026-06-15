@@ -8,7 +8,7 @@
 uv tool install prose-formatter
 ```
 
-Two names are worth flagging up front. The PyPI distribution is `prose-formatter`, because the unqualified `prose` name was already claimed when the project shipped. The binary the wheel installs is `prose`, because that's the name a user types at the shell and a CI step writes into a workflow. Every later command in the documentation assumes the `prose` binary on `PATH`.
+Two names are worth flagging up front, starting with the PyPI distribution `prose-formatter`, named so because the unqualified `prose` name was already claimed when the project shipped. The binary the wheel installs is `prose`, because that's the name a user types at the shell and a CI step writes into a workflow. Every later command in the documentation assumes the `prose` binary on `PATH`.
 
 `pip install prose-formatter` and `pipx install prose-formatter` work the same way for users who prefer those package managers. The PyPI distribution is the same wheel in every case, so the install path is whatever fits the project's existing tooling.
 

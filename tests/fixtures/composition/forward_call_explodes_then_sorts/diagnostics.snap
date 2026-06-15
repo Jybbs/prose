@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/forward_call_explodes_then_sorts/input.py
+---
+alphabetize@4..99
+call-layout@35..45

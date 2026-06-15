@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Already-Sorted Commented Set Is Left Alone"
+
+description = '''
+An already-sorted set whose elements carry trailing comments **comes back unchanged**, the reorder declining to rewrite a group already in order.
+'''

@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/strip_none_return/docstring_stub_none_preserved/input.py
+---
+class Reader(Protocol):
+    def close(self) -> None:
+        """Close the reader."""
+        ...
