@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/annotation_expr_read_target_write/in
 bindings:
   - attributes: []
     bare_read: true
+    first_unconditional_write: 0
     kinds:
       - Assignment
     name: Pair
@@ -16,6 +17,7 @@ bindings:
       - 0
   - attributes: []
     bare_read: false
+    first_unconditional_write: 23
     kinds:
       - Assignment
     name: x
@@ -25,6 +27,7 @@ bindings:
       - 23
   - attributes: []
     bare_read: false
+    first_unconditional_write: 34
     kinds:
       - Assignment
     name: y
