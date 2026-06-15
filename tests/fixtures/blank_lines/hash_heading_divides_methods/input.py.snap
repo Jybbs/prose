@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/hash_heading_divides_methods/input.py
+---
+class Session:
+
+    def open(self):
+        pass
+
+    ### Lifecycle
+
+    def close(self):
+        pass

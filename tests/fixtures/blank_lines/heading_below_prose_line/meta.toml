@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Heading Below a Prose Comment Still Divides"
+
+description = '''
+A multi-line comment block whose body opens with a prose line and then a Markdown-style heading still reads as a **section divider**, since the heading anywhere in the block carries one blank line below it.
+'''

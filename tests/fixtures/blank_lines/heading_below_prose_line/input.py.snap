@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/heading_below_prose_line/input.py
+---
+import os
+
+
+# See the module docs
+### API Reference
+
+def reference():
+    return os.getcwd()
