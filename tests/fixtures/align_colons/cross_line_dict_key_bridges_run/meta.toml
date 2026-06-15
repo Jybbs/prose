@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Cross-Line Dict Key Bridges the Run"
-
-description = '''
-One entry's key spans two lines, so its `:` lands on a different line from where the key opens. **The cross-line key drops out as a bridge**, leaving the flat-key entries on either side to align their colons across it as one block.
-'''

@@ -148,19 +148,24 @@ fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
 /// two entries closes the active run and starts a fresh one, so each
 /// run aligns independently. `**spread` entries skip the colon scan but
 /// do not break the run, matching the long-standing rule that an
-/// unpacking passes alignment through.
+/// unpacking passes alignment through. A keyed entry whose `:` crosses a
+/// line break instead closes the run, so its neighbors do not align a
+/// column across the stranded colon.
 fn dict_member_groups(
     source: &Source,
     rule: RuleId,
     items: &[DictItem],
 ) -> Vec<Vec<aligner::Member>> {
-    aligner::adjacent_member_groups(source, items, false, |item| match dict_item(source, item) {
-        Some(member) if !aligner::is_held(source, rule, item.start()) => {
-            aligner::Slot::Member(member)
-        }
+    aligner::adjacent_member_groups(source, items, false, |item| {
         // A `**spread` (no key) or a skip-held entry joins no group yet
         // bridges the run, so the entries on either side align as one block.
-        _ => aligner::Slot::Bridge,
+        if item.key.is_none() || aligner::is_held(source, rule, item.start()) {
+            return aligner::Slot::Bridge;
+        }
+        // A keyed entry whose colon sits on a later line carries no
+        // single-line anchor, so it breaks the run rather than stranding
+        // its colon inside a column its neighbors share.
+        dict_item(source, item).map_or(aligner::Slot::Break, aligner::Slot::Member)
     })
 }
 
