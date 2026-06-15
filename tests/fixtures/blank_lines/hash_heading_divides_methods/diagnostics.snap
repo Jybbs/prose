@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/hash_heading_divides_methods/input.py
+---
+blank-lines@14..15
+blank-lines@47..48
+blank-lines@65..66

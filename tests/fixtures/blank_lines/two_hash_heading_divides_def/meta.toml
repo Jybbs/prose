@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Two-Hash Heading Reads as a Divider"
+
+description = '''
+A heading comment opening with the minimum two `#` reads as a **section divider**, so the gap below it normalizes to one blank line rather than gluing to the definition.
+'''

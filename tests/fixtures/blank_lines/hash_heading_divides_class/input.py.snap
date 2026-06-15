@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/hash_heading_divides_class/input.py
+---
+import codecs
+
+
+### Codec APIs
+
+class Codec(codecs.Codec):
+
+    pass
