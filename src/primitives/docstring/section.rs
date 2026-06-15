@@ -5,12 +5,11 @@ use std::sync::LazyLock;
 
 use regex_lite::Regex;
 use ruff_python_ast::StringLiteral;
-use ruff_python_trivia::leading_indentation;
 use ruff_source_file::{Line, UniversalNewlineIterator};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::body::{DocstringBody, indent_prefix, triple_quoted_body};
-use super::scan::{LineScan, LineScanner};
+use super::scan::{LineScan, LineScanner, ScannedLine};
 use crate::source::Source;
 
 static ENTRY_PATTERN: LazyLock<Regex> =
@@ -55,13 +54,14 @@ impl<'src> EntryWalker<'src> {
     fn consume(&mut self, line: Line<'src>) {
         let line_start = line.start();
         let line_end = line.end();
-        let text = line.as_str();
+        let ScannedLine {
+            indent_chars,
+            scan,
+            trimmed,
+            ..
+        } = self.scanner.scan_line(line.as_str());
 
-        let indent_str = leading_indentation(text);
-        let trimmed = &text[indent_str.len()..];
-        let indent_chars = indent_str.chars().count();
-
-        match self.scanner.classify(trimmed, indent_chars) {
+        match scan {
             LineScan::Blank => {}
             LineScan::Body => self.consume_body(line_start, line_end, trimmed, indent_chars),
             LineScan::Fence

@@ -12,15 +12,14 @@
 //! pass through unwrapped.
 
 use ruff_diagnostics::Edit;
-use ruff_python_trivia::leading_indentation;
 use textwrap::Options;
 
 use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            DocstringBody, LineScan, LineScanner, entry_description_col, indent_prefix,
-            rewrite_docstrings, section_heading, triple_quoted_body,
+            DocstringBody, LineScan, LineScanner, ScannedLine, entry_description_col,
+            indent_prefix, rewrite_docstrings, section_heading, triple_quoted_body,
         },
         edit::{narrowed_replacement, singleton_groups},
     },
@@ -101,11 +100,14 @@ impl Walker<'_> {
     }
 
     fn consume(&mut self, line: &str) {
-        let indent_str = leading_indentation(line);
-        let trimmed = &line[indent_str.len()..];
-        let indent_chars = indent_str.chars().count();
+        let ScannedLine {
+            indent,
+            indent_chars,
+            scan,
+            trimmed,
+        } = self.scanner.scan_line(line);
 
-        match self.scanner.classify(trimmed, indent_chars) {
+        match scan {
             LineScan::Fence | LineScan::ListMarker | LineScan::VerbatimOpen => {
                 self.flush_paragraph();
                 self.emit_verbatim(line);
@@ -157,13 +159,13 @@ impl Walker<'_> {
         }
 
         match self.region {
-            Region::Description => self.buffer_description(indent_str, text),
+            Region::Description => self.buffer_description(indent, text),
             Region::Section => {
                 if let Some(desc_col) = entry_description_col(text) {
-                    self.start_entry(indent_str, indent_chars, text, desc_col);
+                    self.start_entry(indent, indent_chars, text, desc_col);
                     return;
                 }
-                self.emit_wrapped(indent_str, indent_str, text, self.rule.section_width);
+                self.emit_wrapped(indent, indent, text, self.rule.section_width);
             }
             Region::SectionEntry(_) => unreachable!("entries handled above"),
         }

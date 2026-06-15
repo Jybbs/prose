@@ -2,6 +2,8 @@
 //! markers, section underlines, doctest blocks, reStructuredText
 //! field lists, Sphinx directives, and their continuations.
 
+use ruff_python_trivia::leading_indentation;
+
 /// The classification of a docstring body line by the shared fence,
 /// blank, list, and verbatim scanner. Every variant but `Body` is
 /// terminal for the line, with `Body` handed to the walker's own
@@ -21,8 +23,8 @@ pub(crate) enum LineScan {
 }
 
 /// The fence, list, and verbatim-block state a docstring walker
-/// carries across lines. [`LineScanner::classify`] advances the state
-/// per line and returns its [`LineScan`], leaving each walker to
+/// carries across lines. [`LineScanner::scan_line`] advances the state
+/// per line and returns its [`ScannedLine`], leaving each walker to
 /// dispatch its own effect.
 pub(crate) struct LineScanner {
     body_indent_chars: usize,
@@ -41,11 +43,7 @@ impl LineScanner {
         }
     }
 
-    pub(crate) fn body_indent_chars(&self) -> usize {
-        self.body_indent_chars
-    }
-
-    pub(crate) fn classify(&mut self, trimmed: &str, indent_chars: usize) -> LineScan {
+    fn classify(&mut self, trimmed: &str, indent_chars: usize) -> LineScan {
         if trimmed.starts_with("```") {
             self.in_fence = !self.in_fence;
             self.list_indent = None;
@@ -83,6 +81,36 @@ impl LineScanner {
         }
         LineScan::Body
     }
+
+    pub(crate) fn body_indent_chars(&self) -> usize {
+        self.body_indent_chars
+    }
+
+    /// Splits `line` into its indent prefix and trimmed body, then
+    /// classifies the body, so a walker reads geometry and scan from
+    /// one call.
+    pub(crate) fn scan_line<'a>(&mut self, line: &'a str) -> ScannedLine<'a> {
+        let indent = leading_indentation(line);
+        let trimmed = &line[indent.len()..];
+        let indent_chars = indent.chars().count();
+        let scan = self.classify(trimmed, indent_chars);
+        ScannedLine {
+            indent,
+            indent_chars,
+            scan,
+            trimmed,
+        }
+    }
+}
+
+/// A docstring body line's geometry paired with its classification:
+/// the indent prefix, its character width, the trimmed body, and the
+/// [`LineScan`] the scanner advanced to.
+pub(crate) struct ScannedLine<'a> {
+    pub(crate) indent: &'a str,
+    pub(crate) indent_chars: usize,
+    pub(crate) scan: LineScan,
+    pub(crate) trimmed: &'a str,
 }
 
 /// True when `trimmed` is a delimited head, an `open` prefix then a
