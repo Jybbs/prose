@@ -59,26 +59,26 @@ impl BandPlan<'_> {
         region: &mut Vec<usize>,
         out: &mut Vec<usize>,
     ) {
+        let mut imports = Vec::new();
         let mut leading = Vec::new();
-        let mut skeleton = Vec::new();
+        let mut definitions = Vec::new();
         let mut trailing = Vec::new();
         for idx in region.drain(..) {
             match self.ranks[&idx] {
+                0 => imports.push(idx),
                 1 => leading.push(idx),
                 3 => trailing.push(idx),
-                _ => skeleton.push(idx),
+                _ => definitions.push(idx),
             }
         }
-        leading.sort_by_key(|idx| self.keys[idx]);
-        trailing.sort_by_key(|idx| self.keys[idx]);
-        let below_imports = skeleton.partition_point(|idx| self.ranks[idx] == 0);
-        let (imports, definitions) = skeleton.split_at_mut(below_imports);
         imports.sort_by_key(|&idx| {
             import_sort_key(&body[idx], first_party).expect("rank 0 is import")
         });
-        out.extend(imports.iter().copied());
+        leading.sort_by_key(|idx| self.keys[idx]);
+        trailing.sort_by_key(|idx| self.keys[idx]);
+        out.append(&mut imports);
         out.append(&mut leading);
-        out.extend(definitions.iter().copied());
+        out.append(&mut definitions);
         out.append(&mut trailing);
     }
 
@@ -397,6 +397,24 @@ mod tests {
             .map(|s| assign_run_target(s).map(|(name, _)| name))
             .collect();
         assert_eq!(targets, vec![Some("X"), None, Some("y"), Some("z"), None]);
+    }
+
+    #[test]
+    fn drain_region_hoists_an_import_below_a_definition() {
+        let source =
+            parse("def helper(value):\n    return value\n\n\nimport os\n\n\nCONFIG = helper\n");
+        let body = &source.ast().body;
+        let blocks: Vec<TextRange> = (0..body.len())
+            .map(|i| block_range(&source, body, i, source.module_range()))
+            .collect();
+        let mut order: Vec<usize> = (0..body.len()).collect();
+        band_module_constants(&source, body, &blocks, &[], false, None, &mut order)
+            .expect("a definition before an import bands without panicking");
+        assert_eq!(
+            order,
+            vec![1, 0, 2],
+            "the import hoists above the def and CONFIG pools below it",
+        );
     }
 
     #[test]
