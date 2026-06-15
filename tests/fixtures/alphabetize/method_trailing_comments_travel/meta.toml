@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Trailing Comments Travel With Their Method"
+
+description = '''
+A trailing inline comment on a method's line **moves with that method as the body sorts**, the source-last method keeping its comment rather than stranding it on the new last line. The same ownership holds for every reordered member, so no method inherits a neighbor's note.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Trailing Comments Travel With Their Set Element"
+
+description = '''
+Each set element's trailing inline comment **rides along as the elements alphabetize**, where the leaf-level reorder once left every comment in its source line and handed it to whichever element slid into that slot.
+'''

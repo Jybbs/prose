@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Past the Closing Bracket Stays Put"
+
+description = '''
+A trailing comment after a list's closing `]` **stays put** while the entries sort, a closing delimiter between the last entry and the comment leaving the comment disowned.
+'''
