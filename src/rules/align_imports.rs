@@ -75,9 +75,7 @@ impl Visitor<'_> {
                 .or_else(|| self.qualify_import_as(s).map(|m| (Form::As, m)))
         });
         for members in groups {
-            if members.len() >= 2 {
-                self.walker.emit_group(&members);
-            }
+            self.walker.emit_if_candidate(&members);
         }
     }
 

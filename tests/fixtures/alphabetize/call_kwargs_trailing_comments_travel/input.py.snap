@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/call_kwargs_trailing_comments_travel/input.py
+---
+configure(
+    retries=3,  # attempts on failure
+    timeout=30,  # seconds before giving up
+    verbose=True,  # log every step
+)

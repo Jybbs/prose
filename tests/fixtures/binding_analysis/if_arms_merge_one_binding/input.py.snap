@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/if_arms_merge_one_binding/input.py
 bindings:
   - attributes: []
     bare_read: true
+    first_unconditional_write: 0
     kinds:
       - Assignment
     name: cond
@@ -16,6 +17,7 @@ bindings:
       - 0
   - attributes: []
     bare_read: true
+    first_unconditional_write: ~
     kinds:
       - Assignment
     name: x
