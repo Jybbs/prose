@@ -6,7 +6,7 @@
 //! concatenated docstring expressions are skipped. `body_docstring`
 //! returns one body's leading docstring literal for consumers that
 //! already hold the body. The section
-//! helpers `section_heading`, `entry_description_col`, and
+//! helpers `section_heading`, `entry_head`, and
 //! `entry_carrying_sections` parse a docstring body's Title-case-headed
 //! sections for consumers that walk text rather than the AST,
 //! recognizing entry-carrying sections by content shape rather than
@@ -27,9 +27,7 @@ mod section;
 
 pub(crate) use body::{DocstringBody, indent_prefix, triple_quoted_body};
 pub(crate) use scan::{LineScan, LineScanner};
-pub(crate) use section::{
-    entry_carrying_sections, entry_description_col, section_heading, unbracketed_colon,
-};
+pub(crate) use section::{entry_carrying_sections, entry_head, section_heading, unbracketed_colon};
 
 /// Receiver for the docstring walker. Implementors handle each
 /// docstring `StringLiteral` reached in source order. Call `walk`

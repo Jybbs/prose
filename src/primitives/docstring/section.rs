@@ -14,7 +14,7 @@ use super::scan::{LineScan, LineScanner};
 use crate::source::Source;
 
 static ENTRY_HEAD: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^\w[\w.]*\s*(\(.*\))?\s*$").expect("static pattern compiles"));
+    LazyLock::new(|| Regex::new(r"^(\w[\w.]*)\s*(\(.*\))?\s*$").expect("static pattern compiles"));
 
 static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[A-Z][A-Za-z]*( [A-Z][A-Za-z]*)*:").expect("static pattern compiles")
@@ -91,10 +91,12 @@ impl<'src> EntryWalker<'src> {
         if self.open_section.is_none() {
             return;
         }
-        if indent_chars == body_indent + 4 && entry_description_col(trimmed).is_some() {
+        if indent_chars == body_indent + 4
+            && let Some((name, _)) = entry_head(trimmed)
+        {
             self.finish_entry();
             self.open_entry = Some(SectionEntry {
-                name: entry_name(trimmed),
+                name,
                 range: TextRange::new(line_start, line_end),
             });
             return;
@@ -149,6 +151,36 @@ pub(crate) fn entry_carrying_sections<'src>(
     walker.sections
 }
 
+/// Parses `trimmed` as a Google-style `name: description` entry head,
+/// allowing a balanced parenthesized type group between the name and
+/// the `:` (e.g. `markup (str): A string.`). Returns the entry name
+/// and the description-start character column. `None` for any line
+/// that does not match the head shape or carries no description after
+/// the `:`.
+pub(crate) fn entry_head(trimmed: &str) -> Option<(&str, usize)> {
+    let colon = unbracketed_colon(trimmed)?;
+    let name = ENTRY_HEAD
+        .captures(&trimmed[..colon])?
+        .get(1)
+        .expect("ENTRY_HEAD always captures the name group on a match")
+        .as_str();
+    let description = trimmed[colon + 1..]
+        .strip_prefix(char::is_whitespace)?
+        .trim_start();
+    if description.is_empty() {
+        return None;
+    }
+    let desc_col = trimmed[..trimmed.len() - description.len()].chars().count();
+    Some((name, desc_col))
+}
+
+/// True when `trimmed` opens with a Title-case word or multi-word
+/// run with every word capitalized, immediately followed by `:`.
+/// Trailing content after the `:` is permitted.
+pub(crate) fn section_heading(trimmed: &str) -> bool {
+    SECTION_HEADING.is_match(trimmed)
+}
+
 /// Byte offset of the first `:` in `s` that sits at paren-and-bracket
 /// depth zero, skipping the colons nested inside a parenthesized type
 /// or a bracketed subscript. `None` when every colon is nested or the
@@ -164,42 +196,6 @@ pub(crate) fn unbracketed_colon(s: &str) -> Option<usize> {
         }
     }
     None
-}
-
-/// Returns the description-start character column when `trimmed`
-/// matches the `name: description` shape of a Google-style section
-/// entry head, allowing a balanced parenthesized type group between
-/// the name and the `:` (e.g. `markup (str): A string.`). `None` for
-/// any line that does not match.
-pub(crate) fn entry_description_col(trimmed: &str) -> Option<usize> {
-    let colon = unbracketed_colon(trimmed)?;
-    if !ENTRY_HEAD.is_match(&trimmed[..colon]) {
-        return None;
-    }
-    let description = trimmed[colon + 1..]
-        .strip_prefix(char::is_whitespace)?
-        .trim_start();
-    if description.is_empty() {
-        return None;
-    }
-    Some(trimmed[..trimmed.len() - description.len()].chars().count())
-}
-
-/// True when `trimmed` opens with a Title-case word or multi-word
-/// run with every word capitalized, immediately followed by `:`.
-/// Trailing content after the `:` is permitted.
-pub(crate) fn section_heading(trimmed: &str) -> bool {
-    SECTION_HEADING.is_match(trimmed)
-}
-
-/// Returns the entry-name prefix of `trimmed` for a line already
-/// matched by [`entry_description_col`]. Takes the leading identifier
-/// run, stopping before any parenthesized type or the separating `:`.
-fn entry_name(trimmed: &str) -> &str {
-    let end = trimmed
-        .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.'))
-        .unwrap_or(trimmed.len());
-    &trimmed[..end]
 }
 
 #[cfg(test)]
@@ -330,31 +326,31 @@ mod tests {
     }
 
     #[test]
-    fn entry_description_col_measures_past_parenthesized_type() {
-        assert_eq!(entry_description_col("markup (str): a string."), Some(14));
-        assert_eq!(entry_description_col("flag (bool): on or off"), Some(13));
+    fn entry_head_measures_past_parenthesized_type() {
+        assert_eq!(entry_head("markup (str): a string."), Some(("markup", 14)));
+        assert_eq!(entry_head("flag (bool): on or off"), Some(("flag", 13)));
         assert_eq!(
-            entry_description_col("records (List[Tuple[int, str]]): rows"),
-            Some(33),
+            entry_head("records (List[Tuple[int, str]]): rows"),
+            Some(("records", 33)),
         );
     }
 
     #[test]
-    fn entry_description_col_rejects_lines_without_name_colon_shape() {
-        assert!(entry_description_col("just prose with no colon").is_none());
-        assert!(entry_description_col("name:no_space_after_colon").is_none());
-        assert!(entry_description_col(": no name before colon").is_none());
-        assert!(entry_description_col("name: ").is_none());
-        assert!(entry_description_col("name (only: parens)").is_none());
-        assert!(entry_description_col("two words (int): not an entry").is_none());
-        assert!(entry_description_col("123: digits-only name").is_some());
+    fn entry_head_rejects_lines_without_name_colon_shape() {
+        assert!(entry_head("just prose with no colon").is_none());
+        assert!(entry_head("name:no_space_after_colon").is_none());
+        assert!(entry_head(": no name before colon").is_none());
+        assert!(entry_head("name: ").is_none());
+        assert!(entry_head("name (only: parens)").is_none());
+        assert!(entry_head("two words (int): not an entry").is_none());
+        assert!(entry_head("123: digits-only name").is_some());
     }
 
     #[test]
-    fn entry_description_col_returns_char_column_of_description_start() {
-        assert_eq!(entry_description_col("name: desc"), Some(6));
-        assert_eq!(entry_description_col("name : desc"), Some(7));
-        assert_eq!(entry_description_col("dotted.name: desc"), Some(13));
+    fn entry_head_returns_name_and_description_column() {
+        assert_eq!(entry_head("name: desc"), Some(("name", 6)));
+        assert_eq!(entry_head("name : desc"), Some(("name", 7)));
+        assert_eq!(entry_head("dotted.name: desc"), Some(("dotted.name", 13)));
     }
 
     #[rstest]

@@ -19,8 +19,8 @@ use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            DocstringBody, LineScan, LineScanner, entry_description_col, indent_prefix,
-            rewrite_docstrings, section_heading, triple_quoted_body,
+            DocstringBody, LineScan, LineScanner, entry_head, indent_prefix, rewrite_docstrings,
+            section_heading, triple_quoted_body,
         },
         edit::{narrowed_replacement, singleton_groups},
     },
@@ -159,7 +159,7 @@ impl Walker<'_> {
         match self.region {
             Region::Description => self.buffer_description(indent_str, text),
             Region::Section => {
-                if let Some(desc_col) = entry_description_col(text) {
+                if let Some((_, desc_col)) = entry_head(text) {
                     self.start_entry(indent_str, indent_chars, text, desc_col);
                     return;
                 }
@@ -208,7 +208,7 @@ impl Walker<'_> {
     ) -> bool {
         indent_chars == hanging_col
             || (indent_chars == self.scanner.body_indent_chars() + 4
-                && entry_description_col(trimmed).is_none())
+                && entry_head(trimmed).is_none())
     }
 
     fn start_entry(&mut self, indent_str: &str, indent_chars: usize, text: &str, desc_col: usize) {
