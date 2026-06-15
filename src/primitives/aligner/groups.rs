@@ -349,7 +349,7 @@ where
     F: FnMut(&Token) -> bool,
 {
     let anchor = source.first_token_offset_in_range(search, predicate)?;
-    (!source.contains_line_break(TextRange::new(guard_start, anchor))).then_some(anchor)
+    source.same_line(guard_start, anchor).then_some(anchor)
 }
 
 #[cfg(test)]

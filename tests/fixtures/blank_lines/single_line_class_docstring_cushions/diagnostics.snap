@@ -1,0 +1,9 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/single_line_class_docstring_cushions/input.py
+---
+blank-lines@17..18
+blank-lines@32..33
+blank-lines@41..42
+blank-lines@8..9

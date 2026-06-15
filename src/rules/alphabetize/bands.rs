@@ -16,7 +16,7 @@ use super::{
 use crate::{
     primitives::{
         binding::{bare_import_bound_name, from_import_bound_name},
-        imports::import_group,
+        imports::{import_sort_key, same_import_group},
     },
     source::Source,
 };
@@ -34,12 +34,19 @@ struct BandPlan<'src> {
 }
 
 impl BandPlan<'_> {
-    /// Appends `region`'s body indices to `out`, holding the import run
-    /// at the front, lifting the leading constants directly below it,
-    /// keeping the definitions in their incoming order, and pooling the
-    /// trailing constants last. Both constant bands sort by `(tier,
-    /// name)`. Clears `region`.
-    fn drain_region(&self, region: &mut Vec<usize>, out: &mut Vec<usize>) {
+    /// Appends `region`'s body indices to `out`, sorting the import run
+    /// into canonical group order at the front, lifting the leading
+    /// constants directly below it, keeping the definitions in their
+    /// incoming order, and pooling the trailing constants last. The
+    /// import run sorts by `import_sort_key`. Both constant bands sort
+    /// by `(tier, name)`. Clears `region`.
+    fn drain_region(
+        &self,
+        body: &[Stmt],
+        first_party: &[String],
+        region: &mut Vec<usize>,
+        out: &mut Vec<usize>,
+    ) {
         let mut leading = Vec::new();
         let mut skeleton = Vec::new();
         let mut trailing = Vec::new();
@@ -53,9 +60,13 @@ impl BandPlan<'_> {
         leading.sort_by_key(|idx| self.keys[idx]);
         trailing.sort_by_key(|idx| self.keys[idx]);
         let below_imports = skeleton.partition_point(|idx| self.ranks[idx] == 0);
-        out.extend(skeleton[..below_imports].iter().copied());
+        let (imports, definitions) = skeleton.split_at_mut(below_imports);
+        imports.sort_by_key(|&idx| {
+            import_sort_key(&body[idx], first_party).expect("rank 0 is import")
+        });
+        out.extend(imports.iter().copied());
         out.append(&mut leading);
-        out.extend(skeleton[below_imports..].iter().copied());
+        out.extend(definitions.iter().copied());
         out.append(&mut trailing);
     }
 
@@ -97,6 +108,7 @@ pub(super) fn band_module_constants<'src>(
     source: &'src Source,
     body: &'src [Stmt],
     blocks: &[TextRange],
+    first_party: &[String],
     defer_annotations: bool,
     target_version: Option<PythonVersion>,
     order: &mut Vec<usize>,
@@ -108,11 +120,11 @@ pub(super) fn band_module_constants<'src>(
         if plan.ranks.contains_key(&idx) {
             region.push(idx);
         } else {
-            plan.drain_region(&mut region, &mut banded);
+            plan.drain_region(body, first_party, &mut region, &mut banded);
             banded.push(idx);
         }
     }
-    plan.drain_region(&mut region, &mut banded);
+    plan.drain_region(body, first_party, &mut region, &mut banded);
     (plan.is_sound(&banded) && banded != *order).then(|| {
         *order = banded;
         plan.ranks
@@ -133,9 +145,7 @@ pub(super) fn banded_gap(
 ) -> Option<&'static str> {
     Some(match (*ranks.get(&a)?, *ranks.get(&b)?) {
         (1, 1) | (3, 3) => "\n",
-        (0, 0) if import_group(&body[a], first_party) == import_group(&body[b], first_party) => {
-            "\n"
-        }
+        (0, 0) if same_import_group(&body[a], &body[b], first_party) => "\n",
         (_, 2) | (2, _) => "\n\n\n",
         _ => "\n\n",
     })
