@@ -21,7 +21,7 @@ pub(crate) use emit::space_padding_edit;
 pub(crate) use groups::{
     Slot, adjacent_member_groups, is_alignment_candidate, is_held, keyed_line_adjacent_groups,
     line_adjacent_groups, line_anchored_member, line_anchored_member_at_kind,
-    parameter_split_groups, range_anchored_member_single_line,
+    line_anchored_member_between, parameter_split_groups, range_anchored_member_single_line,
 };
 
 /// Bundles the `groups` accumulator, `settings`, the owning `rule`, and
@@ -54,6 +54,14 @@ impl<'a> AlignWalker<'a> {
         self.push_group(edits);
     }
 
+    /// Aligns `members` as one fix group when they form an alignment
+    /// candidate, recording nothing otherwise.
+    pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
+        if is_alignment_candidate(self.source, members) {
+            self.emit_group(members);
+        }
+    }
+
     /// Drops the held rows from `members`, then emits the survivors as
     /// one group when they still form an alignment candidate.
     pub(crate) fn emit_unheld(&mut self, members: impl IntoIterator<Item = Member>) {
@@ -61,9 +69,7 @@ impl<'a> AlignWalker<'a> {
             .into_iter()
             .filter(|m| !self.is_held(m.line_start))
             .collect();
-        if is_alignment_candidate(&kept) {
-            self.emit_group(&kept);
-        }
+        self.emit_if_candidate(&kept);
     }
 
     /// Computes the alignment edits for `members` without recording

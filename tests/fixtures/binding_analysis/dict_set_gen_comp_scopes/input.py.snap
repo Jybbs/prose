@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/dict_set_gen_comp_scopes/input.py
 bindings:
   - attributes: []
     bare_read: true
+    first_unconditional_write: 0
     kinds:
       - Assignment
     name: pairs
@@ -18,6 +19,7 @@ bindings:
       - 0
   - attributes: []
     bare_read: true
+    first_unconditional_write: 49
     kinds:
       - Comprehension
     name: k
@@ -28,6 +30,7 @@ bindings:
       - 49
   - attributes: []
     bare_read: true
+    first_unconditional_write: 52
     kinds:
       - Comprehension
     name: v
@@ -38,6 +41,7 @@ bindings:
       - 52
   - attributes: []
     bare_read: false
+    first_unconditional_write: 29
     kinds:
       - Assignment
     name: mapping
@@ -47,6 +51,7 @@ bindings:
       - 29
   - attributes: []
     bare_read: true
+    first_unconditional_write: 78
     kinds:
       - Comprehension
     name: k
@@ -57,6 +62,7 @@ bindings:
       - 78
   - attributes: []
     bare_read: false
+    first_unconditional_write: 81
     kinds:
       - Comprehension
     name: _
@@ -66,6 +72,7 @@ bindings:
       - 81
   - attributes: []
     bare_read: false
+    first_unconditional_write: 64
     kinds:
       - Assignment
     name: keys
@@ -75,6 +82,7 @@ bindings:
       - 64
   - attributes: []
     bare_read: false
+    first_unconditional_write: 111
     kinds:
       - Comprehension
     name: _
@@ -84,6 +92,7 @@ bindings:
       - 111
   - attributes: []
     bare_read: true
+    first_unconditional_write: 114
     kinds:
       - Comprehension
     name: v
@@ -94,6 +103,7 @@ bindings:
       - 114
   - attributes: []
     bare_read: false
+    first_unconditional_write: 93
     kinds:
       - Assignment
     name: total

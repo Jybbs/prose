@@ -14,7 +14,7 @@ use super::has_keep_marker;
 use crate::{
     primitives::{
         edit::{apply_inline_edits, splice_parses},
-        orderer::{assemble_blocks, block_range, blocks_span, permute_full},
+        orderer::{assemble_blocks, assemble_separated, block_range, blocks_span, permute_full},
         range::paren_aware_range,
     },
     source::Source,
@@ -65,7 +65,7 @@ pub(super) fn rewrite_dict_text<'src>(
         let divider_slots = partition_divider_slots(source, &order, &d.items);
         let source_last_has_comma = source.trailing_comma(d.range()).is_some();
         let value_ends: Vec<TextSize> = item_ranges.iter().map(Ranged::end).collect();
-        assemble_dict_items_multiline(
+        assemble_separated(
             &value_ends,
             &blocks,
             &block_texts,
@@ -87,46 +87,6 @@ pub(super) fn rewrite_dict_text<'src>(
         return None;
     }
     Some((span, Cow::Owned(assembled)))
-}
-
-/// Concatenates dict-item block texts in `order`, placing each slot's
-/// separator comma against the entry's value span so it lands after the
-/// value and before any trailing line comment. `value_ends` carry each
-/// value's paren-aware end, splitting code from the separator tail past
-/// any closing parens. Non-last slots always carry a comma and the
-/// new-last slot matches `source_last_has_comma`. Inserts a blank line at
-/// every slot listed in `divider_slots`.
-fn assemble_dict_items_multiline(
-    value_ends: &[TextSize],
-    blocks: &[TextRange],
-    block_texts: &[Cow<'_, str>],
-    order: &[usize],
-    divider_slots: &[usize],
-    source_last_has_comma: bool,
-) -> String {
-    let mut out = String::with_capacity(blocks_span(blocks).len().to_usize());
-    for (slot, &idx) in order.iter().enumerate() {
-        let block_text = &block_texts[idx];
-        let tail_len = (blocks[idx].end() - value_ends[idx]).to_usize();
-        let (code, tail) = block_text.split_at(block_text.len() - tail_len);
-        let (separator, comment) = tail.split_at(tail.find('#').unwrap_or(tail.len()));
-        out.push_str(code);
-        let is_last = slot + 1 == order.len();
-        if !is_last || source_last_has_comma {
-            out.push(',');
-        }
-        if !comment.is_empty() {
-            out.extend(separator.chars().filter(|&c| c != ','));
-            out.push_str(comment);
-        }
-        if !is_last {
-            out.push('\n');
-            if divider_slots.binary_search(&slot).is_ok() {
-                out.push('\n');
-            }
-        }
-    }
-    out
 }
 
 /// Composite dict-item sort key. `**unpacked` items return `None` and

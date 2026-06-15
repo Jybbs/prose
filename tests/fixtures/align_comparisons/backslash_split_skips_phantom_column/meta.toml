@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Backslash-Split Operands Skip the Phantom Column"
+
+description = '''
+Two `in` comparisons split across a backslash continuation sit at different indents. **The members fail the shared-baseline check** because their left edges occupy different screen columns, leaving the second operand unpadded.
+'''

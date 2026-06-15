@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/single_line_import_keeps_trailing_comment/input.py
+---
+alphabetize@7..17

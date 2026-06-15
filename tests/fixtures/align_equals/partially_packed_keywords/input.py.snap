@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/partially_packed_keywords/input.py
+---
+foo(
+    a = 1,
+    b=2, c=3,
+)

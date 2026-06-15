@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/align_equals/cross_indent_keywords_buffer/input.py
+---
+align-equals@21..57

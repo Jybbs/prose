@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/method_trailing_comments_travel/input.py
+---
+class Palette:
+    def cool(self): ...  # blues and greens
+    def neutral(self): ...  # grays and tans
+    def warm(self): ...  # reds and oranges

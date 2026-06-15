@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Cross-Group Import Run Sorts as the Band Consolidates It"
+
+description = '''
+Two imports in different canonical groups, split by a bandable constant, **sort across the bare → external `from` → local-package grouping as banding consolidates them**, seating the bare import ahead of the relative one with the canonical blank line between groups.
+'''

@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/dunder_comment_past_bracket_stays/input.py
+---
+alphabetize@17..33

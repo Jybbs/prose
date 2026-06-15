@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/cross_group_split_imports_sort/input.py
+---
+import os
+
+from . import shared
+
+x = 1

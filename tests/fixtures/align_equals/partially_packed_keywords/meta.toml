@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Only the Keyword Alone on Its Line Buffers"
+
+description = '''
+A keyword alone on its line takes the `=` buffer while keywords condensed onto one line keep their tight `name=value`, so a partly-exploded call buffers only the rows that stand on their own.
+'''

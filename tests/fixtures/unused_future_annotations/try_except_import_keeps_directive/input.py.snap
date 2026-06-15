@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/unused_future_annotations/try_except_import_keeps_directive/input.py
+---
+from __future__ import annotations
+
+try:
+    from foo import Bar
+except ImportError:
+    pass
+
+
+def use(value: Bar) -> None:
+    pass
