@@ -144,7 +144,7 @@ impl Walker<'_> {
 
         let prose_indent = match self.region {
             Region::Description => body_indent,
-            Region::Section => body_indent + 4,
+            Region::Section => self.scanner.section_body_indent_chars(),
             Region::SectionEntry(_) => unreachable!("entries handled above"),
         };
         if indent_chars > prose_indent {
@@ -213,7 +213,7 @@ impl Walker<'_> {
         hanging_col: usize,
     ) -> bool {
         indent_chars == hanging_col
-            || (indent_chars == self.scanner.body_indent_chars() + 4
+            || (indent_chars == self.scanner.section_body_indent_chars()
                 && entry_head(trimmed).is_none())
     }
 

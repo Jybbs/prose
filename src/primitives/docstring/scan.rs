@@ -101,6 +101,12 @@ impl LineScanner {
             trimmed,
         }
     }
+
+    /// The character column of a section's entry heads and body
+    /// prose, one 4-space step past the body indent.
+    pub(crate) fn section_body_indent_chars(&self) -> usize {
+        self.body_indent_chars + 4
+    }
 }
 
 /// A docstring body line's geometry paired with its classification:
