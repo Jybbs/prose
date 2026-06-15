@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Banner Above a Constant Pins It In Place"
+
+description = '''
+A decorative rule-line comment reads as a section divider, so banding leaves `CACHE_SIZE` beneath it rather than hoisting the constant across the banner into the leading band.
+'''

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/leading_constant_carries_prose_comment/input.py
+---
+# the upstream cache time-to-live
+TTL_SECONDS = 60
+
+
+def render(template):
+    return template

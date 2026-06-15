@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/trailing_constant_carries_prose_comment/input.py
+---
+alphabetize@11..103

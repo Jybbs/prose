@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/own_line_comment_joins_hoisted_constant/input.py
+---
+alphabetize@0..104
+blank-lines@42..44
+blank-lines@87..89

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/own_line_comment_joins_hoisted_constant/input.py
+---
+# the request ceiling shared across workers
+MAX_WORKERS = 8
+
+
+def configure(profile):
+    return profile

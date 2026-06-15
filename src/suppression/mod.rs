@@ -147,6 +147,13 @@ impl SuppressionMap {
     }
 }
 
+/// True when `comment` is a recognized format or lint directive, so it
+/// drives suppression from its own line and must stay pinned there
+/// rather than ride a sibling reorder.
+pub(crate) fn is_directive_comment(comment: &str) -> bool {
+    classify_format_directive(comment).is_some() || find_prose_ignore(comment).is_some()
+}
+
 fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
     spans.sort_unstable_by_key(|s| s.start());
     spans.dedup_by(|next, prev| {
@@ -164,6 +171,7 @@ mod tests {
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
 
+    use super::is_directive_comment;
     use crate::rule::RuleId;
     use crate::testing::{parse, range};
 
@@ -272,6 +280,18 @@ mod tests {
         // Edit spanning the entire suppressed block (offsets 0..27)
         // overlaps the span and must be dropped.
         assert!(map.intersects(range(0, 27)));
+    }
+
+    #[rstest]
+    #[case("# fmt: off", true)]
+    #[case("# prose: skip[align-equals]", true)]
+    #[case("# prose: ignore", true)]
+    #[case("# a plain note", false)]
+    fn is_directive_comment_spots_format_and_lint_directives(
+        #[case] comment: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(is_directive_comment(comment), expected);
     }
 
     #[rstest]

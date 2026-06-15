@@ -47,7 +47,7 @@ mod leaves;
 mod tiering;
 
 use self::{
-    bands::{band_module_constants, banded_gap},
+    bands::{Banding, band_module_constants, banded_gap},
     leaves::{collect_docstring_entry_edits, collect_leaf_edits},
     tiering::{eval_time_refs, permute_defs},
 };
@@ -319,7 +319,7 @@ fn rewrite_body<'a>(
         target_version,
         ..
     } = ctx;
-    let (blocks, rendered): (Vec<TextRange>, Vec<Cow<'a, str>>) = body
+    let (mut blocks, mut rendered): (Vec<TextRange>, Vec<Cow<'a, str>>) = body
         .iter()
         .enumerate()
         .map(|(i, stmt)| {
@@ -331,7 +331,7 @@ fn rewrite_body<'a>(
     let n = body.len();
     let mut order: Vec<usize> = (0..n).collect();
     let mut import_run_slots: Vec<usize> = Vec::new();
-    let mut band_ranks: Option<HashMap<usize, u8>> = None;
+    let mut band: Option<Banding> = None;
     if !has_inline_statement_join(source, body) {
         let in_class = scope == BodyScope::Class;
         if scope != BodyScope::Function {
@@ -366,7 +366,7 @@ fn rewrite_body<'a>(
             });
         }
         if scope == BodyScope::Module {
-            band_ranks = band_module_constants(
+            band = band_module_constants(
                 source,
                 body,
                 &blocks,
@@ -375,11 +375,25 @@ fn rewrite_body<'a>(
                 target_version,
                 &mut order,
             );
+            // A banded constant carries its forward-attached prose comment
+            // up with it: its block extends back over the comment and its
+            // rendered text gains the comment, collapsing the gap below so
+            // the hoist relocates the comment rather than stranding it.
+            for &(idx, comment) in band.iter().flat_map(|b| &b.carries) {
+                let carried = format!(
+                    "{}{}{}",
+                    source.slice(comment),
+                    source.newline_str(),
+                    rendered[idx],
+                );
+                blocks[idx] = comment.cover(blocks[idx]);
+                rendered[idx] = Cow::Owned(carried);
+            }
         }
         // A banded order reconstructs its own blank-line texture. Otherwise
         // same-group import neighbors collapse to one line, derived from the
         // assembled order the family sorts left.
-        if band_ranks.is_none() {
+        if band.is_none() {
             import_run_slots.extend((0..n.saturating_sub(1)).filter(|&slot| {
                 same_import_group(&body[order[slot]], &body[order[slot + 1]], first_party)
             }));
@@ -390,8 +404,8 @@ fn rewrite_body<'a>(
     if !any_owned && identity && import_run_slots.is_empty() {
         return (Cow::Borrowed(source.slice(body_span)), body_span);
     }
-    let assembled = assemble_blocks(source, &blocks, &rendered, &order, |i| match &band_ranks {
-        Some(ranks) => banded_gap(ranks, body, first_party, order[i], order[i + 1]),
+    let assembled = assemble_blocks(source, &blocks, &rendered, &order, |i| match &band {
+        Some(b) => banded_gap(&b.ranks, body, first_party, order[i], order[i + 1]),
         None => import_run_slots.binary_search(&i).is_ok().then_some("\n"),
     });
     (Cow::Owned(assembled), body_span)
