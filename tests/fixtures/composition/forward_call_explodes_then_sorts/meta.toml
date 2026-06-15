@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Forward Call Explodes Before Its Callee Sorts Above"
+
+description = '''
+`call-layout` resolves a callee defined below the call against the completed module bindings, so **the crowded forward call explodes to keyword form and its keywords sort in the same pass** that `alphabetize` lifts the callee above its caller, leaving the file settled on the first run.
+'''
