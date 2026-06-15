@@ -10,7 +10,7 @@ layout  : doc
 
 A written `-> None` on a function that returns nothing is visual weight the signature does not need. The omission convention already reads an absent return annotation as a function that returns nothing, leaving the explicit form as noise rather than information. `strip-none-return` rewrites it away.
 
-The rewrite is purely mechanical. It fires only when the return annotation is a bare `None`, leaving a `None` nested inside a larger annotation *(`int | None`, `Callable[..., None]`)* and every parameter annotation untouched. The companion [[signature-annotations]] rule enforces the other side of the convention, reporting where a parameter or a value-returning function lacks the annotation it owes.
+The rewrite stays purely mechanical, firing only when the return annotation is a bare `None`, leaving a `None` nested inside a larger annotation *(`int | None`, `Callable[..., None]`)* and every parameter annotation untouched. A declaration-only stub keeps its `-> None` too, because a lone `...` body *(an `@overload` arm, a `Protocol` method, an abstract method)* is a placeholder whose `-> None` declares a type-checker contract rather than redundant weight. The companion [[signature-annotations]] rule enforces the other side of the convention, reporting where a parameter or a value-returning function lacks the annotation it owes.
 
 <template #configuration>
 

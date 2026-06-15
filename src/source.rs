@@ -15,7 +15,7 @@ use ruff_source_file::{
     LineColumn, LineEnding, LineRanges, OneIndexed, PositionEncoding, SourceFile,
     SourceFileBuilder, SourceLocation, find_newline,
 };
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use thiserror::Error;
 
 use crate::{primitives::binding::BindingAnalysis, suppression::SuppressionMap};
@@ -179,6 +179,11 @@ impl Source {
         self.file.to_source_code().line_index(offset)
     }
 
+    /// Returns the range spanning the entire source text.
+    pub fn module_range(&self) -> TextRange {
+        TextRange::up_to(self.text().text_len())
+    }
+
     /// Returns the line-ending sequence used in this source, or
     /// `"\n"` when the source carries no line break.
     pub fn newline_str(&self) -> &'static str {
@@ -204,6 +209,12 @@ impl Source {
     /// Returns `ParseError` if `text` is not a valid Python module.
     pub fn reparse(&self, text: String) -> Result<Self, ParseError> {
         Self::build(text, self.file.name())
+    }
+
+    /// Returns `true` when `a` and `b` sit on one physical source line,
+    /// meaning no line break falls in the gap between them.
+    pub fn same_line(&self, a: TextSize, b: TextSize) -> bool {
+        !self.contains_line_break(TextRange::new(a, b))
     }
 
     /// Returns the byte slice spanned by anything `Ranged`.
@@ -449,6 +460,18 @@ mod tests {
         let s = Source::from_str("x = 1\n").expect("original parses");
         let result = s.reparse("def foo(".to_owned());
         assert!(result.is_err());
+    }
+
+    #[rstest]
+    #[case("a = 1; b = 2\n", true)]
+    #[case("a = 1\nb = 2\n", false)]
+    fn same_line_holds_within_a_line_and_breaks_across_one(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let body = &source.ast().body;
+        assert_eq!(source.same_line(body[0].end(), body[1].start()), expected);
     }
 
     #[test]

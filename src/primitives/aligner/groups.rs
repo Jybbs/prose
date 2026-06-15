@@ -91,13 +91,14 @@ where
     groups
 }
 
-/// Returns `true` when `members` form a multi-row group whose
-/// aligned tokens sit on distinct source lines.
-pub(crate) fn is_alignment_candidate(members: &[Member]) -> bool {
+/// Returns `true` when `members` form a multi-row group whose aligned
+/// tokens sit on distinct source lines at a shared display-column
+/// baseline.
+pub(crate) fn is_alignment_candidate(source: &Source, members: &[Member]) -> bool {
     members.len() >= 2
-        && members
-            .windows(2)
-            .all(|w| w[0].line_start != w[1].line_start)
+        && members.windows(2).all(|w| {
+            w[0].line_start != w[1].line_start && baseline(source, w[0]) == baseline(source, w[1])
+        })
 }
 
 /// Returns `true` when the line containing `anchor` carries a skip
@@ -211,15 +212,36 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
     }
 }
 
-/// Builds a `Member` whose anchor is the first token of `kind` within
-/// `search`. Returns `None` when the search turns up nothing.
+/// Builds a `Member` whose anchor is the first `kind` token in `search`
+/// [confined to one line](single_line_anchor) with `lhs_start`, so a
+/// left-hand side broken across lines stays unaligned.
 pub(crate) fn line_anchored_member_at_kind(
     source: &Source,
+    lhs_start: TextSize,
     search: TextRange,
     kind: TokenKind,
 ) -> Option<Member> {
-    let anchor = source.first_token_offset_in_range(search, |t| t.kind() == kind)?;
-    Some(line_anchored_member(source, anchor))
+    single_line_anchor(source, lhs_start, search, |t| t.kind() == kind)
+        .map(|anchor| line_anchored_member(source, anchor))
+}
+
+/// Builds a `Member` anchored on the first `kind` token between
+/// `lhs.end()` and `rhs_start`, [confined to one line](single_line_anchor)
+/// with `lhs.start()`, so a left-hand side broken across lines stays
+/// unaligned. The scan opens past `lhs.end()`, so a `kind` token inside
+/// the left-hand side never anchors.
+pub(crate) fn line_anchored_member_between(
+    source: &Source,
+    lhs: TextRange,
+    rhs_start: TextSize,
+    kind: TokenKind,
+) -> Option<Member> {
+    line_anchored_member_at_kind(
+        source,
+        lhs.start(),
+        TextRange::new(lhs.end(), rhs_start),
+        kind,
+    )
 }
 
 /// Walks `params` in source order, qualifying each parameter through
@@ -238,12 +260,9 @@ where
         .collect()
 }
 
-/// Builds a `Member` whose anchor is the first token in `search`
-/// satisfying `predicate`, with width measured by `target` plus
-/// `extra_width`. Returns `None` if no token matches, or if the span
-/// from `target.start()` to the anchor crosses a newline (continuation
-/// imports, line-broken assignments). Use this when alignment must
-/// stay confined to a single source line.
+/// Builds a `Member` whose anchor is the first `search` token satisfying
+/// `predicate` and [confined to one line](single_line_anchor) with
+/// `target.start()`, measuring width by `target` plus `extra_width`.
 pub(crate) fn range_anchored_member_single_line<F>(
     source: &Source,
     target: TextRange,
@@ -254,11 +273,36 @@ pub(crate) fn range_anchored_member_single_line<F>(
 where
     F: FnMut(&Token) -> bool,
 {
-    let anchor = source.first_token_offset_in_range(search, predicate)?;
-    if source.contains_line_break(TextRange::new(target.start(), anchor)) {
-        return None;
-    }
-    Some(range_anchored_member(source, target, anchor, extra_width))
+    single_line_anchor(source, target.start(), search, predicate)
+        .map(|anchor| range_anchored_member(source, target, anchor, extra_width))
+}
+
+/// The display column where `member`'s left-hand side begins, the width
+/// of its line up to the gap less the member's own width. An
+/// operator-widened row (a `+=` whose width counts the binary `+` that
+/// renders past the gap) can carry more width than the pre-gap span, so
+/// the subtraction saturates at the leftmost column rather than wrapping.
+fn baseline(source: &Source, member: Member) -> usize {
+    source
+        .slice(TextRange::new(member.line_start, member.gap.start()))
+        .width()
+        .saturating_sub(member.width)
+}
+
+/// Returns the rows of `members` whose anchor line is not skip-held for
+/// `rule`, dropping the held rows so neighbors align around them.
+/// `line_start` yields each row's anchor line, so a row type wrapping a
+/// `Member` filters by the same line the member carries.
+pub(crate) fn retain_unheld<M>(
+    source: &Source,
+    rule: RuleId,
+    members: impl IntoIterator<Item = M>,
+    line_start: impl Fn(&M) -> TextSize,
+) -> Vec<M> {
+    members
+        .into_iter()
+        .filter(|m| !is_held(source, rule, line_start(m)))
+        .collect()
 }
 
 /// Moves the in-progress run into `groups` when it holds at least one
@@ -309,10 +353,28 @@ fn run_continues(
     }
 }
 
+/// Returns the offset of the first token in `search` satisfying
+/// `predicate`, or `None` when none matches or the span from
+/// `guard_start` to that token crosses a line break. A member measures
+/// its width from the anchor's own line, so a cross-line anchor would
+/// align against the wrong line and is held out.
+fn single_line_anchor<F>(
+    source: &Source,
+    guard_start: TextSize,
+    search: TextRange,
+    predicate: F,
+) -> Option<TextSize>
+where
+    F: FnMut(&Token) -> bool,
+{
+    let anchor = source.first_token_offset_in_range(search, predicate)?;
+    source.same_line(guard_start, anchor).then_some(anchor)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{parse, range};
 
     #[test]
     fn adjacent_member_groups_break_after_multiline_closes_run() {
@@ -415,6 +477,86 @@ mod tests {
 
         // The blank line breaks adjacency, so the two members do not share a group.
         assert_eq!(groups, vec![vec![0], vec![1]]);
+    }
+
+    #[test]
+    fn is_alignment_candidate_holds_for_shared_baseline() {
+        // Two `=` rows on distinct lines, each opening at column 0.
+        let source = parse("ab = 1\ncd = 2\n");
+        let members = [
+            Member {
+                gap: range(2, 3),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+            Member {
+                gap: range(9, 10),
+                line_start: TextSize::new(7),
+                op_width: 0,
+                width: 2,
+            },
+        ];
+
+        assert!(is_alignment_candidate(&source, &members));
+    }
+
+    #[test]
+    fn is_alignment_candidate_rejects_differing_baselines() {
+        // Distinct lines, but the `q.` prefix opens the second row two
+        // columns right, so a shared `=` column would land where no row sits.
+        let source = parse("ab = 1\nq.cd = 2\n");
+        let members = [
+            Member {
+                gap: range(2, 3),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+            Member {
+                gap: range(11, 12),
+                line_start: TextSize::new(7),
+                op_width: 0,
+                width: 2,
+            },
+        ];
+
+        assert!(!is_alignment_candidate(&source, &members));
+    }
+
+    #[test]
+    fn is_alignment_candidate_rejects_same_line() {
+        // Two rows sharing a source line never form a column.
+        let source = parse("ab = cd = 1\n");
+        let members = [
+            Member {
+                gap: range(2, 3),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+            Member {
+                gap: range(7, 8),
+                line_start: TextSize::new(0),
+                op_width: 0,
+                width: 2,
+            },
+        ];
+
+        assert!(!is_alignment_candidate(&source, &members));
+    }
+
+    #[test]
+    fn is_alignment_candidate_rejects_singleton() {
+        let source = parse("ab = 1\n");
+        let members = [Member {
+            gap: range(2, 3),
+            line_start: TextSize::new(0),
+            op_width: 0,
+            width: 2,
+        }];
+
+        assert!(!is_alignment_candidate(&source, &members));
     }
 
     #[test]
@@ -609,6 +751,33 @@ mod tests {
 
         assert_eq!(groups.len(), 1);
         assert_eq!(groups[0].len(), 1);
+    }
+
+    #[test]
+    fn line_anchored_member_at_kind_admits_same_line_anchor() {
+        // Key, colon, and value share one line, so the member builds.
+        let source = parse("{k: v}\n");
+        let member = line_anchored_member_at_kind(
+            &source,
+            TextSize::new(1),
+            TextRange::new(TextSize::new(2), TextSize::new(4)),
+            TokenKind::Colon,
+        );
+        assert!(member.is_some());
+    }
+
+    #[test]
+    fn line_anchored_member_at_kind_rejects_cross_line_anchor() {
+        // The `:` opens the line after the key, so the span from the
+        // key's start to the anchor crosses a break and nothing builds.
+        let source = parse("{\n    k\n    : v,\n}\n");
+        let member = line_anchored_member_at_kind(
+            &source,
+            TextSize::new(6),
+            TextRange::new(TextSize::new(7), TextSize::new(14)),
+            TokenKind::Colon,
+        );
+        assert!(member.is_none());
     }
 
     #[test]

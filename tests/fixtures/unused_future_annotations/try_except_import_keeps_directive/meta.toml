@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Optional Import Keeps the Directive"
+
+description = '''
+`Bar` is imported under `try` and the handler swallows a missing dependency, leaving the name unbound whenever the import fails. Eager evaluation on Python 3.13 would raise `NameError`, so **the directive stays** to keep the annotation deferred.
+'''

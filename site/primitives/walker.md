@@ -22,7 +22,7 @@ At `1.0` the discovery hooks open so a downstream can plug its own path source i
 The walker honors `.gitignore` files at every level of the walked tree alongside the repo-root `.gitignore`, the project-local `.ignore` files the [**`ignore`**](https://docs.rs/ignore/) crate recognizes, and the user's global gitignore *(typically `~/.config/git/ignore`)*. Hidden files and directories are walked by default rather than skipped, matching Ruff's path-mode behavior.
 
 ::: warning No Built-In Skip List
-There is no built-in skip list. Directories like `node_modules`, `__pycache__`, `.venv`, or `target` are walked unless a `.gitignore` covers them, meaning a fresh tree with no `.gitignore` walks everything reachable from the path roots. The convention in practice is that the project's `.gitignore` already covers these, leaving `prose format .` against a repo root walking exactly `git ls-files` minus the binary excludes.
+There is no built-in skip list, so directories like `node_modules`, `__pycache__`, `.venv`, or `target` are walked unless a `.gitignore` covers them, meaning a fresh tree with no `.gitignore` walks everything reachable from the path roots. The convention in practice is that the project's `.gitignore` already covers these, leaving `prose format .` against a repo root walking exactly `git ls-files` minus the binary excludes.
 
 `.prose-ignore` is **not** recognized as a separate ignore file. *Prose* defers to `.gitignore` and `.ignore` for project-local exclusions, such that adding a tool-specific ignore file would fragment the ignore surface across the toolchain.
 :::

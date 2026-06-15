@@ -21,7 +21,7 @@ use crate::{
         binding::single_name_target,
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement},
-        orderer::{permute_full, reorder_text},
+        orderer::{permute_full, reorder_separated, reorder_text},
         params::classify_param,
     },
     source::Source,
@@ -113,13 +113,23 @@ impl<'a> LeafCollector<'a> {
         T: Ranged,
         S: Ord,
     {
-        let [first, .., last] = items else {
+        if items.len() < 2 {
             return;
+        }
+        let source = self.source;
+        let render = |_: usize, block| apply_inline_edits(source, block, &self.edits);
+        // One member per line routes through `reorder_separated` so each
+        // trailing comment travels with its member. A single-line or
+        // atomics-packed group shares lines, so the lighter `reorder_text`
+        // keeps its verbatim gaps.
+        let one_per_line = items
+            .windows(2)
+            .all(|pair| source.contains_line_break(TextRange::new(pair[0].end(), pair[1].start())));
+        let (folded, span) = if one_per_line {
+            reorder_separated(source, items, classify, render)
+        } else {
+            reorder_text(source, items, classify, render)
         };
-        let span = first.range().cover(last.range());
-        let folded = reorder_text(self.source, items, classify, |i, _| {
-            apply_inline_edits(self.source, items[i].range(), &self.edits)
-        });
         self.fold_into(span, folded);
     }
 }
@@ -173,23 +183,16 @@ pub(super) fn collect_docstring_entry_edits(
     rewrite_docstrings(source, |source, lit, edits| {
         let signature = param_docs.get(&lit.start());
         for entries in entry_carrying_sections(source, lit) {
-            let cow = reorder_text(
+            let (cow, span) = reorder_text(
                 source,
                 &entries,
                 |entry| Some(entry_key(entry.name, signature)),
-                |_, slice| Cow::Borrowed(slice),
+                |_, block| Cow::Borrowed(source.slice(block)),
             );
             let Cow::Owned(text) = cow else {
                 continue;
             };
-            let [first, .., last] = entries.as_slice() else {
-                unreachable!("Cow::Owned implies entries.len() >= 2");
-            };
-            edits.extend(narrowed_replacement(
-                source,
-                first.range.cover(last.range),
-                text,
-            ));
+            edits.extend(narrowed_replacement(source, span, text));
         }
     })
 }

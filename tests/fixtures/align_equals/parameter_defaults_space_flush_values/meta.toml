@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Flush Parameter Defaults Align and Space Their Values"
+
+description = '''
+Annotated parameter defaults across a multi-line signature align their `=` and gain the one-space value-side buffer.
+'''

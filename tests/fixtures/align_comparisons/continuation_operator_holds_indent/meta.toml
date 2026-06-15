@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Continuation-Line Operator Holds Its Indent"
+
+description = '''
+A boolean operand whose comparison operator opens a continuation line leaves its left side on the prior line. **The cross-line operand drops out of the run** rather than re-anchoring against the continuation, so the line's indentation survives untouched.
+'''

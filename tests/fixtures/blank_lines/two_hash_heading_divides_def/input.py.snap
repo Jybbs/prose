@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/two_hash_heading_divides_def/input.py
+---
+import os
+
+
+## Helpers
+
+def helper():
+    return os.getcwd()

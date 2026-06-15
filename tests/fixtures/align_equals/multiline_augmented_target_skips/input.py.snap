@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/multiline_augmented_target_skips/input.py
+---
+count += 1
+data[
+    key
+]+=2
+total += 3

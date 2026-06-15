@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dunder_all_trailing_comments_travel/input.py
+---
+__all__ = [
+    "Button",  # the clickable control
+    "Frame",  # the container control
+    "Widget",  # the base control
+]

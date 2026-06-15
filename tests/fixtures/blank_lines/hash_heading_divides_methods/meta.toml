@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Indented Hash Heading Divides Methods"
+
+description = '''
+A Markdown-style heading indented inside a class body divides the methods around it, carrying one blank line above and below so the **section divider** holds at class scope.
+'''

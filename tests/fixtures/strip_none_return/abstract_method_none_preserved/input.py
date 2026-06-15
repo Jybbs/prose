@@ -1,0 +1,3 @@
+class Base(ABC):
+    @abstractmethod
+    def run(self) -> None: ...

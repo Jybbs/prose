@@ -102,7 +102,11 @@ pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::M
         .as_deref()
         .map_or(case.pattern.end(), Ranged::end);
     let body_start = case.body.first()?.start();
-    colon_member(source, pre_colon_end, body_start)
+    colon_member(
+        source,
+        TextRange::new(case.pattern.start(), pre_colon_end),
+        body_start,
+    )
 }
 
 /// Builds an alignment member for a class-body annotated assignment,
@@ -110,7 +114,7 @@ pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::M
 /// for any other statement shape.
 fn class_field(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
     let ann = stmt.as_ann_assign_stmt()?;
-    colon_member(source, ann.target.end(), ann.annotation.start())
+    colon_member(source, ann.target.range(), ann.annotation.start())
 }
 
 /// Walks `body`, qualifying each statement through `class_field`,
@@ -121,10 +125,13 @@ fn class_field_groups(source: &Source, rule: RuleId, body: &[Stmt]) -> Vec<Vec<a
     aligner::line_adjacent_groups(source, body, rule, |s| class_field(source, s))
 }
 
-/// Builds a `:`-anchored alignment member from the half-open span
-/// `[start, end)` searched for the colon token.
-fn colon_member(source: &Source, start: TextSize, end: TextSize) -> Option<aligner::Member> {
-    aligner::line_anchored_member_at_kind(source, TextRange::new(start, end), TokenKind::Colon)
+/// Builds a `:`-anchored alignment member whose left-hand side is `lhs`,
+/// searching for the colon between `lhs.end()` and `colon_end`. The scan
+/// opens past `lhs.end()` so a colon inside the left-hand side (a slice,
+/// a nested annotation) never anchors, and the member is rejected when
+/// the colon does not share `lhs`'s opening line.
+fn colon_member(source: &Source, lhs: TextRange, colon_end: TextSize) -> Option<aligner::Member> {
+    aligner::line_anchored_member_between(source, lhs, colon_end, TokenKind::Colon)
 }
 
 /// Builds an alignment member for a `key: value` dict entry, anchored
@@ -132,7 +139,7 @@ fn colon_member(source: &Source, start: TextSize, end: TextSize) -> Option<align
 /// entries that have no key.
 fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
     let key = item.key.as_ref()?;
-    colon_member(source, key.end(), item.value.start())
+    colon_member(source, key.range(), item.value.start())
 }
 
 /// Returns one group per run of consecutive-line `key: value` entries
@@ -141,19 +148,24 @@ fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
 /// two entries closes the active run and starts a fresh one, so each
 /// run aligns independently. `**spread` entries skip the colon scan but
 /// do not break the run, matching the long-standing rule that an
-/// unpacking passes alignment through.
+/// unpacking passes alignment through. A keyed entry whose `:` crosses a
+/// line break instead closes the run, so its neighbors do not align a
+/// column across the stranded colon.
 fn dict_member_groups(
     source: &Source,
     rule: RuleId,
     items: &[DictItem],
 ) -> Vec<Vec<aligner::Member>> {
-    aligner::adjacent_member_groups(source, items, false, |item| match dict_item(source, item) {
-        Some(member) if !aligner::is_held(source, rule, item.start()) => {
-            aligner::Slot::Member(member)
-        }
+    aligner::adjacent_member_groups(source, items, false, |item| {
         // A `**spread` (no key) or a skip-held entry joins no group yet
         // bridges the run, so the entries on either side align as one block.
-        _ => aligner::Slot::Bridge,
+        if item.key.is_none() || aligner::is_held(source, rule, item.start()) {
+            return aligner::Slot::Bridge;
+        }
+        // A keyed entry whose colon sits on a later line carries no
+        // single-line anchor, so it breaks the run rather than stranding
+        // its colon inside a column its neighbors share.
+        dict_item(source, item).map_or(aligner::Slot::Break, aligner::Slot::Member)
     })
 }
 
@@ -240,7 +252,7 @@ fn match_case_members(source: &Source, cases: &[MatchCase]) -> Vec<aligner::Memb
 /// unannotated parameters, signaling a group break to callers.
 fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Member> {
     let annotation = param.annotation()?;
-    colon_member(source, param.name().end(), annotation.start())
+    colon_member(source, param.name().range(), annotation.start())
 }
 
 /// Walks `params` in source order and returns one group per run of
@@ -254,18 +266,37 @@ fn parameter_groups(
 ) -> Vec<Vec<aligner::Member>> {
     aligner::parameter_split_groups(params, |p| parameter(source, p))
         .into_iter()
-        .map(|group| {
-            group
-                .into_iter()
-                .filter(|m| !aligner::is_held(source, rule, m.line_start))
-                .collect()
-        })
+        .map(|group| aligner::retain_unheld(source, rule, group, |m| m.line_start))
         .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::parse;
+
+    #[test]
+    fn class_field_rejects_cross_line_colon() {
+        // The target ends on its own line and the annotation `:` opens
+        // the next.
+        let source = parse("class C:\n    x \\\n        : int\n");
+        let class = source.ast().body[0].as_class_def_stmt().expect("class");
+        assert!(class_field(&source, &class.body[0]).is_none());
+    }
+
+    #[test]
+    fn dict_item_rejects_cross_line_key() {
+        // The key ends on its own line and the `:` opens the next, so the
+        // entry yields no alignable member.
+        let source = parse("d = {\n    k\n    : v,\n}\n");
+        let dict = source.ast().body[0]
+            .as_assign_stmt()
+            .expect("assign")
+            .value
+            .as_dict_expr()
+            .expect("dict");
+        assert!(dict_item(&source, &dict.items[0]).is_none());
+    }
 
     #[test]
     fn find_entry_colon_accepts_star_and_double_star() {
@@ -298,5 +329,24 @@ mod tests {
             find_entry_colon("x (Dict[str, int]): mapping"),
             Some("x (Dict[str, int])".len()),
         );
+    }
+
+    #[test]
+    fn match_case_rejects_multiline_pattern() {
+        // The pattern spans several lines, placing the `:` off the line
+        // where the pattern opens.
+        let source = parse("match x:\n    case (\n        1,\n        2,\n    ):\n        y\n");
+        let m = source.ast().body[0].as_match_stmt().expect("match");
+        assert!(match_case(&source, &m.cases[0]).is_none());
+    }
+
+    #[test]
+    fn parameter_rejects_cross_line_colon() {
+        // The parameter name ends on its own line and the annotation `:`
+        // opens the next.
+        let source = parse("def f(\n    a\n    : int,\n):\n    pass\n");
+        let func = source.ast().body[0].as_function_def_stmt().expect("def");
+        let param = func.parameters.iter_source_order().next().expect("param");
+        assert!(parameter(&source, param).is_none());
     }
 }

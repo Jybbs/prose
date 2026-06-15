@@ -21,19 +21,18 @@ use std::{borrow::Cow, collections::HashMap, ops::Range};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Alias, Decorator, ExceptHandler, Expr, ExprDict, PythonVersion, Stmt, StmtAnnAssign,
-    StmtFunctionDef,
+    Decorator, ExceptHandler, Expr, ExprDict, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef,
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
 };
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextLen, TextRange};
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
     primitives::{
         binding::{annotated_name_target, single_name_target},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
-        imports::{ImportGroup, future_annotations_alias, import_group},
+        imports::{future_annotations_alias, import_sort_key, same_import_group},
         orderer::{assemble_blocks, block_range, blocks_span, permute_in_place},
         params::pins_positional_params,
         scope::{BodyScope, scoped_body},
@@ -87,12 +86,8 @@ impl Rule for Alphabetize {
             source,
             target_version: self.target_version,
         };
-        let (body_text, body_span) = rewrite_body(
-            ctx,
-            body,
-            TextRange::up_to(source.text().text_len()),
-            BodyScope::Module,
-        );
+        let (body_text, body_span) =
+            rewrite_body(ctx, body, source.module_range(), BodyScope::Module);
         let edits = match body_text {
             Cow::Borrowed(_) => leaf_edits,
             Cow::Owned(text) => narrowed_replacement(source, body_span, text)
@@ -270,7 +265,7 @@ fn has_default(ann: &StmtAnnAssign) -> bool {
 /// body carrying one keeps source order.
 fn has_inline_statement_join(source: &Source, body: &[Stmt]) -> bool {
     body.windows(2)
-        .any(|pair| !source.contains_line_break(TextRange::new(pair[0].end(), pair[1].start())))
+        .any(|pair| source.same_line(pair[0].end(), pair[1].start()))
 }
 
 /// True when the line containing the dict's opening `{` carries a
@@ -282,33 +277,6 @@ fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
         .comments_in_range(line)
         .iter()
         .any(|c| source.slice(c).trim_start_matches('#').trim() == "prose: keep")
-}
-
-/// Composite import sort key landing the canonical group order
-/// (bare → external `from` → local-package) ahead of a per-kind
-/// inner sort. Within a group, bare imports sort before `from`
-/// imports, bare by least alias name and `from` by `(level, module)`.
-/// `None` pins any non-import statement in place.
-fn import_sort_key<'a>(
-    stmt: &'a Stmt,
-    first_party: &[String],
-) -> Option<(ImportGroup, u8, u32, &'a str)> {
-    let group = import_group(stmt, first_party)?;
-    Some(match stmt {
-        Stmt::Import(i) => (group, 0, 0, least_alias(&i.names)),
-        Stmt::ImportFrom(i) => (group, 1, i.level, i.module.as_deref().unwrap_or_default()),
-        _ => unreachable!("import_group returns Some only for import statements"),
-    })
-}
-
-/// Returns the alphabetically least alias name in a bare import's
-/// name list. An `import` statement always binds at least one name.
-fn least_alias(names: &[Alias]) -> &str {
-    names
-        .iter()
-        .map(|a| a.name.as_str())
-        .min()
-        .expect("import binds at least one name")
 }
 
 /// Returns the method-group index. `0` for dunders, `1` for
@@ -402,6 +370,7 @@ fn rewrite_body<'a>(
                 source,
                 body,
                 &blocks,
+                first_party,
                 defer_annotations,
                 target_version,
                 &mut order,
@@ -411,11 +380,9 @@ fn rewrite_body<'a>(
         // same-group import neighbors collapse to one line, derived from the
         // assembled order the family sorts left.
         if band_ranks.is_none() {
-            let group = |slot: usize| import_group(&body[order[slot]], first_party);
-            import_run_slots.extend(
-                (0..n.saturating_sub(1))
-                    .filter(|&slot| group(slot).is_some() && group(slot) == group(slot + 1)),
-            );
+            import_run_slots.extend((0..n.saturating_sub(1)).filter(|&slot| {
+                same_import_group(&body[order[slot]], &body[order[slot + 1]], first_party)
+            }));
         }
     }
     let any_owned = rendered.iter().any(|c| matches!(c, Cow::Owned(_)));
@@ -632,35 +599,6 @@ mod tests {
             has_inline_statement_join(&source, &source.ast().body),
             expected
         );
-    }
-
-    #[test]
-    fn import_sort_key_ranks_groups_then_bare_before_from_within_local() {
-        let first_party = vec!["myapp".to_owned()];
-        let s = parse("import os\nfrom os import path\nimport myapp.core\nfrom myapp import app\n");
-        let keys: Vec<_> = s
-            .ast()
-            .body
-            .iter()
-            .map(|stmt| import_sort_key(stmt, &first_party).expect("import statement"))
-            .collect();
-        assert!(
-            keys[0] < keys[1] && keys[1] < keys[2] && keys[2] < keys[3],
-            "expected bare-external < external-from < local-bare < local-from",
-        );
-    }
-
-    #[test]
-    fn import_sort_key_returns_none_for_non_import() {
-        let s = parse("x = 1\n");
-        assert!(import_sort_key(&s.ast().body[0], &[]).is_none());
-    }
-
-    #[test]
-    fn least_alias_returns_alphabetically_min_name() {
-        let s = parse("import sys, os, abc\n");
-        let import = s.ast().body[0].as_import_stmt().expect("import");
-        assert_eq!(least_alias(&import.names), "abc");
     }
 
     #[test]

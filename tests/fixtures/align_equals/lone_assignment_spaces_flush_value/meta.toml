@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Flush Assignment Gains Its Value-Side Space"
+
+description = '''
+A lone assignment written with no space after `=` gains one, so the value reads `name = value` rather than the malformed `name =value`.
+'''

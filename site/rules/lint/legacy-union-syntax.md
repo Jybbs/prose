@@ -14,19 +14,19 @@ The rule fires only on projects whose `target-version` is 3.10 or higher, where 
 
 ::: tabs key:prose-target-version
 == Python 3.10
-The rule fires. `Optional[X]` reads as `X | None` in the diagnostic message.
+The rule fires, with `Optional[X]` reading as `X | None` in the diagnostic message.
 
 == Python 3.11
-The rule fires. Same diagnostic as 3.10.
+The rule fires, raising the same diagnostic as 3.10.
 
 == Python 3.12
-The rule fires. Same diagnostic as 3.10.
+The rule fires, raising the same diagnostic as 3.10.
 
 == Python 3.13
-The rule fires. Same diagnostic as 3.10.
+The rule fires, raising the same diagnostic as 3.10.
 
 == Python 3.14
-The rule fires. Same diagnostic as 3.10, and pairs naturally with the deferred-annotation runtime that [[unused-future-annotations]] reads on the same axis.
+The rule fires, raising the same diagnostic as 3.10 and pairing naturally with the deferred-annotation runtime that [[unused-future-annotations]] reads on the same axis.
 :::
 
 <template #configuration>

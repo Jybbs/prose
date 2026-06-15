@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/align_equals/keyword_parenthesized_value_keeps_parens/input.py
+---
+connect(
+    host = (1 + 2),
+    port = 3,
+)

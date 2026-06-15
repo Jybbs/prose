@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Multi-Line Augmented Target Skips the Member"
+
+description = '''
+An augmented assignment whose target spans multiple lines skips alignment and breaks the run, leaving its `+=` untouched while `count` and `total` normalize as singletons on either side.
+'''

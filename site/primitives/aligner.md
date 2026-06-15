@@ -41,7 +41,7 @@ A consuming rule rarely hand-builds the walker from raw AST traversal, since the
 5. `line_anchored_member_at_kind(source, line, kind)` finds the first token of `kind` on `line` and anchors a `Member` at its end.
 6. `range_anchored_member_single_line(source, range, anchor_of)` builds a `Member` whose `width` is the display-column width of `range`'s slice, for left-hand sides that are sub-ranges of one line.
 7. `space_padding_edit(source, range, n)` produces a `Some(Edit)` replacing `range` with `n` spaces, or `None` when the current contents already match.
-8. `is_alignment_candidate(members)` returns `true` when the group has at least two members and every member sits on a distinct line.
+8. `is_alignment_candidate(source, members)` returns `true` when the group has at least two members, each on a distinct line and opening at a shared column baseline, so the padding lands on a column every row can reach.
 
 ## How the Math Resolves
 
