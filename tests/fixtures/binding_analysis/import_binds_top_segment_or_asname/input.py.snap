@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/import_binds_top_segment_or_asname/i
 bindings:
   - attributes: []
     bare_read: false
+    first_unconditional_write: 7
     kinds:
       - Import
     name: a
@@ -15,6 +16,7 @@ bindings:
       - 7
   - attributes: []
     bare_read: false
+    first_unconditional_write: 16
     kinds:
       - Import
     name: b
@@ -24,6 +26,7 @@ bindings:
       - 16
   - attributes: []
     bare_read: false
+    first_unconditional_write: 29
     kinds:
       - Import
     name: g
@@ -33,6 +36,7 @@ bindings:
       - 29
   - attributes: []
     bare_read: false
+    first_unconditional_write: 52
     kinds:
       - Import
     name: i
@@ -42,6 +46,7 @@ bindings:
       - 52
   - attributes: []
     bare_read: false
+    first_unconditional_write: 68
     kinds:
       - Import
     name: l
@@ -51,6 +56,7 @@ bindings:
       - 68
   - attributes: []
     bare_read: false
+    first_unconditional_write: 98
     kinds:
       - Import
     name: annotations

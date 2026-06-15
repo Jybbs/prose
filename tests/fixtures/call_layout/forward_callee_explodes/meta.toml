@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Resolve a Callee Defined Below the Call"
+
+description = '''
+A call whose callee is a module function **defined later in the file** resolves against the completed module bindings, so the over-threshold call explodes to keyword form on the first pass rather than staying inline until a reorder brings the definition above it.
+'''

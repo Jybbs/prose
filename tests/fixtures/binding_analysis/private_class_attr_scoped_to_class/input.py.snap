@@ -6,6 +6,7 @@ input_file: tests/fixtures/binding_analysis/private_class_attr_scoped_to_class/i
 bindings:
   - attributes: []
     bare_read: false
+    first_unconditional_write: 6
     kinds:
       - ClassDef
     name: C
@@ -15,6 +16,7 @@ bindings:
       - 6
   - attributes: []
     bare_read: false
+    first_unconditional_write: 13
     kinds:
       - Assignment
     name: __secret
@@ -24,6 +26,7 @@ bindings:
       - 13
   - attributes: []
     bare_read: false
+    first_unconditional_write: 35
     kinds:
       - FunctionDef
     name: get
@@ -33,6 +36,7 @@ bindings:
       - 35
   - attributes: []
     bare_read: true
+    first_unconditional_write: 39
     kinds:
       - Parameter
     name: self
