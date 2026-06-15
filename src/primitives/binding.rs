@@ -406,9 +406,9 @@ impl Builder {
         }
     }
 
-    /// Runs `f` with walrus targets marked as bound in a condition
-    /// test, so a `:=` in an `if`/`elif`/`while` test records that the
-    /// branch decision already consumes its value.
+    /// Runs `f` with condition-test depth raised, so a `:=` reached
+    /// while visiting an `if`/`elif`/`while` test records into
+    /// `condition_test_walruses`.
     fn in_condition_test(&mut self, f: impl FnOnce(&mut Self)) {
         self.condition_test_depth += 1;
         f(self);
@@ -1156,6 +1156,7 @@ mod tests {
     #[case::assignment_value("x = (n := f())\n", false)]
     #[case::comprehension_guard("ys = [x for x in xs if (n := x)]\n", false)]
     #[case::body_assignment("if a:\n    n = 1\n", false)]
+    #[case::if_body("if a:\n    print(n := f())\n", false)]
     fn walrus_in_condition_marks_only_condition_test_walruses(
         #[case] src: &str,
         #[case] expected: bool,
