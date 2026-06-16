@@ -16,7 +16,10 @@ use super::{
     ann_assign_with_named_field, has_default, simple_name_assign,
     tiering::{def_run_tier_keys, eval_time_refs},
 };
-use crate::primitives::{binding::tail_identifier, orderer::permute_full};
+use crate::primitives::{
+    binding::tail_identifier,
+    orderer::{permute_full, slot_positions},
+};
 
 /// Classifies a class-body statement as a single-name assignment,
 /// returning its target name and whether it is a constant (`true`) or a
@@ -47,10 +50,7 @@ fn order_is_sound(
     member_at: &HashMap<&str, usize>,
     defer_annotations: bool,
 ) -> bool {
-    let mut position = vec![0usize; body.len()];
-    for (slot, &idx) in order.iter().enumerate() {
-        position[idx] = slot;
-    }
+    let position = slot_positions(order);
     body.iter().enumerate().all(|(reader, stmt)| {
         let reads_eval_time = class_assign_member(stmt).is_some()
             || matches!(stmt, Stmt::ClassDef(_) | Stmt::FunctionDef(_));
