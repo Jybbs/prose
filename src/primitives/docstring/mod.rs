@@ -26,7 +26,7 @@ mod scan;
 mod section;
 
 pub(crate) use body::{DocstringBody, indent_prefix, triple_quoted_body};
-pub(crate) use scan::{LineScan, LineScanner};
+pub(crate) use scan::{LineScan, LineScanner, ScannedLine};
 pub(crate) use section::{entry_carrying_sections, entry_head, section_heading, unbracketed_colon};
 
 /// Receiver for the docstring walker. Implementors handle each

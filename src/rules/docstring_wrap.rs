@@ -7,20 +7,19 @@
 //! `name: description` entries to `docstring_line_length` with a
 //! hanging indent at the description's start column. Verbatim regions
 //! (triple-backtick fences, blocks indented one step beyond the body,
-//! list items and their continuations) pass through unchanged.
+//! list items, and doctest blocks) pass through unchanged.
 //! reStructuredText markup, Sphinx directives, and Numpydoc style
 //! pass through unwrapped.
 
 use ruff_diagnostics::Edit;
-use ruff_python_trivia::leading_indentation;
 use textwrap::Options;
 
 use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            DocstringBody, LineScan, LineScanner, entry_head, indent_prefix, rewrite_docstrings,
-            section_heading, triple_quoted_body,
+            DocstringBody, LineScan, LineScanner, ScannedLine, entry_head, indent_prefix,
+            rewrite_docstrings, section_heading, triple_quoted_body,
         },
         edit::{narrowed_replacement, singleton_groups},
     },
@@ -101,17 +100,20 @@ impl Walker<'_> {
     }
 
     fn consume(&mut self, line: &str) {
-        let indent_str = leading_indentation(line);
-        let trimmed = &line[indent_str.len()..];
-        let indent_chars = indent_str.chars().count();
+        let ScannedLine {
+            indent,
+            indent_chars,
+            scan,
+            trimmed,
+        } = self.scanner.scan_line(line);
 
-        match self.scanner.classify(trimmed, indent_chars) {
-            LineScan::Fence | LineScan::ListMarker => {
+        match scan {
+            LineScan::Fence | LineScan::ListMarker | LineScan::VerbatimOpen => {
                 self.flush_paragraph();
                 self.emit_verbatim(line);
                 return;
             }
-            LineScan::InFence | LineScan::ListContinuation => {
+            LineScan::InFence | LineScan::ListContinuation | LineScan::Verbatim => {
                 self.emit_verbatim(line);
                 return;
             }
@@ -157,13 +159,13 @@ impl Walker<'_> {
         }
 
         match self.region {
-            Region::Description => self.buffer_description(indent_str, text),
+            Region::Description => self.buffer_description(indent, text),
             Region::Section => {
                 if let Some((_, desc_col)) = entry_head(text) {
-                    self.start_entry(indent_str, indent_chars, text, desc_col);
+                    self.start_entry(indent, indent_chars, text, desc_col);
                     return;
                 }
-                self.emit_wrapped(indent_str, indent_str, text, self.rule.section_width);
+                self.emit_wrapped(indent, indent, text, self.rule.section_width);
             }
             Region::SectionEntry(_) => unreachable!("entries handled above"),
         }

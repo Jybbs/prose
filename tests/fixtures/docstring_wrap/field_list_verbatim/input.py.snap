@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/docstring_wrap/field_list_verbatim/input.py
+---
+"""
+:codeauthor: Mircea Ulinic <ping@mirceaulinic.net>
+:maturity:   new
+:depends:    napalm
+:platform:   unix
+"""
