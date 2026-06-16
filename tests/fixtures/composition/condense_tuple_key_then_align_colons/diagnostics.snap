@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/condense_tuple_key_then_align_colons/input.py
+---
+align-colons@78..125
+alphabetize@16..132
+collection-layout@23..155

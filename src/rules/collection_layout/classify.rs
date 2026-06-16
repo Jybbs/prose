@@ -51,6 +51,24 @@ pub(super) fn is_layoutable(expr: &Expr) -> bool {
     )
 }
 
+/// True for an expression built only from binary, boolean, comparison,
+/// and unary operators over dotted names and numeric atoms. Such a tree
+/// carries no string, call, or bracketed member, so collapsing the
+/// whitespace of a soft-wrapped one onto a single line cannot split or
+/// respace a token the way a multi-line string or call would.
+pub(super) fn is_operator_atom_tree(expr: &Expr) -> bool {
+    match expr {
+        Expr::BinOp(b) => is_operator_atom_tree(&b.left) && is_operator_atom_tree(&b.right),
+        Expr::BoolOp(b) => b.values.iter().all(is_operator_atom_tree),
+        Expr::Compare(c) => {
+            is_operator_atom_tree(&c.left) && c.comparators.iter().all(is_operator_atom_tree)
+        }
+        Expr::UnaryOp(u) => is_operator_atom_tree(&u.operand),
+        Expr::NumberLiteral(_) | Expr::BooleanLiteral(_) | Expr::NoneLiteral(_) => true,
+        _ => is_dotted_name(expr),
+    }
+}
+
 /// True for a `Dict`, `List`, or `Set` shape the expand path
 /// canonicalizes. Multi-item `List` and `Set` qualify. Any
 /// non-empty `Dict` qualifies. Tuples and empty collections
@@ -122,6 +140,28 @@ mod tests {
         let stmt = &source.ast().body[0];
         let expr = &stmt.as_expr_stmt().expect("expression statement").value;
         assert_eq!(is_collapsible(expr), expected);
+    }
+
+    #[rstest]
+    #[case("a + b", true)]
+    #[case("a + b * c", true)]
+    #[case("(a + b) * c", true)]
+    #[case("a and b", true)]
+    #[case("a < b <= c", true)]
+    #[case("-a + b", true)]
+    #[case("module.attr + offset", true)]
+    #[case("2 ** depth", true)]
+    #[case("a + helper(b)", false)]
+    #[case("prefix + values[0]", false)]
+    #[case("greeting + \"!\"", false)]
+    fn is_operator_atom_tree_accepts_operator_trees_over_atoms_only(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let stmt = &source.ast().body[0];
+        let expr = &stmt.as_expr_stmt().expect("expression statement").value;
+        assert_eq!(is_operator_atom_tree(expr), expected);
     }
 
     #[test]

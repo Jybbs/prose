@@ -22,3 +22,13 @@ result = offset_lookup[
     base_offset
     + computed_delta
 ]
+
+precedence = coefficient_matrix[
+    (row_base + row_delta)
+    * column_scale
+]
+
+guarded = lookup_table[
+    base_offset
+    + helper(adjustment)
+]
