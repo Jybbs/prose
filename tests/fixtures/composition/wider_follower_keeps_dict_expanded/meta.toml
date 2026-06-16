@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Wider Follower Keeps an Assigned Dict Expanded"
+
+description = '''
+`bb`'s dict fits inline at the unaligned `=`, but collapsing it would let the wider `ccccccccccc` join the alignment group and shift the `=` rightward past the budget. `collection-layout` groups `bb` as if already single-line, reserves that shifted column, and keeps the dict **expanded**, settling a layout that would otherwise oscillate between inline and exploded.
+'''

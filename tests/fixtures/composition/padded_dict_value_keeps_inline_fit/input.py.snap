@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/padded_dict_value_keeps_inline_fit/input.py
+---
+x = {
+    "aaaaaaaaaaaaa" : 0,
+    "b"             : {"application/json": {"schema": {}}, "k": "kkkkkkkkkkkkkkkkkkkkkkkkk"}
+}

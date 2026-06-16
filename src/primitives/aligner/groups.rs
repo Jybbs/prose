@@ -282,7 +282,7 @@ where
 /// operator-widened row (a `+=` whose width counts the binary `+` that
 /// renders past the gap) can carry more width than the pre-gap span, so
 /// the subtraction saturates at the leftmost column rather than wrapping.
-fn baseline(source: &Source, member: Member) -> usize {
+pub(super) fn baseline(source: &Source, member: Member) -> usize {
     source
         .slice(TextRange::new(member.line_start, member.gap.start()))
         .width()
