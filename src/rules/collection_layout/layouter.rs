@@ -1,5 +1,6 @@
-//! The collection-layout serializer. Walks each literal, renders its
-//! inline and expanded forms, and emits the edit that fits the budget.
+//! The collection-layout serializer. Walks each literal and subscript,
+//! renders its inline and expanded forms, and emits the edit that fits
+//! the budget.
 
 use std::{borrow::Cow, collections::HashMap};
 
@@ -13,7 +14,8 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::classify::{
-    Segment, is_align_colons_gap, is_atomic, is_layoutable, requires_expand, segments,
+    Segment, is_align_colons_gap, is_atomic, is_collapsible, is_layoutable, is_operator_atom_tree,
+    requires_expand, segments,
 };
 use super::flow::flow_lines;
 use crate::{
@@ -190,8 +192,8 @@ impl<'a> Layouter<'a> {
     }
 
     /// Builds the canonical inline form of `expr`, recursively
-    /// inlining any nested collection literal. Non-collection leaves
-    /// pass through as their source slice, with explicit parentheses
+    /// inlining any nested collection literal or subscript. Remaining
+    /// leaves pass through as their source slice, with explicit parentheses
     /// recovered against the enclosing `parent` so precedence-bearing
     /// parens (`(-a) ** 2`) survive the collapse.
     fn inline_form(&self, expr: &Expr) -> String {
@@ -200,30 +202,44 @@ impl<'a> Layouter<'a> {
         buf
     }
 
+    /// `expr`'s single-line inline form when it joins without a residual
+    /// line break and fits the budget from `column`, else `None`. The
+    /// break guard leaves an interior member the inline serializer cannot
+    /// itself join, a wrapped binary operation, to the expand path.
+    fn joined_if_fits(&self, expr: &Expr, column: usize) -> Option<String> {
+        let inline = self.inline_form(expr);
+        (!inline.contains('\n') && column + inline.width() <= self.code_line_length)
+            .then_some(inline)
+    }
+
     /// Returns the canonical rewrite for `expr` against the budget at
     /// `column`, or `None` when the visitor should descend into its
     /// children. `indent` is where the closing bracket lands if `expr`
-    /// expands. Emits `Some(inline)` when a multi-line literal's
-    /// inline form fits, `Some(expand)` when a multi-item `Dict`,
-    /// `List`, or `Set`'s rendered width overflows, or when a `Dict`
-    /// carries more than `max_inline_dict_entries` entries whatever
-    /// its width.
+    /// expands. Emits `Some(inline)` when a multi-line literal's or
+    /// subscript's inline form fits, `Some(expand)` when a multi-item
+    /// `Dict`, `List`, or `Set`'s rendered width overflows, or when a
+    /// `Dict` carries more than `max_inline_dict_entries` entries
+    /// whatever its width. A subscript only ever collapses, joining its
+    /// `value[index]` onto one line.
     fn replacement_for(&self, expr: &Expr, column: usize, indent: usize) -> Option<String> {
+        let range = expr.range();
+        if expr.is_subscript_expr() {
+            if !self.source.contains_line_break(range) || self.source.intersects_comment(range) {
+                return None;
+            }
+            return self.joined_if_fits(expr, column);
+        }
         if !is_layoutable(expr) {
             return None;
         }
-        let range = expr.range();
         if self.source.intersects_comment(range) {
             return None;
         }
         let expandable = requires_expand(expr);
         let over_count = self.has_over_count_dict(expr);
         if self.source.contains_line_break(range) {
-            if !over_count {
-                let inline = self.inline_form(expr);
-                if column + inline.width() <= self.code_line_length {
-                    return Some(inline);
-                }
+            if !over_count && let Some(inline) = self.joined_if_fits(expr, column) {
+                return Some(inline);
             }
             return expandable.then(|| self.expand(expr, indent));
         }
@@ -235,13 +251,16 @@ impl<'a> Layouter<'a> {
     /// Serializes a dict item as `key: value` or `**value`, paired with
     /// the canonical display width the fit decision measures.
     ///
-    /// `indent` is the column where the item sits (the item-indent of
-    /// the enclosing dict). The value's actual column for the
+    /// The key routes through `serialize_expr` like the value, so a
+    /// multi-line collection or subscript key whose single-line form fits
+    /// joins onto one line and the entry then aligns its `:` with its
+    /// siblings. `indent` is the column where the item sits (the
+    /// item-indent of the enclosing dict). The value's actual column for the
     /// `code-line-length` check is offset by the key text plus `": "`, so a
     /// long key that pushes its value past the budget correctly
     /// triggers a re-layout of the value. When the value does expand,
-    /// its closing bracket still lands at `indent`. When the value
-    /// passes through borrowed and the source carries an
+    /// its closing bracket still lands at `indent`. When the key and
+    /// value both pass through borrowed and the source carries an
     /// `align-colons`-shaped gap (`[ ]*: `), the item's source slice
     /// is returned borrowed so the alignment padding round-trips. The
     /// width counts the canonical `": "` regardless, so a padded gap
@@ -257,18 +276,21 @@ impl<'a> Layouter<'a> {
             let width = 2 + value_text.width();
             return (Cow::Owned(format!("**{value_text}")), width);
         };
-        let key_text = self.source.slice(key);
+        let key_text = self.serialize_expr(key, parent, indent, indent);
         let value_column = indent + key_text.width() + 2;
         let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
         let width = key_text.width() + 2 + value_text.width();
         let gap = self
             .source
             .slice(TextRange::new(key.end(), item.value.start()));
-        let aligned = is_align_colons_gap(gap);
-        let text = if aligned && matches!(value_text, Cow::Borrowed(_)) {
+        // A rewritten key drops the source slice's alignment padding, so
+        // the padded separator and the borrowed round-trip both hold only
+        // while the key passes through unchanged.
+        let padded = is_align_colons_gap(gap) && matches!(key_text, Cow::Borrowed(_));
+        let text = if padded && matches!(value_text, Cow::Borrowed(_)) {
             Cow::Borrowed(self.source.slice(item))
         } else {
-            let separator = if aligned { gap } else { ": " };
+            let separator = if padded { gap } else { ": " };
             Cow::Owned(format!("{key_text}{separator}{value_text}"))
         };
         (text, width)
@@ -310,11 +332,28 @@ impl<'a> Layouter<'a> {
             Expr::Dict(d) => self.write_inline_dict(buf, d, here),
             Expr::List(l) => self.write_inline_seq(buf, Some(('[', ']')), &l.elts, here, false),
             Expr::Set(s) => self.write_inline_seq(buf, Some(('{', '}')), &s.elts, here, false),
+            Expr::Subscript(s) => {
+                self.write_inline(buf, &s.value, here);
+                buf.push('[');
+                self.write_inline(buf, &s.slice, here);
+                buf.push(']');
+            }
             Expr::Tuple(t) => {
                 let brackets = t.parenthesized.then_some(('(', ')'));
                 self.write_inline_seq(buf, brackets, &t.elts, here, t.elts.len() == 1);
             }
-            _ => buf.push_str(self.slice_with_parens(expr, parent)),
+            _ => {
+                let slice = self.slice_with_parens(expr, parent);
+                // An operator tree over atoms soft-wrapped across lines
+                // rejoins by collapsing its break, where any other leaf
+                // passes through with its source breaks intact for the
+                // fit guard to reject.
+                if slice.contains('\n') && is_operator_atom_tree(expr) {
+                    buf.push_str(&collapse_soft_wraps(slice));
+                } else {
+                    buf.push_str(slice);
+                }
+            }
         }
     }
 
@@ -368,7 +407,7 @@ impl<'a> Layouter<'a> {
 
 impl<'a> Visitor<'a> for Layouter<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
-        if !is_layoutable(expr) {
+        if !is_collapsible(expr) {
             walk_expr(self, expr);
             return;
         }
@@ -389,4 +428,24 @@ impl<'a> Visitor<'a> for Layouter<'a> {
             None => walk_expr(self, expr),
         }
     }
+}
+
+/// Collapses each whitespace run that spans a line break into a single
+/// space, leaving runs without a break untouched. Rejoins a soft-wrapped
+/// operator expression without respacing its operator tokens, since a
+/// run already free of a break is the source's own spacing.
+fn collapse_soft_wraps(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find(char::is_whitespace) {
+        out.push_str(&rest[..start]);
+        let run_len = rest[start..]
+            .find(|c: char| !c.is_whitespace())
+            .unwrap_or(rest.len() - start);
+        let (run, tail) = rest[start..].split_at(run_len);
+        out.push_str(if run.contains('\n') { " " } else { run });
+        rest = tail;
+    }
+    out.push_str(rest);
+    out
 }

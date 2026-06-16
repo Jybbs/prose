@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Condensed Subscript Target Aligns Its Run's Equals"
+
+description = '''
+A multi-line subscript assignment target condenses onto one line under `collection-layout`, then aligns its `=` with the single-line assignments around it under `align-equals`. Condensing first lets the target join the alignment run rather than sitting outside it with an operator stranded across a break.
+'''

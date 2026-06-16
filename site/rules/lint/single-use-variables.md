@@ -1,5 +1,5 @@
 ---
-caption : "surfaces single-use local bindings that could inline cleanly."
+caption : "Surfaces single-use local bindings that could inline cleanly."
 related : [reassigned-constants, step-narration]
 layout  : doc
 ---

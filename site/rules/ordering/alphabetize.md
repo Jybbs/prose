@@ -1,5 +1,5 @@
 ---
-caption : "alphabetizes import siblings, dict-key blocks, and dataclass field runs."
+caption : "Alphabetizes import siblings, dict-key blocks, and dataclass field runs."
 related : [align-colons, align-imports, bare-imports, blank-lines, unsorted-parameters]
 layout  : doc
 ---

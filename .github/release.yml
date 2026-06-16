@@ -19,7 +19,6 @@ changelog:
         - 🗝️ site
     - title: 🧱 Internals
       labels:
-        - ⚖️ tests
         - 🗺️ architecture
         - 🗜️ build
     - title: Other

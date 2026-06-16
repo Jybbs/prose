@@ -1,6 +1,9 @@
 //! Lays out `dict`, `list`, `set`, and `tuple` literals against the
 //! `Config::code_line_length` budget. Multi-line literals whose
-//! assembled inline form fits collapse back to a single line.
+//! assembled inline form fits collapse back to a single line, as does
+//! a multi-line subscript whose `value[index]` fits and a multi-line
+//! collection or subscript dict key, so the alignment rules meet a
+//! single-line member rather than one stranded across a break.
 //! Single-line literals whose inline form overflows expand to one
 //! entry per line. A dict holding more entries than
 //! `max_inline_dict_entries` expands whatever its width, taking any
