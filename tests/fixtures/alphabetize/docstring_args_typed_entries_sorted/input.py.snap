@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/docstring_args_typed_entries_sorted/input.py
+---
+def connect(host, port):
+    """Connect to a server.
+
+    Args:
+        host (str): The hostname to reach.
+        port (int): The port to connect on.
+    """
+    return host

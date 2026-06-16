@@ -18,8 +18,8 @@ use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            DocstringBody, LineScan, LineScanner, ScannedLine, entry_description_col,
-            indent_prefix, rewrite_docstrings, section_heading, triple_quoted_body,
+            DocstringBody, LineScan, LineScanner, ScannedLine, entry_head, indent_prefix,
+            rewrite_docstrings, section_heading, triple_quoted_body,
         },
         edit::{narrowed_replacement, singleton_groups},
     },
@@ -161,7 +161,7 @@ impl Walker<'_> {
         match self.region {
             Region::Description => self.buffer_description(indent, text),
             Region::Section => {
-                if let Some(desc_col) = entry_description_col(text) {
+                if let Some((_, desc_col)) = entry_head(text) {
                     self.start_entry(indent, indent_chars, text, desc_col);
                     return;
                 }
@@ -210,7 +210,7 @@ impl Walker<'_> {
     ) -> bool {
         indent_chars == hanging_col
             || (indent_chars == self.scanner.body_indent_chars() + 4
-                && entry_description_col(trimmed).is_none())
+                && entry_head(trimmed).is_none())
     }
 
     fn start_entry(&mut self, indent_str: &str, indent_chars: usize, text: &str, desc_col: usize) {
@@ -315,5 +315,21 @@ mod tests {
     fn singleton_docstring_is_left_alone() {
         let src = "def f():\n    \"\"\"summary\"\"\"\n";
         assert_eq!(run(src), src);
+    }
+
+    #[test]
+    fn type_bearing_entry_continuation_hangs_under_description_column() {
+        let src = "\"\"\"\nArgs:\n    markup (str): A string containing console markup that will overflow the line budget for sure yes.\n\"\"\"\n";
+        let out = run(src);
+        let continuation = out
+            .lines()
+            .skip_while(|l| !l.contains("markup (str):"))
+            .nth(1)
+            .expect("continuation line follows the wrapped entry head");
+        let indent = continuation.len() - continuation.trim_start().len();
+        assert_eq!(
+            indent, 18,
+            "continuation hangs under the description column"
+        );
     }
 }

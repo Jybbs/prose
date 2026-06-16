@@ -12,8 +12,8 @@ use super::body::{DocstringBody, indent_prefix, triple_quoted_body};
 use super::scan::{LineScan, LineScanner, ScannedLine};
 use crate::source::Source;
 
-static ENTRY_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^\w[\w.]*\s*:\s+\S").expect("static pattern compiles"));
+static ENTRY_HEAD: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(\w[\w.]*)\s*(\(.*\))?\s*$").expect("static pattern compiles"));
 
 static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[A-Z][A-Za-z]*( [A-Z][A-Za-z]*)*:").expect("static pattern compiles")
@@ -93,10 +93,12 @@ impl<'src> EntryWalker<'src> {
         if self.open_section.is_none() {
             return;
         }
-        if indent_chars == body_indent + 4 && entry_description_col(trimmed).is_some() {
+        if indent_chars == body_indent + 4
+            && let Some((name, _)) = entry_head(trimmed)
+        {
             self.finish_entry();
             self.open_entry = Some(SectionEntry {
-                name: entry_name(trimmed),
+                name,
                 range: TextRange::new(line_start, line_end),
             });
             return;
@@ -151,12 +153,27 @@ pub(crate) fn entry_carrying_sections<'src>(
     walker.sections
 }
 
-/// Returns the description-start character column when `trimmed`
-/// matches the `name: description` shape of a Google-style section
-/// entry head. `None` for any line that does not match.
-pub(crate) fn entry_description_col(trimmed: &str) -> Option<usize> {
-    let m = ENTRY_PATTERN.find(trimmed)?;
-    Some(trimmed[..m.end() - 1].chars().count())
+/// Parses `trimmed` as a Google-style `name: description` entry head,
+/// allowing a balanced parenthesized type group between the name and
+/// the `:` (e.g. `markup (str): A string.`). Returns the entry name
+/// and the description-start character column. `None` for any line
+/// that does not match the head shape or carries no description after
+/// the `:`.
+pub(crate) fn entry_head(trimmed: &str) -> Option<(&str, usize)> {
+    let colon = unbracketed_colon(trimmed)?;
+    let name = ENTRY_HEAD
+        .captures(&trimmed[..colon])?
+        .get(1)
+        .expect("ENTRY_HEAD always captures the name group on a match")
+        .as_str();
+    let description = trimmed[colon + 1..]
+        .strip_prefix(char::is_whitespace)?
+        .trim_start();
+    if description.is_empty() {
+        return None;
+    }
+    let desc_col = trimmed[..trimmed.len() - description.len()].chars().count();
+    Some((name, desc_col))
 }
 
 /// True when `trimmed` opens with a Title-case word or multi-word
@@ -166,12 +183,21 @@ pub(crate) fn section_heading(trimmed: &str) -> bool {
     SECTION_HEADING.is_match(trimmed)
 }
 
-/// Returns the entry-name prefix of `trimmed` for a line already
-/// matched by [`entry_description_col`]. Stops at the first `:`,
-/// trimming any trailing whitespace.
-fn entry_name(trimmed: &str) -> &str {
-    let colon = trimmed.find(':').expect("entry head carries a colon");
-    trimmed[..colon].trim_end()
+/// Byte offset of the first `:` in `s` that sits at paren-and-bracket
+/// depth zero, skipping the colons nested inside a parenthesized type
+/// or a bracketed subscript. `None` when every colon is nested or the
+/// line carries none.
+pub(crate) fn unbracketed_colon(s: &str) -> Option<usize> {
+    let mut depth = 0usize;
+    for (cursor, byte) in s.bytes().enumerate() {
+        match byte {
+            b'(' | b'[' => depth += 1,
+            b')' | b']' => depth = depth.saturating_sub(1),
+            b':' if depth == 0 => return Some(cursor),
+            _ => {}
+        }
+    }
+    None
 }
 
 #[cfg(test)]
@@ -259,6 +285,15 @@ mod tests {
     }
 
     #[test]
+    fn entry_carrying_sections_recognizes_type_bearing_entry_by_bare_name() {
+        let src = "def f():\n    \"\"\"\n    Args:\n        markup (str): console markup.\n        width (Dict[str, int]): the budget.\n    \"\"\"\n    pass\n";
+        let s = parse(src);
+        let lit = first_function_docstring(&s);
+        let sections = entry_carrying_sections(&s, lit);
+        assert_eq!(entry_names(&sections), vec![vec!["markup", "width"]]);
+    }
+
+    #[test]
     fn entry_carrying_sections_returns_empty_for_section_without_entries() {
         let src = "def f():\n    \"\"\"\n    Returns:\n        Just prose without a name and colon.\n    \"\"\"\n    pass\n";
         let s = parse(src);
@@ -293,19 +328,31 @@ mod tests {
     }
 
     #[test]
-    fn entry_description_col_rejects_lines_without_name_colon_shape() {
-        assert!(entry_description_col("just prose with no colon").is_none());
-        assert!(entry_description_col("name:no_space_after_colon").is_none());
-        assert!(entry_description_col(": no name before colon").is_none());
-        assert!(entry_description_col("name: ").is_none());
-        assert!(entry_description_col("123: digits-only name").is_some());
+    fn entry_head_measures_past_parenthesized_type() {
+        assert_eq!(entry_head("markup (str): a string."), Some(("markup", 14)));
+        assert_eq!(entry_head("flag (bool): on or off"), Some(("flag", 13)));
+        assert_eq!(
+            entry_head("records (List[Tuple[int, str]]): rows"),
+            Some(("records", 33)),
+        );
     }
 
     #[test]
-    fn entry_description_col_returns_char_column_of_description_start() {
-        assert_eq!(entry_description_col("name: desc"), Some(6));
-        assert_eq!(entry_description_col("name : desc"), Some(7));
-        assert_eq!(entry_description_col("dotted.name: desc"), Some(13));
+    fn entry_head_rejects_lines_without_name_colon_shape() {
+        assert!(entry_head("just prose with no colon").is_none());
+        assert!(entry_head("name:no_space_after_colon").is_none());
+        assert!(entry_head(": no name before colon").is_none());
+        assert!(entry_head("name: ").is_none());
+        assert!(entry_head("name (only: parens)").is_none());
+        assert!(entry_head("two words (int): not an entry").is_none());
+        assert!(entry_head("123: digits-only name").is_some());
+    }
+
+    #[test]
+    fn entry_head_returns_name_and_description_column() {
+        assert_eq!(entry_head("name: desc"), Some(("name", 6)));
+        assert_eq!(entry_head("name : desc"), Some(("name", 7)));
+        assert_eq!(entry_head("dotted.name: desc"), Some(("dotted.name", 13)));
     }
 
     #[rstest]
@@ -351,5 +398,21 @@ mod tests {
         assert!(!section_heading("Foo bar:"));
         assert!(!section_heading("1Args:"));
         assert!(!section_heading(": no name"));
+    }
+
+    #[test]
+    fn unbracketed_colon_returns_none_when_colon_nested_or_absent() {
+        assert!(unbracketed_colon("name (only: parens)").is_none());
+        assert!(unbracketed_colon("List[str, int]").is_none());
+        assert!(unbracketed_colon("no colon here").is_none());
+    }
+
+    #[test]
+    fn unbracketed_colon_skips_balanced_parens_and_brackets() {
+        assert_eq!(unbracketed_colon("markup (str): desc"), Some(12));
+        assert_eq!(
+            unbracketed_colon("x (Dict[str, int]): mapping"),
+            Some("x (Dict[str, int])".len()),
+        );
     }
 }
