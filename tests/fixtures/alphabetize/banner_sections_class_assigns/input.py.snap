@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/banner_sections_class_assigns/input.py
+---
+class Config:
+    # --- Network ---
+    PORT = 8080
+    TIMEOUT = 30
+    CACHE_TTL = TIMEOUT * 2
+    # --- Storage ---
+    backend: str = "s3"
+    root: str = "/"

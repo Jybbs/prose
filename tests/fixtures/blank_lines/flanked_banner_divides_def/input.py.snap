@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/blank_lines/flanked_banner_divides_def/input.py
+---
+def first():
+    return 1
+
+
+# --- Auxiliary Helpers ---
+
+def second():
+    return 2

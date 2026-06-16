@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Flanked-Label Banner Divides Like a Full Rule"
+
+description = '''
+A short rule run flanking a label, `# --- Auxiliary Helpers ---`, reads as a **section divider** the same as a full-width rule. The canonical gap lands above the banner, with one blank line between the banner and the `def` below.
+'''
