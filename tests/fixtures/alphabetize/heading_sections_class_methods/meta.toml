@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Hash Heading Sections a Class Body"
+
+description = '''
+A `##` hash heading divides a class body into sections, so the methods sort within each while the headings stay above the cluster they label.
+'''

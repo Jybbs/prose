@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/banner_sections_import_group/input.py
+---
+import os
+import sys
+# --- Typing ---
+import abc
+import typing

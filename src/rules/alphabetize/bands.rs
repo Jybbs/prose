@@ -10,7 +10,7 @@ use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
 
 use super::{
-    Alphabetize, has_keep_marker,
+    Alphabetize, has_keep_marker, section_ranges,
     tiering::{eval_refs, eval_time_refs, tier_levels},
 };
 use crate::{
@@ -119,8 +119,10 @@ struct ConstSite<'src> {
 /// Hoists module-level constants into a leading band below the imports
 /// and a trailing band beneath the definitions, rewriting `order` in
 /// place. Leaves `order` untouched when the plan declines or would seat
-/// a reference ahead of its definition. The returned [`Banding`] pairs
-/// the band ranks with the prose comment each banded constant carries.
+/// a reference ahead of its definition. A section marker drains the
+/// running region, so a band never crosses a section divider. The returned
+/// [`Banding`] pairs the band ranks with the prose comment each banded
+/// constant carries.
 pub(super) fn band_module_constants<'src>(
     source: &'src Source,
     body: &'src [Stmt],
@@ -131,9 +133,17 @@ pub(super) fn band_module_constants<'src>(
     order: &mut Vec<usize>,
 ) -> Option<Banding> {
     let plan = module_band_plan(source, body, blocks, defer_annotations, target_version)?;
+    let boundaries: Vec<usize> = section_ranges(source, blocks)
+        .iter()
+        .skip(1)
+        .map(|s| s.start)
+        .collect();
     let mut banded = Vec::with_capacity(order.len());
     let mut region = Vec::new();
-    for &idx in order.iter() {
+    for (slot, &idx) in order.iter().enumerate() {
+        if boundaries.contains(&slot) {
+            plan.drain_region(body, first_party, &mut region, &mut banded);
+        }
         if plan.ranks.contains_key(&idx) {
             region.push(idx);
         } else {

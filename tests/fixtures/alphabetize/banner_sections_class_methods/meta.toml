@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Banner Sections a Class Body"
+
+description = '''
+A hand-drawn banner divides a class body into sections, so the methods **sort within each section** while the `# --- Lifecycle ---` and `# --- Helpers ---` dividers hold the place the author gave them.
+'''

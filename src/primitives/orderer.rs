@@ -11,7 +11,10 @@ use ruff_python_trivia::CommentRanges;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{primitives::edit::splice_parses, source::Source};
+use crate::{
+    primitives::{comments::is_marker_line, edit::splice_parses},
+    source::Source,
+};
 
 /// Splices each rendered child at its sorted position. `gap_override`
 /// returning `Some(text)` for new-order slot `i` substitutes that
@@ -93,7 +96,8 @@ pub(crate) fn block_range<T: Ranged>(
     let forward = items
         .get(i + 1)
         .map_or(line_end, |next| line_end.min(next.start()));
-    TextRange::new(leading_attached_start(source, item.start(), lower), forward)
+    let attached = leading_attached_start(source, item.start(), lower);
+    TextRange::new(marker_floor(source, attached, item.start()), forward)
 }
 
 /// Total source extent covered by `blocks`. Requires non-empty input.
@@ -274,6 +278,22 @@ fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize
     current
 }
 
+/// Advances past any section-marker comment leading the attached block, so
+/// a banner or hash heading divider stays in the gap above the member
+/// rather than traveling with it through a sort. Returns the line start
+/// below the marker nearest the member, or `attached_start` when none leads.
+fn marker_floor(source: &Source, attached_start: TextSize, item_start: TextSize) -> TextSize {
+    source
+        .comment_ranges()
+        .comments_in_range(TextRange::new(attached_start, item_start))
+        .iter()
+        .rev()
+        .find(|comment| is_marker_line(source.slice(**comment)))
+        .map_or(attached_start, |comment| {
+            source.text().full_line_end(comment.start())
+        })
+}
+
 /// Extends `item_end` over a trailing comma and inline comment on its line,
 /// reached across only commas and whitespace. Stops at any other token, so a
 /// comment past a `}`, `)`, or `]` stays disowned.
@@ -349,6 +369,13 @@ mod tests {
     }
 
     #[test]
+    fn block_range_excludes_leading_banner_marker() {
+        let source = parse("# --- Section ---\ndef a(): pass\n");
+        let block = block_range(&source, &source.ast().body, 0, source.module_range());
+        assert_eq!(source.slice(block), "def a(): pass");
+    }
+
+    #[test]
     fn block_range_extends_back_through_attached_comments() {
         let source = parse(indoc! {"
             # one
@@ -379,6 +406,13 @@ mod tests {
             source.slice(block),
             "def a(\n    x,\n    y,\n): pass  # trailing"
         );
+    }
+
+    #[test]
+    fn block_range_keeps_prose_comment_below_marker() {
+        let source = parse("# --- Section ---\n# describes a\ndef a(): pass\n");
+        let block = block_range(&source, &source.ast().body, 0, source.module_range());
+        assert_eq!(source.slice(block), "# describes a\ndef a(): pass");
     }
 
     #[test]

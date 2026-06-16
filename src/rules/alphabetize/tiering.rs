@@ -3,7 +3,10 @@
 //! at evaluation time. Shared by the module-constant banding in
 //! `super::bands` and the body rewriter's def-run reorder in `super`.
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Range,
+};
 
 use ruff_python_ast::{
     Expr, Stmt,
@@ -11,7 +14,7 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextSize};
 
-use crate::primitives::orderer::permute_full;
+use crate::primitives::orderer::permute_in_place;
 
 /// Accumulates load-context names through `eval_time_refs`, pruning
 /// function and lambda bodies and skipping deferred annotations.
@@ -88,16 +91,21 @@ pub(super) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> 
     visitor.names
 }
 
-/// Tiers the definition run selected by `member` and permutes `order`
-/// by `(tier, key)`, leaving `order` untouched when the run declines.
+/// Tiers the `member`-selected definitions within `range` and permutes
+/// those slots of `order` by `(tier, key)`, leaving `order` untouched when
+/// the run declines. Tiering scopes to `range`, so a duplicate name or
+/// cycle in another section never declines this one.
 pub(super) fn permute_defs<'src, K: Copy + Ord>(
     order: &mut [usize],
     body: &'src [Stmt],
+    range: Range<usize>,
     defer_annotations: bool,
     member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,
 ) {
-    if let Some(keys) = def_run_tier_keys(body, defer_annotations, member) {
-        permute_full(order, body, |s| keys.get(&s.range().start()).copied());
+    if let Some(keys) = def_run_tier_keys(&body[range.clone()], defer_annotations, member) {
+        permute_in_place(order, body, range, |s| {
+            keys.get(&s.range().start()).copied()
+        });
     }
 }
 

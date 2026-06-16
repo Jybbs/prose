@@ -8,13 +8,16 @@ use ruff_text_size::{TextRange, TextSize};
 
 use crate::source::Source;
 
-/// True when any line in the comment block reads as a divider, either a
-/// decorative rule line or a multi-hash heading.
+/// True when any line in the comment block reads as a section marker,
+/// either a decorative rule line or a multi-hash heading.
 pub(crate) fn is_banner_block(source: &Source, block: TextRange) -> bool {
-    source
-        .slice(block)
-        .lines()
-        .any(|line| is_rule_line(line) || is_heading_line(line))
+    source.slice(block).lines().any(is_marker_line)
+}
+
+/// True when `line` reads as a section marker, a decorative rule line or
+/// a multi-hash heading.
+pub(crate) fn is_marker_line(line: &str) -> bool {
+    is_rule_line(line) || is_heading_line(line)
 }
 
 /// Returns the contiguous range of own-line comments lying between
@@ -43,13 +46,25 @@ fn is_heading_line(line: &str) -> bool {
     line.trim_start().starts_with("##")
 }
 
-/// True when `line` is a comment whose body, after stripping the
-/// leading `#` and surrounding whitespace, consists of 5 or more
-/// identical non-alphanumeric characters.
+/// True for a character authors repeat to draw a divider rule.
+fn is_rule_char(c: char) -> bool {
+    matches!(c, '-' | '=' | '~' | '*' | '_' | '#' | '─' | '━' | '═')
+}
+
+/// True when `line` reads as a decorative rule, either a pure run of five
+/// or more identical rule characters or a run of three or more flanking a
+/// label. Box-drawing dashes count as rule characters.
 fn is_rule_line(line: &str) -> bool {
-    let stripped = line.trim_start().strip_prefix('#').map_or("", str::trim);
-    let bytes = stripped.as_bytes();
-    bytes.len() >= 5 && !bytes[0].is_ascii_alphanumeric() && bytes.iter().all(|&b| b == bytes[0])
+    let body = line.trim_start().strip_prefix('#').map_or("", str::trim);
+    let mut chars = body.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    if !is_rule_char(first) {
+        return false;
+    }
+    let run = 1 + chars.take_while(|&c| c == first).count();
+    run >= 5 || (run >= 3 && body.chars().count() > run)
 }
 
 #[cfg(test)]
@@ -110,8 +125,28 @@ mod tests {
     }
 
     #[rstest]
+    fn is_rule_line_accepts_box_drawing_runs(
+        #[values("# ─────", "# ━━━━━", "# ═════")] line: &str,
+    ) {
+        assert!(is_rule_line(line));
+    }
+
+    #[rstest]
     fn is_rule_line_accepts_canonical_decorative_runs(
         #[values("# =====", "# -----", "# *****", "# _____", "# ~~~~~", "##########")] line: &str,
+    ) {
+        assert!(is_rule_line(line));
+    }
+
+    #[rstest]
+    fn is_rule_line_accepts_flanked_label(
+        #[values(
+            "# --- Lifecycle ---",
+            "# === Section ===",
+            "# ─── Box ───",
+            "# *** Note ***"
+        )]
+        line: &str,
     ) {
         assert!(is_rule_line(line));
     }
