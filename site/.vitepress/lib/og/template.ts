@@ -6,7 +6,7 @@ import type { BrandAssets }     from './assets'
 import type { OgKind, OgPage }  from './pages'
 import {
   CARD_HEIGHT, CARD_WIDTH, META_LABEL, MONO_DIM,
-  cardShell, leftRail, monoLabel, panelDivider, panelRow, panelShell, rasterize, versionCallout
+  cardShell, leftRail, monoLabel, panelDivider, panelRow, panelShell, toSvg, versionCallout
 } from './parts'
 
 const BODY            = '#d4c8b5'
@@ -25,12 +25,12 @@ const TITLE_SIZES = {
   cap  : [[12, 108], [17, 100], [22, 84], [Infinity, 76]]
 } as const
 
-export async function renderPage(
+export function pageSvg(
   page    : OgPage,
   brand   : BrandAssets,
   version : string
-): Promise<Buffer> {
-  return rasterize(buildCard(page, version, brand.wordmark, brand.glyph), brand.fonts)
+): Promise<string> {
+  return toSvg(buildCard(page, version, brand.wordmark, brand.glyph), brand.fonts)
 }
 
 function buildCard(page: OgPage, version: string, wordmark: string, glyph: string): JSXNode {

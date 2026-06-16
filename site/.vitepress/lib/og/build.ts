@@ -1,18 +1,12 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
+import { ogImagePath }                                 from '../config/og-url'
 import { readCargoVersion }                            from '../shared/version'
 import { loadBrandAssets }                             from './assets'
 import { cardKeyer, pruneCards, readCard, writeCard }  from './cache'
-import { renderLanding }                               from './landing'
 import { enumeratePages }                              from './pages'
-import { renderPage }                                  from './template'
-
-interface CardJob {
-  key        : string
-  outputPath : string
-  render     : () => Promise<Buffer>
-}
+import { renderCards, type RenderTask }                from './pool'
 
 export async function buildOgCards(
   srcDir : string,
@@ -25,28 +19,35 @@ export async function buildOgCards(
   const cacheDir = path.join(repo, '.cache', 'og')
   const keyOf    = cardKeyer(version, brand)
 
-  const jobs: readonly CardJob[] = [
-    { key: keyOf('landing'), outputPath: 'og.png', render: () => renderLanding(brand, version) },
+  const tasks: readonly RenderTask[] = [
+    { key: keyOf('landing'), outputPath: ogImagePath('index.md'), page: 'landing' },
     ...enumeratePages(srcDir, pages).map(page => ({
       key        : keyOf(page),
       outputPath : page.outputPath,
-      render     : () => renderPage(page, brand, version)
+      page
     }))
   ]
 
-  await Promise.all(jobs.map(job => materialize(cacheDir, outDir, job)))
-  await pruneCards(cacheDir, jobs.map(job => job.key))
+  const misses: RenderTask[] = []
+  await Promise.all(tasks.map(async task => {
+    const png = await readCard(cacheDir, task.key)
+    if (png) writeDist(outDir, task.outputPath, png)
+    else misses.push(task)
+  }))
+
+  if (misses.length > 0) {
+    const rendered = await renderCards(brand, version, misses)
+    await Promise.all(rendered.map(async card => {
+      writeDist(outDir, card.outputPath, card.png)
+      await writeCard(cacheDir, card.key, Buffer.from(card.png))
+    }))
+  }
+
+  await pruneCards(cacheDir, tasks.map(task => task.key))
 }
 
-async function materialize(cacheDir: string, outDir: string, job: CardJob): Promise<void> {
-  const png  = await readCard(cacheDir, job.key) ?? await renderAndCache(cacheDir, job)
-  const dest = path.join(outDir, job.outputPath)
+function writeDist(outDir: string, outputPath: string, png: Uint8Array): void {
+  const dest = path.join(outDir, outputPath)
   fs.mkdirSync(path.dirname(dest), { recursive: true })
   fs.writeFileSync(dest, png)
-}
-
-async function renderAndCache(cacheDir: string, job: CardJob): Promise<Buffer> {
-  const png = await job.render()
-  await writeCard(cacheDir, job.key, png)
-  return png
 }

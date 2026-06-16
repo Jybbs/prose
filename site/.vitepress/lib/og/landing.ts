@@ -3,7 +3,7 @@ import { createElement, type JSXNode }  from 'satori/jsx'
 import type { BrandAssets }             from './assets'
 import {
   CARD_WIDTH, META_LABEL, MONO_DIM,
-  cardShell, leftRail, monoLabel, panelDivider, panelRow, panelShell, rasterize, versionCallout
+  cardShell, leftRail, monoLabel, panelDivider, panelRow, panelShell, toSvg, versionCallout
 } from './parts'
 
 const ARTIFACT_LEFT = 120
@@ -13,8 +13,8 @@ const TITLE_TOP     = 246
 const TITLE_WIDTH   = 889
 const TRACK         = '0.28em'
 
-export async function renderLanding(brand: BrandAssets, version: string): Promise<Buffer> {
-  return rasterize(buildLandingCard(version, brand.titleWithTagline), brand.fonts)
+export function landingSvg(brand: BrandAssets, version: string): Promise<string> {
+  return toSvg(buildLandingCard(version, brand.titleWithTagline), brand.fonts)
 }
 
 function buildLandingCard(version: string, titleWithTagline: string): JSXNode {
