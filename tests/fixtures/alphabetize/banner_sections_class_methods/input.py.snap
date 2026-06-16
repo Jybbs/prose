@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/banner_sections_class_methods/input.py
+---
+class Session:
+    # --- Lifecycle ---
+    def close(self): ...
+    def open(self): ...
+
+    # --- Helpers ---
+    def decode(self): ...
+    def encode(self): ...

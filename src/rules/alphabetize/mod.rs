@@ -25,12 +25,13 @@ use ruff_python_ast::{
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
 };
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
     primitives::{
         binding::{annotated_name_target, single_name_target, tail_identifier},
+        comments::{is_banner_block, leading_comment_block, marker_floor},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
         imports::{future_annotations_alias, import_sort_key, same_import_group},
         orderer::{assemble_blocks, block_range, blocks_span, permute_in_place},
@@ -248,6 +249,13 @@ fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
         .any(|c| source.slice(c).trim_start_matches('#').trim() == "prose: keep")
 }
 
+/// True when a recognized section marker, a banner or hash heading, sits
+/// in the gap between two member blocks, opening a section the sort never
+/// reorders across.
+fn marker_in_gap(source: &Source, lower: TextSize, upper: TextSize) -> bool {
+    leading_comment_block(source, lower, upper).is_some_and(|block| is_banner_block(source, block))
+}
+
 /// Returns the method-group index. `0` for dunders, `1` for
 /// `@property` / `@cached_property` (decided by the first decorator),
 /// `2` for single-leading-underscore privates, `3` for public.
@@ -285,14 +293,14 @@ fn rewrite_body<'a>(
         defer_annotations,
         first_party,
         source,
-        target_version,
         ..
     } = ctx;
     let (mut blocks, mut rendered): (Vec<TextRange>, Vec<Cow<'a, str>>) = body
         .iter()
         .enumerate()
         .map(|(i, stmt)| {
-            let block = block_range(source, body, i, outer);
+            let raw = block_range(source, body, i, outer);
+            let block = TextRange::new(marker_floor(source, raw.start(), stmt.start()), raw.end());
             (block, rewrite_stmt(ctx, stmt, block, scope))
         })
         .unzip();
@@ -302,42 +310,42 @@ fn rewrite_body<'a>(
     let mut import_run_slots: Vec<usize> = Vec::new();
     let mut band: Option<Banding> = None;
     if !has_inline_statement_join(source, body) {
+        let sections = section_ranges(source, &blocks);
+        let boundaries: Vec<usize> = sections.iter().skip(1).map(|s| s.start).collect();
         let in_class = scope == BodyScope::Class;
-        if scope != BodyScope::Function {
-            permute_defs(&mut order, body, defer_annotations, |s| {
-                s.as_class_def_stmt().map(|c| {
-                    let name = c.name.as_str();
-                    (name, name)
-                })
-            });
-            if in_class {
-                permute_class_assigns(&mut order, body, defer_annotations);
-            }
-            if !(in_class && class_pins_methods(body)) {
-                permute_defs(&mut order, body, defer_annotations, |s| {
-                    s.as_function_def_stmt().map(|f| {
-                        let name = f.name.as_str();
-                        (name, (method_group(f), name))
+        let is_import = |s: &Stmt| s.is_import_stmt() || s.is_import_from_stmt();
+        for section in &sections {
+            let members = &body[section.clone()];
+            if scope != BodyScope::Function {
+                permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
+                    s.as_class_def_stmt().map(|c| {
+                        let name = c.name.as_str();
+                        (name, name)
                     })
                 });
+                if in_class {
+                    permute_class_assigns(&mut order, body, section.clone(), defer_annotations);
+                }
+                if !(in_class && class_pins_methods(members)) {
+                    permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
+                        s.as_function_def_stmt().map(|f| {
+                            let name = f.name.as_str();
+                            (name, (method_group(f), name))
+                        })
+                    });
+                }
+            }
+            for Range { start, end } in chunk_runs(members, |a, b| is_import(a) && is_import(b)) {
+                permute_in_place(
+                    &mut order,
+                    body,
+                    section.start + start..section.start + end,
+                    |s| import_sort_key(s, first_party),
+                );
             }
         }
-        let is_import = |s: &Stmt| s.is_import_stmt() || s.is_import_from_stmt();
-        for Range { start, end } in chunk_runs(body, |a, b| is_import(a) && is_import(b)) {
-            permute_in_place(&mut order, body, start..end, |s| {
-                import_sort_key(s, first_party)
-            });
-        }
         if scope == BodyScope::Module {
-            band = band_module_constants(
-                source,
-                body,
-                &blocks,
-                first_party,
-                defer_annotations,
-                target_version,
-                &mut order,
-            );
+            band = band_module_constants(ctx, body, &blocks, &boundaries, &mut order);
             // A banded constant carries its forward-attached prose comment
             // up with it: its block extends back over the comment and its
             // rendered text gains the comment, collapsing the gap below so
@@ -354,11 +362,12 @@ fn rewrite_body<'a>(
             }
         }
         // A banded order reconstructs its own blank-line texture. Otherwise
-        // same-group import neighbors collapse to one line, derived from the
-        // assembled order the family sorts left.
+        // same-group import neighbors collapse to one line, except across a
+        // section marker, whose dividing gap must survive in place.
         if band.is_none() {
             import_run_slots.extend((0..n.saturating_sub(1)).filter(|&slot| {
                 same_import_group(&body[order[slot]], &body[order[slot + 1]], first_party)
+                    && boundaries.binary_search(&(slot + 1)).is_err()
             }));
         }
     }
@@ -413,6 +422,22 @@ fn rewrite_stmt<'a>(
     }
     let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope);
     splice_bodies(ctx.source, block, [(body_text, body_span)], ctx.leaf_edits)
+}
+
+/// Splits the body's slots into sections at each gap carrying a section
+/// marker, so a family sort orders members within a section and never
+/// moves one across the marker dividing it from its neighbor.
+fn section_ranges(source: &Source, blocks: &[TextRange]) -> Vec<Range<usize>> {
+    let mut sections = Vec::new();
+    let mut start = 0;
+    for i in 1..blocks.len() {
+        if marker_in_gap(source, blocks[i - 1].end(), blocks[i].start()) {
+            sections.push(start..i);
+            start = i;
+        }
+    }
+    sections.push(start..blocks.len());
+    sections
 }
 
 /// Returns the simple name assigned by an `Stmt::Assign` whose

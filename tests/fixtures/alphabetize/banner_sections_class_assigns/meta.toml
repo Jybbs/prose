@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Class-Body Assignments Sort Within Each Banner Section"
+
+description = '''
+A banner divides a class body's assignments into sections that tier and sort on their own. The constant family and the data-field family share one dependency graph within a section, so a derived constant stays below the one it reads, while the divider holds its place between the sections.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Banner Sections Module Definitions"
+
+description = '''
+A banner at module scope divides the top-level functions into sections, each sorting on its own while the dividers stay between the clusters they separate.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Banner Sections an Import Group"
+
+description = '''
+A banner between imports divides the run into sections, so each sorts on its own and no import crosses the divider into the group above it.
+'''

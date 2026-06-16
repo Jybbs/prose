@@ -7,7 +7,7 @@
 //! Reverts the reorder on a duplicate name, a reference cycle, or an
 //! assembled order that would seat a referent after a reader.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Range};
 
 use ruff_python_ast::{Expr, Stmt, helpers::map_subscript};
 use ruff_text_size::Ranged;
@@ -18,7 +18,7 @@ use super::{
 };
 use crate::primitives::{
     binding::tail_identifier,
-    orderer::{permute_full, slot_positions},
+    orderer::{permute_in_place, slot_positions},
 };
 
 /// Classifies a class-body statement as a single-name assignment,
@@ -40,18 +40,21 @@ fn is_classvar(annotation: &Expr) -> bool {
     tail_identifier(map_subscript(annotation)) == Some("ClassVar")
 }
 
-/// True when every reader in `body` keeps each assignment member it
+/// True when every reader in `range` keeps each assignment member it
 /// names ahead of itself in `order`. A reader is an assignment member or
 /// a class or function definition, the latter naming a constant through
-/// its decorators, base classes, or parameter defaults.
+/// its decorators, base classes, or parameter defaults. Scoped to
+/// `range`, so a reader in another section never constrains this one.
 fn order_is_sound(
     order: &[usize],
     body: &[Stmt],
+    range: &Range<usize>,
     member_at: &HashMap<&str, usize>,
     defer_annotations: bool,
 ) -> bool {
     let position = slot_positions(order);
-    body.iter().enumerate().all(|(reader, stmt)| {
+    body[range.clone()].iter().enumerate().all(|(i, stmt)| {
+        let reader = range.start + i;
         let reads_eval_time = class_assign_member(stmt).is_some()
             || matches!(stmt, Stmt::ClassDef(_) | Stmt::FunctionDef(_));
         if !reads_eval_time {
@@ -65,12 +68,19 @@ fn order_is_sound(
     })
 }
 
-/// Sorts the class body's constant and data-field families through one
-/// tiered dependency graph, rewriting `order` in place. Leaves `order`
-/// untouched when fewer than two members reorder, a name repeats, the
-/// reference graph cycles, or the sorted order would strand a reader.
-pub(super) fn permute_class_assigns(order: &mut [usize], body: &[Stmt], defer_annotations: bool) {
-    let Some(tier_keys) = def_run_tier_keys(body, defer_annotations, |stmt| {
+/// Sorts a section's constant and data-field families through one tiered
+/// dependency graph, rewriting `order` in place. Tiering and the
+/// soundness check scope to `range`, so a marker-divided section sorts on
+/// its own. Leaves `order` untouched when fewer than two members reorder,
+/// a name repeats, the reference graph cycles, or the sorted order would
+/// strand a reader.
+pub(super) fn permute_class_assigns(
+    order: &mut [usize],
+    body: &[Stmt],
+    range: Range<usize>,
+    defer_annotations: bool,
+) {
+    let Some(tier_keys) = def_run_tier_keys(&body[range.clone()], defer_annotations, |stmt| {
         class_assign_member(stmt).map(|(name, _)| (name, name))
     }) else {
         return;
@@ -78,13 +88,13 @@ pub(super) fn permute_class_assigns(order: &mut [usize], body: &[Stmt], defer_an
     if tier_keys.len() < 2 {
         return;
     }
-    let member_at: HashMap<&str, usize> = body
+    let member_at: HashMap<&str, usize> = body[range.clone()]
         .iter()
         .enumerate()
-        .filter_map(|(idx, stmt)| class_assign_member(stmt).map(|(name, _)| (name, idx)))
+        .filter_map(|(i, stmt)| class_assign_member(stmt).map(|(name, _)| (name, range.start + i)))
         .collect();
     let snapshot = order.to_vec();
-    permute_full(order, body, |stmt| {
+    permute_in_place(order, body, range.clone(), |stmt| {
         let (ann, _) = ann_assign_with_named_field(stmt)?;
         if is_classvar(&ann.annotation) {
             return None;
@@ -92,12 +102,12 @@ pub(super) fn permute_class_assigns(order: &mut [usize], body: &[Stmt], defer_an
         let (tier, name) = tier_keys[&stmt.range().start()];
         Some((tier, u8::from(has_default(ann)), name))
     });
-    permute_full(order, body, |stmt| {
+    permute_in_place(order, body, range.clone(), |stmt| {
         class_assign_member(stmt)
             .filter(|&(_, is_const)| is_const)
             .map(|_| tier_keys[&stmt.range().start()])
     });
-    if !order_is_sound(order, body, &member_at, defer_annotations) {
+    if !order_is_sound(order, body, &range, &member_at, defer_annotations) {
         order.copy_from_slice(&snapshot);
     }
 }
@@ -113,7 +123,7 @@ mod tests {
         let source = parse(src);
         let body = &first_class(&source).body;
         let mut order: Vec<usize> = (0..body.len()).collect();
-        permute_class_assigns(&mut order, body, false);
+        permute_class_assigns(&mut order, body, 0..body.len(), false);
         order
     }
 
