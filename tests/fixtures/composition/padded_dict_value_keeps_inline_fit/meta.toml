@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Padded Dict Value Keeps Its Inline Fit"
+
+description = '''
+The outer dict expands and `align-colons` pads its `:` column, widening the `"b"` row past the budget. `collection-layout` measures the nested value at its canonical `": "` width rather than the padded gap, so the value **holds its inline placement** and a second pass leaves the output byte-identical.
+'''

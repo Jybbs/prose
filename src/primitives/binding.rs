@@ -201,9 +201,17 @@ impl BindingAnalysis {
 
     /// Returns the read offsets of the module-scope binding for `name`
     /// when its sole write is one function definition. `None` when
-    /// `name` is unbound at module scope, rebound, or written by
-    /// anything other than a single `def`.
+    /// `name` is unbound at module scope, rebound, written by anything
+    /// other than a single `def`, or potentially rebound by a
+    /// module-scope `from x import *`.
     pub(crate) fn module_function_reads(&self, name: &str) -> Option<&[TextSize]> {
+        // A `from x import *` binds under `*` rather than under each
+        // real name it pulls in, so the visible `def` may not be the
+        // function the call actually reaches, leaving no module name
+        // safe to resolve against.
+        if self.module_binding("*").is_some() {
+            return None;
+        }
         let binding = self.module_binding(name)?;
         (binding.kinds == [BindingKind::FunctionDef] && binding.write_offsets.len() == 1)
             .then_some(binding.read_offsets.as_slice())
@@ -1009,6 +1017,16 @@ mod tests {
             reads[0] < reads[1],
             "the deferred forward read sorts ahead of the later module-level call",
         );
+    }
+
+    #[rstest]
+    #[case::star_after_def("def f(b, a):\n    pass\n\n\nfrom x import *\n")]
+    #[case::star_before_def("from x import *\n\n\ndef f(b, a):\n    pass\n")]
+    #[case::star_in_conditional_overlay(
+        "try:\n    from x import *\nexcept ImportError:\n    pass\n\n\ndef f(b, a):\n    pass\n"
+    )]
+    fn module_function_reads_returns_none_under_a_module_star_import(#[case] src: &str) {
+        assert!(analyze(src).module_function_reads("f").is_none());
     }
 
     #[rstest]

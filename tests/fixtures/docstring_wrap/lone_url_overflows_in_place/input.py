@@ -1,0 +1,5 @@
+def reference():
+    """
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+    """
+    return 1

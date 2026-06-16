@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/wider_follower_keeps_dict_expanded/input.py
+---
+align-equals@2..10
+collection-layout@13..87

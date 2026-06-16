@@ -6,7 +6,10 @@
 use ruff_diagnostics::Edit;
 use ruff_text_size::TextRange;
 
-use super::{Member, Settings};
+use super::{
+    Member, Settings,
+    groups::{baseline, is_alignment_candidate},
+};
 use crate::{config::MaxShift, source::Source};
 
 /// Aligns `members` by splitting the source-ordered run into the
@@ -25,6 +28,36 @@ pub(super) fn emit_group(
     }
 }
 
+/// Per-member display column where each member's aligned token lands
+/// under the same column math `emit_group` applies. A candidate group
+/// reports its shared column, split on the `max-shift` cap, while any
+/// other group reports a one-space buffer past each member's own width.
+/// The token's following value sits two columns further on, the
+/// operator's final character plus the one-space value gap.
+pub(crate) fn operator_columns(
+    source: &Source,
+    members: &[Member],
+    settings: Settings,
+) -> Vec<usize> {
+    if !is_alignment_candidate(source, members) {
+        return members
+            .iter()
+            .map(|m| baseline(source, *m) + m.width + 1)
+            .collect();
+    }
+    let mut columns = Vec::with_capacity(members.len());
+    for (group, max_w) in reading_order_groups(members, settings.max_shift) {
+        let suffix = settings.suffix_len(group.len());
+        let max_op = max_op_width(group);
+        columns.extend(
+            group
+                .iter()
+                .map(|m| baseline(source, *m) + m.width + padding_width(*m, max_w, max_op, suffix)),
+        );
+    }
+    columns
+}
+
 /// Returns the edit needed to make `range` carry exactly `n` ASCII
 /// spaces, or `None` if it already does. Emits `Edit::range_deletion`
 /// when `n` is zero.
@@ -39,12 +72,9 @@ pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) ->
     Some(Edit::range_replacement(" ".repeat(n), range))
 }
 
-/// Rewrites each member's gap to
-/// `suffix_len + (max_w - m.width) + (max_op_w - m.op_width)` spaces.
-/// The operator-width term right-aligns variable-width operators so
-/// each operator's last character lands in the shared column.
-/// Members whose gap already carries that width of ASCII spaces emit
-/// nothing.
+/// Rewrites each member's gap to its [`padding_width`], the spacing that
+/// lands every operator's last character in the shared column. Members
+/// whose gap already carries that width of ASCII spaces emit nothing.
 fn emit_with_paddings(
     source: &Source,
     members: &[Member],
@@ -57,7 +87,7 @@ fn emit_with_paddings(
         space_padding_edit(
             source,
             m.gap,
-            suffix_len + (max_w - m.width) + (max_op_w - m.op_width),
+            padding_width(*m, max_w, max_op_w, suffix_len),
         )
     }));
 }
@@ -66,6 +96,14 @@ fn emit_with_paddings(
 /// is empty.
 fn max_op_width(members: &[Member]) -> usize {
     members.iter().map(|m| m.op_width).max().unwrap_or(0)
+}
+
+/// The gap that lands `member`'s aligned token in its group's shared
+/// column: a `suffix_len` buffer plus the slack to the widest member,
+/// plus the operator slack that right-aligns variable-width operators on
+/// their last character.
+fn padding_width(member: Member, max_w: usize, max_op_w: usize, suffix_len: usize) -> usize {
+    suffix_len + (max_w - member.width) + (max_op_w - member.op_width)
 }
 
 /// Splits the source-ordered `members` into the contiguous groups the
@@ -310,6 +348,42 @@ mod tests {
         assert_eq!(
             sorted_summaries(&edits),
             vec![delete(&members[0]), delete(&members[1])],
+        );
+    }
+
+    #[test]
+    fn operator_columns_aligns_a_candidate_group_to_one_column() {
+        let (source, members) = rows(&[(1, 1), (2, 1), (3, 1)]);
+
+        // Three distinct-line rows at one baseline align their operator to
+        // the widest member, so every column lands one past width 3.
+        assert_eq!(
+            operator_columns(&source, &members, Settings::aligned(cap(8))),
+            vec![4, 4, 4],
+        );
+    }
+
+    #[test]
+    fn operator_columns_buffers_a_lone_member_past_its_width() {
+        let (source, members) = rows(&[(3, 5)]);
+
+        // A singleton is no candidate, so its operator takes a one-space
+        // buffer past the width-3 name rather than a shared column.
+        assert_eq!(
+            operator_columns(&source, &members, Settings::aligned(cap(8))),
+            vec![4],
+        );
+    }
+
+    #[test]
+    fn operator_columns_splits_a_candidate_run_on_max_shift() {
+        let (source, members) = rows(&[(1, 1), (15, 1)]);
+
+        // The width-14 spread breaks the cap, so each row forms its own
+        // column: the narrow operator at 2, the wide one at 16.
+        assert_eq!(
+            operator_columns(&source, &members, Settings::aligned(cap(8))),
+            vec![2, 16],
         );
     }
 

@@ -1,0 +1,10 @@
+[docs]
+previewable = true
+title       = "A URL or Path Token Overflows Whole Rather Than Splitting"
+
+description = '''
+A token that reads as a URL or carries an embedded path `/` or `-` wraps as a
+single atomic word, so an over-budget link lands on its own line and overflows
+the budget intact rather than splitting between its segments, keeping the value
+copy-pasteable.
+'''

@@ -1,7 +1,7 @@
 //! The collection-layout serializer. Walks each literal, renders its
 //! inline and expanded forms, and emits the edit that fits the budget.
 
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::HashMap};
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
@@ -9,7 +9,7 @@ use ruff_python_ast::{
     AnyNodeRef, DictItem, Expr, ExprDict,
     visitor::{Visitor, walk_expr},
 };
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::classify::{
@@ -17,19 +17,23 @@ use super::classify::{
 };
 use super::flow::flow_lines;
 use crate::{
-    primitives::{INDENT_STEP, edit::narrowed_replacement, range::paren_aware_range},
+    primitives::{INDENT_STEP, edit::narrowed_replacement},
     source::Source,
 };
 
 /// Per-item state collected from a dict, list, or set literal:
-/// serialized text, atomicity for layout dispatch, and source range
-/// for blank-line-preservation lookups.
+/// serialized text, atomicity for layout dispatch, source range for
+/// blank-line-preservation lookups, and the canonical display width the
+/// fit decision measures. The width tracks the entry at its canonical
+/// `": "` separator, so an `align_colons`-padded source gap that the
+/// text round-trips does not inflate the measured width.
 struct GatheredItems<'src> {
     atomics: Vec<bool>,
     close: char,
     open: char,
     ranges: Vec<TextRange>,
     texts: Vec<Cow<'src, str>>,
+    widths: Vec<usize>,
 }
 
 pub(super) struct Layouter<'a> {
@@ -37,6 +41,7 @@ pub(super) struct Layouter<'a> {
     pub(super) edits: Vec<Edit>,
     pub(super) max_atomics_per_line: usize,
     pub(super) newline: &'static str,
+    pub(super) reservations: HashMap<TextSize, usize>,
     pub(super) source: &'a Source,
     pub(super) tripping_dicts: Vec<TextRange>,
 }
@@ -54,6 +59,7 @@ impl<'a> Layouter<'a> {
             open,
             ranges,
             texts,
+            widths,
         } = self.gather_items(expr, item_indent);
         let total = texts.len();
         let item_prefix = " ".repeat(item_indent);
@@ -68,7 +74,7 @@ impl<'a> Layouter<'a> {
                         let has_more = idx + 1 < total;
                         let inline = &texts[idx];
                         let row_overflows = !inline.contains('\n')
-                            && item_indent + inline.width() + usize::from(has_more)
+                            && item_indent + widths[idx] + usize::from(has_more)
                                 > self.code_line_length;
                         let hung = dict_items.filter(|_| row_overflows).and_then(|items| {
                             self.hang_dict_value(&items[idx], parent, item_indent)
@@ -86,8 +92,9 @@ impl<'a> Layouter<'a> {
                 }
                 Segment::Flow(range) => {
                     let run_start = range.start;
-                    let widths: Vec<usize> = texts[range].iter().map(|c| c.width()).collect();
-                    for line_range in flow_lines(&widths, available, self.max_atomics_per_line) {
+                    for line_range in
+                        flow_lines(&widths[range], available, self.max_atomics_per_line)
+                    {
                         let line_start = run_start + line_range.start;
                         let line_end = run_start + line_range.end;
                         out.push_str(&item_prefix);
@@ -115,14 +122,11 @@ impl<'a> Layouter<'a> {
     fn gather_items(&self, expr: &Expr, indent: usize) -> GatheredItems<'a> {
         let parent = AnyNodeRef::from(expr);
         if let Expr::Dict(d) = expr {
-            let (texts, atomics, ranges): (Vec<_>, Vec<_>, Vec<_>) = d
+            let (texts, widths, atomics, ranges): (Vec<_>, Vec<_>, Vec<_>, Vec<_>) = d
                 .iter()
                 .map(|item| {
-                    (
-                        self.serialize_dict_item(item, parent, indent),
-                        false,
-                        item.range(),
-                    )
+                    let (text, width) = self.serialize_dict_item(item, parent, indent);
+                    (text, width, false, item.range())
                 })
                 .multiunzip();
             return GatheredItems {
@@ -131,6 +135,7 @@ impl<'a> Layouter<'a> {
                 open: '{',
                 ranges,
                 texts,
+                widths,
             };
         }
         let (open, close, elts) = match expr {
@@ -138,14 +143,12 @@ impl<'a> Layouter<'a> {
             Expr::Set(s) => ('{', '}', &s.elts),
             _ => unreachable!("gather_items called on non-expandable expr"),
         };
-        let (texts, atomics, ranges): (Vec<_>, Vec<_>, Vec<_>) = elts
+        let (texts, widths, atomics, ranges): (Vec<_>, Vec<_>, Vec<_>, Vec<_>) = elts
             .iter()
             .map(|e| {
-                (
-                    self.serialize_expr(e, parent, indent, indent),
-                    is_atomic(e),
-                    e.range(),
-                )
+                let text = self.serialize_expr(e, parent, indent, indent);
+                let width = text.width();
+                (text, width, is_atomic(e), e.range())
             })
             .multiunzip();
         GatheredItems {
@@ -154,6 +157,7 @@ impl<'a> Layouter<'a> {
             open,
             ranges,
             texts,
+            widths,
         }
     }
 
@@ -228,7 +232,8 @@ impl<'a> Layouter<'a> {
             .then(|| self.expand(expr, indent))
     }
 
-    /// Serializes a dict item as `key: value` or `**value`.
+    /// Serializes a dict item as `key: value` or `**value`, paired with
+    /// the canonical display width the fit decision measures.
     ///
     /// `indent` is the column where the item sits (the item-indent of
     /// the enclosing dict). The value's actual column for the
@@ -238,31 +243,35 @@ impl<'a> Layouter<'a> {
     /// its closing bracket still lands at `indent`. When the value
     /// passes through borrowed and the source carries an
     /// `align-colons`-shaped gap (`[ ]*: `), the item's source slice
-    /// is returned borrowed so the alignment padding round-trips.
+    /// is returned borrowed so the alignment padding round-trips. The
+    /// width counts the canonical `": "` regardless, so a padded gap
+    /// the text round-trips does not feed back into the fit decision.
     fn serialize_dict_item(
         &self,
         item: &DictItem,
         parent: AnyNodeRef,
         indent: usize,
-    ) -> Cow<'a, str> {
-        if let Some(key) = &item.key {
-            let key_text = self.source.slice(key);
-            let value_column = indent + key_text.width() + 2;
-            let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
-            let gap = self
-                .source
-                .slice(TextRange::new(key.end(), item.value.start()));
-            let aligned = is_align_colons_gap(gap);
-            if aligned && matches!(value_text, Cow::Borrowed(_)) {
-                Cow::Borrowed(self.source.slice(item))
-            } else {
-                let separator = if aligned { gap } else { ": " };
-                Cow::Owned(format!("{key_text}{separator}{value_text}"))
-            }
-        } else {
+    ) -> (Cow<'a, str>, usize) {
+        let Some(key) = &item.key else {
             let value_text = self.serialize_expr(&item.value, parent, indent + 2, indent);
-            Cow::Owned(format!("**{value_text}"))
-        }
+            let width = 2 + value_text.width();
+            return (Cow::Owned(format!("**{value_text}")), width);
+        };
+        let key_text = self.source.slice(key);
+        let value_column = indent + key_text.width() + 2;
+        let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
+        let width = key_text.width() + 2 + value_text.width();
+        let gap = self
+            .source
+            .slice(TextRange::new(key.end(), item.value.start()));
+        let aligned = is_align_colons_gap(gap);
+        let text = if aligned && matches!(value_text, Cow::Borrowed(_)) {
+            Cow::Borrowed(self.source.slice(item))
+        } else {
+            let separator = if aligned { gap } else { ": " };
+            Cow::Owned(format!("{key_text}{separator}{value_text}"))
+        };
+        (text, width)
     }
 
     /// Serializes `expr` into a child slot of an enclosing expand.
@@ -287,7 +296,7 @@ impl<'a> Layouter<'a> {
     /// recovered against `parent` so precedence-bearing parens like
     /// `(-a) ** 2` survive a borrow.
     fn slice_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> &'a str {
-        let range = paren_aware_range(expr.into(), parent, self.source.tokens());
+        let range = self.source.paren_aware_range(expr.into(), parent);
         self.source.slice(range)
     }
 
@@ -364,7 +373,14 @@ impl<'a> Visitor<'a> for Layouter<'a> {
             return;
         }
         let range = expr.range();
-        let column = self.source.column_of(range.start());
+        // Test the collapse against the column `align_equals` shifts the
+        // value to, not the unaligned column the literal currently opens
+        // at, so a fit that survives the shift is what the rule collapses.
+        let column = self
+            .reservations
+            .get(&range.start())
+            .copied()
+            .unwrap_or_else(|| self.source.column_of(range.start()));
         let indent = self.source.line_indent_width(range.start());
         match self.replacement_for(expr, column, indent) {
             Some(text) => self

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Wrapping Resumes After a Verbatim Block Closes"
+
+description = '''
+A doctest block passes through verbatim, then the blank line closes the region and the trailing description wraps to the docstring budget, confirming a verbatim block leaves the surrounding wrap behavior intact once it ends.
+'''

@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/collection_layout/align_equals_disabled_collapses_dict/input.py
+---
+_VALID_HEADER_VALUE_RE_BYTE = 1
+HEADER_VALIDATORS = {bytes: _AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA, str: _BBBBBBB}

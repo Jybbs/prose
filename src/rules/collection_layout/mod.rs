@@ -8,8 +8,13 @@
 //! width overflows at the item-indent column breaks at `:` and hangs
 //! the value at `item_indent + INDENT_STEP`. Comprehensions and any
 //! literal whose source range contains a comment are out of scope.
+//!
+//! Both fit checks stay invariant to the alignment that runs later: a
+//! dict entry measures at its canonical `": "` rather than an
+//! `align_colons`-padded gap, and a collapse tests against the column
+//! `align_equals` shifts the value's `=` to.
 
-use std::num::NonZeroUsize;
+use std::{collections::HashMap, num::NonZeroUsize};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{helpers::any_over_body, visitor::Visitor};
@@ -17,7 +22,7 @@ use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::edit::singleton_groups,
+    primitives::{aligner, edit::singleton_groups},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -25,10 +30,12 @@ use crate::{
 mod classify;
 mod flow;
 mod layouter;
+mod reserve;
 
 use layouter::Layouter;
 
 pub(crate) struct CollectionLayout {
+    align_equals: Option<aligner::Settings>,
     code_line_length: usize,
     max_atomics_per_line: usize,
     max_inline_dict_entries: Option<usize>,
@@ -37,7 +44,13 @@ pub(crate) struct CollectionLayout {
 impl CollectionLayout {
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.collection_layout;
+        let align_equals = &config.rules.align_equals;
         Self {
+            // Reserve the column `align_equals` shifts a value to only when
+            // it runs, since a disabled rule leaves the `=` unaligned.
+            align_equals: align_equals
+                .enabled
+                .then(|| aligner::Settings::from(align_equals)),
             code_line_length: config.code_width(),
             max_atomics_per_line: rules
                 .max_atomics_per_line
@@ -62,11 +75,15 @@ impl Rule for CollectionLayout {
             });
             ranges
         });
+        let reservations = self.align_equals.map_or_else(HashMap::new, |settings| {
+            reserve::reserved_columns(source, settings)
+        });
         let mut visitor = Layouter {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             max_atomics_per_line: self.max_atomics_per_line,
             newline: source.newline_str(),
+            reservations,
             source,
             tripping_dicts,
         };

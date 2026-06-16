@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/keyword_dict_expands_for_spaced_equals/input.py
+---
+d(
+    KW = {
+        "migrations": "migrations.test_migrations_atomic_operation_longerrrrrrrrrrrrrr"
+    }
+)
