@@ -283,15 +283,14 @@ impl<'a> Layouter<'a> {
         let gap = self
             .source
             .slice(TextRange::new(key.end(), item.value.start()));
-        let aligned = is_align_colons_gap(gap);
         // A rewritten key drops the source slice's alignment padding, so
-        // the borrowed round-trip and the padded separator both hold only
+        // the padded separator and the borrowed round-trip both hold only
         // while the key passes through unchanged.
-        let key_borrowed = matches!(key_text, Cow::Borrowed(_));
-        let text = if aligned && key_borrowed && matches!(value_text, Cow::Borrowed(_)) {
+        let padded = is_align_colons_gap(gap) && matches!(key_text, Cow::Borrowed(_));
+        let text = if padded && matches!(value_text, Cow::Borrowed(_)) {
             Cow::Borrowed(self.source.slice(item))
         } else {
-            let separator = if aligned && key_borrowed { gap } else { ": " };
+            let separator = if padded { gap } else { ": " };
             Cow::Owned(format!("{key_text}{separator}{value_text}"))
         };
         (text, width)
