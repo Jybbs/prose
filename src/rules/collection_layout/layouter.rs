@@ -19,11 +19,7 @@ use super::classify::{
 };
 use super::flow::flow_lines;
 use crate::{
-    primitives::{
-        INDENT_STEP,
-        edit::narrowed_replacement,
-        inline::{collapse_soft_wraps, is_operator_atom_tree},
-    },
+    primitives::{INDENT_STEP, edit::narrowed_replacement, inline::single_line_form},
     source::Source,
 };
 
@@ -352,11 +348,7 @@ impl<'a> Layouter<'a> {
                 // rejoins by collapsing its break, where any other leaf
                 // passes through with its source breaks intact for the
                 // fit guard to reject.
-                if slice.contains('\n') && is_operator_atom_tree(expr) {
-                    buf.push_str(&collapse_soft_wraps(slice));
-                } else {
-                    buf.push_str(slice);
-                }
+                buf.push_str(&single_line_form(expr, slice).unwrap_or(Cow::Borrowed(slice)));
             }
         }
     }

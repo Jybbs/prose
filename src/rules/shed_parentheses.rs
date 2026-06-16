@@ -6,8 +6,6 @@
 //! when the bare form fits the budget, and a pair nested inside another
 //! redundant pair sheds in the same pass.
 
-use std::borrow::Cow;
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     AnyNodeRef, Arguments, Expr, Stmt,
@@ -23,7 +21,7 @@ use crate::{
     config::Config,
     primitives::{
         edit::{singleton_groups, splice_reparse},
-        inline::{collapse_soft_wraps, is_operator_atom_tree, whitespace_runs},
+        inline::{single_line_form, whitespace_runs},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -125,13 +123,8 @@ impl Walker<'_> {
             return false;
         }
         let inner = expr.range();
-        let bare: Cow<str> = if self.source.contains_line_break(inner) {
-            if !is_operator_atom_tree(expr) {
-                return false;
-            }
-            Cow::Owned(collapse_soft_wraps(self.source.slice(inner)))
-        } else {
-            Cow::Borrowed(self.source.slice(inner))
+        let Some(bare) = single_line_form(expr, self.source.slice(inner)) else {
+            return false;
         };
         let pair_wraps = self.source.contains_line_break(pair);
         if !self.in_collapse

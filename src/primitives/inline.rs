@@ -1,5 +1,8 @@
-//! Collapses a soft-wrapped expression back onto a single line, and
-//! classifies the operator trees that collapse without respacing a token.
+//! The single-line form of a leaf expression, collapsing a soft-wrapped
+//! operator-atom tree onto one line and declining a leaf whose join
+//! would respace a token.
+
+use std::borrow::Cow;
 
 use ruff_python_ast::{Expr, helpers::is_dotted_name};
 
@@ -7,7 +10,7 @@ use ruff_python_ast::{Expr, helpers::is_dotted_name};
 /// space, leaving runs without a break untouched. Rejoins a soft-wrapped
 /// operator expression without respacing its operator tokens, since a run
 /// already free of a break is the source's own spacing.
-pub(crate) fn collapse_soft_wraps(text: &str) -> String {
+fn collapse_soft_wraps(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut prev_end = 0;
     for (begin, len) in whitespace_runs(text) {
@@ -25,7 +28,7 @@ pub(crate) fn collapse_soft_wraps(text: &str) -> String {
 /// carries no string, call, or bracketed member, so collapsing the
 /// whitespace of a soft-wrapped one onto a single line cannot split or
 /// respace a token the way a multi-line string or call would.
-pub(crate) fn is_operator_atom_tree(expr: &Expr) -> bool {
+fn is_operator_atom_tree(expr: &Expr) -> bool {
     match expr {
         Expr::BinOp(b) => is_operator_atom_tree(&b.left) && is_operator_atom_tree(&b.right),
         Expr::BoolOp(b) => b.values.iter().all(is_operator_atom_tree),
@@ -36,6 +39,17 @@ pub(crate) fn is_operator_atom_tree(expr: &Expr) -> bool {
         Expr::NumberLiteral(_) | Expr::BooleanLiteral(_) | Expr::NoneLiteral(_) => true,
         _ => is_dotted_name(expr),
     }
+}
+
+/// `expr`'s single-line form when collapsing it respaces no token: the
+/// borrowed slice when it carries no break, the soft-wrap collapse when
+/// it is a break-carrying operator-atom tree, and `None` for a multi-line
+/// leaf a join would split or respace.
+pub(crate) fn single_line_form<'s>(expr: &Expr, slice: &'s str) -> Option<Cow<'s, str>> {
+    if !slice.contains('\n') {
+        return Some(Cow::Borrowed(slice));
+    }
+    is_operator_atom_tree(expr).then(|| Cow::Owned(collapse_soft_wraps(slice)))
 }
 
 /// Yields the `(start, len)` byte span of each maximal whitespace run in
@@ -55,6 +69,7 @@ pub(crate) fn whitespace_runs(text: &str) -> impl Iterator<Item = (usize, usize)
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use ruff_text_size::Ranged;
 
     use super::*;
     use crate::testing::parse;
@@ -91,5 +106,20 @@ mod tests {
         let stmt = &source.ast().body[0];
         let expr = &stmt.as_expr_stmt().expect("expression statement").value;
         assert_eq!(is_operator_atom_tree(expr), expected);
+    }
+
+    #[rstest]
+    #[case("value", Some("value"))]
+    #[case("(a +\n    b)", Some("a + b"))]
+    #[case("helper(\n    x)", None)]
+    fn single_line_form_collapses_atom_breaks_and_declines_the_rest(
+        #[case] src: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        let source = parse(src);
+        let stmt = &source.ast().body[0];
+        let expr = &stmt.as_expr_stmt().expect("expression statement").value;
+        let slice = source.slice(expr.range());
+        assert_eq!(single_line_form(expr, slice).as_deref(), expected);
     }
 }
