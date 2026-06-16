@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/alphabetize/classvar_sorts_among_class_constants/input.py
+---
+alphabetize@48..91

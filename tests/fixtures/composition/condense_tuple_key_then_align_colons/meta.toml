@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Condensed Tuple Key Sorts and Aligns With Its Run"
+
+description = '''
+A multi-line tuple key condenses onto one line under `collection-layout`, then joins its single-line siblings so `alphabetize` orders the keys and `align-colons` settles the `:` one space past the widest. The condensed key reads as the single clean member the later rules fold into their run rather than one stranded across a break.
+'''

@@ -21,6 +21,7 @@ use crate::{
         },
         comments::{is_banner_block, leading_comment_block},
         imports::{import_sort_key, same_import_group},
+        orderer::slot_positions,
     },
     source::Source,
     suppression::is_directive_comment,
@@ -94,10 +95,7 @@ impl BandPlan<'_> {
     /// True when every eager reference seats its referent ahead of the
     /// referrer in `order`, the import-safety invariant the hoist holds.
     fn is_sound(&self, order: &[usize]) -> bool {
-        let mut position = vec![0usize; order.len()];
-        for (slot, &idx) in order.iter().enumerate() {
-            position[idx] = slot;
-        }
+        let position = slot_positions(order);
         self.edges
             .iter()
             .all(|&(from, to)| position[to] < position[from])

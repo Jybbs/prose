@@ -142,7 +142,7 @@ pub(super) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
 /// a Kahn-style topological tier with the member's existing sort key, so
 /// a definition never sorts ahead of a sibling it names at evaluation
 /// time.
-fn def_run_tier_keys<'src, K: Copy>(
+pub(super) fn def_run_tier_keys<'src, K: Copy>(
     body: &'src [Stmt],
     defer_annotations: bool,
     member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,

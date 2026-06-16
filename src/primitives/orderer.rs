@@ -239,6 +239,17 @@ where
     )
 }
 
+/// Inverts `order` into the slot each item index occupies, the reverse
+/// of the index-per-slot mapping `order` itself holds. Reading
+/// `slot_positions(order)[idx]` answers where item `idx` landed.
+pub(crate) fn slot_positions(order: &[usize]) -> Vec<usize> {
+    let mut positions = vec![0usize; order.len()];
+    for (slot, &idx) in order.iter().enumerate() {
+        positions[idx] = slot;
+    }
+    positions
+}
+
 /// True when the last member carries a trailing comma on its line.
 fn last_member_has_comma<T: Ranged>(source: &Source, items: &[T]) -> bool {
     let last = items.last().expect("non-empty items");
@@ -553,6 +564,11 @@ mod tests {
         );
         assert_matches!(cow, Cow::Owned(_));
         assert_eq!(&*cow, "DEF a(): pass\nDEF b(): pass");
+    }
+
+    #[test]
+    fn slot_positions_inverts_an_order() {
+        assert_eq!(slot_positions(&[2, 0, 1]), vec![1, 2, 0]);
     }
 
     #[test]

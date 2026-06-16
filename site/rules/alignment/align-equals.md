@@ -1,5 +1,5 @@
 ---
-caption : "aligns the `=` separator across consecutive single-target assignments, annotated function-parameter defaults, and an exploded call's keyword arguments."
+caption : "Aligns the `=` separator across consecutive single-target assignments, annotated function-parameter defaults, and an exploded call's keyword arguments."
 related : [align-colons, align-imports, align-match-case, strip-align-padding]
 layout  : doc
 ---

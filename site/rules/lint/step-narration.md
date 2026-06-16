@@ -1,5 +1,5 @@
 ---
-caption : "surfaces comments that narrate the next line."
+caption : "Surfaces comments that narrate the next line."
 related : [reassigned-constants, single-use-variables]
 layout  : doc
 ---

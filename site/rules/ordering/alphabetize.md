@@ -1,5 +1,5 @@
 ---
-caption : "alphabetizes import siblings, dict-key blocks, and dataclass field runs."
+caption : "Alphabetizes import siblings, dict-key blocks, and dataclass field runs."
 related : [align-colons, align-imports, bare-imports, blank-lines, unsorted-parameters]
 layout  : doc
 ---
@@ -25,13 +25,15 @@ The rule fires on siblings whose order does not carry meaning. It leaves alone e
 
 A class or function definition also holds its place behind any sibling it names at evaluation time (*a base class, a decorator, a parameter default, a non-deferred annotation, or a class-body value*), since sorting it ahead of that sibling would move the name out of scope and raise `NameError` on import. A run whose references form a cycle stays in source order untouched.
 
+Inside a class body, the constants *(bare assignments and `ClassVar`-annotated values)* and the annotated data fields tier through one shared graph, so a constant a method default, base class, or decorator reads stays above the definition reading it, and each `ClassVar` value sorts among the constants while every other annotation holds its place on the required-before-optional field run. Where honoring a reference would strand a reader, the constrained members keep source order.
+
 At module scope, a constant lifts out of arrival order into a band. One whose value reaches only imports, builtins, literals, or fellow leading constants **rides a leading band directly below the imports**, and one that names a function or class **pools into a trailing band beneath the definitions**, so a module reads as its imports, its leading constants, its definitions, then the constants derived from them. Each band alphabetizes within its dependency tier, and a constant a function reads only inside its body still hoists above it, because only an eval-time reference *(a right-hand side, a decorator, a default argument, a base class, a non-deferred annotation)* binds the order. A constant the rule cannot place safely (*a reassigned name, an unresolved reference, a line a suppression directive or a `# prose: keep` marker covers*) pins where the author left it. An own-line comment above a constant rides into the band with it, except a decorative banner, which reads as a section divider and pins the constant beneath it instead.
 
 A recognized **section marker** splits a sort run into sections that each alphabetize on their own while the marker holds its place, so an author who groups members under a divider keeps that grouping through the sort. A hand-drawn banner *(an own-line comment whose body is a run of repeated rule characters around an optional label, `# --- Lifecycle ---`)* and a `##` hash heading both read as dividers, across a class body, a module, and an import group alike. An ordinary prose comment is not a divider, so it stays attached to the member directly below it and travels with that member through the sort.
 
 `alphabetize` never reorders a function's positional-or-keyword parameters, free function and method alike, because a parameter's slot is part of the call contract and a single-file formatter cannot reach the callers a reorder would rebind (*another module's positional call, a framework invoking a hook by slot, a dynamically-dispatched method*). The keyword-only block past the `*` still sorts, since a keyword-only parameter binds by name at every call site. The companion [[unsorted-parameters]] lint reports a free function whose positional run sits out of order, where a reorder is at least worth a human's read of the callers.
 
-At a call site, keyword arguments already in `name=value` form alphabetize, on any callee including a method, because their order never affects which parameter each binds. Positional arguments hold their slot, since naming them would require resolving the callee's signature, which Prose does only for a plain in-module function and never for a method.
+At a call site, keyword arguments already in `name=value` form alphabetize, on any callee including a method, because their order never affects which parameter each binds. Positional arguments hold their slot, since naming them would require resolving the callee's signature, which *Prose* does only for a plain in-module function and never for a method.
 
 A docstring entry naming a parameter of the signature it documents takes that parameter's position as the rule leaves the signature, which for the positional run is source order and for the keyword-only block is sorted order. An entry naming nothing in the signature (*a parameter renamed or removed since the docs were written*) sinks below the mirrored entries, stragglers alphabetizing among themselves. A section with no parameter entries (*`Raises:`, `Returns:`*) alphabetizes throughout.
 

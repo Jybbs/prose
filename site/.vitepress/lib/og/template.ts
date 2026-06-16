@@ -68,7 +68,7 @@ function fitTitleSize(text: string, hasCaption: boolean): number {
 }
 
 function formatCaption(raw: string): string {
-  return raw.replace(/(`|\*\*?|_)(.+?)\1/g, '$2').replace(/^./, c => c.toUpperCase())
+  return raw.replace(/(`|\*\*?|_)(.+?)\1/g, '$2')
 }
 
 function pageAccent(page: OgPage): string {

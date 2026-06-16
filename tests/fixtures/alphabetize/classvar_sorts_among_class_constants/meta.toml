@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A ClassVar Annotation Sorts Among the Constants"
+
+description = '''
+`RETRIES` carries a `ClassVar[int]` annotation, which marks a constant rather than a data field, so it routes to the constant family and sorts ahead of `TIMEOUT`. The bare-typed fields `host` and `port` stay on the required-then-optional field run below, where every non-`ClassVar` annotation lands.
+'''

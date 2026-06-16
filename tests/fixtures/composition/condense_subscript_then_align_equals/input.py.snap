@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/condense_subscript_then_align_equals/input.py
+---
+config[primary_key]    = first_value
+shorter                = second_value
+the_longest_label_here = third_value

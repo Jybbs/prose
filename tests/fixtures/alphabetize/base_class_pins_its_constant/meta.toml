@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Base-Class Expression Pins the Constant It Reads"
+
+description = '''
+The nested class `Store` names `BASE` as its base, evaluated while `Registry` is built, so the base-class edge constrains the constant graph. Sorting `APPLE` ahead of `BASE` would move `BASE` below the subclass reading it, so the constants **hold source order** and the base resolves cleanly.
+'''

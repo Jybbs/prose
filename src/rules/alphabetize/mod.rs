@@ -17,11 +17,11 @@
 //! method alike, because no single-file rewrite can keep every caller's
 //! positional binding intact. Only the keyword-only block past `*` sorts.
 
-use std::{borrow::Cow, collections::HashMap, ops::Range};
+use std::{borrow::Cow, ops::Range};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Decorator, ExceptHandler, Expr, ExprDict, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef,
+    Decorator, ExceptHandler, ExprDict, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef,
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
 };
 use ruff_source_file::LineRanges;
@@ -30,7 +30,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     config::Config,
     primitives::{
-        binding::{annotated_name_target, single_name_target},
+        binding::{annotated_name_target, single_name_target, tail_identifier},
         comments::{is_banner_block, leading_comment_block, marker_floor},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
         imports::{future_annotations_alias, import_sort_key, same_import_group},
@@ -43,14 +43,16 @@ use crate::{
 };
 
 mod bands;
+mod class_graph;
 mod dict;
 mod leaves;
 mod tiering;
 
 use self::{
     bands::{Banding, band_module_constants, banded_gap},
+    class_graph::permute_class_assigns,
     leaves::{collect_docstring_entry_edits, collect_leaf_edits},
-    tiering::{eval_time_refs, permute_defs},
+    tiering::permute_defs,
 };
 
 pub(crate) struct Alphabetize {
@@ -120,16 +122,6 @@ fn ann_assign_with_named_field(stmt: &Stmt) -> Option<(&StmtAnnAssign, &str)> {
     Some((ann, annotated_name_target(ann)?))
 }
 
-/// Classifies a class-body statement as a single-name assignment,
-/// returning its target name and whether it is an annotated field
-/// (`true`) or a plain assignment (`false`). `None` for any other
-/// statement.
-fn assign_family(stmt: &Stmt) -> Option<(&str, bool)> {
-    ann_assign_with_named_field(stmt)
-        .map(|(_, name)| (name, true))
-        .or_else(|| simple_name_assign(stmt).map(|name| (name, false)))
-}
-
 /// Returns the slot ranges of consecutive items whose pairwise
 /// neighbors satisfy `adjacent`. Singleton runs drop.
 fn chunk_runs(items: &[Stmt], mut adjacent: impl FnMut(&Stmt, &Stmt) -> bool) -> Vec<Range<usize>> {
@@ -143,25 +135,6 @@ fn chunk_runs(items: &[Stmt], mut adjacent: impl FnMut(&Stmt, &Stmt) -> bool) ->
             range
         })
         .collect()
-}
-
-/// True when the class body's annotated-field run and plain-assignment
-/// run share no eval-time reference across the family boundary, so each
-/// reorders soundly on its own. A reference crossing the boundary (a
-/// plain assignment reading an annotated field, or the reverse) is
-/// invisible to both runs, since each tiers only its own members, so one
-/// run's sort could hoist the reader above the sibling it names and
-/// raise `NameError`. The caller then declines both runs and keeps
-/// source order.
-fn class_assign_runs_separable(body: &[Stmt], defer_annotations: bool) -> bool {
-    let families: HashMap<&str, bool> = body.iter().filter_map(assign_family).collect();
-    !body.iter().any(|stmt| {
-        assign_family(stmt).is_some_and(|(_, annotated)| {
-            eval_time_refs(stmt, defer_annotations)
-                .iter()
-                .any(|name| families.get(name).is_some_and(|&other| other != annotated))
-        })
-    })
 }
 
 /// True when a class body has at least two `Stmt::AnnAssign` field
@@ -230,11 +203,7 @@ fn concat_or_borrow<'src>(
 }
 
 fn decorator_simple_name(decorator: &Decorator) -> Option<&str> {
-    match map_callable(&decorator.expression) {
-        Expr::Attribute(attr) => Some(attr.attr.as_str()),
-        Expr::Name(name) => Some(name.id.as_str()),
-        _ => None,
-    }
+    tail_identifier(map_callable(&decorator.expression))
 }
 
 /// True when the module carries `from __future__ import annotations`,
@@ -354,14 +323,8 @@ fn rewrite_body<'a>(
                         (name, name)
                     })
                 });
-                if in_class && class_assign_runs_separable(members, defer_annotations) {
-                    permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
-                        ann_assign_with_named_field(s)
-                            .map(|(ann, name)| (name, (u8::from(has_default(ann)), name)))
-                    });
-                    permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
-                        simple_name_assign(s).map(|name| (name, name))
-                    });
+                if in_class {
+                    permute_class_assigns(&mut order, body, section.clone(), defer_annotations);
                 }
                 if !(in_class && class_pins_methods(members)) {
                     permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
@@ -563,26 +526,6 @@ mod tests {
             bar_pos < alpha_pos,
             "docstring entries should keep source order when docstring-entries is off",
         );
-    }
-
-    #[rstest]
-    #[case(
-        "class C:\n    width: int = 10\n    HALF = width\n    height: int = 20\n",
-        false
-    )]
-    #[case("class C:\n    HALF = width\n    width: int = 10\n", false)]
-    #[case(
-        "class C:\n    A = 1\n    B = A\n    x: int = 1\n    y: int = x\n",
-        true
-    )]
-    #[case("class C:\n    GAMMA = 1\n    ALPHA = 2\n", true)]
-    fn class_assign_runs_separable_detects_cross_family_references(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        let source = parse(src);
-        let class = first_class(&source);
-        assert_eq!(class_assign_runs_separable(&class.body, false), expected);
     }
 
     #[rstest]

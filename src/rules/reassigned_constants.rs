@@ -16,7 +16,9 @@ use ruff_text_size::Ranged;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::binding::{BindingAnalysis, annotated_name_target, single_name_target},
+    primitives::binding::{
+        BindingAnalysis, annotated_name_target, single_name_target, tail_identifier,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -130,11 +132,7 @@ fn is_screaming_case(id: &str) -> bool {
 /// Returns `true` when `stmt.test` matches the bare `TYPE_CHECKING`
 /// name or any `<...>.TYPE_CHECKING` attribute access.
 fn is_type_checking_block(stmt: &StmtIf) -> bool {
-    match stmt.test.as_ref() {
-        Expr::Name(name) => name.id == "TYPE_CHECKING",
-        Expr::Attribute(attr) => attr.attr.as_str() == "TYPE_CHECKING",
-        _ => false,
-    }
+    tail_identifier(stmt.test.as_ref()) == Some("TYPE_CHECKING")
 }
 
 /// Returns `true` when `value` is a call whose callable resolves to

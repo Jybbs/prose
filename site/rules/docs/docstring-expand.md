@@ -1,5 +1,5 @@
 ---
-caption : "expands a one-line docstring into the multi-line block shape."
+caption : "Expands a one-line docstring into the multi-line block shape."
 related : [docstring-wrap, docstring-frame]
 layout  : doc
 ---

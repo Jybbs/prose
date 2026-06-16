@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A Class Constant Reading an Annotated Field Skips the Run"
+title       = "A Reader Wedged Between Its Fields Holds Its Slot"
 
 description = '''
-`HALF` reads the annotated field `width`, crossing from the plain-assignment run into the annotated-field run. The two runs sort independently, so reordering either could hoist `HALF` above the `width` it reads and raise `NameError`. The rule **declines both runs** and keeps source order.
+`HALF` reads `width`, the annotated field directly above it, while `height` sits below. Both families tier through one graph, where `HALF` holds its slot between the fields. Alphabetizing the fields would seat `width` below the `HALF` reading it, so the field family **keeps source order** around the wedged reader rather than stranding the reference.
 '''

@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/classvar_sorts_among_class_constants/input.py
+---
+from typing import ClassVar
+
+
+class Config:
+    RETRIES: ClassVar[int] = 3
+    TIMEOUT = 30
+    host: str
+    port: int

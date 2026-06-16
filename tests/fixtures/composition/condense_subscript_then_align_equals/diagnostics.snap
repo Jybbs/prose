@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/condense_subscript_then_align_equals/input.py
+---
+align-equals@47..48
+collection-layout@7..24
