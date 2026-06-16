@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested Pair Sheds Inside a Fold"
+
+description = '''
+A redundant pair nested inside a folding multi-line grouping sheds in the same pass, so the whole condition reflows to `ready = server.up and cache.warm`.
+'''

@@ -114,12 +114,25 @@ pub(crate) fn splice_parses<T, E>(
     replacement: &str,
     parse: impl Fn(&str) -> Result<T, E>,
 ) -> bool {
+    splice_reparse(source, outer, inner, replacement, parse).is_ok()
+}
+
+/// Splices `replacement` into `outer` at `inner` and returns the parsed
+/// result, the round-trip a rule runs to inspect the reparsed tree
+/// rather than merely confirm it parses.
+pub(crate) fn splice_reparse<T, E>(
+    source: &Source,
+    outer: TextRange,
+    inner: TextRange,
+    replacement: &str,
+    parse: impl Fn(&str) -> Result<T, E>,
+) -> Result<T, E> {
     let candidate = format!(
         "{}{replacement}{}",
         source.slice(TextRange::new(outer.start(), inner.start())),
         source.slice(TextRange::new(inner.end(), outer.end())),
     );
-    parse(&candidate).is_ok()
+    parse(&candidate)
 }
 
 /// Weaves `edits` into the `span` slice of `text` and returns the

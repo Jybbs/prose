@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Redundant Grouping Pair Is Dropped"
+
+description = '''
+A parenthesis pair that wraps an expression without binding anything sheds, so `total = (base + tax)` reflows to `total = base + tax`.
+'''

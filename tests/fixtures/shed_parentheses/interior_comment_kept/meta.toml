@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Pair Holding a Comment Stays"
+
+description = '''
+A grouping whose interior carries a comment keeps its parentheses, since folding the break would strand the comment off the line it describes.
+'''

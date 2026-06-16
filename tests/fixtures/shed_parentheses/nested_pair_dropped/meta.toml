@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Nested Redundant Pairs Drop in One Pass"
+
+description = '''
+A pair nested inside another redundant pair sheds in the same pass, so `((base + bonus))` reduces to `base + bonus` and `(left + (right))` to `left + right`.
+'''

@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/nested_pair_dropped/input.py
+---
+doubled = base + bonus
+mixed = left + right

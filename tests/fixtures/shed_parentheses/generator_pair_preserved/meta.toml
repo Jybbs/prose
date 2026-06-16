@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Generator's Pair Survives"
+
+description = '''
+A generator expression is illegal without its surrounding parentheses, so the pair stays.
+'''

@@ -638,6 +638,7 @@ mod tests {
         config.rules.import_layout.enabled = false;
         config.rules.legacy_union_syntax.enabled = false;
         config.rules.reassigned_constants.enabled = false;
+        config.rules.shed_parentheses.enabled = false;
         config.rules.signature_annotations.enabled = false;
         config.rules.signature_layout.enabled = false;
         config.rules.single_use_variables.enabled = false;

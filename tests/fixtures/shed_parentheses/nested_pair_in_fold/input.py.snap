@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/nested_pair_in_fold/input.py
+---
+ready = server.up and cache.warm

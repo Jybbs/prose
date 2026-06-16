@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Multi-Line Condition Folds When It Fits"
+
+description = '''
+A wrapped grouping whose single-line form fits the budget sheds and folds onto one line, so the condition reflows to `ready = server.up and cache.warm`.
+'''

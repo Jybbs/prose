@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/multiline_return_annotation_kept/input.py
+---
+def total() -> (
+    int
+    | str
+):
+    return 0

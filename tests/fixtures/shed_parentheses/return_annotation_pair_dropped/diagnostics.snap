@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/shed_parentheses/return_annotation_pair_dropped/input.py
+---
+shed-parentheses@15..16
+shed-parentheses@19..20

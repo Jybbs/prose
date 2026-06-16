@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/multi_line_condition_folds/input.py
+---
+ready = server.up and cache.warm

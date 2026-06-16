@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/walrus_pair_preserved/input.py
+---
+result = (count := total)

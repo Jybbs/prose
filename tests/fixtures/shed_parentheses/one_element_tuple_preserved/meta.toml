@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A One-Element Tuple's Pair Survives"
+
+description = '''
+The parentheses that form a tuple belong to the tuple rather than wrapping it, so a one-element tuple keeps them.
+'''

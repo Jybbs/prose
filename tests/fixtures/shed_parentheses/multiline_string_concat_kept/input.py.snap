@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/multiline_string_concat_kept/input.py
+---
+message = (
+    "first part "
+    "second part"
+)

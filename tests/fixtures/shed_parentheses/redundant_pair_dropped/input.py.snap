@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/redundant_pair_dropped/input.py
+---
+total = base + tax
+label = name

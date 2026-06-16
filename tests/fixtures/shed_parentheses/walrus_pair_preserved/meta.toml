@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Walrus Binding's Pair Survives"
+
+description = '''
+An assignment expression keeps its pair whatever the surrounding context, leaving the binding readable as one rule rather than a positional exception.
+'''

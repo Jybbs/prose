@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/shed_parentheses/multi_line_condition_folds/input.py
+---
+shed-parentheses@23..28
+shed-parentheses@42..44
+shed-parentheses@8..14

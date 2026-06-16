@@ -31,6 +31,9 @@ Config {
                 3,
             ),
         },
+        shed_parentheses: ToggleOnly {
+            enabled: true,
+        },
         call_layout: CallLayoutConfig {
             enabled: true,
             max_inline_args: Some(

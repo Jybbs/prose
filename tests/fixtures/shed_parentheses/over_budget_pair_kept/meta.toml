@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Over-Budget Grouping Stays Wrapped"
+
+description = '''
+A wrapped grouping whose folded form would overflow the budget keeps its parentheses across the lines it spans.
+'''

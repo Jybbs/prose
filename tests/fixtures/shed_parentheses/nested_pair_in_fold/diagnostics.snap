@@ -1,0 +1,10 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/shed_parentheses/nested_pair_in_fold/input.py
+---
+shed-parentheses@14..15
+shed-parentheses@24..25
+shed-parentheses@25..30
+shed-parentheses@44..46
+shed-parentheses@8..14

@@ -9,6 +9,7 @@ pub(crate) mod docstring;
 pub(crate) mod edit;
 pub(crate) mod equal_targets;
 pub(crate) mod imports;
+pub(crate) mod inline;
 pub(crate) mod layout;
 pub(crate) mod orderer;
 pub(crate) mod params;

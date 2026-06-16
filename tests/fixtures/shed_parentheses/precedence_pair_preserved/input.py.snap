@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/precedence_pair_preserved/input.py
+---
+scaled = (base + bonus) * factor
+power = 2 ** (depth + 1)
