@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/docstring_wrap/over_budget_url_stays_whole/input.py
+---
+def parse_link_headers():
+    """
+    Returns a list of parsed link headers, for more info see:
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+    """
+    return 1

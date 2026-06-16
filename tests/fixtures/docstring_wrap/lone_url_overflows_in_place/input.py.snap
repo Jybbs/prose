@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/docstring_wrap/lone_url_overflows_in_place/input.py
+---
+def reference():
+    """
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+    """
+    return 1

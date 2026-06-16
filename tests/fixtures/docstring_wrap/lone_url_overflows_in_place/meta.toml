@@ -1,0 +1,9 @@
+[docs]
+previewable = false
+title       = "A Lone Over-Budget URL Overflows in Place"
+
+description = '''
+A description that is only a URL too wide for the budget has no space to break
+at, so the URL stays on its own line and overflows the measure intact rather
+than splitting between its segments.
+'''

@@ -93,7 +93,7 @@ impl<'src> EntryWalker<'src> {
         if self.open_section.is_none() {
             return;
         }
-        if indent_chars == body_indent + 4
+        if indent_chars == self.scanner.section_body_indent_chars()
             && let Some((name, _)) = entry_head(trimmed)
         {
             self.finish_entry();
