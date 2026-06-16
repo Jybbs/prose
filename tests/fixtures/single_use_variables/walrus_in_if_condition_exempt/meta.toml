@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Walrus in an If Test Is Exempt"
+
+description = '''
+A walrus bound in the test of an `if` or `elif` is **not flagged**. The branch decision already consumes the value, so the single later read is the second use, and inlining would recompute the guarded expression in both the test and the body.
+'''

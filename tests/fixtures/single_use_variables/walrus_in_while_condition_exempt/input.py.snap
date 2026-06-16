@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/walrus_in_while_condition_exempt/input.py
+---
+def drain(reader):
+    while (chunk := reader.read()) != b"":
+        handle(chunk)

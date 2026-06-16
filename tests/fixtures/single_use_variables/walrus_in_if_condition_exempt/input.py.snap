@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/single_use_variables/single_read_walrus_flagged/input.py
+input_file: tests/fixtures/single_use_variables/walrus_in_if_condition_exempt/input.py
 ---
 def first(items):
     if (n := len(items)) == 1:

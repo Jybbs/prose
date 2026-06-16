@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/single_use_variables/walrus_outside_condition_flagged/input.py
+---
+def report(items):
+    print(total := len(items))
+    return total

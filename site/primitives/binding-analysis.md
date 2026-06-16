@@ -19,7 +19,7 @@ A downstream consumer in `0.2.x` can:
 
 A downstream consumer in `0.2.x` cannot:
 
-- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `first_write_offset`, `is_defined_before`, `module_attribute_count`, `module_function_reads`, `module_reassigned`, `module_used_bare`, `unpack_target`, or `usage_count` on the returned reference. Every reader is `pub(crate)`.
+- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `first_write_offset`, `is_defined_before`, `module_attribute_count`, `module_function_reads`, `module_reassigned`, `module_used_bare`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
 - Implement a custom rule that consumes the binding table. The `Rule` trait is `pub(crate)`.
 
 The methods stabilize toward `1.0`, where every reader becomes `pub` and the `Rule` trait opens so downstream consumers can implement project-specific binding-aware rules.
@@ -41,6 +41,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `module_used_bare(name: &str) -> bool` reports whether a module-scope name is ever read without an attribute access *(the namespace object itself is used)*, which [[bare-imports]] reads before suggesting a `from` import.
 - `unpack_target(binding: BindingId) -> Option<UnpackKind>` returns the unpack disposition of a binding whose sole write is a multi-name tuple or list target, which [[single-use-variables]] reads to choose between exempting the target and naming a subscript rewrite.
 - `usage_count(binding: BindingId) -> usize` counts every read site.
+- `walrus_in_condition(binding: BindingId) -> bool` reports whether a binding's walrus write lands in the test of an `if`, `elif`, or `while`, which [[single-use-variables]] reads to exempt that assign-and-test walrus from the lint.
 
 The supporting types `BindingId`, `ScopeId`, `BindingKind`, `ScopeKind`, `UnpackKind`, `Binding`, and `Scope` are also `pub(crate)` in `0.2.x`. `BindingKind` enumerates the categories of write event the table records: `Assignment`, `AugAssign`, `ClassDef`, `Comprehension`, `ExceptHandler`, `For`, `FunctionDef`, `Import`, `Parameter`, `Walrus`, `With`. `ScopeKind` covers `Class`, `Comprehension`, `Function`, `Module`, matching Python's lexical-scope categories. `UnpackKind` covers `Bare`, `Exempt`, and `Suggested`, the dispositions `unpack_target` reports for a multi-name unpack target.
 

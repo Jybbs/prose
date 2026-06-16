@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Walrus Outside a Condition Is Flagged"
+
+description = '''
+The exemption is narrow. A walrus bound outside an `if`, `elif`, or `while` test, here inside a `print` call, is **flagged** like any single-read binding, since the exemption covers only the assign-and-test idiom where a branch decision already consumes the value.
+'''
