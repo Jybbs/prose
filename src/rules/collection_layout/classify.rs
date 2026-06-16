@@ -34,6 +34,13 @@ pub(super) fn is_atomic(expr: &Expr) -> bool {
     .any(|e| e.is_literal_expr() || is_dotted_name(e))
 }
 
+/// True for the bracketed expressions the visitor measures for a
+/// single-line collapse: the four collection literals plus a subscript,
+/// whose `[index]` joins onto one line whatever the index shape.
+pub(super) fn is_collapsible(expr: &Expr) -> bool {
+    is_layoutable(expr) || expr.is_subscript_expr()
+}
+
 /// True for the four collection-literal `Expr` variants the rule
 /// considers laying out. `Tuple` joins `Dict`, `List`, and `Set` here
 /// because it's collapse-eligible, even though it never expands.
@@ -78,7 +85,10 @@ pub(super) fn segments(atomics: &[bool]) -> Vec<Segment> {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
+    use crate::testing::parse;
 
     #[test]
     fn align_colons_gap_accepts_canonical_and_padded_forms() {
@@ -94,6 +104,24 @@ mod tests {
         assert!(!is_align_colons_gap(" :"));
         assert!(!is_align_colons_gap("\t: "));
         assert!(!is_align_colons_gap(""));
+    }
+
+    #[rstest]
+    #[case("[a]", true)]
+    #[case("{b}", true)]
+    #[case("(c, d)", true)]
+    #[case("{e: f}", true)]
+    #[case("g[h]", true)]
+    #[case("plain", false)]
+    #[case("a + b", false)]
+    fn is_collapsible_covers_collection_literals_and_subscripts(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let stmt = &source.ast().body[0];
+        let expr = &stmt.as_expr_stmt().expect("expression statement").value;
+        assert_eq!(is_collapsible(expr), expected);
     }
 
     #[test]

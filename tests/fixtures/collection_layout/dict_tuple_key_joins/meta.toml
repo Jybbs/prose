@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Multi-Line Collection Keys Join So Their Colons Align"
+
+description = '''
+A multi-line collection key joins onto one line so it reads as the single clean member the alignment and ordering rules fold into their run rather than one stranded across a break. A key that would overflow once joined keeps its source break.
+'''
