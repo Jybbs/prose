@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "NumPy Section Underlines Pass Through Verbatim"
+
+description = '''
+A NumPy-style section underline **passes through verbatim**. A line that is a run of one repeated adornment character such as `-`, `=`, or `~` flushes the open paragraph and keeps the heading's landmark instead of gluing onto the line above.
+'''

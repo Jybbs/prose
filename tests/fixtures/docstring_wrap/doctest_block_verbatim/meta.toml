@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Doctest Blocks Pass Through Verbatim"
+
+description = '''
+A doctest block **passes through verbatim**. A `>>> ` prompt opens an interactive region that runs to the next blank line, so an example and its expected output never join under a reflow.
+'''

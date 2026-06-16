@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Sphinx Directives Pass Through Verbatim"
+
+description = '''
+A Sphinx directive **passes through verbatim**. A `.. name::` line opens a directive block, so consecutive directives stay one per line instead of merging into a paragraph a renderer would read as a single directive.
+'''
