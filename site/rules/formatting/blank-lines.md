@@ -1,5 +1,5 @@
 ---
-caption : "normalizes blank-line counts to canonical values between thematically adjacent statements."
+caption : "Normalizes blank-line counts to canonical values between thematically adjacent statements."
 related : [alphabetize, align-imports, bare-imports]
 layout  : doc
 ---

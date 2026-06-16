@@ -49,7 +49,7 @@ export default defineLoader({
     const md         = await getRenderer()
     const list       = discoverRuleSlugs(rulesDirectory).map(r => ({
       ...r,
-      captionHtml   : md.renderInline(`*Prose* ${r.caption}`),
+      captionHtml   : md.renderInline(r.caption),
       categoryBadge : CATEGORY_META[r.category].badge,
       categoryLabel : CATEGORY_META[r.category].label,
       familyBadge   : FAMILY_META[r.family].badge,
