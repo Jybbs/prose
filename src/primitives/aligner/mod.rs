@@ -17,7 +17,7 @@ mod emit;
 mod groups;
 
 use emit::emit_group;
-pub(crate) use emit::space_padding_edit;
+pub(crate) use emit::{operator_columns, space_padding_edit};
 pub(crate) use groups::{
     Slot, adjacent_member_groups, is_alignment_candidate, is_held, keyed_line_adjacent_groups,
     line_adjacent_groups, line_anchored_member, line_anchored_member_at_kind,

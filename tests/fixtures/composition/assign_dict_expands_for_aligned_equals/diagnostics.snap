@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/assign_dict_expands_for_aligned_equals/input.py
+---
+align-equals@49..50
+collection-layout@119..120

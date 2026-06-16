@@ -89,6 +89,8 @@ impl Visitor<'_> {
 
 When the alignment context is `:`-shaped *(dict items, class fields, annotated parameters, docstring args, match arms)*, the grouping logic lives in [[colon-targets]] instead. A new colon-shaped rule implements `ColonEmitter`'s required `rule` method plus the `handle` and `match_arms` overrides it cares about, calls `walk(source)`, and forwards each yielded `&[Member]` slice to `walker.emit_group(&members)`.
 
+When the context is `=`-shaped *(single-target assignments, exploded-call keyword arguments, annotated parameter defaults)*, the per-row member construction lives in `equal_targets`, which carries no walker because its consumers group differently. [[align-equals]] builds its runs with a multi-line break and calls `emit_group` to pad each `=`, whereas [[collection-layout]] treats a collapsing value as single-line and reads `operator_columns` to predict where each `=` shifts, testing its collapse against the value's resulting column so the decision survives the alignment that runs later. A new `=`-shaped rule calls `equal_targets`'s `assignment`, `keyword`, or `parameter` per row and groups the members to its own adjacency.
+
 ## Re-Using This Primitive
 
 Writing a new alignment rule comes down to wrapping an `AlignWalker` in a visitor struct, building the grouping logic that yields `Vec<Member>` per source-line run, and calling `walker.emit_group(&members)` per group. The padding math, the reading-order regrouping, the singleton handling, and the right-alignment hook all carry through, leaving the rule to focus on its own grouping logic.

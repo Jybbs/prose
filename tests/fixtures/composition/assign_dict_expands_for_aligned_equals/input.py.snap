@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/assign_dict_expands_for_aligned_equals/input.py
+---
+_VALID_HEADER_VALUE_RE_BYTE = 1
+HEADER_VALIDATORS           = {
+    bytes: _AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,
+    str: _BBBBBBB
+}
