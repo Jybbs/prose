@@ -839,6 +839,17 @@ pub(crate) fn single_name_target(assign: &StmtAssign) -> Option<&str> {
     }
 }
 
+/// Returns the trailing identifier of a name reference: the bound name
+/// of a bare `Name` or the attribute of an `Attribute` access. `None`
+/// for any other expression.
+pub(crate) fn tail_identifier(expr: &Expr) -> Option<&str> {
+    match expr {
+        Expr::Attribute(attr) => Some(attr.attr.as_str()),
+        Expr::Name(name) => Some(name.id.as_str()),
+        _ => None,
+    }
+}
+
 /// Returns the segment of `dotted` before the first `.`. Matches
 /// Python's `import a.b.c` shape, which binds `a` rather than the
 /// full dotted path.

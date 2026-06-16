@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/method_default_pins_its_constant/input.py
+---
+class Renderer:
+    SCALE = 2
+    def draw(self, factor=SCALE): ...
+    APPLE = 1

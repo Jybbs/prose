@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/class_graph_is_a_fixed_point/input.py
+---
+class Box:
+    height: int = 20
+    width: int = 10
+    HALF = width

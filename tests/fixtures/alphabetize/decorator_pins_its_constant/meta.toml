@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Decorator Pins the Constant It Reads"
+
+description = '''
+`parse` is decorated with `@WRAP`, applied at class-definition time, so the decorator edge reaches into the constant graph. Sorting `APPLE` ahead of `WRAP` would seat `WRAP` below the method it decorates, so the constants **hold source order** rather than calling the decorator before it exists.
+'''

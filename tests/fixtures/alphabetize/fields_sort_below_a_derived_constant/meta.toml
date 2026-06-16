@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Annotated Fields Sort Beneath a Derived Constant"
+
+description = '''
+`HALF` reads the annotated field `width`, crossing from the constant family into the field family. The two families tier through **one shared graph**, so the fields alphabetize among themselves while `HALF` holds its tier below the `width` it reads. A single graph replaces the blanket bail that once froze both families on any cross-family reference.
+'''

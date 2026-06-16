@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Method Default Pins the Constant It Reads"
+
+description = '''
+`draw` reads `SCALE` through a parameter default, evaluated at class-definition time, so the definition edge feeds the same graph the constants tier through. Sorting `APPLE` ahead of `SCALE` would seat `SCALE` below the method reading it, so the constant family **keeps source order** rather than stranding the reference.
+'''
