@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Redundant Pair Around a Call Argument Drops"
+
+description = '''
+A grouping wrapped around a single call argument sheds, so `record((event))` reflows to `record(event)`.
+'''

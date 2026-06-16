@@ -14,12 +14,12 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::classify::{
-    Segment, is_align_colons_gap, is_atomic, is_collapsible, is_layoutable, is_operator_atom_tree,
-    requires_expand, segments,
+    Segment, is_align_colons_gap, is_atomic, is_collapsible, is_layoutable, requires_expand,
+    segments,
 };
 use super::flow::flow_lines;
 use crate::{
-    primitives::{INDENT_STEP, edit::narrowed_replacement},
+    primitives::{INDENT_STEP, edit::narrowed_replacement, inline::single_line_form},
     source::Source,
 };
 
@@ -348,11 +348,7 @@ impl<'a> Layouter<'a> {
                 // rejoins by collapsing its break, where any other leaf
                 // passes through with its source breaks intact for the
                 // fit guard to reject.
-                if slice.contains('\n') && is_operator_atom_tree(expr) {
-                    buf.push_str(&collapse_soft_wraps(slice));
-                } else {
-                    buf.push_str(slice);
-                }
+                buf.push_str(&single_line_form(expr, slice).unwrap_or(Cow::Borrowed(slice)));
             }
         }
     }
@@ -428,24 +424,4 @@ impl<'a> Visitor<'a> for Layouter<'a> {
             None => walk_expr(self, expr),
         }
     }
-}
-
-/// Collapses each whitespace run that spans a line break into a single
-/// space, leaving runs without a break untouched. Rejoins a soft-wrapped
-/// operator expression without respacing its operator tokens, since a
-/// run already free of a break is the source's own spacing.
-fn collapse_soft_wraps(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut rest = text;
-    while let Some(start) = rest.find(char::is_whitespace) {
-        out.push_str(&rest[..start]);
-        let run_len = rest[start..]
-            .find(|c: char| !c.is_whitespace())
-            .unwrap_or(rest.len() - start);
-        let (run, tail) = rest[start..].split_at(run_len);
-        out.push_str(if run.contains('\n') { " " } else { run });
-        rest = tail;
-    }
-    out.push_str(rest);
-    out
 }

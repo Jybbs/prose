@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/shed_parentheses/over_budget_pair_kept/input.py
+---
+

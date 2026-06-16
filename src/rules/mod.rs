@@ -19,6 +19,7 @@ pub(crate) mod docstring_wrap;
 pub(crate) mod import_layout;
 pub(crate) mod legacy_union_syntax;
 pub(crate) mod reassigned_constants;
+pub(crate) mod shed_parentheses;
 pub(crate) mod signature_annotations;
 pub(crate) mod signature_layout;
 pub(crate) mod single_use_variables;

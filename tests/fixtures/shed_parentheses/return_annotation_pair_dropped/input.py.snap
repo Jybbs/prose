@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/return_annotation_pair_dropped/input.py
+---
+def total() -> int:
+    return 0

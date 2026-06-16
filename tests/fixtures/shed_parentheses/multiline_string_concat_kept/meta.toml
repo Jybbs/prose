@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Multi-Line String Concatenation Stays Wrapped"
+
+description = '''
+A multi-line interior that is not an operator tree, such as an implicit string concatenation, keeps its parentheses rather than folding.
+'''

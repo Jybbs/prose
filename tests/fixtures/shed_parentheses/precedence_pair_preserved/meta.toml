@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Precedence-Bearing Pair Survives"
+
+description = '''
+A pair that binds tighter than the operator enclosing it stays, since dropping it would rebind the expression. Both `(base + bonus) * factor` and `2 ** (depth + 1)` keep their parentheses.
+'''

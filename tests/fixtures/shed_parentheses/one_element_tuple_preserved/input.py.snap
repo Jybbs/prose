@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/one_element_tuple_preserved/input.py
+---
+single = (item,)

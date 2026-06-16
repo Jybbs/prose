@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Single-Line Return Annotation's Pair Drops"
+
+description = '''
+A redundant pair around a single-line return annotation sheds, so `def total() -> (int):` reflows to `def total() -> int:`.
+'''

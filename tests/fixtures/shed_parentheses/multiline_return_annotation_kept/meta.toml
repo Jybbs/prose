@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Multi-Line Return Annotation Is Left Alone"
+
+description = '''
+A multi-line return annotation keeps its pair, which `signature-layout` reshapes to hold the annotation across an expanded signature.
+'''

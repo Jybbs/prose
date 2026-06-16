@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/shed_parentheses/generator_pair_preserved/input.py
+---
+squares = (item for item in items)
