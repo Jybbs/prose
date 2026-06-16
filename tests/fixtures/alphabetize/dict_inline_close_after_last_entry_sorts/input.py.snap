@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dict_inline_close_after_last_entry_sorts/input.py
+---
+config = collect({
+    "a": 2,
+    "b": 1})

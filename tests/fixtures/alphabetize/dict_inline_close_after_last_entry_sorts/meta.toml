@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A One-per-Line Dict Sorts When Its Close Trails the Last Entry"
+
+description = '''
+A one-entry-per-line dict whose closing brace shares the last entry's line inside a call sorts by key. The last entry's block stops at the closing brace rather than running to the line end, so the reorder span stays within the dict.
+'''

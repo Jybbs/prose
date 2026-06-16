@@ -77,10 +77,11 @@ pub(crate) fn assemble_separated(
 }
 
 /// Returns the source-level extent of `items[i]`: its own range, any
-/// comment-only lines directly above it (no intervening blank line), and the
-/// rest of its last line. Bounded below by the previous item's end (or
-/// `outer.start()` for the first) and forward by the next item's start (or
-/// its own line end for the last).
+/// comment-only lines directly above it (no intervening blank line), and its
+/// trailing comma and inline comment. Bounded below by the previous item's end
+/// (or `outer.start()` for the first), and forward by the next item's start, or
+/// for the last item by [`tail_end`], which stops at a closing delimiter on the
+/// line rather than crossing it.
 pub(crate) fn block_range<T: Ranged>(
     source: &Source,
     items: &[T],
@@ -89,10 +90,10 @@ pub(crate) fn block_range<T: Ranged>(
 ) -> TextRange {
     let item = items[i].range();
     let lower = items[..i].last().map_or(outer.start(), Ranged::end);
-    let line_end = source.text().line_end(item.end());
-    let forward = items
-        .get(i + 1)
-        .map_or(line_end, |next| line_end.min(next.start()));
+    let forward = match items.get(i + 1) {
+        Some(next) => source.text().line_end(item.end()).min(next.start()),
+        None => tail_end(source, item.end()),
+    };
     TextRange::new(leading_attached_start(source, item.start(), lower), forward)
 }
 
