@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Tiered Class Graph Is a Fixed Point"
+
+description = '''
+The fields already sit in name order and `HALF` already trails the `width` it reads, so the shared graph finds nothing to move. A region the tiering settled on one pass **stays settled** on the next, holding the idempotence the pipeline guarantees.
+'''

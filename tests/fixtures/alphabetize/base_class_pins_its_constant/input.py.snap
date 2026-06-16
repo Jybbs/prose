@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/base_class_pins_its_constant/input.py
+---
+class Registry:
+    BASE = dict
+    class Store(BASE): ...
+    APPLE = 1
