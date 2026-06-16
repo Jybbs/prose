@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Type-Bearing Args Entry Continuation Hangs Under Its Description"
+
+description = '''
+A Google-style `Args:` entry carries a parenthesized type ahead of its `:`, and its description runs past the budget. **The full pipeline lifts the docstring opener onto its own line, then wraps the over-budget entry so the continuation hangs under the description column rather than falling flush-left to the section indent.**
+'''

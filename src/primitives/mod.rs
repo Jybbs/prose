@@ -7,6 +7,7 @@ pub(crate) mod colon_targets;
 pub(crate) mod comments;
 pub(crate) mod docstring;
 pub(crate) mod edit;
+pub(crate) mod equal_targets;
 pub(crate) mod imports;
 pub(crate) mod layout;
 pub(crate) mod orderer;

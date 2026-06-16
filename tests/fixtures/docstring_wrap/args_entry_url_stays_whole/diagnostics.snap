@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/docstring_wrap/args_entry_url_stays_whole/input.py
+---
+docstring-wrap@96..178

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "reStructuredText Field Lists Pass Through Verbatim"
+
+description = '''
+A reStructuredText field list **passes through unwrapped, one field per line**. Each `:name: value` line opens a field-list region the wrap math skips, so a run of module metadata survives instead of gluing onto its neighbor.
+'''

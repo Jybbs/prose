@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/docstring_wrap/args_entry_url_stays_whole/input.py
+---
+def fetch(endpoint):
+    """
+    Summary line.
+
+    Args:
+        endpoint: Call the base URL at
+                  https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+                  before retrying.
+    """
+    return endpoint

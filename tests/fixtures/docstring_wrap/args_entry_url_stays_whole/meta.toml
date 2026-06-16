@@ -1,0 +1,9 @@
+[docs]
+previewable = false
+title       = "An Over-Budget URL in an Entry Description Stays Whole"
+
+description = '''
+Inside a hanging-indent `Args:` entry, a URL too wide for the budget lands on a
+continuation line and overflows past the description column intact rather than
+splitting at a `/` or `-`.
+'''

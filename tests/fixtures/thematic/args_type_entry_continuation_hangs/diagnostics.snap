@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/thematic/args_type_entry_continuation_hangs/input.py
+---
+docstring-frame@43..43
+signature-annotations@17..24
+signature-annotations@26..33
