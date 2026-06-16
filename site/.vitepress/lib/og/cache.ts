@@ -11,7 +11,7 @@ const OG_DIR = import.meta.dirname
 
 // render sources folded into every cache key, so a change here re-renders all cards
 const TEMPLATE_FILES: readonly string[] = [
-  'assets.ts', 'landing.ts', 'parts.ts', 'resvg-worker.mjs',
+  'assets.ts', 'landing.ts', 'parts.ts', 'pool.ts', 'resvg-worker.mjs',
   'template.ts', '../shared/registries.ts'
 ]
 

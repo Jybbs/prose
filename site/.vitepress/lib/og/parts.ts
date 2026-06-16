@@ -1,4 +1,3 @@
-import { Resvg }                        from '@resvg/resvg-js'
 import { createElement, type JSXNode }  from 'satori/jsx'
 import satori, { type Font }            from 'satori'
 
@@ -15,11 +14,6 @@ const PANEL_FILL = 'rgba(255, 255, 255, 0.04)'
 
 export function toSvg(node: JSXNode, fonts: Font[]): Promise<string> {
   return satori(node, { fonts, height: CARD_HEIGHT, width: CARD_WIDTH })
-}
-
-export function svgToPng(svg: string): Buffer {
-  // satori embeds every glyph as a vector path, so resvg needs no font lookup
-  return new Resvg(svg, { font: { loadSystemFonts: false } }).render().asPng()
 }
 
 export function cardShell(...children: JSXNode[]): JSXNode {

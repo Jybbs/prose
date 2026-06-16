@@ -1,10 +1,11 @@
 import os         from 'node:os'
 import { Worker } from 'node:worker_threads'
 
+import { Resvg } from '@resvg/resvg-js'
+
 import type { BrandAssets } from './assets'
 import { landingSvg }       from './landing'
 import type { OgPage }      from './pages'
-import { svgToPng }         from './parts'
 import { pageSvg }          from './template'
 
 interface CardId {
@@ -60,5 +61,7 @@ function runLane(jobs: readonly RasterJob[]): Promise<readonly RenderedCard[]> {
 }
 
 function rasterize(job: RasterJob): RenderedCard {
-  return { key: job.key, outputPath: job.outputPath, png: svgToPng(job.svg) }
+  // satori embeds every glyph as a vector path, so resvg needs no font lookup
+  const png = new Resvg(job.svg, { font: { loadSystemFonts: false } }).render().asPng()
+  return { key: job.key, outputPath: job.outputPath, png }
 }
