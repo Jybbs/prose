@@ -40,6 +40,26 @@ pub(crate) fn leading_comment_block(
     Some(TextRange::new(text.line_start(first.start()), last.end()))
 }
 
+/// Advances past any section-marker comment leading the attached block, so
+/// a banner or hash heading divider stays in the gap above the member
+/// rather than traveling with it through a sort. Returns the line start
+/// below the marker nearest the member, or `attached_start` when none leads.
+pub(crate) fn marker_floor(
+    source: &Source,
+    attached_start: TextSize,
+    item_start: TextSize,
+) -> TextSize {
+    source
+        .comment_ranges()
+        .comments_in_range(TextRange::new(attached_start, item_start))
+        .iter()
+        .rev()
+        .find(|comment| is_marker_line(source.slice(**comment)))
+        .map_or(attached_start, |comment| {
+            source.text().full_line_end(comment.start())
+        })
+}
+
 /// True when `line` opens with two or more `#`, the Markdown-style
 /// heading shape that reads as a section divider.
 fn is_heading_line(line: &str) -> bool {
@@ -189,5 +209,34 @@ mod tests {
     fn leading_comment_block_skips_trailing_end_of_line_comments() {
         let s = parse("x = 1  # trail\ndef f(): pass\n");
         assert!(gap_block(&s).is_none());
+    }
+
+    #[test]
+    fn marker_floor_skips_a_leading_banner() {
+        let s = parse("# --- Section ---\ndef a(): pass\n");
+        let item_start = s.ast().body[0].start();
+        let floored = marker_floor(&s, TextSize::from(0), item_start);
+        assert_eq!(floored, s.text().line_start(item_start));
+    }
+
+    #[test]
+    fn marker_floor_stops_below_the_marker_keeping_prose() {
+        let s = parse("# --- Section ---\n# describes a\ndef a(): pass\n");
+        let item_start = s.ast().body[0].start();
+        let floored = marker_floor(&s, TextSize::from(0), item_start);
+        assert_eq!(
+            s.slice(TextRange::new(floored, item_start)).trim_end(),
+            "# describes a"
+        );
+    }
+
+    #[test]
+    fn marker_floor_returns_attached_start_when_no_marker_leads() {
+        let s = parse("# describes a\ndef a(): pass\n");
+        let item_start = s.ast().body[0].start();
+        assert_eq!(
+            marker_floor(&s, TextSize::from(0), item_start),
+            TextSize::from(0)
+        );
     }
 }

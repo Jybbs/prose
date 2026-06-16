@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Divider-Shaped Comment in a Dict Rides Its Entry"
+
+description = '''
+A dict carries no sections, so a marker-shaped comment between entries reads as an ordinary own-line comment rather than a divider. It stays attached to the entry below it and travels with that entry through the sort, never dropped.
+'''

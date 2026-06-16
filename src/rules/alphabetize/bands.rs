@@ -10,7 +10,7 @@ use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
 
 use super::{
-    Alphabetize, has_keep_marker, section_ranges,
+    Alphabetize, RewriteCtx, has_keep_marker,
     tiering::{eval_refs, eval_time_refs, tier_levels},
 };
 use crate::{
@@ -124,34 +124,33 @@ struct ConstSite<'src> {
 /// [`Banding`] pairs the band ranks with the prose comment each banded
 /// constant carries.
 pub(super) fn band_module_constants<'src>(
-    source: &'src Source,
+    ctx: RewriteCtx<'src>,
     body: &'src [Stmt],
     blocks: &[TextRange],
-    first_party: &[String],
-    defer_annotations: bool,
-    target_version: Option<PythonVersion>,
+    boundaries: &[usize],
     order: &mut Vec<usize>,
 ) -> Option<Banding> {
-    let plan = module_band_plan(source, body, blocks, defer_annotations, target_version)?;
-    let boundaries: Vec<usize> = section_ranges(source, blocks)
-        .iter()
-        .skip(1)
-        .map(|s| s.start)
-        .collect();
+    let plan = module_band_plan(
+        ctx.source,
+        body,
+        blocks,
+        ctx.defer_annotations,
+        ctx.target_version,
+    )?;
     let mut banded = Vec::with_capacity(order.len());
     let mut region = Vec::new();
     for (slot, &idx) in order.iter().enumerate() {
-        if boundaries.contains(&slot) {
-            plan.drain_region(body, first_party, &mut region, &mut banded);
+        if boundaries.binary_search(&slot).is_ok() {
+            plan.drain_region(body, ctx.first_party, &mut region, &mut banded);
         }
         if plan.ranks.contains_key(&idx) {
             region.push(idx);
         } else {
-            plan.drain_region(body, first_party, &mut region, &mut banded);
+            plan.drain_region(body, ctx.first_party, &mut region, &mut banded);
             banded.push(idx);
         }
     }
-    plan.drain_region(body, first_party, &mut region, &mut banded);
+    plan.drain_region(body, ctx.first_party, &mut region, &mut banded);
     (plan.is_sound(&banded) && banded != *order).then(|| {
         *order = banded;
         Banding {
@@ -438,7 +437,14 @@ mod tests {
             .map(|i| block_range(&source, body, i, source.module_range()))
             .collect();
         let mut order: Vec<usize> = (0..body.len()).collect();
-        band_module_constants(&source, body, &blocks, &[], false, None, &mut order)
+        let ctx = RewriteCtx {
+            defer_annotations: false,
+            first_party: &[],
+            leaf_edits: &[],
+            source: &source,
+            target_version: None,
+        };
+        band_module_constants(ctx, body, &blocks, &[], &mut order)
             .expect("a definition before an import bands without panicking");
         assert_eq!(
             order,

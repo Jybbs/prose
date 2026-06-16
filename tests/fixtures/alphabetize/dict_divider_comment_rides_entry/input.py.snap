@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dict_divider_comment_rides_entry/input.py
+---
+y = {
+    # --- group ---
+    "c": 2,
+    "d": 1,
+}

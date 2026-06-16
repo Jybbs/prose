@@ -31,7 +31,7 @@ use crate::{
     config::Config,
     primitives::{
         binding::{annotated_name_target, single_name_target},
-        comments::{is_banner_block, leading_comment_block},
+        comments::{is_banner_block, leading_comment_block, marker_floor},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
         imports::{future_annotations_alias, import_sort_key, same_import_group},
         orderer::{assemble_blocks, block_range, blocks_span, permute_in_place},
@@ -324,14 +324,14 @@ fn rewrite_body<'a>(
         defer_annotations,
         first_party,
         source,
-        target_version,
         ..
     } = ctx;
     let (mut blocks, mut rendered): (Vec<TextRange>, Vec<Cow<'a, str>>) = body
         .iter()
         .enumerate()
         .map(|(i, stmt)| {
-            let block = block_range(source, body, i, outer);
+            let raw = block_range(source, body, i, outer);
+            let block = TextRange::new(marker_floor(source, raw.start(), stmt.start()), raw.end());
             (block, rewrite_stmt(ctx, stmt, block, scope))
         })
         .unzip();
@@ -340,8 +340,9 @@ fn rewrite_body<'a>(
     let mut order: Vec<usize> = (0..n).collect();
     let mut import_run_slots: Vec<usize> = Vec::new();
     let mut band: Option<Banding> = None;
-    let sections = section_ranges(source, &blocks);
     if !has_inline_statement_join(source, body) {
+        let sections = section_ranges(source, &blocks);
+        let boundaries: Vec<usize> = sections.iter().skip(1).map(|s| s.start).collect();
         let in_class = scope == BodyScope::Class;
         let is_import = |s: &Stmt| s.is_import_stmt() || s.is_import_from_stmt();
         for section in &sections {
@@ -381,15 +382,7 @@ fn rewrite_body<'a>(
             }
         }
         if scope == BodyScope::Module {
-            band = band_module_constants(
-                source,
-                body,
-                &blocks,
-                first_party,
-                defer_annotations,
-                target_version,
-                &mut order,
-            );
+            band = band_module_constants(ctx, body, &blocks, &boundaries, &mut order);
             // A banded constant carries its forward-attached prose comment
             // up with it: its block extends back over the comment and its
             // rendered text gains the comment, collapsing the gap below so
@@ -409,10 +402,9 @@ fn rewrite_body<'a>(
         // same-group import neighbors collapse to one line, except across a
         // section marker, whose dividing gap must survive in place.
         if band.is_none() {
-            let boundaries: Vec<usize> = sections.iter().skip(1).map(|s| s.start).collect();
             import_run_slots.extend((0..n.saturating_sub(1)).filter(|&slot| {
                 same_import_group(&body[order[slot]], &body[order[slot + 1]], first_party)
-                    && !boundaries.contains(&(slot + 1))
+                    && boundaries.binary_search(&(slot + 1)).is_err()
             }));
         }
     }
@@ -472,7 +464,7 @@ fn rewrite_stmt<'a>(
 /// Splits the body's slots into sections at each gap carrying a section
 /// marker, so a family sort orders members within a section and never
 /// moves one across the marker dividing it from its neighbor.
-pub(super) fn section_ranges(source: &Source, blocks: &[TextRange]) -> Vec<Range<usize>> {
+fn section_ranges(source: &Source, blocks: &[TextRange]) -> Vec<Range<usize>> {
     let mut sections = Vec::new();
     let mut start = 0;
     for i in 1..blocks.len() {

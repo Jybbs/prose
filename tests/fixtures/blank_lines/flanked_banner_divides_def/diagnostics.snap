@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/blank_lines/flanked_banner_divides_def/input.py
+---
+blank-lines@25..26
+blank-lines@53..54
