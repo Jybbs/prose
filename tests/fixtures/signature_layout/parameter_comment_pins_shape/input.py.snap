@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/signature_layout/interior_comment_pins_shape/input.py
+input_file: tests/fixtures/signature_layout/parameter_comment_pins_shape/input.py
 ---
 def own_line_pin(
     layout: tuple[int, int],

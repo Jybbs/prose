@@ -5,8 +5,8 @@
 //! A read that finds no binding mid-walk defers and resolves against
 //! the completed scope chain after the walk, so a forward reference to
 //! a name bound later in source order still records against it.
-//! Consuming rules query the table by `BindingId` or by `&Stmt`
-//! rather than driving their own walk.
+//! Consuming rules query the table by `BindingId`, by name, by source
+//! offset, or by an owning `&Stmt` rather than driving their own walk.
 //!
 //! ## Scope model
 //!
@@ -21,7 +21,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ruff_python_ast::{
-    Alias, ExceptHandler, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp,
+    ExceptHandler, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp,
     ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, ModModule, Parameters, Stmt,
     StmtAnnAssign, StmtAssign, StmtAugAssign, StmtClassDef, StmtFor, StmtFunctionDef, StmtIf,
     StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith,
@@ -29,6 +29,13 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use serde::Serialize;
+
+mod names;
+
+pub(crate) use names::{
+    annotated_name_target, bare_import_bound_name, from_import_bound_name, single_name_target,
+    tail_identifier, top_level_module,
+};
 
 /// Stable handle to a binding in `BindingAnalysis`. Cheap to copy.
 #[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
@@ -38,7 +45,7 @@ pub(crate) struct BindingId(u32);
 /// Stable handle to a scope in `BindingAnalysis`. Cheap to copy.
 #[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(transparent)]
-pub(crate) struct ScopeId(u32);
+struct ScopeId(u32);
 
 /// Categories of write event recorded against a binding.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize)]
@@ -58,7 +65,7 @@ pub(crate) enum BindingKind {
 
 /// Categories of lexical scope.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize)]
-pub(crate) enum ScopeKind {
+enum ScopeKind {
     Class,
     Comprehension,
     Function,
@@ -87,7 +94,7 @@ pub(crate) enum UnpackKind {
 /// conditional branch (`if`/`for`/`while`/`try`/`match`), or `None` when
 /// every write is conditional.
 #[derive(Debug, Serialize)]
-pub(crate) struct Binding {
+struct Binding {
     attributes: BTreeSet<String>,
     bare_read: bool,
     first_unconditional_write: Option<TextSize>,
@@ -100,7 +107,7 @@ pub(crate) struct Binding {
 
 /// One lexical scope plus its binding table keyed by name.
 #[derive(Debug, Serialize)]
-pub(crate) struct Scope {
+struct Scope {
     bindings: BTreeMap<String, BindingId>,
     kind: ScopeKind,
     parent: Option<ScopeId>,
@@ -799,27 +806,6 @@ struct UnpackGroup {
     value: TextRange,
 }
 
-/// The bare-`Name` target name of an `Stmt::AnnAssign`. `None` when the
-/// target is an attribute or subscript (`self.x: int`, `d[k]: int`).
-pub(crate) fn annotated_name_target(ann: &StmtAnnAssign) -> Option<&str> {
-    Some(ann.target.as_name_expr()?.id.as_str())
-}
-
-/// The module-scope name a bare `import a.b` alias binds: its `asname`,
-/// or the top-level segment of the dotted path.
-pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
-    alias
-        .asname
-        .as_ref()
-        .map_or_else(|| top_level_module(alias.name.as_str()), Identifier::as_str)
-}
-
-/// The name a `from m import x` alias binds: its `asname`, or the
-/// imported name itself.
-pub(crate) fn from_import_bound_name(alias: &Alias) -> &str {
-    alias.asname.as_ref().unwrap_or(&alias.name).as_str()
-}
-
 /// Resolves `name` against the scope chain rooted at `innermost`,
 /// walking outward through `parent` links. A non-innermost class scope
 /// is skipped, since its names are invisible to nested functions and
@@ -828,33 +814,6 @@ fn resolve_in_chain(scopes: &[Scope], innermost: ScopeId, name: &str) -> Option<
     std::iter::successors(Some(innermost), |&id| scopes[id.0 as usize].parent)
         .filter(|&id| id == innermost || !matches!(scopes[id.0 as usize].kind, ScopeKind::Class))
         .find_map(|id| scopes[id.0 as usize].bindings.get(name).copied())
-}
-
-/// The single bare-`Name` target name of an `Stmt::Assign`. `None` for
-/// a multi-target, destructuring, attribute, or subscript assignment.
-pub(crate) fn single_name_target(assign: &StmtAssign) -> Option<&str> {
-    match assign.targets.as_slice() {
-        [Expr::Name(name)] => Some(name.id.as_str()),
-        _ => None,
-    }
-}
-
-/// Returns the trailing identifier of a name reference: the bound name
-/// of a bare `Name` or the attribute of an `Attribute` access. `None`
-/// for any other expression.
-pub(crate) fn tail_identifier(expr: &Expr) -> Option<&str> {
-    match expr {
-        Expr::Attribute(attr) => Some(attr.attr.as_str()),
-        Expr::Name(name) => Some(name.id.as_str()),
-        _ => None,
-    }
-}
-
-/// Returns the segment of `dotted` before the first `.`. Matches
-/// Python's `import a.b.c` shape, which binds `a` rather than the
-/// full dotted path.
-pub(crate) fn top_level_module(dotted: &str) -> &str {
-    dotted.split_once('.').map_or(dotted, |(head, _)| head)
 }
 
 #[cfg(test)]
@@ -877,18 +836,6 @@ mod tests {
             .get(name)
             .copied()
             .unwrap_or_else(|| panic!("no module-scope binding for {name:?}"))
-    }
-
-    #[test]
-    fn annotated_name_target_keeps_only_name_targets() {
-        let source = parse("x: int = 1\nself.x: int = 1\n");
-        let targets: Vec<Option<&str>> = source
-            .ast()
-            .body
-            .iter()
-            .map(|stmt| annotated_name_target(stmt.as_ann_assign_stmt().expect("ann assign")))
-            .collect();
-        assert_eq!(targets, vec![Some("x"), None]);
     }
 
     #[test]
@@ -1093,26 +1040,6 @@ mod tests {
     #[case("X += 1\n")]
     fn module_reassigned_is_true_when_written_twice_or_augmented(#[case] src: &str) {
         assert!(analyze(src).module_reassigned("X"));
-    }
-
-    #[test]
-    fn single_name_target_keeps_only_single_name_assignments() {
-        let source = parse("X = 1\nself.x = 1\nx, y = 1, 2\n");
-        let targets: Vec<Option<&str>> = source
-            .ast()
-            .body
-            .iter()
-            .map(|stmt| single_name_target(stmt.as_assign_stmt().expect("assign")))
-            .collect();
-        assert_eq!(targets, vec![Some("X"), None, None]);
-    }
-
-    #[test]
-    fn top_level_module_returns_first_segment() {
-        assert_eq!(top_level_module("a"), "a");
-        assert_eq!(top_level_module("a.b"), "a");
-        assert_eq!(top_level_module("a.b.c"), "a");
-        assert_eq!(top_level_module(""), "");
     }
 
     #[rstest]

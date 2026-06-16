@@ -33,6 +33,14 @@ pub struct CleanReport {
     pub entries: usize,
 }
 
+impl CleanReport {
+    /// Records one removed file of `bytes`.
+    pub(super) fn record(&mut self, bytes: u64) {
+        self.bytes += bytes;
+        self.entries += 1;
+    }
+}
+
 /// What a mode knows about the file's rewrite. `Skipped` marks a mode
 /// that never computed the rewrite, whereas the other two record a
 /// completed `run`.

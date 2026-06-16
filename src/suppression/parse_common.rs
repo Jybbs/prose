@@ -16,8 +16,8 @@ pub(super) fn after_prose_prefix(after_hash: &str) -> Option<&str> {
         .map(str::trim_whitespace)
 }
 
-/// Parses the rule-id body of a `[<id>[, <id>...]]` suffix into a
-/// `RuleEntry::Specific`. Returns `None` when the brackets are missing
+/// Parses the rule-id body of a `[<id>[, <id>...]]` suffix into the
+/// set of rule ids. Returns `None` when the brackets are missing
 /// or malformed. Unknown rule ids are silently dropped.
 pub(super) fn parse_bracketed_rule_list(body: &str) -> Option<HashSet<RuleId>> {
     Some(

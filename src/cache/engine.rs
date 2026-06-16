@@ -94,8 +94,7 @@ impl Cache {
             let entry = entry?;
             let bytes = entry.metadata().map_or(0, |m| m.len());
             if fs_err::remove_file(entry.path()).is_ok() {
-                report.bytes += bytes;
-                report.entries += 1;
+                report.record(bytes);
             }
         }
         Ok(report)
@@ -121,8 +120,7 @@ impl Cache {
             match fs_err::remove_file(entry.path()) {
                 Ok(()) => {
                     total = total.saturating_sub(bytes);
-                    report.bytes += bytes;
-                    report.entries += 1;
+                    report.record(bytes);
                 }
                 Err(e) => eprintln!("warning: cache eviction: {e}"),
             }

@@ -129,7 +129,9 @@ impl Walker<'_> {
         let pair_wraps = self.source.contains_line_break(pair);
         if !self.in_collapse
             && pair_wraps
-            && self.source.column_of(pair.start()) + bare.width() > self.code_line_length
+            && self
+                .source
+                .column_overflows(pair.start(), bare.width(), self.code_line_length)
         {
             return false;
         }

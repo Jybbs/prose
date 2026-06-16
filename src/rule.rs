@@ -42,7 +42,7 @@ use crate::{
 /// Carries the offending input so callers can surface it verbatim.
 #[derive(Debug, Error)]
 #[error("unknown rule id `{0}`")]
-pub struct ParseRuleIdError(pub String);
+pub struct ParseRuleIdError(String);
 
 /// Every rule in Prose implements this trait and nothing more.
 ///
@@ -115,6 +115,7 @@ impl fmt::Display for RuleId {
     }
 }
 
+#[cfg(test)]
 impl From<&'static str> for RuleId {
     fn from(slug: &'static str) -> Self {
         Self(slug)

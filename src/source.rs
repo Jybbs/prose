@@ -93,6 +93,12 @@ impl Source {
         self.line_column(offset).column.to_zero_indexed()
     }
 
+    /// Returns `true` when content of display `width` beginning at
+    /// `offset`'s column extends past `budget`.
+    pub fn column_overflows(&self, offset: TextSize, width: usize, budget: usize) -> bool {
+        self.column_of(offset) + width > budget
+    }
+
     /// Returns the comment-range index built during parsing.
     pub fn comment_ranges(&self) -> &CommentRanges {
         &self.comment_ranges

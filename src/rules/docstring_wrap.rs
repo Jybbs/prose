@@ -1,11 +1,10 @@
 //! Wraps Google-style docstring prose to its configured budget.
-//! Description prose wraps to `docstring_line_length`. Structured
-//! sections (`Args:`, `Attributes:`, `Examples:`, `Note:`, `Raises:`,
-//! `Returns:`, `Warning:`, `Yields:`) wrap to the budget that
-//! `docstring_structured_policy` selects. Entry-carrying sections
-//! (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`) wrap
-//! `name: description` entries to `docstring_line_length` with a
-//! hanging indent at the description's start column. Verbatim regions
+//! Description prose wraps to `docstring_line_length`. Title-case-headed
+//! structured sections wrap to the budget that
+//! `docstring_structured_policy` selects. Entry-carrying sections, those
+//! holding `name: description` entries, wrap each entry to
+//! `docstring_line_length` with a hanging indent at the description's
+//! start column. Verbatim regions
 //! (triple-backtick fences, blocks indented one step beyond the body,
 //! list items, and doctest blocks) pass through unchanged.
 //! reStructuredText markup, Sphinx directives, and Numpydoc style

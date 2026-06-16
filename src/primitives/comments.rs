@@ -16,7 +16,7 @@ pub(crate) fn is_banner_block(source: &Source, block: TextRange) -> bool {
 
 /// True when `line` reads as a section marker, a decorative rule line or
 /// a multi-hash heading.
-pub(crate) fn is_marker_line(line: &str) -> bool {
+fn is_marker_line(line: &str) -> bool {
     is_rule_line(line) || is_heading_line(line)
 }
 

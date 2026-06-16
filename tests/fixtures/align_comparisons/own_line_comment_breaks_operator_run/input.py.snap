@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/align_comparisons/own_line_comment_breaks_run/input.py
+input_file: tests/fixtures/align_comparisons/own_line_comment_breaks_operator_run/input.py
 ---
 if (
     foo == 1
