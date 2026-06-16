@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/star_import_callee_stays_inline/input.py
+---
+def bisect_left(a, x, lo=0, hi=None):
+    return a
+
+
+from _bisect import *
+
+
+index = bisect_left(data, target, low, high)

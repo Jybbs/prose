@@ -30,19 +30,28 @@ use crate::{
 /// comment each banded constant carries up with it.
 pub(super) struct Banding {
     pub(super) carries: Vec<(usize, TextRange)>,
-    pub(super) ranks: HashMap<usize, u8>,
+    pub(super) ranks: HashMap<usize, BandRank>,
+}
+
+/// The band a statement hoists into. `drain_region` seats the bands as
+/// imports, leading constants, definitions, then trailing constants.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum BandRank {
+    Definition,
+    Import,
+    Leading,
+    Trailing,
 }
 
 /// The module-scope hoist plan: a band rank per banded statement, the
 /// intra-band `(tier, name)` key per banded constant, the eager-reference
-/// edges the order keeps backward, and the comment each carries. Ranks
-/// are `0` import, `1` leading, `2` definition, `3` trailing. A statement
-/// absent from `ranks` is a pinned anchor.
+/// edges the order keeps backward, and the comment each carries. A
+/// statement absent from `ranks` is a pinned anchor.
 struct BandPlan<'src> {
     carries: Vec<(usize, TextRange)>,
     edges: Vec<(usize, usize)>,
     keys: HashMap<usize, (usize, &'src str)>,
-    ranks: HashMap<usize, u8>,
+    ranks: HashMap<usize, BandRank>,
 }
 
 impl BandPlan<'_> {
@@ -59,26 +68,26 @@ impl BandPlan<'_> {
         region: &mut Vec<usize>,
         out: &mut Vec<usize>,
     ) {
+        let mut imports = Vec::new();
         let mut leading = Vec::new();
-        let mut skeleton = Vec::new();
+        let mut definitions = Vec::new();
         let mut trailing = Vec::new();
         for idx in region.drain(..) {
             match self.ranks[&idx] {
-                1 => leading.push(idx),
-                3 => trailing.push(idx),
-                _ => skeleton.push(idx),
+                BandRank::Import => imports.push(idx),
+                BandRank::Leading => leading.push(idx),
+                BandRank::Definition => definitions.push(idx),
+                BandRank::Trailing => trailing.push(idx),
             }
         }
+        imports.sort_by_key(|&idx| {
+            import_sort_key(&body[idx], first_party).expect("import band holds only imports")
+        });
         leading.sort_by_key(|idx| self.keys[idx]);
         trailing.sort_by_key(|idx| self.keys[idx]);
-        let below_imports = skeleton.partition_point(|idx| self.ranks[idx] == 0);
-        let (imports, definitions) = skeleton.split_at_mut(below_imports);
-        imports.sort_by_key(|&idx| {
-            import_sort_key(&body[idx], first_party).expect("rank 0 is import")
-        });
-        out.extend(imports.iter().copied());
+        out.append(&mut imports);
         out.append(&mut leading);
-        out.extend(definitions.iter().copied());
+        out.append(&mut definitions);
         out.append(&mut trailing);
     }
 
@@ -148,16 +157,20 @@ pub(super) fn band_module_constants<'src>(
 /// between canonical groups. `None` falls back to the source gap, the
 /// case for a pinned anchor on either side, leaving its spacing intact.
 pub(super) fn banded_gap(
-    ranks: &HashMap<usize, u8>,
+    ranks: &HashMap<usize, BandRank>,
     body: &[Stmt],
     first_party: &[String],
     a: usize,
     b: usize,
 ) -> Option<&'static str> {
     Some(match (*ranks.get(&a)?, *ranks.get(&b)?) {
-        (1, 1) | (3, 3) => "\n",
-        (0, 0) if same_import_group(&body[a], &body[b], first_party) => "\n",
-        (_, 2) | (2, _) => "\n\n\n",
+        (BandRank::Leading, BandRank::Leading) | (BandRank::Trailing, BandRank::Trailing) => "\n",
+        (BandRank::Import, BandRank::Import)
+            if same_import_group(&body[a], &body[b], first_party) =>
+        {
+            "\n"
+        }
+        (_, BandRank::Definition) | (BandRank::Definition, _) => "\n\n\n",
         _ => "\n\n",
     })
 }
@@ -189,7 +202,7 @@ fn module_band_plan<'src>(
     let mut def_at: HashMap<&'src str, usize> = HashMap::new();
     let mut dup_defs: HashSet<&'src str> = HashSet::new();
     let mut imports: HashSet<&'src str> = HashSet::new();
-    let mut ranks: HashMap<usize, u8> = HashMap::new();
+    let mut ranks: HashMap<usize, BandRank> = HashMap::new();
     let mut carries: Vec<(usize, TextRange)> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
@@ -228,15 +241,15 @@ fn module_band_plan<'src>(
                 if def_at.insert(name.as_str(), idx).is_some() {
                     dup_defs.insert(name.as_str());
                 }
-                ranks.insert(idx, 2);
+                ranks.insert(idx, BandRank::Definition);
             }
             Stmt::Import(node) => {
                 imports.extend(node.names.iter().map(bare_import_bound_name));
-                ranks.insert(idx, 0);
+                ranks.insert(idx, BandRank::Import);
             }
             Stmt::ImportFrom(node) => {
                 imports.extend(node.names.iter().map(from_import_bound_name));
-                ranks.insert(idx, 0);
+                ranks.insert(idx, BandRank::Import);
             }
             _ => {
                 if let Some((name, value)) = const_target {
@@ -319,7 +332,14 @@ fn module_band_plan<'src>(
             .collect();
         for (s, tier) in members.iter().copied().zip(tier_levels(&dep_sets)?) {
             keys.insert(sites[s].idx, (tier, sites[s].name));
-            ranks.insert(sites[s].idx, if band { 3 } else { 1 });
+            ranks.insert(
+                sites[s].idx,
+                if band {
+                    BandRank::Trailing
+                } else {
+                    BandRank::Leading
+                },
+            );
         }
     }
     let mut edges: Vec<(usize, usize)> = Vec::new();
@@ -336,7 +356,7 @@ fn module_band_plan<'src>(
         }
     }
     for (idx, stmt) in body.iter().enumerate() {
-        if ranks.get(&idx) == Some(&2) {
+        if ranks.get(&idx) == Some(&BandRank::Definition) {
             for name in eval_time_refs(stmt, defer_annotations) {
                 if let Some(&dep) = site_at.get(name).filter(|&&dep| !anchored[dep]) {
                     edges.push((idx, sites[dep].idx));
@@ -400,6 +420,24 @@ mod tests {
     }
 
     #[test]
+    fn drain_region_hoists_an_import_below_a_definition() {
+        let source =
+            parse("def helper(value):\n    return value\n\n\nimport os\n\n\nCONFIG = helper\n");
+        let body = &source.ast().body;
+        let blocks: Vec<TextRange> = (0..body.len())
+            .map(|i| block_range(&source, body, i, source.module_range()))
+            .collect();
+        let mut order: Vec<usize> = (0..body.len()).collect();
+        band_module_constants(&source, body, &blocks, &[], false, None, &mut order)
+            .expect("a definition before an import bands without panicking");
+        assert_eq!(
+            order,
+            vec![1, 0, 2],
+            "the import hoists above the def and CONFIG pools below it",
+        );
+    }
+
+    #[test]
     fn module_band_plan_anchors_a_constant_naming_a_duplicated_definition() {
         let source = parse("def f():\n    pass\n\n\ndef f():\n    pass\n\n\nALIAS = f\n");
         let plan = plan_of(&source).expect("acyclic module plans");
@@ -414,7 +452,8 @@ mod tests {
         let source = parse("def build():\n    return 1\n\n\nTABLE = dict(timeout=30)\n");
         let plan = plan_of(&source).expect("acyclic module plans");
         assert_eq!(
-            plan.ranks[&1], 1,
+            plan.ranks[&1],
+            BandRank::Leading,
             "dict is a builtin, so TABLE rides the leading band"
         );
     }
@@ -423,16 +462,24 @@ mod tests {
     fn module_band_plan_bands_leading_and_trailing_constants() {
         let source = parse("LEAD = 1\n\n\ndef make():\n    return 1\n\n\nTRAIL = make\n");
         let plan = plan_of(&source).expect("acyclic module plans");
-        assert_eq!(plan.ranks[&0], 1, "LEAD touches only a literal");
-        assert_eq!(plan.ranks[&1], 2, "make is a definition");
-        assert_eq!(plan.ranks[&2], 3, "TRAIL names make");
+        assert_eq!(
+            plan.ranks[&0],
+            BandRank::Leading,
+            "LEAD touches only a literal"
+        );
+        assert_eq!(plan.ranks[&1], BandRank::Definition, "make is a definition");
+        assert_eq!(plan.ranks[&2], BandRank::Trailing, "TRAIL names make");
     }
 
     #[test]
     fn module_band_plan_carries_a_prose_comment_into_the_band() {
         let source = parse("def f():\n    pass\n\n# note\n\nX = 1\n");
         let plan = plan_of(&source).expect("acyclic module plans");
-        assert_eq!(plan.ranks[&1], 1, "X leads, hoisting above f");
+        assert_eq!(
+            plan.ranks[&1],
+            BandRank::Leading,
+            "X leads, hoisting above f"
+        );
         let (idx, comment) = plan
             .carries
             .first()
@@ -453,7 +500,8 @@ mod tests {
         let source = parse("X = X\n");
         let plan = plan_of(&source).expect("self-reference does not cycle");
         assert_eq!(
-            plan.ranks[&0], 1,
+            plan.ranks[&0],
+            BandRank::Leading,
             "a self-reference constrains nothing, so X leads"
         );
     }

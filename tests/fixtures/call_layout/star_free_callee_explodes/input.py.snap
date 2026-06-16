@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/call_layout/star_free_callee_explodes/input.py
+---
+def bisect_left(a, x, lo=0, hi=None):
+    return a
+
+
+index = bisect_left(
+    a=data,
+    x=target,
+    lo=low,
+    hi=high
+)

@@ -1,0 +1,13 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/import_below_definition_hoists/input.py
+---
+import os
+
+
+def helper(value):
+    return value
+
+
+CONFIG = helper

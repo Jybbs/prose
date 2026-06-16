@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Import Below a Definition Hoists Into the Import Band"
+
+description = '''
+A bare import sitting beneath a `def` rises into the import band at the top of the module, the constant that names the definition pooling into the trailing band below it.
+'''

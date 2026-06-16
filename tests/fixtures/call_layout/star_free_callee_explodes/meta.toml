@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "The Same Call Explodes With No Star Import in Scope"
+
+description = '''
+With no `from x import *` to cloud resolution, the callee resolves to its module `def` and the over-threshold call explodes to keyword form, confirming the guard withholds the rewrite only when a star import is present.
+'''
