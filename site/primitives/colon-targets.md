@@ -75,6 +75,7 @@ A new `:`-context rule implements `ColonEmitter`, overrides the handlers for the
 - [[align-colons]] aligns multi-item groups across every context.
 - [[strip-align-padding]] strips padding from singleton groups.
 - [[align-match-case]] owns the match-arm context exclusively.
+- The `=`-context sibling builds its members in `equal_targets`, described under [[aligner]].
 
 </template>
 

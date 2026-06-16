@@ -1,0 +1,5 @@
+[harness]
+rules = ["collection-layout", "align-equals"]
+# Ruff collapses the boundary call to one line, where the keyword `=`
+# spacing never runs, so the cycle is prose-only by construction.
+skip_ruff_coexistence = true

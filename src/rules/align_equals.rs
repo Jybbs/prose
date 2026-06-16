@@ -18,15 +18,17 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyNodeRef, AnyParameterRef, ArgOrKeyword, Expr, ExprCall, ExprRef, Parameters, Stmt,
-    token::TokenKind,
+    Expr, ExprCall, Parameters, Stmt,
     visitor::{Visitor as AstVisitor, walk_body, walk_expr, walk_stmt},
 };
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
-    primitives::{aligner, range::paren_aware_range},
+    primitives::{
+        aligner,
+        equal_targets::{self, EqualMember},
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -54,26 +56,6 @@ impl Rule for AlignEquals {
 
     fn id(&self) -> RuleId {
         Self::SLUG
-    }
-}
-
-/// An `=`-anchored alignment member paired with `value_gap`, the span
-/// between the operator and the value that an aligned run rewrites to
-/// one space.
-#[derive(Clone, Copy)]
-struct EqualMember {
-    member: aligner::Member,
-    value_gap: TextRange,
-}
-
-impl EqualMember {
-    /// Pairs `member` with the value-side gap running from just past its
-    /// `op_len`-wide operator to the parenthesis-aware `value_start`.
-    fn new(member: aligner::Member, op_len: TextSize, value_start: TextSize) -> Self {
-        Self {
-            member,
-            value_gap: TextRange::new(member.gap.end() + op_len, value_start),
-        }
     }
 }
 
@@ -117,73 +99,11 @@ impl Visitor<'_> {
         self.walker.push_with_gaps(name_edits, gaps);
     }
 
-    /// Builds an `=`-anchored member with `target` as the LHS span,
-    /// anchoring the `=` between `target.end()` and `value`'s
-    /// parenthesis-aware start so the value-side gap stops before any
-    /// wrapping `(`.
-    fn equal_member(
-        &self,
-        target: TextRange,
-        value: ExprRef,
-        parent: AnyNodeRef,
-    ) -> Option<EqualMember> {
-        let value_start = self.paren_aware(value, parent).start();
-        let member = aligner::range_anchored_member_single_line(
-            self.walker.source,
-            target,
-            TextRange::new(target.end(), value_start),
-            |t| t.kind() == TokenKind::Equal,
-            0,
-        )?;
-        Some(EqualMember::new(member, TextSize::of('='), value_start))
-    }
-
-    /// members. A positional argument, a `**` unpacking, an interior
-    /// comment, or a keyword sharing its physical line with another
-    /// argument ends the active run, so a condensed keyword keeps its
-    /// tight `name=value` rather than taking the `=` buffer. A keyword
-    /// whose value spans lines joins the run, then closes it after
-    /// itself, so the keywords past it align as a separate group.
-    fn keyword_groups(&self, call: &ExprCall) -> Vec<Vec<EqualMember>> {
-        let source = self.walker.source;
-        let arg_lines: Vec<_> = call
-            .arguments
-            .arguments_source_order()
-            .map(|a| source.line_index(a.start()))
-            .collect();
-        aligner::adjacent_member_groups(
-            source,
-            call.arguments.arguments_source_order(),
-            true,
-            |arg| {
-                let Some(keyword) = self.qualify_keyword(arg) else {
-                    return aligner::Slot::Break;
-                };
-                let line = source.line_index(keyword.member.line_start);
-                if arg_lines.iter().filter(|&&l| l == line).count() > 1 {
-                    return aligner::Slot::Break;
-                }
-                if self.walker.is_held(keyword.member.line_start) {
-                    aligner::Slot::Bridge
-                } else {
-                    aligner::Slot::Member(keyword)
-                }
-            },
-        )
-    }
-
-    /// `expr`'s range widened to its explicit parentheses, recovered
-    /// against `parent`, so a parenthesized left-hand side ends past
-    /// its closing `)` instead of leaving the paren inside the gap.
-    fn paren_aware(&self, expr: ExprRef, parent: AnyNodeRef) -> TextRange {
-        paren_aware_range(expr, parent, self.walker.source.tokens())
-    }
-
     fn process_body(&mut self, body: &[Stmt]) {
-        let rule = self.walker.rule;
-        for group in
-            aligner::line_adjacent_groups(self.walker.source, body, rule, |s| self.qualify(s))
-        {
+        let source = self.walker.source;
+        for group in aligner::line_adjacent_groups(source, body, self.walker.rule, |s| {
+            equal_targets::assignment(source, s)
+        }) {
             self.emit_equal_group(&group);
         }
     }
@@ -198,105 +118,26 @@ impl Visitor<'_> {
     /// argument keeps its tight `name=value`, and a single-line call or
     /// a held row is left untouched.
     fn process_call(&mut self, call: &ExprCall) {
-        let source = self.walker.source;
-        if !source.contains_line_break(call.arguments.range()) {
-            return;
-        }
-        for group in self.keyword_groups(call) {
+        for group in equal_targets::keyword_groups(self.walker.source, self.walker.rule, call, true)
+        {
             self.emit_equal_group(&group);
         }
     }
 
     /// Walks `params` through [`aligner::adjacent_member_groups`] with
-    /// [`Self::qualify_parameter`], emitting an alignment pass for each
+    /// [`equal_targets::parameter`], emitting an alignment pass for each
     /// run of defaulted parameters. A multi-line default closes the run
     /// after it, so the parameters past it align as a separate group,
     /// mirroring an exploded call's keyword runs.
     fn process_parameters(&mut self, params: &Parameters) {
-        let groups = aligner::adjacent_member_groups(
-            self.walker.source,
-            params.iter_source_order(),
-            true,
-            |param| self.qualify_parameter(param).into(),
-        );
+        let source = self.walker.source;
+        let groups =
+            aligner::adjacent_member_groups(source, params.iter_source_order(), true, |p| {
+                equal_targets::parameter(source, p).into()
+            });
         for group in groups {
             self.emit_aligned(&group);
         }
-    }
-
-    /// Returns the alignment member for an annotated `x: int = 1`, plain
-    /// `x = 1`, or augmented `x += 1` statement, measuring the left-hand
-    /// side [paren-aware](Self::paren_aware). `None` for any other shape
-    /// or when the span up to the operator breaks across lines.
-    fn qualify(&self, stmt: &Stmt) -> Option<EqualMember> {
-        match stmt {
-            Stmt::AnnAssign(a) => {
-                let value = a.value.as_deref()?;
-                let annotation = self.paren_aware(a.annotation.as_ref().into(), a.into());
-                self.equal_member(a.target.range().cover(annotation), value.into(), a.into())
-            }
-            Stmt::Assign(a) => {
-                let [target] = a.targets.as_slice() else {
-                    return None;
-                };
-                self.equal_member(
-                    self.paren_aware(target.into(), a.into()),
-                    a.value.as_ref().into(),
-                    a.into(),
-                )
-            }
-            Stmt::AugAssign(a) => {
-                let op = a.op.as_str();
-                let target_range = self.paren_aware(a.target.as_ref().into(), a.into());
-                let value_start = self.paren_aware(a.value.as_ref().into(), a.into()).start();
-                let member = aligner::range_anchored_member_single_line(
-                    self.walker.source,
-                    target_range,
-                    TextRange::new(target_range.end(), value_start),
-                    |t| t.kind().as_augmented_assign_operator().is_some(),
-                    op.len(),
-                )?;
-                // `op` is the binary form (`+`), so the augmented operator
-                // runs one column longer for its trailing `=`.
-                let op_len = TextSize::of(op) + TextSize::of('=');
-                Some(EqualMember::new(member, op_len, value_start))
-            }
-            _ => None,
-        }
-    }
-
-    /// Returns the alignment member for a `name=value` keyword argument,
-    /// or `None` for a positional argument or a `**` unpacking. A keyword
-    /// whose value spans lines still qualifies, since its `=` sits on the
-    /// keyword's first line where [`Self::equal_member`] anchors it.
-    fn qualify_keyword(&self, arg: ArgOrKeyword<'_>) -> Option<EqualMember> {
-        let ArgOrKeyword::Keyword(keyword) = arg else {
-            return None;
-        };
-        let name = keyword.arg.as_ref()?;
-        self.equal_member(name.range(), (&keyword.value).into(), keyword.into())
-    }
-
-    /// Returns the alignment member for an annotated function parameter
-    /// carrying a default value, or `None` for any other shape. Width
-    /// spans the parameter name through the annotation's
-    /// [paren-aware](Self::paren_aware) end, and the value-side gap is
-    /// recovered against the parameter-with-default node so a
-    /// parenthesized default keeps its `(`.
-    fn qualify_parameter(&self, param: AnyParameterRef<'_>) -> Option<EqualMember> {
-        let AnyParameterRef::NonVariadic(with_default) = param else {
-            return None;
-        };
-        let annotation = param.annotation()?;
-        let default = param.default()?;
-        let annotation_end = self
-            .paren_aware(annotation.into(), param.as_parameter().into())
-            .end();
-        self.equal_member(
-            TextRange::new(param.name().start(), annotation_end),
-            default.into(),
-            with_default.into(),
-        )
     }
 
     /// The value-side gaps for every member in `group` whose value

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Assigned Dict Expands at the Aligned Equals"
+
+description = '''
+`HEADER_VALIDATORS` fits inline at its unaligned `=`, but `align-equals` shifts that `=` rightward to clear the longer `_VALID_HEADER_VALUE_RE_BYTE`. `collection-layout` reserves the shifted column, so the dict **stays expanded** from the first pass rather than collapsing and re-exploding on the next.
+'''

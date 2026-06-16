@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/padded_dict_value_keeps_inline_fit/input.py
+---
+align-colons@25..37
+collection-layout@109..110
