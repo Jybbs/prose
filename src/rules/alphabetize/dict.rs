@@ -15,7 +15,6 @@ use crate::{
     primitives::{
         edit::{apply_inline_edits, splice_parses},
         orderer::{assemble_blocks, assemble_separated, block_range, blocks_span, permute_full},
-        range::paren_aware_range,
     },
     source::Source,
 };
@@ -103,7 +102,9 @@ fn dict_sort_key<'a>(source: &'a Source, item: &'a DictItem) -> Option<(u8, &'a 
 /// enclosing it. A multiline reorder splits each entry at this offset, so
 /// excluding the closing parens would shed them into the separator tail.
 fn item_value_end(source: &Source, dict: &ExprDict, item: &DictItem) -> TextSize {
-    paren_aware_range((&item.value).into(), dict.into(), source.tokens()).end()
+    source
+        .paren_aware_range((&item.value).into(), dict.into())
+        .end()
 }
 
 /// Returns the new-order slot indices after which a blank-line

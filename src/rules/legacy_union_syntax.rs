@@ -15,10 +15,7 @@ use ruff_python_ast::{
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::{
-        binding::{from_import_bound_name, top_level_module},
-        range::paren_aware_range,
-    },
+    primitives::binding::{from_import_bound_name, top_level_module},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -99,7 +96,7 @@ impl<'a> Walker<'a> {
             .parents
             .last()
             .expect("invariant: subscript visited inside a stmt or expr");
-        let range = paren_aware_range(subscript.into(), parent, self.source.tokens());
+        let range = self.source.paren_aware_range(subscript.into(), parent);
         let edit = Edit::range_replacement(replacement, range);
         self.diagnostics
             .push(Diagnostic::suggestion(self.rule, range, message, edit));

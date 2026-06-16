@@ -3,7 +3,7 @@
 use std::{path::Path, str::FromStr};
 
 use ruff_python_ast::{
-    ModModule,
+    AnyNodeRef, ExprRef, ModModule,
     token::{Token, Tokens},
 };
 use ruff_python_parser::{ParseError, Parsed, parse_module};
@@ -18,7 +18,10 @@ use ruff_source_file::{
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use thiserror::Error;
 
-use crate::{primitives::binding::BindingAnalysis, suppression::SuppressionMap};
+use crate::{
+    primitives::{binding::BindingAnalysis, range::paren_aware_range},
+    suppression::SuppressionMap,
+};
 
 /// Owned wrapper around a parsed Python source file.
 ///
@@ -190,6 +193,12 @@ impl Source {
         find_newline(self.text())
             .map_or(LineEnding::Lf, |(_, ending)| ending)
             .as_str()
+    }
+
+    /// Returns `expr`'s range widened to the explicit parentheses
+    /// recovered against `parent`, threading this source's token stream.
+    pub(crate) fn paren_aware_range(&self, expr: ExprRef, parent: AnyNodeRef) -> TextRange {
+        paren_aware_range(expr, parent, self.tokens())
     }
 
     /// Returns the first non-trivia token scanning backward from

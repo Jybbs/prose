@@ -10,11 +10,7 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{
-    primitives::{aligner, range::paren_aware_range},
-    rule::RuleId,
-    source::Source,
-};
+use crate::{primitives::aligner, rule::RuleId, source::Source};
 
 /// An `=`-anchored alignment member paired with `value_gap`, the span
 /// between the operator and the value that an aligned run rewrites to
@@ -35,6 +31,16 @@ impl EqualMember {
         }
     }
 
+    /// This member's alignment slot, bridging the run when its row is
+    /// skip-held for `rule` so neighbors align around it.
+    pub(crate) fn slot(self, source: &Source, rule: RuleId) -> aligner::Slot<Self> {
+        if aligner::is_held(source, rule, self.member.line_start) {
+            aligner::Slot::Bridge
+        } else {
+            aligner::Slot::Member(self)
+        }
+    }
+
     /// The value's parenthesis-aware start, where the `=`-side gap closes.
     pub(crate) fn value_start(self) -> TextSize {
         self.value_gap.end()
@@ -49,7 +55,7 @@ pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<EqualMember> {
     match stmt {
         Stmt::AnnAssign(a) => {
             let value = a.value.as_deref()?;
-            let annotation = paren_aware(source, a.annotation.as_ref().into(), a.into());
+            let annotation = source.paren_aware_range(a.annotation.as_ref().into(), a.into());
             equal_member(
                 source,
                 a.target.range().cover(annotation),
@@ -63,15 +69,17 @@ pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<EqualMember> {
             };
             equal_member(
                 source,
-                paren_aware(source, target.into(), a.into()),
+                source.paren_aware_range(target.into(), a.into()),
                 a.value.as_ref().into(),
                 a.into(),
             )
         }
         Stmt::AugAssign(a) => {
             let op = a.op.as_str();
-            let target_range = paren_aware(source, a.target.as_ref().into(), a.into());
-            let value_start = paren_aware(source, a.value.as_ref().into(), a.into()).start();
+            let target_range = source.paren_aware_range(a.target.as_ref().into(), a.into());
+            let value_start = source
+                .paren_aware_range(a.value.as_ref().into(), a.into())
+                .start();
             let member = aligner::range_anchored_member_single_line(
                 source,
                 target_range,
@@ -122,11 +130,7 @@ pub(crate) fn keyword_groups(
             if arg_lines.iter().filter(|&&l| l == line).count() > 1 {
                 return aligner::Slot::Break;
             }
-            if aligner::is_held(source, rule, member.member.line_start) {
-                aligner::Slot::Bridge
-            } else {
-                aligner::Slot::Member(member)
-            }
+            member.slot(source, rule)
         },
     )
 }
@@ -142,7 +146,9 @@ pub(crate) fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<E
     };
     let annotation = param.annotation()?;
     let default = param.default()?;
-    let annotation_end = paren_aware(source, annotation.into(), param.as_parameter().into()).end();
+    let annotation_end = source
+        .paren_aware_range(annotation.into(), param.as_parameter().into())
+        .end();
     equal_member(
         source,
         TextRange::new(param.name().start(), annotation_end),
@@ -161,7 +167,7 @@ fn equal_member(
     value: ExprRef,
     parent: AnyNodeRef,
 ) -> Option<EqualMember> {
-    let value_start = paren_aware(source, value, parent).start();
+    let value_start = source.paren_aware_range(value, parent).start();
     let member = aligner::range_anchored_member_single_line(
         source,
         target,
@@ -187,11 +193,4 @@ fn keyword(source: &Source, arg: ArgOrKeyword<'_>) -> Option<EqualMember> {
         (&keyword.value).into(),
         keyword.into(),
     )
-}
-
-/// `expr`'s range widened to its explicit parentheses, recovered against
-/// `parent`, so a parenthesized left-hand side ends past its closing `)`
-/// instead of leaving the paren inside the gap.
-fn paren_aware(source: &Source, expr: ExprRef, parent: AnyNodeRef) -> TextRange {
-    paren_aware_range(expr, parent, source.tokens())
 }

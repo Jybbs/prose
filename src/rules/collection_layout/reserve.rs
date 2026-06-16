@@ -47,14 +47,8 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
     fn visit_body(&mut self, body: &'a [Stmt]) {
         let source = self.source;
         let groups = aligner::adjacent_member_groups(source, body, false, |stmt| {
-            let Some(member) = equal_targets::assignment(source, stmt) else {
-                return aligner::Slot::Break;
-            };
-            if aligner::is_held(source, AlignEquals::SLUG, member.member.line_start) {
-                aligner::Slot::Bridge
-            } else {
-                aligner::Slot::Member(member)
-            }
+            equal_targets::assignment(source, stmt)
+                .map_or(aligner::Slot::Break, |m| m.slot(source, AlignEquals::SLUG))
         });
         self.record(groups);
         walk_body(self, body);

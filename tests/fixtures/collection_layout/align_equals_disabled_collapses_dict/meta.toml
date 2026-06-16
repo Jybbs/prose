@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Assigned Dict Collapses Without a Reserved Column"
+
+description = '''
+With `align-equals` disabled, `collection-layout` reserves no shifted column, so `HEADER_VALIDATORS`'s dict measures against its literal `=` column and **collapses inline**, the exact contrast to the reserved case where the aligned `=` would keep the same dict expanded.
+'''

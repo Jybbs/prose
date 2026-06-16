@@ -17,7 +17,7 @@ use super::classify::{
 };
 use super::flow::flow_lines;
 use crate::{
-    primitives::{INDENT_STEP, edit::narrowed_replacement, range::paren_aware_range},
+    primitives::{INDENT_STEP, edit::narrowed_replacement},
     source::Source,
 };
 
@@ -296,7 +296,7 @@ impl<'a> Layouter<'a> {
     /// recovered against `parent` so precedence-bearing parens like
     /// `(-a) ** 2` survive a borrow.
     fn slice_with_parens(&self, expr: &Expr, parent: AnyNodeRef) -> &'a str {
-        let range = paren_aware_range(expr.into(), parent, self.source.tokens());
+        let range = self.source.paren_aware_range(expr.into(), parent);
         self.source.slice(range)
     }
 
