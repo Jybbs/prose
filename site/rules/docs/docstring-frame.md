@@ -1,5 +1,5 @@
 ---
-caption : "drops a multi-line docstring's opener and closer onto their own lines."
+caption : "Drops a multi-line docstring's opener and closer onto their own lines."
 related : [docstring-wrap, docstring-expand]
 layout  : doc
 ---

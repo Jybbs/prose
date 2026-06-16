@@ -1,0 +1,11 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/subscript_target_joins/input.py
+---
+collection-layout@129..177
+collection-layout@29..46
+collection-layout@300..338
+collection-layout@373..420
+collection-layout@5..14
+collection-layout@60..76

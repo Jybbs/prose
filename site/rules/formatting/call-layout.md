@@ -1,5 +1,5 @@
 ---
-caption : "explodes a keyword-expressible call carrying more than the inline-argument cap to one keyword argument per line."
+caption : "Explodes a keyword-expressible call carrying more than the inline-argument cap to one keyword argument per line."
 related : [alphabetize, collection-layout, signature-layout, strip-trailing-commas]
 layout  : doc
 ---

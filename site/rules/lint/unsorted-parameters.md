@@ -1,5 +1,5 @@
 ---
-caption : "surfaces a free function whose parameters sit out of alphabetical order."
+caption : "Surfaces a free function whose parameters sit out of alphabetical order."
 related : [alphabetize]
 layout  : doc
 ---

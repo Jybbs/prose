@@ -16,3 +16,7 @@ comment_before_close = [
     # closing note
 ]
 trailing_comment_expands = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh"]  # sits after `]`
+comment_pins_subscript = registry[
+    # selected at runtime
+    resolved_key
+]
