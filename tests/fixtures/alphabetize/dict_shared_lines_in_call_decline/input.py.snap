@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/dict_shared_lines_in_call_decline/input.py
+---
+result = build({"wp": 1, "lt": 2,
+                "ws": 3})

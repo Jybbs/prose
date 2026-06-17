@@ -1,6 +1,6 @@
 //! Computes padding widths and emits alignment edits for rules that
 //! align a shared token across a group of lines. Each rule wraps an
-//! `AlignWalker` whose `emit_group` method drives the math. Per-rule
+//! `AlignWalker` and drives it through the `emit_*` methods. Per-rule
 //! knobs travel through `Settings`. Aligned rows always carry a
 //! one-space buffer between content and the aligned token.
 
@@ -14,15 +14,19 @@ use crate::{
 };
 
 mod emit;
-mod groups;
+mod grouping;
+mod holds;
+mod members;
 
 use emit::emit_group;
 pub(crate) use emit::{operator_columns, space_padding_edit};
-pub(crate) use groups::{
-    Slot, adjacent_member_groups, is_alignment_candidate, is_held, keyed_line_adjacent_groups,
-    line_adjacent_groups, line_anchored_member, line_anchored_member_at_kind,
-    line_anchored_member_between, parameter_split_groups, range_anchored_member_single_line,
-    retain_unheld,
+pub(crate) use grouping::{
+    Slot, adjacent_member_groups, keyed_line_adjacent_groups, line_adjacent_groups,
+};
+pub(crate) use holds::{is_alignment_candidate, is_held, retain_unheld};
+pub(crate) use members::{
+    line_anchored_member, line_anchored_member_at_kind, line_anchored_member_between,
+    parameter_split_groups, range_anchored_member_single_line,
 };
 
 /// Bundles the `groups` accumulator, `settings`, the owning `rule`, and
@@ -50,7 +54,7 @@ impl<'a> AlignWalker<'a> {
 
     /// Aligns `members` as one fix group, recording it when the pass
     /// rewrites at least one gap.
-    pub(crate) fn emit_group(&mut self, members: &[Member]) {
+    fn emit_group(&mut self, members: &[Member]) {
         let edits = self.group_edits(members);
         self.push_group(edits);
     }

@@ -6,10 +6,7 @@
 use ruff_diagnostics::Edit;
 use ruff_text_size::TextRange;
 
-use super::{
-    Member, Settings,
-    groups::{baseline, is_alignment_candidate},
-};
+use super::{Member, Settings, holds::is_alignment_candidate, members::baseline};
 use crate::{config::MaxShift, source::Source};
 
 /// Aligns `members` by splitting the source-ordered run into the

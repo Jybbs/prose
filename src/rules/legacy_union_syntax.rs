@@ -5,6 +5,7 @@
 
 use std::collections::HashMap;
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     AnyNodeRef, Expr, ExprSubscript, Identifier, PythonVersion, Stmt,
@@ -84,11 +85,7 @@ impl<'a> Walker<'a> {
             Expr::Tuple(tuple) => &tuple.elts,
             other => std::slice::from_ref(other),
         };
-        let joined = elements
-            .iter()
-            .map(|e| self.source.slice(e))
-            .collect::<Vec<_>>()
-            .join(" | ");
+        let joined = elements.iter().map(|e| self.source.slice(e)).join(" | ");
         let replacement = format!("{joined}{suffix}");
         let legacy = self.source.slice(subscript);
         let message = format!("`{legacy}` is the legacy form. Use `{replacement}`");

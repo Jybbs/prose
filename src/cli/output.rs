@@ -19,20 +19,20 @@ const UBE: (RgbColor, AnsiColor) = (RgbColor(0x8a, 0x80, 0xcb), AnsiColor::Magen
 /// `quiet` strips the anchor emoji and color down to a bare count
 /// line, and a non-TTY stdout leaves `--diff` headers plain so the
 /// output stays a valid patch.
-pub(crate) struct Presentation {
-    pub(crate) quiet: bool,
-    pub(crate) stdout_tty: bool,
+pub(super) struct Presentation {
+    pub(super) quiet: bool,
+    pub(super) stdout_tty: bool,
 }
 
 impl Presentation {
-    pub(crate) fn decorate_diff(&self) -> bool {
+    pub(super) fn decorate_diff(&self) -> bool {
         self.stdout_tty && !self.quiet
     }
 }
 
 /// One run's outcome, resolved to a single anchored summary line.
 #[derive(Debug)]
-pub(crate) enum Summary {
+pub(super) enum Summary {
     Clean,
     Diagnostics { files: usize, total: usize },
     Reformatted { files: usize },
@@ -75,7 +75,7 @@ impl Summary {
 
 /// Writes the closing summary line. Color escapes are stripped
 /// downstream when `writer` is a non-color `AutoStream`.
-pub(crate) fn report(
+pub(super) fn report(
     writer: &mut dyn Write,
     present: &Presentation,
     summary: &Summary,
@@ -86,7 +86,7 @@ pub(crate) fn report(
     writeln!(writer, "{} {}", ube(summary.anchor()), summary.tinted())
 }
 
-pub(crate) fn ube(text: &str) -> String {
+pub(super) fn ube(text: &str) -> String {
     paint(text, UBE)
 }
 

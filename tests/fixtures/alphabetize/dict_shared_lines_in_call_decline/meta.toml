@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Packed-Line Dict Inside a Call Keeps Source Order"
+
+description = '''
+A multiline dict embedded in a call that packs several entries onto one physical line stays in source order, the same decline as a top-level packed dict, here exercised with a closing brace that trails into the call's argument list.
+'''

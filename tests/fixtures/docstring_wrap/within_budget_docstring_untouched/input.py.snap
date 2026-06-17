@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/docstring_wrap/within_budget_untouched/input.py
+input_file: tests/fixtures/docstring_wrap/within_budget_docstring_untouched/input.py
 ---
 def configure(name, retries):
     """

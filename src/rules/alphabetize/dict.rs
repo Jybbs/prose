@@ -37,6 +37,16 @@ pub(super) fn rewrite_dict_text<'src>(
         return None;
     };
     let multi_line = source.contains_line_break(first.range().cover(last.range()));
+    // The block model decomposes one item per line. A multi-line dict that
+    // packs entries onto a shared physical line has no such decomposition, so a
+    // block reorder would reflow it. Decline, leaving it in source order.
+    if multi_line
+        && d.items
+            .windows(2)
+            .any(|w| source.same_line(w[0].end(), w[1].start()))
+    {
+        return None;
+    }
     // Widen each item to its value's paren-aware end, so a parenthesized
     // value keeps its closing parens inside the block rather than shedding
     // them into the separator tail.

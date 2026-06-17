@@ -1,8 +1,5 @@
 //! LSP request routing: the `textDocument/formatting` handler.
 
-//! Protocol handshake and the synchronous message loop that routes
-//! requests and notifications to the formatting and diagnostic passes.
-
 use lsp_server::{Connection, ErrorCode, ExtractError, Message, Request, Response};
 use lsp_types::{
     DocumentFormattingParams,

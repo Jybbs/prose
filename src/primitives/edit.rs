@@ -56,7 +56,7 @@ pub(crate) fn apply_inline_edits<'src>(
 /// with `source_slice`. Returns `None` when `text` already equals
 /// `source_slice` (no edit needed). Walks codepoint-by-codepoint so
 /// the trim never lands inside a multibyte UTF-8 sequence.
-pub(crate) fn narrow_edit(
+fn narrow_edit(
     mut text: String,
     span: TextRange,
     source_slice: &str,

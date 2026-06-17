@@ -1,9 +1,6 @@
 //! LSP notification routing: decode and dispatch document open /
 //! change / close and watched-file events into republished diagnostics.
 
-//! Protocol handshake and the synchronous message loop that routes
-//! requests and notifications to the formatting and diagnostic passes.
-
 use anyhow::Context;
 use lsp_server::{Connection, Message, Notification};
 use lsp_types::{

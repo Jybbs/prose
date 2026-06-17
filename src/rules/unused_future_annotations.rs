@@ -70,16 +70,10 @@ impl<'a> StatementVisitor<'a> for AnnotationProbe {
         if self.found {
             return;
         }
-        match stmt {
-            Stmt::AnnAssign(_) => self.found = true,
-            Stmt::FunctionDef(StmtFunctionDef {
-                parameters,
-                returns,
-                ..
-            }) if returns.is_some() || parameters.iter().any(|p| p.annotation().is_some()) => {
-                self.found = true;
-            }
-            _ => walk_stmt(self, stmt),
+        if statement_annotations(stmt).is_empty() {
+            walk_stmt(self, stmt);
+        } else {
+            self.found = true;
         }
     }
 }
@@ -110,24 +104,8 @@ impl<'b> StatementVisitor<'b> for ResolutionChecker<'_> {
         if !self.all_safe {
             return;
         }
-        match stmt {
-            Stmt::AnnAssign(StmtAnnAssign { annotation, .. }) => {
-                self.check_annotation(annotation);
-            }
-            Stmt::FunctionDef(StmtFunctionDef {
-                parameters,
-                returns,
-                ..
-            }) => {
-                for annotation in parameters
-                    .iter()
-                    .filter_map(AnyParameterRef::annotation)
-                    .chain(returns.as_deref())
-                {
-                    self.check_annotation(annotation);
-                }
-            }
-            _ => {}
+        for annotation in statement_annotations(stmt) {
+            self.check_annotation(annotation);
         }
         walk_stmt(self, stmt);
     }
@@ -160,6 +138,25 @@ fn rule_fires(source: &Source, target: Option<PythonVersion>) -> bool {
     !has_any_annotation(&source.ast().body)
         || target.is_some_and(PythonVersion::defers_annotations)
         || all_annotations_resolve_eagerly(source)
+}
+
+/// Yields each annotation expression a statement carries directly: an
+/// annotated assignment's annotation, plus a function def's parameter
+/// and return annotations.
+fn statement_annotations(stmt: &Stmt) -> Vec<&Expr> {
+    match stmt {
+        Stmt::AnnAssign(StmtAnnAssign { annotation, .. }) => vec![&**annotation],
+        Stmt::FunctionDef(StmtFunctionDef {
+            parameters,
+            returns,
+            ..
+        }) => parameters
+            .iter()
+            .filter_map(AnyParameterRef::annotation)
+            .chain(returns.as_deref())
+            .collect(),
+        _ => Vec::new(),
+    }
 }
 
 fn surgical_alias_range(node: &StmtImportFrom, alias_idx: usize) -> TextRange {

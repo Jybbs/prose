@@ -111,8 +111,11 @@ impl Layout<'_> {
         let inline = self.build_inline(fd);
         let count_trips = self.max_inline_params.is_some_and(|cap| params.len() > cap);
         let first_line = inline.lines().next().unwrap_or(&inline);
-        let length_trips = self.source.column_of(params.range().start()) + first_line.width()
-            > self.code_line_length;
+        let length_trips = self.source.column_overflows(
+            params.range().start(),
+            first_line.width(),
+            self.code_line_length,
+        );
         let replacement = if count_trips || length_trips {
             self.build_expanded(fd, self.source.line_indent_width(fd.start()))
         } else if self.source.contains_line_break(replacement_range) {

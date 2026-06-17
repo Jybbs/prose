@@ -15,7 +15,8 @@
 //! validation. `cache` houses the `prose cache` subcommand handlers.
 //! `runner` houses the pipeline-orchestration helpers that translate
 //! parsed args into source loading, emitter dispatch, and diff
-//! rendering. `exit_status` carries the matrix every subcommand
+//! rendering. `output` houses the human-readable run summary and its
+//! palette. `exit_status` carries the matrix every subcommand
 //! resolves into.
 
 use std::{
