@@ -10,26 +10,43 @@
   --vp-font-family-base          : 'Lora Variable', Georgia, "Times New Roman", serif;
   --vp-font-family-mono          : 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
+  --prose-c-abigail              : #aba3c3;
   --prose-c-apricot              : #e8876f;
+  --prose-c-aqua-haze            : #f6f8fa;
+  --prose-c-brandy               : #dfbb97;
+  --prose-c-casper               : #adbdcd;
   --prose-c-celadon              : #8cc5a3;
   --prose-c-chambray             : #7db3e0;
   --prose-c-eureka               : #e8c840;
   --prose-c-heath                : #c08597;
+  --prose-c-oat                  : #cdbda5;
+  --prose-c-opal                 : #a3c9c1;
   --prose-c-oslo                 : #93a1b8;
+  --prose-c-rainee               : #b8c8a8;
+  --prose-c-shark                : #24292e;
+  --prose-c-sisal                : #d4ccb8;
+  --prose-c-waterloo             : #8b7f9e;
   --prose-c-whiskey              : #d4a574;
+  --prose-c-wistful              : #bcb2da;
+  --prose-c-woodsmoke            : #17171b;
 
   --prose-c-accent               : var(--prose-c-chambray);
   --prose-c-error                : var(--prose-c-apricot);
   --prose-c-warning              : var(--prose-c-eureka);
 
   --prose-c-family-alignment     : var(--prose-c-eureka);
-  --prose-c-family-cli           : var(--prose-c-ube-pale);
+  --prose-c-family-cli           : var(--prose-c-oslo);
   --prose-c-family-docs          : var(--prose-c-celadon);
   --prose-c-family-engine        : var(--prose-c-ube);
   --prose-c-family-formatting    : var(--prose-c-heath);
-  --prose-c-family-layout        : var(--prose-c-oslo);
+  --prose-c-family-layout        : var(--prose-c-wistful);
   --prose-c-family-lint          : var(--prose-c-apricot);
   --prose-c-family-ordering      : var(--prose-c-chambray);
+
+  --prose-c-section-integrations : var(--prose-c-rainee);
+  --prose-c-section-primitives   : var(--prose-c-opal);
+  --prose-c-section-reference    : var(--prose-c-casper);
+  --prose-c-section-usage        : var(--prose-c-oat);
 
   --prose-radius                 : 8px;
   --prose-radius-sm              : 4px;
@@ -88,13 +105,13 @@
   --vp-c-tip-3                   : var(--vp-c-brand-3);
   --vp-c-tip-soft                : var(--vp-c-brand-soft);
 
-  --vp-button-brand-active-bg    : #7d72c1;
+  --vp-button-brand-active-bg    : var(--prose-c-ube-deep);
   --vp-button-brand-bg           : var(--vp-c-brand-1);
   --vp-button-brand-border       : transparent;
   --vp-button-brand-hover-bg     : var(--vp-c-brand-2);
   --vp-button-brand-hover-border : transparent;
 
-  --vp-code-block-bg             : #f6f8fa;
+  --vp-code-block-bg             : var(--prose-c-aqua-haze);
   --vp-code-font-size            : var(--prose-text-code);
   --vp-code-line-height          : 1.6;
 }
@@ -104,8 +121,8 @@
   --vp-c-brand-2     : var(--prose-c-ube-mid);
   --vp-c-brand-3     : var(--prose-c-ube);
   --vp-c-brand-soft  : color-mix(in srgb, var(--prose-c-ube-pale) 16%, transparent);
-  --vp-c-bg-soft     : #17171b;
-  --vp-code-block-bg : #24292e;
+  --vp-c-bg-soft     : var(--prose-c-woodsmoke);
+  --vp-code-block-bg : var(--prose-c-shark);
   --prose-link-hover : var(--prose-c-ube);
 }
 

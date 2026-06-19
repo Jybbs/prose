@@ -9,7 +9,7 @@ import { parsePipeline }                                   from '../rules/pipeli
 import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
 import { toTitleCase }                                     from '../shared/title-case'
 
-import { resolveFamilyColors } from './family-colors'
+import { cssColor } from './colors'
 
 const KINDS = ['integrations', 'primitives', 'reference', 'rules', 'usage'] as const
 export type OgKind = typeof KINDS[number]
@@ -32,15 +32,20 @@ export function enumeratePages(srcDir: string, pages: readonly string[]): readon
   const primitivesIndex = new Map(discoverPrimitives(path.join(srcDir, 'primitives')).map(p => [p.slug as string, p]))
   const pipeline        = parsePipeline(import.meta.url)
   const pipelinePos     = new Map(pipeline.map(r => [r.slug, r.position]))
-  const familyColors    = resolveFamilyColors(srcDir)
+  const color           = cssColor()
   const out: OgPage[]   = []
   for (const rel of pages) {
     if (rel === 'index.md') continue
     const kind = chapterKind(rel)
     if (kind === null) continue
-    out.push(buildPage(rel, kind, rulesIndex, primitivesIndex, pipeline.length, pipelinePos, familyColors, srcDir))
+    out.push(buildPage(rel, kind, rulesIndex, primitivesIndex, pipeline.length, pipelinePos, color, srcDir))
   }
   return out
+}
+
+function accentFor(kind: OgKind, color: (token: string) => string, family?: RuleFamily): string | undefined {
+  const hex = family !== undefined ? color(`prose-c-family-${family}`) : color(`prose-c-section-${kind}`)
+  return hex || undefined
 }
 
 function buildPage(
@@ -50,13 +55,14 @@ function buildPage(
   primitivesIndex : ReadonlyMap<string, DiscoveredPrimitive>,
   pipelineTotal   : number,
   pipelinePos     : ReadonlyMap<string, number>,
-  familyColors    : Record<RuleFamily, string>,
+  color           : (token: string) => string,
   srcDir          : string
 ): OgPage {
   const slug       = pageSlug(rel)
   const outputPath = ogImagePath(rel)
   if (rel.endsWith('/index.md')) {
     return {
+      accent     : accentFor(kind, color, indexFamily(rel)),
       breadcrumb : [toTitleCase(kind, '-')],
       kind,
       outputPath,
@@ -67,7 +73,7 @@ function buildPage(
     const rule     = rulesIndex.get(slug)!
     const position = pipelinePos.get(slug)
     return {
-      accent     : familyColors[rule.family],
+      accent     : accentFor(kind, color, rule.family),
       breadcrumb : ['Rules', FAMILY_META[rule.family].label],
       caption    : rule.caption,
       category   : rule.category,
@@ -81,6 +87,7 @@ function buildPage(
   if (kind === 'primitives') {
     const primitive = primitivesIndex.get(slug)
     return {
+      accent     : accentFor(kind, color),
       breadcrumb : [toTitleCase(kind, '-')],
       kind,
       outputPath,
@@ -89,6 +96,7 @@ function buildPage(
     }
   }
   return {
+    accent     : accentFor(kind, color),
     breadcrumb : [toTitleCase(kind, '-')],
     kind,
     outputPath,
@@ -99,6 +107,11 @@ function buildPage(
 function chapterKind(rel: string): OgKind | null {
   const head = rel.split('/', 1)[0]
   return (KINDS as readonly string[]).includes(head) ? head as OgKind : null
+}
+
+function indexFamily(rel: string): RuleFamily | undefined {
+  const dir = rel.split('/').at(-2)
+  return dir !== undefined && dir in FAMILY_META ? dir as RuleFamily : undefined
 }
 
 function indexTitle(rel: string, kind: OgKind): string {

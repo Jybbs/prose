@@ -2,22 +2,24 @@ import { createElement, type JSXNode } from 'satori/jsx'
 
 import { CATEGORY_META, FAMILY_META } from '../shared/registries'
 
-import type { BrandAssets }     from './assets'
-import type { OgKind, OgPage }  from './pages'
+import type { BrandAssets }            from './assets'
+import { BODY, BRANDY, MONO_DIM, UBE } from './colors'
+import type { OgPage }                 from './pages'
 import {
-  CARD_HEIGHT, CARD_WIDTH, META_LABEL, MONO_DIM,
+  CARD_HEIGHT, CARD_WIDTH,
   cardShell, leftRail, monoLabel, panelDivider, panelRow, panelShell, toSvg, versionCallout
 } from './parts'
 
-const BODY            = '#d4c8b5'
 const DOCS_TRACK      = '0.14em'
 const WORDMARK_ASPECT = 1031 / 380
 
-const SECTION_ACCENTS: Partial<Record<OgKind, string>> = {
-  integrations : '#b8c8a8',
-  primitives   : '#a89cd8',
-  reference    : '#a8b8c8',
-  usage        : '#c8b8a0'
+const CODE_CHIP = {
+  backgroundColor : 'rgba(255, 255, 255, 0.08)',
+  borderRadius    : 4,
+  color           : UBE,
+  fontFamily      : 'JetBrains Mono',
+  fontSize        : 19,
+  padding         : '2px 8px'
 }
 
 const TITLE_SIZES = {
@@ -34,7 +36,7 @@ export function pageSvg(
 }
 
 function buildCard(page: OgPage, version: string, wordmark: string, glyph: string): JSXNode {
-  const accent = pageAccent(page)
+  const accent = page.accent ?? UBE
   return cardShell(
     watermarkLayer(glyph),
     leftRail(accent),
@@ -67,12 +69,20 @@ function fitTitleSize(text: string, hasCaption: boolean): number {
   return TITLE_SIZES[hasCaption ? 'cap' : 'bare'].find(([max]) => text.length <= max)![1]
 }
 
-function formatCaption(raw: string): string {
-  return raw.replace(/(`|\*\*?|_)(.+?)\1/g, '$2')
-}
-
-function pageAccent(page: OgPage): string {
-  return page.accent ?? SECTION_ACCENTS[page.kind] ?? MONO_DIM
+function captionSegments(raw: string): ReadonlyArray<{ code: boolean; text: string }> {
+  const segs  = [] as Array<{ code: boolean; text: string }>
+  const strip = (s: string) => s.replace(/(\*\*?|_)(.+?)\1/g, '$2')
+  const words = (s: string) => strip(s).split(/\s+/).filter(Boolean)
+  const re    = /`([^`]+)`/g
+  let last = 0
+  let m: RegExpExecArray | null
+  while ((m = re.exec(raw)) !== null) {
+    if (m.index > last) words(raw.slice(last, m.index)).forEach(w => segs.push({ code: false, text: w }))
+    segs.push({ code: true, text: m[1] })
+    last = re.lastIndex
+  }
+  if (last < raw.length) words(raw.slice(last)).forEach(w => segs.push({ code: false, text: w }))
+  return segs
 }
 
 function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
@@ -124,19 +134,21 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
       }
     }),
     ...(hasCaption ? [createElement('div', {
-      children : formatCaption(page.caption!),
-      style    : {
-        color             : BODY,
-        display           : '-webkit-box',
-        fontFamily        : 'Lora',
-        fontSize          : 24,
-        fontWeight        : 400,
-        lineHeight        : 1.3,
-        marginRight       : 200,
-        maxWidth          : 820,
-        overflow          : 'hidden',
-        WebkitBoxOrient   : 'vertical',
-        WebkitLineClamp   : 2
+      children : captionSegments(page.caption!).map(seg => createElement('span', {
+        children : seg.text,
+        style    : seg.code ? CODE_CHIP : {}
+      })),
+      style : {
+        alignItems : 'center',
+        color      : BODY,
+        columnGap  : 7,
+        display    : 'flex',
+        flexWrap   : 'wrap',
+        fontFamily : 'Lora',
+        fontSize   : 24,
+        fontWeight : 400,
+        maxWidth   : 1040,
+        rowGap     : 10
       }
     })] : [])
   )
@@ -180,10 +192,10 @@ function wordmarkBlock(wordmark: string): JSXNode {
     createElement('div', {
       children : 'DOCS',
       style    : {
-        backgroundColor : 'rgba(138, 128, 203, 0.18)',
-        border          : '1px solid rgba(188, 178, 218, 0.32)',
+        backgroundColor : `${UBE}2e`,
+        border          : `1px solid ${BRANDY}52`,
         borderRadius    : 6,
-        color           : '#bcb2da',
+        color           : BRANDY,
         display         : 'flex',
         fontFamily      : 'JetBrains Mono',
         fontSize        : 15,

@@ -1,13 +1,13 @@
 import { createElement, type JSXNode }  from 'satori/jsx'
 
-import type { BrandAssets }             from './assets'
+import type { BrandAssets }          from './assets'
+import { META_LABEL, MONO_DIM, UBE } from './colors'
 import {
-  CARD_WIDTH, META_LABEL, MONO_DIM,
+  CARD_WIDTH,
   cardShell, leftRail, monoLabel, panelDivider, panelRow, panelShell, toSvg, versionCallout
 } from './parts'
 
 const ARTIFACT_LEFT = 120
-const PURPLE        = '#8a80cb'
 const TITLE_ASPECT  = 1031 / 380
 const TITLE_TOP     = 246
 const TITLE_WIDTH   = 889
@@ -19,7 +19,7 @@ export function landingSvg(brand: BrandAssets, version: string): Promise<string>
 
 function buildLandingCard(version: string, titleWithTagline: string): JSXNode {
   return cardShell(
-    leftRail(PURPLE),
+    leftRail(UBE),
     glyphBlock(),
     dataPanel(version),
     titleArtwork(titleWithTagline)
@@ -27,7 +27,7 @@ function buildLandingCard(version: string, titleWithTagline: string): JSXNode {
 }
 
 function dataPanel(version: string): JSXNode {
-  return panelShell(PURPLE, '66',
+  return panelShell(UBE, '66',
     panelRow('URL', 'prose.fyi'),
     panelDivider(),
     versionCallout(version)
@@ -67,7 +67,7 @@ function pilcrowMark(): JSXNode {
     children : '¶',
     style    : {
       alignItems     : 'center',
-      color          : PURPLE,
+      color          : UBE,
       display        : 'flex',
       fontFamily     : 'Fraunces',
       fontSize       : 80,

@@ -4,4 +4,4 @@ The layout rules decide the shape a bracketed construct takes once it outgrows a
 
 <RuleCardList family="layout" />
 
-For the per-rule knobs, see the [**Configuration**](/reference/configuration) reference. For the order these rules fire in *(layout settles the bracketed shape early, so the alignment rules measure their columns against the committed layout)*, see the [**Pipeline Order**](/reference/pipeline-order) reference.
+For the per-rule facets, see the [**Configuration**](/reference/configuration) reference. For the order these rules fire in *(layout settles the bracketed shape early, so the alignment rules measure their columns against the committed layout)*, see the [**Pipeline Order**](/reference/pipeline-order) reference.
