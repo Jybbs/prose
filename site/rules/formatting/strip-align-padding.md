@@ -16,7 +16,7 @@ The rule operates on the `:`-shaped contexts that [[align-colons]] covers (*dict
 
 <RuleConfigTable />
 
-`strip-align-padding` is the cleanup pass for the alignment rules above it, so its only knob is `enabled`. Turning it off leaves one-member alignment contexts as one-row tables *(a one-key dict reading with the same padding a multi-key dict would carry)*, which is rarely what a project wants in practice.
+`strip-align-padding` is the cleanup pass for the alignment rules above it, so its only facet is `enabled`. Turning it off leaves one-member alignment contexts as one-row tables *(a one-key dict reading with the same padding a multi-key dict would carry)*, which is rarely what a project wants in practice.
 
 </template>
 

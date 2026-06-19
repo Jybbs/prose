@@ -6,7 +6,7 @@ stability: internal
 
 <PrimitiveLayout primitive="aligner">
 
-*Aligner* computes padding widths and emits the alignment edits that every alignment rule consumes. The shipped consumers ([[align-colons]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[align-match-case]]) share the same column-resolution math, so the math lives once in *Aligner* and each rule supplies a member list plus a knob-set rather than re-implementing the resolution from scratch.
+*Aligner* computes padding widths and emits the alignment edits that every alignment rule consumes. The shipped consumers ([[align-colons]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[align-match-case]]) share the same column-resolution math, so the math lives once in *Aligner* and each rule supplies a member list plus a facet-set rather than re-implementing the resolution from scratch.
 
 
 ## Public Surface
@@ -25,7 +25,7 @@ A downstream consumer in `0.2.x` cannot directly construct a `Member`, drive `em
 The types every consumer touches:
 
 1. `Member { gap: TextRange, line_start: TextSize, op_width: usize, width: usize }` describes one row in an alignment group. `gap` is the whitespace range immediately before the aligned token, rewritten into padding. `line_start` is the offset of the source-line start, used by `is_alignment_candidate` to confirm each member sits on its own line. `op_width` is the display width of variable-width operators *(`==`, `!=`, `<=`)* opting into right-alignment. `width` is the display-column width from member start to gap start, which is what the math compares to find the target column.
-2. `Settings { max_shift, strip_singleton }` carries the rule's `[rules]` knobs. `From<&AlignmentConfig>` builds the canonical settings, and `with_singleton_strip` flips the singleton-collapse behavior on.
+2. `Settings { max_shift, strip_singleton }` carries the rule's `[rules]` facets. `From<&AlignmentConfig>` builds the canonical settings, and `with_singleton_strip` flips the singleton-collapse behavior on.
 3. `AlignWalker { groups: Vec<Vec<Edit>>, rule: RuleId, settings: Settings, source: &'a Source }` is the carrier each rule's visitor struct wraps. `AlignWalker::new(source, settings, rule)` builds one with an empty `groups` accumulator, where each entry is one fix the pipeline maps to a single diagnostic. `emit_group(&mut self, members)` records a group's alignment edits, the `group_edits` / `push_group` pair lets a rule fold extra edits into a group before committing it, and `is_held(anchor)` reports whether a row's line is skip-suppressed for `rule`.
 
 The entry point `emit_group(source: &Source, members: &[Member], settings: Settings, edits: &mut Vec<Edit>)` splits `members` into contiguous groups whose width spread stays within `max_shift`, resolves each group's column at its widest member, and pushes one `Edit` per row that needs padding into the caller's accumulator. A singleton group collapses its gap to one space, or to zero when `settings.strip_singleton` is set.
@@ -53,7 +53,7 @@ When a run's width spread exceeds `max_shift`, the walk regroups it in source or
 
 A row carrying a line-level skip directive *(`# prose: skip`, `# fmt: skip`, or `# prose: skip[<rule>]`)* is **held** out of its group, excluded from the column math, emitting no edit, and transparent to the run so the rows on either side align as one block around it. The grouping treats a held row's own trailing skip comment as not breaking the run, while a standalone comment or blank line between rows still does.
 
-Variable-width operators opt in to right-alignment by setting `op_width`, shifting each row's padding inward by `max(op_width) - row.op_width`. [[align-comparisons]] is the shipped consumer of this hook, with the infrastructure leaving the door open for future variable-width-operator rules to land as a grouping walker plus a knob set rather than a from-scratch implementation.
+Variable-width operators opt in to right-alignment by setting `op_width`, shifting each row's padding inward by `max(op_width) - row.op_width`. [[align-comparisons]] is the shipped consumer of this hook, with the infrastructure leaving the door open for future variable-width-operator rules to land as a grouping walker plus a facet set rather than a from-scratch implementation.
 
 ## Build Pattern
 

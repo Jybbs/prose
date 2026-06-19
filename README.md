@@ -15,7 +15,7 @@
 ***Prose*** formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries and lists, alphabetizes methods and fields within their groups, applies a singleton rule for colon padding, and treats code like prose rather than minified text.
 
 > [!NOTE]
-> ***Prose*** is still pre-1.0. The rule catalog and configuration knobs continue to grow across release lines.
+> ***Prose*** is still pre-1.0. The rule catalog and configuration facets continue to grow across release lines.
 
 ---
 
@@ -50,7 +50,7 @@ prose server                   # language server over stdio
 
 The full edition lives at [prose.fyi](https://prose.fyi/):
 
-- The [**rule catalog**](https://prose.fyi/rules/) walks every rule with before/after fixtures and per-knob configuration.
+- The [**rule catalog**](https://prose.fyi/rules/) walks every rule with before/after fixtures and per-facet configuration.
 - The [**configuration reference**](https://prose.fyi/reference/configuration) covers the `prose.toml` and `pyproject.toml` config files, every key, and the `[rules]` toggles.
 - The [**cache reference**](https://prose.fyi/reference/cache) covers the cache directory, `--no-cache`, the `[cache]` table, and the `prose cache` subcommands.
 - The [**exit-code matrix**](https://prose.fyi/reference/exit-codes) is the contract CI gates and pre-commit hooks compile against.

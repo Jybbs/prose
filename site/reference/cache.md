@@ -38,7 +38,7 @@ Inserts write to a `.tmp`-suffixed sibling then `rename` onto the final path, so
 
 ## Configuration
 
-The knobs under the `[cache]` table *(`[tool.prose.cache]` in a `pyproject.toml`)*:
+The facets under the `[cache]` table *(`[tool.prose.cache]` in a `pyproject.toml`)*:
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|

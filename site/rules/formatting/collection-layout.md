@@ -14,17 +14,22 @@ The rule fires on dictionary, list, set, and tuple literals. A literal expands w
 
 The rule runs the inverse move as well, joining a multi-line construct whose single-line form fits the budget back onto one line. The join reaches the four literals, a multi-line subscript such as `data[key]` or `matrix[row + step]`, and a multi-line collection key inside a dict, so a tuple key split across lines rejoins and reads as the single clean member [[align-colons]] and [[alphabetize]] fold into their run. A construct that would overflow once joined, or whose subscript index carries a call or other member the single-line form cannot rejoin, keeps its source break for the cross-line guard.
 
-A dict also expands once it holds more than `max-inline-dict-entries` entries, whatever its width, taking any enclosing collection with it. It mirrors [[signature-layout]]'s `max-inline-params`, the same count-gate shape applied to parameters. The trigger is dict-only, since a list or set reads acceptably as a packed run while a dict's key-value pairs earn the vertical layout. Set the knob to `false` to leave width as the only dict gate.
+A dict also expands once it holds more than `max-inline-dict-entries` entries, whatever its width, taking any enclosing collection with it. It mirrors [[signature-layout]]'s `max-inline-params`, the same count-gate shape applied to parameters. The trigger is dict-only, since a list or set reads acceptably as a packed run while a dict's key-value pairs earn the vertical layout. Set the facet to `false` to leave width as the only dict gate.
 
 A dict entry whose `key: value` width overflows the budget at the item-indent column breaks at `:` and hangs the value at `item_indent + INDENT_STEP`. The hang applies per-row, so a multi-item dict hangs only the rows that need it. A single-entry dict whose entry overflows enters the expand path and applies the same break. Tuples, lists, and sets stay out of the hang shape because their elements carry no `:` separator.
+
+Each shape move sits behind its own facet, so a project can switch one off without disturbing the others. `collapse` governs the inverse-join back to one line, `explode` governs every expansion *(the width-driven spread and the `max-inline-dict-entries` count trigger alike, so `false` leaves the cap inert)*, and `wrap-dict-entries` governs the over-wide-entry break at `:`. Each defaults on, preserving the combined behavior above, and clearing one freezes that move while the others keep running.
 
 <template #configuration>
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `enabled` | bool | `true` | Toggle the rule on or off |
+| `collapse` | bool | `true` | Join a fitting multi-line literal, subscript, or dict key back to one line. Setting `false` freezes those shapes where they sit |
+| `explode` | bool | `true` | Expand an overflowing or over-count collection to one entry per line. Setting `false` suppresses every expansion and leaves `max-inline-dict-entries` inert |
 | `max-atomics-per-line` | positive int \| `false` | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. Setting `false` removes the cap and packs each line by width alone |
 | `max-inline-dict-entries` | positive int \| `false` | `3` | Expand a dict once its entry count exceeds the cap, whatever its width. Setting `false` disables the count trigger and leaves width as the only dict gate |
+| `wrap-dict-entries` | bool | `true` | Break an over-wide `key: value` at its `:` and hang the value beneath. Setting `false` leaves the oversized entry on one line |
 
 A short tuple inside a function-call argument list, like `numpy.zeros((3, 4))`, stays inline at the default cap. A `dict` literal with eight non-atomic entries expands regardless of length. A four-entry `dict` expands at the default `max-inline-dict-entries` of `3` even when it fits the line.
 

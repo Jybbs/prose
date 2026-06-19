@@ -1,6 +1,6 @@
 # Reference
 
-Reference is the lookup surface for everything *Prose* exposes once a project is past the [**Usage**](/usage/) chapters. Where Usage walks workflows and Integrations wraps them at boundaries, Reference answers shaped questions about flags, knobs, codes, diagnostic shapes, suppression directives, and the deterministic order rules fire in.
+Reference is the lookup surface for everything *Prose* exposes once a project is past the [**Usage**](/usage/) chapters. Where Usage walks workflows and Integrations wraps them at boundaries, Reference answers shaped questions about flags, facets, codes, diagnostic shapes, suppression directives, and the deterministic order rules fire in.
 
 The [**Glossary**](/reference/glossary) is the substrate underneath every other reference page, because every `[[term]]` link on every page across the whole site lands there. Start at the Glossary when a word in the docs needs a definition rather than a workflow.
 
@@ -12,9 +12,9 @@ Every CLI flag, configuration key, exit code, output format, subcommand, and sup
 
 ## The Section at a Glance
 
-- [**Cache**](/reference/cache) covers the user-level cache, the `[cache]` knobs, the `--no-cache` flag, and the `prose cache clean` subcommand.
+- [**Cache**](/reference/cache) covers the user-level cache, the `[cache]` facets, the `--no-cache` flag, and the `prose cache clean` subcommand.
 - [**CLI**](/reference/cli) covers every flag, its precedence, and the subcommand it belongs to.
-- [**Configuration**](/reference/configuration) covers the `prose.toml` and `pyproject.toml` config files and per-rule knobs.
+- [**Configuration**](/reference/configuration) covers the `prose.toml` and `pyproject.toml` config files and per-rule facets.
 - [**Exit Codes**](/reference/exit-codes) covers the five-code contract CI gates compile against.
 - [**Output Formats**](/reference/output-formats) covers `text`, `json`, `github`, and `sarif` shapes.
 - [**Pipeline Order**](/reference/pipeline-order) covers the deterministic order rules fire in, with rationale per rule.

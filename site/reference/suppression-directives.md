@@ -100,4 +100,4 @@ A trailing `# prose: off` on a statement line *(such as `x = 1  # prose: off`)* 
 
 Per-line and block directives compose against the active rule set. `--select align-equals` narrows the pipeline to one rule, and `# prose: ignore[align-equals]` still suppresses that rule on its line. `--ignore reassigned-constants` drops a rule from the active set, and a line carrying `# prose: ignore[reassigned-constants]` is a no-op since the rule is already not firing.
 
-For the per-rule `enabled` knob, see the [**Configuration**](/reference/configuration) reference. For the conceptual narrative on when to reach for suppression, see the [**Suppression**](/usage/suppression) guide chapter.
+For the per-rule `enabled` facet, see the [**Configuration**](/reference/configuration) reference. For the conceptual narrative on when to reach for suppression, see the [**Suppression**](/usage/suppression) guide chapter.

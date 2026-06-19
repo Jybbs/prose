@@ -17,7 +17,7 @@ align-equals      = false
 collection-layout = { max-atomics-per-line = 3 }
 ```
 
-A bare `false` disables a rule, an inline table sets its knobs while leaving the rule enabled, and a rule you do not name stays on at its default. Under `pyproject.toml` the table reads `[tool.prose.rules]`, and a rule with several knobs may prefer the expanded `[rules.<rule>]` sub-table *(`[tool.prose.rules.<rule>]` in the manifest)*, which carries the same settings as the inline form.
+A bare `false` disables a rule, an inline table sets its facets while leaving the rule enabled, and a rule you do not name stays on at its default. Under `pyproject.toml` the table reads `[tool.prose.rules]`, and a rule with several facets may prefer the expanded `[rules.<rule>]` sub-table *(`[tool.prose.rules.<rule>]` in the manifest)*, which carries the same settings as the inline form.
 
 ## Where *Prose* Looks
 
@@ -73,17 +73,20 @@ first-party = ["myapp", "acme"]
 
 A list entry names a root package, so `myapp` matches `import myapp.db` and `from myapp import app` while leaving `from myapplication import x` in the external `from` group.
 
-## Per-Rule Knobs
+## Per-Rule Facets
 
-The `[rules]` table holds one entry per rule you change. A bare bool is the shorthand for `enabled` (*`alphabetize = false`*), an inline table sets a rule's knobs (*`align-equals = { max-shift = 4 }`*), and a rule you do not name stays enabled at its defaults. The table below lists the knobs each rule accepts, with the *Where* column resolving which rules share a knob. Generic knobs *(`enabled`, `max-shift`)* apply to every rule in their column's named category. Rule-specific knobs read inputs scoped to the named rule, even when two rules happen to spell their knob the same way *(the two `allow` rows are distinct, scoped to different rules and reading different inputs)*.
+The `[rules]` table holds one entry per rule you change. A bare bool is the shorthand for `enabled` (*`alphabetize = false`*), an inline table sets a rule's facets (*`align-equals = { max-shift = 4 }`*), and a rule you do not name stays enabled at its defaults. The table below lists the facets each rule accepts, with the *Where* column resolving which rules share a facet. Generic facets *(`enabled`, `max-shift`)* apply to every rule in their column's named category. Rule-specific facets read inputs scoped to the named rule, even when two rules happen to spell their facet the same way *(the two `allow` rows are distinct, scoped to different rules and reading different inputs)*.
 
 | Key | Type | Where | Default | Meaning |
 |---|---|---|---|---|
 | `enabled` | bool | every rule | `true` | Toggle the rule on or off |
 | `max-shift` | positive int \| `0` \| `false` | alignment rules | `16` | Width-spread budget for an alignment run. A positive `N` caps the spread, `0` forbids any shift so every row sits flush, and `false` lifts the cap so a contiguous run folds into one column. To leave one row out of an otherwise-aligned group, hold it with `# prose: skip` |
 | `docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within Title-case-headed docstring sections, parameter entries mirroring the signature as the rule leaves it and stragglers alphabetizing below. Set `false` to keep narrative-curated entry order while still sorting every other surface |
+| `collapse` | bool | [[collection-layout]] | `true` | Join a fitting multi-line literal, subscript, or dict key back to one line. `false` freezes those shapes where they sit |
+| `explode` | bool | [[collection-layout]] | `true` | Expand an overflowing or over-count collection to one entry per line. `false` suppresses every expansion and leaves the count cap inert |
 | `max-atomics-per-line` | positive int \| `false` | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. `false` removes the cap and packs by width alone |
 | `max-inline-dict-entries` | positive int \| `false` | [[collection-layout]] | `3` | Expand a dict once its entry count exceeds the cap, whatever its width. `false` disables the count trigger |
+| `wrap-dict-entries` | bool | [[collection-layout]] | `true` | Break an over-wide `key: value` at its `:` and hang the value beneath. `false` leaves the oversized entry on one line |
 | `max-inline-args` | positive int \| `false` | [[call-layout]] | `3` | Explode a call to one keyword argument per line once its argument count exceeds the cap. `false` disables the count trigger and leaves every call inline |
 | `allow` | list of module names | [[bare-imports]] | `[]` | Modules whose bare-import form is preserved whatever their attribute count |
 | `allow-aliased` | bool | [[bare-imports]] | `true` | Exempt every aliased bare import (*`import x as y`*) from the rule |
@@ -93,7 +96,7 @@ The `[rules]` table holds one entry per rule you change. A bare bool is the shor
 
 ## Rule Categories
 
-Rules sit in configuration buckets, with each bucket carrying a distinct knob shape.
+Rules sit in configuration buckets, with each bucket carrying a distinct facet shape.
 
 ### Alignment Rules
 
@@ -103,9 +106,9 @@ The rules that line columns vertically share one structural question, which is h
 
 Some rules answer a single yes-or-no question with no parameters worth tuning, so each takes only a bare bool toggle. Reach for `<rule> = false` to silence a rule whose default doesn't fit the project: [[blank-lines]], [[docstring-wrap]], [[legacy-union-syntax]], [[docstring-frame]], [[docstring-expand]], [[step-narration]], [[strip-align-padding]], [[strip-trailing-commas]], and [[unused-future-annotations]].
 
-### Rule-Specific Knobs
+### Rule-Specific Facets
 
-Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the knob shaped for its question. [[alphabetize]] takes `docstring-entries` for the docstring-entry reorder, [[bare-imports]] takes an `allow` list of modules whose bare-import form is preserved alongside an `allow-aliased` toggle for the alias exemption and a `max-attributes` cap on the distinct-attribute count that draws the lint, [[collection-layout]] takes `max-atomics-per-line` to cap the inline-collection budget and `max-inline-dict-entries` to expand a dict past an entry count, [[call-layout]] takes `max-inline-args` to explode a call past an argument count, [[reassigned-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
+Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the facet shaped for its question. [[alphabetize]] takes `docstring-entries` for the docstring-entry reorder, [[bare-imports]] takes an `allow` list of modules whose bare-import form is preserved alongside an `allow-aliased` toggle for the alias exemption and a `max-attributes` cap on the distinct-attribute count that draws the lint, [[collection-layout]] takes the `collapse`, `explode`, and `wrap-dict-entries` facets to switch its shape moves on and off independently, plus `max-atomics-per-line` to cap the inline-collection budget and `max-inline-dict-entries` to expand a dict past an entry count, [[call-layout]] takes `max-inline-args` to explode a call past an argument count, [[reassigned-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
 
 ## Docstring Budgets
 
@@ -113,7 +116,7 @@ Docstrings carry two readings inside one triple-quoted region. Description prose
 
 ## Per-Pattern Overrides
 
-A single config carves out per-pattern exceptions through a `[[tool.prose.overrides]]` array-of-tables. Each entry names a `paths` glob list and the partial `[tool.prose]` body its matched files receive, deep-merged per knob over the file's base so the override wins the knobs it sets and leaves the rest. A generated directory can relax a budget, or a test suite can drop a lint, without a nested config file at every boundary.
+A single config carves out per-pattern exceptions through a `[[tool.prose.overrides]]` array-of-tables. Each entry names a `paths` glob list and the partial `[tool.prose]` body its matched files receive, deep-merged per facet over the file's base so the override wins the facets it sets and leaves the rest. A generated directory can relax a budget, or a test suite can drop a lint, without a nested config file at every boundary.
 
 ```toml
 code-line-length = 88
@@ -129,7 +132,7 @@ paths = ["tests/**"]
 single-use-variables = false
 ```
 
-Globs anchor to the declaring config's directory, so `tests/**` matches the `tests/` beside the config rather than at any depth below it. The array-of-tables shape keeps a multi-knob override readable across lines, where a glob-keyed inline table would crowd it onto one against *Prose*'s legibility mandate. When several entries match one file, *Prose* layers their bodies in document order, leaving the last matching entry to win each knob it sets while the earlier entries' other knobs stay in place.
+Globs anchor to the declaring config's directory, so `tests/**` matches the `tests/` beside the config rather than at any depth below it. The array-of-tables shape keeps a multi-facet override readable across lines, where a glob-keyed inline table would crowd it onto one against *Prose*'s legibility mandate. When several entries match one file, *Prose* layers their bodies in document order, leaving the last matching entry to win each facet it sets while the earlier entries' other facets stay in place.
 
 ## Subset by Invocation
 
