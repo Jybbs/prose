@@ -337,7 +337,7 @@ fn rules_bare_bool_false_leaves_other_knobs_default() {
         Config::from_pyproject_str("[tool.prose.rules]\nalphabetize = false\n").expect("parses");
 
     assert!(!config.rules.alphabetize.enabled);
-    assert!(config.rules.alphabetize.docstring_entries);
+    assert!(config.rules.alphabetize.sort_docstring_entries);
 }
 
 #[rstest]

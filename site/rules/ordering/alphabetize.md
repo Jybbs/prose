@@ -43,7 +43,7 @@ Pair with [[align-imports]] to align the `import` keyword across the freshly-sor
 
 <RuleConfigTable />
 
-The ordering itself follows fixed per-construct conventions. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. Consecutive imports group into their canonical order (*bare first, then external `from`, then local-package*), sorted within each group, with the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that lift into the local-package group alongside relative imports. Set `alphabetize = { docstring-entries = false }` to skip the docstring-entry reorder while keeping every AST-level surface sorted.
+The ordering itself follows fixed per-construct conventions. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. Consecutive imports group into their canonical order (*bare first, then external `from`, then local-package*), sorted within each group, with the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that lift into the local-package group alongside relative imports. Set `alphabetize = { sort-docstring-entries = false }` to skip the docstring-entry reorder while keeping every AST-level surface sorted.
 
 </template>
 
