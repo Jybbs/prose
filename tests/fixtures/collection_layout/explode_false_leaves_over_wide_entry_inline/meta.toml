@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A False Explode Facet Suppresses the Over-Wide-Entry Wrap"
+
+description = '''
+With `explode` off, a dict whose `key: value` entry overflows the budget keeps its whole single line rather than expanding and hanging the value beneath. The wrap is a facet of the expansion `explode` gates, so clearing `explode` freezes it too.
+'''
