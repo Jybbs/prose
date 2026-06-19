@@ -40,8 +40,11 @@ use layouter::Layouter;
 pub(crate) struct CollectionLayout {
     align_equals: Option<aligner::Settings>,
     code_line_length: usize,
+    collapse: bool,
+    explode: bool,
     max_atomics_per_line: usize,
     max_inline_dict_entries: Option<usize>,
+    wrap_dict_entries: bool,
 }
 
 impl CollectionLayout {
@@ -55,10 +58,13 @@ impl CollectionLayout {
                 .enabled
                 .then(|| aligner::Settings::from(align_equals)),
             code_line_length: config.code_width(),
+            collapse: rules.collapse,
+            explode: rules.explode,
             max_atomics_per_line: rules
                 .max_atomics_per_line
                 .map_or(usize::MAX, NonZeroUsize::get),
             max_inline_dict_entries: rules.max_inline_dict_entries.map(NonZeroUsize::get),
+            wrap_dict_entries: rules.wrap_dict_entries,
         }
     }
 }
@@ -66,9 +72,11 @@ impl CollectionLayout {
 impl Rule for CollectionLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let body = &source.ast().body;
-        // Precomputed once so the per-node count check is a containment
-        // scan rather than re-walking each subtree.
-        let tripping_dicts = self.max_inline_dict_entries.map_or_else(Vec::new, |cap| {
+        // The count cap rides the `explode` facet, so a cleared `explode`
+        // leaves no tripping dicts and the cap goes inert. Precomputed once
+        // so the per-node check is a containment scan rather than a re-walk.
+        let count_cap = self.max_inline_dict_entries.filter(|_| self.explode);
+        let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
             let mut ranges = Vec::new();
             any_over_body(body, |expr| {
                 if expr.as_dict_expr().is_some_and(|dict| dict.len() > cap) {
@@ -83,12 +91,15 @@ impl Rule for CollectionLayout {
         });
         let mut visitor = Layouter {
             code_line_length: self.code_line_length,
+            collapse: self.collapse,
             edits: Vec::new(),
+            explode: self.explode,
             max_atomics_per_line: self.max_atomics_per_line,
             newline: source.newline_str(),
             reservations,
             source,
             tripping_dicts,
+            wrap_dict_entries: self.wrap_dict_entries,
         };
         visitor.visit_body(body);
         singleton_groups(visitor.edits)

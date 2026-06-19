@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A False Collapse Facet Freezes Every Multi-Line Shape"
+
+description = '''
+Setting `collapse` to `false` freezes the collapse targets in place. A fitting multi-line literal, a multi-line subscript, and a multi-line collection dict key each stay spread across the lines they were written on rather than joining back to one.
+'''

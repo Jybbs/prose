@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A False Explode Facet Lets an Over-Count Dict Collapse"
+
+description = '''
+With `explode` off the count cap is inert, so a multi-line dict carrying more entries than `max-inline-dict-entries` collapses to one line when its inline form fits. The `collapse` facet, still live, drives the join the inert cap no longer blocks.
+'''

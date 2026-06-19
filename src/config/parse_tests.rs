@@ -16,6 +16,20 @@ fn cap(n: usize) -> MaxShift {
 }
 
 #[test]
+fn collection_layout_facet_false_in_sub_table_leaves_siblings_default() {
+    let config =
+        Config::from_pyproject_str("[tool.prose.rules.collection-layout]\ncollapse = false\n")
+            .expect("parses");
+
+    let rules = &config.rules.collection_layout;
+    assert!(!rules.collapse);
+    assert!(rules.enabled);
+    assert!(rules.explode);
+    assert!(rules.wrap_dict_entries);
+    assert_eq!(rules.max_inline_dict_entries, NonZeroUsize::new(3));
+}
+
+#[test]
 fn docstring_line_length_defaults_to_76_when_field_absent() {
     let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
 

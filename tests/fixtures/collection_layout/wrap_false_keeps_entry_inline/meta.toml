@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A False Wrap Facet Leaves an Oversized Entry on One Line"
+
+description = '''
+Setting `wrap-dict-entries` to `false` keeps an over-wide `key: value` on a single line as the dict expands, rather than breaking at `:` and hanging the value beneath. The width and count caps keep their meaning.
+'''

@@ -40,12 +40,15 @@ struct GatheredItems<'src> {
 
 pub(super) struct Layouter<'a> {
     pub(super) code_line_length: usize,
+    pub(super) collapse: bool,
     pub(super) edits: Vec<Edit>,
+    pub(super) explode: bool,
     pub(super) max_atomics_per_line: usize,
     pub(super) newline: &'static str,
     pub(super) reservations: HashMap<TextSize, usize>,
     pub(super) source: &'a Source,
     pub(super) tripping_dicts: Vec<TextRange>,
+    pub(super) wrap_dict_entries: bool,
 }
 
 impl<'a> Layouter<'a> {
@@ -78,9 +81,11 @@ impl<'a> Layouter<'a> {
                         let row_overflows = !inline.contains('\n')
                             && item_indent + widths[idx] + usize::from(has_more)
                                 > self.code_line_length;
-                        let hung = dict_items.filter(|_| row_overflows).and_then(|items| {
-                            self.hang_dict_value(&items[idx], parent, item_indent)
-                        });
+                        let hung = dict_items
+                            .filter(|_| row_overflows && self.wrap_dict_entries)
+                            .and_then(|items| {
+                                self.hang_dict_value(&items[idx], parent, item_indent)
+                            });
                         out.push_str(&item_prefix);
                         out.push_str(hung.as_deref().unwrap_or(inline));
                         if has_more {
@@ -220,11 +225,16 @@ impl<'a> Layouter<'a> {
     /// `Dict`, `List`, or `Set`'s rendered width overflows, or when a
     /// `Dict` carries more than `max_inline_dict_entries` entries
     /// whatever its width. A subscript only ever collapses, joining its
-    /// `value[index]` onto one line.
+    /// `value[index]` onto one line. The `collapse` facet gates every
+    /// inline join and the `explode` facet gates every expansion, so a
+    /// cleared facet returns `None` and leaves that shape untouched.
     fn replacement_for(&self, expr: &Expr, column: usize, indent: usize) -> Option<String> {
         let range = expr.range();
         if expr.is_subscript_expr() {
-            if !self.source.contains_line_break(range) || self.source.intersects_comment(range) {
+            if !self.collapse
+                || !self.source.contains_line_break(range)
+                || self.source.intersects_comment(range)
+            {
                 return None;
             }
             return self.joined_if_fits(expr, column);
@@ -239,11 +249,12 @@ impl<'a> Layouter<'a> {
         let over_count = self.has_over_count_dict(expr);
         if self.source.contains_line_break(range) {
             if !over_count && let Some(inline) = self.joined_if_fits(expr, column) {
-                return Some(inline);
+                return self.collapse.then_some(inline);
             }
-            return expandable.then(|| self.expand(expr, indent));
+            return (self.explode && expandable).then(|| self.expand(expr, indent));
         }
-        (expandable
+        (self.explode
+            && expandable
             && (over_count || column + self.source.slice(range).width() > self.code_line_length))
             .then(|| self.expand(expr, indent))
     }
