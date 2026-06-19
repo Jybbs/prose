@@ -64,8 +64,8 @@ Config {
         },
         bare_imports: BareImportsConfig {
             allow: [],
-            allow_aliased: true,
             enabled: true,
+            exempt_aliased: true,
             max_attributes: 4,
         },
         align_match_case: AlignmentConfig {

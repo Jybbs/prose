@@ -55,8 +55,8 @@ impl Default for AlphabetizeConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct BareImportsConfig {
     pub allow: Vec<String>,
-    pub allow_aliased: bool,
     pub enabled: bool,
+    pub exempt_aliased: bool,
     pub max_attributes: usize,
 }
 
@@ -64,8 +64,8 @@ impl Default for BareImportsConfig {
     fn default() -> Self {
         Self {
             allow: Vec::new(),
-            allow_aliased: true,
             enabled: true,
+            exempt_aliased: true,
             max_attributes: 4,
         }
     }

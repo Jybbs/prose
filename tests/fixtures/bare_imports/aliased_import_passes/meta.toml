@@ -3,5 +3,5 @@ previewable = true
 title       = "An Aliased Bare Import Passes"
 
 description = '''
-`import os as o` carries the author's deliberate namespace handle, so the `allow-aliased` default **exempts it from the rule** whatever its attribute count.
+`import os as o` carries the author's deliberate namespace handle, so the `exempt-aliased` default **exempts it from the rule** whatever its attribute count.
 '''

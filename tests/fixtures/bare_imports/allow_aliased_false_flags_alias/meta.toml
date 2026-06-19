@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Setting allow-aliased False Flags an Aliased Import"
-
-description = '''
-With `allow-aliased = false`, an aliased `import os as o` loses its exemption and flags once its alias namespace is reached through a single attribute, here `o.getcwd()`.
-'''

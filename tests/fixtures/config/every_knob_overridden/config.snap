@@ -67,8 +67,8 @@ Config {
                 "scipy",
                 "torch",
             ],
-            allow_aliased: false,
             enabled: false,
+            exempt_aliased: false,
             max_attributes: 2,
         },
         align_match_case: AlignmentConfig {
