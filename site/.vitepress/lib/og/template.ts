@@ -72,9 +72,7 @@ function formatCaption(raw: string): string {
 }
 
 function pageAccent(page: OgPage): string {
-  return page.family !== undefined
-    ? FAMILY_META[page.family].color
-    : SECTION_ACCENTS[page.kind] ?? MONO_DIM
+  return page.accent ?? SECTION_ACCENTS[page.kind] ?? MONO_DIM
 }
 
 function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {

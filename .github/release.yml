@@ -8,6 +8,7 @@ changelog:
         - 🦉 engine
         - 🪜 alignment
         - 🪉 ordering
+        - 🧺 layout
         - 🪶 formatting
         - 🧶 lint
     - title: 🪄 CLI

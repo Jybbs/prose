@@ -9,10 +9,13 @@ import { parsePipeline }                                   from '../rules/pipeli
 import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
 import { toTitleCase }                                     from '../shared/title-case'
 
+import { resolveFamilyColors } from './family-colors'
+
 const KINDS = ['integrations', 'primitives', 'reference', 'rules', 'usage'] as const
 export type OgKind = typeof KINDS[number]
 
 export interface OgPage {
+  accent    ?: string
   breadcrumb : readonly string[]
   caption   ?: string
   category  ?: RuleCategory
@@ -29,12 +32,13 @@ export function enumeratePages(srcDir: string, pages: readonly string[]): readon
   const primitivesIndex = new Map(discoverPrimitives(path.join(srcDir, 'primitives')).map(p => [p.slug as string, p]))
   const pipeline        = parsePipeline(import.meta.url)
   const pipelinePos     = new Map(pipeline.map(r => [r.slug, r.position]))
+  const familyColors    = resolveFamilyColors(srcDir)
   const out: OgPage[]   = []
   for (const rel of pages) {
     if (rel === 'index.md') continue
     const kind = chapterKind(rel)
     if (kind === null) continue
-    out.push(buildPage(rel, kind, rulesIndex, primitivesIndex, pipeline.length, pipelinePos, srcDir))
+    out.push(buildPage(rel, kind, rulesIndex, primitivesIndex, pipeline.length, pipelinePos, familyColors, srcDir))
   }
   return out
 }
@@ -46,6 +50,7 @@ function buildPage(
   primitivesIndex : ReadonlyMap<string, DiscoveredPrimitive>,
   pipelineTotal   : number,
   pipelinePos     : ReadonlyMap<string, number>,
+  familyColors    : Record<RuleFamily, string>,
   srcDir          : string
 ): OgPage {
   const slug       = pageSlug(rel)
@@ -62,6 +67,7 @@ function buildPage(
     const rule     = rulesIndex.get(slug)!
     const position = pipelinePos.get(slug)
     return {
+      accent     : familyColors[rule.family],
       breadcrumb : ['Rules', FAMILY_META[rule.family].label],
       caption    : rule.caption,
       category   : rule.category,

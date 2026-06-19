@@ -15,6 +15,7 @@
   --prose-c-chambray             : #7db3e0;
   --prose-c-eureka               : #e8c840;
   --prose-c-heath                : #c08597;
+  --prose-c-oslo                 : #93a1b8;
   --prose-c-whiskey              : #d4a574;
 
   --prose-c-accent               : var(--prose-c-chambray);
@@ -26,6 +27,7 @@
   --prose-c-family-docs          : var(--prose-c-celadon);
   --prose-c-family-engine        : var(--prose-c-ube);
   --prose-c-family-formatting    : var(--prose-c-heath);
+  --prose-c-family-layout        : var(--prose-c-oslo);
   --prose-c-family-lint          : var(--prose-c-apricot);
   --prose-c-family-ordering      : var(--prose-c-chambray);
 
