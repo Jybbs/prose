@@ -111,25 +111,39 @@ impl Default for CallLayoutConfig {
 
 /// Configuration for the `collection_layout` rule.
 ///
+/// `collapse`, `explode`, and `wrap_dict_entries` each gate one shape
+/// move and default `true`. `collapse` joins a fitting multi-line
+/// literal, subscript, or dict key back to one line. `explode` drives
+/// every expansion, the width-driven spread and the
+/// `max_inline_dict_entries` count trigger alike, so `false` leaves the
+/// count cap inert. `wrap_dict_entries` breaks an over-wide
+/// `key: value` at its `:` and hangs the value beneath.
+///
 /// `max_atomics_per_line` and `max_inline_dict_entries` each take a
 /// positive integer or `false`. The integer sets the cap, and `false`
 /// disables it, leaving width as the only gate.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CollectionLayoutConfig {
+    pub collapse: bool,
     pub enabled: bool,
+    pub explode: bool,
     #[serde(deserialize_with = "deserialize_max_atomics_per_line")]
     pub max_atomics_per_line: Option<NonZeroUsize>,
     #[serde(deserialize_with = "deserialize_max_inline_dict_entries")]
     pub max_inline_dict_entries: Option<NonZeroUsize>,
+    pub wrap_dict_entries: bool,
 }
 
 impl Default for CollectionLayoutConfig {
     fn default() -> Self {
         Self {
+            collapse: true,
             enabled: true,
+            explode: true,
             max_atomics_per_line: NonZeroUsize::new(8),
             max_inline_dict_entries: NonZeroUsize::new(3),
+            wrap_dict_entries: true,
         }
     }
 }

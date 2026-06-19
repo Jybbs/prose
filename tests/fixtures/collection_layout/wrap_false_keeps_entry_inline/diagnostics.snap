@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/wrap_false_keeps_entry_inline/input.py
+---
+collection-layout@10..142

@@ -1,0 +1,19 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/collection_layout/collapse_false_freezes_shapes/input.py
+---
+frozen_list = [
+    1,
+    2,
+    3,
+]
+frozen_subscript = registry[
+    "primary"
+]
+frozen_collection_key = {
+    (
+        "x",
+        "y",
+    ): "value",
+}

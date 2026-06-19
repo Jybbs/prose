@@ -16,7 +16,7 @@ The rule reads each block as the run of consecutive imports at the same indentat
 
 <RuleConfigTable />
 
-`max-shift` bounds how far the `import` keyword may shift to align. The rule walks each block of imports in source order and grows a column while its width spread stays within the cap, breaking a fresh column at the first import that would exceed it. A `max-shift` of `false` lifts the cap so a contiguous block folds into one column, and `0` forbids any shift. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the full semantics.
+`max-shift` bounds how far the `import` keyword may shift to align. The rule walks each block of imports in source order and grows a column while its width spread stays within the cap, breaking a fresh column at the first import that would exceed it. A `max-shift` of `false` lifts the cap so a contiguous block folds into one column, and `0` forbids any shift. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
 
 </template>
 

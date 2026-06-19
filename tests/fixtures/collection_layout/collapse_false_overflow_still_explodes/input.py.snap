@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/collection_layout/collapse_false_overflow_still_explodes/input.py
+---
+fitting_stays = [
+    10,
+    20,
+    30,
+]
+overflowing_explodes = [
+    1111111, 2222222, 3333333, 4444444, 5555555,
+    6666666, 7777777, 8888888, 9999999
+]

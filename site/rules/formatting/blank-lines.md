@@ -16,7 +16,7 @@ Module-level `def` and `class` carry two blank lines before them and two after w
 
 <RuleConfigTable />
 
-The canonical blank-line counts are hard-coded to PEP 8's `2`-between-top-level and `1`-between-methods cadence, so the rule carries `enabled` as its only knob. Projects that want a different cadence can disable the rule and let their editor's blank-line conventions stand.
+The canonical blank-line counts are hard-coded to PEP 8's `2`-between-top-level and `1`-between-methods cadence, so the rule carries `enabled` as its only facet. Projects that want a different cadence can disable the rule and let their editor's blank-line conventions stand.
 
 </template>
 

@@ -16,7 +16,7 @@ The rule walks each `BoolOp` whose operands are all `Expr::Compare`. The widest 
 
 <RuleConfigTable />
 
-`max-shift` bounds how far an operator may shift to align. The rule walks each run of comparisons in source order and grows a column while its width spread stays within the cap, breaking a fresh column at the first row that would exceed it. A `max-shift` of `false` lifts the cap so a contiguous run folds into one column, and `0` forbids any shift. The [**per-rule knobs**](/reference/configuration#per-rule-knobs) reference covers the full semantics.
+`max-shift` bounds how far an operator may shift to align. The rule walks each run of comparisons in source order and grows a column while its width spread stays within the cap, breaking a fresh column at the first row that would exceed it. A `max-shift` of `false` lifts the cap so a contiguous run folds into one column, and `0` forbids any shift. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
 
 </template>
 

@@ -4,4 +4,4 @@ Auto-fix rules rewrite source as part of `prose format` and surface as `Severity
 
 <RuleCardList category="auto-fix" />
 
-For the deterministic order these rules fire in, see the [**Pipeline Order**](/reference/pipeline-order) reference. For the per-rule knobs, see the [**Configuration**](/reference/configuration) reference. For the lint rules that surface diagnostics without rewriting, see the [**Lint**](/rules/lint/) landing.
+For the deterministic order these rules fire in, see the [**Pipeline Order**](/reference/pipeline-order) reference. For the per-rule facets, see the [**Configuration**](/reference/configuration) reference. For the lint rules that surface diagnostics without rewriting, see the [**Lint**](/rules/lint/) landing.

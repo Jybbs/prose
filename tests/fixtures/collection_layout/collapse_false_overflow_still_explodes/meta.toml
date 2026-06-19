@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A False Collapse Facet Still Lets Overflow Explode"
+
+description = '''
+With `collapse` off, a fitting multi-line literal stays put while an overflowing single-line literal still explodes to its packed rows. The `collapse` and `explode` facets move independently, so clearing one leaves the other live.
+'''

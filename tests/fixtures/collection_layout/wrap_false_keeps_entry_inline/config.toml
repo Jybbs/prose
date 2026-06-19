@@ -1,0 +1,2 @@
+[rules]
+collection-layout = { wrap-dict-entries = false }

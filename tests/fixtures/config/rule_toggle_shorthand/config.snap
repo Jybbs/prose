@@ -23,13 +23,16 @@ Config {
     },
     rules: RuleConfigs {
         collection_layout: CollectionLayoutConfig {
+            collapse: true,
             enabled: true,
+            explode: true,
             max_atomics_per_line: Some(
                 8,
             ),
             max_inline_dict_entries: Some(
                 3,
             ),
+            wrap_dict_entries: true,
         },
         shed_parentheses: ToggleOnly {
             enabled: true,

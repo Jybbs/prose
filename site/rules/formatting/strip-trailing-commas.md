@@ -16,7 +16,7 @@ The rule walks every bracketed container (*dictionaries, lists, sets, function s
 
 <RuleConfigTable />
 
-The strip is unconditional within the contexts named above, so the rule carries `enabled` as its only knob. Tuple literals are exempt by construction because Python uses the trailing comma to disambiguate single-element tuples from parenthesized expressions, leaving no project-level switch to flip on the tuple carve-out.
+The strip is unconditional within the contexts named above, so the rule carries `enabled` as its only facet. Tuple literals are exempt by construction because Python uses the trailing comma to disambiguate single-element tuples from parenthesized expressions, leaving no project-level switch to flip on the tuple carve-out.
 
 </template>
 

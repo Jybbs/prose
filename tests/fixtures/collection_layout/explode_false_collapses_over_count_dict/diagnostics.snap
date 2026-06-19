@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/collection_layout/explode_false_collapses_over_count_dict/input.py
+---
+collection-layout@23..72

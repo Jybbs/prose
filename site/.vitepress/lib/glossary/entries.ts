@@ -205,7 +205,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'The user-level on-disk cache *Prose* keeps for repeat `prose check` and '
               + '`prose format` runs. Keyed by [[BLAKE3]] over '
               + '`(source ++ config ++ rules ++ prose_version)`, capped by the LRU eviction the '
-              + '`[cache] max-size-mib` knob configures, bypassable per invocation '
+              + '`[cache] max-size-mib` facet configures, bypassable per invocation '
               + 'with `--no-cache`, and clearable with `prose cache clean`.',
     families  : ['engine', 'cli'],
     href      : '/reference/cache'
@@ -412,7 +412,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'of a run, `0` forbids any shift, and `false` lifts the cap so a contiguous '
               + 'run folds into one column.',
     families  : ['alignment', 'cli'],
-    href      : '/reference/configuration#per-rule-knobs'
+    href      : '/reference/configuration#per-rule-facets'
   },
 
   'module-level': {

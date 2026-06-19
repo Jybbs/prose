@@ -4,4 +4,4 @@ The docs rules read against the PEP 257 docstring set discovered by the [[docstr
 
 <RuleCardList family="docs" />
 
-For the docstring-budget duality and the `docstring-structured-policy` knob, see the [**Configuration**](/reference/configuration#docstring-budgets) reference. For the walker that finds every docstring in source order, see the [[docstring]] primitive page.
+For the docstring-budget duality and the `docstring-structured-policy` facet, see the [**Configuration**](/reference/configuration#docstring-budgets) reference. For the walker that finds every docstring in source order, see the [[docstring]] primitive page.
