@@ -9,7 +9,7 @@ import { parsePipeline }                                   from '../rules/pipeli
 import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
 import { toTitleCase }                                     from '../shared/title-case'
 
-import { cssColor } from './colors'
+import { resolveToken } from './colors'
 
 const KINDS = ['integrations', 'primitives', 'reference', 'rules', 'usage'] as const
 export type OgKind = typeof KINDS[number]
@@ -32,20 +32,19 @@ export function enumeratePages(srcDir: string, pages: readonly string[]): readon
   const primitivesIndex = new Map(discoverPrimitives(path.join(srcDir, 'primitives')).map(p => [p.slug as string, p]))
   const pipeline        = parsePipeline(import.meta.url)
   const pipelinePos     = new Map(pipeline.map(r => [r.slug, r.position]))
-  const color           = cssColor()
   const out: OgPage[]   = []
   for (const rel of pages) {
     if (rel === 'index.md') continue
     const kind = chapterKind(rel)
     if (kind === null) continue
-    out.push(buildPage(rel, kind, rulesIndex, primitivesIndex, pipeline.length, pipelinePos, color, srcDir))
+    out.push(buildPage(rel, kind, rulesIndex, primitivesIndex, pipeline.length, pipelinePos, srcDir))
   }
   return out
 }
 
-function accentFor(kind: OgKind, color: (token: string) => string, family?: RuleFamily): string | undefined {
-  const hex = family !== undefined ? color(`prose-c-family-${family}`) : color(`prose-c-section-${kind}`)
-  return hex || undefined
+function accentFor(kind: OgKind, family?: RuleFamily): string | undefined {
+  const token = family !== undefined ? `prose-c-family-${family}` : `prose-c-section-${kind}`
+  return resolveToken(token) || undefined
 }
 
 function buildPage(
@@ -55,14 +54,13 @@ function buildPage(
   primitivesIndex : ReadonlyMap<string, DiscoveredPrimitive>,
   pipelineTotal   : number,
   pipelinePos     : ReadonlyMap<string, number>,
-  color           : (token: string) => string,
   srcDir          : string
 ): OgPage {
   const slug       = pageSlug(rel)
   const outputPath = ogImagePath(rel)
   if (rel.endsWith('/index.md')) {
     return {
-      accent     : accentFor(kind, color, indexFamily(rel)),
+      accent     : accentFor(kind, indexFamily(rel)),
       breadcrumb : [toTitleCase(kind, '-')],
       kind,
       outputPath,
@@ -73,7 +71,7 @@ function buildPage(
     const rule     = rulesIndex.get(slug)!
     const position = pipelinePos.get(slug)
     return {
-      accent     : accentFor(kind, color, rule.family),
+      accent     : accentFor(kind, rule.family),
       breadcrumb : ['Rules', FAMILY_META[rule.family].label],
       caption    : rule.caption,
       category   : rule.category,
@@ -87,7 +85,7 @@ function buildPage(
   if (kind === 'primitives') {
     const primitive = primitivesIndex.get(slug)
     return {
-      accent     : accentFor(kind, color),
+      accent     : accentFor(kind),
       breadcrumb : [toTitleCase(kind, '-')],
       kind,
       outputPath,
@@ -96,7 +94,7 @@ function buildPage(
     }
   }
   return {
-    accent     : accentFor(kind, color),
+    accent     : accentFor(kind),
     breadcrumb : [toTitleCase(kind, '-')],
     kind,
     outputPath,

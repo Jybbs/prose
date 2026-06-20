@@ -6,6 +6,8 @@ import type { Font } from 'satori'
 
 const require = createRequire(import.meta.url)
 
+export const BRAND_TITLE_ASPECT = 1031 / 380
+
 export interface BrandAssets {
   fonts            : Font[]
   glyph            : string

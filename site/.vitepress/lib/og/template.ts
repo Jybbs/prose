@@ -2,16 +2,15 @@ import { createElement, type JSXNode } from 'satori/jsx'
 
 import { CATEGORY_META, FAMILY_META } from '../shared/registries'
 
-import type { BrandAssets }            from './assets'
-import { BODY, BRANDY, MONO_DIM, UBE } from './colors'
-import type { OgPage }                 from './pages'
+import { type BrandAssets, BRAND_TITLE_ASPECT } from './assets'
+import { BODY, BRANDY, MONO_DIM, UBE }          from './colors'
+import type { OgPage }                          from './pages'
 import {
   CARD_HEIGHT, CARD_WIDTH,
   cardShell, leftRail, monoLabel, panelDivider, panelRow, panelShell, toSvg, versionCallout
 } from './parts'
 
-const DOCS_TRACK      = '0.14em'
-const WORDMARK_ASPECT = 1031 / 380
+const DOCS_TRACK = '0.14em'
 
 const CODE_CHIP = {
   backgroundColor : 'rgba(255, 255, 255, 0.08)',
@@ -187,7 +186,7 @@ function wordmarkBlock(wordmark: string): JSXNode {
       height : height,
       src    : wordmark,
       style  : { display: 'flex' },
-      width  : Math.round(height * WORDMARK_ASPECT)
+      width  : Math.round(height * BRAND_TITLE_ASPECT)
     }),
     createElement('div', {
       children : 'DOCS',
