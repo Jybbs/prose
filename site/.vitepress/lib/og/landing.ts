@@ -1,7 +1,7 @@
 import { createElement, type JSXNode }  from 'satori/jsx'
 
 import { type BrandAssets, BRAND_TITLE_ASPECT } from './assets'
-import { META_LABEL, MONO_DIM, UBE }            from './colors'
+import { BODY, META_LABEL, UBE }                from './colors'
 import {
   CARD_WIDTH,
   cardShell, leftRail, monoLabel, panelDivider, panelRow, panelShell, toSvg, versionCallout
@@ -54,7 +54,7 @@ function glyphBlock(): JSXNode {
           gap           : 6
         }
       },
-      createElement('div', { children: 'WRITTEN IN RUST',   style: monoLabel(MONO_DIM,   15, TRACK) }),
+      createElement('div', { children: 'WRITTEN IN RUST',   style: monoLabel(BODY,       15, TRACK) }),
       createElement('div', { children: 'EST. 2025',         style: monoLabel(META_LABEL, 13, TRACK) }),
       createElement('div', { children: 'OPEN SOURCE · MIT', style: monoLabel(META_LABEL, 13, TRACK) })
     )

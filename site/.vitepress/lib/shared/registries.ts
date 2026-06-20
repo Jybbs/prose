@@ -34,7 +34,7 @@ export const GLOSSARY_FAMILY_META: Record<GlossaryFamily, Pick<FamilyMeta, 'badg
 }
 
 export const FAMILY_ORDER: readonly RuleFamily[] = [
-  'alignment', 'ordering', 'layout', 'formatting', 'docs', 'lint'
+  'alignment', 'docs', 'formatting', 'layout', 'lint', 'ordering'
 ]
 
 export function categoryOf(family: RuleFamily): RuleCategory {

@@ -10,24 +10,19 @@
   --vp-font-family-base          : 'Lora Variable', Georgia, "Times New Roman", serif;
   --vp-font-family-mono          : 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --prose-c-abigail              : #aba3c3;
   --prose-c-apricot              : #e8876f;
-  --prose-c-aqua-haze            : #f6f8fa;
-  --prose-c-brandy               : #dfbb97;
   --prose-c-casper               : #adbdcd;
   --prose-c-celadon              : #8cc5a3;
   --prose-c-chambray             : #7db3e0;
+  --prose-c-champagne            : #f0e9bc;
+  --prose-c-dexter               : #6db0b5;
   --prose-c-eureka               : #e8c840;
+  --prose-c-grams-hair           : #f6f8fa;
   --prose-c-heath                : #c08597;
   --prose-c-oat                  : #cdbda5;
-  --prose-c-opal                 : #a3c9c1;
-  --prose-c-oslo                 : #93a1b8;
   --prose-c-rainee               : #b8c8a8;
-  --prose-c-shark                : #24292e;
-  --prose-c-sisal                : #d4ccb8;
-  --prose-c-waterloo             : #8b7f9e;
+  --prose-c-toronto              : #5069ad;
   --prose-c-whiskey              : #d4a574;
-  --prose-c-wistful              : #bcb2da;
   --prose-c-woodsmoke            : #17171b;
 
   --prose-c-accent               : var(--prose-c-chambray);
@@ -35,16 +30,16 @@
   --prose-c-warning              : var(--prose-c-eureka);
 
   --prose-c-family-alignment     : var(--prose-c-eureka);
-  --prose-c-family-cli           : var(--prose-c-oslo);
+  --prose-c-family-cli           : var(--prose-c-ube-night);
   --prose-c-family-docs          : var(--prose-c-celadon);
   --prose-c-family-engine        : var(--prose-c-ube);
   --prose-c-family-formatting    : var(--prose-c-heath);
-  --prose-c-family-layout        : var(--prose-c-wistful);
+  --prose-c-family-layout        : var(--prose-c-toronto);
   --prose-c-family-lint          : var(--prose-c-apricot);
   --prose-c-family-ordering      : var(--prose-c-chambray);
 
   --prose-c-section-integrations : var(--prose-c-rainee);
-  --prose-c-section-primitives   : var(--prose-c-opal);
+  --prose-c-section-primitives   : var(--prose-c-dexter);
   --prose-c-section-reference    : var(--prose-c-casper);
   --prose-c-section-usage        : var(--prose-c-oat);
 
@@ -92,6 +87,7 @@
   --prose-c-ube-mid              : color-mix(in oklch, var(--prose-c-ube), white 18%);
   --prose-c-ube-pale             : color-mix(in oklch, var(--prose-c-ube), white 36%);
   --prose-c-ube-deep             : color-mix(in oklch, var(--prose-c-ube), black 22%);
+  --prose-c-ube-night            : color-mix(in oklch, var(--prose-c-ube), black 45%);
 
   --prose-link-hover             : var(--prose-c-ube-deep);
 
@@ -111,7 +107,7 @@
   --vp-button-brand-hover-bg     : var(--vp-c-brand-2);
   --vp-button-brand-hover-border : transparent;
 
-  --vp-code-block-bg             : var(--prose-c-aqua-haze);
+  --vp-code-block-bg             : var(--prose-c-grams-hair);
   --vp-code-font-size            : var(--prose-text-code);
   --vp-code-line-height          : 1.6;
 }
@@ -122,13 +118,13 @@
   --vp-c-brand-3     : var(--prose-c-ube);
   --vp-c-brand-soft  : color-mix(in srgb, var(--prose-c-ube-pale) 16%, transparent);
   --vp-c-bg-soft     : var(--prose-c-woodsmoke);
-  --vp-code-block-bg : var(--prose-c-shark);
+  --vp-code-block-bg : var(--prose-shiki-dark-bg);
   --prose-link-hover : var(--prose-c-ube);
 }
 
-.dark .shiki,
-.dark .shiki-magic-move-container {
-  background-color: var(--shiki-dark-bg) !important;
+.shiki,
+.shiki-magic-move-container {
+  background-color: var(--vp-code-block-bg) !important;
 }
 
 .dark .shiki span,

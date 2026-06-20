@@ -1,6 +1,8 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
+import { formatHex, interpolate } from 'culori'
+
 const TOKENS_CSS = path.join(import.meta.dirname, '..', '..', 'theme', 'styles', 'tokens.css')
 
 function cssColor(): (token: string) => string {
@@ -14,10 +16,14 @@ function cssColor(): (token: string) => string {
 
 export const resolveToken = cssColor()
 
+// oklch blend, the same operation CSS performs for `color-mix(in oklch, a, b pct%)`
+const oklchMix = (a: string, b: string, pct: number): string =>
+  formatHex(interpolate([a, b], 'oklch')(pct / 100))
+
+const ube = resolveToken('prose-c-ube')
+
 export const BG         = resolveToken('prose-c-woodsmoke')
-export const BODY       = resolveToken('prose-c-sisal')
-export const BRANDY     = resolveToken('prose-c-brandy')
-export const META_LABEL = resolveToken('prose-c-waterloo')
-export const META_VALUE = resolveToken('prose-c-sisal')
-export const MONO_DIM   = resolveToken('prose-c-abigail')
-export const UBE        = resolveToken('prose-c-ube')
+export const BODY       = resolveToken('prose-c-champagne')
+export const KICKER     = oklchMix(ube, 'white', 36)  // --prose-c-ube-pale
+export const META_LABEL = oklchMix(ube, 'white', 18)  // --prose-c-ube-mid
+export const UBE        = ube
