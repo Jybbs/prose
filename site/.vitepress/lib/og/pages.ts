@@ -9,10 +9,13 @@ import { parsePipeline }                                   from '../rules/pipeli
 import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
 import { toTitleCase }                                     from '../shared/title-case'
 
+import { resolveToken } from './colors'
+
 const KINDS = ['integrations', 'primitives', 'reference', 'rules', 'usage'] as const
 export type OgKind = typeof KINDS[number]
 
 export interface OgPage {
+  accent    ?: string
   breadcrumb : readonly string[]
   caption   ?: string
   category  ?: RuleCategory
@@ -39,6 +42,11 @@ export function enumeratePages(srcDir: string, pages: readonly string[]): readon
   return out
 }
 
+function accentFor(kind: OgKind, family?: RuleFamily): string | undefined {
+  const token = family !== undefined ? `prose-c-family-${family}` : `prose-c-section-${kind}`
+  return resolveToken(token) || undefined
+}
+
 function buildPage(
   rel             : string,
   kind            : OgKind,
@@ -52,6 +60,7 @@ function buildPage(
   const outputPath = ogImagePath(rel)
   if (rel.endsWith('/index.md')) {
     return {
+      accent     : accentFor(kind, indexFamily(rel)),
       breadcrumb : [toTitleCase(kind, '-')],
       kind,
       outputPath,
@@ -62,6 +71,7 @@ function buildPage(
     const rule     = rulesIndex.get(slug)!
     const position = pipelinePos.get(slug)
     return {
+      accent     : accentFor(kind, rule.family),
       breadcrumb : ['Rules', FAMILY_META[rule.family].label],
       caption    : rule.caption,
       category   : rule.category,
@@ -75,6 +85,7 @@ function buildPage(
   if (kind === 'primitives') {
     const primitive = primitivesIndex.get(slug)
     return {
+      accent     : accentFor(kind),
       breadcrumb : [toTitleCase(kind, '-')],
       kind,
       outputPath,
@@ -83,6 +94,7 @@ function buildPage(
     }
   }
   return {
+    accent     : accentFor(kind),
     breadcrumb : [toTitleCase(kind, '-')],
     kind,
     outputPath,
@@ -93,6 +105,11 @@ function buildPage(
 function chapterKind(rel: string): OgKind | null {
   const head = rel.split('/', 1)[0]
   return (KINDS as readonly string[]).includes(head) ? head as OgKind : null
+}
+
+function indexFamily(rel: string): RuleFamily | undefined {
+  const dir = rel.split('/').at(-2)
+  return dir !== undefined && dir in FAMILY_META ? dir as RuleFamily : undefined
 }
 
 function indexTitle(rel: string, kind: OgKind): string {

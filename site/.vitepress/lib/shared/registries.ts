@@ -1,5 +1,5 @@
 export type RuleCategory   = 'auto-fix' | 'lint'
-export type RuleFamily     = 'alignment' | 'docs' | 'formatting' | 'lint' | 'ordering'
+export type RuleFamily     = 'alignment' | 'docs' | 'formatting' | 'layout' | 'lint' | 'ordering'
 export type GlossaryFamily = RuleFamily | 'cli' | 'engine'
 
 interface CategoryMeta {
@@ -9,7 +9,6 @@ interface CategoryMeta {
 
 interface FamilyMeta {
   badge  : string
-  color  : string
   label  : string
   warmth : 'cool' | 'warm'
 }
@@ -20,11 +19,12 @@ export const CATEGORY_META: Record<RuleCategory, CategoryMeta> = {
 }
 
 export const FAMILY_META: Record<RuleFamily, FamilyMeta> = {
-  alignment  : { badge: '🪜', color: '#e8c840', label: 'Alignment',  warmth: 'warm' },
-  docs       : { badge: '📰', color: '#8cc5a3', label: 'Docs',       warmth: 'cool' },
-  formatting : { badge: '🪶', color: '#c08597', label: 'Formatting', warmth: 'warm' },
-  lint       : { badge: '🧶', color: '#e8876f', label: 'Lint',       warmth: 'warm' },
-  ordering   : { badge: '🪉', color: '#7db3e0', label: 'Ordering',   warmth: 'cool' }
+  alignment  : { badge: '🪜', label: 'Alignment',  warmth: 'warm' },
+  docs       : { badge: '📰', label: 'Docs',       warmth: 'cool' },
+  formatting : { badge: '🪶', label: 'Formatting', warmth: 'warm' },
+  layout     : { badge: '🧺', label: 'Layout',     warmth: 'cool' },
+  lint       : { badge: '🧶', label: 'Lint',       warmth: 'warm' },
+  ordering   : { badge: '🪉', label: 'Ordering',   warmth: 'cool' }
 }
 
 export const GLOSSARY_FAMILY_META: Record<GlossaryFamily, Pick<FamilyMeta, 'badge' | 'label'>> = {
@@ -34,7 +34,7 @@ export const GLOSSARY_FAMILY_META: Record<GlossaryFamily, Pick<FamilyMeta, 'badg
 }
 
 export const FAMILY_ORDER: readonly RuleFamily[] = [
-  'alignment', 'ordering', 'formatting', 'docs', 'lint'
+  'alignment', 'ordering', 'layout', 'formatting', 'docs', 'lint'
 ]
 
 export function categoryOf(family: RuleFamily): RuleCategory {

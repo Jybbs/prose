@@ -42,25 +42,33 @@ const SURFACE_SOURCES: readonly SurfaceSource[] = [
     number : '02'
   },
   {
-    body   : 'Dictionaries, lists, and sets expand to one entry per line. Multi-line '
-           + 'collections drop their trailing comma, blank lines snap to canonical counts, '
-           + 'and singletons collapse to their natural form.',
-    family : 'formatting',
+    body   : 'Calls, signatures, collections, and from-imports that outgrow the line budget '
+           + 'explode to one entry per line. Each argument, key, or name lands on its own '
+           + 'row, so the eye reads down the column and a later edit touches a single line.',
+    family : 'layout',
     number : '03'
+  },
+  {
+    body   : 'Trailing commas come off, blank lines snap to canonical counts, empty grouping '
+           + 'parentheses and redundant `-> None` annotations fall away, and a stale '
+           + '`__future__` import is removed once nothing needs it. The scaffolding clears '
+           + 'after the shape is set.',
+    family : 'formatting',
+    number : '04'
   },
   {
     body   : 'Docstrings join the same legibility discipline as code. Wrap to the project '
            + 'line length, keep single-line shapes single-line, multi-line shapes '
            + 'multi-line, and quote style consistent throughout.',
     family : 'docs',
-    number : '04'
+    number : '05'
   },
   {
     body   : 'Legacy union syntax, reassigned constants, step-narration comments, bare-import '
            + 'patterns, and single-use bindings surface as diagnostics. The formatter never '
            + 'rewrites these, because the fix belongs to the reader.',
     family : 'lint',
-    number : '05'
+    number : '06'
   }
 ]
 

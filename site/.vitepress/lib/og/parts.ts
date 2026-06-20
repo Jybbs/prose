@@ -1,15 +1,12 @@
 import { createElement, type JSXNode }  from 'satori/jsx'
 import satori, { type Font }            from 'satori'
 
+import { BG, META_LABEL, META_VALUE } from './colors'
+
 export const CARD_HEIGHT = 630
 export const CARD_WIDTH  = 1200
 
-export const META_LABEL = '#8b7f9e'
-export const MONO_DIM   = '#a8a0c0'
-
-const BG         = '#16151a'
 const BORDER     = 'rgba(255, 255, 255, 0.10)'
-const META_VALUE = '#e8dec8'
 const PANEL_FILL = 'rgba(255, 255, 255, 0.04)'
 
 export function toSvg(node: JSXNode, fonts: Font[]): Promise<string> {

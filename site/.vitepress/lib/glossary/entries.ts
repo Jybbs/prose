@@ -178,7 +178,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: 'An atomic is a simple, indivisible code element (integer, float, string, '
               + 'single name) that `collection-layout` can safely keep on one line without '
               + 'readability loss.',
-    families  : ['formatting'],
+    families  : ['layout'],
     rule      : 'collection-layout'
   },
 
@@ -226,7 +226,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + '`{x for ...}` literal forms that build a list, dict, or set inline. '
               + '`collection-layout` keeps them on one line when they fit, and their bound '
               + 'targets sit outside `single-use-variables`.',
-    families  : ['formatting', 'lint'],
+    families  : ['layout', 'lint'],
     href      : 'https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions'
   },
 
@@ -237,7 +237,7 @@ export const glossary: Record<string, GlossaryEntry> = {
               + 'with `max-inline-params` and `collection-layout` counts dict entries with '
               + '`max-inline-dict-entries`, and `false` disables either. It replaces the magic '
               + 'trailing comma that Black and Ruff read with an explicit, configurable count.',
-    families  : ['formatting'],
+    families  : ['layout'],
     rule      : 'collection-layout'
   },
 
@@ -349,7 +349,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition: '`import-line-length` is the top-level config key for the wrap budget '
               + '`import-layout` holds long from-imports to. It defaults to **120** and '
               + 'falls back to `code-line-length` when set to `false`.',
-    families  : ['cli', 'formatting'],
+    families  : ['cli', 'layout'],
     href      : '/reference/configuration#top-level-keys'
   },
 
