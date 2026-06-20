@@ -12,8 +12,8 @@ max-size-mib = 250
 align-colons          = false
 align-equals          = false
 align-imports         = false
-alphabetize           = { docstring-entries = false, enabled = false }
-bare-imports          = { allow = ["scipy", "torch"], allow-aliased = false, enabled = false, max-attributes = 2 }
+alphabetize           = { enabled = false, sort-docstring-entries = false }
+bare-imports          = { allow = ["scipy", "torch"], enabled = false, exempt-aliased = false, max-attributes = 2 }
 blank-lines           = false
 call-layout           = { enabled = false, max-inline-args = 6 }
 collection-layout     = { collapse = false, enabled = false, explode = false, max-atomics-per-line = 3, max-inline-dict-entries = 5, wrap-dict-entries = false }

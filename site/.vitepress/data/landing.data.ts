@@ -1,7 +1,7 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderFencedHtml, renderInlineField } from '../lib/markdown/renderer'
-import type { RuleFamily }                                  from '../lib/shared/registries'
+import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
+import { FAMILY_ORDER, type RuleFamily } from '../lib/shared/registries'
 
 export interface Step {
   bodyHtml : string
@@ -25,52 +25,26 @@ interface LandingData {
 declare const data: LandingData
 export { data }
 
-type SurfaceSource = Omit<Surface, 'bodyHtml'> & { body: string }
-
-const SURFACE_SOURCES: readonly SurfaceSource[] = [
-  {
-    body   : 'Equals signs, colons, the `import` keyword, and match arrows line up across '
-           + 'consecutive lines. The eye drops down the column.',
-    family : 'alignment',
-    number : '01'
-  },
-  {
-    body   : 'Sibling entries sort into a predictable order. Imports, dictionary keys, and '
-           + 'set members read top-to-bottom by name, so a reader looking for an entry '
-           + 'already knows where it sits.',
-    family : 'ordering',
-    number : '02'
-  },
-  {
-    body   : 'Calls, signatures, collections, and from-imports that outgrow the line budget '
-           + 'explode to one entry per line. Each argument, key, or name lands on its own '
-           + 'row, so the eye reads down the column and a later edit touches a single line.',
-    family : 'layout',
-    number : '03'
-  },
-  {
-    body   : 'Trailing commas come off, blank lines snap to canonical counts, empty grouping '
-           + 'parentheses and redundant `-> None` annotations fall away, and a stale '
-           + '`__future__` import is removed once nothing needs it. The scaffolding clears '
-           + 'after the shape is set.',
-    family : 'formatting',
-    number : '04'
-  },
-  {
-    body   : 'Docstrings join the same legibility discipline as code. Wrap to the project '
-           + 'line length, keep single-line shapes single-line, multi-line shapes '
-           + 'multi-line, and quote style consistent throughout.',
-    family : 'docs',
-    number : '05'
-  },
-  {
-    body   : 'Legacy union syntax, reassigned constants, step-narration comments, bare-import '
-           + 'patterns, and single-use bindings surface as diagnostics. The formatter never '
-           + 'rewrites these, because the fix belongs to the reader.',
-    family : 'lint',
-    number : '06'
-  }
-]
+const SURFACE_BODIES: Record<RuleFamily, string> = {
+  alignment  : 'Equals signs, colons, the `import` keyword, and match arrows line up across '
+             + 'consecutive lines. The eye drops down the column.',
+  docs       : 'Docstrings join the same legibility discipline as code. Wrap to the project '
+             + 'line length, keep single-line shapes single-line, multi-line shapes '
+             + 'multi-line, and quote style consistent throughout.',
+  formatting : 'Trailing commas come off, blank lines snap to canonical counts, empty grouping '
+             + 'parentheses and redundant `-> None` annotations fall away, and a stale '
+             + '`__future__` import is removed once nothing needs it. The scaffolding clears '
+             + 'after the shape is set.',
+  layout     : 'Calls, signatures, collections, and from-imports that outgrow the line budget '
+             + 'explode to one entry per line. Each argument, key, or name lands on its own '
+             + 'row, so the eye reads down the column and a later edit touches a single line.',
+  lint       : 'Legacy union syntax, reassigned constants, step-narration comments, bare-import '
+             + 'patterns, and single-use bindings surface as diagnostics. The formatter never '
+             + 'rewrites these, because the fix belongs to the reader.',
+  ordering   : 'Sibling entries sort into a predictable order. Imports, dictionary keys, and '
+             + 'set members read top-to-bottom by name, so a reader looking for an entry '
+             + 'already knows where it sits.'
+}
 
 type StepSource = Omit<Step, 'bodyHtml' | 'codeHtml'> & { body: string; code: string }
 
@@ -110,7 +84,11 @@ export default defineLoader({
   async load(): Promise<LandingData> {
     const md = await getRenderer()
     return {
-      surfaces : renderInlineField(md, SURFACE_SOURCES, 'body'),
+      surfaces : FAMILY_ORDER.map((family, i) => ({
+        bodyHtml : md.renderInline(SURFACE_BODIES[family]),
+        family,
+        number   : String(i + 1).padStart(2, '0')
+      })),
       workflow : STEP_SOURCES.map(src => ({
         bodyHtml : md.renderInline(src.body),
         codeHtml : renderFencedHtml(md, src.code, src.language),

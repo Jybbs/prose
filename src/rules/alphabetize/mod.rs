@@ -56,16 +56,16 @@ use self::{
 };
 
 pub(crate) struct Alphabetize {
-    docstring_entries: bool,
     first_party: Vec<String>,
+    sort_docstring_entries: bool,
     target_version: Option<PythonVersion>,
 }
 
 impl Alphabetize {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            docstring_entries: config.rules.alphabetize.docstring_entries,
             first_party: config.first_party(),
+            sort_docstring_entries: config.rules.alphabetize.sort_docstring_entries,
             target_version: config.target_version,
         }
     }
@@ -78,7 +78,7 @@ impl Rule for Alphabetize {
             return Vec::new();
         }
         let (mut leaf_edits, param_docs) = collect_leaf_edits(source);
-        if self.docstring_entries {
+        if self.sort_docstring_entries {
             leaf_edits.extend(collect_docstring_entry_edits(source, &param_docs));
             leaf_edits.sort_unstable();
         }
@@ -511,7 +511,7 @@ mod tests {
                 pass
         "};
         let mut config = Config::default();
-        config.rules.alphabetize.docstring_entries = false;
+        config.rules.alphabetize.sort_docstring_entries = false;
         let rule = Alphabetize::from_config(&config);
         let source = parse(src);
         let edits = rule.apply(&source).into_iter().flatten().collect();
@@ -524,7 +524,7 @@ mod tests {
             .expect("alpha still present");
         assert!(
             bar_pos < alpha_pos,
-            "docstring entries should keep source order when docstring-entries is off",
+            "docstring entries should keep source order when sort-docstring-entries is off",
         );
     }
 

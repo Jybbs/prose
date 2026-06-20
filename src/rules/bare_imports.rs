@@ -1,7 +1,7 @@
 //! Flags a bare `import X` the author did not alias whose namespace is
 //! reached only through a handful of attributes (at most `max-attributes`,
 //! default 4) and never used as the bare object. An aliased bare import
-//! passes while `allow-aliased` holds, and a top-level segment on the
+//! passes while `exempt-aliased` holds, and a top-level segment on the
 //! `allow` list keeps its bare form. Lint-only, emits no edits.
 
 use std::collections::HashSet;
@@ -21,16 +21,17 @@ use crate::{
 
 pub(crate) struct BareImports {
     allow: HashSet<String>,
-    allow_aliased: bool,
+    exempt_aliased: bool,
     max_attributes: usize,
 }
 
 impl BareImports {
     pub(crate) fn from_config(config: &Config) -> Self {
+        let rules = &config.rules.bare_imports;
         Self {
-            allow: config.rules.bare_imports.allow.iter().cloned().collect(),
-            allow_aliased: config.rules.bare_imports.allow_aliased,
-            max_attributes: config.rules.bare_imports.max_attributes,
+            allow: rules.allow.iter().cloned().collect(),
+            exempt_aliased: rules.exempt_aliased,
+            max_attributes: rules.max_attributes,
         }
     }
 }
@@ -43,9 +44,9 @@ impl Rule for BareImports {
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
         let mut visitor = Visitor {
             allow: &self.allow,
-            allow_aliased: self.allow_aliased,
             analysis: source.binding_analysis(),
             diagnostics: Vec::new(),
+            exempt_aliased: self.exempt_aliased,
             max_attributes: self.max_attributes,
             rule: self.id(),
         };
@@ -56,9 +57,9 @@ impl Rule for BareImports {
 
 struct Visitor<'a> {
     allow: &'a HashSet<String>,
-    allow_aliased: bool,
     analysis: &'a BindingAnalysis,
     diagnostics: Vec<Diagnostic>,
+    exempt_aliased: bool,
     max_attributes: usize,
     rule: RuleId,
 }
@@ -68,7 +69,7 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
         if let Stmt::Import(import) = stmt {
             for alias in &import.names {
                 let asname = alias.asname.as_ref();
-                if asname.is_some() && self.allow_aliased {
+                if asname.is_some() && self.exempt_aliased {
                     continue;
                 }
                 let name = alias.name.as_str();

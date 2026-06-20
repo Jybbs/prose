@@ -1,4 +1,5 @@
 import postcssCustomMedia                         from 'postcss-custom-media'
+import githubDark                                 from 'shiki/themes/github-dark.mjs'
 import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
@@ -14,6 +15,7 @@ import { discoverRuleSlugs }                 from './lib/rules/discovery'
 import { ruleLinkPlugin }                    from './lib/rules/link-plugin'
 import { canonicalUrl }                      from './lib/config/canonical-url'
 import { ogImageUrl }                        from './lib/config/og-url'
+import { resolveToken }                      from './lib/og/colors'
 import { CARD_HEIGHT, CARD_WIDTH }           from './lib/og/parts'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME, SITE_TAGLINE } from './lib/shared/constants'
 import { buildPageTimestamps }               from './lib/config/page-timestamps'
@@ -31,6 +33,8 @@ const discoveredPrimitives = discoverPrimitives(primitivesDir(import.meta.url))
 const primitiveNames       = new Map(discoveredPrimitives.map(p => [p.slug as string, p.name]))
 const validSlugs           = new Set(discoveredRules.map(r => r.slug))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
+const shikiDarkBg          = githubDark.colors?.['editor.background'] as string
+const themeColor           = resolveToken('prose-c-ube')
 
 export default defineConfig({
   cacheDir      : `${repoDir}/.cache/vitepress`,
@@ -38,10 +42,11 @@ export default defineConfig({
   description   : SITE_TAGLINE,
   head          : [
     ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }],
-    ['meta', { content: '#dfbc97',                 name:     'theme-color'   }],
+    ['meta', { content: themeColor,                name:     'theme-color'   }],
     ['meta', { content: 'summary_large_image',     name:     'twitter:card'  }],
     ['meta', { content: 'website',                 property: 'og:type'       }],
-    ['meta', { content: 'Prose',                   property: 'og:site_name'  }]
+    ['meta', { content: 'Prose',                   property: 'og:site_name'  }],
+    ['style', {}, `:root{--prose-shiki-dark-bg:${shikiDarkBg}}`]
   ],
   lastUpdated   : false,
   markdown      : {

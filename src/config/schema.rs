@@ -31,21 +31,21 @@ impl Default for AlignmentConfig {
     }
 }
 
-/// Configuration for the `alphabetize` rule. `docstring_entries`
+/// Configuration for the `alphabetize` rule. `sort_docstring_entries`
 /// gates the Google-style entry-section reorder pass, leaving the
 /// AST-level sorts to apply on their own when set `false`.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlphabetizeConfig {
-    pub docstring_entries: bool,
     pub enabled: bool,
+    pub sort_docstring_entries: bool,
 }
 
 impl Default for AlphabetizeConfig {
     fn default() -> Self {
         Self {
-            docstring_entries: true,
             enabled: true,
+            sort_docstring_entries: true,
         }
     }
 }
@@ -55,8 +55,8 @@ impl Default for AlphabetizeConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct BareImportsConfig {
     pub allow: Vec<String>,
-    pub allow_aliased: bool,
     pub enabled: bool,
+    pub exempt_aliased: bool,
     pub max_attributes: usize,
 }
 
@@ -64,8 +64,8 @@ impl Default for BareImportsConfig {
     fn default() -> Self {
         Self {
             allow: Vec::new(),
-            allow_aliased: true,
             enabled: true,
+            exempt_aliased: true,
             max_attributes: 4,
         }
     }

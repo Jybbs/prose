@@ -3,7 +3,7 @@ import { createElement, type JSXNode } from 'satori/jsx'
 import { CATEGORY_META, FAMILY_META } from '../shared/registries'
 
 import { type BrandAssets, BRAND_TITLE_ASPECT } from './assets'
-import { BODY, BRANDY, MONO_DIM, UBE }          from './colors'
+import { BODY, KICKER, UBE }                    from './colors'
 import type { OgPage }                          from './pages'
 import {
   CARD_HEIGHT, CARD_WIDTH,
@@ -15,10 +15,11 @@ const DOCS_TRACK = '0.14em'
 const CODE_CHIP = {
   backgroundColor : 'rgba(255, 255, 255, 0.08)',
   borderRadius    : 4,
-  color           : UBE,
+  color           : KICKER,
   fontFamily      : 'JetBrains Mono',
   fontSize        : 19,
-  padding         : '2px 8px'
+  padding         : '2px 8px',
+  transform       : 'translateY(-2px)'
 }
 
 const TITLE_SIZES = {
@@ -115,7 +116,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
     },
     createElement('div', {
       children : buildKicker(page),
-      style    : { ...monoLabel(MONO_DIM, 22), marginBottom: 12 }
+      style    : { ...monoLabel(KICKER, 22), marginBottom: 12 }
     }),
     createElement('div', {
       children : page.title,
@@ -138,7 +139,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
         style    : seg.code ? CODE_CHIP : {}
       })),
       style : {
-        alignItems : 'center',
+        alignItems : 'baseline',
         color      : BODY,
         columnGap  : 7,
         display    : 'flex',
@@ -192,9 +193,9 @@ function wordmarkBlock(wordmark: string): JSXNode {
       children : 'DOCS',
       style    : {
         backgroundColor : `${UBE}2e`,
-        border          : `1px solid ${BRANDY}52`,
+        border          : `1px solid ${BODY}52`,
         borderRadius    : 6,
-        color           : BRANDY,
+        color           : BODY,
         display         : 'flex',
         fontFamily      : 'JetBrains Mono',
         fontSize        : 15,

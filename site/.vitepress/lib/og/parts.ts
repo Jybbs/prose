@@ -1,7 +1,7 @@
 import { createElement, type JSXNode }  from 'satori/jsx'
 import satori, { type Font }            from 'satori'
 
-import { BG, META_LABEL, META_VALUE } from './colors'
+import { BG, BODY, META_LABEL } from './colors'
 
 export const CARD_HEIGHT = 630
 export const CARD_WIDTH  = 1200
@@ -97,7 +97,7 @@ function metaRow(
     createElement('div', { children: label, style: monoLabel(META_LABEL, 16) }),
     createElement('div', {
       children : value,
-      style    : { color: META_VALUE, fontVariantNumeric: 'tabular-nums', ...valueStyle }
+      style    : { color: BODY, fontVariantNumeric: 'tabular-nums', ...valueStyle }
     })
   )
 }

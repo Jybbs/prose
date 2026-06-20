@@ -44,8 +44,8 @@ Config {
             ),
         },
         alphabetize: AlphabetizeConfig {
-            docstring_entries: false,
             enabled: false,
+            sort_docstring_entries: false,
         },
         strip_trailing_commas: ToggleOnly {
             enabled: false,
@@ -67,8 +67,8 @@ Config {
                 "scipy",
                 "torch",
             ],
-            allow_aliased: false,
             enabled: false,
+            exempt_aliased: false,
             max_attributes: 2,
         },
         align_match_case: AlignmentConfig {
