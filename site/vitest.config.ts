@@ -8,6 +8,7 @@ export default defineConfig({
     globals     : true,
     root        : import.meta.dirname,
     include     : ['.vitepress/tests/**/*.test.ts'],
+    reporters   : process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : ['default'],
     coverage: {
       provider         : 'v8',
       reporter         : ['text', 'lcovonly'],
