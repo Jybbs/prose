@@ -1,0 +1,24 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`discoverRuleSlugs > discovers rules across family directories, sorted by slug 1`] = `
+[
+  {
+    "caption": "Align consecutive assignments",
+    "category": "auto-fix",
+    "family": "alignment",
+    "href": "/rules/alignment/align-equals",
+    "related": [
+      "alphabetize",
+    ],
+    "slug": "align-equals",
+  },
+  {
+    "caption": "Alphabetize sibling entries",
+    "category": "auto-fix",
+    "family": "ordering",
+    "href": "/rules/ordering/alphabetize",
+    "related": [],
+    "slug": "alphabetize",
+  },
+]
+`;

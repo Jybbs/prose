@@ -51,6 +51,11 @@ describe('replaceTextTokens', () => {
     )
     expect(out.map(t => t.content)).toEqual(['', 'prose', ''])
   })
+
+  it('returns the text token unchanged when nothing matches', () => {
+    const out = replaceTextTokens([text('nothing to see')], StubToken, /xyz/g, () => [text('X')])
+    expect(out.map(t => t.content)).toEqual(['nothing to see'])
+  })
 })
 
 describe('walkBodyInlines', () => {

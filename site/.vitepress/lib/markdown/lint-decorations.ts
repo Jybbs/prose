@@ -20,8 +20,8 @@ export function decodeLintMeta(token: string): DecorationItem[] {
 // in a `.lint-flag` element carrying the hover data as `data-*`. Sorted
 // by position, since shiki rejects unordered or overlapping ranges.
 export function lintDecorations(findings: readonly LintFinding[]): DecorationItem[] {
-  return [...findings]
-    .sort((a, b) => a.location.row - b.location.row || a.location.column - b.location.column)
+  return findings
+    .toSorted((a, b) => a.location.row - b.location.row || a.location.column - b.location.column)
     .map(finding => {
       const properties: Record<string, string> = {
         class          : 'lint-flag',

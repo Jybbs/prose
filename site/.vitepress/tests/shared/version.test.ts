@@ -8,6 +8,7 @@ describe('readCargoVersion', () => {
   })
 
   it('throws when the manifest carries no package version', () => {
-    expect(() => readCargoVersion(fixtureDir('cargo-no-version'))).toThrow(/package\.version/)
+    const dir = fixtureDir(import.meta.dirname, 'cargo-no-version')
+    expect(() => readCargoVersion(dir)).toThrow(/package\.version/)
   })
 })

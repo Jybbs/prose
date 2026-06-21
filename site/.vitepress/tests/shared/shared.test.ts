@@ -27,7 +27,7 @@ describe('toTitleCase', () => {
     expect(toTitleCase('one-two-the-end', '-')).toBe('One Two the End')
   })
 
-  const wordArb = fc.array(fc.constantFrom(...'abcdefghij'), { minLength: 1, maxLength: 6 }).map(c => c.join(''))
+  const wordArb = fc.string({ unit: fc.constantFrom(...'abcdefghij'), minLength: 1, maxLength: 6 })
 
   test.prop([fc.array(wordArb, { minLength: 1, maxLength: 5 })])(
     'always capitalizes the first and last word',
@@ -161,6 +161,11 @@ describe('withFallbackSync', () => {
   warnTest('returns the fallback and warns on throw', ({ warn }) => {
     expect(withFallbackSync('demo', () => { throw new Error('boom') }, 7)).toBe(7)
     expect(warn).toHaveBeenCalledOnce()
+  })
+
+  warnTest('warns with the raw value when a non-Error is thrown', ({ warn }) => {
+    expect(withFallbackSync('demo', () => { throw 'oops' }, 7)).toBe(7)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('using fallback'), 'oops')
   })
 })
 

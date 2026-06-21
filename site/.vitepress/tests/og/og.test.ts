@@ -17,7 +17,7 @@ describe('resolveToken', () => {
 })
 
 describe('enumeratePages', () => {
-  const srcDir = fixtureDir('og-pages')
+  const srcDir = fixtureDir(import.meta.dirname)
 
   it('shapes an OgPage per chapter page, skipping index and off-chapter pages', () => {
     const pages = [
@@ -33,5 +33,15 @@ describe('enumeratePages', () => {
       'integrations/editor.md'
     ]
     expect(enumeratePages(srcDir, pages)).toMatchSnapshot()
+  })
+
+  it('attaches the pipeline position for a rule in the pipeline', () => {
+    const [page] = enumeratePages(srcDir, ['rules/alignment/alphabetize.md'])
+    expect(page.pipeline).toMatchObject({ position: expect.any(Number), total: expect.any(Number) })
+  })
+
+  it('falls back to internal stability and the titled slug for an undiscovered primitive', () => {
+    const [page] = enumeratePages(srcDir, ['primitives/ghost.md'])
+    expect(page).toMatchObject({ primitive: { stability: 'internal' }, title: 'Ghost' })
   })
 })

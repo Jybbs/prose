@@ -1,5 +1,6 @@
 import type { JSXNode } from 'satori/jsx'
 
+import { formatFolio }                from '../../shared/numerals'
 import { CATEGORY_META, FAMILY_META } from '../../shared/registries'
 
 import { type BrandAssets, BRAND_TITLE_ASPECT } from './assets'
@@ -90,8 +91,8 @@ function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
     const rows: Array<[string, string]> = [['Family', page.family]]
     if (page.category && page.category !== page.family) rows.push(['Category', page.category])
     if (page.pipeline) {
-      const pad = (n: number) => String(n).padStart(2, '0')
-      rows.push(['Pipeline', `${pad(page.pipeline.position)} / ${pad(page.pipeline.total)}`])
+      const { position, total } = page.pipeline
+      rows.push(['Pipeline', `${formatFolio(position)} / ${formatFolio(total)}`])
     }
     return rows
   }

@@ -15,8 +15,9 @@ const entry = (
   ...overrides
 })
 
-const lowerArb = fc.array(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz'), { minLength: 1, maxLength: 10 })
-  .map(chars => chars.join(''))
+const lowerArb = fc.string({
+  unit: fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz'), minLength: 1, maxLength: 10
+})
 
 const fcEntry = fc.record({ aliases: fc.array(lowerArb, { maxLength: 2 }), slug: lowerArb })
   .map(({ aliases, slug }) => entry(slug, { aliases }))
@@ -121,7 +122,7 @@ describe('cycleIndex', () => {
 })
 
 describe('compareCaseless', () => {
-  const wordArb = fc.array(fc.constantFrom(...'abcdABCD '), { maxLength: 8 }).map(chars => chars.join(''))
+  const wordArb = fc.string({ unit: fc.constantFrom(...'abcdABCD '), maxLength: 8 })
 
   it('ignores case', () => {
     expect(compareCaseless('Align', 'align')).toBe(0)

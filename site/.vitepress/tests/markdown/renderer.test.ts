@@ -6,6 +6,14 @@ describe('renderer', () => {
     expect(renderFencedHtml(md, 'x = 1', 'python')).toContain('<pre')
   })
 
+  it('embeds lint decorations as a fence-meta token', async () => {
+    const md = await getRenderer()
+    const html = renderFencedHtml(md, 'x = 1', 'python', [
+      { start: { line: 0, character: 0 }, end: { line: 0, character: 1 }, properties: {} }
+    ])
+    expect(html).toContain('<pre')
+  })
+
   it('replaces an inline field with its rendered counterpart', async () => {
     const md  = await getRenderer()
     const out = renderInlineField(md, [{ note: 'see `prose`' }], 'note')

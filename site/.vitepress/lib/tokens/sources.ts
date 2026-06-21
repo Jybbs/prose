@@ -100,16 +100,15 @@ export function stripPrefix(s: string): string {
 }
 
 export function sortedTokens(tokens: readonly Token[], mode: 'key' | 'domain' = 'key'): Token[] {
-  const flat = [...tokens]
   if (mode === 'domain') {
-    return flat.sort((a, b) =>
+    return tokens.toSorted((a, b) =>
       a.domain.localeCompare(b.domain) || a.sort.localeCompare(b.sort))
   }
-  return flat.sort((a, b) => a.sort.localeCompare(b.sort))
+  return tokens.toSorted((a, b) => a.sort.localeCompare(b.sort))
 }
 
 export function groupByDomain(tokens: readonly Token[]): [Domain, Token[]][] {
   return [...Map.groupBy(tokens, t => t.domain).entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([d, bucket]) => [d, bucket.sort((a, b) => a.sort.localeCompare(b.sort))])
+    .toSorted(([a], [b]) => a.localeCompare(b))
+    .map(([d, bucket]) => [d, bucket.toSorted((a, b) => a.sort.localeCompare(b.sort))])
 }

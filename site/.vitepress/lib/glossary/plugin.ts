@@ -8,7 +8,7 @@ export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>): (md: 
     throw new Error('glossaryPlugin received an empty phrase map')
   }
 
-  const phrases = [...phraseToSlug.keys()].sort((a, b) => b.length - a.length)
+  const phrases = [...phraseToSlug.keys()].toSorted((a, b) => b.length - a.length)
   const pattern = new RegExp(
     `(?<![A-Za-z0-9_-])(${phrases.map(p => RegExp.escape(p)).join('|')})(?![A-Za-z0-9_-])`,
     'g'
