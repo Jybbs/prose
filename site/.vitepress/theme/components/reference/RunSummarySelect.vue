@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { SelectOption } from './run-summary'
+import type { SelectOption } from '../../../lib/reference/run-summary'
 
 const props = defineProps<{
-  ariaLabel : string
-  options   : readonly SelectOption[]
+  label   : string
+  options : readonly SelectOption[]
 }>()
 
 const model = defineModel<string>({ required: true })
@@ -20,14 +20,14 @@ const selected = computed(() =>
     <button
       type="button"
       class="run-summary-select-trigger"
-      :aria-label="ariaLabel"
+      :aria-label="label"
       aria-haspopup="listbox"
     >
       <span>{{ selected.mono }}</span>
       <span class="run-summary-select-caret" aria-hidden="true">▾</span>
     </button>
     <template #popper>
-      <ul class="run-summary-opts" role="listbox" :aria-label="ariaLabel">
+      <ul class="run-summary-opts" role="listbox" :aria-label="label">
         <li
           v-for="o in options"
           :key="o.id"

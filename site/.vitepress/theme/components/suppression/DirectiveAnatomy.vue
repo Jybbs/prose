@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { SCOPE_META } from './scope-decisions'
+import { SCOPE_META } from './scope-meta'
 
 import {
   data as directives,

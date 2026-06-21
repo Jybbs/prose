@@ -1,8 +1,8 @@
 import { useTimeoutFn }    from '@vueuse/core'
 import { watch, type Ref } from 'vue'
 
-import type { LandingTypingDemoEntry, LandingTypingDemoResetRow } from './typing-demo-fixtures'
-import { editPlan } from './typing-demo-buffer'
+import type { LandingTypingDemoEntry, LandingTypingDemoResetRow } from '../../../lib/landing/typing-demo'
+import { editPlan } from '../../../lib/landing/typing-demo-buffer'
 
 export type Phase =
   | 'editBackspacing'

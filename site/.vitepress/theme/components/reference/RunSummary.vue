@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RenderedLine } from './run-summary'
+import type { RenderedLine } from '../../../lib/reference/run-summary'
 
 defineProps<{ line: RenderedLine }>()
 </script>

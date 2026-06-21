@@ -6,12 +6,12 @@ import path             from 'node:path'
 import type { KeyedTokensInfo } from 'shiki-magic-move/types'
 import { defineLoader }         from 'vitepress'
 
-import { ENTRIES, PRELUDE, RESET_ROWS, RULES, SOURCE } from '../theme/components/landing/typing-demo-fixtures'
+import { ENTRIES, PRELUDE, RESET_ROWS, RULES, SOURCE } from '../lib/landing/typing-demo'
 import type {
   LandingTypingDemoEditEntry,
   LandingTypingDemoEntry,
   LandingTypingDemoResetRow
-} from '../theme/components/landing/typing-demo-fixtures'
+} from '../lib/landing/typing-demo'
 import { precompileMagicMove } from '../lib/markdown/magic-move'
 import { repoRoot }            from '../lib/shared/paths'
 

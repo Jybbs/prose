@@ -12,13 +12,18 @@ const props = withDefaults(defineProps<{
   value  ?: RuleCategory | RuleFamily
 }>(), { linked: true })
 
-const REGISTRY = { category: CATEGORY_META, family: FAMILY_META } as const
-
 const rule    = useCurrentRule()
 const value   = computed(() => props.value ?? rule.value?.[props.axis] ?? null)
-const meta    = computed(() => value.value ? REGISTRY[props.axis][value.value as never] : null)
-const variant = computed(() => `${props.axis}-chip` as 'category-chip' | 'family-chip')
+const meta    = computed(() => {
+  if (!value.value) return null
+  return isCategory(value.value) ? CATEGORY_META[value.value] : FAMILY_META[value.value]
+})
+const variant = computed((): 'category-chip' | 'family-chip' => `${props.axis}-chip`)
 const href    = computed(() => props.linked && value.value ? `/rules/${value.value}/` : undefined)
+
+function isCategory(v: RuleCategory | RuleFamily): v is RuleCategory {
+  return v in CATEGORY_META
+}
 </script>
 
 <template>

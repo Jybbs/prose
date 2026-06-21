@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
-#MISE description="Run all tests including `insta` snapshots"
+#MISE description="Run the test suites including `insta` snapshots; pass `rust` or `site` to scope"
+#MISE wait_for=["bake"]
 
-cargo test --locked
+set -euo pipefail
+
+case "${1:-all}" in
+  all)  cargo test --locked && (cd site && bunx vitest run) ;;
+  rust) cargo test --locked ;;
+  site) shift; (cd site && bunx vitest run "$@") ;;
+  *)    echo "usage: mise test [rust|site]" >&2; exit 2 ;;
+esac

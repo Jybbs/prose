@@ -1,5 +1,10 @@
 ---
+consumedBy: [cli]
+consumes: [source]
+layer: analysis
 stability: internal
+summary: "Ignore-aware filesystem walker yielding every `.py` / `.pyi` / `.pyw` file under given paths."
+tagline: ignore-aware path walker
 ---
 
 # Walker

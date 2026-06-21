@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
-#MISE description="Run `clippy` with all warnings treated as errors"
+#MISE description="Run the linters including `clippy`; pass `rust` or `site` to scope"
 
-cargo clippy --all-targets --locked -- -D warnings
+set -euo pipefail
+
+case "${1:-all}" in
+  all)  cargo clippy --all-targets --locked -- -D warnings && (cd site && bunx oxlint .vitepress) ;;
+  rust) cargo clippy --all-targets --locked -- -D warnings ;;
+  site) shift; (cd site && bunx oxlint .vitepress "$@") ;;
+  *)    echo "usage: mise lint [rust|site]" >&2; exit 2 ;;
+esac

@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
-#MISE description="Generate an LCOV coverage report at `target/lcov.info`"
+#MISE description="Generate an LCOV coverage report; pass `rust` or `site` to scope"
 #MISE tools={"aqua:taiki-e/cargo-llvm-cov" = "latest"}
 
-rustup component add llvm-tools-preview
-cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info
+set -euo pipefail
+
+cover_rust() {
+  rustup component add llvm-tools-preview
+  cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info
+}
+
+case "${1:-all}" in
+  all)  cover_rust && (cd site && bunx vitest run --coverage) ;;
+  rust) cover_rust ;;
+  site) (cd site && bunx vitest run --coverage) ;;
+  *)    echo "usage: mise coverage [rust|site]" >&2; exit 2 ;;
+esac

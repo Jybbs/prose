@@ -101,7 +101,7 @@ export default defineLoader({
   async load(): Promise<readonly ShellCompletion[]> {
     const md = await getRenderer()
     const withNote = renderInlineField(md, SOURCES, 'note')
-    return withNote.map(({ code, note, ...rest }) => ({
+    return withNote.map(({ code, ...rest }) => ({
       ...rest,
       codeHtml : renderFencedHtml(md, code, rest.language)
     }))

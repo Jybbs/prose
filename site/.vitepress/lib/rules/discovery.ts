@@ -3,7 +3,10 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
+import { isContentPage } from '../shared/content-page'
+import { memoizeByPath } from '../shared/memoize-by-path'
 import { categoryOf, FAMILY_ORDER, type RuleCategory, type RuleFamily } from '../shared/registries'
+import { requireString } from '../shared/require-string'
 
 export interface DiscoveredRule {
   caption  : string
@@ -14,35 +17,29 @@ export interface DiscoveredRule {
   slug     : string
 }
 
-const cache = new Map<string, DiscoveredRule[]>()
-
-export function discoverRuleSlugs(rulesDirectory: string): DiscoveredRule[] {
-  const cached = cache.get(rulesDirectory)
-  if (cached !== undefined) return cached
-
+export const discoverRuleSlugs = memoizeByPath((rulesDirectory): DiscoveredRule[] => {
   const families = new Set<string>(FAMILY_ORDER)
   const out      : DiscoveredRule[] = []
   const stray    : string[] = []
   for (const entry of fs.readdirSync(rulesDirectory, { withFileTypes: true })) {
     if (entry.isFile()) {
-      if (entry.name.endsWith('.md') && entry.name !== 'index.md') stray.push(entry.name)
+      if (isContentPage(entry.name)) stray.push(entry.name)
       continue
     }
     const directory = path.join(rulesDirectory, entry.name)
-    const pages     = fs.readdirSync(directory).filter(f => f.endsWith('.md') && f !== 'index.md')
+    const pages     = fs.readdirSync(directory).filter(isContentPage)
     if (!families.has(entry.name)) {
       stray.push(...pages.map(f => `${entry.name}/${f}`))
       continue
     }
     const family = entry.name as RuleFamily
     for (const file of pages) {
-      const slug    = file.slice(0, -'.md'.length)
-      const body    = fs.readFileSync(path.join(directory, file), 'utf8')
-      const fm      = matter(body).data
-      const caption = fm.caption
-      if (typeof caption !== 'string' || caption.trim() === '') {
-        throw new Error(`Rule "${slug}" has invalid or missing caption: ${JSON.stringify(caption)}`)
-      }
+      const slug    = path.basename(file, '.md')
+      const fm      = matter.read(path.join(directory, file)).data
+      const caption = requireString(
+        fm.caption,
+        `Rule "${slug}" has invalid or missing caption: ${JSON.stringify(fm.caption)}`
+      )
       const relatedSlugs = Array.isArray(fm.related) ? fm.related as string[] : []
       out.push({
         caption,
@@ -73,6 +70,5 @@ export function discoverRuleSlugs(rulesDirectory: string): DiscoveredRule[] {
     }
   }
 
-  cache.set(rulesDirectory, out)
   return out
-}
+})

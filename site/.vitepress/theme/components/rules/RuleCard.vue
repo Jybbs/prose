@@ -19,7 +19,7 @@ const caption = ref<HTMLElement | null>(null)
 
 if (!props.clickable) {
   useMeasuredCssVar({
-    measure  : () => {
+    measure: () => {
       const c = caption.value
       if (!c) return null
       const range = document.createRange()

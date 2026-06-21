@@ -55,7 +55,7 @@ const INTEGRATIONS_SIDEBAR: DefaultTheme.SidebarItem[] = [
 
 export function buildSidebar(
   rules      : readonly DiscoveredRule[],
-  primitives : readonly DiscoveredPrimitive[]
+  primitives : readonly Pick<DiscoveredPrimitive, 'name' | 'slug' | 'stability'>[]
 ): DefaultTheme.Sidebar {
   const familySections: DefaultTheme.SidebarItem[] = FAMILY_ORDER.map(family => ({
     items : rules

@@ -4,7 +4,7 @@ import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
-import { buildPhraseToSlug }                 from './lib/glossary/glossary'
+import { buildPhraseToSlug }                 from './lib/glossary/phrase-map'
 import { glossary }                          from './lib/glossary/entries'
 import { glossaryPlugin }                    from './lib/glossary/plugin'
 import { bodyLinkPlugin }                    from './lib/markdown/body-link-plugin'
@@ -15,8 +15,8 @@ import { discoverRuleSlugs }                 from './lib/rules/discovery'
 import { ruleLinkPlugin }                    from './lib/rules/link-plugin'
 import { canonicalUrl }                      from './lib/config/canonical-url'
 import { ogImageUrl }                        from './lib/config/og-url'
-import { resolveToken }                      from './lib/og/colors'
-import { CARD_HEIGHT, CARD_WIDTH }           from './lib/og/parts'
+import { resolveToken }                      from './lib/shared/css-token'
+import { CARD_HEIGHT, CARD_WIDTH }           from './lib/og/render/parts'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME, SITE_TAGLINE } from './lib/shared/constants'
 import { buildPageTimestamps }               from './lib/config/page-timestamps'
 import { primitivesDir, repoRoot, rulesDir } from './lib/shared/paths'
@@ -40,7 +40,7 @@ export default defineConfig({
   cacheDir      : `${repoDir}/.cache/vitepress`,
   cleanUrls     : true,
   description   : SITE_TAGLINE,
-  head          : [
+  head: [
     ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }],
     ['meta', { content: themeColor,                name:     'theme-color'   }],
     ['meta', { content: 'summary_large_image',     name:     'twitter:card'  }],
@@ -49,9 +49,9 @@ export default defineConfig({
     ['style', {}, `:root{--prose-shiki-dark-bg:${shikiDarkBg}}`]
   ],
   lastUpdated   : false,
-  markdown      : {
+  markdown: {
     codeTransformers : [lintDecorationTransformer],
-    config      : md => {
+    config: md => {
       md.use(groupIconMdPlugin)
       md.use(tabsMarkdownPlugin)
       md.use(ruleLinkPlugin(validSlugs, primitiveNames))
@@ -62,16 +62,16 @@ export default defineConfig({
     lineNumbers : false,
     theme       : SHIKI_THEMES
   },
-  sitemap       : {
+  sitemap: {
     hostname: SITE_HOSTNAME
   },
-  themeConfig   : {
-    editLink    : {
+  themeConfig: {
+    editLink: {
       pattern : `${REPO_URL}/edit/main/site/:path`,
       text    : 'Suggest an edit to this page'
     },
-    logo        : { alt: 'prose', src: '/logo.svg' },
-    nav         : [
+    logo      : { alt: 'prose', src: '/logo.svg' },
+    nav: [
       { activeMatch: '/usage/',        link: '/usage/',             text: 'Usage'        },
       { activeMatch: '/reference/',    link: '/reference/',         text: 'Reference'    },
       { activeMatch: '/integrations/', link: '/integrations/',      text: 'Integrations' },
@@ -79,18 +79,18 @@ export default defineConfig({
       { activeMatch: '/primitives/',   link: '/primitives/',        text: 'Primitives'   },
       {                                link: `${REPO_URL}/releases`, text: `v${version}` }
     ],
-    outline     : { level: [2, 3] },
-    search      : { provider: 'local' },
-    sidebar     : buildSidebar(discoveredRules, discoveredPrimitives),
-    siteTitle   : 'Prose',
-    socialLinks : [
+    outline   : { level: [2, 3] },
+    search    : { provider: 'local' },
+    sidebar   : buildSidebar(discoveredRules, discoveredPrimitives),
+    siteTitle : 'Prose',
+    socialLinks: [
       { icon: 'github', link: REPO_URL }
     ]
   },
   title         : 'Prose',
   titleTemplate : ':title · Prose',
   async buildEnd(siteConfig) {
-    const { buildOgCards } = await import('./lib/og/build')
+    const { buildOgCards } = await import('./lib/og/render/build')
     await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
   },
   transformHead({ pageData }) {
@@ -133,10 +133,10 @@ export default defineConfig({
       pageData.frontmatter.name ??= primitiveNames.get(slug)
     }
   },
-  vite          : {
-    build   : {
-      chunkSizeWarningLimit : 4000,
-      rollupOptions         : {
+  vite: {
+    build: {
+      chunkSizeWarningLimit: 4000,
+      rollupOptions: {
         output: {
           manualChunks(id) {
             if (id.includes('/shiki-magic-move/')) return 'shiki-magic-move'
@@ -146,8 +146,8 @@ export default defineConfig({
         }
       }
     },
-    css     : { postcss: { plugins: [postcssCustomMedia()] } },
-    plugins : [groupIconVitePlugin({
+    css: { postcss: { plugins: [postcssCustomMedia()] } },
+    plugins: [groupIconVitePlugin({
       customIcon: {
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),
         gha: TOOL_SEEDS.github.icon

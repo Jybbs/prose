@@ -37,7 +37,7 @@ interface IconPack {
 const repoDir = repoRoot(import.meta.url)
 
 const loadPack = (pack: string): IconPack => {
-  const file = path.join(repoDir, 'node_modules', `@iconify-json/${pack}/icons.json`)
+  const file = path.join(repoDir, 'site', 'node_modules', `@iconify-json/${pack}/icons.json`)
   return JSON.parse(fs.readFileSync(file, 'utf8')) as IconPack
 }
 

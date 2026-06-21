@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { DECISIONS, SCOPE_META, SCOPE_ORDER } from './scope-decisions'
+import { DECISIONS }               from './scope-decisions'
+import { SCOPE_META, SCOPE_ORDER } from './scope-meta'
 
 interface SpecimenLine {
   bracket : 'open' | 'close' | 'mid' | 'solo' | null

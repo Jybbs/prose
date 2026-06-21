@@ -3,16 +3,16 @@ import path from 'node:path'
 import matter from 'gray-matter'
 
 import { ogImagePath }                                     from '../config/og-url'
+import { markdownH1 }                                      from '../markdown/h1'
 import { type DiscoveredPrimitive, discoverPrimitives }    from '../primitives/discovery'
 import { type DiscoveredRule, discoverRuleSlugs }          from '../rules/discovery'
 import { parsePipeline }                                   from '../rules/pipeline-source'
+import { resolveToken }                                    from '../shared/css-token'
 import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
 import { toTitleCase }                                     from '../shared/title-case'
 
-import { resolveToken } from './colors'
-
 const KINDS = ['integrations', 'primitives', 'reference', 'rules', 'usage'] as const
-export type OgKind = typeof KINDS[number]
+type OgKind = typeof KINDS[number]
 
 export interface OgPage {
   accent    ?: string
@@ -29,7 +29,9 @@ export interface OgPage {
 
 export function enumeratePages(srcDir: string, pages: readonly string[]): readonly OgPage[] {
   const rulesIndex      = new Map(discoverRuleSlugs(path.join(srcDir, 'rules')).map(r => [r.slug, r]))
-  const primitivesIndex = new Map(discoverPrimitives(path.join(srcDir, 'primitives')).map(p => [p.slug as string, p]))
+  const primitivesIndex = new Map(
+    discoverPrimitives(path.join(srcDir, 'primitives')).map(p => [p.slug as string, p])
+  )
   const pipeline        = parsePipeline(import.meta.url)
   const pipelinePos     = new Map(pipeline.map(r => [r.slug, r.position]))
   const out: OgPage[]   = []
@@ -128,7 +130,7 @@ function pageTitle(srcDir: string, rel: string): string {
   const fm    = matter.read(path.join(srcDir, rel))
   const named = typeof fm.data.name === 'string' ? fm.data.name.trim() : ''
   if (named) return named
-  const h1 = fm.content.match(/^#\s+(.+?)\s*$/m)?.[1]
+  const h1 = markdownH1(fm.content)
   if (h1) return h1
   return toTitleCase(pageSlug(rel), '-')
 }

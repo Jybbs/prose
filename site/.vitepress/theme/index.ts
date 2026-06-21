@@ -1,5 +1,6 @@
-import type { Component, Theme } from 'vitepress'
-import DefaultTheme              from 'vitepress/theme'
+import type { Theme }     from 'vitepress'
+import type { Component } from 'vue'
+import DefaultTheme       from 'vitepress/theme'
 
 import FloatingVue            from 'floating-vue'
 import { enhanceAppWithTabs } from 'vitepress-plugin-tabs/client'

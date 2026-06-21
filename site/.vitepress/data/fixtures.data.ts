@@ -2,9 +2,9 @@ import { existsSync } from 'node:fs'
 
 import { defineLoader } from 'vitepress'
 
-import { lintDecorations }               from '../lib/fixtures/lint-findings'
 import { readFixtureToggle }             from '../lib/fixtures/toggle'
 import { fixtureWatchGlobs, readFixtureDocs, walkFixtures } from '../lib/fixtures/walker'
+import { lintDecorations }               from '../lib/markdown/lint-decorations'
 import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
 import { discoverRuleSlugs }             from '../lib/rules/discovery'
 import { repoRoot, rulesDir }            from '../lib/shared/paths'

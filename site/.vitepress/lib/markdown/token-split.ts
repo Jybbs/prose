@@ -1,18 +1,21 @@
-import type MarkdownIt from 'markdown-it'
+interface SplittableToken {
+  content: string
+  level  : number
+  type   : string
+}
 
-type Token     = MarkdownIt.Token
-type TokenCtor = new (type: string, tag: string, nesting: MarkdownIt.Token.Nesting) => Token
+type TokenCtor<T> = new (type: string, tag: string, nesting: 0 | 1 | -1) => T
 
-function splitTextToken(
-  child    : Token,
+function splitTextToken<T extends SplittableToken>(
+  child    : T,
   pattern  : RegExp,
-  TokenCtor: TokenCtor,
-  replace  : (match: RegExpExecArray) => Token[] | null
-): Token | Token[] {
+  TokenCtor: TokenCtor<T>,
+  replace  : (match: RegExpExecArray) => T[] | null
+): T | T[] {
   const text = child.content
   pattern.lastIndex = 0
-  const out: Token[] = []
-  let   cursor       = 0
+  const out: T[] = []
+  let   cursor   = 0
   let   match: RegExpExecArray | null
 
   while ((match = pattern.exec(text)) !== null) {
@@ -33,15 +36,15 @@ function splitTextToken(
   return out
 }
 
-export function replaceTextTokens(
-  children : Token[],
-  TokenCtor: TokenCtor,
+export function replaceTextTokens<T extends SplittableToken>(
+  children : T[],
+  TokenCtor: TokenCtor<T>,
   pattern  : RegExp,
-  replace  : (match: RegExpExecArray, child: Token) => Token[] | null,
+  replace  : (match: RegExpExecArray, child: T) => T[] | null,
   options  : { skipInsideLinks?: boolean } = {}
-): Token[] {
-  const out: Token[] = []
-  let   inLink       = 0
+): T[] {
+  const out: T[] = []
+  let   inLink   = 0
 
   for (const child of children) {
     if (options.skipInsideLinks) {
@@ -60,7 +63,11 @@ export function replaceTextTokens(
   return out
 }
 
-function makeText(content: string, level: number, TokenCtor: TokenCtor): Token {
+function makeText<T extends SplittableToken>(
+  content  : string,
+  level    : number,
+  TokenCtor: TokenCtor<T>
+): T {
   const t   = new TokenCtor('text', '', 0)
   t.content = content
   t.level   = level

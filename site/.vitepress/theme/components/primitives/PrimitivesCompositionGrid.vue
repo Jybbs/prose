@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { data as primitiveMeta } from '../../../data/primitives.data'
-import type { PrimitiveLayer }   from '../../../data/primitives-composition.data'
-import type { PrimitiveSlug }    from '../../../lib/shared/registries'
+
+import type { PrimitiveLayer, PrimitiveSlug } from '../../../lib/shared/registries'
 
 interface BandEntry {
   layer : PrimitiveLayer

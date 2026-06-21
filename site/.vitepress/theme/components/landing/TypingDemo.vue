@@ -4,8 +4,8 @@ import { ShikiMagicMovePrecompiled }                from 'shiki-magic-move/vue'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 
 import { data }                                              from '../../../data/landing-typing-demo.data'
-import { applyCompletedEdits, EMPTY_SEGMENTS, resetText, segmentsForEdit } from './typing-demo-buffer'
-import type { BufferSegments }                  from './typing-demo-buffer'
+import { applyCompletedEdits, EMPTY_SEGMENTS, resetText, segmentsForEdit } from '../../../lib/landing/typing-demo-buffer'
+import type { BufferSegments }                  from '../../../lib/landing/typing-demo-buffer'
 import { MAGIC_MOVE_MS, useTypingStateMachine } from './typing-state-machine'
 import type { Phase }                           from './typing-state-machine'
 
@@ -92,7 +92,7 @@ onMounted(() => {
       <header class="typing-demo-label">app.py</header>
       <ShikiMagicMovePrecompiled
         class    = "typing-demo-python-code"
-        :steps   = "data.pythonStateSteps"
+        :steps   = "[...data.pythonStateSteps]"
         :step    = "pythonStateIndex"
         :animate = "!reducedMotion"
         :options = "{ duration: MAGIC_MOVE_MS, stagger: 3 }"
