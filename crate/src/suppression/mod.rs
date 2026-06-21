@@ -155,7 +155,7 @@ pub(crate) fn is_directive_comment(comment: &str) -> bool {
 }
 
 fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
-    spans.sort_unstable_by_key(ruff_text_size::Ranged::start);
+    spans.sort_unstable_by_key(Ranged::start);
     spans.dedup_by(|next, prev| {
         let overlaps = next.start() <= prev.end();
         if overlaps {

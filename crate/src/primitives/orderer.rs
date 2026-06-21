@@ -324,12 +324,7 @@ mod tests {
     #[test]
     fn assemble_blocks_mixes_overridden_and_source_gaps() {
         let source = parse("def a(): pass\ndef b(): pass\ndef c(): pass\n");
-        let blocks: Vec<TextRange> = source
-            .ast()
-            .body
-            .iter()
-            .map(ruff_text_size::Ranged::range)
-            .collect();
+        let blocks: Vec<TextRange> = source.ast().body.iter().map(Ranged::range).collect();
         let rendered: Vec<Cow<str>> = blocks
             .iter()
             .map(|&b| Cow::Borrowed(source.slice(b)))
@@ -344,12 +339,7 @@ mod tests {
     #[test]
     fn assemble_blocks_substitutes_gap_when_override_returns_some() {
         let source = parse("def a(): pass\ndef b(): pass\n");
-        let blocks: Vec<TextRange> = source
-            .ast()
-            .body
-            .iter()
-            .map(ruff_text_size::Ranged::range)
-            .collect();
+        let blocks: Vec<TextRange> = source.ast().body.iter().map(Ranged::range).collect();
         let rendered: Vec<Cow<str>> = blocks
             .iter()
             .map(|&b| Cow::Borrowed(source.slice(b)))

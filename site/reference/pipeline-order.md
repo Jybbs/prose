@@ -1,6 +1,6 @@
 # Pipeline Order
 
-*Prose* runs each enabled rule in a deterministic order, reparsing the source between rules so every downstream rule reads a settled AST. The reparse is the discipline that makes the rule set composable, wherein no rule observes the half-applied state of another, leaving every pass free of cross-rule edit conflict by construction. The order itself is canonical, source-of-truth in `src/rule.rs` *(the `register_rules!` macro block)*, and pedagogically valuable. A rule that depends on a settled token surface sits downstream of every rule that touches that surface, in that *(for example)* [[align-colons]] runs before [[docstring-wrap]] because the docstring wrap budget depends on the post-colon column the alignment rule sets.
+*Prose* runs each enabled rule in a deterministic order, reparsing the source between rules so every downstream rule reads a settled AST. The reparse is the discipline that makes the rule set composable, wherein no rule observes the half-applied state of another, leaving every pass free of cross-rule edit conflict by construction. The order itself is canonical, source-of-truth in `crate/src/rule.rs` *(the `register_rules!` macro block)*, and pedagogically valuable. A rule that depends on a settled token surface sits downstream of every rule that touches that surface, in that *(for example)* [[align-colons]] runs before [[docstring-wrap]] because the docstring wrap budget depends on the post-colon column the alignment rule sets.
 
 ## Canonical Order
 
@@ -30,6 +30,6 @@ Lint-only rules *(the entries above with the 🧶 badge)* never rewrite, so they
 
 ## Internal Surface
 
-The data driving this page comes from parsing the `register_rules!` macro at `src/rule.rs` at build time, so the order on the page is always the order the binary actually runs. The [[pipeline]] primitive page covers the `Pipeline::with_defaults`, `Pipeline::with_filters`, and `Pipeline::for_rule` constructors that pick subsets out of this canonical list.
+The data driving this page comes from parsing the `register_rules!` macro at `crate/src/rule.rs` at build time, so the order on the page is always the order the binary actually runs. The [[pipeline]] primitive page covers the `Pipeline::with_defaults`, `Pipeline::with_filters`, and `Pipeline::for_rule` constructors that pick subsets out of this canonical list.
 
 For the per-rule canonical case and the surrounding behavior of each entry, click the rule's chip above. For the deterministic gate that consumers compile against, see the [**Exit Codes**](/reference/exit-codes) reference.

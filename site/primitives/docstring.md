@@ -16,7 +16,7 @@ tagline: PEP 257 docstring walker
 
 ## Public Surface
 
-*Docstring* lives at `src/primitives/docstring/` and is `pub(crate)`. The downstream-visible consequence is the rewrites the docstring rules emit through the diagnostic stream.
+*Docstring* lives at `crate/src/primitives/docstring/` and is `pub(crate)`. The downstream-visible consequence is the rewrites the docstring rules emit through the diagnostic stream.
 
 At `1.0` the trait promotes to `pub`, opening the surface to downstream-implemented docstring rules.
 

@@ -35,7 +35,7 @@ Snake-case input *(`align_equals`)* is normalized to the canonical kebab form be
 
 ## Registry Pattern
 
-Each concrete rule lives under `prose::rules` (*a `pub(crate)` module today*). The registry macro in `src/rule.rs` emits a single source of truth that drives every consumer:
+Each concrete rule lives under `prose::rules` (*a `pub(crate)` module today*). The registry macro in `crate/src/rule.rs` emits a single source of truth that drives every consumer:
 
 - A `KNOWN_IDS: &[RuleId]` constant carrying every registered slug in canonical order.
 - The pipeline constructors (`for_rule`, `with_defaults`, `with_filters`) that dispatch on slug.

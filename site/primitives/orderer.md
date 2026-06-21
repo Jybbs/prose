@@ -16,7 +16,7 @@ tagline: sibling reorder helper
 
 ## Public Surface
 
-*Orderer* lives at `src/primitives/orderer.rs` and is `pub(crate)`. The downstream-visible consequence is the rewrite [[alphabetize]] emits, with the reordered text landing in the `Edit` the rule produces.
+*Orderer* lives at `crate/src/primitives/orderer.rs` and is `pub(crate)`. The downstream-visible consequence is the rewrite [[alphabetize]] emits, with the reordered text landing in the `Edit` the rule produces.
 
 The shape settles at `1.0`, where a downstream can register its own ordering rule against the same entry points.
 

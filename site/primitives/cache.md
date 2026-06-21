@@ -15,7 +15,7 @@ tagline: content-addressed result cache
 
 ## Consumer-Visible Surface
 
-*Cache* lives at `src/cache.rs` and is `pub(crate)`, so the type is documented here for the consumer-visible CLI behavior it shapes rather than as a directly-callable type. The downstream-visible consequences are the `prose cache` subcommands *(`clean`, `compact`, `info`)*, the `--no-cache` flag on `prose check` and `prose format`, the `--verbose` flag's hit/miss telemetry, and the `[cache]` configuration table. The [**Cache**](/reference/cache) reference covers each surface from a user's perspective.
+*Cache* lives at `crate/src/cache/` and is `pub(crate)`, so the type is documented here for the consumer-visible CLI behavior it shapes rather than as a directly-callable type. The downstream-visible consequences are the `prose cache` subcommands *(`clean`, `compact`, `info`)*, the `--no-cache` flag on `prose check` and `prose format`, the `--verbose` flag's hit/miss telemetry, and the `[cache]` configuration table. The [**Cache**](/reference/cache) reference covers each surface from a user's perspective.
 
 A downstream consumer in `0.2.x` reaches the cache indirectly through `cli::runner::process_path`. Each file's bytes feed `CacheKey::compute`, the resulting key drives a lookup, and on hit the runner rehydrates the cached diagnostics and rewrite into a `SourceFile` without entering the pipeline. On miss, the runner runs the pipeline as normal and inserts the resulting entry before emitting.
 

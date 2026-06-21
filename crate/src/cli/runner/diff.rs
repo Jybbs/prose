@@ -4,7 +4,7 @@ use std::io::Write;
 
 use anyhow::Context;
 
-use crate::cli::output::{self};
+use crate::cli::output;
 
 /// Writes a unified diff between `before` and `after`. When
 /// `decorate`, a Ube `🧵 <name>` heading stands in for the plain
