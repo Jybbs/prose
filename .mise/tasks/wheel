@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 #MISE description="Build the `maturin` wheel into the active virtualenv"
+#MISE dir="crate"
 
 maturin develop

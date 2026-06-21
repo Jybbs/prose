@@ -5,8 +5,8 @@ permissions : { contents: read }
 on:
   pull_request:
     paths:
-      - pyproject.toml
-      - Cargo.toml
+      - crate/pyproject.toml
+      - crate/Cargo.toml
       - .github/workflows/release.yml
 
   push:
@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name : Check out repository
-        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name : Provision uv
         uses : ./.github/actions/provision-uv
@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name : Check out repository
-        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name : Provision uv
         uses : ./.github/actions/provision-uv
@@ -74,7 +74,7 @@ jobs:
 
     steps:
       - name : Check out repository
-        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name : Provision uv
         uses : ./.github/actions/provision-uv
@@ -94,7 +94,7 @@ jobs:
 
     steps:
       - name : Check out repository
-        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name : Download all artifacts
         uses : ./.github/actions/download-wheels
@@ -122,7 +122,7 @@ jobs:
 
     steps:
       - name : Check out repository
-        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name : Download all artifacts
         uses : ./.github/actions/download-wheels
@@ -150,7 +150,7 @@ jobs:
 
     steps:
       - name : Check out repository
-        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name : Download all artifacts
         if   : needs.build.result != 'cancelled' && needs.sdist.result != 'cancelled'

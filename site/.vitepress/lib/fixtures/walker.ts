@@ -23,8 +23,8 @@ interface FixtureWalkEntry {
   rule      : string
 }
 
-export function fixtureWatchGlobs(repoRoot: string): string[] {
-  const fixturesRoot = path.join(repoRoot, FIXTURES_DIR)
+export function fixtureWatchGlobs(crateDir: string): string[] {
+  const fixturesRoot = path.join(crateDir, FIXTURES_DIR)
   return [
     `${fixturesRoot}/**/${INPUT_FILE}`,
     `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
@@ -46,8 +46,8 @@ export function subdirNames(dir: string): string[] {
     .sort()
 }
 
-export function* walkFixtures(repoRoot: string): Generator<FixtureWalkEntry> {
-  const fixturesRoot = path.join(repoRoot, FIXTURES_DIR)
+export function* walkFixtures(crateDir: string): Generator<FixtureWalkEntry> {
+  const fixturesRoot = path.join(crateDir, FIXTURES_DIR)
   for (const rule of subdirNames(fixturesRoot)) {
     const ruleDir = path.join(fixturesRoot, rule)
     for (const caseName of subdirNames(ruleDir)) {

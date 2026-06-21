@@ -115,12 +115,12 @@ pub(crate) fn keyword_groups(
     }
     let arg_lines: Vec<_> = call
         .arguments
-        .arguments_source_order()
+        .iter_source_order()
         .map(|a| source.line_index(a.start()))
         .collect();
     aligner::adjacent_member_groups(
         source,
-        call.arguments.arguments_source_order(),
+        call.arguments.iter_source_order(),
         break_after_multiline,
         |arg| {
             let Some(member) = keyword(source, arg) else {

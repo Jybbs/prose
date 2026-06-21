@@ -92,8 +92,8 @@ struct Walker<'a> {
 impl Walker<'_> {
     fn buffer_description(&mut self, indent: &str, line: &str) {
         if self.paragraph.lines.is_empty() {
-            self.paragraph.initial_indent = indent.to_owned();
-            self.paragraph.subsequent_indent = indent.to_owned();
+            indent.clone_into(&mut self.paragraph.initial_indent);
+            indent.clone_into(&mut self.paragraph.subsequent_indent);
         }
         self.paragraph.lines.push(line.to_owned());
     }
@@ -218,7 +218,7 @@ impl Walker<'_> {
 
     fn start_entry(&mut self, indent_str: &str, indent_chars: usize, text: &str, desc_col: usize) {
         let hanging_col = indent_chars + desc_col;
-        self.paragraph.initial_indent = indent_str.to_owned();
+        indent_str.clone_into(&mut self.paragraph.initial_indent);
         self.paragraph.subsequent_indent = " ".repeat(hanging_col);
         self.paragraph.lines.push(text.to_owned());
         self.region = Region::SectionEntry(hanging_col);

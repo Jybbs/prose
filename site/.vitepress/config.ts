@@ -18,15 +18,15 @@ import { ogImageUrl }                        from './lib/config/og-url'
 import { resolveToken }                      from './lib/shared/css-token'
 import { CARD_HEIGHT, CARD_WIDTH }           from './lib/og/render/parts'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME, SITE_TAGLINE } from './lib/shared/constants'
-import { buildPageTimestamps }               from './lib/config/page-timestamps'
-import { primitivesDir, repoRoot, rulesDir } from './lib/shared/paths'
-import { buildSidebar }                      from './lib/config/sidebar'
-import { toTitleCase }                       from './lib/shared/title-case'
-import { TOOL_SEEDS }                        from './lib/shared/tools'
-import { readCargoVersion }                  from './lib/shared/version'
+import { buildPageTimestamps }                         from './lib/config/page-timestamps'
+import { crateDir, primitivesDir, repoRoot, rulesDir } from './lib/shared/paths'
+import { buildSidebar }                                from './lib/config/sidebar'
+import { toTitleCase }                                 from './lib/shared/title-case'
+import { TOOL_SEEDS }                                  from './lib/shared/tools'
+import { readCargoVersion }                            from './lib/shared/version'
 
 const repoDir              = repoRoot(import.meta.url)
-const version              = readCargoVersion(repoDir)
+const version              = readCargoVersion(crateDir(import.meta.url))
 const pageTimestamps       = buildPageTimestamps(repoDir)
 const discoveredRules      = discoverRuleSlugs(rulesDir(import.meta.url))
 const discoveredPrimitives = discoverPrimitives(primitivesDir(import.meta.url))

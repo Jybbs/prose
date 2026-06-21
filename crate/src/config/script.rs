@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn block_after_shebang_is_read() {
-        let source = indoc! {br#"
+        let source = indoc! {br"
             #!/usr/bin/env -S uv run --script
             # /// script
             # [tool.prose]
@@ -65,7 +65,7 @@ mod tests {
             # ///
 
             x = 1
-        "#};
+        "};
 
         let table = extract_prose_table(source)
             .expect("parses")
@@ -76,13 +76,13 @@ mod tests {
 
     #[test]
     fn block_keeps_a_blank_comment_line() {
-        let source = indoc! {br#"
+        let source = indoc! {br"
             # /// script
             # [tool.prose]
             #
             # code-line-length = 100
             # ///
-        "#};
+        "};
 
         let table = extract_prose_table(source)
             .expect("parses")
@@ -93,13 +93,13 @@ mod tests {
 
     #[test]
     fn block_without_closing_pragma_yields_none() {
-        let source = indoc! {br#"
+        let source = indoc! {br"
             # /// script
             # [tool.prose]
             # code-line-length = 100
 
             x = 1
-        "#};
+        "};
 
         assert_eq!(extract_prose_table(source).expect("parses"), None);
     }
@@ -122,11 +122,11 @@ mod tests {
 
     #[test]
     fn malformed_block_toml_is_an_error() {
-        let source = indoc! {br#"
+        let source = indoc! {br"
             # /// script
             # [tool.prose
             # ///
-        "#};
+        "};
 
         assert!(extract_prose_table(source).is_err());
     }
@@ -138,12 +138,12 @@ mod tests {
 
     #[test]
     fn unspaced_comment_ends_the_block() {
-        let source = indoc! {br#"
+        let source = indoc! {br"
             # /// script
             # [tool.prose]
             #bad
             # ///
-        "#};
+        "};
 
         assert_eq!(extract_prose_table(source).expect("parses"), None);
     }

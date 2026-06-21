@@ -304,7 +304,7 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         let cache = cache_in(&tmp, 100);
         let key = CacheKey::compute(b"x = 1\n", CONFIG_A, rules());
-        fs_err::write(cache.path_for(&key), b"not bincode bytes").expect("writes");
+        fs_err::write(cache.path_for(&key), b"not postcard bytes").expect("writes");
         assert!(cache.lookup(&key).is_none());
     }
 

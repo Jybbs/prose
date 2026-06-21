@@ -15,7 +15,7 @@ export async function buildOgCards(
 ): Promise<void> {
   const repo     = path.dirname(srcDir)
   const brand    = loadBrandAssets(srcDir)
-  const version  = readCargoVersion(repo)
+  const version  = readCargoVersion(path.join(repo, 'crate'))
   const cacheDir = path.join(repo, '.cache', 'og')
   const keyOf    = cardKeyer(version, brand)
 

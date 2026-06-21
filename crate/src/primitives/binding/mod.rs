@@ -756,7 +756,10 @@ impl<'a> Visitor<'a> for Builder {
                 key,
                 value,
                 ..
-            }) => self.enter_comprehension(generators, &[key, value]),
+            }) => match key {
+                Some(key) => self.enter_comprehension(generators, &[key, value]),
+                None => self.enter_comprehension(generators, &[value]),
+            },
             _ => walk_expr(self, expr),
         }
     }

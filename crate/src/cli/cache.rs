@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn relative_age_renders_future_when_mtime_lies_ahead_of_now() {
-        let future = SystemTime::now() + std::time::Duration::from_secs(60);
+        let future = SystemTime::now() + std::time::Duration::from_mins(1);
         assert_eq!(relative_age(future), "in the future");
     }
 
@@ -94,8 +94,8 @@ mod tests {
     fn relative_age_renders_seconds_minutes_hours_days() {
         let now = SystemTime::now();
         assert!(relative_age(now - std::time::Duration::from_secs(5)).ends_with("s ago"));
-        assert!(relative_age(now - std::time::Duration::from_secs(120)).ends_with("m ago"));
-        assert!(relative_age(now - std::time::Duration::from_secs(7200)).ends_with("h ago"));
-        assert!(relative_age(now - std::time::Duration::from_secs(172_800)).ends_with("d ago"));
+        assert!(relative_age(now - std::time::Duration::from_mins(2)).ends_with("m ago"));
+        assert!(relative_age(now - std::time::Duration::from_hours(2)).ends_with("h ago"));
+        assert!(relative_age(now - std::time::Duration::from_hours(48)).ends_with("d ago"));
     }
 }

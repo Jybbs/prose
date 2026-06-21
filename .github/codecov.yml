@@ -27,7 +27,7 @@ coverage:
 
 flags:
   rust:
-    paths        : [src]
+    paths        : [crate/src]
     carryforward : true
   site:
     paths        : [site/.vitepress]

@@ -12,6 +12,10 @@ export function repoRoot(metaUrl: string): string {
   return dir
 }
 
+export function crateDir(metaUrl: string): string {
+  return path.join(repoRoot(metaUrl), 'crate')
+}
+
 export function primitivesDir(metaUrl: string): string {
   return path.join(siteDir(metaUrl), 'primitives')
 }

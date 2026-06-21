@@ -2,7 +2,7 @@ import { defineLoader } from 'vitepress'
 
 import { readFixtureToggle } from '../lib/fixtures/toggle'
 import { fixtureWatchGlobs, readFixtureDocs, walkFixtures } from '../lib/fixtures/walker'
-import { repoRoot }          from '../lib/shared/paths'
+import { crateDir }          from '../lib/shared/paths'
 
 interface RuleExample {
   case  : string
@@ -16,7 +16,7 @@ interface RuleFixtureSet {
 
 type RuleFixturesData = Record<string, RuleFixtureSet>
 
-const root = repoRoot(import.meta.url)
+const crate = crateDir(import.meta.url)
 
 const sortKey = (title: string): string => title.replace(/^`+/, '')
 
@@ -24,13 +24,13 @@ declare const data: RuleFixturesData
 export { data }
 
 export default defineLoader({
-  watch: fixtureWatchGlobs(root),
+  watch: fixtureWatchGlobs(crate),
   async load(): Promise<RuleFixturesData> {
     type Pending        = { canonical: string | null, examples: PendingExample[] }
     type PendingExample = RuleExample & { inputPath: string }
 
     const byRule: Record<string, Pending> = {}
-    for (const { rule, caseName, inputPath } of walkFixtures(root)) {
+    for (const { rule, caseName, inputPath } of walkFixtures(crate)) {
       const docs = readFixtureDocs(inputPath)
       if (docs === undefined) continue
       const set   = (byRule[rule] ??= { canonical: null, examples: [] })

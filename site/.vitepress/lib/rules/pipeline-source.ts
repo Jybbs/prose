@@ -1,7 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { repoRoot } from '../shared/paths'
+import { crateDir } from '../shared/paths'
 
 interface PipelineEntry {
   imperative : string
@@ -13,7 +13,7 @@ const REGISTER_BLOCK = /register_rules!\s*{([\s\S]*?)\n}/
 const RULE_LINE      = /^\s*"([a-z][a-z0-9-]*)"\s*:\s*\w+\s*:\s*\w+\s*=>\s*\w+\s*=>\s*"([^"]+)"\s*,?\s*$/
 
 export function ruleSourcePath(metaUrl: string): string {
-  return path.join(repoRoot(metaUrl), 'src', 'rule.rs')
+  return path.join(crateDir(metaUrl), 'src', 'rule.rs')
 }
 
 export function parsePipeline(metaUrl: string): readonly PipelineEntry[] {

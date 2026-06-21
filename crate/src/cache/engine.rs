@@ -3,15 +3,11 @@
 
 use std::{
     fs::Metadata,
-    io::{self, BufReader, BufWriter, Write},
+    io::{self, BufWriter, Read, Write},
     path::{Path, PathBuf},
     time::SystemTime,
 };
 
-use bincode::{
-    config::standard,
-    serde::{decode_from_std_read, encode_into_std_write},
-};
 use fs_err::DirEntry;
 use tempfile::NamedTempFile;
 
@@ -73,7 +69,7 @@ impl Cache {
         let mut tmp = NamedTempFile::with_suffix_in(".tmp", &self.root)?;
         {
             let mut buf = BufWriter::new(tmp.as_file_mut());
-            encode_into_std_write(value, &mut buf, standard()).map_err(io::Error::other)?;
+            postcard::to_io(value, &mut buf).map_err(io::Error::other)?;
             buf.flush()?;
         }
         tmp.persist(self.path_for(key)).map_err(|e| e.error)?;
@@ -160,9 +156,10 @@ impl Cache {
     /// Returns the entry stored at `key` if present and well-formed,
     /// bumping the entry's mtime.
     pub fn lookup(&self, key: &CacheKey) -> Option<CacheEntry> {
-        let file = fs_err::File::open(self.path_for(key)).ok()?;
-        let entry: CacheEntry =
-            decode_from_std_read(&mut BufReader::new(&file), standard()).ok()?;
+        let mut file = fs_err::File::open(self.path_for(key)).ok()?;
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes).ok()?;
+        let entry: CacheEntry = postcard::from_bytes(&bytes).ok()?;
         let _ = file.set_modified(SystemTime::now());
         Some(entry)
     }

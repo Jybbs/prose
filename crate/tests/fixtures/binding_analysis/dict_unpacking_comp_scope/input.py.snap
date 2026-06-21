@@ -1,0 +1,48 @@
+---
+source: crate/tests/binding_analysis.rs
+expression: source.binding_analysis()
+input_file: crate/tests/fixtures/binding_analysis/dict_unpacking_comp_scope/input.py
+---
+bindings:
+  - attributes: []
+    bare_read: true
+    first_unconditional_write: 0
+    kinds:
+      - Assignment
+    name: dicts
+    read_offsets:
+      - 52
+    scope: 0
+    write_offsets:
+      - 0
+  - attributes: []
+    bare_read: true
+    first_unconditional_write: 47
+    kinds:
+      - Comprehension
+    name: d
+    read_offsets:
+      - 41
+    scope: 1
+    write_offsets:
+      - 47
+  - attributes: []
+    bare_read: false
+    first_unconditional_write: 29
+    kinds:
+      - Assignment
+    name: merged
+    read_offsets: []
+    scope: 0
+    write_offsets:
+      - 29
+scopes:
+  - bindings:
+      dicts: 0
+      merged: 2
+    kind: Module
+    parent: ~
+  - bindings:
+      d: 1
+    kind: Comprehension
+    parent: 0

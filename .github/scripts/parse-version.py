@@ -3,14 +3,14 @@
 # requires-python = ">=3.11"
 # ///
 """
-Validate that `Cargo.toml` agrees with the pushed tag.
+Validate that `crate/Cargo.toml` agrees with the pushed tag.
 
 Reads from the environment:
     `GITHUB_REF_TYPE`  e.g. tag, branch
     `GITHUB_REF_NAME`  e.g. 0.1.0, main
 
-Exits 0 on a non-tag run, or on a tag whose `Cargo.toml` version matches.
-Exits 1 when `Cargo.toml` disagrees with the tag.
+Exits 0 on a non-tag run, or on a tag whose `crate/Cargo.toml` version matches.
+Exits 1 when `crate/Cargo.toml` disagrees with the tag.
 """
 
 from os      import environ
@@ -24,9 +24,9 @@ if __name__ == "__main__":
         raise SystemExit
 
     expected = environ["GITHUB_REF_NAME"]
-    actual   = loads(Path("Cargo.toml").read_text())["package"]["version"]
+    actual   = loads(Path("crate/Cargo.toml").read_text())["package"]["version"]
 
     if actual != expected:
         raise SystemExit(
-            f"::error::Cargo.toml version mismatch: expected {expected}, got {actual}"
+            f"::error::crate/Cargo.toml version mismatch: expected {expected}, got {actual}"
         )
