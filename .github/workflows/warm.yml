@@ -67,7 +67,7 @@ jobs:
           - command    : mise run test rust
             name       : ⚖️ Test
             shared-key : prose-test
-          - command    : mise run upload
+          - command    : mise run upload rust
             name       : ☂️ Coverage
             shared-key : prose-coverage
 
