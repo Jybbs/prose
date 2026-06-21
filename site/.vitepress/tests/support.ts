@@ -3,7 +3,7 @@ import path from 'node:path'
 import { test as base, vi, type MockInstance } from 'vitest'
 
 export const fixtureDir = (...parts: string[]): string =>
-  path.join(import.meta.dirname, 'fixtures', ...parts)
+  path.join(import.meta.dirname, '__fixtures__', ...parts)
 
 // Fixture supplying a console.warn spy that auto-restores after the test,
 // for the with-fallback paths that warn on a swallowed error.
