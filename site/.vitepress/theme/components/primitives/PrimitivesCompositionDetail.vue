@@ -3,9 +3,10 @@ import { useResizeObserver }              from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { data as primitives }    from '../../../data/primitives-composition.data'
-import type { PrimitiveLayer }   from '../../../data/primitives-composition.data'
 import { data as primitiveMeta } from '../../../data/primitives.data'
 import { data as rules }         from '../../../data/rules.data'
+
+import type { PrimitiveLayer } from '../../../lib/shared/registries'
 import { type PrimitiveSlug }    from '../../../lib/shared/registries'
 
 const props = defineProps<{

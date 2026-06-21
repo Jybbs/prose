@@ -11,7 +11,7 @@ import {
   resolveSelection,
   type SelectOption,
   STREAM_OPTIONS
-} from './run-summary'
+} from '../../../lib/reference/run-summary'
 
 const outcomeId = ref('clean')
 const quietId   = ref('full')
@@ -42,10 +42,10 @@ const streamOpts = computed<SelectOption[]>(() => STREAM_OPTIONS.map(s => ({
     <span class="kicker run-summary-explorer-kicker">Build A Run</span>
     <div class="run-summary-cmd">
       <span class="run-summary-cmd-prompt" aria-hidden="true">$ prose</span>
-      <RunSummarySelect v-model="outcomeId" :options="outcomeOpts" aria-label="Run command" />
+      <RunSummarySelect v-model="outcomeId" :options="outcomeOpts" label="Run command" />
       <span class="run-summary-cmd-path" aria-hidden="true">.</span>
-      <RunSummarySelect v-model="quietId" :options="quietOpts" aria-label="Verbosity" />
-      <RunSummarySelect v-model="streamId" :options="streamOpts" aria-label="Output stream" />
+      <RunSummarySelect v-model="quietId" :options="quietOpts" label="Verbosity" />
+      <RunSummarySelect v-model="streamId" :options="streamOpts" label="Output stream" />
     </div>
     <RunSummary :line="line">
       <template #bar>

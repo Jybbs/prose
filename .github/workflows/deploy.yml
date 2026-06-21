@@ -8,8 +8,6 @@ on:
       - .github/workflows/deploy.yml
       - .nvmrc
       - Cargo.toml
-      - bun.lock
-      - package.json
       - 'site/**'
 
   push:
@@ -18,8 +16,6 @@ on:
       - .github/workflows/deploy.yml
       - .nvmrc
       - Cargo.toml
-      - bun.lock
-      - package.json
       - 'site/**'
 
 concurrency:
@@ -27,8 +23,49 @@ concurrency:
   group              : ${{ github.workflow }}-${{ github.head_ref || github.ref }}
 
 jobs:
+  checks:
+    name    : ${{ matrix.name }}
+    runs-on : ubuntu-latest
+
+    env:
+      CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
+      SHA           : ${{ github.event.pull_request.head.sha || github.sha }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - command : mise run typecheck
+            name    : 🪡 Typecheck
+          - command : mise run lint site
+            name    : 🧶 Lint
+          - command : mise run test site
+            name    : ⚖️ Test
+          - command : mise run upload site
+            name    : ☂️ Coverage
+          - command : mise run cruft
+            name    : 🧹 Cruft
+
+    steps:
+      - name : Check out repository
+        uses : actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name : Install mise tools
+        uses : jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+
+      - name : Provision bun
+        uses : ./.github/actions/provision-bun
+
+      - name : Install dependencies
+        run  : mise run bake
+
+      - name : ${{ matrix.command }}
+        run  : ${{ matrix.command }}
+
   deploy:
     name        : 🪁 Deploy
+    needs       : checks
     outputs     : { url: "${{ steps.publish.outputs.deployment-url }}" }
     permissions : { contents: read, deployments: write }
     runs-on     : ubuntu-latest
@@ -56,6 +93,9 @@ jobs:
 
       - name : Build the site
         run  : mise run press
+
+      - name : Check internal links
+        run  : mise run links
 
       - name : Deploy to Cloudflare Pages
         id   : publish

@@ -1,0 +1,14 @@
+{
+  "extends"         : "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions" : {
+    "noEmit" : true,
+    "target" : "ESNext",
+    "lib"    : ["ESNext", "DOM", "DOM.Iterable"],
+    "types"  : ["node", "vite/client", "vitest/globals"]
+  },
+  "include"         : [
+    ".vitepress/**/*.ts",
+    ".vitepress/**/*.vue",
+    "vitest.config.ts"
+  ]
+}

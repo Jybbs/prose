@@ -9,10 +9,10 @@ import { parsePipeline }                                   from '../rules/pipeli
 import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
 import { toTitleCase }                                     from '../shared/title-case'
 
-import { resolveToken } from './colors'
+import { resolveToken } from '../shared/css-token'
 
 const KINDS = ['integrations', 'primitives', 'reference', 'rules', 'usage'] as const
-export type OgKind = typeof KINDS[number]
+type OgKind = typeof KINDS[number]
 
 export interface OgPage {
   accent    ?: string

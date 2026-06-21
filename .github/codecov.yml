@@ -8,7 +8,27 @@ coverage:
     patch:
       default:
         target: 95%
+      rust:
+        target : 95%
+        flags  : [rust]
+      site:
+        target : 95%
+        flags  : [site]
 
     project:
       default:
         target: 95%
+      rust:
+        target : 95%
+        flags  : [rust]
+      site:
+        target : 95%
+        flags  : [site]
+
+flags:
+  rust:
+    paths        : [src]
+    carryforward : true
+  site:
+    paths        : [site/.vitepress]
+    carryforward : true

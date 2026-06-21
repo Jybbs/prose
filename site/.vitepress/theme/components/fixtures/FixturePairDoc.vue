@@ -2,7 +2,6 @@
 import { useIntersectionObserver, useMediaQuery } from '@vueuse/core'
 import type { KeyedTokensInfo }                   from 'shiki-magic-move/types'
 import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
-import type { Component }                         from 'vue'
 
 import RuleCard from '../rules/RuleCard.vue'
 
@@ -30,11 +29,13 @@ interface ActiveFinding {
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 const root          = useTemplateRef<HTMLElement>('root')
 
+type Panel = typeof import('shiki-magic-move/vue').ShikiMagicMovePrecompiled | null
+
 const animate   = ref(false)
 const animating = ref(false)
 const drawn     = ref(false)
 const duration  = ref(0)
-const panel     = shallowRef<Component | null>(null)
+const panel     = shallowRef<Panel>(null)
 const steps     = shallowRef<readonly KeyedTokensInfo[]>([])
 
 const active      = ref<ActiveFinding | null>(null)
@@ -139,7 +140,7 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       v-if="panel"
       v-show="animating"
       class="fixture-pair-panel"
-      :steps="steps"
+      :steps="[...steps]"
       :step="step"
       :animate="animate && !reducedMotion"
       :options="{ containerStyle: false, delayMove: 0, duration, stagger: 3 }"

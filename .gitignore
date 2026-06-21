@@ -23,4 +23,5 @@ __pycache__/
 node_modules/
 site/.vitepress/dist/
 site/.vitepress/.temp/
+site/coverage/
 **/*.timestamp-*.mjs

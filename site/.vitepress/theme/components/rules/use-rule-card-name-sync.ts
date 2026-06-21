@@ -7,7 +7,7 @@ export function useRuleCardNameSync(
   source       : WatchSource
 ): void {
   useMeasuredCssVar({
-    measure  : () => {
+    measure: () => {
       const root = containerRef.value
       if (!root) return null
       let widest = 0

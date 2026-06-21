@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #MISE description="Verify every lockfile is in sync with its manifest"
-#MISE sources=["package.json", "Cargo.toml", "pyproject.toml", "bun.lock", "Cargo.lock", "uv.lock"]
+#MISE sources=["site/package.json", "Cargo.toml", "pyproject.toml", "site/bun.lock", "Cargo.lock", "uv.lock"]
 # Wraps each ecosystem's native frozen-mode primitive in sequence.
 # Failures exit non-zero with the underlying tool's error.
 
 set -euo pipefail
 
-bun install --frozen-lockfile --dry-run
+(cd site && bun install --frozen-lockfile --dry-run)
 cargo update --locked --workspace --dry-run
 uv lock --locked

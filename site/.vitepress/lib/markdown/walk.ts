@@ -1,8 +1,6 @@
-import type MarkdownIt from 'markdown-it'
-
-export function walkBodyInlines(
-  state : { tokens: MarkdownIt.Token[] },
-  visit : (block: MarkdownIt.Token, children: MarkdownIt.Token[]) => void
+export function walkBodyInlines<T extends { children: T[] | null; type: string }>(
+  state : { tokens: T[] },
+  visit : (block: T, children: T[]) => void
 ): void {
   for (let i = 0; i < state.tokens.length; i++) {
     const block = state.tokens[i]

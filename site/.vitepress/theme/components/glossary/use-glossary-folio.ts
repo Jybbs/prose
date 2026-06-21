@@ -8,7 +8,7 @@ const ordered: readonly RenderedGlossaryEntry[] = Object.values(glossary.entries
 const query    = ref<string>('')
 const selected = ref<string>(ordered[0]?.slug ?? '')
 
-const filtered = computed<RenderedGlossaryEntry[]>(() => {
+const filtered = computed<readonly RenderedGlossaryEntry[]>(() => {
   const q = query.value.trim().toLowerCase()
   if (q === '') return ordered
   return ordered.filter(e =>
@@ -35,7 +35,7 @@ function step(delta: number): void {
 interface GlossaryFolio {
   active      : ComputedRef<RenderedGlossaryEntry | undefined>
   activeIndex : ComputedRef<number>
-  filtered    : ComputedRef<RenderedGlossaryEntry[]>
+  filtered    : ComputedRef<readonly RenderedGlossaryEntry[]>
   grouped     : ComputedRef<[string, RenderedGlossaryEntry[]][]>
   ordered     : readonly RenderedGlossaryEntry[]
   query       : Ref<string>

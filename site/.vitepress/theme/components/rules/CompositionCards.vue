@@ -32,7 +32,7 @@ interface CardRow {
   num             : string
   outputHtml      : string
   railPaint       : string
-  segments        : readonly RuleSegment[]
+  segments: readonly RuleSegment[]
   title           : string
 }
 
@@ -51,7 +51,7 @@ const cards = computed<readonly CardRow[]>(() =>
       num             : formatFolio(i + 1, 3),
       outputHtml      : fixture?.outputHtml ?? '',
       railPaint       : railPaint(families),
-      segments        : entry.rules.map((slug, idx) => ({
+      segments: entry.rules.map((slug, idx) => ({
         family : families[idx] ?? null,
         index  : idx + 1,
         rule   : rules.bySlug[slug] ?? null,

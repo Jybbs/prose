@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Type-check the docs-site TypeScript with `vue-tsc`"
+#MISE dir="site"
+
+bunx vue-tsc --noEmit

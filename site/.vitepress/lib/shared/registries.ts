@@ -44,3 +44,5 @@ export function categoryOf(family: RuleFamily): RuleCategory {
 export type PrimitiveSlug =
   | 'aligner' | 'binding-analysis' | 'cache' | 'colon-targets' | 'docstring' | 'edit'
   | 'orderer' | 'pipeline' | 'rule-id' | 'source' | 'suppression-map' | 'walker'
+
+export type PrimitiveLayer = 'analysis' | 'base' | 'orchestration'

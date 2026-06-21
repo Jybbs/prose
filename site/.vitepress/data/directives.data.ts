@@ -39,7 +39,7 @@ const SOURCES: readonly DirectiveSource[] = [
     example  : '# prose: off\n\ndef messy(): pass',
     form     : '# prose: off',
     id       : 'prose-off',
-    parts    : [
+    parts: [
       { role : 'comment',   text : '#'       },
       { role : 'namespace', text : 'prose:'  },
       { role : 'action',    text : 'off'     }
@@ -54,7 +54,7 @@ const SOURCES: readonly DirectiveSource[] = [
     id       : 'fmt-off',
     pairId   : 'fmt-on',
     pairRole : 'opens',
-    parts    : [
+    parts: [
       { role : 'comment',   text : '#'     },
       { role : 'namespace', text : 'fmt:'  },
       { role : 'action',    text : 'off'   }
@@ -68,7 +68,7 @@ const SOURCES: readonly DirectiveSource[] = [
     id       : 'fmt-on',
     pairId   : 'fmt-off',
     pairRole : 'closes',
-    parts    : [
+    parts: [
       { role : 'comment',   text : '#'    },
       { role : 'namespace', text : 'fmt:' },
       { role : 'action',    text : 'on'   }
@@ -83,7 +83,7 @@ const SOURCES: readonly DirectiveSource[] = [
     id       : 'yapf-disable',
     pairId   : 'yapf-enable',
     pairRole : 'opens',
-    parts    : [
+    parts: [
       { role : 'comment',   text : '#'       },
       { role : 'namespace', text : 'yapf:'   },
       { role : 'action',    text : 'disable' }
@@ -98,7 +98,7 @@ const SOURCES: readonly DirectiveSource[] = [
     id       : 'yapf-enable',
     pairId   : 'yapf-disable',
     pairRole : 'closes',
-    parts    : [
+    parts: [
       { role : 'comment',   text : '#'      },
       { role : 'namespace', text : 'yapf:'  },
       { role : 'action',    text : 'enable' }
@@ -112,7 +112,7 @@ const SOURCES: readonly DirectiveSource[] = [
               + 'False,\n}',
     form      : '# prose: keep',
     id        : 'prose-keep',
-    parts     : [
+    parts: [
       { role : 'comment',   text : '#'      },
       { role : 'namespace', text : 'prose:' },
       { role : 'action',    text : 'keep'   }
@@ -126,7 +126,7 @@ const SOURCES: readonly DirectiveSource[] = [
     example : 'data = {"a": 1, "b": 2, "c": 3}  # fmt: skip',
     form    : '# fmt: skip',
     id      : 'fmt-skip',
-    parts   : [
+    parts: [
       { role : 'comment',   text : '#'    },
       { role : 'namespace', text : 'fmt:' },
       { role : 'action',    text : 'skip' }
@@ -139,7 +139,7 @@ const SOURCES: readonly DirectiveSource[] = [
     example : 'data = {"a": 1, "b": 2, "c": 3}  # prose: skip',
     form    : '# prose: skip',
     id      : 'prose-skip',
-    parts   : [
+    parts: [
       { role : 'comment',   text : '#'      },
       { role : 'namespace', text : 'prose:' },
       { role : 'action',    text : 'skip'   }
@@ -152,7 +152,7 @@ const SOURCES: readonly DirectiveSource[] = [
     example : 'foo = 1  # prose: skip[align-equals, strip-trailing-commas]',
     form    : '# prose: skip[<rule>, ...]',
     id      : 'prose-skip-rules',
-    parts   : [
+    parts: [
       { role : 'comment',   text : '#'              },
       { role : 'namespace', text : 'prose:'         },
       { role : 'action',    text : 'skip'           },
@@ -165,7 +165,7 @@ const SOURCES: readonly DirectiveSource[] = [
     example : 'helper = build_helper()  # prose: ignore',
     form    : '# prose: ignore',
     id      : 'prose-ignore',
-    parts   : [
+    parts: [
       { role : 'comment',   text : '#'      },
       { role : 'namespace', text : 'prose:' },
       { role : 'action',    text : 'ignore' }
@@ -178,7 +178,7 @@ const SOURCES: readonly DirectiveSource[] = [
     example : 'TIMEOUT = 30  # prose: ignore[reassigned-constants, single-use-variables]',
     form    : '# prose: ignore[<rule>, ...]',
     id      : 'prose-ignore-rules',
-    parts   : [
+    parts: [
       { role : 'comment',   text : '#'              },
       { role : 'namespace', text : 'prose:'         },
       { role : 'action',    text : 'ignore'         },

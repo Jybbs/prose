@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { data as primitives }  from '../../../data/primitives-composition.data'
-import type { PrimitiveLayer } from '../../../data/primitives-composition.data'
-import type { PrimitiveSlug }  from '../../../lib/shared/registries'
+import { data as primitives } from '../../../data/primitives-composition.data'
+
+import type { PrimitiveLayer, PrimitiveSlug } from '../../../lib/shared/registries'
 
 import PrimitivesCompositionDetail from './PrimitivesCompositionDetail.vue'
 import PrimitivesCompositionGrid   from './PrimitivesCompositionGrid.vue'

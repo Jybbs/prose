@@ -2,7 +2,9 @@
 import PrimitivesComposition from './PrimitivesComposition.vue'
 import DocHeading            from '../base/DocHeading.vue'
 
-defineProps<{ primitive: string }>()
+import type { PrimitiveSlug } from '../../../lib/shared/registries'
+
+defineProps<{ primitive: PrimitiveSlug }>()
 </script>
 
 <template>

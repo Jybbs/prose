@@ -10,8 +10,8 @@ on:
       - Cargo.toml
       - Cargo.lock
       - mise.toml
-      - package.json
-      - bun.lock
+      - site/package.json
+      - site/bun.lock
       - .github/actions/provision-bun/**
       - .github/actions/provision-cargo/**
       - .github/scripts/platforms.toml
@@ -54,17 +54,17 @@ jobs:
 
       matrix:
         include:
-          - bun-lock   : bun.lock
+          - bun-lock   : site/bun.lock
             cache      : false
             command    : mise run bake
             name       : 🥐 Bun
-          - command    : mise run lint
+          - command    : mise run lint rust
             name       : 📎 Clippy
             shared-key : prose-clippy
           - command    : mise run build
             name       : 🗜️ Build
             shared-key : prose-build
-          - command    : mise run test
+          - command    : mise run test rust
             name       : ⚖️ Test
             shared-key : prose-test
           - command    : mise run upload

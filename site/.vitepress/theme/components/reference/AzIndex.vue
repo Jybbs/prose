@@ -3,7 +3,7 @@ import { useTimeoutFn }  from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import { data as TOKENS }                                                    from '../../../data/tokens.data'
-import { DOMAIN_META, groupByDomain, sortedTokens, type Domain, type Token } from '../../../lib/tokens/tokens'
+import { DOMAIN_META, groupByDomain, sortedTokens, type Domain, type Token } from '../../../lib/tokens/sources'
 
 const tabs = (Object.keys(DOMAIN_META) as Domain[]).sort()
 
