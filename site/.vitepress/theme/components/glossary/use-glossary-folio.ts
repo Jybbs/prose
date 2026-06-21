@@ -1,10 +1,12 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 
 import { data as glossary, type RenderedGlossaryEntry } from '../../../data/glossary.data'
-import { cycleIndex, filterEntries, groupByInitial }    from '../../../lib/glossary/folio'
+import {
+  compareCaseless, cycleIndex, filterEntries, groupByInitial
+} from '../../../lib/glossary/folio'
 
 const ordered: readonly RenderedGlossaryEntry[] = Object.values(glossary.entries)
-  .toSorted((a, b) => a.slug.localeCompare(b.slug, 'en', { sensitivity: 'base' }))
+  .toSorted((a, b) => compareCaseless(a.slug, b.slug))
 
 const query    = ref<string>('')
 const selected = ref<string>(ordered[0]?.slug ?? '')

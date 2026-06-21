@@ -4,7 +4,10 @@ import path from 'node:path'
 import matter from 'gray-matter'
 
 import { markdownH1 }                              from '../markdown/h1'
+import { isContentPage }                           from '../shared/content-page'
+import { memoizeByPath }                           from '../shared/memoize-by-path'
 import { type PrimitiveLayer, type PrimitiveSlug } from '../shared/registries'
+import { requireString }                           from '../shared/require-string'
 
 const LAYERS: readonly PrimitiveLayer[] = ['analysis', 'base', 'orchestration']
 
@@ -19,8 +22,6 @@ export interface DiscoveredPrimitive {
   tagline    : string
 }
 
-const cache = new Map<string, DiscoveredPrimitive[]>()
-
 function stringList(value: unknown, slug: string, field: string): string[] {
   if (!Array.isArray(value) || value.some(v => typeof v !== 'string')) {
     throw new Error(`Primitive "${slug}" has invalid or missing ${field}`)
@@ -28,17 +29,14 @@ function stringList(value: unknown, slug: string, field: string): string[] {
   return value as string[]
 }
 
-export function discoverPrimitives(primitivesDir: string): DiscoveredPrimitive[] {
-  const cached = cache.get(primitivesDir)
-  if (cached !== undefined) return cached
-
+export const discoverPrimitives = memoizeByPath((primitivesDir): DiscoveredPrimitive[] => {
   const out: DiscoveredPrimitive[] = []
   for (const file of fs.readdirSync(primitivesDir).sort()) {
-    if (!file.endsWith('.md') || file === 'index.md') continue
+    if (!isContentPage(file)) continue
     const slug = path.basename(file, '.md') as PrimitiveSlug
     const fm   = matter.read(path.join(primitivesDir, file))
 
-    const { layer, stability, summary, tagline } = fm.data
+    const { layer, stability } = fm.data
     if (stability !== 'public' && stability !== 'internal') {
       throw new Error(
         `Primitive "${slug}" has invalid or missing stability: ${JSON.stringify(stability)}`
@@ -47,12 +45,8 @@ export function discoverPrimitives(primitivesDir: string): DiscoveredPrimitive[]
     if (!LAYERS.includes(layer as PrimitiveLayer)) {
       throw new Error(`Primitive "${slug}" has invalid or missing layer: ${JSON.stringify(layer)}`)
     }
-    if (typeof summary !== 'string' || summary === '') {
-      throw new Error(`Primitive "${slug}" has invalid or missing summary`)
-    }
-    if (typeof tagline !== 'string' || tagline === '') {
-      throw new Error(`Primitive "${slug}" has invalid or missing tagline`)
-    }
+    const summary = requireString(fm.data.summary, `Primitive "${slug}" has invalid or missing summary`)
+    const tagline = requireString(fm.data.tagline, `Primitive "${slug}" has invalid or missing tagline`)
 
     const consumes   = stringList(fm.data.consumes, slug, 'consumes') as PrimitiveSlug[]
     const consumedBy = stringList(fm.data.consumedBy, slug, 'consumedBy')
@@ -72,6 +66,5 @@ export function discoverPrimitives(primitivesDir: string): DiscoveredPrimitive[]
     }
   }
 
-  cache.set(primitivesDir, out)
   return out
-}
+})
