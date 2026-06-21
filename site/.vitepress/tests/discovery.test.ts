@@ -9,6 +9,11 @@ describe('discoverRuleSlugs', () => {
     expect(discoverRuleSlugs(fixture('valid'))).toMatchSnapshot()
   })
 
+  it('returns the memoized result on a second call', () => {
+    const dir = fixture('valid')
+    expect(discoverRuleSlugs(dir)).toBe(discoverRuleSlugs(dir))
+  })
+
   it.each([
     ['stray-page',       /must live in a family directory/],
     ['bad-caption',      /invalid or missing caption/],
@@ -24,6 +29,11 @@ describe('discoverPrimitives', () => {
 
   it('discovers primitives sorted by filename', () => {
     expect(discoverPrimitives(fixture('valid'))).toMatchSnapshot()
+  })
+
+  it('returns the memoized result on a second call', () => {
+    const dir = fixture('valid')
+    expect(discoverPrimitives(dir)).toBe(discoverPrimitives(dir))
   })
 
   it.each([

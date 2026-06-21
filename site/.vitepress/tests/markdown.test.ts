@@ -1,3 +1,4 @@
+import { markdownH1 }        from '../lib/markdown/h1'
 import {
   decodeLintMeta, encodeLintMeta, lintDecorations, lintDecorationTransformer
 } from '../lib/markdown/lint-decorations'
@@ -13,6 +14,20 @@ class StubToken {
 
 const text = (content: string): StubToken =>
   Object.assign(new StubToken('text', '', 0), { content })
+
+describe('markdownH1', () => {
+  it('extracts the first H1 heading', () => {
+    expect(markdownH1('# Aligner\n\nbody')).toBe('Aligner')
+  })
+
+  it('skips a deeper heading to find the H1', () => {
+    expect(markdownH1('## Subhead\n# Top')).toBe('Top')
+  })
+
+  it('returns undefined when no H1 is present', () => {
+    expect(markdownH1('no heading here')).toBeUndefined()
+  })
+})
 
 describe('replaceTextTokens', () => {
   it('splits matching text tokens and preserves the rest', () => {

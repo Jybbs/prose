@@ -29,6 +29,6 @@ export interface LintFinding {
 export function readLintFindings(inputPath: string): LintFinding[] {
   const snapPath = path.join(path.dirname(inputPath), LINT_FINDINGS_FILE)
   if (!fs.existsSync(snapPath)) return []
-  const body = matter(fs.readFileSync(snapPath, 'utf8')).content.trim()
+  const body = matter.read(snapPath).content.trim()
   return body ? (JSON.parse(body) as LintFinding[]) : []
 }

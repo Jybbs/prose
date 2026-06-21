@@ -1,5 +1,5 @@
-import { resolveToken }   from '../lib/shared/css-token'
 import { enumeratePages } from '../lib/og/pages'
+import { resolveToken }   from '../lib/shared/css-token'
 import { fixtureDir }     from './support'
 
 describe('resolveToken', () => {
@@ -28,6 +28,7 @@ describe('enumeratePages', () => {
       'rules/alignment/demo-rule.md',
       'primitives/aligner.md',
       'reference/cli.md',
+      'reference/named.md',
       'usage/quick-start.md',
       'integrations/editor.md'
     ]

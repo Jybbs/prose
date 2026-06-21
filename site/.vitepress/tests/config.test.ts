@@ -46,7 +46,9 @@ describe('parseGitTimestamps', () => {
 
 describe('buildPageTimestamps', () => {
   it('reads the repo history into a map', () => {
-    expect(buildPageTimestamps(repoRoot(import.meta.url))).toBeInstanceOf(Map)
+    const map = buildPageTimestamps(repoRoot(import.meta.url))
+    expect(map).toBeInstanceOf(Map)
+    expect(map.size).toBeGreaterThan(0)
   })
 
   warnTest('falls back to an empty map and warns when git fails', ({ warn }) => {

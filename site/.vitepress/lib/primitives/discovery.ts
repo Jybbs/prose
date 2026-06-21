@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
+import { markdownH1 }                              from '../markdown/h1'
 import { type PrimitiveLayer, type PrimitiveSlug } from '../shared/registries'
 
 const LAYERS: readonly PrimitiveLayer[] = ['analysis', 'base', 'orchestration']
@@ -34,8 +35,8 @@ export function discoverPrimitives(primitivesDir: string): DiscoveredPrimitive[]
   const out: DiscoveredPrimitive[] = []
   for (const file of fs.readdirSync(primitivesDir).sort()) {
     if (!file.endsWith('.md') || file === 'index.md') continue
-    const slug = file.slice(0, -'.md'.length) as PrimitiveSlug
-    const fm   = matter(fs.readFileSync(path.join(primitivesDir, file), 'utf8'))
+    const slug = path.basename(file, '.md') as PrimitiveSlug
+    const fm   = matter.read(path.join(primitivesDir, file))
 
     const { layer, stability, summary, tagline } = fm.data
     if (stability !== 'public' && stability !== 'internal') {
@@ -56,7 +57,7 @@ export function discoverPrimitives(primitivesDir: string): DiscoveredPrimitive[]
     const consumes   = stringList(fm.data.consumes, slug, 'consumes') as PrimitiveSlug[]
     const consumedBy = stringList(fm.data.consumedBy, slug, 'consumedBy')
 
-    const name = fm.content.match(/^#\s+(.+?)\s*$/m)?.[1]
+    const name = markdownH1(fm.content)
     if (!name) {
       throw new Error(`Primitive "${slug}" has no H1 heading`)
     }

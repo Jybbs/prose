@@ -36,9 +36,8 @@ export function discoverRuleSlugs(rulesDirectory: string): DiscoveredRule[] {
     }
     const family = entry.name as RuleFamily
     for (const file of pages) {
-      const slug    = file.slice(0, -'.md'.length)
-      const body    = fs.readFileSync(path.join(directory, file), 'utf8')
-      const fm      = matter(body).data
+      const slug    = path.basename(file, '.md')
+      const fm      = matter.read(path.join(directory, file)).data
       const caption = fm.caption
       if (typeof caption !== 'string' || caption.trim() === '') {
         throw new Error(`Rule "${slug}" has invalid or missing caption: ${JSON.stringify(caption)}`)

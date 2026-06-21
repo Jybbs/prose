@@ -62,7 +62,10 @@ describe('readLintFindings', () => {
 describe('readFixtureDocs', () => {
   it('reads the [docs] table from meta.toml when present', () => {
     const withMeta = cases.find(c => sidecar(c.inputPath, 'meta.toml'))!
-    expect(readFixtureDocs(withMeta.inputPath)).toBeDefined()
+    const docs     = readFixtureDocs(withMeta.inputPath)!
+    expect(Object.keys(docs).length).toBeGreaterThan(0)
+    expect(Object.keys(docs).every(k =>
+      ['canonical', 'description', 'previewable', 'title'].includes(k))).toBe(true)
   })
 
   it('returns undefined when meta.toml is absent', () => {

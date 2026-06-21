@@ -56,6 +56,15 @@ exports[`enumeratePages > shapes an OgPage per chapter page, skipping index and 
     "title": "Command Line Interface",
   },
   {
+    "accent": "#adbdcd",
+    "breadcrumb": [
+      "Reference",
+    ],
+    "kind": "reference",
+    "outputPath": "og/reference/named.png",
+    "title": "Custom OG Title",
+  },
+  {
     "accent": "#cdbda5",
     "breadcrumb": [
       "Usage",

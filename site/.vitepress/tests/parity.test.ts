@@ -4,8 +4,8 @@ import path from 'node:path'
 import postcss from 'postcss'
 
 import { glossary }                                        from '../lib/glossary/entries'
-import { resolveToken }                                    from '../lib/shared/css-token'
 import { discoverRuleSlugs }                               from '../lib/rules/discovery'
+import { resolveToken }                                    from '../lib/shared/css-token'
 import { rulesDir }                                        from '../lib/shared/paths'
 import { FAMILY_META, FAMILY_ORDER, GLOSSARY_FAMILY_META } from '../lib/shared/registries'
 
