@@ -1,9 +1,15 @@
 //! Classifies import statements into the canonical group order
-//! bare → external `from` → local-package, and builds the composite
-//! sort key ordering a run within and across those groups. First-party
-//! detection reads the package-name list from `[tool.prose.imports]`.
+//! bare → external `from` → local-package, finds the runs of adjacent
+//! imports the ordering rules act on, builds the composite sort key
+//! ordering a run within and across those groups, and counts the
+//! canonical blank lines dividing two imports. First-party detection
+//! reads the package-name list from `[tool.prose.imports]`.
+
+use std::ops::Range;
 
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
+
+use crate::primitives::orderer::chunk_runs;
 
 const FUTURE_ANNOTATIONS: &str = "annotations";
 const FUTURE_MODULE: &str = "__future__";
@@ -72,6 +78,12 @@ pub(crate) fn import_group(stmt: &Stmt, first_party: &[String]) -> Option<Import
     Some(if local { ImportGroup::Local } else { external })
 }
 
+/// Slot ranges of each run of two or more adjacent imports in `stmts`,
+/// the unit `group-imports` partitions and `alphabetize` sorts.
+pub(crate) fn import_runs(stmts: &[Stmt]) -> Vec<Range<usize>> {
+    chunk_runs(stmts, |a, b| is_import(a) && is_import(b))
+}
+
 /// Composite import sort key. With `grouped`, the canonical group order
 /// (bare → external `from` → local-package) leads a per-kind inner sort,
 /// where bare imports sort before `from` imports, bare by least alias name
@@ -90,16 +102,16 @@ pub(crate) fn import_sort_key<'a>(
     })
 }
 
-/// True for an `import` or `from`-import statement.
-pub(crate) fn is_import(stmt: &Stmt) -> bool {
-    stmt.is_import_stmt() || stmt.is_import_from_stmt()
-}
-
 /// True when the root package of `name` (the substring up to the
 /// first `.`) appears in `first_party`.
 fn is_first_party(name: &str, first_party: &[String]) -> bool {
     let root = name.split_once('.').map_or(name, |(root, _)| root);
     first_party.iter().any(|p| p == root)
+}
+
+/// True for an `import` or `from`-import statement.
+fn is_import(stmt: &Stmt) -> bool {
+    stmt.is_import_stmt() || stmt.is_import_from_stmt()
 }
 
 /// Returns the alphabetically least alias name in a bare import's

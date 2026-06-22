@@ -13,7 +13,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use super::has_keep_marker;
 use crate::{
     primitives::{
-        edit::{apply_inline_edits, splice_parses},
+        edit::{any_owned, apply_inline_edits, splice_parses},
         orderer::{
             any_sibling_shares_line, assemble_blocks, assemble_separated, block_range, blocks_span,
             permute_full,
@@ -66,7 +66,7 @@ pub(super) fn rewrite_dict_text<'src>(
         .iter()
         .map(|&block| apply_inline_edits(source, block, edits))
         .collect();
-    let any_nested_rewrite = block_texts.iter().any(|c| matches!(c, Cow::Owned(_)));
+    let any_nested_rewrite = any_owned(&block_texts);
     let mut order: Vec<usize> = (0..d.len()).collect();
     let permuted = permute_full(&mut order, &d.items, |item| dict_sort_key(source, item));
     let assembled = if multi_line {

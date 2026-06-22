@@ -14,6 +14,12 @@ use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::source::Source;
 
+/// True when any element of `parts` is `Cow::Owned`, the signal a
+/// rewrite produced fresh content rather than a borrow of the source.
+pub(crate) fn any_owned(parts: &[Cow<str>]) -> bool {
+    parts.iter().any(|part| matches!(part, Cow::Owned(_)))
+}
+
 /// Splices `edits` into `text` and returns the resulting string, or
 /// `None` when the sorted edits overlap.
 ///

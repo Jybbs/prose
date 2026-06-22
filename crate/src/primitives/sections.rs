@@ -65,14 +65,12 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::primitives::orderer::member_block;
+    use crate::primitives::orderer::member_blocks;
     use crate::testing::parse;
 
     fn sections_of(source: &Source) -> Sections {
         let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| member_block(source, body, i, source.module_range()))
-            .collect();
+        let blocks = member_blocks(source, body, source.module_range());
         Sections::of(source, &blocks)
     }
 

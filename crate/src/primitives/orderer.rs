@@ -12,7 +12,10 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
-    primitives::{comments::marker_floor, edit::splice_parses},
+    primitives::{
+        comments::marker_floor,
+        edit::{any_owned, splice_parses},
+    },
     source::Source,
 };
 
@@ -118,11 +121,11 @@ pub(crate) fn blocks_span(blocks: &[TextRange]) -> TextRange {
 /// satisfy `adjacent`. Singleton runs drop.
 pub(crate) fn chunk_runs<T>(
     items: &[T],
-    mut adjacent: impl FnMut(&T, &T) -> bool,
+    adjacent: impl FnMut(&T, &T) -> bool,
 ) -> Vec<Range<usize>> {
     let mut start = 0;
     items
-        .chunk_by(|a, b| adjacent(a, b))
+        .chunk_by(adjacent)
         .filter_map(|chunk| {
             let end = start + chunk.len();
             let range = (chunk.len() >= 2).then_some(start..end);
@@ -148,6 +151,18 @@ pub(crate) fn member_block<T: Ranged>(
         marker_floor(source, raw.start(), items[i].start()),
         raw.end(),
     )
+}
+
+/// Member blocks for every slot of `items`, the `Vec<TextRange>` a
+/// section partition and a block reorder both read.
+pub(crate) fn member_blocks<T: Ranged>(
+    source: &Source,
+    items: &[T],
+    outer: TextRange,
+) -> Vec<TextRange> {
+    (0..items.len())
+        .map(|i| member_block(source, items, i, outer))
+        .collect()
 }
 
 /// Convenience wrapper for `permute_in_place` over the full `items`
@@ -226,7 +241,7 @@ where
     let span = blocks_span(&blocks);
     let mut order: Vec<usize> = (0..items.len()).collect();
     let permuted = permute_full(&mut order, items, classify);
-    if !permuted && block_texts.iter().all(|c| matches!(c, Cow::Borrowed(_))) {
+    if !permuted && !any_owned(&block_texts) {
         return (Cow::Borrowed(source.slice(span)), span);
     }
     let value_ends: Vec<TextSize> = items.iter().map(Ranged::end).collect();
@@ -277,7 +292,7 @@ where
     let span = blocks_span(&blocks);
     let mut order: Vec<usize> = (0..items.len()).collect();
     let permuted = permute_full(&mut order, items, classify);
-    if !permuted && rendered.iter().all(|c| matches!(c, Cow::Borrowed(_))) {
+    if !permuted && !any_owned(&rendered) {
         return (Cow::Borrowed(source.slice(span)), span);
     }
     (

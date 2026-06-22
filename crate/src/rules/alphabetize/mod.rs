@@ -30,11 +30,10 @@ use crate::{
     config::Config,
     primitives::{
         binding::{annotated_name_target, single_name_target, tail_identifier},
-        edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
-        imports::{future_annotations_alias, import_blank_lines, import_sort_key, is_import},
+        edit::{any_owned, apply_inline_edits, narrowed_replacement, singleton_groups},
+        imports::{future_annotations_alias, import_blank_lines, import_runs, import_sort_key},
         orderer::{
-            any_sibling_shares_line, assemble_blocks, blocks_span, chunk_runs, member_block,
-            permute_in_place,
+            any_sibling_shares_line, assemble_blocks, blocks_span, member_block, permute_in_place,
         },
         params::pins_positional_params,
         scope::{BodyScope, compound_sub_bodies, scoped_body},
@@ -128,6 +127,27 @@ fn ann_assign_with_named_field(stmt: &Stmt) -> Option<(&StmtAnnAssign, &str)> {
     Some((ann, annotated_name_target(ann)?))
 }
 
+/// Relocates each carried comment up with its banded constant, extending
+/// the constant's block back over the comment and prepending it to the
+/// rendered text so the hoist moves the comment rather than stranding it.
+fn apply_band_carries(
+    source: &Source,
+    band: &Banding,
+    blocks: &mut [TextRange],
+    rendered: &mut [Cow<'_, str>],
+) {
+    for &(idx, comment) in &band.carries {
+        let carried = format!(
+            "{}{}{}",
+            source.slice(comment),
+            source.newline_str(),
+            rendered[idx],
+        );
+        blocks[idx] = comment.cover(blocks[idx]);
+        rendered[idx] = Cow::Owned(carried);
+    }
+}
+
 /// True when a class body has at least two `Stmt::AnnAssign` field
 /// declarations and at least one method whose decorator carries
 /// positional arguments.
@@ -151,7 +171,7 @@ fn concat_or_borrow<'src>(
     source: &'src Source,
     span: TextRange,
 ) -> Cow<'src, str> {
-    if parts.iter().all(|p| matches!(p, Cow::Borrowed(_))) {
+    if !any_owned(parts) {
         return Cow::Borrowed(source.slice(span));
     }
     Cow::Owned(parts.concat())
@@ -272,7 +292,7 @@ fn rewrite_body<'a>(
                     });
                 }
             }
-            for Range { start, end } in chunk_runs(members, |a, b| is_import(a) && is_import(b)) {
+            for Range { start, end } in import_runs(members) {
                 permute_in_place(
                     &mut order,
                     body,
@@ -283,19 +303,8 @@ fn rewrite_body<'a>(
         }
         if scope == BodyScope::Module {
             band = band_module_constants(ctx, body, &blocks, &sections, &mut order);
-            // A banded constant carries its forward-attached prose comment
-            // up with it: its block extends back over the comment and its
-            // rendered text gains the comment, collapsing the gap below so
-            // the hoist relocates the comment rather than stranding it.
-            for &(idx, comment) in band.iter().flat_map(|b| &b.carries) {
-                let carried = format!(
-                    "{}{}{}",
-                    source.slice(comment),
-                    source.newline_str(),
-                    rendered[idx],
-                );
-                blocks[idx] = comment.cover(blocks[idx]);
-                rendered[idx] = Cow::Owned(carried);
+            if let Some(b) = &band {
+                apply_band_carries(source, b, &mut blocks, &mut rendered);
             }
         }
         // A banded order reconstructs its own blank-line texture. Otherwise
@@ -313,9 +322,8 @@ fn rewrite_body<'a>(
             }));
         }
     }
-    let any_owned = rendered.iter().any(|c| matches!(c, Cow::Owned(_)));
     let identity = order.iter().copied().eq(0..n);
-    if !any_owned && identity && import_run_slots.is_empty() {
+    if !any_owned(&rendered) && identity && import_run_slots.is_empty() {
         return (Cow::Borrowed(source.slice(body_span)), body_span);
     }
     let assembled = assemble_blocks(source, &blocks, &rendered, &order, |i| match &band {

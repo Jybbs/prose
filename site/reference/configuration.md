@@ -60,7 +60,7 @@ max-size-mib = 250
 
 ## Imports
 
-The `[imports]` table names the project's first-party packages *(`[tool.prose.imports]` in a `pyproject.toml`)*, so [[group-imports]] places their imports with relative imports in the local-package section rather than the external `from` section. With no list, only relative imports (`from .`, `from ..pkg`) populate the local-package group.
+The `[imports]` table names the project's first-party packages *(`[tool.prose.imports]` in a `pyproject.toml`)*, so [[group-imports]] places their imports with relative imports in the local-package section rather than the external `from` section. With no list, only relative imports (`from .`, `from ..pkg`) populate the local-package section.
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|

@@ -14,10 +14,9 @@ use crate::{
     config::Config,
     primitives::{
         edit::{narrowed_replacement, singleton_groups},
-        imports::{import_group, is_import},
+        imports::{import_group, import_runs},
         orderer::{
-            any_sibling_shares_line, assemble_blocks, blocks_span, chunk_runs, member_block,
-            permute_full,
+            any_sibling_shares_line, assemble_blocks, blocks_span, member_blocks, permute_full,
         },
         scope::{compound_sub_bodies, scoped_body},
         sections::Sections,
@@ -66,12 +65,10 @@ impl Walker<'_> {
     /// siblings share a physical line through `;` keeps source order.
     fn group_body(&mut self, body: &[Stmt], outer: TextRange) {
         if !body.is_empty() && !any_sibling_shares_line(self.source, body) {
-            let blocks: Vec<TextRange> = (0..body.len())
-                .map(|i| member_block(self.source, body, i, outer))
-                .collect();
+            let blocks = member_blocks(self.source, body, outer);
             let sections = Sections::of(self.source, &blocks);
             for section in sections.ranges() {
-                for run in chunk_runs(&body[section.clone()], |a, b| is_import(a) && is_import(b)) {
+                for run in import_runs(&body[section.clone()]) {
                     let run = section.start + run.start..section.start + run.end;
                     self.group_run(body, &blocks, run);
                 }
@@ -97,7 +94,7 @@ impl Walker<'_> {
         }) {
             return;
         }
-        let run_blocks = &blocks[run.clone()];
+        let run_blocks = &blocks[run];
         let rendered: Vec<Cow<'_, str>> = run_blocks
             .iter()
             .map(|&block| Cow::Borrowed(self.source.slice(block)))
