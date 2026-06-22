@@ -62,7 +62,7 @@ The full edition lives at [prose.fyi](https://prose.fyi/):
 
 ## 🗜️ Development
 
-*Prose* is a Rust crate that ships as a Python wheel through [**maturin**](https://www.maturin.rs/), with [**mise**](https://mise.jdx.dev) managing the Rust toolchain, Python interpreter, and every supporting CLI through a single `mise.toml`. After installing mise and [**activating it in your shell**](https://mise.jdx.dev/installing-mise.html), three commands provision the rest:
+*Prose* is a Rust crate that ships as a Python wheel through [**maturin**](https://www.maturin.rs/), with [**mise**](https://mise.jdx.dev) managing the Rust toolchain, Python interpreter, and every supporting CLI through a single mise config. After installing mise and [**activating it in your shell**](https://mise.jdx.dev/installing-mise.html), three commands provision the rest:
 
 ```bash
 git clone https://github.com/Jybbs/prose.git

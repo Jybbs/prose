@@ -10,7 +10,7 @@ on:
       - Cargo.toml
       - crate/Cargo.toml
       - Cargo.lock
-      - mise.toml
+      - .mise/config.toml
       - site/package.json
       - site/bun.lock
       - .github/actions/provision-bun/**

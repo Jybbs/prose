@@ -6,11 +6,11 @@ import { crateDir, primitivesDir, repoRoot, rulesDir, siteDir } from '../../lib/
 const meta = import.meta.url
 
 describe('repoRoot', () => {
-  it('walks up to the directory holding mise.toml', () => {
-    expect(fs.existsSync(path.join(repoRoot(meta), 'mise.toml'))).toBe(true)
+  it('walks up to the directory holding .mise/config.toml', () => {
+    expect(fs.existsSync(path.join(repoRoot(meta), '.mise', 'config.toml'))).toBe(true)
   })
 
-  it('throws when no mise.toml ancestor exists', () => {
+  it('throws when no .mise/config.toml ancestor exists', () => {
     expect(() => repoRoot('file:///')).toThrow(/repo root not found/)
   })
 })
