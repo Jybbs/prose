@@ -1,10 +1,11 @@
-//! Resolves `prose` configuration from `prose.toml` or the
-//! `[tool.prose]` table of `pyproject.toml`.
+//! Resolves `prose` configuration from `prose.toml`, `.config/prose.toml`,
+//! or the `[tool.prose]` table of `pyproject.toml`.
 //!
 //! `Config::load` walks upward from a starting path toward the
-//! filesystem root. In each directory a `prose.toml` outranks a
-//! `pyproject.toml`, and the nearest directory carrying either wins.
-//! A `prose.toml` holds the config at its document root, whereas a
+//! filesystem root. In each directory `prose.toml` outranks
+//! `.config/prose.toml`, which outranks a `pyproject.toml`, and the
+//! nearest directory carrying any of them wins. A `prose.toml` or
+//! `.config/prose.toml` holds the config at its document root, whereas a
 //! `pyproject.toml` nests it under `[tool.prose]`. Reaching the root
 //! without a match resolves to full defaults, so prose works on a
 //! fresh project with no configuration step.
@@ -34,20 +35,14 @@ mod source;
 
 pub(crate) use de::deserialize_rule;
 use de::{deserialize_import_line_length, deserialize_prose};
+pub(crate) use load::config_rel_paths;
 use load::{ConfigNotice, emit_notice, prose_table_from_str, walk_prose_table};
 pub use schema::*;
 pub(crate) use source::ConfigSource;
 
-/// Filename of the dedicated config, parsed with its keys at the
-/// document root.
-const PROSE_TOML: &str = "prose.toml";
-
-/// Filename of the shared manifest, parsed under its `[tool.prose]`
-/// table.
-const PYPROJECT_TOML: &str = "pyproject.toml";
-
-/// The resolved `prose` configuration, read from a `prose.toml` root
-/// or a `pyproject.toml` `[tool.prose]` table.
+/// The resolved `prose` configuration, read from a `prose.toml` or
+/// `.config/prose.toml` document root, or a `pyproject.toml`
+/// `[tool.prose]` table.
 ///
 /// `code_line_length` defaults to `Some(88)`. `docstring_line_length`
 /// defaults to `Some(76)`. `import_line_length` defaults to `Some(120)`,
@@ -112,10 +107,11 @@ impl Config {
     }
 
     /// Walks upward from `from`, returning the config from the nearest
-    /// directory that carries a `prose.toml` or a `pyproject.toml` with
-    /// a `[tool.prose]` table, or `Config::default()` if neither exists
-    /// on the chain. A `prose.toml` outranks a same-directory
-    /// `pyproject.toml`.
+    /// directory that carries a `prose.toml`, a `.config/prose.toml`, or
+    /// a `pyproject.toml` with a `[tool.prose]` table, or
+    /// `Config::default()` if none exists on the chain. Within a directory
+    /// `prose.toml` outranks `.config/prose.toml`, which outranks the
+    /// `pyproject.toml` table.
     ///
     /// Unknown keys and the precedence outcome are logged to stderr and
     /// ignored, keeping the loader forward-compatible with rules added

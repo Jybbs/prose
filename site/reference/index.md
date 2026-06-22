@@ -14,7 +14,7 @@ Every CLI flag, configuration key, exit code, output format, subcommand, and sup
 
 - [**Cache**](/reference/cache) covers the user-level cache, the `[cache]` facets, the `--no-cache` flag, and the `prose cache clean` subcommand.
 - [**CLI**](/reference/cli) covers every flag, its precedence, and the subcommand it belongs to.
-- [**Configuration**](/reference/configuration) covers the `prose.toml` and `pyproject.toml` config files and per-rule facets.
+- [**Configuration**](/reference/configuration) covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml` config files and per-rule facets.
 - [**Exit Codes**](/reference/exit-codes) covers the five-code contract CI gates compile against.
 - [**Output Formats**](/reference/output-formats) covers `text`, `json`, `github`, and `sarif` shapes.
 - [**Pipeline Order**](/reference/pipeline-order) covers the deterministic order rules fire in, with rationale per rule.

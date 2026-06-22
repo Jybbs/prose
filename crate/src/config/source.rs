@@ -22,9 +22,9 @@ pub(crate) struct ConfigSource {
 }
 
 impl ConfigSource {
-    /// Walks `from`'s ancestors for the nearest `prose.toml` or
-    /// `pyproject.toml` carrying `[tool.prose]`, returning its source or
-    /// `None` when the chain holds none.
+    /// Walks `from`'s ancestors for the nearest `prose.toml`,
+    /// `.config/prose.toml`, or `pyproject.toml` carrying `[tool.prose]`,
+    /// returning its source or `None` when the chain holds none.
     ///
     /// # Errors
     ///

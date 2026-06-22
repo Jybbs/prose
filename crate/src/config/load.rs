@@ -8,23 +8,85 @@ use std::{
 
 use serde::{Deserialize, de::IntoDeserializer};
 
-use super::{ConfigError, PROSE_TOML, PYPROJECT_TOML};
+use super::ConfigError;
+
+/// A recognized prose-config source within a directory.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum ConfigForm {
+    DotConfigProseToml,
+    ProseToml,
+    PyprojectTable,
+}
+
+impl ConfigForm {
+    /// The forms in the precedence order the walk applies, highest first.
+    const PRECEDENCE: [Self; 3] = [
+        Self::ProseToml,
+        Self::DotConfigProseToml,
+        Self::PyprojectTable,
+    ];
+
+    /// How this form names itself in a precedence notice.
+    fn label(self) -> &'static str {
+        match self {
+            Self::DotConfigProseToml | Self::ProseToml => self.rel_path(),
+            Self::PyprojectTable => "the [tool.prose] table",
+        }
+    }
+
+    /// Reads this form's prose table from `dir`, yielding `None` when the
+    /// file is absent or a `pyproject.toml` carries no `[tool.prose]`.
+    fn read(self, dir: &Path) -> Result<Option<toml::Table>, ConfigError> {
+        let Some(contents) = read_optional(dir.join(self.rel_path()))? else {
+            return Ok(None);
+        };
+        match self {
+            Self::DotConfigProseToml | Self::ProseToml => Ok(Some(toml::from_str(&contents)?)),
+            Self::PyprojectTable => prose_table_from_str(&contents),
+        }
+    }
+
+    /// This form's directory-relative path.
+    fn rel_path(self) -> &'static str {
+        match self {
+            Self::DotConfigProseToml => ".config/prose.toml",
+            Self::ProseToml => "prose.toml",
+            Self::PyprojectTable => "pyproject.toml",
+        }
+    }
+}
 
 /// A diagnostic surfaced while resolving configuration.
 pub(super) enum ConfigNotice<'a> {
-    /// A `prose.toml` outranked a `[tool.prose]` table in a
-    /// `pyproject.toml` sharing its directory. Carries that directory.
-    ProseTomlPrecedence(&'a Path),
+    /// A higher-precedence config form shadowed a lower one present in
+    /// the same directory. Carries that directory and the two forms.
+    Precedence {
+        dir: &'a Path,
+        shadowed: ConfigForm,
+        winner: ConfigForm,
+    },
     /// An unrecognized key under the prose table. Carries the dotted
     /// key path.
     UnknownKey(&'a str),
 }
 
+/// The directory-relative path of every recognized config form, the
+/// set the server's file watcher registers against.
+pub(crate) fn config_rel_paths() -> [&'static str; ConfigForm::PRECEDENCE.len()] {
+    ConfigForm::PRECEDENCE.map(ConfigForm::rel_path)
+}
+
 pub(super) fn emit_notice(notice: ConfigNotice<'_>) {
     match notice {
-        ConfigNotice::ProseTomlPrecedence(dir) => eprintln!(
-            "note: prose.toml takes precedence over the [tool.prose] table in {}",
-            dir.join(PYPROJECT_TOML).display(),
+        ConfigNotice::Precedence {
+            dir,
+            shadowed,
+            winner,
+        } => eprintln!(
+            "note: {} takes precedence over {} in {}",
+            winner.label(),
+            shadowed.label(),
+            dir.display(),
         ),
         ConfigNotice::UnknownKey(key) => {
             eprintln!("warning: unknown key `{key}` in [tool.prose]");
@@ -62,9 +124,11 @@ fn read_optional(path: PathBuf) -> Result<Option<String>, ConfigError> {
 }
 
 /// Walks upward from `from`, returning the directory and prose table of
-/// the nearest `prose.toml` or `pyproject.toml` `[tool.prose]`, or `None`
-/// when the chain to the root carries neither. A `prose.toml` outranks a
-/// same-directory `pyproject.toml` and stops the walk.
+/// the nearest directory carrying a recognized config form, or `None`
+/// when the chain to the root carries none. Within a directory the order
+/// is `prose.toml`, then `.config/prose.toml`, then a `pyproject.toml`
+/// `[tool.prose]` table, and each lower form present alongside the winner
+/// raises a precedence notice.
 ///
 /// # Errors
 ///
@@ -78,15 +142,22 @@ where
     F: FnMut(ConfigNotice<'_>),
 {
     for dir in from.ancestors() {
-        if let Some(contents) = read_optional(dir.join(PROSE_TOML))? {
-            if pyproject_declares_prose(dir) {
-                on_notice(ConfigNotice::ProseTomlPrecedence(dir));
+        let mut resolved: Option<(ConfigForm, toml::Table)> = None;
+        for form in ConfigForm::PRECEDENCE {
+            let Some(table) = form.read(dir)? else {
+                continue;
+            };
+            if let Some((winner, _)) = &resolved {
+                on_notice(ConfigNotice::Precedence {
+                    dir,
+                    shadowed: form,
+                    winner: *winner,
+                });
+            } else {
+                resolved = Some((form, table));
             }
-            return Ok(Some((dir.to_path_buf(), toml::from_str(&contents)?)));
         }
-        if let Some(contents) = read_optional(dir.join(PYPROJECT_TOML))?
-            && let Some(table) = prose_table_from_str(&contents)?
-        {
+        if let Some((_, table)) = resolved {
             return Ok(Some((dir.to_path_buf(), table)));
         }
     }
@@ -95,12 +166,4 @@ where
 
 fn prose_value(value: &toml::Value) -> Option<&toml::Value> {
     value.get("tool").and_then(|tool| tool.get("prose"))
-}
-
-fn pyproject_declares_prose(dir: &Path) -> bool {
-    read_optional(dir.join(PYPROJECT_TOML))
-        .ok()
-        .flatten()
-        .and_then(|contents| prose_table_from_str(&contents).ok().flatten())
-        .is_some()
 }
