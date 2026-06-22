@@ -12,8 +12,9 @@ Subcommands:
     deploy   Render the Deploy gate summary. Reads `DEPLOY` and `URL`
              plus the GitHub-runner defaults. Exits 0 when `DEPLOY` is
              success.
-    draft    Render the Draft summary. Reads `DRAFT_URL` and
-             `VERSION`, plus the GitHub-runner defaults.
+    draft    Render the Draft summary. Reads `DRAFT_STATE`,
+             `DRAFT_URL`, and `VERSION`, plus the GitHub-runner
+             defaults.
     release  Render the Release gate summary. Reads `BUILD`, `SDIST`,
              `VALIDATE`, `PUBLISH`, plus the GitHub-runner defaults.
              Exits 0 when every required job succeeded. `PUBLISH` is
@@ -90,11 +91,12 @@ class Summary:
 
     def draft(self):
         """
-        Render the Draft summary, either the cut URL or the no-bump no-op.
+        Render the Draft summary across the cut, existing, and no-op states.
         """
         self._emit(
             "draft-summary.md.j2",
             draft_url = environ.get("DRAFT_URL", ""),
+            state     = environ.get("DRAFT_STATE", ""),
             version   = environ["VERSION"]
         )
 

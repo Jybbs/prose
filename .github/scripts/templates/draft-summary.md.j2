@@ -1,7 +1,11 @@
 ## 🪻 Prose Draft
 
-{% if draft_url -%}
+{% if state == "cut" -%}
 Cut [*Prose* {{ version }}]({{ draft_url }}) draft from {{ commit_link }}.
+{% elif state == "drafted" -%}
+A draft for [*Prose* {{ version }}]({{ draft_url }}) already exists, left untouched.
+{% elif state == "published" -%}
+[*Prose* {{ version }}]({{ draft_url }}) is already published. No draft cut.
 {% else -%}
 No version bump in {{ commit_link }}. Draft not cut.
 {% endif %}

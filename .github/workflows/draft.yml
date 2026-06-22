@@ -40,14 +40,13 @@ jobs:
         env:
           GH_TOKEN : ${{ github.token }}
           VERSION  : ${{ steps.tag.outputs.version }}
-        run  : |
-          url=$(gh release create "$VERSION" --target main --generate-notes --draft --repo "$GITHUB_REPOSITORY")
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+        run  : ./.github/scripts/cut-draft.py
 
       - name : 🗞️ Brief
         env:
-          DRAFT_URL : ${{ steps.cut.outputs.url }}
-          REF       : ${{ github.ref_name }}
-          SHA       : ${{ github.sha }}
-          VERSION   : ${{ steps.tag.outputs.version }}
+          DRAFT_STATE : ${{ steps.cut.outputs.state }}
+          DRAFT_URL   : ${{ steps.cut.outputs.url }}
+          REF         : ${{ github.ref_name }}
+          SHA         : ${{ github.sha }}
+          VERSION     : ${{ steps.tag.outputs.version }}
         run  : ./.github/scripts/summary.py draft
