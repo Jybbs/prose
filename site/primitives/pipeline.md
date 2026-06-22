@@ -60,7 +60,7 @@ The variant captures the rule whose output failed to reparse plus the underlying
 
 ## Determinism
 
-Rule order is fixed and the same every run, so a given source plus configuration always produces the same output. The registry pins the order explicitly through a single `register_rules!` macro invocation in `src/rule.rs`, and the pipeline runs rules in that order without parallelism inside one *Source*. Cross-source parallelism *(two files at once)* is the path-mode CLI's job, owned by the walker above the pipeline rather than inside it.
+Rule order is fixed and the same every run, so a given source plus configuration always produces the same output. The registry pins the order explicitly through a single `register_rules!` macro invocation in `crate/src/rule.rs`, and the pipeline runs rules in that order without parallelism inside one *Source*. Cross-source parallelism *(two files at once)* is the path-mode CLI's job, owned by the walker above the pipeline rather than inside it.
 
 ## Internal Surface
 

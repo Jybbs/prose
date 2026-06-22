@@ -4,7 +4,7 @@ use std::io::Write;
 
 use anyhow::Context;
 
-use crate::cli::output::{self};
+use crate::cli::output;
 
 /// Writes a unified diff between `before` and `after`. When
 /// `decorate`, a Ube `🧵 <name>` heading stands in for the plain
@@ -17,7 +17,9 @@ pub(super) fn write_diff<W: Write>(
     after: &str,
     decorate: bool,
 ) -> anyhow::Result<()> {
-    let diff = similar::TextDiff::from_lines(before, after);
+    let diff = similar::TextDiff::configure()
+        .algorithm(similar::Algorithm::Histogram)
+        .diff_lines(before, after);
     let mut unified = diff.unified_diff();
     if decorate {
         writeln!(writer, "{}", output::ube(&format!("🧵 {name}"))).context("writing diff")?;

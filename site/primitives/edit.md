@@ -18,7 +18,7 @@ tagline: rewrite unit
 
 `Edit` itself is `pub` *(re-exported from `ruff_diagnostics`)*, and the `Diagnostic` type a rule emits through the pipeline carries an `Option<Vec<Edit>>` in its `fix` field, visible in every [**output format**](/reference/output-formats) the CLI emits *(json, github, sarif)*. A downstream consumer reading the json output sees every edit's range and content in the `fix.edits[]` array.
 
-The edit-shaping helpers *(`apply_edits`, `apply_inline_edits`, `narrow_edit`)* live at `src/primitives/edit.rs` and are `pub(crate)`. The helpers move to `pub` at `1.0` alongside the `Rule` trait, so a downstream rule can splice edits into source the same way the bundled rules do.
+The edit-shaping helpers *(`apply_edits`, `apply_inline_edits`, `narrow_edit`)* live at `crate/src/primitives/edit.rs` and are `pub(crate)`. The helpers move to `pub` at `1.0` alongside the `Rule` trait, so a downstream rule can splice edits into source the same way the bundled rules do.
 
 ## The Shape
 
@@ -33,7 +33,7 @@ Edits span newlines freely, so a rule rewriting a multi-line construct emits one
 
 ## Internal Surface
 
-Three helpers at `src/primitives/edit.rs` cover the common shaping needs.
+Three helpers at `crate/src/primitives/edit.rs` cover the common shaping needs.
 
 ### `apply_edits(text, edits) -> Option<String>`
 

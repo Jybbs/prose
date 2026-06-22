@@ -6,11 +6,11 @@ import { readFixtureToggle }                    from '../../lib/fixtures/toggle'
 import {
   fixtureWatchGlobs, readFixtureDocs, subdirNames, walkFixtures
 } from '../../lib/fixtures/walker'
-import { repoRoot } from '../../lib/shared/paths'
+import { crateDir } from '../../lib/shared/paths'
 
-const root    = repoRoot(import.meta.url)
-const cases   = [...walkFixtures(root)]
-const absent  = path.join(root, 'tests', 'fixtures', '__no_such_case__', 'input.py')
+const crate   = crateDir(import.meta.url)
+const cases   = [...walkFixtures(crate)]
+const absent  = path.join(crate, 'tests', 'fixtures', '__no_such_case__', 'input.py')
 const sidecar = (inputPath: string, file: string): boolean =>
   fs.existsSync(path.join(path.dirname(inputPath), file))
 
@@ -25,7 +25,7 @@ describe('walkFixtures', () => {
 
 describe('fixtureWatchGlobs', () => {
   it('builds four globs rooted at the fixture tree', () => {
-    const globs = fixtureWatchGlobs(root)
+    const globs = fixtureWatchGlobs(crate)
     expect(globs).toHaveLength(4)
     expect(globs.every(g => g.includes('tests/fixtures'))).toBe(true)
   })
@@ -33,7 +33,7 @@ describe('fixtureWatchGlobs', () => {
 
 describe('subdirNames', () => {
   it('lists rule directories in sorted order', () => {
-    const names = subdirNames(path.join(root, 'tests', 'fixtures'))
+    const names = subdirNames(path.join(crate, 'tests', 'fixtures'))
     expect(names.length).toBeGreaterThan(0)
     expect(names).toEqual([...names].sort())
   })

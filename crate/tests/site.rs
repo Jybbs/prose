@@ -136,7 +136,7 @@ fn every_case_directory_is_well_formed() {
 #[test]
 fn every_fixture_invocation_resolves() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let site = root.join("site");
+    let site = root.join("../site");
     let pattern = Regex::new(r#"<Fixture rule="([^"]+)" case="([^"]+)" /?>"#).unwrap();
     let mut types = TypesBuilder::new();
     types.add_defaults();
@@ -175,7 +175,7 @@ fn every_fixture_invocation_resolves() {
 
 #[test]
 fn every_registered_rule_has_a_page() {
-    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("site/rules");
+    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/rules");
     let families = subdirs(&rules);
     for id in Pipeline::known_ids() {
         assert!(

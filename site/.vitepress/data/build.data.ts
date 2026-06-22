@@ -3,11 +3,11 @@ import { execFileSync } from 'node:child_process'
 import { defineLoader } from 'vitepress'
 
 import { walkFixtures }     from '../lib/fixtures/walker'
-import { repoRoot }         from '../lib/shared/paths'
+import { crateDir }         from '../lib/shared/paths'
 import { readCargoVersion } from '../lib/shared/version'
 import { withFallback }     from '../lib/shared/with-fallback'
 
-const root = repoRoot(import.meta.url)
+const crate = crateDir(import.meta.url)
 
 interface BuildData {
   fixtureCount: number
@@ -24,14 +24,14 @@ export default defineLoader({
     const gitSha = await withFallback(
       'build:git-sha',
       () => execFileSync(
-        'git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }
+        'git', ['rev-parse', '--short', 'HEAD'], { cwd: crate, encoding: 'utf8' }
       ).trim(),
       'unknown'
     )
     return {
-      fixtureCount: Iterator.from(walkFixtures(root)).reduce(n => n + 1, 0),
+      fixtureCount: Iterator.from(walkFixtures(crate)).reduce(n => n + 1, 0),
       gitSha,
-      version: readCargoVersion(root)
+      version: readCargoVersion(crate)
     }
   }
 })

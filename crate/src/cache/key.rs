@@ -3,7 +3,7 @@
 
 use crate::rule::RuleId;
 
-pub(super) const CACHE_FORMAT_VERSION: &str = "3";
+pub(super) const CACHE_FORMAT_VERSION: &str = "4";
 
 /// BLAKE3 digest of
 /// `source_bytes ++ config_toml ++ rule_ids ++ prose_version ++ cache_format_version`.

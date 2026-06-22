@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Keyless Dict-Unpacking Comprehension Pushes a Scope"
+
+description = '''
+A PEP 798 `{**d for ...}` dict comprehension carries no key expression, yet **still pushes its own comprehension scope** binding the loop target, the way its keyed counterpart does.
+'''

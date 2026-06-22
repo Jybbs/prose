@@ -32,12 +32,13 @@ runs:
         shared-key: prose-wheel-${{ inputs.name }}
 
     - name : Run maturin
-      uses : PyO3/maturin-action@3e2bdf6ba6453a61e649744019b8a2d906c7eb38
+      uses : PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b
       with:
-        args      : ${{ inputs.args }}
-        command   : ${{ inputs.command }}
-        manylinux : ${{ inputs.manylinux }}
-        target    : ${{ inputs.target }}
+        args              : ${{ inputs.args }}
+        command           : ${{ inputs.command }}
+        manylinux         : ${{ inputs.manylinux }}
+        target            : ${{ inputs.target }}
+        working-directory : crate
 
     - name : Upload artifact
       uses : actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

@@ -1,61 +1,6 @@
-[package]
-categories   = ["development-tools"]
-description  = "A Python typesetter for the reader."
-edition      = "2024"
-keywords     = ["formatter", "linter", "python", "style"]
-license      = "MIT"
-name         = "prose"
-readme       = "README.md"
-repository   = "https://github.com/Jybbs/prose"
-rust-version = "1.96"
-version      = "0.5.0"
-
-[dependencies]
-annotate-snippets  = "=0.12.13"
-anstream           = "1.0"
-anstyle            = "1.0"
-anstyle-query      = "1.1"
-anyhow             = "1.0"
-bincode            = { version = "2", features = ["serde"] }
-blake3             = "1"
-clap               = { version = "4.5", features = ["derive"] }
-clap_complete      = "4.5"
-dirs               = "6"
-fluent-uri         = "0.4"
-fs-err             = "3"
-globset            = "0.4"
-ignore             = "0.4"
-itertools          = "0.14"
-lsp-server         = "0.7"
-lsp-types          = "0.97"
-rayon              = "1.10"
-regex-lite         = "0.1"
-ruff_diagnostics   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10", features = ["serde"] }
-ruff_python_ast    = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10", features = ["serde"] }
-ruff_python_parser = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10" }
-ruff_python_stdlib = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10" }
-ruff_python_trivia = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10" }
-ruff_source_file   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10", features = ["serde"] }
-ruff_text_size     = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10", features = ["serde"] }
-serde              = { version = "1.0", features = ["derive"] }
-serde-sarif        = "0.8"
-serde_ignored      = "0.1"
-serde_json         = "1.0"
-similar            = "2"
-tempfile           = "3"
-textwrap           = { version = "0.16", default-features = false, features = ["smawk", "unicode-width"] }
-thiserror          = "2.0"
-toml               = "0.9"
-unicode-width      = "0.2"
-
-[dev-dependencies]
-assert_cmd            = "2"
-assert_matches        = "1"
-indoc                 = "2"
-insta                 = { version = "1.39", features = ["glob", "yaml"] }
-proptest              = "1"
-rstest                = "0.26"
-ruff_python_formatter = { git = "https://github.com/astral-sh/ruff", tag = "0.15.10" }
+[workspace]
+members  = ["crate"]
+resolver = "3"
 
 [profile.release]
 panic = "abort"

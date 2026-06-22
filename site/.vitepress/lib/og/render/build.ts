@@ -2,6 +2,7 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import { ogImagePath }                                 from '../../config/og-url'
+import { crateDirFrom }                                from '../../shared/paths'
 import { readCargoVersion }                            from '../../shared/version'
 import { loadBrandAssets }                             from './assets'
 import { cardKeyer, pruneCards, readCard, writeCard }  from './cache'
@@ -15,7 +16,7 @@ export async function buildOgCards(
 ): Promise<void> {
   const repo     = path.dirname(srcDir)
   const brand    = loadBrandAssets(srcDir)
-  const version  = readCargoVersion(repo)
+  const version  = readCargoVersion(crateDirFrom(repo))
   const cacheDir = path.join(repo, '.cache', 'og')
   const keyOf    = cardKeyer(version, brand)
 

@@ -7,9 +7,9 @@ import { fixtureWatchGlobs, readFixtureDocs, walkFixtures } from '../lib/fixture
 import { lintDecorations }               from '../lib/markdown/lint-decorations'
 import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
 import { discoverRuleSlugs }             from '../lib/rules/discovery'
-import { repoRoot, rulesDir }            from '../lib/shared/paths'
+import { crateDir, rulesDir }            from '../lib/shared/paths'
 
-const root      = repoRoot(import.meta.url)
+const crate     = crateDir(import.meta.url)
 const ruleHrefs = new Map(discoverRuleSlugs(rulesDir(import.meta.url)).map(r => [r.slug, r.href]))
 
 interface FixtureEntry {
@@ -43,10 +43,10 @@ function descriptionHtml(
 }
 
 export default defineLoader({
-  watch: fixtureWatchGlobs(root),
+  watch: fixtureWatchGlobs(crate),
   async load(): Promise<FixtureData> {
     const md      = await getRenderer()
-    const entries = [...walkFixtures(root)].filter(({ inputPath }) => existsSync(`${inputPath}.snap`))
+    const entries = [...walkFixtures(crate)].filter(({ inputPath }) => existsSync(`${inputPath}.snap`))
     const rows = await Promise.all(entries.map(async ({ rule, caseName, inputPath }) => {
       const { changesSource, findings, hasFindings, hasToggle, inputRaw, output } =
         await readFixtureToggle(inputPath)

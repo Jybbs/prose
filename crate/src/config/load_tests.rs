@@ -100,13 +100,13 @@ fn load_per_rule_max_shift_overrides_are_independent() {
     let tmp = TempDir::new().expect("tempdir");
     write_pyproject(
         tmp.path(),
-        indoc! {r#"
+        indoc! {r"
             [tool.prose.rules.align-colons]
             max-shift = false
 
             [tool.prose.rules.align-equals]
             max-shift = 0
-        "#},
+        "},
     );
 
     let config = Config::load(tmp.path()).expect("loads");

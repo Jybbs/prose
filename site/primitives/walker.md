@@ -16,7 +16,7 @@ tagline: ignore-aware path walker
 
 ## Consumer-Visible Surface
 
-*Walker* lives at `src/walker.rs` and is itself `pub(crate)`, so the function is documented here for the consumer-visible CLI behavior it shapes rather than as a directly-callable type. The downstream-visible consequence is the set of files `prose check` and `prose format` operate on, with the walk shape settled before any [[source]] construction or [[pipeline]] run.
+*Walker* lives at `crate/src/walker.rs` and is itself `pub(crate)`, so the function is documented here for the consumer-visible CLI behavior it shapes rather than as a directly-callable type. The downstream-visible consequence is the set of files `prose check` and `prose format` operate on, with the walk shape settled before any [[source]] construction or [[pipeline]] run.
 
 A downstream consumer in `0.2.x` reaches the walker indirectly through the CLI's path-mode arguments. Stdin mode bypasses the walker entirely, whether invoked through `--stdin` or the `-` positional alias, because the input stream resolves to a single source written straight to stdout.
 
