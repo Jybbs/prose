@@ -1,8 +1,8 @@
 # Configuration
 
-*Prose* loads its configuration from a `prose.toml` file or the `[tool.prose]` table of a `pyproject.toml`, walking upward from each input file's directory to the nearest one. With no configuration, every rule runs at its default, in that a project that writes no config gets the canonical *Prose* shape automatically.
+*Prose* loads its configuration from a `prose.toml` file, a `.config/prose.toml`, or the `[tool.prose]` table of a `pyproject.toml`, walking upward from each input file's directory to the nearest one. With no configuration, every rule runs at its default, in that a project that writes no config gets the canonical *Prose* shape automatically.
 
-A `prose.toml` keeps its keys at the document root, the form this page shows throughout. A `pyproject.toml` carries the same keys under a `[tool.prose]` prefix so the manifest can house other tools too, leaving every key below a `[tool.prose.<…>]` equivalent for projects that prefer one file.
+A `prose.toml` keeps its keys at the document root, the form this page shows throughout, and a `.config/prose.toml` reads the same way for a project that keeps its tool config under a `.config/` directory. A `pyproject.toml` carries the same keys under a `[tool.prose]` prefix so the manifest can house other tools too, leaving every key below a `[tool.prose.<…>]` equivalent for projects that prefer one file.
 
 `target-version` carries the bare `major.minor` form *(`"3.13"`, `"3.14"`)* used by `mypy`'s `python_version` setting, with rules whose safety depends on the runtime reading the field directly. The docstring-budget duality *(`code-line-length` for Title-case-headed structured sections, `docstring-line-length` for description prose)* lets a project keep code-shaped tables wide while keeping description prose at a comfortable reading measure, and `docstring-structured-policy` collapses both to a single budget when a project prefers a uniform width.
 
@@ -21,9 +21,9 @@ A bare `false` disables a rule, an inline table sets its facets while leaving th
 
 ## Where *Prose* Looks
 
-*Prose* walks upward from each input file's own directory toward the filesystem root, so a file answers to its own project's config even when one invocation names files across several projects. Stdin input walks from the working directory, the one input with no path of its own. In each directory a `prose.toml` outranks a `pyproject.toml`, and the nearest directory carrying either wins, in that *Prose* reads only that one file and never merges across matches up the tree. A `pyproject.toml` lacking a `[tool.prose]` table is passed over, leaving the walk to continue upward. A standalone script the walk never resolves to a project reads its own `[tool.prose]` from a leading PEP 723 `# /// script` block, the one configuration home a single-file script has, whereas a script under a project ignores its block and answers to the project. When neither an ancestor nor a block carries config, every default applies as if the config were empty.
+*Prose* walks upward from each input file's own directory toward the filesystem root, so a file answers to its own project's config even when one invocation names files across several projects. Stdin input walks from the working directory, the one input with no path of its own. In each directory a `prose.toml` outranks a `.config/prose.toml`, which outranks a `pyproject.toml`, and the nearest directory carrying any of them wins, in that *Prose* reads only that one file and never merges across matches up the tree. A `pyproject.toml` lacking a `[tool.prose]` table is passed over, leaving the walk to continue upward. A standalone script the walk never resolves to a project reads its own `[tool.prose]` from a leading PEP 723 `# /// script` block, the one configuration home a single-file script has, whereas a script under a project ignores its block and answers to the project. When neither an ancestor nor a block carries config, every default applies as if the config were empty.
 
-When a `prose.toml` and a `pyproject.toml` `[tool.prose]` table share a directory, the `prose.toml` wins and *Prose* notes the precedence to stderr, so the file that took effect is never ambiguous.
+When more than one of these forms share a directory, the higher-precedence one wins and *Prose* notes the precedence to stderr, so the file that took effect is never ambiguous.
 
 ## Top-Level Keys
 

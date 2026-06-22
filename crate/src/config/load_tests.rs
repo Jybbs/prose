@@ -4,8 +4,9 @@ use assert_matches::assert_matches;
 use indoc::indoc;
 use tempfile::TempDir;
 
+use super::load::ConfigForm;
 use super::*;
-use crate::testing::{write_prose_toml, write_pyproject};
+use crate::testing::{write_dotconfig_prose_toml, write_prose_toml, write_pyproject};
 
 #[test]
 fn load_absent_file_returns_defaults() {
@@ -35,7 +36,7 @@ fn load_emits_precedence_notice_when_both_present() {
 
     let mut precedence_notices = 0;
     let config = Config::load_with_notices(tmp.path(), |notice| {
-        if matches!(notice, ConfigNotice::ProseTomlPrecedence(_)) {
+        if matches!(notice, ConfigNotice::Precedence { .. }) {
             precedence_notices += 1;
         }
     })
@@ -68,6 +69,14 @@ fn load_from_a_file_path_walks_from_its_directory() {
     let config = Config::load(&file).expect("loads");
 
     assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+}
+
+#[test]
+fn load_malformed_dotconfig_prose_toml_returns_toml_error() {
+    let tmp = TempDir::new().expect("tempdir");
+    write_dotconfig_prose_toml(tmp.path(), "[this is not valid TOML");
+
+    assert_matches!(Config::load(tmp.path()), Err(ConfigError::Toml(_)));
 }
 
 #[test]
@@ -143,10 +152,68 @@ fn load_picks_nearest_prose_toml_over_ancestor_pyproject() {
 }
 
 #[test]
+fn load_prefers_dotconfig_over_sibling_pyproject() {
+    let tmp = TempDir::new().expect("tempdir");
+    write_dotconfig_prose_toml(tmp.path(), "code-line-length = 120\n");
+    write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+
+    let mut precedence = Vec::new();
+    let config = Config::load_with_notices(tmp.path(), |notice| {
+        if let ConfigNotice::Precedence {
+            winner, shadowed, ..
+        } = notice
+        {
+            precedence.push((winner, shadowed));
+        }
+    })
+    .expect("loads");
+
+    assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    assert_eq!(
+        precedence,
+        [(ConfigForm::DotConfigProseToml, ConfigForm::PyprojectTable)]
+    );
+}
+
+#[test]
+fn load_prefers_prose_toml_over_sibling_dotconfig() {
+    let tmp = TempDir::new().expect("tempdir");
+    write_prose_toml(tmp.path(), "code-line-length = 120\n");
+    write_dotconfig_prose_toml(tmp.path(), "code-line-length = 80\n");
+
+    let mut precedence = Vec::new();
+    let config = Config::load_with_notices(tmp.path(), |notice| {
+        if let ConfigNotice::Precedence {
+            winner, shadowed, ..
+        } = notice
+        {
+            precedence.push((winner, shadowed));
+        }
+    })
+    .expect("loads");
+
+    assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    assert_eq!(
+        precedence,
+        [(ConfigForm::ProseToml, ConfigForm::DotConfigProseToml)]
+    );
+}
+
+#[test]
 fn load_prefers_prose_toml_over_sibling_pyproject() {
     let tmp = TempDir::new().expect("tempdir");
     write_prose_toml(tmp.path(), "code-line-length = 120\n");
     write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+
+    let config = Config::load(tmp.path()).expect("loads");
+
+    assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+}
+
+#[test]
+fn load_reads_dotconfig_prose_toml() {
+    let tmp = TempDir::new().expect("tempdir");
+    write_dotconfig_prose_toml(tmp.path(), "code-line-length = 120\n");
 
     let config = Config::load(tmp.path()).expect("loads");
 

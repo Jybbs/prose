@@ -98,6 +98,12 @@ pub(crate) fn uri(s: &str) -> Uri {
     Uri::from_str(s).expect("valid uri")
 }
 
+pub(crate) fn write_dotconfig_prose_toml(dir: &Path, contents: &str) {
+    let config_dir = dir.join(".config");
+    std::fs::create_dir_all(&config_dir).expect(".config dir creates");
+    std::fs::write(config_dir.join("prose.toml"), contents).expect(".config/prose.toml writes");
+}
+
 pub(crate) fn write_prose_toml(dir: &Path, contents: &str) {
     std::fs::write(dir.join("prose.toml"), contents).expect("prose.toml writes");
 }
