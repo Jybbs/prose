@@ -6,6 +6,7 @@ input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
 align-imports@125..126
 alphabetize@0..160
 blank-lines@160..161
+group-imports@0..160
 signature-annotations@165..171
 signature-annotations@172..176
 unused-future-annotations@0..35

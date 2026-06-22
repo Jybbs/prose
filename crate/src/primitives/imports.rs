@@ -1,9 +1,15 @@
 //! Classifies import statements into the canonical group order
-//! bare → external `from` → local-package, and builds the composite
-//! sort key ordering a run within and across those groups. First-party
-//! detection reads the package-name list from `[tool.prose.imports]`.
+//! bare → external `from` → local-package, finds the runs of adjacent
+//! imports the ordering rules act on, builds the composite sort key
+//! ordering a run within and across those groups, and counts the
+//! canonical blank lines dividing two imports. First-party detection
+//! reads the package-name list from `[tool.prose.imports]`.
+
+use std::ops::Range;
 
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
+
+use crate::primitives::{orderer::chunk_runs, sections::Sections};
 
 const FUTURE_ANNOTATIONS: &str = "annotations";
 const FUTURE_MODULE: &str = "__future__";
@@ -28,6 +34,23 @@ pub(crate) fn future_annotations_alias(node: &StmtImportFrom) -> Option<usize> {
     node.names
         .iter()
         .position(|alias| alias.name.id == FUTURE_ANNOTATIONS)
+}
+
+/// Canonical blank-line count between two adjacent import statements,
+/// the one decider the import collapse, the banded import arm, and
+/// `blank-lines` share. `Some(1)` divides distinct groups while
+/// `grouped`, `Some(0)` seats every other import pair tight, and `None`
+/// pins any pair that is not two imports. Ungrouped, the imports read as
+/// one flat block, so no pair carries a divider.
+pub(crate) fn import_blank_lines(
+    a: &Stmt,
+    b: &Stmt,
+    first_party: &[String],
+    grouped: bool,
+) -> Option<u32> {
+    let a_group = import_group(a, first_party)?;
+    let b_group = import_group(b, first_party)?;
+    Some(u32::from(grouped && a_group != b_group))
 }
 
 /// Returns the canonical group of an `import` or `from`-import
@@ -55,16 +78,17 @@ pub(crate) fn import_group(stmt: &Stmt, first_party: &[String]) -> Option<Import
     Some(if local { ImportGroup::Local } else { external })
 }
 
-/// Composite import sort key landing the canonical group order
-/// (bare → external `from` → local-package) ahead of a per-kind
-/// inner sort. Within a group, bare imports sort before `from`
-/// imports, bare by least alias name and `from` by `(level, module)`.
-/// `None` pins any non-import statement in place.
+/// Composite import sort key. With `grouped`, the canonical group order
+/// (bare → external `from` → local-package) leads a per-kind inner sort,
+/// where bare imports sort before `from` imports, bare by least alias name
+/// and `from` by `(level, module)`. Without it, the group drops so a run
+/// sorts as one flat block. `None` pins any non-import statement in place.
 pub(crate) fn import_sort_key<'a>(
     stmt: &'a Stmt,
     first_party: &[String],
-) -> Option<(ImportGroup, u8, u32, &'a str)> {
-    let group = import_group(stmt, first_party)?;
+    grouped: bool,
+) -> Option<(Option<ImportGroup>, u8, u32, &'a str)> {
+    let group = grouped.then_some(import_group(stmt, first_party)?);
     Some(match stmt {
         Stmt::Import(i) => (group, 0, 0, least_alias(&i.names)),
         Stmt::ImportFrom(i) => (group, 1, i.level, i.module.as_deref().unwrap_or_default()),
@@ -72,11 +96,25 @@ pub(crate) fn import_sort_key<'a>(
     })
 }
 
-/// True when `a` and `b` are both imports in the same canonical group,
-/// the adjacency that seats a single blank line between them.
-pub(crate) fn same_import_group(a: &Stmt, b: &Stmt, first_party: &[String]) -> bool {
-    let group = import_group(a, first_party);
-    group.is_some() && group == import_group(b, first_party)
+/// Slot ranges of every import run across a sectioned body, each run
+/// offset to absolute slot indices so it never spans a section divider.
+/// The unit `group-imports` partitions and `alphabetize` sorts, one run
+/// at a time within each section.
+pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<Range<usize>> {
+    let mut runs = Vec::new();
+    for section in sections.ranges() {
+        for run in import_runs(&body[section.clone()]) {
+            runs.push(section.start + run.start..section.start + run.end);
+        }
+    }
+    runs
+}
+
+/// Slot ranges of each run of two or more adjacent imports in `stmts`,
+/// the per-section unit `sectioned_import_runs` offsets to absolute
+/// slot indices.
+fn import_runs(stmts: &[Stmt]) -> Vec<Range<usize>> {
+    chunk_runs(stmts, |a, b| is_import(a) && is_import(b))
 }
 
 /// True when the root package of `name` (the substring up to the
@@ -84,6 +122,11 @@ pub(crate) fn same_import_group(a: &Stmt, b: &Stmt, first_party: &[String]) -> b
 fn is_first_party(name: &str, first_party: &[String]) -> bool {
     let root = name.split_once('.').map_or(name, |(root, _)| root);
     first_party.iter().any(|p| p == root)
+}
+
+/// True for an `import` or `from`-import statement.
+fn is_import(stmt: &Stmt) -> bool {
+    stmt.is_import_stmt() || stmt.is_import_from_stmt()
 }
 
 /// Returns the alphabetically least alias name in a bare import's
@@ -101,7 +144,28 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
+    use crate::primitives::orderer::member_blocks;
     use crate::testing::parse;
+
+    #[rstest]
+    #[case("import os\nimport sys\n", true, Some(0))]
+    #[case("import os\nfrom collections import deque\n", true, Some(1))]
+    #[case("import os\nfrom collections import deque\n", false, Some(0))]
+    #[case("import os\nimport sys\n", false, Some(0))]
+    #[case("import os\nx = 1\n", true, None)]
+    #[case("x = 1\nimport os\n", true, None)]
+    fn import_blank_lines_scores_only_import_pairs(
+        #[case] src: &str,
+        #[case] grouped: bool,
+        #[case] expected: Option<u32>,
+    ) {
+        let source = parse(src);
+        let body = &source.ast().body;
+        assert_eq!(
+            import_blank_lines(&body[0], &body[1], &[], grouped),
+            expected
+        );
+    }
 
     #[rstest]
     #[case("import os\n", &[], Some(ImportGroup::Bare))]
@@ -141,7 +205,7 @@ mod tests {
             .ast()
             .body
             .iter()
-            .map(|stmt| import_sort_key(stmt, &first_party).expect("import statement"))
+            .map(|stmt| import_sort_key(stmt, &first_party, true).expect("import statement"))
             .collect();
         assert!(
             keys[0] < keys[1] && keys[1] < keys[2] && keys[2] < keys[3],
@@ -152,7 +216,19 @@ mod tests {
     #[test]
     fn import_sort_key_returns_none_for_non_import() {
         let s = parse("x = 1\n");
-        assert!(import_sort_key(&s.ast().body[0], &[]).is_none());
+        assert!(import_sort_key(&s.ast().body[0], &[], true).is_none());
+    }
+
+    #[test]
+    fn import_sort_key_ungrouped_drops_the_group_dimension() {
+        let first_party = vec!["myapp".to_owned()];
+        let s = parse("import myapp\nfrom collections import Counter\n");
+        let key = |stmt, grouped| import_sort_key(stmt, &first_party, grouped).expect("import");
+        let body = &s.ast().body;
+        // Grouped: local `import myapp` sorts after external `from collections`.
+        assert!(key(&body[0], true) > key(&body[1], true));
+        // Ungrouped: the bare `import` leads by kind, its group ignored.
+        assert!(key(&body[0], false) < key(&body[1], false));
     }
 
     #[test]
@@ -162,17 +238,12 @@ mod tests {
         assert_eq!(least_alias(&import.names), "abc");
     }
 
-    #[rstest]
-    #[case("import os\nimport sys\n", true)]
-    #[case("import os\nfrom collections import deque\n", false)]
-    #[case("import os\nx = 1\n", false)]
-    #[case("x = 1\nimport os\n", false)]
-    fn same_import_group_pairs_only_imports_within_one_group(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        let source = parse(src);
+    #[test]
+    fn sectioned_import_runs_offsets_each_section_run_past_the_divider() {
+        let source = parse("import os\nimport sys\n# --- Typing ---\nimport abc\nimport io\n");
         let body = &source.ast().body;
-        assert_eq!(same_import_group(&body[0], &body[1], &[]), expected);
+        let blocks = member_blocks(&source, body, source.module_range());
+        let sections = Sections::of(&source, &blocks);
+        assert_eq!(sectioned_import_runs(&sections, body), vec![0..2, 2..4]);
     }
 }

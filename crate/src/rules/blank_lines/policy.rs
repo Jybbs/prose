@@ -3,7 +3,7 @@
 
 use ruff_python_ast::{CmpOp, Expr, Stmt, helpers::is_docstring_stmt};
 
-use crate::primitives::{imports::import_group, scope::BodyScope};
+use crate::primitives::{imports::import_blank_lines, scope::BodyScope};
 
 /// Returns the canonical blank-line count for the pair `(prev, curr)`
 /// at `scope`. `None` means no case applies and the pair is skipped,
@@ -16,11 +16,12 @@ pub(super) fn canonical_blanks(
     curr: &Stmt,
     scope: BodyScope,
     first_party: &[String],
+    grouped: bool,
 ) -> Option<u32> {
     match scope {
         BodyScope::Class => class_scope_blanks(prev, curr),
         BodyScope::Function => function_scope_blanks(prev, curr),
-        BodyScope::Module => module_scope_blanks(prev, curr, first_party),
+        BodyScope::Module => module_scope_blanks(prev, curr, first_party, grouped),
     }
 }
 
@@ -78,20 +79,24 @@ fn is_main_guard(stmt: &Stmt) -> bool {
 }
 
 /// Module-scope pair dispatch. A statement following an
-/// `if __name__ == "__main__":` block carries 1 blank line. A pair of
-/// import statements lands 1 blank line when they fall in different
-/// canonical groups (bare, external `from`, local-package) and none
-/// when they share a group. A top-level `FunctionDef` or `ClassDef`
-/// carries 2 blank lines before it. An `Assign` or `AnnAssign`
-/// following a top-level `FunctionDef` or `ClassDef` carries 2.
-fn module_scope_blanks(prev: &Stmt, curr: &Stmt, first_party: &[String]) -> Option<u32> {
+/// `if __name__ == "__main__":` block carries 1 blank line. A grouped
+/// import pair lands 1 blank line across distinct canonical groups
+/// (bare, external `from`, local-package) and none within a group, while
+/// an ungrouped pair reads as one flat block and never divides. A
+/// top-level `FunctionDef` or `ClassDef` carries 2 blank lines before
+/// it. An `Assign` or `AnnAssign` following a top-level `FunctionDef` or
+/// `ClassDef` carries 2.
+fn module_scope_blanks(
+    prev: &Stmt,
+    curr: &Stmt,
+    first_party: &[String],
+    grouped: bool,
+) -> Option<u32> {
     if is_main_guard(prev) {
         return Some(1);
     }
-    if let Some((prev_group, curr_group)) =
-        import_group(prev, first_party).zip(import_group(curr, first_party))
-    {
-        return (prev_group != curr_group).then_some(1);
+    if let Some(blanks) = import_blank_lines(prev, curr, first_party, grouped) {
+        return (blanks != 0).then_some(blanks);
     }
     match (prev, curr) {
         (_, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) => Some(2),
@@ -116,7 +121,7 @@ mod tests {
         let s = parse("class C:\n    '''doc'''\n    def m1(self): pass\n");
         let class = first_class(&s);
         assert_eq!(
-            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[]),
+            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[], true),
             Some(1),
         );
     }
@@ -132,7 +137,7 @@ mod tests {
         let s = parse(src);
         let class = first_class(&s);
         assert_eq!(
-            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[]),
+            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[], true),
             Some(1),
         );
     }
@@ -142,7 +147,13 @@ mod tests {
         let s = parse("class C:\n    '''doc'''\n    pass\n");
         let class = first_class(&s);
         assert_eq!(
-            canonical_blanks(&s.ast().body[0], &class.body[0], BodyScope::Class, &[]),
+            canonical_blanks(
+                &s.ast().body[0],
+                &class.body[0],
+                BodyScope::Class,
+                &[],
+                true
+            ),
             Some(0),
         );
     }
@@ -161,7 +172,13 @@ mod tests {
         let s = parse(src);
         let class = first_class(&s);
         assert_eq!(
-            canonical_blanks(&s.ast().body[0], &class.body[0], BodyScope::Class, &[]),
+            canonical_blanks(
+                &s.ast().body[0],
+                &class.body[0],
+                BodyScope::Class,
+                &[],
+                true
+            ),
             Some(1),
         );
     }
@@ -183,7 +200,13 @@ mod tests {
         let s = parse(src);
         let func = first_def(&s);
         assert_eq!(
-            canonical_blanks(&s.ast().body[0], &func.body[0], BodyScope::Function, &[]),
+            canonical_blanks(
+                &s.ast().body[0],
+                &func.body[0],
+                BodyScope::Function,
+                &[],
+                true
+            ),
             Some(1),
         );
     }
@@ -201,7 +224,13 @@ mod tests {
         let s = parse(src);
         let func = first_def(&s);
         assert_eq!(
-            canonical_blanks(&s.ast().body[0], &func.body[0], BodyScope::Function, &[]),
+            canonical_blanks(
+                &s.ast().body[0],
+                &func.body[0],
+                BodyScope::Function,
+                &[],
+                true
+            ),
             None,
         );
     }
@@ -211,7 +240,7 @@ mod tests {
         let s = parse("class C:\n    def m1(self): pass\n    def m2(self): pass\n");
         let class = first_class(&s);
         assert_eq!(
-            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[]),
+            canonical_blanks(&class.body[0], &class.body[1], BodyScope::Class, &[], true),
             Some(1),
         );
     }
@@ -221,7 +250,7 @@ mod tests {
         let s = parse("def f():\n    x = 1\n    y = 2\n");
         let func = first_def(&s);
         assert_eq!(
-            canonical_blanks(&func.body[0], &func.body[1], BodyScope::Function, &[]),
+            canonical_blanks(&func.body[0], &func.body[1], BodyScope::Function, &[], true),
             None,
         );
     }
@@ -231,7 +260,7 @@ mod tests {
         let s = parse(&format!("{}xs = 1\n", main_guard_src()));
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             Some(1)
         );
     }
@@ -249,7 +278,7 @@ mod tests {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             Some(2),
         );
     }
@@ -259,7 +288,7 @@ mod tests {
         let s = parse("x = 1\nclass C: pass\n");
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             Some(2)
         );
     }
@@ -269,7 +298,7 @@ mod tests {
         let s = parse("x = 1\ndef f(): pass\n");
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             Some(2)
         );
     }
@@ -289,7 +318,7 @@ mod tests {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &list),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &list, true),
             expected,
         );
     }
@@ -305,7 +334,7 @@ mod tests {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             Some(1),
         );
     }
@@ -321,7 +350,7 @@ mod tests {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             None
         );
     }
@@ -331,7 +360,7 @@ mod tests {
         let s = parse("x = 1\ny = 2\n");
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[]),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             None
         );
     }

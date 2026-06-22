@@ -1,5 +1,5 @@
 name        : Provision the Cargo toolchain with a warm build cache
-description : Install mise tools (provisioning the Rust toolchain `mise.toml` selects), refresh the `stable` channel so a runner image lagging a fresh release still builds against the current floor, and restore the Swatinem Cargo cache for the given `shared-key`. Setting `cache` to `false` skips both the Swatinem step and mise's toolchain write-back, for cells that touch neither `target/` nor the registry.
+description : Install mise tools (provisioning the Rust toolchain `.mise/config.toml` selects), refresh the `stable` channel so a runner image lagging a fresh release still builds against the current floor, and restore the Swatinem Cargo cache for the given `shared-key`. Setting `cache` to `false` skips both the Swatinem step and mise's toolchain write-back, for cells that touch neither `target/` nor the registry.
 
 inputs:
   cache:

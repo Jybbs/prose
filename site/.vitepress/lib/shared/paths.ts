@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 export function repoRoot(metaUrl: string): string {
   let dir = path.dirname(fileURLToPath(metaUrl))
-  while (!fs.existsSync(path.join(dir, 'mise.toml'))) {
+  while (!fs.existsSync(path.join(dir, '.mise', 'config.toml'))) {
     const parent = path.dirname(dir)
     if (parent === dir) throw new Error(`repo root not found from ${metaUrl}`)
     dir = parent

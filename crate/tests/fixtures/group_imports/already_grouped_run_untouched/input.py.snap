@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/group_imports/already_grouped_run_untouched/input.py
+---
+import os
+import sys
+from collections import Counter
+from myapp import app

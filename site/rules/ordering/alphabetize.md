@@ -1,6 +1,6 @@
 ---
 caption : "Alphabetizes import siblings, dict-key blocks, and dataclass field runs."
-related : [align-colons, align-imports, bare-imports, blank-lines, unsorted-parameters]
+related : [align-colons, align-imports, bare-imports, blank-lines, group-imports, unsorted-parameters]
 layout  : doc
 ---
 
@@ -18,7 +18,7 @@ A reader who already knows the codebase carries a **mental map** of where things
 | **Enum members** | Alphabetical |
 | **Dataclass and Pydantic fields** | Required before optional |
 | **Parameters and keyword arguments** | Keyword-only and call keywords alphabetical, positional held |
-| **Imports** | Canonical groups, alphabetical within each |
+| **Imports** | Alphabetical within each [[group-imports]] section |
 | **Docstring entries** | Parameter entries mirror the signature, all else alphabetical |
 
 The rule fires on siblings whose order does not carry meaning. It leaves alone every surface where ordering is load-bearing (*positional-only parameters before the `/` separator, enum members with explicit integer or string values, tuple-unpacking targets bound to positional results*).
@@ -43,7 +43,7 @@ Pair with [[align-imports]] to align the `import` keyword across the freshly-sor
 
 <RuleConfigTable />
 
-The ordering itself follows fixed per-construct conventions. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. Consecutive imports group into their canonical order (*bare first, then external `from`, then local-package*), sorted within each group, with the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that lift into the local-package group alongside relative imports. Set `alphabetize = { sort-docstring-entries = false }` to skip the docstring-entry reorder while keeping every AST-level surface sorted.
+The ordering itself follows fixed per-construct conventions. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. [[group-imports]] partitions consecutive imports into their canonical sections (*bare first, then external `from`, then local-package*) and `alphabetize` sorts the names within each, the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that lift into the local-package section alongside relative imports. Set `alphabetize = { sort-docstring-entries = false }` to skip the docstring-entry reorder while keeping every AST-level surface sorted.
 
 </template>
 

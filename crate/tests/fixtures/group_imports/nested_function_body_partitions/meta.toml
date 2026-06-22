@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Imports Inside a Function Body Partition Too"
+
+description = '''
+The rule reaches into every nested body, so a function whose first lines mix a bare and a `from` import **groups them in place** the same as a module run.
+'''

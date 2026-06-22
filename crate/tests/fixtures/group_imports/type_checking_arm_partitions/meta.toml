@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Imports Inside a `TYPE_CHECKING` Arm Partition Too"
+
+description = '''
+The rule reaches into compound-statement arms, so a mixed run guarded by `if TYPE_CHECKING:` **groups in place** the same as a module-level run.
+'''

@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/group_imports/scrambled_run_partitions_into_groups/input.py
+---
+import sys
+import os
+from typing import Any
+from collections import Counter
+from myapp import app
+from . import shared

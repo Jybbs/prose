@@ -21,7 +21,7 @@ use crate::{
         binding::single_name_target,
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement},
-        orderer::{permute_full, reorder_separated, reorder_text},
+        orderer::{any_sibling_shares_line, permute_full, reorder_separated, reorder_text},
         params::classify_param,
     },
     source::Source,
@@ -122,9 +122,7 @@ impl<'a> LeafCollector<'a> {
         // trailing comment travels with its member. A single-line or
         // atomics-packed group shares lines, so the lighter `reorder_text`
         // keeps its verbatim gaps.
-        let one_per_line = items
-            .windows(2)
-            .all(|pair| source.contains_line_break(TextRange::new(pair[0].end(), pair[1].start())));
+        let one_per_line = !any_sibling_shares_line(source, items);
         let (folded, span) = if one_per_line {
             reorder_separated(source, items, classify, render)
         } else {

@@ -33,12 +33,14 @@ use policy::canonical_blanks;
 
 pub(crate) struct BlankLines {
     first_party: Vec<String>,
+    group_imports: bool,
 }
 
 impl BlankLines {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),
+            group_imports: config.rules.group_imports.enabled,
         }
     }
 }
@@ -49,6 +51,7 @@ impl Rule for BlankLines {
         let mut walker = Walker {
             edits: Vec::new(),
             first_party: &self.first_party,
+            group_imports: self.group_imports,
             source,
         };
         walker.pair_siblings(body, BodyScope::Module);
@@ -64,6 +67,7 @@ impl Rule for BlankLines {
 struct Walker<'a> {
     edits: Vec<Edit>,
     first_party: &'a [String],
+    group_imports: bool,
     source: &'a Source,
 }
 
@@ -122,7 +126,9 @@ impl Walker<'_> {
     }
 
     fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
-        let Some(canonical) = canonical_blanks(prev, curr, scope, self.first_party) else {
+        let Some(canonical) =
+            canonical_blanks(prev, curr, scope, self.first_party, self.group_imports)
+        else {
             return;
         };
         let block = leading_comment_block(self.source, prev_end, curr.start());

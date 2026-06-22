@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/alphabetize/imports_flat_when_grouping_off/input.py
+---
+import os
+import sys
+from collections import Counter
+from typing import Any

@@ -13,8 +13,11 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use super::has_keep_marker;
 use crate::{
     primitives::{
-        edit::{apply_inline_edits, splice_parses},
-        orderer::{assemble_blocks, assemble_separated, block_range, blocks_span, permute_full},
+        edit::{any_owned, apply_inline_edits, splice_parses},
+        orderer::{
+            any_sibling_shares_line, assemble_blocks, assemble_separated, block_range, blocks_span,
+            permute_full,
+        },
     },
     source::Source,
 };
@@ -40,11 +43,7 @@ pub(super) fn rewrite_dict_text<'src>(
     // The block model decomposes one item per line. A multi-line dict that
     // packs entries onto a shared physical line has no such decomposition, so a
     // block reorder would reflow it. Decline, leaving it in source order.
-    if multi_line
-        && d.items
-            .windows(2)
-            .any(|w| source.same_line(w[0].end(), w[1].start()))
-    {
+    if multi_line && any_sibling_shares_line(source, &d.items) {
         return None;
     }
     // Widen each item to its value's paren-aware end, so a parenthesized
@@ -67,7 +66,7 @@ pub(super) fn rewrite_dict_text<'src>(
         .iter()
         .map(|&block| apply_inline_edits(source, block, edits))
         .collect();
-    let any_nested_rewrite = block_texts.iter().any(|c| matches!(c, Cow::Owned(_)));
+    let any_nested_rewrite = any_owned(&block_texts);
     let mut order: Vec<usize> = (0..d.len()).collect();
     let permuted = permute_full(&mut order, &d.items, |item| dict_sort_key(source, item));
     let assembled = if multi_line {

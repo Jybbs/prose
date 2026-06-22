@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/group_imports/type_checking_arm_partitions/input.py
+---
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import sys
+    from collections import abc
