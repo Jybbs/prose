@@ -40,8 +40,9 @@ use load::{ConfigNotice, emit_notice, prose_table_from_str, walk_prose_table};
 pub use schema::*;
 pub(crate) use source::ConfigSource;
 
-/// The resolved `prose` configuration, read from a `prose.toml` root
-/// or a `pyproject.toml` `[tool.prose]` table.
+/// The resolved `prose` configuration, read from a `prose.toml` or
+/// `.config/prose.toml` document root, or a `pyproject.toml`
+/// `[tool.prose]` table.
 ///
 /// `code_line_length` defaults to `Some(88)`. `docstring_line_length`
 /// defaults to `Some(76)`. `import_line_length` defaults to `Some(120)`,

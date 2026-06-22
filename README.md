@@ -51,7 +51,7 @@ prose server                   # language server over stdio
 The full edition lives at [prose.fyi](https://prose.fyi/):
 
 - The [**rule catalog**](https://prose.fyi/rules/) walks every rule with before/after fixtures and per-facet configuration.
-- The [**configuration reference**](https://prose.fyi/reference/configuration) covers the `prose.toml` and `pyproject.toml` config files, every key, and the `[rules]` toggles.
+- The [**configuration reference**](https://prose.fyi/reference/configuration) covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml` config files, every key, and the `[rules]` toggles.
 - The [**cache reference**](https://prose.fyi/reference/cache) covers the cache directory, `--no-cache`, the `[cache]` table, and the `prose cache` subcommands.
 - The [**exit-code matrix**](https://prose.fyi/reference/exit-codes) is the contract CI gates and pre-commit hooks compile against.
 - [**Suppression directives**](https://prose.fyi/usage/suppression) cover `# prose: off`, `# prose: skip`, and the rest of the directive surface.

@@ -29,8 +29,8 @@ impl ConfigForm {
     /// How this form names itself in a precedence notice.
     fn label(self) -> &'static str {
         match self {
-            Self::PyprojectTable => "the [tool.prose] table",
             Self::DotConfigProseToml | Self::ProseToml => self.rel_path(),
+            Self::PyprojectTable => "the [tool.prose] table",
         }
     }
 
@@ -41,8 +41,8 @@ impl ConfigForm {
             return Ok(None);
         };
         match self {
-            Self::PyprojectTable => prose_table_from_str(&contents),
             Self::DotConfigProseToml | Self::ProseToml => Ok(Some(toml::from_str(&contents)?)),
+            Self::PyprojectTable => prose_table_from_str(&contents),
         }
     }
 
@@ -72,7 +72,7 @@ pub(super) enum ConfigNotice<'a> {
 
 /// The directory-relative path of every recognized config form, the
 /// set the server's file watcher registers against.
-pub(crate) fn config_rel_paths() -> [&'static str; 3] {
+pub(crate) fn config_rel_paths() -> [&'static str; ConfigForm::PRECEDENCE.len()] {
     ConfigForm::PRECEDENCE.map(ConfigForm::rel_path)
 }
 

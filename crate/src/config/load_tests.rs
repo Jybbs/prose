@@ -43,21 +43,6 @@ fn load_absent_prose_section_returns_defaults() {
 }
 
 #[test]
-fn load_emits_precedence_notice_when_both_present() {
-    let tmp = TempDir::new().expect("tempdir");
-    write_prose_toml(tmp.path(), "code-line-length = 120\n");
-    write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
-
-    let (config, precedence) = load_collecting_precedence(tmp.path());
-
-    assert_eq!(config.code_line_length, NonZeroUsize::new(120));
-    assert_eq!(
-        precedence,
-        [(ConfigForm::ProseToml, ConfigForm::PyprojectTable)]
-    );
-}
-
-#[test]
 fn load_empty_prose_toml_returns_defaults_and_stops_walk() {
     let tmp = TempDir::new().expect("tempdir");
     let nested = tmp.path().join("child");
@@ -204,6 +189,21 @@ fn load_prefers_prose_toml_over_sibling_dotconfig() {
 }
 
 #[test]
+fn load_prefers_prose_toml_over_sibling_pyproject() {
+    let tmp = TempDir::new().expect("tempdir");
+    write_prose_toml(tmp.path(), "code-line-length = 120\n");
+    write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+
+    let (config, precedence) = load_collecting_precedence(tmp.path());
+
+    assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    assert_eq!(
+        precedence,
+        [(ConfigForm::ProseToml, ConfigForm::PyprojectTable)]
+    );
+}
+
+#[test]
 fn load_reads_dotconfig_prose_toml() {
     let tmp = TempDir::new().expect("tempdir");
     write_dotconfig_prose_toml(tmp.path(), "code-line-length = 120\n");
@@ -221,6 +221,25 @@ fn load_reads_pure_prose_toml() {
     let config = Config::load(tmp.path()).expect("loads");
 
     assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+}
+
+#[test]
+fn load_shadows_both_lower_forms_when_all_present() {
+    let tmp = TempDir::new().expect("tempdir");
+    write_prose_toml(tmp.path(), "code-line-length = 120\n");
+    write_dotconfig_prose_toml(tmp.path(), "code-line-length = 100\n");
+    write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 80\n");
+
+    let (config, precedence) = load_collecting_precedence(tmp.path());
+
+    assert_eq!(config.code_line_length, NonZeroUsize::new(120));
+    assert_eq!(
+        precedence,
+        [
+            (ConfigForm::ProseToml, ConfigForm::DotConfigProseToml),
+            (ConfigForm::ProseToml, ConfigForm::PyprojectTable),
+        ]
+    );
 }
 
 #[test]

@@ -396,7 +396,9 @@ mod tests {
                 GlobPattern::Relative(_) => unreachable!("prose registers string globs"),
             })
             .collect();
+        assert!(globs.contains(&"**/prose.toml".to_owned()));
         assert!(globs.contains(&"**/.config/prose.toml".to_owned()));
+        assert!(globs.contains(&"**/pyproject.toml".to_owned()));
         client
             .sender
             .send(Message::Response(Response::new_ok(

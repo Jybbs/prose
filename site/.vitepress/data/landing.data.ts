@@ -57,7 +57,7 @@ const STEP_SOURCES: readonly StepSource[] = [
     title    : 'Install'
   },
   {
-    body     : 'Drop a `prose.toml` at the project root, or a `[tool.prose]` table in `pyproject.toml`. The defaults already work.',
+    body     : 'Drop a `prose.toml` at the project root, a `.config/prose.toml`, or a `[tool.prose]` table in `pyproject.toml`. The defaults already work.',
     code     : 'target-version = "3.13"',
     language : 'toml',
     number   : '02',
