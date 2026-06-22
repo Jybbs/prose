@@ -1,0 +1,16 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/banded_module_is_a_fixed_point/input.py
+---
+from __future__ import annotations
+
+BASE = 1
+DERIVED = BASE + 1
+
+
+def consume():
+    return DERIVED
+
+
+HANDLER = consume

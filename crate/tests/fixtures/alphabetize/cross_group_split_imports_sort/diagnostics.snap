@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/cross_group_split_imports_sort/input.py
----
-alphabetize@0..36

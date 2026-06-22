@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/assigns_dependency_cycle_skips_run/input.py
+---
+FORWARD = BACKWARD + 1
+BACKWARD = FORWARD - 1
+MIDDLE = 0

@@ -1,6 +1,6 @@
 ---
-source: crate/tests/diagnostics.rs
+source: tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: crate/tests/fixtures/binding_analysis/dict_unpacking_comp_scope/input.py
+input_file: tests/fixtures/binding_analysis/dict_unpacking_comp_scope/input.py
 ---
 

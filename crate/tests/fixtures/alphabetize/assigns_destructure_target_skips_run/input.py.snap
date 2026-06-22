@@ -1,8 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/alphabetize/assigns_destructure_target_skips_run/input.py
----
-zebra = 1
-(alpha, beta) = (2, 3)
-delta = 4

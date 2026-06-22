@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/assigns_literal_rhs_sort/input.py
+---
+alpha = "first"
+bravo = "second"
+charlie = "third"

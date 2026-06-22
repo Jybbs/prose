@@ -1,2 +1,2 @@
 [harness]
-rules = ["align-equals", "alphabetize"]
+rules = ["align-equals", "band-constants"]

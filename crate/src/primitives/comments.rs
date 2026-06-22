@@ -2,11 +2,24 @@
 //! the contiguous leading block and whether it reads as a decorative
 //! banner or a multi-hash heading.
 
+use ruff_python_ast::ExprDict;
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::LineRanges;
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::source::Source;
+
+/// True when the line containing the dict's opening `{` carries a
+/// trailing `# prose: keep` comment, the marker that pins a dict against
+/// both entry reordering and module-constant banding.
+pub(crate) fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
+    let line = source.text().full_line_range(dict.range().start());
+    source
+        .comment_ranges()
+        .comments_in_range(line)
+        .iter()
+        .any(|c| source.slice(c).trim_start_matches('#').trim() == "prose: keep")
+}
 
 /// True when any line in the comment block reads as a section marker,
 /// either a decorative rule line or a multi-hash heading.

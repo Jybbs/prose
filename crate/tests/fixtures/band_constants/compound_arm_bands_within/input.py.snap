@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/compound_arm_bands_within/input.py
+---
+if FEATURE:
+    def factor():
+        return 2
+
+
+    SCALE = factor()

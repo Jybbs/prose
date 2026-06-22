@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/future_import_held_above_leading_band/input.py
+---
+from __future__ import annotations
+
+TIMEOUT = 30
+
+
+def fetch() -> int:
+    return TIMEOUT

@@ -1,7 +1,7 @@
 ---
-source: crate/tests/binding_analysis.rs
+source: tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: crate/tests/fixtures/binding_analysis/dict_unpacking_comp_scope/input.py
+input_file: tests/fixtures/binding_analysis/dict_unpacking_comp_scope/input.py
 ---
 bindings:
   - attributes: []

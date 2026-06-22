@@ -135,6 +135,12 @@ pub(crate) fn chunk_runs<T>(
         .collect()
 }
 
+/// True when `order` is the identity permutation `0..order.len()`, the
+/// signal a reorder left every slot in source position.
+pub(crate) fn is_identity(order: &[usize]) -> bool {
+    order.iter().copied().eq(0..order.len())
+}
+
 /// [`block_range`] for `items[i]` with its start pushed below any section
 /// marker leading it, so a banner or hash heading stays in the gap above
 /// the member rather than traveling with it through a reorder. The
@@ -500,6 +506,14 @@ mod tests {
     fn chunk_runs_returns_runs_of_two_or_more_dropping_singletons() {
         let items = [1, 1, 2, 3, 3, 3];
         assert_eq!(chunk_runs(&items, |a, b| a == b), vec![0..2, 3..6]);
+    }
+
+    #[rstest]
+    #[case(&[0, 1, 2], true)]
+    #[case(&[0, 2, 1], false)]
+    #[case(&[], true)]
+    fn is_identity_detects_the_identity_permutation(#[case] order: &[usize], #[case] expected: bool) {
+        assert_eq!(is_identity(order), expected);
     }
 
     #[test]

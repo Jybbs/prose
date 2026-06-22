@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/leading_band_orders_chain_by_tier/input.py
+---
+HEIGHT = 4
+WIDTH = 3
+AREA = WIDTH * HEIGHT
+
+
+def area():
+    return AREA

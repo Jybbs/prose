@@ -12,13 +12,11 @@ use std::{collections::HashMap, ops::Range};
 use ruff_python_ast::{Expr, Stmt, helpers::map_subscript};
 use ruff_text_size::Ranged;
 
-use super::{
-    ann_assign_with_named_field, has_default, simple_name_assign,
-    tiering::{def_run_tier_keys, eval_time_refs},
-};
+use super::{ann_assign_with_named_field, has_default, simple_name_assign};
 use crate::primitives::{
     binding::tail_identifier,
     orderer::{permute_in_place, slot_positions},
+    tiering::{def_run_tier_keys, eval_time_refs},
 };
 
 /// Classifies a class-body statement as a single-name assignment,

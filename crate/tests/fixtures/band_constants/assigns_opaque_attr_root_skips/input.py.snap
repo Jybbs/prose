@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/assigns_opaque_attr_root_skips/input.py
+---
+zebra = os.environ
+alpha = 1
+beta = 2

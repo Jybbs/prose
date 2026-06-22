@@ -20,49 +20,45 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Decorator, ExprDict, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef,
+    Decorator, Stmt, StmtAnnAssign, StmtFunctionDef,
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
 };
-use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
     primitives::{
         binding::{annotated_name_target, single_name_target, tail_identifier},
-        edit::{any_owned, apply_inline_edits, narrowed_replacement, singleton_groups},
-        imports::{
-            future_annotations_alias, import_blank_lines, import_sort_key, sectioned_import_runs,
+        edit::{
+            any_owned, apply_inline_edits, narrowed_replacement, singleton_groups, splice_bodies,
         },
+        imports::{defers_annotations, import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
-            any_sibling_shares_line, assemble_blocks, blocks_span, member_block, permute_in_place,
+            any_sibling_shares_line, assemble_blocks, blocks_span, is_identity, member_block,
+            permute_in_place,
         },
         params::pins_positional_params,
         scope::{BodyScope, compound_sub_bodies, scoped_body},
         sections::Sections,
+        tiering::permute_defs,
     },
     rule::{Rule, RuleId},
     source::Source,
 };
 
-mod bands;
 mod class_graph;
 mod dict;
 mod leaves;
-mod tiering;
 
 use self::{
-    bands::{Banding, band_module_constants, banded_gap},
     class_graph::permute_class_assigns,
     leaves::{collect_docstring_entry_edits, collect_leaf_edits},
-    tiering::permute_defs,
 };
 
 pub(crate) struct Alphabetize {
     first_party: Vec<String>,
     group_imports: bool,
     sort_docstring_entries: bool,
-    target_version: Option<PythonVersion>,
 }
 
 impl Alphabetize {
@@ -71,7 +67,6 @@ impl Alphabetize {
             first_party: config.first_party(),
             group_imports: config.rules.group_imports.enabled,
             sort_docstring_entries: config.rules.alphabetize.sort_docstring_entries,
-            target_version: config.target_version,
         }
     }
 }
@@ -93,7 +88,6 @@ impl Rule for Alphabetize {
             group_imports: self.group_imports,
             leaf_edits: &leaf_edits,
             source,
-            target_version: self.target_version,
         };
         let (body_text, body_span) =
             rewrite_body(ctx, body, source.module_range(), BodyScope::Module);
@@ -119,7 +113,6 @@ struct RewriteCtx<'a> {
     group_imports: bool,
     leaf_edits: &'a [Edit],
     source: &'a Source,
-    target_version: Option<PythonVersion>,
 }
 
 /// Returns the `StmtAnnAssign` and its target name when the target
@@ -127,27 +120,6 @@ struct RewriteCtx<'a> {
 fn ann_assign_with_named_field(stmt: &Stmt) -> Option<(&StmtAnnAssign, &str)> {
     let ann = stmt.as_ann_assign_stmt()?;
     Some((ann, annotated_name_target(ann)?))
-}
-
-/// Relocates each carried comment up with its banded constant, extending
-/// the constant's block back over the comment and prepending it to the
-/// rendered text so the hoist moves the comment rather than stranding it.
-fn apply_band_carries(
-    source: &Source,
-    band: &Banding,
-    blocks: &mut [TextRange],
-    rendered: &mut [Cow<'_, str>],
-) {
-    for &(idx, comment) in &band.carries {
-        let carried = format!(
-            "{}{}{}",
-            source.slice(comment),
-            source.newline_str(),
-            rendered[idx],
-        );
-        blocks[idx] = comment.cover(blocks[idx]);
-        rendered[idx] = Cow::Owned(carried);
-    }
 }
 
 /// True when a class body has at least two `Stmt::AnnAssign` field
@@ -164,31 +136,8 @@ fn class_pins_methods(body: &[Stmt]) -> bool {
             .any(pins_positional_params)
 }
 
-/// Returns `Cow::Borrowed` of `source.slice(span)` when every part
-/// is still a borrow of source, signalling no descendant rewrite
-/// fired. Otherwise concatenates the parts into a single owned
-/// string covering the same span.
-fn concat_or_borrow<'src>(
-    parts: &[Cow<'src, str>],
-    source: &'src Source,
-    span: TextRange,
-) -> Cow<'src, str> {
-    if !any_owned(parts) {
-        return Cow::Borrowed(source.slice(span));
-    }
-    Cow::Owned(parts.concat())
-}
-
 fn decorator_simple_name(decorator: &Decorator) -> Option<&str> {
     tail_identifier(map_callable(&decorator.expression))
-}
-
-/// True when the module carries `from __future__ import annotations`,
-/// deferring every annotation's evaluation per PEP 563.
-fn defers_annotations(body: &[Stmt]) -> bool {
-    body.iter()
-        .filter_map(Stmt::as_import_from_stmt)
-        .any(|node| future_annotations_alias(node).is_some())
 }
 
 /// True when an annotated assignment carries a default, either
@@ -204,17 +153,6 @@ fn has_default(ann: &StmtAnnAssign) -> bool {
                     .any(|kw| matches!(kw.arg.as_deref(), Some("default" | "default_factory")))
             })
         })
-}
-
-/// True when the line containing the dict's opening `{` carries a
-/// trailing `# prose: keep` comment.
-fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
-    let line = source.text().full_line_range(dict.range().start());
-    source
-        .comment_ranges()
-        .comments_in_range(line)
-        .iter()
-        .any(|c| source.slice(c).trim_start_matches('#').trim() == "prose: keep")
 }
 
 /// Returns the method-group index. `0` for dunders, `1` for
@@ -257,7 +195,7 @@ fn rewrite_body<'a>(
         source,
         ..
     } = ctx;
-    let (mut blocks, mut rendered): (Vec<TextRange>, Vec<Cow<'a, str>>) = body
+    let (blocks, rendered): (Vec<TextRange>, Vec<Cow<'a, str>>) = body
         .iter()
         .enumerate()
         .map(|(i, stmt)| {
@@ -269,7 +207,6 @@ fn rewrite_body<'a>(
     let n = body.len();
     let mut order: Vec<usize> = (0..n).collect();
     let mut import_run_slots: Vec<usize> = Vec::new();
-    let mut band: Option<Banding> = None;
     if !any_sibling_shares_line(source, body) {
         let sections = Sections::of(source, &blocks);
         let in_class = scope == BodyScope::Class;
@@ -300,41 +237,23 @@ fn rewrite_body<'a>(
                 import_sort_key(s, first_party, group_imports)
             });
         }
-        if scope == BodyScope::Module {
-            band = band_module_constants(ctx, body, &blocks, &sections, &mut order);
-            if let Some(b) = &band {
-                apply_band_carries(source, b, &mut blocks, &mut rendered);
-            }
-        }
-        // A banded order reconstructs its own blank-line texture. Otherwise
-        // same-group import neighbors collapse to one line, except across a
+        // Same-group import neighbors collapse to one line, except across a
         // section marker, whose dividing gap must survive in place.
-        if band.is_none() {
-            import_run_slots.extend((0..n.saturating_sub(1)).filter(|&slot| {
-                import_blank_lines(
-                    &body[order[slot]],
-                    &body[order[slot + 1]],
-                    first_party,
-                    group_imports,
-                ) == Some(0)
-                    && !sections.is_boundary(slot + 1)
-            }));
-        }
+        import_run_slots.extend((0..n.saturating_sub(1)).filter(|&slot| {
+            import_blank_lines(
+                &body[order[slot]],
+                &body[order[slot + 1]],
+                first_party,
+                group_imports,
+            ) == Some(0)
+                && !sections.is_boundary(slot + 1)
+        }));
     }
-    let identity = order.iter().copied().eq(0..n);
-    if !any_owned(&rendered) && identity && import_run_slots.is_empty() {
+    if !any_owned(&rendered) && is_identity(&order) && import_run_slots.is_empty() {
         return (Cow::Borrowed(source.slice(body_span)), body_span);
     }
-    let assembled = assemble_blocks(source, &blocks, &rendered, &order, |i| match &band {
-        Some(b) => banded_gap(
-            &b.ranks,
-            body,
-            first_party,
-            group_imports,
-            order[i],
-            order[i + 1],
-        ),
-        None => import_run_slots.binary_search(&i).is_ok().then_some("\n"),
+    let assembled = assemble_blocks(source, &blocks, &rendered, &order, |i| {
+        import_run_slots.binary_search(&i).is_ok().then_some("\n")
     });
     (Cow::Owned(assembled), body_span)
 }
@@ -385,37 +304,6 @@ fn rewrite_stmt<'a>(
 /// destructuring, attribute, or subscript targets.
 fn simple_name_assign(stmt: &Stmt) -> Option<&str> {
     single_name_target(stmt.as_assign_stmt()?)
-}
-
-/// Splices `bodies` back into `block`, folding leaf edits into the
-/// pre-, inter-, and post-body gaps. `bodies` must be in source
-/// order.
-fn splice_bodies<'src, I>(
-    source: &'src Source,
-    block: TextRange,
-    bodies: I,
-    leaf_edits: &[Edit],
-) -> Cow<'src, str>
-where
-    I: IntoIterator<Item = (Cow<'src, str>, TextRange)>,
-{
-    let mut parts = Vec::new();
-    let mut cursor = block.start();
-    for (text, span) in bodies {
-        parts.push(apply_inline_edits(
-            source,
-            TextRange::new(cursor, span.start()),
-            leaf_edits,
-        ));
-        parts.push(text);
-        cursor = span.end();
-    }
-    parts.push(apply_inline_edits(
-        source,
-        TextRange::new(cursor, block.end()),
-        leaf_edits,
-    ));
-    concat_or_borrow(&parts, source, block)
 }
 
 #[cfg(test)]
@@ -493,18 +381,6 @@ mod tests {
         let f = first_def(&s);
         let decorator = f.decorator_list.first().expect("one decorator");
         assert_eq!(decorator_simple_name(decorator), None);
-    }
-
-    #[rstest]
-    #[case("from __future__ import annotations\n", true)]
-    #[case("from __future__ import annotations, division\n", true)]
-    #[case("from __future__ import division\n", false)]
-    #[case("from other import annotations\n", false)]
-    #[case("import __future__\n", false)]
-    #[case("x = 1\n", false)]
-    fn defers_annotations_detects_the_future_import(#[case] src: &str, #[case] expected: bool) {
-        let source = parse(src);
-        assert_eq!(defers_annotations(&source.ast().body), expected);
     }
 
     #[test]

@@ -1,9 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/alphabetize/assigns_three_tier_dependency_chain/input.py
----
-PI = 3.14
-RADIUS = 5
-DIAMETER = RADIUS * 2
-AREA = PI * (DIAMETER / 2) ** 2

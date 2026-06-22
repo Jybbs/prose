@@ -5,4 +5,4 @@ input_file: tests/fixtures/suppression/bare_on_without_off_noop/input.py
 ---
 align-equals@1..10
 align-equals@40..49
-alphabetize@0..25
+band-constants@0..25

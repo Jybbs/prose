@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Detached Comment Survives Banding and the Def Sort"
+
+description = '''
+A free-floating comment block, set off by a blank line above and below, sits between the module constants and a def-run that `alphabetize` reorders. `band-constants` lifts the constants into the leading band over its own pass while the detached block stays with the definitions, so the comment **survives** the reorder rather than being dropped.
+'''

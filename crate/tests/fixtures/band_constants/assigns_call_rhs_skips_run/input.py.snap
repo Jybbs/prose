@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/assigns_call_rhs_skips_run/input.py
+---
+zebra = compute_default()
+alpha = 1
+beta = 2

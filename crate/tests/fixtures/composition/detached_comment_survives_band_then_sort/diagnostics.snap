@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/detached_comment_survives_band_then_sort/input.py
+---
+alphabetize@119..180
+band-constants@4..41

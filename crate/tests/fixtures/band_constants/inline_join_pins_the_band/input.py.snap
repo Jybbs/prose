@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/inline_join_pins_the_band/input.py
+---
+TRAIL = make; LEAD = 1
+
+
+def make():
+    return 1

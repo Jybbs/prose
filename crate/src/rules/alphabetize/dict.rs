@@ -10,9 +10,9 @@ use ruff_python_ast::{DictItem, ExprDict};
 use ruff_python_parser::parse_expression;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::has_keep_marker;
 use crate::{
     primitives::{
+        comments::has_keep_marker,
         edit::{any_owned, apply_inline_edits, splice_parses},
         orderer::{
             any_sibling_shares_line, assemble_blocks, assemble_separated, block_range, blocks_span,

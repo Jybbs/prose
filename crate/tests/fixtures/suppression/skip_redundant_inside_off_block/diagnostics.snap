@@ -5,4 +5,4 @@ input_file: tests/fixtures/suppression/skip_redundant_inside_off_block/input.py
 ---
 align-equals@1..10
 align-equals@92..100
-alphabetize@0..25
+band-constants@0..25

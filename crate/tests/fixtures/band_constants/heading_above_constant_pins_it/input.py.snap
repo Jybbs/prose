@@ -1,0 +1,11 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/heading_above_constant_pins_it/input.py
+---
+def build_palette():
+    return []
+
+### theme colors
+
+PALETTE = ("crimson", "slate", "ivory")

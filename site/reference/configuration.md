@@ -104,7 +104,7 @@ The rules that line columns vertically share one structural question, which is h
 
 ### Toggle-Only Rules
 
-Some rules answer a single yes-or-no question with no parameters worth tuning, so each takes only a bare bool toggle. Reach for `<rule> = false` to silence a rule whose default doesn't fit the project: [[blank-lines]], [[group-imports]], [[docstring-wrap]], [[legacy-union-syntax]], [[docstring-frame]], [[docstring-expand]], [[step-narration]], [[strip-align-padding]], [[strip-trailing-commas]], and [[unused-future-annotations]].
+Some rules answer a single yes-or-no question with no parameters worth tuning, so each takes only a bare bool toggle. Reach for `<rule> = false` to silence a rule whose default doesn't fit the project: [[blank-lines]], [[group-imports]], [[band-constants]], [[docstring-wrap]], [[legacy-union-syntax]], [[docstring-frame]], [[docstring-expand]], [[step-narration]], [[strip-align-padding]], [[strip-trailing-commas]], and [[unused-future-annotations]].
 
 ### Rule-Specific Facets
 

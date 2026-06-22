@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/trailing_constant_carries_prose_comment/input.py
+---
+import os
+
+
+def build_default():
+    return {}
+
+
+# the lazily-built registry
+REGISTRY = build_default()

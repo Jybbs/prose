@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/banner_keeps_band_within_section/input.py
+---
+ZILCH = 1
+# --- Imports ---
+import abc
+import zoo

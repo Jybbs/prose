@@ -1,2 +1,2 @@
 [harness]
-rules = ["alphabetize", "blank-lines"]
+rules = ["band-constants", "blank-lines"]
