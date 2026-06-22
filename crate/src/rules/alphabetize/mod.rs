@@ -16,7 +16,7 @@
 //! method alike, because no single-file rewrite can keep every caller's
 //! positional binding intact. Only the keyword-only block past `*` sorts.
 
-use std::{borrow::Cow, ops::Range};
+use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -31,7 +31,9 @@ use crate::{
     primitives::{
         binding::{annotated_name_target, single_name_target, tail_identifier},
         edit::{any_owned, apply_inline_edits, narrowed_replacement, singleton_groups},
-        imports::{future_annotations_alias, import_blank_lines, import_runs, import_sort_key},
+        imports::{
+            future_annotations_alias, import_blank_lines, import_sort_key, sectioned_import_runs,
+        },
         orderer::{
             any_sibling_shares_line, assemble_blocks, blocks_span, member_block, permute_in_place,
         },
@@ -271,9 +273,9 @@ fn rewrite_body<'a>(
     if !any_sibling_shares_line(source, body) {
         let sections = Sections::of(source, &blocks);
         let in_class = scope == BodyScope::Class;
-        for section in sections.ranges() {
-            let members = &body[section.clone()];
-            if scope != BodyScope::Function {
+        if scope != BodyScope::Function {
+            for section in sections.ranges() {
+                let members = &body[section.clone()];
                 permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
                     s.as_class_def_stmt().map(|c| {
                         let name = c.name.as_str();
@@ -292,14 +294,11 @@ fn rewrite_body<'a>(
                     });
                 }
             }
-            for Range { start, end } in import_runs(members) {
-                permute_in_place(
-                    &mut order,
-                    body,
-                    section.start + start..section.start + end,
-                    |s| import_sort_key(s, first_party, group_imports),
-                );
-            }
+        }
+        for run in sectioned_import_runs(&sections, body) {
+            permute_in_place(&mut order, body, run, |s| {
+                import_sort_key(s, first_party, group_imports)
+            });
         }
         if scope == BodyScope::Module {
             band = band_module_constants(ctx, body, &blocks, &sections, &mut order);

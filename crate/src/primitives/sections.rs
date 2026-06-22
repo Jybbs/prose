@@ -36,16 +36,10 @@ impl Sections {
         Self { ranges }
     }
 
-    /// The slot index opening each section past the first, the dividers a
-    /// same-section adjacency check excludes. Always sorted ascending.
-    fn boundaries(&self) -> impl Iterator<Item = usize> + '_ {
-        self.ranges.iter().skip(1).map(|range| range.start)
-    }
-
     /// True when `slot` opens a section past the first, the divider a
     /// same-section reorder never crosses.
     pub(crate) fn is_boundary(&self, slot: usize) -> bool {
-        self.boundaries().any(|boundary| boundary == slot)
+        self.ranges.iter().skip(1).any(|range| range.start == slot)
     }
 
     /// One slot-index range per section, in source order.
@@ -87,14 +81,6 @@ mod tests {
         let sections = sections_of(&source);
         assert_eq!(sections.ranges().len(), 1);
         assert_eq!(sections.ranges()[0], 0..3);
-    }
-
-    #[test]
-    fn boundaries_drops_the_first_section_start() {
-        let source = parse("x = 1\n# =====\ny = 2\n# =====\nz = 3\n");
-        let sections = sections_of(&source);
-        let boundaries: Vec<usize> = sections.boundaries().collect();
-        assert_eq!(boundaries, vec![1, 2]);
     }
 
     #[rstest]

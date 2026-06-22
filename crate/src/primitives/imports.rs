@@ -9,7 +9,7 @@ use std::ops::Range;
 
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 
-use crate::primitives::orderer::chunk_runs;
+use crate::primitives::{orderer::chunk_runs, sections::Sections};
 
 const FUTURE_ANNOTATIONS: &str = "annotations";
 const FUTURE_MODULE: &str = "__future__";
@@ -78,12 +78,6 @@ pub(crate) fn import_group(stmt: &Stmt, first_party: &[String]) -> Option<Import
     Some(if local { ImportGroup::Local } else { external })
 }
 
-/// Slot ranges of each run of two or more adjacent imports in `stmts`,
-/// the unit `group-imports` partitions and `alphabetize` sorts.
-pub(crate) fn import_runs(stmts: &[Stmt]) -> Vec<Range<usize>> {
-    chunk_runs(stmts, |a, b| is_import(a) && is_import(b))
-}
-
 /// Composite import sort key. With `grouped`, the canonical group order
 /// (bare → external `from` → local-package) leads a per-kind inner sort,
 /// where bare imports sort before `from` imports, bare by least alias name
@@ -100,6 +94,27 @@ pub(crate) fn import_sort_key<'a>(
         Stmt::ImportFrom(i) => (group, 1, i.level, i.module.as_deref().unwrap_or_default()),
         _ => unreachable!("import_group returns Some only for import statements"),
     })
+}
+
+/// Slot ranges of every import run across a sectioned body, each run
+/// offset to absolute slot indices so it never spans a section divider.
+/// The unit `group-imports` partitions and `alphabetize` sorts, one run
+/// at a time within each section.
+pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<Range<usize>> {
+    let mut runs = Vec::new();
+    for section in sections.ranges() {
+        for run in import_runs(&body[section.clone()]) {
+            runs.push(section.start + run.start..section.start + run.end);
+        }
+    }
+    runs
+}
+
+/// Slot ranges of each run of two or more adjacent imports in `stmts`,
+/// the per-section unit `sectioned_import_runs` offsets to absolute
+/// slot indices.
+fn import_runs(stmts: &[Stmt]) -> Vec<Range<usize>> {
+    chunk_runs(stmts, |a, b| is_import(a) && is_import(b))
 }
 
 /// True when the root package of `name` (the substring up to the
@@ -129,6 +144,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
+    use crate::primitives::orderer::member_blocks;
     use crate::testing::parse;
 
     #[rstest]
@@ -220,5 +236,14 @@ mod tests {
         let s = parse("import sys, os, abc\n");
         let import = s.ast().body[0].as_import_stmt().expect("import");
         assert_eq!(least_alias(&import.names), "abc");
+    }
+
+    #[test]
+    fn sectioned_import_runs_offsets_each_section_run_past_the_divider() {
+        let source = parse("import os\nimport sys\n# --- Typing ---\nimport abc\nimport io\n");
+        let body = &source.ast().body;
+        let blocks = member_blocks(&source, body, source.module_range());
+        let sections = Sections::of(&source, &blocks);
+        assert_eq!(sectioned_import_runs(&sections, body), vec![0..2, 2..4]);
     }
 }

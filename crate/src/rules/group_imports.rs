@@ -14,7 +14,7 @@ use crate::{
     config::Config,
     primitives::{
         edit::{narrowed_replacement, singleton_groups},
-        imports::{import_group, import_runs},
+        imports::{import_group, sectioned_import_runs},
         orderer::{
             any_sibling_shares_line, assemble_blocks, blocks_span, member_blocks, permute_full,
         },
@@ -67,11 +67,8 @@ impl Walker<'_> {
         if !body.is_empty() && !any_sibling_shares_line(self.source, body) {
             let blocks = member_blocks(self.source, body, outer);
             let sections = Sections::of(self.source, &blocks);
-            for section in sections.ranges() {
-                for run in import_runs(&body[section.clone()]) {
-                    let run = section.start + run.start..section.start + run.end;
-                    self.group_run(body, &blocks, run);
-                }
+            for run in sectioned_import_runs(&sections, body) {
+                self.group_run(body, &blocks, run);
             }
         }
         for stmt in body {
