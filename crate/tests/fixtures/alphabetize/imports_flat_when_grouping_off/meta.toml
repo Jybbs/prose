@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Imports Sort as One Flat Block When Grouping Is Off"
+
+description = '''
+With `group-imports = false`, the imports lose their section dividers and **sort as one flat block**, the bare `import` statements ahead of the `from` imports and each alphabetical within.
+'''

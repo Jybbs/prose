@@ -20,8 +20,9 @@ use crate::{
             single_name_target,
         },
         comments::{is_banner_block, leading_comment_block},
-        imports::{import_sort_key, same_import_group},
+        imports::{import_blank_lines, import_sort_key},
         orderer::slot_positions,
+        sections::Sections,
     },
     source::Source,
     suppression::is_directive_comment,
@@ -56,16 +57,16 @@ struct BandPlan<'src> {
 }
 
 impl BandPlan<'_> {
-    /// Appends `region`'s body indices to `out`, sorting the import run
-    /// into canonical group order at the front, lifting the leading
-    /// constants directly below it, keeping the definitions in their
-    /// incoming order, and pooling the trailing constants last. The
-    /// import run sorts by `import_sort_key`. Both constant bands sort
-    /// by `(tier, name)`. Clears `region`.
+    /// Appends `region`'s body indices to `out`, the import run sorted to
+    /// the front, the leading constants below it, the definitions in
+    /// incoming order, the trailing constants last. The import run sorts by
+    /// group then name when `grouped`, flat otherwise. Both constant bands
+    /// sort by `(tier, name)`. Clears `region`.
     fn drain_region(
         &self,
         body: &[Stmt],
         first_party: &[String],
+        grouped: bool,
         region: &mut Vec<usize>,
         out: &mut Vec<usize>,
     ) {
@@ -82,7 +83,8 @@ impl BandPlan<'_> {
             }
         }
         imports.sort_by_key(|&idx| {
-            import_sort_key(&body[idx], first_party).expect("import band holds only imports")
+            import_sort_key(&body[idx], first_party, grouped)
+                .expect("import band holds only imports")
         });
         leading.sort_by_key(|idx| self.keys[idx]);
         trailing.sort_by_key(|idx| self.keys[idx]);
@@ -125,7 +127,7 @@ pub(super) fn band_module_constants<'src>(
     ctx: RewriteCtx<'src>,
     body: &'src [Stmt],
     blocks: &[TextRange],
-    boundaries: &[usize],
+    sections: &Sections,
     order: &mut Vec<usize>,
 ) -> Option<Banding> {
     let plan = module_band_plan(
@@ -135,20 +137,23 @@ pub(super) fn band_module_constants<'src>(
         ctx.defer_annotations,
         ctx.target_version,
     )?;
+    let drain = |region: &mut Vec<usize>, banded: &mut Vec<usize>| {
+        plan.drain_region(body, ctx.first_party, ctx.group_imports, region, banded);
+    };
     let mut banded = Vec::with_capacity(order.len());
     let mut region = Vec::new();
     for (slot, &idx) in order.iter().enumerate() {
-        if boundaries.binary_search(&slot).is_ok() {
-            plan.drain_region(body, ctx.first_party, &mut region, &mut banded);
+        if sections.is_boundary(slot) {
+            drain(&mut region, &mut banded);
         }
         if plan.ranks.contains_key(&idx) {
             region.push(idx);
         } else {
-            plan.drain_region(body, ctx.first_party, &mut region, &mut banded);
+            drain(&mut region, &mut banded);
             banded.push(idx);
         }
     }
-    plan.drain_region(body, ctx.first_party, &mut region, &mut banded);
+    drain(&mut region, &mut banded);
     (plan.is_sound(&banded) && banded != *order).then(|| {
         *order = banded;
         Banding {
@@ -167,13 +172,14 @@ pub(super) fn banded_gap(
     ranks: &HashMap<usize, BandRank>,
     body: &[Stmt],
     first_party: &[String],
+    grouped: bool,
     a: usize,
     b: usize,
 ) -> Option<&'static str> {
     Some(match (*ranks.get(&a)?, *ranks.get(&b)?) {
         (BandRank::Leading, BandRank::Leading) | (BandRank::Trailing, BandRank::Trailing) => "\n",
         (BandRank::Import, BandRank::Import)
-            if same_import_group(&body[a], &body[b], first_party) =>
+            if import_blank_lines(&body[a], &body[b], first_party, grouped) == Some(0) =>
         {
             "\n"
         }
@@ -438,11 +444,13 @@ mod tests {
         let ctx = RewriteCtx {
             defer_annotations: false,
             first_party: &[],
+            group_imports: true,
             leaf_edits: &[],
             source: &source,
             target_version: None,
         };
-        band_module_constants(ctx, body, &blocks, &[], &mut order)
+        let sections = Sections::of(&source, &blocks);
+        band_module_constants(ctx, body, &blocks, &sections, &mut order)
             .expect("a definition before an import bands without panicking");
         assert_eq!(
             order,

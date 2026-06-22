@@ -1,0 +1,7 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/group_imports/banner_divides_import_sections/input.py
+---
+group-imports@0..42
+group-imports@59..89

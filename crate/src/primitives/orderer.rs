@@ -11,7 +11,19 @@ use ruff_python_trivia::CommentRanges;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{primitives::edit::splice_parses, source::Source};
+use crate::{
+    primitives::{comments::marker_floor, edit::splice_parses},
+    source::Source,
+};
+
+/// True when any adjacent pair of items in `body` shares one physical line.
+/// A block-based reorder decomposes one item per line, so a body packing
+/// two onto a line (`;`-joined statements, comma-packed entries) has no such
+/// decomposition and keeps source order.
+pub(crate) fn any_sibling_shares_line<T: Ranged>(source: &Source, body: &[T]) -> bool {
+    body.windows(2)
+        .any(|pair| source.same_line(pair[0].end(), pair[1].start()))
+}
 
 /// Splices each rendered child at its sorted position. `gap_override`
 /// returning `Some(text)` for new-order slot `i` substitutes that
@@ -100,6 +112,42 @@ pub(crate) fn block_range<T: Ranged>(
 /// Total source extent covered by `blocks`. Requires non-empty input.
 pub(crate) fn blocks_span(blocks: &[TextRange]) -> TextRange {
     blocks[0].cover(*blocks.last().expect("non-empty blocks"))
+}
+
+/// Returns the slot ranges of consecutive items whose pairwise neighbors
+/// satisfy `adjacent`. Singleton runs drop.
+pub(crate) fn chunk_runs<T>(
+    items: &[T],
+    mut adjacent: impl FnMut(&T, &T) -> bool,
+) -> Vec<Range<usize>> {
+    let mut start = 0;
+    items
+        .chunk_by(|a, b| adjacent(a, b))
+        .filter_map(|chunk| {
+            let end = start + chunk.len();
+            let range = (chunk.len() >= 2).then_some(start..end);
+            start = end;
+            range
+        })
+        .collect()
+}
+
+/// [`block_range`] for `items[i]` with its start pushed below any section
+/// marker leading it, so a banner or hash heading stays in the gap above
+/// the member rather than traveling with it through a reorder. The
+/// marker-bearing gap is what [`Sections`](crate::primitives::sections::Sections)
+/// reads to divide the body.
+pub(crate) fn member_block<T: Ranged>(
+    source: &Source,
+    items: &[T],
+    i: usize,
+    outer: TextRange,
+) -> TextRange {
+    let raw = block_range(source, items, i, outer);
+    TextRange::new(
+        marker_floor(source, raw.start(), items[i].start()),
+        raw.end(),
+    )
 }
 
 /// Convenience wrapper for `permute_in_place` over the full `items`
@@ -306,6 +354,7 @@ fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
 mod tests {
     use assert_matches::assert_matches;
     use indoc::indoc;
+    use rstest::rstest;
 
     use super::*;
     use crate::testing::{first_class, first_def, parse};
@@ -319,6 +368,22 @@ mod tests {
             .expect("set value")
             .elts
             .as_slice()
+    }
+
+    #[rstest]
+    #[case("import b\nimport a; x = 1\n", true)]
+    #[case("import b\nimport a\n", false)]
+    #[case("a = 1; b = 2\n", true)]
+    #[case("x = 1\n", false)]
+    fn any_sibling_shares_line_detects_line_packed_pairs(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        assert_eq!(
+            any_sibling_shares_line(&source, &source.ast().body),
+            expected
+        );
     }
 
     #[test]
@@ -414,6 +479,12 @@ mod tests {
         let source = parse("def a(): pass\ndef b(): pass\n");
         let block = block_range(&source, &source.ast().body, 1, source.module_range());
         assert_eq!(source.slice(block), "def b(): pass");
+    }
+
+    #[test]
+    fn chunk_runs_returns_runs_of_two_or_more_dropping_singletons() {
+        let items = [1, 1, 2, 3, 3, 3];
+        assert_eq!(chunk_runs(&items, |a, b| a == b), vec![0..2, 3..6]);
     }
 
     #[test]

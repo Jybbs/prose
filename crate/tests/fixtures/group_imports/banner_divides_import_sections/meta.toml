@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Banner Holds Imports in Separate Sections"
+
+description = '''
+A banner divides a run into independent sections, so each partitions on its own and **no import crosses the divider** into the section above it.
+'''

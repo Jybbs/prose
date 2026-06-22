@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Imports Partition into Bare → External `from` → Local-Package Sections"
+
+description = '''
+A scrambled run of bare, external `from`, and relative imports **partitions into the three canonical sections**. The names within a section keep their source order, the sort left to `alphabetize`, so `sys` stays ahead of `os` here, and the blank line dividing one section from the next is left to `blank-lines`.
+'''

@@ -2,10 +2,9 @@
 //! meaning. The covered shapes are classes and functions in a body,
 //! class-scope `Stmt::AnnAssign` field declarations and `Stmt::Assign`
 //! runs with simple `Name` targets, function and lambda keyword-only
-//! parameters, call kwargs, set literal elements, consecutive `import`
-//! blocks reordered into canonical bare
-//! / external-`from` / local-package groups plus their alias lists,
-//! `global` and `nonlocal` name lists, `del` target lists, and the
+//! parameters, call kwargs, set literal elements, import names and their
+//! alias lists within each section, `global` and `nonlocal` name lists,
+//! `del` target lists, and the
 //! string literals inside `__all__` / `__slots__`.
 //!
 //! Sorting flows through `primitives::orderer::reorder_text`. A
@@ -21,22 +20,25 @@ use std::{borrow::Cow, ops::Range};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Decorator, ExceptHandler, ExprDict, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef,
+    Decorator, ExprDict, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef,
     helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
 };
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
     primitives::{
         binding::{annotated_name_target, single_name_target, tail_identifier},
-        comments::{is_banner_block, leading_comment_block, marker_floor},
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups},
-        imports::{future_annotations_alias, import_sort_key, same_import_group},
-        orderer::{assemble_blocks, block_range, blocks_span, permute_in_place},
+        imports::{future_annotations_alias, import_blank_lines, import_sort_key, is_import},
+        orderer::{
+            any_sibling_shares_line, assemble_blocks, blocks_span, chunk_runs, member_block,
+            permute_in_place,
+        },
         params::pins_positional_params,
-        scope::{BodyScope, scoped_body},
+        scope::{BodyScope, compound_sub_bodies, scoped_body},
+        sections::Sections,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -57,6 +59,7 @@ use self::{
 
 pub(crate) struct Alphabetize {
     first_party: Vec<String>,
+    group_imports: bool,
     sort_docstring_entries: bool,
     target_version: Option<PythonVersion>,
 }
@@ -65,6 +68,7 @@ impl Alphabetize {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),
+            group_imports: config.rules.group_imports.enabled,
             sort_docstring_entries: config.rules.alphabetize.sort_docstring_entries,
             target_version: config.target_version,
         }
@@ -85,6 +89,7 @@ impl Rule for Alphabetize {
         let ctx = RewriteCtx {
             defer_annotations: defers_annotations(body),
             first_party: &self.first_party,
+            group_imports: self.group_imports,
             leaf_edits: &leaf_edits,
             source,
             target_version: self.target_version,
@@ -110,6 +115,7 @@ impl Rule for Alphabetize {
 struct RewriteCtx<'a> {
     defer_annotations: bool,
     first_party: &'a [String],
+    group_imports: bool,
     leaf_edits: &'a [Edit],
     source: &'a Source,
     target_version: Option<PythonVersion>,
@@ -120,21 +126,6 @@ struct RewriteCtx<'a> {
 fn ann_assign_with_named_field(stmt: &Stmt) -> Option<(&StmtAnnAssign, &str)> {
     let ann = stmt.as_ann_assign_stmt()?;
     Some((ann, annotated_name_target(ann)?))
-}
-
-/// Returns the slot ranges of consecutive items whose pairwise
-/// neighbors satisfy `adjacent`. Singleton runs drop.
-fn chunk_runs(items: &[Stmt], mut adjacent: impl FnMut(&Stmt, &Stmt) -> bool) -> Vec<Range<usize>> {
-    let mut start = 0;
-    items
-        .chunk_by(|a, b| adjacent(a, b))
-        .filter_map(|chunk| {
-            let end = start + chunk.len();
-            let range = (chunk.len() >= 2).then_some(start..end);
-            start = end;
-            range
-        })
-        .collect()
 }
 
 /// True when a class body has at least two `Stmt::AnnAssign` field
@@ -149,42 +140,6 @@ fn class_pins_methods(body: &[Stmt]) -> bool {
             .iter()
             .filter_map(Stmt::as_function_def_stmt)
             .any(pins_positional_params)
-}
-
-/// Returns one `(body, outer)` pair per sub-body of a compound
-/// statement. `outer` carries the enclosing arm's range, which bounds
-/// `block_range`'s leading-comment scan for the body's first item.
-/// Empty sub-bodies are returned as-is and skipped by the caller.
-fn compound_sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
-    match stmt {
-        Stmt::For(s) => vec![(s.body.as_slice(), s.range), (s.orelse.as_slice(), s.range)],
-        Stmt::If(s) => std::iter::once((s.body.as_slice(), s.range))
-            .chain(
-                s.elif_else_clauses
-                    .iter()
-                    .map(|c| (c.body.as_slice(), c.range)),
-            )
-            .collect(),
-        Stmt::Match(s) => s
-            .cases
-            .iter()
-            .map(|c| (c.body.as_slice(), c.range))
-            .collect(),
-        Stmt::Try(s) => std::iter::once((s.body.as_slice(), s.range))
-            .chain(
-                s.handlers
-                    .iter()
-                    .map(|ExceptHandler::ExceptHandler(h)| (h.body.as_slice(), h.range)),
-            )
-            .chain([
-                (s.orelse.as_slice(), s.range),
-                (s.finalbody.as_slice(), s.range),
-            ])
-            .collect(),
-        Stmt::While(s) => vec![(s.body.as_slice(), s.range), (s.orelse.as_slice(), s.range)],
-        Stmt::With(s) => vec![(s.body.as_slice(), s.range)],
-        _ => Vec::new(),
-    }
 }
 
 /// Returns `Cow::Borrowed` of `source.slice(span)` when every part
@@ -229,15 +184,6 @@ fn has_default(ann: &StmtAnnAssign) -> bool {
         })
 }
 
-/// True when two adjacent statements in `body` sit on one physical
-/// line, joined by `;`. A block-based reorder carries such a statement's
-/// `;` separator into its new slot and abuts the displaced sibling, so a
-/// body carrying one keeps source order.
-fn has_inline_statement_join(source: &Source, body: &[Stmt]) -> bool {
-    body.windows(2)
-        .any(|pair| source.same_line(pair[0].end(), pair[1].start()))
-}
-
 /// True when the line containing the dict's opening `{` carries a
 /// trailing `# prose: keep` comment.
 fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
@@ -247,13 +193,6 @@ fn has_keep_marker(source: &Source, dict: &ExprDict) -> bool {
         .comments_in_range(line)
         .iter()
         .any(|c| source.slice(c).trim_start_matches('#').trim() == "prose: keep")
-}
-
-/// True when a recognized section marker, a banner or hash heading, sits
-/// in the gap between two member blocks, opening a section the sort never
-/// reorders across.
-fn marker_in_gap(source: &Source, lower: TextSize, upper: TextSize) -> bool {
-    leading_comment_block(source, lower, upper).is_some_and(|block| is_banner_block(source, block))
 }
 
 /// Returns the method-group index. `0` for dunders, `1` for
@@ -292,6 +231,7 @@ fn rewrite_body<'a>(
     let RewriteCtx {
         defer_annotations,
         first_party,
+        group_imports,
         source,
         ..
     } = ctx;
@@ -299,8 +239,7 @@ fn rewrite_body<'a>(
         .iter()
         .enumerate()
         .map(|(i, stmt)| {
-            let raw = block_range(source, body, i, outer);
-            let block = TextRange::new(marker_floor(source, raw.start(), stmt.start()), raw.end());
+            let block = member_block(source, body, i, outer);
             (block, rewrite_stmt(ctx, stmt, block, scope))
         })
         .unzip();
@@ -309,12 +248,10 @@ fn rewrite_body<'a>(
     let mut order: Vec<usize> = (0..n).collect();
     let mut import_run_slots: Vec<usize> = Vec::new();
     let mut band: Option<Banding> = None;
-    if !has_inline_statement_join(source, body) {
-        let sections = section_ranges(source, &blocks);
-        let boundaries: Vec<usize> = sections.iter().skip(1).map(|s| s.start).collect();
+    if !any_sibling_shares_line(source, body) {
+        let sections = Sections::of(source, &blocks);
         let in_class = scope == BodyScope::Class;
-        let is_import = |s: &Stmt| s.is_import_stmt() || s.is_import_from_stmt();
-        for section in &sections {
+        for section in sections.ranges() {
             let members = &body[section.clone()];
             if scope != BodyScope::Function {
                 permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
@@ -340,12 +277,12 @@ fn rewrite_body<'a>(
                     &mut order,
                     body,
                     section.start + start..section.start + end,
-                    |s| import_sort_key(s, first_party),
+                    |s| import_sort_key(s, first_party, group_imports),
                 );
             }
         }
         if scope == BodyScope::Module {
-            band = band_module_constants(ctx, body, &blocks, &boundaries, &mut order);
+            band = band_module_constants(ctx, body, &blocks, &sections, &mut order);
             // A banded constant carries its forward-attached prose comment
             // up with it: its block extends back over the comment and its
             // rendered text gains the comment, collapsing the gap below so
@@ -366,8 +303,13 @@ fn rewrite_body<'a>(
         // section marker, whose dividing gap must survive in place.
         if band.is_none() {
             import_run_slots.extend((0..n.saturating_sub(1)).filter(|&slot| {
-                same_import_group(&body[order[slot]], &body[order[slot + 1]], first_party)
-                    && boundaries.binary_search(&(slot + 1)).is_err()
+                import_blank_lines(
+                    &body[order[slot]],
+                    &body[order[slot + 1]],
+                    first_party,
+                    group_imports,
+                ) == Some(0)
+                    && !sections.is_boundary(slot + 1)
             }));
         }
     }
@@ -377,7 +319,14 @@ fn rewrite_body<'a>(
         return (Cow::Borrowed(source.slice(body_span)), body_span);
     }
     let assembled = assemble_blocks(source, &blocks, &rendered, &order, |i| match &band {
-        Some(b) => banded_gap(&b.ranks, body, first_party, order[i], order[i + 1]),
+        Some(b) => banded_gap(
+            &b.ranks,
+            body,
+            first_party,
+            group_imports,
+            order[i],
+            order[i + 1],
+        ),
         None => import_run_slots.binary_search(&i).is_ok().then_some("\n"),
     });
     (Cow::Owned(assembled), body_span)
@@ -422,22 +371,6 @@ fn rewrite_stmt<'a>(
     }
     let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope);
     splice_bodies(ctx.source, block, [(body_text, body_span)], ctx.leaf_edits)
-}
-
-/// Splits the body's slots into sections at each gap carrying a section
-/// marker, so a family sort orders members within a section and never
-/// moves one across the marker dividing it from its neighbor.
-fn section_ranges(source: &Source, blocks: &[TextRange]) -> Vec<Range<usize>> {
-    let mut sections = Vec::new();
-    let mut start = 0;
-    for i in 1..blocks.len() {
-        if marker_in_gap(source, blocks[i - 1].end(), blocks[i].start()) {
-            sections.push(start..i);
-            start = i;
-        }
-    }
-    sections.push(start..blocks.len());
-    sections
 }
 
 /// Returns the simple name assigned by an `Stmt::Assign` whose
@@ -565,22 +498,6 @@ mod tests {
     fn defers_annotations_detects_the_future_import(#[case] src: &str, #[case] expected: bool) {
         let source = parse(src);
         assert_eq!(defers_annotations(&source.ast().body), expected);
-    }
-
-    #[rstest]
-    #[case("import b\nimport a; x = 1\n", true)]
-    #[case("import b\nimport a\n", false)]
-    #[case("a = 1; b = 2\n", true)]
-    #[case("x = 1\n", false)]
-    fn has_inline_statement_join_detects_semicolon_joined_siblings(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
-        let source = parse(src);
-        assert_eq!(
-            has_inline_statement_join(&source, &source.ast().body),
-            expected
-        );
     }
 
     #[test]

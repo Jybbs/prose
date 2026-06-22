@@ -43,6 +43,9 @@ Config {
                 6,
             ),
         },
+        group_imports: ToggleOnly {
+            enabled: true,
+        },
         alphabetize: AlphabetizeConfig {
             enabled: false,
             sort_docstring_entries: false,

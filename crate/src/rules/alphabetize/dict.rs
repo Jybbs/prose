@@ -14,7 +14,10 @@ use super::has_keep_marker;
 use crate::{
     primitives::{
         edit::{apply_inline_edits, splice_parses},
-        orderer::{assemble_blocks, assemble_separated, block_range, blocks_span, permute_full},
+        orderer::{
+            any_sibling_shares_line, assemble_blocks, assemble_separated, block_range, blocks_span,
+            permute_full,
+        },
     },
     source::Source,
 };
@@ -40,11 +43,7 @@ pub(super) fn rewrite_dict_text<'src>(
     // The block model decomposes one item per line. A multi-line dict that
     // packs entries onto a shared physical line has no such decomposition, so a
     // block reorder would reflow it. Decline, leaving it in source order.
-    if multi_line
-        && d.items
-            .windows(2)
-            .any(|w| source.same_line(w[0].end(), w[1].start()))
-    {
+    if multi_line && any_sibling_shares_line(source, &d.items) {
         return None;
     }
     // Widen each item to its value's paren-aware end, so a parenthesized

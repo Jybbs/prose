@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/group_imports/banner_divides_import_sections/input.py
+---
+import sys
+from collections import Counter
+# --- Local ---
+import os
+from . import shared

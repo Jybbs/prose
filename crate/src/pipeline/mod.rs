@@ -635,6 +635,7 @@ mod tests {
         config.rules.docstring_expand.enabled = false;
         config.rules.docstring_frame.enabled = false;
         config.rules.docstring_wrap.enabled = false;
+        config.rules.group_imports.enabled = false;
         config.rules.import_layout.enabled = false;
         config.rules.legacy_union_syntax.enabled = false;
         config.rules.reassigned_constants.enabled = false;

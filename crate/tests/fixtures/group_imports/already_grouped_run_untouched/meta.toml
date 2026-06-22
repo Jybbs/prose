@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Already-Grouped Run Passes Through Untouched"
+
+description = '''
+A run already sitting in bare → external `from` → local-package order **emits no edit**, the rule firing only when the partition would relocate an import.
+'''

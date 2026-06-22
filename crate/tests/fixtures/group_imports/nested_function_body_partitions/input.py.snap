@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/group_imports/nested_function_body_partitions/input.py
+---
+def load():
+    import sys
+    from collections import Counter
+    return sys, Counter

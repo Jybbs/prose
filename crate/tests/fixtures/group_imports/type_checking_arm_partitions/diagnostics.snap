@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/group_imports/type_checking_arm_partitions/input.py
+---
+group-imports@56..98

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Semicolon-Joined Run Keeps Source Order"
+
+description = '''
+Two imports packed onto one physical line with `;` have no one-per-line block to relocate, so the rule **leaves them untouched** rather than risk abutting the displaced sibling.
+'''

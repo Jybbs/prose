@@ -60,7 +60,7 @@ max-size-mib = 250
 
 ## Imports
 
-The `[imports]` table names the project's first-party packages *(`[tool.prose.imports]` in a `pyproject.toml`)*, so [[alphabetize]] groups their imports with relative imports in the local-package block rather than the external `from` block. With no list, only relative imports (`from .`, `from ..pkg`) populate the local-package group.
+The `[imports]` table names the project's first-party packages *(`[tool.prose.imports]` in a `pyproject.toml`)*, so [[group-imports]] places their imports with relative imports in the local-package section rather than the external `from` section. With no list, only relative imports (`from .`, `from ..pkg`) populate the local-package group.
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
@@ -104,7 +104,7 @@ The rules that line columns vertically share one structural question, which is h
 
 ### Toggle-Only Rules
 
-Some rules answer a single yes-or-no question with no parameters worth tuning, so each takes only a bare bool toggle. Reach for `<rule> = false` to silence a rule whose default doesn't fit the project: [[blank-lines]], [[docstring-wrap]], [[legacy-union-syntax]], [[docstring-frame]], [[docstring-expand]], [[step-narration]], [[strip-align-padding]], [[strip-trailing-commas]], and [[unused-future-annotations]].
+Some rules answer a single yes-or-no question with no parameters worth tuning, so each takes only a bare bool toggle. Reach for `<rule> = false` to silence a rule whose default doesn't fit the project: [[blank-lines]], [[group-imports]], [[docstring-wrap]], [[legacy-union-syntax]], [[docstring-frame]], [[docstring-expand]], [[step-narration]], [[strip-align-padding]], [[strip-trailing-commas]], and [[unused-future-annotations]].
 
 ### Rule-Specific Facets
 
