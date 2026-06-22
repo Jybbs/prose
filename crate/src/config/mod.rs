@@ -35,6 +35,7 @@ mod source;
 
 pub(crate) use de::deserialize_rule;
 use de::{deserialize_import_line_length, deserialize_prose};
+pub(crate) use load::config_rel_paths;
 use load::{ConfigNotice, emit_notice, prose_table_from_str, walk_prose_table};
 pub use schema::*;
 pub(crate) use source::ConfigSource;

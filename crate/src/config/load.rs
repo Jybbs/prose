@@ -30,7 +30,7 @@ impl ConfigForm {
     fn label(self) -> &'static str {
         match self {
             Self::PyprojectTable => "the [tool.prose] table",
-            _ => self.rel_path(),
+            Self::DotConfigProseToml | Self::ProseToml => self.rel_path(),
         }
     }
 
@@ -42,7 +42,7 @@ impl ConfigForm {
         };
         match self {
             Self::PyprojectTable => prose_table_from_str(&contents),
-            _ => Ok(Some(toml::from_str(&contents)?)),
+            Self::DotConfigProseToml | Self::ProseToml => Ok(Some(toml::from_str(&contents)?)),
         }
     }
 
@@ -68,6 +68,12 @@ pub(super) enum ConfigNotice<'a> {
     /// An unrecognized key under the prose table. Carries the dotted
     /// key path.
     UnknownKey(&'a str),
+}
+
+/// The directory-relative path of every recognized config form, the
+/// set the server's file watcher registers against.
+pub(crate) fn config_rel_paths() -> [&'static str; 3] {
+    ConfigForm::PRECEDENCE.map(ConfigForm::rel_path)
 }
 
 pub(super) fn emit_notice(notice: ConfigNotice<'_>) {

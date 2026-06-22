@@ -67,7 +67,7 @@ Repeat runs hit the user-level [**cache**](/reference/cache) on by default, but 
 - uses: actions/cache@v4
   with:
     path: ~/.cache/prose
-    key: prose-${{ runner.os }}-${{ hashFiles('prose.toml', 'pyproject.toml') }}
+    key: prose-${{ runner.os }}-${{ hashFiles('prose.toml', '.config/prose.toml', 'pyproject.toml') }}
 - run: prose check .
 ```
 

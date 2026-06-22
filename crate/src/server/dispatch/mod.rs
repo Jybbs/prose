@@ -12,6 +12,7 @@ use lsp_types::{
 use ruff_source_file::PositionEncoding;
 
 use super::{capabilities, config_cache::ConfigCache, documents::DocumentStore};
+use crate::config::config_rel_paths;
 
 mod notifications;
 mod requests;
@@ -103,9 +104,9 @@ fn main_loop(
 }
 
 /// Registers a `workspace/didChangeWatchedFiles` watcher for prose's config
-/// files when the client supports dynamic registration, so a `pyproject.toml`
-/// or `prose.toml` edit refreshes every open buffer. Clients without dynamic
-/// registration still pick up config changes on the next edit.
+/// files when the client supports dynamic registration, so editing any of
+/// them refreshes every open buffer. Clients without dynamic registration
+/// still pick up config changes on the next edit.
 fn register_config_watchers(
     connection: &Connection,
     capabilities: &ClientCapabilities,
@@ -120,10 +121,10 @@ fn register_config_watchers(
         return Ok(false);
     }
     let options = DidChangeWatchedFilesRegistrationOptions {
-        watchers: ["**/pyproject.toml", "**/prose.toml"]
+        watchers: config_rel_paths()
             .into_iter()
-            .map(|glob| FileSystemWatcher {
-                glob_pattern: GlobPattern::String(glob.to_owned()),
+            .map(|path| FileSystemWatcher {
+                glob_pattern: GlobPattern::String(format!("**/{path}")),
                 kind: None,
             })
             .collect(),
@@ -378,6 +379,24 @@ mod tests {
             panic!("expected registerCapability request");
         };
         assert_eq!(registration.method, "client/registerCapability");
+        let params: RegistrationParams = serde_json::from_value(registration.params.clone())
+            .expect("decodes registration params");
+        let options: DidChangeWatchedFilesRegistrationOptions = serde_json::from_value(
+            params.registrations[0]
+                .register_options
+                .clone()
+                .expect("watcher options"),
+        )
+        .expect("decodes watcher options");
+        let globs: Vec<String> = options
+            .watchers
+            .into_iter()
+            .map(|watcher| match watcher.glob_pattern {
+                GlobPattern::String(glob) => glob,
+                GlobPattern::Relative(_) => unreachable!("prose registers string globs"),
+            })
+            .collect();
+        assert!(globs.contains(&"**/.config/prose.toml".to_owned()));
         client
             .sender
             .send(Message::Response(Response::new_ok(
