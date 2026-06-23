@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize/multiline_spread_not_in_tally/input.py
+---
+config = {
+    "version": "0.1.0",
+    **load_defaults(
+        primary_source,
+        fallback_source,
+    ),
+    "limits": {
+        "retries": 5,
+        "timeout": 30,
+    },
+}

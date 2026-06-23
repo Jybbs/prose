@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Multi-Line Spread Does Not Count Toward the Divider Tally"
+
+description = '''
+A `**spread` whose value spans lines pins in source position and stays out of the multi-line tally, so a dict with one keyed multi-line entry beside it still drops the divider and reads as one block.
+'''

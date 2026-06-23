@@ -19,6 +19,22 @@ use crate::{
     source::Source,
 };
 
+/// Slot indices `i` in `0..order.len() - 1` where the adjacent pair
+/// `(order[i], order[i + 1])` satisfies `pred`, the sorted `Vec<usize>` an
+/// `assemble_*` gap override binary-searches. `pred` receives the slot
+/// alongside the pair, so a predicate keyed off the new-order position (a
+/// section boundary) reads it without re-deriving.
+pub(crate) fn adjacent_slots(
+    order: &[usize],
+    mut pred: impl FnMut(usize, usize, usize) -> bool,
+) -> Vec<usize> {
+    order
+        .windows(2)
+        .enumerate()
+        .filter_map(|(slot, w)| pred(slot, w[0], w[1]).then_some(slot))
+        .collect()
+}
+
 /// True when any adjacent pair of items in `body` shares one physical line.
 /// A block-based reorder decomposes one item per line, so a body packing
 /// two onto a line (`;`-joined statements, comma-packed entries) has no such
@@ -132,6 +148,18 @@ pub(crate) fn block_range<T: Ranged>(
         None => tail_end(source, item.end()),
     };
     TextRange::new(leading_attached_start(source, item.start(), lower), forward)
+}
+
+/// [`block_range`] for every slot of `items`, the marker-free counterpart
+/// to [`member_blocks`] for a body with no section markers to floor against.
+pub(crate) fn block_ranges<T: Ranged>(
+    source: &Source,
+    items: &[T],
+    outer: TextRange,
+) -> Vec<TextRange> {
+    (0..items.len())
+        .map(|i| block_range(source, items, i, outer))
+        .collect()
 }
 
 /// Total source extent covered by `blocks`. Requires non-empty input.
@@ -421,6 +449,13 @@ mod tests {
             .expect("set value")
             .elts
             .as_slice()
+    }
+
+    #[test]
+    fn adjacent_slots_collects_pairs_satisfying_the_predicate() {
+        let order = [0, 2, 4, 6];
+        let slots = adjacent_slots(&order, |slot, a, b| slot == 0 || a + b == 10);
+        assert_eq!(slots, vec![0, 2]);
     }
 
     #[rstest]

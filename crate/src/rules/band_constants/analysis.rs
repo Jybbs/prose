@@ -259,17 +259,13 @@ fn propagate(state: &mut [bool], deps: &[Vec<usize>]) {
 
 #[cfg(test)]
 mod tests {
-    use ruff_text_size::TextRange;
-
     use super::*;
-    use crate::primitives::orderer::block_range;
+    use crate::primitives::orderer::block_ranges;
     use crate::testing::parse;
 
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(source, body, i, source.module_range()))
-            .collect();
+        let blocks = block_ranges(source, body, source.module_range());
         module_band_plan(source, body, &blocks, false, None)
     }
 

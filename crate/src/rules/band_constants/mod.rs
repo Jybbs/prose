@@ -183,10 +183,8 @@ fn apply_band_carries(
 
 #[cfg(test)]
 mod tests {
-    use ruff_text_size::TextRange;
-
     use super::*;
-    use crate::primitives::orderer::block_range;
+    use crate::primitives::orderer::block_ranges;
     use crate::testing::parse;
 
     #[test]
@@ -194,9 +192,7 @@ mod tests {
         let source =
             parse("def helper(value):\n    return value\n\n\nimport os\n\n\nCONFIG = helper\n");
         let body = &source.ast().body;
-        let blocks: Vec<TextRange> = (0..body.len())
-            .map(|i| block_range(&source, body, i, source.module_range()))
-            .collect();
+        let blocks = block_ranges(&source, body, source.module_range());
         let mut order: Vec<usize> = (0..body.len()).collect();
         let bander = Bander {
             defer_annotations: false,

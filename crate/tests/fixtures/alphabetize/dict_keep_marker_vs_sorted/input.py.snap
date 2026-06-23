@@ -1,12 +1,11 @@
 ---
-source: tests/integration.rs
+source: crate/tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/dict_keep_marker_vs_sorted/input.py
+input_file: crate/tests/fixtures/alphabetize/dict_keep_marker_vs_sorted/input.py
 ---
 unmarked = {
     "name"     : "prose",
     "version"  : "0.1.0",
-
     "config"   : {
         "strict"  : True,
         "verbose" : False,
