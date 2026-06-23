@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/composition/call_dict_arg_explodes_sorts_aligns/input.py
+---
+configure(
+    more     = 7,
+    name     = "x",
+    other    = 2,
+    settings = {
+        "alpha" : 1,
+        "beta"  : 2,
+        "delta" : 4,
+        "gamma" : 3
+    }
+)
