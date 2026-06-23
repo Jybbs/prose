@@ -116,13 +116,16 @@ fn item_value_end(source: &Source, dict: &ExprDict, item: &DictItem) -> TextSize
         .end()
 }
 
-/// Returns the new-order slot indices after which a blank-line
-/// divider should sit. A divider goes on either side of every keyed
-/// multi-line entry, isolating it from its neighbors so each
-/// multi-line entry forms its own alignment group downstream.
+/// Returns the new-order slot indices after which a blank-line divider
+/// should sit, one on either side of each keyed multi-line entry. A dict
+/// with fewer than two such entries yields none, leaving a lone multi-line
+/// entry to align into the scalar block rather than sit behind a divider.
 fn partition_divider_slots(source: &Source, order: &[usize], items: &[DictItem]) -> Vec<usize> {
     let is_multiline =
         |i: usize| items[i].key.is_some() && source.contains_line_break(items[i].range());
+    if order.iter().filter(|&&i| is_multiline(i)).count() < 2 {
+        return Vec::new();
+    }
     order
         .windows(2)
         .enumerate()

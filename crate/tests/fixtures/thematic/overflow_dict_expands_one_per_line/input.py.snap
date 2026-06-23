@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
+source: crate/tests/integration.rs
 expression: output
-input_file: tests/fixtures/thematic/overflow_dict_expands_one_per_line/input.py
+input_file: crate/tests/fixtures/thematic/overflow_dict_expands_one_per_line/input.py
 ---
 CONFIG = {
     "backoff" : 1.5,
@@ -10,8 +10,7 @@ CONFIG = {
     "tags"    : ["staging", "ingest"],
     "timeout" : 30,
     "verbose" : True,
-
-    "limits": {
+    "limits"  : {
         "burst_capacity"      : 1200,
         "concurrent_streams"  : 8,
         "queue_depth"         : 256,

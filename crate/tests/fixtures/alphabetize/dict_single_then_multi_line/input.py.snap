@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
+source: crate/tests/integration.rs
 expression: output
-input_file: tests/fixtures/alphabetize/dict_single_then_multi_line/input.py
+input_file: crate/tests/fixtures/alphabetize/dict_single_then_multi_line/input.py
 ---
 mixed = {
     "author"   : "jibbs",
@@ -10,7 +10,6 @@ mixed = {
     "name"     : "prose",
     "tags"     : ["staging", "ingest"],
     "version"  : "0.1.0",
-
     "config": {
         "strict"     : True,
         "tracebacks" : "short",
@@ -24,7 +23,6 @@ with_spread = {
     "name"    : "prose",
     **defaults,
     "version" : "0.1.0",
-
     "config": {
         "strict"  : True,
         "tracing" : "off",
@@ -43,12 +41,10 @@ deep_nesting = {
     "alpha" : 1,
     "beta"  : 2,
     "delta" : "...",
-
     "settings": {
         "logging": {
             "stderr" : "warn",
             "stdout" : "info",
-
             "format": {
                 "compact" : False,
                 "json"    : True,

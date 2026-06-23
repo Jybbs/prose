@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
+source: crate/tests/integration.rs
 expression: output
-input_file: tests/fixtures/thematic/deep_nested_dict_per_level/input.py
+input_file: crate/tests/fixtures/thematic/deep_nested_dict_per_level/input.py
 ---
 DEPLOY = {
     "owner"   : "core",
@@ -41,12 +41,10 @@ DEPLOY = {
     "telemetry": {
         "interval" : 30,
         "sink"     : "datadog",
-
-        "logs": {
-            "format" : "json",
-            "level"  : "info",
-
-            "destinations": {
+        "logs"     : {
+            "format"       : "json",
+            "level"        : "info",
+            "destinations" : {
                 "file"        : "/var/log/app",
                 "remote_sink" : "logserver",
                 "stdout"      : True,

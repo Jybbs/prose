@@ -3,5 +3,5 @@ previewable = true
 title       = "Dictionary Keys Sort When Keys Are String Literals"
 
 description = '''
-Multi-line dict literals **partition entries by rendered line count**. Single-line entries sort first, then a blank divider, then multi-line entries. `**unpacked` items pin in source position, and the partition fires recursively at every level of nesting.
+Multi-line dict literals **partition entries by rendered line count**, single-line entries sorting ahead of multi-line ones. A blank divider fences each multi-line entry only once two or more share the dict, so a lone multi-line entry sorts last with no divider and reads as one block with the scalars above it. `**unpacked` items pin in source position, and the partition fires recursively at every level of nesting.
 '''
