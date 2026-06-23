@@ -3,5 +3,5 @@ previewable = true
 title       = "A Sole Dict Argument Hugs the Call Paren"
 
 description = '''
-A dict handed to a call as its only argument hugs the call paren, its entries one per line at the call's item-indent and the `}` closing against the call. `call-layout` leaves the single-argument call inline rather than exploding it, so the dict opens on the call line itself.
+A dict handed to a call as its only argument hugs the call paren, its entries one per line at the call's item-indent and the `}` closing against the call. **`call-layout` leaves the single-argument call inline rather than exploding it**, so the dict opens on the call line itself.
 '''

@@ -240,10 +240,7 @@ impl<'a> Layouter<'a> {
             }
             return self.joined_if_fits(expr, column);
         }
-        if !is_layoutable(expr) {
-            return None;
-        }
-        if self.source.intersects_comment(range) {
+        if !is_layoutable(expr) || self.source.intersects_comment(range) {
             return None;
         }
         let expandable = requires_expand(expr);

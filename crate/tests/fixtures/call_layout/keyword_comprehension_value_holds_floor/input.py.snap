@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/call_layout/keyword_comprehension_value_holds_floor/input.py
+---
+configure(
+    name="x",
+    other=2,
+    more=7,
+    picks=[
+    value
+    for value in source
+    if value
+]
+)

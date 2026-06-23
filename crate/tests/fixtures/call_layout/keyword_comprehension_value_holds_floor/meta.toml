@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Comprehension Keyword Value Holds the Floor"
+
+description = '''
+A call explodes to one keyword per line while one keyword carries a multi-line list comprehension. The comprehension is no collection literal, so `call-layout` leaves its body at the source indentation rather than re-indenting it to the keyword column, holding it at the safe floor.
+'''
