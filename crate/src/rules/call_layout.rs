@@ -74,7 +74,7 @@ impl Exploder<'_> {
     /// same text. `None` leaves the call inline.
     fn explode_args(&self, call: &ExprCall, indent: usize) -> Option<String> {
         let arguments = &call.arguments;
-        if arguments.args.len() + arguments.keywords.len() <= self.cap {
+        if arguments.len() <= self.cap {
             return None;
         }
         if self.source.intersects_comment(arguments.inner_range()) {
@@ -88,7 +88,7 @@ impl Exploder<'_> {
         }
         let item_indent = indent + INDENT_STEP;
         let last = keywords.args.len() - 1;
-        let trailing = self.source.trailing_comma(call.arguments.range()).is_some();
+        let trailing = self.source.trailing_comma(arguments.range()).is_some();
         let out = explode_parens(
             self.source.newline_str(),
             indent,
