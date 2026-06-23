@@ -6,11 +6,7 @@ use std::num::NonZeroUsize;
 use regex_lite::Regex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use super::de::{
-    deserialize_max_atomics_per_line, deserialize_max_inline_args,
-    deserialize_max_inline_dict_entries, deserialize_max_inline_params, deserialize_regex,
-    serialize_regex,
-};
+use super::de::{deserialize_optional_cap, deserialize_regex, serialize_regex};
 
 /// Alignment-rule config shared by every rule that aligns a token
 /// across consecutive lines. `max_shift` caps how far a row may shift
@@ -101,21 +97,20 @@ impl Default for CacheConfig {
 
 /// Configuration for the `call_layout` rule.
 ///
-/// `max_inline_args` caps the count threshold. A positive integer
-/// enforces the cap. `false` disables the count trigger.
+/// `max_args` caps the count threshold. A positive integer enforces the
+/// cap. `false` disables the count trigger.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CallLayoutConfig {
     pub enabled: bool,
-    #[serde(deserialize_with = "deserialize_max_inline_args")]
-    pub max_inline_args: Option<NonZeroUsize>,
+    pub max_args: InlineBudget,
 }
 
 impl Default for CallLayoutConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            max_inline_args: NonZeroUsize::new(3),
+            max_args: InlineBudget(NonZeroUsize::new(3)),
         }
     }
 }
@@ -125,24 +120,22 @@ impl Default for CallLayoutConfig {
 /// `collapse`, `explode`, and `wrap_dict_entries` each gate one shape
 /// move and default `true`. `collapse` joins a fitting multi-line
 /// literal, subscript, or dict key back to one line. `explode` drives
-/// every expansion, the width-driven spread and the
-/// `max_inline_dict_entries` count trigger alike, so `false` leaves the
-/// count cap inert. `wrap_dict_entries` breaks an over-wide
-/// `key: value` at its `:` and hangs the value beneath.
+/// every expansion, the width-driven spread and the `max_dict_entries`
+/// count trigger alike, so `false` leaves the count cap inert.
+/// `wrap_dict_entries` breaks an over-wide `key: value` at its `:` and
+/// hangs the value beneath.
 ///
-/// `max_atomics_per_line` and `max_inline_dict_entries` each take a
-/// positive integer or `false`. The integer sets the cap, and `false`
-/// disables it, leaving width as the only gate.
+/// `max_atomics` and `max_dict_entries` each take a positive integer or
+/// `false`. The integer sets the cap, and `false` disables it, leaving
+/// width as the only gate.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CollectionLayoutConfig {
     pub collapse: bool,
     pub enabled: bool,
     pub explode: bool,
-    #[serde(deserialize_with = "deserialize_max_atomics_per_line")]
-    pub max_atomics_per_line: Option<NonZeroUsize>,
-    #[serde(deserialize_with = "deserialize_max_inline_dict_entries")]
-    pub max_inline_dict_entries: Option<NonZeroUsize>,
+    pub max_atomics: InlineBudget,
+    pub max_dict_entries: InlineBudget,
     pub wrap_dict_entries: bool,
 }
 
@@ -152,8 +145,8 @@ impl Default for CollectionLayoutConfig {
             collapse: true,
             enabled: true,
             explode: true,
-            max_atomics_per_line: NonZeroUsize::new(8),
-            max_inline_dict_entries: NonZeroUsize::new(3),
+            max_atomics: InlineBudget(NonZeroUsize::new(8)),
+            max_dict_entries: InlineBudget(NonZeroUsize::new(3)),
             wrap_dict_entries: true,
         }
     }
@@ -178,6 +171,35 @@ pub enum DocstringStructuredPolicy {
 #[serde(default, rename_all = "kebab-case")]
 pub struct ImportsConfig {
     pub first_party: Vec<String>,
+}
+
+/// An inline-element budget read from a `max-<element>` key and shared
+/// across the layout rules. `Some(n)` caps the element count a construct
+/// holds inline, and `None` lifts the cap so width alone gates the
+/// shape.
+#[derive(Clone, Copy, Debug)]
+pub struct InlineBudget(Option<NonZeroUsize>);
+
+impl InlineBudget {
+    /// The cap as a plain count, `None` when the budget is uncapped.
+    pub(crate) fn cap(self) -> Option<usize> {
+        self.0.map(NonZeroUsize::get)
+    }
+}
+
+impl<'de> Deserialize<'de> for InlineBudget {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(Self(deserialize_optional_cap(deserializer)?))
+    }
+}
+
+impl Serialize for InlineBudget {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self.0 {
+            Some(n) => serializer.serialize_u64(n.get() as u64),
+            None => serializer.serialize_bool(false),
+        }
+    }
 }
 
 /// How far a row may shift to align, read from `max-shift`.
@@ -245,21 +267,20 @@ impl Default for ReassignedConstantsConfig {
 
 /// Configuration for the `signature_layout` rule.
 ///
-/// `max_inline_params` caps the count threshold. A positive integer
-/// enforces the cap. `false` disables the count trigger.
+/// `max_params` caps the count threshold. A positive integer enforces
+/// the cap. `false` disables the count trigger.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SignatureLayoutConfig {
     pub enabled: bool,
-    #[serde(deserialize_with = "deserialize_max_inline_params")]
-    pub max_inline_params: Option<NonZeroUsize>,
+    pub max_params: InlineBudget,
 }
 
 impl Default for SignatureLayoutConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            max_inline_params: NonZeroUsize::new(4),
+            max_params: InlineBudget(NonZeroUsize::new(4)),
         }
     }
 }

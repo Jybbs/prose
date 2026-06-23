@@ -26,11 +26,15 @@ Config {
             collapse: false,
             enabled: false,
             explode: false,
-            max_atomics_per_line: Some(
-                3,
+            max_atomics: InlineBudget(
+                Some(
+                    3,
+                ),
             ),
-            max_inline_dict_entries: Some(
-                5,
+            max_dict_entries: InlineBudget(
+                Some(
+                    5,
+                ),
             ),
             wrap_dict_entries: false,
         },
@@ -39,8 +43,10 @@ Config {
         },
         call_layout: CallLayoutConfig {
             enabled: false,
-            max_inline_args: Some(
-                6,
+            max_args: InlineBudget(
+                Some(
+                    6,
+                ),
             ),
         },
         group_imports: ToggleOnly {
@@ -91,7 +97,9 @@ Config {
         },
         signature_layout: SignatureLayoutConfig {
             enabled: false,
-            max_inline_params: None,
+            max_params: InlineBudget(
+                None,
+            ),
         },
         import_layout: ToggleOnly {
             enabled: false,

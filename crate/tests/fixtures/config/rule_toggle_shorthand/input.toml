@@ -1,4 +1,4 @@
 [rules]
 align-equals     = { max-shift = 4 }
 alphabetize      = false
-signature-layout = { max-inline-params = false }
+signature-layout = { max-params = false }

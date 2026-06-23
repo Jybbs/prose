@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/composition/explode_false_freezes_dict_arg/input.py
+---
+configure(
+    more     = 7,
+    name     = "x",
+    other    = 2,
+    settings = {"alpha": 1, "beta": 2, "delta": 4, "gamma": 3}
+)

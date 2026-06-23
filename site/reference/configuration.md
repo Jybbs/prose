@@ -14,7 +14,7 @@ code-line-length = 88
 [rules]
 align-colons      = { max-shift = false }
 align-equals      = false
-collection-layout = { max-atomics-per-line = 3 }
+collection-layout = { max-atomics = 3 }
 ```
 
 A bare `false` disables a rule, an inline table sets its facets while leaving the rule enabled, and a rule you do not name stays on at its default. Under `pyproject.toml` the table reads `[tool.prose.rules]`, and a rule with several facets may prefer the expanded `[rules.<rule>]` sub-table *(`[tool.prose.rules.<rule>]` in the manifest)*, which carries the same settings as the inline form.
@@ -85,15 +85,16 @@ The `[rules]` table holds one entry per rule you change. A bare bool is the shor
 | `sort-definitions` | bool | [[alphabetize]] | `true` | Reorder class and function definitions alphabetically, holding each behind any sibling it names at evaluation time. `false` freezes definitions in source order while other surfaces still sort |
 | `sort-docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within Title-case-headed docstring sections, parameter entries mirroring the signature as the rule leaves it and stragglers alphabetizing below. Set `false` to keep narrative-curated entry order while still sorting every other surface |
 | `sort-dunder-lists` | bool | [[alphabetize]] | `true` | Reorder the string items inside `__all__` and `__slots__`. `false` keeps a hand-curated public-API order |
+| `collapse` | bool | [[collection-layout]] | `true` | Join a fitting multi-line literal, subscript, or dict key back to one line. `false` freezes those shapes where they sit |
+| `explode` | bool | [[collection-layout]] | `true` | Expand an overflowing or over-count collection to one entry per line. `false` suppresses every expansion and leaves the count cap inert |
+| `max-atomics` | positive int \| `false` | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. `false` removes the cap and packs by width alone |
+| `max-dict-entries` | positive int \| `false` | [[collection-layout]] | `3` | Expand a dict once its entry count exceeds the cap, whatever its width. `false` disables the count trigger |
+| `wrap-dict-entries` | bool | [[collection-layout]] | `true` | Break an over-wide `key: value` at its `:` and hang the value beneath. `false` leaves the oversized entry on one line |
+| `max-args` | positive int \| `false` | [[call-layout]] | `3` | Explode a call to one keyword argument per line once its argument count exceeds the cap. `false` disables the count trigger and leaves every call inline |
+| `max-params` | positive int \| `false` | [[signature-layout]] | `4` | Expand a signature to one parameter per line once its parameter count exceeds the cap. `false` disables the count trigger and leaves only the `code-line-length` budget |
 | `allow` | list of module names | [[bare-imports]] | `[]` | Modules whose bare-import form is preserved whatever their attribute count |
 | `exempt-aliased` | bool | [[bare-imports]] | `true` | Exempt every aliased bare import (*`import x as y`*) from the rule |
 | `max-attributes` | positive int | [[bare-imports]] | `4` | Distinct-attribute count at or below which an unaliased bare import is flagged |
-| `max-inline-args` | positive int \| `false` | [[call-layout]] | `3` | Explode a call to one keyword argument per line once its argument count exceeds the cap. `false` disables the count trigger and leaves every call inline |
-| `collapse` | bool | [[collection-layout]] | `true` | Join a fitting multi-line literal, subscript, or dict key back to one line. `false` freezes those shapes where they sit |
-| `explode` | bool | [[collection-layout]] | `true` | Expand an overflowing or over-count collection to one entry per line. `false` suppresses every expansion and leaves the count cap inert |
-| `max-atomics-per-line` | positive int \| `false` | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. `false` removes the cap and packs by width alone |
-| `max-inline-dict-entries` | positive int \| `false` | [[collection-layout]] | `3` | Expand a dict once its entry count exceeds the cap, whatever its width. `false` disables the count trigger |
-| `wrap-dict-entries` | bool | [[collection-layout]] | `true` | Break an over-wide `key: value` at its `:` and hang the value beneath. `false` leaves the oversized entry on one line |
 | `allow` | list of names | [[reassigned-constants]] | `[]` | Module-level names exempted from the lint |
 | `allow-pattern` | regex | [[single-use-variables]] | `"^_"` | Binding names exempted from the lint |
 
@@ -111,7 +112,7 @@ Some rules answer a single yes-or-no question with no parameters worth tuning, s
 
 ### Rule-Specific Facets
 
-Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the facet shaped for its question. [[alphabetize]] takes `group-methods`, `sort-definitions`, `sort-docstring-entries`, and `sort-dunder-lists` to switch its sort passes on and off independently, [[bare-imports]] takes an `allow` list of modules whose bare-import form is preserved alongside an `exempt-aliased` toggle for the alias exemption and a `max-attributes` cap on the distinct-attribute count that draws the lint, [[call-layout]] takes `max-inline-args` to explode a call past an argument count, [[collection-layout]] takes the `collapse`, `explode`, and `wrap-dict-entries` facets to switch its shape moves on and off independently, plus `max-atomics-per-line` to cap the inline-collection budget and `max-inline-dict-entries` to expand a dict past an entry count, [[reassigned-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
+Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the facet shaped for its question. [[alphabetize]] takes `group-methods`, `sort-definitions`, `sort-docstring-entries`, and `sort-dunder-lists` to switch its sort passes on and off independently, [[bare-imports]] takes an `allow` list of modules whose bare-import form is preserved alongside an `exempt-aliased` toggle for the alias exemption and a `max-attributes` cap on the distinct-attribute count that draws the lint, [[collection-layout]] takes the `collapse`, `explode`, and `wrap-dict-entries` facets to switch its shape moves on and off independently, plus `max-atomics` to cap the inline-collection budget and `max-dict-entries` to expand a dict past an entry count, [[call-layout]] takes `max-args` to explode a call past an argument count, [[signature-layout]] takes `max-params` to expand a signature past a parameter count, [[reassigned-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
 
 ## Key Naming
 

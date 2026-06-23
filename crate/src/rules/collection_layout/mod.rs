@@ -5,19 +5,19 @@
 //! collection or subscript dict key, so the alignment rules meet a
 //! single-line member rather than one stranded across a break.
 //! Single-line literals whose inline form overflows expand to one
-//! entry per line. A dict holding more entries than
-//! `max_inline_dict_entries` expands whatever its width, taking any
-//! enclosing collection with it. A dict entry whose `key: value`
-//! width overflows at the item-indent column breaks at `:` and hangs
-//! the value at `item_indent + INDENT_STEP`. Comprehensions and any
-//! literal whose source range contains a comment are out of scope.
+//! entry per line. A dict holding more entries than `max_dict_entries`
+//! expands whatever its width, taking any enclosing collection with it.
+//! A dict entry whose `key: value` width overflows at the item-indent
+//! column breaks at `:` and hangs the value at `item_indent +
+//! INDENT_STEP`. Comprehensions and any literal whose source range
+//! contains a comment are out of scope.
 //!
 //! Both fit checks stay invariant to the alignment that runs later: a
 //! dict entry measures at its canonical `": "` rather than an
 //! `align_colons`-padded gap, and a collapse tests against the column
 //! `align_equals` shifts the value's `=` to.
 
-use std::{collections::HashMap, num::NonZeroUsize};
+use std::collections::HashMap;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{helpers::any_over_body, visitor::Visitor};
@@ -42,8 +42,8 @@ pub(crate) struct CollectionLayout {
     code_line_length: usize,
     collapse: bool,
     explode: bool,
-    max_atomics_per_line: usize,
-    max_inline_dict_entries: Option<usize>,
+    max_atomics: usize,
+    max_dict_entries: Option<usize>,
     wrap_dict_entries: bool,
 }
 
@@ -60,10 +60,8 @@ impl CollectionLayout {
             code_line_length: config.code_width(),
             collapse: rules.collapse,
             explode: rules.explode,
-            max_atomics_per_line: rules
-                .max_atomics_per_line
-                .map_or(usize::MAX, NonZeroUsize::get),
-            max_inline_dict_entries: rules.max_inline_dict_entries.map(NonZeroUsize::get),
+            max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
+            max_dict_entries: rules.max_dict_entries.cap(),
             wrap_dict_entries: rules.wrap_dict_entries,
         }
     }
@@ -75,7 +73,7 @@ impl Rule for CollectionLayout {
         // The count cap rides the `explode` facet, so a cleared `explode`
         // leaves no tripping dicts and the cap goes inert. Precomputed once
         // so the per-node check is a containment scan rather than a re-walk.
-        let count_cap = self.max_inline_dict_entries.filter(|_| self.explode);
+        let count_cap = self.max_dict_entries.filter(|_| self.explode);
         let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
             let mut ranges = Vec::new();
             any_over_body(body, |expr| {
@@ -94,7 +92,7 @@ impl Rule for CollectionLayout {
             collapse: self.collapse,
             edits: Vec::new(),
             explode: self.explode,
-            max_atomics_per_line: self.max_atomics_per_line,
+            max_atomics: self.max_atomics,
             newline: source.newline_str(),
             reservations,
             source,

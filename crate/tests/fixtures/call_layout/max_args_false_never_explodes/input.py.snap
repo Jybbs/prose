@@ -1,6 +1,6 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/call_layout/max_inline_args_false_never_explodes/input.py
+input_file: tests/fixtures/call_layout/max_args_false_never_explodes/input.py
 ---
 response = fetch(headers=h, method=m, params=p, url=u)

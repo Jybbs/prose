@@ -4,5 +4,5 @@ previewable = true
 title       = "A Call at the Threshold Stays Inline"
 
 description = '''
-A three-argument call sits at the default `max-inline-args` cap and reads fine on one line, so the rule leaves it untouched.
+A three-argument call sits at the default `max-args` cap and reads fine on one line, so the rule leaves it untouched.
 '''

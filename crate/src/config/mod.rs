@@ -34,7 +34,7 @@ mod script;
 mod source;
 
 pub(crate) use de::deserialize_rule;
-use de::{deserialize_import_line_length, deserialize_prose};
+use de::{deserialize_optional_cap, deserialize_prose};
 pub(crate) use load::config_rel_paths;
 use load::{ConfigNotice, emit_notice, prose_table_from_str, walk_prose_table};
 pub use schema::*;
@@ -57,7 +57,7 @@ pub struct Config {
     pub code_line_length: Option<NonZeroUsize>,
     pub docstring_line_length: Option<NonZeroUsize>,
     pub docstring_structured_policy: DocstringStructuredPolicy,
-    #[serde(deserialize_with = "deserialize_import_line_length")]
+    #[serde(deserialize_with = "deserialize_optional_cap")]
     pub import_line_length: Option<NonZeroUsize>,
     pub imports: ImportsConfig,
     pub rules: RuleConfigs,

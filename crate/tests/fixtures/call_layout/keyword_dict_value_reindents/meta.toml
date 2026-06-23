@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "Re-Indent an Exploded Dict Value to the Keyword Column"
+
+description = '''
+A call explodes to one keyword per line while one keyword already carries a dict value spread one entry per line. That block re-indents so its entries sit at the keyword's item-indent plus a step and its `}` at the keyword column, rather than splicing in at the dict's original indentation.
+'''
