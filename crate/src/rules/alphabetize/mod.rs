@@ -66,7 +66,7 @@ impl Alphabetize {
         let alphabetize = &config.rules.alphabetize;
         Self {
             first_party: config.first_party(),
-            group_imports: config.rules.group_imports.enabled,
+            group_imports: config.group_imports_enabled(),
             group_methods: alphabetize.group_methods,
             sort_definitions: alphabetize.sort_definitions,
             sort_docstring_entries: alphabetize.sort_docstring_entries,
