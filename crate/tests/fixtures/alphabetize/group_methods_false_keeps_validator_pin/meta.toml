@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Validator Pin Holds Even With Method Grouping Off"
+
+description = '''
+`group-methods = false` reaches only the method sort key, so the `class_pins_methods` guard still freezes a validator-shaped class. The methods hold their source order while the fields sort required-before-optional.
+'''

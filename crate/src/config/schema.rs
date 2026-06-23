@@ -27,21 +27,32 @@ impl Default for AlignmentConfig {
     }
 }
 
-/// Configuration for the `alphabetize` rule. `sort_docstring_entries`
-/// gates the Google-style entry-section reorder pass, leaving the
-/// AST-level sorts to apply on their own when set `false`.
+/// Configuration for the `alphabetize` rule. Each facet gates one sort
+/// pass and defaults `true`. `group_methods` keys methods on
+/// `(group, name)` for the dunder-property-private-public grouping,
+/// dropping to `name` alone when `false`. `sort_definitions` reorders
+/// class and function definitions, freezing them in source order when
+/// `false`. `sort_docstring_entries` gates the Google-style
+/// entry-section reorder. `sort_dunder_lists` reorders the `__all__`
+/// and `__slots__` string lists.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlphabetizeConfig {
     pub enabled: bool,
+    pub group_methods: bool,
+    pub sort_definitions: bool,
     pub sort_docstring_entries: bool,
+    pub sort_dunder_lists: bool,
 }
 
 impl Default for AlphabetizeConfig {
     fn default() -> Self {
         Self {
             enabled: true,
+            group_methods: true,
+            sort_definitions: true,
             sort_docstring_entries: true,
+            sort_dunder_lists: true,
         }
     }
 }

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Definitions Freeze in Source Order When Sorting Is Off"
+
+description = '''
+With `sort-definitions = false`, class and function definitions **freeze in source order**, holding back the rule's most disruptive move, while a class's data fields still sort required-before-optional.
+'''

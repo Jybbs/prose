@@ -29,7 +29,7 @@ impl BareImports {
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.bare_imports;
         Self {
-            allow: rules.allow.iter().cloned().collect(),
+            allow: Config::allow_set(&rules.allow),
             exempt_aliased: rules.exempt_aliased,
             max_attributes: rules.max_attributes,
         }

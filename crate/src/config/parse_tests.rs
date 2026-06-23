@@ -32,6 +32,20 @@ fn max_params_cap(config: &Config) -> Option<usize> {
 }
 
 #[test]
+fn alphabetize_facet_false_in_sub_table_leaves_siblings_default() {
+    let config =
+        Config::from_pyproject_str("[tool.prose.rules.alphabetize]\ngroup-methods = false\n")
+            .expect("parses");
+
+    let rules = &config.rules.alphabetize;
+    assert!(!rules.group_methods);
+    assert!(rules.enabled);
+    assert!(rules.sort_definitions);
+    assert!(rules.sort_docstring_entries);
+    assert!(rules.sort_dunder_lists);
+}
+
+#[test]
 fn collection_layout_facet_false_in_sub_table_leaves_siblings_default() {
     let config =
         Config::from_pyproject_str("[tool.prose.rules.collection-layout]\ncollapse = false\n")
@@ -295,7 +309,10 @@ fn rules_bare_bool_false_leaves_other_knobs_default() {
         Config::from_pyproject_str("[tool.prose.rules]\nalphabetize = false\n").expect("parses");
 
     assert!(!config.rules.alphabetize.enabled);
+    assert!(config.rules.alphabetize.group_methods);
+    assert!(config.rules.alphabetize.sort_definitions);
     assert!(config.rules.alphabetize.sort_docstring_entries);
+    assert!(config.rules.alphabetize.sort_dunder_lists);
 }
 
 #[rstest]

@@ -17,7 +17,7 @@
 //! `[[tool.prose.overrides]]` globs and a standalone script's PEP 723
 //! block onto that base, lives in [`ConfigSource`].
 
-use std::{num::NonZeroUsize, path::Path};
+use std::{collections::HashSet, num::NonZeroUsize, path::Path};
 
 use ruff_python_ast::PythonVersion;
 use serde::{Deserialize, Serialize};
@@ -149,6 +149,10 @@ impl Config {
         }
     }
 
+    pub(crate) fn allow_set(allow: &[String]) -> HashSet<String> {
+        allow.iter().cloned().collect()
+    }
+
     pub(crate) fn code_width(&self) -> usize {
         self.code_line_length
             .expect("Config::default synthesizes Some(88)")
@@ -163,6 +167,10 @@ impl Config {
 
     pub(crate) fn first_party(&self) -> Vec<String> {
         self.imports.first_party.clone()
+    }
+
+    pub(crate) fn group_imports_enabled(&self) -> bool {
+        self.rules.group_imports.enabled
     }
 
     /// The budget governing import wrapping, falling back to the code
