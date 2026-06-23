@@ -1,3 +1,0 @@
-[docs]
-title = "Align assignments in a code cell"
-description = "A code cell's assignment pair aligns, leaving the markdown cell and the cell's output untouched."

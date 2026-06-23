@@ -1,3 +1,0 @@
-[docs]
-title = "Pass over a non-Python notebook"
-description = "An R notebook is left untouched, the way an excluded path is skipped."

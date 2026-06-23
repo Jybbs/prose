@@ -19,9 +19,6 @@ fn fixtures() {
             .expect("fixture filename is UTF-8");
 
         let (config, harness) = common::fixture_inputs(path);
-        if harness.cli_only {
-            return;
-        }
         let pipeline = common::build_pipeline(domain, &config, &harness);
         let source = Source::from_path(path).expect("fixture input reads and parses");
 

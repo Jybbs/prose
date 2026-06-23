@@ -1,3 +1,7 @@
 [docs]
-title = "Hold reordering out across cells"
-description = "Two cells each open with an import, and the sibling-reordering rules stay out so neither cell's import migrates across the cell boundary."
+previewable = false
+title       = "Hold Reordering Out Across Cells"
+
+description = '''
+Two cells each open with an import, and **the sibling-reordering rules stay out so neither cell's import migrates across the cell boundary**.
+'''

@@ -1,3 +1,7 @@
 [docs]
-title = "Step over IPython magics"
-description = "A cell opening with a line magic and a shell escape parses in IPython mode, where the rules step over the magics and align the assignments below."
+previewable = false
+title       = "Step Over IPython Magics"
+
+description = '''
+A cell opening with a line magic and a shell escape parses in IPython mode, where **the rules step over the magics and align the assignments below**.
+'''

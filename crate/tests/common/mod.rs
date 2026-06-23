@@ -13,11 +13,6 @@ use similar::TextDiff;
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
 pub(crate) struct HarnessOptions {
-    /// Exercised only by the CLI exit-code tests, so the snapshot
-    /// harness skips it and it carries no `input.*.snap`. A notebook
-    /// whose cells are not valid Python (an R kernel, a broken cell)
-    /// sets this, since the harness parses cells as Python.
-    pub(crate) cli_only: bool,
     rules: Vec<RuleId>,
     pub(crate) skip_ruff_coexistence: bool,
 }
@@ -26,8 +21,8 @@ pub(crate) struct HarnessOptions {
 ///
 /// `composition` fixtures pin a named subset of rules and the sidecar's
 /// `[harness] rules = [...]` field selects exactly that subset, so the
-/// snapshot reflects only the listed rules. `notebook`, `thematic`, and
-/// `suppression` fixtures exercise the full default pipeline.
+/// snapshot reflects only the listed rules. `notebook`, `suppression`,
+/// and `thematic` fixtures exercise the full default pipeline.
 /// `binding_analysis` and `identity` run an empty pipeline because their
 /// fixtures pin parser and no-op behavior. Every other directory matches
 /// a rule slug and runs that rule in isolation.

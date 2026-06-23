@@ -10,14 +10,47 @@ use assert_cmd::{Command, assert::Assert};
 use rstest::rstest;
 use tempfile::{TempDir, tempdir};
 
-/// Notebook fixtures for the CLI-surface tests, all drawn from the
-/// shared fixture tree. `ALIGNS` and `EMPTY` are snapshot fixtures;
-/// `NON_PYTHON` (an R notebook) and `UNPARSEABLE_CELL` (a broken cell)
-/// are the `cli_only` cases the snapshot harness skips.
-const ALIGNS: &str = include_str!("fixtures/notebook/aligns/input.ipynb");
+/// Snapshot notebook fixtures the CLI tests reuse from the shared
+/// tree, `ALIGNS` for the rewrite path and `EMPTY` for the no-op.
+const ALIGNS: &str = include_str!("fixtures/notebook/code_cell_aligns/input.ipynb");
 const EMPTY: &str = include_str!("fixtures/notebook/empty/input.ipynb");
-const NON_PYTHON: &str = include_str!("fixtures/notebook/non_python/input.ipynb");
-const UNPARSEABLE_CELL: &str = include_str!("fixtures/notebook/unparseable_cell/input.ipynb");
+
+/// An R-kernel notebook the formatter passes over, the way an excluded
+/// path is skipped.
+const NON_PYTHON: &str = r#"{
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": ["x <- 1"]
+    }
+  ],
+  "metadata": {
+    "kernelspec": {"language": "R", "name": "ir"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
+/// A Python notebook whose sole code cell does not parse.
+const UNPARSEABLE_CELL: &str = r#"{
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": ["def f("]
+    }
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
 
 /// A `[tool.prose]` table disabling the rule the shared fixture
 /// content fires, so a file governed by it checks clean.

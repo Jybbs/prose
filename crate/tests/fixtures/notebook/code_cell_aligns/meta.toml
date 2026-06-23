@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Align Assignments in a Code Cell"
+
+description = '''
+A code cell's assignment pair aligns, **leaving the markdown cell and the cell's saved output untouched**.
+'''

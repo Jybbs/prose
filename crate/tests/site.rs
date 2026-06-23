@@ -12,8 +12,6 @@ use prose::pipeline::Pipeline;
 use regex_lite::Regex;
 use serde::Deserialize;
 
-mod common;
-
 /// The `[docs]` block every fixture case carries. `title` and
 /// `description` document the case, `previewable` gates whether it
 /// renders on the docs site, and `canonical = true` marks the one lead
@@ -80,13 +78,8 @@ fn every_case_directory_is_well_formed() {
             if has_py && !case_dir.join("input.py.snap").is_file() {
                 violations.push(format!("{id}: input.py without its input.py.snap"));
             }
-            if has_ipynb {
-                let cli_only = common::fixture_inputs(&case_dir.join("input.ipynb"))
-                    .1
-                    .cli_only;
-                if !cli_only && !case_dir.join("input.ipynb.snap").is_file() {
-                    violations.push(format!("{id}: input.ipynb without its input.ipynb.snap"));
-                }
+            if has_ipynb && !case_dir.join("input.ipynb.snap").is_file() {
+                violations.push(format!("{id}: input.ipynb without its input.ipynb.snap"));
             }
             if has_toml && !case_dir.join("config.snap").is_file() {
                 violations.push(format!("{id}: input.toml without its config.snap"));
