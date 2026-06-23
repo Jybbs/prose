@@ -1,7 +1,7 @@
 ---
-source: tests/config_parsing.rs
+source: crate/tests/config_parsing.rs
 expression: config
-input_file: tests/fixtures/config/lone_key_rest_default/input.toml
+input_file: crate/tests/fixtures/config/lone_key_rest_default/input.toml
 ---
 Config {
     cache: CacheConfig {
@@ -26,11 +26,15 @@ Config {
             collapse: true,
             enabled: true,
             explode: true,
-            max_atomics_per_line: Some(
-                8,
+            max_atomics: InlineBudget(
+                Some(
+                    8,
+                ),
             ),
-            max_inline_dict_entries: Some(
-                3,
+            max_dict_entries: InlineBudget(
+                Some(
+                    3,
+                ),
             ),
             wrap_dict_entries: true,
         },
@@ -39,8 +43,10 @@ Config {
         },
         call_layout: CallLayoutConfig {
             enabled: true,
-            max_inline_args: Some(
-                3,
+            max_args: InlineBudget(
+                Some(
+                    3,
+                ),
             ),
         },
         group_imports: ToggleOnly {
@@ -51,7 +57,10 @@ Config {
         },
         alphabetize: AlphabetizeConfig {
             enabled: true,
+            group_methods: true,
+            sort_definitions: true,
             sort_docstring_entries: true,
+            sort_dunder_lists: true,
         },
         strip_trailing_commas: ToggleOnly {
             enabled: true,
@@ -85,8 +94,10 @@ Config {
         },
         signature_layout: SignatureLayoutConfig {
             enabled: true,
-            max_inline_params: Some(
-                4,
+            max_params: InlineBudget(
+                Some(
+                    4,
+                ),
             ),
         },
         import_layout: ToggleOnly {

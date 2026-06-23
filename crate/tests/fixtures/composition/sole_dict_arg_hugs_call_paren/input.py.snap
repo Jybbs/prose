@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/composition/sole_dict_arg_hugs_call_paren/input.py
+---
+foo({
+    "alpha" : 1,
+    "beta"  : 2,
+    "delta" : 4,
+    "gamma" : 3
+})

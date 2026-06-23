@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize/group_methods_false_keeps_validator_pin/input.py
+---
+from pydantic import BaseModel, field_validator
+
+
+class Posting(BaseModel):
+    name: str
+    title: str
+
+    def display(self):
+        return f"{self.name}: {self.title}"
+
+    @field_validator("name")
+    def check_name(cls, v):
+        return v.lower()

@@ -30,13 +30,7 @@ pub(crate) struct ReassignedConstants {
 impl ReassignedConstants {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            allow: config
-                .rules
-                .reassigned_constants
-                .allow
-                .iter()
-                .cloned()
-                .collect(),
+            allow: Config::allow_set(&config.rules.reassigned_constants.allow),
         }
     }
 }

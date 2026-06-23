@@ -55,15 +55,22 @@ use self::{
 pub(crate) struct Alphabetize {
     first_party: Vec<String>,
     group_imports: bool,
+    group_methods: bool,
+    sort_definitions: bool,
     sort_docstring_entries: bool,
+    sort_dunder_lists: bool,
 }
 
 impl Alphabetize {
     pub(crate) fn from_config(config: &Config) -> Self {
+        let alphabetize = &config.rules.alphabetize;
         Self {
             first_party: config.first_party(),
-            group_imports: config.rules.group_imports.enabled,
-            sort_docstring_entries: config.rules.alphabetize.sort_docstring_entries,
+            group_imports: config.group_imports_enabled(),
+            group_methods: alphabetize.group_methods,
+            sort_definitions: alphabetize.sort_definitions,
+            sort_docstring_entries: alphabetize.sort_docstring_entries,
+            sort_dunder_lists: alphabetize.sort_dunder_lists,
         }
     }
 }
@@ -74,7 +81,7 @@ impl Rule for Alphabetize {
         if body.is_empty() {
             return Vec::new();
         }
-        let (mut leaf_edits, param_docs) = collect_leaf_edits(source);
+        let (mut leaf_edits, param_docs) = collect_leaf_edits(source, self.sort_dunder_lists);
         if self.sort_docstring_entries {
             leaf_edits.extend(collect_docstring_entry_edits(source, &param_docs));
             leaf_edits.sort_unstable();
@@ -83,7 +90,9 @@ impl Rule for Alphabetize {
             defer_annotations: defers_annotations(body),
             first_party: &self.first_party,
             group_imports: self.group_imports,
+            group_methods: self.group_methods,
             leaf_edits: &leaf_edits,
+            sort_definitions: self.sort_definitions,
             source,
         };
         let (body_text, body_span) =
@@ -112,7 +121,9 @@ struct RewriteCtx<'a> {
     defer_annotations: bool,
     first_party: &'a [String],
     group_imports: bool,
+    group_methods: bool,
     leaf_edits: &'a [Edit],
+    sort_definitions: bool,
     source: &'a Source,
 }
 
@@ -193,6 +204,8 @@ fn rewrite_body<'a>(
         defer_annotations,
         first_party,
         group_imports,
+        group_methods,
+        sort_definitions,
         source,
         ..
     } = ctx;
@@ -208,20 +221,23 @@ fn rewrite_body<'a>(
         if scope != BodyScope::Function {
             for section in sections.ranges() {
                 let members = &body[section.clone()];
-                permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
-                    s.as_class_def_stmt().map(|c| {
-                        let name = c.name.as_str();
-                        (name, name)
-                    })
-                });
+                if sort_definitions {
+                    permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
+                        s.as_class_def_stmt().map(|c| {
+                            let name = c.name.as_str();
+                            (name, name)
+                        })
+                    });
+                }
                 if in_class {
                     permute_class_assigns(&mut order, body, section.clone(), defer_annotations);
                 }
-                if !(in_class && class_pins_methods(members)) {
+                if sort_definitions && !(in_class && class_pins_methods(members)) {
                     permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
                         s.as_function_def_stmt().map(|f| {
                             let name = f.name.as_str();
-                            (name, (method_group(f), name))
+                            let group = if group_methods { method_group(f) } else { 0 };
+                            (name, (group, name))
                         })
                     });
                 }

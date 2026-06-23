@@ -42,7 +42,7 @@ impl BandConstants {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),
-            group_imports: config.rules.group_imports.enabled,
+            group_imports: config.group_imports_enabled(),
             target_version: config.target_version,
         }
     }

@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize/group_methods_false_sorts_by_name/input.py
+---
+class Report:
+    def __len__(self):
+        pass
+
+    def archive(self):
+        pass
+
+    @property
+    def total(self):
+        pass
