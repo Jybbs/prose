@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/notebook/aligns/input.ipynb
+---
+x  = 1
+yy = 2

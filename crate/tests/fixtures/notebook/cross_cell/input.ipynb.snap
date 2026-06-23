@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/notebook/cross_cell/input.ipynb
+---
+import os
+b = 1
+import abc
+a = b + 1

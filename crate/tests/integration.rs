@@ -7,16 +7,23 @@ use ruff_python_formatter::{PyFormatOptions, format_module_source};
 
 #[test]
 fn fixtures() {
-    insta::glob!("fixtures/**/input.py", |path| {
+    insta::glob!("fixtures/**/input.{py,ipynb}", |path| {
         let domain = common::domain_name(path);
         let case = common::case_name(path);
         if domain == "binding_analysis" {
             return;
         }
+        let input_name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .expect("fixture filename is UTF-8");
 
         let (config, harness) = common::fixture_inputs(path);
+        if harness.cli_only {
+            return;
+        }
         let pipeline = common::build_pipeline(domain, &config, &harness);
-        let source = Source::from_path(path).expect("fixture input reads and parses as Python");
+        let source = Source::from_path(path).expect("fixture input reads and parses");
 
         let (formatted, _) = pipeline
             .run(source)
@@ -24,18 +31,24 @@ fn fixtures() {
         let output = formatted.text();
 
         common::in_snapshot_dir(path, || {
-            insta::assert_snapshot!("input.py", output);
+            insta::assert_snapshot!(input_name, output);
         });
 
-        let reparsed = output
-            .parse::<Source>()
-            .expect("formatter output reparses as Python");
-        let (second, _) = pipeline.run(reparsed).expect("second pass succeeds");
-        assert!(
-            second.text() == output,
-            "fixture `{domain}/{case}` not idempotent on second pass:\n{}",
-            common::unified_diff(output, second.text()),
-        );
+        // A module reparses from its own formatted text. A notebook's
+        // cell boundaries do not survive a bare reparse of that
+        // concatenated text, so its round-trip idempotency is pinned by
+        // the CLI tests rather than here.
+        if domain != "notebook" {
+            let reparsed = output
+                .parse::<Source>()
+                .expect("formatter output reparses as Python");
+            let (second, _) = pipeline.run(reparsed).expect("second pass succeeds");
+            assert!(
+                second.text() == output,
+                "fixture `{domain}/{case}` not idempotent on second pass:\n{}",
+                common::unified_diff(output, second.text()),
+            );
+        }
 
         let fresh_source =
             Source::from_path(path).expect("fixture input re-reads for determinism check");

@@ -10,6 +10,15 @@ use assert_cmd::{Command, assert::Assert};
 use rstest::rstest;
 use tempfile::{TempDir, tempdir};
 
+/// Notebook fixtures for the CLI-surface tests, all drawn from the
+/// shared fixture tree. `ALIGNS` and `EMPTY` are snapshot fixtures;
+/// `NON_PYTHON` (an R notebook) and `UNPARSEABLE_CELL` (a broken cell)
+/// are the `cli_only` cases the snapshot harness skips.
+const ALIGNS: &str = include_str!("fixtures/notebook/aligns/input.ipynb");
+const EMPTY: &str = include_str!("fixtures/notebook/empty/input.ipynb");
+const NON_PYTHON: &str = include_str!("fixtures/notebook/non_python/input.ipynb");
+const UNPARSEABLE_CELL: &str = include_str!("fixtures/notebook/unparseable_cell/input.ipynb");
+
 /// A `[tool.prose]` table disabling the rule the shared fixture
 /// content fires, so a file governed by it checks clean.
 const SUPPRESSING_PYPROJECT: &str = "[tool.prose.rules]\nalign-equals = false\n";
@@ -762,6 +771,151 @@ fn help_exits_clean() {
 #[test]
 fn no_args_prints_help_and_exits_clean() {
     prose().assert().success();
+}
+
+#[test]
+fn notebook_check_reports_the_align_diagnostic() {
+    let (_dir, path) = fixture("nb.ipynb", ALIGNS);
+    let assert = prose()
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let out = stdout_utf8(&assert);
+    assert!(out.contains("align-equals"), "stdout was {out:?}");
+}
+
+#[test]
+fn notebook_check_survives_a_cache_round_trip() {
+    let (_dir, path) = fixture("nb.ipynb", ALIGNS);
+    let (mut cold, cache_dir) = prose_isolated();
+    cold.args(["check"]).arg(&path).assert().code(1);
+    let warm = prose()
+        .args(["--verbose", "check"])
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .code(1);
+    assert!(
+        stderr_utf8(&warm).contains("1 hits"),
+        "the second run should rehydrate from the cache",
+    );
+}
+
+#[test]
+fn notebook_check_validate_reports_the_pending_change() {
+    let (_dir, path) = fixture("nb.ipynb", ALIGNS);
+    prose()
+        .args(["check", "--validate", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(1);
+}
+
+#[test]
+fn notebook_diff_renders_per_cell_hunks() {
+    let (_dir, path) = fixture("nb.ipynb", ALIGNS);
+    let assert = prose()
+        .args(["format", "--diff", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let stdout = stdout_utf8(&assert);
+    assert!(stdout.contains("cell 1"), "cell header missing: {stdout:?}");
+    assert!(stdout.contains("-x = 1"), "before line missing: {stdout:?}");
+    assert!(stdout.contains("+x  = 1"), "after line missing: {stdout:?}");
+}
+
+#[test]
+fn notebook_discovered_in_a_directory_walk() {
+    let dir = tempdir().expect("tempdir");
+    write(dir.path().join("nb.ipynb"), ALIGNS).expect("writes");
+    prose()
+        .args(["format", "--no-cache"])
+        .arg(dir.path())
+        .assert()
+        .success();
+    let after = std::fs::read_to_string(dir.path().join("nb.ipynb")).expect("reads");
+    let parsed: serde_json::Value = serde_json::from_str(&after).expect("valid JSON");
+    assert_eq!(parsed["cells"][1]["source"][0], "x  = 1\n");
+}
+
+#[test]
+fn notebook_empty_is_a_clean_no_op() {
+    let (_dir, path) = fixture("nb.ipynb", EMPTY);
+    prose()
+        .args(["format", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .success();
+}
+
+#[test]
+fn notebook_format_is_idempotent() {
+    let (_dir, path) = fixture("nb.ipynb", ALIGNS);
+    let format = || prose().args(["format", "--no-cache"]).arg(&path).assert();
+    format().success();
+    let once = std::fs::read_to_string(&path).expect("reads");
+    format().success();
+    let twice = std::fs::read_to_string(&path).expect("reads");
+    assert_eq!(once, twice);
+}
+
+#[test]
+fn notebook_format_preserves_outputs_and_rewrites_code() {
+    let (_dir, path) = fixture("nb.ipynb", ALIGNS);
+    prose()
+        .args(["format", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .success();
+    let after = std::fs::read_to_string(&path).expect("reads");
+    let parsed: serde_json::Value = serde_json::from_str(&after).expect("valid JSON");
+    assert_eq!(parsed["cells"][1]["source"][0], "x  = 1\n");
+    assert_eq!(parsed["cells"][1]["execution_count"], 3);
+    assert_eq!(parsed["cells"][1]["outputs"][0]["text"][0], "2\n");
+}
+
+#[test]
+fn notebook_malformed_json_exits_parse_error() {
+    let (_dir, path) = fixture("bad.ipynb", "{not valid json");
+    prose()
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(3);
+}
+
+#[test]
+fn notebook_non_python_is_passed_over() {
+    let (_dir, path) = fixture("nb.ipynb", NON_PYTHON);
+    prose()
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .success();
+}
+
+#[test]
+fn notebook_stdin_filename_selects_the_notebook_type() {
+    let assert = prose()
+        .args(["format", "--stdin", "--stdin-filename", "x.ipynb"])
+        .write_stdin(ALIGNS)
+        .assert()
+        .success();
+    let parsed: serde_json::Value =
+        serde_json::from_str(&stdout_utf8(&assert)).expect("valid JSON");
+    assert_eq!(parsed["cells"][1]["source"][0], "x  = 1\n");
+}
+
+#[test]
+fn notebook_unparseable_cell_exits_parse_error() {
+    let (_dir, path) = fixture("nb.ipynb", UNPARSEABLE_CELL);
+    prose()
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(3);
 }
 
 #[test]

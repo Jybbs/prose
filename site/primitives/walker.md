@@ -3,7 +3,7 @@ consumedBy: [cli]
 consumes: [source]
 layer: analysis
 stability: internal
-summary: "Ignore-aware filesystem walker yielding every `.py` / `.pyi` / `.pyw` file under given paths."
+summary: "Ignore-aware filesystem walker yielding every `.py` / `.pyi` / `.pyw` source and `.ipynb` notebook under given paths."
 tagline: ignore-aware path walker
 ---
 
@@ -11,7 +11,7 @@ tagline: ignore-aware path walker
 
 <PrimitiveLayout primitive="walker">
 
-*Walker* is the recursive path-discovery helper the `check` and `format` subcommands consume. Given a list of path arguments, it yields every Python source file *(`.py`, `.pyi`, `.pyw`)* under those paths, honoring `.gitignore`, `.ignore`, and the user's global ignore file. The walker wraps the [**`ignore`**](https://docs.rs/ignore/) crate's `WalkBuilder`, picking up the same gitignore semantics that Ripgrep, fd, and other tree-walking tools share.
+*Walker* is the recursive path-discovery helper the `check` and `format` subcommands consume. Given a list of path arguments, it yields every Python source file *(`.py`, `.pyi`, `.pyw`)* and Jupyter notebook *(`.ipynb`)* under those paths, honoring `.gitignore`, `.ignore`, and the user's global ignore file. The walker wraps the [**`ignore`**](https://docs.rs/ignore/) crate's `WalkBuilder`, picking up the same gitignore semantics that Ripgrep, fd, and other tree-walking tools share.
 
 
 ## Consumer-Visible Surface

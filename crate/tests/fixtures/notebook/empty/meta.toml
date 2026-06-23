@@ -1,0 +1,3 @@
+[docs]
+title = "Format a notebook with no code cells"
+description = "A notebook carrying only markdown or no cells at all is a clean no-op."

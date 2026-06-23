@@ -73,6 +73,10 @@ impl Rule for BandConstants {
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+
+    fn moves_siblings(&self) -> bool {
+        true
+    }
 }
 
 /// Invariant banding context threaded through the recursion.

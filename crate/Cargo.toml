@@ -31,6 +31,7 @@ postcard           = { version = "1", features = ["use-std"] }
 rayon              = "1.10"
 regex-lite         = "0.1"
 ruff_diagnostics   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18", features = ["serde"] }
+ruff_notebook      = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18" }
 ruff_python_ast    = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18", features = ["serde"] }
 ruff_python_parser = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18" }
 ruff_python_stdlib = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18" }

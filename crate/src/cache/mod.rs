@@ -17,7 +17,7 @@ mod records;
 
 pub use engine::Cache;
 pub use key::CacheKey;
-pub use records::{CacheEntry, CacheInfo, CleanReport, Rewrite};
+pub use records::{CacheEntry, CacheInfo, CleanReport, NotebookRewrite, Rewrite, RewriteKind};
 
 #[cfg(test)]
 mod tests {
@@ -50,7 +50,7 @@ mod tests {
                 rule: RuleId::from("align-equals"),
                 ..format_diagnostic(range(0, 1))
             }],
-            rewrite: Rewrite::Changed(formatted.to_owned()),
+            rewrite: Rewrite::text(formatted.to_owned()),
         }
     }
 
@@ -283,6 +283,23 @@ mod tests {
         let original = CacheEntry {
             diagnostics: Vec::new(),
             rewrite: Rewrite::Skipped,
+        };
+        cache.insert(&key, &original);
+        assert_eq!(cache.lookup(&key).expect("hit"), original);
+    }
+
+    #[test]
+    fn insert_then_lookup_round_trips_a_notebook_rewrite() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        let key = CacheKey::compute(b"nb", CONFIG_A, rules());
+        let original = CacheEntry {
+            diagnostics: Vec::new(),
+            rewrite: Rewrite::notebook(
+                vec!["x = 1\n".to_owned()],
+                vec!["x  = 1\n".to_owned()],
+                "{}\n".to_owned(),
+            ),
         };
         cache.insert(&key, &original);
         assert_eq!(cache.lookup(&key).expect("hit"), original);

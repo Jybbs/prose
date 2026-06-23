@@ -1,0 +1,3 @@
+[docs]
+title = "Surface a parse error in a code cell"
+description = "A code cell that is not valid Python fails at the parse-error exit status."
