@@ -10,7 +10,8 @@ use std::{collections::HashMap, num::NonZeroUsize};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Expr, ExprCall, Parameters,
+    Expr, ExprCall, Parameters, StringLike,
+    helpers::any_over_expr,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextSize};
@@ -21,7 +22,7 @@ use crate::{
         INDENT_STEP,
         call_keywords::{keyword_args, module_call_params, resolve_call_params},
         edit::{narrowed_replacement, singleton_groups},
-        layout::explode_parens,
+        layout::{explode_parens, is_layoutable, reindent_block},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -106,9 +107,23 @@ impl Exploder<'_> {
         Some(out)
     }
 
+    /// True for a multi-line `dict`, `list`, `set`, or `tuple` value
+    /// whose already-exploded block re-indents to the keyword column. A
+    /// value spanning a string literal is excluded, leaving it at the
+    /// verbatim floor, since re-indenting would pad the string interior.
+    fn reindentable(&self, value: &Expr) -> bool {
+        is_layoutable(value)
+            && self.source.contains_line_break(value.range())
+            && !any_over_expr(value, |e| {
+                StringLike::try_from(e).is_ok() && self.source.contains_line_break(e.range())
+            })
+    }
+
     /// Appends `rendered` to `out`, swapping a nested call value's
-    /// argument list for its own exploded form while keeping everything
-    /// before it verbatim, so nesting resolves in one pass.
+    /// argument list for its own exploded form and a multi-line
+    /// collection value for that block re-indented to the keyword
+    /// column, keeping everything before the value verbatim so nesting
+    /// resolves in one pass.
     fn render_value(&self, out: &mut String, value: &Expr, rendered: &str, indent: usize) {
         if let Expr::Call(inner) = value
             && let Some(args_text) = self.explode_args(inner, indent)
@@ -117,6 +132,11 @@ impl Exploder<'_> {
             let head = rendered.strip_suffix(inner_args).unwrap_or(rendered);
             out.push_str(head);
             out.push_str(&args_text);
+        } else if self.reindentable(value)
+            && let Some(head) = rendered.strip_suffix(self.source.slice(value.range()))
+        {
+            out.push_str(head);
+            out.push_str(&reindent_block(self.source.slice(value.range()), indent));
         } else {
             out.push_str(rendered);
         }
@@ -137,5 +157,30 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
             }
         }
         walk_expr(self, expr);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testing::{applied_text, parse};
+
+    #[test]
+    fn keyword_value_spanning_a_multiline_string_holds_the_floor() {
+        let src =
+            "emit(alpha=1, beta=2, gamma=3, note=[\n    \"x\",\n    \"\"\"multi\nline\"\"\",\n])\n";
+        let source = parse(src);
+        let edits = CallLayout::from_config(&Config::default())
+            .apply(&source)
+            .into_iter()
+            .flatten()
+            .collect();
+        let text = applied_text(&source, edits);
+        // The call explodes, yet the string-bearing list stays at the floor,
+        // its rows unshifted so the string interior keeps its column.
+        assert!(
+            text.contains("    note=[\n    \"x\","),
+            "string-bearing value should not re-indent:\n{text}",
+        );
     }
 }

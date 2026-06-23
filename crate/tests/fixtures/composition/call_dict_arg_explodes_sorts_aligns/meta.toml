@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Call Argument Explodes, Sorts, and Aligns in One Pass"
+
+description = '''
+A one-line call carrying a multi-entry dict argument settles to the canonical shape in one forward pass, where `collection-layout` explodes the dict, `call-layout` re-indents it to the keyword column, `alphabetize` sorts the entries, and `align-colons` forms the `:` column. **The dict entries land at the keyword's item-indent plus a step and the `}` at the keyword column.**
+'''

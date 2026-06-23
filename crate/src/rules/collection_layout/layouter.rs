@@ -14,12 +14,13 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::classify::{
-    Segment, is_align_colons_gap, is_atomic, is_collapsible, is_layoutable, requires_expand,
-    segments,
+    Segment, is_align_colons_gap, is_atomic, is_collapsible, requires_expand, segments,
 };
 use super::flow::flow_lines;
 use crate::{
-    primitives::{INDENT_STEP, edit::narrowed_replacement, inline::single_line_form},
+    primitives::{
+        INDENT_STEP, edit::narrowed_replacement, inline::single_line_form, layout::is_layoutable,
+    },
     source::Source,
 };
 
