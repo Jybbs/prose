@@ -3,5 +3,5 @@ previewable = false
 title       = "The Count Trigger Reaches a Dict Inside a Non-Expanding Wrapper"
 
 description = '''
-A single-element list never expands on its own, yet a dict past `max-inline-dict-entries` nested inside it still breaks to one entry per line.
+A single-element list never expands on its own, yet a dict past `max-dict-entries` nested inside it still breaks to one entry per line.
 '''

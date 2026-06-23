@@ -7,9 +7,10 @@ use std::{
 };
 
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use ruff_source_file::SourceFileBuilder;
+use ruff_python_ast::PySourceType;
+use ruff_source_file::{SourceFile, SourceFileBuilder};
 
-use super::{FileOutcome, Pass, RunSetup, has_format_change};
+use super::{FileOutcome, Pass, RunSetup, has_format_change, notebook};
 use crate::{
     cache::{CacheEntry, CacheKey, Rewrite},
     cli::exit_status::ExitStatus,
@@ -20,19 +21,24 @@ use crate::{
 
 pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
     let FileOutcome::Done {
-        rewrite: Rewrite::Changed(text),
+        rewrite: Rewrite::Changed(kind),
         ..
     } = &outcome
     else {
         return outcome;
     };
-    if let Err(e) = fs_err::write(path, text) {
+    if let Err(e) = fs_err::write(path, kind.written()) {
         return failed(ExitStatus::ConfigError, e);
     }
     outcome
 }
 
-pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOutcome {
+pub(super) fn process_path(
+    path: &Path,
+    source_type: PySourceType,
+    setup: &RunSetup,
+    pass: Pass,
+) -> FileOutcome {
     let bytes = match fs_err::read(path) {
         Ok(b) => b,
         Err(e) => return failed(ExitStatus::ConfigError, e),
@@ -59,7 +65,7 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
     if let Some(outcome) = keyed
         .as_ref()
         .and_then(|(c, k)| c.lookup(k))
-        .and_then(|entry| rehydrate(path, &bytes, entry, needs_rewrite))
+        .and_then(|entry| rehydrate(path, source_type, &bytes, entry, needs_rewrite))
     {
         return outcome;
     }
@@ -72,16 +78,17 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
             );
         }
     };
-    let source = match Source::build(text, path.display().to_string()) {
-        Ok(s) => s,
-        Err(e) => {
-            return failed(
+    let outcome = if source_type.is_ipynb() {
+        notebook::process(text, path.display().to_string(), &resolved.pipeline, pass)
+    } else {
+        match Source::build(text, path.display().to_string(), source_type) {
+            Ok(source) => run_pipeline(source, &resolved.pipeline, pass),
+            Err(e) => failed(
                 ExitStatus::ParseError,
                 format_args!("parse error in `{}`: {e}", path.display()),
-            );
+            ),
         }
     };
-    let outcome = run_pipeline(source, &resolved.pipeline, pass);
     if let (
         Some((c, k)),
         FileOutcome::Done {
@@ -104,20 +111,26 @@ pub(super) fn process_path(path: &Path, setup: &RunSetup, pass: Pass) -> FileOut
 
 pub(super) fn process_paths<F>(paths: &[PathBuf], handle: F) -> Vec<FileOutcome>
 where
-    F: Fn(&Path) -> FileOutcome + Send + Sync,
+    F: Fn(&Path, PySourceType) -> FileOutcome + Send + Sync,
 {
     walker::walk(paths)
         .par_bridge()
-        .map(|entry| entry.map_or_else(walk_error, |path| handle(&path)))
+        .map(|entry| {
+            entry.map_or_else(walk_error, |(path, source_type)| handle(&path, source_type))
+        })
         .collect()
 }
 
-pub(super) fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
-    let text = match io::read_to_string(stdin) {
-        Ok(t) => t,
-        Err(e) => return failed(ExitStatus::ConfigError, format_args!("reading stdin: {e}")),
-    };
-    match text.parse::<Source>() {
+pub(super) fn process_stdin(
+    text: String,
+    source_type: PySourceType,
+    pipeline: &Pipeline,
+    pass: Pass,
+) -> FileOutcome {
+    if source_type.is_ipynb() {
+        return notebook::process(text, "<stdin>".to_owned(), pipeline, pass);
+    }
+    match Source::build(text, "<stdin>", source_type) {
         Ok(source) => run_pipeline(source, pipeline, pass),
         Err(e) => failed(
             ExitStatus::ParseError,
@@ -126,8 +139,16 @@ pub(super) fn process_stdin<R: Read>(stdin: R, pipeline: &Pipeline, pass: Pass) 
     }
 }
 
+/// Reads stdin to a string, mapping a read failure to a config-error
+/// outcome.
+pub(super) fn read_stdin<R: Read>(stdin: R) -> Result<String, FileOutcome> {
+    io::read_to_string(stdin)
+        .map_err(|e| failed(ExitStatus::ConfigError, format_args!("reading stdin: {e}")))
+}
+
 pub(super) fn rehydrate(
     path: &Path,
+    source_type: PySourceType,
     original_bytes: &[u8],
     entry: CacheEntry,
     needs_rewrite: bool,
@@ -141,8 +162,13 @@ pub(super) fn rehydrate(
     } else {
         Rewrite::Skipped
     };
-    let original_text = std::str::from_utf8(original_bytes).ok()?.to_owned();
-    let file = SourceFileBuilder::new(path.display().to_string(), original_text).finish();
+    let text = std::str::from_utf8(original_bytes).ok()?;
+    let source_text = if source_type.is_ipynb() {
+        notebook::code(text)?
+    } else {
+        text.to_owned()
+    };
+    let file = SourceFileBuilder::new(path.display().to_string(), source_text).finish();
     Some(FileOutcome::Done {
         cached: true,
         diagnostics: entry.diagnostics,
@@ -151,35 +177,40 @@ pub(super) fn rehydrate(
     })
 }
 
-/// Computes only the passes `pass` reads. `check` collects the
-/// as-written diagnostics, and with `--validate` set it also guards the
-/// would-be rewrite against an unparseable rule output without rebuilding
-/// diagnostics. A `format` run rewrites through `run`, pairing the
-/// rewrite with `diagnose`'s as-written diagnostics when an output format
-/// will render them, or `run`'s own otherwise.
+/// Runs a text source through the pipeline. A check pass collects the
+/// as-written diagnostics through [`diagnose_only`]; a format pass
+/// builds the text rewrite through [`run_and_assemble`].
 pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
-    let file = source.source_file().clone();
     if let Pass::Diagnose { validate } = pass {
-        let diagnostics = pipeline.diagnose(&source);
-        if validate
-            && has_format_change(&diagnostics)
-            && let Err(e) = pipeline.validate(source)
-        {
-            return failed(ExitStatus::ConfigError, e);
-        }
-        return FileOutcome::Done {
-            cached: false,
-            diagnostics,
-            file,
-            rewrite: Rewrite::Skipped,
-        };
+        return diagnose_only(source, pipeline, validate);
     }
-    let diagnosed = matches!(pass, Pass::Both).then(|| pipeline.diagnose(&source));
+    run_and_assemble(
+        source,
+        pipeline,
+        matches!(pass, Pass::Both),
+        |formatted, file| {
+            formatted
+                .changed_from(file.source_text())
+                .map_or(Rewrite::Unchanged, |text| Rewrite::text(text.to_owned()))
+        },
+    )
+}
+
+/// Runs the pipeline and assembles the outcome, deferring the rewrite
+/// to `rewrite`. The caller handles the diagnose-only pass; the
+/// `diagnose_as_written` flag adds the as-written diagnostics an output
+/// format renders beside the rewrite.
+pub(super) fn run_and_assemble(
+    source: Source,
+    pipeline: &Pipeline,
+    diagnose_as_written: bool,
+    rewrite: impl FnOnce(&Source, &SourceFile) -> Rewrite,
+) -> FileOutcome {
+    let file = source.source_file().clone();
+    let diagnosed = diagnose_as_written.then(|| pipeline.diagnose(&source));
     match pipeline.run(source) {
         Ok((formatted, run_diagnostics)) => {
-            let rewrite = formatted
-                .changed_from(file.source_text())
-                .map_or(Rewrite::Unchanged, |text| Rewrite::Changed(text.to_owned()));
+            let rewrite = rewrite(&formatted, &file);
             FileOutcome::Done {
                 cached: false,
                 diagnostics: diagnosed.unwrap_or(run_diagnostics),
@@ -191,11 +222,31 @@ pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> F
     }
 }
 
+/// Collects the as-written diagnostics, and with `validate` guards the
+/// would-be rewrite against an unparseable output. Shared by the
+/// module and notebook check passes.
+pub(super) fn diagnose_only(source: Source, pipeline: &Pipeline, validate: bool) -> FileOutcome {
+    let file = source.source_file().clone();
+    let diagnostics = pipeline.diagnose(&source);
+    if validate
+        && has_format_change(&diagnostics)
+        && let Err(e) = pipeline.validate(source)
+    {
+        return failed(ExitStatus::ConfigError, e);
+    }
+    FileOutcome::Done {
+        cached: false,
+        diagnostics,
+        file,
+        rewrite: Rewrite::Skipped,
+    }
+}
+
 pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
     failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
 }
 
-fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
+pub(super) fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
     eprintln!("error: {e}");
     FileOutcome::Failed(status)
 }
@@ -209,6 +260,7 @@ mod tests {
     use super::super::report::status_from_outcomes;
     use super::super::resolve::ConfigResolver;
     use super::*;
+    use crate::cache::RewriteKind;
     use crate::config::Config;
     use crate::rule::RuleId;
     use crate::testing::{GroupSentinelRule, breaks_parse, parse, range};
@@ -251,6 +303,7 @@ mod tests {
         };
         let outcome = process_path(
             &tmp.path().join("does_not_exist.py"),
+            PySourceType::Python,
             &setup,
             Pass::Diagnose { validate: false },
         );
@@ -261,9 +314,15 @@ mod tests {
     fn rehydrate_marks_a_check_mode_outcome_skipped() {
         let entry = CacheEntry {
             diagnostics: Vec::new(),
-            rewrite: Rewrite::Changed("y = 1\n".to_owned()),
+            rewrite: Rewrite::text("y = 1\n".to_owned()),
         };
-        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, false);
+        let outcome = rehydrate(
+            Path::new("a.py"),
+            PySourceType::Python,
+            b"x = 1\n",
+            entry,
+            false,
+        );
         assert_matches!(
             outcome,
             Some(FileOutcome::Done {
@@ -279,19 +338,35 @@ mod tests {
             diagnostics: Vec::new(),
             rewrite: Rewrite::Skipped,
         };
-        assert!(rehydrate(Path::new("a.py"), b"x = 1\n", entry, true).is_none());
+        assert!(
+            rehydrate(
+                Path::new("a.py"),
+                PySourceType::Python,
+                b"x = 1\n",
+                entry,
+                true
+            )
+            .is_none()
+        );
     }
 
     #[test]
     fn rehydrate_serves_a_changed_rewrite_to_a_format_mode() {
         let entry = CacheEntry {
             diagnostics: Vec::new(),
-            rewrite: Rewrite::Changed("y = 1\n".to_owned()),
+            rewrite: Rewrite::text("y = 1\n".to_owned()),
         };
-        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, true);
+        let outcome = rehydrate(
+            Path::new("a.py"),
+            PySourceType::Python,
+            b"x = 1\n",
+            entry,
+            true,
+        );
         assert_matches!(
             outcome,
-            Some(FileOutcome::Done { rewrite: Rewrite::Changed(text), .. }) if text == "y = 1\n"
+            Some(FileOutcome::Done { rewrite: Rewrite::Changed(RewriteKind::Text(text)), .. })
+                if text == "y = 1\n"
         );
     }
 
@@ -301,7 +376,13 @@ mod tests {
             diagnostics: Vec::new(),
             rewrite: Rewrite::Unchanged,
         };
-        let outcome = rehydrate(Path::new("a.py"), b"x = 1\n", entry, true);
+        let outcome = rehydrate(
+            Path::new("a.py"),
+            PySourceType::Python,
+            b"x = 1\n",
+            entry,
+            true,
+        );
         assert_matches!(
             outcome,
             Some(FileOutcome::Done {

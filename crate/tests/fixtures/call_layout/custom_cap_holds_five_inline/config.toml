@@ -1,2 +1,2 @@
 [rules]
-call-layout = { max-inline-args = 5 }
+call-layout = { max-args = 5 }

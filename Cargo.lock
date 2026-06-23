@@ -1440,6 +1440,7 @@ dependencies = [
  "regex-lite",
  "rstest",
  "ruff_diagnostics",
+ "ruff_notebook",
  "ruff_python_ast",
  "ruff_python_formatter",
  "ruff_python_parser",

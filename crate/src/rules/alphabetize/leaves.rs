@@ -30,6 +30,7 @@ use crate::{
 struct LeafCollector<'a> {
     edits: Vec<Edit>,
     param_docs: HashMap<TextSize, Vec<&'a str>>,
+    sort_dunder_lists: bool,
     source: &'a Source,
 }
 
@@ -55,6 +56,9 @@ impl<'a> LeafCollector<'a> {
     }
 
     fn emit_dunder_list(&mut self, assign: &'a StmtAssign) {
+        if !self.sort_dunder_lists {
+            return;
+        }
         let Some(name) = single_name_target(assign) else {
             return;
         };
@@ -199,10 +203,14 @@ pub(super) fn collect_docstring_entry_edits(
 /// reordering structure, each folding its nested reorders in, and maps
 /// each function docstring's start to its signature-order names, the
 /// mirror key for docstring-entry sorting.
-pub(super) fn collect_leaf_edits(source: &Source) -> (Vec<Edit>, HashMap<TextSize, Vec<&str>>) {
+pub(super) fn collect_leaf_edits(
+    source: &Source,
+    sort_dunder_lists: bool,
+) -> (Vec<Edit>, HashMap<TextSize, Vec<&str>>) {
     let mut collector = LeafCollector {
         edits: Vec::new(),
         param_docs: HashMap::new(),
+        sort_dunder_lists,
         source,
     };
     collector.visit_body(&source.ast().body);
@@ -293,7 +301,7 @@ mod tests {
     "})]
     fn collect_docstring_entry_edits_mirrors_source_order_signature(#[case] src: &str) {
         let source = parse(src);
-        let (_, param_docs) = collect_leaf_edits(&source);
+        let (_, param_docs) = collect_leaf_edits(&source, true);
         let edits = collect_docstring_entry_edits(&source, &param_docs);
         let text = applied_text(&source, edits);
         let pos = |needle: &str| {
@@ -324,7 +332,7 @@ mod tests {
                 \"\"\"
         "};
         let source = parse(src);
-        let (_, param_docs) = collect_leaf_edits(&source);
+        let (_, param_docs) = collect_leaf_edits(&source, true);
         let edits = collect_docstring_entry_edits(&source, &param_docs);
         let text = applied_text(&source, edits);
         let pos = |needle: &str| {
@@ -351,7 +359,7 @@ mod tests {
                     \"\"\"
         "};
         let source = parse(src);
-        let (_, param_docs) = collect_leaf_edits(&source);
+        let (_, param_docs) = collect_leaf_edits(&source, true);
         let edits = collect_docstring_entry_edits(&source, &param_docs);
         let text = applied_text(&source, edits);
         let pos = |needle: &str| {
@@ -389,7 +397,7 @@ mod tests {
         #[case] expected: &str,
     ) {
         let source = parse(src);
-        let (edits, _) = collect_leaf_edits(&source);
+        let (edits, _) = collect_leaf_edits(&source, true);
         assert_eq!(applied_text(&source, edits), expected);
     }
 
@@ -403,7 +411,7 @@ mod tests {
             foo(b=2, a=1)
         "};
         let source = parse(src);
-        let (edits, _) = collect_leaf_edits(&source);
+        let (edits, _) = collect_leaf_edits(&source, true);
         assert!(edits.len() >= 5, "fixture must trigger multiple producers");
         assert!(
             edits.is_sorted(),

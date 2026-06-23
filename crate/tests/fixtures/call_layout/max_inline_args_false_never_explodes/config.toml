@@ -1,2 +1,0 @@
-[rules]
-call-layout = { max-inline-args = false }

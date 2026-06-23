@@ -1,2 +1,2 @@
 [rules]
-collection-layout = { max-inline-dict-entries = false }
+collection-layout = { max-dict-entries = false }

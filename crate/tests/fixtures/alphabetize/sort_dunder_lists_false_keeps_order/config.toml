@@ -1,0 +1,2 @@
+[rules]
+alphabetize = { sort-dunder-lists = false }

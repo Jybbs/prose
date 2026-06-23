@@ -1,0 +1,2 @@
+[rules]
+signature-layout = { max-params = false }

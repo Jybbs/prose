@@ -1,0 +1,8 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/composition/call_dict_arg_explodes_sorts_aligns/input.py
+---
+alphabetize@10..92
+call-layout@10..93
+collection-layout@47..92

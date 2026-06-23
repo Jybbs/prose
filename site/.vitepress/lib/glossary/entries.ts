@@ -234,8 +234,8 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases: ['count-based trigger', 'count gate'],
     definition: 'A count trigger expands a layout once an element count crosses a '
               + 'configured cap, whatever the width. `signature-layout` counts parameters '
-              + 'with `max-inline-params` and `collection-layout` counts dict entries with '
-              + '`max-inline-dict-entries`, and `false` disables either. It replaces the magic '
+              + 'with `max-params` and `collection-layout` counts dict entries with '
+              + '`max-dict-entries`, and `false` disables either. It replaces the magic '
               + 'trailing comma that Black and Ruff read with an explicit, configurable count.',
     families  : ['layout'],
     rule      : 'collection-layout'

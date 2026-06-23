@@ -51,6 +51,10 @@ impl Rule for GroupImports {
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+
+    fn moves_siblings(&self) -> bool {
+        true
+    }
 }
 
 struct Walker<'a> {

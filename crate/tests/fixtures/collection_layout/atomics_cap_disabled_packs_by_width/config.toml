@@ -1,2 +1,2 @@
 [rules]
-collection-layout = { max-atomics-per-line = false }
+collection-layout = { max-atomics = false }

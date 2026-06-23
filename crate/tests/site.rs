@@ -67,13 +67,19 @@ fn every_case_directory_is_well_formed() {
         for case_dir in subdirs(&domain_dir) {
             let id = format!("{domain}/{}", dir_name(&case_dir));
             let has_py = case_dir.join("input.py").is_file();
+            let has_ipynb = case_dir.join("input.ipynb").is_file();
             let has_toml = case_dir.join("input.toml").is_file();
 
-            if !has_py && !has_toml {
-                violations.push(format!("{id}: missing input.py and input.toml"));
+            if !has_py && !has_ipynb && !has_toml {
+                violations.push(format!(
+                    "{id}: missing input.py, input.ipynb, and input.toml"
+                ));
             }
             if has_py && !case_dir.join("input.py.snap").is_file() {
                 violations.push(format!("{id}: input.py without its input.py.snap"));
+            }
+            if has_ipynb && !case_dir.join("input.ipynb.snap").is_file() {
+                violations.push(format!("{id}: input.ipynb without its input.ipynb.snap"));
             }
             if has_toml && !case_dir.join("config.snap").is_file() {
                 violations.push(format!("{id}: input.toml without its config.snap"));

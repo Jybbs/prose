@@ -45,10 +45,10 @@ where
 
 /// Deserializes an optional cap a positive integer sets and `false`
 /// disables. `true` is rejected so the disable spelling stays
-/// unambiguous.
-fn deserialize_optional_cap<'de, D>(
+/// unambiguous. Shared by the `InlineBudget` layout caps and the
+/// top-level `import-line-length` key.
+pub(super) fn deserialize_optional_cap<'de, D>(
     deserializer: D,
-    knob: &str,
 ) -> Result<Option<NonZeroUsize>, D::Error>
 where
     D: Deserializer<'de>,
@@ -62,37 +62,11 @@ where
     match Value::deserialize(deserializer)? {
         Value::Cap(n) => Ok(Some(n)),
         Value::Off(false) => Ok(None),
-        Value::Off(true) => Err(serde::de::Error::custom(format!(
-            "`{knob}` accepts a positive integer or `false`, not `true`"
-        ))),
+        Value::Off(true) => Err(serde::de::Error::custom(
+            "expected a positive integer or `false`, not `true`",
+        )),
     }
 }
-
-/// Generates a named `deserialize_with` target forwarding to
-/// [`deserialize_optional_cap`] with the knob's kebab-case name.
-macro_rules! optional_cap {
-    ($fn_name:ident, $knob:literal) => {
-        pub(super) fn $fn_name<'de, D>(deserializer: D) -> Result<Option<NonZeroUsize>, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            deserialize_optional_cap(deserializer, $knob)
-        }
-    };
-}
-
-optional_cap!(deserialize_import_line_length, "import-line-length");
-
-optional_cap!(deserialize_max_atomics_per_line, "max-atomics-per-line");
-
-optional_cap!(deserialize_max_inline_args, "max-inline-args");
-
-optional_cap!(
-    deserialize_max_inline_dict_entries,
-    "max-inline-dict-entries"
-);
-
-optional_cap!(deserialize_max_inline_params, "max-inline-params");
 
 pub(super) fn deserialize_prose<F>(
     table: toml::Table,

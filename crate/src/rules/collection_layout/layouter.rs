@@ -14,12 +14,13 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::classify::{
-    Segment, is_align_colons_gap, is_atomic, is_collapsible, is_layoutable, requires_expand,
-    segments,
+    Segment, is_align_colons_gap, is_atomic, is_collapsible, requires_expand, segments,
 };
 use super::flow::flow_lines;
 use crate::{
-    primitives::{INDENT_STEP, edit::narrowed_replacement, inline::single_line_form},
+    primitives::{
+        INDENT_STEP, edit::narrowed_replacement, inline::single_line_form, layout::is_layoutable,
+    },
     source::Source,
 };
 
@@ -43,7 +44,7 @@ pub(super) struct Layouter<'a> {
     pub(super) collapse: bool,
     pub(super) edits: Vec<Edit>,
     pub(super) explode: bool,
-    pub(super) max_atomics_per_line: usize,
+    pub(super) max_atomics: usize,
     pub(super) newline: &'static str,
     pub(super) reservations: HashMap<TextSize, usize>,
     pub(super) source: &'a Source,
@@ -99,9 +100,7 @@ impl<'a> Layouter<'a> {
                 }
                 Segment::Flow(range) => {
                     let run_start = range.start;
-                    for line_range in
-                        flow_lines(&widths[range], available, self.max_atomics_per_line)
-                    {
+                    for line_range in flow_lines(&widths[range], available, self.max_atomics) {
                         let line_start = run_start + line_range.start;
                         let line_end = run_start + line_range.end;
                         out.push_str(&item_prefix);
@@ -223,7 +222,7 @@ impl<'a> Layouter<'a> {
     /// expands. Emits `Some(inline)` when a multi-line literal's or
     /// subscript's inline form fits, `Some(expand)` when a multi-item
     /// `Dict`, `List`, or `Set`'s rendered width overflows, or when a
-    /// `Dict` carries more than `max_inline_dict_entries` entries
+    /// `Dict` carries more than `max_dict_entries` entries
     /// whatever its width. A subscript only ever collapses, joining its
     /// `value[index]` onto one line. The `collapse` facet gates every
     /// inline join and the `explode` facet gates every expansion, so a
@@ -239,10 +238,7 @@ impl<'a> Layouter<'a> {
             }
             return self.joined_if_fits(expr, column);
         }
-        if !is_layoutable(expr) {
-            return None;
-        }
-        if self.source.intersects_comment(range) {
+        if !is_layoutable(expr) || self.source.intersects_comment(range) {
             return None;
         }
         let expandable = requires_expand(expr);

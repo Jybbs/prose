@@ -21,6 +21,7 @@ Rewrites Python files to conform to the *Prose* style. Returns exit code 0 once 
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. `--diff` requires `text` |
 | `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor, color, and the `--diff` heading |
 | `--stdin` | bool | off | Read source from stdin and write the rewritten source to stdout |
+| `--stdin-filename` | path | unset | Treat stdin as this path, its extension selecting the source type. A `.ipynb` name reads stdin as a notebook |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules, replacing the configured-enabled set |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, subtracting from whichever set would otherwise have run |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to format, or `-` to read source from stdin |
@@ -60,6 +61,7 @@ Reports violations without modifying source, returning the canonical [**Exit Cod
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | Diagnostic shape. See [**Output Formats**](/reference/output-formats) for the per-format record layout |
 | `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count line, dropping the anchor and color |
 | `--stdin` | bool | off | Read source from stdin instead of the filesystem |
+| `--stdin-filename` | path | unset | Treat stdin as this path, its extension selecting the source type. A `.ipynb` name reads stdin as a notebook |
 | `--validate` | bool | off | Confirm each file's would-be rewrite re-parses, surfacing an unparseable rule output as a config error |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules |
@@ -74,6 +76,16 @@ prose check --output-format sarif . > prose.sarif
 prose check --stdin < module.py
 prose check --validate .
 prose check - < module.py
+```
+
+## Notebook Inputs
+
+`format` and `check` accept Jupyter notebooks (`.ipynb`) alongside `.py` files, both in path-mode discovery and through `--stdin-filename`, whose extension selects the source type. *Prose* parses the notebook, runs the pipeline once over the concatenated code-cell source, and re-emits the JSON with outputs, metadata, and cell structure preserved, rewriting only the code each cell holds. The sibling-reordering rules (`alphabetize`, `band-constants`, `group-imports`) stay out of a notebook run, because a cell's place in the execution order forbids moving code across a cell boundary. A non-Python notebook, an R or Julia kernel, is passed over the way an excluded path is skipped, and `format --diff` renders a unified diff per code cell under a cell header.
+
+```bash
+prose format notebook.ipynb
+prose check analysis/
+prose format --stdin --stdin-filename nb.ipynb < nb.ipynb
 ```
 
 ## `prose cache clean`

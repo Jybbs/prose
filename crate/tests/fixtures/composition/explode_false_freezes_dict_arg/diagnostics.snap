@@ -1,0 +1,7 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/composition/explode_false_freezes_dict_arg/input.py
+---
+alphabetize@10..92
+call-layout@10..93

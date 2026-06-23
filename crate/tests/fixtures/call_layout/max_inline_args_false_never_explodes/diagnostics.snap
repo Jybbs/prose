@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/call_layout/max_inline_args_false_never_explodes/input.py
----
-

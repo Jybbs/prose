@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/call_layout/single_line_collection_value_stays_inline/input.py
+---
+build(
+    alpha=1,
+    beta=2,
+    gamma=3,
+    opts={"k": "v"}
+)

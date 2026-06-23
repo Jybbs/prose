@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Dunder Lists Keep Their Order When Sorting Is Off"
+
+description = '''
+With `sort-dunder-lists = false`, the `__all__` and `__slots__` string lists **keep their authored order**, while every other surface, the method run included, still sorts.
+'''

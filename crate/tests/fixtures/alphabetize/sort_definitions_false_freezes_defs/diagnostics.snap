@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/alphabetize/sort_definitions_false_freezes_defs/input.py
+---
+alphabetize@17..38

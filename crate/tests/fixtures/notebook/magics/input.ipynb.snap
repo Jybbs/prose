@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/notebook/magics/input.ipynb
+---
+%matplotlib inline
+!pip install numpy
+x  = 1
+yy = 2

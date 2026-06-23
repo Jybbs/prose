@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/call_layout/keyword_dict_value_reindents/input.py
+---
+configure(
+    name="x",
+    other=2,
+    more=7,
+    settings={
+        "alpha": 1,
+        "beta": 2,
+        "gamma": 3,
+        "delta": 4
+    }
+)

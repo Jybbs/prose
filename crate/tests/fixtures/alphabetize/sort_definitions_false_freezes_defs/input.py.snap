@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize/sort_definitions_false_freezes_defs/input.py
+---
+class Zebra:
+    id: int
+    name: str
+
+    def withdraw(self):
+        pass
+
+    def deposit(self):
+        pass
+
+
+class Apple:
+    pass
