@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/call_layout/keyword_list_value_reindents/input.py
+---
+render(
+    name="x",
+    other=2,
+    more=7,
+    items=[
+        "a", "b", "c",
+        "d", "e", "f"
+    ]
+)

@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "An Exploded Comprehension Value Re-Indents to the Keyword Column"
+
+description = '''
+A call explodes to one keyword per line while one keyword carries a multi-line list comprehension. `call-layout` re-indents that block to the keyword column the same way it re-indents a dict or list value, its body one step past the keyword and its `]` at the keyword column, rather than splicing it at the source indentation.
+'''

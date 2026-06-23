@@ -6,6 +6,8 @@ use std::ops::Range;
 
 use ruff_python_ast::{Expr, helpers::is_dotted_name};
 
+use crate::primitives::layout::is_layoutable;
+
 /// Describes how a contiguous slice of items should lay out.
 #[derive(Debug, PartialEq)]
 pub(super) enum Segment {
@@ -39,16 +41,6 @@ pub(super) fn is_atomic(expr: &Expr) -> bool {
 /// whose `[index]` joins onto one line whatever the index shape.
 pub(super) fn is_collapsible(expr: &Expr) -> bool {
     is_layoutable(expr) || expr.is_subscript_expr()
-}
-
-/// True for the four collection-literal `Expr` variants the rule
-/// considers laying out. `Tuple` joins `Dict`, `List`, and `Set` here
-/// because it's collapse-eligible, even though it never expands.
-pub(super) fn is_layoutable(expr: &Expr) -> bool {
-    matches!(
-        expr,
-        Expr::Dict(_) | Expr::List(_) | Expr::Set(_) | Expr::Tuple(_)
-    )
 }
 
 /// True for a `Dict`, `List`, or `Set` shape the expand path

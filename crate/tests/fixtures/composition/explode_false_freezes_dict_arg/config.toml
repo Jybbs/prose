@@ -1,0 +1,5 @@
+[rules]
+collection-layout = { explode = false }
+
+[harness]
+rules = ["collection-layout", "call-layout", "alphabetize", "align-equals", "align-colons"]

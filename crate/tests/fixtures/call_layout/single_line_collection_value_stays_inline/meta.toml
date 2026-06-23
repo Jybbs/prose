@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Single-Line Collection Value Stays Inline"
+
+description = '''
+A call explodes to one keyword per line while one keyword holds a single-line dict value. The value stays inline rather than re-indenting, since a single-line collection block has no rows to shift.
+'''

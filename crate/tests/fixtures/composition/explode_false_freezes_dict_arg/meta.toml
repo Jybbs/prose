@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Cleared `explode` Knob Freezes a Dict Argument"
+
+description = '''
+The same call and dict as the canonical case, but with `collection-layout`'s `explode` knob cleared. `collection-layout` leaves the multi-entry dict inline rather than exploding it, so `call-layout` finds no multi-line block to re-indent and the dict rides its keyword line whole. The freeze reaches the dict argument the canonical shape would otherwise expand to its own column.
+'''

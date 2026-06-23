@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "Re-Indent an Exploded List Value to the Keyword Column"
+
+description = '''
+The same re-indent a dict value takes carries a list value. A call explodes to one keyword per line while one keyword already holds a list spread across rows, and that block shifts so its rows sit at the keyword's item-indent plus a step and its `]` at the keyword column.
+'''
