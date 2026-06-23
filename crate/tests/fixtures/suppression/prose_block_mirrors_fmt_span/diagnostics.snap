@@ -5,4 +5,4 @@ input_file: tests/fixtures/suppression/prose_block_mirrors_fmt_span/input.py
 ---
 align-equals@1..10
 align-equals@93..101
-alphabetize@0..25
+band-constants@0..25

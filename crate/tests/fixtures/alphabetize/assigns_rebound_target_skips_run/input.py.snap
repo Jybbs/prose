@@ -1,8 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/alphabetize/assigns_rebound_target_skips_run/input.py
----
-LIMIT = 10
-ALPHA = 1
-LIMIT = 20

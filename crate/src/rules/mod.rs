@@ -9,6 +9,7 @@ pub(crate) mod align_equals;
 pub(crate) mod align_imports;
 pub(crate) mod align_match_case;
 pub(crate) mod alphabetize;
+pub(crate) mod band_constants;
 pub(crate) mod bare_imports;
 pub(crate) mod blank_lines;
 pub(crate) mod call_layout;

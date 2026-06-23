@@ -24,6 +24,14 @@ pub(crate) enum ImportGroup {
     Local,
 }
 
+/// True when the module carries `from __future__ import annotations`,
+/// deferring every annotation's evaluation per PEP 563.
+pub(crate) fn defers_annotations(body: &[Stmt]) -> bool {
+    body.iter()
+        .filter_map(Stmt::as_import_from_stmt)
+        .any(|node| future_annotations_alias(node).is_some())
+}
+
 /// Returns the position of the `annotations` alias in a
 /// `from __future__ import …` statement, or `None` for any other
 /// import.
@@ -146,6 +154,18 @@ mod tests {
     use super::*;
     use crate::primitives::orderer::member_blocks;
     use crate::testing::parse;
+
+    #[rstest]
+    #[case("from __future__ import annotations\n", true)]
+    #[case("from __future__ import annotations, division\n", true)]
+    #[case("from __future__ import division\n", false)]
+    #[case("from other import annotations\n", false)]
+    #[case("import __future__\n", false)]
+    #[case("x = 1\n", false)]
+    fn defers_annotations_detects_the_future_import(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        assert_eq!(defers_annotations(&source.ast().body), expected);
+    }
 
     #[rstest]
     #[case("import os\nimport sys\n", true, Some(0))]

@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/derived_const_pools_into_trailing_band/input.py
+---
+def make():
+    return 1
+
+
+HANDLER = make

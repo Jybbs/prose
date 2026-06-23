@@ -628,6 +628,7 @@ mod tests {
         config.rules.align_imports.enabled = false;
         config.rules.align_match_case.enabled = false;
         config.rules.alphabetize.enabled = false;
+        config.rules.band_constants.enabled = false;
         config.rules.bare_imports.enabled = false;
         config.rules.blank_lines.enabled = false;
         config.rules.call_layout.enabled = false;

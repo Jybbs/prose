@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/assigns_bare_annassign_no_rhs/input.py
+---
+apple = 1
+banana: str = "two"
+zebra: int

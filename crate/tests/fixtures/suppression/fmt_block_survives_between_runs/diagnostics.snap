@@ -5,4 +5,4 @@ input_file: tests/fixtures/suppression/fmt_block_survives_between_runs/input.py
 ---
 align-equals@1..10
 align-equals@89..97
-alphabetize@0..25
+band-constants@0..25

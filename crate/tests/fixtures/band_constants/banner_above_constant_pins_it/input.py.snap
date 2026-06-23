@@ -1,0 +1,12 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/banner_above_constant_pins_it/input.py
+---
+def render(template):
+    return template
+
+
+# =========================
+
+CACHE_SIZE = 256

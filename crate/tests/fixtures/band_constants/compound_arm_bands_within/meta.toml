@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Band Forms Inside a Module-Scope Compound Arm"
+
+description = '''
+Module-scope constant banding descends into the arms of a top-level compound statement, so a constant inside an `if` block that names a definition below it drains to the arm's trailing band, the same hoist the module body receives. The band stops at the class and function boundary, leaving a nested definition's own body untouched.
+'''

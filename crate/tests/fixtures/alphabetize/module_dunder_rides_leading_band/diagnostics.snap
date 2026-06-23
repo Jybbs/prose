@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/module_dunder_rides_leading_band/input.py
----
-alphabetize@0..61

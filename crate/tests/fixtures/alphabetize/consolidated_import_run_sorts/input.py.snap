@@ -1,9 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/alphabetize/consolidated_import_run_sorts/input.py
----
-from a import x
-from b import x
-
-y = 1

@@ -57,6 +57,22 @@ pub(crate) fn apply_inline_edits<'src>(
     }
 }
 
+/// Returns `Cow::Borrowed` of `source.slice(span)` when every part is
+/// still a borrow of source, signalling no descendant rewrite fired.
+/// Otherwise concatenates the parts into a single owned string covering
+/// the same span.
+fn concat_or_borrow<'src>(
+    parts: &[Cow<'src, str>],
+    source: &'src Source,
+    span: TextRange,
+) -> Cow<'src, str> {
+    if any_owned(parts) {
+        Cow::Owned(parts.concat())
+    } else {
+        Cow::Borrowed(source.slice(span))
+    }
+}
+
 /// Trims a candidate replacement to its minimal spanning range by
 /// stripping the longest common codepoint prefix and suffix shared
 /// with `source_slice`. Returns `None` when `text` already equals
@@ -108,6 +124,38 @@ pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: Strin
 /// whose edits are mutually independent returns from `apply`.
 pub(crate) fn singleton_groups(edits: impl IntoIterator<Item = Edit>) -> Vec<Vec<Edit>> {
     edits.into_iter().map(|edit| vec![edit]).collect()
+}
+
+/// Splices `bodies` back into `block`, folding any leaf edits into the
+/// pre-, inter-, and post-body gaps. `bodies` must be in source order. A
+/// caller with no leaf edits passes an empty slice, leaving each gap a
+/// borrow of the source.
+pub(crate) fn splice_bodies<'src, I>(
+    source: &'src Source,
+    block: TextRange,
+    bodies: I,
+    leaf_edits: &[Edit],
+) -> Cow<'src, str>
+where
+    I: IntoIterator<Item = (Cow<'src, str>, TextRange)>,
+{
+    let mut parts = Vec::new();
+    let mut cursor = block.start();
+    for (text, span) in bodies {
+        parts.push(apply_inline_edits(
+            source,
+            TextRange::new(cursor, span.start()),
+            leaf_edits,
+        ));
+        parts.push(text);
+        cursor = span.end();
+    }
+    parts.push(apply_inline_edits(
+        source,
+        TextRange::new(cursor, block.end()),
+        leaf_edits,
+    ));
+    concat_or_borrow(&parts, source, block)
 }
 
 /// Reports whether splicing `replacement` into `outer` at `inner`

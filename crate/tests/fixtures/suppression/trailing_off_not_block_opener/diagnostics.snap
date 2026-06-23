@@ -5,4 +5,4 @@ input_file: tests/fixtures/suppression/trailing_off_not_block_opener/input.py
 ---
 align-equals@1..10
 align-equals@38..47
-alphabetize@0..59
+band-constants@0..59

@@ -1,0 +1,10 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/leading_const_hoists_above_body_reader/input.py
+---
+TIMEOUT = 30
+
+
+def fetch():
+    return TIMEOUT

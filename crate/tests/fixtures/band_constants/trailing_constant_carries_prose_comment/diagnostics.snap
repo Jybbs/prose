@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/band_constants/trailing_constant_carries_prose_comment/input.py
+---
+band-constants@11..103

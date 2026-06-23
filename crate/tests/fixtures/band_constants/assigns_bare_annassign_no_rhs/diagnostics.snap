@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/band_constants/assigns_bare_annassign_no_rhs/input.py
+---
+band-constants@0..40

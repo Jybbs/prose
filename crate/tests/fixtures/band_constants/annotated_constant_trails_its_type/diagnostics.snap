@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/band_constants/annotated_constant_trails_its_type/input.py
+---
+band-constants@27..67

@@ -1,0 +1,14 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/band_constants/assigns_run_stops_at_fmt_off/input.py
+---
+bar_baz = 3
+foo = 2
+zebra = 1
+
+# fmt: off
+matrix = [[0.7, 0.1, 0.1],
+          [0.1, 0.7, 0.1],
+          [0.1, 0.1, 0.7]]
+# fmt: on

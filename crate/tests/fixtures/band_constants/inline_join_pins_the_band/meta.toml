@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Line-Packed Statements Pin the Band"
+
+description = '''
+Two statements sharing a physical line through `;` pin module-scope banding, since a block-based reorder cannot decompose a line carrying two statements. The constants stay among their neighbors even though one names a literal and would lead while the other names the definition and would trail.
+'''

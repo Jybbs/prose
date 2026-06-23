@@ -1,6 +1,0 @@
----
-source: tests/diagnostics.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/alphabetize/derived_call_reaches_class_pools_last/input.py
----
-alphabetize@0..89

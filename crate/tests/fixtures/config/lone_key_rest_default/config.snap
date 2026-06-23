@@ -46,6 +46,9 @@ Config {
         group_imports: ToggleOnly {
             enabled: true,
         },
+        band_constants: ToggleOnly {
+            enabled: true,
+        },
         alphabetize: AlphabetizeConfig {
             enabled: true,
             sort_docstring_entries: true,

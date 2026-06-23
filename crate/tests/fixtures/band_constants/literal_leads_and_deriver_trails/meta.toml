@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "A Literal Constant Leads and a Deriver Trails the Definitions"
+
+description = '''
+A module-level constant whose value reaches only imports, builtins, and literals **rides a leading band directly below the imports**, while one that names a later definition **pools into a trailing band beneath the definitions**. Here `TIMEOUT` lifts above `build` into the leading band and `SESSION`, which calls `build`, drains to the trailing band, so the module reads as its imports, its leading constants, its definitions, then the constants derived from them.
+'''

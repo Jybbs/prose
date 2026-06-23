@@ -5,4 +5,4 @@ input_file: tests/fixtures/suppression/consecutive_off_flattens/input.py
 ---
 align-equals@1..10
 align-equals@100..108
-alphabetize@0..25
+band-constants@0..25
