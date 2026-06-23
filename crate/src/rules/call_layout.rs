@@ -107,12 +107,16 @@ impl Exploder<'_> {
         Some(out)
     }
 
-    /// True for a multi-line `dict`, `list`, `set`, or `tuple` value
-    /// whose already-exploded block re-indents to the keyword column. A
-    /// value spanning a string literal is excluded, leaving it at the
+    /// True for a multi-line collection or comprehension value whose
+    /// already-bracketed block re-indents to the keyword column. A value
+    /// spanning a multi-line string is excluded, leaving it at the
     /// verbatim floor, since re-indenting would pad the string interior.
     fn reindentable(&self, value: &Expr) -> bool {
-        is_layoutable(value)
+        (is_layoutable(value)
+            || matches!(
+                value,
+                Expr::ListComp(_) | Expr::SetComp(_) | Expr::DictComp(_)
+            ))
             && self.source.contains_line_break(value.range())
             && !any_over_expr(value, |e| {
                 StringLike::try_from(e).is_ok() && self.source.contains_line_break(e.range())
@@ -121,9 +125,9 @@ impl Exploder<'_> {
 
     /// Appends `rendered` to `out`, swapping a nested call value's
     /// argument list for its own exploded form and a multi-line
-    /// collection value for that block re-indented to the keyword
-    /// column, keeping everything before the value verbatim so nesting
-    /// resolves in one pass.
+    /// collection or comprehension value for that block re-indented to
+    /// the keyword column, keeping everything before the value verbatim
+    /// so nesting resolves in one pass.
     fn render_value(&self, out: &mut String, value: &Expr, rendered: &str, indent: usize) {
         if let Expr::Call(inner) = value
             && let Some(args_text) = self.explode_args(inner, indent)
