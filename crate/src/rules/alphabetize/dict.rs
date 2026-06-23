@@ -15,8 +15,8 @@ use crate::{
         comments::has_keep_marker,
         edit::{any_owned, apply_inline_edits, splice_parses},
         orderer::{
-            any_sibling_shares_line, assemble_blocks, assemble_separated, block_range, blocks_span,
-            permute_full,
+            adjacent_slots, any_sibling_shares_line, assemble_blocks, assemble_separated,
+            block_ranges, blocks_span, permute_full,
         },
     },
     source::Source,
@@ -55,9 +55,7 @@ pub(super) fn rewrite_dict_text<'src>(
         .map(|item| TextRange::new(item.start(), item_value_end(source, d, item)))
         .collect();
     let blocks: Vec<TextRange> = if multi_line {
-        (0..d.len())
-            .map(|i| block_range(source, &item_ranges, i, d.range()))
-            .collect()
+        block_ranges(source, &item_ranges, d.range())
     } else {
         item_ranges.clone()
     };
@@ -123,13 +121,8 @@ fn item_value_end(source: &Source, dict: &ExprDict, item: &DictItem) -> TextSize
 fn partition_divider_slots(source: &Source, order: &[usize], items: &[DictItem]) -> Vec<usize> {
     let is_multiline =
         |i: usize| items[i].key.is_some() && source.contains_line_break(items[i].range());
-    if order.iter().filter(|&&i| is_multiline(i)).count() < 2 {
+    if order.iter().filter(|&&i| is_multiline(i)).nth(1).is_none() {
         return Vec::new();
     }
-    order
-        .windows(2)
-        .enumerate()
-        .filter(|(_, w)| is_multiline(w[0]) || is_multiline(w[1]))
-        .map(|(i, _)| i)
-        .collect()
+    adjacent_slots(order, |_, a, b| is_multiline(a) || is_multiline(b))
 }

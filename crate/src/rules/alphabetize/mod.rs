@@ -32,7 +32,8 @@ use crate::{
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups, splice_bodies},
         imports::{defers_annotations, import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
-            any_sibling_shares_line, assemble_or_borrow, permute_in_place, rendered_member_blocks,
+            adjacent_slots, any_sibling_shares_line, assemble_or_borrow, permute_in_place,
+            rendered_member_blocks,
         },
         params::pins_positional_params,
         scope::{BodyScope, compound_sub_bodies, scoped_body},
@@ -195,8 +196,7 @@ fn rewrite_body<'a>(
     let (blocks, rendered) = rendered_member_blocks(source, body, outer, |stmt, block| {
         rewrite_stmt(ctx, stmt, block, scope)
     });
-    let n = body.len();
-    let mut order: Vec<usize> = (0..n).collect();
+    let mut order: Vec<usize> = (0..body.len()).collect();
     let mut import_run_slots: Vec<usize> = Vec::new();
     if !any_sibling_shares_line(source, body) {
         let sections = Sections::of(source, &blocks);
@@ -230,15 +230,10 @@ fn rewrite_body<'a>(
         }
         // Same-group import neighbors collapse to one line, except across a
         // section marker, whose dividing gap must survive in place.
-        import_run_slots.extend((0..n.saturating_sub(1)).filter(|&slot| {
-            import_blank_lines(
-                &body[order[slot]],
-                &body[order[slot + 1]],
-                first_party,
-                group_imports,
-            ) == Some(0)
+        import_run_slots = adjacent_slots(&order, |slot, a, b| {
+            import_blank_lines(&body[a], &body[b], first_party, group_imports) == Some(0)
                 && !sections.is_boundary(slot + 1)
-        }));
+        });
     }
     assemble_or_borrow(
         source,
