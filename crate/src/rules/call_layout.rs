@@ -1,12 +1,12 @@
 //! Explodes a keyword-expressible call carrying more than
-//! `max_inline_args` arguments to one keyword argument per line, leaving
+//! `max_args` arguments to one keyword argument per line, leaving
 //! shorter calls and calls that cannot take keyword form inline. The
 //! closing `)` drops to the call's own indent, and a nested call in an
 //! argument value explodes in the same pass. Argument order, `=`
 //! alignment, and trailing-comma policy stay with `alphabetize`,
 //! `align_equals`, and `strip_trailing_commas`.
 
-use std::{collections::HashMap, num::NonZeroUsize};
+use std::collections::HashMap;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -29,24 +29,20 @@ use crate::{
 };
 
 pub(crate) struct CallLayout {
-    max_inline_args: Option<usize>,
+    max_args: Option<usize>,
 }
 
 impl CallLayout {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            max_inline_args: config
-                .rules
-                .call_layout
-                .max_inline_args
-                .map(NonZeroUsize::get),
+            max_args: config.rules.call_layout.max_args.cap(),
         }
     }
 }
 
 impl Rule for CallLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let Some(cap) = self.max_inline_args else {
+        let Some(cap) = self.max_args else {
             return Vec::new();
         };
         let targets = module_call_params(source);
@@ -79,7 +75,7 @@ impl Exploder<'_> {
     /// same text. `None` leaves the call inline.
     fn explode_args(&self, call: &ExprCall, indent: usize) -> Option<String> {
         let arguments = &call.arguments;
-        if arguments.args.len() + arguments.keywords.len() <= self.cap {
+        if arguments.len() <= self.cap {
             return None;
         }
         if self.source.intersects_comment(arguments.inner_range()) {
@@ -93,7 +89,7 @@ impl Exploder<'_> {
         }
         let item_indent = indent + INDENT_STEP;
         let last = keywords.args.len() - 1;
-        let trailing = self.source.trailing_comma(call.arguments.range()).is_some();
+        let trailing = self.source.trailing_comma(arguments.range()).is_some();
         let out = explode_parens(
             self.source.newline_str(),
             indent,

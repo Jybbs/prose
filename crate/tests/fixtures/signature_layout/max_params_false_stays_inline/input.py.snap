@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/signature_layout/max_inline_params_false_stays_inline/input.py
+input_file: tests/fixtures/signature_layout/max_params_false_stays_inline/input.py
 ---
 def render(layout: int, palette: str, spread: float, target: int, verbose: bool):
     return (layout, palette, spread, target, verbose)

@@ -1,8 +1,6 @@
 //! Normalizes function signatures to a binary shape, one line or one
-//! parameter per line, gated by `code_line_length` and
-//! `max_inline_params`. Comments inside `()` pin the existing shape.
-
-use std::num::NonZeroUsize;
+//! parameter per line, gated by `code_line_length` and `max_params`.
+//! Comments inside `()` pin the existing shape.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -27,18 +25,14 @@ use crate::{
 
 pub(crate) struct SignatureLayout {
     code_line_length: usize,
-    max_inline_params: Option<usize>,
+    max_params: Option<usize>,
 }
 
 impl SignatureLayout {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),
-            max_inline_params: config
-                .rules
-                .signature_layout
-                .max_inline_params
-                .map(NonZeroUsize::get),
+            max_params: config.rules.signature_layout.max_params.cap(),
         }
     }
 }
@@ -48,7 +42,7 @@ impl Rule for SignatureLayout {
         let mut visitor = Layout {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
-            max_inline_params: self.max_inline_params,
+            max_params: self.max_params,
             newline: source.newline_str(),
             source,
         };
@@ -64,7 +58,7 @@ impl Rule for SignatureLayout {
 struct Layout<'a> {
     code_line_length: usize,
     edits: Vec<Edit>,
-    max_inline_params: Option<usize>,
+    max_params: Option<usize>,
     newline: &'static str,
     source: &'a Source,
 }
@@ -109,7 +103,7 @@ impl Layout<'_> {
         }
         let replacement_range = self.replacement_range(fd);
         let inline = self.build_inline(fd);
-        let count_trips = self.max_inline_params.is_some_and(|cap| params.len() > cap);
+        let count_trips = self.max_params.is_some_and(|cap| params.len() > cap);
         let first_line = inline.lines().next().unwrap_or(&inline);
         let length_trips = self.source.column_overflows(
             params.range().start(),
