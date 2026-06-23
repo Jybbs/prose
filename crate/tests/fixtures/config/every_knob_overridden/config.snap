@@ -1,7 +1,7 @@
 ---
-source: tests/config_parsing.rs
+source: crate/tests/config_parsing.rs
 expression: config
-input_file: tests/fixtures/config/every_knob_overridden/input.toml
+input_file: crate/tests/fixtures/config/every_knob_overridden/input.toml
 ---
 Config {
     cache: CacheConfig {
@@ -51,7 +51,10 @@ Config {
         },
         alphabetize: AlphabetizeConfig {
             enabled: false,
+            group_methods: false,
+            sort_definitions: false,
             sort_docstring_entries: false,
+            sort_dunder_lists: false,
         },
         strip_trailing_commas: ToggleOnly {
             enabled: false,

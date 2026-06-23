@@ -1,7 +1,7 @@
 ---
-source: tests/config_parsing.rs
+source: crate/tests/config_parsing.rs
 expression: config
-input_file: tests/fixtures/config/rule_toggle_shorthand/input.toml
+input_file: crate/tests/fixtures/config/rule_toggle_shorthand/input.toml
 ---
 Config {
     cache: CacheConfig {
@@ -51,7 +51,10 @@ Config {
         },
         alphabetize: AlphabetizeConfig {
             enabled: false,
+            group_methods: true,
+            sort_definitions: true,
             sort_docstring_entries: true,
+            sort_dunder_lists: true,
         },
         strip_trailing_commas: ToggleOnly {
             enabled: true,

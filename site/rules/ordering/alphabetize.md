@@ -38,9 +38,15 @@ Pair with [[align-imports]] to align the `import` keyword across the freshly-sor
 
 <template #configuration>
 
-<RuleConfigTable />
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `enabled` | bool | `true` | Toggle the rule on or off |
+| `group-methods` | bool | `true` | Group methods into dunders, properties, privates, and publics before sorting within each group. Setting `false` sorts methods by plain name alone |
+| `sort-definitions` | bool | `true` | Reorder class and function definitions, holding each behind any sibling it names at evaluation time. Setting `false` freezes every definition in source order |
+| `sort-docstring-entries` | bool | `true` | Reorder `name: description` entries within Title-case-headed docstring sections, parameter entries mirroring the signature and stragglers alphabetizing below. Setting `false` keeps narrative-curated entry order |
+| `sort-dunder-lists` | bool | `true` | Reorder the string items inside `__all__` and `__slots__`. Setting `false` keeps a hand-curated public-API order |
 
-The ordering itself follows fixed per-construct conventions. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. [[group-imports]] partitions consecutive imports into their canonical sections (*bare first, then external `from`, then local-package*) and `alphabetize` sorts the names within each, the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that lift into the local-package section alongside relative imports. Set `alphabetize = { sort-docstring-entries = false }` to skip the docstring-entry reorder while keeping every AST-level surface sorted.
+The ordering itself follows fixed per-construct conventions. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. [[group-imports]] partitions consecutive imports into their canonical sections (*bare first, then external `from`, then local-package*) and `alphabetize` sorts the names within each, the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that lift into the local-package section alongside relative imports. Each sort pass also switches off on its own through the facets above, so a project can keep its methods grouped while leaving its definitions in source order, or hold a hand-curated `__all__` while every other surface still sorts.
 
 </template>
 

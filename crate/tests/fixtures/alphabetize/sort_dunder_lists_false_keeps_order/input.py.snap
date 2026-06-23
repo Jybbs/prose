@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize/sort_dunder_lists_false_keeps_order/input.py
+---
+__all__ = [
+    "render",
+    "Posting",
+    "Catalog",
+]
+
+
+class Buffer:
+    __slots__ = ["size", "data"]
+
+    def read(self):
+        pass
+
+    def write(self):
+        pass

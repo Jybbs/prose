@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Methods Sort by Plain Name When Grouping Is Off"
+
+description = '''
+With `group-methods = false`, methods **sort by plain name** rather than grouping into dunders, properties, privates, and publics, so a `@property` sorts by its name among the rest rather than grouping above the public methods.
+'''
