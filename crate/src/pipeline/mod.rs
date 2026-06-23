@@ -6,9 +6,11 @@
 //! rule. Alignment rules run last so earlier rewrites settle before
 //! padding widths are computed.
 
+use ruff_diagnostics::{Edit, SourceMap};
+
 use crate::{
     diagnostics::Diagnostic,
-    primitives::edit::apply_edits,
+    primitives::edit::{apply_edits, apply_edits_mapped, forward_offsets},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -58,6 +60,9 @@ impl Pipeline {
         }
         let mut diagnostics = Vec::new();
         for rule in &self.rules {
+            if held_out(source, &**rule) {
+                continue;
+            }
             let rule_id = rule.id();
             let groups = prepared_groups(&**rule, source, suppression, rule_id);
             let message = rule.message();
@@ -108,6 +113,9 @@ impl Pipeline {
         let (source, mut diagnostics) = self.rules.iter().try_fold(
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
+                if held_out(&source, &**rule) {
+                    return Ok((source, diagnostics));
+                }
                 let suppression = source.suppression_map();
                 let rule_id = rule.id();
                 let groups = prepared_groups(&**rule, &source, suppression, rule_id);
@@ -116,7 +124,7 @@ impl Pipeline {
                     return Ok((source, diagnostics));
                 }
                 let message = rule.message();
-                let Some(new_text) = apply_edits(source.text(), groups.concat()) else {
+                let Some((new_text, map)) = weave_groups(&source, groups.concat()) else {
                     return Ok((source, diagnostics));
                 };
                 debug_assert!(
@@ -128,7 +136,12 @@ impl Pipeline {
                         .into_iter()
                         .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
                 );
-                reparse_or_reject(&source, new_text, rule_id).map(|src| (src, diagnostics))
+                let next = reparse_or_reject(&source, new_text, rule_id)?;
+                let next = match map {
+                    Some(m) => next.with_cell_offsets(forward_offsets(source.cell_offsets(), &m)),
+                    None => next,
+                };
+                Ok((next, diagnostics))
             },
         )?;
         drop_suppressed_lints(&mut diagnostics, &source, source.suppression_map());
@@ -149,6 +162,9 @@ impl Pipeline {
         self.rules
             .iter()
             .try_fold(source, |source, rule| {
+                if held_out(&source, &**rule) {
+                    return Ok(source);
+                }
                 let rule_id = rule.id();
                 let groups = prepared_groups(&**rule, &source, source.suppression_map(), rule_id);
                 if groups.is_empty() {
@@ -163,12 +179,30 @@ impl Pipeline {
     }
 }
 
+/// Reports whether the pipeline holds `rule` out of `source`'s run, true
+/// for a sibling-reordering rule over a notebook.
+fn held_out(source: &Source, rule: &dyn Rule) -> bool {
+    source.source_type().is_ipynb() && rule.moves_siblings()
+}
+
+/// Splices a rule's concatenated edits into `source`, returning the
+/// woven text and, for a notebook, the `SourceMap` of cell-offset
+/// deltas. An ordinary module skips the map.
+fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<SourceMap>)> {
+    if source.cell_offsets().is_empty() {
+        apply_edits(source.text(), edits).map(|text| (text, None))
+    } else {
+        apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
 
     use assert_matches::assert_matches;
     use ruff_diagnostics::Edit;
+    use ruff_python_ast::PySourceType;
     use ruff_text_size::TextRange;
 
     use super::*;
@@ -176,6 +210,31 @@ mod tests {
     use crate::diagnostics::Severity;
     use crate::primitives::edit::singleton_groups;
     use crate::testing::{GroupSentinelRule, assert_send_sync, breaks_parse, parse, range};
+
+    /// Test-only rule that rewrites and reports relocating a sibling,
+    /// so the pipeline holds it out of a notebook run.
+    struct MoverSentinelRule {
+        edits: Vec<Edit>,
+        id: RuleId,
+    }
+
+    impl Rule for MoverSentinelRule {
+        fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
+            singleton_groups(self.edits.clone())
+        }
+
+        fn id(&self) -> RuleId {
+            self.id
+        }
+
+        fn message(&self) -> &'static str {
+            "mover test rule"
+        }
+
+        fn moves_siblings(&self) -> bool {
+            true
+        }
+    }
 
     /// Test-only lint-only rule that returns the range list supplied
     /// at construction and never produces edits.
@@ -402,6 +461,19 @@ mod tests {
     }
 
     #[test]
+    fn run_applies_a_sibling_mover_on_a_module() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(MoverSentinelRule {
+            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+            id: RuleId::from("mover"),
+        })]);
+        let source = parse("x = 1\n");
+
+        let (result, _) = pipeline.run(source).expect("module run succeeds");
+
+        assert_eq!(result.text(), "y = 1\n");
+    }
+
+    #[test]
     fn run_declines_an_overlapping_group_as_a_no_op() {
         let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
             groups: vec![vec![
@@ -533,6 +605,21 @@ mod tests {
         assert_eq!(diagnostics[0].rule.as_str(), "rewrite-x-to-y");
         assert_eq!(diagnostics[0].severity, Severity::Format);
         assert!(diagnostics[0].fix.is_some());
+    }
+
+    #[test]
+    fn run_holds_a_sibling_mover_out_of_a_notebook() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(MoverSentinelRule {
+            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
+            id: RuleId::from("mover"),
+        })]);
+        let notebook =
+            Source::build("x = 1\n".to_owned(), "<nb>", PySourceType::Ipynb).expect("parses");
+
+        let (result, diagnostics) = pipeline.run(notebook).expect("notebook run succeeds");
+
+        assert_eq!(result.text(), "x = 1\n");
+        assert!(diagnostics.is_empty());
     }
 
     #[test]

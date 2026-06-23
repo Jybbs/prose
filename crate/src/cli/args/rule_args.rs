@@ -35,6 +35,11 @@ pub(crate) struct CheckArgs {
     #[arg(long)]
     pub(crate) stdin: bool,
 
+    /// Treat stdin as this path, its extension selecting the source
+    /// type. A `.ipynb` name reads stdin as a notebook.
+    #[arg(long, value_name = "PATH")]
+    pub(crate) stdin_filename: Option<PathBuf>,
+
     /// Confirm each file's would-be rewrite re-parses, surfacing an
     /// unparseable rule output as a failure. Off by default.
     #[arg(long)]
@@ -72,6 +77,11 @@ pub(crate) struct FormatArgs {
     /// to passing `-` as the sole path.
     #[arg(long)]
     pub(crate) stdin: bool,
+
+    /// Treat stdin as this path, its extension selecting the source
+    /// type. A `.ipynb` name reads stdin as a notebook.
+    #[arg(long, value_name = "PATH")]
+    pub(crate) stdin_filename: Option<PathBuf>,
 }
 
 #[derive(Clone, Copy, Debug, Default, clap::ValueEnum)]

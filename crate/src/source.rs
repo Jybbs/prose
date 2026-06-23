@@ -2,11 +2,12 @@
 
 use std::{path::Path, str::FromStr};
 
+use ruff_notebook::{Notebook, NotebookError};
 use ruff_python_ast::{
-    AnyNodeRef, ExprRef, ModModule,
+    AnyNodeRef, ExprRef, ModModule, PySourceType,
     token::{Token, Tokens},
 };
-use ruff_python_parser::{ParseError, Parsed, parse_module};
+use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
 use ruff_python_trivia::{
     BackwardsTokenizer, CommentRanges, SimpleToken, SimpleTokenKind, leading_indentation,
     lines_before,
@@ -31,18 +32,28 @@ use crate::{
 /// the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]` and
 /// `# prose: ignore[<id>]` per-line directives, plus a
 /// `BindingAnalysis` table of every name's writes and reads.
+/// `source_type` is the parse mode and `cell_offsets` the notebook
+/// cell boundaries, empty for an ordinary module.
 #[derive(Debug)]
 pub struct Source {
     binding_analysis: Box<BindingAnalysis>,
+    cell_offsets: Box<[TextSize]>,
     comment_ranges: CommentRanges,
     file: SourceFile,
     parsed: Parsed<ModModule>,
+    source_type: PySourceType,
     suppression: Box<SuppressionMap>,
 }
 
 impl Source {
-    pub(crate) fn build(text: String, name: impl Into<Box<str>>) -> Result<Self, ParseError> {
-        let parsed = parse_module(&text)?;
+    pub(crate) fn build(
+        text: String,
+        name: impl Into<Box<str>>,
+        source_type: PySourceType,
+    ) -> Result<Self, ParseError> {
+        let Some(parsed) = parse(&text, ParseOptions::from(source_type))?.try_into_module() else {
+            unreachable!("module-mode parse never yields a bare expression");
+        };
         let file = SourceFileBuilder::new(name, text).finish();
         let comment_ranges = CommentRanges::from(parsed.tokens());
         let first_code_offset = parsed.syntax().body.first().map(Ranged::start);
@@ -54,23 +65,45 @@ impl Source {
         let binding_analysis = Box::new(BindingAnalysis::new(parsed.syntax()));
         Ok(Self {
             binding_analysis,
+            cell_offsets: Box::default(),
             comment_ranges,
             file,
             parsed,
+            source_type,
             suppression,
         })
     }
 
-    /// Reads a file from disk and parses it as Python source.
+    /// Builds the concatenated source of a parsed notebook, attaching
+    /// its cell boundaries. The caller keeps `notebook` to re-emit the
+    /// document after formatting.
+    pub(crate) fn from_notebook(
+        notebook: &Notebook,
+        name: impl Into<Box<str>>,
+    ) -> Result<Self, ParseError> {
+        let cell_offsets = notebook.cell_offsets().iter().copied().collect();
+        Self::build(notebook.source_code().to_owned(), name, PySourceType::Ipynb)
+            .map(|source| source.with_cell_offsets(cell_offsets))
+    }
+
+    /// Reads a file from disk and parses it. An `.ipynb` routes through
+    /// the notebook reader, parsing its concatenated code cells.
     ///
     /// # Errors
     ///
-    /// Returns `SourceError::Io` if the read fails and `SourceError::Parse`
-    /// if the bytes are read successfully but do not form a valid module.
+    /// Returns `SourceError::Io` if the read fails, `SourceError::Notebook`
+    /// if an `.ipynb` is not a valid notebook, and `SourceError::Parse`
+    /// if the parsed source is not a valid module.
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, SourceError> {
         let path = path.as_ref();
         let text = fs_err::read_to_string(path)?;
-        Self::build(text, path.display().to_string()).map_err(Into::into)
+        let source_type = PySourceType::try_from_path(path).unwrap_or_default();
+        let name = path.display().to_string();
+        if source_type.is_ipynb() {
+            let notebook = Notebook::from_source_code(&text)?;
+            return Self::from_notebook(&notebook, name).map_err(Into::into);
+        }
+        Self::build(text, name, source_type).map_err(Into::into)
     }
 
     pub fn ast(&self) -> &ModModule {
@@ -80,6 +113,12 @@ impl Source {
     /// Returns the binding-analysis table built during parsing.
     pub fn binding_analysis(&self) -> &BindingAnalysis {
         &self.binding_analysis
+    }
+
+    /// Returns the notebook cell boundaries in the concatenated buffer,
+    /// empty for an ordinary module.
+    pub(crate) fn cell_offsets(&self) -> &[TextSize] {
+        &self.cell_offsets
     }
 
     /// Returns this source's text when it differs from `original`, or
@@ -223,7 +262,7 @@ impl Source {
     ///
     /// Returns `ParseError` if `text` is not a valid Python module.
     pub fn reparse(&self, text: String) -> Result<Self, ParseError> {
-        Self::build(text, self.file.name())
+        Self::build(text, self.file.name(), self.source_type)
     }
 
     /// Returns `true` when `a` and `b` sit on one physical source line,
@@ -254,6 +293,11 @@ impl Source {
         self.file.to_source_code().source_location(offset, encoding)
     }
 
+    /// Returns the parse mode this source was built under.
+    pub(crate) fn source_type(&self) -> PySourceType {
+        self.source_type
+    }
+
     /// Returns the suppression index built during parsing.
     pub(crate) fn suppression_map(&self) -> &SuppressionMap {
         &self.suppression
@@ -276,6 +320,12 @@ impl Source {
             .filter(|token| token.kind() == SimpleTokenKind::Comma)
             .map(|token| token.range)
     }
+
+    /// Attaches the notebook cell boundaries to this source.
+    pub(crate) fn with_cell_offsets(mut self, cell_offsets: Box<[TextSize]>) -> Self {
+        self.cell_offsets = cell_offsets;
+        self
+    }
 }
 
 /// Parses Python source from an in-memory string.
@@ -286,15 +336,17 @@ impl FromStr for Source {
     type Err = ParseError;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        Self::build(text.to_owned(), "<source>")
+        Self::build(text.to_owned(), "<source>", PySourceType::default())
     }
 }
 
-/// Failure to load and parse a Python source file from disk.
+/// Failure to load and parse a source file from disk.
 #[derive(Debug, Error)]
 pub enum SourceError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Notebook(#[from] NotebookError),
     #[error(transparent)]
     Parse(#[from] ParseError),
 }
@@ -315,6 +367,40 @@ mod tests {
             line: OneIndexed::from_zero_indexed(line),
             column: OneIndexed::from_zero_indexed(column),
         }
+    }
+
+    #[test]
+    fn build_with_ipynb_parses_a_line_magic() {
+        let s = Source::build(
+            "%matplotlib inline\nx = 1\n".to_owned(),
+            "<nb>",
+            PySourceType::Ipynb,
+        )
+        .expect("ipython mode parses a magic");
+        assert_eq!(s.source_type(), PySourceType::Ipynb);
+        assert_eq!(s.ast().body.len(), 2);
+    }
+
+    #[test]
+    fn build_with_python_rejects_a_line_magic() {
+        let result = Source::build(
+            "%matplotlib inline\n".to_owned(),
+            "<mod>",
+            PySourceType::Python,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn cell_offsets_default_empty_and_attach_via_with_cell_offsets() {
+        let s = Source::from_str("x = 1\n").expect("parses");
+        assert!(s.cell_offsets().is_empty());
+
+        let s = s.with_cell_offsets(Box::from([TextSize::new(0), TextSize::new(6)]));
+        assert_eq!(
+            s.cell_offsets().to_vec(),
+            vec![TextSize::new(0), TextSize::new(6)]
+        );
     }
 
     #[test]
@@ -424,6 +510,18 @@ mod tests {
     }
 
     #[test]
+    fn from_path_malformed_notebook_returns_notebook_error() {
+        let tmp = tempfile::Builder::new()
+            .suffix(".ipynb")
+            .tempfile()
+            .expect("temp file creates");
+        std::fs::write(tmp.path(), b"{not valid json").expect("temp file writes");
+
+        let result = Source::from_path(tmp.path());
+        assert_matches!(result, Err(SourceError::Notebook(_)));
+    }
+
+    #[test]
     fn from_path_missing_file_returns_io_error() {
         let result = Source::from_path("/definitely/does/not/exist.py");
         assert_matches!(result, Err(SourceError::Io(_)));
@@ -468,6 +566,13 @@ mod tests {
     fn parse_error_returns_ruff_parse_error() {
         let result: Result<Source, ParseError> = Source::from_str("def foo(");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn reparse_preserves_the_source_type() {
+        let s = Source::build("x = 1\n".to_owned(), "<nb>", PySourceType::Ipynb).expect("parses");
+        let reparsed = s.reparse("y = 2\n".to_owned()).expect("reparses");
+        assert_eq!(reparsed.source_type(), PySourceType::Ipynb);
     }
 
     #[test]

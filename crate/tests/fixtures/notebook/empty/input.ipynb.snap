@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/notebook/empty/input.ipynb
+---
+

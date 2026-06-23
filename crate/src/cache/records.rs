@@ -46,10 +46,60 @@ impl CleanReport {
 /// completed `run`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Rewrite {
-    /// `run` produced text differing from the original.
-    Changed(String),
+    /// `run` produced output differing from the original, carried as a
+    /// kind that knows how to write and diff itself.
+    Changed(RewriteKind),
     /// No rewrite was computed.
     Skipped,
-    /// `run` produced text identical to the original.
+    /// `run` produced output identical to the original.
     Unchanged,
+}
+
+impl Rewrite {
+    /// A `Changed` rewrite for a notebook, carrying the re-emitted
+    /// `json` to write and the `before`/`after` code-cell sources the
+    /// per-cell diff renders.
+    pub(crate) fn notebook(before: Vec<String>, after: Vec<String>, json: String) -> Self {
+        Self::Changed(RewriteKind::Notebook(NotebookRewrite {
+            after,
+            before,
+            json,
+        }))
+    }
+
+    /// A `Changed` rewrite for an ordinary module, written and diffed
+    /// as the formatted source.
+    pub(crate) fn text(code: String) -> Self {
+        Self::Changed(RewriteKind::Text(code))
+    }
+}
+
+/// The formatted output of a `run`. `Text` writes and diffs its
+/// source; `Notebook` writes the re-emitted JSON and diffs each code
+/// cell's Python.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum RewriteKind {
+    Notebook(NotebookRewrite),
+    Text(String),
+}
+
+impl RewriteKind {
+    /// The content committed on a write: the source for a module, the
+    /// re-emitted JSON for a notebook.
+    pub(crate) fn written(&self) -> &str {
+        match self {
+            Self::Notebook(notebook) => &notebook.json,
+            Self::Text(code) => code,
+        }
+    }
+}
+
+/// A reformatted notebook: the re-emitted `json` committed on write,
+/// and the `before` and `after` code-cell sources the per-cell diff
+/// slices.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct NotebookRewrite {
+    pub after: Vec<String>,
+    pub before: Vec<String>,
+    pub json: String,
 }

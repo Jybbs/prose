@@ -109,6 +109,10 @@ impl Rule for Alphabetize {
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+
+    fn moves_siblings(&self) -> bool {
+        true
+    }
 }
 
 /// Invariant context threaded through the body-rewrite recursion.

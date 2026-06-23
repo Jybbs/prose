@@ -319,7 +319,7 @@ mod tests {
             ],
         );
         if let FileOutcome::Done { rewrite, .. } = &mut changed {
-            *rewrite = Rewrite::Changed("x   = 1\n".to_owned());
+            *rewrite = Rewrite::text("x   = 1\n".to_owned());
         }
         let clean = outcome_with(parse("y = 2\n"), Vec::new());
         let outcomes = vec![changed, clean, FileOutcome::Failed(ExitStatus::ParseError)];
@@ -359,7 +359,7 @@ mod tests {
         let format = vec![diagnostic(Severity::Format, range, "synthetic-format")];
         let lint = vec![diagnostic(Severity::Lint, range, "synthetic-lint")];
 
-        assert!(file_changed(&[], &Rewrite::Changed("x = 1\n".to_owned())));
+        assert!(file_changed(&[], &Rewrite::text("x = 1\n".to_owned())));
         assert!(file_changed(&format, &Rewrite::Skipped));
         assert!(!file_changed(&format, &Rewrite::Unchanged));
         assert!(!file_changed(&lint, &Rewrite::Skipped));

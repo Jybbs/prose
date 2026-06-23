@@ -2,11 +2,12 @@
 
 use std::{
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 
 use anyhow::Context;
+use ruff_python_ast::PySourceType;
 use ruff_source_file::SourceFile;
 
 use super::{
@@ -22,12 +23,13 @@ use crate::{
 };
 
 mod diff;
+mod notebook;
 mod process;
 mod report;
 mod resolve;
 
-use diff::write_diff;
-use process::{apply_rewrite, process_path, process_paths, process_stdin};
+use diff::write_rewrite_diff;
+use process::{apply_rewrite, process_path, process_paths, process_stdin, read_stdin};
 use report::{
     emit_outcomes, emitter_summary, finish, render_summary, status_from_outcomes, summarize,
 };
@@ -89,9 +91,16 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
         validate: args.validate,
     };
     let outcomes = if args.stdin {
-        vec![process_stdin(stdin, &setup.cwd.pipeline, pass)]
+        let source_type = stdin_source_type(args.stdin_filename.as_deref());
+        let outcome = match read_stdin(stdin) {
+            Ok(text) => process_stdin(text, source_type, &setup.cwd.pipeline, pass),
+            Err(outcome) => outcome,
+        };
+        vec![outcome]
     } else {
-        process_paths(&args.paths, |path| process_path(path, &setup, pass))
+        process_paths(&args.paths, |path, source_type| {
+            process_path(path, source_type, &setup, pass)
+        })
     };
     let summary = emitter_summary(&outcomes);
     emit_outcomes(&outcomes, args.output_format, &mut stdout, &summary)?;
@@ -117,8 +126,9 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
         Err(s) => return Ok(s),
     };
     if args.stdin {
+        let source_type = stdin_source_type(args.stdin_filename.as_deref());
         return format_stdin(
-            stdin,
+            read_stdin(stdin).map(|text| (text, source_type)),
             args.diff,
             args.output_format,
             present,
@@ -184,19 +194,21 @@ fn format_paths_diff<O: Write, E: Write>(
     stdout: &mut O,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
-    let outcomes = process_paths(paths, |path| process_path(path, setup, Pass::Rewrite));
+    let outcomes = process_paths(paths, |path, source_type| {
+        process_path(path, source_type, setup, Pass::Rewrite)
+    });
     for outcome in &outcomes {
         if let FileOutcome::Done {
             file,
-            rewrite: Rewrite::Changed(formatted),
+            rewrite: Rewrite::Changed(kind),
             ..
         } = outcome
         {
-            write_diff(
+            write_rewrite_diff(
                 stdout,
                 file.name(),
                 file.source_text(),
-                formatted,
+                kind,
                 present.decorate_diff(),
             )?;
         }
@@ -221,8 +233,8 @@ fn format_paths_rewrite<O: Write, E: Write>(
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let pass = format_pass(false, format);
-    let outcomes = process_paths(paths, |path| {
-        apply_rewrite(path, process_path(path, setup, pass))
+    let outcomes = process_paths(paths, |path, source_type| {
+        apply_rewrite(path, process_path(path, source_type, setup, pass))
     });
     let summary = emitter_summary(&outcomes);
     if !format.is_text() {
@@ -237,8 +249,8 @@ fn format_paths_rewrite<O: Write, E: Write>(
     Ok(status)
 }
 
-fn format_stdin<R: Read, O: Write, E: Write>(
-    stdin: R,
+fn format_stdin<O: Write, E: Write>(
+    input: Result<(String, PySourceType), FileOutcome>,
     diff: bool,
     format: OutputFormat,
     present: &Presentation,
@@ -246,29 +258,32 @@ fn format_stdin<R: Read, O: Write, E: Write>(
     writer: &mut O,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
-    let outcome = process_stdin(stdin, pipeline, format_pass(diff, format));
+    let (outcome, original) = match input {
+        Ok((text, source_type)) => (
+            process_stdin(
+                text.clone(),
+                source_type,
+                pipeline,
+                format_pass(diff, format),
+            ),
+            text,
+        ),
+        Err(outcome) => (outcome, String::new()),
+    };
     let outcomes = std::slice::from_ref(&outcome);
     let summary = emitter_summary(outcomes);
-    if let FileOutcome::Done { file, rewrite, .. } = &outcome {
+    if let FileOutcome::Done { rewrite, .. } = &outcome {
         if diff {
-            if let Rewrite::Changed(formatted) = rewrite {
-                write_diff(
-                    writer,
-                    "<stdin>",
-                    file.source_text(),
-                    formatted,
-                    present.decorate_diff(),
-                )?;
+            if let Rewrite::Changed(kind) = rewrite {
+                write_rewrite_diff(writer, "<stdin>", &original, kind, present.decorate_diff())?;
             }
         } else if format.is_text() {
-            let to_write = match rewrite {
-                Rewrite::Changed(formatted) => formatted.as_str(),
-                Rewrite::Skipped => unreachable!("format passes compute the rewrite"),
-                Rewrite::Unchanged => file.source_text(),
+            let to_write: &[u8] = match rewrite {
+                Rewrite::Changed(kind) => kind.written().as_bytes(),
+                // A non-Python notebook skips the rewrite, so echo stdin verbatim.
+                Rewrite::Skipped | Rewrite::Unchanged => original.as_bytes(),
             };
-            writer
-                .write_all(to_write.as_bytes())
-                .context("writing stdout")?;
+            writer.write_all(to_write).context("writing stdout")?;
         } else {
             emit_outcomes(outcomes, format, writer, &summary)?;
         }
@@ -281,6 +296,14 @@ fn format_stdin<R: Read, O: Write, E: Write>(
 
 fn has_format_change(diagnostics: &[Diagnostic]) -> bool {
     diagnostics.iter().any(|d| d.severity == Severity::Format)
+}
+
+/// Resolves the source type of stdin input from a `--stdin-filename`,
+/// defaulting to Python when none is given.
+fn stdin_source_type(filename: Option<&Path>) -> PySourceType {
+    filename
+        .and_then(PySourceType::try_from_path)
+        .unwrap_or_default()
 }
 
 fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {

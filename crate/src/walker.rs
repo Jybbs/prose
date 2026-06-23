@@ -2,21 +2,24 @@
 //!
 //! Wraps `ignore::WalkBuilder`, honoring `.gitignore`, `.ignore`, the
 //! user's global ignore file, and hidden-file conventions. Yields
-//! Python source files (`.py`, `.pyi`, `.pyw`) under the input paths.
+//! Python source files (`.py`, `.pyi`, `.pyw`) and Jupyter notebooks
+//! (`.ipynb`) under the input paths, each paired with its source type.
 
 use std::path::PathBuf;
 
 use ignore::WalkBuilder;
 use ruff_python_ast::PySourceType;
 
-/// Walks `paths` recursively and yields the Python files under them.
+/// Walks `paths` recursively and yields the formattable files under
+/// them, each paired with its `PySourceType`.
 ///
 /// `paths` may contain directories or individual files. Regular files
 /// are yielded only when `PySourceType` classifies them as Python
-/// source. Returns an empty iterator when `paths` is empty.
+/// source or a notebook. Returns an empty iterator when `paths` is
+/// empty.
 pub(crate) fn walk(
     paths: &[PathBuf],
-) -> impl Iterator<Item = Result<PathBuf, ignore::Error>> + Send + use<> {
+) -> impl Iterator<Item = Result<(PathBuf, PySourceType), ignore::Error>> + Send + use<> {
     let builder = paths.split_first().map(|(first, rest)| {
         let mut builder = WalkBuilder::new(first);
         for path in rest {
@@ -31,10 +34,12 @@ pub(crate) fn walk(
         .filter_map(|entry| {
             entry
                 .map(|e| {
-                    let is_python_file = e.file_type().is_some_and(|ft| ft.is_file())
-                        && PySourceType::try_from_path(e.path())
-                            .is_some_and(PySourceType::is_py_file_or_stub);
-                    is_python_file.then(|| e.into_path())
+                    e.file_type()
+                        .is_some_and(|ft| ft.is_file())
+                        .then(|| PySourceType::try_from_path(e.path()))
+                        .flatten()
+                        .filter(|t| t.is_py_file_or_stub() || t.is_ipynb())
+                        .map(|t| (e.into_path(), t))
                 })
                 .transpose()
         })
@@ -50,7 +55,7 @@ mod tests {
     use super::*;
 
     fn collect(paths: &[PathBuf]) -> BTreeSet<PathBuf> {
-        walk(paths).map(|r| r.expect("walk entry")).collect()
+        walk(paths).map(|r| r.expect("walk entry").0).collect()
     }
 
     fn write(path: &std::path::Path, contents: &str) {
@@ -107,7 +112,7 @@ mod tests {
     }
 
     #[test]
-    fn yields_python_source_files_and_skips_others() {
+    fn yields_python_and_notebook_files_and_skips_others() {
         let tmp = TempDir::new().expect("tempdir");
         let root = tmp.path();
         write(&root.join("a.py"), "");
@@ -121,7 +126,32 @@ mod tests {
 
         assert_eq!(
             found,
-            BTreeSet::from([root.join("a.py"), root.join("b.pyi"), root.join("c.pyw"),])
+            BTreeSet::from([
+                root.join("a.py"),
+                root.join("b.pyi"),
+                root.join("c.pyw"),
+                root.join("d.ipynb"),
+            ])
+        );
+    }
+
+    #[test]
+    fn pairs_each_file_with_its_source_type() {
+        let tmp = TempDir::new().expect("tempdir");
+        let root = tmp.path();
+        write(&root.join("mod.py"), "");
+        write(&root.join("nb.ipynb"), "");
+
+        let types: BTreeSet<_> = walk(&[root.to_path_buf()])
+            .map(|r| {
+                let (path, source_type) = r.expect("walk entry");
+                (path.extension().unwrap().to_owned(), source_type.is_ipynb())
+            })
+            .collect();
+
+        assert_eq!(
+            types,
+            BTreeSet::from([("py".into(), false), ("ipynb".into(), true)])
         );
     }
 
