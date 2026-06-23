@@ -29,13 +29,10 @@ use crate::{
     config::Config,
     primitives::{
         binding::{annotated_name_target, single_name_target, tail_identifier},
-        edit::{
-            any_owned, apply_inline_edits, narrowed_replacement, singleton_groups, splice_bodies,
-        },
+        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, splice_bodies},
         imports::{defers_annotations, import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
-            any_sibling_shares_line, assemble_blocks, blocks_span, is_identity, member_block,
-            permute_in_place,
+            any_sibling_shares_line, assemble_or_borrow, permute_in_place, rendered_member_blocks,
         },
         params::pins_positional_params,
         scope::{BodyScope, compound_sub_bodies, scoped_body},
@@ -184,7 +181,7 @@ fn method_group(f: &StmtFunctionDef) -> u8 {
 /// family sorts apply.
 fn rewrite_body<'a>(
     ctx: RewriteCtx<'a>,
-    body: &[Stmt],
+    body: &'a [Stmt],
     outer: TextRange,
     scope: BodyScope,
 ) -> (Cow<'a, str>, TextRange) {
@@ -195,15 +192,9 @@ fn rewrite_body<'a>(
         source,
         ..
     } = ctx;
-    let (blocks, rendered): (Vec<TextRange>, Vec<Cow<'a, str>>) = body
-        .iter()
-        .enumerate()
-        .map(|(i, stmt)| {
-            let block = member_block(source, body, i, outer);
-            (block, rewrite_stmt(ctx, stmt, block, scope))
-        })
-        .unzip();
-    let body_span = blocks_span(&blocks);
+    let (blocks, rendered) = rendered_member_blocks(source, body, outer, |stmt, block| {
+        rewrite_stmt(ctx, stmt, block, scope)
+    });
     let n = body.len();
     let mut order: Vec<usize> = (0..n).collect();
     let mut import_run_slots: Vec<usize> = Vec::new();
@@ -249,13 +240,14 @@ fn rewrite_body<'a>(
                 && !sections.is_boundary(slot + 1)
         }));
     }
-    if !any_owned(&rendered) && is_identity(&order) && import_run_slots.is_empty() {
-        return (Cow::Borrowed(source.slice(body_span)), body_span);
-    }
-    let assembled = assemble_blocks(source, &blocks, &rendered, &order, |i| {
-        import_run_slots.binary_search(&i).is_ok().then_some("\n")
-    });
-    (Cow::Owned(assembled), body_span)
+    assemble_or_borrow(
+        source,
+        &blocks,
+        &rendered,
+        &order,
+        !import_run_slots.is_empty(),
+        |i| import_run_slots.binary_search(&i).is_ok().then_some("\n"),
+    )
 }
 
 /// Recurses into each sub-body of a compound statement, splicing
@@ -263,7 +255,7 @@ fn rewrite_body<'a>(
 /// keyword, and inter-arm regions to leaf-level edits.
 fn rewrite_compound<'a>(
     ctx: RewriteCtx<'a>,
-    stmt: &Stmt,
+    stmt: &'a Stmt,
     block: TextRange,
     scope: BodyScope,
 ) -> Cow<'a, str> {
@@ -282,7 +274,7 @@ fn rewrite_compound<'a>(
 /// and other body-bearing arms. Other shapes apply leaf edits in place.
 fn rewrite_stmt<'a>(
     ctx: RewriteCtx<'a>,
-    stmt: &Stmt,
+    stmt: &'a Stmt,
     block: TextRange,
     parent_scope: BodyScope,
 ) -> Cow<'a, str> {

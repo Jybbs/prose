@@ -34,47 +34,6 @@ pub(super) struct BandPlan<'src> {
 }
 
 impl BandPlan<'_> {
-    /// Applies the plan to `order`, draining each section's slots into
-    /// imports, leading constants, definitions, then trailing constants.
-    /// A section marker drains the running region, so a band never crosses
-    /// a divider. Returns the [`Banding`] when the assembled order both
-    /// differs from `order` and seats every reference ahead of its
-    /// referrer, rewriting `order` in place. Leaves `order` untouched
-    /// otherwise.
-    pub(super) fn apply(
-        self,
-        body: &[Stmt],
-        sections: &Sections,
-        first_party: &[String],
-        grouped: bool,
-        order: &mut Vec<usize>,
-    ) -> Option<Banding> {
-        let drain = |region: &mut Vec<usize>, banded: &mut Vec<usize>| {
-            self.drain_region(body, first_party, grouped, region, banded);
-        };
-        let mut banded = Vec::with_capacity(order.len());
-        let mut region = Vec::new();
-        for (slot, &idx) in order.iter().enumerate() {
-            if sections.is_boundary(slot) {
-                drain(&mut region, &mut banded);
-            }
-            if self.ranks.contains_key(&idx) {
-                region.push(idx);
-            } else {
-                drain(&mut region, &mut banded);
-                banded.push(idx);
-            }
-        }
-        drain(&mut region, &mut banded);
-        (self.is_sound(&banded) && banded != *order).then(|| {
-            *order = banded;
-            Banding {
-                carries: self.carries,
-                ranks: self.ranks,
-            }
-        })
-    }
-
     /// Appends `region`'s body indices to `out`, the import run sorted to
     /// the front, the leading constants below it, the definitions in
     /// incoming order, the trailing constants last. The import run sorts by
@@ -119,6 +78,47 @@ impl BandPlan<'_> {
         self.edges
             .iter()
             .all(|&(from, to)| position[to] < position[from])
+    }
+
+    /// Applies the plan to `order`, draining each section's slots into
+    /// imports, leading constants, definitions, then trailing constants.
+    /// A section marker drains the running region, so a band never crosses
+    /// a divider. Returns the [`Banding`] when the assembled order both
+    /// differs from `order` and seats every reference ahead of its
+    /// referrer, rewriting `order` in place. Leaves `order` untouched
+    /// otherwise.
+    pub(super) fn apply(
+        self,
+        body: &[Stmt],
+        sections: &Sections,
+        first_party: &[String],
+        grouped: bool,
+        order: &mut Vec<usize>,
+    ) -> Option<Banding> {
+        let drain = |region: &mut Vec<usize>, banded: &mut Vec<usize>| {
+            self.drain_region(body, first_party, grouped, region, banded);
+        };
+        let mut banded = Vec::with_capacity(order.len());
+        let mut region = Vec::new();
+        for (slot, &idx) in order.iter().enumerate() {
+            if sections.is_boundary(slot) {
+                drain(&mut region, &mut banded);
+            }
+            if self.ranks.contains_key(&idx) {
+                region.push(idx);
+            } else {
+                drain(&mut region, &mut banded);
+                banded.push(idx);
+            }
+        }
+        drain(&mut region, &mut banded);
+        (self.is_sound(&banded) && banded != *order).then(|| {
+            *order = banded;
+            Banding {
+                carries: self.carries,
+                ranks: self.ranks,
+            }
+        })
     }
 }
 

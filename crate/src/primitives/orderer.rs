@@ -53,6 +53,28 @@ pub(crate) fn assemble_blocks<'src>(
     out
 }
 
+/// Assembles `rendered` in `order` with `gap`, returning the covered
+/// span alongside the text. Short-circuits to a borrow of the source
+/// span when no child rewrote and `order` is identity, unless `forced`
+/// holds, the signal a gap override reshapes spacing without reordering.
+pub(crate) fn assemble_or_borrow<'src>(
+    source: &'src Source,
+    blocks: &[TextRange],
+    rendered: &[Cow<'src, str>],
+    order: &[usize],
+    forced: bool,
+    gap: impl FnMut(usize) -> Option<&'src str>,
+) -> (Cow<'src, str>, TextRange) {
+    let span = blocks_span(blocks);
+    if !forced && !any_owned(rendered) && is_identity(order) {
+        return (Cow::Borrowed(source.slice(span)), span);
+    }
+    (
+        Cow::Owned(assemble_blocks(source, blocks, rendered, order, gap)),
+        span,
+    )
+}
+
 /// Concatenates `block_texts` in `order`, re-emitting each member's comma so
 /// it lands after the value and before any trailing comment. `value_ends`
 /// split the code from each comma-and-comment tail. Non-last slots carry a
@@ -135,12 +157,6 @@ pub(crate) fn chunk_runs<T>(
         .collect()
 }
 
-/// True when `order` is the identity permutation `0..order.len()`, the
-/// signal a reorder left every slot in source position.
-pub(crate) fn is_identity(order: &[usize]) -> bool {
-    order.iter().copied().eq(0..order.len())
-}
-
 /// [`block_range`] for `items[i]` with its start pushed below any section
 /// marker leading it, so a banner or hash heading stays in the gap above
 /// the member rather than traveling with it through a reorder. The
@@ -212,6 +228,25 @@ where
         order[slot] = src;
     }
     true
+}
+
+/// Member blocks for every slot of `items`, each paired with the text
+/// `render` produces for it, the `(blocks, rendered)` split a recursive
+/// body rewriter folds its descendant rewrites into.
+pub(crate) fn rendered_member_blocks<'src, T: Ranged>(
+    source: &'src Source,
+    items: &'src [T],
+    outer: TextRange,
+    mut render: impl FnMut(&'src T, TextRange) -> Cow<'src, str>,
+) -> (Vec<TextRange>, Vec<Cow<'src, str>>) {
+    items
+        .iter()
+        .enumerate()
+        .map(|(i, item)| {
+            let block = member_block(source, items, i, outer);
+            (block, render(item, block))
+        })
+        .unzip()
 }
 
 /// Reorders a comma-separated group laid out one member per line, the comma
@@ -295,18 +330,9 @@ where
             (block, render_block(i, block))
         })
         .unzip();
-    let span = blocks_span(&blocks);
     let mut order: Vec<usize> = (0..items.len()).collect();
-    let permuted = permute_full(&mut order, items, classify);
-    if !permuted && !any_owned(&rendered) {
-        return (Cow::Borrowed(source.slice(span)), span);
-    }
-    (
-        Cow::Owned(assemble_blocks(source, &blocks, &rendered, &order, |_| {
-            None
-        })),
-        span,
-    )
+    permute_full(&mut order, items, classify);
+    assemble_or_borrow(source, &blocks, &rendered, &order, false, |_| None)
 }
 
 /// Inverts `order` into the slot each item index occupies, the reverse
@@ -318,6 +344,12 @@ pub(crate) fn slot_positions(order: &[usize]) -> Vec<usize> {
         positions[idx] = slot;
     }
     positions
+}
+
+/// True when `order` is the identity permutation `0..order.len()`, the
+/// signal a reorder left every slot in source position.
+fn is_identity(order: &[usize]) -> bool {
+    order.iter().copied().eq(0..order.len())
 }
 
 /// True when the last member carries a trailing comma on its line.
@@ -512,7 +544,10 @@ mod tests {
     #[case(&[0, 1, 2], true)]
     #[case(&[0, 2, 1], false)]
     #[case(&[], true)]
-    fn is_identity_detects_the_identity_permutation(#[case] order: &[usize], #[case] expected: bool) {
+    fn is_identity_detects_the_identity_permutation(
+        #[case] order: &[usize],
+        #[case] expected: bool,
+    ) {
         assert_eq!(is_identity(order), expected);
     }
 

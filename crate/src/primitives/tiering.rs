@@ -64,6 +64,44 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
     }
 }
 
+/// Returns a per-member `(tier, key)` lookup keyed by each definition's
+/// start offset, or `None` when the run cannot reorder. The run skips
+/// when two members share a name or when the intra-run reference graph
+/// carries a cycle. A member depends on every other sibling it names in
+/// its evaluation-time surface, and the composite `(tier, key)` combines
+/// a Kahn-style topological tier with the member's existing sort key, so
+/// a definition never sorts ahead of a sibling it names at evaluation
+/// time.
+pub(crate) fn def_run_tier_keys<'src, K: Copy>(
+    body: &'src [Stmt],
+    defer_annotations: bool,
+    member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,
+) -> Option<HashMap<TextSize, (usize, K)>> {
+    let members: Vec<(&'src Stmt, &'src str, K)> = body
+        .iter()
+        .filter_map(|stmt| member(stmt).map(|(name, key)| (stmt, name, key)))
+        .collect();
+    let name_to_idx = unique_name_index(members.iter().map(|&(_, name, _)| name))?;
+    let dep_sets: Vec<HashSet<usize>> = members
+        .iter()
+        .enumerate()
+        .map(|(idx, &(stmt, _, _))| {
+            eval_time_refs(stmt, defer_annotations)
+                .into_iter()
+                .filter_map(|name| name_to_idx.get(name).copied())
+                // A recursive self-reference does not constrain sibling order.
+                .filter(|&dep| dep != idx)
+                .collect()
+        })
+        .collect();
+    tier_key_map(
+        members
+            .into_iter()
+            .map(|(stmt, _, key)| (stmt.range().start(), key)),
+        &dep_sets,
+    )
+}
+
 /// Collects the load-context names in `expr`, pruning every function
 /// and lambda body, the reference set a module constant's value or
 /// annotation contributes to the hoist graph.
@@ -132,44 +170,6 @@ pub(crate) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
         }
     }
     tiers.into_iter().collect()
-}
-
-/// Returns a per-member `(tier, key)` lookup keyed by each definition's
-/// start offset, or `None` when the run cannot reorder. The run skips
-/// when two members share a name or when the intra-run reference graph
-/// carries a cycle. A member depends on every other sibling it names in
-/// its evaluation-time surface, and the composite `(tier, key)` combines
-/// a Kahn-style topological tier with the member's existing sort key, so
-/// a definition never sorts ahead of a sibling it names at evaluation
-/// time.
-pub(crate) fn def_run_tier_keys<'src, K: Copy>(
-    body: &'src [Stmt],
-    defer_annotations: bool,
-    member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,
-) -> Option<HashMap<TextSize, (usize, K)>> {
-    let members: Vec<(&'src Stmt, &'src str, K)> = body
-        .iter()
-        .filter_map(|stmt| member(stmt).map(|(name, key)| (stmt, name, key)))
-        .collect();
-    let name_to_idx = unique_name_index(members.iter().map(|&(_, name, _)| name))?;
-    let dep_sets: Vec<HashSet<usize>> = members
-        .iter()
-        .enumerate()
-        .map(|(idx, &(stmt, _, _))| {
-            eval_time_refs(stmt, defer_annotations)
-                .into_iter()
-                .filter_map(|name| name_to_idx.get(name).copied())
-                // A recursive self-reference does not constrain sibling order.
-                .filter(|&dep| dep != idx)
-                .collect()
-        })
-        .collect();
-    tier_key_map(
-        members
-            .into_iter()
-            .map(|(stmt, _, key)| (stmt.range().start(), key)),
-        &dep_sets,
-    )
 }
 
 /// Tiers `dep_sets` and assembles a per-statement `(tier, key)` lookup

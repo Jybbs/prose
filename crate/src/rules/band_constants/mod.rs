@@ -14,11 +14,9 @@ use ruff_text_size::TextRange;
 use crate::{
     config::Config,
     primitives::{
-        edit::{any_owned, narrowed_replacement, singleton_groups, splice_bodies},
+        edit::{narrowed_replacement, singleton_groups, splice_bodies},
         imports::defers_annotations,
-        orderer::{
-            any_sibling_shares_line, assemble_blocks, blocks_span, is_identity, member_block,
-        },
+        orderer::{any_sibling_shares_line, assemble_or_borrow, rendered_member_blocks},
         scope::{compound_sub_bodies, scoped_body},
         sections::Sections,
     },
@@ -94,15 +92,10 @@ impl<'a> Bander<'a> {
     /// `Cow::Owned` when the band reorders or a descendant arm rewrites,
     /// falling back to `Cow::Borrowed` over `source.slice(span)`.
     fn band_body(&self, body: &'a [Stmt], outer: TextRange) -> (Cow<'a, str>, TextRange) {
-        let (mut blocks, mut rendered): (Vec<TextRange>, Vec<Cow<'a, str>>) = body
-            .iter()
-            .enumerate()
-            .map(|(i, stmt)| {
-                let block = member_block(self.source, body, i, outer);
-                (block, self.band_stmt(stmt, block))
-            })
-            .unzip();
-        let span = blocks_span(&blocks);
+        let (mut blocks, mut rendered) =
+            rendered_member_blocks(self.source, body, outer, |stmt, block| {
+                self.band_stmt(stmt, block)
+            });
         let mut order: Vec<usize> = (0..body.len()).collect();
         let band = (!any_sibling_shares_line(self.source, body))
             .then(|| {
@@ -113,10 +106,7 @@ impl<'a> Bander<'a> {
         if let Some(b) = &band {
             apply_band_carries(self.source, b, &mut blocks, &mut rendered);
         }
-        if !any_owned(&rendered) && is_identity(&order) {
-            return (Cow::Borrowed(self.source.slice(span)), span);
-        }
-        let assembled = assemble_blocks(self.source, &blocks, &rendered, &order, |i| {
+        assemble_or_borrow(self.source, &blocks, &rendered, &order, false, |i| {
             band.as_ref().and_then(|b| {
                 banded_gap(
                     &b.ranks,
@@ -127,8 +117,7 @@ impl<'a> Bander<'a> {
                     order[i + 1],
                 )
             })
-        });
-        (Cow::Owned(assembled), span)
+        })
     }
 
     /// Folds a banded compound arm into `block`. A class or function

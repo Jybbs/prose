@@ -48,6 +48,10 @@ Splices the reordered children into a final string the rule can emit as a single
 
 The comma-aware counterpart to `assemble_blocks` for one-member-per-line groups. It splits each block into code, separator comma, and trailing comment at `value_ends`, then re-emits the comma after the value and before the comment per slot, so the comment rides with its member. Non-last slots always carry a comma, the new-last slot matches `source_last_has_comma`, and a blank line follows every slot in `divider_slots`. [[alphabetize]]'s dict and leaf reorders share it.
 
+### `assemble_or_borrow(source, blocks, rendered, order, forced, gap)`
+
+The borrow-aware finalizer over `assemble_blocks`, returning the assembled text alongside the block-extent span it covers. It short-circuits to `Cow::Borrowed(source.slice(span))` when no child rewrote and `order` is the identity permutation, so a no-op reorder pays no allocation, and assembles owned otherwise. `forced` overrides the short-circuit for a caller whose `gap` reshapes spacing without reordering, the case of an import run collapsing its blank lines in place. `reorder_text` and the recursive body rewriters in [[alphabetize]] and [[band-constants]] all finalize through it.
+
 ### Block-Geometry Helpers
 
 `block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line. `outer` bounds the leading-comment scan's lower edge to a parent extent *(the previous item's end, or `outer.start()` for the first item)*, while the forward scan reaches the next item's start or, for the last item, its own line end. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, used to size the outer `Edit` that replaces the reordered region.
