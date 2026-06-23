@@ -15,6 +15,25 @@ use tempfile::{TempDir, tempdir};
 const ALIGNS: &str = include_str!("fixtures/notebook/code_cell_aligns/input.ipynb");
 const EMPTY: &str = include_str!("fixtures/notebook/empty/input.ipynb");
 
+/// A Python notebook whose sole code cell uses CRLF line endings. The
+/// rewrite aligns the assignment while preserving each `\r\n`.
+const CRLF_CELLS: &str = r#"{
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": ["ab = 1\r\n", "x = 2\r\n"]
+    }
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
 /// An R-kernel notebook the formatter passes over, the way an excluded
 /// path is skipped.
 const NON_PYTHON: &str = r#"{
@@ -895,6 +914,19 @@ fn notebook_format_is_idempotent() {
 }
 
 #[test]
+fn notebook_format_preserves_crlf_line_endings() {
+    let (_dir, path) = fixture("nb.ipynb", CRLF_CELLS);
+    prose()
+        .args(["format", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .success();
+    let after = std::fs::read_to_string(&path).expect("reads");
+    let parsed: serde_json::Value = serde_json::from_str(&after).expect("valid JSON");
+    assert_eq!(parsed["cells"][0]["source"][1], "x  = 2\r\n");
+}
+
+#[test]
 fn notebook_format_preserves_outputs_and_rewrites_code() {
     let (_dir, path) = fixture("nb.ipynb", ALIGNS);
     prose()
@@ -927,6 +959,16 @@ fn notebook_non_python_is_passed_over() {
         .arg(&path)
         .assert()
         .success();
+}
+
+#[test]
+fn notebook_non_python_through_stdin_is_echoed_verbatim() {
+    let assert = prose()
+        .args(["format", "--stdin", "--stdin-filename", "x.ipynb"])
+        .write_stdin(NON_PYTHON)
+        .assert()
+        .success();
+    assert_eq!(stdout_utf8(&assert), NON_PYTHON);
 }
 
 #[test]

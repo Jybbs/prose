@@ -280,8 +280,8 @@ fn format_stdin<O: Write, E: Write>(
         } else if format.is_text() {
             let to_write: &[u8] = match rewrite {
                 Rewrite::Changed(kind) => kind.written().as_bytes(),
-                Rewrite::Skipped => unreachable!("format passes compute the rewrite"),
-                Rewrite::Unchanged => original.as_bytes(),
+                // A non-Python notebook skips the rewrite, so echo stdin verbatim.
+                Rewrite::Skipped | Rewrite::Unchanged => original.as_bytes(),
             };
             writer.write_all(to_write).context("writing stdout")?;
         } else {

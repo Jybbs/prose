@@ -78,7 +78,7 @@ prose check --validate .
 prose check - < module.py
 ```
 
-## Notebook inputs
+## Notebook Inputs
 
 `format` and `check` accept Jupyter notebooks (`.ipynb`) alongside `.py` files, both in path-mode discovery and through `--stdin-filename`, whose extension selects the source type. *Prose* parses the notebook, runs the pipeline once over the concatenated code-cell source, and re-emits the JSON with outputs, metadata, and cell structure preserved, rewriting only the code each cell holds. The sibling-reordering rules (`alphabetize`, `band-constants`, `group-imports`) stay out of a notebook run, because a cell's place in the execution order forbids moving code across a cell boundary. A non-Python notebook, an R or Julia kernel, is passed over the way an excluded path is skipped, and `format --diff` renders a unified diff per code cell under a cell header.
 

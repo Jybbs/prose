@@ -58,10 +58,9 @@ impl Pipeline {
         if suppression.file_is_suppressed() {
             return Vec::new();
         }
-        let notebook = source.source_type().is_ipynb();
         let mut diagnostics = Vec::new();
         for rule in &self.rules {
-            if notebook && rule.moves_siblings() {
+            if held_out(source, &**rule) {
                 continue;
             }
             let rule_id = rule.id();
@@ -111,11 +110,10 @@ impl Pipeline {
         if source.suppression_map().file_is_suppressed() {
             return Ok((source, Vec::new()));
         }
-        let notebook = source.source_type().is_ipynb();
         let (source, mut diagnostics) = self.rules.iter().try_fold(
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
-                if notebook && rule.moves_siblings() {
+                if held_out(&source, &**rule) {
                     return Ok((source, diagnostics));
                 }
                 let suppression = source.suppression_map();
@@ -138,10 +136,9 @@ impl Pipeline {
                         .into_iter()
                         .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
                 );
-                let forwarded = map.map(|m| forward_offsets(source.cell_offsets(), &m));
                 let next = reparse_or_reject(&source, new_text, rule_id)?;
-                let next = match forwarded {
-                    Some(offsets) => next.with_cell_offsets(offsets),
+                let next = match map {
+                    Some(m) => next.with_cell_offsets(forward_offsets(source.cell_offsets(), &m)),
                     None => next,
                 };
                 Ok((next, diagnostics))
@@ -162,11 +159,10 @@ impl Pipeline {
     /// Returns `PipelineError::Reparse` when a rule's edit list produces
     /// text that does not re-parse as Python.
     pub(crate) fn validate(&self, source: Source) -> Result<(), PipelineError> {
-        let notebook = source.source_type().is_ipynb();
         self.rules
             .iter()
             .try_fold(source, |source, rule| {
-                if notebook && rule.moves_siblings() {
+                if held_out(&source, &**rule) {
                     return Ok(source);
                 }
                 let rule_id = rule.id();
@@ -181,6 +177,12 @@ impl Pipeline {
             })
             .map(drop)
     }
+}
+
+/// Reports whether the pipeline holds `rule` out of `source`'s run, true
+/// for a sibling-reordering rule over a notebook.
+fn held_out(source: &Source, rule: &dyn Rule) -> bool {
+    source.source_type().is_ipynb() && rule.moves_siblings()
 }
 
 /// Splices a rule's concatenated edits into `source`, returning the
