@@ -26,7 +26,7 @@ fn collection_layout_facet_false_in_sub_table_leaves_siblings_default() {
     assert!(rules.enabled);
     assert!(rules.explode);
     assert!(rules.wrap_dict_entries);
-    assert_eq!(rules.max_inline_dict_entries, NonZeroUsize::new(3));
+    assert_eq!(rules.max_dict_entries.cap(), Some(3));
 }
 
 #[test]
@@ -174,113 +174,136 @@ fn imports_first_party_reads_kebab_case_list() {
 }
 
 #[test]
-fn max_atomics_per_line_explicit_integer_takes_effect() {
-    let config = Config::from_pyproject_str(
-        "[tool.prose.rules.collection-layout]\nmax-atomics-per-line = 3\n",
-    )
+fn max_args_explicit_integer_takes_effect() {
+    let config = Config::from_pyproject_str("[tool.prose.rules.call-layout]\nmax-args = 5\n")
+        .expect("parses");
+
+    assert_eq!(config.rules.call_layout.max_args.cap(), Some(5));
+}
+
+#[test]
+fn max_args_false_disables_cap() {
+    let config = Config::from_pyproject_str("[tool.prose.rules.call-layout]\nmax-args = false\n")
+        .expect("parses");
+
+    assert!(config.rules.call_layout.max_args.cap().is_none());
+}
+
+#[rstest]
+#[case("5")]
+#[case("false")]
+fn max_args_round_trips_through_toml(#[case] value: &str) {
+    let config = Config::from_pyproject_str(&format!(
+        "[tool.prose.rules.call-layout]\nmax-args = {value}\n"
+    ))
     .expect("parses");
+    let dumped = toml::to_string(&config).expect("Config serializes");
+    let reparsed = Config::from_prose_toml_str(&dumped).expect("reparses");
 
     assert_eq!(
-        config.rules.collection_layout.max_atomics_per_line,
-        NonZeroUsize::new(3),
+        reparsed.rules.call_layout.max_args.cap(),
+        config.rules.call_layout.max_args.cap(),
     );
 }
 
 #[test]
-fn max_atomics_per_line_false_disables_cap() {
-    let config = Config::from_pyproject_str(
-        "[tool.prose.rules.collection-layout]\nmax-atomics-per-line = false\n",
-    )
-    .expect("parses");
-
-    assert!(
-        config
-            .rules
-            .collection_layout
-            .max_atomics_per_line
-            .is_none()
-    );
+fn max_args_true_returns_toml_error() {
+    assert_toml_error("[tool.prose.rules.call-layout]\nmax-args = true\n");
 }
 
 #[test]
-fn max_atomics_per_line_true_returns_toml_error() {
-    assert_toml_error("[tool.prose.rules.collection-layout]\nmax-atomics-per-line = true\n");
-}
-
-#[test]
-fn max_inline_dict_entries_explicit_integer_takes_effect() {
-    let config = Config::from_pyproject_str(
-        "[tool.prose.rules.collection-layout]\nmax-inline-dict-entries = 5\n",
-    )
-    .expect("parses");
-
-    assert_eq!(
-        config.rules.collection_layout.max_inline_dict_entries,
-        NonZeroUsize::new(5),
-    );
-}
-
-#[test]
-fn max_inline_dict_entries_false_disables_count_trigger() {
-    let config = Config::from_pyproject_str(
-        "[tool.prose.rules.collection-layout]\nmax-inline-dict-entries = false\n",
-    )
-    .expect("parses");
-
-    assert!(
-        config
-            .rules
-            .collection_layout
-            .max_inline_dict_entries
-            .is_none()
-    );
-}
-
-#[test]
-fn max_inline_dict_entries_true_returns_toml_error() {
-    assert_toml_error("[tool.prose.rules.collection-layout]\nmax-inline-dict-entries = true\n");
-}
-
-#[test]
-fn max_inline_dict_entries_zero_returns_toml_error() {
-    assert_toml_error("[tool.prose.rules.collection-layout]\nmax-inline-dict-entries = 0\n");
-}
-
-#[test]
-fn max_inline_params_explicit_integer_takes_effect() {
+fn max_atomics_explicit_integer_takes_effect() {
     let config =
-        Config::from_pyproject_str("[tool.prose.rules.signature-layout]\nmax-inline-params = 5\n")
+        Config::from_pyproject_str("[tool.prose.rules.collection-layout]\nmax-atomics = 3\n")
+            .expect("parses");
+
+    assert_eq!(config.rules.collection_layout.max_atomics.cap(), Some(3));
+}
+
+#[test]
+fn max_atomics_false_disables_cap() {
+    let config =
+        Config::from_pyproject_str("[tool.prose.rules.collection-layout]\nmax-atomics = false\n")
+            .expect("parses");
+
+    assert!(config.rules.collection_layout.max_atomics.cap().is_none());
+}
+
+#[test]
+fn max_atomics_true_returns_toml_error() {
+    assert_toml_error("[tool.prose.rules.collection-layout]\nmax-atomics = true\n");
+}
+
+#[test]
+fn max_dict_entries_explicit_integer_takes_effect() {
+    let config =
+        Config::from_pyproject_str("[tool.prose.rules.collection-layout]\nmax-dict-entries = 5\n")
             .expect("parses");
 
     assert_eq!(
-        config.rules.signature_layout.max_inline_params,
-        NonZeroUsize::new(5),
+        config.rules.collection_layout.max_dict_entries.cap(),
+        Some(5)
     );
 }
 
 #[test]
-fn max_inline_params_false_disables_count_trigger() {
+fn max_dict_entries_false_disables_count_trigger() {
     let config = Config::from_pyproject_str(
-        "[tool.prose.rules.signature-layout]\nmax-inline-params = false\n",
+        "[tool.prose.rules.collection-layout]\nmax-dict-entries = false\n",
     )
     .expect("parses");
 
-    assert!(config.rules.signature_layout.max_inline_params.is_none());
+    assert!(
+        config
+            .rules
+            .collection_layout
+            .max_dict_entries
+            .cap()
+            .is_none()
+    );
 }
 
 #[test]
-fn max_inline_params_string_value_returns_toml_error() {
-    assert_toml_error("[tool.prose.rules.signature-layout]\nmax-inline-params = \"off\"\n");
+fn max_dict_entries_true_returns_toml_error() {
+    assert_toml_error("[tool.prose.rules.collection-layout]\nmax-dict-entries = true\n");
 }
 
 #[test]
-fn max_inline_params_true_returns_toml_error() {
-    assert_toml_error("[tool.prose.rules.signature-layout]\nmax-inline-params = true\n");
+fn max_dict_entries_zero_returns_toml_error() {
+    assert_toml_error("[tool.prose.rules.collection-layout]\nmax-dict-entries = 0\n");
 }
 
 #[test]
-fn max_inline_params_zero_returns_toml_error() {
-    assert_toml_error("[tool.prose.rules.signature-layout]\nmax-inline-params = 0\n");
+fn max_params_explicit_integer_takes_effect() {
+    let config =
+        Config::from_pyproject_str("[tool.prose.rules.signature-layout]\nmax-params = 5\n")
+            .expect("parses");
+
+    assert_eq!(config.rules.signature_layout.max_params.cap(), Some(5));
+}
+
+#[test]
+fn max_params_false_disables_count_trigger() {
+    let config =
+        Config::from_pyproject_str("[tool.prose.rules.signature-layout]\nmax-params = false\n")
+            .expect("parses");
+
+    assert!(config.rules.signature_layout.max_params.cap().is_none());
+}
+
+#[test]
+fn max_params_string_value_returns_toml_error() {
+    assert_toml_error("[tool.prose.rules.signature-layout]\nmax-params = \"off\"\n");
+}
+
+#[test]
+fn max_params_true_returns_toml_error() {
+    assert_toml_error("[tool.prose.rules.signature-layout]\nmax-params = true\n");
+}
+
+#[test]
+fn max_params_zero_returns_toml_error() {
+    assert_toml_error("[tool.prose.rules.signature-layout]\nmax-params = 0\n");
 }
 
 #[test]
@@ -370,14 +393,14 @@ fn rules_inline_table_compiles_regex_knob() {
 }
 
 #[test]
-fn rules_inline_table_resolves_nested_max_inline_params() {
+fn rules_inline_table_resolves_nested_max_params() {
     let config = Config::from_pyproject_str(
-        "[tool.prose.rules]\nsignature-layout = { max-inline-params = false }\n",
+        "[tool.prose.rules]\nsignature-layout = { max-params = false }\n",
     )
     .expect("parses");
 
     assert!(config.rules.signature_layout.enabled);
-    assert!(config.rules.signature_layout.max_inline_params.is_none());
+    assert!(config.rules.signature_layout.max_params.cap().is_none());
 }
 
 #[test]
