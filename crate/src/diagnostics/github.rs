@@ -15,7 +15,7 @@ impl Emitter for Github {
         runs: &[Run<'_>],
         _summary: &EmitterSummary,
     ) -> io::Result<()> {
-        for (file, diag) in diagnostics(runs) {
+        for (file, _index, diag) in diagnostics(runs) {
             emit_one(writer, file, diag)?;
         }
         Ok(())
@@ -57,7 +57,7 @@ mod tests {
         Github
             .emit(
                 &mut buf,
-                &[(file, std::slice::from_ref(diag))],
+                &[Run::new(file, std::slice::from_ref(diag), None)],
                 &EmitterSummary::default(),
             )
             .expect("emits");

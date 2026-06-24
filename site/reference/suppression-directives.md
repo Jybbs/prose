@@ -85,7 +85,7 @@ A malformed directive *(unclosed brackets, misspelled keyword, trailing text aft
 
 ## File-Level Suppression
 
-`# prose: off` on a standalone comment line *(not trailing a statement)* opens a suppression span starting at that line. When no matching `# prose: on` follows, the span runs to EOF, suppressing every *Prose* rewrite below the marker. Placed at the top of the file, the directive consequently covers every line in the file:
+`# prose: off` on a standalone comment line *(not trailing a statement)* opens a suppression span starting at that line. When no matching `# prose: on` follows, the span runs to EOF, suppressing every *Prose* rewrite below the marker, though inside a notebook it closes at the end of its own code cell rather than crossing into the next. Placed at the top of the file, the directive consequently covers every line in the file:
 
 ```python
 # prose: off

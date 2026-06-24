@@ -12,6 +12,8 @@ The format selection is per-invocation, defaulting to `text`. All formats write 
 
 The default format, rendering each diagnostic as a rustc-style snippet with a primary annotation marking the offending range, a label naming the rule, and *(when the rule auto-fixes)* a HELP block showing the replacement.
 
+A notebook diagnostic renders under a `cell N` header against that cell's own source, keeping the caret cell-relative.
+
 ```
 warning: align consecutive `=` operators
   --> src/module.py:14:5
@@ -60,6 +62,7 @@ Fields:
 | `kind` | `"diagnostic"` | Record discriminator, always the first key |
 | `code` | string | The [[rule-id]] slug |
 | `filename` | string | Source path |
+| `cell` | number | *Notebook only.* The one-indexed cell holding the diagnostic, absent for an ordinary module |
 | `location` | `{ row, column }` | One-indexed start position |
 | `end_location` | `{ row, column }` | One-indexed end position |
 | `message` | string | The rule's imperative |
@@ -67,6 +70,8 @@ Fields:
 | `fix.applicability` | `"safe"` \| `"unsafe"` \| `"display"` | Confidence the edits preserve runtime semantics |
 | `fix.edits` | array of `{ before, content, location, end_location }` | Replacement spans the editor or CI can apply |
 | `fix.edits[].before` | string | The original substring at the edit's range, paired with `content` for a before/after view without re-reading source |
+
+For a notebook input, each record adds a `cell` field with the diagnostic's one-indexed cell, and its `location` and `end_location` translate to positions within that cell rather than offsets into the concatenated source. A module input carries no `cell`, leaving its positions absolute.
 
 `applicability` is `"safe"` for every auto-fix *Prose* emits at the current release, matching the Ruff-shared scale wherein `safe` means the rewrite preserves runtime semantics and editors can apply the fix automatically. The `unsafe` and `display` levels exist in the schema for forward compatibility with rules whose rewrites might change observable behavior, with no shipped *Prose* rule emitting at those levels today.
 

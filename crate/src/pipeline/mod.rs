@@ -10,7 +10,7 @@ use ruff_diagnostics::{Edit, SourceMap};
 
 use crate::{
     diagnostics::Diagnostic,
-    primitives::edit::{apply_edits, apply_edits_mapped, forward_offsets},
+    primitives::edit::{apply_edits, apply_edits_mapped},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -60,9 +60,6 @@ impl Pipeline {
         }
         let mut diagnostics = Vec::new();
         for rule in &self.rules {
-            if held_out(source, &**rule) {
-                continue;
-            }
             let rule_id = rule.id();
             let groups = prepared_groups(&**rule, source, suppression, rule_id);
             let message = rule.message();
@@ -113,9 +110,6 @@ impl Pipeline {
         let (source, mut diagnostics) = self.rules.iter().try_fold(
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
-                if held_out(&source, &**rule) {
-                    return Ok((source, diagnostics));
-                }
                 let suppression = source.suppression_map();
                 let rule_id = rule.id();
                 let groups = prepared_groups(&**rule, &source, suppression, rule_id);
@@ -136,11 +130,7 @@ impl Pipeline {
                         .into_iter()
                         .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
                 );
-                let next = reparse_or_reject(&source, new_text, rule_id)?;
-                let next = match map {
-                    Some(m) => next.with_cell_offsets(forward_offsets(source.cell_offsets(), &m)),
-                    None => next,
-                };
+                let next = reparse_or_reject(&source, new_text, rule_id, map)?;
                 Ok((next, diagnostics))
             },
         )?;
@@ -162,27 +152,18 @@ impl Pipeline {
         self.rules
             .iter()
             .try_fold(source, |source, rule| {
-                if held_out(&source, &**rule) {
-                    return Ok(source);
-                }
                 let rule_id = rule.id();
                 let groups = prepared_groups(&**rule, &source, source.suppression_map(), rule_id);
                 if groups.is_empty() {
                     return Ok(source);
                 }
-                let Some(new_text) = apply_edits(source.text(), groups.concat()) else {
+                let Some((new_text, map)) = weave_groups(&source, groups.concat()) else {
                     return Ok(source);
                 };
-                reparse_or_reject(&source, new_text, rule_id)
+                reparse_or_reject(&source, new_text, rule_id, map)
             })
             .map(drop)
     }
-}
-
-/// Reports whether the pipeline holds `rule` out of `source`'s run, true
-/// for a sibling-reordering rule over a notebook.
-fn held_out(source: &Source, rule: &dyn Rule) -> bool {
-    source.source_type().is_ipynb() && rule.moves_siblings()
 }
 
 /// Splices a rule's concatenated edits into `source`, returning the
@@ -202,39 +183,15 @@ mod tests {
 
     use assert_matches::assert_matches;
     use ruff_diagnostics::Edit;
-    use ruff_python_ast::PySourceType;
     use ruff_text_size::TextRange;
 
     use super::*;
     use crate::config::Config;
     use crate::diagnostics::Severity;
     use crate::primitives::edit::singleton_groups;
-    use crate::testing::{GroupSentinelRule, assert_send_sync, breaks_parse, parse, range};
-
-    /// Test-only rule that rewrites and reports relocating a sibling,
-    /// so the pipeline holds it out of a notebook run.
-    struct MoverSentinelRule {
-        edits: Vec<Edit>,
-        id: RuleId,
-    }
-
-    impl Rule for MoverSentinelRule {
-        fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
-            singleton_groups(self.edits.clone())
-        }
-
-        fn id(&self) -> RuleId {
-            self.id
-        }
-
-        fn message(&self) -> &'static str {
-            "mover test rule"
-        }
-
-        fn moves_siblings(&self) -> bool {
-            true
-        }
-    }
+    use crate::testing::{
+        GroupSentinelRule, assert_send_sync, breaks_parse, notebook, parse, range,
+    };
 
     /// Test-only lint-only rule that returns the range list supplied
     /// at construction and never produces edits.
@@ -461,19 +418,6 @@ mod tests {
     }
 
     #[test]
-    fn run_applies_a_sibling_mover_on_a_module() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(MoverSentinelRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
-            id: RuleId::from("mover"),
-        })]);
-        let source = parse("x = 1\n");
-
-        let (result, _) = pipeline.run(source).expect("module run succeeds");
-
-        assert_eq!(result.text(), "y = 1\n");
-    }
-
-    #[test]
     fn run_declines_an_overlapping_group_as_a_no_op() {
         let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
             groups: vec![vec![
@@ -608,18 +552,19 @@ mod tests {
     }
 
     #[test]
-    fn run_holds_a_sibling_mover_out_of_a_notebook() {
-        let pipeline = Pipeline::from_rules(vec![Box::new(MoverSentinelRule {
-            edits: vec![Edit::range_replacement("y".to_owned(), range(0, 1))],
-            id: RuleId::from("mover"),
+    fn run_applies_a_reordering_rule_on_a_notebook() {
+        // 325 held a sibling reorder out of the notebook path entirely;
+        // 326 runs it cell-aware, so a rewrite now lands on the cell.
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
+            id: RuleId::from("rewrite-x-to-y"),
         })]);
-        let notebook =
-            Source::build("x = 1\n".to_owned(), "<nb>", PySourceType::Ipynb).expect("parses");
+        let source = notebook(&["x = 1"]);
 
-        let (result, diagnostics) = pipeline.run(notebook).expect("notebook run succeeds");
+        let (result, diagnostics) = pipeline.run(source).expect("notebook run succeeds");
 
-        assert_eq!(result.text(), "x = 1\n");
-        assert!(diagnostics.is_empty());
+        assert_eq!(result.text(), "y = 1\n");
+        assert_eq!(diagnostics.len(), 1);
     }
 
     #[test]

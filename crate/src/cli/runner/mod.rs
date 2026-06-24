@@ -7,6 +7,7 @@ use std::{
 };
 
 use anyhow::Context;
+use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::SourceFile;
 
@@ -42,6 +43,7 @@ enum FileOutcome {
         cached: bool,
         diagnostics: Vec<Diagnostic>,
         file: SourceFile,
+        notebook_index: Option<Box<NotebookIndex>>,
         rewrite: Rewrite,
     },
     Failed(ExitStatus),

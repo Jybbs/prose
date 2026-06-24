@@ -9,6 +9,7 @@
 
 use std::collections::HashMap;
 
+use ruff_notebook::CellOffsets;
 use ruff_python_trivia::{CommentLinePosition, CommentRanges, SuppressionKind};
 use ruff_source_file::{LineRanges, OneIndexed, SourceCode};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
@@ -43,7 +44,8 @@ impl SuppressionMap {
     /// the `file_is_suppressed` shortcut.
     ///
     /// An unmatched `# prose: off` (or alias) extends through end of
-    /// file, a stray `# prose: on` is a no-op, and two consecutive
+    /// file in a module and through the end of its own cell in a
+    /// notebook, a stray `# prose: on` is a no-op, and two consecutive
     /// `# prose: off` directives flatten with the first `# prose: on`
     /// closing the block. Multiple `# prose: ignore` directives on the
     /// same line merge with bare-wins precedence, and `# prose: skip[<id>]`
@@ -52,6 +54,7 @@ impl SuppressionMap {
         source: &SourceCode<'_, '_>,
         comments: &CommentRanges,
         first_code_offset: Option<TextSize>,
+        cell_offsets: &CellOffsets,
     ) -> Self {
         let source_text = source.text();
         let mut lints: HashMap<OneIndexed, RuleEntry> = HashMap::new();
@@ -89,9 +92,15 @@ impl SuppressionMap {
                 lints.entry(line).or_default().merge(entry);
             }
         }
-        let file_suppressed =
-            open_off.is_some_and(|off| first_code_offset.is_none_or(|code| off <= code));
-        spans.extend(open_off.map(|start| TextRange::new(start, source_text.text_len())));
+        let off_end = open_off.map(|start| cell_close_end(cell_offsets, source_text, start));
+        let file_suppressed = open_off.zip(off_end).is_some_and(|(off, end)| {
+            end == source_text.text_len() && first_code_offset.is_none_or(|code| off <= code)
+        });
+        spans.extend(
+            open_off
+                .zip(off_end)
+                .map(|(start, end)| TextRange::new(start, end)),
+        );
         Self {
             file_suppressed,
             lints,
@@ -154,6 +163,15 @@ pub(crate) fn is_directive_comment(comment: &str) -> bool {
     classify_format_directive(comment).is_some() || find_prose_ignore(comment).is_some()
 }
 
+/// The offset an unmatched `# prose: off` opened at `start` closes at:
+/// the end of the notebook cell holding `start`, or the buffer's end for
+/// an ordinary module whose `cell_offsets` are empty.
+fn cell_close_end(cell_offsets: &CellOffsets, source_text: &str, start: TextSize) -> TextSize {
+    cell_offsets
+        .containing_range(start)
+        .map_or(source_text.text_len(), |range| range.end())
+}
+
 fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
     spans.sort_unstable_by_key(Ranged::start);
     spans.dedup_by(|next, prev| {
@@ -173,7 +191,7 @@ mod tests {
 
     use super::is_directive_comment;
     use crate::rule::RuleId;
-    use crate::testing::{parse, range};
+    use crate::testing::{notebook, parse, range};
 
     fn align_equals() -> RuleId {
         "align-equals".parse().expect("align-equals is registered")
@@ -354,6 +372,12 @@ mod tests {
         );
     }
 
+    #[test]
+    fn off_at_the_top_of_a_single_cell_notebook_suppresses_the_file() {
+        let source = notebook(&["# prose: off\nx = 1"]);
+        assert!(source.suppression_map().file_is_suppressed());
+    }
+
     #[rstest]
     fn prose_off_and_fmt_off_open_the_same_span(
         #[values(
@@ -458,6 +482,20 @@ mod tests {
         let map = source.suppression_map();
         assert!(map.is_lint_suppressed_at(line(0), align_equals()));
         assert!(!map.is_lint_suppressed_at(line(0), alphabetize()));
+    }
+
+    #[test]
+    fn unmatched_off_in_a_notebook_closes_at_its_cell_end() {
+        // `# prose: off` opens in cell 0, so it suppresses that cell's `x`
+        // but not cell 1's `y`, and the file is not wholly suppressed.
+        let source = notebook(&["# prose: off\nx = 1", "y = 2"]);
+        let map = source.suppression_map();
+        let offset = |needle: char| source.text().find(needle).expect("present") as u32;
+        let x = offset('x');
+        let y = offset('y');
+        assert!(map.intersects(range(x, x + 1)));
+        assert!(!map.intersects(range(y, y + 1)));
+        assert!(!map.file_is_suppressed());
     }
 
     #[rstest]

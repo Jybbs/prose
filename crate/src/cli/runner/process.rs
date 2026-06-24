@@ -7,6 +7,7 @@ use std::{
 };
 
 use rayon::iter::{ParallelBridge, ParallelIterator};
+use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::{SourceFile, SourceFileBuilder};
 
@@ -81,7 +82,7 @@ pub(super) fn process_path(
     let outcome = if source_type.is_ipynb() {
         notebook::process(text, path.display().to_string(), &resolved.pipeline, pass)
     } else {
-        match Source::build(text, path.display().to_string(), source_type) {
+        match Source::build_module(text, path.display().to_string(), source_type) {
             Ok(source) => run_pipeline(source, &resolved.pipeline, pass),
             Err(e) => failed(
                 ExitStatus::ParseError,
@@ -130,7 +131,7 @@ pub(super) fn process_stdin(
     if source_type.is_ipynb() {
         return notebook::process(text, "<stdin>".to_owned(), pipeline, pass);
     }
-    match Source::build(text, "<stdin>", source_type) {
+    match Source::build_module(text, "<stdin>", source_type) {
         Ok(source) => run_pipeline(source, pipeline, pass),
         Err(e) => failed(
             ExitStatus::ParseError,
@@ -163,31 +164,35 @@ pub(super) fn rehydrate(
         Rewrite::Skipped
     };
     let text = std::str::from_utf8(original_bytes).ok()?;
-    let source_text = if source_type.is_ipynb() {
-        notebook::code(text)?
+    let (source_text, notebook_index) = if source_type.is_ipynb() {
+        let (code, index) = notebook::rehydrated(text)?;
+        (code, Some(index))
     } else {
-        text.to_owned()
+        (text.to_owned(), None)
     };
     let file = SourceFileBuilder::new(path.display().to_string(), source_text).finish();
     Some(FileOutcome::Done {
         cached: true,
         diagnostics: entry.diagnostics,
         file,
+        notebook_index: notebook_index.map(Box::new),
         rewrite,
     })
 }
 
 /// Runs a text source through the pipeline. A check pass collects the
 /// as-written diagnostics through [`diagnose_only`]; a format pass
-/// builds the text rewrite through [`run_and_assemble`].
+/// builds the text rewrite through [`run_and_assemble`]. A module carries
+/// no notebook index.
 pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
     if let Pass::Diagnose { validate } = pass {
-        return diagnose_only(source, pipeline, validate);
+        return diagnose_only(source, pipeline, validate, None);
     }
     run_and_assemble(
         source,
         pipeline,
         matches!(pass, Pass::Both),
+        None,
         |formatted, file| {
             formatted
                 .changed_from(file.source_text())
@@ -197,13 +202,14 @@ pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> F
 }
 
 /// Runs the pipeline and assembles the outcome, deferring the rewrite
-/// to `rewrite`. The caller handles the diagnose-only pass; the
+/// to `rewrite`. The caller handles the diagnose-only pass, while the
 /// `diagnose_as_written` flag adds the as-written diagnostics an output
 /// format renders beside the rewrite.
 pub(super) fn run_and_assemble(
     source: Source,
     pipeline: &Pipeline,
     diagnose_as_written: bool,
+    notebook_index: Option<NotebookIndex>,
     rewrite: impl FnOnce(&Source, &SourceFile) -> Rewrite,
 ) -> FileOutcome {
     let file = source.source_file().clone();
@@ -215,6 +221,7 @@ pub(super) fn run_and_assemble(
                 cached: false,
                 diagnostics: diagnosed.unwrap_or(run_diagnostics),
                 file,
+                notebook_index: notebook_index.map(Box::new),
                 rewrite,
             }
         }
@@ -225,7 +232,12 @@ pub(super) fn run_and_assemble(
 /// Collects the as-written diagnostics, and with `validate` guards the
 /// would-be rewrite against an unparseable output. Shared by the
 /// module and notebook check passes.
-pub(super) fn diagnose_only(source: Source, pipeline: &Pipeline, validate: bool) -> FileOutcome {
+pub(super) fn diagnose_only(
+    source: Source,
+    pipeline: &Pipeline,
+    validate: bool,
+    notebook_index: Option<NotebookIndex>,
+) -> FileOutcome {
     let file = source.source_file().clone();
     let diagnostics = pipeline.diagnose(&source);
     if validate
@@ -238,6 +250,7 @@ pub(super) fn diagnose_only(source: Source, pipeline: &Pipeline, validate: bool)
         cached: false,
         diagnostics,
         file,
+        notebook_index: notebook_index.map(Box::new),
         rewrite: Rewrite::Skipped,
     }
 }

@@ -3,7 +3,8 @@
 //! definitions, declining whenever the assembled order would seat an
 //! eager reference ahead of its definition. The rule walks the module
 //! body and each module-scope compound arm, applying the [`plan`]
-//! analysis and emitting one edit per banded body.
+//! analysis and emitting one edit per banded body, or one per cell over
+//! a notebook.
 
 use std::borrow::Cow;
 
@@ -14,9 +15,12 @@ use ruff_text_size::TextRange;
 use crate::{
     config::Config,
     primitives::{
-        edit::{narrowed_replacement, singleton_groups, splice_bodies},
+        edit::{singleton_groups, splice_bodies},
         imports::defers_annotations,
-        orderer::{any_sibling_shares_line, assemble_or_borrow, rendered_member_blocks},
+        orderer::{
+            any_sibling_shares_line, assemble_or_borrow, assembled_cell_edits,
+            rendered_member_blocks,
+        },
         scope::{compound_sub_bodies, scoped_body},
         sections::Sections,
     },
@@ -61,22 +65,31 @@ impl Rule for BandConstants {
             source,
             target_version: self.target_version,
         };
-        let (text, span) = bander.band_body(body, source.module_range());
-        match text {
-            Cow::Borrowed(_) => Vec::new(),
-            Cow::Owned(rewritten) => {
-                singleton_groups(narrowed_replacement(source, span, rewritten))
-            }
-        }
+        let layout = bander.band_layout(body, source.module_range());
+        let edits = assembled_cell_edits(
+            source,
+            &layout.blocks,
+            &layout.rendered,
+            &layout.order,
+            false,
+            |i| bander.band_gap(&layout, body, i),
+        );
+        singleton_groups(edits)
     }
 
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+}
 
-    fn moves_siblings(&self) -> bool {
-        true
-    }
+/// The banding layout of a module body: its member blocks, their
+/// rendered text, the new-order permutation, and the applied band. The
+/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
+struct BandLayout<'a> {
+    band: Option<Banding>,
+    blocks: Vec<TextRange>,
+    order: Vec<usize>,
+    rendered: Vec<Cow<'a, str>>,
 }
 
 /// Invariant banding context threaded through the recursion.
@@ -91,11 +104,42 @@ struct Bander<'a> {
 impl<'a> Bander<'a> {
     /// Bands a module-scope body, returning the rewritten text alongside
     /// the block-extent span it covers. Each member's text folds in any
-    /// banded module-scope compound arm beneath it, so the outermost
-    /// body emits a single edit covering its descendants. The text is
+    /// banded module-scope compound arm beneath it, so a banded arm splices
+    /// into its parent member rather than emitting on its own. The text is
     /// `Cow::Owned` when the band reorders or a descendant arm rewrites,
     /// falling back to `Cow::Borrowed` over `source.slice(span)`.
     fn band_body(&self, body: &'a [Stmt], outer: TextRange) -> (Cow<'a, str>, TextRange) {
+        let layout = self.band_layout(body, outer);
+        assemble_or_borrow(
+            self.source,
+            &layout.blocks,
+            &layout.rendered,
+            &layout.order,
+            false,
+            |i| self.band_gap(&layout, body, i),
+        )
+    }
+
+    /// The divider [`banded_gap`] places after new-order slot `i` of
+    /// `layout`, `None` when no band applies or the ranks abut with no gap.
+    fn band_gap(&self, layout: &BandLayout<'_>, body: &[Stmt], i: usize) -> Option<&'static str> {
+        layout.band.as_ref().and_then(|b| {
+            banded_gap(
+                &b.ranks,
+                body,
+                self.first_party,
+                self.group_imports,
+                layout.order[i],
+                layout.order[i + 1],
+            )
+        })
+    }
+
+    /// Renders `body`, builds the module band over it, and folds each
+    /// carried comment up with its constant, leaving the assembly to the
+    /// caller. The section partition walls each notebook cell, so a band
+    /// never crosses one.
+    fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
         let (mut blocks, mut rendered) =
             rendered_member_blocks(self.source, body, outer, |stmt, block| {
                 self.band_stmt(stmt, block)
@@ -110,33 +154,12 @@ impl<'a> Bander<'a> {
         if let Some(b) = &band {
             apply_band_carries(self.source, b, &mut blocks, &mut rendered);
         }
-        assemble_or_borrow(self.source, &blocks, &rendered, &order, false, |i| {
-            band.as_ref().and_then(|b| {
-                banded_gap(
-                    &b.ranks,
-                    body,
-                    self.first_party,
-                    self.group_imports,
-                    order[i],
-                    order[i + 1],
-                )
-            })
-        })
-    }
-
-    /// Folds a banded compound arm into `block`. A class or function
-    /// definition leaves module scope, so its body holds no band and the
-    /// block stays a borrow. A compound statement recurses into each arm
-    /// with the inherited module scope. Any other statement is verbatim.
-    fn band_stmt(&self, stmt: &'a Stmt, block: TextRange) -> Cow<'a, str> {
-        if scoped_body(stmt).is_none() && is_compound_statement(stmt) {
-            let bodies = compound_sub_bodies(stmt)
-                .into_iter()
-                .filter(|(body, _)| !body.is_empty())
-                .map(|(body, outer)| self.band_body(body, outer));
-            return splice_bodies(self.source, block, bodies, &[]);
+        BandLayout {
+            band,
+            blocks,
+            order,
+            rendered,
         }
-        Cow::Borrowed(self.source.slice(block))
     }
 
     /// Builds the hoist plan over `body` and applies it to `order`,
@@ -157,6 +180,21 @@ impl<'a> Bander<'a> {
             self.target_version,
         )?
         .apply(body, sections, self.first_party, self.group_imports, order)
+    }
+
+    /// Folds a banded compound arm into `block`. A class or function
+    /// definition leaves module scope, so its body holds no band and the
+    /// block stays a borrow. A compound statement recurses into each arm
+    /// with the inherited module scope. Any other statement is verbatim.
+    fn band_stmt(&self, stmt: &'a Stmt, block: TextRange) -> Cow<'a, str> {
+        if scoped_body(stmt).is_none() && is_compound_statement(stmt) {
+            let bodies = compound_sub_bodies(stmt)
+                .into_iter()
+                .filter(|(body, _)| !body.is_empty())
+                .map(|(body, outer)| self.band_body(body, outer));
+            return splice_bodies(self.source, block, bodies, &[]);
+        }
+        Cow::Borrowed(self.source.slice(block))
     }
 }
 

@@ -10,7 +10,8 @@
 //! Sorting flows through `primitives::orderer::reorder_text`. A
 //! recursive `Cow<'src, str>` rewriter folds inner sorts into the
 //! outer scope's replacement text, so each outermost reordering scope
-//! emits a single edit covering its descendants.
+//! emits a single edit covering its descendants, or one edit per cell
+//! over a notebook.
 //!
 //! Positional-or-keyword parameters never reorder, free function and
 //! method alike, because no single-file rewrite can keep every caller's
@@ -29,11 +30,11 @@ use crate::{
     config::Config,
     primitives::{
         binding::{annotated_name_target, single_name_target, tail_identifier},
-        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, splice_bodies},
+        edit::{apply_inline_edits, singleton_groups, splice_bodies},
         imports::{defers_annotations, import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
-            adjacent_slots, any_sibling_shares_line, assemble_or_borrow, permute_runs,
-            rendered_member_blocks,
+            adjacent_slots, any_sibling_shares_line, assemble_or_borrow, assembled_cell_edits,
+            permute_runs, rendered_member_blocks,
         },
         params::pins_positional_params,
         scope::{BodyScope, compound_sub_bodies, scoped_body},
@@ -96,24 +97,32 @@ impl Rule for Alphabetize {
             sort_definitions: self.sort_definitions,
             source,
         };
-        let (body_text, body_span) =
-            rewrite_body(ctx, body, source.module_range(), BodyScope::Module);
-        let edits = match body_text {
-            Cow::Borrowed(_) => leaf_edits,
-            Cow::Owned(text) => narrowed_replacement(source, body_span, text)
-                .into_iter()
-                .collect(),
-        };
+        let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
+        let edits = assembled_cell_edits(
+            source,
+            &layout.blocks,
+            &layout.rendered,
+            &layout.order,
+            !layout.import_run_slots.is_empty(),
+            |i| import_gap(&layout.import_run_slots, i),
+        );
         singleton_groups(edits)
     }
 
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+}
 
-    fn moves_siblings(&self) -> bool {
-        true
-    }
+/// The reorder layout of one body: its member blocks, their rendered
+/// text, the new-order permutation, and the new-order slots whose import
+/// neighbor collapses onto one line. [`rewrite_body`] folds it into the
+/// combined `Cow` and the notebook path splits it per cell.
+struct BodyLayout<'a> {
+    blocks: Vec<TextRange>,
+    import_run_slots: Vec<usize>,
+    order: Vec<usize>,
+    rendered: Vec<Cow<'a, str>>,
 }
 
 /// Invariant context threaded through the body-rewrite recursion.
@@ -135,72 +144,16 @@ fn ann_assign_with_named_field(stmt: &Stmt) -> Option<(&StmtAnnAssign, &str)> {
     Some((ann, annotated_name_target(ann)?))
 }
 
-/// True when a class body has at least two `Stmt::AnnAssign` field
-/// declarations and at least one method whose decorator carries
-/// positional arguments.
-fn class_pins_methods(body: &[Stmt]) -> bool {
-    body.iter()
-        .filter(|s| ann_assign_with_named_field(s).is_some())
-        .nth(1)
-        .is_some()
-        && body
-            .iter()
-            .filter_map(Stmt::as_function_def_stmt)
-            .any(pins_positional_params)
-}
-
-fn decorator_simple_name(decorator: &Decorator) -> Option<&str> {
-    tail_identifier(map_callable(&decorator.expression))
-}
-
-/// True when an annotated assignment carries a default, either
-/// directly via `= value` or through any nested `Call` in the
-/// annotation that carries a `default` or `default_factory` keyword.
-fn has_default(ann: &StmtAnnAssign) -> bool {
-    ann.value.is_some()
-        || any_over_expr(&ann.annotation, |e| {
-            e.as_call_expr().is_some_and(|c| {
-                c.arguments
-                    .keywords
-                    .iter()
-                    .any(|kw| matches!(kw.arg.as_deref(), Some("default" | "default_factory")))
-            })
-        })
-}
-
-/// Returns the method-group index. `0` for dunders, `1` for
-/// `@property` / `@cached_property` (decided by the first decorator),
-/// `2` for single-leading-underscore privates, `3` for public.
-fn method_group(f: &StmtFunctionDef) -> u8 {
-    let name = f.name.as_str();
-    if is_dunder(name) {
-        0
-    } else if f
-        .decorator_list
-        .first()
-        .and_then(decorator_simple_name)
-        .is_some_and(|n| matches!(n, "cached_property" | "property"))
-    {
-        1
-    } else if name.starts_with('_') {
-        2
-    } else {
-        3
-    }
-}
-
-/// Rewrites a non-empty body, returning the rewritten text alongside
-/// the block-extent span it covers. The text is `Cow::Owned` when any
-/// sibling reorder fires, any descendant rewrite produces owned
-/// content, or any leaf edit lands inside, falling back to
-/// `Cow::Borrowed` over `source.slice(span)`. `scope` selects which
-/// family sorts apply.
-fn rewrite_body<'a>(
+/// Computes the reorder of `body`: renders each member, then permutes the
+/// slots within each section by the family sorts and import grouping that
+/// `scope` enables, leaving the assembly to the caller. The section
+/// partition walls each notebook cell, so no permutation crosses a cell.
+fn body_layout<'a>(
     ctx: RewriteCtx<'a>,
     body: &'a [Stmt],
     outer: TextRange,
     scope: BodyScope,
-) -> (Cow<'a, str>, TextRange) {
+) -> BodyLayout<'a> {
     let RewriteCtx {
         defer_annotations,
         first_party,
@@ -256,13 +209,94 @@ fn rewrite_body<'a>(
                 && !sections.is_boundary(slot + 1)
         });
     }
+    BodyLayout {
+        blocks,
+        import_run_slots,
+        order,
+        rendered,
+    }
+}
+
+/// True when a class body has at least two `Stmt::AnnAssign` field
+/// declarations and at least one method whose decorator carries
+/// positional arguments.
+fn class_pins_methods(body: &[Stmt]) -> bool {
+    body.iter()
+        .filter(|s| ann_assign_with_named_field(s).is_some())
+        .nth(1)
+        .is_some()
+        && body
+            .iter()
+            .filter_map(Stmt::as_function_def_stmt)
+            .any(pins_positional_params)
+}
+
+fn decorator_simple_name(decorator: &Decorator) -> Option<&str> {
+    tail_identifier(map_callable(&decorator.expression))
+}
+
+/// True when an annotated assignment carries a default, either
+/// directly via `= value` or through any nested `Call` in the
+/// annotation that carries a `default` or `default_factory` keyword.
+fn has_default(ann: &StmtAnnAssign) -> bool {
+    ann.value.is_some()
+        || any_over_expr(&ann.annotation, |e| {
+            e.as_call_expr().is_some_and(|c| {
+                c.arguments
+                    .keywords
+                    .iter()
+                    .any(|kw| matches!(kw.arg.as_deref(), Some("default" | "default_factory")))
+            })
+        })
+}
+
+/// The one-newline divider an import-run collapse inserts after new-order
+/// slot `i`, `None` where the neighbors do not collapse onto one line.
+fn import_gap(import_run_slots: &[usize], i: usize) -> Option<&'static str> {
+    import_run_slots.binary_search(&i).is_ok().then_some("\n")
+}
+
+/// Returns the method-group index. `0` for dunders, `1` for
+/// `@property` / `@cached_property` (decided by the first decorator),
+/// `2` for single-leading-underscore privates, `3` for public.
+fn method_group(f: &StmtFunctionDef) -> u8 {
+    let name = f.name.as_str();
+    if is_dunder(name) {
+        0
+    } else if f
+        .decorator_list
+        .first()
+        .and_then(decorator_simple_name)
+        .is_some_and(|n| matches!(n, "cached_property" | "property"))
+    {
+        1
+    } else if name.starts_with('_') {
+        2
+    } else {
+        3
+    }
+}
+
+/// Rewrites a non-empty body, returning the rewritten text alongside
+/// the block-extent span it covers. The text is `Cow::Owned` when any
+/// sibling reorder fires, any descendant rewrite produces owned
+/// content, or any leaf edit lands inside, falling back to
+/// `Cow::Borrowed` over `source.slice(span)`. `scope` selects which
+/// family sorts apply.
+fn rewrite_body<'a>(
+    ctx: RewriteCtx<'a>,
+    body: &'a [Stmt],
+    outer: TextRange,
+    scope: BodyScope,
+) -> (Cow<'a, str>, TextRange) {
+    let layout = body_layout(ctx, body, outer, scope);
     assemble_or_borrow(
-        source,
-        &blocks,
-        &rendered,
-        &order,
-        !import_run_slots.is_empty(),
-        |i| import_run_slots.binary_search(&i).is_ok().then_some("\n"),
+        ctx.source,
+        &layout.blocks,
+        &layout.rendered,
+        &layout.order,
+        !layout.import_run_slots.is_empty(),
+        |i| import_gap(&layout.import_run_slots, i),
     )
 }
 

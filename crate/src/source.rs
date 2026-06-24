@@ -2,7 +2,7 @@
 
 use std::{path::Path, str::FromStr};
 
-use ruff_notebook::{Notebook, NotebookError};
+use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{
     AnyNodeRef, ExprRef, ModModule, PySourceType,
     token::{Token, Tokens},
@@ -37,7 +37,7 @@ use crate::{
 #[derive(Debug)]
 pub struct Source {
     binding_analysis: Box<BindingAnalysis>,
-    cell_offsets: Box<[TextSize]>,
+    cell_offsets: CellOffsets,
     comment_ranges: CommentRanges,
     file: SourceFile,
     parsed: Parsed<ModModule>,
@@ -50,6 +50,7 @@ impl Source {
         text: String,
         name: impl Into<Box<str>>,
         source_type: PySourceType,
+        cell_offsets: CellOffsets,
     ) -> Result<Self, ParseError> {
         let Some(parsed) = parse(&text, ParseOptions::from(source_type))?.try_into_module() else {
             unreachable!("module-mode parse never yields a bare expression");
@@ -61,17 +62,27 @@ impl Source {
             &file.to_source_code(),
             &comment_ranges,
             first_code_offset,
+            &cell_offsets,
         ));
         let binding_analysis = Box::new(BindingAnalysis::new(parsed.syntax()));
         Ok(Self {
             binding_analysis,
-            cell_offsets: Box::default(),
+            cell_offsets,
             comment_ranges,
             file,
             parsed,
             source_type,
             suppression,
         })
+    }
+
+    /// Builds a source carrying no notebook cell boundaries.
+    pub(crate) fn build_module(
+        text: String,
+        name: impl Into<Box<str>>,
+        source_type: PySourceType,
+    ) -> Result<Self, ParseError> {
+        Self::build(text, name, source_type, CellOffsets::default())
     }
 
     /// Builds the concatenated source of a parsed notebook, attaching
@@ -81,9 +92,12 @@ impl Source {
         notebook: &Notebook,
         name: impl Into<Box<str>>,
     ) -> Result<Self, ParseError> {
-        let cell_offsets = notebook.cell_offsets().iter().copied().collect();
-        Self::build(notebook.source_code().to_owned(), name, PySourceType::Ipynb)
-            .map(|source| source.with_cell_offsets(cell_offsets))
+        Self::build(
+            notebook.source_code().to_owned(),
+            name,
+            PySourceType::Ipynb,
+            notebook.cell_offsets().clone(),
+        )
     }
 
     /// Reads a file from disk and parses it. An `.ipynb` routes through
@@ -103,7 +117,7 @@ impl Source {
             let notebook = Notebook::from_source_code(&text)?;
             return Self::from_notebook(&notebook, name).map_err(Into::into);
         }
-        Self::build(text, name, source_type).map_err(Into::into)
+        Self::build_module(text, name, source_type).map_err(Into::into)
     }
 
     pub fn ast(&self) -> &ModModule {
@@ -115,10 +129,31 @@ impl Source {
         &self.binding_analysis
     }
 
+    /// Returns the content range of the notebook cell containing
+    /// `offset`, with the synthetic cell separator excluded, or `None`
+    /// for an ordinary module or an offset past the last cell.
+    pub(crate) fn cell_content_range(&self, offset: TextSize) -> Option<TextRange> {
+        self.cell_offsets
+            .content_ranges()
+            .find(|range| range.contains(offset))
+    }
+
     /// Returns the notebook cell boundaries in the concatenated buffer,
     /// empty for an ordinary module.
-    pub(crate) fn cell_offsets(&self) -> &[TextSize] {
+    pub(crate) fn cell_offsets(&self) -> &CellOffsets {
         &self.cell_offsets
+    }
+
+    /// Returns the source text of each notebook cell, the whole buffer
+    /// as one slice for an ordinary module.
+    pub fn cell_texts(&self) -> Vec<&str> {
+        if self.cell_offsets.is_empty() {
+            return vec![self.text()];
+        }
+        self.cell_offsets
+            .content_ranges()
+            .map(|range| self.slice(range))
+            .collect()
     }
 
     /// Returns this source's text when it differs from `original`, or
@@ -159,13 +194,6 @@ impl Source {
         self.file.source_text().contains_line_break(ranged.range())
     }
 
-    /// Returns the source name. For `from_path` inputs this is
-    /// `path.display().to_string()`, for `from_str` inputs the
-    /// synthetic placeholder `<source>`.
-    pub fn filename(&self) -> &str {
-        self.file.name()
-    }
-
     /// Returns the start offset of the first token in `range` for
     /// which `predicate` is true. Callers that need the full `&Token`
     /// (kind, range, flags) should chain
@@ -189,6 +217,13 @@ impl Source {
     /// source ahead of `offset` from the preceding non-whitespace.
     pub fn has_blank_line_before(&self, offset: TextSize) -> bool {
         lines_before(offset, self.text()) >= 2
+    }
+
+    /// Returns `true` when a notebook cell boundary falls within
+    /// `range`, the wall a sibling reorder never moves a member across.
+    /// Always `false` for an ordinary module.
+    pub(crate) fn has_cell_boundary(&self, range: TextRange) -> bool {
+        self.cell_offsets.has_cell_boundary(range)
     }
 
     /// Returns `true` when at least one comment lies within `ranged`.
@@ -254,15 +289,20 @@ impl Source {
             .next()
     }
 
-    /// Reparses with replacement source text, preserving the original name.
-    ///
-    /// Diagnostic labels keep the original path or `<source>` placeholder.
+    /// Reparses with replacement source text, preserving the original
+    /// name, and carrying `cell_offsets` forward so a notebook keeps its
+    /// cell boundaries across a rule. Diagnostic labels keep the original
+    /// path or `<source>` placeholder.
     ///
     /// # Errors
     ///
     /// Returns `ParseError` if `text` is not a valid Python module.
-    pub fn reparse(&self, text: String) -> Result<Self, ParseError> {
-        Self::build(text, self.file.name(), self.source_type)
+    pub(crate) fn reparse_carrying(
+        &self,
+        text: String,
+        cell_offsets: CellOffsets,
+    ) -> Result<Self, ParseError> {
+        Self::build(text, self.file.name(), self.source_type, cell_offsets)
     }
 
     /// Returns `true` when `a` and `b` sit on one physical source line,
@@ -293,11 +333,6 @@ impl Source {
         self.file.to_source_code().source_location(offset, encoding)
     }
 
-    /// Returns the parse mode this source was built under.
-    pub(crate) fn source_type(&self) -> PySourceType {
-        self.source_type
-    }
-
     /// Returns the suppression index built during parsing.
     pub(crate) fn suppression_map(&self) -> &SuppressionMap {
         &self.suppression
@@ -320,12 +355,6 @@ impl Source {
             .filter(|token| token.kind() == SimpleTokenKind::Comma)
             .map(|token| token.range)
     }
-
-    /// Attaches the notebook cell boundaries to this source.
-    pub(crate) fn with_cell_offsets(mut self, cell_offsets: Box<[TextSize]>) -> Self {
-        self.cell_offsets = cell_offsets;
-        self
-    }
 }
 
 /// Parses Python source from an in-memory string.
@@ -336,7 +365,7 @@ impl FromStr for Source {
     type Err = ParseError;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        Self::build(text.to_owned(), "<source>", PySourceType::default())
+        Self::build_module(text.to_owned(), "<source>", PySourceType::default())
     }
 }
 
@@ -360,7 +389,7 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::*;
-    use crate::testing::{assert_send_sync, parse, range};
+    use crate::testing::{assert_send_sync, notebook, parse, range};
 
     fn line_column(line: usize, column: usize) -> LineColumn {
         LineColumn {
@@ -375,9 +404,9 @@ mod tests {
             "%matplotlib inline\nx = 1\n".to_owned(),
             "<nb>",
             PySourceType::Ipynb,
+            CellOffsets::default(),
         )
         .expect("ipython mode parses a magic");
-        assert_eq!(s.source_type(), PySourceType::Ipynb);
         assert_eq!(s.ast().body.len(), 2);
     }
 
@@ -387,19 +416,21 @@ mod tests {
             "%matplotlib inline\n".to_owned(),
             "<mod>",
             PySourceType::Python,
+            CellOffsets::default(),
         );
         assert!(result.is_err());
     }
 
     #[test]
-    fn cell_offsets_default_empty_and_attach_via_with_cell_offsets() {
-        let s = Source::from_str("x = 1\n").expect("parses");
-        assert!(s.cell_offsets().is_empty());
+    fn cell_offsets_empty_for_a_module_and_present_for_a_notebook() {
+        let module = Source::from_str("x = 1\n").expect("parses");
+        assert!(module.cell_offsets().is_empty());
 
-        let s = s.with_cell_offsets(Box::from([TextSize::new(0), TextSize::new(6)]));
-        assert_eq!(
-            s.cell_offsets().to_vec(),
-            vec![TextSize::new(0), TextSize::new(6)]
+        let nb = notebook(&["x = 1\n", "y = 2\n"]);
+        assert_eq!(nb.cell_offsets().first(), Some(&TextSize::new(0)));
+        assert!(
+            nb.cell_offsets().len() >= 2,
+            "two cells open at least two boundaries",
         );
     }
 
@@ -569,16 +600,30 @@ mod tests {
     }
 
     #[test]
-    fn reparse_preserves_the_source_type() {
-        let s = Source::build("x = 1\n".to_owned(), "<nb>", PySourceType::Ipynb).expect("parses");
-        let reparsed = s.reparse("y = 2\n".to_owned()).expect("reparses");
-        assert_eq!(reparsed.source_type(), PySourceType::Ipynb);
+    fn reparse_preserves_ipython_mode() {
+        let s = Source::build(
+            "%matplotlib inline\nx = 1\n".to_owned(),
+            "<nb>",
+            PySourceType::Ipynb,
+            CellOffsets::default(),
+        )
+        .expect("parses");
+        // Reparse carries the Ipython parse mode forward, so a magic in
+        // the replacement source still parses as a node rather than a
+        // syntax error.
+        let reparsed = s
+            .reparse_carrying(
+                "%matplotlib inline\ny = 2\n".to_owned(),
+                CellOffsets::default(),
+            )
+            .expect("reparses");
+        assert_eq!(reparsed.ast().body.len(), 2);
     }
 
     #[test]
     fn reparse_returns_parse_error_for_bad_replacement() {
         let s = Source::from_str("x = 1\n").expect("original parses");
-        let result = s.reparse("def foo(".to_owned());
+        let result = s.reparse_carrying("def foo(".to_owned(), CellOffsets::default());
         assert!(result.is_err());
     }
 

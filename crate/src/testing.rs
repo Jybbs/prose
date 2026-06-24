@@ -4,8 +4,10 @@ use std::{path::Path, str::FromStr};
 
 use lsp_types::Uri;
 use ruff_diagnostics::Edit;
+use ruff_notebook::Notebook;
 use ruff_python_ast::{Expr, StmtClassDef, StmtFunctionDef};
 use ruff_text_size::TextRange;
+use serde_json::{Value, json};
 
 use crate::{
     config::Config,
@@ -81,6 +83,34 @@ pub(crate) fn format_diagnostic(range: TextRange) -> Diagnostic {
         vec![Edit::range_replacement("y".to_owned(), range)],
         "rewrite x to y".to_owned(),
     )
+}
+
+/// Builds a notebook-backed `Source` from per-cell Python sources, the
+/// `Ipynb` counterpart to [`parse`]. The cells concatenate through the
+/// synthetic separator `ruff_notebook` inserts, so the returned source
+/// carries real cell boundaries.
+pub(crate) fn notebook(cells: &[&str]) -> Source {
+    let cells: Vec<Value> = cells
+        .iter()
+        .map(|source| {
+            json!({
+                "cell_type": "code",
+                "execution_count": null,
+                "metadata": {},
+                "outputs": [],
+                "source": source,
+            })
+        })
+        .collect();
+    let document = json!({
+        "cells": cells,
+        "metadata": { "language_info": { "name": "python" } },
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    });
+    let json = serde_json::to_string(&document).expect("notebook json serializes");
+    let parsed = Notebook::from_source_code(&json).expect("notebook parses");
+    Source::from_notebook(&parsed, "<nb>").expect("notebook source builds")
 }
 
 pub(crate) fn parse(src: &str) -> Source {

@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/notebook/cell_local_import_sort/input.ipynb
+---
+import os
+import sys
+
+# --- cell 2 ---
+
+import abc
+import json
+
+# --- cell 3 ---
+
+import io
+import re

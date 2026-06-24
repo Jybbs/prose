@@ -15,6 +15,36 @@ use tempfile::{TempDir, tempdir};
 const ALIGNS: &str = include_str!("fixtures/notebook/code_cell_aligns/input.ipynb");
 const EMPTY: &str = include_str!("fixtures/notebook/empty/input.ipynb");
 
+/// Two code cells, the second carrying a misaligned assignment pair so
+/// its diagnostic ranges into a row the first cell pushes past in the
+/// concatenated source, proving the report translates it cell-relative.
+const TWO_CODE_CELLS: &str = r#"{
+  "cells": [
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["import os\n", "import sys"]},
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["x = 1\n", "yyy = 2"]}
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
+/// A two-cell notebook whose out-of-order imports sit in the first cell,
+/// so the lone diagnostic falls in a non-last cell and the text emitter
+/// renders it under that cell's header.
+const FIRST_CELL_UNSORTED: &str = r#"{
+  "cells": [
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["import sys\n", "import os"]},
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["value = 1\n"]}
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
 /// A Python notebook whose sole code cell uses CRLF line endings. The
 /// rewrite aligns the assignment while preserving each `\r\n`.
 const CRLF_CELLS: &str = r#"{
@@ -835,6 +865,54 @@ fn notebook_check_reports_the_align_diagnostic() {
         .code(1);
     let out = stdout_utf8(&assert);
     assert!(out.contains("align-equals"), "stdout was {out:?}");
+}
+
+#[test]
+fn notebook_check_json_renders_cell_relative_with_cell_number() {
+    let (_dir, path) = fixture("nb.ipynb", TWO_CODE_CELLS);
+    let assert = prose()
+        .args(["check", "--no-cache", "--output-format", "json"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let out = stdout_utf8(&assert);
+    let record: serde_json::Value =
+        serde_json::from_str(out.lines().next().expect("a diagnostic line")).expect("parses");
+    assert_eq!(
+        record["cell"], 2,
+        "diagnostic carries its absolute cell number"
+    );
+    assert_eq!(
+        record["location"]["row"], 1,
+        "the second cell's diagnostic translates to a cell-relative row",
+    );
+}
+
+#[test]
+fn notebook_check_text_renders_under_a_cell_header() {
+    let (_dir, path) = fixture("nb.ipynb", TWO_CODE_CELLS);
+    let assert = prose()
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let out = stdout_utf8(&assert);
+    assert!(out.contains("cell 2"), "cell header missing: {out:?}");
+}
+
+#[test]
+fn notebook_check_text_renders_a_non_last_cell_under_its_header() {
+    let (_dir, path) = fixture("nb.ipynb", FIRST_CELL_UNSORTED);
+    let assert = prose()
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let out = stdout_utf8(&assert);
+    assert!(
+        out.contains("cell 1"),
+        "non-last cell header missing: {out:?}"
+    );
 }
 
 #[test]

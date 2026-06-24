@@ -4,7 +4,9 @@
 use std::io::{self, Write};
 
 use annotate_snippets::{AnnotationKind, Level, Patch, Renderer, Snippet};
-use ruff_text_size::Ranged;
+use ruff_notebook::NotebookIndex;
+use ruff_source_file::{OneIndexed, SourceFile};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::diagnostics::{Emitter, EmitterSummary, Run, diagnostics};
 
@@ -27,33 +29,77 @@ impl Emitter for Text {
         runs: &[Run<'_>],
         _summary: &EmitterSummary,
     ) -> io::Result<()> {
-        for (file, diag) in diagnostics(runs) {
+        for (file, index, diag) in diagnostics(runs) {
+            let (base, header, text) = view(file, index, diag.range);
+            if let Some(header) = header {
+                writeln!(writer, "{header}")?;
+            }
+            let shift = |range: TextRange| (range - base).to_std_range();
             let warning = Level::WARNING.primary_title(diag.message.as_str()).element(
-                Snippet::source(file.source_text())
+                Snippet::source(text)
                     .line_start(1)
                     .path(file.name())
                     .annotation(
                         AnnotationKind::Primary
-                            .span(diag.range.to_std_range())
+                            .span(shift(diag.range))
                             .label(diag.rule.as_str()),
                     ),
             );
             let mut groups = vec![warning];
             if let Some(fix) = &diag.fix {
-                let snippet = Snippet::source(file.source_text())
+                let snippet = Snippet::source(text)
                     .line_start(1)
                     .path(file.name())
                     .patches(fix.edits().iter().map(|edit| {
-                        Patch::new(
-                            edit.range().to_std_range(),
-                            edit.content().unwrap_or_default(),
-                        )
+                        Patch::new(shift(edit.range()), edit.content().unwrap_or_default())
                     }));
                 groups.push(Level::HELP.secondary_title("replace with").element(snippet));
             }
             writeln!(writer, "{}", self.renderer.render(&groups))?;
         }
         Ok(())
+    }
+}
+
+/// The notebook cell holding `range`, paired with the byte range it
+/// spans, derived from the index by walking from the cell's first row to
+/// the next cell's. `None` for an offset outside every cell.
+fn cell_slice(
+    file: &SourceFile,
+    index: &NotebookIndex,
+    range: TextRange,
+) -> Option<(OneIndexed, TextRange)> {
+    let code = file.to_source_code();
+    let cell = index.cell(code.line_column(range.start()).line)?;
+    let mut start = None;
+    let mut end = file.source_text().text_len();
+    for cell_start in index.iter() {
+        let byte = code.line_start(cell_start.start_row());
+        if start.is_some() {
+            end = byte;
+            break;
+        }
+        if cell_start.cell_index() == cell {
+            start = Some(byte);
+        }
+    }
+    start.map(|start| (cell, TextRange::new(start, end)))
+}
+
+/// The snippet view for a diagnostic at `range`: the byte offset its
+/// rendered text begins at, a cell header for a notebook, and that text.
+/// A module renders the whole source from offset zero with no header, so
+/// the caret stays absolute, where a notebook renders its own cell with a
+/// cell-relative caret under a `cell N` header.
+fn view<'a>(
+    file: &'a SourceFile,
+    index: Option<&NotebookIndex>,
+    range: TextRange,
+) -> (TextSize, Option<String>, &'a str) {
+    let source = file.source_text();
+    match index.and_then(|index| cell_slice(file, index, range)) {
+        Some((cell, span)) => (span.start(), Some(format!("cell {cell}")), &source[span]),
+        None => (TextSize::default(), None, source),
     }
 }
 
@@ -73,7 +119,11 @@ mod tests {
             Text::new()
                 .emit(
                     &mut writer,
-                    &[(source.source_file(), std::slice::from_ref(diag))],
+                    &[Run::new(
+                        source.source_file(),
+                        std::slice::from_ref(diag),
+                        None,
+                    )],
                     &EmitterSummary::default(),
                 )
                 .expect("emits");

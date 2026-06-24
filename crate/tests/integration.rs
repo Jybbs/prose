@@ -26,9 +26,14 @@ fn fixtures() {
             .run(source)
             .expect("first pass succeeds on fixture input");
         let output = formatted.text();
+        let snapshot = if domain == "notebook" {
+            cell_delimited(&formatted)
+        } else {
+            output.to_owned()
+        };
 
         common::in_snapshot_dir(path, || {
-            insta::assert_snapshot!(input_name, output);
+            insta::assert_snapshot!(input_name, snapshot);
         });
 
         // A module reparses from its own formatted text. A notebook's
@@ -58,6 +63,26 @@ fn fixtures() {
             common::unified_diff(output, fresh_formatted.text()),
         );
     });
+}
+
+/// Renders a formatted notebook as its per-cell source joined by a
+/// `# --- cell N ---` banner, so a snapshot shows the cell structure the
+/// concatenated buffer hides. The banner numbers each cell after the
+/// first, which leads unmarked.
+fn cell_delimited(source: &Source) -> String {
+    let cells = source.cell_texts();
+    if cells.len() <= 1 {
+        return source.text().to_owned();
+    }
+    let mut out = String::new();
+    for (i, text) in cells.iter().enumerate() {
+        if i > 0 {
+            out.push_str(&format!("\n\n# --- cell {} ---\n\n", i + 1));
+        }
+        out.push_str(text.trim_end_matches('\n'));
+    }
+    out.push('\n');
+    out
 }
 
 #[test]

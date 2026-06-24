@@ -1,0 +1,10 @@
+[docs]
+previewable = false
+title       = "Band Constants Within Each Cell"
+
+description = '''
+Each cell interleaves a definition, an import, and a constant. The band
+hoists the import to the front and pools the constant below the
+definition inside its own cell, never drawing the second cell's members
+into the first cell's band.
+'''

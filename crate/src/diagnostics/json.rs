@@ -7,8 +7,9 @@ use std::{
 };
 
 use ruff_diagnostics::{Applicability, Edit, Fix};
+use ruff_notebook::NotebookIndex;
 use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
-use ruff_text_size::Ranged;
+use ruff_text_size::{Ranged, TextRange};
 use serde::Serialize;
 
 use crate::{
@@ -32,10 +33,10 @@ impl Emitter for Json {
         runs: &[Run<'_>],
         summary: &EmitterSummary,
     ) -> io::Result<()> {
-        for (file, diag) in diagnostics(runs) {
+        for (file, index, diag) in diagnostics(runs) {
             write_json_line(
                 writer,
-                &JsonRecord::Diagnostic(JsonDiagnostic::new(file, diag, true)),
+                &JsonRecord::Diagnostic(JsonDiagnostic::new(file, index, diag, true)),
             )?;
         }
         write_json_line(writer, &JsonRecord::Summary(JsonSummary::new(summary)))
@@ -44,6 +45,8 @@ impl Emitter for Json {
 
 #[derive(Serialize)]
 struct JsonDiagnostic<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cell: Option<OneIndexed>,
     code: &'a str,
     end_location: JsonLocation,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -54,13 +57,22 @@ struct JsonDiagnostic<'a> {
 }
 
 impl<'a> JsonDiagnostic<'a> {
-    fn new(file: &'a SourceFile, diag: &'a Diagnostic, full: bool) -> Self {
-        let (start, end) = line_columns(file, diag.range);
+    fn new(
+        file: &'a SourceFile,
+        index: Option<&NotebookIndex>,
+        diag: &'a Diagnostic,
+        full: bool,
+    ) -> Self {
+        let (start, end, cell) = located(file, index, diag.range);
         Self {
+            cell,
             code: diag.rule.as_str(),
             end_location: end.into(),
             filename: full.then(|| file.name()),
-            fix: diag.fix.as_ref().map(|fix| JsonFix::new(file, fix, full)),
+            fix: diag
+                .fix
+                .as_ref()
+                .map(|fix| JsonFix::new(file, index, fix, full)),
             location: start.into(),
             message: &diag.message,
         }
@@ -78,9 +90,14 @@ struct JsonEdit<'a> {
 }
 
 impl<'a> JsonEdit<'a> {
-    fn new(file: &'a SourceFile, edit: &'a Edit, full: bool) -> Self {
+    fn new(
+        file: &'a SourceFile,
+        index: Option<&NotebookIndex>,
+        edit: &'a Edit,
+        full: bool,
+    ) -> Self {
         let (location, end_location) = if full {
-            let (start, end) = line_columns(file, edit.range());
+            let (start, end, _) = located(file, index, edit.range());
             (
                 Some(JsonLocation::from(start)),
                 Some(JsonLocation::from(end)),
@@ -104,13 +121,13 @@ struct JsonFix<'a> {
 }
 
 impl<'a> JsonFix<'a> {
-    fn new(file: &'a SourceFile, fix: &'a Fix, full: bool) -> Self {
+    fn new(file: &'a SourceFile, index: Option<&NotebookIndex>, fix: &'a Fix, full: bool) -> Self {
         Self {
             applicability: fix.applicability(),
             edits: fix
                 .edits()
                 .iter()
-                .map(|edit| JsonEdit::new(file, edit, full))
+                .map(|edit| JsonEdit::new(file, index, edit, full))
                 .collect(),
         }
     }
@@ -165,10 +182,30 @@ pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Optio
     let records: Vec<JsonDiagnostic> = diagnostics
         .iter()
         .filter(|diag| diag.severity == Severity::Lint)
-        .map(|diag| JsonDiagnostic::new(file, diag, false))
+        .map(|diag| JsonDiagnostic::new(file, None, diag, false))
         .collect();
     (!records.is_empty())
         .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
+}
+
+/// The start and end positions of `range` plus, for a notebook, the
+/// absolute cell holding it. A notebook translates the positions to
+/// cell-relative coordinates through the index, where a module leaves
+/// them absolute with no cell.
+fn located(
+    file: &SourceFile,
+    index: Option<&NotebookIndex>,
+    range: TextRange,
+) -> (LineColumn, LineColumn, Option<OneIndexed>) {
+    let (start, end) = line_columns(file, range);
+    match index {
+        Some(index) => (
+            index.translate_line_column(&start),
+            index.translate_line_column(&end),
+            index.cell(start.line),
+        ),
+        None => (start, end, None),
+    }
 }
 
 #[cfg(test)]
@@ -193,8 +230,12 @@ mod tests {
 
     fn emit_text(source: &Source, diagnostics: &[Diagnostic], summary: &EmitterSummary) -> String {
         let mut buf = Vec::<u8>::new();
-        Json.emit(&mut buf, &[(source.source_file(), diagnostics)], summary)
-            .expect("emits");
+        Json.emit(
+            &mut buf,
+            &[Run::new(source.source_file(), diagnostics, None)],
+            summary,
+        )
+        .expect("emits");
         String::from_utf8(buf).expect("utf-8")
     }
 

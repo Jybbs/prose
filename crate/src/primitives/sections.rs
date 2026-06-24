@@ -1,11 +1,12 @@
 //! Partitions a statement body's slots into sections at each dividing
-//! marker, the shared boundary a section-aware reorder consults so it
-//! never moves a member across a divider. Import grouping, the family
-//! sorts, and constant banding all read one [`Sections`].
+//! marker and at each notebook cell boundary, the shared boundary a
+//! section-aware reorder consults so it never moves a member across a
+//! divider or out of its cell. Import grouping, the family sorts, and
+//! constant banding all read one [`Sections`].
 
 use std::ops::Range;
 
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::TextRange;
 
 use crate::{
     primitives::comments::{is_banner_block, leading_comment_block},
@@ -14,20 +15,27 @@ use crate::{
 
 /// The section partition of a statement body, one slot-index [`Range`]
 /// per section. A new section opens at each gap carrying a banner or
-/// hash-heading marker, so a body with no marker yields a single
-/// section spanning every slot.
+/// hash-heading marker and at each notebook cell boundary, so a module
+/// body with no marker yields a single section spanning every slot.
 pub(crate) struct Sections {
     ranges: Vec<Range<usize>>,
 }
 
 impl Sections {
     /// Partitions `blocks` into sections, splitting at each marker-bearing
-    /// gap. `blocks` must be in source order.
+    /// gap and between two members that sit in different notebook cells.
+    /// `blocks` must be in source order. A cell boundary abuts its
+    /// neighbors with no gap, the synthetic separator folding into the
+    /// preceding block, so the split reads the members' cells through
+    /// `cell_content_range` rather than the empty gap between blocks.
     pub(crate) fn of(source: &Source, blocks: &[TextRange]) -> Self {
         let mut ranges = Vec::new();
         let mut start = 0;
         for i in 1..blocks.len() {
-            if marker_in_gap(source, blocks[i - 1].end(), blocks[i].start()) {
+            let crosses_cell = source.cell_content_range(blocks[i - 1].start())
+                != source.cell_content_range(blocks[i].start());
+            let gap = TextRange::new(blocks[i - 1].end(), blocks[i].start());
+            if crosses_cell || marker_in_gap(source, gap) {
                 ranges.push(start..i);
                 start = i;
             }
@@ -48,10 +56,11 @@ impl Sections {
     }
 }
 
-/// True when a banner or hash heading sits in the gap between two member
-/// blocks, opening a section the sort never reorders across.
-fn marker_in_gap(source: &Source, lower: TextSize, upper: TextSize) -> bool {
-    leading_comment_block(source, lower, upper).is_some_and(|block| is_banner_block(source, block))
+/// True when a banner or hash heading sits in `gap`, the span between two
+/// member blocks, opening a section the sort never reorders across.
+fn marker_in_gap(source: &Source, gap: TextRange) -> bool {
+    leading_comment_block(source, gap.start(), gap.end())
+        .is_some_and(|block| is_banner_block(source, block))
 }
 
 #[cfg(test)]
@@ -60,12 +69,19 @@ mod tests {
 
     use super::*;
     use crate::primitives::orderer::member_blocks;
-    use crate::testing::parse;
+    use crate::testing::{notebook, parse};
 
     fn sections_of(source: &Source) -> Sections {
         let body = &source.ast().body;
         let blocks = member_blocks(source, body, source.module_range());
         Sections::of(source, &blocks)
+    }
+
+    #[test]
+    fn of_splits_at_a_cell_boundary() {
+        let source = notebook(&["import os\nimport sys", "import abc"]);
+        let sections = sections_of(&source);
+        assert_eq!(sections.ranges(), &[0..2, 2..3]);
     }
 
     #[test]

@@ -1,0 +1,24 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/notebook/cell_local_band/input.ipynb
+---
+import os
+
+
+def helper(value):
+    return value
+
+
+CONFIG = helper
+
+# --- cell 2 ---
+
+import sys
+
+
+def runner(flag):
+    return flag
+
+
+MODE = runner
