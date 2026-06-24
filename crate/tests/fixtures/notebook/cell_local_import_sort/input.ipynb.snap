@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/notebook/cell_local_import_sort/input.ipynb
+---
+import os
+import sys
+import abc
+import json

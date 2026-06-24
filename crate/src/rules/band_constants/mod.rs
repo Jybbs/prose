@@ -3,7 +3,8 @@
 //! definitions, declining whenever the assembled order would seat an
 //! eager reference ahead of its definition. The rule walks the module
 //! body and each module-scope compound arm, applying the [`plan`]
-//! analysis and emitting one edit per banded body.
+//! analysis and emitting one edit per banded body, or one per cell over
+//! a notebook.
 
 use std::borrow::Cow;
 
@@ -14,9 +15,12 @@ use ruff_text_size::TextRange;
 use crate::{
     config::Config,
     primitives::{
-        edit::{narrowed_replacement, singleton_groups, splice_bodies},
+        edit::{singleton_groups, splice_bodies},
         imports::defers_annotations,
-        orderer::{any_sibling_shares_line, assemble_or_borrow, rendered_member_blocks},
+        orderer::{
+            any_sibling_shares_line, assemble_or_borrow, assembled_cell_edits,
+            rendered_member_blocks,
+        },
         scope::{compound_sub_bodies, scoped_body},
         sections::Sections,
     },
@@ -61,22 +65,42 @@ impl Rule for BandConstants {
             source,
             target_version: self.target_version,
         };
-        let (text, span) = bander.band_body(body, source.module_range());
-        match text {
-            Cow::Borrowed(_) => Vec::new(),
-            Cow::Owned(rewritten) => {
-                singleton_groups(narrowed_replacement(source, span, rewritten))
-            }
-        }
+        let layout = bander.band_layout(body, source.module_range());
+        let edits = assembled_cell_edits(
+            source,
+            &layout.blocks,
+            &layout.rendered,
+            &layout.order,
+            false,
+            |i| {
+                layout.band.as_ref().and_then(|b| {
+                    banded_gap(
+                        &b.ranks,
+                        body,
+                        &self.first_party,
+                        self.group_imports,
+                        layout.order[i],
+                        layout.order[i + 1],
+                    )
+                })
+            },
+        );
+        singleton_groups(edits)
     }
 
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+}
 
-    fn moves_siblings(&self) -> bool {
-        true
-    }
+/// The banding layout of a module body: its member blocks, their
+/// rendered text, the new-order permutation, and the applied band. The
+/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
+struct BandLayout<'a> {
+    band: Option<Banding>,
+    blocks: Vec<TextRange>,
+    order: Vec<usize>,
+    rendered: Vec<Cow<'a, str>>,
 }
 
 /// Invariant banding context threaded through the recursion.
@@ -91,11 +115,38 @@ struct Bander<'a> {
 impl<'a> Bander<'a> {
     /// Bands a module-scope body, returning the rewritten text alongside
     /// the block-extent span it covers. Each member's text folds in any
-    /// banded module-scope compound arm beneath it, so the outermost
-    /// body emits a single edit covering its descendants. The text is
+    /// banded module-scope compound arm beneath it, so a banded arm splices
+    /// into its parent member rather than emitting on its own. The text is
     /// `Cow::Owned` when the band reorders or a descendant arm rewrites,
     /// falling back to `Cow::Borrowed` over `source.slice(span)`.
     fn band_body(&self, body: &'a [Stmt], outer: TextRange) -> (Cow<'a, str>, TextRange) {
+        let layout = self.band_layout(body, outer);
+        assemble_or_borrow(
+            self.source,
+            &layout.blocks,
+            &layout.rendered,
+            &layout.order,
+            false,
+            |i| {
+                layout.band.as_ref().and_then(|b| {
+                    banded_gap(
+                        &b.ranks,
+                        body,
+                        self.first_party,
+                        self.group_imports,
+                        layout.order[i],
+                        layout.order[i + 1],
+                    )
+                })
+            },
+        )
+    }
+
+    /// Renders `body`, builds the module band over it, and folds each
+    /// carried comment up with its constant, leaving the assembly to the
+    /// caller. The section partition walls each notebook cell, so a band
+    /// never crosses one.
+    fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
         let (mut blocks, mut rendered) =
             rendered_member_blocks(self.source, body, outer, |stmt, block| {
                 self.band_stmt(stmt, block)
@@ -110,18 +161,12 @@ impl<'a> Bander<'a> {
         if let Some(b) = &band {
             apply_band_carries(self.source, b, &mut blocks, &mut rendered);
         }
-        assemble_or_borrow(self.source, &blocks, &rendered, &order, false, |i| {
-            band.as_ref().and_then(|b| {
-                banded_gap(
-                    &b.ranks,
-                    body,
-                    self.first_party,
-                    self.group_imports,
-                    order[i],
-                    order[i + 1],
-                )
-            })
-        })
+        BandLayout {
+            band,
+            blocks,
+            order,
+            rendered,
+        }
     }
 
     /// Folds a banded compound arm into `block`. A class or function

@@ -47,7 +47,7 @@ fn artifact_location(file: &SourceFile) -> ArtifactLocation {
 
 fn collect_rule_ids(runs: &[Run<'_>]) -> Vec<RuleId> {
     diagnostics(runs)
-        .map(|(_, d)| d.rule)
+        .map(|(_, _, d)| d.rule)
         .collect::<BTreeSet<_>>()
         .into_iter()
         .collect()
@@ -115,7 +115,7 @@ fn sarif_run(runs: &[Run<'_>]) -> SarifRun {
         .map(|id| ReportingDescriptor::builder().id(id.as_str()).build())
         .collect();
     let results: Vec<SarifResult> = diagnostics(runs)
-        .map(|(file, diag)| sarif_result(file, diag))
+        .map(|(file, _index, diag)| sarif_result(file, diag))
         .collect();
     SarifRun::builder()
         .tool(
@@ -145,7 +145,11 @@ mod tests {
     fn emit_value(file: &SourceFile, diagnostics: &[Diagnostic]) -> Value {
         let mut buf = Vec::<u8>::new();
         Sarif
-            .emit(&mut buf, &[(file, diagnostics)], &EmitterSummary::default())
+            .emit(
+                &mut buf,
+                &[Run::new(file, diagnostics, None)],
+                &EmitterSummary::default(),
+            )
             .expect("emits");
         serde_json::from_slice(&buf).expect("parses")
     }

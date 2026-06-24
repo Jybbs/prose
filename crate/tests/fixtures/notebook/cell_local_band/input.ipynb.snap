@@ -1,0 +1,21 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/notebook/cell_local_band/input.ipynb
+---
+import os
+
+
+def helper(value):
+    return value
+
+
+CONFIG = helper
+import sys
+
+
+def runner(flag):
+    return flag
+
+
+MODE = runner

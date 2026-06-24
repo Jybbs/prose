@@ -11,6 +11,7 @@
 use std::{borrow::Cow, cmp::Ordering};
 
 use ruff_diagnostics::{Edit, SourceMap};
+use ruff_notebook::CellOffsets;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::source::Source;
@@ -48,25 +49,17 @@ pub(crate) fn apply_edits_mapped(text: &str, mut edits: Vec<Edit>) -> Option<(St
     Some((woven, source_map))
 }
 
-/// Forwards each offset in `offsets` through `map`, shifting it by the
-/// delta of the nearest marker at or before it, the slide that keeps
-/// notebook cell boundaries current across a reparse. `offsets` and the
-/// markers both run ascending by source position.
-pub(crate) fn forward_offsets(offsets: &[TextSize], map: &SourceMap) -> Box<[TextSize]> {
-    offsets
-        .iter()
-        .map(|&offset| {
-            map.markers()
-                .iter()
-                .rev()
-                .find(|marker| marker.source() <= offset)
-                .map_or(offset, |marker| match marker.source().cmp(&marker.dest()) {
-                    Ordering::Less => offset + (marker.dest() - marker.source()),
-                    Ordering::Greater => offset - (marker.source() - marker.dest()),
-                    Ordering::Equal => offset,
-                })
-        })
-        .collect()
+/// Forwards each cell boundary in `offsets` through `map`, shifting it
+/// by the delta of the nearest marker at or before it, the slide that
+/// keeps notebook cell boundaries current across a reparse. The cloned
+/// offsets and the markers both run ascending by source position, so
+/// the slide preserves their order.
+pub(crate) fn forward_offsets(offsets: &CellOffsets, map: &SourceMap) -> CellOffsets {
+    let mut forwarded = offsets.clone();
+    for offset in forwarded.iter_mut() {
+        *offset = forward_offset(*offset, map);
+    }
+    forwarded
 }
 
 /// Folds any leaf edits whose range falls inside `range` into the
@@ -108,6 +101,21 @@ fn concat_or_borrow<'src>(
     } else {
         Cow::Borrowed(source.slice(span))
     }
+}
+
+/// Shifts a single offset by the delta of the nearest marker at or
+/// before it, the per-boundary slide [`forward_offsets`] maps over a
+/// notebook's cell offsets.
+fn forward_offset(offset: TextSize, map: &SourceMap) -> TextSize {
+    map.markers()
+        .iter()
+        .rev()
+        .find(|marker| marker.source() <= offset)
+        .map_or(offset, |marker| match marker.source().cmp(&marker.dest()) {
+            Ordering::Less => offset + (marker.dest() - marker.source()),
+            Ordering::Greater => offset - (marker.source() - marker.dest()),
+            Ordering::Equal => offset,
+        })
 }
 
 /// Trims a candidate replacement to its minimal spanning range by
@@ -390,18 +398,16 @@ mod tests {
     }
 
     #[test]
-    fn forward_offsets_leaves_an_offset_before_every_marker() {
+    fn forward_offset_leaves_an_offset_before_every_marker() {
         let (_text, map) =
             apply_edits_mapped("abcdef", vec![Edit::insertion("X".to_owned(), 3u32.into())])
                 .expect("woven");
 
-        let forwarded = forward_offsets(&[TextSize::new(1)], &map);
-
-        assert_eq!(forwarded.to_vec(), vec![TextSize::new(1)]);
+        assert_eq!(forward_offset(TextSize::new(1), &map), TextSize::new(1));
     }
 
     #[test]
-    fn forward_offsets_leaves_an_offset_past_a_length_preserving_edit() {
+    fn forward_offset_leaves_an_offset_past_a_length_preserving_edit() {
         let (text, map) = apply_edits_mapped(
             "abc",
             vec![Edit::range_replacement("X".to_owned(), range(0, 1))],
@@ -409,24 +415,21 @@ mod tests {
         .expect("woven");
 
         assert_eq!(text, "Xbc");
-        let forwarded = forward_offsets(&[TextSize::new(2)], &map);
-
-        assert_eq!(forwarded.to_vec(), vec![TextSize::new(2)]);
+        assert_eq!(forward_offset(TextSize::new(2), &map), TextSize::new(2));
     }
 
     #[test]
-    fn forward_offsets_slides_a_boundary_back_over_a_deletion() {
+    fn forward_offset_slides_a_boundary_back_over_a_deletion() {
         let (text, map) =
             apply_edits_mapped("abcdef", vec![Edit::range_deletion(range(1, 3))]).expect("woven");
 
         assert_eq!(text, "adef");
-        let forwarded = forward_offsets(&[TextSize::new(0), TextSize::new(5)], &map);
-
-        assert_eq!(forwarded.to_vec(), vec![TextSize::new(0), TextSize::new(3)]);
+        assert_eq!(forward_offset(TextSize::new(0), &map), TextSize::new(0));
+        assert_eq!(forward_offset(TextSize::new(5), &map), TextSize::new(3));
     }
 
     #[test]
-    fn forward_offsets_slides_a_boundary_past_an_insertion() {
+    fn forward_offset_slides_a_boundary_past_an_insertion() {
         let (text, map) = apply_edits_mapped(
             "abcdef",
             vec![Edit::insertion("XX".to_owned(), 2u32.into())],
@@ -434,9 +437,8 @@ mod tests {
         .expect("woven");
 
         assert_eq!(text, "abXXcdef");
-        let forwarded = forward_offsets(&[TextSize::new(1), TextSize::new(4)], &map);
-
-        assert_eq!(forwarded.to_vec(), vec![TextSize::new(1), TextSize::new(6)]);
+        assert_eq!(forward_offset(TextSize::new(1), &map), TextSize::new(1));
+        assert_eq!(forward_offset(TextSize::new(4), &map), TextSize::new(6));
     }
 
     #[test]

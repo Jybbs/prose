@@ -7,6 +7,7 @@
 
 use std::{borrow::Cow, ops::Range};
 
+use ruff_diagnostics::Edit;
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -14,7 +15,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     primitives::{
         comments::marker_floor,
-        edit::{any_owned, splice_parses},
+        edit::{any_owned, narrowed_replacement, splice_parses},
     },
     source::Source,
 };
@@ -127,6 +128,58 @@ pub(crate) fn assemble_separated(
         }
     }
     out
+}
+
+/// Assembles a body rewrite into edits: one narrowed edit per notebook
+/// cell the `blocks` span, or a single body-spanning edit for an ordinary
+/// module. The arguments mirror [`assemble_or_borrow`]. `order` never
+/// crosses a cell boundary, the invariant [`Sections`](crate::primitives::sections::Sections)
+/// upholds, so each cell's slots stay a contiguous run that reassembles
+/// against the cell's own block span. That span ends exactly at the cell
+/// boundary, the last member's block folding in the synthetic separator,
+/// so every emitted edit lands inside one cell and its woven offset slides
+/// in bounds.
+pub(crate) fn assembled_cell_edits<'src>(
+    source: &'src Source,
+    blocks: &[TextRange],
+    rendered: &[Cow<'src, str>],
+    order: &[usize],
+    forced: bool,
+    mut gap: impl FnMut(usize) -> Option<&'src str>,
+) -> Vec<Edit> {
+    if source.cell_offsets().is_empty() {
+        let (text, span) = assemble_or_borrow(source, blocks, rendered, order, forced, gap);
+        return match text {
+            Cow::Borrowed(_) => Vec::new(),
+            Cow::Owned(owned) => narrowed_replacement(source, span, owned)
+                .into_iter()
+                .collect(),
+        };
+    }
+    let mut edits = Vec::new();
+    let mut start = 0;
+    while start < blocks.len() {
+        let cell = source.cell_content_range(blocks[start].start());
+        let mut end = start + 1;
+        while end < blocks.len() && source.cell_content_range(blocks[end].start()) == cell {
+            end += 1;
+        }
+        let rebased: Vec<usize> = order[start..end].iter().map(|&slot| slot - start).collect();
+        let assembled = assemble_blocks(
+            source,
+            &blocks[start..end],
+            &rendered[start..end],
+            &rebased,
+            |slot| gap(start + slot),
+        );
+        edits.extend(narrowed_replacement(
+            source,
+            blocks_span(&blocks[start..end]),
+            assembled,
+        ));
+        start = end;
+    }
+    edits
 }
 
 /// Returns the source-level extent of `items[i]`: its own range, any

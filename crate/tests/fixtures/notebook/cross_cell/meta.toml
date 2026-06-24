@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "Hold Reordering Out Across Cells"
+title       = "Reorder Within a Cell, Never Across One"
 
 description = '''
-Two cells each open with an import, and **the sibling-reordering rules stay out so neither cell's import migrates across the cell boundary**.
+Two cells each open with an import, and **the sibling-reordering rules run cell-aware so neither cell's import migrates across the boundary**. The second cell's `a = b + 1` reads `b` from the first, and the per-cell reorder keeps that reference after its referent.
 '''

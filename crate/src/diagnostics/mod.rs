@@ -5,6 +5,7 @@ use std::{
     io::{self, Write},
 };
 
+use ruff_notebook::NotebookIndex;
 use ruff_source_file::{LineColumn, SourceFile};
 use ruff_text_size::TextRange;
 use serde::Serialize;
@@ -24,9 +25,6 @@ pub(crate) use github::Github;
 pub(crate) use json::Json;
 pub(crate) use sarif::Sarif;
 pub(crate) use text::Text;
-
-/// One pipeline run paired with the diagnostics it produced.
-pub(crate) type Run<'a> = (&'a SourceFile, &'a [Diagnostic]);
 
 pub(crate) trait Emitter {
     fn emit(
@@ -48,11 +46,42 @@ pub(crate) struct EmitterSummary {
     pub(crate) rules_fired: BTreeMap<RuleId, usize>,
 }
 
-/// Flattens every run into its `(file, diagnostic)` pairs in
-/// file-major order, the traversal each emitter walks.
-fn diagnostics<'a>(runs: &'a [Run<'a>]) -> impl Iterator<Item = (&'a SourceFile, &'a Diagnostic)> {
-    runs.iter()
-        .flat_map(|(file, ds)| ds.iter().map(move |d| (*file, d)))
+/// One file's diagnostics paired with the `SourceFile` they range into
+/// and, for a notebook, the `NotebookIndex` translating a concatenated
+/// position into a cell-relative one. The translator threads through
+/// this one seam rather than each emitter rebuilding it, modeled on
+/// ruff's `EmitterContext`.
+pub(crate) struct Run<'a> {
+    pub(crate) diagnostics: &'a [Diagnostic],
+    pub(crate) file: &'a SourceFile,
+    pub(crate) notebook_index: Option<&'a NotebookIndex>,
+}
+
+impl<'a> Run<'a> {
+    pub(crate) fn new(
+        file: &'a SourceFile,
+        diagnostics: &'a [Diagnostic],
+        notebook_index: Option<&'a NotebookIndex>,
+    ) -> Self {
+        Self {
+            diagnostics,
+            file,
+            notebook_index,
+        }
+    }
+}
+
+/// Flattens every run into its `(file, notebook index, diagnostic)`
+/// triples in file-major order, the traversal each emitter walks. The
+/// notebook index is `None` for an ordinary module.
+fn diagnostics<'a>(
+    runs: &'a [Run<'a>],
+) -> impl Iterator<Item = (&'a SourceFile, Option<&'a NotebookIndex>, &'a Diagnostic)> {
+    runs.iter().flat_map(|run| {
+        run.diagnostics
+            .iter()
+            .map(move |d| (run.file, run.notebook_index, d))
+    })
 }
 
 fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, LineColumn) {

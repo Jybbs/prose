@@ -1,0 +1,9 @@
+[docs]
+previewable = false
+title       = "Sort Imports Within a Cell, Never Across One"
+
+description = '''
+Each cell opens with two out-of-order imports, and the reordering rules
+sort each cell's imports in place, leaving the two cells' import runs
+separate because a cross-cell move would rewrite execution order.
+'''

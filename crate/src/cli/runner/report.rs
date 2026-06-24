@@ -26,8 +26,15 @@ pub(super) fn emit_outcomes<W: Write>(
         .iter()
         .filter_map(|o| match o {
             FileOutcome::Done {
-                file, diagnostics, ..
-            } => Some((file, diagnostics.as_slice())),
+                diagnostics,
+                file,
+                notebook_index,
+                ..
+            } => Some(Run::new(
+                file,
+                diagnostics.as_slice(),
+                notebook_index.as_deref(),
+            )),
             FileOutcome::Failed(_) => None,
         })
         .collect();
@@ -227,6 +234,7 @@ mod tests {
             cached: false,
             diagnostics,
             file: source.source_file().clone(),
+            notebook_index: None,
             rewrite: Rewrite::Skipped,
         }
     }

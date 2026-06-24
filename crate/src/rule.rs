@@ -81,13 +81,6 @@ pub(crate) trait Rule: Send + Sync {
     fn message(&self) -> &'static str {
         message_for_id(self.id())
     }
-
-    /// Reports whether this rule relocates one sibling statement past
-    /// another. Defaults to `false`; the pipeline holds a `true` rule
-    /// out of a notebook run.
-    fn moves_siblings(&self) -> bool {
-        false
-    }
 }
 
 /// Stable, parseable rule identifier wrapping a kebab-case slug.
@@ -361,16 +354,6 @@ mod tests {
         #[values("", "-foo", "foo-", "a--b", "Foo", "abc!")] invalid: &str,
     ) {
         assert!(!is_valid_slug(invalid.as_bytes()));
-    }
-
-    #[test]
-    fn moves_siblings_flags_only_the_reordering_rules() {
-        let config = Config::default();
-        assert!(Alphabetize::from_config(&config).moves_siblings());
-        assert!(BandConstants::from_config(&config).moves_siblings());
-        assert!(GroupImports::from_config(&config).moves_siblings());
-        assert!(!AlignEquals::from_config(&config).moves_siblings());
-        assert!(!BlankLines::from_config(&config).moves_siblings());
     }
 
     #[test]

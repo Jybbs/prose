@@ -126,7 +126,10 @@ impl Walker<'_> {
     }
 
     fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
-        if self.straddles_cell_boundary(prev_end, curr.start()) {
+        if self
+            .source
+            .has_cell_boundary(TextRange::new(prev_end, curr.start()))
+        {
             return;
         }
         let Some(canonical) =
@@ -143,15 +146,6 @@ impl Walker<'_> {
             self.normalize_below_block(b.end(), curr_line_start, below_target);
         }
     }
-
-    /// Reports whether a notebook cell boundary falls between
-    /// `prev_end` and `curr_start`.
-    fn straddles_cell_boundary(&self, prev_end: TextSize, curr_start: TextSize) -> bool {
-        self.source
-            .cell_offsets()
-            .iter()
-            .any(|&boundary| prev_end < boundary && boundary <= curr_start)
-    }
 }
 
 impl<'a> StatementVisitor<'a> for Walker<'a> {
@@ -165,30 +159,25 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
 
 #[cfg(test)]
 mod tests {
-    use ruff_python_ast::PySourceType;
-
     use super::*;
-    use crate::source::Source;
+    use crate::testing::{notebook, parse};
 
-    /// A function in cell 0 and a call in cell 1, concatenated. Module
-    /// spacing wants a blank after the def, but the cell boundary sits
-    /// in that gap.
-    const CONCATENATED: &str = "def f():\n    return 1\nx = f()\n";
+    /// A function in cell 0 and a call in cell 1. Module spacing wants a
+    /// blank after the def, but a cell boundary sits in that gap.
+    fn split_across_two_cells() -> Source {
+        notebook(&["def f():\n    return 1", "x = f()"])
+    }
 
     #[test]
     fn wall_absent_normalizes_the_gap_in_a_module() {
-        let source =
-            Source::build(CONCATENATED.to_owned(), "<mod>", PySourceType::Python).expect("parses");
+        let source = parse(split_across_two_cells().text());
         let edits = BlankLines::from_config(&Config::default()).apply(&source);
         assert!(!edits.is_empty(), "module spacing should pad after the def");
     }
 
     #[test]
     fn wall_leaves_a_gap_straddling_a_cell_boundary() {
-        let cell_offsets = Box::from([TextSize::new(0), TextSize::new(22), TextSize::new(30)]);
-        let source = Source::build(CONCATENATED.to_owned(), "<nb>", PySourceType::Ipynb)
-            .expect("parses")
-            .with_cell_offsets(cell_offsets);
+        let source = split_across_two_cells();
         let edits = BlankLines::from_config(&Config::default()).apply(&source);
         assert!(
             edits.is_empty(),
