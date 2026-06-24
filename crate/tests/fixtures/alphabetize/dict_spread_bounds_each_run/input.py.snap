@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize/dict_spread_bounds_each_run/input.py
+---
+config = {
+    "b": 1,
+    **defaults,
+    "a": 2,
+}

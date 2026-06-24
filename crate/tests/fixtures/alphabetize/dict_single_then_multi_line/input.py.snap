@@ -20,9 +20,9 @@ mixed = {
 inline = {"config": {"strict": True}, "name": "prose", "version": "0.1.0"}
 
 with_spread = {
-    "name"    : "prose",
-    **defaults,
     "version" : "0.1.0",
+    **defaults,
+    "name"    : "prose",
     "config": {
         "strict"  : True,
         "tracing" : "off",

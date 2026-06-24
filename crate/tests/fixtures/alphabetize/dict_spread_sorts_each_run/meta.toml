@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Each Keyed Run Sorts on Its Own Side of a `**` Spread"
+
+description = '''
+Keyed entries sort only within their run, so `"d"` and `"c"` order ahead of `**defaults` and `"b"` and `"a"` order after it, neither crossing the spread.
+'''
