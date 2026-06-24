@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Keyed Run Between Two Spreads Sorts Within"
+
+description = '''
+A run fenced by a `**` spread on each side sorts only within itself, so `"b"` and `"a"` order between `**base` and `**overrides` without either spread moving.
+'''

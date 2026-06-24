@@ -17,7 +17,7 @@ use crate::{
         edit::{any_owned, apply_inline_edits, splice_parses},
         orderer::{
             adjacent_slots, any_sibling_shares_line, assemble_blocks, assemble_separated,
-            block_ranges, blocks_span, chunk_runs, permute_runs,
+            block_ranges, blocks_span, permute_runs, runs_where,
         },
     },
     source::Source,
@@ -119,7 +119,7 @@ fn item_value_end(source: &Source, dict: &ExprDict, item: &DictItem) -> TextSize
 /// Slot ranges of each run of two or more adjacent keyed entries, a `**`
 /// spread carrying no key and so bounding the runs on either side.
 fn keyed_runs(items: &[DictItem]) -> Vec<Range<usize>> {
-    chunk_runs(items, |a, b| a.key.is_some() && b.key.is_some())
+    runs_where(items, |item| item.key.is_some())
 }
 
 /// Returns the new-order slot indices after which a blank-line divider
