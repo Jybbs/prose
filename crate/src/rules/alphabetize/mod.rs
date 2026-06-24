@@ -32,7 +32,7 @@ use crate::{
         edit::{apply_inline_edits, narrowed_replacement, singleton_groups, splice_bodies},
         imports::{defers_annotations, import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
-            adjacent_slots, any_sibling_shares_line, assemble_or_borrow, permute_in_place,
+            adjacent_slots, any_sibling_shares_line, assemble_or_borrow, permute_runs,
             rendered_member_blocks,
         },
         params::pins_positional_params,
@@ -243,11 +243,12 @@ fn rewrite_body<'a>(
                 }
             }
         }
-        for run in sectioned_import_runs(&sections, body) {
-            permute_in_place(&mut order, body, run, |s| {
-                import_sort_key(s, first_party, group_imports)
-            });
-        }
+        permute_runs(
+            &mut order,
+            body,
+            sectioned_import_runs(&sections, body),
+            |s| import_sort_key(s, first_party, group_imports),
+        );
         // Same-group import neighbors collapse to one line, except across a
         // section marker, whose dividing gap must survive in place.
         import_run_slots = adjacent_slots(&order, |slot, a, b| {

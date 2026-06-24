@@ -258,6 +258,24 @@ where
     true
 }
 
+/// Permutes the slots within each run of `runs` independently, items
+/// classified `None` pinning in place. Returns `true` when any run rewrote a
+/// slot. The many-run counterpart to [`permute_full`], keeping each sort
+/// within its run so no item crosses a boundary.
+pub(crate) fn permute_runs<'a, T, K>(
+    order: &mut [usize],
+    items: &'a [T],
+    runs: impl IntoIterator<Item = Range<usize>>,
+    mut classify: impl FnMut(&'a T) -> Option<K>,
+) -> bool
+where
+    K: Ord,
+{
+    runs.into_iter().fold(false, |permuted, run| {
+        permuted | permute_in_place(order, items, run, &mut classify)
+    })
+}
+
 /// Member blocks for every slot of `items`, each paired with the text
 /// `render` produces for it, the `(blocks, rendered)` split a recursive
 /// body rewriter folds its descendant rewrites into.
@@ -645,6 +663,24 @@ mod tests {
         });
         assert!(!permuted);
         assert_eq!(order, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn permute_runs_returns_false_when_no_run_reorders() {
+        let mut order = vec![0, 1, 2];
+        let items = ["a", "b", "c"];
+        let permuted = permute_runs(&mut order, &items, [0..1, 1..3], |s: &&str| Some(*s));
+        assert!(!permuted);
+        assert_eq!(order, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn permute_runs_sorts_each_run_without_crossing_a_boundary() {
+        let mut order = vec![0, 1, 2, 3, 4];
+        let items = ["b", "a", "z", "d", "c"];
+        let permuted = permute_runs(&mut order, &items, [0..2, 3..5], |s: &&str| Some(*s));
+        assert!(permuted);
+        assert_eq!(order, vec![1, 0, 2, 4, 3]);
     }
 
     #[test]
