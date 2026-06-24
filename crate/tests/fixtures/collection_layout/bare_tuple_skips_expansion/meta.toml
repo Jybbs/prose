@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Bare Comma Tuple Stays on Its Line While a Parenthesized Sibling Expands"
+
+description = '''
+Only a parenthesized tuple expands. **A bare comma tuple carries no bracket pair to hang the broken lines on**, so it holds its source line whatever its width, while its parenthesized sibling flows across lines like a `list`.
+'''

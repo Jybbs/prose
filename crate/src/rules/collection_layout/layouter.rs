@@ -24,7 +24,7 @@ use crate::{
     source::Source,
 };
 
-/// Per-item state collected from a dict, list, or set literal:
+/// Per-item state collected from a dict, list, set, or tuple literal:
 /// serialized text, atomicity for layout dispatch, source range for
 /// blank-line-preservation lookups, and the canonical display width the
 /// fit decision measures. The width tracks the entry at its canonical
@@ -147,6 +147,7 @@ impl<'a> Layouter<'a> {
         let (open, close, elts) = match expr {
             Expr::List(l) => ('[', ']', &l.elts),
             Expr::Set(s) => ('{', '}', &s.elts),
+            Expr::Tuple(t) => ('(', ')', &t.elts),
             _ => unreachable!("gather_items called on non-expandable expr"),
         };
         let (texts, widths, atomics, ranges): (Vec<_>, Vec<_>, Vec<_>, Vec<_>) = elts
@@ -221,9 +222,9 @@ impl<'a> Layouter<'a> {
     /// children. `indent` is where the closing bracket lands if `expr`
     /// expands. Emits `Some(inline)` when a multi-line literal's or
     /// subscript's inline form fits, `Some(expand)` when a multi-item
-    /// `Dict`, `List`, or `Set`'s rendered width overflows, or when a
-    /// `Dict` carries more than `max_dict_entries` entries
-    /// whatever its width. A subscript only ever collapses, joining its
+    /// `Dict`, `List`, `Set`, or parenthesized `Tuple`'s rendered width
+    /// overflows, or when a `Dict` carries more than `max_dict_entries`
+    /// entries whatever its width. A subscript only ever collapses, joining its
     /// `value[index]` onto one line. The `collapse` facet gates every
     /// inline join and the `explode` facet gates every expansion, so a
     /// cleared facet returns `None` and leaves that shape untouched.
@@ -347,7 +348,7 @@ impl<'a> Layouter<'a> {
             }
             Expr::Tuple(t) => {
                 let brackets = t.parenthesized.then_some(('(', ')'));
-                self.write_inline_seq(buf, brackets, &t.elts, here, t.elts.len() == 1);
+                self.write_inline_seq(buf, brackets, &t.elts, here, t.len() == 1);
             }
             _ => {
                 let slice = self.slice_with_parens(expr, parent);

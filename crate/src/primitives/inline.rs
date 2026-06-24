@@ -72,7 +72,7 @@ mod tests {
     use ruff_text_size::Ranged;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_expr, parse};
 
     #[rstest]
     #[case("a", "a")]
@@ -103,8 +103,7 @@ mod tests {
         #[case] expected: bool,
     ) {
         let source = parse(src);
-        let stmt = &source.ast().body[0];
-        let expr = &stmt.as_expr_stmt().expect("expression statement").value;
+        let expr = first_expr(&source);
         assert_eq!(is_operator_atom_tree(expr), expected);
     }
 
@@ -117,8 +116,7 @@ mod tests {
         #[case] expected: Option<&str>,
     ) {
         let source = parse(src);
-        let stmt = &source.ast().body[0];
-        let expr = &stmt.as_expr_stmt().expect("expression statement").value;
+        let expr = first_expr(&source);
         let slice = source.slice(expr.range());
         assert_eq!(single_line_form(expr, slice).as_deref(), expected);
     }

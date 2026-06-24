@@ -10,8 +10,10 @@ mapping = {
 }
 
 overflow = {
-    (leading_axis_coordinate_grid_anchor_component,
-     trailing_axis_coordinate_grid_values): 1,
+    (
+        leading_axis_coordinate_grid_anchor_component,
+        trailing_axis_coordinate_grid_values
+    ): 1,
     short_key: 2
 }
 
