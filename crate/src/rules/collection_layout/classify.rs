@@ -82,7 +82,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_expr, parse};
 
     #[test]
     fn align_colons_gap_accepts_canonical_and_padded_forms() {
@@ -113,8 +113,7 @@ mod tests {
         #[case] expected: bool,
     ) {
         let source = parse(src);
-        let stmt = &source.ast().body[0];
-        let expr = &stmt.as_expr_stmt().expect("expression statement").value;
+        let expr = first_expr(&source);
         assert_eq!(is_collapsible(expr), expected);
     }
 
@@ -130,8 +129,7 @@ mod tests {
         #[case] expected: bool,
     ) {
         let source = parse(src);
-        let stmt = &source.ast().body[0];
-        let expr = &stmt.as_expr_stmt().expect("expression statement").value;
+        let expr = first_expr(&source);
         assert_eq!(requires_expand(expr), expected);
     }
 
