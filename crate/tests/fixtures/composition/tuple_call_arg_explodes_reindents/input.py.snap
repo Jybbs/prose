@@ -1,0 +1,15 @@
+---
+source: tests/integration.rs
+expression: output
+input_file: tests/fixtures/composition/tuple_call_arg_explodes_reindents/input.py
+---
+configure(
+    coords = (
+        compute_alpha_coordinate(),
+        compute_beta_coordinate(),
+        compute_gamma_coord()
+    ),
+    more  = 7,
+    name  = "x",
+    other = 2
+)

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Over-Wide Parenthesized Tuple Expands Like a List"
+
+description = '''
+A parenthesized tuple that overflows the budget breaks across lines through the same flow layout `collection-layout` already gives a `list`. **Atomic elements flow across as few balanced lines as fit** under `code-line-length` and the `max-atomics` cap, while a run of non-atomic elements lands one per line.
+'''
