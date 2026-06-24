@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/collection_layout/comprehension_chained_filters_collapse/input.py
+---
+collection-layout@12..102

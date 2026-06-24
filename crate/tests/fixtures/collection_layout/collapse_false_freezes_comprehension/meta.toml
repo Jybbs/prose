@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Cleared Collapse Facet Freezes a Comprehension"
+
+description = '''
+The `collapse` facet gates the comprehension join the same way it gates every other collapse, so `collapse = false` leaves a fitting comprehension at its source line breaks.
+'''

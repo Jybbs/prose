@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/collection_layout/comprehension_argument_composes_with_call_layout/input.py
+---
+collection-layout@60..107

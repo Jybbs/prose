@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/collection_layout/comprehension_chained_filters_collapse/input.py
+---
+eligible = [person for person in applicants if person.is_active if person.has_quorum]

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/collection_layout/comprehension_async_filtered_collapses/input.py
+---
+async def collect(source):
+    return [item.value async for item in source if item.ready]

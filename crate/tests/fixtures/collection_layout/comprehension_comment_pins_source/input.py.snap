@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/collection_layout/comprehension_comment_pins_source/input.py
+---
+squares = [
+    value * value  # keep the running square
+    for value in measurements
+]

@@ -1,21 +1,16 @@
 //! Lays out `dict`, `list`, `set`, and `tuple` literals against the
-//! `Config::code_line_length` budget. Multi-line literals whose
-//! assembled inline form fits collapse back to a single line, as does
-//! a multi-line subscript whose `value[index]` fits and a multi-line
-//! collection or subscript dict key, so the alignment rules meet a
-//! single-line member rather than one stranded across a break.
-//! Single-line literals whose inline form overflows expand to one
-//! entry per line. A dict holding more entries than `max_dict_entries`
-//! expands whatever its width, taking any enclosing collection with it.
-//! A dict entry whose `key: value` width overflows at the item-indent
-//! column breaks at `:` and hangs the value at `item_indent +
-//! INDENT_STEP`. Comprehensions and any literal whose source range
-//! contains a comment are out of scope.
+//! `Config::code_line_length` budget. A multi-line literal, subscript,
+//! or comprehension whose inline form fits collapses to one line. An
+//! overflowing single-line literal expands one entry per line, and a
+//! dict over `max_dict_entries` expands whatever its width, taking any
+//! enclosing collection with it. An over-wide dict entry breaks at `:`
+//! and hangs its value. A subscript and a comprehension only ever
+//! collapse, and a comment or a folded multi-line string holds a
+//! construct at its source shape.
 //!
-//! Both fit checks stay invariant to the alignment that runs later: a
-//! dict entry measures at its canonical `": "` rather than an
-//! `align_colons`-padded gap, and a collapse tests against the column
-//! `align_equals` shifts the value's `=` to.
+//! Both fit checks stay invariant to the later alignment: a dict entry
+//! measures at its canonical `": "`, and a collapse tests against the
+//! column `align_equals` shifts the value's `=` to.
 
 use std::collections::HashMap;
 

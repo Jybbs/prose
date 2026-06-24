@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Multi-Line String Pins a Comprehension at Its Source Shape"
+
+description = '''
+A comprehension spanning a multi-line string holds its source line breaks, since folding the soft-wraps onto one line would respace the string interior.
+'''

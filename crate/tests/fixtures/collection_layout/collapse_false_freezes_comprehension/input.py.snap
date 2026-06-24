@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/collection_layout/collapse_false_freezes_comprehension/input.py
+---
+doubled = [
+    value * 2
+    for value in source_values
+]
