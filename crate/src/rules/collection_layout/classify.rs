@@ -43,15 +43,17 @@ pub(super) fn is_collapsible(expr: &Expr) -> bool {
     is_layoutable(expr) || expr.is_subscript_expr()
 }
 
-/// True for a `Dict`, `List`, or `Set` shape the expand path
-/// canonicalizes. Multi-item `List` and `Set` qualify. Any
-/// non-empty `Dict` qualifies. Tuples and empty collections
-/// collapse only, never expand.
+/// True for a `Dict`, `List`, `Set`, or parenthesized `Tuple` shape
+/// the expand path canonicalizes. Multi-item `List`, `Set`, and
+/// parenthesized `Tuple` qualify, as does any non-empty `Dict`. A bare
+/// tuple carries no bracket pair to hang broken lines on, and an empty
+/// or single-item collection has nothing to flow.
 pub(super) fn requires_expand(expr: &Expr) -> bool {
     match expr {
         Expr::Dict(d) => !d.is_empty(),
         Expr::List(l) => l.len() > 1,
         Expr::Set(s) => s.len() > 1,
+        Expr::Tuple(t) => t.parenthesized && t.len() > 1,
         _ => false,
     }
 }
@@ -114,6 +116,23 @@ mod tests {
         let stmt = &source.ast().body[0];
         let expr = &stmt.as_expr_stmt().expect("expression statement").value;
         assert_eq!(is_collapsible(expr), expected);
+    }
+
+    #[rstest]
+    #[case("(a, b)", true)]
+    #[case("(a,)", false)]
+    #[case("()", false)]
+    #[case("a, b, c", false)]
+    #[case("(a + b)", false)]
+    #[case("[a, b]", true)]
+    fn requires_expand_gates_parenthesized_multi_item_tuples(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let stmt = &source.ast().body[0];
+        let expr = &stmt.as_expr_stmt().expect("expression statement").value;
+        assert_eq!(requires_expand(expr), expected);
     }
 
     #[test]
