@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `**` Spread Bounds the Entry Sort"
+
+description = '''
+A `**` merge lets a later key override an earlier one, so the keyed entries sort only within the run between two spreads. Here `"b"` and `"a"` keep their places on either side of `**defaults` rather than crossing it.
+'''

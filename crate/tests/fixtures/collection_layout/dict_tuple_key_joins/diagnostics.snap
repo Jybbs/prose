@@ -3,6 +3,6 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/collection_layout/dict_tuple_key_joins/input.py
 ---
+collection-layout@177..288
 collection-layout@23..155
-collection-layout@287..288
 collection-layout@315..454

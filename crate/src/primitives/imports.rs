@@ -9,7 +9,7 @@ use std::ops::Range;
 
 use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 
-use crate::primitives::{orderer::chunk_runs, sections::Sections};
+use crate::primitives::{orderer::runs_where, sections::Sections};
 
 const FUTURE_ANNOTATIONS: &str = "annotations";
 const FUTURE_MODULE: &str = "__future__";
@@ -122,7 +122,7 @@ pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<R
 /// the per-section unit `sectioned_import_runs` offsets to absolute
 /// slot indices.
 fn import_runs(stmts: &[Stmt]) -> Vec<Range<usize>> {
-    chunk_runs(stmts, |a, b| is_import(a) && is_import(b))
+    runs_where(stmts, is_import)
 }
 
 /// True when the root package of `name` (the substring up to the

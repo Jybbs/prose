@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A One-Element Tuple and a Grouping Paren Stay Intact"
+
+description = '''
+A one-element tuple keeps its load-bearing trailing `,` and stays inline, since breaking a single element gains nothing. **A grouping-parenthesized expression is left untouched** because it shares the `( )` spelling yet is no tuple.
+'''
