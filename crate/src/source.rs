@@ -144,6 +144,18 @@ impl Source {
         &self.cell_offsets
     }
 
+    /// Returns the source text of each notebook cell, the whole buffer
+    /// as one slice for an ordinary module.
+    pub fn cell_texts(&self) -> Vec<&str> {
+        if self.cell_offsets.is_empty() {
+            return vec![self.text()];
+        }
+        self.cell_offsets
+            .content_ranges()
+            .map(|range| self.slice(range))
+            .collect()
+    }
+
     /// Returns this source's text when it differs from `original`, or
     /// `None` when they match.
     pub fn changed_from(&self, original: &str) -> Option<&str> {

@@ -1,9 +1,12 @@
 ---
 source: crate/tests/integration.rs
-expression: output
+expression: snapshot
 input_file: crate/tests/fixtures/notebook/cross_cell/input.ipynb
 ---
 import os
 b = 1
+
+# --- cell 2 ---
+
 import abc
 a = b + 1
