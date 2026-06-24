@@ -36,22 +36,38 @@ pub(super) fn is_atomic(expr: &Expr) -> bool {
     .any(|e| e.is_literal_expr() || is_dotted_name(e))
 }
 
-/// True for the bracketed expressions the visitor measures for a
-/// single-line collapse: the four collection literals plus a subscript,
-/// whose `[index]` joins onto one line whatever the index shape.
-pub(super) fn is_collapsible(expr: &Expr) -> bool {
-    is_layoutable(expr) || expr.is_subscript_expr()
+/// True for the collapse-only forms, a subscript whose `[index]` joins
+/// onto one line whatever the index shape and the four comprehensions,
+/// each joining when it fits and never expanding the way a literal does.
+pub(super) fn is_collapse_only(expr: &Expr) -> bool {
+    matches!(
+        expr,
+        Expr::DictComp(_)
+            | Expr::Generator(_)
+            | Expr::ListComp(_)
+            | Expr::SetComp(_)
+            | Expr::Subscript(_)
+    )
 }
 
-/// True for a `Dict`, `List`, or `Set` shape the expand path
-/// canonicalizes. Multi-item `List` and `Set` qualify. Any
-/// non-empty `Dict` qualifies. Tuples and empty collections
-/// collapse only, never expand.
+/// True for the bracketed expressions the visitor measures for a
+/// single-line collapse: the four collection literals plus the
+/// collapse-only forms, a subscript and the four comprehensions.
+pub(super) fn is_collapsible(expr: &Expr) -> bool {
+    is_layoutable(expr) || is_collapse_only(expr)
+}
+
+/// True for a `Dict`, `List`, `Set`, or parenthesized `Tuple` shape
+/// the expand path canonicalizes. Multi-item `List`, `Set`, and
+/// parenthesized `Tuple` qualify, as does any non-empty `Dict`. A bare
+/// tuple carries no bracket pair to hang broken lines on, and an empty
+/// or single-item collection has nothing to flow.
 pub(super) fn requires_expand(expr: &Expr) -> bool {
     match expr {
         Expr::Dict(d) => !d.is_empty(),
         Expr::List(l) => l.len() > 1,
         Expr::Set(s) => s.len() > 1,
+        Expr::Tuple(t) => t.parenthesized && t.len() > 1,
         _ => false,
     }
 }
@@ -80,7 +96,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_expr, parse};
 
     #[test]
     fn align_colons_gap_accepts_canonical_and_padded_forms() {
@@ -104,16 +120,35 @@ mod tests {
     #[case("(c, d)", true)]
     #[case("{e: f}", true)]
     #[case("g[h]", true)]
+    #[case("[x for x in y]", true)]
+    #[case("{x for x in y}", true)]
+    #[case("{k: v for k, v in y}", true)]
+    #[case("(x for x in y)", true)]
     #[case("plain", false)]
     #[case("a + b", false)]
-    fn is_collapsible_covers_collection_literals_and_subscripts(
+    fn is_collapsible_covers_literals_subscripts_and_comprehensions(
         #[case] src: &str,
         #[case] expected: bool,
     ) {
         let source = parse(src);
-        let stmt = &source.ast().body[0];
-        let expr = &stmt.as_expr_stmt().expect("expression statement").value;
+        let expr = first_expr(&source);
         assert_eq!(is_collapsible(expr), expected);
+    }
+
+    #[rstest]
+    #[case("(a, b)", true)]
+    #[case("(a,)", false)]
+    #[case("()", false)]
+    #[case("a, b, c", false)]
+    #[case("(a + b)", false)]
+    #[case("[a, b]", true)]
+    fn requires_expand_gates_parenthesized_multi_item_tuples(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let expr = first_expr(&source);
+        assert_eq!(requires_expand(expr), expected);
     }
 
     #[test]

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/collection_layout/comprehension_multiple_generators_collapse/input.py
+---
+flattened = [cell for row in grid for cell in row]

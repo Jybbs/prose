@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested-Loop Comprehension Joins onto One Line"
+
+description = '''
+A comprehension carrying more than one `for` clause joins onto one line when it fits, every clause concatenated in source order.
+'''

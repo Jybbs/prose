@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension With Chained Filters Joins onto One Line"
+
+description = '''
+A comprehension carrying more than one `if` clause joins onto one line when it fits, every filter concatenated in source order after the `for` clause.
+'''

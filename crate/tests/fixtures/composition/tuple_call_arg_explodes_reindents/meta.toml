@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Tuple Call Argument Explodes and Re-Indents in One Pass"
+
+description = '''
+A one-line call carrying an over-wide tuple argument settles in one forward pass, where `collection-layout` explodes the tuple, `call-layout` re-indents it to the keyword column, and `alphabetize` orders the keywords with `align-equals` aligning their `=`. **The tuple elements land at the keyword's item-indent plus a step and the `)` at the keyword column**, the same seating a `list` or `dict` argument takes.
+'''

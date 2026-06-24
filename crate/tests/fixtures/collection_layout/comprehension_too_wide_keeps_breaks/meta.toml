@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension Too Wide to Join Keeps Its Breaks"
+
+description = '''
+A comprehension whose single-line form overflows the budget stays at its source line breaks, since the collapse-only move never explodes a comprehension into a canonical shape the way a literal expands.
+'''

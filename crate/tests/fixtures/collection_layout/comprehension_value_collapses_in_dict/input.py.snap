@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/collection_layout/comprehension_value_collapses_in_dict/input.py
+---
+buckets = {
+    "alpha": alpha_source,
+    "delta": delta_source,
+    "gamma": gamma_source,
+    "kappa": [item for item in kappa_source]
+}

@@ -5,7 +5,7 @@ use std::{path::Path, str::FromStr};
 use lsp_types::Uri;
 use ruff_diagnostics::Edit;
 use ruff_notebook::Notebook;
-use ruff_python_ast::{StmtClassDef, StmtFunctionDef};
+use ruff_python_ast::{Expr, StmtClassDef, StmtFunctionDef};
 use ruff_text_size::TextRange;
 use serde_json::{Value, json};
 
@@ -67,6 +67,13 @@ pub(crate) fn first_def(source: &Source) -> &StmtFunctionDef {
     source.ast().body[0]
         .as_function_def_stmt()
         .expect("first statement is a def")
+}
+
+pub(crate) fn first_expr(source: &Source) -> &Expr {
+    &source.ast().body[0]
+        .as_expr_stmt()
+        .expect("first statement is an expression")
+        .value
 }
 
 /// Format diagnostic with a safe single-edit fix.

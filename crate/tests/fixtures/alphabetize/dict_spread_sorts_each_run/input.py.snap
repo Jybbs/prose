@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize/dict_spread_sorts_each_run/input.py
+---
+config = {
+    "c": 2,
+    "d": 1,
+    **defaults,
+    "a": 4,
+    "b": 3,
+}

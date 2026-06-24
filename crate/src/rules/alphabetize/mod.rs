@@ -34,7 +34,7 @@ use crate::{
         imports::{defers_annotations, import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
             adjacent_slots, any_sibling_shares_line, assemble_or_borrow, assembled_cell_edits,
-            permute_in_place, rendered_member_blocks,
+            permute_runs, rendered_member_blocks,
         },
         params::pins_positional_params,
         scope::{BodyScope, compound_sub_bodies, scoped_body},
@@ -285,11 +285,12 @@ fn body_layout<'a>(
                 }
             }
         }
-        for run in sectioned_import_runs(&sections, body) {
-            permute_in_place(&mut order, body, run, |s| {
-                import_sort_key(s, first_party, group_imports)
-            });
-        }
+        permute_runs(
+            &mut order,
+            body,
+            sectioned_import_runs(&sections, body),
+            |s| import_sort_key(s, first_party, group_imports),
+        );
         // Same-group import neighbors collapse to one line, except across a
         // section marker, whose dividing gap must survive in place.
         import_run_slots = adjacent_slots(&order, |slot, a, b| {

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Comprehensions Collapse to One Line When They Fit"
+
+description = '''
+A list, set, or dict comprehension or a generator expression broken across lines joins back onto one line when its single-line form fits the budget, the collapse-only move a subscript already takes. A comprehension is one expression rather than a run of entries, so it only ever collapses and never explodes, leaving one too wide to fit at its source line breaks.
+'''

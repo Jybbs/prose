@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/alphabetize/dict_run_between_two_spreads/input.py
+---
+config = {
+    **base,
+    "a": 2,
+    "b": 1,
+    **overrides,
+}

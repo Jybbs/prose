@@ -1,0 +1,8 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/composition/tuple_call_arg_explodes_reindents/input.py
+---
+alphabetize@10..122
+call-layout@10..122
+collection-layout@45..121

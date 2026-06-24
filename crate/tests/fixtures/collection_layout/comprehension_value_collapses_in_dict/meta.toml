@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension Dict Value Joins While Its Dict Expands"
+
+description = '''
+A multi-line comprehension handed as a dict value joins onto one line while the enclosing dict holds its one-entry-per-line expansion, the inner collapse and outer spread settling in one pass.
+'''

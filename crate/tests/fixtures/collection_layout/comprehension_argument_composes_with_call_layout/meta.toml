@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension Argument Joins or Holds Its Re-Indent"
+
+description = '''
+A fitting comprehension argument collapses and rides its keyword line whole, while one too wide to join keeps the keyword-column re-indent `call-layout` gives it, the two shapes converging in one forward pass.
+'''

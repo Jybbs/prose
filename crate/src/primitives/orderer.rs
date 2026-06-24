@@ -220,24 +220,6 @@ pub(crate) fn blocks_span(blocks: &[TextRange]) -> TextRange {
     blocks[0].cover(*blocks.last().expect("non-empty blocks"))
 }
 
-/// Returns the slot ranges of consecutive items whose pairwise neighbors
-/// satisfy `adjacent`. Singleton runs drop.
-pub(crate) fn chunk_runs<T>(
-    items: &[T],
-    adjacent: impl FnMut(&T, &T) -> bool,
-) -> Vec<Range<usize>> {
-    let mut start = 0;
-    items
-        .chunk_by(adjacent)
-        .filter_map(|chunk| {
-            let end = start + chunk.len();
-            let range = (chunk.len() >= 2).then_some(start..end);
-            start = end;
-            range
-        })
-        .collect()
-}
-
 /// [`block_range`] for `items[i]` with its start pushed below any section
 /// marker leading it, so a banner or hash heading stays in the gap above
 /// the member rather than traveling with it through a reorder. The
@@ -309,6 +291,24 @@ where
         order[slot] = src;
     }
     true
+}
+
+/// Permutes the slots within each run of `runs` independently, items
+/// classified `None` pinning in place. Returns `true` when any run rewrote a
+/// slot. The many-run counterpart to [`permute_full`], keeping each sort
+/// within its run so no item crosses a boundary.
+pub(crate) fn permute_runs<'a, T, K>(
+    order: &mut [usize],
+    items: &'a [T],
+    runs: impl IntoIterator<Item = Range<usize>>,
+    mut classify: impl FnMut(&'a T) -> Option<K>,
+) -> bool
+where
+    K: Ord,
+{
+    runs.into_iter().fold(false, |permuted, run| {
+        permuted | permute_in_place(order, items, run, &mut classify)
+    })
 }
 
 /// Member blocks for every slot of `items`, each paired with the text
@@ -416,6 +416,17 @@ where
     assemble_or_borrow(source, &blocks, &rendered, &order, false, |_| None)
 }
 
+/// Slot ranges of each run of two or more adjacent items that each
+/// satisfy `qualifies`, an item failing it bounding the runs on either
+/// side. The unary-predicate face of [`chunk_runs`], folding the
+/// per-item test into the pairwise neighbor check.
+pub(crate) fn runs_where<T>(
+    items: &[T],
+    mut qualifies: impl FnMut(&T) -> bool,
+) -> Vec<Range<usize>> {
+    chunk_runs(items, |a, b| qualifies(a) && qualifies(b))
+}
+
 /// Inverts `order` into the slot each item index occupies, the reverse
 /// of the index-per-slot mapping `order` itself holds. Reading
 /// `slot_positions(order)[idx]` answers where item `idx` landed.
@@ -425,6 +436,21 @@ pub(crate) fn slot_positions(order: &[usize]) -> Vec<usize> {
         positions[idx] = slot;
     }
     positions
+}
+
+/// Returns the slot ranges of consecutive items whose pairwise neighbors
+/// satisfy `adjacent`. Singleton runs drop.
+fn chunk_runs<T>(items: &[T], adjacent: impl FnMut(&T, &T) -> bool) -> Vec<Range<usize>> {
+    let mut start = 0;
+    items
+        .chunk_by(adjacent)
+        .filter_map(|chunk| {
+            let end = start + chunk.len();
+            let range = (chunk.len() >= 2).then_some(start..end);
+            start = end;
+            range
+        })
+        .collect()
 }
 
 /// True when `order` is the identity permutation `0..order.len()`, the
@@ -701,6 +727,24 @@ mod tests {
     }
 
     #[test]
+    fn permute_runs_returns_false_when_no_run_reorders() {
+        let mut order = vec![0, 1, 2];
+        let items = ["a", "b", "c"];
+        let permuted = permute_runs(&mut order, &items, [0..1, 1..3], |s: &&str| Some(*s));
+        assert!(!permuted);
+        assert_eq!(order, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn permute_runs_sorts_each_run_without_crossing_a_boundary() {
+        let mut order = vec![0, 1, 2, 3, 4];
+        let items = ["b", "a", "z", "d", "c"];
+        let permuted = permute_runs(&mut order, &items, [0..2, 3..5], |s: &&str| Some(*s));
+        assert!(permuted);
+        assert_eq!(order, vec![1, 0, 2, 4, 3]);
+    }
+
+    #[test]
     fn reorder_text_inline_swaps_two_items() {
         let source = parse("def f(b, a): pass\n");
         let func = first_def(&source);
@@ -788,6 +832,12 @@ mod tests {
         );
         assert_matches!(cow, Cow::Owned(_));
         assert_eq!(&*cow, "DEF a(): pass\nDEF b(): pass");
+    }
+
+    #[test]
+    fn runs_where_bounds_runs_at_each_failing_item() {
+        let items = [1, 1, 0, 1, 1, 1];
+        assert_eq!(runs_where(&items, |&n| n == 1), vec![0..2, 3..6]);
     }
 
     #[test]
