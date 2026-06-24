@@ -76,6 +76,15 @@ impl Source {
         })
     }
 
+    /// Builds a source carrying no notebook cell boundaries.
+    pub(crate) fn build_module(
+        text: String,
+        name: impl Into<Box<str>>,
+        source_type: PySourceType,
+    ) -> Result<Self, ParseError> {
+        Self::build(text, name, source_type, CellOffsets::default())
+    }
+
     /// Builds the concatenated source of a parsed notebook, attaching
     /// its cell boundaries. The caller keeps `notebook` to re-emit the
     /// document after formatting.
@@ -108,7 +117,7 @@ impl Source {
             let notebook = Notebook::from_source_code(&text)?;
             return Self::from_notebook(&notebook, name).map_err(Into::into);
         }
-        Self::build(text, name, source_type, CellOffsets::default()).map_err(Into::into)
+        Self::build_module(text, name, source_type).map_err(Into::into)
     }
 
     pub fn ast(&self) -> &ModModule {
@@ -171,13 +180,6 @@ impl Source {
     /// least one line break.
     pub fn contains_line_break<R: Ranged>(&self, ranged: R) -> bool {
         self.file.source_text().contains_line_break(ranged.range())
-    }
-
-    /// Returns the source name. For `from_path` inputs this is
-    /// `path.display().to_string()`, for `from_str` inputs the
-    /// synthetic placeholder `<source>`.
-    pub fn filename(&self) -> &str {
-        self.file.name()
     }
 
     /// Returns the start offset of the first token in `range` for
@@ -275,19 +277,14 @@ impl Source {
             .next()
     }
 
-    /// Reparses with replacement source text, preserving the original name.
-    ///
-    /// Diagnostic labels keep the original path or `<source>` placeholder.
+    /// Reparses with replacement source text, preserving the original
+    /// name, and carrying `cell_offsets` forward so a notebook keeps its
+    /// cell boundaries across a rule. Diagnostic labels keep the original
+    /// path or `<source>` placeholder.
     ///
     /// # Errors
     ///
     /// Returns `ParseError` if `text` is not a valid Python module.
-    pub fn reparse(&self, text: String) -> Result<Self, ParseError> {
-        self.reparse_carrying(text, CellOffsets::default())
-    }
-
-    /// Reparses carrying `cell_offsets` forward, the variant the pipeline
-    /// drives so a notebook keeps its cell boundaries across a rule.
     pub(crate) fn reparse_carrying(
         &self,
         text: String,
@@ -356,12 +353,7 @@ impl FromStr for Source {
     type Err = ParseError;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        Self::build(
-            text.to_owned(),
-            "<source>",
-            PySourceType::default(),
-            CellOffsets::default(),
-        )
+        Self::build_module(text.to_owned(), "<source>", PySourceType::default())
     }
 }
 
@@ -608,7 +600,10 @@ mod tests {
         // the replacement source still parses as a node rather than a
         // syntax error.
         let reparsed = s
-            .reparse("%matplotlib inline\ny = 2\n".to_owned())
+            .reparse_carrying(
+                "%matplotlib inline\ny = 2\n".to_owned(),
+                CellOffsets::default(),
+            )
             .expect("reparses");
         assert_eq!(reparsed.ast().body.len(), 2);
     }
@@ -616,7 +611,7 @@ mod tests {
     #[test]
     fn reparse_returns_parse_error_for_bad_replacement() {
         let s = Source::from_str("x = 1\n").expect("original parses");
-        let result = s.reparse("def foo(".to_owned());
+        let result = s.reparse_carrying("def foo(".to_owned(), CellOffsets::default());
         assert!(result.is_err());
     }
 

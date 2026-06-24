@@ -7,11 +7,10 @@
 //! padding widths are computed.
 
 use ruff_diagnostics::{Edit, SourceMap};
-use ruff_notebook::CellOffsets;
 
 use crate::{
     diagnostics::Diagnostic,
-    primitives::edit::{apply_edits, apply_edits_mapped, forward_offsets},
+    primitives::edit::{apply_edits, apply_edits_mapped},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -131,10 +130,7 @@ impl Pipeline {
                         .into_iter()
                         .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
                 );
-                let cell_offsets = map.map_or_else(CellOffsets::default, |m| {
-                    forward_offsets(source.cell_offsets(), &m)
-                });
-                let next = reparse_or_reject(&source, new_text, rule_id, cell_offsets)?;
+                let next = reparse_or_reject(&source, new_text, rule_id, map)?;
                 Ok((next, diagnostics))
             },
         )?;
@@ -164,10 +160,7 @@ impl Pipeline {
                 let Some((new_text, map)) = weave_groups(&source, groups.concat()) else {
                     return Ok(source);
                 };
-                let cell_offsets = map.map_or_else(CellOffsets::default, |m| {
-                    forward_offsets(source.cell_offsets(), &m)
-                });
-                reparse_or_reject(&source, new_text, rule_id, cell_offsets)
+                reparse_or_reject(&source, new_text, rule_id, map)
             })
             .map(drop)
     }

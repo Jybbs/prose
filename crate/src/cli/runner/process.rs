@@ -7,7 +7,7 @@ use std::{
 };
 
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use ruff_notebook::{CellOffsets, NotebookIndex};
+use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::{SourceFile, SourceFileBuilder};
 
@@ -82,12 +82,7 @@ pub(super) fn process_path(
     let outcome = if source_type.is_ipynb() {
         notebook::process(text, path.display().to_string(), &resolved.pipeline, pass)
     } else {
-        match Source::build(
-            text,
-            path.display().to_string(),
-            source_type,
-            CellOffsets::default(),
-        ) {
+        match Source::build_module(text, path.display().to_string(), source_type) {
             Ok(source) => run_pipeline(source, &resolved.pipeline, pass),
             Err(e) => failed(
                 ExitStatus::ParseError,
@@ -136,7 +131,7 @@ pub(super) fn process_stdin(
     if source_type.is_ipynb() {
         return notebook::process(text, "<stdin>".to_owned(), pipeline, pass);
     }
-    match Source::build(text, "<stdin>", source_type, CellOffsets::default()) {
+    match Source::build_module(text, "<stdin>", source_type) {
         Ok(source) => run_pipeline(source, pipeline, pass),
         Err(e) => failed(
             ExitStatus::ParseError,
@@ -207,7 +202,7 @@ pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> F
 }
 
 /// Runs the pipeline and assembles the outcome, deferring the rewrite
-/// to `rewrite`. The caller handles the diagnose-only pass; the
+/// to `rewrite`. The caller handles the diagnose-only pass, while the
 /// `diagnose_as_written` flag adds the as-written diagnostics an output
 /// format renders beside the rewrite.
 pub(super) fn run_and_assemble(

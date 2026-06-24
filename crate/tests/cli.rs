@@ -30,6 +30,21 @@ const TWO_CODE_CELLS: &str = r#"{
   "nbformat_minor": 5
 }"#;
 
+/// A two-cell notebook whose out-of-order imports sit in the first cell,
+/// so the lone diagnostic falls in a non-last cell and the text emitter
+/// renders it under that cell's header.
+const FIRST_CELL_UNSORTED: &str = r#"{
+  "cells": [
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["import sys\n", "import os"]},
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["value = 1\n"]}
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
 /// A Python notebook whose sole code cell uses CRLF line endings. The
 /// rewrite aligns the assignment while preserving each `\r\n`.
 const CRLF_CELLS: &str = r#"{
@@ -883,6 +898,21 @@ fn notebook_check_text_renders_under_a_cell_header() {
         .code(1);
     let out = stdout_utf8(&assert);
     assert!(out.contains("cell 2"), "cell header missing: {out:?}");
+}
+
+#[test]
+fn notebook_check_text_renders_a_non_last_cell_under_its_header() {
+    let (_dir, path) = fixture("nb.ipynb", FIRST_CELL_UNSORTED);
+    let assert = prose()
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let out = stdout_utf8(&assert);
+    assert!(
+        out.contains("cell 1"),
+        "non-last cell header missing: {out:?}"
+    );
 }
 
 #[test]

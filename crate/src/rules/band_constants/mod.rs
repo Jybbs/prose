@@ -72,18 +72,7 @@ impl Rule for BandConstants {
             &layout.rendered,
             &layout.order,
             false,
-            |i| {
-                layout.band.as_ref().and_then(|b| {
-                    banded_gap(
-                        &b.ranks,
-                        body,
-                        &self.first_party,
-                        self.group_imports,
-                        layout.order[i],
-                        layout.order[i + 1],
-                    )
-                })
-            },
+            |i| bander.band_gap(&layout, body, i),
         );
         singleton_groups(edits)
     }
@@ -127,19 +116,23 @@ impl<'a> Bander<'a> {
             &layout.rendered,
             &layout.order,
             false,
-            |i| {
-                layout.band.as_ref().and_then(|b| {
-                    banded_gap(
-                        &b.ranks,
-                        body,
-                        self.first_party,
-                        self.group_imports,
-                        layout.order[i],
-                        layout.order[i + 1],
-                    )
-                })
-            },
+            |i| self.band_gap(&layout, body, i),
         )
+    }
+
+    /// The divider [`banded_gap`] places after new-order slot `i` of
+    /// `layout`, `None` when no band applies or the ranks abut with no gap.
+    fn band_gap(&self, layout: &BandLayout<'_>, body: &[Stmt], i: usize) -> Option<&'static str> {
+        layout.band.as_ref().and_then(|b| {
+            banded_gap(
+                &b.ranks,
+                body,
+                self.first_party,
+                self.group_imports,
+                layout.order[i],
+                layout.order[i + 1],
+            )
+        })
     }
 
     /// Renders `body`, builds the module band over it, and folds each
@@ -169,21 +162,6 @@ impl<'a> Bander<'a> {
         }
     }
 
-    /// Folds a banded compound arm into `block`. A class or function
-    /// definition leaves module scope, so its body holds no band and the
-    /// block stays a borrow. A compound statement recurses into each arm
-    /// with the inherited module scope. Any other statement is verbatim.
-    fn band_stmt(&self, stmt: &'a Stmt, block: TextRange) -> Cow<'a, str> {
-        if scoped_body(stmt).is_none() && is_compound_statement(stmt) {
-            let bodies = compound_sub_bodies(stmt)
-                .into_iter()
-                .filter(|(body, _)| !body.is_empty())
-                .map(|(body, outer)| self.band_body(body, outer));
-            return splice_bodies(self.source, block, bodies, &[]);
-        }
-        Cow::Borrowed(self.source.slice(block))
-    }
-
     /// Builds the hoist plan over `body` and applies it to `order`,
     /// seating the leading band beneath the import run each section opens.
     /// Returns the [`Banding`] when constants relocated soundly.
@@ -202,6 +180,21 @@ impl<'a> Bander<'a> {
             self.target_version,
         )?
         .apply(body, sections, self.first_party, self.group_imports, order)
+    }
+
+    /// Folds a banded compound arm into `block`. A class or function
+    /// definition leaves module scope, so its body holds no band and the
+    /// block stays a borrow. A compound statement recurses into each arm
+    /// with the inherited module scope. Any other statement is verbatim.
+    fn band_stmt(&self, stmt: &'a Stmt, block: TextRange) -> Cow<'a, str> {
+        if scoped_body(stmt).is_none() && is_compound_statement(stmt) {
+            let bodies = compound_sub_bodies(stmt)
+                .into_iter()
+                .filter(|(body, _)| !body.is_empty())
+                .map(|(body, outer)| self.band_body(body, outer));
+            return splice_bodies(self.source, block, bodies, &[]);
+        }
+        Cow::Borrowed(self.source.slice(block))
     }
 }
 
