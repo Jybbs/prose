@@ -1,0 +1,9 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/collection_layout/comprehension_collapses_when_fits/input.py
+---
+collection-layout@118..144
+collection-layout@13..47
+collection-layout@158..184
+collection-layout@63..103

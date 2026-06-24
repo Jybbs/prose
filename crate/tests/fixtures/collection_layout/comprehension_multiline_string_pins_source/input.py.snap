@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/collection_layout/comprehension_multiline_string_pins_source/input.py
+---
+banners = [
+    """
+    {title}
+    """
+    for title in section_titles
+]

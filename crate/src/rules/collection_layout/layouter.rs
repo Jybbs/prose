@@ -7,14 +7,15 @@ use std::{borrow::Cow, collections::HashMap};
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyNodeRef, DictItem, Expr, ExprDict,
+    AnyNodeRef, Comprehension, DictItem, Expr, ExprDict,
     visitor::{Visitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use super::classify::{
-    Segment, is_align_colons_gap, is_atomic, is_collapsible, requires_expand, segments,
+    Segment, is_align_colons_gap, is_atomic, is_collapse_only, is_collapsible, requires_expand,
+    segments,
 };
 use super::flow::flow_lines;
 use crate::{
@@ -219,26 +220,27 @@ impl<'a> Layouter<'a> {
     /// Returns the canonical rewrite for `expr` against the budget at
     /// `column`, or `None` when the visitor should descend into its
     /// children. `indent` is where the closing bracket lands if `expr`
-    /// expands. Emits `Some(inline)` when a multi-line literal's or
-    /// subscript's inline form fits, `Some(expand)` when a multi-item
-    /// `Dict`, `List`, or `Set`'s rendered width overflows, or when a
-    /// `Dict` carries more than `max_dict_entries` entries
-    /// whatever its width. A subscript only ever collapses, joining its
-    /// `value[index]` onto one line. The `collapse` facet gates every
-    /// inline join and the `explode` facet gates every expansion, so a
-    /// cleared facet returns `None` and leaves that shape untouched.
+    /// expands. Emits `Some(inline)` when a multi-line literal's,
+    /// subscript's, or comprehension's inline form fits, `Some(expand)`
+    /// when a multi-item `Dict`, `List`, or `Set`'s rendered width
+    /// overflows, or when a `Dict` carries more than `max_dict_entries`
+    /// entries whatever its width. A subscript and a comprehension only
+    /// ever collapse, joining onto one line and never exploding. The
+    /// `collapse` facet gates every inline join and the `explode` facet
+    /// gates every expansion, so a cleared facet returns `None` and
+    /// leaves that shape untouched.
     fn replacement_for(&self, expr: &Expr, column: usize, indent: usize) -> Option<String> {
         let range = expr.range();
-        if expr.is_subscript_expr() {
-            if !self.collapse
-                || !self.source.contains_line_break(range)
-                || self.source.intersects_comment(range)
-            {
+        if self.source.intersects_comment(range) {
+            return None;
+        }
+        if is_collapse_only(expr) {
+            if !self.collapse || !self.source.contains_line_break(range) {
                 return None;
             }
             return self.joined_if_fits(expr, column);
         }
-        if !is_layoutable(expr) || self.source.intersects_comment(range) {
+        if !is_layoutable(expr) {
             return None;
         }
         let expandable = requires_expand(expr);
@@ -329,6 +331,33 @@ impl<'a> Layouter<'a> {
         self.source.slice(range)
     }
 
+    /// Appends a comprehension's `for`/`if` clause chain to `buf`, each
+    /// clause a single space from the preceding text and an async
+    /// generator carrying its `async` keyword. The targets, iterables,
+    /// and conditions route back through `write_inline` so a nested
+    /// collection or soft-wrapped operand joins as it does at top level.
+    fn write_comprehension_clauses(
+        &self,
+        buf: &mut String,
+        generators: &[Comprehension],
+        parent: AnyNodeRef,
+    ) {
+        for generator in generators {
+            buf.push_str(if generator.is_async {
+                " async for "
+            } else {
+                " for "
+            });
+            self.write_inline(buf, &generator.target, parent);
+            buf.push_str(" in ");
+            self.write_inline(buf, &generator.iter, parent);
+            for condition in &generator.ifs {
+                buf.push_str(" if ");
+                self.write_inline(buf, condition, parent);
+            }
+        }
+    }
+
     /// Appends the inline serialization of `expr` to `buf`. Recursive
     /// helper backing `inline_form`. `parent` is the immediate
     /// enclosing AST node, used for `paren_aware_range` recovery on
@@ -337,8 +366,31 @@ impl<'a> Layouter<'a> {
         let here = AnyNodeRef::from(expr);
         match expr {
             Expr::Dict(d) => self.write_inline_dict(buf, d, here),
+            Expr::DictComp(c) => {
+                let brackets = Some(('{', '}'));
+                self.write_inline_comprehension(
+                    buf,
+                    brackets,
+                    c.key.as_deref(),
+                    &c.value,
+                    &c.generators,
+                    here,
+                );
+            }
+            Expr::Generator(c) => {
+                let brackets = c.parenthesized.then_some(('(', ')'));
+                self.write_inline_comprehension(buf, brackets, None, &c.elt, &c.generators, here);
+            }
             Expr::List(l) => self.write_inline_seq(buf, Some(('[', ']')), &l.elts, here, false),
+            Expr::ListComp(c) => {
+                let brackets = Some(('[', ']'));
+                self.write_inline_comprehension(buf, brackets, None, &c.elt, &c.generators, here);
+            }
             Expr::Set(s) => self.write_inline_seq(buf, Some(('{', '}')), &s.elts, here, false),
+            Expr::SetComp(c) => {
+                let brackets = Some(('{', '}'));
+                self.write_inline_comprehension(buf, brackets, None, &c.elt, &c.generators, here);
+            }
             Expr::Subscript(s) => {
                 self.write_inline(buf, &s.value, here);
                 buf.push('[');
@@ -358,6 +410,31 @@ impl<'a> Layouter<'a> {
                 buf.push_str(&single_line_form(expr, slice).unwrap_or(Cow::Borrowed(slice)));
             }
         }
+    }
+
+    /// Appends a comprehension's bracketed inline form to `buf`: an
+    /// optional `key: ` head, the element, then the clause chain, all
+    /// wrapped in `brackets`. A `None` open or close carries the bare
+    /// generator whose call parentheses stand in for its own, and a
+    /// `Some` key carries the dict comprehension's `key: value` head.
+    fn write_inline_comprehension(
+        &self,
+        buf: &mut String,
+        brackets: Option<(char, char)>,
+        key: Option<&Expr>,
+        element: &Expr,
+        generators: &[Comprehension],
+        parent: AnyNodeRef,
+    ) {
+        let (open, close) = brackets.unzip();
+        buf.extend(open);
+        if let Some(key) = key {
+            self.write_inline(buf, key, parent);
+            buf.push_str(": ");
+        }
+        self.write_inline(buf, element, parent);
+        self.write_comprehension_clauses(buf, generators, parent);
+        buf.extend(close);
     }
 
     /// Writes `d`'s inline serialization into `buf` as `{k: v, ...}`,

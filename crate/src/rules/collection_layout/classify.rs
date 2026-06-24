@@ -36,11 +36,25 @@ pub(super) fn is_atomic(expr: &Expr) -> bool {
     .any(|e| e.is_literal_expr() || is_dotted_name(e))
 }
 
+/// True for the collapse-only forms, a subscript whose `[index]` joins
+/// onto one line whatever the index shape and the four comprehensions,
+/// each joining when it fits and never expanding the way a literal does.
+pub(super) fn is_collapse_only(expr: &Expr) -> bool {
+    matches!(
+        expr,
+        Expr::DictComp(_)
+            | Expr::Generator(_)
+            | Expr::ListComp(_)
+            | Expr::SetComp(_)
+            | Expr::Subscript(_)
+    )
+}
+
 /// True for the bracketed expressions the visitor measures for a
-/// single-line collapse: the four collection literals plus a subscript,
-/// whose `[index]` joins onto one line whatever the index shape.
+/// single-line collapse: the four collection literals plus the
+/// collapse-only forms, a subscript and the four comprehensions.
 pub(super) fn is_collapsible(expr: &Expr) -> bool {
-    is_layoutable(expr) || expr.is_subscript_expr()
+    is_layoutable(expr) || is_collapse_only(expr)
 }
 
 /// True for a `Dict`, `List`, or `Set` shape the expand path
@@ -104,9 +118,13 @@ mod tests {
     #[case("(c, d)", true)]
     #[case("{e: f}", true)]
     #[case("g[h]", true)]
+    #[case("[x for x in y]", true)]
+    #[case("{x for x in y}", true)]
+    #[case("{k: v for k, v in y}", true)]
+    #[case("(x for x in y)", true)]
     #[case("plain", false)]
     #[case("a + b", false)]
-    fn is_collapsible_covers_collection_literals_and_subscripts(
+    fn is_collapsible_covers_literals_subscripts_and_comprehensions(
         #[case] src: &str,
         #[case] expected: bool,
     ) {

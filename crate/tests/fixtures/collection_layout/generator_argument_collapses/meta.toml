@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Generator Argument Joins onto Its Call Line"
+
+description = '''
+A generator expression handed to a call as its sole argument joins back onto the call line when it fits, the surrounding call parentheses standing in for the generator's own.
+'''

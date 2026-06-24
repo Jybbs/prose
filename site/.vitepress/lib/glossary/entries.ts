@@ -224,7 +224,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     ],
     definition: 'A comprehension is one of Python\'s `[x for x in xs]`, `{k: v for ...}`, or '
               + '`{x for ...}` literal forms that build a list, dict, or set inline. '
-              + '`collection-layout` keeps them on one line when they fit, and their bound '
+              + '`collection-layout` joins them back onto one line when they fit, and their bound '
               + 'targets sit outside `single-use-variables`.',
     families  : ['layout', 'lint'],
     href      : 'https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions'

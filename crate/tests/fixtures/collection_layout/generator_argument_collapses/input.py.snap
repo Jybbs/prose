@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: output
+input_file: crate/tests/fixtures/collection_layout/generator_argument_collapses/input.py
+---
+total = sum(value for value in amounts)
