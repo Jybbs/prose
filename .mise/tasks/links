@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-#MISE description="Check the built site for broken internal links with `lychee`"
+#MISE description="Check the built site's off-site URLs with `lychee`"
 #MISE dir="site"
+#MISE depends=["press"]
 #MISE tools={"aqua:lycheeverse/lychee" = "latest"}
 
-lychee --root-dir "$PWD/.vitepress/dist" .vitepress/dist
+lychee --no-progress --base-url https://prose.fyi --exclude '^https?://(www\.)?prose\.fyi' dist

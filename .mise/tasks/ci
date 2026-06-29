@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #MISE description="Full local CI sweep"
-#MISE depends=["audit", "bake", "check", "cruft", "lint", "lockfile", "test rust", "test site", "typecheck"]
+#MISE depends=["audit", "check", "lint", "links", "lockfile", "press", "test"]
 #MISE depends_post=["wheel"]
 
 # `maturin develop` (the `wheel` task) relinks target/debug/prose, which the

@@ -21,7 +21,6 @@ __pycache__/
 .idea/
 
 node_modules/
-site/.vitepress/dist/
-site/.vitepress/.temp/
+site/.astro/
+site/dist
 site/coverage/
-**/*.timestamp-*.mjs

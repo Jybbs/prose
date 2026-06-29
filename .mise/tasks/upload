@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
-#MISE description="Generate coverage and upload it to Codecov; pass `rust` or `site` to scope"
+#MISE description="Generate coverage and upload it to Codecov for the Rust crate"
 #MISE tools={"pipx:codecov-cli" = "latest"}
 
 set -euo pipefail
 
-case "${1:-all}" in
-  all)  mise run upload rust && mise run upload site ;;
-  rust) mise run coverage rust && codecovcli upload-process --flag rust --file target/lcov.info --sha "$SHA" ;;
-  site) mise run coverage site && codecovcli upload-process --flag site --file site/coverage/lcov.info --sha "$SHA" ;;
-  *)    echo "usage: mise upload [rust|site]" >&2; exit 2 ;;
-esac
+mise run coverage && codecovcli upload-process --flag rust --file target/lcov.info --sha "$SHA"

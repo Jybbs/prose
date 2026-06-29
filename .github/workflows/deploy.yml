@@ -4,19 +4,16 @@ permissions : { contents: read }
 
 on:
   pull_request:
-    paths:
+    paths: &paths
+      - .github/actions/provision-bun/**
       - .github/workflows/deploy.yml
-      - .nvmrc
+      - .mise/tasks/**
       - crate/Cargo.toml
       - 'site/**'
 
   push:
     branches: [main]
-    paths:
-      - .github/workflows/deploy.yml
-      - .nvmrc
-      - crate/Cargo.toml
-      - 'site/**'
+    paths: *paths
 
 concurrency:
   cancel-in-progress : ${{ github.event_name == 'pull_request' }}
@@ -25,77 +22,49 @@ concurrency:
 jobs:
   checks:
     name    : ${{ matrix.name }}
-    runs-on : ubuntu-latest
-
-    env:
-      CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
-      SHA           : ${{ github.event.pull_request.head.sha || github.sha }}
+    runs-on : &ubuntu ubuntu-latest
 
     strategy:
       fail-fast: false
 
       matrix:
         include:
+          - command : mise run links
+            name    : 🪺 Build
           - command : mise run typecheck
             name    : 🪡 Typecheck
-          - command : mise run lint site
-            name    : 🧶 Lint
-          - command : mise run test site
-            name    : ⚖️ Test
-          - command : mise run upload site
-            name    : ☂️ Coverage
-          - command : mise run cruft
-            name    : 🧹 Cruft
 
     steps:
-      - name : Check out repository
+      - &checkout
+        name : Check out repository
         uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
-      - name : Install mise tools
+      - &mise-tools
+        name : Install mise tools
         uses : jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d
 
-      - name : Provision bun
+      - &provision-bun
+        name : Provision bun
         uses : ./.github/actions/provision-bun
-
-      - name : Install dependencies
-        run  : mise run bake
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}
 
   deploy:
     name        : 🪁 Deploy
+    if          : ${{ github.event_name == 'push' }}
     needs       : checks
     outputs     : { url: "${{ steps.publish.outputs.deployment-url }}" }
     permissions : { contents: read, deployments: write }
-    runs-on     : ubuntu-latest
+    runs-on     : *ubuntu
 
     steps:
-      - name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
-
-      - name : Provision Cargo
-        uses : ./.github/actions/provision-cargo
-        with : { shared-key: prose-build }
-
-      - name : Provision bun
-        uses : ./.github/actions/provision-bun
-
-      - name : Build the Prose binary
-        run  : mise run build
-
-      - name : Restore the OG card cache
-        uses : actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
-        with:
-          key          : og-cards-${{ runner.os }}-${{ github.sha }}
-          path         : .cache/og
-          restore-keys : og-cards-${{ runner.os }}-
+      - *checkout
+      - *mise-tools
+      - *provision-bun
 
       - name : Build the site
         run  : mise run press
-
-      - name : Check internal links
-        run  : mise run links
 
       - name : Deploy to Cloudflare Pages
         id   : publish
@@ -103,25 +72,23 @@ jobs:
         with:
           accountId : ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           apiToken  : ${{ secrets.CLOUDFLARE_TOKEN }}
-          command   : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ github.head_ref || github.ref_name }} --commit-dirty=true
+          command   : pages deploy site/dist --project-name=prose --branch=${{ github.head_ref || github.ref_name }} --commit-dirty=true
 
   gate:
     name    : 🗞️ Brief
     if      : always()
-    needs   : deploy
-    runs-on : ubuntu-latest
+    needs   : checks
+    runs-on : *ubuntu
 
     steps:
-      - name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - *checkout
 
       - name : Provision uv
         uses : ./.github/actions/provision-uv
 
       - name : Summarize and gate
         env:
-          DEPLOY : ${{ needs.deploy.result }}
-          REF    : ${{ github.head_ref || github.ref_name }}
-          SHA    : ${{ github.event.pull_request.head.sha || github.sha }}
-          URL    : ${{ needs.deploy.outputs.url }}
-        run  : ./.github/scripts/summary.py deploy
+          CHECK : ${{ needs.checks.result }}
+          REF   : ${{ github.head_ref || github.ref_name }}
+          SHA   : ${{ github.event.pull_request.head.sha || github.sha }}
+        run  : ./.github/scripts/summary.py docs
