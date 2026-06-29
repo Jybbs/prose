@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
 #MISE description="Lint the Rust crate with `clippy`"
 
-set -euo pipefail
-
-case "${1:-all}" in
-  all|rust) cargo clippy --all-targets --locked -- -D warnings ;;
-  *)        echo "usage: mise lint [rust]" >&2; exit 2 ;;
-esac
+cargo clippy --all-targets --locked -- -D warnings

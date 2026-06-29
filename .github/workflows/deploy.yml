@@ -29,8 +29,10 @@ jobs:
 
       matrix:
         include:
-          - command : mise run press && mise run links
+          - command : mise run links
             name    : 🪺 Build
+          - command : mise run typecheck
+            name    : 🪡 Typecheck
 
     steps:
       - &checkout
@@ -45,7 +47,7 @@ jobs:
         name : Provision bun
         uses : ./.github/actions/provision-bun
 
-      - name : ${{ matrix.name }}
+      - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}
 
   deploy:

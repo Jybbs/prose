@@ -60,16 +60,16 @@ jobs:
             cache      : false
             command    : mise run bake
             name       : 🥐 Bun
-          - command    : mise run lint rust
+          - command    : mise run lint
             name       : 📎 Clippy
             shared-key : prose-clippy
           - command    : mise run build
             name       : 🗜️ Build
             shared-key : prose-build
-          - command    : mise run test rust
+          - command    : mise run test
             name       : ⚖️ Test
             shared-key : prose-test
-          - command    : mise run upload rust
+          - command    : mise run upload
             name       : ☂️ Coverage
             shared-key : prose-coverage
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #MISE description="Type-check the docs site with `astro check`"
 #MISE dir="site"
-#MISE wait_for=["bake"]
+#MISE depends=["bake"]
 
 bun run astro check

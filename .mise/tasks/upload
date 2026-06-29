@@ -4,7 +4,4 @@
 
 set -euo pipefail
 
-case "${1:-all}" in
-  all|rust) mise run coverage rust && codecovcli upload-process --flag rust --file target/lcov.info --sha "$SHA" ;;
-  *)        echo "usage: mise upload [rust]" >&2; exit 2 ;;
-esac
+mise run coverage && codecovcli upload-process --flag rust --file target/lcov.info --sha "$SHA"

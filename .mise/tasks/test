@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
 #MISE description="Run the Rust test suite including `insta` snapshots"
 
-set -euo pipefail
-
-case "${1:-all}" in
-  all|rust) cargo test --locked ;;
-  *)        echo "usage: mise test [rust]" >&2; exit 2 ;;
-esac
+cargo test --locked
