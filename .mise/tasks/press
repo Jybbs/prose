@@ -3,4 +3,4 @@
 #MISE depends=["bake"]
 #MISE dir="site"
 
-bunx astro build
+bun run astro build

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-#MISE description="Install bun dependencies against the frozen lockfile"
+#MISE description="Install bun dependencies and sync Astro's generated types"
 #MISE dir="site"
 #MISE sources=["site/package.json", "site/bun.lock"]
 
-bun install --frozen-lockfile && bunx astro sync
+bun install --frozen-lockfile && bun run astro sync

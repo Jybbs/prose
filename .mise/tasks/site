@@ -2,4 +2,4 @@
 #MISE description="Run the docs dev server against `site`"
 #MISE dir="site"
 
-bunx astro dev
+bun run astro dev
