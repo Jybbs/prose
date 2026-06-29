@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-#MISE description="Produce the static docs bundle at `site/.vitepress/dist`"
+#MISE description="Produce the static docs bundle at `site/dist`"
 #MISE depends=["bake"]
 #MISE dir="site"
 
-bunx vitepress build
+bunx astro build

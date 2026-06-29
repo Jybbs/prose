@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="Run the VitePress dev server against `site/`"
+#MISE description="Run the docs dev server against `site`"
 #MISE dir="site"
 
-bunx vitepress dev
+bunx astro dev

@@ -5,30 +5,16 @@ coverage:
   round     : down
 
   status:
-    patch:
+    patch: &targets
       default:
         target: 95%
       rust:
         target : 95%
         flags  : [rust]
-      site:
-        target : 95%
-        flags  : [site]
 
-    project:
-      default:
-        target: 95%
-      rust:
-        target : 95%
-        flags  : [rust]
-      site:
-        target : 95%
-        flags  : [site]
+    project: *targets
 
 flags:
   rust:
     paths        : [crate/src]
-    carryforward : true
-  site:
-    paths        : [site/.vitepress]
     carryforward : true

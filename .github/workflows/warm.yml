@@ -28,11 +28,12 @@ jobs:
   plan:
     name            : 🗺️ Plan
     outputs         : { matrix: "${{ steps.matrix.outputs.matrix }}" }
-    runs-on         : ubuntu-latest
+    runs-on         : &ubuntu ubuntu-latest
     timeout-minutes : 5
 
     steps:
-      - name : Check out repository
+      - &checkout
+        name : Check out repository
         uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name : Provision uv
@@ -44,7 +45,7 @@ jobs:
 
   checks:
     name    : ${{ matrix.name }}
-    runs-on : ubuntu-latest
+    runs-on : *ubuntu
 
     env:
       CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
@@ -73,8 +74,7 @@ jobs:
             shared-key : prose-coverage
 
     steps:
-      - name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - *checkout
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
@@ -100,8 +100,7 @@ jobs:
       matrix    : ${{ fromJSON(needs.plan.outputs.matrix) }}
 
     steps:
-      - name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - *checkout
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo

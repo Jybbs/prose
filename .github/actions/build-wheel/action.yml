@@ -16,7 +16,7 @@ inputs:
 
   name:
     default     : sdist
-    description : Tag suffix in the uploaded `wheels-{name}` artifact and the `provision-cargo` shared-key scope.
+    description : Tag suffix in the uploaded `dist-{name}` artifact and the `provision-cargo` shared-key scope.
 
   target:
     default     : ''
@@ -44,6 +44,6 @@ runs:
       uses : actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
         if-no-files-found : error
-        name              : wheels-${{ inputs.name }}
+        name              : dist-${{ inputs.name }}
         path              : target/wheels/*
         retention-days    : 7

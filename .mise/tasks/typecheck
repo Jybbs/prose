@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-#MISE description="Type-check the docs-site TypeScript with `vue-tsc`"
+#MISE description="Type-check the docs site with `astro check`"
 #MISE dir="site"
 #MISE wait_for=["bake"]
 
-bunx vue-tsc --noEmit
+bunx astro check

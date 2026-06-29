@@ -20,14 +20,16 @@ jobs:
   plan:
     name            : 🗺️ Plan
     outputs         : { matrix: "${{ steps.matrix.outputs.matrix }}" }
-    runs-on         : ubuntu-latest
+    runs-on         : &ubuntu ubuntu-latest
     timeout-minutes : 5
 
     steps:
-      - name : Check out repository
+      - &checkout
+        name : Check out repository
         uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
-      - name : Provision uv
+      - &provision-uv
+        name : Provision uv
         uses : ./.github/actions/provision-uv
 
       - name : Emit build matrix
@@ -48,13 +50,12 @@ jobs:
       matrix    : ${{ fromJSON(needs.plan.outputs.matrix) }}
 
     steps:
-      - name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - *checkout
 
-      - name : Provision uv
-        uses : ./.github/actions/provision-uv
+      - *provision-uv
 
-      - name : Rewrite README for PyPI
+      - &rewrite-readme
+        name : Rewrite README for PyPI
         run  : ./.github/scripts/transform_readme.py
 
       - name : Build wheel
@@ -69,18 +70,15 @@ jobs:
   sdist:
     name            : 🚢 sdist
     needs           : plan
-    runs-on         : ubuntu-latest
+    runs-on         : *ubuntu
     timeout-minutes : 10
 
     steps:
-      - name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - *checkout
 
-      - name : Provision uv
-        uses : ./.github/actions/provision-uv
+      - *provision-uv
 
-      - name : Rewrite README for PyPI
-        run  : ./.github/scripts/transform_readme.py
+      - *rewrite-readme
 
       - name : Build sdist
         uses : ./.github/actions/build-wheel
@@ -89,17 +87,18 @@ jobs:
   validate:
     name            : 🕯️ Validate
     needs           : [build, sdist]
-    runs-on         : ubuntu-latest
+    runs-on         : *ubuntu
     timeout-minutes : 10
 
     steps:
-      - name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - *checkout
 
-      - name : Download all artifacts
-        uses : ./.github/actions/download-wheels
+      - &download-dist
+        name : Download all artifacts
+        uses : ./.github/actions/download-dist
 
-      - name : Provision uv
+      - &provision-uv-nocache
+        name : Provision uv
         uses : ./.github/actions/provision-uv
         with : { cache-dependency-glob: "" }
 
@@ -113,7 +112,7 @@ jobs:
     if              : github.ref_type == 'tag'
     needs           : validate
     permissions     : { attestations: write, id-token: write }
-    runs-on         : ubuntu-latest
+    runs-on         : *ubuntu
     timeout-minutes : 10
 
     environment:
@@ -121,15 +120,11 @@ jobs:
       url  : https://pypi.org/p/prose-formatter
 
     steps:
-      - name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - *checkout
 
-      - name : Download all artifacts
-        uses : ./.github/actions/download-wheels
+      - *download-dist
 
-      - name : Provision uv
-        uses : ./.github/actions/provision-uv
-        with : { cache-dependency-glob: "" }
+      - *provision-uv-nocache
 
       - name : Attest SLSA provenance to GitHub
         uses : actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26
@@ -145,19 +140,17 @@ jobs:
     name            : 🗞️ Brief
     if              : always()
     needs           : [build, sdist, validate, publish]
-    runs-on         : ubuntu-latest
+    runs-on         : *ubuntu
     timeout-minutes : 5
 
     steps:
-      - name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - *checkout
 
       - name : Download all artifacts
         if   : needs.build.result != 'cancelled' && needs.sdist.result != 'cancelled'
-        uses : ./.github/actions/download-wheels
+        uses : ./.github/actions/download-dist
 
-      - name : Provision uv
-        uses : ./.github/actions/provision-uv
+      - *provision-uv
 
       - name : Write release summary
         env:

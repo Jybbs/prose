@@ -22,11 +22,11 @@ env:
 jobs:
   check:
     name    : ${{ matrix.name }}
-    runs-on : ubuntu-latest
+    runs-on : &ubuntu ubuntu-latest
 
     env:
       CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
-      SHA           : ${{ github.event.pull_request.head.sha || github.sha }}
+      SHA           : &sha ${{ github.event.pull_request.head.sha || github.sha }}
 
     strategy:
       fail-fast: false
@@ -59,7 +59,8 @@ jobs:
             shared-key : prose-coverage
 
     steps:
-      - name : Check out repository
+      - &checkout
+        name : Check out repository
         uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name : Provision Cargo
@@ -75,11 +76,10 @@ jobs:
     name    : 🗞️ Brief
     if      : always()
     needs   : check
-    runs-on : ubuntu-latest
+    runs-on : *ubuntu
 
     steps:
-      - name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - *checkout
 
       - name : Provision uv
         uses : ./.github/actions/provision-uv
@@ -88,5 +88,5 @@ jobs:
         env:
           CHECK : ${{ needs.check.result }}
           REF   : ${{ github.head_ref || github.ref_name }}
-          SHA   : ${{ github.event.pull_request.head.sha || github.sha }}
+          SHA   : *sha
         run  : ./.github/scripts/summary.py ci
