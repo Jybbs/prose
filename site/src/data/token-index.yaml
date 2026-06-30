@@ -1,0 +1,141 @@
+cli-flag:
+  - blurb: Color-output mode for human-readable output.
+    href: /reference/cli#global-flag
+    key: '--color'
+  - blurb: Print a unified diff without rewriting the source.
+    href: /reference/cli#prose-format
+    key: '--diff'
+  - blurb: Subtract the listed rule from the active set.
+    href: /reference/cli#precedence
+    key: '--ignore <slug>'
+  - blurb: Bypass the user-level cache for the single invocation.
+    href: /reference/cache
+    key: '--no-cache'
+  - blurb: Pick the diagnostic shape (`text` / `json` / `github` / `sarif`).
+    href: /reference/cli#prose-format
+    key: '--output-format'
+  - blurb: Reduce the closing summary to a bare count line.
+    href: /reference/cli#run-summary
+    key: '--quiet'
+  - blurb: Restrict the run to the listed rule.
+    href: /reference/cli#precedence
+    key: '--select <slug>'
+  - blurb: Read source from stdin, write the rewrite to stdout.
+    href: /reference/cli#prose-format
+    key: '--stdin'
+  - blurb: Treat stdin as this filename, its extension selecting Python or a notebook.
+    href: /reference/cli#prose-format
+    key: '--stdin-filename'
+  - blurb: Confirm the would-be rewrite re-parses, surfacing an unparseable rule output.
+    href: /reference/cli#prose-check
+    key: '--validate'
+  - blurb: Print a one-line cache summary to stderr at the end of the run.
+    href: /reference/cache#hit-miss-telemetry
+    key: '--verbose'
+config-key:
+  - blurb: Toggle the user-level cache globally.
+    href: /reference/cache#configuration
+    key: cache.enabled
+  - blurb: LRU eviction cap on the cache directory.
+    href: /reference/cache#configuration
+    key: cache.max-size-mib
+  - blurb: Maximum column budget for code lines.
+    href: /reference/configuration#top-level-keys
+    key: code-line-length
+  - blurb: Maximum column budget for docstring prose.
+    href: /reference/configuration#docstring-budgets
+    key: docstring-line-length
+  - blurb: Budget policy for docstring structured sections.
+    href: /reference/configuration#docstring-budgets
+    key: docstring-structured-policy
+  - blurb: Per-rule toggle, the bare bool in `[rules]`.
+    href: /reference/configuration#per-rule-facets
+    key: enabled
+  - blurb: Import-wrap column budget, falls back to `code-line-length`.
+    href: /reference/configuration#top-level-keys
+    key: import-line-length
+  - blurb: Package names lifted into the local-package import group.
+    href: /reference/configuration#imports
+    key: imports.first-party
+  - blurb: Per-rule width-spread budget for an alignment run.
+    href: /reference/configuration#per-rule-facets
+    key: max-shift
+  - blurb: Glob list selecting the files an override entry applies its partial config to.
+    href: /reference/configuration#per-pattern-overrides
+    key: overrides.paths
+  - blurb: Python version the parser reads against.
+    href: /reference/configuration#top-level-keys
+    key: target-version
+exit-code:
+  - blurb: Clean run, every rewrite applied.
+    href: /reference/exit-codes
+    key: '0'
+  - blurb: Pending rewrites under check.
+    href: /reference/exit-codes
+    key: '1'
+  - blurb: Lint diagnostics emitted.
+    href: /reference/exit-codes
+    key: '2'
+  - blurb: Parse failure on at least one file.
+    href: /reference/exit-codes
+    key: '3'
+  - blurb: Invalid CLI invocation or configuration.
+    href: /reference/exit-codes
+    key: '4'
+output-format:
+  - blurb: Workflow-command annotations for inline PR review.
+    href: /reference/output-formats#github
+    key: github
+  - blurb: LSP-style structured diagnostics.
+    href: /reference/output-formats#json
+    key: json
+  - blurb: GitHub Code Scanning upload format.
+    href: /reference/output-formats#sarif
+    key: sarif
+  - blurb: Default human-readable output.
+    href: /reference/output-formats#text
+    key: text
+subcommand:
+  - blurb: Clear every cached entry and report the freed bytes.
+    href: /reference/cache#prose-cache-clean
+    key: prose cache clean
+  - blurb: Evict oldest entries until the configured size cap is met.
+    href: /reference/cache#prose-cache-compact
+    key: prose cache compact
+  - blurb: Print cache path, entry count, byte total, and mtimes.
+    href: /reference/cache#prose-cache-info
+    key: prose cache info
+  - blurb: Verify without rewriting, resolving to a non-zero exit code when any rewrite pends.
+    href: /reference/cli#prose-check
+    key: prose check
+  - blurb: Emit shell-completion scripts for the active shell.
+    href: /reference/cli#prose-completions
+    key: prose completions
+  - blurb: Apply every pending rewrite in place.
+    href: /reference/cli#prose-format
+    key: prose format
+  - blurb: Serve format-on-save and live diagnostics over the language-server protocol.
+    href: /reference/cli#prose-server
+    key: prose server
+suppression:
+  - blurb: 'Yapf alias for `# fmt: off`.'
+    href: /reference/suppression-directives#block-markers
+    key: '# yapf: disable'
+  - blurb: 'Yapf alias for `# fmt: on`.'
+    href: /reference/suppression-directives#block-markers
+    key: '# yapf: enable'
+  - blurb: Per-line lint suppression for the listed rule.
+    href: /reference/suppression-directives#line-markers
+    key: '# prose: ignore[<slug>]'
+  - blurb: Preserve the authored shape against rewrites.
+    href: /reference/suppression-directives#dict-literal-order-preservation
+    key: '# prose: keep'
+  - blurb: Block-format suppression open.
+    href: /reference/suppression-directives#block-markers
+    key: '# fmt: off'
+  - blurb: Block-format suppression close.
+    href: /reference/suppression-directives#block-markers
+    key: '# fmt: on'
+  - blurb: Single-line format suppression.
+    href: /reference/suppression-directives#line-markers
+    key: '# fmt: skip'

@@ -1,0 +1,12 @@
+alignment:
+  body: Equals signs, colons, the `import` keyword, and match arrows line up across consecutive lines. The eye drops down the column.
+docs:
+  body: Docstrings join the same legibility discipline as code. Wrap to the project line length, keep single-line shapes single-line, multi-line shapes multi-line, and quote style consistent throughout.
+formatting:
+  body: Trailing commas come off, blank lines snap to canonical counts, empty grouping parentheses and redundant `-> None` annotations fall away, and a stale `__future__` import is removed once nothing needs it. The scaffolding clears after the shape is set.
+layout:
+  body: Calls, signatures, collections, and from-imports that outgrow the line budget explode to one entry per line. Each argument, key, or name lands on its own row, so the eye reads down the column and a later edit touches a single line.
+lint:
+  body: Legacy union syntax, reassigned constants, step-narration comments, bare-import patterns, and single-use bindings surface as diagnostics. The formatter never rewrites these, because the fix belongs to the reader.
+ordering:
+  body: Sibling entries sort into a predictable order. Imports, dictionary keys, and set members read top-to-bottom by name, so a reader looking for an entry already knows where it sits.

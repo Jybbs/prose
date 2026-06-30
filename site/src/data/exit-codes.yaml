@@ -1,0 +1,36 @@
+'0':
+  code: 0
+  detail:
+    - Returned by both `prose check` and `prose format` when the input is already conforming.
+    - CI gates pass without further work.
+  label: Clean
+  summary: No diagnostics, no rewrites pending.
+'1':
+  code: 1
+  detail:
+    - '`prose check` returns this when one or more auto-fix rules would emit edits.'
+    - '`prose format` returns 0 once the rewrite lands.'
+    - Every auto-fix rule contributes here.
+  label: Format would change
+  summary: At least one auto-fix diagnostic is pending.
+'2':
+  code: 2
+  detail:
+    - Surfaces under both `prose check` and `prose format`.
+    - 'The shipped lints contribute: `legacy-union-syntax`, `reassigned-constants`, `step-narration`, `single-use-variables`.'
+  label: Lint violation
+  summary: At least one lint-only diagnostic surfaced.
+'3':
+  code: 3
+  detail:
+    - Surfaces under both subcommands when `ruff_python_parser` fails on the source.
+    - The pipeline does not run, leaving no other diagnostics to fire.
+  label: Parse error
+  summary: Input could not be parsed as Python.
+'4':
+  code: 4
+  detail:
+    - Surfaces from config-file parse errors, malformed `--select` / `--ignore` flags, or unknown CLI options.
+    - A malformed flag pre-empts the whole run, whereas a broken ancestor config fails only the files it governs while the rest proceed.
+  label: Config error
+  summary: Config file or argument validation failed.

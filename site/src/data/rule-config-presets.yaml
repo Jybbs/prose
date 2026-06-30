@@ -1,0 +1,16 @@
+alignment:
+  rows:
+    - default: 'true'
+      key: enabled
+      meaning: Toggle the rule on or off
+      type: bool
+    - default: '16'
+      key: max-shift
+      meaning: Width-spread budget for an alignment run. A positive `N` caps the spread, `0` forbids any shift, and `false` folds a contiguous run into one column
+      type: positive int | `0` | `false`
+toggle:
+  rows:
+    - default: 'true'
+      key: enabled
+      meaning: Toggle the rule on or off
+      type: bool

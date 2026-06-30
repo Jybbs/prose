@@ -1,0 +1,74 @@
+emacs:
+  caption: after-save-hook
+  code: |-
+    (defun prose-format-on-save ()
+      (when (derived-mode-p 'python-mode)
+        (call-process "prose" nil nil nil
+                      "format" buffer-file-name)
+        (revert-buffer :ignore-auto
+                       :noconfirm
+                       :preserve-modes)))
+
+    (add-hook 'after-save-hook
+              #'prose-format-on-save)
+  language: elisp
+  name: Emacs
+  target: init.el
+helix:
+  caption: editor.formatter
+  code: |-
+    [[editor.formatter]]
+    languages = ["python"]
+    command   = "prose"
+    args      = ["format", "-"]
+  language: toml
+  name: Helix
+  target: languages.toml
+jetbrains:
+  caption: File Watchers
+  code: |-
+    File type         : Python
+    Scope             : Project Files
+    Program           : prose
+    Arguments         : format $FilePath$
+    Working directory : $ProjectFileDir$
+  language: text
+  name: JetBrains
+  target: Watcher dialog
+neovim:
+  caption: autocmd BufWritePost
+  code: autocmd BufWritePost *.py silent! !prose format %
+  language: vim
+  name: Neovim
+  target: init.vim
+sublime:
+  caption: SublimeOnSaveBuild
+  code: |-
+    # Install: SublimeOnSaveBuild
+    {
+      "build_systems": [{
+        "name"        : "prose",
+        "shell_cmd"   : "prose format \"$file\"",
+        "selector"    : "source.python",
+        "working_dir" : "$file_path"
+      }]
+    }
+  language: python
+  name: Sublime Text
+  target: <Project>.sublime-project
+vscode:
+  caption: emeraldwalk.runonsave
+  code: |-
+    {
+      "emeraldwalk.runonsave": {
+        "commands": [
+          {
+            "match" : "\\.py$",
+            "cmd"   : "prose format ${file}"
+          }
+        ]
+      }
+    }
+  language: json
+  name: VS Code
+  target: settings.json
