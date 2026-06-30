@@ -1,0 +1,45 @@
+:root {
+  --prose-font-display           : 'Fraunces Variable', Georgia, "Times New Roman", serif;
+  --prose-font-base              : 'Lora Variable', Georgia, "Times New Roman", serif;
+  --prose-font-mono              : 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --prose-c-apricot              : #e8876f;
+  --prose-c-casper               : #adbdcd;
+  --prose-c-celadon              : #8cc5a3;
+  --prose-c-chambray             : #7db3e0;
+  --prose-c-champagne            : #f0e9bc;
+  --prose-c-dexter               : #6db0b5;
+  --prose-c-eureka               : #e8c840;
+  --prose-c-grams-hair           : #f6f8fa;
+  --prose-c-heath                : #c08597;
+  --prose-c-oat                  : #cdbda5;
+  --prose-c-rainee               : #b8c8a8;
+  --prose-c-toronto              : #5069ad;
+  --prose-c-whiskey              : #d4a574;
+  --prose-c-woodsmoke            : #17171b;
+
+  --prose-c-ube                  : #8a80cb;
+  --prose-c-ube-mid              : color-mix(in oklch, var(--prose-c-ube), white 18%);
+  --prose-c-ube-pale             : color-mix(in oklch, var(--prose-c-ube), white 36%);
+  --prose-c-ube-deep             : color-mix(in oklch, var(--prose-c-ube), black 22%);
+  --prose-c-ube-night            : color-mix(in oklch, var(--prose-c-ube), black 45%);
+
+  --prose-c-accent               : var(--prose-c-chambray);
+  --prose-c-error                : var(--prose-c-apricot);
+  --prose-c-warning              : var(--prose-c-eureka);
+  --prose-link-hover             : var(--prose-c-ube-deep);
+
+  --prose-c-family-alignment     : var(--prose-c-eureka);
+  --prose-c-family-cli           : var(--prose-c-ube-night);
+  --prose-c-family-docs          : var(--prose-c-celadon);
+  --prose-c-family-engine        : var(--prose-c-ube);
+  --prose-c-family-formatting    : var(--prose-c-heath);
+  --prose-c-family-layout        : var(--prose-c-toronto);
+  --prose-c-family-lint          : var(--prose-c-apricot);
+  --prose-c-family-ordering      : var(--prose-c-chambray);
+
+  --prose-c-section-integrations : var(--prose-c-rainee);
+  --prose-c-section-primitives   : var(--prose-c-dexter);
+  --prose-c-section-reference    : var(--prose-c-casper);
+  --prose-c-section-usage        : var(--prose-c-oat);
+}
