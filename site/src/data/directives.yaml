@@ -1,0 +1,167 @@
+fmt-off:
+  effect: Opens a region every auto-fix rule leaves untouched, so a hand-tuned block survives the formatter pass intact.
+  example: |-
+    # fmt: off
+    keep_this_block_exactly_as_written = (1,2,3)
+    # fmt: on
+  form: '# fmt: off'
+  pairId: fmt-on
+  pairRole: opens
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'fmt:'
+    - role: action
+      text: 'off'
+  scope: block
+fmt-on:
+  effect: Closes the suppressed region. Formatting resumes on the following line.
+  example: |-
+    # fmt: off
+    keep_this_block_exactly_as_written = (1,2,3)
+    # fmt: on
+  form: '# fmt: on'
+  pairId: fmt-off
+  pairRole: closes
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'fmt:'
+    - role: action
+      text: 'on'
+  scope: block
+fmt-skip:
+  effect: Every auto-fix rule skips the line carrying the directive. Pairs with `[<rule>, ...]` to narrow the scope.
+  example: 'data = {"a": 1, "b": 2, "c": 3}  # fmt: skip'
+  form: '# fmt: skip'
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'fmt:'
+    - role: action
+      text: skip
+  scope: line
+prose-ignore:
+  effect: Every lint rule skips the line. Pairs with `[<rule>, ...]` to narrow the scope.
+  example: 'helper = build_helper()  # prose: ignore'
+  form: '# prose: ignore'
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'prose:'
+    - role: action
+      text: ignore
+  scope: line
+prose-ignore-rules:
+  effect: Only the listed lint rules skip the line. Two bracketed directives on one line union their rule slugs.
+  example: 'TIMEOUT = 30  # prose: ignore[reassigned-constants, single-use-variables]'
+  form: '# prose: ignore[<rule>, ...]'
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'prose:'
+    - role: action
+      text: ignore
+    - role: payload
+      text: '[<rule>, ...]'
+  scope: line
+prose-keep:
+  effect: Every ordering rule leaves the dict entries in their authored order. Scopes to that one dict literal.
+  example: |-
+    config = {  # prose: keep
+        "stage_one"   : True,
+        "stage_two"   : False,
+    }
+  form: '# prose: keep'
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'prose:'
+    - role: action
+      text: keep
+  scope: block
+  scopeNote: dict literal only
+prose-off:
+  effect: Suppresses every *Prose* rewrite for the entire file. Declared on a comment line near the top.
+  example: |-
+    # prose: off
+
+    def messy(): pass
+  form: '# prose: off'
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'prose:'
+    - role: action
+      text: 'off'
+  scope: file
+prose-skip:
+  aliasOf: fmt-skip
+  effect: 'Alias for `# fmt: skip`. Every auto-fix rule skips the line carrying the directive.'
+  example: 'data = {"a": 1, "b": 2, "c": 3}  # prose: skip'
+  form: '# prose: skip'
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'prose:'
+    - role: action
+      text: skip
+  scope: line
+prose-skip-rules:
+  effect: Only the listed auto-fix rules skip the line. Two bracketed directives on one line union their rule slugs.
+  example: 'foo = 1  # prose: skip[align-equals, strip-trailing-commas]'
+  form: '# prose: skip[<rule>, ...]'
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'prose:'
+    - role: action
+      text: skip
+    - role: payload
+      text: '[<rule>, ...]'
+  scope: line
+yapf-disable:
+  aliasOf: fmt-off
+  effect: 'Alias for `# fmt: off`. Recognized to ease migration from yapf.'
+  example: |-
+    # yapf: disable
+    keep_this_block_exactly_as_written = (1,2,3)
+    # yapf: enable
+  form: '# yapf: disable'
+  pairId: yapf-enable
+  pairRole: opens
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'yapf:'
+    - role: action
+      text: disable
+  scope: block
+yapf-enable:
+  aliasOf: fmt-on
+  effect: 'Alias for `# fmt: on`. Closes a yapf-style suppressed region.'
+  example: |-
+    # yapf: disable
+    keep_this_block_exactly_as_written = (1,2,3)
+    # yapf: enable
+  form: '# yapf: enable'
+  pairId: yapf-disable
+  pairRole: closes
+  parts:
+    - role: comment
+      text: '#'
+    - role: namespace
+      text: 'yapf:'
+    - role: action
+      text: enable
+  scope: block

@@ -1,0 +1,22 @@
+'01':
+  body: Fetch the wheel and expose the `prose` binary.
+  code: uv tool install prose-formatter
+  language: bash
+  title: Install
+'02':
+  body: Drop a `prose.toml` at the project root, a `.config/prose.toml`, or a `[tool.prose]` table in `pyproject.toml`. The defaults already work.
+  code: target-version = "3.13"
+  language: toml
+  title: Configure
+'03':
+  body: Rewrite in place, or check without writing.
+  code: |-
+    prose format path/
+    prose check path/
+  language: bash
+  title: Run
+'04':
+  body: Optionally pair with Ruff for the token-level surface *Prose* doesn't touch.
+  code: ruff format && prose format
+  language: bash
+  title: Compose

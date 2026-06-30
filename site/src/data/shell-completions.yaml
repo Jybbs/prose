@@ -1,0 +1,47 @@
+bash:
+  caption: bash_completion.d
+  code: prose completions bash > /etc/bash_completion.d/prose
+  command: prose completions bash
+  language: bash
+  mono: bash
+  name: Bash
+  note: The `/etc/bash_completion.d/` directory is the system-wide completion hook on most distributions. For a per-user install, write to `~/.local/share/bash-completion/completions/prose` instead.
+  target: /etc/bash_completion.d/prose
+elvish:
+  caption: use module
+  code: |-
+    prose completions elvish > ~/.config/elvish/lib/prose-completions.elv
+    use prose-completions
+  command: prose completions elvish
+  language: shellscript
+  mono: elvish
+  name: Elvish
+  note: The `use` line goes in `~/.config/elvish/rc.elv` to register the completions on shell start.
+  target: ~/.config/elvish/lib/prose-completions.elv
+fish:
+  caption: completions directory
+  code: prose completions fish > ~/.config/fish/completions/prose.fish
+  command: prose completions fish
+  language: fish
+  mono: fish
+  name: Fish
+  note: Fish picks up completions in `~/.config/fish/completions/` on the next shell start, no `source` required.
+  target: ~/.config/fish/completions/prose.fish
+powershell:
+  caption: $PROFILE script
+  code: prose completions powershell > $PROFILE.CurrentUserAllHosts
+  command: prose completions powershell
+  language: powershell
+  mono: powershell
+  name: PowerShell
+  note: PowerShell loads `$PROFILE.CurrentUserAllHosts` on every session, so the completions register on the next shell start.
+  target: $PROFILE.CurrentUserAllHosts
+zsh:
+  caption: fpath function
+  code: prose completions zsh > "${fpath[1]}/_prose"
+  command: prose completions zsh
+  language: zsh
+  mono: zsh
+  name: Zsh
+  note: The `${fpath[1]}` expansion lands at the first entry of zsh's function path, which is where `compinit` picks up new completions. Restart the shell or run `autoload -Uz compinit && compinit` to pick the completions up without re-launching.
+  target: ${fpath[1]}/_prose
