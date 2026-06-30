@@ -64,8 +64,25 @@ pub(crate) enum Command {
     /// Rewrite files to conform to the Prose style.
     Format(FormatArgs),
 
+    /// List the registered rules in pipeline order.
+    Rules(RulesArgs),
+
     /// Run the language server over stdio.
     Server(ServerArgs),
+}
+
+#[derive(Debug, clap::Args)]
+pub(crate) struct RulesArgs {
+    /// Output format for the rule listing.
+    #[arg(long, value_enum, default_value_t)]
+    pub(crate) output_format: RulesFormat,
+}
+
+#[derive(Clone, Copy, Debug, Default, clap::ValueEnum)]
+pub(crate) enum RulesFormat {
+    Json,
+    #[default]
+    Table,
 }
 
 #[derive(Debug, Subcommand)]
