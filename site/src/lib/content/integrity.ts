@@ -21,7 +21,6 @@ export interface CorpusEntry {
 }
 
 interface Rule {
-  caption : string
   family  : RuleFamily
   related : readonly string[]
   slug    : string
@@ -37,11 +36,10 @@ const isFamily = (name: string): name is RuleFamily => (FAMILY_ORDER as readonly
 
 const slugOf = (file: string): string => file.replace(/\.mdx?$/, '')
 
-function requireCaption(value: string | undefined, slug: string): string {
+function assertCaption(value: string | undefined, slug: string): void {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`rule "${slug}" is missing its caption`)
   }
-  return value
 }
 
 // Enforces the relationship invariants a per-record schema cannot reach over
@@ -57,7 +55,7 @@ export function assertCorpusIntegrity(entries: Iterable<CorpusEntry>): void {
   for (const { data, path } of entries) {
     const parts = path.split('/')
     const file  = parts.at(-1) ?? ''
-    if (file === 'index.md' || file === 'index.mdx') continue
+    if (slugOf(file) === 'index') continue
 
     if (parts[0] === 'rules') {
       const family = parts[1]
@@ -66,10 +64,10 @@ export function assertCorpusIntegrity(entries: Iterable<CorpusEntry>): void {
         continue
       }
       const slug = slugOf(file)
+      assertCaption(data.caption, slug)
       rules.push({
-        caption : requireCaption(data.caption, slug),
         family,
-        related : data.related ?? [],
+        related: data.related ?? [],
         slug
       })
     } else if (parts[0] === 'primitives' && parts.length === 2) {

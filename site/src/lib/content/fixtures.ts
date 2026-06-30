@@ -11,13 +11,6 @@ const INPUT_FILE    = 'input.py'
 const META_FILE     = 'meta.toml'
 const SNAPSHOT_FILE = 'input.py.snap'
 
-interface FixtureDocs {
-  canonical?   : boolean
-  description?  : string
-  previewable? : boolean
-  title?        : string
-}
-
 // Folds a fixture case directory into one entry the built-in loaders cannot
 // produce, pairing the input with the snapshot output, the lint findings the
 // harness emits, and the `[docs]` table that surfaces the case on its rule
@@ -68,15 +61,19 @@ function snapshotBody(raw: string): string {
   return close === -1 ? raw : raw.slice(close + 5)
 }
 
+async function readOptional(dir: string, name: string): Promise<string | null> {
+  const file = path.join(dir, name)
+  return existsSync(file) ? fs.readFile(file, 'utf8') : null
+}
+
 async function readFindings(dir: string): Promise<unknown[]> {
-  const file = path.join(dir, FINDINGS_FILE)
-  if (!existsSync(file)) return []
-  const body = snapshotBody(await fs.readFile(file, 'utf8')).trim()
+  const raw = await readOptional(dir, FINDINGS_FILE)
+  if (raw === null) return []
+  const body = snapshotBody(raw).trim()
   return body ? (JSON.parse(body) as unknown[]) : []
 }
 
-async function readDocs(dir: string): Promise<FixtureDocs> {
-  const file = path.join(dir, META_FILE)
-  if (!existsSync(file)) return {}
-  return (parse(await fs.readFile(file, 'utf8')) as { docs?: FixtureDocs }).docs ?? {}
+async function readDocs(dir: string): Promise<Record<string, unknown>> {
+  const raw = await readOptional(dir, META_FILE)
+  return raw === null ? {} : (parse(raw) as { docs?: Record<string, unknown> }).docs ?? {}
 }
