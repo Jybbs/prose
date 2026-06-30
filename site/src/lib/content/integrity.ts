@@ -1,22 +1,16 @@
-import { FAMILY_ORDER }   from '../shared/registries'
-import type { RuleFamily } from '../shared/registries'
+import { FAMILY_ORDER }         from '../shared/registries'
+import type { RuleFamily }      from '../shared/registries'
+import type { DocsFrontmatter } from './schemas'
 
 // `consumedBy` names a primitive's consumers, which span rules, sibling
 // primitives, and the CLI, so the CLI is a legitimate consumer that owns no
 // primitive page of its own.
 const CLI_CONSUMER = 'cli'
 
-interface CorpusFrontmatter {
-  caption?    : string
-  consumedBy? : readonly string[]
-  consumes?   : readonly string[]
-  related?    : readonly string[]
-}
-
 // One docs entry plus its path relative to `src/content/docs`, which carries
 // the section and family the cross-record checks read off the directory tree.
 export interface CorpusEntry {
-  data : CorpusFrontmatter
+  data : DocsFrontmatter
   path : string
 }
 

@@ -20,6 +20,8 @@ export const docsExtension = z.object({
   tagline    : z.string().optional()
 })
 
+export type DocsFrontmatter = z.infer<typeof docsExtension>
+
 export const glossary = z.object({
   aliases    : z.array(z.string()).optional(),
   definition : z.string(),

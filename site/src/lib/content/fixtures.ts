@@ -40,7 +40,7 @@ export function fixturesLoader(): Loader {
             data: {
               findings : await readFindings(dir),
               input    : source,
-              output   : snapshotBody(snapshot).replace(/\s+$/, '\n'),
+              output   : snapshotBody(snapshot).trimEnd() + '\n',
               ...(await readDocs(dir))
             }
           })
