@@ -1,6 +1,4 @@
-import fs from 'node:fs'
-
-const css = fs.readFileSync(new URL('../../styles/tokens.css', import.meta.url), 'utf8')
+import css from '../../styles/tokens.css?raw'
 
 function declared(name: string): string {
   return css.match(new RegExp(`--${name}\\s*:\\s*([^;]+);`))?.[1].trim() ?? ''
