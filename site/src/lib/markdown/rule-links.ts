@@ -2,16 +2,16 @@ import { findAndReplace }             from 'mdast-util-find-and-replace'
 import type { PhrasingContent, Root } from 'mdast'
 import { visitParents }               from 'unist-util-visit-parents'
 
-import type { DocsVocab, PrimitiveRef, RuleRef }  from '../content/docs-vocab'
-import { mdastElement, mdastLink, withinHeading } from './mdast-node'
+import type { DocsVocab, PrimitiveRef, RuleRef }             from '../content/docs-vocab'
+import { mdastElement, mdastLink, mdastText, withinHeading } from './mdast-node'
 
 const SLUG      = /^[a-z][a-z0-9-]*$/
 const WIKI_LINK = /\[\[([^\]]+)\]\]/g
 
-const ruleNode = (ref: RuleRef, slug: string): PhrasingContent =>
-  mdastElement('a', { className: ['rule-chip'], 'data-caption': ref.caption, href: ref.href }, [
-    { type: 'text', value: slug }
-  ])
+const ruleNode = (ref: RuleRef, slug: string): PhrasingContent => {
+  const props = { className: ['rule-chip'], 'data-caption': ref.caption, href: ref.href }
+  return mdastElement('a', props, mdastText(slug))
+}
 
 const primitiveNode = (ref: PrimitiveRef): PhrasingContent =>
   mdastLink(ref.href, {}, [{ type: 'strong', children: [{ type: 'inlineCode', value: ref.title }] }])

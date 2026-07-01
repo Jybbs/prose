@@ -5,6 +5,7 @@ import type { AnnotationRenderOptions } from '@expressive-code/core'
 import type {
   ExpressiveCodeBlock,
   ExpressiveCodeInlineRange,
+  ExpressiveCodeLine,
   ExpressiveCodePlugin
 } from '@expressive-code/core'
 import type { Parents, Properties } from 'hast'
@@ -19,7 +20,8 @@ class LintFlagAnnotation extends ExpressiveCodeAnnotation {
   }
 
   render({ nodesToTransform }: AnnotationRenderOptions): Parents[] {
-    return nodesToTransform.map(node => h('span.lint-flag', this.dataset(), node))
+    const attrs = this.dataset()
+    return nodesToTransform.map(node => h('span.lint-flag', attrs, node))
   }
 
   private dataset(): Properties {
@@ -39,16 +41,18 @@ class LintFlagAnnotation extends ExpressiveCodeAnnotation {
 function* findingRanges(
   finding: LintFinding,
   block: ExpressiveCodeBlock
-): Iterable<ExpressiveCodeInlineRange & { lineIndex: number }> {
+): Iterable<{ line: ExpressiveCodeLine, range: ExpressiveCodeInlineRange }> {
   const firstLine = finding.location.row - 1
   const lastLine  = finding.end_location.row - 1
   for (let lineIndex = firstLine; lineIndex <= lastLine; lineIndex++) {
     const line = block.getLine(lineIndex)
     if (!line) continue
     yield {
-      columnEnd   : lineIndex === lastLine  ? finding.end_location.column - 1 : line.text.length,
-      columnStart : lineIndex === firstLine ? finding.location.column - 1     : 0,
-      lineIndex
+      line,
+      range: {
+        columnEnd   : lineIndex === lastLine  ? finding.end_location.column - 1 : line.text.length,
+        columnStart : lineIndex === firstLine ? finding.location.column - 1     : 0
+      }
     }
   }
 }
@@ -67,10 +71,8 @@ export function pluginLintFlag(findings: Map<string, LintFinding[]>): Expressive
         const found = findings.get(id)
         if (!found) throw new Error(`lint="${id}" references no fixture findings`)
         for (const finding of found) {
-          for (const { columnEnd, columnStart, lineIndex } of findingRanges(finding, codeBlock)) {
-            codeBlock.getLine(lineIndex)?.addAnnotation(
-              new LintFlagAnnotation(finding, { columnEnd, columnStart })
-            )
+          for (const { line, range } of findingRanges(finding, codeBlock)) {
+            line.addAnnotation(new LintFlagAnnotation(finding, range))
           }
         }
       }

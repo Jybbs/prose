@@ -13,3 +13,7 @@ export function* pageFiles(dir: string): Iterable<{ file: string, slug: string }
     if (isPage(file)) yield { file, slug: slugOf(file) }
   }
 }
+
+// The immediate subdirectory names of `dir`, sorted.
+export const subdirectories = (dir: string): string[] =>
+  readdirSync(dir, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name).sort()

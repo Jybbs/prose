@@ -6,8 +6,11 @@ interface HastData {
   hProperties ?: Properties
 }
 
+// A single text node wrapped for the phrasing-content slots the builders take.
+export const mdastText = (value: string): PhrasingContent[] => [{ type: 'text', value }]
+
 // mdast-util-to-hast reads `hName` and `hProperties` off any node's `data`, so
-// a custom element rides through to hast without a handler. The type stays off
+// a custom element reaches hast without a handler. The type stays off
 // the mdast unions, so body-link, which visits `link` nodes, leaves these be.
 export function mdastElement(
   hName      : string,
@@ -24,7 +27,7 @@ export function mdastSpan(className: string, children: PhrasingContent[]): Phras
 }
 
 // A native link, so `body-link` and to-hast both treat it as an anchor. Extra
-// hast attributes, a class or a `data-*`, travel in `data.hProperties`.
+// hast attributes, a class or a `data-*`, go in `data.hProperties`.
 export function mdastLink(url: string, properties: Properties, children: PhrasingContent[]): Link {
   return { type: 'link', url, title: null, children, data: { hProperties: properties } }
 }

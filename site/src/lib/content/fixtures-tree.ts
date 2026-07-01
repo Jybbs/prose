@@ -1,14 +1,12 @@
-import { readdirSync } from 'node:fs'
-import path            from 'node:path'
+import path from 'node:path'
 
 import { parseFrontmatter } from '@astrojs/markdown-remark'
+
+import { subdirectories } from './page'
 
 // The `<rule>/<case>` id, the rule slug in kebab form so it joins the docs
 // collection's rule slugs.
 export const fixtureId = (rule: string, name: string): string => `${rule.replaceAll('_', '-')}/${name}`
-
-const subdirectories = (dir: string): string[] =>
-  readdirSync(dir, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name).sort()
 
 // Each `<rule>/<case>` case directory under the fixtures root, the rule and case
 // names alongside the joined path.

@@ -1,7 +1,7 @@
 import { findAndReplace } from 'mdast-util-find-and-replace'
 import type { Root }      from 'mdast'
 
-import { mdastSpan } from './mdast-node'
+import { mdastSpan, mdastText } from './mdast-node'
 
 // Wraps every whole-word Prose or prose in body text in a span.prose-mark
 // carrying the captured case. The lookarounds keep Prose-foo and fooProse
@@ -13,7 +13,7 @@ export function remarkProseMark() {
   return (tree: Root): void => {
     findAndReplace(
       tree,
-      [PATTERN, (_match, word: string) => mdastSpan('prose-mark', [{ type: 'text', value: word }])],
+      [PATTERN, (_match, word: string) => mdastSpan('prose-mark', mdastText(word))],
       { ignore: 'heading' }
     )
   }

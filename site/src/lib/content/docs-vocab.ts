@@ -1,12 +1,12 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { fileURLToPath }             from 'node:url'
+import { readFileSync }  from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 import { parseFrontmatter }   from '@astrojs/markdown-remark'
 import { parse as parseYaml } from 'yaml'
 
-import { isFamily }        from '../shared/registries'
-import type { RuleFamily } from '../shared/registries'
-import { pageFiles }       from './page'
+import { isFamily }                  from '../shared/registries'
+import type { RuleFamily }           from '../shared/registries'
+import { pageFiles, subdirectories } from './page'
 
 export interface RuleRef      { caption: string, family: RuleFamily, href: string }
 export interface PrimitiveRef { href: string, title: string }
@@ -43,13 +43,12 @@ export function discoverDocsVocab(siteRoot: URL): DocsVocab {
 
 function ruleRefs(dir: string): Map<string, RuleRef> {
   const out = new Map<string, RuleRef>()
-  for (const family of readdirSync(dir, { withFileTypes: true })) {
-    if (!family.isDirectory() || !isFamily(family.name)) continue
-    for (const { file, slug } of pageFiles(`${dir}/${family.name}`)) {
+  for (const family of subdirectories(dir).filter(isFamily)) {
+    for (const { file, slug } of pageFiles(`${dir}/${family}`)) {
       out.set(slug, {
-        caption : String(frontmatter(`${dir}/${family.name}/${file}`).caption ?? ''),
-        family  : family.name,
-        href    : `/rules/${family.name}/${slug}`
+        caption : String(frontmatter(`${dir}/${family}/${file}`).caption ?? ''),
+        family,
+        href    : `/rules/${family}/${slug}`
       })
     }
   }

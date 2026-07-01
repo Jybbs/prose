@@ -3,13 +3,14 @@ import type { Root }      from 'mdast'
 import { findAndReplace } from 'mdast-util-find-and-replace'
 
 import type { DocsVocab, GlossaryRef } from '../content/docs-vocab'
-import { mdastElement }                from './mdast-node'
+import { mdastElement, mdastText }     from './mdast-node'
 
 const glossaryNode = (ref: GlossaryRef, phrase: string) => {
-  const text = [{ type: 'text' as const, value: phrase }]
+  const text  = mdastText(phrase)
+  const props = { className: ['glossary-term'], 'data-definition': ref.definition }
   return ref.href
-    ? mdastElement('a', { className: ['glossary-term'], 'data-definition': ref.definition, href: ref.href }, text)
-    : mdastElement('span', { className: ['glossary-term'], 'data-definition': ref.definition }, text)
+    ? mdastElement('a', { ...props, href: ref.href }, text)
+    : mdastElement('span', props, text)
 }
 
 // Auto-links the first occurrence of each glossary phrase per page, longest

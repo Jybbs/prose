@@ -3,8 +3,8 @@ import sitemap                 from '@astrojs/sitemap';
 import starlight               from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 
-import { buildContentTimestamps, lastmodForUrl } from './src/lib/config/page-timestamps';
-import { watchCrateSources }                     from './src/lib/integrations/watch-crate';
+import { buildContentTimestamps, lastmodForUrl }       from './src/lib/config/page-timestamps';
+import { watchCrateSources }                           from './src/lib/integrations/watch-crate';
 import { lintFlagPlugin, proseProcessor, shikiConfig } from './src/lib/markdown/config';
 
 const siteRoot   = new URL('./', import.meta.url);
