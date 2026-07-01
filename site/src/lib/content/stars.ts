@@ -3,13 +3,13 @@ import type { Loader } from 'astro/loaders'
 import { conditionalLoad } from './conditional'
 
 const ENDPOINT = 'https://api.github.com/repos/Jybbs/prose'
+const STAR_FMT = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
 
 const stargazers = (payload: unknown): number =>
   (payload as { stargazers_count?: number }).stargazers_count ?? 0
 
 // Collapses a thousands count to a `1.2k` form.
-const formatStars = (count: number): string =>
-  count < 1000 ? String(count) : `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k`
+const formatStars = (count: number): string => STAR_FMT.format(count).toLowerCase()
 
 // Loads the GitHub stargazer count as a single entry, the cold offline build
 // falling back to `0`.

@@ -6,8 +6,9 @@ import path                                   from 'node:path'
 import type { Loader } from 'astro/loaders'
 
 import { ENTRIES, PRELUDE, RESET_ROWS, RULES, SOURCE } from '../landing/typing-demo'
-import { precompileMagicMove }                          from '../markdown/magic-move'
-import { resolveProseBinary }                           from '../shared/paths'
+import { precompileMagicMove }                         from '../markdown/magic-move'
+import { resolveProseBinary }                          from '../shared/paths'
+import { replaceStore }                                from './store'
 
 // Runs the compiled `prose` binary once per morph state, the source first, then
 // the cumulative rule selections, then each config-tail variant, and precompiles
@@ -16,8 +17,8 @@ import { resolveProseBinary }                           from '../shared/paths'
 export function typingDemoLoader(): Loader {
   return {
     name: 'prose-typing-demo',
-    load: async ({ config, parseData, store }) => {
-      const binary = resolveProseBinary(config.root)
+    load: async ctx => {
+      const binary = resolveProseBinary(ctx.config.root)
 
       const states = [
         SOURCE,
@@ -27,7 +28,7 @@ export function typingDemoLoader(): Loader {
           .map(entry => runProse(binary, SOURCE, RULES.join(','), entry.tail))
       ]
 
-      const data = await parseData({
+      await replaceStore(ctx, [{
         id   : 'landing',
         data : {
           entries          : ENTRIES,
@@ -35,9 +36,7 @@ export function typingDemoLoader(): Loader {
           pythonStateSteps : await precompileMagicMove(states),
           resetRows        : RESET_ROWS
         }
-      })
-      store.clear()
-      store.set({ data, id: 'landing' })
+      }])
     }
   }
 }

@@ -130,6 +130,8 @@ export const pipelineEntry = z.object({
   slug       : z.string()
 })
 
+export type PipelineEntry = z.infer<typeof pipelineEntry>
+
 export const release = z.object({ version: z.string() })
 
 export const stars = z.object({ stars: z.string() })

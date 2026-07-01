@@ -5,12 +5,8 @@ import { parse }       from 'smol-toml'
 import type { Loader } from 'astro/loaders'
 
 import { cargoTomlPath, resolveProseBinary } from '../shared/paths'
-
-export type PipelineEntry = {
-  imperative : string
-  position   : number
-  slug       : string
-}
+import type { PipelineEntry }                from './schemas'
+import { replaceStore }                      from './store'
 
 export function parseCrateVersion(toml: string, source: string): string {
   const version = (parse(toml) as { package?: { version?: unknown } }).package?.version
@@ -24,14 +20,11 @@ export function parseCrateVersion(toml: string, source: string): string {
 export function pipelineLoader(): Loader {
   return {
     name: 'prose-pipeline',
-    load: async ({ config, parseData, store }) => {
-      const binary  = resolveProseBinary(config.root)
+    load: async ctx => {
+      const binary  = resolveProseBinary(ctx.config.root)
       const json    = execFileSync(binary, ['rules', '--output-format', 'json'], { encoding: 'utf8' })
       const entries = JSON.parse(json) as PipelineEntry[]
-      store.clear()
-      for (const entry of entries) {
-        store.set({ data: await parseData({ data: entry, id: entry.slug }), id: entry.slug })
-      }
+      await replaceStore(ctx, entries.map(entry => ({ data: entry, id: entry.slug })))
     }
   }
 }
@@ -40,11 +33,10 @@ export function pipelineLoader(): Loader {
 export function releaseLoader(): Loader {
   return {
     name: 'prose-release',
-    load: async ({ config, parseData, store }) => {
-      const source  = cargoTomlPath(config.root)
+    load: async ctx => {
+      const source  = cargoTomlPath(ctx.config.root)
       const version = parseCrateVersion(await fs.readFile(source, 'utf8'), source)
-      store.clear()
-      store.set({ data: await parseData({ data: { version }, id: 'release' }), id: 'release' })
+      await replaceStore(ctx, [{ data: { version }, id: 'release' }])
     }
   }
 }

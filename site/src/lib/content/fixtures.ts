@@ -7,6 +7,8 @@ import { parseFrontmatter } from '@astrojs/markdown-remark'
 import { parse }            from 'smol-toml'
 import type { Loader }      from 'astro/loaders'
 
+import { replaceStore, type StoreEntry } from './store'
+
 const FINDINGS_FILE = 'lint_findings.snap'
 const INPUT_FILE    = 'input.py'
 const META_FILE     = 'meta.toml'
@@ -20,9 +22,9 @@ const SNAPSHOT_FILE = 'input.py.snap'
 export function fixturesLoader(): Loader {
   return {
     name: 'prose-fixtures',
-    load: async ({ config, parseData, store }) => {
-      const root = fileURLToPath(new URL('../crate/tests/fixtures/', config.root))
-      store.clear()
+    load: async ctx => {
+      const root = fileURLToPath(new URL('../crate/tests/fixtures/', ctx.config.root))
+      const entries: StoreEntry[] = []
       for (const rule of subdirectories(root)) {
         const ruleDir = path.join(root, rule)
         for (const name of subdirectories(ruleDir)) {
@@ -35,19 +37,18 @@ export function fixturesLoader(): Loader {
             fs.readFile(input, 'utf8'),
             fs.readFile(snap, 'utf8')
           ])
-          const id   = `${rule.replaceAll('_', '-')}/${name}`
-          const data = await parseData({
-            id,
-            data: {
+          entries.push({
+            id   : `${rule.replaceAll('_', '-')}/${name}`,
+            data : {
               findings : await readFindings(dir),
               input    : source,
               output   : snapshotBody(snapshot).trimEnd() + '\n',
               ...(await readDocs(dir))
             }
           })
-          store.set({ data, id })
         }
       }
+      await replaceStore(ctx, entries)
     }
   }
 }

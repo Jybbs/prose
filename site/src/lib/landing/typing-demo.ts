@@ -113,18 +113,13 @@ export interface LandingTypingDemoResetRow {
 }
 
 function buildResetRows(): LandingTypingDemoResetRow[] {
-  const rows  : LandingTypingDemoResetRow[] = []
-  const index = new Map<string, number>()
+  const rows = new Map<string, LandingTypingDemoResetRow>()
   for (const entry of ENTRIES) {
-    const at = index.get(entry.anchor)
-    if (at === undefined) {
-      index.set(entry.anchor, rows.length)
-      rows.push({ anchor: entry.anchor, end: entry.to, prelude: entry.from })
-    } else {
-      rows[at].end = entry.to
-    }
+    const row = rows.get(entry.anchor)
+    if (row) row.end = entry.to
+    else rows.set(entry.anchor, { anchor: entry.anchor, end: entry.to, prelude: entry.from })
   }
-  return rows
+  return [...rows.values()]
 }
 
 export const RESET_ROWS: readonly LandingTypingDemoResetRow[] = buildResetRows()

@@ -1,19 +1,16 @@
-import { ofetch }            from 'ofetch'
+import { ofetch }             from 'ofetch'
 import type { LoaderContext } from 'astro/loaders'
+
+import { replaceStore, type StoreEntry } from './store'
 
 type StoreContext = Pick<LoaderContext, 'logger' | 'meta' | 'parseData' | 'store'>
 
-interface RawEntry {
-  data : Record<string, unknown>
-  id   : string
-}
-
 interface ConditionalSource {
   etagKey   : string
-  fallback  : readonly RawEntry[]
+  fallback  : readonly StoreEntry[]
   headers   : Record<string, string>
   label     : string
-  toEntries : (payload: unknown) => readonly RawEntry[]
+  toEntries : (payload: unknown) => readonly StoreEntry[]
   url       : string
 }
 
@@ -47,16 +44,9 @@ export async function conditionalLoad(ctx: StoreContext, source: ConditionalSour
 
   const etagHeader = response.headers.get('etag')
   if (etagHeader) ctx.meta.set(source.etagKey, etagHeader)
-  await replace(ctx, source.toEntries(response._data))
+  await replaceStore(ctx, source.toEntries(response._data))
 }
 
 async function seedIfCold(ctx: StoreContext, source: ConditionalSource): Promise<void> {
-  if (ctx.store.keys().length === 0) await replace(ctx, source.fallback)
-}
-
-async function replace(ctx: StoreContext, entries: readonly RawEntry[]): Promise<void> {
-  ctx.store.clear()
-  for (const { data, id } of entries) {
-    ctx.store.set({ data: await ctx.parseData({ data, id }), id })
-  }
+  if (ctx.store.keys().length === 0) await replaceStore(ctx, source.fallback)
 }

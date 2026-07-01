@@ -17,7 +17,7 @@ export function buildContentTimestamps(siteRoot: URL): Map<string, string> {
     )
     return parseContentTimestamps(raw)
   } catch (err) {
-    console.warn('[sitemap] git log failed, omitting lastmod:', Error.isError(err) ? err.message : err)
+    console.warn('[sitemap] git log failed, omitting lastmod:', err instanceof Error ? err.message : err)
     return new Map()
   }
 }

@@ -56,7 +56,6 @@ fn write_table<W: Write>(mut stdout: W, rules: &[RuleInfo]) -> std::io::Result<(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pipeline::Pipeline;
 
     fn render(output_format: RulesFormat) -> String {
         let mut out = Vec::new();
@@ -73,6 +72,11 @@ mod tests {
         assert_eq!(
             rules[0]["slug"].as_str(),
             Some(Pipeline::known_ids()[0].as_str())
+        );
+        assert!(
+            rules[0]["imperative"].as_str().is_some_and(|s| !s.is_empty()),
+            "every rule carries a non-empty imperative: {:?}",
+            rules[0],
         );
     }
 
