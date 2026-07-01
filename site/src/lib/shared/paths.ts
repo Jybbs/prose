@@ -19,6 +19,10 @@ export function cargoTomlPath(siteRoot: URL): string {
   return path.join(crateDir(siteRoot), 'Cargo.toml')
 }
 
+export function fixturesDir(siteRoot: URL): string {
+  return path.join(crateDir(siteRoot), 'tests', 'fixtures')
+}
+
 export function ruleSourcePath(siteRoot: URL): string {
   return path.join(crateDir(siteRoot), 'src', 'rule.rs')
 }

@@ -41,7 +41,7 @@ jobs:
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
-        with : { shared-key: prose-bin }
+        with : { save: false, shared-key: prose-build }
 
       - &build-prose
         name : Build the prose binary

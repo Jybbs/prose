@@ -1,5 +1,6 @@
-import { FAMILY_ORDER }         from '../shared/registries'
+import { isFamily }             from '../shared/registries'
 import type { RuleFamily }      from '../shared/registries'
+import { slugOf }               from './page'
 import type { DocsFrontmatter } from './schemas'
 
 // `consumedBy` names a primitive's consumers, which span rules, sibling
@@ -25,10 +26,6 @@ interface Primitive {
   consumes   : readonly string[]
   slug       : string
 }
-
-const isFamily = (name: string): name is RuleFamily => (FAMILY_ORDER as readonly string[]).includes(name)
-
-const slugOf = (file: string): string => file.replace(/\.mdx?$/, '')
 
 function assertCaption(value: string | undefined, slug: string): void {
   if (typeof value !== 'string' || value.trim() === '') {

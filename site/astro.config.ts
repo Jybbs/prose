@@ -5,19 +5,20 @@ import starlightLinksValidator from 'starlight-links-validator';
 
 import { buildContentTimestamps, lastmodForUrl } from './src/lib/config/page-timestamps';
 import { watchCrateSources }                     from './src/lib/integrations/watch-crate';
-import { markdownConfig }                        from './src/lib/markdown/config';
+import { lintFlagPlugin, proseProcessor, shikiConfig } from './src/lib/markdown/config';
 
 const siteRoot   = new URL('./', import.meta.url);
 const timestamps = buildContentTimestamps(siteRoot);
 
 export default defineConfig({
   site     : 'https://prose.fyi',
-  markdown : markdownConfig,
+  markdown : { processor: proseProcessor, shikiConfig },
   integrations: [
     starlight({
-      title       : 'Prose',
-      lastUpdated : true,
-      plugins     : [starlightLinksValidator()],
+      title          : 'Prose',
+      lastUpdated    : true,
+      expressiveCode : { plugins: [lintFlagPlugin] },
+      plugins        : [starlightLinksValidator()],
     }),
     sitemap({
       serialize(item) {

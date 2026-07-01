@@ -1,0 +1,15 @@
+---
+import { TabItem, Tabs } from '@astrojs/starlight/components'
+
+import { TARGET_VERSIONS, TARGET_VERSION_SYNC_KEY } from '../lib/shared/constants'
+---
+
+{/* One synced tab per supported target version, its body supplied by the
+    matching version slot, so a page's version tabs move in step. */}
+<Tabs syncKey={TARGET_VERSION_SYNC_KEY}>
+  {TARGET_VERSIONS.map(version => (
+    <TabItem label={`Python ${version}`}>
+      <slot name={version} />
+    </TabItem>
+  ))}
+</Tabs>

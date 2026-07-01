@@ -105,23 +105,28 @@ export const composition = z
 
 const findingLocation = z.object({ column: z.number(), row: z.number() })
 
+const finding = z.object({
+  code         : z.string(),
+  end_location : findingLocation,
+  fix          : z.object({
+    applicability : z.string(),
+    edits         : z.array(z.object({ before: z.string(), content: z.string() }))
+  }).nullable(),
+  location     : findingLocation,
+  message      : z.string()
+})
+
+export type LintFinding = z.infer<typeof finding>
+
 export const fixture = z.object({
   canonical   : z.boolean().optional(),
   description : z.string().optional(),
   input       : z.string(),
   output      : z.string(),
   previewable : z.boolean().optional(),
+  steps       : z.array(z.unknown()).optional(),
   title       : z.string().optional(),
-  findings    : z.array(z.object({
-    code         : z.string(),
-    end_location : findingLocation,
-    fix          : z.object({
-      applicability : z.string(),
-      edits         : z.array(z.object({ before: z.string(), content: z.string() }))
-    }).nullable(),
-    location     : findingLocation,
-    message      : z.string()
-  }))
+  findings    : z.array(finding)
 })
 
 export const pipelineEntry = z.object({

@@ -1,6 +1,6 @@
-import { createMarkdownProcessor, type MarkdownRenderer } from '@astrojs/markdown-remark'
+import type { MarkdownRenderer } from '@astrojs/markdown-remark'
 
-import { markdownConfig } from './config'
+import { proseProcessor, shikiConfig } from './config'
 
 // The processor is the non-loader render path. Reads inside a Content Layer
 // loader take the loader context's own `renderMarkdown` instead, then pass its
@@ -8,7 +8,7 @@ import { markdownConfig } from './config'
 let cachedProcessor: Promise<MarkdownRenderer> | null = null
 
 function processor(): Promise<MarkdownRenderer> {
-  return (cachedProcessor ??= createMarkdownProcessor(markdownConfig))
+  return (cachedProcessor ??= proseProcessor.createRenderer({ shikiConfig }))
 }
 
 export async function renderMarkdown(markdown: string): Promise<string> {

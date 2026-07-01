@@ -6,6 +6,9 @@
 export const FAMILY_ORDER = ['alignment', 'docs', 'formatting', 'layout', 'lint', 'ordering'] as const
 export type RuleFamily = (typeof FAMILY_ORDER)[number]
 
+export const isFamily = (name: string): name is RuleFamily =>
+  (FAMILY_ORDER as readonly string[]).includes(name)
+
 export const GLOSSARY_FAMILIES = [...FAMILY_ORDER, 'cli', 'engine'] as const
 
 export const PRIMITIVE_LAYERS = ['analysis', 'base', 'orchestration'] as const
