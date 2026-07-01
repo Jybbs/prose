@@ -74,7 +74,9 @@ mod tests {
             Some(Pipeline::known_ids()[0].as_str())
         );
         assert!(
-            rules[0]["imperative"].as_str().is_some_and(|s| !s.is_empty()),
+            rules[0]["imperative"]
+                .as_str()
+                .is_some_and(|s| !s.is_empty()),
             "every rule carries a non-empty imperative: {:?}",
             rules[0],
         );
