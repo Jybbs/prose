@@ -41,11 +41,11 @@ jobs:
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
-        with : { shared-key: prose-build }
+        with : { shared-key: prose-bin }
 
       - &build-prose
         name : Build the prose binary
-        run  : mise run build
+        run  : mise run build bin
 
       - &provision-bun
         name : Provision bun
