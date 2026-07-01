@@ -1088,6 +1088,32 @@ fn quiet_check_reduces_summary_to_a_bare_count() {
 }
 
 #[test]
+fn rules_table_lists_each_rule_on_its_own_line() {
+    let assert = prose().arg("rules").assert().success();
+    let out = stdout_utf8(&assert);
+    assert!(
+        out.lines().count() > 1,
+        "expected one row per rule: {out:?}"
+    );
+    assert!(out.contains("align-equals"), "stdout was {out:?}");
+}
+
+#[test]
+fn rules_json_emits_the_registry_in_pipeline_order() {
+    let assert = prose()
+        .args(["rules", "--output-format", "json"])
+        .assert()
+        .success();
+    let rules: Vec<serde_json::Value> =
+        serde_json::from_str(&stdout_utf8(&assert)).expect("valid JSON array");
+    assert_eq!(rules[0]["position"].as_u64(), Some(1));
+    assert!(
+        rules.iter().any(|rule| rule["slug"] == "align-equals"),
+        "registry missing align-equals: {rules:?}",
+    );
+}
+
+#[test]
 fn server_completes_a_stdio_session_over_the_real_binary() {
     let session = lsp_session(&[
         r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}"#,

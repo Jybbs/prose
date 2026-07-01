@@ -108,6 +108,10 @@ const findingLocation = z.object({ column: z.number(), row: z.number() })
 export const fixture = z.object({
   canonical   : z.boolean().optional(),
   description : z.string().optional(),
+  input       : z.string(),
+  output      : z.string(),
+  previewable : z.boolean().optional(),
+  title       : z.string().optional(),
   findings    : z.array(z.object({
     code         : z.string(),
     end_location : findingLocation,
@@ -117,9 +121,40 @@ export const fixture = z.object({
     }).nullable(),
     location     : findingLocation,
     message      : z.string()
-  })),
-  input       : z.string(),
-  output      : z.string(),
-  previewable : z.boolean().optional(),
-  title       : z.string().optional()
+  }))
+})
+
+export const pipelineEntry = z.object({
+  imperative : z.string(),
+  position   : z.number(),
+  slug       : z.string()
+})
+
+export type PipelineEntry = z.infer<typeof pipelineEntry>
+
+export const release = z.object({ version: z.string() })
+
+export const stars = z.object({ stars: z.string() })
+
+export const pypiRelease = z.object({
+  date      : z.string(),
+  month     : z.string(),
+  url       : z.string(),
+  version   : z.string(),
+  year      : z.string(),
+  yearShort : z.string()
+})
+
+export const typingDemo = z.object({
+  prelude          : z.string(),
+  pythonStateSteps : z.array(z.unknown()),
+  resetRows        : z.array(z.object({ anchor: z.string(), end: z.string(), prelude: z.string() })),
+  entries          : z.array(z.object({
+    anchor : z.string(),
+    from   : z.string(),
+    kind   : z.literal('edit'),
+    slug   : z.string(),
+    tail   : z.string().optional(),
+    to     : z.string()
+  }))
 })

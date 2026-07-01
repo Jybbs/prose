@@ -114,6 +114,9 @@ subcommand:
   - blurb: Apply every pending rewrite in place.
     href: /reference/cli#prose-format
     key: prose format
+  - blurb: List the registered rules in pipeline order.
+    href: /reference/cli#prose-rules
+    key: prose rules
   - blurb: Serve format-on-save and live diagnostics over the language-server protocol.
     href: /reference/cli#prose-server
     key: prose server

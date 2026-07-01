@@ -3,8 +3,11 @@ import fs                          from 'node:fs/promises'
 import path                        from 'node:path'
 import { fileURLToPath }           from 'node:url'
 
-import { parse }       from 'smol-toml'
-import type { Loader } from 'astro/loaders'
+import { parseFrontmatter } from '@astrojs/markdown-remark'
+import { parse }            from 'smol-toml'
+import type { Loader }      from 'astro/loaders'
+
+import { replaceStore, type StoreEntry } from './store'
 
 const FINDINGS_FILE = 'lint_findings.snap'
 const INPUT_FILE    = 'input.py'
@@ -19,9 +22,9 @@ const SNAPSHOT_FILE = 'input.py.snap'
 export function fixturesLoader(): Loader {
   return {
     name: 'prose-fixtures',
-    load: async ({ config, parseData, store }) => {
-      const root = fileURLToPath(new URL('../crate/tests/fixtures/', config.root))
-      store.clear()
+    load: async ctx => {
+      const root = fileURLToPath(new URL('../crate/tests/fixtures/', ctx.config.root))
+      const entries: StoreEntry[] = []
       for (const rule of subdirectories(root)) {
         const ruleDir = path.join(root, rule)
         for (const name of subdirectories(ruleDir)) {
@@ -34,19 +37,18 @@ export function fixturesLoader(): Loader {
             fs.readFile(input, 'utf8'),
             fs.readFile(snap, 'utf8')
           ])
-          const id   = `${rule.replaceAll('_', '-')}/${name}`
-          const data = await parseData({
-            id,
-            data: {
+          entries.push({
+            id   : `${rule.replaceAll('_', '-')}/${name}`,
+            data : {
               findings : await readFindings(dir),
               input    : source,
               output   : snapshotBody(snapshot).trimEnd() + '\n',
               ...(await readDocs(dir))
             }
           })
-          store.set({ data, id })
         }
       }
+      await replaceStore(ctx, entries)
     }
   }
 }
@@ -54,11 +56,12 @@ export function fixturesLoader(): Loader {
 const subdirectories = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name).sort()
 
-// Drops the leading insta YAML frontmatter the snapshot tooling writes,
-// leaving the recorded body the source-of-truth output.
+// Drops the insta YAML frontmatter the snapshot tooling writes, leaving the
+// recorded body the source-of-truth output. `parseFrontmatter` removes the
+// frontmatter block, and the slice drops the newline it leaves before the body.
 function snapshotBody(raw: string): string {
-  const close = raw.startsWith('---\n') ? raw.indexOf('\n---\n', 4) : -1
-  return close === -1 ? raw : raw.slice(close + 5)
+  const content = parseFrontmatter(raw).content
+  return content.startsWith('\n') ? content.slice(1) : content
 }
 
 async function readOptional(dir: string, name: string): Promise<string | null> {

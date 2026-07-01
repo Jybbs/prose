@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
-#MISE description="Build the `prose` binary in debug mode"
+#MISE description="Build the crate in debug mode"
 
-cargo build --all-targets --locked
+set -euo pipefail
+
+case "${1:-all}" in
+  all) cargo build --all-targets --locked ;;
+  bin) cargo build --bin prose --locked ;;
+  *)   echo "usage: mise build [bin]" >&2; exit 2 ;;
+esac

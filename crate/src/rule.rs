@@ -247,7 +247,7 @@ macro_rules! register_rules {
 
         /// Default backing for [`Rule::message`]. Matches each
         /// registered slug to its registry-supplied imperative.
-        fn message_for_id(id: RuleId) -> &'static str {
+        pub(crate) fn message_for_id(id: RuleId) -> &'static str {
             match id.as_str() {
                 $($slug => $msg,)*
                 _ => unreachable!("rule id must be registered"),
