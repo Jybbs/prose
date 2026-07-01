@@ -7,8 +7,8 @@ import { cargoTomlPath, proseBinaryCandidates, ruleSourcePath } from '../shared/
 // dev without restarting the server.
 export function watchCrateSources(): AstroIntegration {
   return {
-    name: 'prose-watch-crate',
-    hooks: {
+    name  : 'prose-watch-crate',
+    hooks : {
       'astro:config:setup': ({ addWatchFile, config }) => {
         addWatchFile(ruleSourcePath(config.root))
         addWatchFile(cargoTomlPath(config.root))

@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process'
 
-import { repoRoot } from '../shared/paths'
+import { DOCS_CONTENT_DIR, repoRoot } from '../shared/paths'
 
-const CONTENT_PREFIX = 'site/src/content/docs/'
+const CONTENT_PREFIX = `site/${DOCS_CONTENT_DIR}`
 const MD_SUFFIX      = '.md'
 
 // Maps each docs page to the ISO date of its most recent add-or-modify commit,
@@ -22,8 +22,8 @@ export function buildContentTimestamps(siteRoot: URL): Map<string, string> {
   }
 }
 
-export function parseContentTimestamps(raw: string): Map<string, string> {
-  const out = new Map<string, string>()
+function parseContentTimestamps(raw: string): Map<string, string> {
+  const out     = new Map<string, string>()
   let   isoDate = ''
   for (const line of raw.split('\n')) {
     if (!line) continue

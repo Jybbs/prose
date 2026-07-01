@@ -81,7 +81,7 @@ NDJSON:
   definition: NDJSON is newline-delimited JSON. `prose check --output-format json` emits one record per line in this shape, so editors and tooling can stream diagnostics without buffering the whole document.
   families:
     - cli
-  href: /reference/output-formats#json
+  href: /reference/output-formats
 PEP 257:
   aliases:
     - pep 257
@@ -90,7 +90,7 @@ PEP 257:
   families:
     - docs
     - engine
-  href: /primitives/docstring#the-pep-257-definition
+  href: /primitives/docstring
 PEP 604:
   aliases:
     - pep 604
@@ -209,12 +209,12 @@ applicability:
   families:
     - cli
     - engine
-  href: /reference/output-formats#json
+  href: /reference/output-formats
 atomic:
   aliases:
     - atomic literal
     - atomic literals
-  definition: An atomic is a simple, indivisible code element (integer, float, string, single name) that `collection-layout` can safely keep on one line without readability loss.
+  definition: An atomic is a simple, indivisible code element *(integer, float, string, single name)* that `collection-layout` can safely keep on one line without readability loss.
   families:
     - layout
   rule: collection-layout
@@ -250,7 +250,7 @@ code-line-length:
   families:
     - cli
     - formatting
-  href: /reference/configuration#top-level-keys
+  href: /reference/configuration
 comprehension:
   aliases:
     - comprehensions
@@ -275,7 +275,7 @@ dataclass:
     - dataclasses
     - dataclass field
     - dataclass fields
-  definition: A dataclass is a class decorated with `@dataclass` whose body lists typed field declarations. `alphabetize` reorders the fields (required before optional), `align-colons` aligns their annotation colons, and `align-equals` aligns their default-value `=` signs.
+  definition: A dataclass is a class decorated with `@dataclass` whose body lists typed field declarations. `alphabetize` reorders the fields *(required before optional)*, `align-colons` aligns their annotation colons, and `align-equals` aligns their default-value `=` signs.
   families:
     - ordering
     - alignment
@@ -304,14 +304,14 @@ docstring-line-length:
   families:
     - cli
     - docs
-  href: /reference/configuration#top-level-keys
+  href: /reference/configuration
 dunder:
   aliases:
     - dunder name
     - dunder names
     - __all__
     - __slots__
-  definition: A dunder is the Python convention for names wrapped in double underscores (`__name__`, `__all__`, `__init__`). `reassigned-constants` treats them as runtime sentinels, and `alphabetize` treats them as ordering anchors that surface before properties and privates inside a class body.
+  definition: A dunder is the Python convention for names wrapped in double underscores *(`__name__`, `__all__`, `__init__`)*. `reassigned-constants` treats them as runtime sentinels, and `alphabetize` treats them as ordering anchors that surface before properties and privates inside a class body.
   families:
     - ordering
     - lint
@@ -367,9 +367,9 @@ import-line-length:
   families:
     - cli
     - layout
-  href: /reference/configuration#top-level-keys
+  href: /reference/configuration
 kebab-case:
-  definition: Kebab-case is the lowercase-with-hyphens naming convention *Prose* uses for every rule slug (`align-equals`, `single-use-variables`). The form is canonical across CLI flags, config tables, suppression directives, and diagnostic output.
+  definition: Kebab-case is the lowercase-with-hyphens naming convention *Prose* uses for every rule slug *(`align-equals`, `single-use-variables`)*. The form is canonical across CLI flags, config tables, suppression directives, and diagnostic output.
   families:
     - engine
     - cli
@@ -482,7 +482,7 @@ target-version:
   families:
     - cli
     - lint
-  href: /reference/configuration#top-level-keys
+  href: /reference/configuration
 walrus operator:
   aliases:
     - walrus
@@ -494,7 +494,7 @@ workflow command:
   aliases:
     - workflow commands
     - workflow-command annotation
-  definition: A workflow command is GitHub Actions' inline-annotation syntax (`::warning file=...,line=...::message`). The `--output-format github` shape emits one workflow command per diagnostic, which GitHub renders as a check-run annotation on the PR diff.
+  definition: A workflow command is GitHub Actions' inline-annotation syntax *(`::warning file=...,line=...::message`)*. The `--output-format github` shape emits one workflow command per diagnostic, which GitHub renders as a check-run annotation on the PR diff.
   families:
     - cli
-  href: /reference/output-formats#github
+  href: /reference/output-formats

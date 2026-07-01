@@ -8,7 +8,7 @@ import { cargoTomlPath, resolveProseBinary } from '../shared/paths'
 import type { PipelineEntry }                from './schemas'
 import { replaceStore }                      from './store'
 
-export function parseCrateVersion(toml: string, source: string): string {
+function parseCrateVersion(toml: string, source: string): string {
   const version = (parse(toml) as { package?: { version?: unknown } }).package?.version
   if (typeof version !== 'string') throw new Error(`package.version not found in ${source}`)
   return version

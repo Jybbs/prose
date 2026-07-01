@@ -6,6 +6,10 @@ inputs:
     default     : true
     description : When `false` the Swatinem Cargo cache step is skipped and the mise toolchain cache is not written back. Use for cells (*`Format`, `Unused`*) that populate neither `target/` nor `~/.cargo/registry/`.
 
+  save:
+    default     : true
+    description : When `false` the Swatinem cache is restored but never saved, so a cell reads a warm cache another cell owns without clobbering it. Pairs with a `shared-key` a build cell elsewhere populates.
+
   shared-key:
     default     : prose
     description : Swatinem cache scope. Distinct keys allow per-profile cache isolation.
@@ -28,4 +32,5 @@ runs:
       uses : Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
       with:
         cache-on-failure : 'true'
+        save-if          : ${{ inputs.save != 'false' }}
         shared-key       : ${{ inputs.shared-key }}

@@ -1,5 +1,6 @@
-import { FAMILY_ORDER }         from '../shared/registries'
+import { isFamily }             from '../shared/registries'
 import type { RuleFamily }      from '../shared/registries'
+import { isIndex, slugOf }      from './page'
 import type { DocsFrontmatter } from './schemas'
 
 // `consumedBy` names a primitive's consumers, which span rules, sibling
@@ -26,10 +27,6 @@ interface Primitive {
   slug       : string
 }
 
-const isFamily = (name: string): name is RuleFamily => (FAMILY_ORDER as readonly string[]).includes(name)
-
-const slugOf = (file: string): string => file.replace(/\.mdx?$/, '')
-
 function assertCaption(value: string | undefined, slug: string): void {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`rule "${slug}" is missing its caption`)
@@ -49,7 +46,7 @@ export function assertCorpusIntegrity(entries: Iterable<CorpusEntry>): void {
   for (const { data, path } of entries) {
     const parts = path.split('/')
     const file  = parts.at(-1) ?? ''
-    if (slugOf(file) === 'index') continue
+    if (isIndex(file)) continue
 
     if (parts[0] === 'rules') {
       const family = parts[1]

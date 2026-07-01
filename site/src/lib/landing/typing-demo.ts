@@ -1,4 +1,4 @@
-export interface LandingTypingDemoEditEntry {
+interface LandingTypingDemoEditEntry {
   anchor : string
   from   : string
   kind   : 'edit'
@@ -6,8 +6,6 @@ export interface LandingTypingDemoEditEntry {
   tail  ?: string
   to     : string
 }
-
-export type LandingTypingDemoEntry = LandingTypingDemoEditEntry
 
 export const SOURCE = `from pathlib import Path
 from dataclasses import dataclass
@@ -72,7 +70,7 @@ target-version        = "3.13"
     : `${base}\n[rules]\n${rules.join('\n')}\n`
 }
 
-export const ENTRIES: readonly LandingTypingDemoEntry[] = [
+export const ENTRIES: readonly LandingTypingDemoEditEntry[] = [
   ...RULES.map((slug): LandingTypingDemoEditEntry => ({
     anchor : ruleAnchor(slug),
     from   : 'false',
@@ -106,7 +104,7 @@ export const ENTRIES: readonly LandingTypingDemoEntry[] = [
   }
 ]
 
-export interface LandingTypingDemoResetRow {
+interface LandingTypingDemoResetRow {
   anchor  : string
   end     : string
   prelude : string
