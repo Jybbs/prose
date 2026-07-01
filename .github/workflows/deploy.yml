@@ -30,7 +30,7 @@ jobs:
       matrix:
         include:
           - command : mise run links
-            name    : 🪺 Build
+            name    : 🗜️ Build
           - command : mise run typecheck
             name    : 🪡 Typecheck
 
