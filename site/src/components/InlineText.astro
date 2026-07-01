@@ -7,7 +7,7 @@ interface Props {
 
 // Renders a runtime string carrying inline markdown through the build-time
 // inline primitive, so backtick spans and the page-body plugins reach titles
-// and messages the way a regex substitution never could.
+// and messages.
 const { text } = Astro.props
 const html     = await renderInline(text)
 ---

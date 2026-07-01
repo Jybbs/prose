@@ -18,8 +18,7 @@ const SNAPSHOT_FILE = 'input.py.snap'
 // Folds a fixture case directory into one entry the built-in loaders cannot
 // produce, pairing the input with the snapshot output, the lint findings the
 // harness emits, and the `[docs]` table that surfaces the case on its rule
-// page. The case id is `<rule>/<case>` with the rule slug in kebab form so it
-// joins the docs collection's rule slugs.
+// page.
 export function fixturesLoader(): Loader {
   return {
     name: 'prose-fixtures',
@@ -53,14 +52,11 @@ export function fixturesLoader(): Loader {
   }
 }
 
-async function readOptional(dir: string, name: string): Promise<string | null> {
-  const file = path.join(dir, name)
-  return existsSync(file) ? fs.readFile(file, 'utf8') : null
-}
-
 async function readDocs(dir: string): Promise<Record<string, unknown>> {
-  const raw = await readOptional(dir, META_FILE)
-  return raw === null ? {} : (parse(raw) as { docs?: Record<string, unknown> }).docs ?? {}
+  const file = path.join(dir, META_FILE)
+  if (!existsSync(file)) return {}
+  const raw = await fs.readFile(file, 'utf8')
+  return (parse(raw) as { docs?: Record<string, unknown> }).docs ?? {}
 }
 
 // Precompiles the before/after magic-move token steps for a previewable case

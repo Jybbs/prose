@@ -4,7 +4,8 @@ import { readdirSync } from 'node:fs'
 // slug is the basename without that extension.
 const PAGE = /\.mdx?$/
 
-const isPage = (file: string): boolean => PAGE.test(file) && !file.startsWith('index.')
+const isPage = (file: string): boolean => PAGE.test(file) && !isIndex(file)
+export const isIndex = (file: string): boolean => slugOf(file) === 'index'
 export const slugOf = (file: string): string => file.replace(PAGE, '')
 
 // Each entry page directly under `dir`, paired with its slug.

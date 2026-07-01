@@ -2,10 +2,12 @@ import { existsSync }    from 'node:fs'
 import path              from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// Build-time filesystem anchors derived from a loader or integration `config.root`,
-// the site directory Astro resolves the build against. Each returns an absolute
-// path so the `node:fs` and `node:child_process` reads reach the crate and the
-// compiled binary that sit beside the site in the workspace.
+// Build-time filesystem anchors. The functions derive absolute paths from a
+// loader or integration `config.root`, the site directory Astro resolves the
+// build against, so the `node:fs` and `node:child_process` reads reach the
+// crate and the compiled binary that sit beside the site in the workspace.
+
+export const DOCS_CONTENT_DIR = 'src/content/docs/'
 
 export function repoRoot(siteRoot: URL): string {
   return fileURLToPath(new URL('../', siteRoot))

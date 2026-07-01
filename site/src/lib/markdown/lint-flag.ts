@@ -1,6 +1,4 @@
-import { h } from 'hastscript'
-
-import { ExpressiveCodeAnnotation }    from '@expressive-code/core'
+import { ExpressiveCodeAnnotation }     from '@expressive-code/core'
 import type { AnnotationRenderOptions } from '@expressive-code/core'
 import type {
   ExpressiveCodeBlock,
@@ -8,7 +6,8 @@ import type {
   ExpressiveCodeLine,
   ExpressiveCodePlugin
 } from '@expressive-code/core'
-import type { Parents, Properties } from 'hast'
+import type { Parents, Properties }     from 'hast'
+import { h }                            from 'hastscript'
 
 import type { LintFinding } from '../content/schemas'
 
@@ -46,7 +45,7 @@ function* findingRanges(
   const lastLine  = finding.end_location.row - 1
   for (let lineIndex = firstLine; lineIndex <= lastLine; lineIndex++) {
     const line = block.getLine(lineIndex)
-    if (!line) continue
+    if (!line) throw new Error(`${finding.code} row ${lineIndex + 1} exceeds the lint fence body`)
     yield {
       line,
       range: {
@@ -63,8 +62,8 @@ function* findingRanges(
 // findings to draw.
 export function pluginLintFlag(findings: Map<string, LintFinding[]>): ExpressiveCodePlugin {
   return {
-    name: 'prose:lint-flag',
-    hooks: {
+    name  : 'prose:lint-flag',
+    hooks : {
       preprocessMetadata({ codeBlock }) {
         const id = codeBlock.metaOptions.getString('lint')
         if (id === undefined) return

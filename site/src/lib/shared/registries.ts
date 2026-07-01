@@ -3,7 +3,7 @@
 // tree, so this module carries only the closed vocabularies a Zod enum and the
 // cross-record pass validate against.
 
-export const FAMILY_ORDER = ['alignment', 'docs', 'formatting', 'layout', 'lint', 'ordering'] as const
+const FAMILY_ORDER = ['alignment', 'docs', 'formatting', 'layout', 'lint', 'ordering'] as const
 export type RuleFamily = (typeof FAMILY_ORDER)[number]
 
 export const isFamily = (name: string): name is RuleFamily =>

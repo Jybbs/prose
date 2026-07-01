@@ -6,6 +6,7 @@ on:
   pull_request:
     paths: &paths
       - .github/actions/provision-bun/**
+      - .github/actions/provision-cargo/**
       - .github/workflows/deploy.yml
       - .mise/tasks/**
       - crate/Cargo.toml

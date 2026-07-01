@@ -2,7 +2,7 @@
 // following one `var()` alias, and `tokensToCss` regenerates the `:root`
 // custom properties for the browser.
 
-export const TOKENS: Record<string, string> = {
+const TOKENS: Record<string, string> = {
   'family-alignment'     : 'var(--prose-palette-eureka)',
   'family-cli'           : 'var(--prose-palette-ube-night)',
   'family-docs'          : 'var(--prose-palette-celadon)',

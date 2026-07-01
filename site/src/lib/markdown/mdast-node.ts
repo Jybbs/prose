@@ -1,10 +1,5 @@
-import type { Properties }            from 'hast'
-import type { Link, PhrasingContent } from 'mdast'
-
-interface HastData {
-  hName       ?: string
-  hProperties ?: Properties
-}
+import type { Properties }                  from 'hast'
+import type { Data, Link, PhrasingContent } from 'mdast'
 
 // A single text node wrapped for the phrasing-content slots the builders take.
 export const mdastText = (value: string): PhrasingContent[] => [{ type: 'text', value }]
@@ -34,7 +29,7 @@ export function mdastLink(url: string, properties: Properties, children: Phrasin
 
 // Appends a class to a node's hast properties, coercing the string-or-array
 // `className` shape so an existing list survives.
-export function pushClassName(node: { data?: HastData }, className: string): void {
+export function pushClassName(node: { data?: Data }, className: string): void {
   const data       = (node.data ??= {})
   const properties = (data.hProperties ??= {})
   const existing   = properties.className
@@ -45,3 +40,8 @@ export function pushClassName(node: { data?: HastData }, className: string): voi
 // True when any ancestor is a heading, so the visitors skip heading-nested nodes.
 export const withinHeading = (ancestors: Array<{ type: string }>): boolean =>
   ancestors.some(ancestor => ancestor.type === 'heading')
+
+// One global matcher shared by the linkers so every plugin draws the same word
+// boundary, the lookarounds keeping hyphenated and snake_case compounds literal.
+export const wordBounded = (source: string): RegExp =>
+  new RegExp(String.raw`(?<![\w-])(${source})(?![\w-])`, 'g')
