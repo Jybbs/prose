@@ -1,0 +1,63 @@
+---
+import '../base/kicker.css'
+import './shell-completions.css'
+
+import { getCollection } from 'astro:content'
+import { Code }          from '@astrojs/starlight/components'
+
+import Tool             from '../base/Tool.astro'
+import { renderInline } from '../../lib/markdown/render'
+
+const shells = await getCollection('shellCompletions')
+
+const noteHtml = await Promise.all(shells.map(shell => renderInline(shell.data.note)))
+---
+
+<shell-completions class="shell-card">
+  <div class="shell-card-stack" role="tablist" aria-label="Shell completion targets">
+    {shells.map((shell, i) => (
+      <button
+        type="button"
+        role="tab"
+        class:list={['shell-card-tab', { 'is-active': i === 0 }]}
+        aria-selected={i === 0 ? 'true' : 'false'}
+        data-slug={shell.id}
+        style={`--idx: ${i}`}
+      >
+        <span class="shell-card-tab-mark" aria-hidden="true"><Tool slug={shell.id} bare /></span>
+        <em class="shell-card-tab-name">{shell.data.name}</em>
+      </button>
+    ))}
+
+    {shells.map((shell, i) => (
+      <article class="shell-card-modal" data-slug={shell.id} hidden={i !== 0}>
+        <header class="shell-card-modal-head">
+          <span class="shell-card-modal-mark" aria-hidden="true"><Tool slug={shell.id} bare /></span>
+          <span class="kicker">{shell.data.caption}</span>
+        </header>
+        <div class="shell-card-modal-body">
+          <div class="shell-card-modal-code"><Code code={shell.data.code} lang={shell.data.language} /></div>
+          <p class="shell-card-modal-note" set:html={noteHtml[i]} />
+        </div>
+      </article>
+    ))}
+  </div>
+</shell-completions>
+
+<script>
+  import { wireTabSelect } from '../../lib/shared/tab-select'
+
+  // Turns the stacked side tabs into a selector over the per-shell modals.
+  class ShellCompletions extends HTMLElement {
+    connectedCallback(): void {
+      wireTabSelect(this, {
+        events : ['click'],
+        key    : 'slug',
+        panels : '.shell-card-modal',
+        tabs   : '.shell-card-tab'
+      })
+    }
+  }
+
+  customElements.define('shell-completions', ShellCompletions)
+</script>

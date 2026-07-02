@@ -1,0 +1,56 @@
+---
+
+import { getCollection } from 'astro:content'
+
+import Fixture              from '../fixtures/Fixture.astro'
+import RuleCardList         from './RuleCardList.astro'
+import RuleChrome           from './RuleChrome.astro'
+import RuleConfigTable      from './RuleConfigTable.astro'
+import { fixtureHasToggle } from '../../lib/content/fixtures'
+import { discoveredRules }  from '../../lib/content/rules'
+
+interface Props {
+  slug: string
+}
+
+const { slug } = Astro.props
+
+const rule = (await discoveredRules()).find(candidate => candidate.slug === slug)
+if (rule === undefined) throw new Error(`RuleLayout slug "${slug}" does not match a rule page`)
+
+const fixtures  = (await getCollection('fixtures')).filter(entry => entry.id.startsWith(`${slug}/`))
+const canonical = fixtures.find(entry => entry.data.canonical === true)
+if (canonical === undefined) throw new Error(`Rule "${slug}" has no canonical fixture`)
+
+const caseOf   = (id: string): string => id.slice(slug.length + 1)
+const sortKey  = (title: string): string => title.replace(/^`+/, '')
+const toggles = (entry: (typeof fixtures)[number]): number => Number(fixtureHasToggle(entry.data))
+const examples = fixtures
+  .filter(entry =>
+    entry.data.previewable === true && entry.data.canonical !== true &&
+    entry.data.title !== undefined)
+  .toSorted((a, b) =>
+    toggles(b) - toggles(a) ||
+    sortKey(a.data.title ?? '').localeCompare(sortKey(b.data.title ?? '')))
+---
+
+<RuleChrome slug={slug} />
+
+<slot />
+
+<h2 id="configuration">Configuration</h2>
+<slot name="configuration">
+  <RuleConfigTable slug={slug} />
+</slot>
+
+<h2 id="the-canonical-case">The Canonical Case</h2>
+<Fixture rule={slug} case={caseOf(canonical.id)} />
+
+<h2 id="more-examples">More Examples</h2>
+{examples.map(example => (
+  <Fixture rule={slug} case={caseOf(example.id)} title={example.data.title} />
+))}
+
+<h2 id="related">Related</h2>
+<RuleCardList slugs={rule.related} />
+<slot name="related-after" />

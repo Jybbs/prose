@@ -1,0 +1,116 @@
+---
+import './scope-pip.css'
+import './directive-anatomy.css'
+
+import { getCollection }        from 'astro:content'
+import type { CollectionEntry } from 'astro:content'
+
+import { renderInline }            from '../../lib/markdown/render'
+import { SCOPE_META, SCOPE_ORDER } from '../../lib/suppression/scope-meta'
+
+type Directive = CollectionEntry<'directives'>
+type Scope     = Directive['data']['scope']
+type PartRole  = Directive['data']['parts'][number]['role']
+
+const ROLE_LABEL: Record<PartRole, string> = {
+  action    : 'action',
+  comment   : 'comment',
+  namespace : 'namespace',
+  payload   : 'rule list'
+}
+
+const DIRECTIVE_SCOPE_ORDER = SCOPE_ORDER.filter((scope): scope is Scope => scope !== 'dict')
+
+const DIRECTIVE_MARKS = [' fmt:', ' yapf:', ' prose:']
+const FOCUS_ID        = 'prose-ignore-rules'
+
+const directives = await getCollection('directives')
+
+const bands = DIRECTIVE_SCOPE_ORDER.map(scope => ({
+  items : directives.filter(d => d.data.scope === scope),
+  scope
+}))
+
+const effectHtml = new Map(await Promise.all(
+  directives.map(async d => [d.id, await renderInline(d.data.effect)] as const)
+))
+
+function classifyLine(line: string): 'directive' | 'comment' | 'code' {
+  const trimmed = line.trim()
+  if (DIRECTIVE_MARKS.some(mark => trimmed.includes(mark))) return 'directive'
+  if (trimmed.startsWith('#')) return 'comment'
+  return 'code'
+}
+---
+
+<directive-anatomy class="directive-anatomy">
+  <div class="directive-anatomy-index" role="tablist" aria-label="Directive index">
+    {bands.map(band => (
+      <section class="directive-anatomy-band" data-scope={band.scope}>
+        <header class="directive-anatomy-band-head">
+          <span class="directive-anatomy-band-badge" aria-hidden="true">{SCOPE_META[band.scope].pip}</span>
+          <span class="directive-anatomy-band-name">{SCOPE_META[band.scope].label}</span>
+          <span class="directive-anatomy-band-rule" aria-hidden="true"></span>
+        </header>
+        <div class="directive-anatomy-band-cells">
+          {band.items.map(d => (
+            <button
+              type="button"
+              role="tab"
+              class="directive-anatomy-thumb"
+              data-scope={d.data.scope}
+              data-directive={d.id}
+              class:list={{ 'is-active': d.id === FOCUS_ID }}
+              aria-selected={d.id === FOCUS_ID ? 'true' : 'false'}
+            >
+              <span class="directive-anatomy-thumb-form">{d.data.form}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+
+  {directives.map(d => (
+    <div
+      class="directive-anatomy-plate"
+      data-scope={d.data.scope}
+      data-directive={d.id}
+      hidden={d.id !== FOCUS_ID}
+    >
+      <div class="directive-anatomy-specimen">
+        {d.data.parts.map(part => (
+          <span class="directive-anatomy-part-col" data-role={part.role}>
+            <span class="directive-anatomy-part">{part.text}</span>
+            <span class="directive-anatomy-tick" aria-hidden="true"></span>
+            <span class="directive-anatomy-label">{ROLE_LABEL[part.role]}</span>
+          </span>
+        ))}
+      </div>
+
+      <div class="directive-anatomy-info">
+        <p class="directive-anatomy-effect" set:html={effectHtml.get(d.id)} />
+        <pre class="directive-anatomy-pre"><code>{d.data.example.split('\n').map(line => <span class="directive-anatomy-line" data-line-kind={classifyLine(line)}>{line + '\n'}</span>)}</code></pre>
+      </div>
+    </div>
+  ))}
+</directive-anatomy>
+
+<script>
+  import { wireTabSelect } from '../../lib/shared/tab-select'
+
+  // Moves the focused directive's plate into view as its thumb takes a click
+  // or hover.
+  class DirectiveAnatomy extends HTMLElement {
+    connectedCallback(): void {
+      wireTabSelect(this, {
+        events : ['click', 'mouseenter'],
+        key    : 'directive',
+        panels : '.directive-anatomy-plate',
+        tabs   : '.directive-anatomy-thumb'
+      })
+    }
+  }
+
+  customElements.define('directive-anatomy', DirectiveAnatomy)
+</script>

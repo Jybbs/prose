@@ -1,0 +1,47 @@
+---
+import '../base/folio.css'
+import '../base/kicker.css'
+import './pipeline-order.css'
+
+import { getCollection } from 'astro:content'
+
+import MiddleEllipsis      from '../base/MiddleEllipsis.astro'
+import { discoveredRules } from '../../lib/content/rules'
+import { formatFolio }     from '../../lib/shared/numerals'
+
+const passes = (await getCollection('pipeline'))
+  .map(entry => entry.data)
+  .sort((a, b) => a.position - b.position)
+
+const bySlug = new Map((await discoveredRules()).map(rule => [rule.slug, rule]))
+---
+
+<section class="pipeline-order" aria-label="Pipeline order">
+  <header class="pipeline-order-masthead">
+    <span class="kicker pipeline-order-edition">
+      {passes.length} passes · <code>src/rule.rs</code>
+    </span>
+  </header>
+  <ol class="pipeline-order-columns">
+    {passes.map(pass => {
+      const rule = bySlug.get(pass.slug)
+      return (
+        <li class="pipeline-order-entry" data-family={rule?.family}>
+          <a
+            class="pipeline-order-link"
+            href={rule?.href}
+            data-badge={rule?.badge}
+            data-caption={rule?.caption}
+            data-family={rule?.family}
+            data-slug={pass.slug}
+          >
+            <span class="folio">№ {formatFolio(pass.position)}</span>
+            <span class="pipeline-order-name"><MiddleEllipsis text={pass.slug} tail={2} /></span>
+            <span class="pipeline-order-leader" aria-hidden="true"></span>
+            <span class="pipeline-order-glyph" aria-hidden="true">{rule?.badge ?? '·'}</span>
+          </a>
+        </li>
+      )
+    })}
+  </ol>
+</section>

@@ -1,0 +1,113 @@
+---
+import './primitives-composition.css'
+
+import PrimitivesCompositionDetail from './PrimitivesCompositionDetail.astro'
+import PrimitivesCompositionGrid   from './PrimitivesCompositionGrid.astro'
+
+import { discoveredPrimitives, LAYER_NUMERAL } from '../../lib/content/primitives'
+
+interface Props {
+  initialFocus ?: string
+}
+
+const { initialFocus } = Astro.props
+
+const primitives = await discoveredPrimitives()
+
+const bands = (['analysis', 'orchestration', 'base'] as const).map(key => ({
+  entries : primitives.filter(primitive => primitive.layer === key),
+  key,
+  numeral : LAYER_NUMERAL[key]
+}))
+
+const focused = primitives.find(primitive => primitive.slug === initialFocus) ?? null
+if (initialFocus !== undefined && focused === null) {
+  throw new Error(`PrimitivesComposition initialFocus "${initialFocus}" does not match a primitive page`)
+}
+
+const related = new Set(focused === null ? [] : [...focused.consumes, ...focused.consumedBy])
+---
+
+<div
+  class="primitives-composition"
+  data-layer={focused?.layer ?? 'empty'}
+  data-initial-focus={initialFocus}
+>
+  <PrimitivesCompositionGrid bands={bands} focused={focused?.slug ?? null} related={related} />
+  {initialFocus === undefined && <PrimitivesCompositionDetail primitives={primitives} />}
+</div>
+
+<script>
+  const TILE = '.primitives-composition-tile'
+  const LINK = '.primitives-composition-tile-link'
+
+  // Suppresses the dot separator after a mention that ends its wrapped line.
+  function markWrapped(card: HTMLElement): void {
+    for (const row of card.querySelectorAll<HTMLElement>('.primitives-composition-card-rel-mentions')) {
+      const items = [...row.querySelectorAll<HTMLElement>('.primitives-composition-card-mention-item')]
+      for (const [index, item] of items.entries()) {
+        const next = items[index + 1]
+        if (next && next.offsetTop > item.offsetTop) item.dataset.suppressDot = ''
+        else delete item.dataset.suppressDot
+      }
+    }
+  }
+
+  function apply(root: HTMLElement, slug: string | null): void {
+    const link = slug === null ? null : root.querySelector<HTMLElement>(`${LINK}[data-slug="${slug}"]`)
+    const related = new Set(link?.dataset.related?.split(' ') ?? [])
+    root.dataset.layer = link?.closest<HTMLElement>(TILE)?.dataset.layer ?? 'empty'
+    for (const tile of root.querySelectorAll<HTMLElement>(TILE)) {
+      const tileSlug = tile.querySelector<HTMLElement>(LINK)?.dataset.slug ?? ''
+      const active   = link !== null && tileSlug === slug
+      tile.classList.toggle('primitives-composition-tile-active', active)
+      tile.classList.toggle('primitives-composition-tile-related', link !== null && !active && related.has(tileSlug))
+      tile.classList.toggle('primitives-composition-tile-mute', link !== null && !active && !related.has(tileSlug))
+    }
+    for (const card of root.querySelectorAll<HTMLElement>('.primitives-composition-card')) {
+      card.hidden = link === null ? card.dataset.slug !== undefined : card.dataset.slug !== slug
+      if (!card.hidden) markWrapped(card)
+    }
+  }
+
+  function remarkVisible(root: HTMLElement): void {
+    const card = root.querySelector<HTMLElement>('.primitives-composition-card:not([hidden])')
+    if (card) markWrapped(card)
+  }
+
+  function anchorOf(event: Event): HTMLElement | null {
+    const target = event.target
+    return target instanceof Element ? target.closest<HTMLElement>(LINK) : null
+  }
+
+  const roots = document.querySelectorAll<HTMLElement>('.primitives-composition')
+
+  for (const root of roots) {
+    const initial = root.dataset.initialFocus ?? null
+    root.addEventListener('mouseover', event => {
+      const link = anchorOf(event)
+      if (link) apply(root, link.dataset.slug ?? null)
+    })
+    // Without an initial focus the last hovered tile stays focused, so only a
+    // pinned composition resets on leave.
+    root.addEventListener('mouseout', event => {
+      const link = anchorOf(event)
+      if (link === null || initial === null) return
+      if (event instanceof MouseEvent && event.relatedTarget instanceof Node && link.contains(event.relatedTarget)) return
+      apply(root, initial)
+    })
+    root.addEventListener('focusin', event => {
+      const link = anchorOf(event)
+      if (link) apply(root, link.dataset.slug ?? null)
+    })
+    root.addEventListener('focusout', event => {
+      if (anchorOf(event) && initial !== null) apply(root, initial)
+    })
+
+    const detail = root.querySelector<HTMLElement>('[aria-live]')
+    if (detail) new ResizeObserver(() => remarkVisible(root)).observe(detail)
+  }
+
+  await document.fonts.ready
+  for (const root of roots) remarkVisible(root)
+</script>

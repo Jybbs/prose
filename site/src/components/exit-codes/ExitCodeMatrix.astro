@@ -1,0 +1,63 @@
+---
+import './exit-code-matrix.css'
+
+import { getCollection } from 'astro:content'
+
+import { renderInline } from '../../lib/markdown/render'
+
+const codes = (await getCollection('exitCodes'))
+  .map(entry => entry.data)
+  .sort((a, b) => a.code - b.code)
+
+const detailHtml = await Promise.all(
+  codes.map(row => Promise.all(row.detail.map(item => renderInline(item))))
+)
+---
+
+<exit-code-matrix class="exit-codes-spread">
+  <nav class="exit-codes-index" aria-label="Exit codes">
+    {codes.map((row, i) => (
+      <button
+        type="button"
+        class:list={['exit-code-index-row', { active: i === 0 }]}
+        data-exit-code={row.code}
+      >
+        <span class="exit-code-index-num">{row.code}</span>
+        <span class="exit-code-index-label">{row.label}</span>
+        <span class="exit-code-index-leader" aria-hidden="true"></span>
+        <span class="exit-code-index-mark" aria-hidden="true"></span>
+      </button>
+    ))}
+  </nav>
+  {codes.map((row, i) => (
+    <article class="exit-code-entry" data-exit-code={row.code} aria-live="polite" hidden={i !== 0}>
+      <header class="exit-code-entry-head">
+        <span class="exit-code-entry-numeral" aria-hidden="true">{row.code}</span>
+        <span class="exit-code-entry-label">{row.label}</span>
+      </header>
+      <p class="exit-code-entry-summary">{row.summary}</p>
+      <ul class="exit-code-entry-details">
+        {detailHtml[i].map(html => <li set:html={html} />)}
+      </ul>
+    </article>
+  ))}
+</exit-code-matrix>
+
+<script>
+  import { wireTabSelect } from '../../lib/shared/tab-select'
+
+  // Swaps the visible exit-code entry as index rows take hover or focus.
+  class ExitCodeMatrix extends HTMLElement {
+    connectedCallback(): void {
+      wireTabSelect(this, {
+        activeClass : 'active',
+        events      : ['focus', 'mouseenter'],
+        key         : 'exitCode',
+        panels      : '.exit-code-entry',
+        tabs        : '.exit-code-index-row'
+      })
+    }
+  }
+
+  customElements.define('exit-code-matrix', ExitCodeMatrix)
+</script>

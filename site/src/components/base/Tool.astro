@@ -1,0 +1,24 @@
+---
+import './tool.css'
+
+import { getEntry } from 'astro:content'
+import { Icon }     from 'astro-icon/components'
+
+interface Props {
+  bare ?: boolean
+  slug  : string
+}
+
+const { bare = false, slug } = Astro.props
+
+const entry = await getEntry('tools', slug)
+if (entry === undefined) throw new Error(`Tool "${slug}" is not in the tools collection`)
+
+const { href, icon, name } = entry.data
+---
+
+<a class:list={['tool-mark', { 'tool-bare': bare }]} href={href} title={name} target="_blank" rel="noopener">
+  {bare
+    ? <Icon class="tool-mark-icon" name={icon} aria-hidden="true" />
+    : <code><Icon class="tool-mark-icon" name={icon} aria-hidden="true" />{name}</code>}
+</a>

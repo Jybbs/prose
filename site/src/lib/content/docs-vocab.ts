@@ -1,5 +1,5 @@
-import { readFileSync }  from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { existsSync, readFileSync } from 'node:fs'
+import { fileURLToPath }            from 'node:url'
 
 import { parseFrontmatter }   from '@astrojs/markdown-remark'
 import { parse as parseYaml } from 'yaml'
@@ -9,7 +9,7 @@ import { isFamily }                  from '../shared/registries'
 import type { RuleFamily }           from '../shared/registries'
 import { pageFiles, subdirectories } from './page'
 
-export interface RuleRef      { caption: string, family: RuleFamily, href: string }
+export interface RuleRef      { badge: string, caption: string, family: RuleFamily, href: string }
 export interface PrimitiveRef { href: string, title: string }
 export interface GlossaryRef  { definition: string, href?: string, slug: string }
 
@@ -28,6 +28,10 @@ interface GlossarySource {
 const frontmatter = (path: string): Record<string, unknown> =>
   parseFrontmatter(readFileSync(path, 'utf8')).frontmatter as Record<string, unknown>
 
+// A section index carries either markdown extension.
+const indexPath = (dir: string): string =>
+  existsSync(`${dir}/index.mdx`) ? `${dir}/index.mdx` : `${dir}/index.md`
+
 // The rule families, primitive titles, and glossary phrases the page-body
 // plugins resolve against, read from the docs tree and glossary data at config
 // load, before the content collections exist. The type unions stay hand-curated
@@ -45,8 +49,10 @@ export function discoverDocsVocab(siteRoot: URL): DocsVocab {
 function ruleRefs(dir: string): Map<string, RuleRef> {
   const out = new Map<string, RuleRef>()
   for (const family of subdirectories(dir).filter(isFamily)) {
+    const badge = String(frontmatter(indexPath(`${dir}/${family}`)).badge ?? '')
     for (const { file, slug } of pageFiles(`${dir}/${family}`)) {
       out.set(slug, {
+        badge,
         caption : String(frontmatter(`${dir}/${family}/${file}`).caption ?? ''),
         family,
         href    : `/rules/${family}/${slug}`

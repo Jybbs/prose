@@ -5,15 +5,20 @@ import path           from 'node:path'
 import { parse }       from 'smol-toml'
 import type { Loader } from 'astro/loaders'
 
-import { precompileMagicMove }                  from '../markdown/magic-move'
-import { fixturesDir }                          from '../shared/paths'
-import { fixtureDirs, fixtureId, snapshotBody } from './fixtures-tree'
-import { readFindings }                         from './lint-findings'
-import { replaceStore, type StoreEntry }        from './store'
+import { precompileMagicMove }           from '../markdown/magic-move'
+import { fixturesDir }                   from '../shared/paths'
+import {
+  fixtureDirs, fixtureId, INPUT_FILE, META_FILE, SNAPSHOT_FILE, snapshotBody
+} from './fixtures-tree'
+import { readFindings }                  from './lint-findings'
+import { replaceStore, type StoreEntry } from './store'
 
-const INPUT_FILE    = 'input.py'
-const META_FILE     = 'meta.toml'
-const SNAPSHOT_FILE = 'input.py.snap'
+// A case earns the before/after toggle when its output differs from its input
+// or lint findings decorate the after pane.
+export const fixtureHasToggle = (
+  data: { findings: readonly unknown[], input: string, output: string }
+): boolean =>
+  data.input !== data.output || data.findings.length > 0
 
 // Folds a fixture case directory into one entry the built-in loaders cannot
 // produce, pairing the input with the snapshot output, the lint findings the

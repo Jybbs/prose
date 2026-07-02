@@ -1,0 +1,67 @@
+---
+import '../base/folio.css'
+import '../base/kicker.css'
+import './editor-run-on-save.css'
+
+import { getCollection } from 'astro:content'
+import { Code }          from '@astrojs/starlight/components'
+
+import Tool            from '../base/Tool.astro'
+import { formatFolio } from '../../lib/shared/numerals'
+
+const editors = await getCollection('editorConfigs')
+---
+
+<editor-run-on-save class="editor-card">
+  <aside class="editor-card-index">
+    <span class="kicker editor-card-edition">Editors · {formatFolio(editors.length)}</span>
+    <ul class="editor-card-list" role="tablist">
+      {editors.map((editor, i) => (
+        <li>
+          <button
+            type="button"
+            role="tab"
+            class:list={['editor-card-row', { 'is-active': i === 0 }]}
+            aria-selected={i === 0 ? 'true' : 'false'}
+            data-slug={editor.id}
+          >
+            <span class="folio">№ {formatFolio(i + 1)}</span>
+            <span class="editor-card-row-mark" aria-hidden="true"><Tool slug={editor.id} bare /></span>
+            <em class="editor-card-row-name">{editor.data.name}</em>
+            <span class="editor-card-row-leader" aria-hidden="true"></span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  </aside>
+
+  <div class="editor-card-faces" aria-live="polite">
+    {editors.map((editor, i) => (
+      <section class="editor-card-face" data-slug={editor.id} hidden={i !== 0}>
+        <header class="editor-card-face-head">
+          <span class="kicker">{editor.data.caption}</span>
+          <span class="editor-card-face-target">{editor.data.target}</span>
+        </header>
+        <div class="editor-card-face-code"><Code code={editor.data.code} lang={editor.data.language} /></div>
+      </section>
+    ))}
+  </div>
+</editor-run-on-save>
+
+<script>
+  import { wireTabSelect } from '../../lib/shared/tab-select'
+
+  // Turns the index rows into tabs over the per-editor config faces.
+  class EditorRunOnSave extends HTMLElement {
+    connectedCallback(): void {
+      wireTabSelect(this, {
+        events : ['click'],
+        key    : 'slug',
+        panels : '.editor-card-face',
+        tabs   : '.editor-card-row'
+      })
+    }
+  }
+
+  customElements.define('editor-run-on-save', EditorRunOnSave)
+</script>

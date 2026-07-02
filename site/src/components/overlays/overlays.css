@@ -1,0 +1,161 @@
+.overlay-panel {
+  position      : absolute;
+  top           : 0;
+  left          : 0;
+  z-index       : 60;
+  max-width     : 22rem;
+  background    : var(--sl-color-bg);
+  border        : 1px solid var(--sl-color-hairline);
+  border-radius : var(--prose-radius);
+  box-shadow    : var(--prose-shadow-tooltip);
+  animation     : overlay-rise 120ms ease-out;
+}
+
+@keyframes overlay-rise {
+  from {
+    opacity   : 0;
+    transform : translateY(-4px);
+  }
+
+  to {
+    opacity   : 1;
+    transform : translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay-panel {
+    animation : none;
+  }
+}
+
+.glossary-pop {
+  min-width   : 14rem;
+  padding     : 12px 16px;
+  border      : 2px solid color-mix(in srgb, var(--prose-palette-celadon) 55%, var(--sl-color-hairline));
+  border-top  : 3px solid var(--prose-palette-celadon);
+  color       : var(--sl-color-white);
+  font-size   : var(--prose-text-sm);
+  line-height : 1.5;
+}
+
+.glossary-pop-term {
+  margin      : 0;
+  font-size   : var(--prose-text-md);
+  font-weight : 700;
+  color       : var(--prose-palette-celadon);
+  white-space : nowrap;
+}
+
+.glossary-pop-divider {
+  margin-block       : 6px;
+  border-block-start : 1px solid var(--sl-color-hairline);
+  height             : 0;
+}
+
+.glossary-pop-body {
+  font-style : italic;
+  color      : var(--sl-color-gray-2);
+}
+
+.glossary-pop-body code {
+  font-size : 0.95em;
+  color     : var(--sl-color-white);
+}
+
+.glossary-pop-link {
+  display         : block;
+  margin          : 12px -16px -12px;
+  padding         : 6px 16px;
+  border-radius   : 0 0 calc(var(--prose-radius) - 2px) calc(var(--prose-radius) - 2px);
+  background      : color-mix(in srgb, var(--prose-palette-celadon) 55%, var(--sl-color-hairline));
+  font-family     : var(--sl-font-mono);
+  font-size       : var(--prose-label-size);
+  letter-spacing  : var(--prose-meta-tracking);
+  text-align      : center;
+  text-transform  : uppercase;
+  color           : var(--sl-color-white);
+  text-decoration : none;
+  transition      : background var(--prose-transition);
+}
+
+.glossary-pop-link:hover {
+  background : color-mix(in srgb, var(--prose-palette-celadon) 75%, var(--sl-color-hairline));
+}
+
+.overlay-panel.rule-card-pop {
+  max-width : min(calc(100vw - 32px), 600px);
+}
+
+.rule-card-pop .rule-card {
+  min-height            : auto;
+  overflow              : hidden;
+  padding-bottom        : 8px;
+  row-gap               : 8px;
+  grid-template-columns : auto auto auto;
+  width                 : max-content;
+  max-width             : min(calc(100vw - 32px), 600px);
+  height                : auto;
+  border                : none;
+  border-top            : 3px solid var(--family-color);
+  border-radius         : var(--prose-radius);
+  background            : var(--sl-color-bg);
+}
+
+.rule-card-pop .rule-card-caption {
+  display            : block;
+  -webkit-line-clamp : none;
+  overflow           : visible;
+  text-wrap          : balance;
+  overflow-wrap      : anywhere;
+}
+
+.rule-card-pop .rule-card-caption :where(code) {
+  white-space : normal;
+}
+
+.rule-card-pop .rule-card-header {
+  background    : var(--sl-color-gray-6);
+  border-bottom : 1px solid var(--sl-color-hairline);
+  grid-column   : 1 / -1;
+  margin        : -12px -16px 0;
+  padding       : 8px 16px;
+}
+
+.lint-shorthand {
+  align-items : center;
+  display     : flex;
+  flex-wrap   : wrap;
+  font-family : var(--sl-font-mono);
+  font-size   : var(--prose-text-xs);
+  gap         : 0.4rem;
+}
+
+.lint-chip {
+  border-radius : var(--prose-radius-sm);
+  padding       : 0.1rem 0.45rem;
+}
+
+.lint-chip-struck {
+  background      : color-mix(in srgb, var(--sl-color-white) 8%, transparent);
+  color           : var(--sl-color-gray-3);
+  text-decoration : line-through;
+}
+
+.lint-chip-suggest {
+  background : color-mix(in srgb, var(--family-color) 12%, transparent);
+  color      : var(--family-color);
+}
+
+.lint-into {
+  color : var(--sl-color-gray-3);
+}
+
+.lint-message {
+  font-family : var(--sl-font);
+  font-size   : var(--prose-text-sm);
+}
+
+.lint-message code {
+  color : var(--family-color);
+}

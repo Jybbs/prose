@@ -1,0 +1,149 @@
+---
+import './composition-cards.css'
+
+import { getCollection } from 'astro:content'
+
+import FixtureNoChange from '../fixtures/FixtureNoChange.astro'
+import FixturePair     from '../fixtures/FixturePair.astro'
+import FixtureToggle   from '../fixtures/FixtureToggle.astro'
+import RuleSegmentChip from './RuleSegmentChip.astro'
+
+import { fixtureHasToggle } from '../../lib/content/fixtures'
+import { discoveredRules }  from '../../lib/content/rules'
+import { renderBlock }      from '../../lib/markdown/render'
+import { railPaint }        from '../../lib/shared/family-rail'
+import { formatFolio }      from '../../lib/shared/numerals'
+import { titleCase }        from '../../lib/shared/title-case'
+
+const rules    = await discoveredRules()
+const fixtures = await getCollection('fixtures')
+const cases    = (await getCollection('composition')).toSorted((a, b) => a.id.localeCompare(b.id))
+
+const cards = await Promise.all(cases.map(async (entry, index) => {
+  const fixture = fixtures.find(candidate => candidate.id === `composition/${entry.id}`)
+  if (fixture === undefined) throw new Error(`Composition case "${entry.id}" has no fixture entry`)
+
+  const segments = entry.data.rules.map(slug => {
+    const rule = rules.find(candidate => candidate.slug === slug) ?? null
+    return { family: rule?.family ?? null, rule, slug }
+  })
+  const families      = segments.map(segment => segment.family)
+  const changesSource = fixture.data.input !== fixture.data.output
+  const hasFindings   = fixture.data.findings.length > 0
+  const withToggle    = fixtureHasToggle(fixture.data)
+
+  return {
+    case            : entry.id,
+    changesSource,
+    dominantFamily  : families[0] ?? null,
+    fixture         : fixture.data,
+    hasFindings,
+    hasToggle       : withToggle,
+    headlinePaint   : railPaint(families, 'to right'),
+    lintId          : hasFindings ? fixture.id : undefined,
+    num             : formatFolio(index + 1, 3),
+    railPaint       : railPaint(families),
+    segments,
+    syncId          : `composition-${entry.id}`,
+    title           : titleCase(entry.id.replaceAll('_', '-')),
+    descriptionHtml : fixture.data.description === undefined
+      ? undefined
+      : await renderBlock(fixture.data.description)
+  }
+}))
+---
+
+<ol class="composition-cards-list" aria-label="Composition cards">
+  {cards.map(card => (
+    <li
+      id={card.case}
+      class="fixture-card"
+      data-family={card.dominantFamily}
+      data-edits={String(card.changesSource)}
+      data-lint={String(card.hasFindings)}
+      style={`--rail-paint: ${card.railPaint}; --headline-paint: ${card.headlinePaint}`}
+    >
+      <div class="fixture-card-summary-row">
+        <button
+          type="button"
+          class="fixture-card-summary"
+          aria-expanded="false"
+          aria-controls={`composition-body-${card.case}`}
+        >
+          <span class="fixture-card-num">{card.num}</span>
+          <span class="fixture-card-title">{card.title}</span>
+        </button>
+        <div class="composition-cards-tick-cell">
+          <ol
+            class="composition-cards-ticks"
+            aria-label={`${card.segments.length} rules in pipeline order`}
+          >
+            {card.segments.map(segment => (
+              <li class="composition-cards-tick-item">
+                <RuleSegmentChip segment={segment} withTooltip={false} />
+              </li>
+            ))}
+          </ol>
+          <div class="composition-cards-toggle-slot">
+            {card.hasToggle ? <FixtureToggle for={card.syncId} /> : <FixtureNoChange />}
+          </div>
+        </div>
+      </div>
+      <div id={`composition-body-${card.case}`} class="fixture-card-body" role="region">
+        <div class="fixture-card-body-inner">
+          <div class="fixture-card-body-content">
+            {card.descriptionHtml !== undefined && (
+              <Fragment>
+                <div class="fixture-card-desc" set:html={card.descriptionHtml} />
+                <div class="fixture-card-rule" aria-hidden="true"></div>
+              </Fragment>
+            )}
+            <div class="composition-cards-detail">
+              <FixturePair
+                input={card.fixture.input}
+                lintId={card.lintId}
+                output={card.fixture.output}
+                steps={card.fixture.steps}
+                syncId={card.syncId}
+              />
+            </div>
+            <ol
+              class="composition-cards-bar"
+              aria-label={`${card.segments.length} rules in pipeline order`}
+            >
+              {card.segments.map(segment => (
+                <li class="composition-cards-bar-cell">
+                  <RuleSegmentChip segment={segment} withTooltip={true} />
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </div>
+    </li>
+  ))}
+</ol>
+
+<script>
+  // Single-open accordion over the shared fixture-card chrome. Clicks inside
+  // the tick cell, the bar, or the open body keep their own behavior rather
+  // than toggling the card.
+  for (const list of document.querySelectorAll<HTMLElement>('.composition-cards-list')) {
+    const setOpen = (card: HTMLElement, open: boolean): void => {
+      card.classList.toggle('is-open', open)
+      card.querySelector('.fixture-card-summary')?.setAttribute('aria-expanded', String(open))
+    }
+    list.addEventListener('click', event => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const card = target.closest<HTMLElement>('.fixture-card')
+      if (card === null || !list.contains(card)) return
+      if (target.closest('.composition-cards-tick-cell, .fixture-card-body')) return
+      const open = !card.classList.contains('is-open')
+      for (const other of list.querySelectorAll<HTMLElement>('.fixture-card.is-open')) {
+        if (other !== card) setOpen(other, false)
+      }
+      setOpen(card, open)
+    })
+  }
+</script>

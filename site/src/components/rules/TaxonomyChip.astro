@@ -1,0 +1,31 @@
+---
+import './taxonomy-chip.css'
+
+import { CATEGORY_META, familyMeta }     from '../../lib/content/family-meta'
+import type { RuleCategory, RuleFamily } from '../../lib/shared/registries'
+import { familyRoute }                   from '../../lib/shared/routes'
+
+interface Props {
+  axis    : 'category' | 'family'
+  linked ?: boolean
+  value   : RuleCategory | RuleFamily
+}
+
+const { axis, linked = true, value } = Astro.props
+
+const meta = axis === 'category'
+  ? CATEGORY_META[value as RuleCategory]
+  : (await familyMeta()).get(value) ?? { badge: '', label: value }
+
+const Tag = linked ? 'a' : 'div'
+---
+
+<Tag
+  class={`${axis}-chip`}
+  href={linked ? familyRoute(value) : undefined}
+  data-category={axis === 'category' ? value : undefined}
+  data-family={axis === 'family' ? value : undefined}
+>
+  <span class={`${axis}-chip-badge`} aria-hidden="true">{meta.badge}</span>
+  <span class={`${axis}-chip-label`}>{meta.label}</span>
+</Tag>

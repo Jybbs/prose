@@ -1,0 +1,65 @@
+.sl-markdown-content a.category-chip,
+.sl-markdown-content a.family-chip,
+.category-chip,
+.family-chip {
+  display         : inline-flex;
+  align-items     : center;
+  gap             : 10px;
+  padding         : 6px 14px 6px 10px;
+  border          : 1px solid var(--sl-color-hairline);
+  border-radius   : 0;
+  color           : var(--sl-color-white);
+  font-family     : var(--sl-font-mono);
+  font-size       : var(--prose-label-size);
+  letter-spacing  : var(--prose-label-tracking);
+  text-transform  : uppercase;
+  text-decoration : none;
+  transition      :
+    border-color      var(--prose-transition),
+    border-left-width var(--prose-transition),
+    padding-left      var(--prose-transition);
+}
+
+.sl-markdown-content a.category-chip,
+.category-chip {
+  border-left : 2px solid var(--category-accent);
+}
+
+.sl-markdown-content a.family-chip,
+.family-chip {
+  border-left : 2px solid var(--family-color);
+}
+
+.sl-markdown-content a.category-chip:hover,
+.sl-markdown-content a.family-chip:hover,
+a.category-chip:hover,
+a.family-chip:hover {
+  border-left-width : 3px;
+  padding-left      : 9px;
+}
+
+.sl-markdown-content a.category-chip:hover,
+a.category-chip:hover {
+  border-color : var(--category-accent);
+}
+
+.sl-markdown-content a.family-chip:hover,
+a.family-chip:hover {
+  border-color : var(--family-color);
+}
+
+.category-chip-badge {
+  font-family             : var(--prose-font-display);
+  font-style              : italic;
+  font-size               : 1.4rem;
+  font-weight             : 500;
+  font-variation-settings : 'opsz' 14;
+  line-height             : 1;
+  text-transform          : none;
+  letter-spacing          : 0;
+  color                   : var(--category-accent);
+}
+
+.family-chip-badge {
+  font-size : var(--prose-text-md);
+}

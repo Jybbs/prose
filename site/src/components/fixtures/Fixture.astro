@@ -1,0 +1,120 @@
+---
+import './fixture.css'
+import './fixture-card.css'
+
+import { getEntry } from 'astro:content'
+
+import FixtureNoChange from './FixtureNoChange.astro'
+import FixturePair     from './FixturePair.astro'
+import FixtureToggle   from './FixtureToggle.astro'
+
+import { fixtureHasToggle }          from '../../lib/content/fixtures'
+import { discoveredRules }           from '../../lib/content/rules'
+import { renderBlock, renderInline } from '../../lib/markdown/render'
+
+interface Props {
+  case     : string
+  open    ?: boolean
+  rule     : string
+  title   ?: string
+  variant ?: 'doc' | 'landing'
+}
+
+const { case: caseName, open = false, rule, title, variant } = Astro.props
+
+const slug  = rule.replaceAll('_', '-')
+const id    = `${slug}/${caseName}`
+const entry = await getEntry('fixtures', id)
+if (entry === undefined) throw new Error(`Fixture "${id}" does not exist`)
+
+const { description, findings, input, output, steps } = entry.data
+
+const anchor        = `fixture-${rule}-${caseName}`
+const changesSource = input !== output
+const hasFindings   = findings.length > 0
+const hasToggle     = fixtureHasToggle(entry.data)
+const family        = (await discoveredRules()).find(r => r.slug === slug)?.family
+
+const descriptionHtml = description === undefined ? undefined : await renderBlock(description)
+const titleHtml       = title === undefined ? undefined : await renderInline(title)
+const lintId          = hasFindings ? id : undefined
+---
+
+{titleHtml !== undefined
+  ? <fixture-card
+      class:list={['fixture-card', { 'is-open': open }]}
+      id={anchor}
+      data-family={family}
+      data-edits={String(changesSource)}
+      data-lint={String(hasFindings)}
+    >
+      <div class="fixture-card-summary-row">
+        <button
+          type="button"
+          class="fixture-card-summary"
+          aria-expanded={open ? 'true' : 'false'}
+          aria-controls={`${anchor}-body`}
+        >
+          <span class="fixture-card-num" aria-hidden="true"></span>
+          <span class="fixture-card-title" set:html={titleHtml} />
+        </button>
+        <div class:list={['fixture-card-actions', { 'is-active': open }]}>
+          {hasToggle ? <FixtureToggle for={anchor} /> : <FixtureNoChange />}
+        </div>
+      </div>
+      <div id={`${anchor}-body`} class="fixture-card-body" role="region">
+        <div class="fixture-card-body-inner">
+          <div class="fixture-card-body-content">
+            {descriptionHtml !== undefined && (
+              <Fragment>
+                <div class="fixture-card-desc" set:html={descriptionHtml} />
+                <div class="fixture-card-rule" aria-hidden="true"></div>
+              </Fragment>
+            )}
+            <FixturePair input={input} lintId={lintId} output={output} steps={steps} syncId={anchor} />
+          </div>
+        </div>
+      </div>
+    </fixture-card>
+  : <div class="fixture">
+      {descriptionHtml !== undefined && variant !== 'landing' && (
+        <div class="fixture-lead" set:html={descriptionHtml} />
+      )}
+      {hasToggle && variant !== 'landing' && (
+        <header class="fixture-bar"><FixtureToggle for={anchor} /></header>
+      )}
+      <FixturePair
+        input={input}
+        lintId={lintId}
+        output={output}
+        steps={steps}
+        syncId={anchor}
+        variant={variant}
+      />
+    </div>}
+
+<script>
+  // Opens and closes the card, the actions cluster staying inert to the row
+  // toggle, with a matching location hash opening the card it names.
+  class FixtureCardElement extends HTMLElement {
+    connectedCallback(): void {
+      this.querySelector('.fixture-card-summary-row')?.addEventListener('click', event => {
+        if ((event.target as HTMLElement).closest('.fixture-card-actions')) return
+        this.#setOpen(!this.classList.contains('is-open'))
+      })
+      const syncWithHash = (): void => {
+        if (window.location.hash === `#${this.id}`) this.#setOpen(true)
+      }
+      window.addEventListener('hashchange', syncWithHash)
+      syncWithHash()
+    }
+
+    #setOpen(open: boolean): void {
+      this.classList.toggle('is-open', open)
+      this.querySelector('.fixture-card-summary')?.setAttribute('aria-expanded', String(open))
+      this.querySelector('.fixture-card-actions')?.classList.toggle('is-active', open)
+    }
+  }
+
+  customElements.define('fixture-card', FixtureCardElement)
+</script>

@@ -1,0 +1,43 @@
+:root {
+  --prose-font-display          : var(--font-fraunces);
+
+  --prose-radius                : 8px;
+  --prose-radius-sm             : 4px;
+
+  --prose-focus-ring            : 2px solid var(--sl-color-accent);
+
+  --prose-shadow-lift           : 0 12px 28px -10px;
+  --prose-shadow-tooltip        : 0 8px 24px rgba(0, 0, 0, 0.28);
+
+  --prose-transition            : 0.15s ease;
+  --prose-transition-slow       : 0.2s ease;
+  --prose-transition-card       : var(--prose-transition-slow);
+  --prose-rule-draw-ms          : 420;
+
+  --prose-ease-emphasized       : cubic-bezier(0.4, 0, 0.2, 1);
+
+  --prose-tint-faint            : 5%;
+  --prose-tint-medium           : 14%;
+  --prose-tint-strong           : 32%;
+
+  --prose-kicker-size           : var(--prose-text-xxs);
+  --prose-kicker-size-sm        : 0.62rem;
+  --prose-kicker-tracking       : 0.14em;
+
+  --prose-label-size            : var(--prose-text-xxs);
+  --prose-label-tracking        : 0.1em;
+  --prose-label-tracking-loose  : 0.08em;
+
+  --prose-meta-tracking         : 0.06em;
+  --prose-folio-tracking        : 0.04em;
+  --prose-display-tracking-wide : 0.18em;
+
+  --prose-text-meta             : 0.62rem;
+  --prose-text-xxs              : 0.7rem;
+  --prose-text-xs               : 0.78rem;
+  --prose-text-code             : 0.78rem;
+  --prose-text-sm               : 0.85rem;
+  --prose-text-md               : 0.95rem;
+
+  --prose-pad-card-snug         : 10px 14px;
+}

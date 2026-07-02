@@ -11,7 +11,7 @@ const stabilityOf = new Map(
     .map(entry => [entry.id, entry.data.stability])
 )
 
-const idOf = (href: string): string => href.replace(/^\/|\/$/g, '')
+const idOf = (href: string): string => href.replaceAll(/^\/|\/$/g, '')
 
 const subgroup = (label: string, entries: SidebarEntry[]): SidebarEntry => ({
   badge     : undefined,

@@ -1,0 +1,40 @@
+---
+import './cta-ledger.css'
+
+import type { CollectionEntry } from 'astro:content'
+
+type PyPIRelease = CollectionEntry<'pypiReleases'>['data']
+
+interface Props {
+  releases: readonly PyPIRelease[]
+}
+
+const { releases } = Astro.props
+
+// Releases arrive newest-first, so a year's rows are already contiguous.
+const groupedByYear: { items: PyPIRelease[], year: string }[] = []
+for (const release of releases) {
+  const group = groupedByYear.at(-1)
+  if (group !== undefined && group.year === release.year) group.items.push(release)
+  else groupedByYear.push({ items: [release], year: release.year })
+}
+---
+
+<div class="landing-cta-scroll">
+  {groupedByYear.map(group => (
+    <div class="landing-cta-group">
+      <p class="landing-cta-year">{group.year}</p>
+      <ol class="landing-cta-ledger">
+        {group.items.map(release => (
+          <li class="landing-cta-ledger-row">
+            <a href={release.url} rel="noopener" target="_blank">
+              <span class="landing-cta-ledger-version">{release.version}</span>
+              <span class="landing-cta-ledger-leader" aria-hidden="true"></span>
+              <span class="landing-cta-ledger-month">{release.month}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  ))}
+</div>

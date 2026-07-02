@@ -24,4 +24,4 @@ export const proseProcessor = unified({
 
 export const shikiConfig: ShikiConfig = { themes: SHIKI_THEMES }
 
-export const lintFlagPlugin = pluginLintFlag(discoverLintFindings(siteRoot))
+export const lintFlagPlugin = pluginLintFlag(discoverLintFindings(siteRoot), vocab.rules)

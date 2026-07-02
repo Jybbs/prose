@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
-#MISE description="Lint the Rust crate with `clippy`"
+#MISE description="Run the linters including `clippy`, passing `rust` or `site` to scope"
 
-cargo clippy --all-targets --locked -- -D warnings
+set -euo pipefail
+
+lint_site() {
+  cd site
+  bunx --bun oxlint src
+  bunx --bun eslint .
+}
+
+case "${1:-all}" in
+  all)  cargo clippy --all-targets --locked -- -D warnings && (lint_site) ;;
+  rust) cargo clippy --all-targets --locked -- -D warnings ;;
+  site) (lint_site) ;;
+  *)    echo "usage: mise lint [rust|site]" >&2; exit 2 ;;
+esac

@@ -1,0 +1,47 @@
+---
+import { getEntry } from 'astro:content'
+
+import { discoveredRules } from '../../lib/content/rules'
+import { renderInline }    from '../../lib/markdown/render'
+
+interface Props {
+  slug: string
+}
+
+const { slug } = Astro.props
+
+const rule = (await discoveredRules()).find(candidate => candidate.slug === slug)
+if (rule === undefined) throw new Error(`RuleConfigTable slug "${slug}" does not match a rule page`)
+
+const presetId = rule.family === 'alignment' ? 'alignment' : 'toggle'
+const preset   = await getEntry('ruleConfigPresets', presetId)
+if (preset === undefined) throw new Error(`Rule config preset "${presetId}" does not exist`)
+
+const rows = await Promise.all(preset.data.rows.map(async row => ({
+  default     : row.default,
+  key         : row.key,
+  meaningHtml : await renderInline(row.meaning),
+  typeHtml    : await renderInline(row.type)
+})))
+---
+
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Type</th>
+      <th>Default</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    {rows.map(row => (
+      <tr>
+        <td><code>{row.key}</code></td>
+        <td set:html={row.typeHtml} />
+        <td><code>{row.default}</code></td>
+        <td set:html={row.meaningHtml} />
+      </tr>
+    ))}
+  </tbody>
+</table>

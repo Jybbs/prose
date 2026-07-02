@@ -1,0 +1,50 @@
+---
+import './surface-card.css'
+
+import { familyMeta }          from '../../../lib/content/family-meta'
+import type { DiscoveredRule } from '../../../lib/content/rules'
+import { renderInline }        from '../../../lib/markdown/render'
+import { formatFolio }         from '../../../lib/shared/numerals'
+import { categoryOf }          from '../../../lib/shared/registries'
+import type { RuleFamily }     from '../../../lib/shared/registries'
+import { familyRoute }         from '../../../lib/shared/routes'
+
+interface Props {
+  badge  : string
+  body   : string
+  family : RuleFamily
+  number : string
+  rules  : readonly DiscoveredRule[]
+}
+
+const { badge, body, family, number, rules } = Astro.props
+
+const bodyHtml = await renderInline(body)
+const label    = (await familyMeta()).get(family)?.label ?? family
+const first    = rules[0]
+---
+
+<div class="surface-card surface-card-tab-index" data-family={family} data-category={categoryOf(family)}>
+  <a class="surface-card-cover-link" href={familyRoute(family)} aria-label={`See all ${label.toLowerCase()} rules`}></a>
+  <span class="surface-card-number">— {number}</span>
+  <span class="surface-card-icon" aria-hidden="true">{badge}</span>
+  <h3 class="surface-card-label">{label}</h3>
+  <p class="surface-card-blurb" set:html={bodyHtml} />
+  <div class="surface-card-chips">
+    <div class="tab-index">
+      <div class="tab-row">
+        {rules.map((rule, index) => (
+          <a
+            class:list={['tab', { active: index === 0 }]}
+            href={rule.href}
+            aria-label={rule.slug}
+            data-slug={rule.slug}
+          >{formatFolio(index + 1)}</a>
+        ))}
+      </div>
+      <div class="tab-label" aria-live="polite">
+        {first && <a class="tab-label-link" href={first.href} aria-label={first.slug}>{first.slug}</a>}
+      </div>
+    </div>
+  </div>
+</div>

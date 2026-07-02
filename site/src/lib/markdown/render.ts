@@ -10,6 +10,11 @@ function processor(): Promise<MarkdownRenderer> {
   return (cachedProcessor ??= proseProcessor.createRenderer({ shikiConfig }))
 }
 
+export async function renderBlock(markdown: string): Promise<string> {
+  const { code } = await (await processor()).render(markdown)
+  return code
+}
+
 export async function renderInline(markdown: string): Promise<string> {
   const { code } = await (await processor()).render(markdown)
   return stripParagraph(code)

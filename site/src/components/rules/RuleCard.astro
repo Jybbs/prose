@@ -1,0 +1,26 @@
+---
+import './rule-card.css'
+
+import MiddleEllipsis          from '../base/MiddleEllipsis.astro'
+import { familyMeta }          from '../../lib/content/family-meta'
+import type { DiscoveredRule } from '../../lib/content/rules'
+import { renderInline }        from '../../lib/markdown/render'
+
+interface Props {
+  rule: DiscoveredRule
+}
+
+const { rule }    = Astro.props
+const captionHtml = await renderInline(rule.caption)
+const familyLabel = (await familyMeta()).get(rule.family)?.label ?? rule.family
+---
+
+<article class="rule-card" data-category={rule.category} data-family={rule.family}>
+  <a class="rule-card-cover" href={rule.href} aria-label={rule.slug}></a>
+  <span class="rule-card-badge" title={familyLabel} aria-hidden="true">{rule.badge}</span>
+  <div class="rule-card-name">
+    <h3 class="rule-card-slug" title={rule.slug}><MiddleEllipsis text={rule.slug} /></h3>
+    <span class="rule-card-fam">{familyLabel}</span>
+  </div>
+  <p class="rule-card-caption" set:html={captionHtml} />
+</article>

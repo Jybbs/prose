@@ -7,7 +7,7 @@ import { mdastElement, mdastText, wordBounded } from './mdast-node'
 
 const glossaryNode = (ref: GlossaryRef, phrase: string) => {
   const text  = mdastText(phrase)
-  const props = { className: ['glossary-term'], 'data-definition': ref.definition }
+  const props = { className: ['glossary-term'], 'data-definition': ref.definition, 'data-term': ref.slug }
   return ref.href
     ? mdastElement('a', { ...props, href: ref.href }, text)
     : mdastElement('span', props, text)

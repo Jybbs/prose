@@ -48,7 +48,7 @@ function buildKicker(page: OgPage): string {
 }
 
 function captionSegments(raw: string): ReadonlyArray<{ code: boolean, text: string }> {
-  const strip = (s: string): string => s.replace(/(\*\*?|_)(.+?)\1/g, '$2')
+  const strip = (s: string): string => s.replaceAll(/(\*\*?|_)(.+?)\1/g, '$2')
   // `split` interleaves the backtick captures at odd indexes
   return raw.split(/`([^`]+)`/).flatMap((part, index): Array<{ code: boolean, text: string }> =>
     index % 2 === 1

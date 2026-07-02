@@ -1,11 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs'
 import path                         from 'node:path'
 
-import { fixturesDir }                          from '../shared/paths'
-import { fixtureDirs, fixtureId, snapshotBody } from './fixtures-tree'
-import type { LintFinding }                     from './schemas'
-
-const FINDINGS_FILE = 'lint_findings.snap'
+import { fixturesDir }                                         from '../shared/paths'
+import { FINDINGS_FILE, fixtureDirs, fixtureId, snapshotBody } from './fixtures-tree'
+import type { LintFinding }                                    from './schemas'
 
 // The lint findings the decoration plugin draws, keyed by the `<rule>/<case>`
 // fixture id a `lint=` fence names. Read from the harness snapshots at config
@@ -16,7 +14,7 @@ export function discoverLintFindings(siteRoot: URL): Map<string, LintFinding[]> 
   const out  = new Map<string, LintFinding[]>()
   for (const { dir, name, rule } of fixtureDirs(root)) {
     const findings = readFindings(dir)
-    if (findings.length) out.set(fixtureId(rule, name), findings)
+    if (findings.length > 0) out.set(fixtureId(rule, name), findings)
   }
   return out
 }

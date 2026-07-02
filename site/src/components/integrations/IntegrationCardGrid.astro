@@ -1,0 +1,32 @@
+---
+import './integration-card-grid.css'
+
+import { getCollection } from 'astro:content'
+
+import { sectionLeaf }  from '../../lib/content/sections'
+import { renderInline } from '../../lib/markdown/render'
+
+const pages = (await getCollection('docs')).filter(
+  entry => sectionLeaf(entry.id, 'integrations') !== undefined)
+
+const cards = await Promise.all(pages.map(async entry => {
+  const { summary, tagline, title } = entry.data
+  if (summary === undefined || tagline === undefined) {
+    throw new Error(`Integration page "${entry.id}" is missing tagline or summary frontmatter`)
+  }
+  return { bodyHtml: await renderInline(summary), href: `/${entry.id}`, kicker: tagline, title }
+}))
+
+cards.sort((a, b) => a.title.localeCompare(b.title))
+---
+
+<div class="int-card-grid">
+  {cards.map(card => (
+    <a class="int-card" href={card.href}>
+      <p class="int-kicker">{card.kicker}</p>
+      <p class="int-title">{card.title}</p>
+      <p class="int-body" set:html={card.bodyHtml} />
+      <p class="int-foot">Open →</p>
+    </a>
+  ))}
+</div>

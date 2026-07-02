@@ -1,0 +1,63 @@
+---
+import './primitives-composition-grid.css'
+
+import type { DiscoveredPrimitive, PrimitiveLayer } from '../../lib/content/primitives'
+
+interface Band {
+  entries : readonly DiscoveredPrimitive[]
+  key     : PrimitiveLayer
+  numeral : string
+}
+
+interface Props {
+  bands   : readonly Band[]
+  focused : string | null
+  related : ReadonlySet<string>
+}
+
+const { bands, focused, related } = Astro.props
+
+const tileState = (slug: string): 'active' | 'idle' | 'mute' | 'related' => {
+  if (focused === null) return 'idle'
+  if (slug === focused) return 'active'
+  if (related.has(slug)) return 'related'
+  return 'mute'
+}
+---
+
+<div class="primitives-composition-grid">
+  {bands.map(band => (
+    <section class="primitives-composition-band" data-layer={band.key}>
+      <header class="primitives-composition-band-head">
+        <span class="primitives-composition-band-badge">
+          <span class="primitives-composition-band-numeral" aria-hidden="true">{band.numeral}</span>
+        </span>
+        <span class="primitives-composition-band-name">{band.key}</span>
+        <span class="primitives-composition-band-rule" aria-hidden="true"></span>
+      </header>
+      <ul class="primitives-composition-band-cells">
+        {band.entries.map(entry => {
+          const state = tileState(entry.slug)
+          return (
+          <li
+            class:list={[
+              'primitives-composition-tile',
+              state !== 'idle' && `primitives-composition-tile-${state}`
+            ]}
+            data-layer={entry.layer}
+          >
+            <a
+              class="primitives-composition-tile-link"
+              href={entry.href}
+              data-related={[...entry.consumes, ...entry.consumedBy].join(' ')}
+              data-slug={entry.slug}
+            >
+              <span class="primitives-composition-tile-name">{entry.name}</span>
+            </a>
+          </li>
+          )
+        })}
+      </ul>
+    </section>
+  ))}
+</div>

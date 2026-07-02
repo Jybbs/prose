@@ -4,6 +4,11 @@ import { parseFrontmatter } from '@astrojs/markdown-remark'
 
 import { subdirectories } from './page'
 
+export const FINDINGS_FILE = 'lint_findings.snap'
+export const INPUT_FILE    = 'input.py'
+export const META_FILE     = 'meta.toml'
+export const SNAPSHOT_FILE = 'input.py.snap'
+
 // The `<rule>/<case>` id, the rule slug in kebab form so it joins the docs
 // collection's rule slugs.
 export const fixtureId = (rule: string, name: string): string => `${rule.replaceAll('_', '-')}/${name}`

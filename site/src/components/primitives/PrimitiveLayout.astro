@@ -1,0 +1,16 @@
+---
+import PrimitivesComposition from './PrimitivesComposition.astro'
+
+interface Props {
+  slug: string
+}
+
+const { slug } = Astro.props
+---
+
+<PrimitivesComposition initialFocus={slug} />
+<slot name="lead" />
+<slot />
+
+<h2 id="related">Related</h2>
+<slot name="related" />

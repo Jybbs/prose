@@ -1,0 +1,206 @@
+.glossary-folio-index-narrow {
+  margin-top : 32px;
+}
+
+.glossary-folio-index-narrow .glossary-folio-list {
+  max-height : none;
+}
+
+@media (min-width: 1280px) {
+  .glossary-folio-index-narrow {
+    display : none !important;
+  }
+}
+
+.sl-markdown-content .glossary-folio-rows {
+  margin     : 0;
+  padding    : 0;
+  list-style : none;
+}
+
+.sl-markdown-content .glossary-folio-rows li + li {
+  margin-top : 0;
+}
+
+.sl-markdown-content .glossary-folio-letter {
+  margin : 0 0 4px;
+}
+
+.sl-markdown-content .glossary-folio-row-slug {
+  padding       : 0;
+  background    : transparent;
+  border-radius : 0;
+  font-size     : var(--prose-text-sm);
+  color         : var(--sl-color-gray-2);
+  transition    : none;
+}
+
+.sl-markdown-content .glossary-folio-row:hover .glossary-folio-row-slug,
+.sl-markdown-content .glossary-folio-row.is-active .glossary-folio-row-slug {
+  color : var(--sl-color-white);
+}
+
+.sl-markdown-content .glossary-folio-empty code {
+  padding       : 0;
+  background    : transparent;
+  border-radius : 0;
+  color         : var(--sl-color-gray-2);
+}
+
+.glossary-folio-index {
+  display        : flex;
+  flex-direction : column;
+  gap            : 12px;
+  margin         : 20px 0 0;
+}
+
+.glossary-folio-search {
+  display       : flex;
+  align-items   : center;
+  gap           : 10px;
+  padding       : 6px 14px;
+  border        : 1px solid var(--sl-color-hairline);
+  border-radius : var(--prose-radius);
+  background    : var(--sl-color-gray-6);
+  transition    : border-color var(--prose-transition), background var(--prose-transition);
+}
+
+.glossary-folio-search:hover {
+  border-color : color-mix(in srgb, var(--prose-palette-ube) 35%, var(--sl-color-hairline));
+  background   : var(--sl-color-bg);
+}
+
+.glossary-folio-search:focus-within {
+  border-color : color-mix(in srgb, var(--prose-palette-ube) 55%, var(--sl-color-hairline));
+  box-shadow   : 0 0 0 3px color-mix(in srgb, var(--prose-palette-ube) 20%, transparent);
+}
+
+.glossary-folio-search-glyph {
+  flex-shrink : 0;
+  width       : 14px;
+  height      : 14px;
+  color       : var(--sl-color-gray-2);
+}
+
+.glossary-folio-input {
+  flex        : 1;
+  min-width   : 0;
+  height      : 22px;
+  border      : none;
+  background  : transparent;
+  font-family : var(--sl-font);
+  font-size   : var(--prose-text-sm);
+  color       : var(--sl-color-white);
+  outline     : none;
+}
+
+.glossary-folio-input::placeholder {
+  font-family : inherit;
+  font-size   : inherit;
+  color       : var(--sl-color-gray-3);
+  opacity     : 0.8;
+}
+
+.glossary-folio-meta {
+  flex-shrink    : 0;
+  margin-left    : auto;
+  padding-left   : 8px;
+  font-family    : var(--sl-font-mono);
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-meta-tracking);
+  text-transform : uppercase;
+  color          : var(--sl-color-gray-3);
+  white-space    : nowrap;
+}
+
+.glossary-folio-empty {
+  padding     : 12px 4px;
+  font-family : var(--sl-font);
+  font-size   : var(--prose-text-sm);
+  color       : var(--sl-color-gray-3);
+}
+
+.glossary-folio-empty code {
+  background  : transparent;
+  padding     : 0;
+  font-family : var(--sl-font-mono);
+  font-size   : 0.9em;
+  color       : var(--sl-color-gray-2);
+}
+
+.glossary-folio-list {
+  max-height : calc(100vh - 240px);
+  overflow-y : auto;
+}
+
+.glossary-folio-block + .glossary-folio-block {
+  margin-top : 14px;
+}
+
+.glossary-folio-letter {
+  margin         : 0 0 4px;
+  padding        : 0 4px 4px;
+  border-bottom  : 1px solid var(--sl-color-hairline);
+  font-family    : var(--sl-font-mono);
+  font-size      : var(--prose-text-meta);
+  font-weight    : 500;
+  letter-spacing : var(--prose-label-tracking);
+  text-transform : uppercase;
+  color          : var(--sl-color-gray-3);
+  opacity        : 0.7;
+}
+
+.glossary-folio-rows {
+  margin     : 0;
+  padding    : 0;
+  list-style : none;
+}
+
+.glossary-folio-row {
+  display               : grid;
+  grid-template-columns : 3px 1fr;
+  align-items           : center;
+  gap                   : 10px;
+  width                 : 100%;
+  min-height            : 24px;
+  padding               : 3px 8px;
+  border                : none;
+  border-radius         : var(--prose-radius-sm);
+  background            : transparent;
+  text-align            : left;
+  cursor                : pointer;
+  transition            : background var(--prose-transition);
+}
+
+.glossary-folio-row-rail {
+  align-self    : stretch;
+  border-radius : 2px;
+  background    : var(--rail-paint, var(--family-color));
+}
+
+.glossary-folio-row-slug {
+  background    : transparent;
+  padding       : 0;
+  font-family   : var(--sl-font);
+  font-size     : var(--prose-text-sm);
+  color         : var(--sl-color-gray-2);
+  overflow-wrap : anywhere;
+  min-width     : 0;
+}
+
+.glossary-folio-row:hover {
+  background : color-mix(in srgb, var(--family-color) 10%, transparent);
+}
+
+.glossary-folio-row:hover .glossary-folio-row-slug {
+  color : var(--sl-color-white);
+}
+
+.glossary-folio-row.is-active {
+  background : color-mix(in srgb, var(--family-color) 22%, transparent);
+}
+
+.glossary-folio-row.is-active .glossary-folio-row-slug {
+  color       : var(--sl-color-white);
+  font-weight : 600;
+}

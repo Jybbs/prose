@@ -9,7 +9,13 @@ const SLUG      = /^[a-z][a-z0-9-]*$/
 const WIKI_LINK = /\[\[([^\]]+)\]\]/g
 
 const ruleNode = (ref: RuleRef, slug: string): PhrasingContent => {
-  const props = { className: ['rule-chip'], 'data-caption': ref.caption, href: ref.href }
+  const props = {
+    className      : ['rule-chip'],
+    'data-badge'   : ref.badge,
+    'data-caption' : ref.caption,
+    'data-family'  : ref.family,
+    href           : ref.href
+  }
   return mdastElement('a', props, mdastText(slug))
 }
 

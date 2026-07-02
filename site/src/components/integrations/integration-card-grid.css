@@ -1,0 +1,77 @@
+.int-card-grid {
+  display               : grid;
+  grid-template-columns : repeat(auto-fill, minmax(260px, 1fr));
+  gap                   : 1rem;
+  margin                : 1.5rem 0;
+}
+
+a.int-card {
+  display         : block;
+  padding         : 1rem 1.1rem 0.85rem;
+  background      : var(--sl-color-gray-6);
+  border          : 1px solid var(--sl-color-hairline);
+  border-radius   : var(--prose-radius-sm);
+  text-decoration : none;
+  color           : var(--sl-color-white);
+  transition      :
+    border-color var(--prose-transition),
+    background   var(--prose-transition);
+}
+
+a.int-card:hover {
+  border-color    : var(--prose-palette-ube);
+  background      : var(--sl-color-bg);
+  text-decoration : none;
+}
+
+.int-card,
+.int-card * {
+  text-decoration : none;
+}
+
+.int-card .int-kicker {
+  margin         : 0 0 0.3rem;
+  font-family    : var(--sl-font-mono);
+  font-size      : var(--prose-kicker-size-sm);
+  letter-spacing : var(--prose-label-tracking-loose);
+  text-transform : uppercase;
+  color          : var(--sl-color-gray-3);
+}
+
+.int-card .int-title {
+  margin      : 0 0 0.5rem;
+  border      : none;
+  padding     : 0;
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-size   : 1.2rem;
+  font-weight : 500;
+  color       : var(--sl-color-white);
+}
+
+.int-card .int-body {
+  margin      : 0 0 0.7rem;
+  font-size   : 0.88rem;
+  line-height : 1.45;
+  color       : var(--sl-color-gray-2);
+}
+
+.int-card .int-body em {
+  font-style : italic;
+}
+
+.int-card .int-body code {
+  font-family   : var(--sl-font-mono);
+  background    : var(--sl-color-bg);
+  padding       : 1px 5px;
+  border-radius : var(--prose-radius-sm);
+  font-size     : var(--prose-text-xs);
+}
+
+.int-card .int-foot {
+  margin         : 0;
+  font-family    : var(--sl-font-mono);
+  font-size      : var(--prose-kicker-size);
+  letter-spacing : var(--prose-meta-tracking);
+  color          : var(--prose-palette-ube);
+}

@@ -1,0 +1,100 @@
+---
+import './glossary-folio-index.css'
+
+import { Icon } from '@astrojs/starlight/components'
+
+import { glossaryFolioEntries } from './entries'
+import { groupByInitial }       from './folio'
+import { railPaint }            from '../../lib/shared/family-rail'
+
+interface Props {
+  class ?: string
+}
+
+const { class: className } = Astro.props
+
+const entries = await glossaryFolioEntries()
+const grouped = groupByInitial(entries)
+const first   = entries[0]?.slug
+---
+
+<aside class:list={['glossary-folio-index', className]} aria-label="Glossary index">
+  <div class="glossary-folio-search">
+    <Icon name="magnifier" class="glossary-folio-search-glyph" />
+    <input type="search" class="glossary-folio-input" aria-label="Filter glossary" />
+    <span class="glossary-folio-meta">{entries.length} of {entries.length}</span>
+  </div>
+  <div class="glossary-folio-empty" hidden>No entries match <code></code>.</div>
+  <div class="glossary-folio-list">
+    {grouped.map(([initial, group]) => (
+      <div class="glossary-folio-block">
+        <p class="glossary-folio-letter">{initial}</p>
+        <ul class="glossary-folio-rows">
+          {group.map(entry => (
+            <li>
+              <button
+                type="button"
+                class:list={['glossary-folio-row', { 'is-active': entry.slug === first }]}
+                data-aliases={entry.aliases.join('\n')}
+                data-family={entry.primaryFamily}
+                data-slug={entry.slug}
+                style={`--rail-paint: ${railPaint(entry.families)}`}
+              >
+                <span class="glossary-folio-row-rail" aria-hidden="true"></span>
+                <code class="glossary-folio-row-slug">{entry.slug}</code>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</aside>
+
+<script>
+  import { glossaryFolioQuery, glossaryFolioSlug } from '../../lib/stores/glossary'
+  import { entryMatches }                          from './folio'
+
+  for (const root of document.querySelectorAll<HTMLElement>('.glossary-folio-index')) {
+    const input = root.querySelector<HTMLInputElement>('.glossary-folio-input')
+    const meta  = root.querySelector<HTMLElement>('.glossary-folio-meta')
+    const empty = root.querySelector<HTMLElement>('.glossary-folio-empty')
+    const list  = root.querySelector<HTMLElement>('.glossary-folio-list')
+    const rows  = [...root.querySelectorAll<HTMLElement>('.glossary-folio-row')]
+
+    input?.addEventListener('input', () => glossaryFolioQuery.set(input.value))
+    root.addEventListener('click', event => {
+      const row = event.target instanceof Element
+        ? event.target.closest<HTMLElement>('.glossary-folio-row')
+        : null
+      if (row?.dataset.slug !== undefined) glossaryFolioSlug.set(row.dataset.slug)
+    })
+
+    const update = (): void => {
+      const query  = glossaryFolioQuery.get()
+      const active = glossaryFolioSlug.get() ?? rows[0]?.dataset.slug
+      if (input && input.value !== query) input.value = query
+      let visible = 0
+      for (const row of rows) {
+        const match = entryMatches(row.dataset.slug ?? '', row.dataset.aliases ?? '', query)
+        const item  = row.closest('li')
+        if (item) item.hidden = !match
+        if (match) visible += 1
+        row.classList.toggle('is-active', row.dataset.slug === active)
+      }
+      for (const block of root.querySelectorAll<HTMLElement>('.glossary-folio-block')) {
+        block.hidden = block.querySelector('li:not([hidden])') === null
+      }
+      if (meta) meta.textContent = `${visible} of ${rows.length}`
+      if (empty) {
+        empty.hidden = visible > 0
+        const code = empty.querySelector('code')
+        if (code) code.textContent = query
+      }
+      if (list) list.hidden = visible === 0
+    }
+
+    glossaryFolioQuery.subscribe(update)
+    glossaryFolioSlug.subscribe(update)
+  }
+</script>

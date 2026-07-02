@@ -1,0 +1,20 @@
+---
+import './rule-chrome.css'
+
+import TaxonomyChip        from './TaxonomyChip.astro'
+import { discoveredRules } from '../../lib/content/rules'
+
+interface Props {
+  slug: string
+}
+
+const { slug } = Astro.props
+
+const rule = (await discoveredRules()).find(candidate => candidate.slug === slug)
+if (rule === undefined) throw new Error(`RuleChrome slug "${slug}" does not match a rule page`)
+---
+
+<div class="rule-chrome">
+  <TaxonomyChip axis="category" value={rule.category} />
+  {rule.family !== 'lint' && <TaxonomyChip axis="family" value={rule.family} />}
+</div>

@@ -12,6 +12,7 @@ const PART_ROLES       = ['action', 'comment', 'namespace', 'payload'] as const
 // schema spans the rules, primitives, and prose pages alike, with the
 // per-section requirements enforced by the cross-record integrity pass.
 export const docsExtension = z.object({
+  badge      : z.string().optional(),
   caption    : z.string().optional(),
   consumedBy : z.array(z.string()).optional(),
   consumes   : z.array(z.string()).optional(),

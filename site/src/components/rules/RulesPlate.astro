@@ -1,0 +1,44 @@
+---
+import './rules-plate.css'
+
+import { familyMeta }      from '../../lib/content/family-meta'
+import { discoveredRules } from '../../lib/content/rules'
+import { FAMILY_ORDER }    from '../../lib/shared/registries'
+import { familyRoute }     from '../../lib/shared/routes'
+
+const rules = await discoveredRules()
+const meta  = await familyMeta()
+
+const clusters = FAMILY_ORDER.map(family => ({
+  family,
+  icon  : meta.get(family)?.badge ?? '',
+  label : meta.get(family)?.label ?? family,
+  rules : rules.filter(rule => rule.family === family)
+}))
+---
+
+<div class="rules-plate">
+  {clusters.map(cluster => (
+    <section class="rules-cluster" data-family={cluster.family}>
+      <a class="rules-cluster-head" href={familyRoute(cluster.family)}>
+        <span class="rules-cluster-emoji" aria-hidden="true">{cluster.icon}</span>
+        <h2 class="rules-cluster-name">{cluster.label}</h2>
+      </a>
+      <ul class="rules-cluster-specimens">
+        {cluster.rules.map(rule => (
+          <li>
+            <a
+              class="specimen"
+              href={rule.href}
+              data-badge={rule.badge}
+              data-caption={rule.caption}
+              data-family={rule.family}
+            >
+              <span class="specimen-slug">{rule.slug}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</div>

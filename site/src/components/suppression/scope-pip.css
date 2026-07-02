@@ -1,0 +1,11 @@
+.directive-anatomy-band-badge,
+.scope-specimen-legend-pip {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  border-radius   : 50%;
+  color           : var(--sl-color-bg);
+  font-family     : var(--prose-font-display);
+  font-style      : italic;
+  font-weight     : 500;
+}

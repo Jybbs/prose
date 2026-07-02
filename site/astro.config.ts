@@ -6,13 +6,13 @@ import icon                            from 'astro-icon'
 import postcssCustomMedia              from 'postcss-custom-media'
 import starlightLinksValidator         from 'starlight-links-validator'
 
-import { buildContentTimestamps, lastmodForUrl }       from './src/lib/config/page-timestamps'
-import { watchCrateSources }                           from './src/lib/integrations/watch-crate'
-import { lintFlagPlugin, proseProcessor, shikiConfig } from './src/lib/markdown/config'
-import { sidebar }                                     from './src/lib/nav/sidebar'
-import { REPO_URL, SHIKI_THEMES }                      from './src/lib/shared/constants'
-import { FONT_FAMILIES }                               from './src/lib/tokens/fonts'
-import { resolveColor, tokensToCss }                   from './src/lib/tokens/resolve'
+import { buildContentTimestamps, lastmodForUrl } from './src/lib/config/page-timestamps'
+import { watchCrateSources }                     from './src/lib/integrations/watch-crate'
+import { proseProcessor, shikiConfig }           from './src/lib/markdown/config'
+import { sidebar }                               from './src/lib/nav/sidebar'
+import { REPO_URL }                              from './src/lib/shared/constants'
+import { FONT_FAMILIES }                         from './src/lib/tokens/fonts'
+import { resolveColor, tokensToCss }             from './src/lib/tokens/resolve'
 
 const timestamps = buildContentTimestamps(new URL('./', import.meta.url))
 const npmLocal   = fontProviders.npm({ remote: false })
@@ -24,7 +24,14 @@ export default defineConfig({
 
   integrations: [
     starlight({
-      customCss       : ['./src/styles/theme.css'],
+      customCss       : [
+        './src/styles/tokens.css',
+        './src/styles/accents.css',
+        './src/styles/marks.css',
+        './src/styles/markdown.css',
+        './src/styles/primitives.css',
+        './src/styles/theme.css'
+      ],
       editLink        : { baseUrl: `${REPO_URL}/edit/main/site/` },
       lastUpdated     : true,
       logo            : { alt: 'prose', src: './public/logo.svg' },
@@ -38,12 +45,6 @@ export default defineConfig({
       components: {
         Head        : './src/components/Head.astro',
         SocialIcons : './src/components/SocialIcons.astro'
-      },
-
-      expressiveCode: {
-        plugins                   : [lintFlagPlugin],
-        themes                    : [SHIKI_THEMES.dark, SHIKI_THEMES.light],
-        useStarlightUiThemeColors : true
       },
 
       head: [
