@@ -1,0 +1,6 @@
+@custom-media --prose-bp-tiny       (max-width: 480px);
+@custom-media --prose-bp-mobile     (max-width: 640px);
+@custom-media --prose-bp-card-stack (max-width: 720px);
+@custom-media --prose-bp-tablet     (max-width: 760px);
+@custom-media --prose-bp-medium     (max-width: 820px);
+@custom-media --prose-bp-desktop    (max-width: 960px);

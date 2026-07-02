@@ -22,6 +22,7 @@ class Config:
         return {"url": f"{base_url}/{fully_qualified_endpoint_url}"}
 `
 
+// Demo play order, not alphabetical. Each morph state runs a cumulative prefix.
 export const RULES = [
   'align-equals',
   'align-colons',

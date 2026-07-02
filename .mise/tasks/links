@@ -4,7 +4,9 @@
 #MISE depends=["press"]
 #MISE tools={"aqua:lycheeverse/lychee" = "latest"}
 
-lychee --no-progress --base-url https://prose.fyi \
-  --exclude '^https?://(www\.)?prose\.fyi' \
+SITE_HOST=$(grep -om1 'https://[^/<]*' dist/sitemap-index.xml | cut -d/ -f3)
+
+lychee --no-progress --base-url "https://${SITE_HOST}" \
+  --exclude "^https?://(www\.)?${SITE_HOST//./\\.}" \
   --exclude '^https://github\.com/Jybbs/prose/edit/' \
   dist

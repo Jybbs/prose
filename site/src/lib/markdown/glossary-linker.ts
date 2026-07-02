@@ -15,8 +15,8 @@ const glossaryNode = (ref: GlossaryRef, phrase: string) => {
 
 // Auto-links the first occurrence of each glossary entry per page, longest
 // phrase first so a phrase never shadows one it prefixes, wrapping the matched
-// casing in a glossary-term component. `ignore` leaves existing links, code, and
-// headings untouched.
+// casing in a glossary-term component. `ignore` leaves headings and existing
+// links untouched, and find-and-replace never enters code.
 export function remarkGlossary(vocab: DocsVocab) {
   const phrases = [...vocab.glossary.keys()].sort((a, b) => b.length - a.length)
   if (phrases.length === 0) return () => {}

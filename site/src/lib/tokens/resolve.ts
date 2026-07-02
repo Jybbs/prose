@@ -1,8 +1,6 @@
-// The design-system tokens as a typed map. `resolveColor` evaluates a token
-// to a concrete color, and `tokensToCss` regenerates the `:root` custom
-// properties for the browser.
-
 import { formatHex, interpolate } from 'culori'
+
+import { FONTS, fontStack } from './fonts'
 
 const TOKENS: Record<string, string> = {
   'family-alignment'     : 'var(--prose-palette-eureka)',
@@ -13,9 +11,9 @@ const TOKENS: Record<string, string> = {
   'family-layout'        : 'var(--prose-palette-toronto)',
   'family-lint'          : 'var(--prose-palette-apricot)',
   'family-ordering'      : 'var(--prose-palette-chambray)',
-  'font-base'            : `'Lora Variable', Georgia, "Times New Roman", serif`,
-  'font-display'         : `'Fraunces Variable', Georgia, "Times New Roman", serif`,
-  'font-mono'            : `'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`,
+  'font-base'            : fontStack(FONTS.base),
+  'font-display'         : fontStack(FONTS.display),
+  'font-mono'            : fontStack(FONTS.mono),
   'palette-apricot'      : '#e8876f',
   'palette-casper'       : '#adbdcd',
   'palette-celadon'      : '#8cc5a3',
@@ -33,6 +31,7 @@ const TOKENS: Record<string, string> = {
   'palette-ube-mid'      : 'color-mix(in oklch, var(--prose-palette-ube), white 18%)',
   'palette-ube-night'    : 'color-mix(in oklch, var(--prose-palette-ube), black 45%)',
   'palette-ube-pale'     : 'color-mix(in oklch, var(--prose-palette-ube), white 36%)',
+  'palette-ube-wash'     : 'color-mix(in oklch, var(--prose-palette-ube), white 82%)',
   'palette-whiskey'      : '#d4a574',
   'palette-woodsmoke'    : '#17171b',
   'role-accent'          : 'var(--prose-palette-chambray)',

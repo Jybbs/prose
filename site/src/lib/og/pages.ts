@@ -26,8 +26,6 @@ export interface OgCard {
   page : OgPage | 'landing'
 }
 
-// Enumerates every card the build renders, the landing card plus one card per
-// docs page, enriched from the docs and pipeline collections.
 export async function enumerateCards(): Promise<OgCard[]> {
   const [docs, pipeline] = await Promise.all([getCollection('docs'), getCollection('pipeline')])
   const positions = new Map(pipeline.map(entry => [entry.data.slug, entry.data.position]))

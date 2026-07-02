@@ -29,7 +29,6 @@ export function pipelineLoader(): Loader {
   }
 }
 
-// Loads the crate version as a single entry the Open Graph enrichment reads.
 export function releaseLoader(): Loader {
   return {
     name: 'prose-release',

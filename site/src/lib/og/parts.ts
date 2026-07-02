@@ -2,6 +2,7 @@ import { createElement as h }       from 'satori/jsx'
 import type { JSXElement, JSXNode } from 'satori/jsx'
 import satori, { type Font }        from 'satori'
 
+import { FONTS }                from '../tokens/fonts'
 import { BG, BODY, META_LABEL } from './colors'
 
 export const CARD_HEIGHT = 630
@@ -56,15 +57,13 @@ export function leftRail(color: string): JSXNode {
 export function monoLabel(color: string, size: number, track = '0.14em') {
   return {
     color         : color,
-    fontFamily    : 'JetBrains Mono',
+    fontFamily    : FONTS.mono.name,
     fontSize      : size,
     fontWeight    : 500,
     letterSpacing : track
   }
 }
 
-// The data panel every card carries: the label-value rows, a divider when any
-// row exists, and the version callout beneath.
 export function dataPanel(
   accent  : string,
   alpha   : string,
@@ -136,12 +135,12 @@ function metaRow(
 
 function panelRow(label: string, value: string): JSXNode {
   return metaRow(label.toUpperCase(), value,
-    { fontFamily: 'JetBrains Mono', fontSize: 19, fontWeight: 500 }, 24, 8)
+    { fontFamily: FONTS.mono.name, fontSize: 19, fontWeight: 500 }, 24, 8)
 }
 
 function versionCallout(version: string): JSXNode {
   return metaRow('VERSION', version, {
-    fontFamily    : 'Fraunces',
+    fontFamily    : FONTS.display.name,
     fontSize      : 72,
     fontWeight    : 600,
     letterSpacing : '-0.01em',

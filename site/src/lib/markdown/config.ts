@@ -16,18 +16,12 @@ import { remarkRuleLinks }      from './rule-links'
 const siteRoot = new URL('../../../', import.meta.url)
 const vocab    = discoverDocsVocab(siteRoot)
 
-// The default remark processor carrying the page-body plugin order, set as
-// `markdown.processor` and shared with the standalone render path. Wiki-links
-// and glossary terms resolve first, then the word-mark, then body-link last so
-// it reaches the anchors the earlier plugins emit.
+// Wiki-links and glossary terms resolve first, then the word-mark, then
+// body-link last so it reaches the anchors the earlier plugins emit.
 export const proseProcessor = unified({
   remarkPlugins: [[remarkRuleLinks, vocab], [remarkGlossary, vocab], remarkProseMark, remarkBodyLink]
 })
 
-// Shiki stays cross-cutting, so `markdown.shikiConfig` and the standalone
-// renderer both take it and highlight with the one dual-theme set.
 export const shikiConfig: ShikiConfig = { themes: SHIKI_THEMES }
 
-// The lint-decoration plugin, bound to the findings a `lint=` fence names, for
-// Starlight's Expressive Code integration.
 export const lintFlagPlugin = pluginLintFlag(discoverLintFindings(siteRoot))

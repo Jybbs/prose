@@ -39,9 +39,7 @@ function assertWarmth(value: DocsFrontmatter['warmth'], family: RuleFamily): voi
 
 // Enforces the relationship invariants a per-record schema cannot reach over
 // the loaded docs collection, throwing on the first violation to fail the
-// build. Covers stray-page rejection and family-directory legitimacy,
-// family-index warmth, one family per rule slug, `related` resolution, and
-// the primitive consumes-and-consumed-by graph.
+// build.
 export function assertCorpusIntegrity(entries: Iterable<CorpusEntry>): void {
   const primitives : Primitive[] = []
   const rules      : Rule[]      = []
@@ -107,10 +105,8 @@ function assertRelatedResolves(rules: readonly Rule[]): void {
 }
 
 // Validates that every edge of the consumes-and-consumed-by graph resolves to a
-// real node. A `consumes` edge names another primitive, whereas a `consumedBy`
-// edge names a consumer the primitive serves, which spans rules, sibling
-// primitives, and the CLI. The graph is not a strict inverse, because a
-// primitive curates the consumers it lists rather than mirroring every edge.
+// real node. The graph is not a strict inverse, because a primitive curates the
+// consumers it lists rather than mirroring every edge.
 function assertPrimitiveGraph(rules: readonly Rule[], primitives: readonly Primitive[]): void {
   const primitiveSlugs = new Set(primitives.map(p => p.slug))
   const ruleSlugs      = new Set(rules.map(r => r.slug))

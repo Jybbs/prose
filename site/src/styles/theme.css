@@ -1,0 +1,26 @@
+:root {
+  --sl-color-accent-low  : var(--prose-palette-ube-night);
+  --sl-color-accent      : var(--prose-palette-ube);
+  --sl-color-accent-high : var(--prose-palette-ube-pale);
+  --sl-color-black       : var(--prose-palette-woodsmoke);
+  --sl-font              : var(--font-lora);
+  --sl-font-mono         : var(--font-jetbrains-mono);
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low  : var(--prose-palette-ube-wash);
+  --sl-color-accent-high : var(--prose-palette-ube-night);
+}
+
+/* `#_top` is Starlight's id on the page-title h1 */
+#_top,
+.sl-markdown-content :is(h1, h2, h3, h4) {
+  font-family: var(--font-fraunces);
+}
+
+#starlight__on-this-page,
+#starlight__sidebar .top-level > li > details > summary .group-label .large {
+  font-family : var(--font-fraunces);
+  font-style  : italic;
+  font-weight : 500;
+}

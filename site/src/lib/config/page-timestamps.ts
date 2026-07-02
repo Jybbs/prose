@@ -6,8 +6,7 @@ const CONTENT_PREFIX = `site/${DOCS_CONTENT_DIR}`
 const MD_SUFFIX      = '.md'
 
 // Maps each docs page to the ISO date of its most recent add-or-modify commit,
-// read in one `git log` pass for the sitemap `lastmod`. A git failure yields an
-// empty map, leaving entries without a `lastmod`.
+// read in one `git log` pass for the sitemap `lastmod`.
 export function buildContentTimestamps(siteRoot: URL): Map<string, string> {
   try {
     const raw = execFileSync(
@@ -33,13 +32,12 @@ function parseContentTimestamps(raw: string): Map<string, string> {
     }
     if (!line.endsWith(MD_SUFFIX)) continue
     const slug = line.slice(CONTENT_PREFIX.length)
+    // `git log` lists newest commits first, so the first date seen per page wins.
     if (!out.has(slug)) out.set(slug, isoDate)
   }
   return out
 }
 
-// Resolves a sitemap item URL to the ISO date of its source page, trying the
-// page file and its index variant.
 export function lastmodForUrl(url: string, timestamps: Map<string, string>): string | undefined {
   const slug       = new URL(url).pathname.split('/').filter(Boolean).join('/')
   const candidates = slug === '' ? ['index.md'] : [`${slug}.md`, `${slug}/index.md`]

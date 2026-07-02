@@ -5,9 +5,8 @@ interface Props {
   text: string
 }
 
-// Renders a runtime string carrying inline markdown through the build-time
-// inline primitive, so backtick spans and the page-body plugins reach titles
-// and messages.
+// `text` carries inline markdown, rendered through the same plugin pipeline
+// as page bodies.
 const { text } = Astro.props
 const html     = await renderInline(text)
 ---

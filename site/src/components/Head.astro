@@ -1,0 +1,9 @@
+---
+import Default  from '@astrojs/starlight/components/Head.astro'
+import { Font } from 'astro:assets'
+
+import { FONT_FAMILIES } from '../lib/tokens/fonts'
+---
+
+<Default><slot /></Default>
+{FONT_FAMILIES.map(({ cssVariable }) => <Font cssVariable={cssVariable} />)}

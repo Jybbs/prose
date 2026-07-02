@@ -10,10 +10,7 @@ const LANDING_ALT = 'Prose, a Python typesetter for the reader.'
 const [docs, [release]] = await Promise.all([getCollection('docs'), getCollection('release')])
 const docsIds           = new Set(docs.map(entry => entry.id))
 
-// Adds the per-route card image, Twitter image, description, and structured
-// data onto the head Starlight built. A rule page's description falls back to
-// its caption, and a route with no docs entry behind it, the 404 page, takes
-// the landing card.
+// A route with no docs entry behind it, the 404 page, takes the landing card.
 export const onRequest = defineRouteMiddleware(context => {
   const { site } = context
   if (site === undefined) return
