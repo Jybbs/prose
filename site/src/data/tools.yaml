@@ -45,7 +45,7 @@ maturin:
   role: Rust to Python wheel build
 mise:
   href: https://mise.jdx.dev/
-  icon: custom:mise
+  icon: mise
   name: mise
   role: Tool versions and tasks
 neovim:

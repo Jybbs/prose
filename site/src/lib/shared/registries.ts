@@ -14,3 +14,4 @@ export const GLOSSARY_FAMILIES = [...FAMILY_ORDER, 'cli', 'engine'] as const
 export const PRIMITIVE_LAYERS = ['analysis', 'base', 'orchestration'] as const
 
 export const PRIMITIVE_STABILITIES = ['internal', 'public'] as const
+export type PrimitiveStability = (typeof PRIMITIVE_STABILITIES)[number]

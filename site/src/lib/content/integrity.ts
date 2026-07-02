@@ -33,6 +33,10 @@ function assertCaption(value: string | undefined, slug: string): void {
   }
 }
 
+function assertStability(value: DocsFrontmatter['stability'], slug: string): void {
+  if (value === undefined) throw new Error(`primitive "${slug}" is missing its stability`)
+}
+
 function assertWarmth(value: DocsFrontmatter['warmth'], family: RuleFamily): void {
   if (value === undefined) throw new Error(`family "${family}" index is missing its warmth`)
 }
@@ -68,10 +72,12 @@ export function assertCorpusIntegrity(entries: Iterable<CorpusEntry>): void {
         slug
       })
     } else if (parts[0] === 'primitives' && parts.length === 2) {
+      const slug = slugOf(file)
+      assertStability(data.stability, slug)
       primitives.push({
         consumedBy : data.consumedBy ?? [],
         consumes   : data.consumes ?? [],
-        slug       : slugOf(file)
+        slug
       })
     }
   }

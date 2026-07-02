@@ -10,7 +10,7 @@ import { buildContentTimestamps, lastmodForUrl }       from './src/lib/config/pa
 import { watchCrateSources }                           from './src/lib/integrations/watch-crate'
 import { lintFlagPlugin, proseProcessor, shikiConfig } from './src/lib/markdown/config'
 import { sidebar }                                     from './src/lib/nav/sidebar'
-import { REPO_URL }                                    from './src/lib/shared/constants'
+import { REPO_URL, SHIKI_THEMES }                      from './src/lib/shared/constants'
 import { FONT_FAMILIES }                               from './src/lib/tokens/fonts'
 import { resolveColor, tokensToCss }                   from './src/lib/tokens/resolve'
 
@@ -26,7 +26,6 @@ export default defineConfig({
     starlight({
       customCss       : ['./src/styles/theme.css'],
       editLink        : { baseUrl: `${REPO_URL}/edit/main/site/` },
-      expressiveCode  : { plugins: [lintFlagPlugin] },
       lastUpdated     : true,
       logo            : { alt: 'prose', src: './public/logo.svg' },
       plugins         : [starlightLinksValidator()],
@@ -39,6 +38,12 @@ export default defineConfig({
       components: {
         Head        : './src/components/Head.astro',
         SocialIcons : './src/components/SocialIcons.astro'
+      },
+
+      expressiveCode: {
+        plugins                   : [lintFlagPlugin],
+        themes                    : [SHIKI_THEMES.dark, SHIKI_THEMES.light],
+        useStarlightUiThemeColors : true
       },
 
       head: [

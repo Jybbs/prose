@@ -1,5 +1,5 @@
-const SERIF_FALLBACKS = 'Georgia, "Times New Roman", serif'
-const MONO_FALLBACKS  = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+const SERIF_FALLBACKS = ['Georgia', 'Times New Roman', 'serif']
+const MONO_FALLBACKS  = ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
 
 export const FONTS = {
   base    : { fallbacks: SERIF_FALLBACKS, name: 'Lora',           slug: 'lora',           staticWeights: [400],      weightSpan: '400 700' },
@@ -9,10 +9,8 @@ export const FONTS = {
 
 export const FONT_FAMILIES = Object.values(FONTS).map(face => ({
   cssVariable : `--font-${face.slug}` as const,
+  fallbacks   : face.fallbacks,
   name        : `${face.name} Variable`,
   options     : { package: `@fontsource-variable/${face.slug}` },
   weights     : [face.weightSpan] as [string]
 }))
-
-export const fontStack = ({ fallbacks, name }: (typeof FONTS)[keyof typeof FONTS]): string =>
-  `'${name} Variable', ${fallbacks}`

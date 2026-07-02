@@ -1,14 +1,13 @@
 import { defineRouteMiddleware, type StarlightRouteData } from '@astrojs/starlight/route-data'
 import { getCollection }                                  from 'astro:content'
 
-import { PRIMITIVE_STABILITIES } from '../shared/registries'
-import { PRIMITIVES_LABEL }      from './sidebar'
+import type { PrimitiveStability } from '../shared/registries'
+import { PRIMITIVES_LABEL }        from './sidebar'
 
 type SidebarEntry = StarlightRouteData['sidebar'][number]
 
 const stabilityOf = new Map(
-  (await getCollection('docs'))
-    .filter(entry => entry.data.stability !== undefined)
+  (await getCollection('docs', entry => entry.data.stability !== undefined))
     .map(entry => [entry.id, entry.data.stability])
 )
 
@@ -31,7 +30,7 @@ export const onRequest = defineRouteMiddleware(context => {
       entry.type === 'group' && entry.label === PRIMITIVES_LABEL
   )
   if (group === undefined) return
-  const links = (stability: (typeof PRIMITIVE_STABILITIES)[number]): SidebarEntry[] =>
+  const links = (stability: PrimitiveStability): SidebarEntry[] =>
     group.entries.filter(
       entry => entry.type === 'link' && stabilityOf.get(idOf(entry.href)) === stability
     )

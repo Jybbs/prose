@@ -1,7 +1,5 @@
 import { formatHex, interpolate } from 'culori'
 
-import { FONTS, fontStack } from './fonts'
-
 const TOKENS: Record<string, string> = {
   'family-alignment'     : 'var(--prose-palette-eureka)',
   'family-cli'           : 'var(--prose-palette-ube-night)',
@@ -11,9 +9,6 @@ const TOKENS: Record<string, string> = {
   'family-layout'        : 'var(--prose-palette-toronto)',
   'family-lint'          : 'var(--prose-palette-apricot)',
   'family-ordering'      : 'var(--prose-palette-chambray)',
-  'font-base'            : fontStack(FONTS.base),
-  'font-display'         : fontStack(FONTS.display),
-  'font-mono'            : fontStack(FONTS.mono),
   'palette-apricot'      : '#e8876f',
   'palette-casper'       : '#adbdcd',
   'palette-celadon'      : '#8cc5a3',
