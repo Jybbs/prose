@@ -16,13 +16,13 @@ export default defineConfig({
   markdown     : { processor: proseProcessor, shikiConfig },
   integrations : [
     starlight({
-      title           : 'Prose',
       components      : { SocialIcons: './src/components/SocialIcons.astro' },
       editLink        : { baseUrl: `${REPO_URL}/edit/main/site/` },
       expressiveCode  : { plugins: [lintFlagPlugin] },
       lastUpdated     : true,
       plugins         : [starlightLinksValidator()],
       routeMiddleware : './src/lib/head/middleware.ts',
+      title           : 'Prose',
       titleDelimiter  : '·',
       head            : [{
         attrs : { content: resolveColor('palette-ube'), name: 'theme-color' },

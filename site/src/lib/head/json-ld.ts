@@ -12,7 +12,11 @@ interface ArticleFacts {
 // One `TechArticle` node per docs page, carrying the headline, description,
 // canonical URL, and the page's card as its image.
 export function articleLd(facts: ArticleFacts): string {
-  const article: WithContext<TechArticle> = { '@context': CONTEXT, '@type': 'TechArticle', ...facts }
+  const article: WithContext<TechArticle> = {
+    '@context' : CONTEXT,
+    '@type'    : 'TechArticle',
+    ...facts
+  }
   return JSON.stringify(article)
 }
 

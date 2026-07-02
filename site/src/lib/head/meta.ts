@@ -30,7 +30,12 @@ export function jsonLd(head: Head, content: string): void {
 
 // Rewrites the entry Starlight already emitted for the tag, falling back to a
 // push when none exists.
-export function upsertMeta(head: Head, key: 'name' | 'property', id: string, content: string): void {
+export function upsertMeta(
+  head    : Head,
+  key     : 'name' | 'property',
+  id      : string,
+  content : string
+): void {
   const existing = head.find(entry => entry.tag === 'meta' && entry.attrs?.[key] === id)
   if (existing?.attrs !== undefined) existing.attrs.content = content
   else head.push(meta(key, id, content))

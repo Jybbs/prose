@@ -6,6 +6,7 @@ import assetsSource   from './assets.ts?raw'
 import colorsSource   from './colors.ts?raw'
 import landingSource  from './landing.ts?raw'
 import partsSource    from './parts.ts?raw'
+import renderSource   from './render.ts?raw'
 import templateSource from './template.ts?raw'
 
 import type { BrandAssets } from './assets'
@@ -14,10 +15,14 @@ import type { OgPage }      from './pages'
 // The render sources folded into every cache key, so an edit to any of them
 // re-renders every card.
 const TEMPLATE_DIGEST = hash([
-  assetsSource, colorsSource, landingSource, partsSource, resolveSource, templateSource
+  assetsSource, colorsSource, landingSource, partsSource, renderSource, resolveSource,
+  templateSource
 ])
 
-export function cardKeyer(version: string, brand: BrandAssets): (card: OgPage | 'landing') => string {
+export function cardKeyer(
+  version : string,
+  brand   : BrandAssets
+): (card: OgPage | 'landing') => string {
   const base = { brand: hash(brand), template: TEMPLATE_DIGEST, version }
   return card => hash({ base, card })
 }

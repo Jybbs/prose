@@ -118,7 +118,13 @@ function metaRow(
 ): JSXNode {
   return el('div',
     {
-      style: { alignItems: 'baseline', display: 'flex', gap, justifyContent: 'space-between', marginBottom }
+      style: {
+        alignItems     : 'baseline',
+        display        : 'flex',
+        gap            : gap,
+        justifyContent : 'space-between',
+        marginBottom   : marginBottom
+      }
     },
     el('div', { children: label, style: monoLabel(META_LABEL, 16) }),
     el('div', {
@@ -134,6 +140,11 @@ function panelRow(label: string, value: string): JSXNode {
 }
 
 function versionCallout(version: string): JSXNode {
-  return metaRow('VERSION', version,
-    { fontFamily: 'Fraunces', fontSize: 72, fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1 }, 18)
+  return metaRow('VERSION', version, {
+    fontFamily    : 'Fraunces',
+    fontSize      : 72,
+    fontWeight    : 600,
+    letterSpacing : '-0.01em',
+    lineHeight    : 1
+  }, 18)
 }
