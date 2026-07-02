@@ -6,19 +6,28 @@ import starlightLinksValidator from 'starlight-links-validator'
 import { buildContentTimestamps, lastmodForUrl }       from './src/lib/config/page-timestamps'
 import { watchCrateSources }                           from './src/lib/integrations/watch-crate'
 import { lintFlagPlugin, proseProcessor, shikiConfig } from './src/lib/markdown/config'
+import { REPO_URL }                                    from './src/lib/shared/constants'
+import { resolveColor }                                from './src/lib/tokens/resolve'
 
-const siteRoot   = new URL('./', import.meta.url)
-const timestamps = buildContentTimestamps(siteRoot)
+const timestamps = buildContentTimestamps(new URL('./', import.meta.url))
 
 export default defineConfig({
   site         : 'https://prose.fyi',
   markdown     : { processor: proseProcessor, shikiConfig },
   integrations : [
     starlight({
-      title          : 'Prose',
-      lastUpdated    : true,
-      expressiveCode : { plugins: [lintFlagPlugin] },
-      plugins        : [starlightLinksValidator()]
+      components      : { SocialIcons: './src/components/SocialIcons.astro' },
+      editLink        : { baseUrl: `${REPO_URL}/edit/main/site/` },
+      expressiveCode  : { plugins: [lintFlagPlugin] },
+      lastUpdated     : true,
+      plugins         : [starlightLinksValidator()],
+      routeMiddleware : './src/lib/head/middleware.ts',
+      title           : 'Prose',
+      titleDelimiter  : '·',
+      head            : [{
+        attrs : { content: resolveColor('palette-ube'), name: 'theme-color' },
+        tag   : 'meta'
+      }]
     }),
     sitemap({
       serialize(item) {

@@ -1,3 +1,5 @@
+export const REPO_URL = 'https://github.com/Jybbs/prose'
+
 export const SHIKI_THEMES = { dark: 'github-dark', light: 'github-light' } as const
 
 // The Python target versions the rule pages tab across, oldest first.

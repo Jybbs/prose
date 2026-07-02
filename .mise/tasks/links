@@ -4,4 +4,7 @@
 #MISE depends=["press"]
 #MISE tools={"aqua:lycheeverse/lychee" = "latest"}
 
-lychee --no-progress --base-url https://prose.fyi --exclude '^https?://(www\.)?prose\.fyi' dist
+lychee --no-progress --base-url https://prose.fyi \
+  --exclude '^https?://(www\.)?prose\.fyi' \
+  --exclude '^https://github\.com/Jybbs/prose/edit/' \
+  dist

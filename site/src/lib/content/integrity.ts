@@ -33,11 +33,15 @@ function assertCaption(value: string | undefined, slug: string): void {
   }
 }
 
+function assertWarmth(value: DocsFrontmatter['warmth'], family: RuleFamily): void {
+  if (value === undefined) throw new Error(`family "${family}" index is missing its warmth`)
+}
+
 // Enforces the relationship invariants a per-record schema cannot reach over
 // the loaded docs collection, throwing on the first violation to fail the
-// build. Covers stray-page rejection and family-directory legitimacy, one
-// family per rule slug, `related` resolution, and the primitive
-// consumes-and-consumed-by graph.
+// build. Covers stray-page rejection and family-directory legitimacy,
+// family-index warmth, one family per rule slug, `related` resolution, and
+// the primitive consumes-and-consumed-by graph.
 export function assertCorpusIntegrity(entries: Iterable<CorpusEntry>): void {
   const primitives : Primitive[] = []
   const rules      : Rule[]      = []
@@ -46,6 +50,10 @@ export function assertCorpusIntegrity(entries: Iterable<CorpusEntry>): void {
   for (const { data, path } of entries) {
     const parts = path.split('/')
     const file  = parts.at(-1) ?? ''
+    if (parts[0] === 'rules' && parts.length === 3 && isFamily(parts[1]) && isIndex(file)) {
+      assertWarmth(data.warmth, parts[1])
+      continue
+    }
     if (isIndex(file)) continue
 
     if (parts[0] === 'rules') {
@@ -111,10 +119,14 @@ function assertPrimitiveGraph(rules: readonly Rule[], primitives: readonly Primi
 
   for (const { consumedBy, consumes, slug } of primitives) {
     for (const dep of consumes) {
-      if (!primitiveSlugs.has(dep)) throw new Error(`primitive "${slug}" consumes unknown primitive "${dep}"`)
+      if (!primitiveSlugs.has(dep)) {
+        throw new Error(`primitive "${slug}" consumes unknown primitive "${dep}"`)
+      }
     }
     for (const consumer of consumedBy) {
-      if (!consumerOk(consumer)) throw new Error(`primitive "${slug}" lists unknown consumer "${consumer}"`)
+      if (!consumerOk(consumer)) {
+        throw new Error(`primitive "${slug}" lists unknown consumer "${consumer}"`)
+      }
     }
   }
 }

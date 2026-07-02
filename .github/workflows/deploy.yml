@@ -73,6 +73,13 @@ jobs:
       - *build-prose
       - *provision-bun
 
+      - name : Restore the OG card cache
+        uses : actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          key          : og-cards-${{ runner.os }}-${{ github.sha }}
+          path         : .cache/og
+          restore-keys : og-cards-${{ runner.os }}-
+
       - name : Build the site
         run  : mise run press
 

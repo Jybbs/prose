@@ -1,14 +1,16 @@
 import { z } from 'astro/zod'
 
-import { GLOSSARY_FAMILIES, PRIMITIVE_LAYERS, PRIMITIVE_STABILITIES } from '../shared/registries'
+import {
+  FAMILY_WARMTHS, GLOSSARY_FAMILIES, PRIMITIVE_LAYERS, PRIMITIVE_STABILITIES
+} from '../shared/registries'
 
 const DIRECTIVE_SCOPES = ['block', 'file', 'line'] as const
 const PART_ROLES       = ['action', 'comment', 'namespace', 'payload'] as const
 
-// The rule and primitive frontmatter the `docs` collection carries beyond
-// Starlight's own fields, every field optional because one schema spans the
-// rules, primitives, and prose pages alike, with the per-section requirements
-// enforced by the cross-record integrity pass.
+// The rule, family-index, and primitive frontmatter the `docs` collection
+// carries beyond Starlight's own fields, every field optional because one
+// schema spans the rules, primitives, and prose pages alike, with the
+// per-section requirements enforced by the cross-record integrity pass.
 export const docsExtension = z.object({
   caption    : z.string().optional(),
   consumedBy : z.array(z.string()).optional(),
@@ -17,7 +19,8 @@ export const docsExtension = z.object({
   related    : z.array(z.string()).optional(),
   stability  : z.enum(PRIMITIVE_STABILITIES).optional(),
   summary    : z.string().optional(),
-  tagline    : z.string().optional()
+  tagline    : z.string().optional(),
+  warmth     : z.enum(FAMILY_WARMTHS).optional()
 })
 
 export type DocsFrontmatter = z.infer<typeof docsExtension>

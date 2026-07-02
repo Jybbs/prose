@@ -1,6 +1,8 @@
-// The design-system tokens as a typed map. `resolveToken` reads a value
-// following one `var()` alias, and `tokensToCss` regenerates the `:root`
-// custom properties for the browser.
+// The design-system tokens as a typed map. `resolveColor` evaluates a token
+// to a concrete color, and `tokensToCss` regenerates the `:root` custom
+// properties for the browser.
+
+import { formatHex, interpolate } from 'culori'
 
 const TOKENS: Record<string, string> = {
   'family-alignment'     : 'var(--prose-palette-eureka)',
@@ -43,13 +45,19 @@ const TOKENS: Record<string, string> = {
   'section-usage'        : 'var(--prose-palette-oat)'
 }
 
-// Reads a token's value, following one `var()` alias so an aliased token and a
-// `color-mix()` blend both resolve to their first referenced token's value,
-// leaving the concrete blend to the color consumer.
-export function resolveToken(name: string): string {
-  const value      = TOKENS[name] ?? ''
-  const referenced = value.match(/var\(--prose-([\w-]+)\)/)?.[1]
-  return referenced ? (TOKENS[referenced] ?? '') : value
+const MIX = /^color-mix\(in oklch, var\(--prose-([\w-]+)\), (black|white) (\d+)%\)$/
+
+// Evaluates a token to a concrete color, following `var()` aliases and
+// computing `color-mix()` blends, the same operation CSS performs for the
+// browser.
+export function resolveColor(name: string): string {
+  const value = TOKENS[name] ?? ''
+  const alias = value.match(/^var\(--prose-([\w-]+)\)$/)
+  if (alias !== null) return resolveColor(alias[1])
+  const mix = value.match(MIX)
+  if (mix === null) return value
+  const [, base, toward, share] = mix
+  return formatHex(interpolate([resolveColor(base), toward], 'oklch')(Number(share) / 100))
 }
 
 export function tokensToCss(): string {
