@@ -32,7 +32,7 @@ export function lintShorthand(input: ShorthandInput): Shorthand | null {
       // The diagnostic spans the whole assignment, so the name comes from
       // the first backtick of the message, with the lowercase rename standing
       // in for the rule's first suggestion.
-      const name = firstBacktick(message)
+      const name = /`([^`]+)`/.exec(message)?.[1]
       return name === undefined ? null : { after: name.toLowerCase(), before: name, kind: 'replace' }
     }
     case 'single-use-variables': {
@@ -48,10 +48,6 @@ export function lintShorthand(input: ShorthandInput): Shorthand | null {
     default:
       return null
   }
-}
-
-function firstBacktick(message: string): string | undefined {
-  return /`([^`]+)`/.exec(message)?.[1]
 }
 
 function truncate(value: string, max = 48): string {

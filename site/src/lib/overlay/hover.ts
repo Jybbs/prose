@@ -1,6 +1,8 @@
 import type { Placement } from '@floating-ui/dom'
 
-import { float } from './float'
+import { float }       from './float'
+import { closestFrom } from '../shared/dom/closest-from'
+import { el }          from '../shared/dom/el'
 
 export interface HoverOverlayOptions {
   gapPx       ?: number
@@ -46,10 +48,9 @@ export function attachHoverOverlay(options: HoverOverlayOptions): void {
     close()
     const content = options.render(anchor)
     if (content === null) return
-    const panel = document.createElement('div')
-    panel.className = `overlay-panel ${options.panelClass}`
-    panel.id        = panelId
-    panel.role      = 'tooltip'
+    const panel = el('div', `overlay-panel ${options.panelClass}`)
+    panel.id   = panelId
+    panel.role = 'tooltip'
     panel.append(content)
     panel.addEventListener('mouseenter', () => window.clearTimeout(hideTimer))
     panel.addEventListener('mouseleave', scheduleHide)
@@ -72,23 +73,18 @@ export function attachHoverOverlay(options: HoverOverlayOptions): void {
     showTimer = window.setTimeout(() => show(anchor), showDelayMs)
   }
 
-  function anchorOf(event: Event): HTMLElement | null {
-    const target = event.target
-    return target instanceof Element ? target.closest<HTMLElement>(options.selector) : null
-  }
-
   document.addEventListener('mouseover', event => {
-    const anchor = anchorOf(event)
+    const anchor = closestFrom(event, options.selector)
     if (anchor) scheduleShow(anchor)
   })
   document.addEventListener('mouseout', event => {
-    if (anchorOf(event)) scheduleHide()
+    if (closestFrom(event, options.selector)) scheduleHide()
   })
   document.addEventListener('focusin', event => {
-    const anchor = anchorOf(event)
+    const anchor = closestFrom(event, options.selector)
     if (anchor) scheduleShow(anchor)
   })
   document.addEventListener('focusout', event => {
-    if (anchorOf(event)) scheduleHide()
+    if (closestFrom(event, options.selector)) scheduleHide()
   })
 }

@@ -1,7 +1,7 @@
 ---
-import './taxonomy-chip.css'
+import './styles/taxonomy-chip.css'
 
-import { CATEGORY_META, familyMeta }     from '../../lib/content/family-meta'
+import { CATEGORY_META, familyMeta }     from '../../lib/content/discovery/family-meta'
 import type { RuleCategory, RuleFamily } from '../../lib/shared/registries'
 import { familyRoute }                   from '../../lib/shared/routes'
 
@@ -15,7 +15,7 @@ const { axis, linked = true, value } = Astro.props
 
 const meta = axis === 'category'
   ? CATEGORY_META[value as RuleCategory]
-  : (await familyMeta()).get(value) ?? { badge: '', label: value }
+  : (await familyMeta())(value)
 
 const Tag = linked ? 'a' : 'div'
 ---

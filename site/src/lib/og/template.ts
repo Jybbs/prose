@@ -1,5 +1,6 @@
 import type { JSXNode } from 'satori/jsx'
 
+import { formatFolio }       from '../shared/numerals'
 import { FONTS }             from '../tokens/fonts'
 import type { BrandAssets }  from './assets'
 import { BODY, KICKER, UBE } from './colors'
@@ -59,10 +60,6 @@ function captionSegments(raw: string): ReadonlyArray<{ code: boolean, text: stri
 
 function fitTitleSize(text: string, hasCaption: boolean): number {
   return TITLE_SIZES[hasCaption ? 'cap' : 'bare'].find(([max]) => text.length <= max)![1]
-}
-
-function formatFolio(n: number): string {
-  return String(n).padStart(2, '0')
 }
 
 function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {

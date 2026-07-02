@@ -1,6 +1,6 @@
 import { isFamily }             from '../shared/registries'
 import type { RuleFamily }      from '../shared/registries'
-import { isIndex, slugOf }      from './page'
+import { isIndex, slugOf }      from './discovery/page'
 import type { DocsFrontmatter } from './schemas'
 
 // `consumedBy` names a primitive's consumers, which span rules, sibling

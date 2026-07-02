@@ -1,10 +1,10 @@
 ---
-import './glossary-folio-index.css'
+import './styles/glossary-folio-index.css'
 
 import { Icon } from '@astrojs/starlight/components'
 
-import { glossaryFolioEntries } from './entries'
-import { groupByInitial }       from './folio'
+import { glossaryFolioEntries } from '../../lib/glossary/entries'
+import { groupByInitial }       from '../../lib/glossary/folio'
 import { railPaint }            from '../../lib/shared/family-rail'
 
 interface Props {
@@ -52,8 +52,9 @@ const first   = entries[0]?.slug
 </aside>
 
 <script>
-  import { glossaryFolioQuery, glossaryFolioSlug } from '../../lib/stores/glossary'
-  import { entryMatches }                          from './folio'
+  import { entryMatches }                          from '../../lib/glossary/folio'
+  import { glossaryFolioQuery, glossaryFolioSlug } from '../../lib/glossary/store'
+  import { closestFrom }                           from '../../lib/shared/dom/closest-from'
 
   for (const root of document.querySelectorAll<HTMLElement>('.glossary-folio-index')) {
     const input = root.querySelector<HTMLInputElement>('.glossary-folio-input')
@@ -64,9 +65,7 @@ const first   = entries[0]?.slug
 
     input?.addEventListener('input', () => glossaryFolioQuery.set(input.value))
     root.addEventListener('click', event => {
-      const row = event.target instanceof Element
-        ? event.target.closest<HTMLElement>('.glossary-folio-row')
-        : null
+      const row = closestFrom(event, '.glossary-folio-row')
       if (row?.dataset.slug !== undefined) glossaryFolioSlug.set(row.dataset.slug)
     })
 

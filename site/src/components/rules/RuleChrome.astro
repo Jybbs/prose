@@ -1,8 +1,8 @@
 ---
-import './rule-chrome.css'
+import './styles/rule-chrome.css'
 
-import TaxonomyChip        from './TaxonomyChip.astro'
-import { discoveredRules } from '../../lib/content/rules'
+import TaxonomyChip    from './TaxonomyChip.astro'
+import { ruleOrThrow } from '../../lib/content/discovery/rules'
 
 interface Props {
   slug: string
@@ -10,8 +10,7 @@ interface Props {
 
 const { slug } = Astro.props
 
-const rule = (await discoveredRules()).find(candidate => candidate.slug === slug)
-if (rule === undefined) throw new Error(`RuleChrome slug "${slug}" does not match a rule page`)
+const rule = await ruleOrThrow(slug, 'RuleChrome')
 ---
 
 <div class="rule-chrome">

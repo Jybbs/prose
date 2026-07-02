@@ -3,6 +3,10 @@
 
 set -euo pipefail
 
+lint_rust() {
+  cargo clippy --all-targets --locked -- -D warnings
+}
+
 lint_site() {
   cd site
   bunx --bun oxlint src
@@ -10,8 +14,8 @@ lint_site() {
 }
 
 case "${1:-all}" in
-  all)  cargo clippy --all-targets --locked -- -D warnings && (lint_site) ;;
-  rust) cargo clippy --all-targets --locked -- -D warnings ;;
+  all)  lint_rust && (lint_site) ;;
+  rust) lint_rust ;;
   site) (lint_site) ;;
   *)    echo "usage: mise lint [rust|site]" >&2; exit 2 ;;
 esac

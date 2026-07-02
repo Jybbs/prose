@@ -10,18 +10,19 @@ const { tail = 3, text } = Astro.props
 <middle-ellipsis data-tail={tail} data-text={text}>{text}</middle-ellipsis>
 
 <script>
+  import { remeasure } from '../../lib/shared/dom/remeasure'
+
   // Fits a long token into its row by eliding the middle, a binary search
   // finding the widest prefix that leaves the tail visible.
   class MiddleEllipsis extends HTMLElement {
-    #observer = new ResizeObserver(() => this.#fit())
+    #observer: ResizeObserver | undefined
 
     connectedCallback(): void {
-      this.#observer.observe(this)
-      void document.fonts.ready.then(() => this.#fit())
+      this.#observer = remeasure(this, () => this.#fit())
     }
 
     disconnectedCallback(): void {
-      this.#observer.disconnect()
+      this.#observer?.disconnect()
     }
 
     #fit(): void {

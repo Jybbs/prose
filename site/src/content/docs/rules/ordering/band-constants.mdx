@@ -9,8 +9,7 @@ related:
   - reassigned-constants
 ---
 
-import RuleConfigTable from '../../../../components/rules/RuleConfigTable.astro'
-import RuleLayout      from '../../../../components/rules/RuleLayout.astro'
+import RuleLayout from '../../../../components/rules/RuleLayout.astro'
 
 <RuleLayout slug="band-constants">
 
@@ -32,8 +31,6 @@ An own-line comment above a constant rides into the band with it, so a note stay
 Pair with [[alphabetize]] to sort the names within each import section and the definition runs, with [[group-imports]] to partition the imports the leading band seats below, and with [[reassigned-constants]] to flag a `SCREAMING_CASE` name whose reassignment pins it out of a band.
 
 <Fragment slot="configuration">
-
-<RuleConfigTable slug="band-constants" />
 
 `band-constants` is a single on/off toggle. Left on, it gathers every relocatable module constant into the leading and trailing bands. Turned off with `band-constants = false`, the constants stay in place among their neighbors. The `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* decides which imports the leading band seats below, since a first-party package's imports group with the local-package section.
 

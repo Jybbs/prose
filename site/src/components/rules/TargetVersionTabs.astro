@@ -1,0 +1,13 @@
+---
+import { TabItem, Tabs } from '@astrojs/starlight/components'
+
+import { TARGET_VERSIONS, TARGET_VERSION_SYNC_KEY } from '../../lib/shared/constants'
+---
+
+<Tabs syncKey={TARGET_VERSION_SYNC_KEY}>
+  {TARGET_VERSIONS.map(version => (
+    <TabItem label={`Python ${version}`}>
+      <slot name={version} />
+    </TabItem>
+  ))}
+</Tabs>

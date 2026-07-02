@@ -1,12 +1,12 @@
 ---
-import './surfaces.css'
+import './styles/surfaces.css'
 
 import { getCollection } from 'astro:content'
 
 import LandingSection from '../LandingSection.astro'
 import SurfaceCard    from './SurfaceCard.astro'
 
-import { discoveredRules, familyBadges } from '../../../lib/content/rules'
+import { discoveredRules, familyBadges } from '../../../lib/content/discovery/rules'
 import { formatFolio }                   from '../../../lib/shared/numerals'
 import { FAMILY_ORDER }                  from '../../../lib/shared/registries'
 
@@ -47,7 +47,7 @@ const heading = `<strong>${cards.length}</strong> rule families. <em>${rules.len
   import AutoScroll    from 'embla-carousel-auto-scroll'
 
   import { attachEdgeMagnet } from '../../../lib/landing/edge-magnet'
-  import { reducedMotion }    from '../../../lib/shared/reduced-motion'
+  import { reducedMotion }    from '../../../lib/shared/dom/reduced-motion'
 
   const BASE_SPEED_PX_PER_SEC = 32
   const EDGE_MARGIN_PX        = 32

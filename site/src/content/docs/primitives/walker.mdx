@@ -41,15 +41,16 @@ The walker accepts a slice of input paths, where the first path seeds a `WalkBui
 
 An empty path list yields an empty iterator, because the CLI shape requires at least one path outside stdin mode.
 
-## Python File Detection
+## Source File Detection
 
-Each yielded entry passes through `PySourceType::try_from_path` *(from `ruff_python_ast`)* to ensure the file is Python source. The accepted types are:
+Each yielded entry passes through `PySourceType::try_from_path` *(from `ruff_python_ast`)* to sort the file onto its parse path. The accepted types are:
 
 - `.py` regular Python source
 - `.pyi` type stub
 - `.pyw` Windows windowed-Python source
+- `.ipynb` Jupyter notebook, routed through the notebook reader that formats each code cell
 
-Other extensions are skipped, including Jupyter `.ipynb` notebooks, since *Prose* targets Python source rather than notebook cells. Files whose name carries no extension are also skipped, because `PySourceType` returns no source-type match. A file named `script` without an extension stays out of the walk even if it carries Python source, since the walker doesn't probe file contents.
+Other extensions are skipped. Files whose name carries no extension are also skipped, because `PySourceType` returns no source-type match. A file named `script` without an extension stays out of the walk even if it carries Python source, since the walker doesn't probe file contents.
 
 Extension matching follows the host filesystem's case-sensitivity rules, which means `Foo.PY` walks on a default macOS volume *(case-insensitive)* and is skipped on a typical Linux volume *(case-sensitive)*. Yield order is the underlying `ignore::Walk` order, which is deterministic per-tree on a given filesystem but not specified across filesystems, so a downstream that needs cross-platform-reproducible diagnostic order should sort the yielded paths before feeding them into the pipeline.
 

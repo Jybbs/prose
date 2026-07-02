@@ -1,9 +1,9 @@
 ---
-import './integration-card-grid.css'
+import './styles/integration-card-grid.css'
 
 import { getCollection } from 'astro:content'
 
-import { sectionLeaf }  from '../../lib/content/sections'
+import { sectionLeaf }  from '../../lib/content/discovery/sections'
 import { renderInline } from '../../lib/markdown/render'
 
 const pages = (await getCollection('docs')).filter(

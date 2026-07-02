@@ -16,14 +16,6 @@ The decision is structural rather than textual, so a pair sheds only where remov
 
 A wrapped multi-line grouping folds onto one line when the bare form fits the budget and stays wrapped when it would overflow, so a short boolean condition reads as one clean line whereas a long one keeps its parentheses across the lines it needs. A pair nested inside another redundant pair sheds in the same pass.
 
-<Fragment slot="configuration">
-
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
-
-</Fragment>
-
 <Fragment slot="related-after">
 
 For per-line opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[shed-parentheses]` directive.

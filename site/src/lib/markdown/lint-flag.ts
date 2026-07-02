@@ -9,8 +9,9 @@ import type {
 import type { Parents, Properties }     from 'hast'
 import { h }                            from 'hastscript'
 
-import type { RuleRef }     from '../content/docs-vocab'
+import type { RuleRef }     from '../content/discovery/docs-vocab'
 import type { LintFinding } from '../content/schemas'
+import { required }         from '../shared/required'
 
 // Wraps a flagged span in a `.lint-flag` element carrying the finding's hover
 // payload as `data-*`, the hooks the tooltip layer reads.
@@ -55,8 +56,10 @@ function* findingRanges(
   const firstLine = finding.location.row - 1
   const lastLine  = finding.end_location.row - 1
   for (let lineIndex = firstLine; lineIndex <= lastLine; lineIndex++) {
-    const line = block.getLine(lineIndex)
-    if (!line) throw new Error(`${finding.code} row ${lineIndex + 1} exceeds the lint fence body`)
+    const line = required(
+      block.getLine(lineIndex),
+      `${finding.code} row ${lineIndex + 1} exceeds the lint fence body`
+    )
     yield {
       line,
       range: {
@@ -81,8 +84,7 @@ export function pluginLintFlag(
       preprocessMetadata({ codeBlock }) {
         const id = codeBlock.metaOptions.getString('lint')
         if (id === undefined) return
-        const found = findings.get(id)
-        if (!found) throw new Error(`lint="${id}" references no fixture findings`)
+        const found = required(findings.get(id), `lint="${id}" references no fixture findings`)
         for (const finding of found) {
           for (const { line, range } of findingRanges(finding, codeBlock)) {
             line.addAnnotation(new LintFlagAnnotation(finding, rules.get(finding.code), range))

@@ -1,15 +1,21 @@
 ---
-import '../base/folio.css'
-import '../base/kicker.css'
-import './editor-run-on-save.css'
+import '../../styles/mixins/folio.css'
+import '../../styles/mixins/kicker.css'
+import '../../styles/mixins/leader.css'
+import './styles/editor-run-on-save.css'
 
 import { getCollection } from 'astro:content'
 import { Code }          from '@astrojs/starlight/components'
 
 import Tool            from '../base/Tool.astro'
 import { formatFolio } from '../../lib/shared/numerals'
+import { required }    from '../../lib/shared/required'
 
-const editors = await getCollection('editorConfigs')
+const editors   = await getCollection('editorConfigs')
+const toolNames = new Map((await getCollection('tools')).map(tool => [tool.id, tool.data.name]))
+
+const nameOf = (id: string): string =>
+  required(toolNames.get(id), `Editor "${id}" is not in the tools collection`)
 ---
 
 <editor-run-on-save class="editor-card">
@@ -26,9 +32,9 @@ const editors = await getCollection('editorConfigs')
             data-slug={editor.id}
           >
             <span class="folio">№ {formatFolio(i + 1)}</span>
-            <span class="editor-card-row-mark" aria-hidden="true"><Tool slug={editor.id} bare /></span>
-            <em class="editor-card-row-name">{editor.data.name}</em>
-            <span class="editor-card-row-leader" aria-hidden="true"></span>
+            <span class="tool-medallion editor-card-row-mark" aria-hidden="true"><Tool slug={editor.id} bare /></span>
+            <em class="editor-card-row-name">{nameOf(editor.id)}</em>
+            <span class="leader editor-card-row-leader" aria-hidden="true"></span>
           </button>
         </li>
       ))}
@@ -49,19 +55,13 @@ const editors = await getCollection('editorConfigs')
 </editor-run-on-save>
 
 <script>
-  import { wireTabSelect } from '../../lib/shared/tab-select'
+  import { defineTabSelectElement } from '../../lib/shared/dom/tab-select'
 
   // Turns the index rows into tabs over the per-editor config faces.
-  class EditorRunOnSave extends HTMLElement {
-    connectedCallback(): void {
-      wireTabSelect(this, {
-        events : ['click'],
-        key    : 'slug',
-        panels : '.editor-card-face',
-        tabs   : '.editor-card-row'
-      })
-    }
-  }
-
-  customElements.define('editor-run-on-save', EditorRunOnSave)
+  defineTabSelectElement('editor-run-on-save', {
+    events : ['click'],
+    key    : 'slug',
+    panels : '.editor-card-face',
+    tabs   : '.editor-card-row'
+  })
 </script>

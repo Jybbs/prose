@@ -1,0 +1,67 @@
+---
+import './styles/cta.css'
+
+import { getCollection } from 'astro:content'
+
+import ReleaseLedger from './ReleaseLedger.astro'
+import ReleaseStamp  from './ReleaseStamp.astro'
+import ReleaseToggle from './ReleaseToggle.astro'
+
+const [current, ...extras] = (await getCollection('pypiReleases')).map(entry => entry.data)
+---
+
+<section class="landing-cta">
+  <aside class="landing-cta-panel">
+    <div class="landing-cta-face">
+      <ReleaseStamp release={current} />
+    </div>
+    <div class="landing-cta-face landing-cta-open">
+      <ReleaseLedger releases={extras} />
+    </div>
+    <ReleaseToggle />
+  </aside>
+
+  <div class="landing-cta-body">
+    <p class="landing-cta-kicker kicker">Read on</p>
+    <p class="landing-cta-lede">
+      Bring <em><span class="prose-mark">Prose</span></em> to your own pages and make the next save <em>legible</em>.
+    </p>
+    <div class="landing-cta-cmd" aria-label="Install command">
+      <span class="landing-cta-prompt" aria-hidden="true">$</span>
+      <code>uv tool install prose-formatter</code>
+      <button type="button" class="copy" title="Copy command" aria-label="Copy install command"></button>
+    </div>
+    <a class="landing-cta-primary" href="/usage/quick-start">
+      <span>Quick start</span>
+      <span class="landing-cta-arrow" aria-hidden="true">→</span>
+    </a>
+  </div>
+</section>
+
+<script>
+  const COPIED_MS = 2000
+
+  const cta    = document.querySelector<HTMLElement>('.landing-cta')
+  const toggle = cta?.querySelector<HTMLButtonElement>('.landing-cta-toggle') ?? null
+  if (cta !== null && toggle !== null) {
+    toggle.addEventListener('click', () => {
+      const open = cta.classList.toggle('is-open')
+      toggle.textContent = open ? '←' : '+'
+      toggle.setAttribute('aria-expanded', String(open))
+      toggle.setAttribute('aria-label', open ? 'Back to current release' : 'Show previous releases')
+    })
+  }
+
+  const cmd  = document.querySelector<HTMLElement>('.landing-cta-cmd')
+  const copy = cmd?.querySelector<HTMLButtonElement>('button.copy') ?? null
+  let timer: ReturnType<typeof setTimeout> | undefined
+  if (cmd !== null && copy !== null) {
+    copy.addEventListener('click', async () => {
+      const command = cmd.querySelector('code')?.textContent ?? ''
+      await navigator.clipboard.writeText(command)
+      copy.classList.add('copied')
+      clearTimeout(timer)
+      timer = setTimeout(() => copy.classList.remove('copied'), COPIED_MS)
+    })
+  }
+</script>

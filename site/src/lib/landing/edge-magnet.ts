@@ -1,5 +1,5 @@
-import type { EmblaCarouselType } from 'embla-carousel'
-import type { AutoScrollType }    from 'embla-carousel-auto-scroll'
+import type { EmblaCarouselType, ScrollBodyType } from 'embla-carousel'
+import type { AutoScrollType }                    from 'embla-carousel-auto-scroll'
 
 export interface EdgeMagnetOptions {
   edgeMarginPx    : number
@@ -24,7 +24,7 @@ export function attachEdgeMagnet(
   let engaged  = false
   let velocity = 0
 
-  function magnetBody(): ReturnType<EmblaCarouselType['internalEngine']>['scrollBody'] {
+  function magnetBody(): ScrollBodyType {
     const engine = embla.internalEngine()
     const { index, location, previousLocation, scrollTarget, target } = engine
     let bodyVelocity = 0

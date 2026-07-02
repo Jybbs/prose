@@ -1,5 +1,6 @@
 ---
-import type { DiscoveredRule } from '../../lib/content/rules'
+import type { DiscoveredRule } from '../../lib/content/discovery/rules'
+import { ruleChipAttrs }       from '../../lib/shared/rule-chip'
 
 interface Props {
   segment     : { family: string | null, rule: DiscoveredRule | null, slug: string }
@@ -14,8 +15,7 @@ const tooltip = withTooltip ? segment.rule : null
 <a
   href={segment.rule?.href}
   class="composition-cards-chip"
-  data-badge={tooltip?.badge}
-  data-caption={tooltip?.caption}
+  {...(tooltip ? ruleChipAttrs(tooltip) : {})}
   data-family={segment.family}
   data-slug={segment.slug}
   title={segment.rule ? undefined : `${segment.slug} (${segment.family ?? 'undocumented'})`}

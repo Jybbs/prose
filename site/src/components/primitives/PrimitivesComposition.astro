@@ -1,10 +1,10 @@
 ---
-import './primitives-composition.css'
+import './styles/primitives-composition.css'
 
 import PrimitivesCompositionDetail from './PrimitivesCompositionDetail.astro'
 import PrimitivesCompositionGrid   from './PrimitivesCompositionGrid.astro'
 
-import { discoveredPrimitives, LAYER_NUMERAL } from '../../lib/content/primitives'
+import { discoveredPrimitives, LAYER_NUMERAL } from '../../lib/content/discovery/primitives'
 
 interface Props {
   initialFocus ?: string
@@ -38,6 +38,9 @@ const related = new Set(focused === null ? [] : [...focused.consumes, ...focused
 </div>
 
 <script>
+  import { closestFrom } from '../../lib/shared/dom/closest-from'
+  import { remeasure }   from '../../lib/shared/dom/remeasure'
+
   const TILE = '.primitives-composition-tile'
   const LINK = '.primitives-composition-tile-link'
 
@@ -75,39 +78,31 @@ const related = new Set(focused === null ? [] : [...focused.consumes, ...focused
     if (card) markWrapped(card)
   }
 
-  function anchorOf(event: Event): HTMLElement | null {
-    const target = event.target
-    return target instanceof Element ? target.closest<HTMLElement>(LINK) : null
-  }
-
   const roots = document.querySelectorAll<HTMLElement>('.primitives-composition')
 
   for (const root of roots) {
     const initial = root.dataset.initialFocus ?? null
     root.addEventListener('mouseover', event => {
-      const link = anchorOf(event)
+      const link = closestFrom(event, LINK)
       if (link) apply(root, link.dataset.slug ?? null)
     })
     // Without an initial focus the last hovered tile stays focused, so only a
     // pinned composition resets on leave.
     root.addEventListener('mouseout', event => {
-      const link = anchorOf(event)
+      const link = closestFrom(event, LINK)
       if (link === null || initial === null) return
       if (event instanceof MouseEvent && event.relatedTarget instanceof Node && link.contains(event.relatedTarget)) return
       apply(root, initial)
     })
     root.addEventListener('focusin', event => {
-      const link = anchorOf(event)
+      const link = closestFrom(event, LINK)
       if (link) apply(root, link.dataset.slug ?? null)
     })
     root.addEventListener('focusout', event => {
-      if (anchorOf(event) && initial !== null) apply(root, initial)
+      if (closestFrom(event, LINK) && initial !== null) apply(root, initial)
     })
 
     const detail = root.querySelector<HTMLElement>('[aria-live]')
-    if (detail) new ResizeObserver(() => remarkVisible(root)).observe(detail)
+    if (detail) remeasure(detail, () => remarkVisible(root))
   }
-
-  await document.fonts.ready
-  for (const root of roots) remarkVisible(root)
 </script>

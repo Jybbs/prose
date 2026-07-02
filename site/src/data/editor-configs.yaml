@@ -12,7 +12,6 @@ emacs:
     (add-hook 'after-save-hook
               #'prose-format-on-save)
   language: elisp
-  name: Emacs
   target: init.el
 helix:
   caption: editor.formatter
@@ -22,7 +21,6 @@ helix:
     command   = "prose"
     args      = ["format", "-"]
   language: toml
-  name: Helix
   target: languages.toml
 jetbrains:
   caption: File Watchers
@@ -33,13 +31,11 @@ jetbrains:
     Arguments         : format $FilePath$
     Working directory : $ProjectFileDir$
   language: text
-  name: JetBrains
   target: Watcher dialog
 neovim:
   caption: autocmd BufWritePost
   code: autocmd BufWritePost *.py silent! !prose format %
   language: vim
-  name: Neovim
   target: init.vim
 sublime:
   caption: SublimeOnSaveBuild
@@ -54,7 +50,6 @@ sublime:
       }]
     }
   language: python
-  name: Sublime Text
   target: <Project>.sublime-project
 vscode:
   caption: emeraldwalk.runonsave
@@ -70,5 +65,4 @@ vscode:
       }
     }
   language: json
-  name: VS Code
   target: settings.json

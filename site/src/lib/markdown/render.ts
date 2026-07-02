@@ -1,14 +1,9 @@
-import type { MarkdownRenderer } from '@astrojs/markdown-remark'
-
 import { proseProcessor, shikiConfig } from './config'
+import { lazy }                        from '../shared/lazy'
 
 // The processor is the non-loader render path, whereas reads inside a Content
 // Layer loader take the loader context's own `renderMarkdown`.
-let cachedProcessor: Promise<MarkdownRenderer> | null = null
-
-function processor(): Promise<MarkdownRenderer> {
-  return (cachedProcessor ??= proseProcessor.createRenderer({ shikiConfig }))
-}
+const processor = lazy(() => proseProcessor.createRenderer({ shikiConfig }))
 
 export async function renderBlock(markdown: string): Promise<string> {
   const { code } = await (await processor()).render(markdown)

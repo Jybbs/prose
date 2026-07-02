@@ -1,8 +1,8 @@
 ---
-import './surface-card.css'
+import './styles/surface-card.css'
 
-import { familyMeta }          from '../../../lib/content/family-meta'
-import type { DiscoveredRule } from '../../../lib/content/rules'
+import { familyMeta }          from '../../../lib/content/discovery/family-meta'
+import type { DiscoveredRule } from '../../../lib/content/discovery/rules'
 import { renderInline }        from '../../../lib/markdown/render'
 import { formatFolio }         from '../../../lib/shared/numerals'
 import { categoryOf }          from '../../../lib/shared/registries'
@@ -20,7 +20,7 @@ interface Props {
 const { badge, body, family, number, rules } = Astro.props
 
 const bodyHtml = await renderInline(body)
-const label    = (await familyMeta()).get(family)?.label ?? family
+const label    = (await familyMeta())(family).label
 const first    = rules[0]
 ---
 

@@ -9,8 +9,7 @@ related:
   - bare-imports
 ---
 
-import RuleConfigTable from '../../../../components/rules/RuleConfigTable.astro'
-import RuleLayout      from '../../../../components/rules/RuleLayout.astro'
+import RuleLayout from '../../../../components/rules/RuleLayout.astro'
 
 <RuleLayout slug="group-imports">
 
@@ -31,8 +30,6 @@ A recognized **section marker** *(a hand-drawn banner like `# --- Typing ---` or
 Pair with [[alphabetize]] to sort the names within each section, with [[align-imports]] to align the `import` keyword across the freshly grouped block, and with [[blank-lines]] for the blank line between sections.
 
 <Fragment slot="configuration">
-
-<RuleConfigTable slug="group-imports" />
 
 `group-imports` is a single on/off toggle. Left on, it partitions every import run into the canonical sections. Turned off with `group-imports = false`, the imports read as one flat block and [[alphabetize]] sorts them together rather than within sections. The `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* names the packages that join the local-package section alongside relative imports.
 

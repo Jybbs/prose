@@ -1,25 +1,29 @@
 ---
 import '@shikijs/magic-move/style.css'
-import './typing-demo.css'
+import '../../styles/mixins/panel.css'
+import './styles/typing-demo.css'
 
 import { getEntry } from 'astro:content'
 import { Code }     from '@astrojs/starlight/components'
 
 import { SOURCE }    from '../../lib/landing/typing-demo'
 import { embedJson } from '../../lib/shared/json-island'
+import { required }  from '../../lib/shared/required'
 
-const demo = await getEntry('typingDemo', 'landing')
-if (demo === undefined) throw new Error('The typing-demo collection is missing its landing entry')
+const demo = required(
+  await getEntry('typingDemo', 'landing'),
+  'The typing-demo collection is missing its landing entry'
+)
 
 const { entries, prelude, pythonStateSteps, resetRows } = demo.data
 ---
 
 <typing-demo class="typing-demo">
-  <section class="typing-demo-panel typing-demo-config" aria-label="prose config">
+  <section class="panel panel-clip typing-demo-panel typing-demo-config" aria-label="prose config">
     <header class="typing-demo-label">prose.toml</header>
     <pre class="typing-demo-config-code"><code><span class="typing-demo-config-prelude" data-segment="before">{prelude}</span><span class="typing-demo-config-editing" data-segment="editingLineBefore"></span><span class="typing-demo-config-editing"><span data-segment="editing"></span><span class="typing-demo-caret" aria-hidden="true" hidden></span></span><span class="typing-demo-config-editing" data-segment="editingLineAfter"></span><span class="typing-demo-config-prelude" data-segment="after"></span></code></pre>
   </section>
-  <section class="typing-demo-panel typing-demo-python" aria-label="Python source">
+  <section class="panel panel-clip typing-demo-panel typing-demo-python" aria-label="Python source">
     <header class="typing-demo-label">app.py</header>
     <div class="typing-demo-python-code"><Code code={SOURCE} lang="python" /></div>
   </section>
@@ -35,9 +39,9 @@ const { entries, prelude, pythonStateSteps, resetRows } = demo.data
     applyCompletedEdits, EMPTY_SEGMENTS, resetText, segmentsForEdit
   } from '../../lib/landing/typing-demo-buffer'
   import type { BufferSegments, TypingDemoEntry, TypingDemoResetRow } from '../../lib/landing/typing-demo-buffer'
-  import { createTypingMachine, MAGIC_MOVE_MS }                       from '../../lib/landing/typing-state-machine'
-  import type { MachineState }                                        from '../../lib/landing/typing-state-machine'
-  import { reducedMotion }                                            from '../../lib/shared/reduced-motion'
+  import { createTypingMachine, MAGIC_MOVE_MS } from '../../lib/landing/typing-state-machine'
+  import type { MachineState }                  from '../../lib/landing/typing-state-machine'
+  import { reducedMotion }                      from '../../lib/shared/dom/reduced-motion'
 
   interface Payload {
     entries          : TypingDemoEntry[]

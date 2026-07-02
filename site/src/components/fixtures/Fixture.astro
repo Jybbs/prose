@@ -1,6 +1,6 @@
 ---
-import './fixture.css'
-import './fixture-card.css'
+import './styles/fixture.css'
+import './styles/fixture-card.css'
 
 import { getEntry } from 'astro:content'
 
@@ -8,9 +8,11 @@ import FixtureNoChange from './FixtureNoChange.astro'
 import FixturePair     from './FixturePair.astro'
 import FixtureToggle   from './FixtureToggle.astro'
 
-import { fixtureHasToggle }          from '../../lib/content/fixtures'
-import { discoveredRules }           from '../../lib/content/rules'
+import { fixtureHasToggle }          from '../../lib/content/loaders/fixtures'
+import { fixtureId }                 from '../../lib/content/discovery/fixtures-tree'
+import { ruleBySlug }                from '../../lib/content/discovery/rules'
 import { renderBlock, renderInline } from '../../lib/markdown/render'
+import { required }                  from '../../lib/shared/required'
 
 interface Props {
   case     : string
@@ -23,9 +25,8 @@ interface Props {
 const { case: caseName, open = false, rule, title, variant } = Astro.props
 
 const slug  = rule.replaceAll('_', '-')
-const id    = `${slug}/${caseName}`
-const entry = await getEntry('fixtures', id)
-if (entry === undefined) throw new Error(`Fixture "${id}" does not exist`)
+const id    = fixtureId(rule, caseName)
+const entry = required(await getEntry('fixtures', id), `Fixture "${id}" does not exist`)
 
 const { description, findings, input, output, steps } = entry.data
 
@@ -33,7 +34,7 @@ const anchor        = `fixture-${rule}-${caseName}`
 const changesSource = input !== output
 const hasFindings   = findings.length > 0
 const hasToggle     = fixtureHasToggle(entry.data)
-const family        = (await discoveredRules()).find(r => r.slug === slug)?.family
+const family        = (await ruleBySlug(slug))?.family
 
 const descriptionHtml = description === undefined ? undefined : await renderBlock(description)
 const titleHtml       = title === undefined ? undefined : await renderInline(title)

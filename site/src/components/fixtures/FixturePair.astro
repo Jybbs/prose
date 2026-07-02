@@ -1,7 +1,8 @@
 ---
 import '@shikijs/magic-move/style.css'
-import './fixture.css'
-import './fixture-landing.css'
+import '../../styles/mixins/panel.css'
+import './styles/fixture.css'
+import './styles/fixture-landing.css'
 
 import { Code } from '@astrojs/starlight/components'
 
@@ -23,7 +24,7 @@ const lintMeta = lintId === undefined ? undefined : `lint=${lintId}`
 
 {variant === 'landing'
   ? <div class="fixture-pair fixture-pair-landing">
-      <div class="fixture-pair-side">
+      <div class="panel panel-clip fixture-pair-side">
         <div class="fixture-pair-label" data-side="before">
           <span class="fixture-pair-dot" data-side="before"></span>
           <span>Before</span>
@@ -31,7 +32,7 @@ const lintMeta = lintId === undefined ? undefined : `lint=${lintId}`
         <div class="fixture-pair-code"><Code code={input} lang="python" /></div>
       </div>
       <div class="fixture-pair-arrow" aria-hidden="true">→</div>
-      <div class="fixture-pair-side">
+      <div class="panel panel-clip fixture-pair-side">
         <div class="fixture-pair-label" data-side="after">
           <span class="fixture-pair-dot" data-side="after"></span>
           <span>After</span>
@@ -39,7 +40,7 @@ const lintMeta = lintId === undefined ? undefined : `lint=${lintId}`
         <div class="fixture-pair-code"><Code code={output} lang="python" /></div>
       </div>
     </div>
-  : <fixture-pair class="fixture-pair fixture-pair-doc" data-id={syncId}>
+  : <fixture-pair class="panel panel-clip fixture-pair fixture-pair-doc" data-id={syncId}>
       <div class="fixture-pair-panel" data-side="before" hidden><Code code={input} lang="python" /></div>
       <div class="fixture-pair-panel" data-side="after"><Code code={output} lang="python" meta={lintMeta} /></div>
       <div class="fixture-pair-morph" hidden></div>
@@ -51,9 +52,9 @@ const lintMeta = lintId === undefined ? undefined : `lint=${lintId}`
 
   import type { KeyedTokensInfo } from '@shikijs/magic-move/types'
 
-  import { fixtureTabs, tabOf } from '../../lib/stores/fixtures'
-  import type { FixtureTab }    from '../../lib/stores/fixtures'
-  import { reducedMotion }      from '../../lib/shared/reduced-motion'
+  import { fixtureTabs, tabOf } from '../../lib/fixtures/store'
+  import type { FixtureTab }    from '../../lib/fixtures/store'
+  import { reducedMotion }      from '../../lib/shared/dom/reduced-motion'
 
   type Renderer = InstanceType<typeof import('@shikijs/magic-move/renderer').MagicMoveRenderer>
 

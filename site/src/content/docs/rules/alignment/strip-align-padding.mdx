@@ -8,8 +8,7 @@ related:
   - align-match-case
 ---
 
-import RuleConfigTable from '../../../../components/rules/RuleConfigTable.astro'
-import RuleLayout      from '../../../../components/rules/RuleLayout.astro'
+import RuleLayout from '../../../../components/rules/RuleLayout.astro'
 
 <RuleLayout slug="strip-align-padding">
 
@@ -18,8 +17,6 @@ An alignment group exists to give the reader's eye a column to drop down. With *
 The rule operates on the `:`-shaped contexts that [[align-colons]] covers (*dict literals, dataclass and Pydantic fields, function-signature annotations, docstring `Args:` blocks*) plus the single-expression `match`-arm context that [[align-match-case]] covers. Multi-member groups whose `:`s sit on distinct lines and open at a shared column pass through this rule untouched, since the colon-alignment surfaces own them. A run whose rows open at differing columns realizes no shared column, so its padding strips here the way a singleton's does. The `=`-alignment from [[align-equals]] and the `import`-keyword alignment from [[align-imports]] carry their own one-member fallbacks and don't need pruning here.
 
 <Fragment slot="configuration">
-
-<RuleConfigTable slug="strip-align-padding" />
 
 `strip-align-padding` is the cleanup pass for the alignment rules above it, so its only facet is `enabled`. Turning it off leaves one-member alignment contexts as one-row tables *(a one-key dict reading with the same padding a multi-key dict would carry)*, which is rarely what a project wants in practice.
 

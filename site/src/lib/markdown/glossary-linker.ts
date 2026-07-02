@@ -2,7 +2,7 @@ import escapeStringRegexp from 'escape-string-regexp'
 import type { Root }      from 'mdast'
 import { findAndReplace } from 'mdast-util-find-and-replace'
 
-import type { DocsVocab, GlossaryRef }          from '../content/docs-vocab'
+import type { DocsVocab, GlossaryRef }          from '../content/discovery/docs-vocab'
 import { mdastElement, mdastText, wordBounded } from './mdast-node'
 
 const glossaryNode = (ref: GlossaryRef, phrase: string) => {

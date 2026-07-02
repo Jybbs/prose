@@ -1,8 +1,9 @@
 ---
 import { getEntry } from 'astro:content'
 
-import { discoveredRules } from '../../lib/content/rules'
-import { renderInline }    from '../../lib/markdown/render'
+import { ruleOrThrow }  from '../../lib/content/discovery/rules'
+import { renderInline } from '../../lib/markdown/render'
+import { required }     from '../../lib/shared/required'
 
 interface Props {
   slug: string
@@ -10,14 +11,18 @@ interface Props {
 
 const { slug } = Astro.props
 
-const rule = (await discoveredRules()).find(candidate => candidate.slug === slug)
-if (rule === undefined) throw new Error(`RuleConfigTable slug "${slug}" does not match a rule page`)
+const rule = await ruleOrThrow(slug, 'RuleConfigTable')
 
 const presetId = rule.family === 'alignment' ? 'alignment' : 'toggle'
-const preset   = await getEntry('ruleConfigPresets', presetId)
-if (preset === undefined) throw new Error(`Rule config preset "${presetId}" does not exist`)
+const preset   = required(
+  await getEntry('ruleConfigPresets', presetId),
+  `Rule config preset "${presetId}" does not exist`
+)
+const extra = await getEntry('ruleConfigPresets', slug)
 
-const rows = await Promise.all(preset.data.rows.map(async row => ({
+const presetRows = [...preset.data.rows, ...extra?.data.rows ?? []]
+
+const rows = await Promise.all(presetRows.map(async row => ({
   default     : row.default,
   key         : row.key,
   meaningHtml : await renderInline(row.meaning),

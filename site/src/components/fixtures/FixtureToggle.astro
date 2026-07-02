@@ -1,5 +1,5 @@
 ---
-import './fixture.css'
+import './styles/fixture.css'
 
 interface Props {
   for: string
@@ -16,8 +16,8 @@ const { for: fixtureId } = Astro.props
 <script>
   import { listenKeys } from 'nanostores'
 
-  import { fixtureTabs, setTab, tabOf } from '../../lib/stores/fixtures'
-  import type { FixtureTab }            from '../../lib/stores/fixtures'
+  import { fixtureTabs, setTab, tabOf } from '../../lib/fixtures/store'
+  import type { FixtureTab }            from '../../lib/fixtures/store'
 
   class FixtureToggleElement extends HTMLElement {
     connectedCallback(): void {

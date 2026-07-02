@@ -10,8 +10,7 @@ related:
   - align-match-case
 ---
 
-import RuleConfigTable from '../../../../components/rules/RuleConfigTable.astro'
-import RuleLayout      from '../../../../components/rules/RuleLayout.astro'
+import RuleLayout from '../../../../components/rules/RuleLayout.astro'
 
 <RuleLayout slug="align-imports">
 
@@ -20,8 +19,6 @@ An import block carries two kinds of structure that the reader's eye wants to fo
 The rule reads each block as the run of consecutive imports at the same indentation. A blank line, a comment, or a non-import statement resets the run. Pair with [[alphabetize]] to sort entries within each block before alignment, with [[blank-lines]] to separate import groups by category, and with [[bare-imports]] to canonicalize bare-versus-from before the alignment pass.
 
 <Fragment slot="configuration">
-
-<RuleConfigTable slug="align-imports" />
 
 `max-shift` bounds how far the `import` keyword may shift to align. The rule walks each block of imports in source order and grows a column while its width spread stays within the cap, breaking a fresh column at the first import that would exceed it. A `max-shift` of `false` lifts the cap so a contiguous block folds into one column, and `0` forbids any shift. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
 

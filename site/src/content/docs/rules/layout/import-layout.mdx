@@ -19,10 +19,6 @@ The rule acts on a single-line `from ... import ...` only. A `from ... import *`
 
 <Fragment slot="configuration">
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
-
 The wrap budget comes from the top-level [`import-line-length`](/reference/configuration#top-level-keys) key *(default `120`)*, governing the import wrap independently of `code-line-length`. An import is a roster [[alphabetize]] already orders, so it stays scannable at a width where dense expression code would not, earning more horizontal room before a wrap pays off. Setting `import-line-length` to `false` drops the dedicated budget, so the import wrap falls back to `code-line-length`.
 
 </Fragment>

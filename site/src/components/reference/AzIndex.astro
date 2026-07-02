@@ -1,21 +1,45 @@
 ---
-import './az-index.css'
+import './styles/az-index.css'
 
 import { getCollection } from 'astro:content'
 
-import { renderInline }                               from '../../lib/markdown/render'
-import { DOMAIN_LABELS, TOKEN_DOMAINS, tokenSortKey } from '../../lib/reference/token-domains'
-import type { TokenDomain }                           from '../../lib/reference/token-domains'
+import { renderInline }                from '../../lib/markdown/render'
+import { TOKEN_DOMAINS, tokenSortKey } from '../../lib/reference/token-domains'
+import type { TokenDomain }            from '../../lib/reference/token-domains'
+import { SCOPE_META }                  from '../../lib/suppression/scope-meta'
 
-const index = await getCollection('tokenIndex')
+const index      = await getCollection('tokenIndex')
+const exitCodes  = (await getCollection('exitCodes')).map(entry => entry.data)
+const directives = await getCollection('directives')
+
+interface TokenEntry {
+  blurb : string
+  href  : string
+  key   : string
+}
+
+// The exit-code and suppression entries derive from the collections that
+// document them, so those two surfaces cannot drift from their pages.
+const derived: Partial<Record<TokenDomain, TokenEntry[]>> = {
+  'exit-code' : exitCodes.map(row => ({
+    blurb : row.summary,
+    href  : '/reference/exit-codes',
+    key   : String(row.code)
+  })),
+  suppression : directives.map(entry => ({
+    blurb : entry.data.effect,
+    href  : `/reference/suppression-directives#${SCOPE_META[entry.data.scope].anchor}`,
+    key   : entry.data.form
+  }))
+}
 
 const sections = await Promise.all(TOKEN_DOMAINS.map(async domain => {
-  const tokens = index.find(entry => entry.id === domain)?.data ?? []
+  const data = index.find(entry => entry.id === domain)?.data
   return {
     domain,
-    label  : DOMAIN_LABELS[domain],
+    label  : data?.label ?? domain,
     tokens : await Promise.all(
-      [...tokens]
+      [...derived[domain] ?? data?.entries ?? []]
         .sort((a, b) => tokenSortKey(a.key).localeCompare(tokenSortKey(b.key)))
         .map(async token => ({
           blurbHtml : await renderInline(token.blurb),
@@ -25,21 +49,19 @@ const sections = await Promise.all(TOKEN_DOMAINS.map(async domain => {
     )
   }
 }))
-
-const tabs: TokenDomain[] = [...TOKEN_DOMAINS].sort()
 ---
 
 <az-index class="az-index-stage">
   <nav class="az-index-tabs" role="tablist" aria-label="Domain tabs">
     <button type="button" role="tab" aria-selected="true" class="az-index-tab is-active">All</button>
-    {tabs.map(domain => (
+    {sections.map(section => (
       <button
         type="button"
         role="tab"
         aria-selected="false"
         class="az-index-tab"
-        data-domain={domain}
-      >{DOMAIN_LABELS[domain]}</button>
+        data-domain={section.domain}
+      >{section.label}</button>
     ))}
   </nav>
 
@@ -71,55 +93,26 @@ const tabs: TokenDomain[] = [...TOKEN_DOMAINS].sort()
 </az-index>
 
 <script>
-  import { attachHoverOverlay } from '../../lib/overlay/hover'
+  import { attachHoverOverlay }          from '../../lib/overlay/hover'
+  import { el }                          from '../../lib/shared/dom/el'
+  import { defineTabSelectElement }      from '../../lib/shared/dom/tab-select'
 
-  // The domain tabs filter the key sections, and the hover overlay floats
-  // each key's detail card beside its column, the keys behind it dimming and
-  // the held key marking itself current while the card stays open.
-  class AzIndexElement extends HTMLElement {
-    connectedCallback(): void {
-      for (const tab of this.querySelectorAll<HTMLButtonElement>('.az-index-tab')) {
-        tab.addEventListener('click', () => this.#select(tab))
-      }
-    }
-
-    #select(tab: HTMLButtonElement): void {
-      const domain = tab.dataset.domain
-      for (const sibling of this.querySelectorAll('.az-index-tab')) {
-        sibling.classList.toggle('is-active', sibling === tab)
-        sibling.setAttribute('aria-selected', String(sibling === tab))
-      }
-      for (const section of this.querySelectorAll<HTMLElement>('.az-index-section')) {
-        section.hidden = domain !== undefined && section.dataset.domain !== domain
-      }
-    }
-  }
 
   function detail(anchor: HTMLElement): HTMLElement {
-    const card = document.createElement('aside')
-    card.className = 'az-index-detail'
+    const card = el('aside', 'az-index-detail')
     card.dataset.domain = anchor.closest<HTMLElement>('.az-index-key')?.dataset.domain ?? ''
 
-    const banner = document.createElement('header')
-    banner.className = 'az-index-detail-banner'
-    const kicker = document.createElement('span')
-    kicker.className   = 'az-index-detail-kicker'
-    kicker.textContent = anchor.dataset.label ?? ''
-    banner.append(kicker)
+    const banner = el('header', 'az-index-detail-banner')
+    banner.append(el('span', 'az-index-detail-kicker', anchor.dataset.label ?? ''))
 
-    const body = document.createElement('div')
-    body.className = 'az-index-detail-body'
-    const key = document.createElement('code')
-    key.className   = 'az-index-detail-key'
-    key.textContent = anchor.dataset.key ?? ''
-    const blurb = document.createElement('p')
-    blurb.className = 'az-index-detail-blurb'
+    const blurb = el('p', 'az-index-detail-blurb')
     blurb.innerHTML = anchor.dataset.blurb ?? ''
-    const href = document.createElement('a')
-    href.className   = 'az-index-detail-href'
-    href.href        = anchor.getAttribute('href') ?? ''
-    href.textContent = `→ ${anchor.getAttribute('href') ?? ''}`
-    body.append(key, blurb, href)
+    const target = anchor.getAttribute('href') ?? ''
+    const href   = el('a', 'az-index-detail-href', `→ ${target}`)
+    href.href    = target
+
+    const body = el('div', 'az-index-detail-body')
+    body.append(el('code', 'az-index-detail-key', anchor.dataset.key ?? ''), blurb, href)
 
     card.append(banner, body)
     return card
@@ -129,6 +122,17 @@ const tabs: TokenDomain[] = [...TOKEN_DOMAINS].sort()
     const wrap = anchor.closest('az-index')?.querySelector<HTMLElement>('.az-index-float-keys-wrap')
     if (wrap) wrap.dataset.dim = String(dimmed)
   }
+
+  // The domain tabs filter the key sections, the keyless All tab showing
+  // every section, and the hover overlay floats each key's detail card
+  // beside its column, the keys behind it dimming and the held key marking
+  // itself current while the card stays open.
+  defineTabSelectElement('az-index', {
+    events : ['click'],
+    key    : 'domain',
+    panels : '.az-index-section',
+    tabs   : '.az-index-tab'
+  })
 
   attachHoverOverlay({
     gapPx       : 14,
@@ -146,6 +150,4 @@ const tabs: TokenDomain[] = [...TOKEN_DOMAINS].sort()
     render      : detail,
     selector    : '.az-index-key-btn'
   })
-
-  customElements.define('az-index', AzIndexElement)
 </script>

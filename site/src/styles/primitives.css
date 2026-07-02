@@ -13,15 +13,6 @@
   margin-bottom : 8px;
 }
 
-.fixture-pair-arrow {
-  display     : grid;
-  place-items : center;
-}
-
-.glossary-pop-term {
-  font-family : var(--prose-font-display);
-}
-
 .exit-code-entry-summary :where(code),
 .exit-code-entry-details :where(code),
 .glossary-pop-body code,

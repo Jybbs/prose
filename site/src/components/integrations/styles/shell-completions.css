@@ -1,0 +1,123 @@
+.shell-card {
+  display       : block;
+  position      : relative;
+  padding-right : 132px;
+  margin        : 1.5rem 0;
+}
+
+.shell-card-stack {
+  position : relative;
+}
+
+.shell-card-tab {
+  position      : absolute;
+  right         : -132px;
+  width         : 132px;
+  display       : inline-flex;
+  align-items   : center;
+  gap           : 8px;
+  padding       : 8px 12px;
+  border        : 1px solid var(--sl-color-hairline);
+  border-left   : none;
+  border-radius : 0 6px 6px 0;
+  background    : var(--sl-color-gray-6);
+  color         : var(--sl-color-gray-2);
+  text-align    : left;
+  white-space   : nowrap;
+  cursor        : pointer;
+  font-family   : inherit;
+  font-size     : inherit;
+  transition    : background var(--prose-transition), border-color var(--prose-transition), color var(--prose-transition);
+  top           : calc(23px + var(--idx) * 44px);
+  z-index       : 1;
+}
+
+.shell-card-tab-name {
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 600;
+  font-size   : var(--prose-text-sm);
+}
+
+.shell-card-tab:hover {
+  background : color-mix(in srgb, var(--prose-palette-celadon) 9%, var(--sl-color-gray-6));
+  color      : var(--sl-color-white);
+}
+
+.shell-card-tab.is-active,
+.shell-card-tab.is-active:hover {
+  background   : color-mix(in srgb, var(--prose-palette-celadon) 24%, var(--sl-color-gray-6));
+  border-color : color-mix(in srgb, var(--prose-palette-celadon) 65%, var(--sl-color-hairline));
+  color        : var(--sl-color-white);
+  z-index      : 5;
+}
+
+.shell-card-tab.is-active .shell-card-tab-mark {
+  border-color : color-mix(in srgb, var(--prose-palette-celadon) 70%, var(--sl-color-hairline));
+  background   : var(--sl-color-bg);
+}
+
+.shell-card-modal-mark {
+  --mark-size      : 26px;
+  --mark-strength  : 60%;
+  --mark-icon-size : 14px;
+}
+
+.shell-card-modal {
+  display        : flex;
+  flex-direction : column;
+  border         : 1px solid var(--sl-color-hairline);
+  border-radius  : var(--prose-radius);
+  background     : var(--sl-color-bg);
+  box-shadow     : var(--prose-shadow-lift) color-mix(in srgb, var(--sl-color-white) 6%, transparent);
+  overflow       : hidden;
+  min-height     : 260px;
+}
+
+.shell-card-modal[hidden] {
+  display : none;
+}
+
+.shell-card-modal-head {
+  display     : flex;
+  align-items : center;
+  gap         : 12px;
+  padding     : 14px 18px 10px;
+}
+
+.shell-card-modal-body {
+  flex : 1 1 auto;
+}
+
+.shell-card-modal-code .expressive-code {
+  margin : 0;
+}
+
+.shell-card-modal-code .expressive-code pre {
+  margin        : 0;
+  border        : none;
+  border-radius : 0;
+}
+
+.shell-card-modal-note {
+  margin      : 0;
+  padding     : 0 18px 14px;
+  font-size   : 0.92rem;
+  line-height : 1.55;
+  color       : var(--sl-color-gray-2);
+}
+
+.shell-card-modal-note code {
+  font-family   : var(--sl-font-mono);
+  font-size     : var(--prose-text-code);
+  padding       : 3px 6px;
+  border-radius : var(--prose-radius-sm);
+  background    : var(--sl-color-bg-inline-code);
+  color         : var(--prose-palette-ube);
+}
+
+@media (--prose-bp-card-stack) {
+  .shell-card        { padding-right: 0; }
+  .shell-card-modal  { min-height: auto; }
+  .shell-card-tab    { position: relative; right: auto; top: auto; width: auto; border-radius: var(--prose-radius-sm); border-left: 1px solid var(--sl-color-hairline); margin: 0 4px 6px 12px; }
+}

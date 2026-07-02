@@ -12,8 +12,8 @@
 
   "rules": {
     "import/default"                       : "off",
-    "import/no-unassigned-import"          : ["error", { "allow": ["**/*.css"] }],
     "import/max-dependencies"              : "off",
+    "import/no-unassigned-import"          : ["error", { "allow": ["**/*.css"] }],
     "max-lines-per-function"               : "off",
     "no-await-in-loop"                     : "off",
     "no-negated-condition"                 : "off",

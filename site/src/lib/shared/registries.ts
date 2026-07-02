@@ -10,7 +10,7 @@ export const isFamily = (name: string): name is RuleFamily =>
 export type RuleCategory = 'auto-fix' | 'lint'
 
 // Lint coincides with its domain, so the category collapses off the family.
-export const categoryOf = (family: RuleFamily): RuleCategory =>
+export const categoryOf = (family: string): RuleCategory =>
   family === 'lint' ? 'lint' : 'auto-fix'
 
 export const FAMILY_WARMTHS = ['cool', 'warm'] as const

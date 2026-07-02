@@ -1,5 +1,6 @@
 ---
-import './run-summary.css'
+import '../../styles/mixins/panel.css'
+import './styles/run-summary.css'
 
 import type { RenderedLine } from '../../lib/reference/run-summary'
 
@@ -10,7 +11,7 @@ interface Props {
 const { line } = Astro.props
 ---
 
-<div class="run-summary">
+<div class="panel panel-clip run-summary">
   <div class="run-summary-bar">
     {[1, 2, 3].map(() => <span class="run-summary-dot" aria-hidden="true"></span>)}
     <span class="run-summary-title" aria-hidden="true">prose</span>

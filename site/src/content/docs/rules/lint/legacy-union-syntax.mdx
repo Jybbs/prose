@@ -5,9 +5,8 @@ related:
   - unused-future-annotations
 ---
 
-import RuleConfigTable   from '../../../../components/rules/RuleConfigTable.astro'
 import RuleLayout        from '../../../../components/rules/RuleLayout.astro'
-import TargetVersionTabs from '../../../../components/TargetVersionTabs.astro'
+import TargetVersionTabs from '../../../../components/rules/TargetVersionTabs.astro'
 
 <RuleLayout slug="legacy-union-syntax">
 
@@ -34,8 +33,6 @@ The rule fires only on projects whose `target-version` is 3.10 or higher, where 
 </TargetVersionTabs>
 
 <Fragment slot="configuration">
-
-<RuleConfigTable slug="legacy-union-syntax" />
 
 The `target-version` field from the top-level [**Configuration**](/reference/configuration#top-level-keys) gates the lint per project.
 

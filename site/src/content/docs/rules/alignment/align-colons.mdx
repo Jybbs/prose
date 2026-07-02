@@ -10,8 +10,7 @@ related:
   - strip-align-padding
 ---
 
-import RuleConfigTable from '../../../../components/rules/RuleConfigTable.astro'
-import RuleLayout      from '../../../../components/rules/RuleLayout.astro'
+import RuleLayout from '../../../../components/rules/RuleLayout.astro'
 
 <RuleLayout slug="align-colons">
 
@@ -20,8 +19,6 @@ The `:` separator appears across the contexts below, wherein columns of values s
 The rule walks each context independently, treating a group as the consecutive members sharing the same indentation level and parent shape. A blank line, an own-line comment, or a non-member statement resets the group. Alignment honors the [[strip-align-padding]] so that one-member contexts skip padding altogether, leaving a one-key dict reading as plain code instead of a one-row table.
 
 <Fragment slot="configuration">
-
-<RuleConfigTable slug="align-colons" />
 
 `max-shift` bounds how far a key may shift to align. The rule walks each group of `:` entries in source order and grows a column while its width spread stays within the cap, breaking a fresh column at the first key that would exceed it. A `max-shift` of `false` lifts the cap so a contiguous group folds into one column, and `0` forbids any shift so every `:` sits flush. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
 

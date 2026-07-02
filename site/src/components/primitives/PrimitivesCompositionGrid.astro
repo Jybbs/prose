@@ -1,7 +1,8 @@
 ---
-import './primitives-composition-grid.css'
+import '../../styles/mixins/band.css'
+import './styles/primitives-composition-grid.css'
 
-import type { DiscoveredPrimitive, PrimitiveLayer } from '../../lib/content/primitives'
+import type { DiscoveredPrimitive, PrimitiveLayer } from '../../lib/content/discovery/primitives'
 
 interface Band {
   entries : readonly DiscoveredPrimitive[]
@@ -28,12 +29,12 @@ const tileState = (slug: string): 'active' | 'idle' | 'mute' | 'related' => {
 <div class="primitives-composition-grid">
   {bands.map(band => (
     <section class="primitives-composition-band" data-layer={band.key}>
-      <header class="primitives-composition-band-head">
+      <header class="band-head primitives-composition-band-head">
         <span class="primitives-composition-band-badge">
           <span class="primitives-composition-band-numeral" aria-hidden="true">{band.numeral}</span>
         </span>
-        <span class="primitives-composition-band-name">{band.key}</span>
-        <span class="primitives-composition-band-rule" aria-hidden="true"></span>
+        <span class="band-name">{band.key}</span>
+        <span class="band-rule" aria-hidden="true"></span>
       </header>
       <ul class="primitives-composition-band-cells">
         {band.entries.map(entry => {

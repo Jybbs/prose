@@ -1,5 +1,5 @@
 ---
-import './run-summary.css'
+import './styles/run-summary.css'
 
 import RunSummary from './RunSummary.astro'
 
@@ -42,6 +42,8 @@ const selects = [
     glossFor, OUTCOMES, QUIET_OPTIONS, resolveSelection, STREAM_OPTIONS
   } from '../../lib/reference/run-summary'
   import type { RenderedLine } from '../../lib/reference/run-summary'
+  import { closestFrom }       from '../../lib/shared/dom/closest-from'
+  import { el }                from '../../lib/shared/dom/el'
 
   type Axis = 'outcome' | 'quiet' | 'stream'
 
@@ -72,9 +74,7 @@ const selects = [
         })
       }
       document.addEventListener('click', event => {
-        if (!(event.target instanceof Element) || event.target.closest('run-summary-explorer') !== this) {
-          this.#close()
-        }
+        if (closestFrom(event, 'run-summary-explorer') !== this) this.#close()
       })
       document.addEventListener('keydown', event => {
         if (event.key === 'Escape') this.#close()
@@ -100,11 +100,9 @@ const selects = [
 
     #show(axis: Axis, trigger: HTMLElement): void {
       this.#close()
-      const panel = document.createElement('div')
-      panel.className = 'overlay-panel run-summary-opts-panel'
-      const list = document.createElement('ul')
-      list.className = 'run-summary-opts'
-      list.role      = 'listbox'
+      const panel = el('div', 'overlay-panel run-summary-opts-panel')
+      const list  = el('ul', 'run-summary-opts')
+      list.role = 'listbox'
       list.setAttribute('aria-label', trigger.getAttribute('aria-label') ?? '')
       for (const option of this.#options(axis)) {
         list.append(this.#optionRow(axis, option, trigger))
@@ -120,27 +118,19 @@ const selects = [
       const item = document.createElement('li')
       item.role  = 'option'
       item.setAttribute('aria-selected', String(this.#selection[axis] === option.id))
-      const button = document.createElement('button')
-      button.type      = 'button'
-      button.className = 'run-summary-opt'
+      const button = el('button', 'run-summary-opt')
+      button.type = 'button'
       button.classList.toggle('is-active', this.#selection[axis] === option.id)
 
-      const mono = document.createElement('span')
-      mono.className   = 'run-summary-opt-mono'
-      mono.textContent = option.mono
+      const mono = el('span', 'run-summary-opt-mono', option.mono)
 
-      const example = document.createElement('span')
-      example.className = 'run-summary-opt-eg'
+      const example = el('span', 'run-summary-opt-eg')
       if (option.preview.anchor !== null) {
-        const anchor = document.createElement('span')
-        anchor.className  = 'run-summary-opt-eg-anchor'
+        const anchor = el('span', 'run-summary-opt-eg-anchor', option.preview.anchor)
         anchor.ariaHidden = 'true'
-        anchor.textContent = option.preview.anchor
         example.append(anchor)
       }
-      const text = document.createElement('span')
-      text.className   = 'run-summary-opt-eg-text'
-      text.textContent = option.preview.text
+      const text = el('span', 'run-summary-opt-eg-text', option.preview.text)
       if (option.preview.countTint !== null) text.dataset.tint = option.preview.countTint
       example.append(text)
 
@@ -162,16 +152,12 @@ const selects = [
       const row = this.querySelector<HTMLElement>('.run-summary-line')!
       row.replaceChildren()
       if (line.anchor !== null) {
-        const anchor = document.createElement('span')
-        anchor.className  = 'run-summary-anchor'
+        const anchor = el('span', 'run-summary-anchor', line.anchor)
         anchor.ariaHidden = 'true'
-        anchor.textContent = line.anchor
         if (line.anchorUbe) anchor.dataset.ube = 'true'
         row.append(anchor)
       }
-      const message = document.createElement('span')
-      message.className   = 'run-summary-msg'
-      message.textContent = line.text
+      const message = el('span', 'run-summary-msg', line.text)
       if (line.countTint !== null) message.dataset.tint = line.countTint
       row.append(message)
 

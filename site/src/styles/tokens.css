@@ -40,4 +40,6 @@
   --prose-text-md               : 0.95rem;
 
   --prose-pad-card-snug         : 10px 14px;
+
+  --prose-panel-wash            : color-mix(in srgb, var(--sl-color-gray-6) 30%, var(--sl-color-bg));
 }

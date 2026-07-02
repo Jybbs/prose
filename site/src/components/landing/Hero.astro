@@ -1,5 +1,5 @@
 ---
-import './hero.css'
+import './styles/hero.css'
 ---
 
 <landing-hero class="landing-hero">
@@ -12,6 +12,7 @@ import './hero.css'
 <script>
   import { ROW_STRIDE_PX, tileStamps } from '../../lib/landing/hero-stamps'
   import type { Stamp }                from '../../lib/landing/hero-stamps'
+  import { el }                        from '../../lib/shared/dom/el'
 
   const STAMP_PER_COL = 240
   const TERMINUS_GAP  = 40
@@ -19,15 +20,12 @@ import './hero.css'
   function stampNode(stamp: Stamp): HTMLElement {
     let node: HTMLElement
     if (stamp.kind === 'big') {
-      const img     = document.createElement('img')
-      img.src       = '/logo.svg'
-      img.alt       = ''
-      img.className = 'landing-hero-watermark landing-hero-watermark-big'
-      node          = img
+      const img = el('img', 'landing-hero-watermark landing-hero-watermark-big')
+      img.src   = '/logo.svg'
+      img.alt   = ''
+      node      = img
     } else {
-      node             = document.createElement('span')
-      node.textContent = stamp.letter
-      node.className   = 'landing-hero-watermark landing-hero-watermark-small'
+      node = el('span', 'landing-hero-watermark landing-hero-watermark-small', stamp.letter)
     }
     node.style.setProperty('--rot', `${stamp.rotate}deg`)
     node.style.left = `${stamp.x}%`

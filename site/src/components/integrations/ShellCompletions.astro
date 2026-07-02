@@ -1,14 +1,19 @@
 ---
-import '../base/kicker.css'
-import './shell-completions.css'
+import '../../styles/mixins/kicker.css'
+import './styles/shell-completions.css'
 
 import { getCollection } from 'astro:content'
 import { Code }          from '@astrojs/starlight/components'
 
 import Tool             from '../base/Tool.astro'
 import { renderInline } from '../../lib/markdown/render'
+import { required }     from '../../lib/shared/required'
 
-const shells = await getCollection('shellCompletions')
+const shells    = await getCollection('shellCompletions')
+const toolNames = new Map((await getCollection('tools')).map(tool => [tool.id, tool.data.name]))
+
+const nameOf = (id: string): string =>
+  required(toolNames.get(id), `Shell "${id}" is not in the tools collection`)
 
 const noteHtml = await Promise.all(shells.map(shell => renderInline(shell.data.note)))
 ---
@@ -24,15 +29,15 @@ const noteHtml = await Promise.all(shells.map(shell => renderInline(shell.data.n
         data-slug={shell.id}
         style={`--idx: ${i}`}
       >
-        <span class="shell-card-tab-mark" aria-hidden="true"><Tool slug={shell.id} bare /></span>
-        <em class="shell-card-tab-name">{shell.data.name}</em>
+        <span class="tool-medallion shell-card-tab-mark" aria-hidden="true"><Tool slug={shell.id} bare /></span>
+        <em class="shell-card-tab-name">{nameOf(shell.id)}</em>
       </button>
     ))}
 
     {shells.map((shell, i) => (
       <article class="shell-card-modal" data-slug={shell.id} hidden={i !== 0}>
         <header class="shell-card-modal-head">
-          <span class="shell-card-modal-mark" aria-hidden="true"><Tool slug={shell.id} bare /></span>
+          <span class="tool-medallion shell-card-modal-mark" aria-hidden="true"><Tool slug={shell.id} bare /></span>
           <span class="kicker">{shell.data.caption}</span>
         </header>
         <div class="shell-card-modal-body">
@@ -45,19 +50,13 @@ const noteHtml = await Promise.all(shells.map(shell => renderInline(shell.data.n
 </shell-completions>
 
 <script>
-  import { wireTabSelect } from '../../lib/shared/tab-select'
+  import { defineTabSelectElement } from '../../lib/shared/dom/tab-select'
 
   // Turns the stacked side tabs into a selector over the per-shell modals.
-  class ShellCompletions extends HTMLElement {
-    connectedCallback(): void {
-      wireTabSelect(this, {
-        events : ['click'],
-        key    : 'slug',
-        panels : '.shell-card-modal',
-        tabs   : '.shell-card-tab'
-      })
-    }
-  }
-
-  customElements.define('shell-completions', ShellCompletions)
+  defineTabSelectElement('shell-completions', {
+    events : ['click'],
+    key    : 'slug',
+    panels : '.shell-card-modal',
+    tabs   : '.shell-card-tab'
+  })
 </script>

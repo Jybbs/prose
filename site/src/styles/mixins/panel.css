@@ -1,0 +1,9 @@
+.panel {
+  border        : 1px solid var(--sl-color-hairline);
+  border-radius : var(--prose-radius);
+  background    : var(--sl-color-gray-6);
+}
+
+.panel-clip {
+  overflow : hidden;
+}

@@ -5,9 +5,8 @@ related:
   - legacy-union-syntax
 ---
 
-import RuleConfigTable   from '../../../../components/rules/RuleConfigTable.astro'
 import RuleLayout        from '../../../../components/rules/RuleLayout.astro'
-import TargetVersionTabs from '../../../../components/TargetVersionTabs.astro'
+import TargetVersionTabs from '../../../../components/rules/TargetVersionTabs.astro'
 
 <RuleLayout slug="unused-future-annotations">
 
@@ -34,8 +33,6 @@ The rewrite fires on any of the branches below, each a separate reason the impor
 </TargetVersionTabs>
 
 <Fragment slot="configuration">
-
-<RuleConfigTable slug="unused-future-annotations" />
 
 The `target-version` field from the top-level [**Configuration**](/reference/configuration#top-level-keys) gates the rewrite per project.
 

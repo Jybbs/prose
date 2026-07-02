@@ -1,6 +1,7 @@
 ---
-import './workflow.css'
-import './workflow-step.css'
+import '../../styles/mixins/panel.css'
+import './styles/workflow.css'
+import './styles/workflow-step.css'
 
 import { getCollection } from 'astro:content'
 
@@ -18,7 +19,7 @@ const chapters = await Promise.all(steps.map(async (step, index) => ({
 ---
 
 <LandingSection centered heading="<em>Open</em> with these few lines." kicker="The Workflow" variant="quickstart">
-  <article class="landing-workflow">
+  <article class="panel landing-workflow">
     {chapters.map((chapter, index) => (
       <section
         class:list={[

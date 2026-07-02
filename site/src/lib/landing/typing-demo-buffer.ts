@@ -36,10 +36,7 @@ export function applyCompletedEdits(
 ): string {
   let text = base
   for (const entry of entries.slice(0, upTo)) {
-    const index = text.indexOf(entry.anchor + entry.from)
-    if (index === -1) continue
-    const valueStart = index + entry.anchor.length
-    text = text.slice(0, valueStart) + entry.to + text.slice(valueStart + entry.from.length)
+    text = spliceAfterAnchor(text, entry.anchor, entry.from, entry.to)
   }
   return text
 }
@@ -101,10 +98,21 @@ export function resetText(
     const partial = phase === 'resetBackspacing'
       ? row.end.slice(0, Math.max(0, row.end.length - progress))
       : row.prelude.slice(0, progress)
-    const anchorIndex = text.indexOf(row.anchor + row.prelude)
-    if (anchorIndex === -1) continue
-    const valueStart = anchorIndex + row.anchor.length
-    text = text.slice(0, valueStart) + partial + text.slice(valueStart + row.prelude.length)
+    text = spliceAfterAnchor(text, row.anchor, row.prelude, partial)
   }
   return text
+}
+
+// Replaces the `target` text directly after `anchor`, leaving the text
+// unchanged when the anchored run is absent.
+function spliceAfterAnchor(
+  text        : string,
+  anchor      : string,
+  target      : string,
+  replacement : string
+): string {
+  const index = text.indexOf(anchor + target)
+  if (index === -1) return text
+  const start = index + anchor.length
+  return text.slice(0, start) + replacement + text.slice(start + target.length)
 }

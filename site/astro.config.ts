@@ -29,6 +29,7 @@ export default defineConfig({
         './src/styles/accents.css',
         './src/styles/marks.css',
         './src/styles/markdown.css',
+        './src/styles/pq-rows.css',
         './src/styles/primitives.css',
         './src/styles/theme.css'
       ],
@@ -43,8 +44,8 @@ export default defineConfig({
       titleDelimiter  : '·',
 
       components: {
-        Head        : './src/components/Head.astro',
-        SocialIcons : './src/components/SocialIcons.astro'
+        Head        : './src/components/chrome/Head.astro',
+        SocialIcons : './src/components/chrome/SocialIcons.astro'
       },
 
       head: [

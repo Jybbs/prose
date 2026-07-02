@@ -1,0 +1,130 @@
+---
+import './styles/overlays.css'
+import '../rules/styles/rule-card.css'
+---
+
+<script>
+  import { attachHoverOverlay } from '../../lib/overlay/hover'
+  import { lintShorthand }      from '../../lib/overlay/lint-shorthand'
+  import type { Shorthand }     from '../../lib/overlay/lint-shorthand'
+  import { el }                 from '../../lib/shared/dom/el'
+  import { inlineCode }         from '../../lib/shared/inline-code'
+  import { categoryOf }         from '../../lib/shared/registries'
+  import { RULE_CHIP_SELECTOR } from '../../lib/shared/rule-chip'
+  import { titleCase }          from '../../lib/shared/title-case'
+
+  interface RuleCardData {
+    badge   : string
+    caption : string
+    family  : string
+    header ?: HTMLElement
+    slug    : string
+  }
+
+  // The hover counterpart of the server-rendered rule card, sharing its
+  // classes so `rule-card.css` styles both.
+  function ruleCard({ badge, caption, family, header, slug }: RuleCardData): HTMLElement {
+    const card = el('article', 'rule-card')
+    card.dataset.category = categoryOf(family)
+    card.dataset.family   = family
+    if (header) {
+      const head = el('div', 'rule-card-header')
+      head.append(header)
+      card.append(head)
+    }
+    card.append(el('span', 'rule-card-badge', badge))
+    const name = el('div', 'rule-card-name')
+    name.append(el('h3', 'rule-card-slug', slug), el('span', 'rule-card-fam', titleCase(family)))
+    const text = el('p', 'rule-card-caption')
+    text.innerHTML = inlineCode(caption)
+    card.append(name, text)
+    return card
+  }
+
+  function glossaryPanel(anchor: HTMLElement): Node | null {
+    const { definition, term } = anchor.dataset
+    if (definition === undefined || term === undefined) return null
+    const body = el('div', 'glossary-pop-body')
+    body.innerHTML = inlineCode(definition)
+    const panel = document.createDocumentFragment()
+    panel.append(el('div', 'glossary-pop-term', term), el('div', 'glossary-pop-divider'), body)
+    const href = anchor.getAttribute('href')
+    if (href !== null && offPage(href)) {
+      const link = el('a', 'glossary-pop-link', 'Read more →')
+      link.href = href
+      panel.append(link)
+    }
+    return panel
+  }
+
+  // A link to the current page adds nothing the reader is not already on,
+  // whereas a fragment deep-links even from its own page.
+  function offPage(href: string): boolean {
+    if (href.includes('#')) return true
+    return href.replace(/\/$/, '') !== location.pathname.replace(/\/$/, '')
+  }
+
+  function ruleChipPanel(anchor: HTMLElement): Node | null {
+    const { badge, caption, family } = anchor.dataset
+    const slug = anchor.dataset.slug ?? anchor.textContent
+    if (badge === undefined || caption === undefined || family === undefined || !slug) return null
+    return ruleCard({ badge, caption, family, slug })
+  }
+
+  function lintFlagPanel(anchor: HTMLElement): Node | null {
+    const { badge, before, caption, family, message, rule, suggested } = anchor.dataset
+    if (badge === undefined || caption === undefined || family === undefined) return null
+    if (message === undefined || rule === undefined) return null
+    const shorthand = lintShorthand({ before, flagged: anchor.textContent ?? '', message, rule, suggested })
+    return ruleCard({ badge, caption, family, header: shorthandHeader(shorthand, message), slug: rule })
+  }
+
+  function shorthandHeader(shorthand: Shorthand | null, message: string): HTMLElement {
+    if (shorthand?.kind === 'replace') {
+      const head = el('span', 'lint-shorthand')
+      const into = el('span', 'lint-into', '→')
+      into.ariaHidden = 'true'
+      head.append(
+        el('span', 'lint-chip lint-chip-struck', shorthand.before),
+        into,
+        el('span', 'lint-chip lint-chip-suggest', shorthand.after)
+      )
+      return head
+    }
+    if (shorthand?.kind === 'remove') {
+      const head = el('span', 'lint-shorthand')
+      head.append(el('span', 'lint-chip lint-chip-struck', shorthand.text))
+      return head
+    }
+    const head = el('span', 'lint-message')
+    head.innerHTML = inlineCode(message)
+    return head
+  }
+
+  attachHoverOverlay({
+    hideDelayMs : 320,
+    panelClass  : 'glossary-pop',
+    placement   : 'top',
+    render      : glossaryPanel,
+    selector    : '.glossary-term',
+    showDelayMs : 100
+  })
+
+  attachHoverOverlay({
+    hideDelayMs : 120,
+    panelClass  : 'rule-card-pop',
+    placement   : 'bottom-start',
+    render      : ruleChipPanel,
+    selector    : RULE_CHIP_SELECTOR,
+    showDelayMs : 80
+  })
+
+  attachHoverOverlay({
+    hideDelayMs : 160,
+    panelClass  : 'rule-card-pop fam-lint',
+    placement   : 'bottom-start',
+    render      : lintFlagPanel,
+    selector    : '.lint-flag',
+    showDelayMs : 60
+  })
+</script>

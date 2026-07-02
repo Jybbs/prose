@@ -2,20 +2,15 @@ import { findAndReplace }             from 'mdast-util-find-and-replace'
 import type { PhrasingContent, Root } from 'mdast'
 import { visitParents }               from 'unist-util-visit-parents'
 
-import type { DocsVocab, PrimitiveRef, RuleRef }             from '../content/docs-vocab'
+import type { DocsVocab, PrimitiveRef, RuleRef }             from '../content/discovery/docs-vocab'
+import { ruleChipAttrs }                                     from '../shared/rule-chip'
 import { mdastElement, mdastLink, mdastText, withinHeading } from './mdast-node'
 
 const SLUG      = /^[a-z][a-z0-9-]*$/
 const WIKI_LINK = /\[\[([^\]]+)\]\]/g
 
 const ruleNode = (ref: RuleRef, slug: string): PhrasingContent => {
-  const props = {
-    className      : ['rule-chip'],
-    'data-badge'   : ref.badge,
-    'data-caption' : ref.caption,
-    'data-family'  : ref.family,
-    href           : ref.href
-  }
+  const props = { className: ['rule-chip'], ...ruleChipAttrs(ref), href: ref.href }
   return mdastElement('a', props, mdastText(slug))
 }
 

@@ -1,10 +1,13 @@
 ---
-import './built-on.css'
+import '../../styles/mixins/panel.css'
+import './styles/built-on.css'
 
 import { getCollection } from 'astro:content'
 import { Icon }          from 'astro-icon/components'
 
 import LandingSection from './LandingSection.astro'
+
+import { required } from '../../lib/shared/required'
 
 interface Credit {
   role : string
@@ -21,14 +24,16 @@ const credits: readonly Credit[] = [
 
 const tools   = await getCollection('tools')
 const entries = credits.map(({ role, slug }) => {
-  const tool = tools.find(entry => entry.id === slug)?.data
-  if (tool === undefined) throw new Error(`BuiltOn credit "${slug}" is not in the tools collection`)
+  const tool = required(
+    tools.find(entry => entry.id === slug)?.data,
+    `BuiltOn credit "${slug}" is not in the tools collection`
+  )
   return { role, slug, tool }
 })
 ---
 
 <LandingSection centered variant="built-on" kicker="The Lineage" heading="Standing on <em>giants</em>.">
-  <div class="built-on-grid">
+  <div class="panel panel-clip built-on-grid">
     {entries.map(entry => (
       <a class="built-on-card" href={entry.tool.href} rel="noopener" target="_blank">
         <span class="built-on-medallion">

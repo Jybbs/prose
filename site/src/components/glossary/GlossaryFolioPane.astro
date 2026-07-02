@@ -1,17 +1,15 @@
 ---
-import './glossary-folio-pane.css'
+import '../../styles/mixins/kicker.css'
+import './styles/glossary-folio-pane.css'
 
-import { glossaryFolioEntries } from './entries'
-import { familyMeta }           from '../../lib/content/family-meta'
+import { familyMeta }           from '../../lib/content/discovery/family-meta'
+import { glossaryFolioEntries } from '../../lib/glossary/entries'
 import { formatFolio }          from '../../lib/shared/numerals'
 
 const entries = await glossaryFolioEntries()
 const first   = entries[0]
 
-const meta = await familyMeta()
-
-const metaOf = (family: string): { badge: string, label: string } =>
-  meta.get(family) ?? { badge: '', label: family }
+const metaOf = await familyMeta()
 ---
 
 <div class="glossary-folio-stage" data-family={first?.primaryFamily}>
@@ -24,7 +22,7 @@ const metaOf = (family: string): { badge: string, label: string } =>
       hidden={index !== 0}
     >
       <header class="glossary-folio-head">
-        <p class="glossary-folio-folio">
+        <p class="kicker glossary-folio-folio">
           {entry.families.map(family => (
             <span class="glossary-folio-chip" data-family={family}>
               <span class="glossary-folio-badge" aria-hidden="true">{metaOf(family).badge}</span>
@@ -62,8 +60,9 @@ const metaOf = (family: string): { badge: string, label: string } =>
 </div>
 
 <script>
-  import { glossaryFolioQuery, glossaryFolioSlug } from '../../lib/stores/glossary'
-  import { cycleIndex, entryMatches }              from './folio'
+  import { cycleIndex, entryMatches }              from '../../lib/glossary/folio'
+  import { glossaryFolioQuery, glossaryFolioSlug } from '../../lib/glossary/store'
+  import { closestFrom }                           from '../../lib/shared/dom/closest-from'
   import { formatFolio }                           from '../../lib/shared/numerals'
 
   for (const stage of document.querySelectorAll<HTMLElement>('.glossary-folio-stage')) {
@@ -77,9 +76,7 @@ const metaOf = (family: string): { badge: string, label: string } =>
     const activeSlug = (): string | undefined => glossaryFolioSlug.get() ?? articles[0]?.dataset.slug
 
     stage.addEventListener('click', event => {
-      const step = event.target instanceof Element
-        ? event.target.closest<HTMLElement>('.glossary-folio-step')
-        : null
+      const step = closestFrom(event, '.glossary-folio-step')
       if (step === null) return
       const entries = pool()
       const slug    = activeSlug()

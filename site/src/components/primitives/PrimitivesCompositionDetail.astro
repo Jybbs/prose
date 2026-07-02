@@ -1,12 +1,13 @@
 ---
-import './primitives-composition-detail.css'
+import './styles/primitives-composition-detail.css'
 
-import { LAYER_NUMERAL }                            from '../../lib/content/primitives'
-import type { DiscoveredPrimitive, PrimitiveLayer } from '../../lib/content/primitives'
-import { discoveredRules }                          from '../../lib/content/rules'
-import type { DiscoveredRule }                      from '../../lib/content/rules'
+import { LAYER_NUMERAL }                            from '../../lib/content/discovery/primitives'
+import type { DiscoveredPrimitive, PrimitiveLayer } from '../../lib/content/discovery/primitives'
+import { discoveredRules }                          from '../../lib/content/discovery/rules'
+import type { DiscoveredRule }                      from '../../lib/content/discovery/rules'
 import { renderInline }                             from '../../lib/markdown/render'
 import { primitiveRoute }                           from '../../lib/shared/routes'
+import { ruleChipAttrs }                            from '../../lib/shared/rule-chip'
 
 interface Props {
   primitives: readonly DiscoveredPrimitive[]
@@ -74,13 +75,7 @@ const cards = await Promise.all(primitives.map(async primitive => ({
                     <span class="primitives-composition-card-mention-text">{mention.slug}</span>
                   </a>
                 ) : mention.kind === 'rule' ? (
-                  <a
-                    class="rule-chip"
-                    href={mention.rule.href}
-                    data-badge={mention.rule.badge}
-                    data-caption={mention.rule.caption}
-                    data-family={mention.rule.family}
-                  >{mention.slug}</a>
+                  <a class="rule-chip" href={mention.rule.href} {...ruleChipAttrs(mention.rule)}>{mention.slug}</a>
                 ) : (
                   <span class="primitives-composition-card-mention-ext">{mention.slug}</span>
                 )}

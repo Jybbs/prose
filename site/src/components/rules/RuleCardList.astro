@@ -1,7 +1,7 @@
 ---
 import RuleCard from './RuleCard.astro'
 
-import { discoveredRules }               from '../../lib/content/rules'
+import { discoveredRules }               from '../../lib/content/discovery/rules'
 import type { RuleCategory, RuleFamily } from '../../lib/shared/registries'
 
 interface Props {
@@ -27,6 +27,8 @@ const items = slugs === undefined
   : slugs === undefined && <p class="rule-card-grid-empty">No rules in this group yet.</p>}
 
 <script>
+  import { remeasure } from '../../lib/shared/dom/remeasure'
+
   // Equalizes the name column across every card grid so the caption column
   // opens at one shared edge, re-measured as the grid resizes.
   function sync(grid: HTMLElement): void {
@@ -37,10 +39,7 @@ const items = slugs === undefined
     if (widest > 0) grid.style.setProperty('--rule-card-name-width', `${widest}px`)
   }
 
-  const grids = document.querySelectorAll<HTMLElement>('.rule-card-grid, .related-rules-inline')
-  for (const grid of grids) {
-    new ResizeObserver(() => sync(grid)).observe(grid)
+  for (const grid of document.querySelectorAll<HTMLElement>('.rule-card-grid, .related-rules-inline')) {
+    remeasure(grid, () => sync(grid))
   }
-  await document.fonts.ready
-  grids.forEach(sync)
 </script>

@@ -6,8 +6,9 @@ import Fixture              from '../fixtures/Fixture.astro'
 import RuleCardList         from './RuleCardList.astro'
 import RuleChrome           from './RuleChrome.astro'
 import RuleConfigTable      from './RuleConfigTable.astro'
-import { fixtureHasToggle } from '../../lib/content/fixtures'
-import { discoveredRules }  from '../../lib/content/rules'
+import { fixtureHasToggle } from '../../lib/content/loaders/fixtures'
+import { ruleOrThrow }      from '../../lib/content/discovery/rules'
+import { required }         from '../../lib/shared/required'
 
 interface Props {
   slug: string
@@ -15,12 +16,13 @@ interface Props {
 
 const { slug } = Astro.props
 
-const rule = (await discoveredRules()).find(candidate => candidate.slug === slug)
-if (rule === undefined) throw new Error(`RuleLayout slug "${slug}" does not match a rule page`)
+const rule = await ruleOrThrow(slug, 'RuleLayout')
 
 const fixtures  = (await getCollection('fixtures')).filter(entry => entry.id.startsWith(`${slug}/`))
-const canonical = fixtures.find(entry => entry.data.canonical === true)
-if (canonical === undefined) throw new Error(`Rule "${slug}" has no canonical fixture`)
+const canonical = required(
+  fixtures.find(entry => entry.data.canonical === true),
+  `Rule "${slug}" has no canonical fixture`
+)
 
 const caseOf   = (id: string): string => id.slice(slug.length + 1)
 const sortKey  = (title: string): string => title.replace(/^`+/, '')
@@ -39,9 +41,8 @@ const examples = fixtures
 <slot />
 
 <h2 id="configuration">Configuration</h2>
-<slot name="configuration">
-  <RuleConfigTable slug={slug} />
-</slot>
+<RuleConfigTable slug={slug} />
+<slot name="configuration" />
 
 <h2 id="the-canonical-case">The Canonical Case</h2>
 <Fixture rule={slug} case={caseOf(canonical.id)} />

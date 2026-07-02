@@ -2,7 +2,7 @@
 title: Quick Start
 ---
 
-Three subcommands cover every shape of run *Prose* supports. `format` rewrites files in place, `check` reports violations without modifying anything, and `completions` emits a shell-completion script. The same exit-code matrix gates both `format` and `check`, meaning a CI step and a local pre-commit hook compile against the same outcomes.
+The `format` and `check` subcommands carry the everyday runs, `format` rewriting files in place and `check` reporting violations without modifying anything. The same exit-code matrix gates both, meaning a CI step and a local pre-commit hook compile against the same outcomes.
 
 ## Run on a Project
 

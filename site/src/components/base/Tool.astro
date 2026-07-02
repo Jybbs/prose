@@ -1,8 +1,10 @@
 ---
-import './tool.css'
+import './styles/tool.css'
 
 import { getEntry } from 'astro:content'
 import { Icon }     from 'astro-icon/components'
+
+import { required } from '../../lib/shared/required'
 
 interface Props {
   bare ?: boolean
@@ -11,8 +13,10 @@ interface Props {
 
 const { bare = false, slug } = Astro.props
 
-const entry = await getEntry('tools', slug)
-if (entry === undefined) throw new Error(`Tool "${slug}" is not in the tools collection`)
+const entry = required(
+  await getEntry('tools', slug),
+  `Tool "${slug}" is not in the tools collection`
+)
 
 const { href, icon, name } = entry.data
 ---
