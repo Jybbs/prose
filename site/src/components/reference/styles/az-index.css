@@ -47,14 +47,11 @@
                height var(--prose-transition);
 }
 
-.az-index-tab:hover {
-  color : var(--sl-color-white);
-}
-
 .az-index-tab:hover::after {
   background : color-mix(in srgb, var(--domain-color, var(--sl-color-gray-2)) 80%, transparent);
 }
 
+.az-index-tab:hover,
 .az-index-tab.is-active {
   color : var(--sl-color-white);
 }

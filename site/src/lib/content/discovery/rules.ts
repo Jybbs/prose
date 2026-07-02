@@ -4,6 +4,7 @@ import { familyIndex, familyPage }       from './sections'
 import { lazy }                          from '../../shared/lazy'
 import { categoryOf, isFamily }          from '../../shared/registries'
 import type { RuleCategory, RuleFamily } from '../../shared/registries'
+import { required }                      from '../../shared/required'
 import { ruleRoute }                     from '../../shared/routes'
 
 export interface DiscoveredRule {
@@ -35,9 +36,7 @@ export async function ruleBySlug(slug: string): Promise<DiscoveredRule | undefin
 // The rule carrying `slug`, throwing when no rule page matches so a bad
 // slug fails the build at the component that passed it.
 export async function ruleOrThrow(slug: string, consumer: string): Promise<DiscoveredRule> {
-  const rule = await ruleBySlug(slug)
-  if (rule === undefined) throw new Error(`${consumer} slug "${slug}" does not match a rule page`)
-  return rule
+  return required(await ruleBySlug(slug), `${consumer} slug "${slug}" does not match a rule page`)
 }
 
 async function deriveRules(): Promise<DiscoveredRule[]> {

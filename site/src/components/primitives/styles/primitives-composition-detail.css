@@ -24,21 +24,13 @@
 }
 
 .primitives-composition-card-layer-numeral {
-  display         : inline-flex;
-  align-items     : center;
-  justify-content : center;
-  width           : 32px;
-  height          : 32px;
-  border-radius   : 50%;
-  font-family     : var(--prose-font-display);
-  font-style      : italic;
-  font-weight     : 500;
-  font-size       : 1.05rem;
-  line-height     : 1;
-  color           : var(--sl-color-bg);
-  background      : var(--pc-layer);
-  box-shadow      : 0 0 0 2px color-mix(in srgb, var(--pc-layer) 25%, var(--sl-color-bg));
-  flex-shrink     : 0;
+  width       : 32px;
+  height      : 32px;
+  font-size   : 1.05rem;
+  line-height : 1;
+  background  : var(--pc-layer);
+  box-shadow  : 0 0 0 2px color-mix(in srgb, var(--pc-layer) 25%, var(--sl-color-bg));
+  flex-shrink : 0;
 }
 
 .primitives-composition-card-head-text {
@@ -70,7 +62,7 @@
   color         : var(--sl-color-accent);
   background    : var(--sl-color-gray-6);
   padding       : 1px 4px;
-  border-radius : 4px;
+  border-radius : var(--prose-radius-sm);
 }
 
 .primitives-composition-card-rel {
@@ -127,18 +119,10 @@
 }
 
 .primitives-composition-card-mention-chip {
-  display         : inline-flex;
-  align-items     : center;
-  justify-content : center;
-  width           : 18px;
-  height          : 18px;
-  border-radius   : 50%;
-  font-family     : var(--prose-font-display);
-  font-style      : italic;
-  font-weight     : 500;
-  font-size       : 0.7rem;
-  line-height     : 1;
-  color           : var(--sl-color-bg);
+  width       : 18px;
+  height      : 18px;
+  font-size   : var(--prose-text-xxs);
+  line-height : 1;
 }
 
 .primitives-composition-card-mention-chip[data-layer="base"]          { background: var(--pc-base);          }

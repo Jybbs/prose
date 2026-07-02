@@ -38,7 +38,7 @@
 
 .scope-specimen-gutter {
   font-family   : var(--sl-font-mono);
-  font-size     : 0.7rem;
+  font-size     : var(--prose-text-xxs);
   color         : var(--sl-color-gray-3);
   text-align    : right;
   padding-right : 8px;

@@ -127,7 +127,7 @@
 
 .composition-cards-chip-slug {
   font-size      : var(--prose-text-xxs);
-  letter-spacing : 0.04em;
+  letter-spacing : var(--prose-folio-tracking);
   text-transform : uppercase;
 }
 

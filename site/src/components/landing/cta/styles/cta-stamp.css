@@ -30,7 +30,7 @@
 }
 
 .landing-cta-stamp-month {
-  font-size      : 0.7rem;
+  font-size      : var(--prose-text-xxs);
   letter-spacing : var(--prose-display-tracking-wide);
   color          : color-mix(in srgb, var(--stamp-accent) 55%, var(--sl-color-gray-3));
 }

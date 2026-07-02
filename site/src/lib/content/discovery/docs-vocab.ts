@@ -7,6 +7,7 @@ import { parse as parseYaml } from 'yaml'
 import { DOCS_CONTENT_DIR }          from '../../shared/paths'
 import { isFamily }                  from '../../shared/registries'
 import type { RuleFamily }           from '../../shared/registries'
+import { primitiveRoute, ruleRoute } from '../../shared/routes'
 import { pageFiles, subdirectories } from './page'
 
 export interface RuleRef      { badge: string, caption: string, family: RuleFamily, href: string }
@@ -55,7 +56,7 @@ function ruleRefs(dir: string): Map<string, RuleRef> {
         badge,
         caption : String(frontmatter(`${dir}/${family}/${file}`).caption ?? ''),
         family,
-        href    : `/rules/${family}/${slug}`
+        href    : ruleRoute(family, slug)
       })
     }
   }
@@ -66,7 +67,7 @@ function primitiveRefs(dir: string): Map<string, PrimitiveRef> {
   const out = new Map<string, PrimitiveRef>()
   for (const { file, slug } of pageFiles(dir)) {
     out.set(slug, {
-      href  : `/primitives/${slug}`,
+      href  : primitiveRoute(slug),
       title : String(frontmatter(`${dir}/${file}`).title ?? slug)
     })
   }

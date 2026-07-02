@@ -1,5 +1,6 @@
 import { isFamily }             from '../shared/registries'
 import type { RuleFamily }      from '../shared/registries'
+import { required }             from '../shared/required'
 import { isIndex, slugOf }      from './discovery/page'
 import type { DocsFrontmatter } from './schemas'
 
@@ -34,11 +35,11 @@ function assertCaption(value: string | undefined, slug: string): void {
 }
 
 function assertStability(value: DocsFrontmatter['stability'], slug: string): void {
-  if (value === undefined) throw new Error(`primitive "${slug}" is missing its stability`)
+  required(value, `primitive "${slug}" is missing its stability`)
 }
 
 function assertWarmth(value: DocsFrontmatter['warmth'], family: RuleFamily): void {
-  if (value === undefined) throw new Error(`family "${family}" index is missing its warmth`)
+  required(value, `family "${family}" index is missing its warmth`)
 }
 
 // Enforces the relationship invariants a per-record schema cannot reach over

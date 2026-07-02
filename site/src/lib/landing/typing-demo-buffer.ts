@@ -29,6 +29,8 @@ export const EMPTY_SEGMENTS: BufferSegments = {
   editingLineBefore : ''
 }
 
+export const beforeOnly = (before: string): BufferSegments => ({ ...EMPTY_SEGMENTS, before })
+
 export function applyCompletedEdits(
   base    : string,
   entries : readonly TypingDemoEntry[],
@@ -61,7 +63,7 @@ export function segmentsForEdit(
   editProgress : number
 ): BufferSegments {
   const anchorIndex = text.indexOf(entry.anchor + entry.from)
-  if (anchorIndex === -1) return { ...EMPTY_SEGMENTS, before: text }
+  if (anchorIndex === -1) return beforeOnly(text)
   const valueStart = anchorIndex + entry.anchor.length
   const valueEnd   = valueStart + entry.from.length
   const fullBefore = text.slice(0, valueStart)

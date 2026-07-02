@@ -37,8 +37,7 @@
   pointer-events : none;
 }
 
-.surface-card-cover-link,
-.rule-card-cover {
+.surface-card-cover-link {
   position             : absolute;
   inset                : 0;
   z-index              : 0;
@@ -48,8 +47,7 @@
   text-decoration-line : none;
 }
 
-.surface-card-cover-link:focus-visible,
-.rule-card-cover:focus-visible {
+.surface-card-cover-link:focus-visible {
   outline        : var(--prose-focus-ring);
   outline-offset : 2px;
 }
@@ -191,7 +189,7 @@
   padding              : 2px 0;
   font-family          : var(--sl-font-mono);
   font-size            : var(--prose-text-xxs);
-  letter-spacing       : 0.06em;
+  letter-spacing       : var(--prose-meta-tracking);
   text-decoration-line : none;
   color                : var(--sl-color-gray-3);
   transition           : color var(--tab-easing);
