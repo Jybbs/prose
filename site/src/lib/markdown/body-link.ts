@@ -3,10 +3,8 @@ import type { Root }    from 'mdast'
 
 import { pushClassName, withinHeading } from './mdast-node'
 
-// Adds the body-link class to every anchor outside a heading, so authored
-// links, autolinks, and the primitive references the wiki-link plugin emits
-// share one hover treatment. Registered last so it reaches the links the
-// other plugins produce.
+// Registered last so authored links, autolinks, and the anchors the earlier
+// plugins emit all share one hover treatment.
 export function remarkBodyLink() {
   return (tree: Root): void => {
     visitParents(tree, 'link', (node, ancestors) => {

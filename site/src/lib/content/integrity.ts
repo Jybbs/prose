@@ -33,15 +33,17 @@ function assertCaption(value: string | undefined, slug: string): void {
   }
 }
 
+function assertStability(value: DocsFrontmatter['stability'], slug: string): void {
+  if (value === undefined) throw new Error(`primitive "${slug}" is missing its stability`)
+}
+
 function assertWarmth(value: DocsFrontmatter['warmth'], family: RuleFamily): void {
   if (value === undefined) throw new Error(`family "${family}" index is missing its warmth`)
 }
 
 // Enforces the relationship invariants a per-record schema cannot reach over
 // the loaded docs collection, throwing on the first violation to fail the
-// build. Covers stray-page rejection and family-directory legitimacy,
-// family-index warmth, one family per rule slug, `related` resolution, and
-// the primitive consumes-and-consumed-by graph.
+// build.
 export function assertCorpusIntegrity(entries: Iterable<CorpusEntry>): void {
   const primitives : Primitive[] = []
   const rules      : Rule[]      = []
@@ -70,10 +72,12 @@ export function assertCorpusIntegrity(entries: Iterable<CorpusEntry>): void {
         slug
       })
     } else if (parts[0] === 'primitives' && parts.length === 2) {
+      const slug = slugOf(file)
+      assertStability(data.stability, slug)
       primitives.push({
         consumedBy : data.consumedBy ?? [],
         consumes   : data.consumes ?? [],
-        slug       : slugOf(file)
+        slug
       })
     }
   }
@@ -107,10 +111,8 @@ function assertRelatedResolves(rules: readonly Rule[]): void {
 }
 
 // Validates that every edge of the consumes-and-consumed-by graph resolves to a
-// real node. A `consumes` edge names another primitive, whereas a `consumedBy`
-// edge names a consumer the primitive serves, which spans rules, sibling
-// primitives, and the CLI. The graph is not a strict inverse, because a
-// primitive curates the consumers it lists rather than mirroring every edge.
+// real node. The graph is not a strict inverse, because a primitive curates the
+// consumers it lists rather than mirroring every edge.
 function assertPrimitiveGraph(rules: readonly Rule[], primitives: readonly Primitive[]): void {
   const primitiveSlugs = new Set(primitives.map(p => p.slug))
   const ruleSlugs      = new Set(rules.map(r => r.slug))

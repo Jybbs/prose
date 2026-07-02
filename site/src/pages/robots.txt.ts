@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro'
 
-// Allow-all crawling, pointing crawlers at the index the sitemap integration
-// emits.
+// `sitemap-index.xml` is the filename the sitemap integration emits.
 export const GET: APIRoute = ({ site }) => {
   const lines = [
     'User-agent: *', 'Allow: /', '',

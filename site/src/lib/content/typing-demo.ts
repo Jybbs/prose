@@ -10,10 +10,9 @@ import { precompileMagicMove }                         from '../markdown/magic-m
 import { resolveProseBinary }                          from '../shared/paths'
 import { replaceStore }                                from './store'
 
-// Runs the compiled `prose` binary once per morph state, the source first, then
-// the cumulative rule selections, then each config-tail variant, and precompiles
-// the magic-move token steps the landing typing demo animates between. Requires
-// a prior `cargo build`.
+// Runs the compiled `prose` binary once per morph state and precompiles the
+// magic-move token steps the landing typing demo animates between. Requires a
+// prior `cargo build`.
 export function typingDemoLoader(): Loader {
   return {
     name: 'prose-typing-demo',

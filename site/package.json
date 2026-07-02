@@ -4,24 +4,32 @@
   "private" : true,
 
   "dependencies": {
-    "@astrojs/starlight"         : "0.41.1",
-    "@fontsource/fraunces"       : "5.2.9",
-    "@fontsource/jetbrains-mono" : "5.2.8",
-    "@fontsource/lora"           : "5.2.8",
-    "@shikijs/magic-move"        : "4.3.0",
-    "astro"                      : "7.0.3",
-    "cacache"                    : "21.0.1",
-    "culori"                     : "4.0.2",
-    "ofetch"                     : "1.5.1",
-    "satori"                     : "0.26.0"
+    "@astrojs/starlight"                   : "0.41.1",
+    "@fontsource-variable/fraunces"        : "5.2.9",
+    "@fontsource-variable/jetbrains-mono"  : "5.2.8",
+    "@fontsource-variable/lora"            : "5.2.8",
+    "@fontsource/fraunces"                 : "5.2.9",
+    "@fontsource/jetbrains-mono"           : "5.2.8",
+    "@fontsource/lora"                     : "5.2.8",
+    "@iconify-json/logos"                  : "1.2.11",
+    "@iconify-json/simple-icons"           : "1.2.88",
+    "@shikijs/magic-move"                  : "4.3.0",
+    "astro"                                : "7.0.3",
+    "astro-icon"                           : "1.1.5",
+    "cacache"                              : "21.0.1",
+    "culori"                               : "4.0.2",
+    "ofetch"                               : "1.5.1",
+    "satori"                               : "0.26.0"
   },
 
   "devDependencies": {
-    "@astrojs/check"            : "0.9.9",
-    "@types/cacache"            : "20.0.1",
-    "@types/culori"             : "4.0.1",
-    "schema-dts"                : "2.0.0",
-    "starlight-links-validator" : "0.25.1",
-    "typescript"                : "5.9.3"
+    "@astrojs/check"                : "0.9.9",
+    "@csstools/postcss-global-data" : "4.0.0",
+    "@types/cacache"                : "20.0.1",
+    "@types/culori"                 : "4.0.1",
+    "postcss-custom-media"          : "12.0.1",
+    "schema-dts"                    : "2.0.0",
+    "starlight-links-validator"     : "0.25.1",
+    "typescript"                    : "5.9.3"
   }
 }

@@ -28,8 +28,6 @@ export function jsonLd(head: Head, content: string): void {
   head.push({ attrs: { type: 'application/ld+json' }, content, tag: 'script' })
 }
 
-// Rewrites the entry Starlight already emitted for the tag, falling back to a
-// push when none exists.
 export function upsertMeta(
   head    : Head,
   key     : 'name' | 'property',

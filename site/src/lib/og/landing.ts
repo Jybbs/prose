@@ -1,6 +1,7 @@
 import { site }         from 'astro:config/server'
 import type { JSXNode } from 'satori/jsx'
 
+import { FONTS }                 from '../tokens/fonts'
 import type { BrandAssets }      from './assets'
 import { BODY, META_LABEL, UBE } from './colors'
 import {
@@ -60,7 +61,7 @@ function pilcrowMark(): JSXNode {
     style    : {
       alignItems     : 'center',
       color          : UBE,
-      fontFamily     : 'Fraunces',
+      fontFamily     : FONTS.display.name,
       fontSize       : 80,
       fontWeight     : 600,
       height         : 72,

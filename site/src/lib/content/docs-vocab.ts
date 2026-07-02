@@ -67,8 +67,6 @@ function primitiveRefs(dir: string): Map<string, PrimitiveRef> {
   return out
 }
 
-// Registers each entry's own phrase and its aliases against one reference,
-// throwing when a phrase resolves to two entries.
 function glossaryPhrases(path: string): Map<string, GlossaryRef> {
   const source = parseYaml(readFileSync(path, 'utf8')) as Record<string, GlossarySource>
   const out    = new Map<string, GlossaryRef>()

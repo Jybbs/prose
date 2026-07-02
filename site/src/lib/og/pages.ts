@@ -1,10 +1,11 @@
 import { getCollection }        from 'astro:content'
 import type { CollectionEntry } from 'astro:content'
 
-import { isFamily }        from '../shared/registries'
-import type { RuleFamily } from '../shared/registries'
-import { resolveColor }    from '../tokens/resolve'
-import { isLandingId }     from './url'
+import { isFamily }                            from '../shared/registries'
+import type { PrimitiveStability, RuleFamily } from '../shared/registries'
+import { titleCase }                           from '../shared/title-case'
+import { resolveColor }                        from '../tokens/resolve'
+import { isLandingId }                         from './url'
 
 type DocsEntry = CollectionEntry<'docs'>
 type Warmth    = NonNullable<DocsEntry['data']['warmth']>
@@ -16,7 +17,7 @@ export interface OgPage {
   family    ?: RuleFamily
   kind       : string
   pipeline  ?: { position: number, total: number }
-  stability ?: string
+  stability ?: PrimitiveStability
   title      : string
   warmth    ?: Warmth
 }
@@ -26,8 +27,6 @@ export interface OgCard {
   page : OgPage | 'landing'
 }
 
-// Enumerates every card the build renders, the landing card plus one card per
-// docs page, enriched from the docs and pipeline collections.
 export async function enumerateCards(): Promise<OgCard[]> {
   const [docs, pipeline] = await Promise.all([getCollection('docs'), getCollection('pipeline')])
   const positions = new Map(pipeline.map(entry => [entry.data.slug, entry.data.position]))
@@ -84,8 +83,4 @@ function pageFor(
     return { ...base, stability: entry.data.stability ?? 'internal' }
   }
   return base
-}
-
-function titleCase(slug: string): string {
-  return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }

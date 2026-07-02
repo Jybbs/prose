@@ -1,5 +1,6 @@
 import type { JSXNode } from 'satori/jsx'
 
+import { FONTS }             from '../tokens/fonts'
 import type { BrandAssets }  from './assets'
 import { BODY, KICKER, UBE } from './colors'
 import type { OgPage }       from './pages'
@@ -16,6 +17,8 @@ const CODE_CHIP = {
   transform       : 'translateY(-2px)'
 }
 
+// Each pair is a max title length and the font size used up to it, `cap` for
+// titles with a caption.
 const TITLE_SIZES = {
   bare : [[4, 144], [8, 132], [14, 120], [Infinity, 100]],
   cap  : [[12, 108], [17, 100], [22, 84], [Infinity, 76]]
@@ -46,6 +49,7 @@ function buildKicker(page: OgPage): string {
 
 function captionSegments(raw: string): ReadonlyArray<{ code: boolean, text: string }> {
   const strip = (s: string): string => s.replace(/(\*\*?|_)(.+?)\1/g, '$2')
+  // `split` interleaves the backtick captures at odd indexes
   return raw.split(/`([^`]+)`/).flatMap((part, index): Array<{ code: boolean, text: string }> =>
     index % 2 === 1
       ? [{ code: true, text: part }]
@@ -97,7 +101,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
       children : page.title,
       style    : {
         color         : accent,
-        fontFamily    : 'Fraunces',
+        fontFamily    : FONTS.display.name,
         fontSize      : fitTitleSize(page.title, caption !== undefined),
         fontStyle     : 'normal',
         fontWeight    : 600,
@@ -119,7 +123,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
         columnGap  : 7,
         display    : 'flex',
         flexWrap   : 'wrap',
-        fontFamily : 'Lora',
+        fontFamily : FONTS.base.name,
         fontSize   : 24,
         fontWeight : 400,
         maxWidth   : 1040,
