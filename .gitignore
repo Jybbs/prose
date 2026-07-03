@@ -22,5 +22,6 @@ __pycache__/
 
 node_modules/
 site/.astro/
+site/.lycheecache
 site/dist
 site/coverage/
