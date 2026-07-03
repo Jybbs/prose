@@ -45,7 +45,7 @@ jobs:
           - cache      : false
             command    : mise run audit
             name       : 🪓 Unused
-          - command    : mise run lint
+          - command    : mise run lint rust
             name       : 📎 Clippy
             shared-key : prose-clippy
           - command    : mise run build

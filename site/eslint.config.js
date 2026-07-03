@@ -1,8 +1,11 @@
-import astro from 'eslint-plugin-astro'
+import astro    from 'eslint-plugin-astro'
+import tsParser from '@typescript-eslint/parser'
 
-// The `.astro` frontmatter and template surface oxlint cannot parse. The
-// TypeScript tree is oxlint's, configured in `.oxlintrc.json`.
 export default [
   ...astro.configs['flat/recommended'],
+  {
+    files           : ['**/*.astro'],
+    languageOptions : { parserOptions: { parser: tsParser } }
+  },
   { ignores: ['.astro/', 'dist/'] }
 ]

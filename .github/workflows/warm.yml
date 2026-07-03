@@ -60,7 +60,7 @@ jobs:
             cache      : false
             command    : mise run bake
             name       : 🥐 Bun
-          - command    : mise run lint
+          - command    : mise run lint rust
             name       : 📎 Clippy
             shared-key : prose-clippy
           - command    : mise run build

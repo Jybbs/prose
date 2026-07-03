@@ -1,7 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S bash -euo pipefail
 #MISE description="Run the linters including `clippy`, passing `rust` or `site` to scope"
-
-set -euo pipefail
 
 lint_rust() {
   cargo clippy --all-targets --locked -- -D warnings
@@ -9,6 +7,7 @@ lint_rust() {
 
 lint_site() {
   cd site
+  bun install --frozen-lockfile
   bunx --bun oxlint src
   bunx --bun eslint .
 }
