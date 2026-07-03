@@ -44,6 +44,7 @@ export default defineConfig({
       titleDelimiter  : '·',
 
       components: {
+        Footer      : './src/components/chrome/Footer.astro',
         Head        : './src/components/chrome/Head.astro',
         SocialIcons : './src/components/chrome/SocialIcons.astro'
       },

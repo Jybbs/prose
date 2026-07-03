@@ -160,7 +160,7 @@ export const pipelineEntry = z.object({
 
 export type PipelineEntry = z.infer<typeof pipelineEntry>
 
-export const release = z.object({ version: z.string() })
+export const release = z.object({ gitSha: z.string(), version: z.string() })
 
 export const stars = z.object({ stars: z.string() })
 

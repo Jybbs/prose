@@ -14,6 +14,15 @@ function parseCrateVersion(toml: string, source: string): string {
   return version
 }
 
+// The short commit the docs were built from, `unknown` when git is unavailable.
+function commitSha(): string {
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim()
+  } catch {
+    return 'unknown'
+  }
+}
+
 // Loads the pipeline order as one entry per rule for the pipeline-order page,
 // read from the `prose rules` JSON the binary emits so the registry in
 // `crate/src/rule.rs` stays the single source of truth.
@@ -35,7 +44,7 @@ export function releaseLoader(): Loader {
     load: async ctx => {
       const source  = cargoTomlPath(ctx.config.root)
       const version = parseCrateVersion(await fs.readFile(source, 'utf8'), source)
-      await replaceStore(ctx, [{ data: { version }, id: 'release' }])
+      await replaceStore(ctx, [{ data: { gitSha: commitSha(), version }, id: 'release' }])
     }
   }
 }

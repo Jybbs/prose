@@ -5,14 +5,19 @@ import { getCollection } from 'astro:content'
 import { REPO_URL } from '../../lib/shared/constants'
 
 const [release] = await getCollection('release')
+const [stars]   = await getCollection('stars')
 ---
 
 <a class="version" href={`${REPO_URL}/releases`}>v{release.data.version}</a>
+<a class="stars" href={REPO_URL} title="GitHub stars">
+  <span class="star-glyph" aria-hidden="true">★</span>{stars.data.stars}
+</a>
 <Default />
 
 <style>
-  /* Matches Starlight's own social-link declarations so the version link aligns with the icons */
-  .version {
+  /* The version and stars links borrow Starlight's social-link sizing so they sit inline with the icons. */
+  .version,
+  .stars {
     color           : var(--sl-color-text-accent);
     font-family     : var(--sl-font-mono, monospace);
     font-size       : var(--sl-text-sm);
@@ -21,7 +26,18 @@ const [release] = await getCollection('release')
     text-decoration : none;
   }
 
-  .version:hover {
+  .stars {
+    display     : inline-flex;
+    align-items : center;
+    gap         : 0.35em;
+  }
+
+  .version:hover,
+  .stars:hover {
     color: var(--sl-color-white);
+  }
+
+  .star-glyph {
+    color: var(--prose-palette-apricot);
   }
 </style>

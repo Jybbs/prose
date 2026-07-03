@@ -1,0 +1,105 @@
+---
+---
+
+<div class="not-found">
+  <p class="not-found-kicker kicker">
+    <span class="not-found-mark" aria-hidden="true">&times;</span>
+    <span>404 &middot; mistyped</span>
+  </p>
+  <h1 class="not-found-headline">
+    A page
+    <span class="not-found-strike">misplaced</span>
+    <span class="not-found-fix">mistyped</span>.
+  </h1>
+  <p class="not-found-body">
+    The URL didn't resolve to any surface we keep on file. Step back to the home page and try a different route through the catalog.
+  </p>
+  <a class="not-found-cta" href="/">
+    <span>Back to the home page</span>
+    <span class="not-found-arrow" aria-hidden="true">&rarr;</span>
+  </a>
+</div>
+
+<style>
+  .not-found {
+    display        : flex;
+    flex-direction : column;
+    align-items    : flex-start;
+    gap            : 22px;
+    max-width      : 640px;
+    margin         : 96px auto;
+    padding        : 0 24px;
+  }
+
+  .not-found-kicker {
+    display     : inline-flex;
+    align-items : center;
+    gap         : 10px;
+  }
+
+  .not-found-mark {
+    color : var(--prose-palette-apricot);
+  }
+
+  .not-found-headline {
+    margin         : 0;
+    font-family    : var(--prose-font-display);
+    font-weight    : 500;
+    font-size      : clamp(2.4rem, 5.4vw, 3.4rem);
+    line-height    : 1.08;
+    letter-spacing : -0.01em;
+    color          : var(--sl-color-white);
+    max-width      : 18ch;
+  }
+
+  .not-found-strike {
+    color                     : var(--sl-color-gray-3);
+    text-decoration-line      : line-through;
+    text-decoration-color     : color-mix(in srgb, var(--prose-palette-apricot) 75%, transparent);
+    text-decoration-thickness : 2px;
+    margin-right              : 8px;
+  }
+
+  .not-found-fix {
+    font-style : italic;
+    color      : var(--prose-palette-ube);
+  }
+
+  .not-found-body {
+    margin      : 0;
+    max-width   : 48ch;
+    font-size   : 1rem;
+    line-height : 1.6;
+    color       : var(--sl-color-gray-2);
+  }
+
+  .not-found-cta {
+    display              : inline-flex;
+    align-items          : center;
+    gap                  : 10px;
+    margin-top           : 6px;
+    padding              : 11px 20px;
+    border               : 1px solid var(--prose-palette-apricot);
+    border-radius        : var(--prose-radius-sm);
+    color                : color-mix(in srgb, var(--prose-palette-apricot) 70%, var(--sl-color-white));
+    font-family          : var(--prose-font-display);
+    font-style           : italic;
+    font-weight          : 500;
+    text-decoration-line : none;
+    transition           : background var(--prose-transition), color var(--prose-transition);
+  }
+
+  .not-found-cta:hover {
+    background : color-mix(in srgb, var(--prose-palette-apricot) 14%, var(--sl-color-bg));
+    color      : var(--sl-color-white);
+  }
+
+  .not-found-arrow {
+    display    : inline-block;
+    transition : transform var(--prose-transition);
+  }
+
+  .not-found-cta:hover .not-found-arrow {
+    transform : translateX(3px);
+  }
+</style>

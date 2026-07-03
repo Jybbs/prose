@@ -6,6 +6,7 @@ import Fixture              from '../fixtures/Fixture.astro'
 import RuleCardList         from './RuleCardList.astro'
 import RuleChrome           from './RuleChrome.astro'
 import RuleConfigTable      from './RuleConfigTable.astro'
+import SectionHeading       from '../base/SectionHeading.astro'
 import { fixtureHasToggle } from '../../lib/content/loaders/fixtures'
 import { ruleOrThrow }      from '../../lib/content/discovery/rules'
 import { required }         from '../../lib/shared/required'
@@ -40,18 +41,18 @@ const examples = fixtures
 
 <slot />
 
-<h2 id="configuration">Configuration</h2>
+<SectionHeading id="configuration" title="Configuration" />
 <RuleConfigTable slug={slug} />
 <slot name="configuration" />
 
-<h2 id="the-canonical-case">The Canonical Case</h2>
+<SectionHeading id="the-canonical-case" title="The Canonical Case" />
 <Fixture rule={slug} case={caseOf(canonical.id)} />
 
-<h2 id="more-examples">More Examples</h2>
+<SectionHeading id="more-examples" title="More Examples" />
 {examples.map(example => (
   <Fixture rule={slug} case={caseOf(example.id)} title={example.data.title} />
 ))}
 
-<h2 id="related">Related</h2>
+<SectionHeading id="related" title="Related" />
 <RuleCardList slugs={rule.related} />
 <slot name="related-after" />

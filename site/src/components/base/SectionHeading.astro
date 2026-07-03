@@ -1,0 +1,16 @@
+---
+interface Props {
+  id    : string
+  title : string
+}
+
+const { id, title } = Astro.props
+---
+
+<div class="sl-heading-wrapper level-h2">
+  <h2 id={id}>{title}</h2>
+  <a class="sl-anchor-link" href={`#${id}`}>
+    <span aria-hidden="true" class="sl-anchor-icon"></span>
+    <span class="sr-only" data-pagefind-ignore>Section titled “{title}”</span>
+  </a>
+</div>

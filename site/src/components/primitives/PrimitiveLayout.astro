@@ -1,5 +1,6 @@
 ---
 import PrimitivesComposition from './PrimitivesComposition.astro'
+import SectionHeading        from '../base/SectionHeading.astro'
 
 interface Props {
   slug: string
@@ -12,5 +13,5 @@ const { slug } = Astro.props
 <slot name="lead" />
 <slot />
 
-<h2 id="related">Related</h2>
+<SectionHeading id="related" title="Related" />
 <slot name="related" />
