@@ -1,5 +1,5 @@
 ---
-import { getEntry } from 'astro:content'
+import { getCollection } from 'astro:content'
 
 import { ruleOrThrow }  from '../../lib/content/discovery/rules'
 import { renderInline } from '../../lib/markdown/render'
@@ -14,11 +14,12 @@ const { slug } = Astro.props
 const rule = await ruleOrThrow(slug, 'RuleConfigTable')
 
 const presetId = rule.family === 'alignment' ? 'alignment' : 'toggle'
+const presets  = await getCollection('ruleConfigPresets')
 const preset   = required(
-  await getEntry('ruleConfigPresets', presetId),
+  presets.find(entry => entry.id === presetId),
   `Rule config preset "${presetId}" does not exist`
 )
-const extra = await getEntry('ruleConfigPresets', slug)
+const extra = presets.find(entry => entry.id === slug)
 
 const presetRows = [...preset.data.rows, ...extra?.data.rows ?? []]
 
