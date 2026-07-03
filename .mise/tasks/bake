@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S bash -euo pipefail
 #MISE description="Install bun dependencies and sync Astro's generated types"
 #MISE dir="site"
 #MISE sources=["site/package.json", "site/bun.lock"]

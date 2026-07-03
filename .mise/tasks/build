@@ -1,7 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S bash -euo pipefail
 #MISE description="Build the crate in debug mode"
-
-set -euo pipefail
 
 case "${1:-all}" in
   all) cargo build --all-targets --locked ;;

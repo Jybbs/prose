@@ -1,8 +1,6 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S bash -euo pipefail
 #MISE description="Generate an LCOV coverage report for the Rust crate"
-#MISE tools={"aqua:taiki-e/cargo-llvm-cov" = "latest"}
-
-set -euo pipefail
+#MISE tools={"aqua:taiki-e/cargo-llvm-cov" = "0.8.7"}
 
 rustup component add llvm-tools-preview
 cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info
