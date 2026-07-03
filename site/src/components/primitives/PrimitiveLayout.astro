@@ -1,0 +1,17 @@
+---
+import PrimitivesComposition from './PrimitivesComposition.astro'
+import SectionHeading        from '../base/SectionHeading.astro'
+
+interface Props {
+  slug: string
+}
+
+const { slug } = Astro.props
+---
+
+<PrimitivesComposition initialFocus={slug} />
+<slot name="lead" />
+<slot />
+
+<SectionHeading id="related" title="Related" />
+<slot name="related" />

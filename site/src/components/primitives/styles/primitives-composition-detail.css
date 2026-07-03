@@ -1,0 +1,174 @@
+.primitives-composition-card {
+  display        : flex;
+  flex-direction : column;
+  gap            : 14px;
+  margin-top     : 14px;
+  padding        : 18px 22px;
+  background     : var(--sl-color-bg);
+  border         : 1px solid var(--sl-color-hairline);
+  border-top     : 3px solid var(--pc-layer);
+  border-radius  : var(--prose-radius-sm);
+}
+
+.primitives-composition-card[hidden] {
+  display : none;
+}
+
+.primitives-composition-card-head {
+  display        : flex;
+  align-items    : center;
+  text-align     : left;
+  gap            : 14px;
+  padding-bottom : 12px;
+  border-bottom  : 1px solid color-mix(in srgb, var(--sl-color-hairline) 70%, var(--pc-layer));
+}
+
+.primitives-composition-card-layer-numeral {
+  width       : 32px;
+  height      : 32px;
+  font-size   : 1.05rem;
+  line-height : 1;
+  background  : var(--pc-layer);
+  box-shadow  : 0 0 0 2px color-mix(in srgb, var(--pc-layer) 25%, var(--sl-color-bg));
+  flex-shrink : 0;
+}
+
+.primitives-composition-card-head-text {
+  display        : flex;
+  flex-direction : column;
+  gap            : 3px;
+  min-width      : 0;
+  flex           : 1;
+}
+
+.primitives-composition-card-name {
+  font-family : var(--prose-font-display);
+  font-size   : 1rem;
+  line-height : 1.1;
+  color       : var(--sl-color-white);
+}
+
+.primitives-composition-card-summary {
+  font-family : var(--sl-font-mono);
+  font-size   : 0.68rem;
+  line-height : 1.5;
+  color       : var(--sl-color-gray-2);
+}
+
+.sl-markdown-content .primitives-composition-card-summary code,
+.primitives-composition-card-summary code {
+  font-family   : var(--sl-font-mono);
+  font-size     : 1em;
+  color         : var(--sl-color-accent);
+  background    : var(--sl-color-gray-6);
+  padding       : 1px 4px;
+  border-radius : var(--prose-radius-sm);
+}
+
+.primitives-composition-card-rel {
+  display               : grid;
+  grid-template-columns : 78px minmax(0, 1fr);
+  column-gap            : 10px;
+  align-items           : center;
+}
+
+.primitives-composition-card-rel-label {
+  font-family    : var(--sl-font-mono);
+  font-size      : 0.54rem;
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+  text-align     : left;
+  white-space    : nowrap;
+  color          : color-mix(in srgb, var(--pc-layer) 70%, var(--sl-color-gray-2));
+}
+
+.primitives-composition-card-rel-mentions {
+  display     : flex;
+  flex-wrap   : wrap;
+  align-items : center;
+  gap         : 5px 16px;
+  min-height  : 24px;
+  font-family : var(--sl-font-mono);
+  font-size   : 0.68rem;
+  color       : var(--sl-color-gray-2);
+}
+
+.sl-markdown-content .primitives-composition-card-mention,
+.primitives-composition-card-mention {
+  display              : inline-flex;
+  align-items          : center;
+  gap                  : 5px;
+  font-size            : 0.68rem;
+  color                : var(--sl-color-white);
+  text-decoration-line : none;
+  border-bottom        : 1px solid transparent;
+  transition           : color        140ms var(--prose-ease-emphasized),
+                         border-color 140ms var(--prose-ease-emphasized);
+}
+
+.sl-markdown-content .primitives-composition-card-mention[data-layer="base"],
+.primitives-composition-card-mention[data-layer="base"]          { color: color-mix(in srgb, var(--pc-base)          70%, var(--sl-color-white)); border-bottom-color: color-mix(in srgb, var(--pc-base)          40%, transparent); }
+.sl-markdown-content .primitives-composition-card-mention[data-layer="orchestration"],
+.primitives-composition-card-mention[data-layer="orchestration"] { color: color-mix(in srgb, var(--pc-orchestration) 70%, var(--sl-color-white)); border-bottom-color: color-mix(in srgb, var(--pc-orchestration) 40%, transparent); }
+.sl-markdown-content .primitives-composition-card-mention[data-layer="analysis"],
+.primitives-composition-card-mention[data-layer="analysis"]      { color: color-mix(in srgb, var(--pc-analysis)      70%, var(--sl-color-white)); border-bottom-color: color-mix(in srgb, var(--pc-analysis)      40%, transparent); }
+
+.sl-markdown-content .primitives-composition-card-mention:hover,
+.primitives-composition-card-mention:hover {
+  border-bottom-color : currentColor;
+}
+
+.primitives-composition-card-mention-chip {
+  width       : 18px;
+  height      : 18px;
+  font-size   : var(--prose-text-xxs);
+  line-height : 1;
+}
+
+.primitives-composition-card-mention-chip[data-layer="base"]          { background: var(--pc-base);          }
+.primitives-composition-card-mention-chip[data-layer="orchestration"] { background: var(--pc-orchestration); }
+.primitives-composition-card-mention-chip[data-layer="analysis"]      { background: var(--pc-analysis);      }
+
+.primitives-composition-card-mention-text {
+  display : inline-block;
+}
+
+.primitives-composition-card-mention-ext {
+  font-size : 0.68rem;
+  color     : var(--sl-color-gray-3);
+}
+
+.primitives-composition-card-mention-item {
+  position    : relative;
+  display     : inline-flex;
+  align-items : center;
+}
+
+.primitives-composition-card-mention-item:not(:last-child)::after {
+  content        : "·";
+  position       : absolute;
+  left           : calc(100% + 8px);
+  top            : 50%;
+  transform      : translate(-50%, -50%);
+  color          : var(--sl-color-gray-3);
+  pointer-events : none;
+}
+
+.primitives-composition-card-mention-item[data-suppress-dot]::after {
+  display : none;
+}
+
+.sl-markdown-content .primitives-composition-card-rel-mentions a.rule-chip,
+.primitives-composition-card-rel-mentions a.rule-chip {
+  padding     : 2px 8px 2px 6px;
+  font-size   : 0.68rem;
+  line-height : 1.5;
+}
+
+.primitives-composition-card-hint {
+  margin      : 0;
+  font-family : var(--sl-font);
+  font-style  : italic;
+  font-size   : var(--prose-text-sm);
+  color       : var(--sl-color-gray-3);
+}

@@ -1,0 +1,42 @@
+---
+import './styles/fixture.css'
+
+interface Props {
+  for: string
+}
+
+const { for: fixtureId } = Astro.props
+---
+
+<fixture-toggle class="fixture-toggle" role="tablist" aria-label="Fixture view" data-for={fixtureId}>
+  <button type="button" role="tab" class="fixture-toggle-pill" data-side="before" aria-selected="false">Before</button>
+  <button type="button" role="tab" class="fixture-toggle-pill" data-side="after" aria-selected="true">After</button>
+</fixture-toggle>
+
+<script>
+  import { listenKeys } from 'nanostores'
+
+  import { fixtureTabs, setTab, tabOf } from '../../lib/fixtures/store'
+  import type { FixtureTab }            from '../../lib/fixtures/store'
+
+  class FixtureToggleElement extends HTMLElement {
+    connectedCallback(): void {
+      const id = this.dataset.for ?? ''
+      for (const pill of this.querySelectorAll<HTMLButtonElement>('.fixture-toggle-pill')) {
+        pill.addEventListener('click', event => {
+          event.stopPropagation()
+          setTab(id, pill.dataset.side as FixtureTab)
+        })
+      }
+      listenKeys(fixtureTabs, [id], () => this.#reflect(tabOf(id)))
+    }
+
+    #reflect(tab: FixtureTab): void {
+      for (const pill of this.querySelectorAll<HTMLButtonElement>('.fixture-toggle-pill')) {
+        pill.setAttribute('aria-selected', String(pill.dataset.side === tab))
+      }
+    }
+  }
+
+  customElements.define('fixture-toggle', FixtureToggleElement)
+</script>

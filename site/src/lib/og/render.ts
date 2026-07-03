@@ -9,6 +9,8 @@ import { cardKeyer, pruneCards, readCard, writeCard } from './cache'
 import { landingSvg }                                 from './landing'
 import { type OgCard, enumerateCards }                from './pages'
 import { pageSvg }                                    from './template'
+import { lazy }                                       from '../shared/lazy'
+import { required }                                   from '../shared/required'
 
 const CACHE_DIR = fileURLToPath(new URL('../.cache/og/', root))
 
@@ -18,7 +20,7 @@ interface Renderer {
   version : string
 }
 
-let renderer: Promise<Renderer> | undefined
+const renderer = lazy(init)
 
 export async function cardResponse(id: string): Promise<Response> {
   return new Response(new Uint8Array(await renderCard(id)), {
@@ -27,14 +29,13 @@ export async function cardResponse(id: string): Promise<Response> {
 }
 
 export async function pageCardIds(): Promise<string[]> {
-  const { cards } = await (renderer ??= init())
+  const { cards } = await renderer()
   return [...cards.values()].filter(card => card.page !== 'landing').map(card => card.id)
 }
 
 async function renderCard(id: string): Promise<Buffer> {
-  const { brand, cards, version } = await (renderer ??= init())
-  const card = cards.get(id)
-  if (card === undefined) throw new Error(`no OG card enumerated for "${id}"`)
+  const { brand, cards, version } = await renderer()
+  const card = required(cards.get(id), `no OG card enumerated for "${id}"`)
   const cached = await readCard(CACHE_DIR, card.key)
   if (cached !== null) return cached
   const svg = card.page === 'landing'

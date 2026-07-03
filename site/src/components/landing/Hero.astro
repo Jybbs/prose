@@ -1,0 +1,77 @@
+---
+import './styles/hero.css'
+---
+
+<landing-hero class="landing-hero">
+  <div class="landing-hero-watermarks" aria-hidden="true"></div>
+  <h1 class="landing-hero-wordmark">
+    <img src="/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." />
+  </h1>
+</landing-hero>
+
+<script>
+  import { ROW_STRIDE_PX, tileStamps } from '../../lib/landing/hero-stamps'
+  import type { Stamp }                from '../../lib/landing/hero-stamps'
+  import { el }                        from '../../lib/shared/dom/el'
+  import { remeasure }                 from '../../lib/shared/dom/remeasure'
+
+  const STAMP_PER_COL = 240
+  const TERMINUS_GAP  = 40
+
+  function stampNode(stamp: Stamp): HTMLElement {
+    let node: HTMLElement
+    if (stamp.kind === 'big') {
+      const img = el('img', 'landing-hero-watermark landing-hero-watermark-big')
+      img.src   = '/logo.svg'
+      img.alt   = ''
+      node      = img
+    } else {
+      node = el('span', 'landing-hero-watermark landing-hero-watermark-small', stamp.letter)
+    }
+    node.style.setProperty('--rot', `${stamp.rotate}deg`)
+    node.style.left = `${stamp.x}%`
+    node.style.top  = `${stamp.y}px`
+    return node
+  }
+
+  // Stretches the watermark layer from the hero down to the surfaces carousel
+  // and retiles the stamp field whenever the column or row count changes, the
+  // body observer catching both viewport resizes and later layout shifts.
+  class LandingHero extends HTMLElement {
+    #cols = 0
+    #observer?: ResizeObserver
+    #rows = 0
+
+    connectedCallback(): void {
+      this.#observer = remeasure(document.body, () => this.#tile())
+    }
+
+    disconnectedCallback(): void {
+      this.#observer?.disconnect()
+    }
+
+    #tile(): void {
+      const layer = this.querySelector<HTMLElement>('.landing-hero-watermarks')
+      if (layer === null) return
+      const terminus = document.querySelector<HTMLElement>('.surfaces-carousel')
+      const height   = terminus === null
+        ? 0
+        : terminus.getBoundingClientRect().top - this.getBoundingClientRect().top - TERMINUS_GAP
+      if (height > 0) {
+        layer.style.height    = `${height}px`
+        layer.style.minHeight = '0'
+      } else {
+        layer.style.removeProperty('height')
+        layer.style.removeProperty('min-height')
+      }
+      const cols = Math.max(3, Math.round(layer.getBoundingClientRect().width / STAMP_PER_COL))
+      const rows = Math.max(3, Math.ceil(Math.max(height, 0) / ROW_STRIDE_PX) + 1)
+      if (cols === this.#cols && rows === this.#rows) return
+      this.#cols = cols
+      this.#rows = rows
+      layer.replaceChildren(...tileStamps(cols, rows).map(stampNode))
+    }
+  }
+
+  customElements.define('landing-hero', LandingHero)
+</script>

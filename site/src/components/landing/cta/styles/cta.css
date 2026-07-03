@@ -1,0 +1,202 @@
+.landing-cta {
+  --stamp-accent : var(--prose-palette-whiskey);
+  --stamp-ink    : color-mix(in srgb, var(--stamp-accent) 65%, var(--sl-color-white));
+  --panel-bg     : var(--sl-color-bg);
+  --panel-edge   : var(--sl-color-hairline);
+
+  position              : relative;
+  margin-top            : 76px;
+  display               : grid;
+  grid-template-columns : 196px minmax(0, 1fr);
+  border                : 1px solid var(--sl-color-hairline);
+  background            : var(--sl-color-gray-6);
+  overflow              : hidden;
+  text-align            : left;
+}
+
+.landing-cta-panel {
+  position     : relative;
+  background   : var(--panel-bg);
+  border-right : 1px solid var(--panel-edge);
+  min-height   : 200px;
+  overflow     : hidden;
+}
+
+.landing-cta-face {
+  position                   : absolute;
+  inset                      : 0;
+  padding                    : 16px 14px;
+  display                    : flex;
+  flex-direction             : column;
+  align-items                : center;
+  justify-content            : center;
+  transition-property        : opacity, transform, visibility;
+  transition-duration        : 240ms;
+  transition-timing-function : cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-cta:not(.is-open) .landing-cta-open,
+.landing-cta.is-open .landing-cta-face:not(.landing-cta-open) {
+  opacity        : 0;
+  transform      : translateY(8px);
+  visibility     : hidden;
+  pointer-events : none;
+}
+
+.landing-cta-toggle {
+  position        : absolute;
+  top             : 8px;
+  right           : 8px;
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 26px;
+  height          : 26px;
+  padding         : 0;
+  border          : 1px solid color-mix(in srgb, var(--stamp-accent) 30%, var(--panel-edge));
+  border-radius   : 50%;
+  background      : color-mix(in srgb, var(--stamp-accent) 8%, var(--panel-bg));
+  color           : var(--stamp-ink);
+  cursor          : pointer;
+  font-family     : var(--sl-font-mono);
+  font-size       : var(--prose-text-md);
+  line-height     : 1;
+  transition      : background var(--prose-transition), border-color var(--prose-transition), transform var(--prose-transition);
+  z-index         : 5;
+}
+.landing-cta-toggle:hover {
+  background   : color-mix(in srgb, var(--stamp-accent) 22%, var(--sl-color-bg));
+  border-color : color-mix(in srgb, var(--stamp-accent) 55%, var(--panel-edge));
+  transform    : scale(1.06);
+}
+
+.landing-cta-body {
+  position              : relative;
+  padding               : 18px 22px;
+  display               : grid;
+  grid-template-columns : minmax(0, 1fr) auto;
+  column-gap            : 18px;
+  row-gap               : 4px;
+  align-items           : center;
+}
+
+.landing-cta-kicker {
+  grid-column : 1 / 3;
+  margin      : 0 0 4px;
+}
+
+.landing-cta-lede {
+  grid-column : 1 / 3;
+  margin      : 0 0 10px;
+  max-width   : 48ch;
+  font-family : var(--prose-font-display);
+  font-weight : 400;
+  font-size   : 1.25rem;
+  line-height : 1.3;
+  color       : var(--sl-color-white);
+}
+.landing-cta-lede em {
+  font-style : italic;
+  color      : var(--sl-color-accent);
+}
+
+.landing-cta-cmd {
+  position      : relative;
+  grid-column   : 1;
+  display       : inline-flex;
+  align-items   : center;
+  gap           : 10px;
+  padding       : 8px 44px 8px 14px;
+  border        : 1px solid var(--sl-color-hairline);
+  border-radius : var(--prose-radius-sm);
+  background    : var(--sl-color-bg);
+  font-family   : var(--sl-font-mono);
+  font-size     : var(--prose-text-code);
+  color         : var(--sl-color-white);
+}
+
+.landing-cta-prompt {
+  color : var(--sl-color-gray-3);
+}
+
+.landing-cta-cmd code {
+  background : transparent;
+  padding    : 0;
+  font-size  : inherit;
+  color      : inherit;
+}
+
+.landing-cta-cmd > button.copy {
+  direction           : ltr;
+  position            : absolute;
+  top                 : 50%;
+  right               : 6px;
+  transform           : translateY(-50%);
+  z-index             : 3;
+  width               : 28px;
+  height              : 28px;
+  border              : 1px solid var(--sl-color-hairline);
+  border-radius       : var(--prose-radius-sm);
+  background-color    : var(--sl-color-gray-6);
+  background-image    : url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' height='20' width='20' stroke='rgba(128,128,128,1)' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2'/%3E%3C/svg%3E");
+  background-position : 50%;
+  background-repeat   : no-repeat;
+  background-size     : 14px;
+  opacity             : 0;
+  cursor              : pointer;
+  transition          : border-color 0.25s, background-color 0.25s, opacity 0.25s;
+}
+
+.landing-cta-cmd:hover > button.copy,
+.landing-cta-cmd > button.copy:focus {
+  opacity : 1;
+}
+
+.landing-cta-cmd > button.copy:hover,
+.landing-cta-cmd > button.copy.copied {
+  border-color     : var(--sl-color-hairline);
+  background-color : var(--sl-color-bg);
+}
+
+.landing-cta-cmd > button.copy.copied {
+  background-image : url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' height='20' width='20' stroke='rgba(128,128,128,1)' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9 2 2 4-4'/%3E%3C/svg%3E");
+  opacity          : 1;
+}
+
+.landing-cta-primary {
+  grid-column          : 2;
+  display              : inline-flex;
+  align-items          : center;
+  gap                  : 6px;
+  padding              : 8px 16px;
+  border-radius        : var(--prose-radius-sm);
+  background           : var(--sl-color-accent);
+  color                : var(--sl-color-bg);
+  font-family          : var(--prose-font-display);
+  font-style           : italic;
+  font-weight          : 500;
+  font-size            : var(--prose-text-md);
+  text-decoration-line : none;
+  transition           : background var(--prose-transition);
+}
+.landing-cta-primary:hover {
+  background : var(--sl-color-accent-high);
+}
+
+.landing-cta-arrow {
+  display    : inline-block;
+  transition : transform var(--prose-transition);
+}
+.landing-cta-primary:hover .landing-cta-arrow {
+  transform : translateX(3px);
+}
+
+@media (--prose-bp-card-stack) {
+  .landing-cta {
+    grid-template-columns : 1fr;
+  }
+  .landing-cta-panel {
+    border-right  : none;
+    border-bottom : 1px solid var(--panel-edge);
+  }
+}

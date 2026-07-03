@@ -1,0 +1,41 @@
+---
+import '../../styles/mixins/panel.css'
+import './styles/workflow.css'
+import './styles/workflow-step.css'
+
+import { getCollection } from 'astro:content'
+
+import LandingSection                from './LandingSection.astro'
+import { renderBlock, renderInline } from '../../lib/markdown/render'
+import { toRoman }                   from '../../lib/shared/numerals'
+
+const steps    = (await getCollection('landingWorkflow')).sort((a, b) => a.id.localeCompare(b.id))
+const chapters = await Promise.all(steps.map(async (step, index) => ({
+  bodyHtml : await renderInline(step.data.body),
+  codeHtml : await renderBlock(`\`\`\`${step.data.language}\n${step.data.code}\n\`\`\``),
+  roman    : toRoman(index + 1),
+  title    : step.data.title
+})))
+---
+
+<LandingSection centered heading="<em>Open</em> with these few lines." kicker="The Workflow" variant="quickstart">
+  <article class="panel landing-workflow">
+    {chapters.map((chapter, index) => (
+      <section
+        class:list={[
+          'landing-workflow-section',
+          { 'landing-workflow-section-last': index === chapters.length - 1 }
+        ]}
+      >
+        <aside class="landing-workflow-gutter" aria-hidden="true">
+          <span class="landing-workflow-roman">{chapter.roman}.</span>
+        </aside>
+        <div class="landing-workflow-body">
+          <h3 class="landing-workflow-title">{chapter.title}</h3>
+          <p class="landing-workflow-prose" set:html={chapter.bodyHtml} />
+          <div class="landing-workflow-code" set:html={chapter.codeHtml} />
+        </div>
+      </section>
+    ))}
+  </article>
+</LandingSection>

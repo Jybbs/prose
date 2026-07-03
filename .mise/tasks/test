@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S bash -euo pipefail
 #MISE description="Run the Rust test suite including `insta` snapshots"
 
 cargo test --locked

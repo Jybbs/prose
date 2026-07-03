@@ -1,0 +1,19 @@
+---
+import './styles/rule-chrome.css'
+
+import TaxonomyChip    from './TaxonomyChip.astro'
+import { ruleOrThrow } from '../../lib/content/discovery/rules'
+
+interface Props {
+  slug: string
+}
+
+const { slug } = Astro.props
+
+const rule = await ruleOrThrow(slug, 'RuleChrome')
+---
+
+<div class="rule-chrome">
+  <TaxonomyChip axis="category" value={rule.category} />
+  {rule.family !== 'lint' && <TaxonomyChip axis="family" value={rule.family} />}
+</div>

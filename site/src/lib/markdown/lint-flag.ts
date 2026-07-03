@@ -9,12 +9,18 @@ import type {
 import type { Parents, Properties }     from 'hast'
 import { h }                            from 'hastscript'
 
+import type { RuleRef }     from '../content/discovery/docs-vocab'
 import type { LintFinding } from '../content/schemas'
+import { required }         from '../shared/required'
 
 // Wraps a flagged span in a `.lint-flag` element carrying the finding's hover
 // payload as `data-*`, the hooks the tooltip layer reads.
 class LintFlagAnnotation extends ExpressiveCodeAnnotation {
-  constructor(private readonly finding: LintFinding, inlineRange: ExpressiveCodeInlineRange) {
+  constructor(
+    private readonly finding : LintFinding,
+    private readonly rule    : RuleRef | undefined,
+    inlineRange              : ExpressiveCodeInlineRange
+  ) {
     super({ inlineRange })
   }
 
@@ -25,6 +31,12 @@ class LintFlagAnnotation extends ExpressiveCodeAnnotation {
 
   private dataset(): Properties {
     const data: Properties = { 'data-message': this.finding.message, 'data-rule': this.finding.code }
+    if (this.rule) {
+      data['data-badge']   = this.rule.badge
+      data['data-caption'] = this.rule.caption
+      data['data-family']  = this.rule.family
+      data['data-href']    = this.rule.href
+    }
     const edit = this.finding.fix?.edits[0]
     if (edit) {
       data['data-before']    = edit.before
@@ -44,8 +56,10 @@ function* findingRanges(
   const firstLine = finding.location.row - 1
   const lastLine  = finding.end_location.row - 1
   for (let lineIndex = firstLine; lineIndex <= lastLine; lineIndex++) {
-    const line = block.getLine(lineIndex)
-    if (!line) throw new Error(`${finding.code} row ${lineIndex + 1} exceeds the lint fence body`)
+    const line = required(
+      block.getLine(lineIndex),
+      `${finding.code} row ${lineIndex + 1} exceeds the lint fence body`
+    )
     yield {
       line,
       range: {
@@ -60,18 +74,20 @@ function* findingRanges(
 // its harness findings, read from the build-time map the config binds. An id
 // the map does not hold is a build error, since it names a fixture with no
 // findings to draw.
-export function pluginLintFlag(findings: Map<string, LintFinding[]>): ExpressiveCodePlugin {
+export function pluginLintFlag(
+  findings : Map<string, LintFinding[]>,
+  rules    : Map<string, RuleRef>
+): ExpressiveCodePlugin {
   return {
     name  : 'prose:lint-flag',
     hooks : {
       preprocessMetadata({ codeBlock }) {
         const id = codeBlock.metaOptions.getString('lint')
         if (id === undefined) return
-        const found = findings.get(id)
-        if (!found) throw new Error(`lint="${id}" references no fixture findings`)
+        const found = required(findings.get(id), `lint="${id}" references no fixture findings`)
         for (const finding of found) {
           for (const { line, range } of findingRanges(finding, codeBlock)) {
-            line.addAnnotation(new LintFlagAnnotation(finding, range))
+            line.addAnnotation(new LintFlagAnnotation(finding, rules.get(finding.code), range))
           }
         }
       }

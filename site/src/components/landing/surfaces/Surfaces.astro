@@ -1,0 +1,121 @@
+---
+import './styles/surfaces.css'
+
+import { getCollection } from 'astro:content'
+
+import LandingSection from '../LandingSection.astro'
+import SurfaceCard    from './SurfaceCard.astro'
+
+import { discoveredRules, familyBadges } from '../../../lib/content/discovery/rules'
+import { formatFolio }                   from '../../../lib/shared/numerals'
+import { FAMILY_ORDER }                  from '../../../lib/shared/registries'
+
+const surfaces = await getCollection('landingSurfaces')
+const rules    = await discoveredRules()
+const badges   = await familyBadges()
+
+const cards = FAMILY_ORDER.map((family, index) => ({
+  badge  : badges.get(family) ?? '',
+  body   : surfaces.find(surface => surface.id === family)?.data.body ?? '',
+  family,
+  number : formatFolio(index + 1, 3),
+  rules  : rules.filter(rule => rule.family === family)
+}))
+
+const heading = `<strong>${cards.length}</strong> rule families. <em>${rules.length}</em> rules.`
+---
+
+<LandingSection centered heading={heading} kicker="The Surfaces" variant="surfaces">
+  <a slot="heading-extra" href="/rules/" class="landing-small-button">All rules</a>
+  <landing-marquee class="surfaces-carousel" aria-label="Rule family carousel">
+    <div class="surfaces-carousel-track">
+      {cards.map(card => (
+        <SurfaceCard
+          badge={card.badge}
+          body={card.body}
+          family={card.family}
+          number={card.number}
+          rules={card.rules}
+        />
+      ))}
+    </div>
+  </landing-marquee>
+</LandingSection>
+
+<script>
+  import EmblaCarousel from 'embla-carousel'
+  import AutoScroll    from 'embla-carousel-auto-scroll'
+
+  import { attachEdgeMagnet, FRAMES_PER_SEC } from '../../../lib/landing/edge-magnet'
+  import { reducedMotion }                    from '../../../lib/shared/dom/reduced-motion'
+
+  const BASE_SPEED_PX_PER_SEC = 32
+  const EDGE_MARGIN_PX        = 32
+  const MAGNET_GAIN           = 4
+  const MAX_PULL_PX_PER_SEC   = BASE_SPEED_PX_PER_SEC * 8
+
+  class LandingMarquee extends HTMLElement {
+    connectedCallback(): void {
+      const autoScroll = AutoScroll({
+        playOnInit        : !reducedMotion.matches,
+        speed             : BASE_SPEED_PX_PER_SEC / FRAMES_PER_SEC,
+        startDelay        : 0,
+        stopOnInteraction : false
+      })
+      const embla = EmblaCarousel(this, { align: 'start', loop: true, watchDrag: false }, [autoScroll])
+
+      // A track short enough to fit whole cannot loop, so the crawl parks and
+      // the mask clears.
+      const settleStatic = (): void => {
+        const fits = !embla.internalEngine().slideLooper.canLoop()
+        this.classList.toggle('surfaces-carousel-static', fits)
+        if (fits) autoScroll.stop()
+        else if (!reducedMotion.matches && !autoScroll.isPlaying()) autoScroll.play(0)
+      }
+      embla.on('reInit', settleStatic)
+      settleStatic()
+
+      if (!reducedMotion.matches) {
+        attachEdgeMagnet(embla, autoScroll, {
+          edgeMarginPx    : EDGE_MARGIN_PX,
+          magnetGain      : MAGNET_GAIN,
+          maxPullPxPerSec : MAX_PULL_PX_PER_SEC
+        })
+      }
+
+      this.#wireCards()
+    }
+
+    // The spotlight tracks the pointer inside each card, and the folio tabs
+    // swap the label link beneath the row to the hovered rule.
+    #wireCards(): void {
+      for (const card of this.querySelectorAll<HTMLElement>('.surface-card')) {
+        card.addEventListener('pointerenter', () => { card.dataset.active = 'true' })
+        card.addEventListener('pointerleave', () => { card.dataset.active = 'false' })
+        card.addEventListener('pointermove', event => {
+          const rect = card.getBoundingClientRect()
+          card.style.setProperty('--spotlight-x', `${((event.clientX - rect.left) / rect.width) * 100}%`)
+          card.style.setProperty('--spotlight-y', `${((event.clientY - rect.top) / rect.height) * 100}%`)
+        })
+
+        for (const tab of card.querySelectorAll<HTMLAnchorElement>('.tab')) {
+          const select = (): void => {
+            for (const sibling of card.querySelectorAll('.tab')) sibling.classList.remove('active')
+            tab.classList.add('active')
+            const label = card.querySelector<HTMLAnchorElement>('.tab-label-link')
+            if (label === null) return
+            const swapped = label.cloneNode() as HTMLAnchorElement
+            swapped.href        = tab.href
+            swapped.textContent = tab.dataset.slug ?? ''
+            swapped.setAttribute('aria-label', tab.dataset.slug ?? '')
+            label.replaceWith(swapped)
+          }
+          tab.addEventListener('mouseenter', select)
+          tab.addEventListener('focus', select)
+        }
+      }
+    }
+  }
+
+  customElements.define('landing-marquee', LandingMarquee)
+</script>

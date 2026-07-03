@@ -1,0 +1,20 @@
+.band-head {
+  display     : flex;
+  align-items : center;
+  gap         : 9px;
+}
+
+.band-name {
+  font-family    : var(--sl-font-mono);
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+  color          : color-mix(in srgb, var(--band-accent) 75%, var(--sl-color-gray-2));
+  flex-shrink    : 0;
+}
+
+.band-rule {
+  flex-grow  : 1;
+  height     : 1px;
+  background : color-mix(in srgb, var(--band-accent) 30%, var(--sl-color-hairline));
+}

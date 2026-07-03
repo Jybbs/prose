@@ -1,0 +1,181 @@
+---
+import './styles/run-summary.css'
+
+import RunSummary from './RunSummary.astro'
+
+import { glossFor, resolveSelection } from '../../lib/reference/run-summary'
+
+const line  = resolveSelection('clean', 'full', 'tty')
+const gloss = glossFor('clean', 'full', 'tty')
+
+const selects = [
+  { axis: 'outcome', label: 'Run command',   mono: 'check'           },
+  { axis: 'quiet',   label: 'Verbosity',     mono: 'default'         },
+  { axis: 'stream',  label: 'Output stream', mono: 'interactive tty' }
+]
+---
+
+<run-summary-explorer class="run-summary-explorer">
+  <span class="kicker run-summary-explorer-kicker">Build A Run</span>
+  <div class="run-summary-cmd">
+    <span class="run-summary-cmd-prompt" aria-hidden="true">$ prose</span>
+    {selects.map(({ axis, label, mono }) => (
+      <Fragment>
+        <span class="run-summary-select" data-axis={axis}>
+          <button type="button" class="run-summary-select-trigger" aria-label={label} aria-haspopup="listbox">
+            <span data-label>{mono}</span>
+            <span class="run-summary-select-caret" aria-hidden="true">▾</span>
+          </button>
+        </span>
+        {axis === 'outcome' && <span class="run-summary-cmd-path" aria-hidden="true">.</span>}
+      </Fragment>
+    ))}
+  </div>
+  <RunSummary line={line}>
+    <span slot="bar" class="run-summary-caption">{gloss}</span>
+  </RunSummary>
+</run-summary-explorer>
+
+<script>
+  import { float } from '../../lib/overlay/float'
+  import {
+    glossFor, OUTCOMES, QUIET_OPTIONS, resolveSelection, STREAM_OPTIONS
+  } from '../../lib/reference/run-summary'
+  import type { RenderedLine } from '../../lib/reference/run-summary'
+  import { closestFrom }       from '../../lib/shared/dom/closest-from'
+  import { el }                from '../../lib/shared/dom/el'
+
+  type Axis = 'outcome' | 'quiet' | 'stream'
+
+  interface OptionRow {
+    id      : string
+    mono    : string
+    preview : RenderedLine
+  }
+
+  class RunSummaryExplorer extends HTMLElement {
+    #open      : { panel: HTMLElement, unpin: () => void } | null = null
+    #hideTimer = 0
+    #showTimer = 0
+    #selection = { outcome: 'clean', quiet: 'full', stream: 'tty' }
+
+    connectedCallback(): void {
+      for (const select of this.querySelectorAll<HTMLElement>('.run-summary-select')) {
+        const axis    = select.dataset.axis as Axis
+        const trigger = select.querySelector<HTMLButtonElement>('.run-summary-select-trigger')!
+        trigger.addEventListener('click', () => this.#toggle(axis, trigger))
+        trigger.addEventListener('mouseenter', () => {
+          window.clearTimeout(this.#showTimer)
+          this.#showTimer = window.setTimeout(() => this.#show(axis, trigger), 60)
+        })
+        trigger.addEventListener('mouseleave', () => {
+          window.clearTimeout(this.#showTimer)
+          this.#scheduleClose()
+        })
+      }
+      document.addEventListener('click', event => {
+        if (closestFrom(event, 'run-summary-explorer') !== this) this.#close()
+      })
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') this.#close()
+      })
+    }
+
+    #options(axis: Axis): OptionRow[] {
+      const { outcome, quiet, stream } = this.#selection
+      switch (axis) {
+        case 'outcome':
+          return OUTCOMES.map(o => ({ id: o.key, mono: o.args, preview: resolveSelection(o.key, quiet, stream) }))
+        case 'quiet':
+          return QUIET_OPTIONS.map(q => ({ id: q.id, mono: q.mono, preview: resolveSelection(outcome, q.id, stream) }))
+        case 'stream':
+          return STREAM_OPTIONS.map(s => ({ id: s.id, mono: s.mono, preview: resolveSelection(outcome, quiet, s.id) }))
+      }
+    }
+
+    #toggle(axis: Axis, trigger: HTMLElement): void {
+      if (this.#open === null) this.#show(axis, trigger)
+      else this.#close()
+    }
+
+    #show(axis: Axis, trigger: HTMLElement): void {
+      this.#close()
+      const panel = el('div', 'overlay-panel run-summary-opts-panel')
+      const list  = el('ul', 'run-summary-opts')
+      list.role = 'listbox'
+      list.setAttribute('aria-label', trigger.getAttribute('aria-label') ?? '')
+      for (const option of this.#options(axis)) {
+        list.append(this.#optionRow(axis, option, trigger))
+      }
+      panel.append(list)
+      panel.addEventListener('mouseenter', () => window.clearTimeout(this.#hideTimer))
+      panel.addEventListener('mouseleave', () => this.#scheduleClose())
+      document.body.append(panel)
+      this.#open = { panel, unpin: float(trigger, panel, { gapPx: 6, placement: 'bottom-start' }) }
+    }
+
+    #optionRow(axis: Axis, option: OptionRow, trigger: HTMLElement): HTMLElement {
+      const item = el('li', '')
+      item.role  = 'option'
+      item.setAttribute('aria-selected', String(this.#selection[axis] === option.id))
+      const button = el('button', 'run-summary-opt')
+      button.type = 'button'
+      button.classList.toggle('is-active', this.#selection[axis] === option.id)
+
+      const mono = el('span', 'run-summary-opt-mono', option.mono)
+
+      const example = el('span', 'run-summary-opt-eg')
+      if (option.preview.anchor !== null) {
+        const anchor = el('span', 'run-summary-opt-eg-anchor', option.preview.anchor)
+        anchor.ariaHidden = 'true'
+        example.append(anchor)
+      }
+      const text = el('span', 'run-summary-opt-eg-text', option.preview.text)
+      if (option.preview.countTint !== null) text.dataset.tint = option.preview.countTint
+      example.append(text)
+
+      button.append(mono, example)
+      button.addEventListener('click', () => {
+        this.#selection[axis] = option.id
+        trigger.querySelector('[data-label]')!.textContent = option.mono
+        this.#drawLine()
+        this.#close()
+      })
+      item.append(button)
+      return item
+    }
+
+    #drawLine(): void {
+      const { outcome, quiet, stream } = this.#selection
+      const line = resolveSelection(outcome, quiet, stream)
+
+      const row = this.querySelector<HTMLElement>('.run-summary-line')!
+      row.replaceChildren()
+      if (line.anchor !== null) {
+        const anchor = el('span', 'run-summary-anchor', line.anchor)
+        anchor.ariaHidden = 'true'
+        if (line.anchorUbe) anchor.dataset.ube = 'true'
+        row.append(anchor)
+      }
+      const message = el('span', 'run-summary-msg', line.text)
+      if (line.countTint !== null) message.dataset.tint = line.countTint
+      row.append(message)
+
+      this.querySelector('.run-summary-caption')!.textContent = glossFor(outcome, quiet, stream)
+    }
+
+    #scheduleClose(): void {
+      window.clearTimeout(this.#hideTimer)
+      this.#hideTimer = window.setTimeout(() => this.#close(), 200)
+    }
+
+    #close(): void {
+      if (this.#open === null) return
+      this.#open.unpin()
+      this.#open.panel.remove()
+      this.#open = null
+    }
+  }
+
+  customElements.define('run-summary-explorer', RunSummaryExplorer)
+</script>

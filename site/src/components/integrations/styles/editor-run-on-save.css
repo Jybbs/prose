@@ -1,0 +1,156 @@
+.editor-card {
+  display               : grid;
+  grid-template-columns : 232px 1fr;
+  margin                : 1.5rem 0;
+  border                : 1px solid var(--sl-color-hairline);
+  border-radius         : var(--prose-radius);
+  background            : var(--sl-color-bg);
+  overflow              : hidden;
+}
+
+.editor-card-index {
+  padding      : 18px 14px 18px 18px;
+  border-right : 1px solid var(--sl-color-hairline);
+  background   : var(--sl-color-gray-6);
+}
+
+.editor-card-edition {
+  display        : block;
+  margin-bottom  : 14px;
+  padding-bottom : 10px;
+  border-bottom  : 2px double var(--sl-color-hairline);
+}
+
+.editor-card .editor-card-list {
+  display        : flex;
+  flex-direction : column;
+  gap            : 2px;
+  margin         : 0;
+  padding        : 0;
+  list-style     : none;
+}
+
+.editor-card .editor-card-list li + li {
+  margin-top : 0;
+}
+
+.editor-card-row {
+  display       : flex;
+  align-items   : center;
+  gap           : 10px;
+  width         : 100%;
+  padding       : 8px;
+  border        : 0;
+  border-radius : var(--prose-radius-sm);
+  background    : transparent;
+  cursor        : pointer;
+  text-align    : left;
+  color         : var(--sl-color-white);
+  transition    : background var(--prose-transition);
+}
+
+.editor-card-row:hover {
+  background : color-mix(in srgb, var(--prose-palette-celadon) 7%, transparent);
+}
+
+.editor-card-row.is-active {
+  background : color-mix(in srgb, var(--prose-palette-celadon) 14%, transparent);
+}
+
+.editor-card-row.is-active .editor-card-row-mark {
+  border-color : color-mix(in srgb, var(--prose-palette-celadon) 65%, var(--sl-color-hairline));
+}
+
+.editor-card-row-name {
+  flex-shrink : 1;
+  min-width   : 0;
+  overflow    : hidden;
+  white-space : nowrap;
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 500;
+  font-size   : var(--prose-text-md);
+  color       : var(--sl-color-white);
+}
+
+.editor-card-row.is-active .editor-card-row-name {
+  color : color-mix(in srgb, var(--prose-palette-celadon) 60%, var(--sl-color-white));
+}
+
+.editor-card-faces {
+  display        : flex;
+  flex-direction : column;
+  min-width      : 0;
+}
+
+.editor-card-face {
+  display        : flex;
+  flex           : 1;
+  flex-direction : column;
+  background     : var(--sl-color-gray-6);
+}
+
+.editor-card-face[hidden] {
+  display : none;
+}
+
+.editor-card-face-head {
+  display       : flex;
+  align-items   : baseline;
+  gap           : 10px;
+  padding       : 14px 18px;
+  border-bottom : 1px solid var(--sl-color-hairline);
+}
+
+.editor-card-face-target {
+  margin-left : auto;
+  font-family : var(--sl-font-mono);
+  font-size   : var(--prose-text-xs);
+  color       : var(--sl-color-gray-2);
+}
+
+.editor-card-face-code {
+  display        : flex;
+  flex           : 1;
+  flex-direction : column;
+}
+
+.editor-card-face-code .expressive-code,
+.editor-card-face-code .expressive-code .frame {
+  display        : flex;
+  flex           : 1;
+  flex-direction : column;
+  margin         : 0;
+}
+
+.editor-card-face-code .expressive-code pre {
+  flex          : 1;
+  margin        : 0;
+  border        : none;
+  border-radius : 0;
+}
+
+@media (--prose-bp-card-stack) {
+  .editor-card {
+    grid-template-columns : 1fr;
+  }
+
+  .editor-card-index {
+    border-right  : none;
+    border-bottom : 1px solid var(--sl-color-hairline);
+  }
+
+  .editor-card-list {
+    flex-direction : row;
+    flex-wrap      : wrap;
+    gap            : 4px;
+  }
+
+  .editor-card-row {
+    flex : 1 1 30%;
+  }
+
+  .editor-card-row-leader {
+    display : none;
+  }
+}

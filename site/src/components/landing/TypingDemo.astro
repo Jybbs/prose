@@ -1,0 +1,135 @@
+---
+import '@shikijs/magic-move/style.css'
+import '../../styles/mixins/panel.css'
+import './styles/typing-demo.css'
+
+import { getEntry } from 'astro:content'
+import { Code }     from '@astrojs/starlight/components'
+
+import { SOURCE }    from '../../lib/landing/typing-demo'
+import { embedJson } from '../../lib/shared/json-island'
+import { required }  from '../../lib/shared/required'
+
+const demo = required(
+  await getEntry('typingDemo', 'landing'),
+  'The typing-demo collection is missing its landing entry'
+)
+
+const { entries, prelude, pythonStateSteps, resetRows } = demo.data
+---
+
+<typing-demo class="typing-demo">
+  <section class="panel panel-clip typing-demo-panel typing-demo-config" aria-label="prose config">
+    <header class="typing-demo-label">prose.toml</header>
+    <pre class="typing-demo-config-code"><code><span class="typing-demo-config-prelude" data-segment="before">{prelude}</span><span class="typing-demo-config-editing" data-segment="editingLineBefore"></span><span class="typing-demo-config-editing"><span data-segment="editing"></span><span class="typing-demo-caret" aria-hidden="true" hidden></span></span><span class="typing-demo-config-editing" data-segment="editingLineAfter"></span><span class="typing-demo-config-prelude" data-segment="after"></span></code></pre>
+  </section>
+  <section class="panel panel-clip typing-demo-panel typing-demo-python" aria-label="Python source">
+    <header class="typing-demo-label">app.py</header>
+    <div class="typing-demo-python-code"><Code code={SOURCE} lang="python" /></div>
+  </section>
+  <button type="button" class="typing-demo-replay" hidden>Replay</button>
+  <script is:inline type="application/json" data-payload set:html={embedJson({ entries, prelude, pythonStateSteps, resetRows })} />
+</typing-demo>
+
+<script>
+  import { MagicMoveRenderer }    from '@shikijs/magic-move/renderer'
+  import type { KeyedTokensInfo } from '@shikijs/magic-move/types'
+
+  import {
+    applyCompletedEdits, beforeOnly, resetText, segmentsForEdit
+  } from '../../lib/landing/typing-demo-buffer'
+  import type { BufferSegments, TypingDemoEntry, TypingDemoResetRow } from '../../lib/landing/typing-demo-buffer'
+  import { createTypingMachine, MAGIC_MOVE_MS } from '../../lib/landing/typing-state-machine'
+  import type { MachineState }                  from '../../lib/landing/typing-state-machine'
+  import { reducedMotion }                      from '../../lib/shared/dom/reduced-motion'
+
+  interface Payload {
+    entries          : TypingDemoEntry[]
+    prelude          : string
+    pythonStateSteps : KeyedTokensInfo[]
+    resetRows        : TypingDemoResetRow[]
+  }
+
+  class TypingDemoElement extends HTMLElement {
+    #caret!    : HTMLElement
+    #payload!  : Payload
+    #renderer! : MagicMoveRenderer
+    #segments! : NodeListOf<HTMLElement>
+    #step = 0
+
+    connectedCallback(): void {
+      this.#payload  = JSON.parse(this.querySelector('script[data-payload]')!.textContent!) as Payload
+      this.#caret    = this.querySelector<HTMLElement>('.typing-demo-caret')!
+      this.#segments = this.querySelectorAll<HTMLElement>('[data-segment]')
+
+      const python = this.querySelector<HTMLElement>('.typing-demo-python-code')!
+      python.replaceChildren()
+      this.#renderer = new MagicMoveRenderer(python)
+      this.#renderer.options = { ...this.#renderer.options, duration: MAGIC_MOVE_MS, stagger: 3 }
+      this.#renderer.replace(this.#payload.pythonStateSteps[0])
+
+      const machine = createTypingMachine({
+        entries       : this.#payload.entries,
+        onChange      : state => this.#draw(state),
+        reducedMotion : () => reducedMotion.matches,
+        resetRows     : this.#payload.resetRows
+      })
+
+      new IntersectionObserver(
+        entries => machine.setInView(entries.some(entry => entry.isIntersecting)),
+        { rootMargin: '-20% 0px -20% 0px', threshold: 0 }
+      ).observe(this)
+
+      const replay = this.querySelector<HTMLButtonElement>('.typing-demo-replay')!
+      replay.addEventListener('click', () => machine.replay())
+
+      if (reducedMotion.matches) {
+        replay.hidden = false
+        machine.freezeAtEnd()
+      } else {
+        machine.boot()
+      }
+    }
+
+    #draw(state: MachineState): void {
+      const segments = this.#segmentsFor(state)
+      for (const span of this.#segments) {
+        span.textContent = segments[span.dataset.segment as keyof BufferSegments]
+      }
+      this.#caret.hidden = state.phase !== 'editBackspacing' && state.phase !== 'editTyping'
+
+      if (state.pythonStateIndex !== this.#step) {
+        this.#step = state.pythonStateIndex
+        const target = this.#payload.pythonStateSteps[this.#step]
+        if (reducedMotion.matches) this.#renderer.replace(target)
+        else void this.#renderer.render(target)
+      }
+    }
+
+    #segmentsFor(state: MachineState): BufferSegments {
+      const { entries, prelude, resetRows } = this.#payload
+      const entry = entries[state.entryIndex]
+      switch (state.phase) {
+        case 'editBackspacing':
+        case 'editTyping':
+        case 'holdAfterTyped':
+        case 'holdBetweenEdits': {
+          const text = applyCompletedEdits(prelude, entries, state.entryIndex)
+          return entry === undefined
+            ? beforeOnly(text)
+            : segmentsForEdit(entry, text, state.phase, state.editProgress)
+        }
+        case 'resetBackspacing':
+        case 'resetTyping':
+          return beforeOnly(resetText(prelude, resetRows, state.phase, state.editProgress))
+        case 'holdAtEnd':
+        case 'reducedMotion':
+          return beforeOnly(applyCompletedEdits(prelude, entries, entries.length))
+        default:
+          return beforeOnly(prelude)
+      }
+    }
+  }
+
+  customElements.define('typing-demo', TypingDemoElement)
+</script>

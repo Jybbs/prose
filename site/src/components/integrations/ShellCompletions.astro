@@ -1,0 +1,58 @@
+---
+import '../../styles/mixins/kicker.css'
+import './styles/shell-completions.css'
+
+import { getCollection } from 'astro:content'
+import { Code }          from '@astrojs/starlight/components'
+
+import Tool             from '../base/Tool.astro'
+import { toolNamer }    from '../../lib/content/discovery/tool-names'
+import { renderInline } from '../../lib/markdown/render'
+
+const shells   = await getCollection('shellCompletions')
+const nameOf   = await toolNamer('Shell')
+const noteHtml = await Promise.all(shells.map(shell => renderInline(shell.data.note)))
+---
+
+<shell-completions class="shell-card">
+  <div class="shell-card-stack" role="tablist" aria-label="Shell completion targets">
+    {shells.map((shell, i) => (
+      <button
+        type="button"
+        role="tab"
+        class:list={['shell-card-tab', { 'is-active': i === 0 }]}
+        aria-selected={i === 0 ? 'true' : 'false'}
+        data-slug={shell.id}
+        style={`--idx: ${i}`}
+      >
+        <span class="tool-medallion shell-card-tab-mark" aria-hidden="true"><Tool slug={shell.id} bare /></span>
+        <em class="shell-card-tab-name">{nameOf(shell.id)}</em>
+      </button>
+    ))}
+
+    {shells.map((shell, i) => (
+      <article class="shell-card-modal" data-slug={shell.id} hidden={i !== 0}>
+        <header class="shell-card-modal-head">
+          <span class="tool-medallion shell-card-modal-mark" aria-hidden="true"><Tool slug={shell.id} bare /></span>
+          <span class="kicker">{shell.data.caption}</span>
+        </header>
+        <div class="shell-card-modal-body">
+          <div class="shell-card-modal-code"><Code code={shell.data.code} lang={shell.data.language} /></div>
+          <p class="shell-card-modal-note" set:html={noteHtml[i]} />
+        </div>
+      </article>
+    ))}
+  </div>
+</shell-completions>
+
+<script>
+  import { defineTabSelectElement } from '../../lib/shared/dom/tab-select'
+
+  // Turns the stacked side tabs into a selector over the per-shell modals.
+  defineTabSelectElement('shell-completions', {
+    events : ['click'],
+    key    : 'slug',
+    panels : '.shell-card-modal',
+    tabs   : '.shell-card-tab'
+  })
+</script>

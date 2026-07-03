@@ -37,6 +37,7 @@ runs:
         args              : ${{ inputs.args }}
         command           : ${{ inputs.command }}
         manylinux         : ${{ inputs.manylinux }}
+        maturin-version   : 1.14.1
         target            : ${{ inputs.target }}
         working-directory : crate
 

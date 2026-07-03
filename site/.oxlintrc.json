@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+
+  "categories": {
+    "correctness" : "deny",
+    "pedantic"    : "deny",
+    "perf"        : "deny",
+    "suspicious"  : "deny"
+  },
+
+  "plugins": ["import", "oxc", "promise", "typescript", "unicorn"],
+
+  "rules": {
+    "import/default"                       : "off",
+    "import/max-dependencies"              : "off",
+    "import/no-unassigned-import"          : ["error", { "allow": ["**/*.css"] }],
+    "max-lines-per-function"               : "off",
+    "no-await-in-loop"                     : "off",
+    "no-negated-condition"                 : "off",
+    "no-underscore-dangle"                 : "off",
+    "require-unicode-regexp"               : "off",
+    "unicorn/consistent-function-scoping"  : "off",
+    "unicorn/no-array-callback-reference"  : "off",
+    "unicorn/no-array-sort"                : "off",
+    "unicorn/no-negated-condition"         : "off"
+  }
+}

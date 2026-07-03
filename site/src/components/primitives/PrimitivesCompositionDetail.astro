@@ -1,0 +1,95 @@
+---
+import '../../styles/mixins/pip.css'
+import './styles/primitives-composition-detail.css'
+
+import { LAYER_NUMERAL }                            from '../../lib/content/discovery/primitives'
+import type { DiscoveredPrimitive, PrimitiveLayer } from '../../lib/content/discovery/primitives'
+import { discoveredRules }                          from '../../lib/content/discovery/rules'
+import type { DiscoveredRule }                      from '../../lib/content/discovery/rules'
+import { renderInline }                             from '../../lib/markdown/render'
+import { primitiveRoute }                           from '../../lib/shared/routes'
+import { ruleChipAttrs }                            from '../../lib/shared/rule-chip'
+
+interface Props {
+  primitives: readonly DiscoveredPrimitive[]
+}
+
+const { primitives } = Astro.props
+
+type Mention =
+  | { kind: 'external', slug: string }
+  | { kind: 'primitive', layer: PrimitiveLayer, slug: string }
+  | { kind: 'rule', rule: DiscoveredRule, slug: string }
+
+const rules  = await discoveredRules()
+const layers = new Map(primitives.map(primitive => [primitive.slug, primitive.layer]))
+
+function mentionOf(slug: string): Mention {
+  const layer = layers.get(slug)
+  if (layer !== undefined) return { kind: 'primitive', layer, slug }
+  const rule = rules.find(candidate => candidate.slug === slug)
+  if (rule !== undefined) return { kind: 'rule', rule, slug }
+  return { kind: 'external', slug }
+}
+
+const cards = await Promise.all(primitives.map(async primitive => ({
+  layer       : primitive.layer,
+  name        : primitive.name,
+  slug        : primitive.slug,
+  summaryHtml : await renderInline(primitive.summary),
+  relations   : [
+    { label: 'consumes',    mentions: primitive.consumes.map(mentionOf)   },
+    { label: 'consumed by', mentions: primitive.consumedBy.map(mentionOf) }
+  ].filter(relation => relation.mentions.length > 0)
+})))
+---
+
+<div aria-live="polite">
+  {cards.map(card => (
+    <div class="primitives-composition-card" data-layer={card.layer} data-slug={card.slug} hidden>
+      <div class="primitives-composition-card-head">
+        <span class="primitives-composition-card-layer-numeral" aria-hidden="true">
+          {LAYER_NUMERAL[card.layer]}
+        </span>
+        <div class="primitives-composition-card-head-text">
+          <span class="primitives-composition-card-name">{card.name}</span>
+          <span class="primitives-composition-card-summary" set:html={card.summaryHtml} />
+        </div>
+      </div>
+      {card.relations.map(relation => (
+        <div class="primitives-composition-card-rel">
+          <span class="primitives-composition-card-rel-label">{relation.label}</span>
+          <span class="primitives-composition-card-rel-mentions">
+            {relation.mentions.map(mention => (
+              <span class="primitives-composition-card-mention-item">
+                {mention.kind === 'primitive' ? (
+                  <a
+                    class="primitives-composition-card-mention"
+                    data-layer={mention.layer}
+                    href={primitiveRoute(mention.slug)}
+                  >
+                    <span
+                      class="primitives-composition-card-mention-chip"
+                      data-layer={mention.layer}
+                      aria-hidden="true"
+                    >{LAYER_NUMERAL[mention.layer]}</span>
+                    <span class="primitives-composition-card-mention-text">{mention.slug}</span>
+                  </a>
+                ) : mention.kind === 'rule' ? (
+                  <a class="rule-chip" href={mention.rule.href} {...ruleChipAttrs(mention.rule)}>{mention.slug}</a>
+                ) : (
+                  <span class="primitives-composition-card-mention-ext">{mention.slug}</span>
+                )}
+              </span>
+            ))}
+          </span>
+        </div>
+      ))}
+    </div>
+  ))}
+  <div class="primitives-composition-card" data-layer="empty">
+    <p class="primitives-composition-card-hint">
+      Hover a tile to see what it draws from and what it feeds into.
+    </p>
+  </div>
+</div>

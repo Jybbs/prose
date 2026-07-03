@@ -1,0 +1,26 @@
+---
+import type { DiscoveredRule } from '../../lib/content/discovery/rules'
+import { ruleChipAttrs }       from '../../lib/shared/rule-chip'
+
+interface Props {
+  segment     : { family: string | null, rule: DiscoveredRule | null, slug: string }
+  withTooltip : boolean
+}
+
+const { segment, withTooltip } = Astro.props
+
+const tooltip = withTooltip ? segment.rule : null
+---
+
+<a
+  href={segment.rule?.href}
+  class="composition-cards-chip"
+  {...(tooltip ? ruleChipAttrs(tooltip) : {})}
+  data-family={segment.family}
+  data-slug={segment.slug}
+  title={segment.rule ? undefined : `${segment.slug} (${segment.family ?? 'undocumented'})`}
+>
+  <span class="composition-cards-chip-label">
+    <span class="composition-cards-chip-slug">{segment.slug}</span>
+  </span>
+</a>

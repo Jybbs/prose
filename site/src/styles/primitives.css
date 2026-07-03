@@ -1,0 +1,23 @@
+.sl-markdown-content .starlight-aside__title,
+.sl-markdown-content th {
+  margin         : 0;
+  font-family    : var(--sl-font-mono);
+  font-size      : var(--prose-kicker-size);
+  font-weight    : 700;
+  letter-spacing : var(--prose-kicker-tracking);
+  text-transform : uppercase;
+  color          : var(--sl-color-gray-3);
+}
+
+.sl-markdown-content .starlight-aside__title {
+  margin-bottom : 8px;
+}
+
+.exit-code-entry-summary :where(code),
+.exit-code-entry-details :where(code),
+.glossary-pop-body code,
+.rule-card-caption :where(code) {
+  padding       : 2px 6px;
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--sl-color-white) 8%, transparent);
+}

@@ -3,15 +3,37 @@ import { z } from 'astro/zod'
 import {
   FAMILY_WARMTHS, GLOSSARY_FAMILIES, PRIMITIVE_LAYERS, PRIMITIVE_STABILITIES
 } from '../shared/registries'
+import { required } from '../shared/required'
+import { SCOPES }   from '../suppression/scope-meta'
 
-const DIRECTIVE_SCOPES = ['block', 'file', 'line'] as const
-const PART_ROLES       = ['action', 'comment', 'namespace', 'payload'] as const
+const DIRECTIVE_FORM = /^(#) ([a-z]+:) ([a-z]+)(\[.*\])?$/
+const PART_ROLES     = ['action', 'comment', 'namespace', 'payload'] as const
+
+interface DirectivePart {
+  role : (typeof PART_ROLES)[number]
+  text : string
+}
+
+// Tokenizes a directive form into its anatomy parts, the leading `#` as the
+// comment, the `word:` head as the namespace, the verb as the action, and a
+// trailing bracket run as the payload.
+function directiveParts(form: string): DirectivePart[] {
+  const match = required(DIRECTIVE_FORM.exec(form), `directive form "${form}" does not tokenize`)
+  const parts: DirectivePart[] = [
+    { role: 'comment',   text: match[1] },
+    { role: 'namespace', text: match[2] },
+    { role: 'action',    text: match[3] }
+  ]
+  if (match[4] !== undefined) parts.push({ role: 'payload', text: match[4] })
+  return parts
+}
 
 // The rule, family-index, and primitive frontmatter the `docs` collection
 // carries beyond Starlight's own fields, every field optional because one
 // schema spans the rules, primitives, and prose pages alike, with the
 // per-section requirements enforced by the cross-record integrity pass.
 export const docsExtension = z.object({
+  badge      : z.string().optional(),
   caption    : z.string().optional(),
   consumedBy : z.array(z.string()).optional(),
   consumes   : z.array(z.string()).optional(),
@@ -36,15 +58,17 @@ export const glossary = z.object({
 export const tool = z.object({
   href : z.string(),
   icon : z.string(),
-  name : z.string(),
-  role : z.string()
+  name : z.string()
 })
 
-export const tokenIndex = z.array(z.object({
-  blurb : z.string(),
-  href  : z.string(),
-  key   : z.string()
-}))
+export const tokenIndex = z.object({
+  label   : z.string(),
+  entries : z.array(z.object({
+    blurb : z.string(),
+    href  : z.string(),
+    key   : z.string()
+  })).nonempty().optional()
+})
 
 export const exitCode = z.object({
   code    : z.number(),
@@ -53,33 +77,29 @@ export const exitCode = z.object({
   summary : z.string()
 })
 
-export const directive = z.object({
-  aliasOf   : z.string().optional(),
-  effect    : z.string(),
-  example   : z.string(),
-  form      : z.string(),
-  pairId    : z.string().optional(),
-  pairRole  : z.enum(['closes', 'opens']).optional(),
-  parts     : z.array(z.object({ role: z.enum(PART_ROLES), text: z.string() })).nonempty(),
-  scope     : z.enum(DIRECTIVE_SCOPES),
-  scopeNote : z.string().optional()
-})
+export const directive = z
+  .object({
+    aliasOf  : z.string().optional(),
+    effect   : z.string(),
+    example  : z.string(),
+    form     : z.string().regex(DIRECTIVE_FORM),
+    pairId   : z.string().optional(),
+    pairRole : z.enum(['closes', 'opens']).optional(),
+    scope    : z.enum(SCOPES)
+  })
+  .transform(data => ({ ...data, parts: directiveParts(data.form) }))
 
 export const editorConfig = z.object({
   caption  : z.string(),
   code     : z.string(),
   language : z.string(),
-  name     : z.string(),
   target   : z.string()
 })
 
 export const shellCompletion = z.object({
   caption  : z.string(),
   code     : z.string(),
-  command  : z.string(),
   language : z.string(),
-  mono     : z.string(),
-  name     : z.string(),
   note     : z.string(),
   target   : z.string()
 })
@@ -140,7 +160,7 @@ export const pipelineEntry = z.object({
 
 export type PipelineEntry = z.infer<typeof pipelineEntry>
 
-export const release = z.object({ version: z.string() })
+export const release = z.object({ gitSha: z.string(), version: z.string() })
 
 export const stars = z.object({ stars: z.string() })
 

@@ -1,0 +1,53 @@
+---
+import { getCollection } from 'astro:content'
+
+import { ruleOrThrow }  from '../../lib/content/discovery/rules'
+import { renderInline } from '../../lib/markdown/render'
+import { required }     from '../../lib/shared/required'
+
+interface Props {
+  slug: string
+}
+
+const { slug } = Astro.props
+
+const rule = await ruleOrThrow(slug, 'RuleConfigTable')
+
+const presetId = rule.family === 'alignment' ? 'alignment' : 'toggle'
+const presets  = await getCollection('ruleConfigPresets')
+const preset   = required(
+  presets.find(entry => entry.id === presetId),
+  `Rule config preset "${presetId}" does not exist`
+)
+const extra = presets.find(entry => entry.id === slug)
+
+const presetRows = [...preset.data.rows, ...extra?.data.rows ?? []]
+
+const rows = await Promise.all(presetRows.map(async row => ({
+  default     : row.default,
+  key         : row.key,
+  meaningHtml : await renderInline(row.meaning),
+  typeHtml    : await renderInline(row.type)
+})))
+---
+
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Type</th>
+      <th>Default</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    {rows.map(row => (
+      <tr>
+        <td><code>{row.key}</code></td>
+        <td set:html={row.typeHtml} />
+        <td><code>{row.default}</code></td>
+        <td set:html={row.meaningHtml} />
+      </tr>
+    ))}
+  </tbody>
+</table>

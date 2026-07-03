@@ -1,0 +1,105 @@
+---
+import '../../styles/mixins/kicker.css'
+import './styles/glossary-folio-pane.css'
+
+import { familyMeta }           from '../../lib/content/discovery/family-meta'
+import { glossaryFolioEntries } from '../../lib/glossary/entries'
+import { formatFolio }          from '../../lib/shared/numerals'
+
+const entries = await glossaryFolioEntries()
+const first   = entries[0]
+
+const metaOf = await familyMeta()
+---
+
+<div class="glossary-folio-stage" data-family={first?.primaryFamily}>
+  {entries.map((entry, index) => (
+    <article
+      class="glossary-folio-pane"
+      data-aliases={entry.aliases.join('\n')}
+      data-family={entry.primaryFamily}
+      data-slug={entry.slug}
+      hidden={index !== 0}
+    >
+      <header class="glossary-folio-head">
+        <p class="kicker glossary-folio-folio">
+          {entry.families.map(family => (
+            <span class="glossary-folio-chip" data-family={family}>
+              <span class="glossary-folio-badge" aria-hidden="true">{metaOf(family).badge}</span>
+              <span class="glossary-folio-folio-family">{metaOf(family).label}</span>
+            </span>
+          ))}
+          <span class="glossary-folio-folio-sep" aria-hidden="true">·</span>
+          <span class="glossary-folio-count">{formatFolio(index + 1)} / {formatFolio(entries.length)}</span>
+        </p>
+        <div class="glossary-folio-steps">
+          <button type="button" class="glossary-folio-step" data-step="-1" aria-label="Previous entry">
+            <span aria-hidden="true">‹</span>
+          </button>
+          <button type="button" class="glossary-folio-step" data-step="1" aria-label="Next entry">
+            <span aria-hidden="true">›</span>
+          </button>
+        </div>
+      </header>
+      <h2 class="glossary-folio-headword">
+        {entry.href !== undefined
+          ? <a href={entry.href}>{entry.slug}</a>
+          : <span>{entry.slug}</span>}
+      </h2>
+      {entry.aliases.length > 0 && (
+        <p class="glossary-folio-aliases">
+          <span class="glossary-folio-aliases-label">also</span>
+          {entry.aliases.map(alias => (
+            <code class="glossary-folio-aliases-chip">{alias}</code>
+          ))}
+        </p>
+      )}
+      <div class="glossary-folio-body" set:html={entry.definitionHtml} />
+    </article>
+  ))}
+</div>
+
+<script>
+  import { cycleIndex, entryMatches }              from '../../lib/glossary/folio'
+  import { glossaryFolioQuery, glossaryFolioSlug } from '../../lib/glossary/store'
+  import { closestFrom }                           from '../../lib/shared/dom/closest-from'
+  import { formatFolio }                           from '../../lib/shared/numerals'
+
+  for (const stage of document.querySelectorAll<HTMLElement>('.glossary-folio-stage')) {
+    const articles = [...stage.querySelectorAll<HTMLElement>('.glossary-folio-pane')]
+
+    const pool = (): HTMLElement[] => {
+      const query = glossaryFolioQuery.get()
+      return articles.filter(article =>
+        entryMatches(article.dataset.slug ?? '', article.dataset.aliases ?? '', query))
+    }
+    const activeSlug = (): string | undefined => glossaryFolioSlug.get() ?? articles[0]?.dataset.slug
+
+    stage.addEventListener('click', event => {
+      const step = closestFrom(event, '.glossary-folio-step')
+      if (step === null) return
+      const entries = pool()
+      const slug    = activeSlug()
+      const index   = entries.findIndex(article => article.dataset.slug === slug)
+      const next    = entries[cycleIndex(index, Number(step.dataset.step), entries.length)]
+      if (next?.dataset.slug !== undefined) glossaryFolioSlug.set(next.dataset.slug)
+    })
+
+    const update = (): void => {
+      const slug   = activeSlug()
+      const active = articles.find(article => article.dataset.slug === slug)
+      for (const article of articles) article.hidden = article !== active
+      if (active === undefined) return
+      if (active.dataset.family !== undefined) stage.dataset.family = active.dataset.family
+      const entries = pool()
+      const index   = entries.indexOf(active)
+      const count   = active.querySelector<HTMLElement>('.glossary-folio-count')
+      if (count) {
+        count.textContent = `${index < 0 ? '–' : formatFolio(index + 1)} / ${formatFolio(entries.length)}`
+      }
+    }
+
+    glossaryFolioQuery.subscribe(update)
+    glossaryFolioSlug.subscribe(update)
+  }
+</script>

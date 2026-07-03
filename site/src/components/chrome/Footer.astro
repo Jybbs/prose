@@ -1,0 +1,68 @@
+---
+import Default           from '@astrojs/starlight/components/Footer.astro'
+import { getCollection } from 'astro:content'
+
+const [release] = await getCollection('release')
+const rules     = (await getCollection('pipeline')).length
+const fixtures  = (await getCollection('fixtures')).length
+
+interface Item {
+  code  ?: boolean
+  label  : string
+  value  : string | number
+}
+
+const items: Item[] = [
+  { label: 'Version',  value: release.data.version },
+  { label: 'Commit',   value: release.data.gitSha, code: true },
+  { label: 'Rules',    value: rules },
+  { label: 'Fixtures', value: fixtures }
+]
+---
+
+<Default />
+
+<footer class="build-metadata">
+  {items.map(item => (
+    <span class="build-metadata-item">
+      <span class="build-metadata-label">{item.label}</span>
+      <span class="build-metadata-value">
+        {item.code ? <code>{item.value}</code> : item.value}
+      </span>
+    </span>
+  ))}
+</footer>
+
+<style>
+  .build-metadata {
+    display        : flex;
+    flex-wrap      : wrap;
+    align-items    : center;
+    gap            : 14px 22px;
+    margin-top     : 24px;
+    padding-top    : 14px;
+    border-top     : 1px solid var(--sl-color-hairline);
+    font-family    : var(--sl-font-mono, monospace);
+    font-size      : var(--sl-text-xs);
+    color          : var(--sl-color-gray-3);
+  }
+
+  .build-metadata-item {
+    display     : inline-flex;
+    align-items : center;
+    gap         : 6px;
+  }
+
+  .build-metadata-label {
+    text-transform : uppercase;
+    letter-spacing : 0.12em;
+  }
+
+  .build-metadata-value {
+    color : var(--sl-color-white);
+  }
+
+  .build-metadata-value code {
+    font-size : inherit;
+  }
+</style>

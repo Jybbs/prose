@@ -1,0 +1,150 @@
+---
+import '@shikijs/magic-move/style.css'
+import '../../styles/mixins/panel.css'
+import './styles/fixture.css'
+import './styles/fixture-landing.css'
+
+import { Code } from '@astrojs/starlight/components'
+
+import { embedJson } from '../../lib/shared/json-island'
+
+interface Props {
+  input    : string
+  lintId  ?: string
+  output   : string
+  steps   ?: readonly unknown[]
+  syncId   : string
+  variant ?: 'doc' | 'landing'
+}
+
+const { input, lintId, output, steps, syncId, variant = 'doc' } = Astro.props
+
+const lintMeta = lintId === undefined ? undefined : `lint=${lintId}`
+---
+
+{variant === 'landing'
+  ? <div class="fixture-pair fixture-pair-landing">
+      <div class="panel panel-clip fixture-pair-side">
+        <div class="fixture-pair-label" data-side="before">
+          <span class="fixture-pair-dot" data-side="before"></span>
+          <span>Before</span>
+        </div>
+        <div class="fixture-pair-code"><Code code={input} lang="python" /></div>
+      </div>
+      <div class="fixture-pair-arrow" aria-hidden="true">→</div>
+      <div class="panel panel-clip fixture-pair-side">
+        <div class="fixture-pair-label" data-side="after">
+          <span class="fixture-pair-dot" data-side="after"></span>
+          <span>After</span>
+        </div>
+        <div class="fixture-pair-code"><Code code={output} lang="python" /></div>
+      </div>
+    </div>
+  : <fixture-pair class="panel panel-clip fixture-pair fixture-pair-doc" data-id={syncId}>
+      <div class="fixture-pair-panel" data-side="before" hidden><Code code={input} lang="python" /></div>
+      <div class="fixture-pair-panel" data-side="after"><Code code={output} lang="python" meta={lintMeta} /></div>
+      <div class="fixture-pair-morph" hidden></div>
+      {steps && <script is:inline type="application/json" data-steps set:html={embedJson(steps)} />}
+    </fixture-pair>}
+
+<script>
+  import { listenKeys } from 'nanostores'
+
+  import type { KeyedTokensInfo } from '@shikijs/magic-move/types'
+
+  import { fixtureTabs, tabOf } from '../../lib/fixtures/store'
+  import type { FixtureTab }    from '../../lib/fixtures/store'
+  import { reducedMotion }      from '../../lib/shared/dom/reduced-motion'
+
+  type Renderer = InstanceType<typeof import('@shikijs/magic-move/renderer').MagicMoveRenderer>
+
+  // The static Expressive Code panels carry the decorated `.lint-flag` spans,
+  // so magic-move owns the pane only through the morph and hands back to the
+  // panel on settle, where the squiggles draw back in.
+  class FixturePairElement extends HTMLElement {
+    #morphing = false
+    #renderer : Renderer | null = null
+    #step     = 1
+    #steps    : KeyedTokensInfo[] = []
+
+    connectedCallback(): void {
+      const id = this.dataset.id ?? ''
+      this.#steps = this.#stepsPayload()
+
+      const observer = new IntersectionObserver(entries => {
+        if (!entries.some(entry => entry.isIntersecting)) return
+        void this.#prepare()
+        this.#drawSquiggles()
+        observer.disconnect()
+      })
+      observer.observe(this)
+
+      listenKeys(fixtureTabs, [id], () => this.#show(tabOf(id)))
+    }
+
+    #stepsPayload(): KeyedTokensInfo[] {
+      const payload = this.querySelector('script[data-steps]')?.textContent
+      return payload ? (JSON.parse(payload) as KeyedTokensInfo[]) : []
+    }
+
+    async #prepare(): Promise<void> {
+      if (this.#steps.length === 0 || reducedMotion.matches) return
+      const { MagicMoveRenderer } = await import('@shikijs/magic-move/renderer')
+      const container = this.#part('.fixture-pair-morph')
+      const duration  = Number(getComputedStyle(document.documentElement).getPropertyValue('--prose-rule-draw-ms'))
+      const renderer  = new MagicMoveRenderer(container)
+      renderer.options = { ...renderer.options, containerStyle: false, delayMove: 0, duration, stagger: 3 }
+      renderer.replace(this.#steps[this.#step])
+      this.#renderer = renderer
+    }
+
+    #part(selector: string): HTMLElement {
+      return this.querySelector<HTMLElement>(selector)!
+    }
+
+    #panel(tab: FixtureTab): HTMLElement {
+      return this.#part(`.fixture-pair-panel[data-side="${tab}"]`)
+    }
+
+    #show(tab: FixtureTab): void {
+      const step = tab === 'before' ? 0 : 1
+      if (step === this.#step) return
+      this.#step = step
+      if (this.#renderer && !reducedMotion.matches) {
+        void this.#morph(tab)
+      } else {
+        this.#swap(tab)
+      }
+    }
+
+    async #morph(tab: FixtureTab): Promise<void> {
+      const morph = this.#part('.fixture-pair-morph')
+      if (!this.#morphing) {
+        this.#morphing = true
+        this.#panel('before').hidden = true
+        this.#panel('after').hidden  = true
+        morph.hidden = false
+      }
+      await this.#renderer!.render(this.#steps[this.#step])
+      this.#morphing = false
+      morph.hidden = true
+      this.#swap(tab)
+    }
+
+    #swap(tab: FixtureTab): void {
+      this.#panel('before').hidden = tab !== 'before'
+      this.#panel('after').hidden  = tab !== 'after'
+      if (tab === 'after') this.#drawSquiggles()
+    }
+
+    // Replays the left-to-right squiggle draw, resetting to scaleX(0) and
+    // landing on scaleX(1) a frame later so the CSS transition re-fires.
+    #drawSquiggles(): void {
+      if (reducedMotion.matches) return
+      this.classList.add('lint-undrawn')
+      requestAnimationFrame(() => requestAnimationFrame(() => this.classList.remove('lint-undrawn')))
+    }
+  }
+
+  customElements.define('fixture-pair', FixturePairElement)
+</script>

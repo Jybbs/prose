@@ -1,0 +1,45 @@
+---
+import RuleCard from './RuleCard.astro'
+
+import { discoveredRules }               from '../../lib/content/discovery/rules'
+import type { RuleCategory, RuleFamily } from '../../lib/shared/registries'
+
+interface Props {
+  category ?: RuleCategory
+  family   ?: RuleFamily
+  slugs    ?: readonly string[]
+}
+
+const { category, family, slugs } = Astro.props
+
+const rules = await discoveredRules()
+const items = slugs === undefined
+  ? rules.filter(rule =>
+      (category === undefined || rule.category === category) &&
+      (family === undefined   || rule.family   === family))
+  : slugs.flatMap(slug => rules.find(rule => rule.slug === slug) ?? [])
+---
+
+{items.length > 0
+  ? <div class={slugs === undefined ? 'rule-card-grid' : 'related-rules-inline'}>
+      {items.map(rule => <RuleCard rule={rule} />)}
+    </div>
+  : slugs === undefined && <p class="rule-card-grid-empty">No rules in this group yet.</p>}
+
+<script>
+  import { remeasure } from '../../lib/shared/dom/remeasure'
+
+  // Equalizes the name column across every card grid so the caption column
+  // opens at one shared edge, re-measured as the grid resizes.
+  function sync(grid: HTMLElement): void {
+    let widest = 0
+    for (const name of grid.querySelectorAll<HTMLElement>('.rule-card-name')) {
+      widest = Math.max(widest, name.scrollWidth)
+    }
+    if (widest > 0) grid.style.setProperty('--rule-card-name-width', `${widest}px`)
+  }
+
+  for (const grid of document.querySelectorAll<HTMLElement>('.rule-card-grid, .related-rules-inline')) {
+    remeasure(grid, () => sync(grid))
+  }
+</script>

@@ -2,6 +2,8 @@ import { existsSync }    from 'node:fs'
 import path              from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { required } from './required'
+
 // `siteRoot` is a loader or integration `config.root`, the site directory Astro
 // resolves the build against, one level below the workspace root that holds the
 // crate and the compiled binary.
@@ -34,9 +36,8 @@ export function proseBinaryCandidates(siteRoot: URL): string[] {
 }
 
 export function resolveProseBinary(siteRoot: URL): string {
-  const found = proseBinaryCandidates(siteRoot).find(existsSync)
-  if (found === undefined) {
-    throw new Error('prose binary not found at target/{release,debug}/prose. Run `cargo build` first.')
-  }
-  return found
+  return required(
+    proseBinaryCandidates(siteRoot).find(existsSync),
+    'prose binary not found at target/{release,debug}/prose. Run `cargo build` first.'
+  )
 }

@@ -32,8 +32,13 @@ jobs:
         include:
           - command : mise run links
             name    : 🗜️ Build
+            binary  : true
+            render  : true
           - command : mise run typecheck
             name    : 🪡 Typecheck
+            binary  : true
+          - command : mise run lint site
+            name    : 🧶 Lint
 
     steps:
       - &checkout
@@ -44,15 +49,40 @@ jobs:
         uses : ./.github/actions/provision-cargo
         with : { save: false, shared-key: prose-build }
 
-      - &build-prose
-        name : Build the prose binary
+      - name : Build the prose binary
+        if   : ${{ matrix.binary }}
         run  : mise run build bin
 
       - &provision-bun
         name : Provision bun
         uses : ./.github/actions/provision-bun
 
+      - name : Restore the OG card cache
+        if   : ${{ matrix.render }}
+        uses : &cache-action actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with : &og-cache
+          key          : og-cards-${{ runner.os }}-${{ github.sha }}
+          path         : .cache/og
+          restore-keys : og-cards-${{ runner.os }}-
+
+      - name : Restore the Astro content cache
+        if   : ${{ matrix.binary }}
+        uses : *cache-action
+        with:
+          key          : astro-store-${{ runner.os }}-${{ github.sha }}
+          path         : site/.astro
+          restore-keys : astro-store-${{ runner.os }}-
+
+      - name : Restore the lychee cache
+        if   : ${{ matrix.render }}
+        uses : *cache-action
+        with:
+          key          : lychee-${{ runner.os }}-${{ github.sha }}
+          path         : site/.lycheecache
+          restore-keys : lychee-${{ runner.os }}-
+
       - name : ${{ matrix.command }}
+        env  : { GITHUB_TOKEN: "${{ github.token }}" }
         run  : ${{ matrix.command }}
 
   deploy:
@@ -70,15 +100,14 @@ jobs:
         uses : ./.github/actions/provision-cargo
         with : { cache: false }
 
-      - *build-prose
+      - name : Build the prose binary
+        run  : mise run build bin
+
       - *provision-bun
 
       - name : Restore the OG card cache
-        uses : actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
-        with:
-          key          : og-cards-${{ runner.os }}-${{ github.sha }}
-          path         : .cache/og
-          restore-keys : og-cards-${{ runner.os }}-
+        uses : *cache-action
+        with : *og-cache
 
       - name : Build the site
         run  : mise run press

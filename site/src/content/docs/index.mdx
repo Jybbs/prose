@@ -1,0 +1,26 @@
+---
+title: Prose
+description: An opinionated Python code formatter that restores legibility.
+template: splash
+---
+
+import BuiltOn        from '../../components/landing/BuiltOn.astro'
+import Cta            from '../../components/landing/cta/Cta.astro'
+import Hero           from '../../components/landing/Hero.astro'
+import LandingSection from '../../components/landing/LandingSection.astro'
+import Metaphor       from '../../components/landing/Metaphor.astro'
+import Surfaces       from '../../components/landing/surfaces/Surfaces.astro'
+import TypingDemo     from '../../components/landing/TypingDemo.astro'
+import Workflow       from '../../components/landing/Workflow.astro'
+
+<section class="landing-page" aria-label="prose overview">
+  <Hero />
+  <LandingSection variant="proof" kicker="The Proof" heading="From <strong>cramped</strong> to <em>composed</em>." centered>
+    <TypingDemo />
+  </LandingSection>
+  <Metaphor />
+  <Surfaces />
+  <Workflow />
+  <BuiltOn />
+  <Cta />
+</section>

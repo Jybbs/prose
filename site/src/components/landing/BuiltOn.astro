@@ -1,0 +1,47 @@
+---
+import '../../styles/mixins/panel.css'
+import './styles/built-on.css'
+
+import { getCollection } from 'astro:content'
+import { Icon }          from 'astro-icon/components'
+
+import LandingSection from './LandingSection.astro'
+
+import { required } from '../../lib/shared/required'
+
+interface Credit {
+  role : string
+  slug : 'github' | 'mise' | 'ruff' | 'rust' | 'uv'
+}
+
+const credits: readonly Credit[] = [
+  { role: 'CI',             slug: 'github' },
+  { role: 'Implementation', slug: 'rust'   },
+  { role: 'Install path',   slug: 'uv'     },
+  { role: 'Tool versions',  slug: 'mise'   },
+  { role: 'Parser & AST',   slug: 'ruff'   }
+]
+
+const tools   = await getCollection('tools')
+const entries = credits.map(({ role, slug }) => {
+  const tool = required(
+    tools.find(entry => entry.id === slug)?.data,
+    `BuiltOn credit "${slug}" is not in the tools collection`
+  )
+  return { role, slug, tool }
+})
+---
+
+<LandingSection centered variant="built-on" kicker="The Lineage" heading="Standing on <em>giants</em>.">
+  <div class="panel panel-clip built-on-grid">
+    {entries.map(entry => (
+      <a class="built-on-card" href={entry.tool.href} rel="noopener" target="_blank">
+        <span class="built-on-medallion">
+          <Icon class="built-on-logo" name={entry.tool.icon} aria-hidden="true" />
+        </span>
+        <span class="built-on-name">{entry.tool.name}</span>
+        <span class="built-on-role kicker">{entry.role}</span>
+      </a>
+    ))}
+  </div>
+</LandingSection>

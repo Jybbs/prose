@@ -1,0 +1,47 @@
+---
+title: unused-future-annotations
+caption: Removes `from __future__ import annotations` lines that no longer carry their weight on the target Python version.
+related:
+  - legacy-union-syntax
+---
+
+import RuleLayout        from '../../../../components/rules/RuleLayout.astro'
+import TargetVersionTabs from '../../../../components/rules/TargetVersionTabs.astro'
+
+<RuleLayout slug="unused-future-annotations">
+
+The `from __future__ import annotations` directive made forward-reference annotations possible on Python versions where the runtime evaluated annotations eagerly. PEP 749 lands deferred annotation evaluation in Python **3.14** by default whenever the file's annotations are typing-only, and the import becomes redundant. `unused-future-annotations` removes the import when removal is provably safe for the file.
+
+The rewrite fires on any of the branches below, each a separate reason the import is removable. The file may carry zero annotations (*the directive is unused outright*). The `target-version` may be 3.14 or higher (*the runtime defers annotation evaluation, so the directive carries no runtime weight*). Or every name appearing in every annotation may resolve to an unconditional module-scope binding before its first annotation use (*forward references aren't needed, so the runtime evaluates annotations eagerly without raising*). When none of those branches holds, the import stays in place.
+
+<TargetVersionTabs>
+  <Fragment slot="3.10">
+    The version-gated branch stays quiet, so removal fires only if the file has zero annotations or every annotation resolves to an unconditional module-scope binding before use.
+  </Fragment>
+  <Fragment slot="3.11">
+    The branch stays quiet, the same as on 3.10.
+  </Fragment>
+  <Fragment slot="3.12">
+    The branch stays quiet, the same as on 3.10.
+  </Fragment>
+  <Fragment slot="3.13">
+    The branch stays quiet, the same as on 3.10.
+  </Fragment>
+  <Fragment slot="3.14">
+    The version-gated branch fires, because PEP 749 lands deferred annotation evaluation, so the directive is redundant for typing-only annotations and the import removes cleanly.
+  </Fragment>
+</TargetVersionTabs>
+
+<Fragment slot="configuration">
+
+The `target-version` field from the top-level [**Configuration**](/reference/configuration#top-level-keys) gates the rewrite per project.
+
+</Fragment>
+
+<Fragment slot="related-after">
+
+For the gate semantics, [**`target-version`**](/reference/configuration#top-level-keys) in the Configuration chapter covers how the field is read across version-gated rules.
+
+</Fragment>
+
+</RuleLayout>

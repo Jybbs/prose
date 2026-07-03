@@ -1,8 +1,8 @@
 import { unified }          from '@astrojs/markdown-remark'
 import type { ShikiConfig } from '@astrojs/markdown-remark'
 
-import { discoverDocsVocab }    from '../content/docs-vocab'
-import { discoverLintFindings } from '../content/lint-findings'
+import { discoverDocsVocab }    from '../content/discovery/docs-vocab'
+import { discoverLintFindings } from '../content/discovery/lint-findings'
 import { SHIKI_THEMES }         from '../shared/constants'
 import { remarkBodyLink }       from './body-link'
 import { remarkGlossary }       from './glossary-linker'
@@ -24,4 +24,4 @@ export const proseProcessor = unified({
 
 export const shikiConfig: ShikiConfig = { themes: SHIKI_THEMES }
 
-export const lintFlagPlugin = pluginLintFlag(discoverLintFindings(siteRoot))
+export const lintFlagPlugin = pluginLintFlag(discoverLintFindings(siteRoot), vocab.rules)

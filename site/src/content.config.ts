@@ -2,13 +2,13 @@ import { defineCollection } from 'astro:content'
 import { file, glob }       from 'astro/loaders'
 import { docsSchema }       from '@astrojs/starlight/schema'
 
-import { pipelineLoader, releaseLoader } from './lib/content/crate'
-import { docsLoaderWithIntegrity }       from './lib/content/docs-loader'
-import { fixturesLoader }                from './lib/content/fixtures'
-import { pypiReleasesLoader }            from './lib/content/pypi'
+import { pipelineLoader, releaseLoader } from './lib/content/loaders/crate'
+import { docsLoaderWithIntegrity }       from './lib/content/loaders/docs-loader'
+import { fixturesLoader }                from './lib/content/loaders/fixtures'
+import { pypiReleasesLoader }            from './lib/content/loaders/pypi'
 import * as schema                       from './lib/content/schemas'
-import { starsLoader }                   from './lib/content/stars'
-import { typingDemoLoader }              from './lib/content/typing-demo'
+import { starsLoader }                   from './lib/content/loaders/stars'
+import { typingDemoLoader }              from './lib/content/loaders/typing-demo'
 
 const data = (name: string): string => `src/data/${name}.yaml`
 

@@ -1,0 +1,120 @@
+.rules-plate {
+  display   : grid;
+  gap       : 14px;
+  isolation : isolate;
+}
+
+.rules-cluster {
+  position      : relative;
+  padding       : 18px 24px;
+  border        : 1px solid color-mix(in srgb, var(--family-color) 25%, var(--sl-color-hairline));
+  border-radius : var(--prose-radius);
+  background    : color-mix(in srgb, var(--family-color) 6%, var(--sl-color-bg));
+}
+
+.rules-cluster:has(.specimen:hover),
+.rules-cluster:focus-within {
+  z-index : 10;
+}
+
+.sl-markdown-content a.rules-cluster-head,
+a.rules-cluster-head {
+  display              : flex;
+  align-items          : center;
+  gap                  : 14px;
+  margin-bottom        : 12px;
+  text-decoration-line : none;
+  color                : inherit;
+}
+
+.sl-markdown-content a.rules-cluster-head:hover,
+a.rules-cluster-head:hover {
+  text-decoration-line : none;
+}
+
+.rules-cluster-emoji {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 48px;
+  height          : 48px;
+  border          : 1px solid color-mix(in srgb, var(--family-color) 35%, var(--sl-color-hairline));
+  border-radius   : 50%;
+  background      : var(--sl-color-bg);
+  font-size       : 1.4rem;
+  line-height     : 1;
+}
+
+.sl-markdown-content .rules-cluster-name,
+.rules-cluster-name {
+  margin      : 0;
+  padding     : 0;
+  border      : none;
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 500;
+  font-size   : 1.55rem;
+  line-height : 1;
+  color       : var(--family-color);
+  text-wrap   : balance;
+}
+
+.sl-markdown-content .rules-cluster-specimens,
+.rules-cluster-specimens {
+  display    : flex;
+  flex-wrap  : wrap;
+  gap        : 8px;
+  list-style : none;
+  margin     : 0;
+  padding    : 0;
+  isolation  : isolate;
+}
+
+.sl-markdown-content .rules-cluster-specimens > li,
+.rules-cluster-specimens > li {
+  position             : relative;
+  margin               : 0;
+  padding-inline-start : 0;
+  list-style           : none;
+}
+
+.sl-markdown-content .rules-cluster-specimens > li::before,
+.sl-markdown-content .rules-cluster-specimens > li::marker {
+  content : none;
+}
+
+.sl-markdown-content a.specimen,
+a.specimen {
+  position             : relative;
+  display              : inline-flex;
+  align-items          : baseline;
+  padding              : 4px 9px;
+  border               : 1px solid color-mix(in srgb, var(--family-color, var(--sl-color-hairline)) 30%, transparent);
+  border-radius        : var(--prose-radius);
+  background           : var(--sl-color-bg);
+  color                : var(--sl-color-white);
+  text-decoration-line : none;
+  font-family          : var(--sl-font-mono);
+  font-size            : var(--prose-text-xxs);
+  transition           :
+    border-color var(--prose-transition),
+    transform    var(--prose-transition);
+}
+
+.sl-markdown-content a.specimen:hover,
+.sl-markdown-content a.specimen:focus-visible,
+a.specimen:hover,
+a.specimen:focus-visible {
+  border-color         : var(--family-color, var(--sl-color-accent));
+  text-decoration-line : none;
+  transform            : translateY(-1px);
+}
+
+.rules-cluster-specimens > li:hover,
+.rules-cluster-specimens > li:focus-within {
+  z-index : 20;
+}
+
+.specimen-slug {
+  color : var(--family-color);
+}

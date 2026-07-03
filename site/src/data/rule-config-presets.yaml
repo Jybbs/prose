@@ -14,3 +14,81 @@ toggle:
       key: enabled
       meaning: Toggle the rule on or off
       type: bool
+alphabetize:
+  rows:
+    - default: 'true'
+      key: group-methods
+      meaning: Group methods into dunders, properties, privates, and publics before sorting within each group. Setting `false` sorts methods by plain name alone
+      type: bool
+    - default: 'true'
+      key: sort-definitions
+      meaning: Reorder class and function definitions, holding each behind any sibling it names at evaluation time. Setting `false` freezes every definition in source order
+      type: bool
+    - default: 'true'
+      key: sort-docstring-entries
+      meaning: 'Reorder `name: description` entries within Title-case-headed docstring sections, parameter entries mirroring the signature and stragglers alphabetizing below. Setting `false` keeps narrative-curated entry order'
+      type: bool
+    - default: 'true'
+      key: sort-dunder-lists
+      meaning: Reorder the string items inside `__all__` and `__slots__`. Setting `false` keeps a hand-curated public-API order
+      type: bool
+bare-imports:
+  rows:
+    - default: '[]'
+      key: allow
+      meaning: Modules whose bare-import form is preserved whatever their attribute count
+      type: list of module names
+    - default: 'true'
+      key: exempt-aliased
+      meaning: Exempt every aliased bare import (*`import x as y`*) from the rule
+      type: bool
+    - default: '4'
+      key: max-attributes
+      meaning: Distinct-attribute count at or below which a bare import is flagged
+      type: integer
+call-layout:
+  rows:
+    - default: '3'
+      key: max-args
+      meaning: Cap on the argument count an inline call can carry. A call exceeding the cap explodes, so the default `3` explodes a call of four or more arguments. Setting `false` disables the count trigger and leaves every call inline
+      type: positive int | `false`
+collection-layout:
+  rows:
+    - default: 'true'
+      key: collapse
+      meaning: Join a fitting multi-line literal, subscript, comprehension, or dict key back to one line. Setting `false` freezes those shapes where they sit
+      type: bool
+    - default: 'true'
+      key: explode
+      meaning: Expand an overflowing or over-count collection to one entry per line. Setting `false` suppresses every expansion and leaves `max-dict-entries` inert
+      type: bool
+    - default: '8'
+      key: max-atomics
+      meaning: Keep short collections on one line when each entry is an atomic literal and the run fits the cap. Setting `false` removes the cap and packs each line by width alone
+      type: positive int | `false`
+    - default: '3'
+      key: max-dict-entries
+      meaning: Expand a dict once its entry count exceeds the cap, whatever its width. Setting `false` disables the count trigger and leaves width as the only dict gate
+      type: positive int | `false`
+    - default: 'true'
+      key: wrap-dict-entries
+      meaning: 'Break an over-wide `key: value` at its `:` and hang the value beneath. Setting `false` leaves the oversized entry on one line'
+      type: bool
+reassigned-constants:
+  rows:
+    - default: '[]'
+      key: allow
+      meaning: Module-level names exempted from the lint
+      type: list of names
+signature-layout:
+  rows:
+    - default: '4'
+      key: max-params
+      meaning: Cap on the parameter count an inline signature can carry. Setting `false` disables the count trigger and leaves only the line-length budget
+      type: positive int | `false`
+single-use-variables:
+  rows:
+    - default: '"^_"'
+      key: allow-pattern
+      meaning: Binding names exempted from the lint
+      type: regex

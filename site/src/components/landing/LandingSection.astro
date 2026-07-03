@@ -1,0 +1,22 @@
+---
+import './styles/landing.css'
+import './styles/landing-section.css'
+
+interface Props {
+  centered ?: boolean
+  heading   : string
+  kicker   ?: string
+  variant  ?: string
+}
+
+const { centered = false, heading, kicker, variant } = Astro.props
+---
+
+<div class:list={['landing-section', variant && `landing-${variant}`]}>
+  <div class:list={['landing-section-heading', { centered }]}>
+    {kicker && <p class="kicker" data-variant="rule">{kicker}</p>}
+    <h2 set:html={heading} />
+    <slot name="heading-extra" />
+  </div>
+  <slot />
+</div>

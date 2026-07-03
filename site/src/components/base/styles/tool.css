@@ -1,0 +1,37 @@
+.tool-mark:hover > code {
+  color : var(--prose-palette-celadon);
+}
+
+.tool-mark .tool-mark-icon {
+  display        : inline-block;
+  width          : 0.78em;
+  height         : 0.78em;
+  margin-right   : 3px;
+  vertical-align : -0.08em;
+}
+
+.tool-bare .tool-mark-icon {
+  margin-right   : 0;
+  width          : 1em;
+  height         : 1em;
+  vertical-align : -0.18em;
+}
+
+.tool-medallion {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  width           : var(--mark-size, 22px);
+  height          : var(--mark-size, 22px);
+  flex            : 0 0 auto;
+  border          : 1px solid color-mix(in srgb, var(--prose-palette-celadon) var(--mark-strength, 28%), var(--sl-color-hairline));
+  border-radius   : 50%;
+  background      : var(--sl-color-bg);
+}
+
+.tool-medallion .tool-mark-icon {
+  width          : var(--mark-icon-size, 12px);
+  height         : var(--mark-icon-size, 12px);
+  margin-right   : 0;
+  vertical-align : 0;
+}

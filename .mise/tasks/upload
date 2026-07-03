@@ -1,7 +1,6 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S bash -euo pipefail
 #MISE description="Generate coverage and upload it to Codecov for the Rust crate"
-#MISE tools={"pipx:codecov-cli" = "latest"}
+#MISE depends=["coverage"]
+#MISE tools={"pipx:codecov-cli" = "11.2.8"}
 
-set -euo pipefail
-
-mise run coverage && codecovcli upload-process --flag rust --file target/lcov.info --sha "$SHA"
+codecovcli upload-process --flag rust --file target/lcov.info --sha "$SHA"

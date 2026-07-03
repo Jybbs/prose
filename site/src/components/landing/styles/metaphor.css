@@ -1,0 +1,108 @@
+.landing-metaphor {
+  padding-top : 72px;
+  border-top  : 1px solid var(--sl-color-hairline);
+}
+
+.landing-definition {
+  position : relative;
+  margin   : 36px 0 0;
+  padding  : 32px 40px 36px;
+}
+
+.landing-definition-kicker {
+  margin : 0 0 16px;
+}
+
+.landing-definition-head {
+  display       : flex;
+  align-items   : baseline;
+  gap           : 10px;
+  margin-bottom : 22px;
+}
+
+.landing-definition-word {
+  margin      : 0;
+  padding     : 0;
+  border      : none;
+  font-family : var(--prose-font-display);
+  font-weight : 500;
+  font-size   : 2.2rem;
+  line-height : 1;
+  color       : var(--prose-palette-ube);
+  text-wrap   : balance;
+}
+
+.landing-definition-pron {
+  font-family : var(--sl-font-mono);
+  font-size   : var(--prose-text-sm);
+  color       : var(--sl-color-gray-3);
+}
+
+.landing-definition-leader {
+  flex          : 1;
+  align-self    : end;
+  height        : 0;
+  border-bottom : 1px dotted color-mix(in srgb, var(--sl-color-gray-3) 50%, transparent);
+  margin        : 0 6px 0.35em;
+  opacity       : 0.5;
+}
+
+.landing-definition-pos {
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-size   : 1rem;
+  color       : var(--sl-color-gray-3);
+}
+
+.landing-definition-list {
+  list-style     : none;
+  margin         : 0;
+  padding        : 0;
+  display        : flex;
+  flex-direction : column;
+  gap            : 12px;
+}
+
+.landing-definition-list li {
+  display     : flex;
+  align-items : baseline;
+  gap         : 12px;
+}
+
+.landing-definition-num {
+  display        : inline-block;
+  padding        : 1px 8px;
+  border-radius  : 999px;
+  background     : color-mix(in srgb, var(--sl-color-accent) var(--prose-tint-faint), transparent);
+  font-family    : var(--sl-font-mono);
+  font-size      : var(--prose-text-xxs);
+  color          : var(--sl-color-accent);
+  vertical-align : 0.18em;
+  flex           : 0 0 auto;
+}
+
+.landing-definition-body {
+  font-family : var(--sl-font);
+  font-style  : italic;
+  font-size   : var(--prose-text-md);
+  line-height : 1.55;
+  color       : var(--sl-color-gray-2);
+}
+
+.landing-definition-rule {
+  margin     : 22px 0;
+  border     : 0;
+  border-top : 1px solid var(--sl-color-hairline);
+}
+
+.landing-definition-copy p {
+  margin      : 0 0 14px;
+  font-family : var(--sl-font);
+  font-size   : 1rem;
+  line-height : 1.65;
+  color       : var(--sl-color-gray-2);
+}
+
+.landing-definition-copy p:last-child {
+  margin-bottom : 0;
+}

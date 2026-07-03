@@ -5,6 +5,7 @@
 
   "dependencies": {
     "@astrojs/starlight"                   : "0.41.1",
+    "@floating-ui/dom"                     : "1.7.6",
     "@fontsource-variable/fraunces"        : "5.2.9",
     "@fontsource-variable/jetbrains-mono"  : "5.2.8",
     "@fontsource-variable/lora"            : "5.2.8",
@@ -18,6 +19,9 @@
     "astro-icon"                           : "1.1.5",
     "cacache"                              : "21.0.1",
     "culori"                               : "4.0.2",
+    "embla-carousel"                       : "8.6.0",
+    "embla-carousel-auto-scroll"           : "8.6.0",
+    "nanostores"                           : "1.4.0",
     "ofetch"                               : "1.5.1",
     "satori"                               : "0.26.0"
   },
@@ -27,6 +31,9 @@
     "@csstools/postcss-global-data" : "4.0.0",
     "@types/cacache"                : "20.0.1",
     "@types/culori"                 : "4.0.1",
+    "eslint"                        : "10.6.0",
+    "eslint-plugin-astro"           : "2.1.1",
+    "oxlint"                        : "1.72.0",
     "postcss-custom-media"          : "12.0.1",
     "schema-dts"                    : "2.0.0",
     "starlight-links-validator"     : "0.25.1",
