@@ -15,4 +15,4 @@ runs:
       with:
         cache-dependency-glob : ${{ inputs.cache-dependency-glob }}
         enable-cache          : true
-        version               : latest
+        version               : 0.11.26

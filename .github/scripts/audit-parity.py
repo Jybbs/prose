@@ -10,7 +10,8 @@ exits 0 when every pair agrees. Mismatches surface as `::error::`
 annotations naming the file pair and the divergent values.
 
 Initial pairs:
-    Rust version    `README.md` badge vs `crate/Cargo.toml` `rust-version`
+    Rust version    `README.md` badge, `crate/Cargo.toml` `rust-version`,
+                    and the `.mise/config.toml` `rust` pin
     Python version  `README.md` badge vs `crate/pyproject.toml` `requires-python`
 """
 
@@ -42,6 +43,7 @@ def major_minor(value: str) -> str:
 if __name__ == "__main__":
 
     cargo   = loads(Path("crate/Cargo.toml").read_text(encoding="utf-8"))
+    mise    = loads(Path(".mise/config.toml").read_text(encoding="utf-8"))
     project = loads(Path("crate/pyproject.toml").read_text(encoding="utf-8"))
 
     pairs = [
@@ -49,6 +51,11 @@ if __name__ == "__main__":
             "README.md Rust badge ↔ crate/Cargo.toml rust-version",
             badge("rust.svg"),
             major_minor(cargo["package"]["rust-version"])
+        ),
+        (
+            "crate/Cargo.toml rust-version ↔ .mise/config.toml rust pin",
+            major_minor(cargo["package"]["rust-version"]),
+            major_minor(mise["tools"]["rust"])
         ),
         (
             "README.md Python badge ↔ crate/pyproject.toml requires-python",

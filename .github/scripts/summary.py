@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["jinja2"]
+# dependencies = ["jinja2==3.1.6"]
 # ///
 """
 Render a Prose step summary and gate the workflow's exit code.
