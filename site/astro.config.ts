@@ -73,8 +73,6 @@ export default defineConfig({
     css: {
       postcss: {
         plugins: [
-          // `postcssGlobalData` must precede `postcssCustomMedia` so the
-          // breakpoint definitions are in scope when the queries resolve.
           postcssGlobalData({ files: ['./src/styles/breakpoints.css'] }),
           postcssCustomMedia()
         ]
