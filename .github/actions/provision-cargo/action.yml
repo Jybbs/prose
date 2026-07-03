@@ -18,10 +18,15 @@ runs:
   using: composite
 
   steps:
+    - name  : Point RUSTUP_HOME into the cached mise directory
+      shell : bash
+      run   : echo "MISE_RUSTUP_HOME=$HOME/.local/share/mise/rustup" >> "$GITHUB_ENV"
+
     - name : Install mise tools
       uses : jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d
       with:
-        cache_save : ${{ inputs.cache != 'false' }}
+        cache_key_prefix : mise
+        cache_save       : ${{ inputs.cache != 'false' }}
 
     - name : Restore Cargo cache
       if   : ${{ inputs.cache != 'false' }}
