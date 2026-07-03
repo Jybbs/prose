@@ -46,6 +46,11 @@ if __name__ == "__main__":
     mise    = loads(Path(".mise/config.toml").read_text(encoding="utf-8"))
     project = loads(Path("crate/pyproject.toml").read_text(encoding="utf-8"))
 
+    # The mise `rust` pin is a bare version string or a table with `version`.
+    mise_rust = mise["tools"]["rust"]
+    if isinstance(mise_rust, dict):
+        mise_rust = mise_rust["version"]
+
     pairs = [
         (
             "README.md Rust badge ↔ crate/Cargo.toml rust-version",
@@ -55,7 +60,7 @@ if __name__ == "__main__":
         (
             "crate/Cargo.toml rust-version ↔ .mise/config.toml rust pin",
             major_minor(cargo["package"]["rust-version"]),
-            major_minor(mise["tools"]["rust"])
+            major_minor(mise_rust)
         ),
         (
             "README.md Python badge ↔ crate/pyproject.toml requires-python",

@@ -7,9 +7,11 @@
 SITE_HOST=$(grep -om1 'https://[^/<]*' dist/sitemap-index.xml | cut -d/ -f3)
 
 lychee --no-progress \
+  --scheme http --scheme https \
   --max-retries 3 --retry-wait-time 2 --timeout 30 \
   --cache --max-cache-age 1d --cache-exclude-status '429, 500..504' \
   --base-url "https://${SITE_HOST}" \
   --exclude "^https?://(www\.)?${SITE_HOST//./\\.}" \
   --exclude '^https://github\.com/Jybbs/prose/edit/' \
+  --exclude '^https://www\.gnu\.org/' \
   dist
