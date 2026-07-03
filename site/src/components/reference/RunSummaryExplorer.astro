@@ -115,7 +115,7 @@ const selects = [
     }
 
     #optionRow(axis: Axis, option: OptionRow, trigger: HTMLElement): HTMLElement {
-      const item = document.createElement('li')
+      const item = el('li', '')
       item.role  = 'option'
       item.setAttribute('aria-selected', String(this.#selection[axis] === option.id))
       const button = el('button', 'run-summary-opt')

@@ -1,4 +1,4 @@
-export interface TabSelectOptions {
+interface TabSelectOptions {
   activeClass ?: string
   events       : readonly ('click' | 'focus' | 'mouseenter')[]
   key          : string
@@ -10,7 +10,7 @@ export interface TabSelectOptions {
 // picked tab, `aria-selected` where a tab carries the role, and `hidden` on
 // the panels whose dataset `key` misses the selection, a tab carrying no key
 // value showing every panel.
-export function wireTabSelect(root: ParentNode, options: TabSelectOptions): void {
+function wireTabSelect(root: ParentNode, options: TabSelectOptions): void {
   const { activeClass = 'is-active', events, key, panels, tabs } = options
 
   const select = (picked: HTMLElement): void => {

@@ -3,7 +3,7 @@ import { lazy }              from '../../shared/lazy'
 import type { RuleCategory } from '../../shared/registries'
 import { titleCase }         from '../../shared/title-case'
 
-export interface FamilyMeta {
+interface FamilyMeta {
   badge : string
   label : string
 }

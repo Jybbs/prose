@@ -2,7 +2,7 @@
 // read section membership as segment structure rather than regex lookaheads.
 // Each reader returns `undefined` for foreign sections and section indexes.
 
-export interface FamilyPage {
+interface FamilyPage {
   family : string
   slug   : string
 }

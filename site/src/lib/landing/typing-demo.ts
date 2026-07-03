@@ -1,11 +1,4 @@
-interface LandingTypingDemoEditEntry {
-  anchor : string
-  from   : string
-  kind   : 'edit'
-  slug   : string
-  tail  ?: string
-  to     : string
-}
+import type { TypingDemoEntry, TypingDemoResetRow } from './typing-demo-buffer'
 
 export const SOURCE = `from pathlib import Path
 from dataclasses import dataclass
@@ -71,8 +64,8 @@ target-version        = "3.13"
     : `${base}\n[rules]\n${rules.join('\n')}\n`
 }
 
-export const ENTRIES: readonly LandingTypingDemoEditEntry[] = [
-  ...RULES.map((slug): LandingTypingDemoEditEntry => ({
+export const ENTRIES: readonly TypingDemoEntry[] = [
+  ...RULES.map((slug): TypingDemoEntry => ({
     anchor : ruleAnchor(slug),
     from   : 'false',
     kind   : 'edit',
@@ -105,14 +98,8 @@ export const ENTRIES: readonly LandingTypingDemoEditEntry[] = [
   }
 ]
 
-interface LandingTypingDemoResetRow {
-  anchor  : string
-  end     : string
-  prelude : string
-}
-
-function buildResetRows(): LandingTypingDemoResetRow[] {
-  const rows = new Map<string, LandingTypingDemoResetRow>()
+function buildResetRows(): TypingDemoResetRow[] {
+  const rows = new Map<string, TypingDemoResetRow>()
   for (const entry of ENTRIES) {
     const row = rows.get(entry.anchor)
     if (row) row.end = entry.to
@@ -121,4 +108,4 @@ function buildResetRows(): LandingTypingDemoResetRow[] {
   return [...rows.values()]
 }
 
-export const RESET_ROWS: readonly LandingTypingDemoResetRow[] = buildResetRows()
+export const RESET_ROWS: readonly TypingDemoResetRow[] = buildResetRows()

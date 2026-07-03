@@ -20,7 +20,7 @@ export interface MachineState {
   pythonStateIndex : number
 }
 
-export interface TypingMachine {
+interface TypingMachine {
   boot        : () => void
   freezeAtEnd : () => void
   replay      : () => void

@@ -46,12 +46,11 @@ const heading = `<strong>${cards.length}</strong> rule families. <em>${rules.len
   import EmblaCarousel from 'embla-carousel'
   import AutoScroll    from 'embla-carousel-auto-scroll'
 
-  import { attachEdgeMagnet } from '../../../lib/landing/edge-magnet'
-  import { reducedMotion }    from '../../../lib/shared/dom/reduced-motion'
+  import { attachEdgeMagnet, FRAMES_PER_SEC } from '../../../lib/landing/edge-magnet'
+  import { reducedMotion }                    from '../../../lib/shared/dom/reduced-motion'
 
   const BASE_SPEED_PX_PER_SEC = 32
   const EDGE_MARGIN_PX        = 32
-  const FRAMES_PER_SEC        = 60
   const MAGNET_GAIN           = 4
   const MAX_PULL_PX_PER_SEC   = BASE_SPEED_PX_PER_SEC * 8
 

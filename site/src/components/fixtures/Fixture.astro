@@ -95,12 +95,15 @@ const lintId          = hasFindings ? id : undefined
     </div>}
 
 <script>
+  import { setFixtureCardOpen } from '../../lib/fixtures/card'
+  import { closestFrom }        from '../../lib/shared/dom/closest-from'
+
   // Opens and closes the card, the actions cluster staying inert to the row
   // toggle, with a matching location hash opening the card it names.
   class FixtureCardElement extends HTMLElement {
     connectedCallback(): void {
       this.querySelector('.fixture-card-summary-row')?.addEventListener('click', event => {
-        if ((event.target as HTMLElement).closest('.fixture-card-actions')) return
+        if (closestFrom(event, '.fixture-card-actions')) return
         this.#setOpen(!this.classList.contains('is-open'))
       })
       const syncWithHash = (): void => {
@@ -111,8 +114,7 @@ const lintId          = hasFindings ? id : undefined
     }
 
     #setOpen(open: boolean): void {
-      this.classList.toggle('is-open', open)
-      this.querySelector('.fixture-card-summary')?.setAttribute('aria-expanded', String(open))
+      setFixtureCardOpen(this, open)
       this.querySelector('.fixture-card-actions')?.classList.toggle('is-active', open)
     }
   }

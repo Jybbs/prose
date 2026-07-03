@@ -21,7 +21,7 @@ export interface BufferSegments {
   editingLineBefore : string
 }
 
-export const EMPTY_SEGMENTS: BufferSegments = {
+const EMPTY_SEGMENTS: BufferSegments = {
   after             : '',
   before            : '',
   editing           : '',

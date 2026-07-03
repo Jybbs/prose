@@ -6,15 +6,11 @@ import { getCollection } from 'astro:content'
 import { Code }          from '@astrojs/starlight/components'
 
 import Tool             from '../base/Tool.astro'
+import { toolNamer }    from '../../lib/content/discovery/tool-names'
 import { renderInline } from '../../lib/markdown/render'
-import { required }     from '../../lib/shared/required'
 
-const shells    = await getCollection('shellCompletions')
-const toolNames = new Map((await getCollection('tools')).map(tool => [tool.id, tool.data.name]))
-
-const nameOf = (id: string): string =>
-  required(toolNames.get(id), `Shell "${id}" is not in the tools collection`)
-
+const shells   = await getCollection('shellCompletions')
+const nameOf   = await toolNamer('Shell')
 const noteHtml = await Promise.all(shells.map(shell => renderInline(shell.data.note)))
 ---
 

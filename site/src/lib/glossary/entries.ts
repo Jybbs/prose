@@ -8,7 +8,7 @@ import { lazy }                from '../shared/lazy'
 import type { GlossaryFamily } from '../shared/registries'
 import { required }            from '../shared/required'
 
-export interface GlossaryFolioEntry {
+interface GlossaryFolioEntry {
   aliases        : readonly string[]
   definitionHtml : string
   families       : readonly GlossaryFamily[]

@@ -82,10 +82,11 @@ const related = new Set(focused === null ? [] : [...focused.consumes, ...focused
 
   for (const root of roots) {
     const initial = root.dataset.initialFocus ?? null
-    root.addEventListener('mouseover', event => {
+    const focusLink = (event: Event) => {
       const link = closestFrom(event, LINK)
       if (link) apply(root, link.dataset.slug ?? null)
-    })
+    }
+    root.addEventListener('mouseover', focusLink)
     // Without an initial focus the last hovered tile stays focused, so only a
     // pinned composition resets on leave.
     root.addEventListener('mouseout', event => {
@@ -94,10 +95,7 @@ const related = new Set(focused === null ? [] : [...focused.consumes, ...focused
       if (event instanceof MouseEvent && event.relatedTarget instanceof Node && link.contains(event.relatedTarget)) return
       apply(root, initial)
     })
-    root.addEventListener('focusin', event => {
-      const link = closestFrom(event, LINK)
-      if (link) apply(root, link.dataset.slug ?? null)
-    })
+    root.addEventListener('focusin', focusLink)
     root.addEventListener('focusout', event => {
       if (closestFrom(event, LINK) && initial !== null) apply(root, initial)
     })

@@ -1,7 +1,7 @@
 import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom'
 import type { Placement }                                   from '@floating-ui/dom'
 
-export interface FloatOptions {
+interface FloatOptions {
   gapPx     ?: number
   placement ?: Placement
 }

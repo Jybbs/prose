@@ -127,25 +127,22 @@ const cards = await Promise.all(cases.map(async (entry, index) => {
 </ol>
 
 <script>
-  import { closestFrom } from '../../lib/shared/dom/closest-from'
+  import { setFixtureCardOpen } from '../../lib/fixtures/card'
+  import { closestFrom }        from '../../lib/shared/dom/closest-from'
 
   // Single-open accordion over the shared fixture-card chrome. Clicks inside
   // the tick cell, the bar, or the open body keep their own behavior rather
   // than toggling the card.
   for (const list of document.querySelectorAll<HTMLElement>('.composition-cards-list')) {
-    const setOpen = (card: HTMLElement, open: boolean): void => {
-      card.classList.toggle('is-open', open)
-      card.querySelector('.fixture-card-summary')?.setAttribute('aria-expanded', String(open))
-    }
     list.addEventListener('click', event => {
       const card = closestFrom(event, '.fixture-card')
       if (card === null || !list.contains(card)) return
       if (closestFrom(event, '.composition-cards-tick-cell, .fixture-card-body')) return
       const open = !card.classList.contains('is-open')
       for (const other of list.querySelectorAll<HTMLElement>('.fixture-card.is-open')) {
-        if (other !== card) setOpen(other, false)
+        if (other !== card) setFixtureCardOpen(other, false)
       }
-      setOpen(card, open)
+      setFixtureCardOpen(card, open)
     })
   }
 </script>

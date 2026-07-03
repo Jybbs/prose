@@ -8,14 +8,11 @@ import { getCollection } from 'astro:content'
 import { Code }          from '@astrojs/starlight/components'
 
 import Tool            from '../base/Tool.astro'
+import { toolNamer }   from '../../lib/content/discovery/tool-names'
 import { formatFolio } from '../../lib/shared/numerals'
-import { required }    from '../../lib/shared/required'
 
-const editors   = await getCollection('editorConfigs')
-const toolNames = new Map((await getCollection('tools')).map(tool => [tool.id, tool.data.name]))
-
-const nameOf = (id: string): string =>
-  required(toolNames.get(id), `Editor "${id}" is not in the tools collection`)
+const editors = await getCollection('editorConfigs')
+const nameOf  = await toolNamer('Editor')
 ---
 
 <editor-run-on-save class="editor-card">

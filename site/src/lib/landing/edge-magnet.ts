@@ -1,13 +1,15 @@
 import type { EmblaCarouselType, ScrollBodyType } from 'embla-carousel'
 import type { AutoScrollType }                    from 'embla-carousel-auto-scroll'
 
-export interface EdgeMagnetOptions {
+import { closestFrom } from '../shared/dom/closest-from'
+
+interface EdgeMagnetOptions {
   edgeMarginPx    : number
   magnetGain      : number
   maxPullPxPerSec : number
 }
 
-const MS_PER_FRAME = 1000 / 60
+export const FRAMES_PER_SEC = 60
 
 // The pointer-pull layer over the auto-scroll plugin. A pointer over a card
 // hanging past either viewport edge pulls the scroll toward that card, speed
@@ -34,7 +36,7 @@ export function attachEdgeMagnet(
       duration  : () => -1,
       seek      : () => {
         previousLocation.set(location)
-        bodyVelocity = velocity * MS_PER_FRAME / 1000
+        bodyVelocity = velocity / FRAMES_PER_SEC
         location.add(bodyVelocity)
         target.set(location)
         const currentIndex = scrollTarget.byDistance(0, false).index
@@ -71,7 +73,7 @@ export function attachEdgeMagnet(
   }
 
   function onPointerMove(event: PointerEvent): void {
-    const card = (event.target as HTMLElement).closest('.surface-card')
+    const card = closestFrom(event, '.surface-card')
     if (card === null) {
       velocity = 0
       engage()

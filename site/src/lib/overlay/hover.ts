@@ -4,7 +4,7 @@ import { float }       from './float'
 import { closestFrom } from '../shared/dom/closest-from'
 import { el }          from '../shared/dom/el'
 
-export interface HoverOverlayOptions {
+interface HoverOverlayOptions {
   gapPx       ?: number
   hideDelayMs ?: number
   onClose     ?: (anchor: HTMLElement) => void

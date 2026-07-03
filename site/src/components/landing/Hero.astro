@@ -13,6 +13,7 @@ import './styles/hero.css'
   import { ROW_STRIDE_PX, tileStamps } from '../../lib/landing/hero-stamps'
   import type { Stamp }                from '../../lib/landing/hero-stamps'
   import { el }                        from '../../lib/shared/dom/el'
+  import { remeasure }                 from '../../lib/shared/dom/remeasure'
 
   const STAMP_PER_COL = 240
   const TERMINUS_GAP  = 40
@@ -37,16 +38,16 @@ import './styles/hero.css'
   // and retiles the stamp field whenever the column or row count changes, the
   // body observer catching both viewport resizes and later layout shifts.
   class LandingHero extends HTMLElement {
-    #cols     = 0
-    #observer = new ResizeObserver(() => this.#tile())
-    #rows     = 0
+    #cols = 0
+    #observer?: ResizeObserver
+    #rows = 0
 
     connectedCallback(): void {
-      this.#observer.observe(document.body)
+      this.#observer = remeasure(document.body, () => this.#tile())
     }
 
     disconnectedCallback(): void {
-      this.#observer.disconnect()
+      this.#observer?.disconnect()
     }
 
     #tile(): void {

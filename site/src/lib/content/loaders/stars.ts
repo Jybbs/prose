@@ -1,8 +1,9 @@
 import type { Loader } from 'astro/loaders'
 
 import { conditionalLoad } from './conditional'
+import { REPO_SLUG }       from '../../shared/constants'
 
-const ENDPOINT = 'https://api.github.com/repos/Jybbs/prose'
+const ENDPOINT = `https://api.github.com/repos/${REPO_SLUG}`
 const STAR_FMT = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
 
 const stargazers = (payload: unknown): number =>
