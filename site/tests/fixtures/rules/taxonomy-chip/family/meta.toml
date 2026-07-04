@@ -5,7 +5,7 @@ axis  = "family"
 value = "alignment"
 
 [[store.docs]]
-id   = "rules/alignment/index"
+id   = "rules/alignment"
 data = { badge = "⚖️" }
 
 [[store.docs]]

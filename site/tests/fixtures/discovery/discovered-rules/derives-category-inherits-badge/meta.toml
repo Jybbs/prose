@@ -1,5 +1,5 @@
 [[docs]]
-id         = "rules/alignment/index"
+id         = "rules/alignment"
 data.badge = "⚖️"
 
 [[docs]]
@@ -8,7 +8,7 @@ data.caption = "Aligns equals"
 data.related = ["align-colons"]
 
 [[docs]]
-id         = "rules/lint/index"
+id         = "rules/lint"
 data.badge = "🔎"
 
 [[docs]]
@@ -16,7 +16,7 @@ id   = "rules/lint/bare-imports"
 data = {}
 
 [[docs]]
-id   = "rules/formatting/index"
+id   = "rules/formatting"
 data = {}
 
 [[docs]]

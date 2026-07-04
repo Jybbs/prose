@@ -1,5 +1,5 @@
 [[docs]]
-id         = "rules/alignment/index"
+id         = "rules/alignment"
 data.badge = "⚖️"
 
 [[docs]]
@@ -7,7 +7,7 @@ id   = "rules/alignment/align-equals"
 data = {}
 
 [[docs]]
-id         = "rules/lint/index"
+id         = "rules/lint"
 data.badge = "🔎"
 
 [[docs]]

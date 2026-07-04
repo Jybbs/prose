@@ -17,7 +17,7 @@ data.tagline    = "T1"
 data.title      = "Edge Magnet"
 
 [[docs]]
-id   = "primitives/index"
+id   = "primitives"
 data = {}
 
 [[docs]]

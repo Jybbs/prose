@@ -1,5 +1,5 @@
 [[docs]]
-id         = "rules/lint/index"
+id         = "rules/lint"
 data.badge = "🔎"
 
 [[docs]]

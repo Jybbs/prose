@@ -6,7 +6,7 @@ rule  = "align_equals"
 title = "Already aligned"
 
 [[store.docs]]
-id   = "rules/alignment/index"
+id   = "rules/alignment"
 data = { badge = "⚖️" }
 
 [[store.docs]]

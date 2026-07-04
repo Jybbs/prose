@@ -1,12 +1,13 @@
 import { getCollection }        from 'astro:content'
 import type { CollectionEntry } from 'astro:content'
 
-import { isFamily }                            from '../shared/registries'
-import type { PrimitiveStability, RuleFamily } from '../shared/registries'
-import { titleCase }                           from '../shared/title-case'
-import { resolveColor }                        from '../tokens/resolve'
-import type { TokenName }                      from '../tokens/resolve'
-import { isLandingId }                         from './url'
+import { familyIndex, familyPage, sectionLeaf } from '../content/discovery/sections'
+import { isFamily }                             from '../shared/registries'
+import type { PrimitiveStability, RuleFamily }  from '../shared/registries'
+import { titleCase }                            from '../shared/title-case'
+import { resolveColor }                         from '../tokens/resolve'
+import type { TokenName }                       from '../tokens/resolve'
+import { isLandingId }                          from './url'
 
 type DocsEntry = CollectionEntry<'docs'>
 type Warmth    = NonNullable<DocsEntry['data']['warmth']>
@@ -48,9 +49,9 @@ function accentFor(kind: string, family?: RuleFamily): string | undefined {
 function familyWarmths(docs: readonly DocsEntry[]): Map<RuleFamily, Warmth> {
   const out = new Map<RuleFamily, Warmth>()
   for (const entry of docs) {
-    const [head, family, ...rest] = entry.id.split('/')
-    if (head !== 'rules' || rest.length > 0 || family === undefined || !isFamily(family)) continue
-    if (entry.data.warmth !== undefined) out.set(family, entry.data.warmth)
+    const family = familyIndex(entry.id)
+    if (family === undefined || !isFamily(family) || entry.data.warmth === undefined) continue
+    out.set(family, entry.data.warmth)
   }
   return out
 }
@@ -61,12 +62,13 @@ function pageFor(
   total     : number,
   warmths   : ReadonlyMap<RuleFamily, Warmth>
 ): OgPage {
-  const parts = entry.id.split('/')
-  const kind  = parts[0]
-  const base  = { accent: accentFor(kind), breadcrumb: [kind], kind, title: entry.data.title }
-  if (kind === 'rules' && parts.length === 3 && isFamily(parts[1])) {
-    const family   = parts[1]
-    const position = positions.get(parts[2])
+  const kind = entry.id.split('/')[0]
+  const base = { accent: accentFor(kind), breadcrumb: [kind], kind, title: entry.data.title }
+
+  const rule = familyPage(entry.id)
+  if (rule !== undefined && isFamily(rule.family)) {
+    const { family, slug } = rule
+    const position         = positions.get(slug)
     return {
       ...base,
       accent     : accentFor(kind, family),
@@ -74,14 +76,17 @@ function pageFor(
       caption    : entry.data.caption,
       family,
       pipeline   : position !== undefined ? { position, total } : undefined,
-      title      : titleCase(parts[2]),
+      title      : titleCase(slug),
       warmth     : warmths.get(family)
     }
   }
-  if (kind === 'rules' && parts.length === 2 && isFamily(parts[1])) {
-    return { ...base, accent: accentFor(kind, parts[1]) }
+
+  const family = familyIndex(entry.id)
+  if (family !== undefined && isFamily(family)) {
+    return { ...base, accent: accentFor(kind, family) }
   }
-  if (kind === 'primitives' && parts.length === 2) {
+
+  if (sectionLeaf(entry.id, 'primitives') !== undefined) {
     return { ...base, stability: entry.data.stability ?? 'internal' }
   }
   return base

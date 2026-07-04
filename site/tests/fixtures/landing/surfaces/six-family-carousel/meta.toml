@@ -1,7 +1,7 @@
 component = "landing/surfaces/Surfaces.astro"
 
 [[store.docs]]
-id   = "rules/alignment/index"
+id   = "rules/alignment"
 data = { badge = "⚖️" }
 
 [[store.docs]]
@@ -9,7 +9,7 @@ id   = "rules/alignment/align-equals"
 data = { caption = "Aligns equals" }
 
 [[store.docs]]
-id   = "rules/lint/index"
+id   = "rules/lint"
 data = { badge = "🔎" }
 
 [[store.docs]]

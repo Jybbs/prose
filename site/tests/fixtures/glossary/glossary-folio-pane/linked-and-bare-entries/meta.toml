@@ -1,7 +1,7 @@
 component = "glossary/GlossaryFolioPane.astro"
 
 [[store.docs]]
-id   = "rules/ordering/index"
+id   = "rules/ordering"
 data = { badge = "🪉" }
 
 [[store.docs]]

@@ -9,7 +9,7 @@ id   = "align-equals"
 data = { position = 1, slug = "align-equals" }
 
 [[store.docs]]
-id   = "rules/alignment/index"
+id   = "rules/alignment"
 data = { badge = "⚖️" }
 
 [[store.docs]]

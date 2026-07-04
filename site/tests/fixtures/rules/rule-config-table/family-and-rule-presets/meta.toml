@@ -4,7 +4,7 @@ component = "rules/RuleConfigTable.astro"
 slug = "align-equals"
 
 [[store.docs]]
-id   = "rules/alignment/index"
+id   = "rules/alignment"
 data = { badge = "⚖️" }
 
 [[store.docs]]

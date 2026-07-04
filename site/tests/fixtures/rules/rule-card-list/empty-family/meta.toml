@@ -4,7 +4,7 @@ component = "rules/RuleCardList.astro"
 family = "lint"
 
 [[store.docs]]
-id   = "rules/alignment/index"
+id   = "rules/alignment"
 data = { badge = "⚖️" }
 
 [[store.docs]]
@@ -12,7 +12,7 @@ id   = "rules/alignment/align-equals"
 data = { caption = "Aligns equals" }
 
 [[store.docs]]
-id   = "rules/ordering/index"
+id   = "rules/ordering"
 data = { badge = "🪉" }
 
 [[store.docs]]

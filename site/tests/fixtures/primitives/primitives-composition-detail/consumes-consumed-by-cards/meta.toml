@@ -19,7 +19,7 @@ slug       = "rope"
 summary    = "A rope"
 
 [[store.docs]]
-id   = "rules/alignment/index"
+id   = "rules/alignment"
 data = { badge = "⚖️" }
 
 [[store.docs]]

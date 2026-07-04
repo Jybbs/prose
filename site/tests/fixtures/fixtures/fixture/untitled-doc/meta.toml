@@ -5,7 +5,7 @@ case = "basic"
 rule = "align_equals"
 
 [[store.docs]]
-id   = "rules/alignment/index"
+id   = "rules/alignment"
 data = { badge = "⚖️" }
 
 [[store.docs]]

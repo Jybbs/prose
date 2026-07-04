@@ -13,7 +13,7 @@ id   = "integrations/editor"
 data = { summary = "Wraps the save event.", tagline = "save · LSP", title = "Editor" }
 
 [[store.docs]]
-id   = "integrations/index"
+id   = "integrations"
 data = { summary = "skip me", tagline = "skip", title = "Overview" }
 
 [[store.docs]]
