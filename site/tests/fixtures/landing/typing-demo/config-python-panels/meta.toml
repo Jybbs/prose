@@ -1,0 +1,17 @@
+component = "landing/TypingDemo.astro"
+timeout   = 20000
+
+[[store.typingDemo]]
+id   = "landing"
+data = {
+    entries          = [{
+        anchor = "a",
+        from   = "x",
+        kind   = "edit",
+        slug   = "align-equals",
+        to     = "y"
+    }],
+    prelude          = "target-version = \"3.13\"\n",
+    pythonStateSteps = [{ tokens = [] }],
+    resetRows        = [{ anchor = "a", end = "b", prelude = "c" }]
+}

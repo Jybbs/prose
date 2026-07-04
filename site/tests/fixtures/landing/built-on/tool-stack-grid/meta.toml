@@ -1,0 +1,33 @@
+component = "landing/BuiltOn.astro"
+
+[[store.tools]]
+id   = "github"
+data = {
+    href = "https://github.com/features/actions",
+    icon = "simple-icons:githubactions",
+    name = "GitHub Actions"
+}
+
+[[store.tools]]
+id   = "rust"
+data = {
+    href = "https://www.rust-lang.org/",
+    icon = "simple-icons:rust",
+    name = "Rust"
+}
+
+[[store.tools]]
+id   = "uv"
+data = { href = "https://docs.astral.sh/uv/", icon = "simple-icons:uv", name = "uv" }
+
+[[store.tools]]
+id   = "mise"
+data = { href = "https://mise.jdx.dev/", icon = "mise", name = "mise" }
+
+[[store.tools]]
+id   = "ruff"
+data = {
+    href = "https://docs.astral.sh/ruff/",
+    icon = "simple-icons:ruff",
+    name = "Ruff"
+}

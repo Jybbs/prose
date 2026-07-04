@@ -5,7 +5,7 @@ import { FONTS }                 from '../tokens/fonts'
 import type { BrandAssets }      from './assets'
 import { BODY, META_LABEL, UBE } from './colors'
 import {
-  CARD_WIDTH,
+  CARD_WIDTH, PANEL_BORDER_ALPHA,
   cardShell, dataPanel, el, leftRail, monoLabel, toSvg
 } from './parts'
 
@@ -15,14 +15,14 @@ const TITLE_WIDTH   = 889
 const TRACK         = '0.28em'
 
 export function landingSvg(brand: BrandAssets, version: string): Promise<string> {
-  return toSvg(buildLandingCard(version, brand), brand.fonts)
+  return toSvg(buildLandingCard(brand, version), brand.fonts)
 }
 
-function buildLandingCard(version: string, brand: BrandAssets): JSXNode {
+function buildLandingCard(brand: BrandAssets, version: string): JSXNode {
   return cardShell(
     leftRail(UBE),
     glyphBlock(),
-    dataPanel(UBE, '66', [['URL', new URL(site!).hostname]], version),
+    dataPanel(UBE, PANEL_BORDER_ALPHA.cool, [['URL', new URL(site!).hostname]], version),
     titleArtwork(brand)
   )
 }

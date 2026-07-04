@@ -1,0 +1,27 @@
+component = "primitives/PrimitivesCompositionDetail.astro"
+
+[[props.primitives]]
+consumedBy = []
+consumes   = ["rope", "align-equals", "external-thing"]
+href       = "/primitives/edge-magnet"
+layer      = "base"
+name       = "Edge Magnet"
+slug       = "edge-magnet"
+summary    = "Snaps to edges"
+
+[[props.primitives]]
+consumedBy = ["edge-magnet"]
+consumes   = []
+href       = "/primitives/rope"
+layer      = "analysis"
+name       = "Rope"
+slug       = "rope"
+summary    = "A rope"
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }

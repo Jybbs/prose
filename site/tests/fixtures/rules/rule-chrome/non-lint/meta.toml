@@ -1,0 +1,20 @@
+component = "rules/RuleChrome.astro"
+
+[props]
+slug = "align-equals"
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }
+
+[[store.docs]]
+id   = "rules/lint/index"
+data = { badge = "🔎" }
+
+[[store.docs]]
+id   = "rules/lint/bare-imports"
+data = { caption = "Flags bare imports" }

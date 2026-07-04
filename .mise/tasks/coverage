@@ -1,6 +1,8 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Generate an LCOV coverage report for the Rust crate"
+#MISE description="Generate an LCOV coverage report, scoped by a `rust` or `site` argument"
 #MISE tools={"aqua:taiki-e/cargo-llvm-cov" = "0.8.7"}
 
-rustup component add llvm-tools-preview
-cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info
+source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
+rust() { rustup component add llvm-tools-preview && cargo llvm-cov --workspace --locked --lcov --output-path target/lcov.info; }
+site() { (cd site && bunx --bun vitest run --coverage); }
+scope "$@"

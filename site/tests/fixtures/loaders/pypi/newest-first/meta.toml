@@ -1,0 +1,13 @@
+schema = "pypiRelease"
+
+[fetch]
+status = 200
+
+[fetch.data.releases]
+"0.0.9" = []
+"0.1.0" = [{ upload_time = "2026-01-14T00:00:00" }]
+"0.1.5" = [{ upload_time = "2026-02-01T00:00:00", yanked = true }]
+"0.2.0" = [
+    { upload_time = "2026-04-09T10:00:00", yanked = true },
+    { upload_time = "2026-04-09T11:00:00" }
+]

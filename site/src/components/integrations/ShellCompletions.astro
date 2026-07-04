@@ -49,10 +49,10 @@ const noteHtml = await Promise.all(shells.map(shell => renderInline(shell.data.n
   import { defineTabSelectElement } from '../../lib/shared/dom/tab-select'
 
   // Turns the stacked side tabs into a selector over the per-shell modals.
-  defineTabSelectElement('shell-completions', {
+  defineTabSelectElement({
     events : ['click'],
     key    : 'slug',
     panels : '.shell-card-modal',
     tabs   : '.shell-card-tab'
-  })
+  }, 'shell-completions')
 </script>

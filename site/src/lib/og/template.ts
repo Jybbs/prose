@@ -6,7 +6,7 @@ import type { BrandAssets }  from './assets'
 import { BODY, KICKER, UBE } from './colors'
 import type { OgPage }       from './pages'
 import {
-  CARD_HEIGHT, CARD_WIDTH,
+  CARD_HEIGHT, CARD_WIDTH, PANEL_BORDER_ALPHA,
   cardShell, dataPanel, el, leftRail, monoLabel, toSvg
 } from './parts'
 
@@ -18,11 +18,11 @@ const CODE_CHIP = {
   transform       : 'translateY(-2px)'
 }
 
-// Each pair is a max title length and the font size used up to it, `cap` for
-// titles with a caption.
+// Font size by title length, `steps` shortest-first with `base` the size for a
+// title longer than every step, `cap` for titles that carry a caption.
 const TITLE_SIZES = {
-  bare : [[4, 144], [8, 132], [14, 120], [Infinity, 100]],
-  cap  : [[12, 108], [17, 100], [22, 84], [Infinity, 76]]
+  bare : { base: 100, steps: [[4, 144], [8, 132], [14, 120]] },
+  cap  : { base: 76,  steps: [[12, 108], [17, 100], [22, 84]] }
 } as const
 
 export function pageSvg(
@@ -30,16 +30,16 @@ export function pageSvg(
   brand   : BrandAssets,
   version : string
 ): Promise<string> {
-  return toSvg(buildCard(page, version, brand), brand.fonts)
+  return toSvg(buildCard(brand, page, version), brand.fonts)
 }
 
-function buildCard(page: OgPage, version: string, brand: BrandAssets): JSXNode {
+function buildCard(brand: BrandAssets, page: OgPage, version: string): JSXNode {
   const accent = page.accent ?? UBE
   return cardShell(
     watermarkLayer(brand.glyph),
     leftRail(accent),
     wordmarkBlock(brand),
-    dataPanel(accent, page.warmth === 'warm' ? '99' : '66', panelRows(page), version),
+    dataPanel(accent, page.warmth === 'warm' ? PANEL_BORDER_ALPHA.warm : PANEL_BORDER_ALPHA.cool, panelRows(page), version),
     titleBlock(page, accent)
   )
 }
@@ -59,7 +59,8 @@ function captionSegments(raw: string): ReadonlyArray<{ code: boolean, text: stri
 }
 
 function fitTitleSize(text: string, hasCaption: boolean): number {
-  return TITLE_SIZES[hasCaption ? 'cap' : 'bare'].find(([max]) => text.length <= max)![1]
+  const { base, steps } = TITLE_SIZES[hasCaption ? 'cap' : 'bare']
+  return steps.find(([max]) => text.length <= max)?.[1] ?? base
 }
 
 function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
@@ -177,4 +178,20 @@ function wordmarkBlock(brand: BrandAssets): JSXNode {
       }
     })
   )
+}
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  describe('fitTitleSize', () => {
+    test.each([
+      { name: 'takes the largest bare size', text: 'Go', caption: false, size: 144 },
+      { name: 'steps a bare title down',     text: 'Medium', caption: false, size: 132 },
+      { name: 'falls back to the bare base', text: 'A long uncaptioned page title', caption: false, size: 100 },
+      { name: 'takes the largest cap size',  text: 'Short', caption: true, size: 108 },
+      { name: 'falls back to the cap base',  text: 'A long captioned page title here', caption: true, size: 76 }
+    ])('$name', ({ text, caption, size }) => {
+      expect(fitTitleSize(text, caption)).toBe(size)
+    })
+  })
 }

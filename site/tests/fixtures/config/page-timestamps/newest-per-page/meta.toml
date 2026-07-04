@@ -1,0 +1,8 @@
+[options]
+log = """
+2026-03-01T10:00:00+00:00
+site/src/content/docs/usage/quick-start.md
+site/src/content/docs/reference/notes.txt
+2026-01-15T09:00:00+00:00
+site/src/content/docs/usage/quick-start.md
+"""

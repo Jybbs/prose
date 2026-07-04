@@ -1,0 +1,24 @@
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Type</th>
+      <th>Default</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>enabled</code></td>
+      <td><code>bool</code></td>
+      <td><code>true</code></td>
+      <td>Turns the rule on</td>
+    </tr>
+    <tr>
+      <td><code>max-shift</code></td>
+      <td><code>int</code></td>
+      <td><code>40</code></td>
+      <td>Caps the shift width</td>
+    </tr>
+  </tbody>
+</table>

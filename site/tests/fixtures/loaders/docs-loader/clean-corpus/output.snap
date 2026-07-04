@@ -1,0 +1,20 @@
+{
+  "entries": [
+    {
+      "id": "index",
+      "filePath": "src/content/docs/index.md",
+      "data": {}
+    },
+    {
+      "id": "other",
+      "filePath": "astro.config.mjs",
+      "data": {}
+    },
+    {
+      "id": "nofile",
+      "data": {}
+    }
+  ],
+  "innerLoadCalls": 1,
+  "name": "prose-docs"
+}

@@ -1,0 +1,9 @@
+<div class="rule-chrome">
+  <a class="category-chip" href="/rules/auto-fix/" data-category="auto-fix"
+    ><span class="category-chip-badge" aria-hidden="true">A</span
+    ><span class="category-chip-label">Auto-Fix</span></a
+  ><a class="family-chip" href="/rules/alignment/" data-family="alignment"
+    ><span class="family-chip-badge" aria-hidden="true">⚖️</span
+    ><span class="family-chip-label">Alignment</span></a
+  >
+</div>

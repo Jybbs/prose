@@ -1,0 +1,25 @@
+[[docs]]
+id             = "primitives/hero-tiling"
+data.layer     = "analysis"
+data.stability = "internal"
+data.summary   = "S2"
+data.tagline   = "T2"
+data.title     = "Hero Tiling"
+
+[[docs]]
+id              = "primitives/edge-magnet"
+data.consumedBy = ["b"]
+data.consumes   = ["a"]
+data.layer      = "base"
+data.stability  = "public"
+data.summary    = "S1"
+data.tagline    = "T1"
+data.title      = "Edge Magnet"
+
+[[docs]]
+id   = "primitives/index"
+data = {}
+
+[[docs]]
+id   = "rules/alignment/foo"
+data = {}

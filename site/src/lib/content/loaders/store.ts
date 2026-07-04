@@ -5,8 +5,8 @@ export type StoreEntry = { data: Record<string, unknown>, id: string }
 // Clears a collection store and repopulates it from raw entries, parsing each
 // through the loader context so the collection schema validates every record.
 export async function replaceStore(
-  ctx: Pick<LoaderContext, 'parseData' | 'store'>,
-  entries: Iterable<StoreEntry>
+  ctx     : Pick<LoaderContext, 'parseData' | 'store'>,
+  entries : Iterable<StoreEntry>
 ): Promise<void> {
   ctx.store.clear()
   for (const { data, id } of entries) {

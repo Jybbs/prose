@@ -1,0 +1,12 @@
+component = "base/Tool.astro"
+
+[props]
+slug = "ruff"
+
+[[store.tools]]
+id   = "ruff"
+data = {
+    href = "https://docs.astral.sh/ruff/",
+    icon = "simple-icons:ruff",
+    name = "Ruff"
+}

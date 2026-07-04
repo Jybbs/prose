@@ -1,0 +1,5 @@
+component = "base/MiddleEllipsis.astro"
+
+[props]
+tail = 5
+text = "a/very/long/path.py"

@@ -1,0 +1,32 @@
+[[docs]]
+id         = "rules/alignment/index"
+data.badge = "⚖️"
+
+[[docs]]
+id           = "rules/alignment/align-equals"
+data.caption = "Aligns equals"
+data.related = ["align-colons"]
+
+[[docs]]
+id         = "rules/lint/index"
+data.badge = "🔎"
+
+[[docs]]
+id   = "rules/lint/bare-imports"
+data = {}
+
+[[docs]]
+id   = "rules/formatting/index"
+data = {}
+
+[[docs]]
+id           = "rules/ordering/alphabetize"
+data.caption = "Sorts entries"
+
+[[docs]]
+id   = "rules/misc/renegade"
+data = {}
+
+[[docs]]
+id   = "primitives/edge-magnet"
+data = {}

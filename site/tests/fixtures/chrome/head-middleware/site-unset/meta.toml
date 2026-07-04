@@ -1,0 +1,14 @@
+[[docs]]
+id   = "rules/alignment/align-equals"
+data = {}
+
+[[docs]]
+id   = "rules/alignment/align-colons"
+data = {}
+
+[[release]]
+id   = "0.6.0"
+data = { version = "0.6.0" }
+
+[options]
+id = "index"

@@ -1,0 +1,28 @@
+[
+  {
+    "consumedBy": [
+      "b"
+    ],
+    "consumes": [
+      "a"
+    ],
+    "href": "/primitives/edge-magnet",
+    "layer": "base",
+    "name": "Edge Magnet",
+    "slug": "edge-magnet",
+    "stability": "public",
+    "summary": "S1",
+    "tagline": "T1"
+  },
+  {
+    "consumedBy": [],
+    "consumes": [],
+    "href": "/primitives/hero-tiling",
+    "layer": "analysis",
+    "name": "Hero Tiling",
+    "slug": "hero-tiling",
+    "stability": "internal",
+    "summary": "S2",
+    "tagline": "T2"
+  }
+]

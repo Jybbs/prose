@@ -1,0 +1,57 @@
+<run-summary-explorer class="run-summary-explorer"
+  ><span class="kicker run-summary-explorer-kicker">Build A Run</span>
+  <div class="run-summary-cmd">
+    <span class="run-summary-cmd-prompt" aria-hidden="true">$ prose</span
+    ><span class="run-summary-select" data-axis="outcome"
+      ><button
+        type="button"
+        class="run-summary-select-trigger"
+        aria-label="Run command"
+        aria-haspopup="listbox"
+      >
+        <span data-label>check</span
+        ><span class="run-summary-select-caret" aria-hidden="true">▾</span>
+      </button></span
+    ><span class="run-summary-cmd-path" aria-hidden="true">.</span
+    ><span class="run-summary-select" data-axis="quiet"
+      ><button
+        type="button"
+        class="run-summary-select-trigger"
+        aria-label="Verbosity"
+        aria-haspopup="listbox"
+      >
+        <span data-label>default</span
+        ><span class="run-summary-select-caret" aria-hidden="true">▾</span>
+      </button></span
+    ><span class="run-summary-select" data-axis="stream"
+      ><button
+        type="button"
+        class="run-summary-select-trigger"
+        aria-label="Output stream"
+        aria-haspopup="listbox"
+      >
+        <span data-label>interactive tty</span
+        ><span class="run-summary-select-caret" aria-hidden="true">▾</span>
+      </button></span
+    >
+  </div>
+  <div class="panel panel-clip run-summary">
+    <div class="run-summary-bar">
+      <span class="run-summary-dot" aria-hidden="true"></span
+      ><span class="run-summary-dot" aria-hidden="true"></span
+      ><span class="run-summary-dot" aria-hidden="true"></span
+      ><span class="run-summary-title" aria-hidden="true">prose</span
+      ><span class="run-summary-caption">A clean run, full output, on a tty.</span>
+    </div>
+    <div class="run-summary-body">
+      <div class="run-summary-line">
+        <span class="run-summary-anchor" data-ube="true" aria-hidden="true">🪻</span
+        ><span class="run-summary-msg" data-tint="celadon">All clean.</span>
+      </div>
+    </div>
+  </div></run-summary-explorer
+>
+<script
+  type="module"
+  src="src/components/reference/RunSummaryExplorer.astro?astro&type=script&index=0&lang.ts"
+></script>

@@ -1,0 +1,41 @@
+<fixture-pair class="panel panel-clip fixture-pair fixture-pair-doc" data-id="fixture-demo"
+  ><div class="fixture-pair-panel" data-side="before" hidden>
+    <div class="expressive-code">
+      <link rel="stylesheet" href="/_astro/ec.u6yl4.css" />
+      <script type="module" src="/_astro/ec.0vx5m.js"></script>
+      <figure class="frame not-content">
+        <figcaption class="header"></figcaption>
+        <pre
+          data-language="python"
+        ><code><div class="ec-line"><div class="code"><span style="--0:#E1E4E8;--1:#24292E">x </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">1</span></div></div></code></pre>
+        <div class="copy">
+          <div aria-live="polite"></div>
+          <button title="Copy to clipboard" data-copied="Copied!" data-code="x = 1">
+            <div></div>
+          </button>
+        </div>
+      </figure>
+    </div>
+  </div>
+  <div class="fixture-pair-panel" data-side="after">
+    <div class="expressive-code">
+      <figure class="frame not-content">
+        <figcaption class="header"></figcaption>
+        <pre
+          data-language="python"
+        ><code><div class="ec-line"><div class="code"><span style="--0:#E1E4E8;--1:#24292E">x </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">1</span></div></div></code></pre>
+        <div class="copy">
+          <div aria-live="polite"></div>
+          <button title="Copy to clipboard" data-copied="Copied!" data-code="x = 1">
+            <div></div>
+          </button>
+        </div>
+      </figure>
+    </div>
+  </div>
+  <div class="fixture-pair-morph" hidden></div
+></fixture-pair>
+<script
+  type="module"
+  src="src/components/fixtures/FixturePair.astro?astro&type=script&index=0&lang.ts"
+></script>

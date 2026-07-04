@@ -1,0 +1,4 @@
+part  = "monoLabel"
+color = "#ffffff"
+size  = 16
+text  = "LABEL"

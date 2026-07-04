@@ -1,0 +1,79 @@
+[
+  {
+    "attrs": {
+      "href": "https://prose.fyi/rules/alignment/align-equals/",
+      "rel": "canonical"
+    },
+    "tag": "link"
+  },
+  {
+    "attrs": {
+      "content": "https://prose.fyi/og/rules/alignment/align-equals.png",
+      "property": "og:image"
+    },
+    "tag": "meta"
+  },
+  {
+    "attrs": {
+      "content": "1200",
+      "property": "og:image:width"
+    },
+    "tag": "meta"
+  },
+  {
+    "attrs": {
+      "content": "630",
+      "property": "og:image:height"
+    },
+    "tag": "meta"
+  },
+  {
+    "attrs": {
+      "content": "image/png",
+      "property": "og:image:type"
+    },
+    "tag": "meta"
+  },
+  {
+    "attrs": {
+      "content": "Align Equals card",
+      "property": "og:image:alt"
+    },
+    "tag": "meta"
+  },
+  {
+    "attrs": {
+      "content": "https://prose.fyi/og/rules/alignment/align-equals.png",
+      "name": "twitter:image"
+    },
+    "tag": "meta"
+  },
+  {
+    "attrs": {
+      "content": "Align Equals card",
+      "name": "twitter:image:alt"
+    },
+    "tag": "meta"
+  },
+  {
+    "attrs": {
+      "content": "Line up.",
+      "name": "description"
+    },
+    "tag": "meta"
+  },
+  {
+    "attrs": {
+      "content": "Line up.",
+      "property": "og:description"
+    },
+    "tag": "meta"
+  },
+  {
+    "attrs": {
+      "type": "application/ld+json"
+    },
+    "content": "{\"@context\":\"https://schema.org\",\"@type\":\"TechArticle\",\"description\":\"Line up.\",\"headline\":\"Align Equals\",\"image\":\"https://prose.fyi/og/rules/alignment/align-equals.png\",\"url\":\"https://prose.fyi/rules/alignment/align-equals/\"}",
+    "tag": "script"
+  }
+]

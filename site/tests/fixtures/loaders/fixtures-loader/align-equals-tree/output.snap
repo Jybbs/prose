@@ -1,0 +1,174 @@
+{
+  "entries": [
+    {
+      "data": {
+        "findings": [],
+        "input": "x=1\n",
+        "output": "x = 1\n",
+        "previewable": true,
+        "steps": [
+          {
+            "code": "x=1\n",
+            "hash": "UvMfwVojakDY2mqyIxy66vJxvqqzAIGe243KPrp3d50",
+            "tokens": [
+              {
+                "content": "x",
+                "offset": 0,
+                "htmlStyle": {
+                  "color": "#24292E",
+                  "--shiki-dark": "#E1E4E8"
+                },
+                "key": "UvMfwVojakDY2mqyIxy66vJxvqqzAIGe243KPrp3d50-0"
+              },
+              {
+                "content": "=",
+                "offset": 1,
+                "htmlStyle": {
+                  "color": "#D73A49",
+                  "--shiki-dark": "#F97583"
+                },
+                "key": "UvMfwVojakDY2mqyIxy66vJxvqqzAIGe243KPrp3d50-1"
+              },
+              {
+                "content": "1",
+                "offset": 2,
+                "htmlStyle": {
+                  "color": "#005CC5",
+                  "--shiki-dark": "#79B8FF"
+                },
+                "key": "UvMfwVojakDY2mqyIxy66vJxvqqzAIGe243KPrp3d50-2"
+              },
+              {
+                "content": "\n",
+                "offset": 3,
+                "key": "UvMfwVojakDY2mqyIxy66vJxvqqzAIGe243KPrp3d50-3"
+              },
+              {
+                "content": "\n",
+                "offset": 4,
+                "key": "UvMfwVojakDY2mqyIxy66vJxvqqzAIGe243KPrp3d50-4"
+              }
+            ],
+            "lineNumbers": false,
+            "bg": "#fff;--shiki-dark-bg:#24292e",
+            "fg": "#24292e;--shiki-dark:#e1e4e8",
+            "themeName": "shiki-themes github-light github-dark",
+            "lang": "python"
+          },
+          {
+            "code": "x = 1\n",
+            "hash": "J1uA4E0gZZUQb0jNWhdGLhRSWd079Pmio7shEV033-g",
+            "tokens": [
+              {
+                "content": "x",
+                "offset": 0,
+                "htmlStyle": {
+                  "color": "#24292E",
+                  "--shiki-dark": "#E1E4E8"
+                },
+                "key": "UvMfwVojakDY2mqyIxy66vJxvqqzAIGe243KPrp3d50-0"
+              },
+              {
+                "content": " ",
+                "offset": 1,
+                "key": "J1uA4E0gZZUQb0jNWhdGLhRSWd079Pmio7shEV033-g-1"
+              },
+              {
+                "content": "=",
+                "offset": 2,
+                "htmlStyle": {
+                  "color": "#D73A49",
+                  "--shiki-dark": "#F97583"
+                },
+                "key": "UvMfwVojakDY2mqyIxy66vJxvqqzAIGe243KPrp3d50-1"
+              },
+              {
+                "content": " ",
+                "offset": 3,
+                "htmlStyle": {
+                  "color": "#24292E",
+                  "--shiki-dark": "#E1E4E8"
+                },
+                "key": "J1uA4E0gZZUQb0jNWhdGLhRSWd079Pmio7shEV033-g-3"
+              },
+              {
+                "content": "1",
+                "offset": 4,
+                "htmlStyle": {
+                  "color": "#005CC5",
+                  "--shiki-dark": "#79B8FF"
+                },
+                "key": "UvMfwVojakDY2mqyIxy66vJxvqqzAIGe243KPrp3d50-2"
+              },
+              {
+                "content": "\n",
+                "offset": 5,
+                "key": "UvMfwVojakDY2mqyIxy66vJxvqqzAIGe243KPrp3d50-3"
+              },
+              {
+                "content": "\n",
+                "offset": 6,
+                "key": "J1uA4E0gZZUQb0jNWhdGLhRSWd079Pmio7shEV033-g-6"
+              }
+            ],
+            "lineNumbers": false,
+            "bg": "#fff;--shiki-dark-bg:#24292e",
+            "fg": "#24292e;--shiki-dark:#e1e4e8",
+            "themeName": "shiki-themes github-light github-dark",
+            "lang": "python"
+          }
+        ],
+        "title": "Basic"
+      },
+      "id": "align-equals/basic"
+    },
+    {
+      "data": {
+        "findings": [
+          {
+            "code": "no-op",
+            "end_location": {
+              "column": 2,
+              "row": 1
+            },
+            "location": {
+              "column": 1,
+              "row": 1
+            },
+            "message": "a finding",
+            "fix": null
+          }
+        ],
+        "input": "w = 4\n",
+        "output": "w = 4\n",
+        "previewable": false
+      },
+      "id": "align-equals/flagged"
+    },
+    {
+      "data": {
+        "findings": [],
+        "input": "y = 2\n",
+        "output": "y = 2\n",
+        "previewable": true
+      },
+      "id": "align-equals/identical"
+    },
+    {
+      "data": {
+        "findings": [],
+        "input": "z=3\n",
+        "output": "z = 3\n"
+      },
+      "id": "align-equals/nometa"
+    },
+    {
+      "data": {
+        "findings": [],
+        "input": "q=9\n",
+        "output": "q = 9\n"
+      },
+      "id": "align-equals/tableless"
+    }
+  ]
+}

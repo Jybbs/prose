@@ -1,20 +1,7 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Run the linters including `clippy`, passing `rust` or `site` to scope"
+#MISE description="Run the linters including `clippy`, scoped by a `rust` or `site` argument"
 
-lint_rust() {
-  cargo clippy --all-targets --locked -- -D warnings
-}
-
-lint_site() {
-  cd site
-  bun install --frozen-lockfile
-  bunx --bun oxlint src
-  bunx --bun eslint .
-}
-
-case "${1:-all}" in
-  all)  lint_rust && (lint_site) ;;
-  rust) lint_rust ;;
-  site) (lint_site) ;;
-  *)    echo "usage: mise lint [rust|site]" >&2; exit 2 ;;
-esac
+source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
+rust() { cargo clippy --all-targets --locked -- -D warnings; }
+site() { (cd site && bun install --frozen-lockfile --ignore-scripts && bunx --bun oxlint src && bunx --bun eslint .); }
+scope "$@"

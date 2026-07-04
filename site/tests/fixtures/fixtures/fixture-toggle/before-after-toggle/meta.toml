@@ -1,0 +1,4 @@
+component = "fixtures/FixtureToggle.astro"
+
+[props]
+for = "fixture-demo"

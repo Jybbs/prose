@@ -1,0 +1,31 @@
+[
+  {
+    "badge": "⚖️",
+    "caption": "Aligns equals",
+    "category": "auto-fix",
+    "family": "alignment",
+    "href": "/rules/alignment/align-equals",
+    "related": [
+      "align-colons"
+    ],
+    "slug": "align-equals"
+  },
+  {
+    "badge": "",
+    "caption": "Sorts entries",
+    "category": "auto-fix",
+    "family": "ordering",
+    "href": "/rules/ordering/alphabetize",
+    "related": [],
+    "slug": "alphabetize"
+  },
+  {
+    "badge": "🔎",
+    "caption": "",
+    "category": "lint",
+    "family": "lint",
+    "href": "/rules/lint/bare-imports",
+    "related": [],
+    "slug": "bare-imports"
+  }
+]

@@ -3,4 +3,4 @@
 #MISE dir="site"
 #MISE sources=["site/package.json", "site/bun.lock"]
 
-bun install --frozen-lockfile && bun run astro sync
+bun install --frozen-lockfile --ignore-scripts && bun run astro sync

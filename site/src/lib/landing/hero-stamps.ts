@@ -1,3 +1,5 @@
+import * as fc from 'fast-check'
+
 export const ROW_STRIDE_PX = 200
 
 const ROT_STEP = 67
@@ -61,4 +63,41 @@ export function tileStamps(cols: number, rows: number): readonly Stamp[] {
     }
   }
   return out
+}
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  const LETTERS = new Set(['e', 'o', 'r', 's'])
+
+  describe('tileStamps', () => {
+    test('renders one big pilcrow and four corner letters per cell', () => {
+      expect(tileStamps(1, 1)).toEqual([
+        { kind: 'big',                rotate: -180, x: 50, y: 100 },
+        { kind: 'small', letter: 'r', rotate: -113, x: 86, y: 28  },
+        { kind: 'small', letter: 'o', rotate: -46,  x: 86, y: 172 },
+        { kind: 'small', letter: 's', rotate: 21,   x: 14, y: 172 },
+        { kind: 'small', letter: 'e', rotate: 88,   x: 14, y: 28  }
+      ])
+    })
+
+    test('emits five stamps per cell with valid letters and rotations', () => {
+      fc.assert(fc.property(fc.integer({ min: 1, max: 8 }), fc.integer({ min: 1, max: 8 }), (cols, rows) => {
+        const stamps = tileStamps(cols, rows)
+        expect(stamps).toHaveLength(cols * rows * 5)
+        expect(stamps.filter(stamp => stamp.kind === 'big')).toHaveLength(cols * rows)
+        for (const stamp of stamps) {
+          expect(stamp.rotate).toBeGreaterThanOrEqual(-180)
+          expect(stamp.rotate).toBeLessThan(180)
+          if (stamp.kind === 'small') expect(LETTERS.has(stamp.letter)).toBe(true)
+        }
+      }))
+    })
+
+    test('is deterministic for a given grid', () => {
+      fc.assert(fc.property(fc.integer({ min: 1, max: 6 }), fc.integer({ min: 1, max: 6 }), (cols, rows) => {
+        expect(tileStamps(cols, rows)).toEqual(tileStamps(cols, rows))
+      }))
+    })
+  })
 }

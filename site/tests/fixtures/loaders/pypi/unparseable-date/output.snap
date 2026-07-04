@@ -1,0 +1,16 @@
+{
+  "entries": [
+    {
+      "data": {
+        "date": "nonsense!!",
+        "month": "—",
+        "url": "https://pypi.org/project/prose-formatter/9.9.9/",
+        "version": "9.9.9",
+        "year": "nons",
+        "yearShort": "ns"
+      },
+      "id": "9.9.9"
+    }
+  ],
+  "fetchCalls": 1
+}

@@ -117,11 +117,11 @@ const { entries, prelude, pythonStateSteps, resetRows } = demo.data
           const text = applyCompletedEdits(prelude, entries, state.entryIndex)
           return entry === undefined
             ? beforeOnly(text)
-            : segmentsForEdit(entry, text, state.phase, state.editProgress)
+            : segmentsForEdit(state.editProgress, entry, state.phase, text)
         }
         case 'resetBackspacing':
         case 'resetTyping':
-          return beforeOnly(resetText(prelude, resetRows, state.phase, state.editProgress))
+          return beforeOnly(resetText(state.phase, prelude, state.editProgress, resetRows))
         case 'holdAtEnd':
         case 'reducedMotion':
           return beforeOnly(applyCompletedEdits(prelude, entries, entries.length))

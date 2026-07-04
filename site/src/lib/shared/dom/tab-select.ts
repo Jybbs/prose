@@ -10,7 +10,7 @@ interface TabSelectOptions {
 // picked tab, `aria-selected` where a tab carries the role, and `hidden` on
 // the panels whose dataset `key` misses the selection, a tab carrying no key
 // value showing every panel.
-function wireTabSelect(root: ParentNode, options: TabSelectOptions): void {
+function wireTabSelect(options: TabSelectOptions, root: ParentNode): void {
   const { activeClass = 'is-active', events, key, panels, tabs } = options
 
   const select = (picked: HTMLElement): void => {
@@ -34,10 +34,10 @@ function wireTabSelect(root: ParentNode, options: TabSelectOptions): void {
 
 // Registers a custom element whose whole behavior is one `wireTabSelect`
 // call over its subtree.
-export function defineTabSelectElement(tag: string, options: TabSelectOptions): void {
+export function defineTabSelectElement(options: TabSelectOptions, tag: string): void {
   customElements.define(tag, class extends HTMLElement {
     connectedCallback(): void {
-      wireTabSelect(this, options)
+      wireTabSelect(options, this)
     }
   })
 }

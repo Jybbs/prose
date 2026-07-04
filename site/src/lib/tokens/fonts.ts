@@ -14,3 +14,24 @@ export const FONT_FAMILIES = Object.values(FONTS).map(face => ({
   options     : { package: `@fontsource-variable/${face.slug}` },
   weights     : [face.weightSpan] as [string]
 }))
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  describe('FONT_FAMILIES', () => {
+    test('derives one family per declared face', () => {
+      expect(FONT_FAMILIES).toHaveLength(Object.values(FONTS).length)
+    })
+
+    test.each(Object.values(FONTS).map((face, index) => ({ name: face.slug, face, family: FONT_FAMILIES[index] })))(
+      'derives the $name family from its face',
+      ({ face, family }) => {
+        expect(family.cssVariable).toBe(`--font-${face.slug}`)
+        expect(family.name).toBe(`${face.name} Variable`)
+        expect(family.options.package).toBe(`@fontsource-variable/${face.slug}`)
+        expect(family.weights).toEqual([face.weightSpan])
+        expect(family.fallbacks).toBe(face.fallbacks)
+      }
+    )
+  })
+}

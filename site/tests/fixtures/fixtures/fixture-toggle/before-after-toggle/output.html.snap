@@ -1,0 +1,27 @@
+<fixture-toggle
+  class="fixture-toggle"
+  role="tablist"
+  aria-label="Fixture view"
+  data-for="fixture-demo"
+  ><button
+    type="button"
+    role="tab"
+    class="fixture-toggle-pill"
+    data-side="before"
+    aria-selected="false"
+  >
+    Before</button
+  ><button
+    type="button"
+    role="tab"
+    class="fixture-toggle-pill"
+    data-side="after"
+    aria-selected="true"
+  >
+    After
+  </button></fixture-toggle
+>
+<script
+  type="module"
+  src="src/components/fixtures/FixtureToggle.astro?astro&type=script&index=0&lang.ts"
+></script>

@@ -1,0 +1,11 @@
+[[tools]]
+id        = "ruff"
+data.name = "Ruff"
+
+[[tools]]
+id        = "black"
+data.name = "Black"
+
+[options]
+noun = "editor"
+ids  = ["ruff", "black"]

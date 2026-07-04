@@ -1,0 +1,96 @@
+[
+  {
+    "id": "index",
+    "page": "landing"
+  },
+  {
+    "id": "usage/install",
+    "page": {
+      "accent": "#cdbda5",
+      "breadcrumb": [
+        "usage"
+      ],
+      "kind": "usage",
+      "title": "Install"
+    }
+  },
+  {
+    "id": "rules/alignment",
+    "page": {
+      "accent": "#e8c840",
+      "breadcrumb": [
+        "rules"
+      ],
+      "kind": "rules",
+      "title": "Alignment"
+    }
+  },
+  {
+    "id": "rules/alignment/align-equals",
+    "page": {
+      "accent": "#e8c840",
+      "breadcrumb": [
+        "rules",
+        "alignment"
+      ],
+      "kind": "rules",
+      "title": "Align Equals",
+      "caption": "Aligns `=` across **runs**",
+      "family": "alignment",
+      "pipeline": {
+        "position": 1,
+        "total": 2
+      },
+      "warmth": "warm"
+    }
+  },
+  {
+    "id": "rules/alignment/tidy-spans",
+    "page": {
+      "accent": "#e8c840",
+      "breadcrumb": [
+        "rules",
+        "alignment"
+      ],
+      "kind": "rules",
+      "title": "Tidy Spans",
+      "caption": "no folio",
+      "family": "alignment",
+      "warmth": "warm"
+    }
+  },
+  {
+    "id": "rules/nope",
+    "page": {
+      "breadcrumb": [
+        "rules"
+      ],
+      "kind": "rules",
+      "title": "Bogus Family"
+    }
+  },
+  {
+    "id": "primitives/text-range",
+    "page": {
+      "accent": "#6db0b5",
+      "breadcrumb": [
+        "primitives"
+      ],
+      "kind": "primitives",
+      "title": "TextRange",
+      "stability": "public"
+    }
+  },
+  {
+    "id": "primitives/rope",
+    "page": {
+      "accent": "#6db0b5",
+      "breadcrumb": [
+        "primitives"
+      ],
+      "kind": "primitives",
+      "title": "Rope",
+      "stability": "internal"
+    }
+  }
+]

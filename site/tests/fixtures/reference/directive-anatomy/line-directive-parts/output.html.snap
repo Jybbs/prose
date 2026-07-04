@@ -1,0 +1,96 @@
+<directive-anatomy class="directive-anatomy"
+  ><div class="directive-anatomy-index" role="tablist" aria-label="Directive index">
+    <section class="directive-anatomy-band" data-scope="file">
+      <header class="band-head directive-anatomy-band-head">
+        <span class="directive-anatomy-band-badge" aria-hidden="true">F</span
+        ><span class="band-name">File</span><span class="band-rule" aria-hidden="true"></span>
+      </header>
+      <div class="directive-anatomy-band-cells">
+        <button
+          type="button"
+          role="tab"
+          data-scope="file"
+          data-directive="file-off"
+          class="directive-anatomy-thumb"
+          aria-selected="false"
+        >
+          <span class="directive-anatomy-thumb-form">prose: off</span>
+        </button>
+      </div>
+    </section>
+    <section class="directive-anatomy-band" data-scope="block">
+      <header class="band-head directive-anatomy-band-head">
+        <span class="directive-anatomy-band-badge" aria-hidden="true">B</span
+        ><span class="band-name">Block</span><span class="band-rule" aria-hidden="true"></span>
+      </header>
+      <div class="directive-anatomy-band-cells"></div>
+    </section>
+    <section class="directive-anatomy-band" data-scope="line">
+      <header class="band-head directive-anatomy-band-head">
+        <span class="directive-anatomy-band-badge" aria-hidden="true">L</span
+        ><span class="band-name">Line</span><span class="band-rule" aria-hidden="true"></span>
+      </header>
+      <div class="directive-anatomy-band-cells">
+        <button
+          type="button"
+          role="tab"
+          data-scope="line"
+          data-directive="prose-ignore-rules"
+          class="directive-anatomy-thumb is-active"
+          aria-selected="true"
+        >
+          <span class="directive-anatomy-thumb-form">prose: ignore=…</span>
+        </button>
+      </div>
+    </section>
+    <section class="directive-anatomy-band" data-scope="dict">
+      <header class="band-head directive-anatomy-band-head">
+        <span class="directive-anatomy-band-badge" aria-hidden="true">D</span
+        ><span class="band-name">Dict literal</span
+        ><span class="band-rule" aria-hidden="true"></span>
+      </header>
+      <div class="directive-anatomy-band-cells"></div>
+    </section>
+  </div>
+  <div class="directive-anatomy-plate" data-scope="line" data-directive="prose-ignore-rules">
+    <div class="directive-anatomy-specimen">
+      <span class="directive-anatomy-part-col" data-role="action"
+        ><span class="directive-anatomy-part">ignore</span
+        ><span class="directive-anatomy-tick" aria-hidden="true"></span
+        ><span class="directive-anatomy-label">action</span></span
+      ><span class="directive-anatomy-part-col" data-role="payload"
+        ><span class="directive-anatomy-part">align-equals</span
+        ><span class="directive-anatomy-tick" aria-hidden="true"></span
+        ><span class="directive-anatomy-label">rule list</span></span
+      >
+    </div>
+    <div class="directive-anatomy-info">
+      <p class="directive-anatomy-effect">Ignores the listed rules on this line</p>
+      <pre
+        class="directive-anatomy-pre"
+      ><code><span class="directive-anatomy-line" data-line-kind="directive">x = 1  # prose: ignore=align-equals
+</span><span class="directive-anatomy-line" data-line-kind="code">y = 2
+</span></code></pre>
+    </div>
+  </div>
+  <div class="directive-anatomy-plate" data-scope="file" data-directive="file-off" hidden>
+    <div class="directive-anatomy-specimen">
+      <span class="directive-anatomy-part-col" data-role="action"
+        ><span class="directive-anatomy-part">off</span
+        ><span class="directive-anatomy-tick" aria-hidden="true"></span
+        ><span class="directive-anatomy-label">action</span></span
+      >
+    </div>
+    <div class="directive-anatomy-info">
+      <p class="directive-anatomy-effect">Disables the whole file</p>
+      <pre
+        class="directive-anatomy-pre"
+      ><code><span class="directive-anatomy-line" data-line-kind="directive"># prose: off
+</span></code></pre>
+    </div>
+  </div></directive-anatomy
+>
+<script
+  type="module"
+  src="src/components/reference/DirectiveAnatomy.astro?astro&type=script&index=0&lang.ts"
+></script>

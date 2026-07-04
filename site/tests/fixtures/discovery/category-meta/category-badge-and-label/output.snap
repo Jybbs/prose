@@ -1,0 +1,10 @@
+{
+  "auto-fix": {
+    "badge": "A",
+    "label": "Auto-Fix"
+  },
+  "lint": {
+    "badge": "L",
+    "label": "Lint"
+  }
+}

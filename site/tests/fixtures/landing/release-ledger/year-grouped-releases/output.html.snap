@@ -1,0 +1,33 @@
+<div class="landing-cta-scroll">
+  <div class="landing-cta-group">
+    <p class="landing-cta-year">2026</p>
+    <ol class="landing-cta-ledger">
+      <li class="landing-cta-ledger-row">
+        <a href="https://pypi.org/p/0.5.0/" rel="noopener" target="_blank"
+          ><span class="landing-cta-ledger-version">0.5.0</span
+          ><span class="landing-cta-ledger-leader" aria-hidden="true"></span
+          ><span class="landing-cta-ledger-month">May</span></a
+        >
+      </li>
+      <li class="landing-cta-ledger-row">
+        <a href="https://pypi.org/p/0.4.0/" rel="noopener" target="_blank"
+          ><span class="landing-cta-ledger-version">0.4.0</span
+          ><span class="landing-cta-ledger-leader" aria-hidden="true"></span
+          ><span class="landing-cta-ledger-month">February</span></a
+        >
+      </li>
+    </ol>
+  </div>
+  <div class="landing-cta-group">
+    <p class="landing-cta-year">2025</p>
+    <ol class="landing-cta-ledger">
+      <li class="landing-cta-ledger-row">
+        <a href="https://pypi.org/p/0.3.0/" rel="noopener" target="_blank"
+          ><span class="landing-cta-ledger-version">0.3.0</span
+          ><span class="landing-cta-ledger-leader" aria-hidden="true"></span
+          ><span class="landing-cta-ledger-month">November</span></a
+        >
+      </li>
+    </ol>
+  </div>
+</div>

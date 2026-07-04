@@ -1,0 +1,5 @@
+<middle-ellipsis data-tail="3" data-text="x.py">x.py</middle-ellipsis>
+<script
+  type="module"
+  src="src/components/base/MiddleEllipsis.astro?astro&type=script&index=0&lang.ts"
+></script>

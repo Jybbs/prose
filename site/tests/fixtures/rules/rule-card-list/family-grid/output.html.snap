@@ -1,0 +1,21 @@
+<div class="rule-card-grid">
+  <article class="rule-card" data-category="auto-fix" data-family="alignment">
+    <a class="rule-card-cover" href="/rules/alignment/align-equals" aria-label="align-equals"></a
+    ><span class="rule-card-badge" title="Alignment" aria-hidden="true">⚖️</span>
+    <div class="rule-card-name">
+      <h3 class="rule-card-slug" title="align-equals">
+        <middle-ellipsis data-tail="3" data-text="align-equals">align-equals</middle-ellipsis>
+        <script
+          type="module"
+          src="src/components/base/MiddleEllipsis.astro?astro&type=script&index=0&lang.ts"
+        ></script>
+      </h3>
+      <span class="rule-card-fam">Alignment</span>
+    </div>
+    <p class="rule-card-caption">Aligns equals</p>
+  </article>
+</div>
+<script
+  type="module"
+  src="src/components/rules/RuleCardList.astro?astro&type=script&index=0&lang.ts"
+></script>

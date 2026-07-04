@@ -1,0 +1,22 @@
+component = "glossary/GlossaryFolioIndex.astro"
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }
+
+[[store.glossary]]
+id   = "align-equals"
+data = {
+    aliases    = ["aka-align"],
+    definition = "defA",
+    families   = ["ordering"],
+    rule       = "align-equals"
+}
+
+[[store.glossary]]
+id   = "band-constants"
+data = { aliases = [], definition = "defB", families = ["alignment", "layout"] }

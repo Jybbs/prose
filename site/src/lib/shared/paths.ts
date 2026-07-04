@@ -10,10 +10,6 @@ import { required } from './required'
 
 export const DOCS_CONTENT_DIR = 'src/content/docs/'
 
-export function repoRoot(siteRoot: URL): string {
-  return fileURLToPath(new URL('../', siteRoot))
-}
-
 function crateDir(siteRoot: URL): string {
   return fileURLToPath(new URL('../crate/', siteRoot))
 }
@@ -26,13 +22,13 @@ export function fixturesDir(siteRoot: URL): string {
   return path.join(crateDir(siteRoot), 'tests', 'fixtures')
 }
 
-export function ruleSourcePath(siteRoot: URL): string {
-  return path.join(crateDir(siteRoot), 'src', 'rule.rs')
-}
-
 export function proseBinaryCandidates(siteRoot: URL): string[] {
   const root = repoRoot(siteRoot)
   return ['target/release/prose', 'target/debug/prose'].map(rel => path.join(root, rel))
+}
+
+export function repoRoot(siteRoot: URL): string {
+  return fileURLToPath(new URL('../', siteRoot))
 }
 
 export function resolveProseBinary(siteRoot: URL): string {
@@ -40,4 +36,8 @@ export function resolveProseBinary(siteRoot: URL): string {
     proseBinaryCandidates(siteRoot).find(existsSync),
     'prose binary not found at target/{release,debug}/prose. Run `cargo build` first.'
   )
+}
+
+export function ruleSourcePath(siteRoot: URL): string {
+  return path.join(crateDir(siteRoot), 'src', 'rule.rs')
 }

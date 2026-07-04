@@ -1,0 +1,35 @@
+<div class="surface-card surface-card-tab-index" data-family="alignment" data-category="auto-fix">
+  <a
+    class="surface-card-cover-link"
+    href="/rules/alignment/"
+    aria-label="See all alignment rules"
+  ></a
+  ><span class="surface-card-number">— 001</span
+  ><span class="surface-card-icon" aria-hidden="true">⚖️</span>
+  <h3 class="surface-card-label">Alignment</h3>
+  <p class="surface-card-blurb">Equals signs line up.</p>
+  <div class="surface-card-chips">
+    <div class="tab-index">
+      <div class="tab-row">
+        <a
+          class="tab active"
+          href="/rules/alignment/align-equals"
+          aria-label="align-equals"
+          data-slug="align-equals"
+          >01</a
+        ><a
+          class="tab"
+          href="/rules/alignment/align-colons"
+          aria-label="align-colons"
+          data-slug="align-colons"
+          >02</a
+        >
+      </div>
+      <div class="tab-label" aria-live="polite">
+        <a class="tab-label-link" href="/rules/alignment/align-equals" aria-label="align-equals"
+          >align-equals</a
+        >
+      </div>
+    </div>
+  </div>
+</div>

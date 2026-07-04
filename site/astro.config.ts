@@ -71,7 +71,8 @@ export default defineConfig({
   ],
 
   vite: {
-    css: {
+    define : { 'import.meta.vitest': 'undefined' },
+    css    : {
       postcss: {
         plugins: [
           postcssGlobalData({ files: ['./src/styles/breakpoints.css'] }),

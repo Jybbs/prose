@@ -1,0 +1,19 @@
+component = "landing/Workflow.astro"
+
+[[store.landingWorkflow]]
+id   = "01"
+data = {
+    body     = "Fetch the wheel.",
+    code     = "uv tool install prose-formatter",
+    language = "bash",
+    title    = "Install"
+}
+
+[[store.landingWorkflow]]
+id   = "02"
+data = {
+    body     = "Drop a config.",
+    code     = "target-version = \"3.13\"",
+    language = "toml",
+    title    = "Configure"
+}

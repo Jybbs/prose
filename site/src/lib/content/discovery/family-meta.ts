@@ -1,7 +1,7 @@
-import { familyBadges }      from './rules'
-import { lazy }              from '../../shared/lazy'
-import type { RuleCategory } from '../../shared/registries'
-import { titleCase }         from '../../shared/title-case'
+import { familyBadges }                          from './rules'
+import { lazy }                                  from '../../shared/lazy'
+import type { GlossaryOnlyFamily, RuleCategory } from '../../shared/registries'
+import { titleCase }                             from '../../shared/title-case'
 
 interface FamilyMeta {
   badge : string
@@ -15,7 +15,7 @@ export const CATEGORY_META: Record<RuleCategory, FamilyMeta> = {
 
 // The glossary spans two families beyond the rule set, whose badges have no
 // index page to read from, so they carry their meta here.
-const EXTRA_FAMILY_META: Record<string, FamilyMeta> = {
+const EXTRA_FAMILY_META: Record<GlossaryOnlyFamily, FamilyMeta> = {
   cli    : { badge: '🪄', label: 'CLI'    },
   engine : { badge: '🦉', label: 'Engine' }
 }

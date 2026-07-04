@@ -1,0 +1,51 @@
+[
+  {
+    "type": "group",
+    "label": "Primitives",
+    "collapsed": false,
+    "entries": [
+      {
+        "type": "link",
+        "href": "/primitives/",
+        "label": "Overview",
+        "isCurrent": false,
+        "attrs": {}
+      },
+      {
+        "collapsed": false,
+        "entries": [
+          {
+            "type": "link",
+            "href": "/primitives/aligner/",
+            "label": "Aligner",
+            "isCurrent": false,
+            "attrs": {}
+          },
+          {
+            "type": "link",
+            "href": "/primitives/orderer/",
+            "label": "Orderer",
+            "isCurrent": false,
+            "attrs": {}
+          }
+        ],
+        "label": "Public Surface",
+        "type": "group"
+      },
+      {
+        "collapsed": false,
+        "entries": [
+          {
+            "type": "link",
+            "href": "/primitives/walker/",
+            "label": "Walker",
+            "isCurrent": false,
+            "attrs": {}
+          }
+        ],
+        "label": "Crate Internal",
+        "type": "group"
+      }
+    ]
+  }
+]

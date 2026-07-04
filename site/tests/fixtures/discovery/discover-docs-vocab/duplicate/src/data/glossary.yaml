@@ -1,0 +1,8 @@
+alpha:
+  definition: First entry.
+  aliases:
+    - shared
+beta:
+  definition: Second entry.
+  aliases:
+    - shared

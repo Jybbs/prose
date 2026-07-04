@@ -23,3 +23,27 @@ function stripParagraph(html: string): string {
     ? trimmed.slice(3, -4)
     : trimmed
 }
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  describe('renderBlock', () => {
+    test('renders a paragraph', async () => {
+      expect(await renderBlock('Hello there reader')).toContain('<p>Hello there reader</p>')
+    })
+
+    test('runs the body-mark plugins', async () => {
+      expect(await renderBlock('Prose reads well')).toContain('prose-mark')
+    })
+  })
+
+  describe('renderInline', () => {
+    test('strips the single wrapping paragraph', async () => {
+      expect(await renderInline('Hello there reader')).toBe('Hello there reader')
+    })
+
+    test('leaves non-paragraph output untouched', async () => {
+      expect(await renderInline('- item')).toContain('<ul>')
+    })
+  })
+}

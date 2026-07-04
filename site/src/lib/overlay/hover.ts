@@ -48,7 +48,7 @@ export function attachHoverOverlay(options: HoverOverlayOptions): void {
     close()
     const content = options.render(anchor)
     if (content === null) return
-    const panel = el('div', `overlay-panel ${options.panelClass}`)
+    const panel = el(`overlay-panel ${options.panelClass}`, 'div')
     panel.id   = panelId
     panel.role = 'tooltip'
     panel.append(content)

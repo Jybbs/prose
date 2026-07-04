@@ -1,0 +1,255 @@
+{
+  "entries": [
+    {
+      "data": {
+        "prelude": "code-line-length      = 88\ndocstring-line-length = 76\ntarget-version        = \"3.13\"\n\n# Rules are on by default.\n# All 'true' values are just for show.\n[rules]\nalign-equals      = false\nalign-colons      = false\nalign-imports     = false\nsignature-layout  = false\nalphabetize       = false\ndocstring-expand  = false\ndocstring-wrap    = false\nblank-lines       = false\ncollection-layout = false\n",
+        "pythonStateSteps": [
+          {
+            "chars": 718,
+            "step": 0
+          },
+          {
+            "chars": 718,
+            "step": 1
+          },
+          {
+            "chars": 718,
+            "step": 2
+          },
+          {
+            "chars": 718,
+            "step": 3
+          },
+          {
+            "chars": 718,
+            "step": 4
+          },
+          {
+            "chars": 718,
+            "step": 5
+          },
+          {
+            "chars": 718,
+            "step": 6
+          },
+          {
+            "chars": 718,
+            "step": 7
+          },
+          {
+            "chars": 718,
+            "step": 8
+          },
+          {
+            "chars": 718,
+            "step": 9
+          },
+          {
+            "chars": 718,
+            "step": 10
+          },
+          {
+            "chars": 718,
+            "step": 11
+          },
+          {
+            "chars": 718,
+            "step": 12
+          }
+        ],
+        "resetRows": [
+          {
+            "anchor": "align-equals      = ",
+            "end": "{ max-shift = 6 }",
+            "prelude": "false"
+          },
+          {
+            "anchor": "align-colons      = ",
+            "end": "{ max-shift = false }",
+            "prelude": "false"
+          },
+          {
+            "anchor": "align-imports     = ",
+            "end": "true",
+            "prelude": "false"
+          },
+          {
+            "anchor": "signature-layout  = ",
+            "end": "true",
+            "prelude": "false"
+          },
+          {
+            "anchor": "alphabetize       = ",
+            "end": "true",
+            "prelude": "false"
+          },
+          {
+            "anchor": "docstring-expand  = ",
+            "end": "true",
+            "prelude": "false"
+          },
+          {
+            "anchor": "docstring-wrap    = ",
+            "end": "true",
+            "prelude": "false"
+          },
+          {
+            "anchor": "blank-lines       = ",
+            "end": "true",
+            "prelude": "false"
+          },
+          {
+            "anchor": "collection-layout = ",
+            "end": "true",
+            "prelude": "false"
+          },
+          {
+            "anchor": "docstring-line-length = ",
+            "end": "60",
+            "prelude": "76"
+          }
+        ],
+        "entries": [
+          {
+            "anchor": "align-equals      = ",
+            "from": "false",
+            "kind": "edit",
+            "slug": "align-equals",
+            "to": "true"
+          },
+          {
+            "anchor": "align-colons      = ",
+            "from": "false",
+            "kind": "edit",
+            "slug": "align-colons",
+            "to": "true"
+          },
+          {
+            "anchor": "align-imports     = ",
+            "from": "false",
+            "kind": "edit",
+            "slug": "align-imports",
+            "to": "true"
+          },
+          {
+            "anchor": "signature-layout  = ",
+            "from": "false",
+            "kind": "edit",
+            "slug": "signature-layout",
+            "to": "true"
+          },
+          {
+            "anchor": "alphabetize       = ",
+            "from": "false",
+            "kind": "edit",
+            "slug": "alphabetize",
+            "to": "true"
+          },
+          {
+            "anchor": "docstring-expand  = ",
+            "from": "false",
+            "kind": "edit",
+            "slug": "docstring-expand",
+            "to": "true"
+          },
+          {
+            "anchor": "docstring-wrap    = ",
+            "from": "false",
+            "kind": "edit",
+            "slug": "docstring-wrap",
+            "to": "true"
+          },
+          {
+            "anchor": "blank-lines       = ",
+            "from": "false",
+            "kind": "edit",
+            "slug": "blank-lines",
+            "to": "true"
+          },
+          {
+            "anchor": "collection-layout = ",
+            "from": "false",
+            "kind": "edit",
+            "slug": "collection-layout",
+            "to": "true"
+          },
+          {
+            "anchor": "align-equals      = ",
+            "from": "true",
+            "kind": "edit",
+            "slug": "max-shift",
+            "tail": "code-line-length      = 88\ndocstring-line-length = 76\ntarget-version        = \"3.13\"\n\n[rules]\nalign-equals = { max-shift = 6 }\n",
+            "to": "{ max-shift = 6 }"
+          },
+          {
+            "anchor": "align-colons      = ",
+            "from": "true",
+            "kind": "edit",
+            "slug": "max-shift",
+            "tail": "code-line-length      = 88\ndocstring-line-length = 76\ntarget-version        = \"3.13\"\n\n[rules]\nalign-equals = { max-shift = 6 }\nalign-colons = { max-shift = false }\n",
+            "to": "{ max-shift = false }"
+          },
+          {
+            "anchor": "docstring-line-length = ",
+            "from": "76",
+            "kind": "edit",
+            "slug": "docstring-line-length",
+            "tail": "code-line-length      = 88\ndocstring-line-length = 60\ntarget-version        = \"3.13\"\n\n[rules]\nalign-equals = { max-shift = 6 }\nalign-colons = { max-shift = false }\n",
+            "to": "60"
+          }
+        ]
+      },
+      "id": "landing"
+    }
+  ],
+  "execCalls": [
+    {
+      "hasCwd": false,
+      "select": "align-equals"
+    },
+    {
+      "hasCwd": false,
+      "select": "align-equals,align-colons"
+    },
+    {
+      "hasCwd": false,
+      "select": "align-equals,align-colons,align-imports"
+    },
+    {
+      "hasCwd": false,
+      "select": "align-equals,align-colons,align-imports,signature-layout"
+    },
+    {
+      "hasCwd": false,
+      "select": "align-equals,align-colons,align-imports,signature-layout,alphabetize"
+    },
+    {
+      "hasCwd": false,
+      "select": "align-equals,align-colons,align-imports,signature-layout,alphabetize,docstring-expand"
+    },
+    {
+      "hasCwd": false,
+      "select": "align-equals,align-colons,align-imports,signature-layout,alphabetize,docstring-expand,docstring-wrap"
+    },
+    {
+      "hasCwd": false,
+      "select": "align-equals,align-colons,align-imports,signature-layout,alphabetize,docstring-expand,docstring-wrap,blank-lines"
+    },
+    {
+      "hasCwd": false,
+      "select": "align-equals,align-colons,align-imports,signature-layout,alphabetize,docstring-expand,docstring-wrap,blank-lines,collection-layout"
+    },
+    {
+      "hasCwd": true,
+      "select": "align-equals,align-colons,align-imports,signature-layout,alphabetize,docstring-expand,docstring-wrap,blank-lines,collection-layout"
+    },
+    {
+      "hasCwd": true,
+      "select": "align-equals,align-colons,align-imports,signature-layout,alphabetize,docstring-expand,docstring-wrap,blank-lines,collection-layout"
+    },
+    {
+      "hasCwd": true,
+      "select": "align-equals,align-colons,align-imports,signature-layout,alphabetize,docstring-expand,docstring-wrap,blank-lines,collection-layout"
+    }
+  ]
+}

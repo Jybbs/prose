@@ -1,0 +1,2 @@
+[options]
+throws = 'Glossary phrase "shared" registered against both "alpha" and "beta"'

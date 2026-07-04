@@ -71,7 +71,7 @@ const metaOf = await familyMeta()
     const pool = (): HTMLElement[] => {
       const query = glossaryFolioQuery.get()
       return articles.filter(article =>
-        entryMatches(article.dataset.slug ?? '', article.dataset.aliases ?? '', query))
+        entryMatches(article.dataset.aliases ?? '', query, article.dataset.slug ?? ''))
     }
     const activeSlug = (): string | undefined => glossaryFolioSlug.get() ?? articles[0]?.dataset.slug
 
@@ -81,7 +81,7 @@ const metaOf = await familyMeta()
       const entries = pool()
       const slug    = activeSlug()
       const index   = entries.findIndex(article => article.dataset.slug === slug)
-      const next    = entries[cycleIndex(index, Number(step.dataset.step), entries.length)]
+      const next    = entries[cycleIndex(Number(step.dataset.step), index, entries.length)]
       if (next?.dataset.slug !== undefined) glossaryFolioSlug.set(next.dataset.slug)
     })
 

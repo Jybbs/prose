@@ -8,22 +8,11 @@ import { BG, BODY, META_LABEL } from './colors'
 export const CARD_HEIGHT = 630
 export const CARD_WIDTH  = 1200
 
+// Accent-border opacity for the data panel, keyed on the page's warmth.
+export const PANEL_BORDER_ALPHA = { cool: '66', warm: '99' } as const
+
 const BORDER     = 'rgba(255, 255, 255, 0.10)'
 const PANEL_FILL = 'rgba(255, 255, 255, 0.04)'
-
-// satori's createElement<P> returns JSXElement<P>, which its own JSXNode union
-// rejects for non-unknown P, so el returns satori's JSX.Element (JSXElement<any, any>).
-export function el(
-  type       : string,
-  props      : Record<string, unknown> | null,
-  ...children: JSXNode[]
-): JSXElement<any, any> {
-  return h(type, props, ...children)
-}
-
-export function toSvg(node: JSXNode, fonts: Font[]): Promise<string> {
-  return satori(node, { fonts, height: CARD_HEIGHT, width: CARD_WIDTH })
-}
 
 export function cardShell(...children: JSXNode[]): JSXNode {
   return el('div',
@@ -39,29 +28,6 @@ export function cardShell(...children: JSXNode[]): JSXNode {
     },
     ...children
   )
-}
-
-export function leftRail(color: string): JSXNode {
-  return el('div', {
-    style: {
-      backgroundImage : `linear-gradient(to bottom, ${color}, ${color}cc)`,
-      bottom          : 0,
-      left            : 50,
-      position        : 'absolute',
-      top             : 0,
-      width           : 14
-    }
-  })
-}
-
-export function monoLabel(color: string, size: number, track = '0.14em') {
-  return {
-    color         : color,
-    fontFamily    : FONTS.mono.name,
-    fontSize      : size,
-    fontWeight    : 500,
-    letterSpacing : track
-  }
 }
 
 export function dataPanel(
@@ -109,10 +75,10 @@ function panelDivider(): JSXNode {
 }
 
 function metaRow(
+  gap          : number,
   label        : string,
   value        : string,
   valueStyle   : Record<string, unknown>,
-  gap          : number,
   marginBottom : number = 0
 ): JSXNode {
   return el('div',
@@ -134,16 +100,53 @@ function metaRow(
 }
 
 function panelRow(label: string, value: string): JSXNode {
-  return metaRow(label.toUpperCase(), value,
-    { fontFamily: FONTS.mono.name, fontSize: 19, fontWeight: 500 }, 24, 8)
+  return metaRow(24, label.toUpperCase(), value,
+    { fontFamily: FONTS.mono.name, fontSize: 19, fontWeight: 500 }, 8)
 }
 
 function versionCallout(version: string): JSXNode {
-  return metaRow('VERSION', version, {
+  return metaRow(18, 'VERSION', version, {
     fontFamily    : FONTS.display.name,
     fontSize      : 72,
     fontWeight    : 600,
     letterSpacing : '-0.01em',
     lineHeight    : 1
-  }, 18)
+  })
+}
+
+// satori's createElement<P> returns JSXElement<P>, which its own JSXNode union
+// rejects for non-unknown P, so el returns satori's JSX.Element (JSXElement<any, any>).
+export function el(
+  type       : string,
+  props      : Record<string, unknown> | null,
+  ...children: JSXNode[]
+): JSXElement<any, any> {
+  return h(type, props, ...children)
+}
+
+export function leftRail(color: string): JSXNode {
+  return el('div', {
+    style: {
+      backgroundImage : `linear-gradient(to bottom, ${color}, ${color}cc)`,
+      bottom          : 0,
+      left            : 50,
+      position        : 'absolute',
+      top             : 0,
+      width           : 14
+    }
+  })
+}
+
+export function monoLabel(color: string, size: number, track = '0.14em') {
+  return {
+    color         : color,
+    fontFamily    : FONTS.mono.name,
+    fontSize      : size,
+    fontWeight    : 500,
+    letterSpacing : track
+  }
+}
+
+export function toSvg(node: JSXNode, fonts: Font[]): Promise<string> {
+  return satori(node, { fonts, height: CARD_HEIGHT, width: CARD_WIDTH })
 }

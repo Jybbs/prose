@@ -7,14 +7,20 @@ coverage:
   status:
     patch: &targets
       default:
-        target: 95%
-      rust:
-        target : 95%
+        target: &target 95%
+      rust: &status
         flags  : [rust]
+        target : *target
+      site:
+        <<     : *status
+        flags  : [site]
 
     project: *targets
 
 flags:
-  rust:
-    paths        : [crate/src]
+  rust: &flag
     carryforward : true
+    paths        : [crate/src]
+  site:
+    <<    : *flag
+    paths : [site/src]

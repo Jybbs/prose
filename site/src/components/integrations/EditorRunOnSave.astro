@@ -55,10 +55,10 @@ const nameOf  = await toolNamer('Editor')
   import { defineTabSelectElement } from '../../lib/shared/dom/tab-select'
 
   // Turns the index rows into tabs over the per-editor config faces.
-  defineTabSelectElement('editor-run-on-save', {
+  defineTabSelectElement({
     events : ['click'],
     key    : 'slug',
     panels : '.editor-card-face',
     tabs   : '.editor-card-row'
-  })
+  }, 'editor-run-on-save')
 </script>

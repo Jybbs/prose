@@ -1,0 +1,5 @@
+<p class="rule-card-grid-empty">No rules in this group yet.</p>
+<script
+  type="module"
+  src="src/components/rules/RuleCardList.astro?astro&type=script&index=0&lang.ts"
+></script>

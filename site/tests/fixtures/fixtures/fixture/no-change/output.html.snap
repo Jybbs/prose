@@ -1,0 +1,81 @@
+<script
+  type="module"
+  src="src/components/fixtures/FixturePair.astro?astro&type=script&index=0&lang.ts"
+></script>
+<fixture-card
+  id="fixture-align_equals-basic"
+  data-family="alignment"
+  data-edits="false"
+  data-lint="false"
+  class="fixture-card"
+  ><div class="fixture-card-summary-row">
+    <button
+      type="button"
+      class="fixture-card-summary"
+      aria-expanded="false"
+      aria-controls="fixture-align_equals-basic-body"
+    >
+      <span class="fixture-card-num" aria-hidden="true"></span
+      ><span class="fixture-card-title">Already aligned</span>
+    </button>
+    <div class="fixture-card-actions">
+      <div class="fixture-nochange">
+        <div class="fixture-toggle fixture-nochange-ghost" aria-hidden="true">
+          <span class="fixture-toggle-pill" data-side="before">Before</span
+          ><span class="fixture-toggle-pill" data-side="after">After</span>
+        </div>
+        <span class="fixture-nochange-label">No Change</span>
+      </div>
+    </div>
+  </div>
+  <div id="fixture-align_equals-basic-body" class="fixture-card-body" role="region">
+    <div class="fixture-card-body-inner">
+      <div class="fixture-card-body-content">
+        <div class="fixture-card-desc"><p>A lead</p></div>
+        <div class="fixture-card-rule" aria-hidden="true"></div>
+        <fixture-pair
+          class="panel panel-clip fixture-pair fixture-pair-doc"
+          data-id="fixture-align_equals-basic"
+          ><div class="fixture-pair-panel" data-side="before" hidden>
+            <div class="expressive-code">
+              <link rel="stylesheet" href="/_astro/ec.u6yl4.css" />
+              <script type="module" src="/_astro/ec.0vx5m.js"></script>
+              <figure class="frame not-content">
+                <figcaption class="header"></figcaption>
+                <pre
+                  data-language="python"
+                ><code><div class="ec-line"><div class="code"><span style="--0:#E1E4E8;--1:#24292E">x </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">1</span></div></div></code></pre>
+                <div class="copy">
+                  <div aria-live="polite"></div>
+                  <button title="Copy to clipboard" data-copied="Copied!" data-code="x = 1">
+                    <div></div>
+                  </button>
+                </div>
+              </figure>
+            </div>
+          </div>
+          <div class="fixture-pair-panel" data-side="after">
+            <div class="expressive-code">
+              <figure class="frame not-content">
+                <figcaption class="header"></figcaption>
+                <pre
+                  data-language="python"
+                ><code><div class="ec-line"><div class="code"><span style="--0:#E1E4E8;--1:#24292E">x </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">1</span></div></div></code></pre>
+                <div class="copy">
+                  <div aria-live="polite"></div>
+                  <button title="Copy to clipboard" data-copied="Copied!" data-code="x = 1">
+                    <div></div>
+                  </button>
+                </div>
+              </figure>
+            </div>
+          </div>
+          <div class="fixture-pair-morph" hidden></div
+        ></fixture-pair>
+      </div>
+    </div></div
+></fixture-card>
+<script
+  type="module"
+  src="src/components/fixtures/Fixture.astro?astro&type=script&index=0&lang.ts"
+></script>

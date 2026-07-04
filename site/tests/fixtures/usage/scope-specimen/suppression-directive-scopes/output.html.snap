@@ -1,0 +1,71 @@
+<div class="scope-specimen">
+  <pre
+    class="scope-specimen-source"
+  ><code><span class="scope-specimen-line" data-scope="file" data-bracket="open"><span class="scope-specimen-gutter" aria-hidden="true"> 1</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code"># prose: off</span></span><span class="scope-specimen-line" data-scope="file" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true"> 2</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code"> </span></span><span class="scope-specimen-line" data-scope="file" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true"> 3</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">from collections import OrderedDict</span></span><span class="scope-specimen-line" data-scope="file" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true"> 4</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code"> </span></span><span class="scope-specimen-line" data-scope="file" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true"> 5</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">def render(rows):</span></span><span class="scope-specimen-line" data-scope="block" data-bracket="open"><span class="scope-specimen-gutter" aria-hidden="true"> 6</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">    # fmt: off</span></span><span class="scope-specimen-line" data-scope="block" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true"> 7</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">    grid = [[1, 0, 0, 0],</span></span><span class="scope-specimen-line" data-scope="block" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true"> 8</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">            [0, 1, 0, 0],</span></span><span class="scope-specimen-line" data-scope="block" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true"> 9</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">            [0, 0, 1, 0],</span></span><span class="scope-specimen-line" data-scope="block" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true">10</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">            [0, 0, 0, 1]]</span></span><span class="scope-specimen-line" data-scope="block" data-bracket="close"><span class="scope-specimen-gutter" aria-hidden="true">11</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">    # fmt: on</span></span><span class="scope-specimen-line" data-scope="file" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true">12</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code"> </span></span><span class="scope-specimen-line" data-scope="line" data-bracket="solo"><span class="scope-specimen-gutter" aria-hidden="true">13</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">    out = build(rows)  # fmt: skip</span></span><span class="scope-specimen-line" data-scope="line" data-bracket="solo"><span class="scope-specimen-gutter" aria-hidden="true">14</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">    log(out)  # prose: ignore[&lt;rule&gt;]</span></span><span class="scope-specimen-line" data-scope="file" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true">15</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code"> </span></span><span class="scope-specimen-line" data-scope="dict" data-bracket="open"><span class="scope-specimen-gutter" aria-hidden="true">16</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">    STAGES = {  # prose: keep</span></span><span class="scope-specimen-line" data-scope="dict" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true">17</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">        &quot;fetch&quot;    : fetch,</span></span><span class="scope-specimen-line" data-scope="dict" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true">18</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">        &quot;parse&quot;    : parse,</span></span><span class="scope-specimen-line" data-scope="dict" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true">19</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">        &quot;validate&quot; : validate,</span></span><span class="scope-specimen-line" data-scope="dict" data-bracket="mid"><span class="scope-specimen-gutter" aria-hidden="true">20</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">        &quot;render&quot;   : render,</span></span><span class="scope-specimen-line" data-scope="dict" data-bracket="close"><span class="scope-specimen-gutter" aria-hidden="true">21</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code">    }</span></span><span class="scope-specimen-line" data-scope="file" data-bracket="close"><span class="scope-specimen-gutter" aria-hidden="true">22</span><span class="scope-specimen-bracket" aria-hidden="true"></span><span class="scope-specimen-code"> </span></span></code></pre>
+  <ul class="scope-specimen-legend">
+    <li class="scope-specimen-legend-row" data-scope="file">
+      <span class="scope-specimen-legend-marker" aria-hidden="true"
+        ><span class="scope-specimen-legend-pip">F</span
+        ><span class="scope-specimen-legend-name">File</span></span
+      >
+      <ul class="scope-specimen-legend-directives">
+        <li class="scope-specimen-legend-directive">
+          <a class="body-link" href="/reference/suppression-directives#file-level-suppression"
+            ><code># prose: off</code></a
+          >
+        </li>
+      </ul>
+    </li>
+    <li class="scope-specimen-legend-row" data-scope="block">
+      <span class="scope-specimen-legend-marker" aria-hidden="true"
+        ><span class="scope-specimen-legend-pip">B</span
+        ><span class="scope-specimen-legend-name">Block</span></span
+      >
+      <ul class="scope-specimen-legend-directives">
+        <li class="scope-specimen-legend-directive">
+          <a class="body-link" href="/reference/suppression-directives#block-markers"
+            ><code># fmt: off … # fmt: on</code></a
+          >
+        </li>
+      </ul>
+    </li>
+    <li class="scope-specimen-legend-row" data-scope="line">
+      <span class="scope-specimen-legend-marker" aria-hidden="true"
+        ><span class="scope-specimen-legend-pip">L</span
+        ><span class="scope-specimen-legend-name">Line</span></span
+      >
+      <ul class="scope-specimen-legend-directives">
+        <li class="scope-specimen-legend-directive">
+          <a class="body-link" href="/reference/suppression-directives#line-markers"
+            ><code># fmt: skip</code></a
+          >
+        </li>
+        <li class="scope-specimen-legend-directive">
+          <a class="body-link" href="/reference/suppression-directives#line-markers"
+            ><code># prose: skip[&lt;rule&gt;]</code></a
+          >
+        </li>
+        <li class="scope-specimen-legend-directive">
+          <a class="body-link" href="/reference/suppression-directives#line-markers"
+            ><code># prose: ignore[&lt;rule&gt;]</code></a
+          >
+        </li>
+      </ul>
+    </li>
+    <li class="scope-specimen-legend-row" data-scope="dict">
+      <span class="scope-specimen-legend-marker" aria-hidden="true"
+        ><span class="scope-specimen-legend-pip">D</span
+        ><span class="scope-specimen-legend-name">Dict literal</span></span
+      >
+      <ul class="scope-specimen-legend-directives">
+        <li class="scope-specimen-legend-directive">
+          <a
+            class="body-link"
+            href="/reference/suppression-directives#dict-literal-order-preservation"
+            ><code># prose: keep</code></a
+          >
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>

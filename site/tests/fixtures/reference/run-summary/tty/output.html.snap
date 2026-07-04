@@ -1,0 +1,14 @@
+<div class="panel panel-clip run-summary">
+  <div class="run-summary-bar">
+    <span class="run-summary-dot" aria-hidden="true"></span
+    ><span class="run-summary-dot" aria-hidden="true"></span
+    ><span class="run-summary-dot" aria-hidden="true"></span
+    ><span class="run-summary-title" aria-hidden="true">prose</span>
+  </div>
+  <div class="run-summary-body">
+    <div class="run-summary-line">
+      <span class="run-summary-anchor" data-ube="true" aria-hidden="true">🔖</span
+      ><span class="run-summary-msg" data-tint="apricot">5 diagnostics in 2 files.</span>
+    </div>
+  </div>
+</div>

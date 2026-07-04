@@ -1,0 +1,11 @@
+[[docs]]
+id         = "rules/alignment/index"
+data.badge = "⚖️"
+
+[[docs]]
+id           = "rules/alignment/align-equals"
+data.caption = "Aligns equals"
+data.related = ["align-colons"]
+
+[options]
+slug = "align-equals"

@@ -1,0 +1,7 @@
+schema = "pypiRelease"
+
+[fetch]
+status = 200
+
+[fetch.data.releases]
+"9.9.9" = [{ upload_time = "nonsense!!" }]

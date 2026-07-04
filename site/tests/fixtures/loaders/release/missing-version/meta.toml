@@ -1,0 +1,6 @@
+schema = "release"
+git    = "abc1234\n"
+cargo  = """
+[package]
+name = "prose"
+"""

@@ -1,0 +1,11 @@
+{
+  "badge": "⚖️",
+  "caption": "Aligns equals",
+  "category": "auto-fix",
+  "family": "alignment",
+  "href": "/rules/alignment/align-equals",
+  "related": [
+    "align-colons"
+  ],
+  "slug": "align-equals"
+}

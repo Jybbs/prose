@@ -1,0 +1,33 @@
+{
+  "entries": [
+    {
+      "data": {
+        "imperative": "Align equals",
+        "position": 1,
+        "slug": "align-equals"
+      },
+      "id": "align-equals"
+    },
+    {
+      "data": {
+        "imperative": "Sort imports",
+        "position": 2,
+        "slug": "alphabetize"
+      },
+      "id": "alphabetize"
+    }
+  ],
+  "execArgs": [
+    [
+      "/repo/target/release/prose",
+      [
+        "rules",
+        "--output-format",
+        "json"
+      ],
+      {
+        "encoding": "utf8"
+      }
+    ]
+  ]
+}

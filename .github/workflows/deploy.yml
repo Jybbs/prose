@@ -25,6 +25,10 @@ jobs:
     name    : ${{ matrix.name }}
     runs-on : &ubuntu ubuntu-latest
 
+    env:
+      CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
+      SHA           : ${{ github.event.pull_request.head.sha || github.sha }}
+
     strategy:
       fail-fast: false
 
@@ -39,6 +43,18 @@ jobs:
             binary  : true
           - command : mise run lint site
             name    : 🧶 Lint
+          - command : mise run test site
+            name    : ⚖️ Test
+            site    : true
+          - command : mise run upload site
+            name    : ☂️ Coverage
+            site    : true
+          - command : mise run cruft
+            name    : 🧹 Cruft
+            site    : true
+          - command : mise run mutation
+            name    : 🎨 Mutation
+            site    : true
 
     steps:
       - &checkout
@@ -50,7 +66,7 @@ jobs:
         with : { save: false, shared-key: prose-build }
 
       - name : Build the prose binary
-        if   : ${{ matrix.binary }}
+        if   : ${{ matrix.binary || matrix.site }}
         run  : mise run build bin
 
       - &provision-bun
@@ -66,7 +82,7 @@ jobs:
           restore-keys : og-cards-${{ runner.os }}-
 
       - name : Restore the Astro content cache
-        if   : ${{ matrix.binary }}
+        if   : ${{ matrix.binary || matrix.site }}
         uses : *cache-action
         with:
           key          : astro-store-${{ runner.os }}-${{ github.sha }}
@@ -80,6 +96,10 @@ jobs:
           key          : lychee-${{ runner.os }}-${{ github.sha }}
           path         : site/.lycheecache
           restore-keys : lychee-${{ runner.os }}-
+
+      - name : Provision the docs-site content
+        if   : ${{ matrix.site }}
+        run  : mise run bake
 
       - name : ${{ matrix.command }}
         env  : { GITHUB_TOKEN: "${{ github.token }}" }

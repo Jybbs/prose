@@ -1,0 +1,23 @@
+[[docs]]
+id   = "rules/alignment/align-equals"
+data = {}
+
+[[docs]]
+id   = "rules/alignment/align-colons"
+data = {}
+
+[[release]]
+id   = "0.6.0"
+data = { version = "0.6.0" }
+
+[options]
+id   = "rules/alignment/align-colons"
+data = { caption = "A capped card.", title = "Capped" }
+head = [{
+    attrs = {
+        href = "https://prose.fyi/rules/alignment/align-colons/",
+        rel  = "canonical"
+    },
+    tag   = "link"
+}]
+site = "https://prose.fyi/"

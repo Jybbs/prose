@@ -1,3 +1,4 @@
+import { applyCompletedEdits }                      from './typing-demo-buffer'
 import type { TypingDemoEntry, TypingDemoResetRow } from './typing-demo-buffer'
 
 export const SOURCE = `from pathlib import Path
@@ -109,3 +110,37 @@ function buildResetRows(): TypingDemoResetRow[] {
 }
 
 export const RESET_ROWS: readonly TypingDemoResetRow[] = buildResetRows()
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  describe('typing demo data', () => {
+    test('the source carries the dataclass under format', () => {
+      expect(SOURCE).toContain('class Config:')
+    })
+
+    test.each(RULES.map(rule => ({ rule })))('the prelude lists $rule as false', ({ rule }) => {
+      expect(PRELUDE).toContain(rule)
+      expect(ENTRIES.some(entry => entry.slug === rule && entry.from === 'false' && entry.to === 'true')).toBe(true)
+    })
+
+    test('applying the rule toggles flips every false to true', () => {
+      const toggled = applyCompletedEdits(PRELUDE, ENTRIES, RULES.length)
+      for (const rule of RULES) expect(toggled).toContain(rule)
+      expect(toggled).not.toContain('= false')
+      expect(toggled).toContain('= true')
+    })
+
+    test('reset rows carry one entry per unique anchor', () => {
+      const anchors = new Set(ENTRIES.map(entry => entry.anchor))
+      expect(RESET_ROWS).toHaveLength(anchors.size)
+      expect(new Set(RESET_ROWS.map(row => row.anchor))).toEqual(anchors)
+    })
+
+    test('a reset row keeps the first prelude and the last end value', () => {
+      const alignRow = RESET_ROWS.find(row => row.anchor.startsWith('align-equals'))
+      expect(alignRow?.prelude).toBe('false')
+      expect(alignRow?.end).toBe('{ max-shift = 6 }')
+    })
+  })
+}

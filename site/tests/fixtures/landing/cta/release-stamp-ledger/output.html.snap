@@ -1,0 +1,83 @@
+<section class="landing-cta">
+  <aside class="landing-cta-panel">
+    <div class="landing-cta-face">
+      <a
+        href="https://pypi.org/project/prose-formatter/0.6.0/"
+        rel="noopener"
+        target="_blank"
+        class="landing-cta-stamp"
+        aria-label="Current release 0.6.0, May 2026"
+        ><span class="landing-cta-stamp-edge" aria-hidden="true"></span
+        ><span class="landing-cta-stamp-month">May</span
+        ><span class="landing-cta-stamp-version">0.6.0</span
+        ><span class="landing-cta-stamp-year">'26</span></a
+      >
+    </div>
+    <div class="landing-cta-face landing-cta-open">
+      <div class="landing-cta-scroll">
+        <div class="landing-cta-group">
+          <p class="landing-cta-year">2026</p>
+          <ol class="landing-cta-ledger">
+            <li class="landing-cta-ledger-row">
+              <a
+                href="https://pypi.org/project/prose-formatter/0.5.0/"
+                rel="noopener"
+                target="_blank"
+                ><span class="landing-cta-ledger-version">0.5.0</span
+                ><span class="landing-cta-ledger-leader" aria-hidden="true"></span
+                ><span class="landing-cta-ledger-month">February</span></a
+              >
+            </li>
+          </ol>
+        </div>
+        <div class="landing-cta-group">
+          <p class="landing-cta-year">2025</p>
+          <ol class="landing-cta-ledger">
+            <li class="landing-cta-ledger-row">
+              <a
+                href="https://pypi.org/project/prose-formatter/0.4.0/"
+                rel="noopener"
+                target="_blank"
+                ><span class="landing-cta-ledger-version">0.4.0</span
+                ><span class="landing-cta-ledger-leader" aria-hidden="true"></span
+                ><span class="landing-cta-ledger-month">November</span></a
+              >
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <button
+      type="button"
+      class="landing-cta-toggle"
+      aria-expanded="false"
+      aria-label="Show previous releases"
+    >
+      +
+    </button>
+  </aside>
+  <div class="landing-cta-body">
+    <p class="landing-cta-kicker kicker">Read on</p>
+    <p class="landing-cta-lede">
+      Bring <em><span class="prose-mark">Prose</span></em> to your own pages and make the next save
+      <em>legible</em>.
+    </p>
+    <div class="landing-cta-cmd" aria-label="Install command">
+      <span class="landing-cta-prompt" aria-hidden="true">$</span
+      ><code>uv tool install prose-formatter</code
+      ><button
+        type="button"
+        class="copy"
+        title="Copy command"
+        aria-label="Copy install command"
+      ></button>
+    </div>
+    <a class="landing-cta-primary" href="/usage/quick-start"
+      ><span>Quick start</span><span class="landing-cta-arrow" aria-hidden="true">→</span></a
+    >
+  </div>
+</section>
+<script
+  type="module"
+  src="src/components/landing/cta/Cta.astro?astro&type=script&index=0&lang.ts"
+></script>

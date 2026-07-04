@@ -1,3 +1,5 @@
+import * as fc from 'fast-check'
+
 import { isFamily }             from '../shared/registries'
 import type { RuleFamily }      from '../shared/registries'
 import { required }             from '../shared/required'
@@ -88,7 +90,7 @@ export function assertCorpusIntegrity(entries: Iterable<CorpusEntry>): void {
   }
   assertOneFamilyPerSlug(rules)
   assertRelatedResolves(rules)
-  assertPrimitiveGraph(rules, primitives)
+  assertPrimitiveGraph(primitives, rules)
 }
 
 function assertOneFamilyPerSlug(rules: readonly Rule[]): void {
@@ -114,7 +116,7 @@ function assertRelatedResolves(rules: readonly Rule[]): void {
 // Validates that every edge of the consumes-and-consumed-by graph resolves to a
 // real node. The graph is not a strict inverse, because a primitive curates the
 // consumers it lists rather than mirroring every edge.
-function assertPrimitiveGraph(rules: readonly Rule[], primitives: readonly Primitive[]): void {
+function assertPrimitiveGraph(primitives: readonly Primitive[], rules: readonly Rule[]): void {
   const primitiveSlugs = new Set(primitives.map(p => p.slug))
   const ruleSlugs      = new Set(rules.map(r => r.slug))
   const consumerOk     = (name: string): boolean =>
@@ -132,4 +134,74 @@ function assertPrimitiveGraph(rules: readonly Rule[], primitives: readonly Primi
       }
     }
   }
+}
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  const entry = (path: string, data: DocsFrontmatter = {}): CorpusEntry => ({ data, path })
+
+  const VALID: CorpusEntry[] = [
+    entry('rules/alignment/index.md',        { warmth: 'warm' }),
+    entry('rules/alignment/align-equals.md', { caption: 'Aligns `=`', related: ['align-colons'] }),
+    entry('rules/alignment/align-colons.md', { caption: 'Aligns `:`' }),
+    entry('primitives/index.md'),
+    entry('guide/getting-started.md'),
+    entry('primitives/member.md', { consumedBy: ['cli', 'align-equals'], consumes: [],         stability: 'public' }),
+    entry('primitives/band.md',   { consumedBy: ['cli', 'member'],       consumes: ['member'], stability: 'internal' })
+  ]
+
+  describe('assertCorpusIntegrity', () => {
+    test.each([
+      { name: 'a fully resolved corpus',              entries: VALID },
+      { name: 'a slug repeated within one family',    entries: [
+        entry('rules/alignment/dup.md', { caption: 'a' }),
+        entry('rules/alignment/dup.md', { caption: 'b' })
+      ] }
+    ])('accepts $name', ({ entries }) => {
+      expect(() => assertCorpusIntegrity(entries)).not.toThrow()
+    })
+
+    test.each([
+      { name: 'a family index missing its warmth', message: /family "alignment" index is missing its warmth/, entries: [
+        entry('rules/alignment/index.md')
+      ] },
+      { name: 'a rule page missing its caption', message: /rule "align-equals" is missing its caption/, entries: [
+        entry('rules/alignment/align-equals.md')
+      ] },
+      { name: 'a rule page with a blank caption', message: /rule "align-equals" is missing its caption/, entries: [
+        entry('rules/alignment/align-equals.md', { caption: '   ' })
+      ] },
+      { name: 'a primitive missing its stability', message: /primitive "member" is missing its stability/, entries: [
+        entry('primitives/member.md')
+      ] },
+      { name: 'a rule page outside a family directory', message: /found stray: rules\/orphan\.md/, entries: [
+        entry('rules/orphan.md', { caption: 'x' })
+      ] },
+      { name: 'a rule page under an unknown family', message: /found stray: rules\/bogus\/foo\.md/, entries: [
+        entry('rules/bogus/foo.md', { caption: 'x' })
+      ] },
+      { name: 'a slug claimed by two families', message: /rule "dup" appears in both the alignment and layout families/, entries: [
+        entry('rules/alignment/dup.md', { caption: 'a' }),
+        entry('rules/layout/dup.md',    { caption: 'b' })
+      ] },
+      { name: 'a related reference that resolves to nothing', message: /rule "a" lists unknown related rule "ghost"/, entries: [
+        entry('rules/alignment/a.md', { caption: 'x', related: ['ghost'] })
+      ] },
+      { name: 'a primitive consuming an unknown primitive', message: /primitive "band" consumes unknown primitive "ghost"/, entries: [
+        entry('primitives/band.md', { consumes: ['ghost'], stability: 'internal' })
+      ] },
+      { name: 'a primitive listing an unknown consumer', message: /primitive "member" lists unknown consumer "ghost"/, entries: [
+        entry('primitives/member.md', { consumedBy: ['ghost'], stability: 'public' })
+      ] }
+    ])('rejects $name', ({ entries, message }) => {
+      expect(() => assertCorpusIntegrity(entries)).toThrow(message)
+    })
+
+    test('a single captioned rule page in a family never throws', () => {
+      fc.assert(fc.property(fc.stringMatching(/^[a-z]{1,12}$/), slug => {
+        expect(() => assertCorpusIntegrity([entry(`rules/alignment/${slug}.md`, { caption: 'x' })])).not.toThrow()
+      }))
+    })
+  })
 }

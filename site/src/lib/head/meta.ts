@@ -42,3 +42,58 @@ export function upsertMeta(
 function meta(key: 'name' | 'property', id: string, content: string): HeadEntry {
   return { attrs: { content, [key]: id }, tag: 'meta' }
 }
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  const head = (...entries: Head): Head => entries
+  const metaWith = (entries: Head, key: string, id: string) =>
+    entries.find(entry => entry.tag === 'meta' && entry.attrs?.[key] === id)
+
+  describe('canonicalOf', () => {
+    test.each([
+      { name: 'reads a canonical href',           entries: head({ tag: 'link', attrs: { rel: 'canonical', href: 'https://prose.fyi/x/' } }), expected: 'https://prose.fyi/x/' },
+      { name: 'returns undefined with no link',    entries: head({ tag: 'meta', attrs: { name: 'x' } }),                                     expected: undefined            },
+      { name: 'ignores a non-string href',         entries: head({ tag: 'link', attrs: { rel: 'canonical' } }),                              expected: undefined            }
+    ])('$name', ({ entries, expected }) => {
+      expect(canonicalOf(entries)).toBe(expected)
+    })
+  })
+
+  describe('imageMeta', () => {
+    test('pushes the og and twitter image tags with card dimensions', () => {
+      const h = head()
+      imageMeta(h, 'card.png', 'Alt text')
+      expect(metaWith(h, 'property', 'og:image')?.attrs?.content).toBe('card.png')
+      expect(metaWith(h, 'property', 'og:image:width')?.attrs?.content).toBe('1200')
+      expect(metaWith(h, 'property', 'og:image:height')?.attrs?.content).toBe('630')
+      expect(metaWith(h, 'property', 'og:image:type')?.attrs?.content).toBe('image/png')
+      expect(metaWith(h, 'name', 'twitter:image')?.attrs?.content).toBe('card.png')
+      expect(metaWith(h, 'name', 'twitter:image:alt')?.attrs?.content).toBe('Alt text')
+    })
+  })
+
+  describe('jsonLd', () => {
+    test('appends a script tag carrying the payload', () => {
+      const h = head()
+      jsonLd(h, '{"x":1}')
+      expect(h.at(-1)).toEqual({ attrs: { type: 'application/ld+json' }, content: '{"x":1}', tag: 'script' })
+    })
+  })
+
+  describe('upsertMeta', () => {
+    test('appends a fresh meta when none matches', () => {
+      const h = head()
+      upsertMeta(h, 'name', 'description', 'new')
+      expect(metaWith(h, 'name', 'description')?.attrs?.content).toBe('new')
+      expect(h).toHaveLength(1)
+    })
+
+    test('rewrites the content of an existing meta in place', () => {
+      const h = head({ tag: 'meta', attrs: { content: 'old', name: 'description' } })
+      upsertMeta(h, 'name', 'description', 'fresh')
+      expect(h).toHaveLength(1)
+      expect(metaWith(h, 'name', 'description')?.attrs?.content).toBe('fresh')
+    })
+  })
+}

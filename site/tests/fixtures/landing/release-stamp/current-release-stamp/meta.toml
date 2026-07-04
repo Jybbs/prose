@@ -1,0 +1,9 @@
+component = "landing/cta/ReleaseStamp.astro"
+
+[props.release]
+date      = "2026-05-01"
+month     = "May"
+url       = "https://pypi.org/project/prose-formatter/0.6.0/"
+version   = "0.6.0"
+year      = "2026"
+yearShort = "26"

@@ -1,0 +1,2 @@
+schema = "pipelineEntry"
+exec   = '''[{"imperative":"Align equals","position":1,"slug":"align-equals"},{"imperative":"Sort imports","position":2,"slug":"alphabetize"}]'''

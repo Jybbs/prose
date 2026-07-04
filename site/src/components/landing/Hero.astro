@@ -10,23 +10,21 @@ import './styles/hero.css'
 </landing-hero>
 
 <script>
-  import { ROW_STRIDE_PX, tileStamps } from '../../lib/landing/hero-stamps'
+  import { heroGrid, watermarkHeight } from '../../lib/landing/hero-tiling'
+  import { tileStamps }                from '../../lib/landing/hero-stamps'
   import type { Stamp }                from '../../lib/landing/hero-stamps'
   import { el }                        from '../../lib/shared/dom/el'
   import { remeasure }                 from '../../lib/shared/dom/remeasure'
 
-  const STAMP_PER_COL = 240
-  const TERMINUS_GAP  = 40
-
   function stampNode(stamp: Stamp): HTMLElement {
     let node: HTMLElement
     if (stamp.kind === 'big') {
-      const img = el('img', 'landing-hero-watermark landing-hero-watermark-big')
+      const img = el('landing-hero-watermark landing-hero-watermark-big', 'img')
       img.src   = '/logo.svg'
       img.alt   = ''
       node      = img
     } else {
-      node = el('span', 'landing-hero-watermark landing-hero-watermark-small', stamp.letter)
+      node = el('landing-hero-watermark landing-hero-watermark-small', 'span', stamp.letter)
     }
     node.style.setProperty('--rot', `${stamp.rotate}deg`)
     node.style.left = `${stamp.x}%`
@@ -54,9 +52,10 @@ import './styles/hero.css'
       const layer = this.querySelector<HTMLElement>('.landing-hero-watermarks')
       if (layer === null) return
       const terminus = document.querySelector<HTMLElement>('.surfaces-carousel')
-      const height   = terminus === null
-        ? 0
-        : terminus.getBoundingClientRect().top - this.getBoundingClientRect().top - TERMINUS_GAP
+      const height   = watermarkHeight(
+        this.getBoundingClientRect().top,
+        terminus === null ? null : terminus.getBoundingClientRect().top
+      )
       if (height > 0) {
         layer.style.height    = `${height}px`
         layer.style.minHeight = '0'
@@ -64,8 +63,7 @@ import './styles/hero.css'
         layer.style.removeProperty('height')
         layer.style.removeProperty('min-height')
       }
-      const cols = Math.max(3, Math.round(layer.getBoundingClientRect().width / STAMP_PER_COL))
-      const rows = Math.max(3, Math.ceil(Math.max(height, 0) / ROW_STRIDE_PX) + 1)
+      const { cols, rows } = heroGrid(height, layer.getBoundingClientRect().width)
       if (cols === this.#cols && rows === this.#rows) return
       this.#cols = cols
       this.#rows = rows

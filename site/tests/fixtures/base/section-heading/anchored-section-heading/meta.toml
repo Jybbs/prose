@@ -1,0 +1,5 @@
+component = "base/SectionHeading.astro"
+
+[props]
+id    = "intro"
+title = "Getting Started"

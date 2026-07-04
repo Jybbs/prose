@@ -1,0 +1,69 @@
+<aside class="glossary-folio-index" aria-label="Glossary index">
+  <div class="glossary-folio-search">
+    <svg
+      aria-hidden="true"
+      class="glossary-folio-search-glyph astro-n5k4ipy7"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      style="--sl-icon-size: 1em"
+    >
+      <path
+        d="M21.71 20.29 18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a.999.999 0 0 0 1.42 0 1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z"
+      /></svg
+    ><input type="search" class="glossary-folio-input" aria-label="Filter glossary" /><span
+      class="glossary-folio-meta"
+      >2 of 2</span
+    >
+  </div>
+  <div class="glossary-folio-empty" hidden>No entries match <code></code>.</div>
+  <div class="glossary-folio-list">
+    <div class="glossary-folio-block">
+      <p class="glossary-folio-letter">A</p>
+      <ul class="glossary-folio-rows">
+        <li>
+          <button
+            type="button"
+            class="glossary-folio-row is-active"
+            data-aliases="aka-align"
+            data-family="ordering"
+            data-slug="align-equals"
+            style="--rail-paint: var(--prose-family-ordering)"
+          >
+            <span class="glossary-folio-row-rail" aria-hidden="true"></span
+            ><code class="glossary-folio-row-slug">align-equals</code>
+          </button>
+        </li>
+      </ul>
+    </div>
+    <div class="glossary-folio-block">
+      <p class="glossary-folio-letter">B</p>
+      <ul class="glossary-folio-rows">
+        <li>
+          <button
+            type="button"
+            class="glossary-folio-row"
+            data-aliases
+            data-family="alignment"
+            data-slug="band-constants"
+            style="
+              --rail-paint: linear-gradient(
+                to bottom,
+                var(--prose-family-alignment),
+                var(--prose-family-layout)
+              );
+            "
+          >
+            <span class="glossary-folio-row-rail" aria-hidden="true"></span
+            ><code class="glossary-folio-row-slug">band-constants</code>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</aside>
+<script
+  type="module"
+  src="src/components/glossary/GlossaryFolioIndex.astro?astro&type=script&index=0&lang.ts"
+></script>

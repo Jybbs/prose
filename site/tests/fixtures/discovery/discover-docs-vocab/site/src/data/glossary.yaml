@@ -1,0 +1,8 @@
+alignment:
+  definition: Lining up tokens on a shared column.
+  href: /concepts/alignment
+  aliases:
+    - alignment
+    - align
+engine:
+  definition: The formatting core.

@@ -1,0 +1,4 @@
+component = "landing/LandingSection.astro"
+
+[props]
+heading = "Plain."

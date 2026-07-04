@@ -5,7 +5,7 @@
 # Re-resolves each ecosystem's lockfile and prints a `git diff --stat`
 # naming any lockfile that moved.
 
-(cd site && bun install)
+(cd site && bun install --ignore-scripts)
 cargo update --workspace
 uv lock --project crate
 git diff --stat site/bun.lock Cargo.lock crate/uv.lock

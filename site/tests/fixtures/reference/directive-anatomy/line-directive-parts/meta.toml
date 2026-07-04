@@ -1,0 +1,24 @@
+component = "reference/DirectiveAnatomy.astro"
+
+[[store.directives]]
+id   = "prose-ignore-rules"
+data = {
+    effect  = "Ignores the listed rules on this line",
+    example = "x = 1  # prose: ignore=align-equals\ny = 2",
+    form    = "prose: ignore=…",
+    parts   = [
+        { role = "action", text = "ignore" },
+        { role = "payload", text = "align-equals" }
+    ],
+    scope   = "line"
+}
+
+[[store.directives]]
+id   = "file-off"
+data = {
+    effect  = "Disables the whole file",
+    example = "# prose: off",
+    form    = "prose: off",
+    parts   = [{ role = "action", text = "off" }],
+    scope   = "file"
+}

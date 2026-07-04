@@ -16,3 +16,24 @@ export function ruleChipAttrs(rule: RuleChipSource): Record<string, string> {
     'data-rule-pop' : ''
   }
 }
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  describe('rule-chip', () => {
+    test('selects the bare hover marker', () => {
+      expect(RULE_CHIP_SELECTOR).toBe('a[data-rule-pop]')
+    })
+
+    test('emits the hover-contract dataset with an empty marker', () => {
+      expect(ruleChipAttrs({ badge: '📐', caption: 'aligns `=`', family: 'alignment' })).toMatchInlineSnapshot(`
+        {
+          "data-badge": "📐",
+          "data-caption": "aligns \`=\`",
+          "data-family": "alignment",
+          "data-rule-pop": "",
+        }
+      `)
+    })
+  })
+}

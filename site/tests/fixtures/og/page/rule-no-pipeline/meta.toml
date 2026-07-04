@@ -1,0 +1,10 @@
+version = "0.2.0"
+
+[page]
+accent     = "#e8c840"
+breadcrumb = ["rules", "alignment"]
+caption    = "Aligns `=` across **runs**"
+family     = "alignment"
+kind       = "rules"
+title      = "Align Equals"
+warmth     = "warm"

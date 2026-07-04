@@ -1,0 +1,6 @@
+version = "0.2.0"
+
+[page]
+breadcrumb = ["usage"]
+kind       = "usage"
+title      = "Install"

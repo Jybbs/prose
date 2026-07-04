@@ -1,0 +1,63 @@
+<div class="primitives-composition-grid">
+  <section class="primitives-composition-band" data-layer="base">
+    <header class="band-head primitives-composition-band-head">
+      <span class="primitives-composition-band-badge"
+        ><span class="primitives-composition-band-numeral" aria-hidden="true">I</span></span
+      ><span class="band-name">base</span><span class="band-rule" aria-hidden="true"></span>
+    </header>
+    <ul class="primitives-composition-band-cells">
+      <li class="primitives-composition-tile primitives-composition-tile-active" data-layer="base">
+        <a
+          class="primitives-composition-tile-link"
+          href="/primitives/edge-magnet"
+          data-related="rope hero-tiling"
+          data-slug="edge-magnet"
+          ><span class="primitives-composition-tile-name">Edge Magnet</span></a
+        >
+      </li>
+    </ul>
+  </section>
+  <section class="primitives-composition-band" data-layer="orchestration">
+    <header class="band-head primitives-composition-band-head">
+      <span class="primitives-composition-band-badge"
+        ><span class="primitives-composition-band-numeral" aria-hidden="true">II</span></span
+      ><span class="band-name">orchestration</span
+      ><span class="band-rule" aria-hidden="true"></span>
+    </header>
+    <ul class="primitives-composition-band-cells">
+      <li
+        class="primitives-composition-tile primitives-composition-tile-mute"
+        data-layer="orchestration"
+      >
+        <a
+          class="primitives-composition-tile-link"
+          href="/primitives/hero-tiling"
+          data-related
+          data-slug="hero-tiling"
+          ><span class="primitives-composition-tile-name">Hero Tiling</span></a
+        >
+      </li>
+    </ul>
+  </section>
+  <section class="primitives-composition-band" data-layer="analysis">
+    <header class="band-head primitives-composition-band-head">
+      <span class="primitives-composition-band-badge"
+        ><span class="primitives-composition-band-numeral" aria-hidden="true">III</span></span
+      ><span class="band-name">analysis</span><span class="band-rule" aria-hidden="true"></span>
+    </header>
+    <ul class="primitives-composition-band-cells">
+      <li
+        class="primitives-composition-tile primitives-composition-tile-related"
+        data-layer="analysis"
+      >
+        <a
+          class="primitives-composition-tile-link"
+          href="/primitives/rope"
+          data-related
+          data-slug="rope"
+          ><span class="primitives-composition-tile-name">Rope</span></a
+        >
+      </li>
+    </ul>
+  </section>
+</div>

@@ -1,0 +1,29 @@
+component = "usage/ScopeSpecimen.astro"
+
+[[store.directives]]
+id   = "prose-off"
+data = { form = "# prose: off", scope = "file" }
+
+[[store.directives]]
+id   = "fmt-off"
+data = { form = "# fmt: off", scope = "block", pairId = "fmt-on" }
+
+[[store.directives]]
+id   = "fmt-on"
+data = { form = "# fmt: on", scope = "block", pairId = "fmt-off" }
+
+[[store.directives]]
+id   = "fmt-skip"
+data = { form = "# fmt: skip", scope = "line" }
+
+[[store.directives]]
+id   = "prose-skip-rules"
+data = { form = "# prose: skip[<rule>]", scope = "line" }
+
+[[store.directives]]
+id   = "prose-ignore-rules"
+data = { form = "# prose: ignore[<rule>]", scope = "line" }
+
+[[store.directives]]
+id   = "prose-keep"
+data = { form = "# prose: keep", scope = "dict" }

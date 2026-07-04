@@ -1,0 +1,1 @@
+run `align-equals` now

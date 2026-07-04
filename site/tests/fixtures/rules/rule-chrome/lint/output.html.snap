@@ -1,0 +1,6 @@
+<div class="rule-chrome">
+  <a class="category-chip" href="/rules/lint/" data-category="lint"
+    ><span class="category-chip-badge" aria-hidden="true">L</span
+    ><span class="category-chip-label">Lint</span></a
+  >
+</div>

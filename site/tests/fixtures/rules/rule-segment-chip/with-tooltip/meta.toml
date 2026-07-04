@@ -1,0 +1,17 @@
+component = "rules/RuleSegmentChip.astro"
+
+[props]
+withTooltip = true
+
+[props.segment]
+family = "alignment"
+slug   = "align-equals"
+rule   = {
+    badge    = "⚖️",
+    caption  = "Aligns `=` signs",
+    category = "auto-fix",
+    family   = "alignment",
+    href     = "/rules/alignment/align-equals",
+    related  = [],
+    slug     = "align-equals"
+}

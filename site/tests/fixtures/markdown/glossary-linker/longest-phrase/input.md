@@ -1,0 +1,1 @@
+the align equals rule

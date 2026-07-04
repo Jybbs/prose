@@ -1,0 +1,13 @@
+component = "rules/TaxonomyChip.astro"
+
+[props]
+axis  = "category"
+value = "auto-fix"
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }

@@ -1,0 +1,38 @@
+<section class="panel pipeline-order" aria-label="Pipeline order">
+  <header class="pipeline-order-masthead">
+    <span class="kicker pipeline-order-edition">2 passes · <code>src/rule.rs</code></span>
+  </header>
+  <ol class="pipeline-order-columns">
+    <li class="pipeline-order-entry" data-family="alignment">
+      <a
+        class="pipeline-order-link"
+        href="/rules/alignment/align-equals"
+        data-badge="⚖️"
+        data-caption="Aligns equals"
+        data-family="alignment"
+        data-rule-pop
+        data-slug="align-equals"
+        ><span class="folio">№ 01</span
+        ><span class="pipeline-order-name"
+          ><middle-ellipsis data-tail="2" data-text="align-equals">align-equals</middle-ellipsis>
+          <script
+            type="module"
+            src="src/components/base/MiddleEllipsis.astro?astro&type=script&index=0&lang.ts"
+          ></script></span
+        ><span class="leader pipeline-order-leader" aria-hidden="true"></span
+        ><span class="pipeline-order-glyph" aria-hidden="true">⚖️</span></a
+      >
+    </li>
+    <li class="pipeline-order-entry">
+      <a class="pipeline-order-link" data-slug="sort-imports"
+        ><span class="folio">№ 02</span
+        ><span class="pipeline-order-name"
+          ><middle-ellipsis data-tail="2" data-text="sort-imports"
+            >sort-imports</middle-ellipsis
+          ></span
+        ><span class="leader pipeline-order-leader" aria-hidden="true"></span
+        ><span class="pipeline-order-glyph" aria-hidden="true">·</span></a
+      >
+    </li>
+  </ol>
+</section>

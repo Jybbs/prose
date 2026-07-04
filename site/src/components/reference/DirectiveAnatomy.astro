@@ -99,10 +99,10 @@ function classifyLine(line: string): 'directive' | 'comment' | 'code' {
 
   // Moves the focused directive's plate into view as its thumb takes a click
   // or hover.
-  defineTabSelectElement('directive-anatomy', {
+  defineTabSelectElement({
     events : ['click', 'mouseenter'],
     key    : 'directive',
     panels : '.directive-anatomy-plate',
     tabs   : '.directive-anatomy-thumb'
-  })
+  }, 'directive-anatomy')
 </script>

@@ -1,0 +1,18 @@
+{
+  "entries": [],
+  "meta": {
+    "k:etag": "\"prev\""
+  },
+  "request": [
+    "https://example.test/data",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "If-None-Match": "\"prev\""
+      },
+      "ignoreResponseError": true,
+      "retry": 2
+    }
+  ],
+  "warnings": []
+}

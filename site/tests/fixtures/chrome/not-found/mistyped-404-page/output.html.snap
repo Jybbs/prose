@@ -1,0 +1,18 @@
+<div class="not-found astro-owxhamra">
+  <p class="not-found-kicker kicker astro-owxhamra">
+    <span class="not-found-mark astro-owxhamra" aria-hidden="true">&times;</span
+    ><span class="astro-owxhamra">404 &middot; mistyped</span>
+  </p>
+  <h1 class="not-found-headline astro-owxhamra">
+    A page<span class="not-found-strike astro-owxhamra">misplaced</span
+    ><span class="not-found-fix astro-owxhamra">mistyped</span>.
+  </h1>
+  <p class="not-found-body astro-owxhamra">
+    The URL didn't resolve to any surface we keep on file. Step back to the home page and try a
+    different route through the catalog.
+  </p>
+  <a class="not-found-cta astro-owxhamra" href="/"
+    ><span class="astro-owxhamra">Back to the home page</span
+    ><span class="not-found-arrow astro-owxhamra" aria-hidden="true">&rarr;</span></a
+  >
+</div>

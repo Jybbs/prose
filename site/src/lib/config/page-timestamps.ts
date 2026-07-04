@@ -43,3 +43,19 @@ export function lastmodForUrl(url: string, timestamps: Map<string, string>): str
   const candidates = slug === '' ? ['index.md'] : [`${slug}.md`, `${slug}/index.md`]
   return candidates.map(candidate => timestamps.get(candidate)).find(Boolean)
 }
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  describe('lastmodForUrl', () => {
+    const stamps = new Map([['index.md', 'A'], ['rules/index.md', 'C'], ['usage/quick-start.md', 'B']])
+    test.each([
+      { name: 'the site root resolves to index.md',   url: 'https://prose.fyi/',                   lastmod: 'A' },
+      { name: 'a leaf page resolves to its own file', url: 'https://prose.fyi/usage/quick-start/', lastmod: 'B' },
+      { name: 'a section resolves to its index file', url: 'https://prose.fyi/rules/',             lastmod: 'C' },
+      { name: 'an unknown page has no lastmod',        url: 'https://prose.fyi/nope/',              lastmod: undefined }
+    ])('$name', ({ url, lastmod }) => {
+      expect(lastmodForUrl(url, stamps)).toBe(lastmod)
+    })
+  })
+}

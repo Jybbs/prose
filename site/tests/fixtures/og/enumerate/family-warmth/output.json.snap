@@ -1,0 +1,30 @@
+[
+  {
+    "id": "index",
+    "page": "landing"
+  },
+  {
+    "id": "rules/lint",
+    "page": {
+      "accent": "#e8876f",
+      "breadcrumb": [
+        "rules"
+      ],
+      "kind": "rules",
+      "title": "Lint"
+    }
+  },
+  {
+    "id": "rules/lint/no-empty-blocks",
+    "page": {
+      "accent": "#e8876f",
+      "breadcrumb": [
+        "rules",
+        "lint"
+      ],
+      "kind": "rules",
+      "title": "No Empty Blocks",
+      "family": "lint"
+    }
+  }
+]

@@ -1,0 +1,37 @@
+component = "integrations/EditorRunOnSave.astro"
+axeIgnore = [
+    "aria-required-children",
+    "aria-required-parent",
+    "listitem",
+    "nested-interactive"
+]
+
+[[store.editorConfigs]]
+id   = "emacs"
+data = {
+    caption  = "after-save-hook",
+    code     = "x = 1",
+    language = "python",
+    target   = "init.el"
+}
+
+[[store.editorConfigs]]
+id   = "helix"
+data = {
+    caption  = "editor.formatter",
+    code     = "y = 2",
+    language = "python",
+    target   = "config.toml"
+}
+
+[[store.tools]]
+id   = "emacs"
+data = { href = "https://gnu.org/emacs", icon = "logos:emacs", name = "Emacs" }
+
+[[store.tools]]
+id   = "helix"
+data = {
+    href = "https://helix-editor.com",
+    icon = "simple-icons:helix",
+    name = "Helix"
+}

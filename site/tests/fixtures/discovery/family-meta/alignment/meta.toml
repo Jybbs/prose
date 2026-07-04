@@ -1,0 +1,10 @@
+[[docs]]
+id         = "rules/alignment/index"
+data.badge = "⚖️"
+
+[[docs]]
+id   = "rules/alignment/align-equals"
+data = {}
+
+[options]
+family = "alignment"

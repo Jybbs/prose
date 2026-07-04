@@ -1,8 +1,8 @@
 // Creates an element carrying a class and optional text, the building block
 // the island scripts assemble their panels from.
 export function el<K extends keyof HTMLElementTagNameMap>(
-  tag       : K,
   className : string,
+  tag       : K,
   content  ?: string
 ): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag)

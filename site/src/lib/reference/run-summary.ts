@@ -48,12 +48,16 @@ export function glossFor(outcomeId: string, quietId: string, streamId: string): 
   return `${outcome.gloss}, ${quiet.gloss}, ${stream.gloss}.`
 }
 
-export function resolveSelection(outcomeId: string, quietId: string, streamId: string): RenderedLine {
+export function resolveSelection(
+  outcomeId : string,
+  quietId   : string,
+  streamId  : string
+): RenderedLine {
   const outcome = OUTCOMES.find(o => o.key === outcomeId) ?? OUTCOMES[0]
-  return resolveLine(outcome, quietId === 'quiet', streamId === 'tty')
+  return resolveLine(streamId === 'tty', outcome, quietId === 'quiet')
 }
 
-function resolveLine(outcome: Outcome, quiet: boolean, colorBearing: boolean): RenderedLine {
+function resolveLine(colorBearing: boolean, outcome: Outcome, quiet: boolean): RenderedLine {
   if (quiet) return { anchor: null, anchorUbe: false, countTint: null, text: outcome.text }
   return {
     anchor    : outcome.anchor,
@@ -61,4 +65,44 @@ function resolveLine(outcome: Outcome, quiet: boolean, colorBearing: boolean): R
     countTint : colorBearing ? outcome.tint : null,
     text      : outcome.text
   }
+}
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  describe('glossFor', () => {
+    test.each([
+      { name: 'combines the three axis glosses',       out: 'clean', quiet: 'quiet', stream: 'pipe', expected: 'A clean run, quiet, piped.'                    },
+      { name: 'falls back to defaults on unknown ids', out: 'nope',  quiet: 'nope',  stream: 'nope', expected: `${OUTCOMES[0].gloss}, full output, on a tty.` }
+    ])('$name', ({ out, quiet, stream, expected }) => {
+      expect(glossFor(out, quiet, stream)).toBe(expected)
+    })
+  })
+
+  describe('resolveSelection', () => {
+    test.each([
+      {
+        name     : 'a quiet line drops the anchor and tint',
+        out      : 'check', quiet: 'quiet', stream: 'tty',
+        expected : { anchor: null, anchorUbe: false, countTint: null, text: '5 diagnostics in 2 files.' }
+      },
+      {
+        name     : 'a tty line carries the anchor and tint',
+        out      : 'check', quiet: 'full', stream: 'tty',
+        expected : { anchor: '🔖', anchorUbe: true, countTint: 'apricot', text: '5 diagnostics in 2 files.' }
+      },
+      {
+        name     : 'a piped line keeps the anchor but drops the tint',
+        out      : 'clean', quiet: 'full', stream: 'pipe',
+        expected : { anchor: '🪻', anchorUbe: false, countTint: null, text: 'All clean.' }
+      },
+      {
+        name     : 'an unknown outcome falls back to the first',
+        out      : 'nope', quiet: 'full', stream: 'tty',
+        expected : { anchor: '🪻', anchorUbe: true, countTint: 'celadon', text: 'All clean.' }
+      }
+    ])('$name', ({ out, quiet, stream, expected }) => {
+      expect(resolveSelection(out, quiet, stream)).toEqual(expected)
+    })
+  })
 }

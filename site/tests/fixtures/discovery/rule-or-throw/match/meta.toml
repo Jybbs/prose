@@ -1,0 +1,11 @@
+[[docs]]
+id         = "rules/lint/index"
+data.badge = "🔎"
+
+[[docs]]
+id   = "rules/lint/bare-imports"
+data = {}
+
+[options]
+slug     = "bare-imports"
+consumer = "card"

@@ -1,0 +1,41 @@
+component = "primitives/PrimitivesComposition.astro"
+error     = "does not match a primitive page"
+
+[props]
+initialFocus = "ghost"
+
+[[store.docs]]
+id   = "primitives/edge-magnet"
+data = {
+    consumedBy = ["hero-tiling"],
+    consumes   = ["rope"],
+    layer      = "base",
+    stability  = "internal",
+    summary    = "Snaps",
+    tagline    = "Snaps to edges",
+    title      = "Edge Magnet"
+}
+
+[[store.docs]]
+id   = "primitives/rope"
+data = {
+    consumedBy = ["edge-magnet"],
+    consumes   = [],
+    layer      = "analysis",
+    stability  = "internal",
+    summary    = "A rope",
+    tagline    = "A rope",
+    title      = "Rope"
+}
+
+[[store.docs]]
+id   = "primitives/hero-tiling"
+data = {
+    consumedBy = [],
+    consumes   = ["edge-magnet"],
+    layer      = "orchestration",
+    stability  = "internal",
+    summary    = "Tiles",
+    tagline    = "Tiles",
+    title      = "Hero Tiling"
+}

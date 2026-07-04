@@ -1,0 +1,49 @@
+<typing-demo class="typing-demo"
+  ><section class="panel panel-clip typing-demo-panel typing-demo-config" aria-label="prose config">
+    <header class="typing-demo-label">prose.toml</header>
+    <pre
+      class="typing-demo-config-code"
+    ><code><span class="typing-demo-config-prelude" data-segment="before">target-version = &quot;3.13&quot;
+</span><span class="typing-demo-config-editing" data-segment="editingLineBefore"></span><span class="typing-demo-config-editing"><span data-segment="editing"></span><span class="typing-demo-caret" aria-hidden="true" hidden></span></span><span class="typing-demo-config-editing" data-segment="editingLineAfter"></span><span class="typing-demo-config-prelude" data-segment="after"></span></code></pre>
+  </section>
+  <section class="panel panel-clip typing-demo-panel typing-demo-python" aria-label="Python source">
+    <header class="typing-demo-label">app.py</header>
+    <div class="typing-demo-python-code">
+      <div class="expressive-code">
+        <link rel="stylesheet" href="/_astro/ec.u6yl4.css" />
+        <script type="module" src="/_astro/ec.0vx5m.js"></script>
+        <figure class="frame not-content">
+          <figcaption class="header"></figcaption>
+          <pre
+            data-language="python"
+          ><code><div class="ec-line"><div class="code"><span style="--0:#F97583;--1:#B7313E">from</span><span style="--0:#E1E4E8;--1:#24292E"> pathlib </span><span style="--0:#F97583;--1:#B7313E">import</span><span style="--0:#E1E4E8;--1:#24292E"> Path</span></div></div><div class="ec-line"><div class="code"><span style="--0:#F97583;--1:#B7313E">from</span><span style="--0:#E1E4E8;--1:#24292E"> dataclasses </span><span style="--0:#F97583;--1:#B7313E">import</span><span style="--0:#E1E4E8;--1:#24292E"> dataclass</span></div></div><div class="ec-line"><div class="code"><span style="--0:#B392F0;--1:#6F42C1">@dataclass</span></div></div><div class="ec-line"><div class="code"><span style="--0:#F97583;--1:#B7313E">class</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#B392F0;--1:#6F42C1">Config</span><span style="--0:#E1E4E8;--1:#24292E">:</span></div></div><div class="ec-line"><div class="code"><span class="indent">    </span><span style="--0:#9ECBFF;--1:#032F62">"""Connection knobs read at startup from the project's pyproject.toml, with command-line overrides applied last."""</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#E1E4E8;--1:#24292E">    </span></span><span style="--0:#E1E4E8;--1:#24292E">timeout: </span><span style="--0:#79B8FF;--1:#005CC5">int</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#F97583;--1:#B7313E">|</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">None</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">None</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#E1E4E8;--1:#24292E">    </span></span><span style="--0:#E1E4E8;--1:#24292E">name: </span><span style="--0:#79B8FF;--1:#005CC5">str</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#9ECBFF;--1:#032F62">"service"</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#E1E4E8;--1:#24292E">    </span></span><span style="--0:#E1E4E8;--1:#24292E">debug: </span><span style="--0:#79B8FF;--1:#005CC5">bool</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">False</span></div></div><div class="ec-line"><div class="code"><span class="indent">    </span><span style="--0:#F97583;--1:#B7313E">def</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#B392F0;--1:#6F42C1">build_request</span><span style="--0:#E1E4E8;--1:#24292E">(self, db: </span><span style="--0:#79B8FF;--1:#005CC5">str</span><span style="--0:#E1E4E8;--1:#24292E">, fully_qualified_endpoint_url: </span><span style="--0:#79B8FF;--1:#005CC5">str</span><span style="--0:#E1E4E8;--1:#24292E">, body: </span><span style="--0:#79B8FF;--1:#005CC5">dict</span><span style="--0:#E1E4E8;--1:#24292E">, timeout: </span><span style="--0:#79B8FF;--1:#005CC5">int</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">30</span><span style="--0:#E1E4E8;--1:#24292E">, headers: </span><span style="--0:#79B8FF;--1:#005CC5">dict</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#F97583;--1:#B7313E">|</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">None</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">None</span><span style="--0:#E1E4E8;--1:#24292E">,) -> </span><span style="--0:#79B8FF;--1:#005CC5">dict</span><span style="--0:#E1E4E8;--1:#24292E">:</span></div></div><div class="ec-line"><div class="code"><span class="indent">        </span><span style="--0:#9ECBFF;--1:#032F62">"""Build a configured request with per-call overrides."""</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#E1E4E8;--1:#24292E">        </span></span><span style="--0:#E1E4E8;--1:#24292E">headers_map </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> {</span><span style="--0:#9ECBFF;--1:#032F62">"x-api-key"</span><span style="--0:#E1E4E8;--1:#24292E">: </span><span style="--0:#9ECBFF;--1:#032F62">"secret"</span><span style="--0:#E1E4E8;--1:#24292E">, </span><span style="--0:#9ECBFF;--1:#032F62">"accept"</span><span style="--0:#E1E4E8;--1:#24292E">: </span><span style="--0:#9ECBFF;--1:#032F62">"application/json"</span><span style="--0:#E1E4E8;--1:#24292E">, </span><span style="--0:#9ECBFF;--1:#032F62">"x-request-correlation-id"</span><span style="--0:#E1E4E8;--1:#24292E">: </span><span style="--0:#9ECBFF;--1:#032F62">"abc-123"</span><span style="--0:#E1E4E8;--1:#24292E">}</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#E1E4E8;--1:#24292E">        </span></span><span style="--0:#E1E4E8;--1:#24292E">base_url </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#9ECBFF;--1:#032F62">"https://example.com"</span></div></div><div class="ec-line"><div class="code"><span class="indent">        </span><span style="--0:#F97583;--1:#B7313E">return</span><span style="--0:#E1E4E8;--1:#24292E"> {</span><span style="--0:#9ECBFF;--1:#032F62">"url"</span><span style="--0:#E1E4E8;--1:#24292E">: </span><span style="--0:#F97583;--1:#B7313E">f</span><span style="--0:#9ECBFF;--1:#032F62">"</span><span style="--0:#79B8FF;--1:#005CC5">{</span><span style="--0:#E1E4E8;--1:#24292E">base_url</span><span style="--0:#79B8FF;--1:#005CC5">}</span><span style="--0:#9ECBFF;--1:#032F62">/</span><span style="--0:#79B8FF;--1:#005CC5">{</span><span style="--0:#E1E4E8;--1:#24292E">fully_qualified_endpoint_url</span><span style="--0:#79B8FF;--1:#005CC5">}</span><span style="--0:#9ECBFF;--1:#032F62">"</span><span style="--0:#E1E4E8;--1:#24292E">}</span></div></div></code></pre>
+          <div class="copy">
+            <div aria-live="polite"></div>
+            <button
+              title="Copy to clipboard"
+              data-copied="Copied!"
+              data-code="from pathlib import Pathfrom dataclasses import dataclass@dataclassclass Config:    &#x22;&#x22;&#x22;Connection knobs read at startup from the project&#x27;s pyproject.toml, with command-line overrides applied last.&#x22;&#x22;&#x22;    timeout: int | None = None    name: str = &#x22;service&#x22;    debug: bool = False    def build_request(self, db: str, fully_qualified_endpoint_url: str, body: dict, timeout: int = 30, headers: dict | None = None,) -> dict:        &#x22;&#x22;&#x22;Build a configured request with per-call overrides.&#x22;&#x22;&#x22;        headers_map = {&#x22;x-api-key&#x22;: &#x22;secret&#x22;, &#x22;accept&#x22;: &#x22;application/json&#x22;, &#x22;x-request-correlation-id&#x22;: &#x22;abc-123&#x22;}        base_url = &#x22;https://example.com&#x22;        return {&#x22;url&#x22;: f&#x22;{base_url}/{fully_qualified_endpoint_url}&#x22;}"
+            >
+              <div></div>
+            </button>
+          </div>
+        </figure>
+      </div>
+    </div>
+  </section>
+  <button type="button" class="typing-demo-replay" hidden>Replay</button>
+  <script type="application/json" data-payload>
+    {
+      "entries": [
+        { "anchor": "a", "from": "x", "kind": "edit", "slug": "align-equals", "to": "y" }
+      ],
+      "prelude": "target-version = \"3.13\"\n",
+      "pythonStateSteps": [{ "tokens": [] }],
+      "resetRows": [{ "anchor": "a", "end": "b", "prelude": "c" }]
+    }
+  </script></typing-demo
+>
+<script
+  type="module"
+  src="src/components/landing/TypingDemo.astro?astro&type=script&index=0&lang.ts"
+></script>

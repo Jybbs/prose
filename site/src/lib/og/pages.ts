@@ -5,6 +5,7 @@ import { isFamily }                            from '../shared/registries'
 import type { PrimitiveStability, RuleFamily } from '../shared/registries'
 import { titleCase }                           from '../shared/title-case'
 import { resolveColor }                        from '../tokens/resolve'
+import type { TokenName }                      from '../tokens/resolve'
 import { isLandingId }                         from './url'
 
 type DocsEntry = CollectionEntry<'docs'>
@@ -40,7 +41,8 @@ export async function enumerateCards(): Promise<OgCard[]> {
 }
 
 function accentFor(kind: string, family?: RuleFamily): string | undefined {
-  return resolveColor(family !== undefined ? `family-${family}` : `section-${kind}`) || undefined
+  const token = family !== undefined ? `family-${family}` : `section-${kind}`
+  return resolveColor(token as TokenName) || undefined
 }
 
 function familyWarmths(docs: readonly DocsEntry[]): Map<RuleFamily, Warmth> {

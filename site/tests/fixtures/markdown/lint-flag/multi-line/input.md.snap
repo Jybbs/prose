@@ -1,0 +1,5 @@
+<div class="expressive-code">
+  <pre
+    data-language="python"
+  ><code><div class="ec-line"><div class="code"><span class="lint-flag" data-message="align these" data-rule="align-equals">x = 1</span></div></div><div class="ec-line"><div class="code"><span class="lint-flag" data-message="align these" data-rule="align-equals">y =</span> 2</div></div></code></pre>
+</div>

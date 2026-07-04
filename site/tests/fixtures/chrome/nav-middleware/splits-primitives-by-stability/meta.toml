@@ -1,0 +1,50 @@
+[[docs]]
+id   = "primitives/aligner"
+data = { stability = "public" }
+
+[[docs]]
+id   = "primitives/orderer"
+data = { stability = "public" }
+
+[[docs]]
+id   = "primitives/walker"
+data = { stability = "internal" }
+
+[[docs]]
+id   = "usage/format"
+data = {}
+
+[options]
+
+[[options.sidebar]]
+type      = "group"
+label     = "Primitives"
+collapsed = false
+
+[[options.sidebar.entries]]
+type      = "link"
+href      = "/primitives/"
+label     = "Overview"
+isCurrent = false
+attrs     = {}
+
+[[options.sidebar.entries]]
+type      = "link"
+href      = "/primitives/aligner/"
+label     = "Aligner"
+isCurrent = false
+attrs     = {}
+
+[[options.sidebar.entries]]
+type      = "link"
+href      = "/primitives/orderer/"
+label     = "Orderer"
+isCurrent = false
+attrs     = {}
+
+[[options.sidebar.entries]]
+type      = "link"
+href      = "/primitives/walker/"
+label     = "Walker"
+isCurrent = false
+attrs     = {}

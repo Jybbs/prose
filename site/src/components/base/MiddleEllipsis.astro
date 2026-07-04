@@ -10,10 +10,9 @@ const { tail = 3, text } = Astro.props
 <middle-ellipsis data-tail={tail} data-text={text}>{text}</middle-ellipsis>
 
 <script>
-  import { remeasure } from '../../lib/shared/dom/remeasure'
+  import { middleEllipsis } from '../../lib/shared/middle-ellipsis'
+  import { remeasure }      from '../../lib/shared/dom/remeasure'
 
-  // Fits a long token into its row by eliding the middle, a binary search
-  // finding the widest prefix that leaves the tail visible.
   class MiddleEllipsis extends HTMLElement {
     #observer: ResizeObserver | undefined
 
@@ -28,26 +27,11 @@ const { tail = 3, text } = Astro.props
     #fit(): void {
       const tail = Number(this.dataset.tail ?? 3)
       const text = this.dataset.text ?? ''
-      this.textContent = text
-      if (this.scrollWidth <= this.clientWidth + 1) return
-      if (text.length <= tail + 1) return
-
-      let lo   = 0
-      let hi   = text.length - tail - 1
-      let best = -1
-      while (lo <= hi) {
-        const mid        = Math.floor((lo + hi) / 2)
-        this.textContent = `${text.slice(0, mid)}…${text.slice(-tail)}`
-        if (this.scrollWidth <= this.clientWidth + 1) {
-          best = mid
-          lo   = mid + 1
-        } else {
-          hi = mid - 1
-        }
+      const fits = (candidate: string): boolean => {
+        this.textContent = candidate
+        return this.scrollWidth <= this.clientWidth + 1
       }
-      this.textContent = best < 1
-        ? `…${text.slice(-tail)}`
-        : `${text.slice(0, best)}…${text.slice(-tail)}`
+      this.textContent = middleEllipsis(fits, tail, text)
     }
   }
 

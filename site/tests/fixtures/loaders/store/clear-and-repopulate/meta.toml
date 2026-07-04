@@ -1,0 +1,9 @@
+schema = "stars"
+
+[[initial]]
+id   = "old"
+data = { stars = "stale" }
+
+[[entries]]
+id   = "stars"
+data = { stars = "1.2k" }

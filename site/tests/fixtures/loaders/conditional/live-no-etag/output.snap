@@ -1,0 +1,22 @@
+{
+  "entries": [
+    {
+      "data": {
+        "v": "live"
+      },
+      "id": "row"
+    }
+  ],
+  "meta": {},
+  "request": [
+    "https://example.test/data",
+    {
+      "headers": {
+        "Accept": "application/json"
+      },
+      "ignoreResponseError": true,
+      "retry": 2
+    }
+  ],
+  "warnings": []
+}

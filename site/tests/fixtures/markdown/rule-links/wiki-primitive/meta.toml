@@ -1,0 +1,11 @@
+[[rules]]
+slug    = "align-equals"
+badge   = "B"
+caption = "Aligns assignments"
+family  = "alignment"
+href    = "/rules/alignment/align-equals"
+
+[[primitives]]
+slug  = "band-constants"
+title = "band-constants"
+href  = "/primitives/band-constants"

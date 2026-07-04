@@ -1,0 +1,21 @@
+component = "integrations/IntegrationCardGrid.astro"
+
+[[store.docs]]
+id   = "integrations/pre-commit"
+data = {
+    summary = "Wraps the staging boundary.",
+    tagline = "hook · staged",
+    title   = "Pre-Commit"
+}
+
+[[store.docs]]
+id   = "integrations/editor"
+data = { summary = "Wraps the save event.", tagline = "save · LSP", title = "Editor" }
+
+[[store.docs]]
+id   = "integrations/index"
+data = { summary = "skip me", tagline = "skip", title = "Overview" }
+
+[[store.docs]]
+id   = "usage/scope"
+data = { summary = "foreign", tagline = "foreign", title = "Scope" }

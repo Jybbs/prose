@@ -1,0 +1,12 @@
+[[tools]]
+id        = "ruff"
+data.name = "Ruff"
+
+[[tools]]
+id        = "black"
+data.name = "Black"
+
+[options]
+noun   = "editor"
+ids    = ["vim"]
+throws = 'editor "vim" is not in the tools collection'

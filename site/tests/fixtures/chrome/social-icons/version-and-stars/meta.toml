@@ -1,0 +1,9 @@
+component = "chrome/SocialIcons.astro"
+
+[[store.release]]
+id   = "r"
+data = { version = "0.5.0", gitSha = "abc1234" }
+
+[[store.stars]]
+id   = "s"
+data = { stars = "1.2k" }

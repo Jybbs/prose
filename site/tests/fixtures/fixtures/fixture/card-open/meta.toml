@@ -1,0 +1,24 @@
+component = "fixtures/Fixture.astro"
+
+[props]
+case  = "basic"
+open  = true
+rule  = "align_equals"
+title = "Aligns the block"
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }
+
+[[store.fixtures]]
+id   = "align-equals/basic"
+data = {
+    description = "A lead",
+    findings    = [],
+    input       = "x=1",
+    output      = "x = 1"
+}

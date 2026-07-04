@@ -1,0 +1,5 @@
+part    = "dataPanel"
+accent  = "#8a80cb"
+alpha   = "99"
+version = "0.1.0"
+rows    = []

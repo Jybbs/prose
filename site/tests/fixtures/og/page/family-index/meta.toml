@@ -1,0 +1,7 @@
+version = "0.2.0"
+
+[page]
+accent     = "#e8c840"
+breadcrumb = ["rules"]
+kind       = "rules"
+title      = "Alignment"

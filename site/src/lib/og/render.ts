@@ -50,7 +50,7 @@ async function init(): Promise<Renderer> {
   const [[release], enumerated] = await Promise.all([getCollection('release'), enumerateCards()])
   const brand   = loadBrandAssets()
   const version = release.data.version
-  const keyOf   = cardKeyer(version, brand)
+  const keyOf   = cardKeyer(brand, version)
   const cards   = new Map(enumerated.map(card => [card.id, { ...card, key: keyOf(card.page) }]))
   await pruneCards(CACHE_DIR, [...cards.values()].map(card => card.key))
   return { brand, cards, version }

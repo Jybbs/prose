@@ -1,0 +1,4 @@
+component = "base/MiddleEllipsis.astro"
+
+[props]
+text = "x.py"

@@ -1,0 +1,25 @@
+[[docs]]
+id         = "rules/alignment/index"
+data.badge = "⚖️"
+
+[[docs]]
+id   = "rules/alignment/align-equals"
+data = {}
+
+[[glossary]]
+id              = "atom"
+data.aliases    = ["atomic"]
+data.definition = "A unit"
+data.families   = ["ordering"]
+data.rule       = "align-equals"
+
+[[glossary]]
+id              = "Beam"
+data.definition = "A ray"
+data.families   = ["alignment"]
+
+[[glossary]]
+id              = "cusp"
+data.definition = "An edge"
+data.families   = ["layout"]
+data.href       = "/usage/scope"

@@ -1,0 +1,5 @@
+---
+source: t
+expression: output
+---
+[{"code":"no-op","end_location":{"column":2,"row":1},"fix":null,"location":{"column":1,"row":1},"message":"a finding"}]

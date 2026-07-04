@@ -1,0 +1,9 @@
+<landing-hero class="landing-hero"
+  ><div class="landing-hero-watermarks" aria-hidden="true"></div>
+  <h1 class="landing-hero-wordmark">
+    <img src="/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." /></h1
+></landing-hero>
+<script
+  type="module"
+  src="src/components/landing/Hero.astro?astro&type=script&index=0&lang.ts"
+></script>

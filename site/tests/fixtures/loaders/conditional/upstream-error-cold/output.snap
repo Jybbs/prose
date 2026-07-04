@@ -1,0 +1,24 @@
+{
+  "entries": [
+    {
+      "data": {
+        "v": "fallback"
+      },
+      "id": "row"
+    }
+  ],
+  "meta": {},
+  "request": [
+    "https://example.test/data",
+    {
+      "headers": {
+        "Accept": "application/json"
+      },
+      "ignoreResponseError": true,
+      "retry": 2
+    }
+  ],
+  "warnings": [
+    "demo: upstream returned 503, seeding the static fallback"
+  ]
+}

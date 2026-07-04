@@ -1,0 +1,6 @@
+component = "integrations/IntegrationCardGrid.astro"
+error     = "missing tagline or summary"
+
+[[store.docs]]
+id   = "integrations/broken"
+data = { title = "Broken" }

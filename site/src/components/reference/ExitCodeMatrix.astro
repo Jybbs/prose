@@ -48,11 +48,11 @@ const detailHtml = await Promise.all(
   import { defineTabSelectElement } from '../../lib/shared/dom/tab-select'
 
   // Swaps the visible exit-code entry as index rows take hover or focus.
-  defineTabSelectElement('exit-code-matrix', {
+  defineTabSelectElement({
     activeClass : 'active',
     events      : ['focus', 'mouseenter'],
     key         : 'exitCode',
     panels      : '.exit-code-entry',
     tabs        : '.exit-code-index-row'
-  })
+  }, 'exit-code-matrix')
 </script>

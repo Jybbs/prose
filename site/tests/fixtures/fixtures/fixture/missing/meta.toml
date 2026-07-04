@@ -1,0 +1,6 @@
+component = "fixtures/Fixture.astro"
+error     = "does not exist"
+
+[props]
+case = "ghost"
+rule = "align_equals"

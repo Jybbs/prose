@@ -1,0 +1,7 @@
+[[docs]]
+id   = "rules/lint"
+data = { title = "Lint" }
+
+[[docs]]
+id   = "rules/lint/no-empty-blocks"
+data = { title = "ignored" }

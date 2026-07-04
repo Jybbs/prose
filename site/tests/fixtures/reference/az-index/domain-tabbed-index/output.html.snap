@@ -1,0 +1,157 @@
+<az-index class="az-index-stage"
+  ><nav class="az-index-tabs" role="tablist" aria-label="Domain tabs">
+    <button type="button" role="tab" aria-selected="true" class="az-index-tab is-active">All</button
+    ><button
+      type="button"
+      role="tab"
+      aria-selected="false"
+      class="az-index-tab"
+      data-domain="cli-flag"
+    >
+      CLI Flags</button
+    ><button
+      type="button"
+      role="tab"
+      aria-selected="false"
+      class="az-index-tab"
+      data-domain="config-key"
+    >
+      config-key</button
+    ><button
+      type="button"
+      role="tab"
+      aria-selected="false"
+      class="az-index-tab"
+      data-domain="exit-code"
+    >
+      Exit Codes</button
+    ><button
+      type="button"
+      role="tab"
+      aria-selected="false"
+      class="az-index-tab"
+      data-domain="output-format"
+    >
+      output-format</button
+    ><button
+      type="button"
+      role="tab"
+      aria-selected="false"
+      class="az-index-tab"
+      data-domain="subcommand"
+    >
+      subcommand</button
+    ><button
+      type="button"
+      role="tab"
+      aria-selected="false"
+      class="az-index-tab"
+      data-domain="suppression"
+    >
+      Suppression
+    </button>
+  </nav>
+  <div class="az-index-float-wrap">
+    <div class="az-index-float-keys-wrap" data-dim="false">
+      <section class="az-index-section" data-domain="cli-flag">
+        <header class="az-index-section-head">
+          <span class="kicker az-index-section-folio">CLI Flags</span
+          ><span class="az-index-section-count">2 entries</span>
+        </header>
+        <ul class="az-index-keys">
+          <li class="az-index-key" data-domain="cli-flag">
+            <a
+              class="az-index-key-btn"
+              href="/reference/cli#diff"
+              data-blurb="Show a diff"
+              data-key="--diff"
+              data-label="CLI Flags"
+              >--diff</a
+            >
+          </li>
+          <li class="az-index-key" data-domain="cli-flag">
+            <a
+              class="az-index-key-btn"
+              href="/reference/cli#quiet"
+              data-blurb="Stay quiet"
+              data-key="--quiet"
+              data-label="CLI Flags"
+              >--quiet</a
+            >
+          </li>
+        </ul>
+      </section>
+      <section class="az-index-section" data-domain="config-key">
+        <header class="az-index-section-head">
+          <span class="kicker az-index-section-folio">config-key</span
+          ><span class="az-index-section-count">0 entries</span>
+        </header>
+        <ul class="az-index-keys"></ul>
+      </section>
+      <section class="az-index-section" data-domain="exit-code">
+        <header class="az-index-section-head">
+          <span class="kicker az-index-section-folio">Exit Codes</span
+          ><span class="az-index-section-count">2 entries</span>
+        </header>
+        <ul class="az-index-keys">
+          <li class="az-index-key" data-domain="exit-code">
+            <a
+              class="az-index-key-btn"
+              href="/reference/exit-codes"
+              data-blurb="No findings"
+              data-key="0"
+              data-label="Exit Codes"
+              >0</a
+            >
+          </li>
+          <li class="az-index-key" data-domain="exit-code">
+            <a
+              class="az-index-key-btn"
+              href="/reference/exit-codes"
+              data-blurb="Findings remain"
+              data-key="2"
+              data-label="Exit Codes"
+              >2</a
+            >
+          </li>
+        </ul>
+      </section>
+      <section class="az-index-section" data-domain="output-format">
+        <header class="az-index-section-head">
+          <span class="kicker az-index-section-folio">output-format</span
+          ><span class="az-index-section-count">0 entries</span>
+        </header>
+        <ul class="az-index-keys"></ul>
+      </section>
+      <section class="az-index-section" data-domain="subcommand">
+        <header class="az-index-section-head">
+          <span class="kicker az-index-section-folio">subcommand</span
+          ><span class="az-index-section-count">0 entries</span>
+        </header>
+        <ul class="az-index-keys"></ul>
+      </section>
+      <section class="az-index-section" data-domain="suppression">
+        <header class="az-index-section-head">
+          <span class="kicker az-index-section-folio">Suppression</span
+          ><span class="az-index-section-count">1 entries</span>
+        </header>
+        <ul class="az-index-keys">
+          <li class="az-index-key" data-domain="suppression">
+            <a
+              class="az-index-key-btn"
+              href="/reference/suppression-directives#file-level-suppression"
+              data-blurb="Disables the file"
+              data-key="prose: off"
+              data-label="Suppression"
+              >prose: off</a
+            >
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div></az-index
+>
+<script
+  type="module"
+  src="src/components/reference/AzIndex.astro?astro&type=script&index=0&lang.ts"
+></script>

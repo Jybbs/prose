@@ -1,0 +1,3 @@
+{
+  "error": "[\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"stars\"\n    ],\n    \"message\": \"Invalid input: expected string, received number\"\n  }\n]"
+}

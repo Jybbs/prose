@@ -1,0 +1,5 @@
+part    = "dataPanel"
+accent  = "#8a80cb"
+alpha   = "66"
+version = "0.1.0"
+rows    = [["Family", "alignment"]]

@@ -1,0 +1,6 @@
+schema   = "release"
+gitFails = true
+cargo    = """
+[package]
+version = "0.3.1"
+"""

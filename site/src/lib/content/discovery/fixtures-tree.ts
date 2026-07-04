@@ -29,3 +29,39 @@ export function snapshotBody(raw: string): string {
   const content = parseFrontmatter(raw).content
   return content.startsWith('\n') ? content.slice(1) : content
 }
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  describe('constants', () => {
+    test('name the harness files', () => {
+      expect({ FINDINGS_FILE, INPUT_FILE, META_FILE, SNAPSHOT_FILE }).toEqual({
+        FINDINGS_FILE : 'lint_findings.snap',
+        INPUT_FILE    : 'input.py',
+        META_FILE     : 'meta.toml',
+        SNAPSHOT_FILE : 'input.py.snap'
+      })
+    })
+  })
+
+  describe('fixtureId', () => {
+    test.each([
+      { name: 'kebabs the rule and joins the case', rule: 'align_equals', case: 'basic', expected: 'align-equals/basic' },
+      { name: 'kebabs every underscore',            rule: 'a_b_c',        case: 'x',     expected: 'a-b-c/x' }
+    ])('$name', ({ case: name, expected, rule }) => {
+      expect(fixtureId(rule, name)).toBe(expected)
+    })
+  })
+
+  describe('snapshotBody', () => {
+    test('drops the insta frontmatter and its leading newline', () => {
+      const body = snapshotBody('---\nsource: tests/diagnostics.rs\nexpression: json\n---\n[1]\n')
+      expect(body.startsWith('[')).toBe(true)
+      expect(JSON.parse(body.trim())).toEqual([1])
+    })
+
+    test('returns a body carrying no frontmatter unchanged', () => {
+      expect(snapshotBody('plain output\n')).toBe('plain output\n')
+    })
+  })
+}

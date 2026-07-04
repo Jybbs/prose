@@ -99,20 +99,20 @@ const sections = await Promise.all(TOKEN_DOMAINS.map(async domain => {
 
 
   function detail(anchor: HTMLElement): HTMLElement {
-    const card = el('aside', 'az-index-detail')
+    const card = el('az-index-detail', 'aside')
     card.dataset.domain = anchor.closest<HTMLElement>('.az-index-key')?.dataset.domain ?? ''
 
-    const banner = el('header', 'az-index-detail-banner')
-    banner.append(el('span', 'az-index-detail-kicker', anchor.dataset.label ?? ''))
+    const banner = el('az-index-detail-banner', 'header')
+    banner.append(el('az-index-detail-kicker', 'span', anchor.dataset.label ?? ''))
 
-    const blurb = el('p', 'az-index-detail-blurb')
+    const blurb = el('az-index-detail-blurb', 'p')
     blurb.innerHTML = anchor.dataset.blurb ?? ''
     const target = anchor.getAttribute('href') ?? ''
-    const href   = el('a', 'az-index-detail-href', `→ ${target}`)
+    const href   = el('az-index-detail-href', 'a', `→ ${target}`)
     href.href    = target
 
-    const body = el('div', 'az-index-detail-body')
-    body.append(el('code', 'az-index-detail-key', anchor.dataset.key ?? ''), blurb, href)
+    const body = el('az-index-detail-body', 'div')
+    body.append(el('az-index-detail-key', 'code', anchor.dataset.key ?? ''), blurb, href)
 
     card.append(banner, body)
     return card
@@ -127,12 +127,12 @@ const sections = await Promise.all(TOKEN_DOMAINS.map(async domain => {
   // every section, and the hover overlay floats each key's detail card
   // beside its column, the keys behind it dimming and the held key marking
   // itself current while the card stays open.
-  defineTabSelectElement('az-index', {
+  defineTabSelectElement({
     events : ['click'],
     key    : 'domain',
     panels : '.az-index-section',
     tabs   : '.az-index-tab'
-  })
+  }, 'az-index')
 
   attachHoverOverlay({
     gapPx       : 14,

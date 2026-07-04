@@ -1,0 +1,13 @@
+<div class="int-card-grid">
+  <a class="int-card" href="/integrations/editor"
+    ><p class="int-kicker">save · LSP</p>
+    <p class="int-title">Editor</p>
+    <p class="int-body">Wraps the save event.</p>
+    <p class="int-foot">Open →</p></a
+  ><a class="int-card" href="/integrations/pre-commit"
+    ><p class="int-kicker">hook · staged</p>
+    <p class="int-title">Pre-Commit</p>
+    <p class="int-body">Wraps the staging boundary.</p>
+    <p class="int-foot">Open →</p></a
+  >
+</div>

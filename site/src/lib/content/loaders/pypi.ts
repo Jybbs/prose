@@ -20,7 +20,7 @@ const projectUrl = (version: string): string => `https://pypi.org/project/${PACK
 // Folds a version and its upload date into the presentational fields each
 // release row renders, the month abbreviation and the two-digit year stored
 // rather than derived at render time.
-function render(version: string, date: string): Record<string, string> {
+function render(date: string, version: string): Record<string, string> {
   const parsed = new Date(date)
   const month  = Number.isNaN(parsed.getTime()) ? '—' : MONTH_FMT.format(parsed).toUpperCase()
   return {
@@ -34,14 +34,14 @@ function render(version: string, date: string): Record<string, string> {
 }
 
 const FALLBACK = ([['0.2.0', '2026-04-09'], ['0.1.0', '2026-01-14']] as const)
-  .map(([version, date]) => ({ data: render(version, date), id: version }))
+  .map(([version, date]) => ({ data: render(date, version), id: version }))
 
 function toEntries(payload: unknown): { data: Record<string, string>, id: string }[] {
   return Object.entries((payload as Payload).releases)
     .filter(([, files]) => files.length > 0)
     .map(([version, files]) => {
       const live = files.find(file => !file.yanked) ?? files[0]
-      return { data: render(version, live.upload_time.slice(0, 10)), id: version }
+      return { data: render(live.upload_time.slice(0, 10), version), id: version }
     })
     .sort((a, b) => b.data.date.localeCompare(a.data.date))
 }

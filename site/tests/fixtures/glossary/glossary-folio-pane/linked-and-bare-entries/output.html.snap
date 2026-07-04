@@ -1,0 +1,68 @@
+<div class="glossary-folio-stage" data-family="ordering">
+  <article
+    class="glossary-folio-pane"
+    data-aliases="atomic"
+    data-family="ordering"
+    data-slug="align-equals"
+  >
+    <header class="glossary-folio-head">
+      <p class="kicker glossary-folio-folio">
+        <span class="glossary-folio-chip" data-family="ordering"
+          ><span class="glossary-folio-badge" aria-hidden="true">🪉</span
+          ><span class="glossary-folio-folio-family">Ordering</span></span
+        ><span class="glossary-folio-chip" data-family="engine"
+          ><span class="glossary-folio-badge" aria-hidden="true">🦉</span
+          ><span class="glossary-folio-folio-family">Engine</span></span
+        ><span class="glossary-folio-folio-sep" aria-hidden="true">·</span
+        ><span class="glossary-folio-count">01 / 02</span>
+      </p>
+      <div class="glossary-folio-steps">
+        <button
+          type="button"
+          class="glossary-folio-step"
+          data-step="-1"
+          aria-label="Previous entry"
+        >
+          <span aria-hidden="true">‹</span></button
+        ><button type="button" class="glossary-folio-step" data-step="1" aria-label="Next entry">
+          <span aria-hidden="true">›</span>
+        </button>
+      </div>
+    </header>
+    <h2 class="glossary-folio-headword"><a href="/rules/ordering/align-equals">align-equals</a></h2>
+    <p class="glossary-folio-aliases">
+      <span class="glossary-folio-aliases-label">also</span
+      ><code class="glossary-folio-aliases-chip">atomic</code>
+    </p>
+    <div class="glossary-folio-body">A unit of layout.</div>
+  </article>
+  <article class="glossary-folio-pane" data-aliases data-family="alignment" data-slug="beam" hidden>
+    <header class="glossary-folio-head">
+      <p class="kicker glossary-folio-folio">
+        <span class="glossary-folio-chip" data-family="alignment"
+          ><span class="glossary-folio-badge" aria-hidden="true"></span
+          ><span class="glossary-folio-folio-family">alignment</span></span
+        ><span class="glossary-folio-folio-sep" aria-hidden="true">·</span
+        ><span class="glossary-folio-count">02 / 02</span>
+      </p>
+      <div class="glossary-folio-steps">
+        <button
+          type="button"
+          class="glossary-folio-step"
+          data-step="-1"
+          aria-label="Previous entry"
+        >
+          <span aria-hidden="true">‹</span></button
+        ><button type="button" class="glossary-folio-step" data-step="1" aria-label="Next entry">
+          <span aria-hidden="true">›</span>
+        </button>
+      </div>
+    </header>
+    <h2 class="glossary-folio-headword"><span>beam</span></h2>
+    <div class="glossary-folio-body">A ray of light.</div>
+  </article>
+</div>
+<script
+  type="module"
+  src="src/components/glossary/GlossaryFolioPane.astro?astro&type=script&index=0&lang.ts"
+></script>

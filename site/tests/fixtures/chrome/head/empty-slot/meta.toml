@@ -1,0 +1,4 @@
+component = "chrome/Head.astro"
+
+[slots]
+default = ""

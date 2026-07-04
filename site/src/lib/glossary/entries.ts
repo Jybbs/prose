@@ -34,7 +34,7 @@ async function deriveEntries(): Promise<GlossaryFolioEntry[]> {
     aliases        : entry.data.aliases ?? [],
     definitionHtml : await renderInline(entry.data.definition),
     families       : entry.data.families,
-    href           : entryHref(entry.id, entry.data, rules),
+    href           : entryHref(entry.data, rules, entry.id),
     initial        : firstLetter(entry.id),
     primaryFamily  : entry.data.families[0],
     slug           : entry.id
@@ -43,9 +43,9 @@ async function deriveEntries(): Promise<GlossaryFolioEntry[]> {
 }
 
 function entryHref(
-  slug  : string,
   entry : GlossarySource,
-  rules : readonly DiscoveredRule[]
+  rules : readonly DiscoveredRule[],
+  slug  : string
 ): string | undefined {
   if (entry.rule !== undefined) {
     return required(

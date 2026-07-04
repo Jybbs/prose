@@ -24,18 +24,18 @@ import '../rules/styles/rule-card.css'
   // The hover counterpart of the server-rendered rule card, sharing its
   // classes so `rule-card.css` styles both.
   function ruleCard({ badge, caption, family, header, slug }: RuleCardData): HTMLElement {
-    const card = el('article', 'rule-card')
+    const card = el('rule-card', 'article')
     card.dataset.category = categoryOf(family)
     card.dataset.family   = family
     if (header) {
-      const head = el('div', 'rule-card-header')
+      const head = el('rule-card-header', 'div')
       head.append(header)
       card.append(head)
     }
-    card.append(el('span', 'rule-card-badge', badge))
-    const name = el('div', 'rule-card-name')
-    name.append(el('h3', 'rule-card-slug', slug), el('span', 'rule-card-fam', titleCase(family)))
-    const text = el('p', 'rule-card-caption')
+    card.append(el('rule-card-badge', 'span', badge))
+    const name = el('rule-card-name', 'div')
+    name.append(el('rule-card-slug', 'h3', slug), el('rule-card-fam', 'span', titleCase(family)))
+    const text = el('rule-card-caption', 'p')
     text.innerHTML = inlineCode(caption)
     card.append(name, text)
     return card
@@ -44,13 +44,13 @@ import '../rules/styles/rule-card.css'
   function glossaryPanel(anchor: HTMLElement): Node | null {
     const { definition, term } = anchor.dataset
     if (definition === undefined || term === undefined) return null
-    const body = el('div', 'glossary-pop-body')
+    const body = el('glossary-pop-body', 'div')
     body.innerHTML = inlineCode(definition)
     const panel = document.createDocumentFragment()
-    panel.append(el('div', 'glossary-pop-term', term), el('div', 'glossary-pop-divider'), body)
+    panel.append(el('glossary-pop-term', 'div', term), el('glossary-pop-divider', 'div'), body)
     const href = anchor.getAttribute('href')
     if (href !== null && offPage(href)) {
-      const link = el('a', 'glossary-pop-link', 'Read more →')
+      const link = el('glossary-pop-link', 'a', 'Read more →')
       link.href = href
       panel.append(link)
     }
@@ -76,27 +76,27 @@ import '../rules/styles/rule-card.css'
     if (badge === undefined || caption === undefined || family === undefined) return null
     if (message === undefined || rule === undefined) return null
     const shorthand = lintShorthand({ before, flagged: anchor.textContent ?? '', message, rule, suggested })
-    return ruleCard({ badge, caption, family, header: shorthandHeader(shorthand, message), slug: rule })
+    return ruleCard({ badge, caption, family, header: shorthandHeader(message, shorthand), slug: rule })
   }
 
-  function shorthandHeader(shorthand: Shorthand | null, message: string): HTMLElement {
+  function shorthandHeader(message: string, shorthand: Shorthand | null): HTMLElement {
     if (shorthand?.kind === 'replace') {
-      const head = el('span', 'lint-shorthand')
-      const into = el('span', 'lint-into', '→')
+      const head = el('lint-shorthand', 'span')
+      const into = el('lint-into', 'span', '→')
       into.ariaHidden = 'true'
       head.append(
-        el('span', 'lint-chip lint-chip-struck', shorthand.before),
+        el('lint-chip lint-chip-struck', 'span', shorthand.before),
         into,
-        el('span', 'lint-chip lint-chip-suggest', shorthand.after)
+        el('lint-chip lint-chip-suggest', 'span', shorthand.after)
       )
       return head
     }
     if (shorthand?.kind === 'remove') {
-      const head = el('span', 'lint-shorthand')
-      head.append(el('span', 'lint-chip lint-chip-struck', shorthand.text))
+      const head = el('lint-shorthand', 'span')
+      head.append(el('lint-chip lint-chip-struck', 'span', shorthand.text))
       return head
     }
-    const head = el('span', 'lint-message')
+    const head = el('lint-message', 'span')
     head.innerHTML = inlineCode(message)
     return head
   }

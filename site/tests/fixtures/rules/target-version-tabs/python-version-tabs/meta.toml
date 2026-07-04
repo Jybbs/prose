@@ -1,0 +1,8 @@
+component = "rules/TargetVersionTabs.astro"
+
+[slots]
+"3.10" = "<p>ten body</p>"
+"3.11" = "<p>eleven body</p>"
+"3.12" = "<p>twelve body</p>"
+"3.13" = "<p>thirteen body</p>"
+"3.14" = "<p>fourteen body</p>"

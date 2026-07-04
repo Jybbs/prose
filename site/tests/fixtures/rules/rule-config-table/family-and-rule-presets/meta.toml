@@ -1,0 +1,34 @@
+component = "rules/RuleConfigTable.astro"
+
+[props]
+slug = "align-equals"
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }
+
+[[store.ruleConfigPresets]]
+id   = "alignment"
+data = {
+    rows = [{
+        default = "true",
+        key     = "enabled",
+        meaning = "Turns the rule on",
+        type    = "`bool`"
+    }]
+}
+
+[[store.ruleConfigPresets]]
+id   = "align-equals"
+data = {
+    rows = [{
+        default = "40",
+        key     = "max-shift",
+        meaning = "Caps the shift width",
+        type    = "`int`"
+    }]
+}

@@ -75,7 +75,7 @@ const first   = entries[0]?.slug
       if (input && input.value !== query) input.value = query
       let visible = 0
       for (const row of rows) {
-        const match = entryMatches(row.dataset.slug ?? '', row.dataset.aliases ?? '', query)
+        const match = entryMatches(row.dataset.aliases ?? '', query, row.dataset.slug ?? '')
         const item  = row.closest('li')
         if (item) item.hidden = !match
         if (match) visible += 1

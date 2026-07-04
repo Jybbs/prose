@@ -1,0 +1,31 @@
+component = "reference/AzIndex.astro"
+
+[[store.tokenIndex]]
+id   = "cli-flag"
+data = {
+    entries = [
+        { blurb = "Show a diff", href = "/reference/cli#diff", key = "--diff" },
+        { blurb = "Stay quiet", href = "/reference/cli#quiet", key = "--quiet" }
+    ],
+    label   = "CLI Flags"
+}
+
+[[store.tokenIndex]]
+id   = "exit-code"
+data = { label = "Exit Codes" }
+
+[[store.tokenIndex]]
+id   = "suppression"
+data = { label = "Suppression" }
+
+[[store.exitCodes]]
+id   = "2"
+data = { code = 2, summary = "Findings remain" }
+
+[[store.exitCodes]]
+id   = "0"
+data = { code = 0, summary = "No findings" }
+
+[[store.directives]]
+id   = "file-off"
+data = { effect = "Disables the file", form = "prose: off", scope = "file" }

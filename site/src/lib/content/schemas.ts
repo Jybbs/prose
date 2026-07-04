@@ -186,3 +186,132 @@ export const typingDemo = z.object({
     to     : z.string()
   }))
 })
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  const FIXTURE = {
+    description : 'a demo pair',
+    input       : 'x=1',
+    output      : 'x = 1',
+    previewable : true,
+    findings    : [
+      { code: 'E1', end_location: { column: 2, row: 1 }, location: { column: 1, row: 1 }, message: 'm', fix: null },
+      { code: 'E2', end_location: { column: 2, row: 1 }, location: { column: 1, row: 1 }, message: 'm',
+        fix: { applicability: 'safe', edits: [{ before: 'x=1', content: 'x = 1' }] } }
+    ]
+  }
+
+  const TYPING_DEMO = {
+    prelude          : 'p',
+    pythonStateSteps : [{}],
+    resetRows        : [{ anchor: 'a', end: 'e', prelude: 'p' }],
+    entries          : [
+      { anchor: 'a', from: 'f', kind: 'edit', slug: 's', to: 't' },
+      { anchor: 'a', from: 'f', kind: 'edit', slug: 's', tail: 'z', to: 't' }
+    ]
+  }
+
+  describe('schemas accept valid frontmatter', () => {
+    test.each([
+      { name: 'docsExtension, every field absent',      schema: docsExtension,    input: {} },
+      { name: 'docsExtension, every field present',     schema: docsExtension,    input: {
+        badge   : 'b', caption: 'c', consumedBy: ['a'], consumes: ['b'], layer: 'base',
+        related : ['r'], stability: 'public', summary: 's', tagline: 't', warmth: 'warm'
+      } },
+      { name: 'glossary with aliases and rule',         schema: glossary,         input: {
+        aliases: ['a'], definition: 'd', families: ['cli', 'engine'], href: '/x', rule: 'r'
+      } },
+      { name: 'tool',                                   schema: tool,             input: { href: '/h', icon: 'i', name: 'n' } },
+      { name: 'tokenIndex without entries',             schema: tokenIndex,       input: { label: 'l' } },
+      { name: 'tokenIndex with entries',                schema: tokenIndex,       input: { label: 'l', entries: [{ blurb: 'b', href: '/h', key: 'k' }] } },
+      { name: 'exitCode',                               schema: exitCode,         input: { code: 0, detail: ['d'], label: 'l', summary: 's' } },
+      { name: 'editorConfig',                           schema: editorConfig,     input: { caption: 'c', code: 'x', language: 'py', target: 't' } },
+      { name: 'shellCompletion',                        schema: shellCompletion,  input: { caption: 'c', code: 'x', language: 'bash', note: 'n', target: 't' } },
+      { name: 'ruleConfigPreset',                       schema: ruleConfigPreset, input: { rows: [{ default: 'd', key: 'k', meaning: 'm', type: 't' }] } },
+      { name: 'landingSurface',                         schema: landingSurface,   input: { body: 'b' } },
+      { name: 'landingStep',                            schema: landingStep,      input: { body: 'b', code: 'c', language: 'py', title: 't' } },
+      { name: 'fixture with a null and a present fix',  schema: fixture,          input: FIXTURE },
+      { name: 'pipelineEntry',                          schema: pipelineEntry,    input: { imperative: 'do', position: 1, slug: 's' } },
+      { name: 'release',                                schema: release,          input: { gitSha: 'abc', version: '0.1.0' } },
+      { name: 'stars',                                  schema: stars,            input: { stars: '100' } },
+      { name: 'pypiRelease',                            schema: pypiRelease,      input: {
+        date: '2026-01-01', month: 'Jan', url: '/u', version: '0.1.0', year: '2026', yearShort: '26'
+      } },
+      { name: 'typingDemo',                             schema: typingDemo,       input: TYPING_DEMO }
+    ])('$name', ({ schema, input }) => {
+      expect(schema.safeParse(input).success).toBe(true)
+    })
+  })
+
+  describe('schemas reject invalid frontmatter', () => {
+    test.each([
+      { name: 'docsExtension with an unknown layer',   schema: docsExtension,    input: { layer: 'bogus' } },
+      { name: 'docsExtension with an unknown warmth',  schema: docsExtension,    input: { warmth: 'hot' } },
+      { name: 'glossary with empty families',          schema: glossary,         input: { definition: 'd', families: [] } },
+      { name: 'glossary with an unknown family',       schema: glossary,         input: { definition: 'd', families: ['bogus'] } },
+      { name: 'glossary missing its definition',       schema: glossary,         input: { families: ['cli'] } },
+      { name: 'tool missing its href',                 schema: tool,             input: { icon: 'i', name: 'n' } },
+      { name: 'tokenIndex with empty entries',         schema: tokenIndex,       input: { label: 'l', entries: [] } },
+      { name: 'exitCode with empty detail',            schema: exitCode,         input: { code: 0, detail: [], label: 'l', summary: 's' } },
+      { name: 'exitCode with a non-numeric code',      schema: exitCode,         input: { code: 'x', detail: ['d'], label: 'l', summary: 's' } },
+      { name: 'editorConfig missing its code',         schema: editorConfig,     input: { caption: 'c', language: 'py', target: 't' } },
+      { name: 'shellCompletion missing its note',      schema: shellCompletion,  input: { caption: 'c', code: 'x', language: 'bash', target: 't' } },
+      { name: 'ruleConfigPreset with empty rows',      schema: ruleConfigPreset, input: { rows: [] } },
+      { name: 'landingSurface missing its body',       schema: landingSurface,   input: {} },
+      { name: 'landingStep missing its title',         schema: landingStep,      input: { body: 'b', code: 'c', language: 'py' } },
+      { name: 'fixture missing its input',             schema: fixture,          input: { findings: [], output: 'o' } },
+      { name: 'fixture with a malformed finding',      schema: fixture,          input: {
+        findings: [{ code: 'E', end_location: { column: 1, row: 1 }, location: { column: 1, row: 1 }, fix: null }],
+        input   : 'i', output: 'o'
+      } },
+      { name: 'pipelineEntry with a non-numeric position', schema: pipelineEntry, input: { imperative: 'd', position: 'x', slug: 's' } },
+      { name: 'release missing its version',           schema: release,          input: { gitSha: 'abc' } },
+      { name: 'stars with a non-string count',         schema: stars,            input: { stars: 100 } },
+      { name: 'typingDemo with an unknown edit kind',  schema: typingDemo,       input: {
+        ...TYPING_DEMO, entries: [{ anchor: 'a', from: 'f', kind: 'append', slug: 's', to: 't' }]
+      } }
+    ])('$name', ({ schema, input }) => {
+      expect(schema.safeParse(input).success).toBe(false)
+    })
+  })
+
+  const directiveInput = (form: string) => ({ effect: 'e', example: 'x', form, scope: 'file' as const })
+
+  describe('directive tokenizes its form', () => {
+    test.each([
+      { name: 'a bare directive', form: '# fmt: off', parts: [
+        { role: 'comment',   text: '#' },
+        { role: 'namespace', text: 'fmt:' },
+        { role: 'action',    text: 'off' }
+      ] },
+      { name: 'a bracket payload', form: '# prose: skip[align-equals]', parts: [
+        { role: 'comment',   text: '#' },
+        { role: 'namespace', text: 'prose:' },
+        { role: 'action',    text: 'skip' },
+        { role: 'payload',   text: '[align-equals]' }
+      ] }
+    ])('$name', ({ form, parts }) => {
+      expect(directive.parse(directiveInput(form)).parts).toEqual(parts)
+    })
+
+    test.each([
+      { name: 'a capitalized namespace', form: '# Fmt: off' },
+      { name: 'a missing comment hash',  form: 'fmt: off' },
+      { name: 'a missing colon',         form: '# fmt off' }
+    ])('rejects $name', ({ form }) => {
+      expect(directive.safeParse(directiveInput(form)).success).toBe(false)
+    })
+  })
+
+  describe('composition lifts the harness rules', () => {
+    test('valid input', () => {
+      expect(composition.parse({ harness: { rules: ['align-equals', 'align-colons'] } }))
+        .toEqual({ rules: ['align-equals', 'align-colons'] })
+    })
+
+    test('rejects an empty rule set', () => {
+      expect(composition.safeParse({ harness: { rules: [] } }).success).toBe(false)
+    })
+  })
+}

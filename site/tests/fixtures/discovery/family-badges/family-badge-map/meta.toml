@@ -1,0 +1,19 @@
+[[docs]]
+id         = "rules/alignment/index"
+data.badge = "⚖️"
+
+[[docs]]
+id   = "rules/alignment/align-equals"
+data = {}
+
+[[docs]]
+id         = "rules/lint/index"
+data.badge = "🔎"
+
+[[docs]]
+id   = "rules/lint/bare-imports"
+data = {}
+
+[[docs]]
+id   = "rules/ordering/alphabetize"
+data = {}

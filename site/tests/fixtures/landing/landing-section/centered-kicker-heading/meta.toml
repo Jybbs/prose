@@ -1,0 +1,7 @@
+component = "landing/LandingSection.astro"
+
+[props]
+centered = true
+heading  = "Standing on <em>giants</em>."
+kicker   = "The Lineage"
+variant  = "built-on"

@@ -1,0 +1,73 @@
+<div aria-live="polite">
+  <div class="primitives-composition-card" data-layer="base" data-slug="edge-magnet" hidden>
+    <div class="primitives-composition-card-head">
+      <span class="primitives-composition-card-layer-numeral" aria-hidden="true">I</span>
+      <div class="primitives-composition-card-head-text">
+        <span class="primitives-composition-card-name">Edge Magnet</span
+        ><span class="primitives-composition-card-summary">Snaps to edges</span>
+      </div>
+    </div>
+    <div class="primitives-composition-card-rel">
+      <span class="primitives-composition-card-rel-label">consumes</span
+      ><span class="primitives-composition-card-rel-mentions"
+        ><span class="primitives-composition-card-mention-item"
+          ><a
+            class="primitives-composition-card-mention"
+            data-layer="analysis"
+            href="/primitives/rope"
+            ><span
+              class="primitives-composition-card-mention-chip"
+              data-layer="analysis"
+              aria-hidden="true"
+              >III</span
+            ><span class="primitives-composition-card-mention-text">rope</span></a
+          ></span
+        ><span class="primitives-composition-card-mention-item"
+          ><a
+            class="rule-chip"
+            href="/rules/alignment/align-equals"
+            data-badge="⚖️"
+            data-caption="Aligns equals"
+            data-family="alignment"
+            data-rule-pop
+            >align-equals</a
+          ></span
+        ><span class="primitives-composition-card-mention-item"
+          ><span class="primitives-composition-card-mention-ext">external-thing</span></span
+        ></span
+      >
+    </div>
+  </div>
+  <div class="primitives-composition-card" data-layer="analysis" data-slug="rope" hidden>
+    <div class="primitives-composition-card-head">
+      <span class="primitives-composition-card-layer-numeral" aria-hidden="true">III</span>
+      <div class="primitives-composition-card-head-text">
+        <span class="primitives-composition-card-name">Rope</span
+        ><span class="primitives-composition-card-summary">A rope</span>
+      </div>
+    </div>
+    <div class="primitives-composition-card-rel">
+      <span class="primitives-composition-card-rel-label">consumed by</span
+      ><span class="primitives-composition-card-rel-mentions"
+        ><span class="primitives-composition-card-mention-item"
+          ><a
+            class="primitives-composition-card-mention"
+            data-layer="base"
+            href="/primitives/edge-magnet"
+            ><span
+              class="primitives-composition-card-mention-chip"
+              data-layer="base"
+              aria-hidden="true"
+              >I</span
+            ><span class="primitives-composition-card-mention-text">edge-magnet</span></a
+          ></span
+        ></span
+      >
+    </div>
+  </div>
+  <div class="primitives-composition-card" data-layer="empty">
+    <p class="primitives-composition-card-hint">
+      Hover a tile to see what it draws from and what it feeds into.
+    </p>
+  </div>
+</div>

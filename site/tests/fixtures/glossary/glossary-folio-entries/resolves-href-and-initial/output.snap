@@ -1,0 +1,36 @@
+[
+  {
+    "aliases": [
+      "atomic"
+    ],
+    "definitionHtml": "<em>A unit</em>",
+    "families": [
+      "ordering"
+    ],
+    "href": "/rules/alignment/align-equals",
+    "initial": "A",
+    "primaryFamily": "ordering",
+    "slug": "atom"
+  },
+  {
+    "aliases": [],
+    "definitionHtml": "<em>A ray</em>",
+    "families": [
+      "alignment"
+    ],
+    "initial": "B",
+    "primaryFamily": "alignment",
+    "slug": "Beam"
+  },
+  {
+    "aliases": [],
+    "definitionHtml": "<em>An edge</em>",
+    "families": [
+      "layout"
+    ],
+    "href": "/usage/scope",
+    "initial": "C",
+    "primaryFamily": "layout",
+    "slug": "cusp"
+  }
+]

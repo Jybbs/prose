@@ -1,0 +1,68 @@
+<div class="rules-plate">
+  <section class="rules-cluster" data-family="alignment">
+    <a class="rules-cluster-head" href="/rules/alignment/"
+      ><span class="rules-cluster-emoji" aria-hidden="true">⚖️</span>
+      <h2 class="rules-cluster-name">Alignment</h2></a
+    >
+    <ul class="rules-cluster-specimens">
+      <li>
+        <a
+          class="specimen"
+          href="/rules/alignment/align-equals"
+          data-badge="⚖️"
+          data-caption="Aligns equals"
+          data-family="alignment"
+          data-rule-pop
+          ><span class="specimen-slug">align-equals</span></a
+        >
+      </li>
+    </ul>
+  </section>
+  <section class="rules-cluster" data-family="docs">
+    <a class="rules-cluster-head" href="/rules/docs/"
+      ><span class="rules-cluster-emoji" aria-hidden="true"></span>
+      <h2 class="rules-cluster-name">docs</h2></a
+    >
+    <ul class="rules-cluster-specimens"></ul>
+  </section>
+  <section class="rules-cluster" data-family="formatting">
+    <a class="rules-cluster-head" href="/rules/formatting/"
+      ><span class="rules-cluster-emoji" aria-hidden="true"></span>
+      <h2 class="rules-cluster-name">formatting</h2></a
+    >
+    <ul class="rules-cluster-specimens"></ul>
+  </section>
+  <section class="rules-cluster" data-family="layout">
+    <a class="rules-cluster-head" href="/rules/layout/"
+      ><span class="rules-cluster-emoji" aria-hidden="true"></span>
+      <h2 class="rules-cluster-name">layout</h2></a
+    >
+    <ul class="rules-cluster-specimens"></ul>
+  </section>
+  <section class="rules-cluster" data-family="lint">
+    <a class="rules-cluster-head" href="/rules/lint/"
+      ><span class="rules-cluster-emoji" aria-hidden="true"></span>
+      <h2 class="rules-cluster-name">lint</h2></a
+    >
+    <ul class="rules-cluster-specimens"></ul>
+  </section>
+  <section class="rules-cluster" data-family="ordering">
+    <a class="rules-cluster-head" href="/rules/ordering/"
+      ><span class="rules-cluster-emoji" aria-hidden="true">🪉</span>
+      <h2 class="rules-cluster-name">Ordering</h2></a
+    >
+    <ul class="rules-cluster-specimens">
+      <li>
+        <a
+          class="specimen"
+          href="/rules/ordering/alphabetize"
+          data-badge="🪉"
+          data-caption="Sorts entries"
+          data-family="ordering"
+          data-rule-pop
+          ><span class="specimen-slug">alphabetize</span></a
+        >
+      </li>
+    </ul>
+  </section>
+</div>

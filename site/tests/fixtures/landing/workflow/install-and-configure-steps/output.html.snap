@@ -1,0 +1,54 @@
+<div class="landing-section landing-quickstart">
+  <div class="landing-section-heading centered">
+    <p class="kicker" data-variant="rule">The Workflow</p>
+    <h2><em>Open</em> with these few lines.</h2>
+  </div>
+  <article class="panel landing-workflow">
+    <section class="landing-workflow-section">
+      <aside class="landing-workflow-gutter" aria-hidden="true">
+        <span class="landing-workflow-roman">I.</span>
+      </aside>
+      <div class="landing-workflow-body">
+        <h3 class="landing-workflow-title">Install</h3>
+        <p class="landing-workflow-prose">Fetch the wheel.</p>
+        <div class="landing-workflow-code">
+          <pre
+            class="astro-code astro-code-themes github-light github-dark"
+            style="
+              background-color: #fff;
+              --shiki-dark-bg: #24292e;
+              color: #24292e;
+              --shiki-dark: #e1e4e8;
+              overflow-x: auto;
+            "
+            tabindex="0"
+            data-language="bash"
+          ><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">uv</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> tool</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> install</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> prose-formatter</span></span></code></pre>
+        </div>
+      </div>
+    </section>
+    <section class="landing-workflow-section landing-workflow-section-last">
+      <aside class="landing-workflow-gutter" aria-hidden="true">
+        <span class="landing-workflow-roman">II.</span>
+      </aside>
+      <div class="landing-workflow-body">
+        <h3 class="landing-workflow-title">Configure</h3>
+        <p class="landing-workflow-prose">Drop a config.</p>
+        <div class="landing-workflow-code">
+          <pre
+            class="astro-code astro-code-themes github-light github-dark"
+            style="
+              background-color: #fff;
+              --shiki-dark-bg: #24292e;
+              color: #24292e;
+              --shiki-dark: #e1e4e8;
+              overflow-x: auto;
+            "
+            tabindex="0"
+            data-language="toml"
+          ><code><span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">target-version = </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"3.13"</span></span></code></pre>
+        </div>
+      </div>
+    </section>
+  </article>
+</div>

@@ -1,0 +1,14 @@
+meta = 'lint="demo"'
+
+[[findings.demo]]
+code         = "align-equals"
+message      = "align these"
+location     = { row = 1, column = 1 }
+end_location = { row = 1, column = 6 }
+
+[[rules]]
+slug    = "align-equals"
+badge   = "B"
+caption = "Aligns assignments"
+family  = "alignment"
+href    = "/rules/alignment/align-equals"

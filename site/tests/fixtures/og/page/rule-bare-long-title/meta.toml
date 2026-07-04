@@ -1,0 +1,12 @@
+version = "0.2.0"
+
+[page]
+accent     = "#e8c840"
+breadcrumb = ["rules", "alignment"]
+family     = "alignment"
+kind       = "rules"
+title      = "xxxxxxxxxxxxxxxxxxxx"
+
+[page.pipeline]
+position = 1
+total    = 9

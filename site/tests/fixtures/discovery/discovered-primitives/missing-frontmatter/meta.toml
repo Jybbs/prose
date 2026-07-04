@@ -1,0 +1,6 @@
+[[docs]]
+id         = "primitives/broken"
+data.title = "Broken"
+
+[options]
+throws = 'Primitive "broken" is missing layer, stability, summary, or tagline frontmatter'

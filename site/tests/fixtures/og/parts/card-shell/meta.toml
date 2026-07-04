@@ -1,0 +1,2 @@
+part     = "cardShell"
+children = ["a", "b"]

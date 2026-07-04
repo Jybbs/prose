@@ -1,0 +1,4 @@
+warm = true
+
+[fetch]
+status = 500

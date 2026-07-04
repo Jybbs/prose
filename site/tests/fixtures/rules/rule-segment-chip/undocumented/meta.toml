@@ -1,0 +1,9 @@
+component = "rules/RuleSegmentChip.astro"
+
+[props]
+withTooltip = true
+
+[props.segment]
+family = "@null"
+rule   = "@null"
+slug   = "ghost-rule"

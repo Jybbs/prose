@@ -1,0 +1,17 @@
+component = "rules/CompositionCards.astro"
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }
+
+[[store.composition]]
+id   = "align_equals"
+data = { rules = ["align-equals"] }
+
+[[store.fixtures]]
+id   = "composition/align_equals"
+data = { findings = [], input = "x=1", output = "x = 1" }

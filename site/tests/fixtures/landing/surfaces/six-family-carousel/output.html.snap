@@ -1,0 +1,151 @@
+<div class="landing-section landing-surfaces">
+  <div class="landing-section-heading centered">
+    <p class="kicker" data-variant="rule">The Surfaces</p>
+    <h2><strong>6</strong> rule families. <em>2</em> rules.</h2>
+    <a href="/rules/" class="landing-small-button">All rules</a>
+  </div>
+  <landing-marquee class="surfaces-carousel" aria-label="Rule family carousel"
+    ><div class="surfaces-carousel-track">
+      <div
+        class="surface-card surface-card-tab-index"
+        data-family="alignment"
+        data-category="auto-fix"
+      >
+        <a
+          class="surface-card-cover-link"
+          href="/rules/alignment/"
+          aria-label="See all alignment rules"
+        ></a
+        ><span class="surface-card-number">— 001</span
+        ><span class="surface-card-icon" aria-hidden="true">⚖️</span>
+        <h3 class="surface-card-label">Alignment</h3>
+        <p class="surface-card-blurb">Equals signs line up.</p>
+        <div class="surface-card-chips">
+          <div class="tab-index">
+            <div class="tab-row">
+              <a
+                class="tab active"
+                href="/rules/alignment/align-equals"
+                aria-label="align-equals"
+                data-slug="align-equals"
+                >01</a
+              >
+            </div>
+            <div class="tab-label" aria-live="polite">
+              <a
+                class="tab-label-link"
+                href="/rules/alignment/align-equals"
+                aria-label="align-equals"
+                >align-equals</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="surface-card surface-card-tab-index" data-family="docs" data-category="auto-fix">
+        <a class="surface-card-cover-link" href="/rules/docs/" aria-label="See all docs rules"></a
+        ><span class="surface-card-number">— 002</span
+        ><span class="surface-card-icon" aria-hidden="true"></span>
+        <h3 class="surface-card-label">docs</h3>
+        <p class="surface-card-blurb"></p>
+        <div class="surface-card-chips">
+          <div class="tab-index">
+            <div class="tab-row"></div>
+            <div class="tab-label" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="surface-card surface-card-tab-index"
+        data-family="formatting"
+        data-category="auto-fix"
+      >
+        <a
+          class="surface-card-cover-link"
+          href="/rules/formatting/"
+          aria-label="See all formatting rules"
+        ></a
+        ><span class="surface-card-number">— 003</span
+        ><span class="surface-card-icon" aria-hidden="true"></span>
+        <h3 class="surface-card-label">formatting</h3>
+        <p class="surface-card-blurb"></p>
+        <div class="surface-card-chips">
+          <div class="tab-index">
+            <div class="tab-row"></div>
+            <div class="tab-label" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="surface-card surface-card-tab-index"
+        data-family="layout"
+        data-category="auto-fix"
+      >
+        <a
+          class="surface-card-cover-link"
+          href="/rules/layout/"
+          aria-label="See all layout rules"
+        ></a
+        ><span class="surface-card-number">— 004</span
+        ><span class="surface-card-icon" aria-hidden="true"></span>
+        <h3 class="surface-card-label">layout</h3>
+        <p class="surface-card-blurb"></p>
+        <div class="surface-card-chips">
+          <div class="tab-index">
+            <div class="tab-row"></div>
+            <div class="tab-label" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+      <div class="surface-card surface-card-tab-index" data-family="lint" data-category="lint">
+        <a class="surface-card-cover-link" href="/rules/lint/" aria-label="See all lint rules"></a
+        ><span class="surface-card-number">— 005</span
+        ><span class="surface-card-icon" aria-hidden="true">🔎</span>
+        <h3 class="surface-card-label">Lint</h3>
+        <p class="surface-card-blurb">Diagnostics surface.</p>
+        <div class="surface-card-chips">
+          <div class="tab-index">
+            <div class="tab-row">
+              <a
+                class="tab active"
+                href="/rules/lint/legacy-union"
+                aria-label="legacy-union"
+                data-slug="legacy-union"
+                >01</a
+              >
+            </div>
+            <div class="tab-label" aria-live="polite">
+              <a class="tab-label-link" href="/rules/lint/legacy-union" aria-label="legacy-union"
+                >legacy-union</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="surface-card surface-card-tab-index"
+        data-family="ordering"
+        data-category="auto-fix"
+      >
+        <a
+          class="surface-card-cover-link"
+          href="/rules/ordering/"
+          aria-label="See all ordering rules"
+        ></a
+        ><span class="surface-card-number">— 006</span
+        ><span class="surface-card-icon" aria-hidden="true"></span>
+        <h3 class="surface-card-label">ordering</h3>
+        <p class="surface-card-blurb"></p>
+        <div class="surface-card-chips">
+          <div class="tab-index">
+            <div class="tab-row"></div>
+            <div class="tab-label" aria-live="polite"></div>
+          </div>
+        </div>
+      </div></div
+  ></landing-marquee>
+</div>
+<script
+  type="module"
+  src="src/components/landing/surfaces/Surfaces.astro?astro&type=script&index=0&lang.ts"
+></script>

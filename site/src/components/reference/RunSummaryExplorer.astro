@@ -100,8 +100,8 @@ const selects = [
 
     #show(axis: Axis, trigger: HTMLElement): void {
       this.#close()
-      const panel = el('div', 'overlay-panel run-summary-opts-panel')
-      const list  = el('ul', 'run-summary-opts')
+      const panel = el('overlay-panel run-summary-opts-panel', 'div')
+      const list  = el('run-summary-opts', 'ul')
       list.role = 'listbox'
       list.setAttribute('aria-label', trigger.getAttribute('aria-label') ?? '')
       for (const option of this.#options(axis)) {
@@ -115,22 +115,22 @@ const selects = [
     }
 
     #optionRow(axis: Axis, option: OptionRow, trigger: HTMLElement): HTMLElement {
-      const item = el('li', '')
+      const item = el('', 'li')
       item.role  = 'option'
       item.setAttribute('aria-selected', String(this.#selection[axis] === option.id))
-      const button = el('button', 'run-summary-opt')
+      const button = el('run-summary-opt', 'button')
       button.type = 'button'
       button.classList.toggle('is-active', this.#selection[axis] === option.id)
 
-      const mono = el('span', 'run-summary-opt-mono', option.mono)
+      const mono = el('run-summary-opt-mono', 'span', option.mono)
 
-      const example = el('span', 'run-summary-opt-eg')
+      const example = el('run-summary-opt-eg', 'span')
       if (option.preview.anchor !== null) {
-        const anchor = el('span', 'run-summary-opt-eg-anchor', option.preview.anchor)
+        const anchor = el('run-summary-opt-eg-anchor', 'span', option.preview.anchor)
         anchor.ariaHidden = 'true'
         example.append(anchor)
       }
-      const text = el('span', 'run-summary-opt-eg-text', option.preview.text)
+      const text = el('run-summary-opt-eg-text', 'span', option.preview.text)
       if (option.preview.countTint !== null) text.dataset.tint = option.preview.countTint
       example.append(text)
 
@@ -152,12 +152,12 @@ const selects = [
       const row = this.querySelector<HTMLElement>('.run-summary-line')!
       row.replaceChildren()
       if (line.anchor !== null) {
-        const anchor = el('span', 'run-summary-anchor', line.anchor)
+        const anchor = el('run-summary-anchor', 'span', line.anchor)
         anchor.ariaHidden = 'true'
         if (line.anchorUbe) anchor.dataset.ube = 'true'
         row.append(anchor)
       }
-      const message = el('span', 'run-summary-msg', line.text)
+      const message = el('run-summary-msg', 'span', line.text)
       if (line.countTint !== null) message.dataset.tint = line.countTint
       row.append(message)
 

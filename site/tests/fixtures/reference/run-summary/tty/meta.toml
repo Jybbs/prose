@@ -1,0 +1,7 @@
+component = "reference/RunSummary.astro"
+
+[props.line]
+anchor    = "🔖"
+anchorUbe = true
+countTint = "apricot"
+text      = "5 diagnostics in 2 files."

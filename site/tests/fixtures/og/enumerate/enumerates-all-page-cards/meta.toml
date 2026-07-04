@@ -1,0 +1,39 @@
+[[docs]]
+id   = "index"
+data = { title = "Prose" }
+
+[[docs]]
+id   = "usage/install"
+data = { title = "Install" }
+
+[[docs]]
+id   = "rules/alignment"
+data = { title = "Alignment", warmth = "warm" }
+
+[[docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns `=` across **runs**", title = "ignored" }
+
+[[docs]]
+id   = "rules/alignment/tidy-spans"
+data = { caption = "no folio", title = "ignored" }
+
+[[docs]]
+id   = "rules/nope"
+data = { title = "Bogus Family" }
+
+[[docs]]
+id   = "primitives/text-range"
+data = { stability = "public", title = "TextRange" }
+
+[[docs]]
+id   = "primitives/rope"
+data = { title = "Rope" }
+
+[[pipeline]]
+id   = "align-equals"
+data = { position = 1, slug = "align-equals" }
+
+[[pipeline]]
+id   = "sort-imports"
+data = { position = 2, slug = "sort-imports" }

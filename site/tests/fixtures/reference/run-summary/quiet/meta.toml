@@ -1,0 +1,7 @@
+component = "reference/RunSummary.astro"
+
+[props.line]
+anchor    = "@null"
+anchorUbe = false
+countTint = "@null"
+text      = "All clean."

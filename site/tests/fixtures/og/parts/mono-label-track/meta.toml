@@ -1,0 +1,5 @@
+part  = "monoLabel"
+color = "#000000"
+size  = 22
+track = "0.28em"
+text  = "LABEL"

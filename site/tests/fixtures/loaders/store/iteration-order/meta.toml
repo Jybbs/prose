@@ -1,0 +1,7 @@
+[[entries]]
+id   = "a"
+data = { n = 1 }
+
+[[entries]]
+id   = "b"
+data = { n = 2 }

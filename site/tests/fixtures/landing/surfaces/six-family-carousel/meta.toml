@@ -1,0 +1,25 @@
+component = "landing/surfaces/Surfaces.astro"
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }
+
+[[store.docs]]
+id   = "rules/lint/index"
+data = { badge = "🔎" }
+
+[[store.docs]]
+id   = "rules/lint/legacy-union"
+data = { caption = "Flags unions" }
+
+[[store.landingSurfaces]]
+id   = "alignment"
+data = { body = "Equals signs line up." }
+
+[[store.landingSurfaces]]
+id   = "lint"
+data = { body = "Diagnostics surface." }

@@ -1,0 +1,23 @@
+[[docs]]
+id   = "primitives/aligner"
+data = { stability = "public" }
+
+[[docs]]
+id   = "primitives/orderer"
+data = { stability = "public" }
+
+[[docs]]
+id   = "primitives/walker"
+data = { stability = "internal" }
+
+[[docs]]
+id   = "usage/format"
+data = {}
+
+[options]
+
+[[options.sidebar]]
+type      = "group"
+label     = "Rules"
+collapsed = false
+entries   = []

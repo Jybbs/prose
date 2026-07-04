@@ -1,0 +1,34 @@
+component = "integrations/ShellCompletions.astro"
+axeIgnore = ["aria-required-children", "nested-interactive"]
+
+[[store.shellCompletions]]
+id   = "bash"
+data = {
+    caption  = "bash_completion.d",
+    code     = "prose completions bash",
+    language = "bash",
+    note     = "bash note",
+    target   = "/etc/bash_completion.d/prose"
+}
+
+[[store.shellCompletions]]
+id   = "fish"
+data = {
+    caption  = "completions dir",
+    code     = "prose completions fish",
+    language = "fish",
+    note     = "fish note",
+    target   = "~/.config/fish/completions/prose.fish"
+}
+
+[[store.tools]]
+id   = "bash"
+data = { href = "https://gnu.org/bash", icon = "logos:bash-icon", name = "Bash" }
+
+[[store.tools]]
+id   = "fish"
+data = {
+    href = "https://fishshell.com",
+    icon = "simple-icons:fishshell",
+    name = "Fish"
+}

@@ -75,3 +75,17 @@ async function previewSteps(
   if (docs.previewable !== true || input === output) return {}
   return { steps: await precompileMagicMove([input, output]) }
 }
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  describe('fixtureHasToggle', () => {
+    test.each([
+      { data: { findings: [],   input: 'a', output: 'b' }, name: 'output differs',    want: true },
+      { data: { findings: [{}], input: 'a', output: 'a' }, name: 'findings decorate',  want: true },
+      { data: { findings: [],   input: 'a', output: 'a' }, name: 'identical, no lint', want: false }
+    ])('$name -> $want', ({ data, want }) => {
+      expect(fixtureHasToggle(data)).toBe(want)
+    })
+  })
+}

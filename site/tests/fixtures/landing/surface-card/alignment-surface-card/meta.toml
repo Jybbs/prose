@@ -1,0 +1,35 @@
+component = "landing/surfaces/SurfaceCard.astro"
+
+[props]
+badge  = "⚖️"
+body   = "Equals signs line up."
+family = "alignment"
+number = "001"
+rules  = [
+    {
+        badge    = "⚖️",
+        caption  = "",
+        category = "auto-fix",
+        family   = "alignment",
+        href     = "/rules/alignment/align-equals",
+        related  = [],
+        slug     = "align-equals"
+    },
+    {
+        badge    = "⚖️",
+        caption  = "",
+        category = "auto-fix",
+        family   = "alignment",
+        href     = "/rules/alignment/align-colons",
+        related  = [],
+        slug     = "align-colons"
+    }
+]
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }

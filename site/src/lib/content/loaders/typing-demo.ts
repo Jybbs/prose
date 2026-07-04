@@ -21,10 +21,10 @@ export function typingDemoLoader(): Loader {
 
       const states = [
         SOURCE,
-        ...RULES.map((_, index) => runProse(binary, SOURCE, RULES.slice(0, index + 1).join(','))),
+        ...RULES.map((_, index) => runProse(binary, RULES.slice(0, index + 1).join(','), SOURCE)),
         ...ENTRIES
           .filter(entry => entry.tail !== undefined)
-          .map(entry => runProse(binary, SOURCE, RULES.join(','), entry.tail))
+          .map(entry => runProse(binary, RULES.join(','), SOURCE, entry.tail))
       ]
 
       await replaceStore(ctx, [{
@@ -40,7 +40,7 @@ export function typingDemoLoader(): Loader {
   }
 }
 
-function runProse(binary: string, source: string, select: string, configToml?: string): string {
+function runProse(binary: string, select: string, source: string, configToml?: string): string {
   const args = ['format', '--stdin', '--select', select]
   const run  = (cwd?: string): string => execFileSync(binary, args, {
     cwd,

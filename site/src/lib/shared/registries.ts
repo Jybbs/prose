@@ -1,3 +1,5 @@
+import * as fc from 'fast-check'
+
 // Runtime classification flows from frontmatter and the directory tree, so this
 // module carries only the closed vocabularies the Zod enums validate against.
 
@@ -17,8 +19,43 @@ export const FAMILY_WARMTHS = ['cool', 'warm'] as const
 
 export const GLOSSARY_FAMILIES = [...FAMILY_ORDER, 'cli', 'engine'] as const
 export type GlossaryFamily = (typeof GLOSSARY_FAMILIES)[number]
+export type GlossaryOnlyFamily = Exclude<GlossaryFamily, RuleFamily>
 
 export const PRIMITIVE_LAYERS = ['analysis', 'base', 'orchestration'] as const
 
 export const PRIMITIVE_STABILITIES = ['internal', 'public'] as const
 export type PrimitiveStability = (typeof PRIMITIVE_STABILITIES)[number]
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  describe('isFamily', () => {
+    test('accepts every ordered family', () => {
+      fc.assert(fc.property(fc.constantFrom(...FAMILY_ORDER), (name) => {
+        expect(isFamily(name)).toBe(true)
+      }))
+    })
+
+    test.each([
+      { name: 'rejects a glossary-only family', input: 'cli' },
+      { name: 'rejects an unknown name',        input: 'nope' },
+      { name: 'rejects an empty name',          input: '' }
+    ])('$name', ({ input }) => {
+      expect(isFamily(input)).toBe(false)
+    })
+  })
+
+  describe('categoryOf', () => {
+    test.each(
+      FAMILY_ORDER.map(family => ({ family, expected: family === 'lint' ? 'lint' : 'auto-fix' }))
+    )('maps $family to $expected', ({ family, expected }) => {
+      expect(categoryOf(family)).toBe(expected)
+    })
+  })
+
+  describe('GLOSSARY_FAMILIES', () => {
+    test('extends the family order with the cross-cutting domains', () => {
+      expect(GLOSSARY_FAMILIES).toEqual([...FAMILY_ORDER, 'cli', 'engine'])
+    })
+  })
+}

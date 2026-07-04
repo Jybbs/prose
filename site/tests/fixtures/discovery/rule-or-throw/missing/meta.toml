@@ -1,0 +1,8 @@
+[[docs]]
+id   = "rules/lint/bare-imports"
+data = {}
+
+[options]
+slug     = "nonexistent"
+consumer = "card"
+throws   = 'card slug "nonexistent" does not match a rule page'

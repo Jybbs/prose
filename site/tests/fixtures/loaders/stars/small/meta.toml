@@ -1,0 +1,7 @@
+schema = "stars"
+
+[fetch]
+status = 200
+
+[fetch.data]
+stargazers_count = 42

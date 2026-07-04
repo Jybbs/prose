@@ -1,0 +1,22 @@
+component = "glossary/GlossaryFolioPane.astro"
+
+[[store.docs]]
+id   = "rules/ordering/index"
+data = { badge = "🪉" }
+
+[[store.docs]]
+id   = "rules/ordering/align-equals"
+data = { caption = "Aligns equals" }
+
+[[store.glossary]]
+id   = "align-equals"
+data = {
+    aliases    = ["atomic"],
+    definition = "A unit of layout.",
+    families   = ["ordering", "engine"],
+    rule       = "align-equals"
+}
+
+[[store.glossary]]
+id   = "beam"
+data = { aliases = [], definition = "A ray of light.", families = ["alignment"] }

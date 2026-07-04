@@ -1,0 +1,13 @@
+<p>
+  run
+  <a
+    class="rule-chip"
+    data-badge="B"
+    data-caption="Aligns assignments"
+    data-family="alignment"
+    data-rule-pop=""
+    href="/rules/alignment/align-equals"
+    >align-equals</a
+  >
+  now
+</p>

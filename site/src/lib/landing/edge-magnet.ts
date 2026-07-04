@@ -1,5 +1,6 @@
 import type { EmblaCarouselType, ScrollBodyType } from 'embla-carousel'
 import type { AutoScrollType }                    from 'embla-carousel-auto-scroll'
+import * as fc                                    from 'fast-check'
 
 import { closestFrom } from '../shared/dom/closest-from'
 
@@ -16,6 +17,7 @@ export const FRAMES_PER_SEC = 60
 // scaled by the overshoot, while a pointer parked between cards pauses the
 // crawl. The pull installs its own scroll body, the same seek contract the
 // plugin's body fulfils, and hands the engine back to the plugin on release.
+/* istanbul ignore next -- embla wiring, exercised only against a live carousel */
 export function attachEdgeMagnet(
   embla      : EmblaCarouselType,
   autoScroll : AutoScrollType,
@@ -79,22 +81,50 @@ export function attachEdgeMagnet(
       engage()
       return
     }
-    const viewportRect = viewport.getBoundingClientRect()
-    const cardRect     = card.getBoundingClientRect()
-    const leftGap      = cardRect.left - viewportRect.left - options.edgeMarginPx
-    const rightGap     = viewportRect.right - cardRect.right - options.edgeMarginPx
-    let pull = 0
-    if (leftGap < 0)       pull = -leftGap * options.magnetGain
-    else if (rightGap < 0) pull = rightGap * options.magnetGain
-    if (pull === 0) {
-      velocity = 0
-      engage()
-      return
-    }
-    velocity = Math.max(-options.maxPullPxPerSec, Math.min(options.maxPullPxPerSec, pull))
+    velocity = edgePull(card.getBoundingClientRect(), options, viewport.getBoundingClientRect())
     engage()
   }
 
   viewport.addEventListener('pointermove', onPointerMove)
   viewport.addEventListener('pointerleave', release)
+}
+
+function edgePull(
+  card     : { left: number, right: number },
+  options  : EdgeMagnetOptions,
+  viewport : { left: number, right: number }
+): number {
+  const { edgeMarginPx, magnetGain, maxPullPxPerSec } = options
+  const leftGap  = card.left - viewport.left - edgeMarginPx
+  const rightGap = viewport.right - card.right - edgeMarginPx
+  const pull =
+    leftGap  < 0 ? -leftGap  * magnetGain :
+    rightGap < 0 ?  rightGap * magnetGain : 0
+  return Math.max(-maxPullPxPerSec, Math.min(maxPullPxPerSec, pull))
+}
+
+if (import.meta.vitest) {
+  const { describe, expect, test } = import.meta.vitest
+
+  const OPTIONS  = { edgeMarginPx: 16, magnetGain: 0.5, maxPullPxPerSec: 800 }
+  const VIEWPORT = { left: 0, right: 1000 }
+
+  describe('edgePull', () => {
+    test.each([
+      { name: 'a card resting inside both edges pulls nothing',   card: { left: 100,   right: 300 },   pull: 0 },
+      { name: 'a left overhang pulls toward the card',            card: { left: -40,   right: 160 },   pull: 28 },
+      { name: 'a right overhang pulls the other way',             card: { left: 840,   right: 1040 },  pull: -28 },
+      { name: 'a deep left overhang clamps to the speed cap',     card: { left: -2000, right: -1800 }, pull: 800 },
+      { name: 'a deep right overhang clamps to the speed cap',    card: { left: 2800,  right: 3000 },  pull: -800 }
+    ])('$name', ({ card, pull }) => {
+      expect(edgePull(card, OPTIONS, VIEWPORT)).toBe(pull)
+    })
+
+    test('never pulls faster than the speed cap in either direction', () => {
+      fc.assert(fc.property(fc.integer({ min: -5000, max: 5000 }), fc.integer({ min: 0, max: 400 }), (left, span) => {
+        const magnitude = Math.abs(edgePull({ left, right: left + span }, OPTIONS, VIEWPORT))
+        expect(magnitude).toBeLessThanOrEqual(OPTIONS.maxPullPxPerSec)
+      }))
+    })
+  })
 }

@@ -20,11 +20,25 @@ const TEMPLATE_DIGEST = hash([
 ])
 
 export function cardKeyer(
-  version : string,
-  brand   : BrandAssets
+  brand   : BrandAssets,
+  version : string
 ): (card: OgPage | 'landing') => string {
   const base = { brand: hash(brand), template: TEMPLATE_DIGEST, version }
   return card => hash({ base, card })
+}
+
+export async function pruneCards(cacheDir: string, live: Iterable<string>): Promise<void> {
+  try {
+    const keep  = new Set(live)
+    const index = await cacache.ls(cacheDir)
+    const stale = Object.keys(index).filter(key => !keep.has(key))
+    if (stale.length === 0) return
+    await Promise.all(stale.map(key => cacache.rm.entry(cacheDir, key)))
+    await cacache.verify(cacheDir)
+  }
+  catch {
+    // prune is best-effort housekeeping
+  }
 }
 
 export async function readCard(cacheDir: string, key: string): Promise<Buffer | null> {
@@ -43,19 +57,5 @@ export async function writeCard(cacheDir: string, key: string, png: Buffer): Pro
   }
   catch {
     // a failed write still leaves the rendered card in the response
-  }
-}
-
-export async function pruneCards(cacheDir: string, live: Iterable<string>): Promise<void> {
-  try {
-    const keep  = new Set(live)
-    const index = await cacache.ls(cacheDir)
-    const stale = Object.keys(index).filter(key => !keep.has(key))
-    if (stale.length === 0) return
-    await Promise.all(stale.map(key => cacache.rm.entry(cacheDir, key)))
-    await cacache.verify(cacheDir)
-  }
-  catch {
-    // prune is best-effort housekeeping
   }
 }

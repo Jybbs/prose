@@ -1,0 +1,6 @@
+[fetch]
+status = 200
+etag   = '"abc"'
+
+[fetch.data]
+v = "live"

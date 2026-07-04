@@ -1,0 +1,19 @@
+component = "reference/ExitCodeMatrix.astro"
+
+[[store.exitCodes]]
+id   = "2"
+data = {
+    code    = 2,
+    detail  = ["A finding remains", "Another"],
+    label   = "Diagnostics",
+    summary = "Findings remain"
+}
+
+[[store.exitCodes]]
+id   = "0"
+data = {
+    code    = 0,
+    detail  = ["All good"],
+    label   = "Clean",
+    summary = "No findings"
+}

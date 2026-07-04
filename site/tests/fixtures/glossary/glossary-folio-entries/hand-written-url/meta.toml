@@ -1,0 +1,8 @@
+[[glossary]]
+id              = "hand"
+data.definition = "x"
+data.families   = ["ordering"]
+data.href       = "/rules/x"
+
+[options]
+throws = "hand-writes a rule URL"

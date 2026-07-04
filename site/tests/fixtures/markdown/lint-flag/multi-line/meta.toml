@@ -1,0 +1,7 @@
+meta = 'lint="demo"'
+
+[[findings.demo]]
+code         = "align-equals"
+message      = "align these"
+location     = { row = 1, column = 1 }
+end_location = { row = 2, column = 4 }

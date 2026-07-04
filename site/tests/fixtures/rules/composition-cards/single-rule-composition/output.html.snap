@@ -1,0 +1,141 @@
+<ol class="composition-cards-list" aria-label="Composition cards">
+  <li
+    id="align_equals"
+    class="fixture-card"
+    data-family="alignment"
+    data-edits="true"
+    data-lint="false"
+    style="
+      --rail-paint: var(--prose-family-alignment);
+      --headline-paint: var(--prose-family-alignment);
+    "
+  >
+    <div class="fixture-card-summary-row">
+      <button
+        type="button"
+        class="fixture-card-summary"
+        aria-expanded="false"
+        aria-controls="composition-body-align_equals"
+      >
+        <span class="fixture-card-num">001</span
+        ><span class="fixture-card-title">Align Equals</span>
+      </button>
+      <div class="composition-cards-tick-cell">
+        <ol class="composition-cards-ticks" aria-label="1 rules in pipeline order">
+          <li class="composition-cards-tick-item">
+            <a
+              href="/rules/alignment/align-equals"
+              class="composition-cards-chip"
+              data-family="alignment"
+              data-slug="align-equals"
+              ><span class="composition-cards-chip-label"
+                ><span class="composition-cards-chip-slug">align-equals</span></span
+              ></a
+            >
+          </li>
+        </ol>
+        <div class="composition-cards-toggle-slot">
+          <fixture-toggle
+            class="fixture-toggle"
+            role="tablist"
+            aria-label="Fixture view"
+            data-for="composition-align_equals"
+            ><button
+              type="button"
+              role="tab"
+              class="fixture-toggle-pill"
+              data-side="before"
+              aria-selected="false"
+            >
+              Before</button
+            ><button
+              type="button"
+              role="tab"
+              class="fixture-toggle-pill"
+              data-side="after"
+              aria-selected="true"
+            >
+              After
+            </button></fixture-toggle
+          >
+          <script
+            type="module"
+            src="src/components/fixtures/FixtureToggle.astro?astro&type=script&index=0&lang.ts"
+          ></script>
+        </div>
+      </div>
+    </div>
+    <div id="composition-body-align_equals" class="fixture-card-body" role="region">
+      <div class="fixture-card-body-inner">
+        <div class="fixture-card-body-content">
+          <div class="composition-cards-detail">
+            <fixture-pair
+              class="panel panel-clip fixture-pair fixture-pair-doc"
+              data-id="composition-align_equals"
+              ><div class="fixture-pair-panel" data-side="before" hidden>
+                <div class="expressive-code">
+                  <link rel="stylesheet" href="/_astro/ec.u6yl4.css" />
+                  <script type="module" src="/_astro/ec.0vx5m.js"></script>
+                  <figure class="frame not-content">
+                    <figcaption class="header"></figcaption>
+                    <pre
+                      data-language="python"
+                    ><code><div class="ec-line"><div class="code"><span style="--0:#E1E4E8;--1:#24292E">x</span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#79B8FF;--1:#005CC5">1</span></div></div></code></pre>
+                    <div class="copy">
+                      <div aria-live="polite"></div>
+                      <button title="Copy to clipboard" data-copied="Copied!" data-code="x=1">
+                        <div></div>
+                      </button>
+                    </div>
+                  </figure>
+                </div>
+              </div>
+              <div class="fixture-pair-panel" data-side="after">
+                <div class="expressive-code">
+                  <figure class="frame not-content">
+                    <figcaption class="header"></figcaption>
+                    <pre
+                      data-language="python"
+                    ><code><div class="ec-line"><div class="code"><span style="--0:#E1E4E8;--1:#24292E">x </span><span style="--0:#F97583;--1:#B7313E">=</span><span style="--0:#E1E4E8;--1:#24292E"> </span><span style="--0:#79B8FF;--1:#005CC5">1</span></div></div></code></pre>
+                    <div class="copy">
+                      <div aria-live="polite"></div>
+                      <button title="Copy to clipboard" data-copied="Copied!" data-code="x = 1">
+                        <div></div>
+                      </button>
+                    </div>
+                  </figure>
+                </div>
+              </div>
+              <div class="fixture-pair-morph" hidden></div
+            ></fixture-pair>
+            <script
+              type="module"
+              src="src/components/fixtures/FixturePair.astro?astro&type=script&index=0&lang.ts"
+            ></script>
+          </div>
+          <ol class="composition-cards-bar" aria-label="1 rules in pipeline order">
+            <li class="composition-cards-bar-cell">
+              <a
+                href="/rules/alignment/align-equals"
+                class="composition-cards-chip"
+                data-badge="⚖️"
+                data-caption="Aligns equals"
+                data-family="alignment"
+                data-rule-pop
+                data-family="alignment"
+                data-slug="align-equals"
+                ><span class="composition-cards-chip-label"
+                  ><span class="composition-cards-chip-slug">align-equals</span></span
+                ></a
+              >
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </li>
+</ol>
+<script
+  type="module"
+  src="src/components/rules/CompositionCards.astro?astro&type=script&index=0&lang.ts"
+></script>

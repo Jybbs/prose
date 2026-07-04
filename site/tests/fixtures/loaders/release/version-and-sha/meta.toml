@@ -1,0 +1,6 @@
+schema = "release"
+git    = "abc1234\n"
+cargo  = """
+[package]
+version = "0.3.1"
+"""

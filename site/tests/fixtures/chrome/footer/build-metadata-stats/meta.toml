@@ -1,0 +1,21 @@
+component = "chrome/Footer.astro"
+
+[[store.release]]
+id   = "r"
+data = { version = "0.5.0", gitSha = "abc1234" }
+
+[[store.pipeline]]
+id   = "a"
+data = {}
+
+[[store.pipeline]]
+id   = "b"
+data = {}
+
+[[store.pipeline]]
+id   = "c"
+data = {}
+
+[[store.fixtures]]
+id   = "f"
+data = {}

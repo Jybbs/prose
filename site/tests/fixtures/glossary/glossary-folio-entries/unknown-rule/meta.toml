@@ -1,0 +1,8 @@
+[[glossary]]
+id              = "ghost"
+data.definition = "x"
+data.families   = ["ordering"]
+data.rule       = "nope"
+
+[options]
+throws = "unknown rule"

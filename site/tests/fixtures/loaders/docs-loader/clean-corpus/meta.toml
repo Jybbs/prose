@@ -1,0 +1,13 @@
+[[store]]
+id       = "index"
+filePath = "src/content/docs/index.md"
+data     = {}
+
+[[store]]
+id       = "other"
+filePath = "astro.config.mjs"
+data     = {}
+
+[[store]]
+id   = "nofile"
+data = {}

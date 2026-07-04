@@ -1,0 +1,20 @@
+component = "rules/RuleCardList.astro"
+
+[props]
+family = "lint"
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }
+
+[[store.docs]]
+id   = "rules/ordering/index"
+data = { badge = "🪉" }
+
+[[store.docs]]
+id   = "rules/ordering/alphabetize"
+data = { caption = "Sorts entries" }

@@ -1,0 +1,42 @@
+component = "primitives/PrimitivesCompositionGrid.astro"
+setProps  = ["related"]
+
+[props]
+focused = "edge-magnet"
+related = ["rope"]
+
+[[props.bands]]
+key     = "base"
+numeral = "I"
+entries = [{
+    consumedBy = ["hero-tiling"],
+    consumes   = ["rope"],
+    href       = "/primitives/edge-magnet",
+    layer      = "base",
+    name       = "Edge Magnet",
+    slug       = "edge-magnet"
+}]
+
+[[props.bands]]
+key     = "orchestration"
+numeral = "II"
+entries = [{
+    consumedBy = [],
+    consumes   = [],
+    href       = "/primitives/hero-tiling",
+    layer      = "orchestration",
+    name       = "Hero Tiling",
+    slug       = "hero-tiling"
+}]
+
+[[props.bands]]
+key     = "analysis"
+numeral = "III"
+entries = [{
+    consumedBy = [],
+    consumes   = [],
+    href       = "/primitives/rope",
+    layer      = "analysis",
+    name       = "Rope",
+    slug       = "rope"
+}]

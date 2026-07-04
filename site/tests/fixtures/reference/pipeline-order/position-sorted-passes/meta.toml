@@ -1,0 +1,17 @@
+component = "reference/PipelineOrder.astro"
+
+[[store.pipeline]]
+id   = "sort-imports"
+data = { position = 2, slug = "sort-imports" }
+
+[[store.pipeline]]
+id   = "align-equals"
+data = { position = 1, slug = "align-equals" }
+
+[[store.docs]]
+id   = "rules/alignment/index"
+data = { badge = "⚖️" }
+
+[[store.docs]]
+id   = "rules/alignment/align-equals"
+data = { caption = "Aligns equals" }

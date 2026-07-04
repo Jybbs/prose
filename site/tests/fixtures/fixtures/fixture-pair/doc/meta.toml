@@ -1,0 +1,6 @@
+component = "fixtures/FixturePair.astro"
+
+[props]
+input  = "x = 1"
+output = "x = 1"
+syncId = "fixture-demo"

@@ -1,0 +1,27 @@
+{
+  "entries": [
+    {
+      "data": {
+        "date": "2026-04-09",
+        "month": "APR",
+        "url": "https://pypi.org/project/prose-formatter/0.2.0/",
+        "version": "0.2.0",
+        "year": "2026",
+        "yearShort": "26"
+      },
+      "id": "0.2.0"
+    },
+    {
+      "data": {
+        "date": "2026-01-14",
+        "month": "JAN",
+        "url": "https://pypi.org/project/prose-formatter/0.1.0/",
+        "version": "0.1.0",
+        "year": "2026",
+        "yearShort": "26"
+      },
+      "id": "0.1.0"
+    }
+  ],
+  "fetchCalls": 0
+}
