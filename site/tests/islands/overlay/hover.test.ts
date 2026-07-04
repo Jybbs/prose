@@ -31,6 +31,14 @@ function overlay(over: Partial<Options> = {}): { anchor: HTMLElement, selector: 
 
 const currentPanel = () => document.querySelector('.overlay-panel')
 
+const SHOW = 100
+const HIDE = 240
+const openPanel = (anchor: HTMLElement): HTMLElement => {
+  fire(anchor, 'mouseover')
+  vi.advanceTimersByTime(SHOW)
+  return currentPanel() as HTMLElement
+}
+
 beforeEach(() => { vi.useFakeTimers(); floatMock.mockClear(); unpin.mockClear() })
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); document.body.innerHTML = '' })
 
@@ -41,7 +49,7 @@ describe('attachHoverOverlay', () => {
     fire(anchor, 'mouseover')
     expect(currentPanel()).toBeNull()
 
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(SHOW)
     const panel = currentPanel() as HTMLElement
     expect(panel).toHaveClass('panel-x')
     expect(panel.getAttribute('role')).toBe('tooltip')
@@ -55,7 +63,7 @@ describe('attachHoverOverlay', () => {
     const onOpen = vi.fn()
     const { anchor } = overlay({ onOpen, render: () => null })
     fire(anchor, 'mouseover')
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(SHOW)
     expect(currentPanel()).toBeNull()
     expect(anchor).not.toHaveAttribute('aria-describedby')
     expect(onOpen).not.toHaveBeenCalled()
@@ -64,12 +72,10 @@ describe('attachHoverOverlay', () => {
   test('closes after the hide delay, clearing aria and unpinning', () => {
     const onClose = vi.fn()
     const { anchor } = overlay({ onClose })
-    fire(anchor, 'mouseover')
-    vi.advanceTimersByTime(100)
-    const panel = currentPanel() as HTMLElement
+    const panel = openPanel(anchor)
 
     fire(anchor, 'mouseout')
-    vi.advanceTimersByTime(240)
+    vi.advanceTimersByTime(HIDE)
     expect(panel.isConnected).toBe(false)
     expect(anchor).not.toHaveAttribute('aria-describedby')
     expect(onClose).toHaveBeenCalledWith(anchor)
@@ -78,24 +84,20 @@ describe('attachHoverOverlay', () => {
 
   test('a pointer entering the panel cancels the pending hide', () => {
     const { anchor } = overlay()
-    fire(anchor, 'mouseover')
-    vi.advanceTimersByTime(100)
-    const panel = currentPanel() as HTMLElement
+    const panel = openPanel(anchor)
 
     panel.dispatchEvent(new Event('mouseleave'))
     panel.dispatchEvent(new Event('mouseenter'))
-    vi.advanceTimersByTime(240)
+    vi.advanceTimersByTime(HIDE)
     expect(panel.isConnected).toBe(true)
   })
 
   test('a pointer leaving the panel schedules the hide', () => {
     const { anchor } = overlay()
-    fire(anchor, 'mouseover')
-    vi.advanceTimersByTime(100)
-    const panel = currentPanel() as HTMLElement
+    const panel = openPanel(anchor)
 
     panel.dispatchEvent(new Event('mouseleave'))
-    vi.advanceTimersByTime(240)
+    vi.advanceTimersByTime(HIDE)
     expect(panel.isConnected).toBe(false)
   })
 
@@ -103,9 +105,9 @@ describe('attachHoverOverlay', () => {
     const onOpen = vi.fn()
     const { anchor } = overlay({ onOpen })
     fire(anchor, 'mouseover')
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(SHOW)
     fire(anchor, 'mouseover')
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(SHOW)
     expect(onOpen).toHaveBeenCalledOnce()
   })
 
@@ -116,9 +118,9 @@ describe('attachHoverOverlay', () => {
     second.className = selector.slice(1)
 
     fire(anchor, 'mouseover')
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(SHOW)
     fire(second, 'mouseover')
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(SHOW)
     expect(anchor).not.toHaveAttribute('aria-describedby')
     expect(second).toHaveAttribute('aria-describedby')
   })
@@ -126,12 +128,12 @@ describe('attachHoverOverlay', () => {
   test('focus opens and blur closes the panel', () => {
     const { anchor } = overlay()
     fire(anchor, 'focusin')
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(SHOW)
     const panel = currentPanel() as HTMLElement
     expect(panel.isConnected).toBe(true)
 
     fire(anchor, 'focusout')
-    vi.advanceTimersByTime(240)
+    vi.advanceTimersByTime(HIDE)
     expect(panel.isConnected).toBe(false)
   })
 
@@ -147,7 +149,7 @@ describe('attachHoverOverlay', () => {
   test('a scheduled hide with nothing open is a no-op', () => {
     const { anchor } = overlay()
     fire(anchor, 'mouseout')
-    vi.advanceTimersByTime(240)
+    vi.advanceTimersByTime(HIDE)
     expect(currentPanel()).toBeNull()
   })
 })

@@ -39,7 +39,7 @@ function buildCard(brand: BrandAssets, page: OgPage, version: string): JSXNode {
     watermarkLayer(brand.glyph),
     leftRail(accent),
     wordmarkBlock(brand),
-    dataPanel(accent, page.warmth === 'warm' ? PANEL_BORDER_ALPHA.warm : PANEL_BORDER_ALPHA.cool, panelRows(page), version),
+    dataPanel(accent, PANEL_BORDER_ALPHA[page.warmth ?? 'cool'], panelRows(page), version),
     titleBlock(page, accent)
   )
 }

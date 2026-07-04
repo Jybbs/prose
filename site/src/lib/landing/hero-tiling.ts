@@ -2,7 +2,7 @@ import * as fc from 'fast-check'
 
 import { ROW_STRIDE_PX } from './hero-stamps'
 
-export interface HeroTilingOptions {
+interface HeroTilingOptions {
   rowStridePx   : number
   stampPerColPx : number
   terminusGapPx : number

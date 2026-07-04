@@ -14,7 +14,7 @@ const ruleNode = (ref: RuleRef, slug: string): PhrasingContent => {
 }
 
 const primitiveNode = (ref: PrimitiveRef): PhrasingContent =>
-  mdastLink(ref.href, {}, [{ type: 'strong', children: [{ type: 'inlineCode', value: ref.title }] }])
+  mdastLink(ref.href, [{ type: 'strong', children: [{ type: 'inlineCode', value: ref.title }] }])
 
 // Two-phase rule and primitive linking. Phase one rewrites [[slug]] in body or
 // heading text, a rule to a rule-chip component and a primitive to a plain
@@ -31,13 +31,11 @@ export function remarkRuleLinks(vocab: DocsVocab) {
       throw new Error(`Unknown slug "${slug}" referenced by [[${slug}]]`)
     }])
 
-    const promotions: Array<{ children: PhrasingContent[], index: number, node: PhrasingContent }> = []
     visitOutsideHeadings(tree, 'inlineCode', (node, ancestors) => {
       const rule = vocab.rules.get(node.value)
       if (!rule) return
       const children = ancestors.at(-1)!.children as unknown as PhrasingContent[]
-      promotions.push({ children, index: children.indexOf(node), node: ruleNode(rule, node.value) })
+      children[children.indexOf(node)] = ruleNode(rule, node.value)
     })
-    for (const { children, index, node } of promotions) children[index] = node
   }
 }

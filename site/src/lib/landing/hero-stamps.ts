@@ -42,15 +42,15 @@ function rotate(idx: number): number {
 export function tileStamps(cols: number, rows: number): readonly Stamp[] {
   const out: Stamp[] = []
   let idx = 0
+  const o  = 0.36
+  const dx = (100 / cols) * o
+  const dy = ROW_STRIDE_PX * o
   for (let r = 0; r < rows; r++) {
     for (let cIdx = 0; cIdx < cols; cIdx++) {
       const xC = ((cIdx + 0.5) / cols) * 100
       const yC = (r + 0.5) * ROW_STRIDE_PX
       out.push({ kind: 'big', rotate: rotate(idx), x: xC, y: yC })
       idx++
-      const o        = 0.36
-      const dx       = (100 / cols) * o
-      const dy       = ROW_STRIDE_PX * o
       // The unsigned shift keeps the XOR seed non-negative, which `Math.trunc` would not.
       // oxlint-disable-next-line unicorn/prefer-math-trunc
       const cellSeed = ((r * 2654435761) ^ (cIdx * 40503)) >>> 0

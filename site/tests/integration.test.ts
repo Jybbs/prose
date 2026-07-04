@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, test, vi }        from 'vitest'
 import type { Data }                          from 'mdast'
 import type { JSXNode }                       from 'satori/jsx'
 import type { AstroComponentFactory }         from 'astro/runtime/server/index.js'
+import type { Loader }                        from 'astro/loaders'
 import { visitParents }                       from 'unist-util-visit-parents'
 
 import type {
@@ -51,7 +52,7 @@ import type { Entry, FakeContext, Schema }    from './common/loader'
 import { renderTransform }                    from './common/mdast'
 import type { Transform }                     from './common/mdast'
 
-const state = vi.hoisted(() => ({ store: {} as Record<string, { data: unknown, id: string }[]> }))
+const state = vi.hoisted(() => ({ store: {} as Record<string, StoreRow[]> }))
 const H     = vi.hoisted(() => ({ cargoToml: { value: '' }, exec: vi.fn(), fetchRaw: vi.fn(), innerLoad: vi.fn() }))
 
 vi.mock('astro:content',              async () => (await import('./common/support')).astroContent(state.store))
@@ -91,8 +92,9 @@ vi.mock('@astrojs/starlight/components/Head.astro', async () => {
   }
 })
 
-type Meta   = Record<string, unknown>
-type Handler = (c: Case) => Promise<void>
+type Meta     = Record<string, unknown>
+type Handler  = (c: Case) => Promise<void>
+type StoreRow = { data: unknown, id: string }
 
 const handlersFor = (subjects: Iterable<string>, handler: Handler): Record<string, Handler> =>
   Object.fromEntries([...subjects].map(subject => [subject, handler]))
@@ -102,7 +104,7 @@ const snapshot = async (c: Case, file: string, text: string, format: 'markup' | 
   await expect(body).toMatchFileSnapshot(path.join(c.dir, file))
 }
 
-const seedStore = (store: Record<string, { data: unknown, id: string }[]>): void => {
+const seedStore = (store: Record<string, StoreRow[]>): void => {
   for (const key of Object.keys(state.store)) delete state.store[key]
   Object.assign(state.store, store)
 }
@@ -190,7 +192,7 @@ const components = import.meta.glob<{ default: AstroComponentFactory }>('../src/
 
 const component: Handler = async c => {
   vi.resetModules()
-  seedStore((c.meta.store as Record<string, { data: unknown, id: string }[]>) ?? {})
+  seedStore((c.meta.store as Record<string, StoreRow[]>) ?? {})
   const container = await AstroContainer.create()
   const { default: Component } = await components[`../src/components/${c.meta.component as string}`]()
   const options = { props: propsFrom(c.meta), slots: (c.meta.slots as Record<string, string>) ?? {} }
@@ -212,8 +214,8 @@ const versionOf = (meta: Meta): string => (meta.version as string | undefined) ?
 
 const enumerateJson = async (meta: Meta): Promise<string> => {
   seedStore({
-    docs     : (meta.docs as { data: unknown, id: string }[] | undefined) ?? [],
-    pipeline : (meta.pipeline as { data: unknown, id: string }[] | undefined) ?? []
+    docs     : (meta.docs as StoreRow[] | undefined) ?? [],
+    pipeline : (meta.pipeline as StoreRow[] | undefined) ?? []
   })
   return JSON.stringify(await enumerateCards(), null, 2)
 }
@@ -343,7 +345,7 @@ const discoveryRunners: Record<string, (dir: string, options: Meta) => Promise<u
 const discovery: Handler = async c => {
   const { options: raw, ...store } = c.meta
   const options                    = (raw ?? {}) as Meta
-  seedStore(store as Record<string, { data: unknown, id: string }[]>)
+  seedStore(store as Record<string, StoreRow[]>)
   vi.doMock('../src/lib/markdown/render', () => ({ renderInline: (md: string) => Promise.resolve(`<em>${md}</em>`) }))
   const run = discoveryRunners[c.subject](c.dir, options)
   if (typeof options.throws === 'string') await expect(run).rejects.toThrow(options.throws)
@@ -390,6 +392,13 @@ const configureFetch = (meta: Meta): void => {
   else H.fetchRaw.mockResolvedValueOnce(fetchResponse(fetch) as never)
 }
 
+const fetchLoader = (make: () => Loader) => async ({ meta }: Case): Promise<unknown> => {
+  configureFetch(meta)
+  const fake = makeContext({ schema: schemaFor(meta) })
+  await make().load(fake.ctx)
+  return { entries: values(fake), fetchCalls: H.fetchRaw.mock.calls.length }
+}
+
 const loaderRunners: Record<string, (c: Case) => Promise<unknown>> = {
   conditional: async ({ meta }) => {
     configureFetch(meta)
@@ -431,12 +440,7 @@ const loaderRunners: Record<string, (c: Case) => Promise<unknown>> = {
     return { entries: values(fake), execArgs: H.exec.mock.calls }
   },
 
-  pypi: async ({ meta }) => {
-    configureFetch(meta)
-    const fake = makeContext({ schema: schemaFor(meta) })
-    await pypiReleasesLoader().load(fake.ctx)
-    return { entries: values(fake), fetchCalls: H.fetchRaw.mock.calls.length }
-  },
+  pypi: fetchLoader(pypiReleasesLoader),
 
   release: async ({ meta }) => {
     H.cargoToml.value = meta.cargo as string
@@ -451,12 +455,7 @@ const loaderRunners: Record<string, (c: Case) => Promise<unknown>> = {
     return { entries: values(fake) }
   },
 
-  stars: async ({ meta }) => {
-    configureFetch(meta)
-    const fake = makeContext({ schema: schemaFor(meta) })
-    await starsLoader().load(fake.ctx)
-    return { entries: values(fake), fetchCalls: H.fetchRaw.mock.calls.length }
-  },
+  stars: fetchLoader(starsLoader),
 
   store: async ({ meta }) => {
     const fake = makeContext({ schema: schemaFor(meta), store: asEntries(meta.initial) })

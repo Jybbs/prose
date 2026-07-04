@@ -1,19 +1,7 @@
-type CountTint  = 'apricot' | 'celadon'
-type OutcomeKey = 'check' | 'clean' | 'diff' | 'format'
-
 interface AxisOption {
   gloss : string
   id    : string
   mono  : string
-}
-
-interface Outcome {
-  anchor : string
-  args   : string
-  gloss  : string
-  key    : OutcomeKey
-  text   : string
-  tint   : CountTint
 }
 
 export interface RenderedLine {
@@ -23,12 +11,15 @@ export interface RenderedLine {
   text      : string
 }
 
-export const OUTCOMES: readonly Outcome[] = [
+export const OUTCOMES = [
   { anchor: '🪻', args: 'check',         gloss: 'A clean run',       key: 'clean',  text: 'All clean.',                    tint: 'celadon' },
   { anchor: '🔖', args: 'check',         gloss: 'Violations found',  key: 'check',  text: '5 diagnostics in 2 files.',     tint: 'apricot' },
   { anchor: '🗞️', args: 'format',        gloss: 'Files reformatted', key: 'format', text: 'Reformatted 4 files.',          tint: 'apricot' },
   { anchor: '🗞️', args: 'format --diff', gloss: 'A diff preview',    key: 'diff',   text: '3 files would be reformatted.', tint: 'apricot' }
-]
+] as const
+
+type Outcome   = (typeof OUTCOMES)[number]
+type CountTint = Outcome['tint']
 
 export const QUIET_OPTIONS: readonly AxisOption[] = [
   { gloss: 'full output', id: 'full',  mono: 'default' },

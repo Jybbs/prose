@@ -14,10 +14,9 @@ export function mdastElement(
   return node as unknown as PhrasingContent
 }
 
-// A native link, so `body-link` and to-hast both treat it as an anchor. Extra
-// hast attributes, a class or a `data-*`, go in `data.hProperties`.
-export function mdastLink(url: string, properties: Properties, children: PhrasingContent[]): Link {
-  return { type: 'link', url, title: null, children, data: { hProperties: properties } }
+// A native link, so `body-link` and to-hast both treat it as an anchor.
+export function mdastLink(url: string, children: PhrasingContent[]): Link {
+  return { type: 'link', url, title: null, children }
 }
 
 export function mdastSpan(className: string, children: PhrasingContent[]): PhrasingContent {

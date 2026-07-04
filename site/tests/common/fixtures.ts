@@ -3,6 +3,8 @@ import path from 'node:path'
 
 import { parse } from 'smol-toml'
 
+import { subdirectories } from '../../src/lib/content/discovery/page'
+
 export interface Case {
   dir     : string
   domain  : string
@@ -13,13 +15,10 @@ export interface Case {
 
 const root = path.join(import.meta.dirname, '..', 'fixtures')
 
-const subdirs = (at: string): string[] =>
-  fs.readdirSync(at, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => entry.name).sort()
-
 export const cases = (): Case[] =>
-  subdirs(root).flatMap(domain =>
-    subdirs(path.join(root, domain)).flatMap(subject =>
-      subdirs(path.join(root, domain, subject)).map(name => {
+  subdirectories(root).flatMap(domain =>
+    subdirectories(path.join(root, domain)).flatMap(subject =>
+      subdirectories(path.join(root, domain, subject)).map(name => {
         const dir  = path.join(root, domain, subject, name)
         const toml = path.join(dir, 'meta.toml')
         return {

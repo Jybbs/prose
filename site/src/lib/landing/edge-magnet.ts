@@ -76,12 +76,9 @@ export function attachEdgeMagnet(
 
   function onPointerMove(event: PointerEvent): void {
     const card = closestFrom(event, '.surface-card')
-    if (card === null) {
-      velocity = 0
-      engage()
-      return
-    }
-    velocity = edgePull(card.getBoundingClientRect(), options, viewport.getBoundingClientRect())
+    velocity = card === null
+      ? 0
+      : edgePull(card.getBoundingClientRect(), options, viewport.getBoundingClientRect())
     engage()
   }
 

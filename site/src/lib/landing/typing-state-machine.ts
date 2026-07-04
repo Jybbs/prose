@@ -1,7 +1,7 @@
 import { editPlan }                                 from './typing-demo-buffer'
 import type { TypingDemoEntry, TypingDemoResetRow } from './typing-demo-buffer'
 
-export type Phase =
+type Phase =
   | 'editBackspacing'
   | 'editTyping'
   | 'holdAfterReset'

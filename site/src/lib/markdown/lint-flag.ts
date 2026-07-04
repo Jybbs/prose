@@ -12,6 +12,7 @@ import { h }                            from 'hastscript'
 import type { RuleRef }     from '../content/discovery/docs-vocab'
 import type { LintFinding } from '../content/schemas'
 import { required }         from '../shared/required'
+import { ruleHoverAttrs }   from '../shared/rule-chip'
 
 // Wraps a flagged span in a `.lint-flag` element carrying the finding's hover
 // payload as `data-*`, the hooks the tooltip layer reads.
@@ -32,10 +33,8 @@ class LintFlagAnnotation extends ExpressiveCodeAnnotation {
   private dataset(): Properties {
     const data: Properties = { 'data-message': this.finding.message, 'data-rule': this.finding.code }
     if (this.rule) {
-      data['data-badge']   = this.rule.badge
-      data['data-caption'] = this.rule.caption
-      data['data-family']  = this.rule.family
-      data['data-href']    = this.rule.href
+      Object.assign(data, ruleHoverAttrs(this.rule))
+      data['data-href'] = this.rule.href
     }
     const edit = this.finding.fix?.edits[0]
     if (edit) {
