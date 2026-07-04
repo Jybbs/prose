@@ -16,27 +16,27 @@
     }
   },
   "primitives": {
-    "foo": {
-      "href": "/primitives/foo",
-      "title": "Foo Primitive"
-    },
     "bar": {
       "href": "/primitives/bar",
       "title": "bar"
+    },
+    "foo": {
+      "href": "/primitives/foo",
+      "title": "Foo Primitive"
     }
   },
   "rules": {
-    "align-equals": {
-      "badge": "⚖️",
-      "caption": "Aligns equals signs",
-      "family": "alignment",
-      "href": "/rules/alignment/align-equals"
-    },
     "align-colons": {
       "badge": "⚖️",
       "caption": "Aligns colons",
       "family": "alignment",
       "href": "/rules/alignment/align-colons"
+    },
+    "align-equals": {
+      "badge": "⚖️",
+      "caption": "Aligns equals signs",
+      "family": "alignment",
+      "href": "/rules/alignment/align-equals"
     },
     "bare-imports": {
       "badge": "🔎",

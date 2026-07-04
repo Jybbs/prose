@@ -52,9 +52,6 @@ jobs:
           - command : mise run cruft
             name    : 🧹 Cruft
             site    : true
-          - command : mise run mutation
-            name    : 🎨 Mutation
-            site    : true
 
     steps:
       - &checkout

@@ -9,7 +9,7 @@ export const isIndex = (file: string): boolean => slugOf(file) === 'index'
 export const slugOf = (file: string): string => file.replace(PAGE, '')
 
 export function* pageFiles(dir: string): Iterable<{ file: string, slug: string }> {
-  for (const file of readdirSync(dir)) {
+  for (const file of readdirSync(dir).sort()) {
     if (isPage(file)) yield { file, slug: slugOf(file) }
   }
 }

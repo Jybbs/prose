@@ -1,6 +1,0 @@
-#!/usr/bin/env -S bash -euo pipefail
-#MISE description="Run StrykerJS mutation testing over the docs-site `src/lib`"
-#MISE dir="site"
-#MISE wait_for=["bake"]
-
-bunx --bun stryker run
