@@ -4,9 +4,9 @@ import './styles/scope-specimen.css'
 
 import { getCollection } from 'astro:content'
 
-import { required }                from '../../lib/shared/required'
-import { SCOPE_META, SCOPE_ORDER } from '../../lib/suppression/scope-meta'
-import type { ScopeKey }           from '../../lib/suppression/scope-meta'
+import { required }                               from '../../lib/shared/required'
+import { directiveHref, SCOPE_META, SCOPE_ORDER } from '../../lib/suppression/scope-meta'
+import type { ScopeKey }                          from '../../lib/suppression/scope-meta'
 
 interface SpecimenLine {
   bracket : 'open' | 'close' | 'mid' | 'solo' | null
@@ -39,8 +39,6 @@ const lines: SpecimenLine[] = [
   { bracket : 'close', scope : 'file',  text : '' }
 ]
 
-const DIRECTIVES_PAGE = '/reference/suppression-directives'
-
 const LEGEND_IDS = [
   'prose-off', 'fmt-off', 'fmt-skip', 'prose-skip-rules', 'prose-ignore-rules', 'prose-keep'
 ]
@@ -55,7 +53,7 @@ const legendEntry = (id: string): { directive: string, href: string, scope: Scop
   const closer = data.pairId === undefined ? undefined : byId.get(data.pairId)
   return {
     directive : closer === undefined ? data.form : `${data.form} … ${closer.form}`,
-    href      : `${DIRECTIVES_PAGE}#${SCOPE_META[data.scope].anchor}`,
+    href      : directiveHref(data.scope),
     scope     : data.scope
   }
 }

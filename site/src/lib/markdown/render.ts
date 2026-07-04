@@ -11,8 +11,7 @@ export async function renderBlock(markdown: string): Promise<string> {
 }
 
 export async function renderInline(markdown: string): Promise<string> {
-  const { code } = await (await processor()).render(markdown)
-  return stripParagraph(code)
+  return stripParagraph(await renderBlock(markdown))
 }
 
 // Drops the single paragraph the block renderer wraps an inline field in,

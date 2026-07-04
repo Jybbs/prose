@@ -41,8 +41,10 @@ export const STREAM_OPTIONS: readonly AxisOption[] = [
   { gloss: 'no color', id: 'nocolor', mono: '--color never'   }
 ]
 
+const outcomeFor = (id: string): Outcome => OUTCOMES.find(o => o.key === id) ?? OUTCOMES[0]
+
 export function glossFor(outcomeId: string, quietId: string, streamId: string): string {
-  const outcome = OUTCOMES.find(o => o.key === outcomeId)     ?? OUTCOMES[0]
+  const outcome = outcomeFor(outcomeId)
   const quiet   = QUIET_OPTIONS.find(q => q.id === quietId)   ?? QUIET_OPTIONS[0]
   const stream  = STREAM_OPTIONS.find(s => s.id === streamId) ?? STREAM_OPTIONS[0]
   return `${outcome.gloss}, ${quiet.gloss}, ${stream.gloss}.`
@@ -53,7 +55,7 @@ export function resolveSelection(
   quietId   : string,
   streamId  : string
 ): RenderedLine {
-  const outcome = OUTCOMES.find(o => o.key === outcomeId) ?? OUTCOMES[0]
+  const outcome = outcomeFor(outcomeId)
   return resolveLine(streamId === 'tty', outcome, quietId === 'quiet')
 }
 

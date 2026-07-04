@@ -68,5 +68,11 @@ if (import.meta.vitest) {
       const { x } = await positionPanel(anchor, panel, { placement: 'bottom', platform })
       expect(x + 200).toBeLessThanOrEqual(1000)
     })
+
+    test('defaults to the top placement when none is given', async () => {
+      const platform = stubPlatform({ height: 30, width: 100, x: 450, y: 400 }, { height: 800, width: 1000 })
+      const { placement } = await positionPanel(anchor, panel, { platform })
+      expect(placement).toBe('top')
+    })
   })
 }

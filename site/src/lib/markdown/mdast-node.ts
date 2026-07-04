@@ -1,5 +1,6 @@
-import type { Properties }                  from 'hast'
-import type { Data, Link, PhrasingContent } from 'mdast'
+import { visitParents }    from 'unist-util-visit-parents'
+import type { Properties } from 'hast'
+import type { Data, Link, Nodes, Parent, PhrasingContent, Root } from 'mdast'
 
 // mdast-util-to-hast reads `hName` and `hProperties` off any node's `data`, so
 // a custom element reaches hast without a handler. The type stays off
@@ -34,8 +35,20 @@ export function pushClassName(node: { data?: Data }, className: string): void {
   properties.className = [...list, className]
 }
 
-export const withinHeading = (ancestors: Array<{ type: string }>): boolean =>
+const withinHeading = (ancestors: Array<{ type: string }>): boolean =>
   ancestors.some(ancestor => ancestor.type === 'heading')
+
+// Visits every node of `type` that no heading encloses.
+export function visitOutsideHeadings<T extends Nodes['type']>(
+  tree    : Root,
+  type    : T,
+  visitor : (node: Extract<Nodes, { type: T }>, ancestors: Parent[]) => void
+): void {
+  visitParents(tree, type as Nodes['type'], (node, ancestors) => {
+    if (withinHeading(ancestors)) return
+    visitor(node as Extract<Nodes, { type: T }>, ancestors as Parent[])
+  })
+}
 
 // The lookarounds keep hyphenated and snake_case compounds literal.
 export const wordBounded = (source: string): RegExp =>

@@ -10,6 +10,9 @@ export const SCOPE_META: Record<ScopeKey, { anchor: string, label: string, pip: 
 
 export const SCOPE_ORDER: ScopeKey[] = ['file', 'block', 'line', 'dict']
 
+export const directiveHref = (scope: ScopeKey): string =>
+  `/reference/suppression-directives#${SCOPE_META[scope].anchor}`
+
 if (import.meta.vitest) {
   const { describe, expect, test } = import.meta.vitest
 

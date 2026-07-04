@@ -1,9 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test } from 'vitest'
 
+import { fire, freshName }        from '../../common/dom'
 import { defineTabSelectElement } from '../../../src/lib/shared/dom/tab-select'
-
-let seq = 0
 
 // Registers a fresh custom element (a tag is one-shot in the registry) over a
 // tabs-and-panels subtree, connecting it so `wireTabSelect` runs.
@@ -11,7 +10,7 @@ function mountTabs(
   markup  : string,
   options : Partial<Parameters<typeof defineTabSelectElement>[0]> = {}
 ): { host: HTMLElement, panel: (lang: string) => HTMLElement, tab: (lang: string) => HTMLElement } {
-  const tag = `x-tabs-${++seq}`
+  const tag = freshName('x-tabs')
   defineTabSelectElement({ events: ['click'], key: 'lang', panels: '.panel', tabs: '.tab', ...options }, tag)
   const host = document.createElement(tag)
   host.innerHTML = markup
@@ -35,7 +34,7 @@ afterEach(() => { document.body.innerHTML = '' })
 describe('defineTabSelectElement', () => {
   test('selecting a keyed tab activates it, sets aria, and hides the mismatched panels', () => {
     const { host, panel, tab } = mountTabs(TABS)
-    tab('py').dispatchEvent(new Event('click'))
+    fire(tab('py'), 'click')
 
     expect(tab('py')).toHaveClass('is-active')
     expect(tab('py')).toHaveAttribute('aria-selected', 'true')
@@ -47,8 +46,8 @@ describe('defineTabSelectElement', () => {
 
   test('a tab with no key value shows every panel and skips aria on the roleless tab', () => {
     const { host, panel, tab } = mountTabs(TABS)
-    tab('py').dispatchEvent(new Event('click'))
-    ;(host.querySelector('.all') as HTMLElement).dispatchEvent(new Event('click'))
+    fire(tab('py'), 'click')
+    fire(host.querySelector('.all') as HTMLElement, 'click')
 
     expect(host.querySelector('.all')).toHaveClass('is-active')
     expect(host.querySelector('.all')).not.toHaveAttribute('aria-selected')
@@ -59,7 +58,7 @@ describe('defineTabSelectElement', () => {
 
   test('honors a custom active class and a non-click event', () => {
     const { tab } = mountTabs(TABS, { activeClass: 'chosen', events: ['mouseenter'] })
-    tab('rs').dispatchEvent(new Event('mouseenter'))
+    fire(tab('rs'), 'mouseenter')
     expect(tab('rs')).toHaveClass('chosen')
     expect(tab('py')).not.toHaveClass('chosen')
   })

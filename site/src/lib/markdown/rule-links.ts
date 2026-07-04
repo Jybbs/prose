@@ -1,10 +1,9 @@
 import { findAndReplace }             from 'mdast-util-find-and-replace'
 import type { PhrasingContent, Root } from 'mdast'
-import { visitParents }               from 'unist-util-visit-parents'
 
-import type { DocsVocab, PrimitiveRef, RuleRef }             from '../content/discovery/docs-vocab'
-import { ruleChipAttrs }                                     from '../shared/rule-chip'
-import { mdastElement, mdastLink, mdastText, withinHeading } from './mdast-node'
+import type { DocsVocab, PrimitiveRef, RuleRef }                    from '../content/discovery/docs-vocab'
+import { ruleChipAttrs }                                            from '../shared/rule-chip'
+import { mdastElement, mdastLink, mdastText, visitOutsideHeadings } from './mdast-node'
 
 const SLUG      = /^[a-z][a-z0-9-]*$/
 const WIKI_LINK = /\[\[([^\]]+)\]\]/g
@@ -33,8 +32,7 @@ export function remarkRuleLinks(vocab: DocsVocab) {
     }])
 
     const promotions: Array<{ children: PhrasingContent[], index: number, node: PhrasingContent }> = []
-    visitParents(tree, 'inlineCode', (node, ancestors) => {
-      if (withinHeading(ancestors)) return
+    visitOutsideHeadings(tree, 'inlineCode', (node, ancestors) => {
       const rule = vocab.rules.get(node.value)
       if (!rule) return
       const children = ancestors.at(-1)!.children as unknown as PhrasingContent[]

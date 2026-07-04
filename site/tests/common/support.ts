@@ -1,7 +1,5 @@
-import { experimental_AstroContainer as AstroContainer } from 'astro/container'
-import { test as base, vi }                              from 'vitest'
-import type { DetachedWindowAPI }                        from 'happy-dom'
-import type { MockInstance }                             from 'vitest'
+import { test as base, vi }       from 'vitest'
+import type { DetachedWindowAPI } from 'happy-dom'
 
 interface ContentEntry {
   data : unknown
@@ -9,13 +7,9 @@ interface ContentEntry {
 }
 
 interface Fixtures {
-  container        : AstroContainer
   fakeRO           : { resize: (target: Element, rect: Partial<DOMRectReadOnly>) => void }
   loadFonts        : () => void
-  mount            : (html: string) => HTMLElement
-  setRect          : (target: Element, rect: Partial<DOMRect>) => void
   setReducedMotion : (value: 'no-preference' | 'reduce') => void
-  warn             : MockInstance
 }
 
 export function astroContent(store: Record<string, ContentEntry[]>) {
@@ -27,10 +21,6 @@ export function astroContent(store: Record<string, ContentEntry[]>) {
 }
 
 export const test = base.extend<Fixtures>({
-  container: async ({}, use) => {
-    await use(await AstroContainer.create())
-  },
-
   fakeRO: async ({}, use) => {
     const callbacks = new Map<Element, ResizeObserverCallback>()
     class FakeResizeObserver {
@@ -61,28 +51,9 @@ export const test = base.extend<Fixtures>({
     await use(() => settle())
   },
 
-  mount: async ({}, use) => {
-    const root = document.body.appendChild(document.createElement('div'))
-    await use(html => { root.innerHTML = html; return root })
-    root.remove()
-  },
-
-  setRect: async ({}, use) => {
-    await use((target, rect) => Object.defineProperty(target, 'getBoundingClientRect', {
-      configurable : true,
-      value        : () => ({ bottom: 0, height: 0, left: 0, right: 0, toJSON() {}, top: 0, width: 0, x: 0, y: 0, ...rect })
-    }))
-  },
-
   setReducedMotion: async ({}, use) => {
     const { settings } = (window as unknown as { happyDOM: DetachedWindowAPI }).happyDOM
     await use(value => { settings.device.prefersReducedMotion = value })
     settings.device.prefersReducedMotion = 'no-preference'
-  },
-
-  warn: async ({}, use) => {
-    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    await use(spy)
-    spy.mockRestore()
   }
 })

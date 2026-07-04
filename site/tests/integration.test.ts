@@ -94,6 +94,9 @@ vi.mock('@astrojs/starlight/components/Head.astro', async () => {
 type Meta   = Record<string, unknown>
 type Handler = (c: Case) => Promise<void>
 
+const handlersFor = (subjects: Iterable<string>, handler: Handler): Record<string, Handler> =>
+  Object.fromEntries([...subjects].map(subject => [subject, handler]))
+
 const snapshot = async (c: Case, file: string, text: string, format: 'markup' | 'raw'): Promise<void> => {
   const body = format === 'markup' ? await formatMarkup(text) : normalize(text)
   await expect(body).toMatchFileSnapshot(path.join(c.dir, file))
@@ -166,7 +169,7 @@ const markdown: Handler = async c => {
   await snapshot(c, 'input.md.snap', output, c.meta.throws ? 'raw' : 'markup')
 }
 
-const markdownEntries = Object.fromEntries([...Object.keys(transformFor), 'lint-flag'].map(d => [d, markdown]))
+const markdownEntries = handlersFor([...Object.keys(transformFor), 'lint-flag'], markdown)
 
 const reviveNulls = (value: unknown): unknown => {
   if (value === '@null') return null
@@ -245,7 +248,7 @@ const og: Handler = async c => {
   else                           await snapshot(c, 'output.svg.snap', output, 'markup')
 }
 
-const ogEntries = Object.fromEntries(Object.keys(ogRender).map(d => [d, og]))
+const ogEntries = handlersFor(Object.keys(ogRender), og)
 
 const asMiddleware = (fn: unknown) => fn as (c: unknown, next: () => Promise<void>) => Promise<void>
 
@@ -347,7 +350,7 @@ const discovery: Handler = async c => {
   else await snapshot(c, 'output.snap', JSON.stringify(await run, null, 2), 'raw')
 }
 
-const discoveryEntries = Object.fromEntries(Object.keys(discoveryRunners).map(d => [d, discovery]))
+const discoveryEntries = handlersFor(Object.keys(discoveryRunners), discovery)
 
 interface FetchMeta {
   data   ?: unknown
@@ -486,7 +489,7 @@ const loader: Handler = async c => {
   await snapshot(c, 'output.snap', JSON.stringify(result, null, 2), 'raw')
 }
 
-const loaderEntries = Object.fromEntries(Object.keys(loaderRunners).map(d => [d, loader]))
+const loaderEntries = handlersFor(Object.keys(loaderRunners), loader)
 
 const registry: Record<string, Handler> = {
   ...markdownEntries,

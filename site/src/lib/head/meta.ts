@@ -64,12 +64,15 @@ if (import.meta.vitest) {
     test('pushes the og and twitter image tags with card dimensions', () => {
       const h = head()
       imageMeta(h, 'card.png', 'Alt text')
-      expect(metaWith(h, 'property', 'og:image')?.attrs?.content).toBe('card.png')
-      expect(metaWith(h, 'property', 'og:image:width')?.attrs?.content).toBe('1200')
-      expect(metaWith(h, 'property', 'og:image:height')?.attrs?.content).toBe('630')
-      expect(metaWith(h, 'property', 'og:image:type')?.attrs?.content).toBe('image/png')
-      expect(metaWith(h, 'name', 'twitter:image')?.attrs?.content).toBe('card.png')
-      expect(metaWith(h, 'name', 'twitter:image:alt')?.attrs?.content).toBe('Alt text')
+      expect(h.map(entry => [entry.attrs?.property ?? entry.attrs?.name, entry.attrs?.content])).toEqual([
+        ['og:image',          'card.png'],
+        ['og:image:width',    '1200'],
+        ['og:image:height',   '630'],
+        ['og:image:type',     'image/png'],
+        ['og:image:alt',      'Alt text'],
+        ['twitter:image',     'card.png'],
+        ['twitter:image:alt', 'Alt text']
+      ])
     })
   })
 

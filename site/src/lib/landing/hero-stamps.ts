@@ -55,8 +55,7 @@ export function tileStamps(cols: number, rows: number): readonly Stamp[] {
       // oxlint-disable-next-line unicorn/prefer-math-trunc
       const cellSeed = ((r * 2654435761) ^ (cIdx * 40503)) >>> 0
       const shuffled = PERMUTATIONS[cellSeed % PERMUTATIONS.length]
-      for (let i = 0; i < 4; i++) {
-        const [sx, sy] = CORNER_SIGNS[i]
+      for (const [i, [sx, sy]] of CORNER_SIGNS.entries()) {
         out.push({ kind: 'small', letter: shuffled[i], rotate: rotate(idx), x: xC + sx * dx, y: yC + sy * dy })
         idx++
       }

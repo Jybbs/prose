@@ -73,18 +73,15 @@ export function attachHoverOverlay(options: HoverOverlayOptions): void {
     showTimer = window.setTimeout(() => show(anchor), showDelayMs)
   }
 
-  document.addEventListener('mouseover', event => {
+  const onEnter = (event: Event): void => {
     const anchor = closestFrom(event, options.selector)
     if (anchor) scheduleShow(anchor)
-  })
-  document.addEventListener('mouseout', event => {
+  }
+  const onLeave = (event: Event): void => {
     if (closestFrom(event, options.selector)) scheduleHide()
-  })
-  document.addEventListener('focusin', event => {
-    const anchor = closestFrom(event, options.selector)
-    if (anchor) scheduleShow(anchor)
-  })
-  document.addEventListener('focusout', event => {
-    if (closestFrom(event, options.selector)) scheduleHide()
-  })
+  }
+  document.addEventListener('mouseover', onEnter)
+  document.addEventListener('focusin', onEnter)
+  document.addEventListener('mouseout', onLeave)
+  document.addEventListener('focusout', onLeave)
 }

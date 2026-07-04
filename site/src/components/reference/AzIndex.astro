@@ -6,7 +6,7 @@ import { getCollection } from 'astro:content'
 import { renderInline }                from '../../lib/markdown/render'
 import { TOKEN_DOMAINS, tokenSortKey } from '../../lib/reference/token-domains'
 import type { TokenDomain }            from '../../lib/reference/token-domains'
-import { SCOPE_META }                  from '../../lib/suppression/scope-meta'
+import { directiveHref }               from '../../lib/suppression/scope-meta'
 
 const index      = await getCollection('tokenIndex')
 const exitCodes  = (await getCollection('exitCodes')).map(entry => entry.data)
@@ -28,7 +28,7 @@ const derived: Partial<Record<TokenDomain, TokenEntry[]>> = {
   })),
   suppression : directives.map(entry => ({
     blurb : entry.data.effect,
-    href  : `/reference/suppression-directives#${SCOPE_META[entry.data.scope].anchor}`,
+    href  : directiveHref(entry.data.scope),
     key   : entry.data.form
   }))
 }

@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { fire, freshName } from '../../common/dom'
+
 const { floatMock, unpin } = vi.hoisted(() => {
   const stop = vi.fn()
   return { floatMock: vi.fn(() => stop), unpin: stop }
@@ -11,12 +13,10 @@ import { attachHoverOverlay } from '../../../src/lib/overlay/hover'
 
 type Options = Parameters<typeof attachHoverOverlay>[0]
 
-let seq = 0
-
 // Attaches one overlay bound to a unique selector, so listeners left on the
 // shared document by earlier tests never match this test's anchor.
 function overlay(over: Partial<Options> = {}): { anchor: HTMLElement, selector: string } {
-  const selector = `.anchor-${++seq}`
+  const selector = `.${freshName('anchor')}`
   const anchor   = document.createElement('button')
   document.body.append(anchor)
   anchor.className = selector.slice(1)
@@ -29,7 +29,6 @@ function overlay(over: Partial<Options> = {}): { anchor: HTMLElement, selector: 
   return { anchor, selector }
 }
 
-const fire = (target: EventTarget, type: string) => target.dispatchEvent(new Event(type, { bubbles: true }))
 const currentPanel = () => document.querySelector('.overlay-panel')
 
 beforeEach(() => { vi.useFakeTimers(); floatMock.mockClear(); unpin.mockClear() })
