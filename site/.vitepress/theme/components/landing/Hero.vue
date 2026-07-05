@@ -3,6 +3,7 @@ import { useElementBounding }       from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import { ROW_STRIDE_PX, tileStamps } from '../../../lib/landing/hero-stamps'
+import { SITE_ALT }                  from '../../../lib/shared/constants'
 
 const STAMP_PER_COL = 240
 const TERMINUS_GAP  = 40
@@ -58,7 +59,7 @@ const stamps = computed(() => tileStamps(cols.value, rows.value))
       </template>
     </div>
     <h1 class="landing-hero-wordmark">
-      <img src="/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." />
+      <img src="/title-with-tagline.svg" :alt="SITE_ALT" />
     </h1>
   </div>
 </template>

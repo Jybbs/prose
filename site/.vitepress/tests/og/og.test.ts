@@ -1,4 +1,5 @@
 import { enumeratePages } from '../../lib/og/pages'
+import { cardKeyer }      from '../../lib/og/render/cache'
 import { fixtureDir }     from '../support'
 
 describe('enumeratePages', () => {
@@ -28,5 +29,16 @@ describe('enumeratePages', () => {
   it('falls back to internal stability and the titled slug for an undiscovered primitive', () => {
     const [page] = enumeratePages(srcDir, ['primitives/ghost.md'])
     expect(page).toMatchObject({ primitive: { stability: 'internal' }, title: 'Ghost' })
+  })
+})
+
+describe('cardKeyer', () => {
+  const brand = { fonts: [], glyph: 'g', titleWithTagline: 't', wordmark: 'w' }
+
+  it('keys stably per input and re-keys when the version or card changes', () => {
+    const keyOf = cardKeyer('0.1.0', brand)
+    expect(keyOf('landing')).toBe(cardKeyer('0.1.0', brand)('landing'))
+    expect(keyOf('landing')).not.toBe(cardKeyer('0.2.0', brand)('landing'))
+    expect(keyOf('landing')).not.toBe(keyOf({ breadcrumb: [], kind: 'usage', outputPath: 'o', title: 'T' }))
   })
 })

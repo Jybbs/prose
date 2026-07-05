@@ -1,3 +1,6 @@
+import fs   from 'node:fs'
+import path from 'node:path'
+
 import postcssCustomMedia                         from 'postcss-custom-media'
 import githubDark                                 from 'shiki/themes/github-dark.mjs'
 import { defineConfig }                           from 'vitepress'
@@ -15,10 +18,12 @@ import { discoverRules }                     from './lib/rules/discovery'
 import { assertCorpusIntegrity }             from './lib/rules/integrity'
 import { ruleLinkPlugin }                    from './lib/rules/link-plugin'
 import { canonicalUrl }                      from './lib/config/canonical-url'
-import { ogImageUrl }                        from './lib/config/og-url'
+import { pageHead }                          from './lib/config/head'
+import { ROBOTS_TXT }                        from './lib/config/robots'
+import { attachLastmod }                     from './lib/config/sitemap'
 import { PALETTE, paletteCss }               from './lib/shared/palette'
-import { CARD_HEIGHT, CARD_WIDTH }           from './lib/og/render/parts'
-import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME, SITE_TAGLINE } from './lib/shared/constants'
+import { REPO_URL, SHIKI_THEMES }            from './lib/shared/constants'
+import { SITE_HOSTNAME, SITE_TAGLINE }       from './lib/shared/constants'
 import { buildPageTimestamps }                         from './lib/config/page-timestamps'
 import { crateDir, primitivesDir, repoRoot, rulesDir } from './lib/shared/paths'
 import { buildSidebar }                                from './lib/config/sidebar'
@@ -48,7 +53,6 @@ export default defineConfig({
     ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }],
     ['meta', { content: themeColor,                name:     'theme-color'   }],
     ['meta', { content: 'summary_large_image',     name:     'twitter:card'  }],
-    ['meta', { content: 'website',                 property: 'og:type'       }],
     ['meta', { content: 'Prose',                   property: 'og:site_name'  }],
     ['style', {}, `:root{--prose-shiki-dark-bg:${shikiDarkBg}}`]
   ],
@@ -67,7 +71,8 @@ export default defineConfig({
     theme       : SHIKI_THEMES
   },
   sitemap: {
-    hostname: SITE_HOSTNAME
+    hostname       : SITE_HOSTNAME,
+    transformItems : items => attachLastmod(items, pageTimestamps)
   },
   themeConfig: {
     editLink: {
@@ -94,30 +99,12 @@ export default defineConfig({
   title         : 'Prose',
   titleTemplate : ':title · Prose',
   async buildEnd(siteConfig) {
+    fs.writeFileSync(path.join(siteConfig.outDir, 'robots.txt'), ROBOTS_TXT)
     const { buildOgCards } = await import('./lib/og/render/build')
     await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
   },
   transformHead({ pageData }) {
-    const isLanding   = pageData.relativePath === 'index.md'
-    const description = pageData.frontmatter.description ?? pageData.frontmatter.caption ?? SITE_TAGLINE
-    const title       = pageData.frontmatter.name ?? pageData.title ?? 'Prose'
-    const ogImage     = ogImageUrl(pageData.relativePath)
-    const ogTitle     = isLanding ? 'Prose'                                       : `${title} · Prose`
-    const ogAlt       = isLanding ? 'Prose, a Python typesetter for the reader.'  : `${title} card`
-    const ogUrl       = canonicalUrl(pageData.relativePath)
-    return [
-      ['meta', { content: ogTitle,             property: 'og:title'           }],
-      ['meta', { content: description,         property: 'og:description'     }],
-      ['meta', { content: ogUrl,               property: 'og:url'             }],
-      ['meta', { content: 'en_US',             property: 'og:locale'          }],
-      ['meta', { content: ogImage,             property: 'og:image'           }],
-      ['meta', { content: String(CARD_WIDTH),  property: 'og:image:width'     }],
-      ['meta', { content: String(CARD_HEIGHT), property: 'og:image:height'    }],
-      ['meta', { content: 'image/png',         property: 'og:image:type'      }],
-      ['meta', { content: ogAlt,               property: 'og:image:alt'       }],
-      ['meta', { content: ogImage,             name:     'twitter:image'      }],
-      ['meta', { content: ogAlt,               name:     'twitter:image:alt'  }]
-    ]
+    return pageHead(pageData, version)
   },
   transformPageData(pageData) {
     pageData.frontmatter ||= {}
@@ -126,11 +113,13 @@ export default defineConfig({
       'link',
       { href: canonicalUrl(pageData.relativePath), rel: 'canonical' }
     ])
+    if (!pageData.description && typeof pageData.frontmatter.caption === 'string') {
+      pageData.description = pageData.frontmatter.caption
+    }
     const ts = pageTimestamps.get(pageData.relativePath)
     if (ts) pageData.lastUpdated = ts
     if (pageData.relativePath.startsWith('rules/') && !pageData.relativePath.endsWith('index.md')) {
-      const slug = pageData.relativePath.replace(/^rules\/|\.md$/g, '')
-      pageData.frontmatter.name ??= toTitleCase(slug, '-')
+      pageData.frontmatter.name ??= toTitleCase(path.basename(pageData.relativePath, '.md'), '-')
     }
     if (pageData.relativePath.startsWith('primitives/') && !pageData.relativePath.endsWith('index.md')) {
       const slug = pageData.relativePath.replace(/^primitives\/|\.md$/g, '')

@@ -41,7 +41,7 @@ describe('PALETTE', () => {
     ['ube-mid',   'lighter'],
     ['ube-pale',  'lighter']
   ] as const)('mixes %s %s than the base hue', (shade, direction) => {
-    const compare = direction === 'darker' ? 'toBeLessThan' : 'toBeGreaterThan'
-    expect(lightness(PALETTE[shade]))[compare](lightness(PALETTE.ube))
+    const delta = lightness(PALETTE[shade]) - lightness(PALETTE.ube)
+    expect(direction === 'darker' ? delta : -delta).toBeLessThan(0)
   })
 })
