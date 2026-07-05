@@ -5,6 +5,7 @@ import { contentPages, isContentPage, matterPages } from '../shared/content-page
 import { memoizeByPath }                            from '../shared/memoize-by-path'
 import * as registries                              from '../shared/registries'
 import { requireString }                            from '../shared/require-string'
+import { ruleRoute }                                from '../shared/routes'
 
 export interface DiscoveredRule {
   caption  : string
@@ -50,7 +51,7 @@ export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
         caption,
         category : registries.categoryOf(family),
         family,
-        href     : `/rules/${family}/${slug}`,
+        href     : ruleRoute(family, slug),
         related  : relatedSlugs,
         slug
       })

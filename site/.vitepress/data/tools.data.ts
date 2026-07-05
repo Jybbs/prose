@@ -1,8 +1,13 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { defineLoader } from 'vitepress'
+import { icons as logos }         from '@iconify-json/logos'
+import { icons as simpleIcons }   from '@iconify-json/simple-icons'
+import type { IconifyJSON }       from '@iconify/types'
+import { getIconData, iconToSVG } from '@iconify/utils'
+import { defineLoader }           from 'vitepress'
 
+import { lookup }                    from '../lib/shared/lookup'
 import { repoRoot }                  from '../lib/shared/paths'
 import { TOOL_SEEDS, type ToolSlug } from '../lib/shared/tools'
 
@@ -22,24 +27,12 @@ interface ToolsData {
   entries : Record<ToolSlug, ToolEntry>
 }
 
-interface IconPackEntry {
-  body    : string
-  height ?: number
-  width  ?: number
-}
-
-interface IconPack {
-  height ?: number
-  icons   : Record<string, IconPackEntry>
-  width  ?: number
+const ICON_SETS: Record<string, IconifyJSON> = {
+  'logos'        : logos,
+  'simple-icons' : simpleIcons
 }
 
 const repoDir = repoRoot(import.meta.url)
-
-const loadPack = (pack: string): IconPack => {
-  const file = path.join(repoDir, 'site', 'node_modules', `@iconify-json/${pack}/icons.json`)
-  return JSON.parse(fs.readFileSync(file, 'utf8')) as IconPack
-}
 
 function loadLocalSvg(relative: string, viewBox: string): ToolIcon {
   const file = path.join(repoDir, 'site', '.vitepress', 'assets', relative)
@@ -59,21 +52,13 @@ const CUSTOM_ICONS: Record<string, ToolIcon> = {
 
 function loadIcon(spec: string): ToolIcon {
   const [pack, name] = spec.split(':')
-  if (pack === 'custom') {
-    const custom = CUSTOM_ICONS[name]
-    if (custom === undefined) {
-      throw new Error(`tools.data: custom icon "${name}" not registered`)
-    }
-    return custom
-  }
-  const data  = loadPack(pack)
-  const entry = data.icons[name]
-  if (entry === undefined) {
+  if (pack === 'custom') return lookup(CUSTOM_ICONS, name, 'Custom icon')
+  const icon = getIconData(lookup(ICON_SETS, pack, 'Icon set'), name)
+  if (icon === null) {
     throw new Error(`tools.data: icon "${spec}" not found in @iconify-json/${pack}`)
   }
-  const w = entry.width  ?? data.width  ?? 24
-  const h = entry.height ?? data.height ?? 24
-  return { body: entry.body, viewBox: `0 0 ${w} ${h}` }
+  const svg = iconToSVG(icon)
+  return { body: svg.body, viewBox: svg.attributes.viewBox }
 }
 
 declare const data: ToolsData

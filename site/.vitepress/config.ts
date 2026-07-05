@@ -28,6 +28,7 @@ import * as constants                       from './lib/shared/constants'
 import { buildPageTimestamps }              from './lib/config/page-timestamps'
 import * as paths                           from './lib/shared/paths'
 import { SECTIONS }                         from './lib/shared/registries'
+import { sectionRoute }                     from './lib/shared/routes'
 import { buildSidebar }                     from './lib/config/sidebar'
 import { toTitleCase }                      from './lib/shared/title-case'
 import { TOOL_SEEDS }                       from './lib/shared/tools'
@@ -86,7 +87,7 @@ export default defineConfig({
     logo      : { alt: 'prose', src: '/logo.svg' },
     nav: [
       ...SECTIONS.map(({ label, slug }) =>
-        ({ activeMatch: `/${slug}/`, link: `/${slug}/`, text: label })),
+        ({ activeMatch: sectionRoute(slug), link: sectionRoute(slug), text: label })),
       { link: `${constants.REPO_URL}/releases`, text: `v${version}` }
     ],
     outline   : { level: [2, 3] },

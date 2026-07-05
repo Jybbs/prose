@@ -1,5 +1,6 @@
 import { defineLoader } from 'vitepress'
 
+import { REPO_SLUG }    from '../lib/shared/constants'
 import { withFallback } from '../lib/shared/with-fallback'
 
 interface StarsData {
@@ -14,7 +15,7 @@ export default defineLoader({
   async load(): Promise<StarsData> {
     if (process.env.PROSE_OFFLINE_DOCS === '1') return { stars: '0' }
     const stars = await withFallback('stars:fetch', async () => {
-      const response = await fetch('https://api.github.com/repos/Jybbs/prose', {
+      const response = await fetch(`https://api.github.com/repos/${REPO_SLUG}`, {
         headers: { 'User-Agent': 'prose-docs-build' }
       })
       if (!response.ok) throw new Error(`GitHub API returned ${response.status}`)

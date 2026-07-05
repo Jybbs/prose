@@ -1,14 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
-import { SCOPE_META } from './scope-meta'
-
-import {
-  data as directives,
-  type Directive,
-  type PartRole,
-  type Scope
-} from '../../../data/directives.data'
+import { data as directives }     from '../../../data/directives.data'
+import { useTabSelect }           from '../../../lib/composables/use-tab-select'
+import { type PartRole }          from '../../../lib/suppression/directive-parts'
+import { SCOPE_META, scopeBands } from '../../../lib/suppression/scopes'
 
 const ROLE_LABEL: Record<PartRole, string> = {
   action    : 'action',
@@ -17,24 +11,16 @@ const ROLE_LABEL: Record<PartRole, string> = {
   payload   : 'rule list'
 }
 
-const DIRECTIVE_SCOPE_ORDER: Scope[] = ['file', 'block', 'line']
+const bands = scopeBands(directives)
 
-const bands = computed(() => {
-  return DIRECTIVE_SCOPE_ORDER.map(scope => ({
-    scope,
-    items : directives.filter(d => d.scope === scope)
-  }))
-})
-
-const focusId = ref<string>('prose-ignore-rules')
-
-const focused = computed<Directive>(() =>
-  directives.find(d => d.id === focusId.value) ?? directives[0]
-)
+const { active: focused, selected: focusId } = useTabSelect(directives, d => d.id)
+focusId.value = 'prose-ignore-rules'
 
 function classifyLine(line: string): 'directive' | 'comment' | 'code' {
   const trimmed = line.trim()
-  if (trimmed.includes(' fmt:') || trimmed.includes(' yapf:') || trimmed.includes(' prose:')) return 'directive'
+  if (trimmed.includes(' fmt:') || trimmed.includes(' yapf:') || trimmed.includes(' prose:')) {
+    return 'directive'
+  }
   if (trimmed.startsWith('#')) return 'comment'
   return 'code'
 }
