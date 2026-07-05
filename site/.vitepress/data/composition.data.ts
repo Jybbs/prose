@@ -5,7 +5,7 @@ import { parse }        from 'smol-toml'
 import { defineLoader } from 'vitepress'
 
 import { subdirNames } from '../lib/fixtures/walker'
-import { crateDir }    from '../lib/shared/paths'
+import { fixturesDir } from '../lib/shared/paths'
 import { toTitleCase } from '../lib/shared/title-case'
 
 interface CompositionCase {
@@ -18,7 +18,7 @@ interface CompositionData {
   cases : readonly CompositionCase[]
 }
 
-const compositionDir = path.join(crateDir(import.meta.url), 'tests/fixtures/composition')
+const compositionDir = path.join(fixturesDir(import.meta.url), 'composition')
 
 declare const data: CompositionData
 export { data }

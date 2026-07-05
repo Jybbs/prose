@@ -20,6 +20,14 @@ export function crateDirFrom(repoRoot: string): string {
   return path.join(repoRoot, 'crate')
 }
 
+export function fixturesDir(metaUrl: string): string {
+  return fixturesDirFrom(crateDir(metaUrl))
+}
+
+export function fixturesDirFrom(crateDir: string): string {
+  return path.join(crateDir, 'tests', 'fixtures')
+}
+
 export function primitivesDir(metaUrl: string): string {
   return path.join(siteDir(metaUrl), 'primitives')
 }

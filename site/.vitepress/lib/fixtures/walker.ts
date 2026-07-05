@@ -3,9 +3,9 @@ import path from 'node:path'
 
 import { parse } from 'smol-toml'
 
-import * as lintFindings from './lint-findings'
+import { fixturesDirFrom } from '../shared/paths'
+import * as lintFindings   from './lint-findings'
 
-const FIXTURES_DIR  = 'tests/fixtures'
 const INPUT_FILE    = 'input.py'
 const META_FILE     = 'meta.toml'
 const SNAPSHOT_FILE = snapshotPath(INPUT_FILE)
@@ -34,7 +34,7 @@ export function corpusLintFindings(crateDir: string): Map<string, lintFindings.L
 }
 
 export function fixtureWatchGlobs(crateDir: string): string[] {
-  const fixturesRoot = path.join(crateDir, FIXTURES_DIR)
+  const fixturesRoot = fixturesDirFrom(crateDir)
   return [
     `${fixturesRoot}/**/${INPUT_FILE}`,
     `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
@@ -61,7 +61,7 @@ export function subdirNames(dir: string): string[] {
 }
 
 export function* walkFixtures(crateDir: string): Generator<FixtureWalkEntry> {
-  const fixturesRoot = path.join(crateDir, FIXTURES_DIR)
+  const fixturesRoot = fixturesDirFrom(crateDir)
   for (const rule of subdirNames(fixturesRoot)) {
     const ruleDir = path.join(fixturesRoot, rule)
     for (const caseName of subdirNames(ruleDir)) {

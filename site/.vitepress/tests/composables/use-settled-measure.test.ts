@@ -1,46 +1,20 @@
 // @vitest-environment happy-dom
-import { flushPromises, mount }    from '@vue/test-utils'
-import { defineComponent, h, ref } from 'vue'
+import { flushPromises } from '@vue/test-utils'
+import { ref }           from 'vue'
 
-import { useSettledMeasure } from '../../lib/composables/use-settled-measure'
-
-class FakeResizeObserver {
-  static latest: FakeResizeObserver | undefined
-  callback: ResizeObserverCallback
-
-  constructor(callback: ResizeObserverCallback) {
-    this.callback = callback
-    FakeResizeObserver.latest = this
-  }
-
-  disconnect(): void {}
-  observe(): void {}
-  unobserve(): void {}
-
-  resize(): void {
-    this.callback([], this as unknown as ResizeObserver)
-  }
-}
-
-const mountWith = (measure: () => void) => {
-  const target = ref(document.createElement('div'))
-  return mount(defineComponent({
-    setup() {
-      useSettledMeasure(target, measure)
-      return () => h('div')
-    }
-  }))
-}
+import { useSettledMeasure }   from '../../lib/composables/use-settled-measure'
+import { domTest, mountSetup } from '../dom'
 
 describe('useSettledMeasure', () => {
-  it('measures once the fonts settle and again on each resize', async () => {
-    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+  domTest('measures after the fonts settle and on resize', async ({ fonts, resizeObserver }) => {
     const measure = vi.fn<() => void>()
-    mountWith(measure)
+    mountSetup(() => useSettledMeasure(ref(document.createElement('div')), measure))
+    await flushPromises()
+    expect(measure).not.toHaveBeenCalled()
+    fonts.settle()
     await flushPromises()
     expect(measure).toHaveBeenCalledTimes(1)
-    FakeResizeObserver.latest!.resize()
+    resizeObserver.fire()
     expect(measure).toHaveBeenCalledTimes(2)
-    vi.unstubAllGlobals()
   })
 })

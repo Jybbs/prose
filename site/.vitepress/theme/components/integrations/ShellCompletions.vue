@@ -9,21 +9,23 @@ const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
 
 <template>
   <div class="shell-card">
-    <div class="shell-card-stack" role="tablist" aria-label="Shell completion targets">
-      <button
-        v-for="(shell, i) in shells"
-        :key="shell.slug"
-        type="button"
-        role="tab"
-        class="shell-card-tab"
-        :class="{ 'is-active': shell.slug === activeSlug }"
-        :aria-selected="shell.slug === activeSlug"
-        :style="{ '--idx': i }"
-        @click="activeSlug = shell.slug"
-      >
-        <span class="shell-card-tab-mark" aria-hidden="true"><Tool :slug="shell.slug" bare /></span>
-        <em class="shell-card-tab-name">{{ shell.name }}</em>
-      </button>
+    <div class="shell-card-stack">
+      <div role="tablist" aria-label="Shell completion targets">
+        <button
+          v-for="(shell, i) in shells"
+          :key="shell.slug"
+          type="button"
+          role="tab"
+          class="shell-card-tab"
+          :class="{ 'is-active': shell.slug === activeSlug }"
+          :aria-selected="shell.slug === activeSlug"
+          :style="{ '--idx': i }"
+          @click="activeSlug = shell.slug"
+        >
+          <span class="shell-card-tab-mark" aria-hidden="true"><Tool :slug="shell.slug" bare /></span>
+          <em class="shell-card-tab-name">{{ shell.name }}</em>
+        </button>
+      </div>
 
       <article class="shell-card-modal">
         <header class="shell-card-modal-head">

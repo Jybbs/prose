@@ -1,0 +1,9 @@
+component = 'landing/ReleaseStamp'
+
+[props.release]
+date      = '2026-05-12'
+month     = 'May'
+url       = 'https://pypi.org/project/prose-formatter/0.6.0/'
+version   = '0.6.0'
+year      = '2026'
+yearShort = '26'

@@ -13,7 +13,7 @@ const { selected: activeSlug } = useTabSelect(editors, e => e.slug)
     <aside class="editor-card-index">
       <span class="kicker editor-card-edition">Editors &middot; {{ formatFolio(editors.length) }}</span>
       <ul class="editor-card-list" role="tablist">
-        <li v-for="(editor, i) in editors" :key="editor.slug">
+        <li v-for="(editor, i) in editors" :key="editor.slug" role="presentation">
           <button
             type="button"
             role="tab"

@@ -85,8 +85,7 @@ const trackStyle = computed(() => ({
             :family="card.family"
             :number="card.number"
             :rules="card.rules"
-            :aria-hidden="copy === 2 ? 'true' : undefined"
-            :tabindex="copy === 2 ? -1 : undefined"
+            :inert="copy === 2"
           />
         </template>
       </div>

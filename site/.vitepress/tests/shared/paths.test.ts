@@ -16,11 +16,12 @@ describe('repoRoot', () => {
 })
 
 describe('directory helpers', () => {
-  it('resolve the crate, site, rules, and primitives directories under the repo', () => {
+  it('resolve the crate, site, rules, primitives, and fixtures directories under the repo', () => {
     const root = paths.repoRoot(meta)
     expect(paths.crateDir(meta)).toBe(path.join(root, 'crate'))
     expect(paths.siteDir(meta)).toBe(path.join(root, 'site'))
     expect(paths.rulesDir(meta)).toBe(path.join(root, 'site', 'rules'))
     expect(paths.primitivesDir(meta)).toBe(path.join(root, 'site', 'primitives'))
+    expect(paths.fixturesDir(meta)).toBe(path.join(root, 'crate', 'tests', 'fixtures'))
   })
 })

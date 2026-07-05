@@ -1,0 +1,7 @@
+component = 'base/Kicker'
+
+[props]
+variant = 'rule'
+
+[slots]
+default = 'The Surfaces'

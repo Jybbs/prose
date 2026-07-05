@@ -12,27 +12,22 @@ vi.mock('../../data/rules.data', () => ({
 }))
 
 import * as composables from '../../lib/composables/route'
-
-function capture<T>(fn: () => T): T {
-  let value!: T
-  mount(defineComponent({ setup() { value = fn(); return () => h('div') } }))
-  return value
-}
+import { mountSetup }   from '../dom'
 
 describe('useCurrentRule', () => {
   it('resolves the rule for the current route slug', () => {
     route.value = { relativePath: 'rules/alignment/align-equals.md' }
-    expect(capture(composables.useCurrentRule).value?.slug).toBe('align-equals')
+    expect(mountSetup(composables.useCurrentRule).value?.slug).toBe('align-equals')
   })
 
   it('returns null off a rule page', () => {
     route.value = { relativePath: 'reference/cli.md' }
-    expect(capture(composables.useCurrentRule).value).toBeNull()
+    expect(mountSetup(composables.useCurrentRule).value).toBeNull()
   })
 
   it('returns null on a rules index route', () => {
     route.value = { relativePath: 'rules/index.md' }
-    expect(capture(composables.useCurrentRule).value).toBeNull()
+    expect(mountSetup(composables.useCurrentRule).value).toBeNull()
   })
 })
 
@@ -50,11 +45,11 @@ describe('provideCurrentRule', () => {
 describe('useCurrentFamily', () => {
   it('reads the family segment of a rule route', () => {
     route.value = { relativePath: 'rules/alignment/align-equals.md' }
-    expect(capture(composables.useCurrentFamily).value).toBe('alignment')
+    expect(mountSetup(composables.useCurrentFamily).value).toBe('alignment')
   })
 
   it('returns null off the rules tree', () => {
     route.value = { relativePath: 'usage/index.md' }
-    expect(capture(composables.useCurrentFamily).value).toBeNull()
+    expect(mountSetup(composables.useCurrentFamily).value).toBeNull()
   })
 })
