@@ -50,11 +50,11 @@
 }
 
 .editor-card-row:hover {
-  background : color-mix(in srgb, var(--prose-c-celadon) 7%, transparent);
+  background : color-mix(in srgb, var(--prose-palette-celadon) 7%, transparent);
 }
 
 .editor-card-row.is-active {
-  background : color-mix(in srgb, var(--prose-c-celadon) 14%, transparent);
+  background : color-mix(in srgb, var(--prose-palette-celadon) 14%, transparent);
 }
 
 .editor-card-row-mark,
@@ -66,7 +66,7 @@
   width           : var(--mark-size, 22px);
   height          : var(--mark-size, 22px);
   flex            : 0 0 auto;
-  border          : 1px solid color-mix(in srgb, var(--prose-c-celadon) var(--mark-strength, 28%), var(--vp-c-divider));
+  border          : 1px solid color-mix(in srgb, var(--prose-palette-celadon) var(--mark-strength, 28%), var(--vp-c-divider));
   border-radius   : 50%;
   background      : var(--vp-c-bg);
 }
@@ -78,7 +78,7 @@
 }
 
 .editor-card-row.is-active .editor-card-row-mark {
-  border-color : color-mix(in srgb, var(--prose-c-celadon) 65%, var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--prose-palette-celadon) 65%, var(--vp-c-divider));
 }
 
 .editor-card-row-mark .tool-mark-icon,
@@ -103,7 +103,7 @@
 }
 
 .editor-card-row.is-active .editor-card-row-name {
-  color : color-mix(in srgb, var(--prose-c-celadon) 60%, var(--vp-c-text-1));
+  color : color-mix(in srgb, var(--prose-palette-celadon) 60%, var(--vp-c-text-1));
 }
 
 .editor-card-row-leader {

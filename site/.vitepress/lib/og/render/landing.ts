@@ -1,7 +1,7 @@
 import type { JSXNode } from 'satori/jsx'
 
 import { type BrandAssets, BRAND_TITLE_ASPECT } from './assets'
-import { BODY, META_LABEL, UBE }                from './colors'
+import { PALETTE } from '../../shared/palette'
 import {
   CARD_WIDTH,
   cardShell, el, leftRail, monoLabel, panelDivider, panelRow, panelShell, toSvg, versionCallout
@@ -18,7 +18,7 @@ export function landingSvg(brand: BrandAssets, version: string): Promise<string>
 
 function buildLandingCard(version: string, titleWithTagline: string): JSXNode {
   return cardShell(
-    leftRail(UBE),
+    leftRail(PALETTE.ube),
     glyphBlock(),
     dataPanel(version),
     titleArtwork(titleWithTagline)
@@ -26,7 +26,7 @@ function buildLandingCard(version: string, titleWithTagline: string): JSXNode {
 }
 
 function dataPanel(version: string): JSXNode {
-  return panelShell(UBE, '66',
+  return panelShell(PALETTE.ube, '66',
     panelRow('URL', 'prose.fyi'),
     panelDivider(),
     versionCallout(version)
@@ -54,9 +54,9 @@ function glyphBlock(): JSXNode {
           gap           : 6
         }
       },
-      el('div', { children: 'WRITTEN IN RUST',   style: monoLabel(BODY,       15, TRACK) }),
-      el('div', { children: 'EST. 2025',         style: monoLabel(META_LABEL, 13, TRACK) }),
-      el('div', { children: 'OPEN SOURCE · MIT', style: monoLabel(META_LABEL, 13, TRACK) })
+      el('div', { children: 'WRITTEN IN RUST',   style: monoLabel(PALETTE.champagne,       15, TRACK) }),
+      el('div', { children: 'EST. 2025',         style: monoLabel(PALETTE['ube-mid'], 13, TRACK) }),
+      el('div', { children: 'OPEN SOURCE · MIT', style: monoLabel(PALETTE['ube-mid'], 13, TRACK) })
     )
   )
 }
@@ -66,7 +66,7 @@ function pilcrowMark(): JSXNode {
     children: '¶',
     style: {
       alignItems     : 'center',
-      color          : UBE,
+      color          : PALETTE.ube,
       display        : 'flex',
       fontFamily     : 'Fraunces',
       fontSize       : 80,

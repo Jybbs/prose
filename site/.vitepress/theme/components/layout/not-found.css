@@ -16,7 +16,7 @@
 }
 
 .not-found-kicker-mark {
-  color : var(--prose-c-apricot);
+  color : var(--prose-palette-apricot);
 }
 
 .not-found-headline {
@@ -37,14 +37,14 @@
   font-style                : normal;
   color                     : var(--vp-c-text-3);
   text-decoration-line      : line-through;
-  text-decoration-color     : color-mix(in srgb, var(--prose-c-apricot) 75%, transparent);
+  text-decoration-color     : color-mix(in srgb, var(--prose-palette-apricot) 75%, transparent);
   text-decoration-thickness : 2px;
   margin-right              : 8px;
 }
 
 .not-found-fix {
   font-style : italic;
-  color      : var(--prose-c-ube);
+  color      : var(--prose-palette-ube);
 }
 
 .not-found-body {
@@ -61,10 +61,10 @@
   align-items          : center;
   gap                  : 10px;
   padding              : 11px 20px;
-  border               : 1px solid var(--prose-c-apricot);
+  border               : 1px solid var(--prose-palette-apricot);
   border-radius        : var(--prose-radius-sm);
   background           : var(--vp-c-bg);
-  color                : color-mix(in srgb, var(--prose-c-apricot) 70%, var(--vp-c-text-1));
+  color                : color-mix(in srgb, var(--prose-palette-apricot) 70%, var(--vp-c-text-1));
   font-family          : var(--prose-font-display);
   font-style           : italic;
   font-weight          : 500;
@@ -75,7 +75,7 @@
 }
 
 .not-found-cta:hover {
-  background : color-mix(in srgb, var(--prose-c-apricot) 14%, var(--vp-c-bg));
+  background : color-mix(in srgb, var(--prose-palette-apricot) 14%, var(--vp-c-bg));
   color      : var(--vp-c-text-1);
 }
 

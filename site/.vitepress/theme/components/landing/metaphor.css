@@ -31,7 +31,7 @@
   font-weight : 500;
   font-size   : 2.2rem;
   line-height : 1;
-  color       : var(--prose-c-ube);
+  color       : var(--prose-palette-ube);
   text-wrap   : balance;
 }
 

@@ -18,7 +18,7 @@
 
 .landing-section h2 em {
   font-style : italic;
-  color      : var(--prose-c-celadon);
+  color      : var(--prose-palette-celadon);
 }
 
 .landing-section h2 strong {

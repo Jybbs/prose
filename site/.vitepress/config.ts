@@ -16,7 +16,7 @@ import { assertCorpusIntegrity }             from './lib/rules/integrity'
 import { ruleLinkPlugin }                    from './lib/rules/link-plugin'
 import { canonicalUrl }                      from './lib/config/canonical-url'
 import { ogImageUrl }                        from './lib/config/og-url'
-import { resolveToken }                      from './lib/shared/css-token'
+import { PALETTE, paletteCss }               from './lib/shared/palette'
 import { CARD_HEIGHT, CARD_WIDTH }           from './lib/og/render/parts'
 import { REPO_URL, SHIKI_THEMES, SITE_HOSTNAME, SITE_TAGLINE } from './lib/shared/constants'
 import { buildPageTimestamps }                         from './lib/config/page-timestamps'
@@ -36,7 +36,7 @@ const primitiveNames       = new Map(discoveredPrimitives.map(p => [p.slug as st
 const validSlugs           = new Set(discoveredRules.map(r => r.slug))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const shikiDarkBg          = githubDark.colors?.['editor.background'] as string
-const themeColor           = resolveToken('prose-c-ube')
+const themeColor           = PALETTE.ube
 
 assertCorpusIntegrity(ruleDiscovery, discoveredPrimitives)
 
@@ -151,7 +151,11 @@ export default defineConfig({
       }
     },
     css: { postcss: { plugins: [postcssCustomMedia()] } },
-    plugins: [groupIconVitePlugin({
+    plugins: [{
+      load      : id => id === '\0virtual:prose-palette.css' ? paletteCss() : undefined,
+      name      : 'prose-palette',
+      resolveId : id => id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined
+    }, groupIconVitePlugin({
       customIcon: {
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),
         gha: TOOL_SEEDS.github.icon

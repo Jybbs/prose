@@ -19,7 +19,7 @@
   font-size      : 1.4rem;
   line-height    : 1;
   letter-spacing : var(--prose-meta-tracking);
-  color          : color-mix(in srgb, var(--wf-accent) 70%, var(--vp-c-text-1));
+  color          : color-mix(in srgb, var(--workflow-accent) 70%, var(--vp-c-text-1));
   writing-mode   : vertical-rl;
   transform      : rotate(180deg);
   text-align     : center;

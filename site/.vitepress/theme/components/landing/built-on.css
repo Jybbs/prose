@@ -1,5 +1,5 @@
 .built-on-grid {
-  --stack-accent : var(--prose-c-ube);
+  --stack-accent : var(--prose-palette-ube);
 
   display               : grid;
   grid-template-columns : repeat(5, minmax(0, 1fr));

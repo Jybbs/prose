@@ -1,7 +1,7 @@
 .directive-anatomy [data-role="comment"]   { --part-color : var(--vp-c-text-3); }
-.directive-anatomy [data-role="namespace"] { --part-color : color-mix(in srgb, var(--prose-c-ube)     65%, var(--vp-c-text-1)); }
-.directive-anatomy [data-role="action"]    { --part-color : color-mix(in srgb, var(--prose-c-apricot) 70%, var(--vp-c-text-1)); }
-.directive-anatomy [data-role="payload"]   { --part-color : color-mix(in srgb, var(--prose-c-celadon) 70%, var(--vp-c-text-1)); }
+.directive-anatomy [data-role="namespace"] { --part-color : color-mix(in srgb, var(--prose-palette-ube)     65%, var(--vp-c-text-1)); }
+.directive-anatomy [data-role="action"]    { --part-color : color-mix(in srgb, var(--prose-palette-apricot) 70%, var(--vp-c-text-1)); }
+.directive-anatomy [data-role="payload"]   { --part-color : color-mix(in srgb, var(--prose-palette-celadon) 70%, var(--vp-c-text-1)); }
 
 .directive-anatomy {
   border        : 1px solid var(--vp-c-divider);
@@ -201,6 +201,6 @@
   white-space : pre;
 }
 
-.directive-anatomy-line[data-line-kind="directive"] { color : color-mix(in srgb, var(--prose-c-apricot) 75%, var(--vp-c-text-1)); font-weight : 500; }
+.directive-anatomy-line[data-line-kind="directive"] { color : color-mix(in srgb, var(--prose-palette-apricot) 75%, var(--vp-c-text-1)); font-weight : 500; }
 .directive-anatomy-line[data-line-kind="comment"]   { color : var(--vp-c-text-3); }
 .directive-anatomy-line[data-line-kind="code"]      { color : var(--vp-c-text-1); }

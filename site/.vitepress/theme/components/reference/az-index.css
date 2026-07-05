@@ -1,9 +1,9 @@
-[data-domain="cli-flag"]      { --domain-color: var(--prose-c-ube);      }
-[data-domain="config-key"]    { --domain-color: var(--prose-c-celadon);  }
-[data-domain="exit-code"]     { --domain-color: var(--prose-c-chambray); }
-[data-domain="output-format"] { --domain-color: var(--prose-c-whiskey);  }
-[data-domain="subcommand"]    { --domain-color: var(--prose-c-eureka);   }
-[data-domain="suppression"]   { --domain-color: var(--prose-c-apricot);  }
+[data-domain="cli-flag"]      { --domain-color: var(--prose-palette-ube);      }
+[data-domain="config-key"]    { --domain-color: var(--prose-palette-celadon);  }
+[data-domain="exit-code"]     { --domain-color: var(--prose-palette-chambray); }
+[data-domain="output-format"] { --domain-color: var(--prose-palette-whiskey);  }
+[data-domain="subcommand"]    { --domain-color: var(--prose-palette-eureka);   }
+[data-domain="suppression"]   { --domain-color: var(--prose-palette-apricot);  }
 
 
 .az-index-stage {
@@ -196,8 +196,8 @@ a.az-index-key-btn[aria-current="true"] {
   background-color : color-mix(in srgb, var(--vp-c-bg-alt) 30%, var(--vp-c-bg));
   background-image : radial-gradient(
     circle at 100% 0%,
-    color-mix(in srgb, var(--domain-color, var(--prose-c-ube)) 42%, transparent) 0%,
-    color-mix(in srgb, var(--domain-color, var(--prose-c-ube)) 14%, transparent) 40%,
+    color-mix(in srgb, var(--domain-color, var(--prose-palette-ube)) 42%, transparent) 0%,
+    color-mix(in srgb, var(--domain-color, var(--prose-palette-ube)) 14%, transparent) 40%,
     transparent 80%
   );
 }

@@ -111,7 +111,7 @@
   font-family    : var(--vp-font-family-mono);
   font-size      : 1em;
   text-transform : none;
-  color          : var(--prose-c-ube);
+  color          : var(--prose-palette-ube);
 }
 
 .fixture-card-actions {
@@ -167,7 +167,7 @@
   left       : 0;
   width      : 30px;
   height     : 2px;
-  background : var(--headline-paint, var(--family-color, var(--prose-c-chambray)));
+  background : var(--headline-paint, var(--family-color, var(--prose-palette-chambray)));
 }
 
 .fixture-card[data-edits="false"]:not([data-lint="true"]) .fixture-card-desc::before {
@@ -195,13 +195,13 @@
 .fixture-card-desc code {
   font-family : var(--vp-font-family-mono);
   font-size   : 0.85em;
-  color       : var(--prose-c-ube);
+  color       : var(--prose-palette-ube);
 }
 
 .fixture-card-rule {
   height           : 2px;
   margin           : 0 0 14px;
-  background       : var(--headline-paint, var(--family-color, var(--prose-c-chambray)));
+  background       : var(--headline-paint, var(--family-color, var(--prose-palette-chambray)));
   transform        : scaleX(0);
   transform-origin : left;
   transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease;

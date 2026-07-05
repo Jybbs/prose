@@ -2,7 +2,7 @@ import { createElement as h }       from 'satori/jsx'
 import type { JSXElement, JSXNode } from 'satori/jsx'
 import satori, { type Font }        from 'satori'
 
-import { BG, BODY, META_LABEL } from './colors'
+import { PALETTE } from '../../shared/palette'
 
 export const CARD_HEIGHT = 630
 export const CARD_WIDTH  = 1200
@@ -28,7 +28,7 @@ export function cardShell(...children: JSXNode[]): JSXNode {
   return el('div',
     {
       style: {
-        backgroundColor : BG,
+        backgroundColor : PALETTE.woodsmoke,
         display         : 'flex',
         flexDirection   : 'column',
         height          : '100%',
@@ -105,10 +105,10 @@ function metaRow(
     {
       style: { alignItems: 'baseline', display: 'flex', gap, justifyContent: 'space-between', marginBottom }
     },
-    el('div', { children: label, style: monoLabel(META_LABEL, 16) }),
+    el('div', { children: label, style: monoLabel(PALETTE['ube-mid'], 16) }),
     el('div', {
       children : value,
-      style    : { color: BODY, fontVariantNumeric: 'tabular-nums', ...valueStyle }
+      style    : { color: PALETTE.champagne, fontVariantNumeric: 'tabular-nums', ...valueStyle }
     })
   )
 }

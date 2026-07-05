@@ -1,4 +1,4 @@
-@property --rot {
+@property --rotation {
   syntax        : '<angle>';
   initial-value : 0deg;
   inherits      : false;
@@ -29,15 +29,15 @@
 }
 
 .landing-hero-watermark {
-  --rot            : 0deg;
+  --rotation       : 0deg;
 
   position         : absolute;
   display          : inline-block;
   opacity          : 0.08;
-  color            : var(--prose-c-ube);
+  color            : var(--prose-palette-ube);
   user-select      : none;
   pointer-events   : none;
-  transform        : translate(-50%, -50%) rotate(var(--rot));
+  transform        : translate(-50%, -50%) rotate(var(--rotation));
   transform-origin : center;
   will-change      : transform;
 }
@@ -53,7 +53,7 @@
   font-weight : 700;
   font-size   : 2.4rem;
   line-height : 1;
-  color       : var(--prose-c-ube);
+  color       : var(--prose-palette-ube);
 }
 
 @supports (animation-timeline: view()) {
@@ -63,7 +63,7 @@
     animation-range    : cover 15% cover 55%;
   }
   @keyframes watermark-align {
-    to { --rot: 0deg; }
+    to { --rotation: 0deg; }
   }
 }
 

@@ -11,9 +11,9 @@
 
 .vp-doc .composition-cards-list,
 .composition-cards-list {
-  --cc-ease-morph : cubic-bezier(0.32, 0.72, 0, 1);
-  --cc-reveal     : 0.28s;
-  --cc-grow       : 0.4s;
+  --card-ease-morph : cubic-bezier(0.32, 0.72, 0, 1);
+  --card-reveal     : 0.28s;
+  --card-grow       : 0.4s;
   list-style      : none;
   margin          : 0;
   padding         : 0;
@@ -75,7 +75,7 @@
 }
 
 .composition-cards-list .fixture-card-body {
-  transition : grid-template-rows var(--cc-grow) var(--cc-ease-morph);
+  transition : grid-template-rows var(--card-grow) var(--card-ease-morph);
 }
 
 /* A revealing tick must never wrap the headline to a second line, so the
@@ -95,7 +95,7 @@
 
 .vp-doc a.composition-cards-chip,
 .composition-cards-chip {
-  --cc-ink              : color-mix(in oklch, var(--family-color, var(--vp-c-text-1)), black 48%);
+  --card-ink            : color-mix(in oklch, var(--family-color, var(--vp-c-text-1)), black 48%);
   display               : grid;
   grid-template-columns : 0fr;
   align-items           : center;
@@ -104,11 +104,11 @@
   font-family           : var(--vp-font-family-mono);
   line-height           : 1.2;
   text-decoration       : none;
-  transition            : grid-template-columns var(--cc-reveal) var(--cc-ease-morph);
+  transition            : grid-template-columns var(--card-reveal) var(--card-ease-morph);
 }
 
 .fixture-card[data-edits="false"] .composition-cards-chip {
-  --cc-ink   : var(--vp-c-text-2);
+  --card-ink : var(--vp-c-text-2);
   background : var(--vp-c-divider);
 }
 
@@ -120,8 +120,8 @@
   overflow    : hidden;
   white-space : nowrap;
   opacity     : 0;
-  color       : var(--cc-ink);
-  transition  : opacity var(--cc-reveal) var(--cc-ease-morph);
+  color       : var(--card-ink);
+  transition  : opacity var(--card-reveal) var(--card-ease-morph);
 }
 
 .composition-cards-chip-slug {
@@ -186,7 +186,7 @@
   gap        : 3px;
   width      : 60px;
   margin     : 12px 0 0 auto;
-  transition : width 0.36s var(--cc-ease-morph) var(--cc-grow);
+  transition : width 0.36s var(--card-ease-morph) var(--card-grow);
 }
 
 .vp-doc .composition-cards-list .composition-cards-bar.is-open {
@@ -210,12 +210,12 @@
 .vp-doc .composition-cards-list .composition-cards-bar .composition-cards-chip-label {
   padding    : 0 10px;
   opacity    : 0;
-  transition : opacity 0.18s var(--cc-ease-morph);
+  transition : opacity 0.18s var(--card-ease-morph);
 }
 
 .vp-doc .composition-cards-list .composition-cards-bar.is-open .composition-cards-chip-label {
   opacity          : 1;
-  transition-delay : calc(var(--cc-grow) + 0.42s);
+  transition-delay : calc(var(--card-grow) + 0.42s);
 }
 
 .composition-cards-detail {

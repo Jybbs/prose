@@ -1,6 +1,6 @@
 .vp-doc p em,
 .vp-doc li em {
-  color: var(--prose-c-whiskey);
+  color: var(--prose-palette-whiskey);
 }
 
 .vp-doc :not(pre) > code {
@@ -21,9 +21,9 @@ a.tool-mark {
 .vp-doc a.body-link:hover,
 .vp-doc a.tool-mark:hover,
 a.tool-mark:hover {
-  --link-underline : var(--prose-link-hover);
+  --link-underline : var(--prose-role-link-hover);
   background-size  : 100% 1px;
-  color            : var(--prose-link-hover);
+  color            : var(--prose-role-link-hover);
 }
 
 .v-popper--theme-rule-card {

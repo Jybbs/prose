@@ -66,13 +66,13 @@
 }
 
 .glossary-folio-search:hover {
-  border-color : color-mix(in srgb, var(--prose-c-ube) 35%, var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--prose-palette-ube) 35%, var(--vp-c-divider));
   background   : var(--vp-c-bg);
 }
 
 .glossary-folio-search:focus-within {
-  border-color : color-mix(in srgb, var(--prose-c-ube) 55%, var(--vp-c-divider));
-  box-shadow   : 0 0 0 3px color-mix(in srgb, var(--prose-c-ube) 20%, transparent);
+  border-color : color-mix(in srgb, var(--prose-palette-ube) 55%, var(--vp-c-divider));
+  box-shadow   : 0 0 0 3px color-mix(in srgb, var(--prose-palette-ube) 20%, transparent);
 }
 
 .glossary-folio-search-glyph {

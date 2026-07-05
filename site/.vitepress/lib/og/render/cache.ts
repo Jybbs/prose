@@ -11,8 +11,8 @@ const OG_DIR = import.meta.dirname
 
 // render sources folded into every cache key, so a change here re-renders all cards
 const TEMPLATE_FILES: readonly string[] = [
-  'assets.ts', 'colors.ts', 'landing.ts', 'parts.ts', 'pool.ts', 'resvg-worker.mjs',
-  'template.ts', '../../shared/registries.ts', '../../../theme/styles/tokens.css'
+  'assets.ts', 'landing.ts', 'parts.ts', 'pool.ts', 'resvg-worker.mjs', 'template.ts',
+  '../../shared/palette.ts', '../../shared/registries.ts'
 ]
 
 type CardInput = OgPage | 'landing'

@@ -2,10 +2,11 @@
 import { useTimeoutFn }  from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import { data as TOKENS }                                                    from '../../../data/tokens.data'
-import { DOMAIN_META, groupByDomain, sortedTokens, type Domain, type Token } from '../../../lib/tokens/sources'
+import { data as TOKENS }                             from '../../../data/tokens.data'
+import { DOMAIN_LABELS, groupByDomain, sortedTokens } from '../../../lib/tokens/sources'
+import type { Domain, Token }                         from '../../../lib/tokens/sources'
 
-const tabs = (Object.keys(DOMAIN_META) as Domain[]).sort()
+const tabs = (Object.keys(DOMAIN_LABELS) as Domain[]).sort()
 
 type View = 'all' | Domain
 
@@ -54,7 +55,7 @@ function onEnter(token: Token, event: MouseEvent | FocusEvent): void {
         :class="{ 'is-active': view === d }"
         :data-domain="d"
         @click="view = d"
-      >{{ DOMAIN_META[d].label }}</button>
+      >{{ DOMAIN_LABELS[d] }}</button>
     </nav>
 
     <div class="az-index-float-wrap">
@@ -66,7 +67,7 @@ function onEnter(token: Token, event: MouseEvent | FocusEvent): void {
           :data-domain="domain"
         >
           <header class="az-index-section-head">
-            <span class="kicker az-index-section-folio">{{ DOMAIN_META[domain].label }}</span>
+            <span class="kicker az-index-section-folio">{{ DOMAIN_LABELS[domain] }}</span>
             <span class="az-index-section-count">{{ tokens.length }} entries</span>
           </header>
           <ul class="az-index-keys">
@@ -94,7 +95,7 @@ function onEnter(token: Token, event: MouseEvent | FocusEvent): void {
       >
         <aside class="az-index-detail" :data-domain="focus.domain">
           <header class="az-index-detail-banner">
-            <span class="az-index-detail-kicker">{{ DOMAIN_META[focus.domain].label }}</span>
+            <span class="az-index-detail-kicker">{{ DOMAIN_LABELS[focus.domain] }}</span>
           </header>
           <div class="az-index-detail-body">
             <code class="az-index-detail-key">{{ focus.key }}</code>

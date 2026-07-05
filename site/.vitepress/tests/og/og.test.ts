@@ -1,20 +1,5 @@
 import { enumeratePages } from '../../lib/og/pages'
-import { resolveToken }   from '../../lib/shared/css-token'
 import { fixtureDir }     from '../support'
-
-describe('resolveToken', () => {
-  it('follows a single var() hop to a leaf hex', () => {
-    expect(resolveToken('prose-c-family-engine')).toMatch(/^#[0-9a-f]{6}$/i)
-  })
-
-  it('returns a non-aliased value directly', () => {
-    expect(resolveToken('prose-c-ube')).toMatch(/^#[0-9a-f]{6}$/i)
-  })
-
-  it('returns an empty string for an unknown token', () => {
-    expect(resolveToken('prose-c-not-a-real-token')).toBe('')
-  })
-})
 
 describe('enumeratePages', () => {
   const srcDir = fixtureDir(import.meta.dirname)

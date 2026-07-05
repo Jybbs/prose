@@ -23,13 +23,13 @@
 }
 
 .vp-doc .custom-block.warning::before {
-  background: var(--prose-c-warning);
+  background: var(--prose-role-warning);
 }
 
 .vp-doc .custom-block.danger::before {
-  background: var(--prose-c-error);
+  background: var(--prose-role-error);
 }
 
 .vp-doc .custom-block.info::before {
-  background: var(--prose-c-accent);
+  background: var(--prose-role-accent);
 }

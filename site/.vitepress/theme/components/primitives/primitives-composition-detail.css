@@ -6,7 +6,7 @@
   padding        : 18px 22px;
   background     : var(--vp-c-bg);
   border         : 1px solid var(--vp-c-divider);
-  border-top     : 3px solid var(--pc-layer);
+  border-top     : 3px solid var(--layer-accent);
   border-radius  : var(--prose-radius-sm);
 }
 
@@ -16,7 +16,7 @@
   text-align     : left;
   gap            : 14px;
   padding-bottom : 12px;
-  border-bottom  : 1px solid color-mix(in srgb, var(--vp-c-divider) 70%, var(--pc-layer));
+  border-bottom  : 1px solid color-mix(in srgb, var(--vp-c-divider) 70%, var(--layer-accent));
 }
 
 .primitives-composition-card-layer-numeral {
@@ -32,8 +32,8 @@
   font-size       : 1.05rem;
   line-height     : 1;
   color           : var(--vp-c-bg);
-  background      : var(--pc-layer);
-  box-shadow      : 0 0 0 2px color-mix(in srgb, var(--pc-layer) 25%, var(--vp-c-bg));
+  background      : var(--layer-accent);
+  box-shadow      : 0 0 0 2px color-mix(in srgb, var(--layer-accent) 25%, var(--vp-c-bg));
   flex-shrink     : 0;
 }
 
@@ -83,7 +83,7 @@
   text-transform : uppercase;
   text-align     : left;
   white-space    : nowrap;
-  color          : color-mix(in srgb, var(--pc-layer) 70%, var(--vp-c-text-2));
+  color          : color-mix(in srgb, var(--layer-accent) 70%, var(--vp-c-text-2));
 }
 
 .primitives-composition-card-rel-mentions {
@@ -111,11 +111,11 @@
 }
 
 .vp-doc .primitives-composition-card-mention[data-layer="base"],
-.primitives-composition-card-mention[data-layer="base"]          { color: color-mix(in srgb, var(--pc-base)          70%, var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--pc-base)          40%, transparent); }
+.primitives-composition-card-mention[data-layer="base"]          { color: color-mix(in srgb, var(--layer-base)          70%, var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-base)          40%, transparent); }
 .vp-doc .primitives-composition-card-mention[data-layer="orchestration"],
-.primitives-composition-card-mention[data-layer="orchestration"] { color: color-mix(in srgb, var(--pc-orchestration) 70%, var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--pc-orchestration) 40%, transparent); }
+.primitives-composition-card-mention[data-layer="orchestration"] { color: color-mix(in srgb, var(--layer-orchestration) 70%, var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-orchestration) 40%, transparent); }
 .vp-doc .primitives-composition-card-mention[data-layer="analysis"],
-.primitives-composition-card-mention[data-layer="analysis"]      { color: color-mix(in srgb, var(--pc-analysis)      70%, var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--pc-analysis)      40%, transparent); }
+.primitives-composition-card-mention[data-layer="analysis"]      { color: color-mix(in srgb, var(--layer-analysis)      70%, var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-analysis)      40%, transparent); }
 
 .vp-doc .primitives-composition-card-mention:hover,
 .primitives-composition-card-mention:hover {
@@ -137,9 +137,9 @@
   color           : var(--vp-c-bg);
 }
 
-.primitives-composition-card-mention-chip[data-layer="base"]          { background: var(--pc-base);          }
-.primitives-composition-card-mention-chip[data-layer="orchestration"] { background: var(--pc-orchestration); }
-.primitives-composition-card-mention-chip[data-layer="analysis"]      { background: var(--pc-analysis);      }
+.primitives-composition-card-mention-chip[data-layer="base"]          { background: var(--layer-base);          }
+.primitives-composition-card-mention-chip[data-layer="orchestration"] { background: var(--layer-orchestration); }
+.primitives-composition-card-mention-chip[data-layer="analysis"]      { background: var(--layer-analysis);      }
 
 .primitives-composition-card-mention-text {
   display : inline-block;

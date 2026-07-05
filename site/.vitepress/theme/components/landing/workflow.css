@@ -1,5 +1,5 @@
 .landing-workflow {
-  --wf-accent : var(--prose-c-celadon);
+  --workflow-accent : var(--prose-palette-celadon);
 
   display        : flex;
   flex-direction : column;
@@ -15,7 +15,7 @@
   grid-template-columns : 72px 1fr;
   gap                   : 24px;
   padding               : 14px 28px;
-  border-bottom         : 1px dashed color-mix(in srgb, var(--wf-accent) 24%, var(--vp-c-divider));
+  border-bottom         : 1px dashed color-mix(in srgb, var(--workflow-accent) 24%, var(--vp-c-divider));
 }
 
 .landing-workflow-section::before {
@@ -25,7 +25,7 @@
   bottom     : 14px;
   left       : calc(28px + 72px);
   width      : 1px;
-  background : color-mix(in srgb, var(--wf-accent) 28%, var(--vp-c-divider));
+  background : color-mix(in srgb, var(--workflow-accent) 28%, var(--vp-c-divider));
 }
 
 .landing-workflow-section-last {
@@ -47,7 +47,7 @@
   font-weight : 500;
   font-size   : 1.8rem;
   line-height : 1;
-  color       : color-mix(in srgb, var(--wf-accent) 70%, var(--vp-c-text-1));
+  color       : color-mix(in srgb, var(--workflow-accent) 70%, var(--vp-c-text-1));
 }
 
 @media (--prose-bp-card-stack) {

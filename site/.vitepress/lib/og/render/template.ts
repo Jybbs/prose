@@ -4,7 +4,7 @@ import { formatFolio }                from '../../shared/numerals'
 import { CATEGORY_META, FAMILY_META } from '../../shared/registries'
 
 import { type BrandAssets, BRAND_TITLE_ASPECT } from './assets'
-import { BODY, KICKER, UBE }                    from './colors'
+import { PALETTE } from '../../shared/palette'
 import type { OgPage }                          from '../pages'
 import {
   CARD_HEIGHT, CARD_WIDTH,
@@ -16,7 +16,7 @@ const DOCS_TRACK = '0.14em'
 const CODE_CHIP = {
   backgroundColor : 'rgba(255, 255, 255, 0.08)',
   borderRadius    : 4,
-  color           : KICKER,
+  color           : PALETTE['ube-pale'],
   fontFamily      : 'JetBrains Mono',
   fontSize        : 19,
   padding         : '2px 8px',
@@ -37,7 +37,7 @@ export function pageSvg(
 }
 
 function buildCard(page: OgPage, version: string, wordmark: string, glyph: string): JSXNode {
-  const accent = page.accent ?? UBE
+  const accent = page.accent ?? PALETTE.ube
   return cardShell(
     watermarkLayer(glyph),
     leftRail(accent),
@@ -117,7 +117,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
     },
     el('div', {
       children : buildKicker(page),
-      style    : { ...monoLabel(KICKER, 22), marginBottom: 12 }
+      style    : { ...monoLabel(PALETTE['ube-pale'], 22), marginBottom: 12 }
     }),
     el('div', {
       children : page.title,
@@ -141,7 +141,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
       })),
       style : {
         alignItems : 'baseline',
-        color      : BODY,
+        color      : PALETTE.champagne,
         columnGap  : 7,
         display    : 'flex',
         flexWrap   : 'wrap',
@@ -193,10 +193,10 @@ function wordmarkBlock(wordmark: string): JSXNode {
     el('div', {
       children : 'DOCS',
       style: {
-        backgroundColor : `${UBE}2e`,
-        border          : `1px solid ${BODY}52`,
+        backgroundColor : `${PALETTE.ube}2e`,
+        border          : `1px solid ${PALETTE.champagne}52`,
         borderRadius    : 6,
-        color           : BODY,
+        color           : PALETTE.champagne,
         display         : 'flex',
         fontFamily      : 'JetBrains Mono',
         fontSize        : 15,

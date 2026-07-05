@@ -31,12 +31,12 @@
 }
 
 .exit-code-index-row:hover {
-  background : color-mix(in srgb, var(--code-accent) 6%, transparent);
+  background : color-mix(in srgb, var(--exit-code-accent) 6%, transparent);
   color      : var(--vp-c-text-1);
 }
 
 .exit-code-index-row.active {
-  background : color-mix(in srgb, var(--code-accent) 12%, transparent);
+  background : color-mix(in srgb, var(--exit-code-accent) 12%, transparent);
   color      : var(--vp-c-text-1);
 }
 
@@ -45,7 +45,7 @@
   font-variant-numeric : tabular-nums lining-nums;
   font-size            : 1rem;
   text-align           : right;
-  color                : var(--code-accent);
+  color                : var(--exit-code-accent);
 }
 
 .exit-code-index-label {
@@ -64,12 +64,12 @@
   display    : block;
   width      : 8px;
   height     : 8px;
-  background : var(--code-accent);
+  background : var(--exit-code-accent);
 }
 
 .exit-code-entry {
   padding-inline-start : 18px;
-  border-left          : 2px solid var(--code-accent);
+  border-left          : 2px solid var(--exit-code-accent);
 }
 
 .exit-code-entry-head {
@@ -85,7 +85,7 @@
   font-size            : 2.6rem;
   font-weight          : 500;
   line-height          : 1;
-  color                 : var(--code-accent);
+  color                 : var(--exit-code-accent);
 }
 
 .exit-code-entry-label {
@@ -130,7 +130,7 @@
   left      : 0;
   top       : 0.45em;
   font-size : 0.6em;
-  color     : var(--code-accent);
+  color     : var(--exit-code-accent);
 }
 
 .exit-code-entry-details > li::marker {

@@ -18,6 +18,7 @@ import '@fontsource-variable/lora/wght-italic.css'
 
 import Layout from './Layout.vue'
 
+import 'virtual:prose-palette.css'
 import './styles/tokens.css'
 import './styles/accents.css'
 import './styles/globals.css'

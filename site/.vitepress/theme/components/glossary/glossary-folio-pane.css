@@ -1,5 +1,5 @@
 .glossary-folio-stage:not([data-family]) {
-  --family-color : var(--prose-c-ube);
+  --family-color : var(--prose-palette-ube);
 }
 
 .glossary-folio-pane {
@@ -156,7 +156,7 @@
   font-size      : var(--prose-label-size);
   letter-spacing : var(--prose-label-tracking);
   text-transform : uppercase;
-  color          : var(--prose-c-ube);
+  color          : var(--prose-palette-ube);
 }
 
 .vp-doc code.glossary-folio-aliases-chip,

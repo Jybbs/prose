@@ -39,20 +39,20 @@
 }
 
 .shell-card-tab:hover {
-  background : color-mix(in srgb, var(--prose-c-celadon) 9%, var(--vp-c-bg-soft));
+  background : color-mix(in srgb, var(--prose-palette-celadon) 9%, var(--vp-c-bg-soft));
   color      : var(--vp-c-text-1);
 }
 
 .shell-card-tab.is-active,
 .shell-card-tab.is-active:hover {
-  background   : color-mix(in srgb, var(--prose-c-celadon) 24%, var(--vp-c-bg-soft));
-  border-color : color-mix(in srgb, var(--prose-c-celadon) 65%, var(--vp-c-divider));
+  background   : color-mix(in srgb, var(--prose-palette-celadon) 24%, var(--vp-c-bg-soft));
+  border-color : color-mix(in srgb, var(--prose-palette-celadon) 65%, var(--vp-c-divider));
   color        : var(--vp-c-text-1);
   z-index      : 5;
 }
 
 .shell-card-tab.is-active .shell-card-tab-mark {
-  border-color : color-mix(in srgb, var(--prose-c-celadon) 70%, var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--prose-palette-celadon) 70%, var(--vp-c-divider));
   background   : var(--vp-c-bg);
 }
 
@@ -97,7 +97,7 @@
   padding       : 3px 6px;
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-code-bg);
-  color         : var(--prose-c-ube);
+  color         : var(--prose-palette-ube);
 }
 
 @media (--prose-bp-card-stack) {

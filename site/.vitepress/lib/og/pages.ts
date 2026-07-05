@@ -7,7 +7,7 @@ import { markdownH1 }                                      from '../markdown/h1'
 import { type DiscoveredPrimitive, discoverPrimitives }    from '../primitives/discovery'
 import { type DiscoveredRule, discoverRuleIndex }          from '../rules/discovery'
 import { readPipeline }                                    from '../rules/pipeline'
-import { resolveToken }                                    from '../shared/css-token'
+import { FAMILIES, SECTIONS }                              from '../shared/palette'
 import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
 import type { PrimitiveStability }                         from '../shared/registries'
 import { toTitleCase }                                     from '../shared/title-case'
@@ -46,8 +46,8 @@ export function enumeratePages(srcDir: string, pages: readonly string[]): readon
 }
 
 function accentFor(kind: OgKind, family?: RuleFamily): string | undefined {
-  const token = family !== undefined ? `prose-c-family-${family}` : `prose-c-section-${kind}`
-  return resolveToken(token) || undefined
+  if (family !== undefined) return FAMILIES[family]
+  return kind === 'rules' ? undefined : SECTIONS[kind]
 }
 
 function buildPage(

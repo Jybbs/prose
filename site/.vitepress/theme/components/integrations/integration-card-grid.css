@@ -21,7 +21,7 @@ a.int-card {
 
 .vp-doc a.int-card:hover,
 a.int-card:hover {
-  border-color    : var(--prose-c-ube);
+  border-color    : var(--prose-palette-ube);
   background      : var(--vp-c-bg);
   text-decoration : none;
 }
@@ -75,5 +75,5 @@ a.int-card:hover {
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-kicker-size);
   letter-spacing : var(--prose-meta-tracking);
-  color          : var(--prose-c-ube);
+  color          : var(--prose-palette-ube);
 }

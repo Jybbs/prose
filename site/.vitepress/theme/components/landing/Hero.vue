@@ -41,18 +41,18 @@ const stamps = computed(() => tileStamps(cols.value, rows.value))
           alt=""
           class="landing-hero-watermark landing-hero-watermark-big"
           :style="{
-            '--rot' : `${s.rotate}deg`,
-            left    : `${s.x}%`,
-            top     : `${s.y}px`
+            '--rotation' : `${s.rotate}deg`,
+            left         : `${s.x}%`,
+            top          : `${s.y}px`
           }"
         />
         <span
           v-else
           class="landing-hero-watermark landing-hero-watermark-small"
           :style="{
-            '--rot' : `${s.rotate}deg`,
-            left    : `${s.x}%`,
-            top     : `${s.y}px`
+            '--rotation' : `${s.rotate}deg`,
+            left         : `${s.x}%`,
+            top          : `${s.y}px`
           }"
         >{{ s.letter }}</span>
       </template>

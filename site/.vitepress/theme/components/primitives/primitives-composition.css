@@ -1,7 +1,7 @@
 .primitives-composition {
-  --pc-base          : var(--prose-c-celadon);
-  --pc-orchestration : var(--prose-c-whiskey);
-  --pc-analysis      : var(--prose-c-ube);
+  --layer-base          : var(--prose-palette-celadon);
+  --layer-orchestration : var(--prose-palette-whiskey);
+  --layer-analysis      : var(--prose-palette-ube);
 
   margin        : 1.5rem 0;
   padding       : 12px 14px;
@@ -10,10 +10,10 @@
   background    : var(--vp-c-bg);
 }
 
-.primitives-composition [data-layer="base"]          { --pc-layer : var(--pc-base);          }
-.primitives-composition [data-layer="orchestration"] { --pc-layer : var(--pc-orchestration); }
-.primitives-composition [data-layer="analysis"]      { --pc-layer : var(--pc-analysis);      }
-.primitives-composition [data-layer="empty"]         { --pc-layer : var(--vp-c-divider);     }
+.primitives-composition [data-layer="base"]          { --layer-accent : var(--layer-base);          }
+.primitives-composition [data-layer="orchestration"] { --layer-accent : var(--layer-orchestration); }
+.primitives-composition [data-layer="analysis"]      { --layer-accent : var(--layer-analysis);      }
+.primitives-composition [data-layer="empty"]         { --layer-accent : var(--vp-c-divider);        }
 
 .vp-doc .primitives-composition a,
 .primitives-composition a {

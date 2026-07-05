@@ -50,7 +50,7 @@
   box-shadow    : var(--prose-shadow-tooltip);
 }
 
-.v-popper--theme-glossary { --tooltip-accent : var(--prose-c-celadon); }
+.v-popper--theme-glossary { --tooltip-accent : var(--prose-palette-celadon); }
 
 .typing-demo-label {
   position       : absolute;

@@ -6,13 +6,6 @@ export type Domain =
   | 'subcommand'
   | 'suppression'
 
-interface DomainMeta {
-  accent : string
-  label  : string
-  pip    : string
-  short  : string
-}
-
 interface TokenSource {
   blurb : string
   href  : string
@@ -27,13 +20,13 @@ export interface Token {
   sort      : string
 }
 
-export const DOMAIN_META: Record<Domain, DomainMeta> = {
-  'cli-flag'      : { accent : 'var(--prose-c-ube)',      label : 'CLI Flag',              pip : 'F', short : 'flag'      },
-  'config-key'    : { accent : 'var(--prose-c-celadon)',  label : 'Configuration Key',     pip : 'K', short : 'config'    },
-  'exit-code'     : { accent : 'var(--prose-c-chambray)', label : 'Exit Code',             pip : 'E', short : 'exit'      },
-  'output-format' : { accent : 'var(--prose-c-whiskey)',  label : 'Output Format',         pip : 'O', short : 'output'    },
-  'subcommand'    : { accent : 'var(--prose-c-eureka)',   label : 'Subcommand',            pip : 'S', short : 'cmd'       },
-  'suppression'   : { accent : 'var(--prose-c-apricot)',  label : 'Suppression Directive', pip : 'D', short : 'directive' }
+export const DOMAIN_LABELS: Record<Domain, string> = {
+  'cli-flag'      : 'CLI Flag',
+  'config-key'    : 'Configuration Key',
+  'exit-code'     : 'Exit Code',
+  'output-format' : 'Output Format',
+  'subcommand'    : 'Subcommand',
+  'suppression'   : 'Suppression Directive'
 }
 
 export const SOURCES: Record<Domain, readonly TokenSource[]> = {

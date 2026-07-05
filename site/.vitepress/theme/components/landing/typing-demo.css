@@ -59,7 +59,7 @@
   height              : 1.05em;
   margin-inline-start : 1px;
   vertical-align      : text-bottom;
-  background          : var(--prose-c-whiskey);
+  background          : var(--prose-palette-whiskey);
   animation           : typing-demo-caret-blink 1s steps(2) infinite;
 }
 

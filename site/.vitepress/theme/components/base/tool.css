@@ -1,5 +1,5 @@
 .tool-mark:hover > code {
-  color : var(--prose-c-celadon);
+  color : var(--prose-palette-celadon);
 }
 
 .tool-mark .tool-mark-icon {
