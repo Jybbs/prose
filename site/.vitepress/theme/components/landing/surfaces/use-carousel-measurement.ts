@@ -6,7 +6,6 @@ import { useSettledMeasure } from '../../../../lib/composables/use-settled-measu
 interface CarouselMeasurement {
   fits      : Ref<boolean>
   halfWidth : Ref<number>
-  measure   : () => void
 }
 
 export function useCarouselMeasurement(
@@ -43,5 +42,5 @@ export function useCarouselMeasurement(
   useSettledMeasure(viewportRef, measure)
   useEventListener('resize', measure)
 
-  return { fits, halfWidth, measure }
+  return { fits, halfWidth }
 }

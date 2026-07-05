@@ -1,10 +1,6 @@
 import { parse }           from '@vue/compiler-sfc'
 import type { KnipConfig } from 'knip'
 
-// knip auto-compiles `.vue` through its built-in Vue plugin but ships nothing
-// for markdown, so the component imports VitePress pages carry in their
-// `<script setup>` go unseen. parse() lifts those script bodies; the markdown
-// body holds no import sites, so only the script blocks matter.
 const pageScript = (text: string): string => {
   const { descriptor } = parse(text)
   return [descriptor.script?.content, descriptor.scriptSetup?.content].filter(Boolean).join('\n')

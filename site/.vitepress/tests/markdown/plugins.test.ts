@@ -68,7 +68,7 @@ describe('ruleLinkPlugin', () => {
   const rules  = new Map<string, Pick<DiscoveredRule, 'family' | 'href'>>([
     ['align-equals', { family: 'alignment', href: '/rules/alignment/align-equals' }]
   ])
-  const plugin = ruleLinkPlugin(rules, new Map([['aligner', 'Aligner']]))
+  const plugin = ruleLinkPlugin(rules, new Map([['aligner', { name: 'Aligner' }]]))
   const run    = (src: string, env: object = {}): string => render(md => md.use(plugin), src, env)
 
   it('renders a rule wiki-link as an InlineRuleLink', () => {

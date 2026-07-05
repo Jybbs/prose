@@ -76,6 +76,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'prose check',         href: '/reference/cli#prose-check',           blurb: 'Verify without rewriting, resolving to a non-zero exit code when any rewrite pends.' },
     { key: 'prose completions',   href: '/reference/cli#prose-completions',     blurb: 'Emit shell-completion scripts for the active shell.' },
     { key: 'prose format',        href: '/reference/cli#prose-format',          blurb: 'Apply every pending rewrite in place.' },
+    { key: 'prose rules',         href: '/reference/cli#prose-rules',           blurb: 'List every registered rule in pipeline order.' },
     { key: 'prose server',        href: '/reference/cli#prose-server',          blurb: 'Serve format-on-save and live diagnostics over the language-server protocol.' }
   ],
   'suppression': [
@@ -89,20 +90,12 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
   ]
 }
 
-export function stripPrefix(s: string): string {
-  return s.replace(/^[#\-\s]+/, '').replace(/^(prose|fmt|yapf)\s*:?\s*/i, '').toLowerCase()
-}
-
-export function sortedTokens(tokens: readonly Token[], mode: 'key' | 'domain' = 'key'): Token[] {
-  if (mode === 'domain') {
-    return tokens.toSorted((a, b) =>
-      a.domain.localeCompare(b.domain) || a.sort.localeCompare(b.sort))
-  }
-  return tokens.toSorted((a, b) => a.sort.localeCompare(b.sort))
-}
-
 export function groupByDomain(tokens: readonly Token[]): [Domain, Token[]][] {
   return [...Map.groupBy(tokens, t => t.domain).entries()]
     .toSorted(([a], [b]) => a.localeCompare(b))
     .map(([d, bucket]) => [d, bucket.toSorted((a, b) => a.sort.localeCompare(b.sort))])
+}
+
+export function stripPrefix(s: string): string {
+  return s.replace(/^[#\-\s]+/, '').replace(/^(prose|fmt|yapf)\s*:?\s*/i, '').toLowerCase()
 }

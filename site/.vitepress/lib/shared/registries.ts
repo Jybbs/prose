@@ -61,3 +61,9 @@ export const PRIMITIVE_STABILITIES = ['internal', 'public'] as const
 
 export type PrimitiveLayer     = (typeof PRIMITIVE_LAYERS)[number]
 export type PrimitiveStability = (typeof PRIMITIVE_STABILITIES)[number]
+
+export const PRIMITIVE_LAYER_NUMERALS: Record<PrimitiveLayer, string> = {
+  analysis      : 'III',
+  base          : 'I',
+  orchestration : 'II'
+}

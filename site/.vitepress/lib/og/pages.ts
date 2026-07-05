@@ -2,14 +2,14 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
-import { ogImagePath }                                  from '../config/og-url'
-import { markdownH1 }                                   from '../markdown/h1'
-import { type DiscoveredPrimitive, discoverPrimitives } from '../primitives/discovery'
-import { type DiscoveredRule, discoverRuleIndex }       from '../rules/discovery'
-import { readPipeline }                                 from '../rules/pipeline'
-import { FAMILIES, SECTIONS }                           from '../shared/palette'
-import * as registries                                  from '../shared/registries'
-import { toTitleCase }                                  from '../shared/title-case'
+import { ogImagePath }                                      from '../config/og-url'
+import { markdownH1 }                                       from '../markdown/h1'
+import { type DiscoveredPrimitive, discoverPrimitiveIndex } from '../primitives/discovery'
+import { type DiscoveredRule, discoverRuleIndex }           from '../rules/discovery'
+import { readPipeline }                                     from '../rules/pipeline'
+import { FAMILIES, SECTIONS }                               from '../shared/palette'
+import * as registries                                      from '../shared/registries'
+import { toTitleCase }                                      from '../shared/title-case'
 
 const SECTION_SLUGS = new Set<string>(registries.SECTIONS.map(section => section.slug))
 type OgKind = registries.SectionSlug
@@ -29,9 +29,7 @@ export interface OgPage {
 
 export function enumeratePages(srcDir: string, pages: readonly string[]): readonly OgPage[] {
   const rulesIndex      = discoverRuleIndex(path.join(srcDir, 'rules'))
-  const primitivesIndex = new Map(
-    discoverPrimitives(path.join(srcDir, 'primitives')).map(p => [p.slug as string, p])
-  )
+  const primitivesIndex = discoverPrimitiveIndex(path.join(srcDir, 'primitives'))
   const pipeline        = readPipeline(import.meta.url)
   const pipelinePos     = new Map(pipeline.map(r => [r.slug, r.position]))
   const out: OgPage[]   = []

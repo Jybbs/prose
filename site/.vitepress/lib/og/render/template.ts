@@ -1,3 +1,4 @@
+import MarkdownIt       from 'markdown-it'
 import type { JSXNode } from 'satori/jsx'
 
 import { formatFolio }                from '../../shared/numerals'
@@ -8,13 +9,11 @@ import { PALETTE }                              from '../../shared/palette'
 import type { OgPage }                          from '../pages'
 import * as parts                               from './parts'
 
-const DOCS_TRACK = '0.14em'
-
 const CODE_CHIP = {
   backgroundColor : 'rgba(255, 255, 255, 0.08)',
   borderRadius    : 4,
   color           : PALETTE['ube-pale'],
-  fontFamily      : 'JetBrains Mono',
+  fontFamily      : parts.FONT.mono,
   fontSize        : 19,
   padding         : '2px 8px',
   transform       : 'translateY(-2px)'
@@ -67,20 +66,15 @@ function fitTitleSize(text: string, hasCaption: boolean): number {
   return TITLE_SIZES[hasCaption ? 'cap' : 'bare'].find(([max]) => text.length <= max)![1]
 }
 
-function captionSegments(raw: string): ReadonlyArray<{ code: boolean; text: string }> {
-  const segs  = [] as Array<{ code: boolean; text: string }>
-  const strip = (s: string) => s.replace(/(\*\*?|_)(.+?)\1/g, '$2')
-  const words = (s: string) => strip(s).split(/\s+/).filter(Boolean)
-  const re    = /`([^`]+)`/g
-  let last = 0
-  let m: RegExpExecArray | null
-  while ((m = re.exec(raw)) !== null) {
-    if (m.index > last) words(raw.slice(last, m.index)).forEach(w => segs.push({ code: false, text: w }))
-    segs.push({ code: true, text: m[1] })
-    last = re.lastIndex
-  }
-  if (last < raw.length) words(raw.slice(last)).forEach(w => segs.push({ code: false, text: w }))
-  return segs
+const md = new MarkdownIt()
+
+function captionSegments(raw: string): ReadonlyArray<{ code: boolean, text: string }> {
+  const children = md.parseInline(raw, {})[0]?.children ?? []
+  return children.flatMap((token): Array<{ code: boolean, text: string }> => {
+    if (token.type === 'code_inline') return [{ code: true, text: token.content }]
+    if (token.type !== 'text')        return []
+    return token.content.split(/\s+/).filter(Boolean).map(text => ({ code: false, text }))
+  })
 }
 
 function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
@@ -121,7 +115,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
       style: {
         color         : accent,
         display       : 'flex',
-        fontFamily    : 'Fraunces',
+        fontFamily    : parts.FONT.display,
         fontSize      : fitTitleSize(page.title, caption !== undefined),
         fontStyle     : 'normal',
         fontWeight    : 600,
@@ -142,7 +136,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
         columnGap  : 7,
         display    : 'flex',
         flexWrap   : 'wrap',
-        fontFamily : 'Lora',
+        fontFamily : parts.FONT.body,
         fontSize   : 24,
         fontWeight : 400,
         maxWidth   : 1040,
@@ -190,15 +184,12 @@ function wordmarkBlock(wordmark: string): JSXNode {
     parts.el('div', {
       children : 'DOCS',
       style: {
+        ...parts.monoLabel(PALETTE.champagne, 15),
         backgroundColor : `${PALETTE.ube}2e`,
         border          : `1px solid ${PALETTE.champagne}52`,
         borderRadius    : 6,
-        color           : PALETTE.champagne,
         display         : 'flex',
-        fontFamily      : 'JetBrains Mono',
-        fontSize        : 15,
         fontWeight      : 600,
-        letterSpacing   : DOCS_TRACK,
         marginBottom    : 22,
         padding         : '6px 12px'
       }

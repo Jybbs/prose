@@ -15,7 +15,7 @@ import { glossaryPlugin }                   from './lib/glossary/plugin'
 import { bodyLinkPlugin }                   from './lib/markdown/body-link-plugin'
 import { lintDecorationTransformer }        from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                  from './lib/markdown/prose-mark-plugin'
-import { discoverPrimitives }               from './lib/primitives/discovery'
+import { discoverPrimitiveIndex, discoverPrimitives } from './lib/primitives/discovery'
 import { discoverRuleIndex, discoverRules } from './lib/rules/discovery'
 import { assertCorpusIntegrity }            from './lib/rules/integrity'
 import { ruleLinkPlugin }                   from './lib/rules/link-plugin'
@@ -27,7 +27,7 @@ import { PALETTE, paletteCss }              from './lib/shared/palette'
 import * as constants                       from './lib/shared/constants'
 import { buildPageTimestamps }              from './lib/config/page-timestamps'
 import * as paths                           from './lib/shared/paths'
-import { SECTIONS }                          from './lib/shared/registries'
+import { SECTIONS }                         from './lib/shared/registries'
 import { buildSidebar }                     from './lib/config/sidebar'
 import { toTitleCase }                      from './lib/shared/title-case'
 import { TOOL_SEEDS }                       from './lib/shared/tools'
@@ -42,7 +42,7 @@ const ruleDiscovery        = discoverRules(rulesDirectory)
 const ruleIndex            = discoverRuleIndex(rulesDirectory)
 const discoveredRules      = ruleDiscovery.rules
 const discoveredPrimitives = discoverPrimitives(paths.primitivesDir(import.meta.url))
-const primitiveNames       = new Map(discoveredPrimitives.map(p => [p.slug as string, p.name]))
+const primitiveIndex       = discoverPrimitiveIndex(paths.primitivesDir(import.meta.url))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const shikiDarkBg          = githubDark.colors?.['editor.background'] as string
 const themeColor           = PALETTE.ube
@@ -66,7 +66,7 @@ export default defineConfig({
     config: md => {
       md.use(groupIconMdPlugin)
       md.use(tabsMarkdownPlugin)
-      md.use(ruleLinkPlugin(ruleIndex, primitiveNames))
+      md.use(ruleLinkPlugin(ruleIndex, primitiveIndex))
       md.use(glossaryPlugin(glossaryPhraseToSlug, glossaryHrefs(glossary, ruleIndex)))
       md.use(proseMarkPlugin)
       md.use(bodyLinkPlugin)
@@ -124,7 +124,7 @@ export default defineConfig({
     }
     if (pageData.relativePath.startsWith('primitives/') && !pageData.relativePath.endsWith('index.md')) {
       const slug = pageData.relativePath.replace(/^primitives\/|\.md$/g, '')
-      pageData.frontmatter.name ??= primitiveNames.get(slug)
+      pageData.frontmatter.name ??= primitiveIndex.get(slug)?.name
     }
   },
   vite: {

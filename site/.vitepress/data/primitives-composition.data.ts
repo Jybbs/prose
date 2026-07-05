@@ -9,6 +9,7 @@ type PrimitiveEntry = Omit<DiscoveredPrimitive, 'summary'> & { summaryHtml: stri
 
 interface PrimitivesCompositionData {
   byLayer : Record<PrimitiveLayer, readonly PrimitiveEntry[]>
+  bySlug  : Record<string, PrimitiveEntry>
   entries : readonly PrimitiveEntry[]
 }
 
@@ -24,6 +25,7 @@ export default defineLoader({
     const entries = renderInlineField(md, discoverPrimitives(dir), 'summary')
     type ByLayer  = Record<PrimitiveLayer, readonly PrimitiveEntry[]>
     const byLayer = Object.groupBy(entries, e => e.layer) as ByLayer
-    return { byLayer, entries }
+    const bySlug  = Object.fromEntries(entries.map(e => [e.slug as string, e]))
+    return { byLayer, bySlug, entries }
   }
 })

@@ -11,7 +11,7 @@ type View = 'all' | sources.Domain
 const view  = ref<View>('all')
 const focus = ref<sources.Token | null>(null)
 
-const allGrouped    = computed(() => sources.groupByDomain(sources.sortedTokens(TOKENS, 'key')))
+const allGrouped    = computed(() => sources.groupByDomain(TOKENS))
 const visibleGroups = computed(() => {
   if (view.value === 'all') return allGrouped.value
   return allGrouped.value.filter(([d]) => d === view.value)

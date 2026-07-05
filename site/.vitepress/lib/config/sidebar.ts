@@ -1,13 +1,11 @@
 import path from 'node:path'
 
-import matter from 'gray-matter'
-
 import type { DefaultTheme } from 'vitepress'
 
 import { markdownH1 }               from '../markdown/h1'
 import { type DiscoveredPrimitive } from '../primitives/discovery'
 import { type DiscoveredRule }      from '../rules/discovery'
-import { contentPages }             from '../shared/content-page'
+import { matterPages }              from '../shared/content-page'
 import * as registries              from '../shared/registries'
 import { requireString }            from '../shared/require-string'
 
@@ -88,11 +86,11 @@ function sectionGroups(
 }
 
 function sectionPages(directory: string, slug: registries.SectionSlug): DefaultTheme.SidebarItem[] {
-  return contentPages(directory).map(file => {
+  return matterPages(directory).map(page => {
     const title = requireString(
-      markdownH1(matter.read(path.join(directory, file)).content),
-      `${slug}/${file} has no H1 for its sidebar entry`
+      markdownH1(page.content),
+      `${slug}/${page.file} has no H1 for its sidebar entry`
     )
-    return { link: `/${slug}/${path.basename(file, '.md')}`, text: title }
+    return { link: `/${slug}/${page.slug}`, text: title }
   })
 }

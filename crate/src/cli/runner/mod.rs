@@ -326,6 +326,7 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+    use crate::cli::args::RunArgs;
     use crate::rule::RuleId;
     use crate::testing::write_pyproject;
 
@@ -338,13 +339,15 @@ mod tests {
     }
 
     fn check_args(paths: Vec<PathBuf>, stdin: bool) -> CheckArgs {
-        let mut args = CheckArgs {
+        CheckArgs {
+            common: RunArgs {
+                no_cache: true,
+                stdin,
+                ..Default::default()
+            },
             paths,
             ..Default::default()
-        };
-        args.common.no_cache = true;
-        args.common.stdin = stdin;
-        args
+        }
     }
 
     fn fixture(source: &str) -> (TempDir, PathBuf) {
@@ -355,14 +358,15 @@ mod tests {
     }
 
     fn format_args(paths: Vec<PathBuf>, stdin: bool, diff: bool) -> FormatArgs {
-        let mut args = FormatArgs {
+        FormatArgs {
+            common: RunArgs {
+                no_cache: true,
+                stdin,
+                ..Default::default()
+            },
             diff,
             paths,
-            ..Default::default()
-        };
-        args.common.no_cache = true;
-        args.common.stdin = stdin;
-        args
+        }
     }
 
     fn run_check(args: CheckArgs) -> ExitStatus {

@@ -1,16 +1,23 @@
-import { discoverPrimitives } from '../../lib/primitives/discovery'
-import { fixtureDir }         from '../support'
+import * as discovery from '../../lib/primitives/discovery'
+import { fixtureDir } from '../support'
 
 describe('discoverPrimitives', () => {
   const fixture = (name: string): string => fixtureDir(import.meta.dirname, name)
 
   it('discovers primitives sorted by filename', () => {
-    expect(discoverPrimitives(fixture('valid'))).toMatchSnapshot()
+    expect(discovery.discoverPrimitives(fixture('valid'))).toMatchSnapshot()
   })
 
   it('returns the memoized result on a second call', () => {
     const dir = fixture('valid')
-    expect(discoverPrimitives(dir)).toBe(discoverPrimitives(dir))
+    expect(discovery.discoverPrimitives(dir)).toBe(discovery.discoverPrimitives(dir))
+  })
+
+  it('indexes discovered primitives by slug', () => {
+    const dir = fixture('valid')
+    expect([...discovery.discoverPrimitiveIndex(dir).keys()])
+      .toEqual(discovery.discoverPrimitives(dir).map(p => p.slug))
+    expect(discovery.discoverPrimitiveIndex(dir)).toBe(discovery.discoverPrimitiveIndex(dir))
   })
 
   it.each([
@@ -21,6 +28,6 @@ describe('discoverPrimitives', () => {
     ['bad-tagline',   /invalid or missing tagline/],
     ['missing-h1',    /no H1 heading/]
   ])('rejects %s', (dir, message) => {
-    expect(() => discoverPrimitives(fixture(dir))).toThrow(message)
+    expect(() => discovery.discoverPrimitives(fixture(dir))).toThrow(message)
   })
 })

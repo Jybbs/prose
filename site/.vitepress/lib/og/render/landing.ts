@@ -65,7 +65,7 @@ function pilcrowMark(): JSXNode {
       alignItems     : 'center',
       color          : PALETTE.ube,
       display        : 'flex',
-      fontFamily     : 'Fraunces',
+      fontFamily     : parts.FONT.display,
       fontSize       : 80,
       fontWeight     : 600,
       height         : 72,

@@ -7,6 +7,13 @@ import { PALETTE } from '../../shared/palette'
 export const CARD_HEIGHT = 630
 export const CARD_WIDTH  = 1200
 
+// The exact family strings satori matches the loaded font faces against.
+export const FONT = {
+  body    : 'Lora',
+  display : 'Fraunces',
+  mono    : 'JetBrains Mono'
+} as const
+
 const BORDER     = 'rgba(255, 255, 255, 0.10)'
 const PANEL_FILL = 'rgba(255, 255, 255, 0.04)'
 
@@ -56,7 +63,7 @@ export function leftRail(color: string): JSXNode {
 export function monoLabel(color: string, size: number, track = '0.14em') {
   return {
     color         : color,
-    fontFamily    : 'JetBrains Mono',
+    fontFamily    : FONT.mono,
     fontSize      : size,
     fontWeight    : 500,
     letterSpacing : track
@@ -115,10 +122,10 @@ function metaRow(
 
 export function panelRow(label: string, value: string): JSXNode {
   return metaRow(label.toUpperCase(), value,
-    { fontFamily: 'JetBrains Mono', fontSize: 19, fontWeight: 500 }, 24, 8)
+    { fontFamily: FONT.mono, fontSize: 19, fontWeight: 500 }, 24, 8)
 }
 
 export function versionCallout(version: string): JSXNode {
   return metaRow('VERSION', version,
-    { fontFamily: 'Fraunces', fontSize: 72, fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1 }, 18)
+    { fontFamily: FONT.display, fontSize: 72, fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1 }, 18)
 }

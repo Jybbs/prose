@@ -59,7 +59,8 @@ export default defineLoader({
     type ByFamily    = Record<registries.RuleFamily, readonly RenderedRule[]>
     const byFamily   = Object.groupBy(list, r => r.family) as ByFamily
     for (const family of registries.FAMILY_ORDER) byFamily[family] ??= []
-    const byCategory = (['auto-fix', 'lint'] as const).map(category => {
+    const categories = Object.keys(registries.CATEGORY_META) as registries.RuleCategory[]
+    const byCategory = categories.map(category => {
       const rulesInCategory = list.filter(r => r.category === category)
       type GroupedRules     = Partial<Record<registries.RuleFamily, readonly RenderedRule[]>>
       const grouped         = Object.groupBy(rulesInCategory, r => r.family) as GroupedRules

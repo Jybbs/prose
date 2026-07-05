@@ -1,12 +1,10 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import matter from 'gray-matter'
-
-import { contentPages, isContentPage } from '../shared/content-page'
-import { memoizeByPath }               from '../shared/memoize-by-path'
-import * as registries                 from '../shared/registries'
-import { requireString }               from '../shared/require-string'
+import { contentPages, isContentPage, matterPages } from '../shared/content-page'
+import { memoizeByPath }                            from '../shared/memoize-by-path'
+import * as registries                              from '../shared/registries'
+import { requireString }                            from '../shared/require-string'
 
 export interface DiscoveredRule {
   caption  : string
@@ -37,15 +35,12 @@ export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
       continue
     }
     const directory = path.join(rulesDirectory, entry.name)
-    const pages     = contentPages(directory)
     if (!families.has(entry.name)) {
-      strayPages.push(...pages.map(f => `${entry.name}/${f}`))
+      strayPages.push(...contentPages(directory).map(f => `${entry.name}/${f}`))
       continue
     }
     const family = entry.name as registries.RuleFamily
-    for (const file of pages) {
-      const slug    = path.basename(file, '.md')
-      const fm      = matter.read(path.join(directory, file)).data
+    for (const { data: fm, slug } of matterPages(directory)) {
       const caption = requireString(
         fm.caption,
         `Rule "${slug}" has invalid or missing caption: ${JSON.stringify(fm.caption)}`

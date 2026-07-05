@@ -77,11 +77,8 @@
 }
 
 .lint-chip-struck {
-  background : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
-  color      : var(--vp-c-text-3);
-}
-
-.lint-chip-struck {
+  background      : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
+  color           : var(--vp-c-text-3);
   text-decoration : line-through;
 }
 

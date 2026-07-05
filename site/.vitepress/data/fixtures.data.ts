@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 
-import { defineLoader } from 'vitepress'
+import { defineLoader }          from 'vitepress'
+import type { MarkdownRenderer } from 'vitepress'
 
 import { readFixtureToggle } from '../lib/fixtures/toggle'
 import * as walker           from '../lib/fixtures/walker'
@@ -24,10 +25,7 @@ type FixtureData = Record<string, Record<string, FixtureEntry>>
 declare const data: FixtureData
 export { data }
 
-function descriptionHtml(
-  md        : Awaited<ReturnType<typeof renderer.getRenderer>>,
-  inputPath : string
-): string | undefined {
+function descriptionHtml(md: MarkdownRenderer, inputPath: string): string | undefined {
   const text = walker.readFixtureDocs(inputPath)?.description?.trim()
   return text ? renderer.renderBlockHtml(md, text) : undefined
 }

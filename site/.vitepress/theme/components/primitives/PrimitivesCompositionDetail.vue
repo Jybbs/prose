@@ -6,16 +6,14 @@ import { data as primitiveMeta } from '../../../data/primitives.data'
 import { data as rules }         from '../../../data/rules.data'
 import { useSettledMeasure }     from '../../../lib/composables/use-settled-measure'
 
-import type { PrimitiveLayer } from '../../../lib/shared/registries'
-import { type PrimitiveSlug }    from '../../../lib/shared/registries'
+import { PRIMITIVE_LAYER_NUMERALS }           from '../../../lib/shared/registries'
+import type { PrimitiveLayer, PrimitiveSlug } from '../../../lib/shared/registries'
 
 const props = defineProps<{
   focused : PrimitiveSlug | null
 }>()
 
-const LAYER_NUMERAL: Record<PrimitiveLayer, string> = { analysis: 'III', base: 'I', orchestration: 'II' }
-
-const focusedEntry = computed(() => props.focused === null ? null : primitives.entries.find(e => e.slug === props.focused) ?? null)
+const focusedEntry = computed(() => props.focused === null ? null : primitives.bySlug[props.focused] ?? null)
 
 const relations = computed(() => {
   const f = focusedEntry.value
@@ -31,13 +29,12 @@ function isPrimitive(s: string): s is PrimitiveSlug {
 }
 
 function layerOf(slug: string): string {
-  const e = primitives.entries.find(x => x.slug === slug)
-  return e?.layer ?? 'empty'
+  return primitives.bySlug[slug]?.layer ?? 'empty'
 }
 
 function numeralOf(slug: string): string {
   const layer = layerOf(slug)
-  return LAYER_NUMERAL[layer as PrimitiveLayer] ?? ''
+  return PRIMITIVE_LAYER_NUMERALS[layer as PrimitiveLayer] ?? ''
 }
 
 function ruleOf(slug: string) {
@@ -69,7 +66,7 @@ watch(focusedEntry, scheduleUpdate, { immediate: true })
   <div ref="cardRef" class="primitives-composition-card" :data-layer="focusedEntry?.layer ?? 'empty'" aria-live="polite">
     <template v-if="focusedEntry">
       <div class="primitives-composition-card-head">
-        <span class="primitives-composition-card-layer-numeral" aria-hidden="true">{{ LAYER_NUMERAL[focusedEntry.layer] }}</span>
+        <span class="primitives-composition-card-layer-numeral" aria-hidden="true">{{ PRIMITIVE_LAYER_NUMERALS[focusedEntry.layer] }}</span>
         <div class="primitives-composition-card-head-text">
           <span class="primitives-composition-card-name">{{ primitiveMeta.bySlug[focusedEntry.slug].name }}</span>
           <span class="primitives-composition-card-summary" v-html="focusedEntry.summaryHtml" />

@@ -1,6 +1,7 @@
 import { defineLoader } from 'vitepress'
 
 import * as renderer                     from '../lib/markdown/renderer'
+import { formatFolio }                   from '../lib/shared/numerals'
 import { FAMILY_ORDER, type RuleFamily } from '../lib/shared/registries'
 
 export interface Step {
@@ -57,7 +58,8 @@ const STEP_SOURCES: readonly StepSource[] = [
     title    : 'Install'
   },
   {
-    body     : 'Drop a `prose.toml` at the project root, a `.config/prose.toml`, or a `[tool.prose]` table in `pyproject.toml`. The defaults already work.',
+    body     : 'Drop a `prose.toml` at the project root, a `.config/prose.toml`, or a '
+             + '`[tool.prose]` table in `pyproject.toml`. The defaults already work.',
     code     : 'target-version = "3.13"',
     language : 'toml',
     number   : '02',
@@ -87,7 +89,7 @@ export default defineLoader({
       surfaces : FAMILY_ORDER.map((family, i) => ({
         bodyHtml : renderer.renderInlineHtml(md, SURFACE_BODIES[family]),
         family,
-        number   : String(i + 1).padStart(2, '0')
+        number   : formatFolio(i + 1)
       })),
       workflow : STEP_SOURCES.map(src => ({
         bodyHtml : renderer.renderInlineHtml(md, src.body),

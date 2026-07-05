@@ -4,6 +4,8 @@ import path              from 'node:path'
 
 import type { Font } from 'satori'
 
+import { FONT } from './parts'
+
 const require = createRequire(import.meta.url)
 
 export const BRAND_TITLE_ASPECT = 1031 / 380
@@ -16,16 +18,16 @@ export interface BrandAssets {
 }
 
 const FONT_FACES: readonly Omit<Font, 'data'>[] = [
-  { name: 'Fraunces',       style: 'italic', weight: 400 },
-  { name: 'Fraunces',       style: 'normal', weight: 400 },
-  { name: 'Fraunces',       style: 'italic', weight: 500 },
-  { name: 'Fraunces',       style: 'normal', weight: 600 },
-  { name: 'Fraunces',       style: 'normal', weight: 700 },
-  { name: 'JetBrains Mono', style: 'normal', weight: 400 },
-  { name: 'JetBrains Mono', style: 'normal', weight: 500 },
-  { name: 'JetBrains Mono', style: 'normal', weight: 700 },
-  { name: 'Lora',           style: 'italic', weight: 400 },
-  { name: 'Lora',           style: 'normal', weight: 400 }
+  { name: FONT.display, style: 'italic', weight: 400 },
+  { name: FONT.display, style: 'normal', weight: 400 },
+  { name: FONT.display, style: 'italic', weight: 500 },
+  { name: FONT.display, style: 'normal', weight: 600 },
+  { name: FONT.display, style: 'normal', weight: 700 },
+  { name: FONT.mono,    style: 'normal', weight: 400 },
+  { name: FONT.mono,    style: 'normal', weight: 500 },
+  { name: FONT.mono,    style: 'normal', weight: 700 },
+  { name: FONT.body,    style: 'italic', weight: 400 },
+  { name: FONT.body,    style: 'normal', weight: 400 }
 ]
 
 export function loadBrandAssets(srcDir: string): BrandAssets {

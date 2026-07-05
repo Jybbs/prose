@@ -1,7 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { discoverPrimitives, type DiscoveredPrimitive } from '../lib/primitives/discovery'
-import { primitivesDir }                                from '../lib/shared/paths'
+import { discoverPrimitiveIndex, discoverPrimitives } from '../lib/primitives/discovery'
+import type { DiscoveredPrimitive }                   from '../lib/primitives/discovery'
+import { primitivesDir }                              from '../lib/shared/paths'
 
 interface PrimitivesData {
   bySlug : Record<string, DiscoveredPrimitive>
@@ -16,8 +17,9 @@ export { data }
 export default defineLoader({
   watch: [`${dir}/*.md`],
   load(): PrimitivesData {
-    const list   = discoverPrimitives(dir).slice().sort((a, b) => a.slug.localeCompare(b.slug))
-    const bySlug = Object.fromEntries(list.map(p => [p.slug as string, p]))
-    return { bySlug, list }
+    return {
+      bySlug : Object.fromEntries(discoverPrimitiveIndex(dir)),
+      list   : discoverPrimitives(dir)
+    }
   }
 })

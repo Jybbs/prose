@@ -7,6 +7,8 @@ mod rule_args;
 mod server_args;
 mod validation;
 
+#[cfg(test)]
+pub(crate) use rule_args::RunArgs;
 pub(crate) use rule_args::{
     CheckArgs, FormatArgs, OutputFormat, RuleFilter, RulesArgs, RulesFormat,
 };

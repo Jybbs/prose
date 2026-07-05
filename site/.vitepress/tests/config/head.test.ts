@@ -1,4 +1,4 @@
-import { pageHead }                  from '../../lib/config/head'
+import { pageHead }                    from '../../lib/config/head'
 import { SITE_HOSTNAME, SITE_TAGLINE } from '../../lib/shared/constants'
 
 import type { HeadConfig, PageData } from 'vitepress'

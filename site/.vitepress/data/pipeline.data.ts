@@ -32,15 +32,17 @@ export default defineLoader({
   async load(): Promise<PipelineData> {
     const discovered = discoverRuleIndex(rulesDirectory)
     const rules      = readPipeline(import.meta.url).map(({ imperative, position, slug }) => {
-      const entry = discovered.get(slug)
+      const entry        = discovered.get(slug)
+      const categoryMeta = entry ? registries.CATEGORY_META[entry.category] : null
+      const familyMeta   = entry ? registries.FAMILY_META[entry.family]     : null
       return {
         category      : entry?.category ?? null,
-        categoryBadge : entry ? registries.CATEGORY_META[entry.category].badge : null,
-        categoryLabel : entry ? registries.CATEGORY_META[entry.category].label : null,
+        categoryBadge : categoryMeta?.badge ?? null,
+        categoryLabel : categoryMeta?.label ?? null,
         documented    : entry !== undefined,
         family        : entry?.family ?? null,
-        familyBadge   : entry ? registries.FAMILY_META[entry.family].badge : null,
-        familyLabel   : entry ? registries.FAMILY_META[entry.family].label : null,
+        familyBadge   : familyMeta?.badge ?? null,
+        familyLabel   : familyMeta?.label ?? null,
         imperative,
         position,
         slug
