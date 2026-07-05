@@ -2,19 +2,7 @@ import type { DecorationItem, ShikiTransformer } from '@shikijs/types'
 
 import type { LintFinding } from '../fixtures/lint-findings'
 
-const META_PREFIX = 'lintdeco-'
-
-// Encodes decorations into a fence-meta token the transformer decodes in
-// its preprocess hook, so they travel inside the markdown string rather
-// than through module state the config and build realms do not share.
-export function encodeLintMeta(decorations: readonly DecorationItem[]): string {
-  return META_PREFIX + Buffer.from(JSON.stringify(decorations)).toString('base64url')
-}
-
-export function decodeLintMeta(token: string): DecorationItem[] {
-  const json = Buffer.from(token.slice(META_PREFIX.length), 'base64url').toString('utf8')
-  return JSON.parse(json) as DecorationItem[]
-}
+const META_PREFIX = 'lint='
 
 // Converts findings into shiki decorations that wrap each flagged span
 // in a `.lint-flag` element carrying the hover data as `data-*`. Sorted
@@ -41,11 +29,25 @@ export function lintDecorations(findings: readonly LintFinding[]): DecorationIte
     })
 }
 
-export const lintDecorationTransformer: ShikiTransformer = {
-  name: 'prose:lint-flag',
-  preprocess(_code, options) {
-    const token = options.meta?.__raw?.split(/\s+/).find(part => part.startsWith(META_PREFIX))
-    if (!token) return
-    ;(options.decorations ??= []).push(...decodeLintMeta(token))
+// Binds the corpus findings map at config load, so a fence names its
+// fixture with a plain `lint=<id>` token and the decorations are computed
+// in preprocess. An id the map does not hold is a build error.
+export function lintDecorationTransformer(
+  findings: ReadonlyMap<string, readonly LintFinding[]>
+): ShikiTransformer {
+  return {
+    name: 'prose:lint-flag',
+    preprocess(_code, options) {
+      const token = options.meta?.__raw?.split(/\s+/).find(part => part.startsWith(META_PREFIX))
+      if (!token) return
+      const id    = token.slice(META_PREFIX.length)
+      const found = findings.get(id)
+      if (!found) throw new Error(`${META_PREFIX}${id} references no fixture findings`)
+      ;(options.decorations ??= []).push(...lintDecorations(found))
+    }
   }
+}
+
+export function lintFenceMeta(fixtureId: string): string {
+  return META_PREFIX + fixtureId
 }

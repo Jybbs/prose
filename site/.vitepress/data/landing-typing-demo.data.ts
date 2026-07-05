@@ -6,53 +6,48 @@ import path             from 'node:path'
 import type { KeyedTokensInfo } from 'shiki-magic-move/types'
 import { defineLoader }         from 'vitepress'
 
-import { ENTRIES, PRELUDE, RESET_ROWS, RULES, SOURCE } from '../lib/landing/typing-demo'
-import type {
-  LandingTypingDemoEditEntry,
-  LandingTypingDemoEntry,
-  LandingTypingDemoResetRow
-} from '../lib/landing/typing-demo'
+import * as typingDemo         from '../lib/landing/typing-demo'
 import { precompileMagicMove } from '../lib/markdown/magic-move'
-import { proseBinaryCandidates, repoRoot, resolveProseBinary } from '../lib/shared/paths'
+import * as paths              from '../lib/shared/paths'
 
 export type {
   LandingTypingDemoEditEntry,
   LandingTypingDemoEntry,
   LandingTypingDemoResetRow
-}
+} from '../lib/landing/typing-demo'
 
 interface LandingTypingDemoData {
-  entries          : readonly LandingTypingDemoEntry[]
+  entries          : readonly typingDemo.LandingTypingDemoEntry[]
   prelude          : string
   pythonStateSteps : readonly KeyedTokensInfo[]
-  resetRows        : readonly LandingTypingDemoResetRow[]
+  resetRows        : readonly typingDemo.LandingTypingDemoResetRow[]
 }
 
 declare const data: LandingTypingDemoData
 export { data }
 
-const root = repoRoot(import.meta.url)
+const root = paths.repoRoot(import.meta.url)
 
 export default defineLoader({
-  watch: proseBinaryCandidates(root),
+  watch: paths.proseBinaryCandidates(root),
   async load(): Promise<LandingTypingDemoData> {
-    const bin = resolveProseBinary(root)
+    const bin = paths.resolveProseBinary(root)
 
-    const states: string[] = [SOURCE]
-    for (let i = 0; i < RULES.length; i++) {
-      states.push(runProse(bin, SOURCE, RULES.slice(0, i + 1).join(',')))
+    const states: string[] = [typingDemo.SOURCE]
+    for (let i = 0; i < typingDemo.RULES.length; i++) {
+      states.push(runProse(bin, typingDemo.SOURCE, typingDemo.RULES.slice(0, i + 1).join(',')))
     }
-    for (const entry of ENTRIES) {
+    for (const entry of typingDemo.ENTRIES) {
       if (entry.tail !== undefined) {
-        states.push(runProse(bin, SOURCE, RULES.join(','), entry.tail))
+        states.push(runProse(bin, typingDemo.SOURCE, typingDemo.RULES.join(','), entry.tail))
       }
     }
 
     return {
-      entries          : ENTRIES,
-      prelude          : PRELUDE,
+      entries          : typingDemo.ENTRIES,
+      prelude          : typingDemo.PRELUDE,
       pythonStateSteps : await precompileMagicMove(states),
-      resetRows        : RESET_ROWS
+      resetRows        : typingDemo.RESET_ROWS
     }
   }
 })

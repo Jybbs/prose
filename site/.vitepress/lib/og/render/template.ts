@@ -4,12 +4,9 @@ import { formatFolio }                from '../../shared/numerals'
 import { CATEGORY_META, FAMILY_META } from '../../shared/registries'
 
 import { type BrandAssets, BRAND_TITLE_ASPECT } from './assets'
-import { PALETTE } from '../../shared/palette'
+import { PALETTE }                              from '../../shared/palette'
 import type { OgPage }                          from '../pages'
-import {
-  CARD_HEIGHT, CARD_WIDTH,
-  cardShell, el, leftRail, monoLabel, panelDivider, panelRow, panelShell, toSvg, versionCallout
-} from './parts'
+import * as parts                               from './parts'
 
 const DOCS_TRACK = '0.14em'
 
@@ -33,14 +30,14 @@ export function pageSvg(
   brand   : BrandAssets,
   version : string
 ): Promise<string> {
-  return toSvg(buildCard(page, version, brand.wordmark, brand.glyph), brand.fonts)
+  return parts.toSvg(buildCard(page, version, brand.wordmark, brand.glyph), brand.fonts)
 }
 
 function buildCard(page: OgPage, version: string, wordmark: string, glyph: string): JSXNode {
   const accent = page.accent ?? PALETTE.ube
-  return cardShell(
+  return parts.cardShell(
     watermarkLayer(glyph),
-    leftRail(accent),
+    parts.leftRail(accent),
     wordmarkBlock(wordmark),
     dataPanel(page, version, accent),
     titleBlock(page, accent)
@@ -48,21 +45,21 @@ function buildCard(page: OgPage, version: string, wordmark: string, glyph: strin
 }
 
 function buildKicker(page: OgPage): string {
-  const parts = page.breadcrumb.map(s => s.toUpperCase())
+  const segments = page.breadcrumb.map(s => s.toUpperCase())
   if (page.category) {
     const tail = CATEGORY_META[page.category].label.toUpperCase()
-    if (parts.at(-1) !== tail) parts.push(tail)
+    if (segments.at(-1) !== tail) segments.push(tail)
   }
-  return `— ${parts.join(' · ')} —`
+  return `— ${segments.join(' · ')} —`
 }
 
 function dataPanel(page: OgPage, version: string, accent: string): JSXNode {
   const rows = panelRows(page)
   const warm = page.family !== undefined && FAMILY_META[page.family].warmth === 'warm'
-  return panelShell(accent, warm ? '99' : '66',
-    ...rows.map(row => panelRow(...row)),
-    ...(rows.length > 0 ? [panelDivider()] : []),
-    versionCallout(version)
+  return parts.panelShell(accent, warm ? '99' : '66',
+    ...rows.map(row => parts.panelRow(...row)),
+    ...(rows.length > 0 ? [parts.panelDivider()] : []),
+    parts.versionCallout(version)
   )
 }
 
@@ -104,7 +101,7 @@ function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
 
 function titleBlock(page: OgPage, accent: string): JSXNode {
   const caption = page.caption
-  return el('div',
+  return parts.el('div',
     {
       style: {
         display       : 'flex',
@@ -115,11 +112,11 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
         top           : 360
       }
     },
-    el('div', {
+    parts.el('div', {
       children : buildKicker(page),
-      style    : { ...monoLabel(PALETTE['ube-pale'], 22), marginBottom: 12 }
+      style    : { ...parts.monoLabel(PALETTE['ube-pale'], 22), marginBottom: 12 }
     }),
-    el('div', {
+    parts.el('div', {
       children : page.title,
       style: {
         color         : accent,
@@ -134,8 +131,8 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
         maxWidth      : 1040
       }
     }),
-    ...(caption !== undefined ? [el('div', {
-      children : captionSegments(caption).map(seg => el('span', {
+    ...(caption !== undefined ? [parts.el('div', {
+      children : captionSegments(caption).map(seg => parts.el('span', {
         children : seg.text,
         style    : seg.code ? CODE_CHIP : {}
       })),
@@ -157,23 +154,23 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
 
 function watermarkLayer(glyph: string): JSXNode {
   const size = 720
-  return el('div',
+  return parts.el('div',
     {
       style: {
         display  : 'flex',
-        left     : (CARD_WIDTH - size) / 2,
+        left     : (parts.CARD_WIDTH - size) / 2,
         opacity  : 0.012,
         position : 'absolute',
-        top      : (CARD_HEIGHT - size) / 2
+        top      : (parts.CARD_HEIGHT - size) / 2
       }
     },
-    el('img', { height: size, src: glyph, width: size })
+    parts.el('img', { height: size, src: glyph, width: size })
   )
 }
 
 function wordmarkBlock(wordmark: string): JSXNode {
   const height = 76
-  return el('div',
+  return parts.el('div',
     {
       style: {
         alignItems : 'flex-end',
@@ -184,13 +181,13 @@ function wordmarkBlock(wordmark: string): JSXNode {
         top        : 80
       }
     },
-    el('img', {
+    parts.el('img', {
       height : height,
       src    : wordmark,
       style  : { display: 'flex' },
       width  : Math.round(height * BRAND_TITLE_ASPECT)
     }),
-    el('div', {
+    parts.el('div', {
       children : 'DOCS',
       style: {
         backgroundColor : `${PALETTE.ube}2e`,

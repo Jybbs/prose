@@ -2,16 +2,15 @@
 import { useTimeoutFn }  from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import { data as TOKENS }                             from '../../../data/tokens.data'
-import { DOMAIN_LABELS, groupByDomain, sortedTokens } from '../../../lib/tokens/sources'
-import type { Domain, Token }                         from '../../../lib/tokens/sources'
+import { data as TOKENS } from '../../../data/tokens.data'
+import * as sources       from '../../../lib/tokens/sources'
 
-const tabs = (Object.keys(DOMAIN_LABELS) as Domain[]).sort()
+const tabs = (Object.keys(sources.DOMAIN_LABELS) as sources.Domain[]).sort()
 
-type View = 'all' | Domain
+type View = 'all' | sources.Domain
 
 const view  = ref<View>('all')
-const focus = ref<Token | null>(null)
+const focus = ref<sources.Token | null>(null)
 const popX  = ref(0)
 const popY  = ref(0)
 
@@ -19,13 +18,13 @@ const { start: scheduleClear, stop: cancelClear } = useTimeoutFn(
   () => { focus.value = null }, 220, { immediate: false }
 )
 
-const allGrouped    = computed(() => groupByDomain(sortedTokens(TOKENS, 'key')))
+const allGrouped    = computed(() => sources.groupByDomain(sources.sortedTokens(TOKENS, 'key')))
 const visibleGroups = computed(() => {
   if (view.value === 'all') return allGrouped.value
   return allGrouped.value.filter(([d]) => d === view.value)
 })
 
-function onEnter(token: Token, event: MouseEvent | FocusEvent): void {
+function onEnter(token: sources.Token, event: MouseEvent | FocusEvent): void {
   cancelClear()
   focus.value = token
   const rect  = (event.currentTarget as HTMLElement).getBoundingClientRect()
@@ -36,7 +35,7 @@ function onEnter(token: Token, event: MouseEvent | FocusEvent): void {
 
 <template>
   <div class="az-index-stage">
-    <nav class="az-index-tabs" role="tablist" aria-label="Domain tabs">
+    <nav class="az-index-tabs" role="tablist" aria-label="sources.Domain tabs">
       <button
         type="button"
         role="tab"
@@ -55,7 +54,7 @@ function onEnter(token: Token, event: MouseEvent | FocusEvent): void {
         :class="{ 'is-active': view === d }"
         :data-domain="d"
         @click="view = d"
-      >{{ DOMAIN_LABELS[d] }}</button>
+      >{{ sources.DOMAIN_LABELS[d] }}</button>
     </nav>
 
     <div class="az-index-float-wrap">
@@ -67,7 +66,7 @@ function onEnter(token: Token, event: MouseEvent | FocusEvent): void {
           :data-domain="domain"
         >
           <header class="az-index-section-head">
-            <span class="kicker az-index-section-folio">{{ DOMAIN_LABELS[domain] }}</span>
+            <span class="kicker az-index-section-folio">{{ sources.DOMAIN_LABELS[domain] }}</span>
             <span class="az-index-section-count">{{ tokens.length }} entries</span>
           </header>
           <ul class="az-index-keys">
@@ -95,7 +94,7 @@ function onEnter(token: Token, event: MouseEvent | FocusEvent): void {
       >
         <aside class="az-index-detail" :data-domain="focus.domain">
           <header class="az-index-detail-banner">
-            <span class="az-index-detail-kicker">{{ DOMAIN_LABELS[focus.domain] }}</span>
+            <span class="az-index-detail-kicker">{{ sources.DOMAIN_LABELS[focus.domain] }}</span>
           </header>
           <div class="az-index-detail-body">
             <code class="az-index-detail-key">{{ focus.key }}</code>

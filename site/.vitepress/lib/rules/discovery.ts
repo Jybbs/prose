@@ -5,13 +5,13 @@ import matter from 'gray-matter'
 
 import { isContentPage } from '../shared/content-page'
 import { memoizeByPath } from '../shared/memoize-by-path'
-import { categoryOf, FAMILY_ORDER, type RuleCategory, type RuleFamily } from '../shared/registries'
+import * as registries   from '../shared/registries'
 import { requireString } from '../shared/require-string'
 
 export interface DiscoveredRule {
   caption  : string
-  category : RuleCategory
-  family   : RuleFamily
+  category : registries.RuleCategory
+  family   : registries.RuleFamily
   href     : string
   related  : readonly string[]
   slug     : string
@@ -28,7 +28,7 @@ export const discoverRuleIndex = memoizeByPath(
 )
 
 export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
-  const families   = new Set<string>(FAMILY_ORDER)
+  const families   = new Set<string>(registries.FAMILY_ORDER)
   const rules      : DiscoveredRule[] = []
   const strayPages : string[] = []
   for (const entry of fs.readdirSync(rulesDirectory, { withFileTypes: true })) {
@@ -42,7 +42,7 @@ export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
       strayPages.push(...pages.map(f => `${entry.name}/${f}`))
       continue
     }
-    const family = entry.name as RuleFamily
+    const family = entry.name as registries.RuleFamily
     for (const file of pages) {
       const slug    = path.basename(file, '.md')
       const fm      = matter.read(path.join(directory, file)).data
@@ -53,7 +53,7 @@ export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
       const relatedSlugs = Array.isArray(fm.related) ? fm.related as string[] : []
       rules.push({
         caption,
-        category : categoryOf(family),
+        category : registries.categoryOf(family),
         family,
         href     : `/rules/${family}/${slug}`,
         related  : relatedSlugs,

@@ -1,7 +1,5 @@
 import { markdownH1 }        from '../../lib/markdown/h1'
-import {
-  decodeLintMeta, encodeLintMeta, lintDecorations, lintDecorationTransformer
-} from '../../lib/markdown/lint-decorations'
+import * as decorations      from '../../lib/markdown/lint-decorations'
 import { replaceTextTokens } from '../../lib/markdown/token-split'
 import { walkBodyInlines }   from '../../lib/markdown/walk'
 
@@ -74,15 +72,6 @@ describe('walkBodyInlines', () => {
   })
 })
 
-describe('encodeLintMeta', () => {
-  it('round-trips decorations through a base64url fence-meta token', () => {
-    const decorations = [{ end: 4, properties: { class: 'lint-flag' }, start: 0 }]
-    const meta = encodeLintMeta(decorations)
-    expect(meta.startsWith('lintdeco-')).toBe(true)
-    expect(decodeLintMeta(meta)).toEqual(decorations)
-  })
-})
-
 describe('lintDecorations', () => {
   it('sorts findings by position and maps them to shiki decorations', () => {
     const findings = [
@@ -95,7 +84,7 @@ describe('lintDecorations', () => {
         message      : 'first'
       }
     ]
-    expect(lintDecorations(findings)).toEqual([
+    expect(decorations.lintDecorations(findings)).toEqual([
       {
         end        : { character: 3, line: 0 },
         properties : { class: 'lint-flag', 'data-before': 'x', 'data-message': 'first', 'data-rule': 'a', 'data-suggested': 'y' },
@@ -111,20 +100,31 @@ describe('lintDecorations', () => {
 })
 
 describe('lintDecorationTransformer', () => {
-  const preprocess = lintDecorationTransformer.preprocess as unknown as
+  const findings = new Map([
+    ['demo-rule/basic', [{ code: 'a', end_location: { column: 4, row: 1 }, location: { column: 1, row: 1 }, message: 'm' }]]
+  ])
+  const preprocess = decorations.lintDecorationTransformer(findings).preprocess as unknown as
     (code: string, options: { decorations?: unknown[]; meta?: { __raw?: string } }) => void
 
-  it('decodes the fence-meta token into options.decorations', () => {
-    const decorations = [{ end: 3, properties: { class: 'lint-flag' }, start: 0 }]
+  it('computes decorations for the fixture the lint token names', () => {
     const options: { decorations?: unknown[]; meta?: { __raw?: string } } =
-      { meta: { __raw: `python ${encodeLintMeta(decorations)}` } }
+      { meta: { __raw: `python ${decorations.lintFenceMeta('demo-rule/basic')}` } }
     preprocess('', options)
-    expect(options.decorations).toEqual(decorations)
+    expect(options.decorations).toEqual([{
+      end        : { character: 3, line: 0 },
+      properties : { class: 'lint-flag', 'data-message': 'm', 'data-rule': 'a' },
+      start      : { character: 0, line: 0 }
+    }])
   })
 
   it('leaves decorations untouched when no lint token is present', () => {
     const options: { decorations?: unknown[]; meta?: { __raw?: string } } = { meta: { __raw: 'python' } }
     preprocess('', options)
     expect(options.decorations).toBeUndefined()
+  })
+
+  it('throws when the token names a fixture with no findings', () => {
+    expect(() => preprocess('', { meta: { __raw: 'python lint=ghost/none' } }))
+      .toThrow(/references no fixture findings/)
   })
 })

@@ -4,36 +4,29 @@ import { computed, ref } from 'vue'
 import RunSummary       from './RunSummary.vue'
 import RunSummarySelect from './RunSummarySelect.vue'
 
-import {
-  glossFor,
-  OUTCOMES,
-  QUIET_OPTIONS,
-  resolveSelection,
-  type SelectOption,
-  STREAM_OPTIONS
-} from '../../../lib/reference/run-summary'
+import * as runSummary from '../../../lib/reference/run-summary'
 
 const outcomeId = ref('clean')
 const quietId   = ref('full')
 const streamId  = ref('tty')
 
-const line  = computed(() => resolveSelection(outcomeId.value, quietId.value, streamId.value))
-const gloss = computed(() => glossFor(outcomeId.value, quietId.value, streamId.value))
+const line  = computed(() => runSummary.resolveSelection(outcomeId.value, quietId.value, streamId.value))
+const gloss = computed(() => runSummary.glossFor(outcomeId.value, quietId.value, streamId.value))
 
-const outcomeOpts = computed<SelectOption[]>(() => OUTCOMES.map(o => ({
+const outcomeOpts = computed<runSummary.SelectOption[]>(() => runSummary.OUTCOMES.map(o => ({
   id      : o.key,
   mono    : o.args,
-  preview : resolveSelection(o.key, quietId.value, streamId.value)
+  preview : runSummary.resolveSelection(o.key, quietId.value, streamId.value)
 })))
 
-const quietOpts = computed<SelectOption[]>(() => QUIET_OPTIONS.map(q => ({
+const quietOpts = computed<runSummary.SelectOption[]>(() => runSummary.QUIET_OPTIONS.map(q => ({
   ...q,
-  preview: resolveSelection(outcomeId.value, q.id, streamId.value)
+  preview: runSummary.resolveSelection(outcomeId.value, q.id, streamId.value)
 })))
 
-const streamOpts = computed<SelectOption[]>(() => STREAM_OPTIONS.map(s => ({
+const streamOpts = computed<runSummary.SelectOption[]>(() => runSummary.STREAM_OPTIONS.map(s => ({
   ...s,
-  preview: resolveSelection(outcomeId.value, quietId.value, s.id)
+  preview: runSummary.resolveSelection(outcomeId.value, quietId.value, s.id)
 })))
 </script>
 

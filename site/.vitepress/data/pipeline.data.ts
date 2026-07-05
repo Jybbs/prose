@@ -1,17 +1,16 @@
 import { defineLoader } from 'vitepress'
 
-import { discoverRuleIndex }                         from '../lib/rules/discovery'
-import { readPipeline }                              from '../lib/rules/pipeline'
-import { proseBinaryCandidates, repoRoot, rulesDir } from '../lib/shared/paths'
-import { CATEGORY_META, FAMILY_META }                from '../lib/shared/registries'
-import type { RuleCategory, RuleFamily }             from '../lib/shared/registries'
+import { discoverRuleIndex } from '../lib/rules/discovery'
+import { readPipeline }      from '../lib/rules/pipeline'
+import * as paths            from '../lib/shared/paths'
+import * as registries       from '../lib/shared/registries'
 
 interface PipelineRule {
-  category      : RuleCategory | null
+  category      : registries.RuleCategory | null
   categoryBadge : string | null
   categoryLabel : string | null
   documented    : boolean
-  family        : RuleFamily | null
+  family        : registries.RuleFamily | null
   familyBadge   : string | null
   familyLabel   : string | null
   imperative    : string
@@ -23,25 +22,25 @@ interface PipelineData {
   rules : readonly PipelineRule[]
 }
 
-const rulesDirectory = rulesDir(import.meta.url)
+const rulesDirectory = paths.rulesDir(import.meta.url)
 
 declare const data: PipelineData
 export { data }
 
 export default defineLoader({
-  watch: [...proseBinaryCandidates(repoRoot(import.meta.url)), `${rulesDirectory}/*.md`],
+  watch: [...paths.proseBinaryCandidates(paths.repoRoot(import.meta.url)), `${rulesDirectory}/*.md`],
   async load(): Promise<PipelineData> {
     const discovered = discoverRuleIndex(rulesDirectory)
     const rules      = readPipeline(import.meta.url).map(({ imperative, position, slug }) => {
       const entry = discovered.get(slug)
       return {
         category      : entry?.category ?? null,
-        categoryBadge : entry ? CATEGORY_META[entry.category].badge : null,
-        categoryLabel : entry ? CATEGORY_META[entry.category].label : null,
+        categoryBadge : entry ? registries.CATEGORY_META[entry.category].badge : null,
+        categoryLabel : entry ? registries.CATEGORY_META[entry.category].label : null,
         documented    : entry !== undefined,
         family        : entry?.family ?? null,
-        familyBadge   : entry ? FAMILY_META[entry.family].badge : null,
-        familyLabel   : entry ? FAMILY_META[entry.family].label : null,
+        familyBadge   : entry ? registries.FAMILY_META[entry.family].badge : null,
+        familyLabel   : entry ? registries.FAMILY_META[entry.family].label : null,
         imperative,
         position,
         slug

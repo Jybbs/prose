@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useIntersectionObserver, useMediaQuery } from '@vueuse/core'
 import type { KeyedTokensInfo }                   from 'shiki-magic-move/types'
-import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import RuleCard from '../rules/RuleCard.vue'
 
@@ -33,10 +33,10 @@ type Panel = typeof import('shiki-magic-move/vue').ShikiMagicMovePrecompiled | n
 
 const animate   = ref(false)
 const animating = ref(false)
-const drawn     = ref(false)
 const duration  = ref(0)
 const panel     = shallowRef<Panel>(null)
 const steps     = shallowRef<readonly KeyedTokensInfo[]>([])
+const undrawn   = ref(false)
 
 const active      = ref<ActiveFinding | null>(null)
 const messageHtml = computed(() => inlineCode(active.value?.message ?? ''))
@@ -72,12 +72,12 @@ async function prepare(): Promise<void> {
   animate.value = true
 }
 
-// Replays the left-to-right squiggle draw, resetting to scaleX(0) and
-// landing on scaleX(1) a frame later so the CSS transition re-fires.
+// Replays the left-to-right squiggle draw, staging `lint-undrawn` and
+// lifting it two frames later so the CSS transition re-fires.
 function drawSquiggles(): void {
   if (typeof requestAnimationFrame === 'undefined') return
-  drawn.value = false
-  requestAnimationFrame(() => requestAnimationFrame(() => { drawn.value = true }))
+  undrawn.value = true
+  requestAnimationFrame(() => requestAnimationFrame(() => { undrawn.value = false }))
 }
 
 // Magic-move owns the panel through the morph, and on settle the
@@ -125,6 +125,11 @@ watch(() => props.activeTab, tab => {
   }
 })
 
+// The static HTML ships the wave drawn, so staging it undrawn at mount,
+// before the first paint, keeps the first-view entrance a clean draw
+// rather than a shrink-then-grow on intersection.
+onMounted(() => { undrawn.value = true })
+
 const { stop } = useIntersectionObserver(root, ([entry]) => {
   if (!entry.isIntersecting) return
   prepare()
@@ -149,7 +154,7 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
     <div
       v-show="!animating"
       class="fixture-pair-panel"
-      :class="{ 'lint-drawn': drawn }"
+      :class="{ 'lint-undrawn': undrawn }"
       @mouseover="show"
       @mouseout="hide"
       @focusin="show"

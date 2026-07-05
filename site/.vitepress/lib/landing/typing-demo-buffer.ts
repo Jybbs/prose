@@ -1,8 +1,4 @@
-import type {
-  LandingTypingDemoEditEntry,
-  LandingTypingDemoEntry,
-  LandingTypingDemoResetRow
-} from './typing-demo'
+import type * as typingDemo from './typing-demo'
 
 export interface BufferSegments {
   after             : string
@@ -22,7 +18,7 @@ export const EMPTY_SEGMENTS: BufferSegments = {
 
 export function applyCompletedEdits(
   base    : string,
-  entries : readonly LandingTypingDemoEntry[],
+  entries : readonly typingDemo.LandingTypingDemoEntry[],
   upTo    : number
 ): string {
   let text = base
@@ -51,7 +47,7 @@ export function editPlan(from: string, to: string): {
 }
 
 export function segmentsForEdit(
-  entry        : LandingTypingDemoEditEntry,
+  entry        : typingDemo.LandingTypingDemoEditEntry,
   text         : string,
   phase        : string,
   editProgress : number
@@ -85,7 +81,7 @@ export function segmentsForEdit(
 
 export function resetText(
   prelude  : string,
-  rows     : readonly LandingTypingDemoResetRow[],
+  rows     : readonly typingDemo.LandingTypingDemoResetRow[],
   phase    : string,
   progress : number
 ): string {

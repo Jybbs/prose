@@ -2,19 +2,19 @@
 import { useElementHover, useElementSize, useMouseInElement } from '@vueuse/core'
 import { computed, ref, useTemplateRef }                      from 'vue'
 
-import type { RenderedRule }            from '../../../../data/rules.data'
-import { formatFolio }                  from '../../../../lib/shared/numerals'
-import { categoryOf, FAMILY_META, type RuleFamily } from '../../../../lib/shared/registries'
+import type { RenderedRule } from '../../../../data/rules.data'
+import { formatFolio }       from '../../../../lib/shared/numerals'
+import * as registries       from '../../../../lib/shared/registries'
 
 const props = defineProps<{
   bodyHtml : string
-  family   : RuleFamily
+  family   : registries.RuleFamily
   number   : string
   rules    : readonly RenderedRule[]
 }>()
 
-const meta     = computed(() => FAMILY_META[props.family])
-const category = computed(() => categoryOf(props.family))
+const meta     = computed(() => registries.FAMILY_META[props.family])
+const category = computed(() => registries.categoryOf(props.family))
 const href     = computed(() => `/rules/${props.family}/`)
 
 const rootRef = useTemplateRef<HTMLElement>('root')

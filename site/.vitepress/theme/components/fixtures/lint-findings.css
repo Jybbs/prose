@@ -23,13 +23,13 @@
   background       : color-mix(in srgb, var(--family-color) 55%, transparent);
   -webkit-mask     : var(--lint-wave) left center / 8px 4px repeat-x;
   mask             : var(--lint-wave) left center / 8px 4px repeat-x;
-  transform        : scaleX(0);
+  transform        : scaleX(1);
   transform-origin : left;
   transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease, opacity var(--prose-transition);
 }
 
-.lint-drawn .lint-flag::after {
-  transform : scaleX(1);
+.lint-undrawn .lint-flag::after {
+  transform : scaleX(0);
 }
 
 .lint-flag:hover::after {
@@ -42,7 +42,7 @@
     transition : none;
   }
 
-  .lint-flag::after {
+  .lint-undrawn .lint-flag::after {
     transform : scaleX(1);
   }
 }

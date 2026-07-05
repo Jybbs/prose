@@ -3,13 +3,11 @@ import path from 'node:path'
 
 import { LINT_FINDINGS_FILE, readLintFindings } from '../../lib/fixtures/lint-findings'
 import { readFixtureToggle }                    from '../../lib/fixtures/toggle'
-import {
-  fixtureWatchGlobs, readFixtureDocs, subdirNames, walkFixtures
-} from '../../lib/fixtures/walker'
-import { crateDir } from '../../lib/shared/paths'
+import * as walker                              from '../../lib/fixtures/walker'
+import { crateDir }                             from '../../lib/shared/paths'
 
 const crate   = crateDir(import.meta.url)
-const cases   = [...walkFixtures(crate)]
+const cases   = [...walker.walkFixtures(crate)]
 const absent  = path.join(crate, 'tests', 'fixtures', '__no_such_case__', 'input.py')
 const sidecar = (inputPath: string, file: string): boolean =>
   fs.existsSync(path.join(path.dirname(inputPath), file))
@@ -20,12 +18,22 @@ describe('walkFixtures', () => {
     expect(cases[0].inputPath.endsWith('input.py')).toBe(true)
     expect(cases[0].rule).toBeTruthy()
     expect(cases[0].caseName).toBeTruthy()
+    expect(cases[0].id).toBe(`${cases[0].rule}/${cases[0].caseName}`)
+  })
+})
+
+describe('corpusLintFindings', () => {
+  it('maps every findings-bearing case by its fixture id', () => {
+    const map = walker.corpusLintFindings(crate)
+    expect(map.size).toBeGreaterThan(0)
+    expect([...map.keys()].every(id => /^[^/]+\/[^/]+$/.test(id))).toBe(true)
+    expect([...map.values()].every(findings => findings.length > 0)).toBe(true)
   })
 })
 
 describe('fixtureWatchGlobs', () => {
   it('builds four globs rooted at the fixture tree', () => {
-    const globs = fixtureWatchGlobs(crate)
+    const globs = walker.fixtureWatchGlobs(crate)
     expect(globs).toHaveLength(4)
     expect(globs.every(g => g.includes('tests/fixtures'))).toBe(true)
   })
@@ -33,7 +41,7 @@ describe('fixtureWatchGlobs', () => {
 
 describe('subdirNames', () => {
   it('lists rule directories in sorted order', () => {
-    const names = subdirNames(path.join(crate, 'tests', 'fixtures'))
+    const names = walker.subdirNames(path.join(crate, 'tests', 'fixtures'))
     expect(names.length).toBeGreaterThan(0)
     expect(names).toEqual([...names].sort())
   })
@@ -62,13 +70,13 @@ describe('readLintFindings', () => {
 describe('readFixtureDocs', () => {
   it('reads the [docs] table from meta.toml when present', () => {
     const withMeta = cases.find(c => sidecar(c.inputPath, 'meta.toml'))!
-    const docs     = readFixtureDocs(withMeta.inputPath)!
+    const docs     = walker.readFixtureDocs(withMeta.inputPath)!
     expect(Object.keys(docs).length).toBeGreaterThan(0)
     expect(Object.keys(docs).every(k =>
       ['canonical', 'description', 'previewable', 'title'].includes(k))).toBe(true)
   })
 
   it('returns undefined when meta.toml is absent', () => {
-    expect(readFixtureDocs(absent)).toBeUndefined()
+    expect(walker.readFixtureDocs(absent)).toBeUndefined()
   })
 })

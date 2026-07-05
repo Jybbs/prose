@@ -6,7 +6,7 @@ import postcss from 'postcss'
 import { glossary }          from '../../lib/glossary/entries'
 import { discoverRuleSlugs } from '../../lib/rules/discovery'
 import { rulesDir }          from '../../lib/shared/paths'
-import { FAMILY_META, FAMILY_ORDER, GLOSSARY_FAMILY_META } from '../../lib/shared/registries'
+import * as registries       from '../../lib/shared/registries'
 
 const styles = (name: string): string =>
   fs.readFileSync(path.join(import.meta.dirname, '..', '..', 'theme', 'styles', name), 'utf8')
@@ -19,7 +19,7 @@ const accentSlugs = (): string[] => {
   return [...slugs].sort()
 }
 
-const glossaryFamilies = Object.keys(GLOSSARY_FAMILY_META).sort()
+const glossaryFamilies = Object.keys(registries.GLOSSARY_FAMILY_META).sort()
 
 describe('family registry and stylesheet parity', () => {
   it('every glossary family has a [data-family] accent, with no orphans', () => {
@@ -27,8 +27,8 @@ describe('family registry and stylesheet parity', () => {
   })
 
   it('FAMILY_ORDER covers FAMILY_META, and GLOSSARY_FAMILY_META adds cli and engine', () => {
-    expect.soft([...FAMILY_ORDER].sort()).toEqual(Object.keys(FAMILY_META).sort())
-    expect.soft(glossaryFamilies).toEqual([...Object.keys(FAMILY_META), 'cli', 'engine'].sort())
+    expect.soft([...registries.FAMILY_ORDER].sort()).toEqual(Object.keys(registries.FAMILY_META).sort())
+    expect.soft(glossaryFamilies).toEqual([...Object.keys(registries.FAMILY_META), 'cli', 'engine'].sort())
   })
 })
 

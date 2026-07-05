@@ -2,15 +2,13 @@ import { existsSync } from 'node:fs'
 
 import { defineLoader } from 'vitepress'
 
-import { readFixtureToggle }             from '../lib/fixtures/toggle'
-import { fixtureWatchGlobs, readFixtureDocs, walkFixtures } from '../lib/fixtures/walker'
-import { lintDecorations }               from '../lib/markdown/lint-decorations'
-import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
-import { discoverRuleSlugs }             from '../lib/rules/discovery'
-import { crateDir, rulesDir }            from '../lib/shared/paths'
+import { readFixtureToggle } from '../lib/fixtures/toggle'
+import * as walker           from '../lib/fixtures/walker'
+import { lintFenceMeta }     from '../lib/markdown/lint-decorations'
+import * as renderer         from '../lib/markdown/renderer'
+import { crateDir }          from '../lib/shared/paths'
 
-const crate     = crateDir(import.meta.url)
-const ruleHrefs = new Map(discoverRuleSlugs(rulesDir(import.meta.url)).map(r => [r.slug, r.href]))
+const crate = crateDir(import.meta.url)
 
 interface FixtureEntry {
   changesSource    : boolean
@@ -27,28 +25,21 @@ declare const data: FixtureData
 export { data }
 
 function descriptionHtml(
-  md        : Awaited<ReturnType<typeof getRenderer>>,
+  md        : Awaited<ReturnType<typeof renderer.getRenderer>>,
   inputPath : string
 ): string | undefined {
-  const text = readFixtureDocs(inputPath)?.description?.trim()
-  if (!text) return undefined
-  // The card description renders through `v-html`, which never instantiates
-  // the `<InlineRuleLink>` component the rule-link plugin emits for a
-  // backticked slug, so downgrade it to the plain anchor primitive links
-  // already use on this surface.
-  return md.render(text).replace(
-    /<InlineRuleLink slug="([^"]+)" \/>/g,
-    (_, slug) => `<a class="body-link" href="${ruleHrefs.get(slug)!}"><code>${slug}</code></a>`
-  )
+  const text = walker.readFixtureDocs(inputPath)?.description?.trim()
+  return text ? renderer.renderBlockHtml(md, text) : undefined
 }
 
 export default defineLoader({
-  watch: fixtureWatchGlobs(crate),
+  watch: walker.fixtureWatchGlobs(crate),
   async load(): Promise<FixtureData> {
-    const md      = await getRenderer()
-    const entries = [...walkFixtures(crate)].filter(({ inputPath }) => existsSync(`${inputPath}.snap`))
-    const rows = await Promise.all(entries.map(async ({ rule, caseName, inputPath }) => {
-      const { changesSource, findings, hasFindings, hasToggle, inputRaw, output } =
+    const md      = await renderer.getRenderer()
+    const entries = [...walker.walkFixtures(crate)]
+      .filter(({ inputPath }) => existsSync(walker.snapshotPath(inputPath)))
+    const rows = await Promise.all(entries.map(async ({ caseName, id, inputPath, rule }) => {
+      const { changesSource, hasFindings, hasToggle, inputRaw, output } =
         await readFixtureToggle(inputPath)
       return {
         caseName,
@@ -57,8 +48,8 @@ export default defineLoader({
           descriptionHtml : descriptionHtml(md, inputPath),
           hasFindings,
           hasToggle,
-          inputHtml       : renderFencedHtml(md, inputRaw, 'python'),
-          outputHtml      : renderFencedHtml(md, output, 'python', lintDecorations(findings))
+          inputHtml       : renderer.renderFencedHtml(md, inputRaw, 'python'),
+          outputHtml      : renderer.renderFencedHtml(md, output, 'python', hasFindings ? lintFenceMeta(id) : '')
         },
         rule
       }

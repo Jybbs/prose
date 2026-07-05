@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderFencedHtml, renderInlineField } from '../lib/markdown/renderer'
+import * as renderer from '../lib/markdown/renderer'
 
 interface ShellCompletion {
   caption  : string
@@ -99,11 +99,11 @@ use prose-completions`,
 export default defineLoader({
   watch: [],
   async load(): Promise<readonly ShellCompletion[]> {
-    const md = await getRenderer()
-    const withNote = renderInlineField(md, SOURCES, 'note')
+    const md = await renderer.getRenderer()
+    const withNote = renderer.renderInlineField(md, SOURCES, 'note')
     return withNote.map(({ code, ...rest }) => ({
       ...rest,
-      codeHtml : renderFencedHtml(md, code, rest.language)
+      codeHtml : renderer.renderFencedHtml(md, code, rest.language)
     }))
   }
 })

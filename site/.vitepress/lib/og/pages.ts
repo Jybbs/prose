@@ -2,15 +2,14 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
-import { ogImagePath }                                     from '../config/og-url'
-import { markdownH1 }                                      from '../markdown/h1'
-import { type DiscoveredPrimitive, discoverPrimitives }    from '../primitives/discovery'
-import { type DiscoveredRule, discoverRuleIndex }          from '../rules/discovery'
-import { readPipeline }                                    from '../rules/pipeline'
-import { FAMILIES, SECTIONS }                              from '../shared/palette'
-import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
-import type { PrimitiveStability }                         from '../shared/registries'
-import { toTitleCase }                                     from '../shared/title-case'
+import { ogImagePath }                                  from '../config/og-url'
+import { markdownH1 }                                   from '../markdown/h1'
+import { type DiscoveredPrimitive, discoverPrimitives } from '../primitives/discovery'
+import { type DiscoveredRule, discoverRuleIndex }       from '../rules/discovery'
+import { readPipeline }                                 from '../rules/pipeline'
+import { FAMILIES, SECTIONS }                           from '../shared/palette'
+import * as registries                                  from '../shared/registries'
+import { toTitleCase }                                  from '../shared/title-case'
 
 const KINDS = ['integrations', 'primitives', 'reference', 'rules', 'usage'] as const
 type OgKind = typeof KINDS[number]
@@ -19,12 +18,12 @@ export interface OgPage {
   accent    ?: string
   breadcrumb : readonly string[]
   caption   ?: string
-  category  ?: RuleCategory
-  family    ?: RuleFamily
+  category  ?: registries.RuleCategory
+  family    ?: registries.RuleFamily
   kind       : OgKind
   outputPath : string
   pipeline  ?: { position: number, total: number }
-  primitive ?: { stability: PrimitiveStability }
+  primitive ?: { stability: registries.PrimitiveStability }
   title      : string
 }
 
@@ -45,7 +44,7 @@ export function enumeratePages(srcDir: string, pages: readonly string[]): readon
   return out
 }
 
-function accentFor(kind: OgKind, family?: RuleFamily): string | undefined {
+function accentFor(kind: OgKind, family?: registries.RuleFamily): string | undefined {
   if (family !== undefined) return FAMILIES[family]
   return kind === 'rules' ? undefined : SECTIONS[kind]
 }
@@ -75,7 +74,7 @@ function buildPage(
     const position = pipelinePos.get(slug)
     return {
       accent     : accentFor(kind, rule.family),
-      breadcrumb : ['Rules', FAMILY_META[rule.family].label],
+      breadcrumb : ['Rules', registries.FAMILY_META[rule.family].label],
       caption    : rule.caption,
       category   : rule.category,
       family     : rule.family,
@@ -110,9 +109,9 @@ function chapterKind(rel: string): OgKind | null {
   return (KINDS as readonly string[]).includes(head) ? head as OgKind : null
 }
 
-function indexFamily(rel: string): RuleFamily | undefined {
+function indexFamily(rel: string): registries.RuleFamily | undefined {
   const dir = rel.split('/').at(-2)
-  return dir !== undefined && dir in FAMILY_META ? dir as RuleFamily : undefined
+  return dir !== undefined && dir in registries.FAMILY_META ? dir as registries.RuleFamily : undefined
 }
 
 function indexTitle(rel: string, kind: OgKind): string {

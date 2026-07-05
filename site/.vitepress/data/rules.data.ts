@@ -1,12 +1,11 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer }                              from '../lib/markdown/renderer'
-import { discoverRuleSlugs }                        from '../lib/rules/discovery'
-import type { DiscoveredRule }                      from '../lib/rules/discovery'
-import { rulesDir }                                 from '../lib/shared/paths'
-import { CATEGORY_META, FAMILY_META, FAMILY_ORDER } from '../lib/shared/registries'
-import type { RuleCategory, RuleFamily }            from '../lib/shared/registries'
-import { toTitleCase }                              from '../lib/shared/title-case'
+import { getRenderer, renderInlineHtml } from '../lib/markdown/renderer'
+import { discoverRuleSlugs }             from '../lib/rules/discovery'
+import type { DiscoveredRule }           from '../lib/rules/discovery'
+import { rulesDir }                      from '../lib/shared/paths'
+import * as registries                   from '../lib/shared/registries'
+import { toTitleCase }                   from '../lib/shared/title-case'
 
 export type { DiscoveredRule }
 
@@ -20,20 +19,20 @@ export interface RenderedRule extends DiscoveredRule {
 }
 
 interface RuleFamilyGroup {
-  family : RuleFamily
+  family : registries.RuleFamily
   label  : string
   rules  : readonly RenderedRule[]
 }
 
 interface RuleCategoryGroup {
   byFamily : readonly RuleFamilyGroup[]
-  category : RuleCategory
+  category : registries.RuleCategory
   label    : string
 }
 
 interface RulesData {
   byCategory : readonly RuleCategoryGroup[]
-  byFamily   : Record<RuleFamily, readonly RenderedRule[]>
+  byFamily   : Record<registries.RuleFamily, readonly RenderedRule[]>
   bySlug     : Record<string, RenderedRule>
   list       : readonly RenderedRule[]
 }
@@ -49,31 +48,31 @@ export default defineLoader({
     const md         = await getRenderer()
     const list       = discoverRuleSlugs(rulesDirectory).map(r => ({
       ...r,
-      captionHtml   : md.renderInline(r.caption),
-      categoryBadge : CATEGORY_META[r.category].badge,
-      categoryLabel : CATEGORY_META[r.category].label,
-      familyBadge   : FAMILY_META[r.family].badge,
-      familyLabel   : FAMILY_META[r.family].label,
+      captionHtml   : renderInlineHtml(md, r.caption),
+      categoryBadge : registries.CATEGORY_META[r.category].badge,
+      categoryLabel : registries.CATEGORY_META[r.category].label,
+      familyBadge   : registries.FAMILY_META[r.family].badge,
+      familyLabel   : registries.FAMILY_META[r.family].label,
       name          : toTitleCase(r.slug, '-')
     }))
     const bySlug     = Object.fromEntries(list.map(r => [r.slug, r])) as Record<string, RenderedRule>
-    type ByFamily    = Record<RuleFamily, readonly RenderedRule[]>
+    type ByFamily    = Record<registries.RuleFamily, readonly RenderedRule[]>
     const byFamily   = Object.groupBy(list, r => r.family) as ByFamily
-    for (const family of FAMILY_ORDER) byFamily[family] ??= []
+    for (const family of registries.FAMILY_ORDER) byFamily[family] ??= []
     const byCategory = (['auto-fix', 'lint'] as const).map(category => {
       const rulesInCategory = list.filter(r => r.category === category)
-      type GroupedRules     = Partial<Record<RuleFamily, readonly RenderedRule[]>>
+      type GroupedRules     = Partial<Record<registries.RuleFamily, readonly RenderedRule[]>>
       const grouped         = Object.groupBy(rulesInCategory, r => r.family) as GroupedRules
       return {
-        byFamily : FAMILY_ORDER
+        byFamily : registries.FAMILY_ORDER
           .filter(family => grouped[family]?.length)
           .map(family => ({
             family,
-            label : FAMILY_META[family].label,
+            label : registries.FAMILY_META[family].label,
             rules : grouped[family]!
           })),
         category,
-        label    : CATEGORY_META[category].label
+        label    : registries.CATEGORY_META[category].label
       }
     })
     return { byCategory, byFamily, bySlug, list }

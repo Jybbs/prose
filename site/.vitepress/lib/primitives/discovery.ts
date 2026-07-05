@@ -3,20 +3,19 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
-import { markdownH1 }                              from '../markdown/h1'
-import { isContentPage }                           from '../shared/content-page'
-import { memoizeByPath }                           from '../shared/memoize-by-path'
-import { PRIMITIVE_LAYERS, PRIMITIVE_STABILITIES } from '../shared/registries'
-import type { PrimitiveLayer, PrimitiveSlug, PrimitiveStability } from '../shared/registries'
-import { requireString }                           from '../shared/require-string'
+import { markdownH1 }    from '../markdown/h1'
+import { isContentPage } from '../shared/content-page'
+import { memoizeByPath } from '../shared/memoize-by-path'
+import * as registries   from '../shared/registries'
+import { requireString } from '../shared/require-string'
 
 export interface DiscoveredPrimitive {
   consumedBy : readonly string[]
-  consumes   : readonly PrimitiveSlug[]
-  layer      : PrimitiveLayer
+  consumes   : readonly registries.PrimitiveSlug[]
+  layer      : registries.PrimitiveLayer
   name       : string
-  slug       : PrimitiveSlug
-  stability  : PrimitiveStability
+  slug       : registries.PrimitiveSlug
+  stability  : registries.PrimitiveStability
   summary    : string
   tagline    : string
 }
@@ -48,15 +47,15 @@ export const discoverPrimitives = memoizeByPath((primitivesDir): DiscoveredPrimi
   const out: DiscoveredPrimitive[] = []
   for (const file of fs.readdirSync(primitivesDir).sort()) {
     if (!isContentPage(file)) continue
-    const slug = path.basename(file, '.md') as PrimitiveSlug
+    const slug = path.basename(file, '.md') as registries.PrimitiveSlug
     const fm   = matter.read(path.join(primitivesDir, file))
 
-    const stability = requireMember(fm.data.stability, PRIMITIVE_STABILITIES, slug, 'stability')
-    const layer     = requireMember(fm.data.layer, PRIMITIVE_LAYERS, slug, 'layer')
+    const stability = requireMember(fm.data.stability, registries.PRIMITIVE_STABILITIES, slug, 'stability')
+    const layer     = requireMember(fm.data.layer, registries.PRIMITIVE_LAYERS, slug, 'layer')
     const summary   = requireString(fm.data.summary, fieldMessage(slug, 'summary'))
     const tagline   = requireString(fm.data.tagline, fieldMessage(slug, 'tagline'))
 
-    const consumes   = stringList(fm.data.consumes, slug, 'consumes') as PrimitiveSlug[]
+    const consumes   = stringList(fm.data.consumes, slug, 'consumes') as registries.PrimitiveSlug[]
     const consumedBy = stringList(fm.data.consumedBy, slug, 'consumedBy')
 
     const name = markdownH1(fm.content)

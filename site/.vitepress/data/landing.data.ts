@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
+import * as renderer                     from '../lib/markdown/renderer'
 import { FAMILY_ORDER, type RuleFamily } from '../lib/shared/registries'
 
 export interface Step {
@@ -82,16 +82,16 @@ const STEP_SOURCES: readonly StepSource[] = [
 export default defineLoader({
   watch: [],
   async load(): Promise<LandingData> {
-    const md = await getRenderer()
+    const md = await renderer.getRenderer()
     return {
       surfaces : FAMILY_ORDER.map((family, i) => ({
-        bodyHtml : md.renderInline(SURFACE_BODIES[family]),
+        bodyHtml : renderer.renderInlineHtml(md, SURFACE_BODIES[family]),
         family,
         number   : String(i + 1).padStart(2, '0')
       })),
       workflow : STEP_SOURCES.map(src => ({
-        bodyHtml : md.renderInline(src.body),
-        codeHtml : renderFencedHtml(md, src.code, src.language),
+        bodyHtml : renderer.renderInlineHtml(md, src.body),
+        codeHtml : renderer.renderFencedHtml(md, src.code, src.language),
         language : src.language,
         number   : src.number,
         title    : src.title

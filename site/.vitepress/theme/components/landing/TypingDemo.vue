@@ -3,9 +3,8 @@ import { useIntersectionObserver, useMediaQuery }   from '@vueuse/core'
 import { ShikiMagicMovePrecompiled }                from 'shiki-magic-move/vue'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 
-import { data }                                              from '../../../data/landing-typing-demo.data'
-import { applyCompletedEdits, EMPTY_SEGMENTS, resetText, segmentsForEdit } from '../../../lib/landing/typing-demo-buffer'
-import type { BufferSegments }                  from '../../../lib/landing/typing-demo-buffer'
+import { data }                                 from '../../../data/landing-typing-demo.data'
+import * as buffer                              from '../../../lib/landing/typing-demo-buffer'
 import { MAGIC_MOVE_MS, useTypingStateMachine } from './typing-state-machine'
 import type { Phase }                           from './typing-state-machine'
 
@@ -29,32 +28,32 @@ const staticText = computed(() => {
   switch (phase.value) {
     case 'holdAtEnd':
     case 'reducedMotion':
-      return applyCompletedEdits(data.prelude, data.entries, data.entries.length)
+      return buffer.applyCompletedEdits(data.prelude, data.entries, data.entries.length)
     default:
       return data.prelude
   }
 })
 
-const segments = computed<BufferSegments>(() => {
+const segments = computed<buffer.BufferSegments>(() => {
   const entry = data.entries[entryIndex.value]
   switch (phase.value) {
     case 'editBackspacing':
     case 'editTyping':
     case 'holdAfterTyped':
     case 'holdBetweenEdits': {
-      const text = applyCompletedEdits(data.prelude, data.entries, entryIndex.value)
+      const text = buffer.applyCompletedEdits(data.prelude, data.entries, entryIndex.value)
       return entry
-        ? segmentsForEdit(entry, text, phase.value, editProgress.value)
-        : { ...EMPTY_SEGMENTS, before: text }
+        ? buffer.segmentsForEdit(entry, text, phase.value, editProgress.value)
+        : { ...buffer.EMPTY_SEGMENTS, before: text }
     }
     case 'resetBackspacing':
     case 'resetTyping':
       return {
-        ...EMPTY_SEGMENTS,
-        before: resetText(data.prelude, data.resetRows, phase.value, editProgress.value)
+        ...buffer.EMPTY_SEGMENTS,
+        before: buffer.resetText(data.prelude, data.resetRows, phase.value, editProgress.value)
       }
     default:
-      return { ...EMPTY_SEGMENTS, before: staticText.value }
+      return { ...buffer.EMPTY_SEGMENTS, before: staticText.value }
   }
 })
 

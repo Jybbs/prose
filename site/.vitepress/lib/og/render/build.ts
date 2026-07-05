@@ -1,13 +1,13 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { ogImagePath }                                 from '../../config/og-url'
-import { crateDirFrom }                                from '../../shared/paths'
-import { readCargoVersion }                            from '../../shared/version'
-import { loadBrandAssets }                             from './assets'
-import { cardKeyer, pruneCards, readCard, writeCard }  from './cache'
-import { enumeratePages }                              from '../pages'
-import { renderCards, type RenderTask }                from './pool'
+import { ogImagePath }                  from '../../config/og-url'
+import { crateDirFrom }                 from '../../shared/paths'
+import { readCargoVersion }             from '../../shared/version'
+import { loadBrandAssets }              from './assets'
+import * as cache                       from './cache'
+import { enumeratePages }               from '../pages'
+import { renderCards, type RenderTask } from './pool'
 
 export async function buildOgCards(
   srcDir : string,
@@ -18,7 +18,7 @@ export async function buildOgCards(
   const brand    = loadBrandAssets(srcDir)
   const version  = readCargoVersion(crateDirFrom(repo))
   const cacheDir = path.join(repo, '.cache', 'og')
-  const keyOf    = cardKeyer(version, brand)
+  const keyOf    = cache.cardKeyer(version, brand)
 
   const tasks: readonly RenderTask[] = [
     { key: keyOf('landing'), outputPath: ogImagePath('index.md'), page: 'landing' },
@@ -31,7 +31,7 @@ export async function buildOgCards(
 
   const misses: RenderTask[] = []
   await Promise.all(tasks.map(async task => {
-    const png = await readCard(cacheDir, task.key)
+    const png = await cache.readCard(cacheDir, task.key)
     if (png) writeDist(outDir, task.outputPath, png)
     else misses.push(task)
   }))
@@ -40,11 +40,11 @@ export async function buildOgCards(
     const rendered = await renderCards(brand, version, misses)
     await Promise.all(rendered.map(async card => {
       writeDist(outDir, card.outputPath, card.png)
-      await writeCard(cacheDir, card.key, Buffer.from(card.png))
+      await cache.writeCard(cacheDir, card.key, Buffer.from(card.png))
     }))
   }
 
-  await pruneCards(cacheDir, tasks.map(task => task.key))
+  await cache.pruneCards(cacheDir, tasks.map(task => task.key))
 }
 
 function writeDist(outDir: string, outputPath: string, png: Uint8Array): void {
