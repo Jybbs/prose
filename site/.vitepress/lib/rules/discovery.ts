@@ -3,10 +3,10 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
-import { isContentPage } from '../shared/content-page'
-import { memoizeByPath } from '../shared/memoize-by-path'
-import * as registries   from '../shared/registries'
-import { requireString } from '../shared/require-string'
+import { contentPages, isContentPage } from '../shared/content-page'
+import { memoizeByPath }               from '../shared/memoize-by-path'
+import * as registries                 from '../shared/registries'
+import { requireString }               from '../shared/require-string'
 
 export interface DiscoveredRule {
   caption  : string
@@ -37,7 +37,7 @@ export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
       continue
     }
     const directory = path.join(rulesDirectory, entry.name)
-    const pages     = fs.readdirSync(directory).filter(isContentPage)
+    const pages     = contentPages(directory)
     if (!families.has(entry.name)) {
       strayPages.push(...pages.map(f => `${entry.name}/${f}`))
       continue

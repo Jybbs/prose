@@ -1,3 +1,8 @@
+---
+summary: 'Tab-completes every flag and rule slug across Bash, Zsh, Fish, Elvish, and PowerShell.'
+tagline: 'interactive shell'
+---
+
 # Shell Completions
 
 `prose completions <shell>` prints a shell-completion script to stdout, ready to redirect into the shell's completion search path. Each supported shell carries the canonical install path it expects, meaning the install reduces to a single redirect on every supported platform.

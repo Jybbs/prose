@@ -27,6 +27,7 @@ import { PALETTE, paletteCss }              from './lib/shared/palette'
 import * as constants                       from './lib/shared/constants'
 import { buildPageTimestamps }              from './lib/config/page-timestamps'
 import * as paths                           from './lib/shared/paths'
+import { SECTIONS }                          from './lib/shared/registries'
 import { buildSidebar }                     from './lib/config/sidebar'
 import { toTitleCase }                      from './lib/shared/title-case'
 import { TOOL_SEEDS }                       from './lib/shared/tools'
@@ -84,16 +85,13 @@ export default defineConfig({
     },
     logo      : { alt: 'prose', src: '/logo.svg' },
     nav: [
-      { activeMatch: '/usage/',        link: '/usage/',             text: 'Usage'        },
-      { activeMatch: '/reference/',    link: '/reference/',         text: 'Reference'    },
-      { activeMatch: '/integrations/', link: '/integrations/',      text: 'Integrations' },
-      { activeMatch: '/rules/',        link: '/rules/',             text: 'Rules'        },
-      { activeMatch: '/primitives/',   link: '/primitives/',        text: 'Primitives'   },
-      {                                link: `${constants.REPO_URL}/releases`, text: `v${version}` }
+      ...SECTIONS.map(({ label, slug }) =>
+        ({ activeMatch: `/${slug}/`, link: `/${slug}/`, text: label })),
+      { link: `${constants.REPO_URL}/releases`, text: `v${version}` }
     ],
     outline   : { level: [2, 3] },
     search    : { provider: 'local' },
-    sidebar   : buildSidebar(discoveredRules, discoveredPrimitives),
+    sidebar   : buildSidebar(discoveredPrimitives, discoveredRules, paths.siteDir(import.meta.url)),
     siteTitle : 'Prose',
     socialLinks: [
       { icon: 'github', link: constants.REPO_URL }

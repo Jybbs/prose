@@ -1,5 +1,7 @@
-import { useElementBounding, useEventListener, useResizeObserver } from '@vueuse/core'
-import { onMounted, ref, type Ref }                                from 'vue'
+import { useElementBounding, useEventListener } from '@vueuse/core'
+import { ref, type Ref }                        from 'vue'
+
+import { useSettledMeasure } from '../../../../lib/composables/use-settled-measure'
 
 interface CarouselMeasurement {
   fits      : Ref<boolean>
@@ -38,12 +40,8 @@ export function useCarouselMeasurement(
     }
   }
 
-  useResizeObserver(viewportRef, measure)
+  useSettledMeasure(viewportRef, measure)
   useEventListener('resize', measure)
-  onMounted(async () => {
-    if ('fonts' in document) await document.fonts.ready
-    measure()
-  })
 
   return { fits, halfWidth, measure }
 }

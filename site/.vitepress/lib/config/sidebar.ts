@@ -1,8 +1,17 @@
+import path from 'node:path'
+
+import matter from 'gray-matter'
+
 import type { DefaultTheme } from 'vitepress'
 
-import { type DiscoveredPrimitive }  from '../primitives/discovery'
-import { type DiscoveredRule }       from '../rules/discovery'
-import { FAMILY_META, FAMILY_ORDER } from '../shared/registries'
+import { markdownH1 }               from '../markdown/h1'
+import { type DiscoveredPrimitive } from '../primitives/discovery'
+import { type DiscoveredRule }      from '../rules/discovery'
+import { contentPages }             from '../shared/content-page'
+import * as registries              from '../shared/registries'
+import { requireString }            from '../shared/require-string'
+
+type SidebarPrimitive = Pick<DiscoveredPrimitive, 'name' | 'slug' | 'stability'>
 
 const primLink = (slug: string, text: string): DefaultTheme.SidebarItem =>
   ({ link: `/primitives/${slug}`, text })
@@ -10,86 +19,80 @@ const primLink = (slug: string, text: string): DefaultTheme.SidebarItem =>
 const ruleLink = (rule: DiscoveredRule): DefaultTheme.SidebarItem =>
   ({ link: rule.href, text: rule.slug })
 
-const USAGE_SIDEBAR: DefaultTheme.SidebarItem[] = [
-  {
-    items: [
-      { link: '/usage/',             text: 'Overview'     },
-      { link: '/usage/installation', text: 'Installation' },
-      { link: '/usage/quick-start',  text: 'Quick Start'  },
-      { link: '/usage/suppression',  text: 'Suppression'  }
-    ],
-    text : 'Usage'
-  }
-]
-
-const REFERENCE_SIDEBAR: DefaultTheme.SidebarItem[] = [
-  {
-    items: [
-      { link: '/reference/',                       text: 'Overview'               },
-      { link: '/reference/cache',                  text: 'Cache'                  },
-      { link: '/reference/cli',                    text: 'CLI'                    },
-      { link: '/reference/configuration',          text: 'Configuration'          },
-      { link: '/reference/exit-codes',             text: 'Exit Codes'             },
-      { link: '/reference/glossary',               text: 'Glossary'               },
-      { link: '/reference/output-formats',         text: 'Output Formats'         },
-      { link: '/reference/pipeline-order',         text: 'Pipeline Order'         },
-      { link: '/reference/suppression-directives', text: 'Suppression Directives' }
-    ],
-    text : 'Reference'
-  }
-]
-
-const INTEGRATIONS_SIDEBAR: DefaultTheme.SidebarItem[] = [
-  {
-    items: [
-      { link: '/integrations/',                  text: 'Overview'          },
-      { link: '/integrations/editor',            text: 'Editor'            },
-      { link: '/integrations/github-actions',    text: 'GitHub Actions'    },
-      { link: '/integrations/pre-commit',        text: 'Pre-Commit'        },
-      { link: '/integrations/ruff',              text: 'Ruff'              },
-      { link: '/integrations/shell-completions', text: 'Shell Completions' }
-    ],
-    text : 'Integrations'
-  }
-]
-
 export function buildSidebar(
+  primitives : readonly SidebarPrimitive[],
   rules      : readonly DiscoveredRule[],
-  primitives : readonly Pick<DiscoveredPrimitive, 'name' | 'slug' | 'stability'>[]
+  srcDir     : string
 ): DefaultTheme.Sidebar {
-  const familySections: DefaultTheme.SidebarItem[] = FAMILY_ORDER.map(family => ({
+  return Object.fromEntries(registries.SECTIONS.map(({ label, slug }) =>
+    [`/${slug}/`, sectionGroups(label, primitives, rules, slug, srcDir)]))
+}
+
+function primitiveGroups(
+  label      : string,
+  primitives : readonly SidebarPrimitive[]
+): DefaultTheme.SidebarItem[] {
+  const publicPrimitives   = primitives.filter(p => p.stability === 'public')
+  const internalPrimitives = primitives.filter(p => p.stability === 'internal')
+  return [
+    { items: [{ link: '/primitives/', text: 'Overview' }], text: label },
+    {
+      items : publicPrimitives.map(p => primLink(p.slug, p.name)),
+      text  : 'Public Surface'
+    },
+    {
+      items : internalPrimitives.map(p => primLink(p.slug, p.name)),
+      text  : 'Crate Internal'
+    }
+  ]
+}
+
+function ruleGroups(label: string, rules: readonly DiscoveredRule[]): DefaultTheme.SidebarItem[] {
+  const familySections: DefaultTheme.SidebarItem[] = registries.FAMILY_ORDER.map(family => ({
     items : rules
       .filter(r => r.family === family)
       .map(ruleLink),
     link  : `/rules/${family}/`,
-    text  : FAMILY_META[family].label
+    text  : registries.FAMILY_META[family].label
   }))
-  const publicPrimitives   = primitives.filter(p => p.stability === 'public')
-  const internalPrimitives = primitives.filter(p => p.stability === 'internal')
-  return {
-    '/integrations/' : INTEGRATIONS_SIDEBAR,
-    '/usage/'        : USAGE_SIDEBAR,
-    '/primitives/'   : [
-      { items: [{ link: '/primitives/', text: 'Overview' }], text: 'Primitives' },
-      {
-        items : publicPrimitives.map(p => primLink(p.slug, p.name)),
-        text  : 'Public Surface'
-      },
-      {
-        items : internalPrimitives.map(p => primLink(p.slug, p.name)),
-        text  : 'Crate Internal'
-      }
-    ],
-    '/reference/'    : REFERENCE_SIDEBAR,
-    '/rules/'        : [
-      {
-        items: [
-          { link: '/rules/',             text: 'Overview'    },
-          { link: '/rules/composition/', text: 'Composition' }
-        ],
-        text : 'Rules'
-      },
-      ...familySections
-    ]
+  return [
+    {
+      items: [
+        { link: '/rules/',             text: 'Overview'    },
+        { link: '/rules/composition/', text: 'Composition' }
+      ],
+      text : label
+    },
+    ...familySections
+  ]
+}
+
+function sectionGroups(
+  label      : string,
+  primitives : readonly SidebarPrimitive[],
+  rules      : readonly DiscoveredRule[],
+  slug       : registries.SectionSlug,
+  srcDir     : string
+): DefaultTheme.SidebarItem[] {
+  switch (slug) {
+    case 'primitives' : return primitiveGroups(label, primitives)
+    case 'rules'      : return ruleGroups(label, rules)
+    default           : return [{
+      items : [
+        { link: `/${slug}/`, text: 'Overview' },
+        ...sectionPages(path.join(srcDir, slug), slug)
+      ],
+      text  : label
+    }]
   }
+}
+
+function sectionPages(directory: string, slug: registries.SectionSlug): DefaultTheme.SidebarItem[] {
+  return contentPages(directory).map(file => {
+    const title = requireString(
+      markdownH1(matter.read(path.join(directory, file)).content),
+      `${slug}/${file} has no H1 for its sidebar entry`
+    )
+    return { link: `/${slug}/${path.basename(file, '.md')}`, text: title }
+  })
 }

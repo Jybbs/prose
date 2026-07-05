@@ -11,8 +11,8 @@ import { FAMILIES, SECTIONS }                           from '../shared/palette'
 import * as registries                                  from '../shared/registries'
 import { toTitleCase }                                  from '../shared/title-case'
 
-const KINDS = ['integrations', 'primitives', 'reference', 'rules', 'usage'] as const
-type OgKind = typeof KINDS[number]
+const SECTION_SLUGS = new Set<string>(registries.SECTIONS.map(section => section.slug))
+type OgKind = registries.SectionSlug
 
 export interface OgPage {
   accent    ?: string
@@ -106,7 +106,7 @@ function buildPage(
 
 function chapterKind(rel: string): OgKind | null {
   const head = rel.split('/', 1)[0]
-  return (KINDS as readonly string[]).includes(head) ? head as OgKind : null
+  return SECTION_SLUGS.has(head) ? head as OgKind : null
 }
 
 function indexFamily(rel: string): registries.RuleFamily | undefined {

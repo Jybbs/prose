@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useResizeObserver }                     from '@vueuse/core'
-import { onMounted, ref, useTemplateRef, watch } from 'vue'
+import { ref, useTemplateRef, watch } from 'vue'
+
+import { useSettledMeasure } from '../../../lib/composables/use-settled-measure'
 
 const props = withDefaults(
   defineProps<{
@@ -34,14 +35,7 @@ function fit() {
     : `${props.text.slice(0, best)}…${props.text.slice(-props.tail)}`
 }
 
-onMounted(async () => {
-  if (document.fonts?.ready) {
-    await document.fonts.ready
-  }
-  fit()
-})
-
-useResizeObserver(elRef, fit)
+useSettledMeasure(elRef, fit)
 watch(() => props.text, fit)
 </script>
 

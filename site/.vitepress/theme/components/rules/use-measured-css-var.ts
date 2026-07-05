@@ -1,5 +1,6 @@
-import { useResizeObserver }                            from '@vueuse/core'
-import { onMounted, watch, type Ref, type WatchSource } from 'vue'
+import { watch, type Ref, type WatchSource } from 'vue'
+
+import { useSettledMeasure } from '../../../lib/composables/use-settled-measure'
 
 interface UseMeasuredCssVarOptions {
   measure   : () => number | null
@@ -30,7 +31,6 @@ export function useMeasuredCssVar(options: UseMeasuredCssVarOptions): void {
     })
   }
 
-  onMounted(run)
-  useResizeObserver(observe ?? target, run)
+  useSettledMeasure(observe ?? target, run)
   if (triggers) for (const source of triggers) watch(source, run)
 }

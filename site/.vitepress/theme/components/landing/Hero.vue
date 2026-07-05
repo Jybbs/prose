@@ -2,11 +2,9 @@
 import { useElementBounding }       from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
-import { ROW_STRIDE_PX, tileStamps } from '../../../lib/landing/hero-stamps'
+import { tileStamps }                from '../../../lib/landing/hero-stamps'
+import { heroGrid, watermarkHeight } from '../../../lib/landing/hero-tiling'
 import { SITE_ALT }                  from '../../../lib/shared/constants'
-
-const STAMP_PER_COL = 240
-const TERMINUS_GAP  = 40
 
 const heroRef  = useTemplateRef<HTMLElement>('hero')
 const layerRef = useTemplateRef<HTMLElement>('layer')
@@ -18,18 +16,16 @@ const { top:   terminusTop } = useElementBounding(() =>
 )
 
 const layerHeight = computed(() => {
-  const h = terminusTop.value - heroTop.value - TERMINUS_GAP
-  return h > 0 ? h : null
+  const height = watermarkHeight(heroTop.value, terminusTop.value)
+  return height > 0 ? height : null
 })
 
 const layerStyle = computed(() =>
   layerHeight.value !== null ? { height: `${layerHeight.value}px`, minHeight: '0' } : undefined
 )
 
-const cols = computed(() => Math.max(3, Math.round(layerWidth.value / STAMP_PER_COL)))
-const rows = computed(() => Math.max(3, Math.ceil((layerHeight.value ?? 0) / ROW_STRIDE_PX) + 1))
-
-const stamps = computed(() => tileStamps(cols.value, rows.value))
+const grid   = computed(() => heroGrid(layerHeight.value ?? 0, layerWidth.value))
+const stamps = computed(() => tileStamps(grid.value.cols, grid.value.rows))
 </script>
 
 <template>

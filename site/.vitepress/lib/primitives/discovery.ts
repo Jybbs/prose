@@ -1,10 +1,9 @@
-import fs   from 'node:fs'
 import path from 'node:path'
 
 import matter from 'gray-matter'
 
 import { markdownH1 }    from '../markdown/h1'
-import { isContentPage } from '../shared/content-page'
+import { contentPages }  from '../shared/content-page'
 import { memoizeByPath } from '../shared/memoize-by-path'
 import * as registries   from '../shared/registries'
 import { requireString } from '../shared/require-string'
@@ -45,8 +44,7 @@ function stringList(value: unknown, slug: string, field: string): string[] {
 
 export const discoverPrimitives = memoizeByPath((primitivesDir): DiscoveredPrimitive[] => {
   const out: DiscoveredPrimitive[] = []
-  for (const file of fs.readdirSync(primitivesDir).sort()) {
-    if (!isContentPage(file)) continue
+  for (const file of contentPages(primitivesDir)) {
     const slug = path.basename(file, '.md') as registries.PrimitiveSlug
     const fm   = matter.read(path.join(primitivesDir, file))
 
@@ -58,10 +56,7 @@ export const discoverPrimitives = memoizeByPath((primitivesDir): DiscoveredPrimi
     const consumes   = stringList(fm.data.consumes, slug, 'consumes') as registries.PrimitiveSlug[]
     const consumedBy = stringList(fm.data.consumedBy, slug, 'consumedBy')
 
-    const name = markdownH1(fm.content)
-    if (!name) {
-      throw new Error(`Primitive "${slug}" has no H1 heading`)
-    }
+    const name = requireString(markdownH1(fm.content), `Primitive "${slug}" has no H1 heading`)
 
     out.push({ consumedBy, consumes, layer, name, slug, stability, summary, tagline })
   }

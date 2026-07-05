@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { useIntersectionObserver, useMediaQuery } from '@vueuse/core'
-import type { KeyedTokensInfo }                   from 'shiki-magic-move/types'
+import { useIntersectionObserver } from '@vueuse/core'
+import { PopperWrapper }           from 'floating-vue'
+import type { KeyedTokensInfo }    from 'shiki-magic-move/types'
 import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import RuleCard from '../rules/RuleCard.vue'
 
 import { data as rules }     from '../../../data/rules.data'
 import type { RenderedRule } from '../../../data/rules.data'
+import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
 import { lintShorthand }     from '../../../lib/fixtures/lint-shorthand'
 import type { Shorthand }    from '../../../lib/fixtures/lint-shorthand'
 import type { FixtureTab }   from '../../../lib/shared/fixture-tab'
@@ -19,14 +21,12 @@ const props = defineProps<{
 }>()
 
 interface ActiveFinding {
-  left      : number
   message   : string
   rule      : RenderedRule
   shorthand : Shorthand | null
-  top       : number
 }
 
-const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+const reducedMotion = useReducedMotion()
 const root          = useTemplateRef<HTMLElement>('root')
 
 type Panel = typeof import('shiki-magic-move/vue').ShikiMagicMovePrecompiled | null
@@ -39,6 +39,7 @@ const steps     = shallowRef<readonly KeyedTokensInfo[]>([])
 const undrawn   = ref(false)
 
 const active      = ref<ActiveFinding | null>(null)
+const activeFlag  = shallowRef<HTMLElement | null>(null)
 const messageHtml = computed(() => inlineCode(active.value?.message ?? ''))
 
 const activeHtml = computed(() => props.activeTab === 'before' ? props.inputHtml : props.outputHtml)
@@ -88,14 +89,16 @@ function settle(): void {
   drawSquiggles()
 }
 
+// The `.lint-flag` anchors sit inside `v-html` static HTML, so event
+// delegation finds them and the popper takes the hovered flag as a dynamic
+// reference node rather than wrapping each anchor in a component.
 function show(event: Event): void {
   const flag = (event.target as HTMLElement).closest<HTMLElement>('.lint-flag')
   const rule = flag?.dataset.rule ? rules.bySlug[flag.dataset.rule] : undefined
   if (!flag || !rule) return
-  const rect    = flag.getBoundingClientRect()
-  const message = flag.dataset.message ?? ''
+  const message    = flag.dataset.message ?? ''
+  activeFlag.value = flag
   active.value = {
-    left      : rect.left,
     message,
     rule,
     shorthand : lintShorthand({
@@ -104,8 +107,7 @@ function show(event: Event): void {
       message,
       rule      : flag.dataset.rule ?? '',
       suggested : flag.dataset.suggested
-    }),
-    top       : rect.bottom + 6
+    })
   }
 }
 
@@ -161,13 +163,20 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       @focusout="hide"
       v-html="activeHtml"
     />
-    <Teleport to="body">
-      <div
-        v-if="active"
-        class="lint-popover v-popper--theme-rule-card fam-lint"
-        :style="{ left: `${active.left}px`, top: `${active.top}px` }"
-      >
-        <RuleCard :rule="active.rule" :clickable="false">
+    <PopperWrapper
+      theme="rule-card"
+      placement="bottom-start"
+      popper-class="lint-popover fam-lint"
+      :auto-hide="false"
+      :distance="6"
+      :handle-resize="false"
+      :popper-triggers="[]"
+      :reference-node="() => activeFlag!"
+      :shown="active !== null"
+      :triggers="[]"
+    >
+      <template #popper>
+        <RuleCard v-if="active" :rule="active.rule" :clickable="false">
           <template #header>
             <span v-if="active.shorthand?.kind === 'replace'" class="lint-shorthand">
               <span class="lint-chip lint-chip-struck">{{ active.shorthand.before }}</span>
@@ -180,7 +189,7 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
             <span v-else class="lint-message" v-html="messageHtml" />
           </template>
         </RuleCard>
-      </div>
-    </Teleport>
+      </template>
+    </PopperWrapper>
   </div>
 </template>

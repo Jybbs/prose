@@ -65,12 +65,8 @@
 }
 
 
-.az-index-float-wrap {
-  position   : relative;
-  min-height : 180px;
-}
-
 .az-index-float-keys-wrap {
+  min-height : 180px;
   transition : opacity var(--prose-transition);
 }
 
@@ -78,13 +74,23 @@
   opacity : 0.55;
 }
 
-.az-index-float-pop {
-  position : fixed;
-  z-index  : 50;
-  width    : 300px;
+.az-index-key .v-popper {
+  display : block;
 }
 
-.az-index-float-pop .az-index-detail {
+.v-popper--theme-az-index .v-popper__inner {
+  width         : 300px;
+  background    : transparent;
+  border        : none;
+  border-radius : 0;
+  box-shadow    : none;
+}
+
+.v-popper--theme-az-index .v-popper__arrow-container {
+  display : none;
+}
+
+.v-popper--theme-az-index .az-index-detail {
   box-shadow : var(--prose-shadow-tooltip);
 }
 

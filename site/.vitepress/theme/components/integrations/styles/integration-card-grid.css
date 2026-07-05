@@ -5,30 +5,39 @@
   margin                : 1.5rem 0;
 }
 
-.vp-doc a.int-card,
-a.int-card {
-  display         : block;
-  padding         : 1rem 1.1rem 0.85rem;
-  background      : var(--vp-c-bg-soft);
-  border          : 1px solid var(--vp-c-divider);
-  border-radius   : var(--prose-radius-sm);
-  text-decoration : none;
-  color           : var(--vp-c-text-1);
-  transition      :
+.int-card {
+  position      : relative;
+  padding       : 1rem 1.1rem 0.85rem;
+  background    : var(--vp-c-bg-soft);
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius-sm);
+  color         : var(--vp-c-text-1);
+  transition    :
     border-color var(--prose-transition),
     background   var(--prose-transition);
 }
 
-.vp-doc a.int-card:hover,
-a.int-card:hover {
-  border-color    : var(--prose-palette-ube);
-  background      : var(--vp-c-bg);
+.int-card:hover {
+  border-color : var(--prose-palette-ube);
+  background   : var(--vp-c-bg);
+}
+
+.vp-doc .int-card a.int-title-link,
+.int-card a.int-title-link {
+  color           : inherit;
   text-decoration : none;
 }
 
-.int-card,
-.int-card * {
-  text-decoration : none;
+.int-card .int-title-link::after {
+  content  : '';
+  position : absolute;
+  inset    : 0;
+}
+
+.vp-doc .int-card .int-body a,
+.int-card .int-body a {
+  position : relative;
+  z-index  : 1;
 }
 
 .int-card .int-kicker {

@@ -1,6 +1,6 @@
 import { formatHex, interpolate } from 'culori'
 
-import type { GlossaryFamily } from './registries'
+import type { GlossaryFamily, SectionSlug } from './registries'
 
 // The same blend CSS performs for `color-mix(in oklch, base, toward pct%)`
 const oklchMix = (base: string, toward: 'black' | 'white', share: number): string =>
@@ -50,7 +50,10 @@ const ROLES = {
   warning      : PALETTE.eureka
 }
 
-export const SECTIONS = {
+// Keyed by section slug so a rename in the `SECTIONS` registry fails here,
+// where the accent tokens the OG cards resolve are emitted. Rules pages
+// accent by family instead, so the `rules` slug carries no section hue.
+export const SECTIONS: Record<Exclude<SectionSlug, 'rules'>, string> = {
   integrations : PALETTE.rainee,
   primitives   : PALETTE.dexter,
   reference    : PALETTE.casper,

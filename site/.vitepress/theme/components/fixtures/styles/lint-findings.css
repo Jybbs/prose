@@ -47,11 +47,6 @@
   }
 }
 
-.lint-popover {
-  position : fixed;
-  z-index  : 60;
-}
-
 .lint-popover .rule-card {
   min-height     : auto;
   overflow       : hidden;

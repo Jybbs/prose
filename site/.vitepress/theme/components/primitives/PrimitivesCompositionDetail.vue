@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useResizeObserver }              from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { data as primitives }    from '../../../data/primitives-composition.data'
 import { data as primitiveMeta } from '../../../data/primitives.data'
 import { data as rules }         from '../../../data/rules.data'
+import { useSettledMeasure }     from '../../../lib/composables/use-settled-measure'
 
 import type { PrimitiveLayer } from '../../../lib/shared/registries'
 import { type PrimitiveSlug }    from '../../../lib/shared/registries'
@@ -61,7 +61,7 @@ function updateWrapMarkers() {
 }
 
 const scheduleUpdate = () => nextTick(updateWrapMarkers)
-useResizeObserver(cardRef, scheduleUpdate)
+useSettledMeasure(cardRef, scheduleUpdate)
 watch(focusedEntry, scheduleUpdate, { immediate: true })
 </script>
 

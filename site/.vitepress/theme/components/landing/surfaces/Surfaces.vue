@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useMediaQuery }                         from '@vueuse/core'
 import { computed, useTemplateRef, watchEffect } from 'vue'
 
 import LandingSection from '../LandingSection.vue'
 
-import { data as landing } from '../../../../data/landing.data'
-import { data as rules }   from '../../../../data/rules.data'
+import { data as landing }  from '../../../../data/landing.data'
+import { data as rules }    from '../../../../data/rules.data'
+import { useReducedMotion } from '../../../../lib/composables/use-reduced-motion'
 
 import { useCarouselMeasurement } from './use-carousel-measurement'
 import { useCarouselVelocity }    from './use-carousel-velocity'
@@ -29,7 +29,7 @@ const heading = computed(() =>
 
 const trackRef      = useTemplateRef<HTMLElement>('track')
 const viewportRef   = useTemplateRef<HTMLElement>('viewport')
-const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+const reducedMotion = useReducedMotion()
 
 const { fits, halfWidth } = useCarouselMeasurement(trackRef, viewportRef, () => surfaceCards.value.length)
 const { offset, onPointerLeave, onPointerMove } = useCarouselVelocity(viewportRef, halfWidth, fits, {
