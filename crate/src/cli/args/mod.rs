@@ -153,7 +153,7 @@ mod tests {
         assert!(normalize_stdin_dash(&mut cli).is_none());
         let args = check_command(cli);
         assert!(args.paths.is_empty());
-        assert!(args.stdin);
+        assert!(args.common.stdin);
     }
 
     #[test]
@@ -161,7 +161,7 @@ mod tests {
         let cli = Cli::try_parse_from(["prose", "check"]).expect("parses");
         let args = check_command(cli);
         assert!(args.paths.is_empty());
-        assert!(!args.stdin);
+        assert!(!args.common.stdin);
     }
 
     #[test]
@@ -169,7 +169,7 @@ mod tests {
         let cli =
             Cli::try_parse_from(["prose", "check", "--output-format", "github"]).expect("parses");
         let args = check_command(cli);
-        assert_matches!(args.output_format, OutputFormat::Github);
+        assert_matches!(args.common.output_format, OutputFormat::Github);
     }
 
     #[test]
@@ -177,7 +177,7 @@ mod tests {
         let cli =
             Cli::try_parse_from(["prose", "check", "--output-format", "json"]).expect("parses");
         let args = check_command(cli);
-        assert_matches!(args.output_format, OutputFormat::Json);
+        assert_matches!(args.common.output_format, OutputFormat::Json);
     }
 
     #[test]
@@ -185,7 +185,7 @@ mod tests {
         let cli = Cli::try_parse_from(["prose", "check", "a.py", "b/"]).expect("parses");
         let args = check_command(cli);
         assert_eq!(args.paths, [PathBuf::from("a.py"), PathBuf::from("b/")]);
-        assert!(!args.stdin);
+        assert!(!args.common.stdin);
     }
 
     #[test]
@@ -201,10 +201,10 @@ mod tests {
         .expect("parses");
         let args = check_command(cli);
         assert_eq!(
-            args.rules.select,
+            args.common.rules.select,
             [RuleId::from("align-equals"), RuleId::from("align-colons")],
         );
-        assert_eq!(args.rules.ignore, [RuleId::from("alphabetize")]);
+        assert_eq!(args.common.rules.ignore, [RuleId::from("alphabetize")]);
     }
 
     #[test]
@@ -212,7 +212,7 @@ mod tests {
         let cli = Cli::try_parse_from(["prose", "check", "--stdin"]).expect("parses");
         let args = check_command(cli);
         assert!(args.paths.is_empty());
-        assert!(args.stdin);
+        assert!(args.common.stdin);
     }
 
     #[test]
@@ -363,7 +363,7 @@ mod tests {
         assert!(normalize_stdin_dash(&mut cli).is_none());
         let args = format_command(cli);
         assert!(args.paths.is_empty());
-        assert!(args.stdin);
+        assert!(args.common.stdin);
     }
 
     #[test]
@@ -372,7 +372,7 @@ mod tests {
         let args = format_command(cli);
         assert!(args.diff);
         assert_eq!(args.paths, [PathBuf::from("a.py")]);
-        assert!(!args.stdin);
+        assert!(!args.common.stdin);
     }
 
     #[test]
@@ -387,8 +387,8 @@ mod tests {
         ])
         .expect("parses");
         let args = format_command(cli);
-        assert_eq!(args.rules.select, [RuleId::from("align-equals")]);
-        assert_eq!(args.rules.ignore, [RuleId::from("alphabetize")]);
+        assert_eq!(args.common.rules.select, [RuleId::from("align-equals")]);
+        assert_eq!(args.common.rules.ignore, [RuleId::from("alphabetize")]);
     }
 
     #[test]
@@ -396,7 +396,7 @@ mod tests {
         let cli = Cli::try_parse_from(["prose", "format", "--stdin"]).expect("parses");
         let args = format_command(cli);
         assert!(args.paths.is_empty());
-        assert!(args.stdin);
+        assert!(args.common.stdin);
     }
 
     #[test]
@@ -454,7 +454,7 @@ mod tests {
         assert!(normalize_stdin_dash(&mut cli).is_none());
         let args = check_command(cli);
         assert_eq!(args.paths, [PathBuf::from("a.py"), PathBuf::from("b/")]);
-        assert!(!args.stdin);
+        assert!(!args.common.stdin);
     }
 
     #[test]

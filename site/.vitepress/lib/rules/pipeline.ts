@@ -21,7 +21,7 @@ export function parsePipelineJson(text: string): readonly PipelineEntry[] {
     }
     return {
       imperative : requireString(imperative, `pipeline entry ${i} has invalid or missing imperative`),
-      position,
+      position   : position,
       slug       : requireString(slug, `pipeline entry ${i} has invalid or missing slug`)
     }
   })

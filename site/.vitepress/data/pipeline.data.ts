@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { discoverRuleSlugs }                         from '../lib/rules/discovery'
+import { discoverRuleIndex }                         from '../lib/rules/discovery'
 import { readPipeline }                              from '../lib/rules/pipeline'
 import { proseBinaryCandidates, repoRoot, rulesDir } from '../lib/shared/paths'
 import { CATEGORY_META, FAMILY_META }                from '../lib/shared/registries'
@@ -31,7 +31,7 @@ export { data }
 export default defineLoader({
   watch: [...proseBinaryCandidates(repoRoot(import.meta.url)), `${rulesDirectory}/*.md`],
   async load(): Promise<PipelineData> {
-    const discovered = new Map(discoverRuleSlugs(rulesDirectory).map(r => [r.slug, r]))
+    const discovered = discoverRuleIndex(rulesDirectory)
     const rules      = readPipeline(import.meta.url).map(({ imperative, position, slug }) => {
       const entry = discovered.get(slug)
       return {

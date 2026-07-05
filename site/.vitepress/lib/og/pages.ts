@@ -5,10 +5,11 @@ import matter from 'gray-matter'
 import { ogImagePath }                                     from '../config/og-url'
 import { markdownH1 }                                      from '../markdown/h1'
 import { type DiscoveredPrimitive, discoverPrimitives }    from '../primitives/discovery'
-import { type DiscoveredRule, discoverRuleSlugs }          from '../rules/discovery'
+import { type DiscoveredRule, discoverRuleIndex }          from '../rules/discovery'
 import { readPipeline }                                    from '../rules/pipeline'
 import { resolveToken }                                    from '../shared/css-token'
 import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
+import type { PrimitiveStability }                         from '../shared/registries'
 import { toTitleCase }                                     from '../shared/title-case'
 
 const KINDS = ['integrations', 'primitives', 'reference', 'rules', 'usage'] as const
@@ -22,13 +23,13 @@ export interface OgPage {
   family    ?: RuleFamily
   kind       : OgKind
   outputPath : string
-  pipeline  ?: { position: number; total: number }
-  primitive ?: { stability: 'internal' | 'public' }
+  pipeline  ?: { position: number, total: number }
+  primitive ?: { stability: PrimitiveStability }
   title      : string
 }
 
 export function enumeratePages(srcDir: string, pages: readonly string[]): readonly OgPage[] {
-  const rulesIndex      = new Map(discoverRuleSlugs(path.join(srcDir, 'rules')).map(r => [r.slug, r]))
+  const rulesIndex      = discoverRuleIndex(path.join(srcDir, 'rules'))
   const primitivesIndex = new Map(
     discoverPrimitives(path.join(srcDir, 'primitives')).map(p => [p.slug as string, p])
   )

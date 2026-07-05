@@ -94,8 +94,8 @@ pub fn run() -> ExitCode {
 
 fn command_quiet(command: &Command) -> bool {
     match command {
-        Command::Check(args) => args.quiet,
-        Command::Format(args) => args.quiet,
+        Command::Check(args) => args.common.quiet,
+        Command::Format(args) => args.common.quiet,
         Command::Cache { .. }
         | Command::Completions { .. }
         | Command::Rules(_)

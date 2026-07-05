@@ -85,15 +85,15 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
     mut stdout: O,
     mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
-    let setup = match build_run(args.rules, args.no_cache) {
+    let setup = match build_run(args.common.rules, args.common.no_cache) {
         Ok(s) => s,
         Err(s) => return Ok(s),
     };
     let pass = Pass::Diagnose {
         validate: args.validate,
     };
-    let outcomes = if args.stdin {
-        let source_type = stdin_source_type(args.stdin_filename.as_deref());
+    let outcomes = if args.common.stdin {
+        let source_type = stdin_source_type(args.common.stdin_filename.as_deref());
         let outcome = match read_stdin(stdin) {
             Ok(text) => process_stdin(text, source_type, &setup.cwd.pipeline, pass),
             Err(outcome) => outcome,
@@ -105,7 +105,7 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
         })
     };
     let summary = emitter_summary(&outcomes);
-    emit_outcomes(&outcomes, args.output_format, &mut stdout, &summary)?;
+    emit_outcomes(&outcomes, args.common.output_format, &mut stdout, &summary)?;
     let status = finish(&outcomes, setup.cache.is_some(), verbose, false);
     render_summary(
         &mut stderr,
@@ -123,16 +123,16 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
     mut stdout: O,
     mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
-    let setup = match build_run(args.rules, args.no_cache) {
+    let setup = match build_run(args.common.rules, args.common.no_cache) {
         Ok(s) => s,
         Err(s) => return Ok(s),
     };
-    if args.stdin {
-        let source_type = stdin_source_type(args.stdin_filename.as_deref());
+    if args.common.stdin {
+        let source_type = stdin_source_type(args.common.stdin_filename.as_deref());
         return format_stdin(
             read_stdin(stdin).map(|text| (text, source_type)),
             args.diff,
-            args.output_format,
+            args.common.output_format,
             present,
             &setup.cwd.pipeline,
             &mut stdout,
@@ -151,7 +151,7 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
     } else {
         format_paths_rewrite(
             &args.paths,
-            args.output_format,
+            args.common.output_format,
             &setup,
             verbose,
             present,
@@ -338,12 +338,13 @@ mod tests {
     }
 
     fn check_args(paths: Vec<PathBuf>, stdin: bool) -> CheckArgs {
-        CheckArgs {
-            no_cache: true,
+        let mut args = CheckArgs {
             paths,
-            stdin,
             ..Default::default()
-        }
+        };
+        args.common.no_cache = true;
+        args.common.stdin = stdin;
+        args
     }
 
     fn fixture(source: &str) -> (TempDir, PathBuf) {
@@ -354,13 +355,14 @@ mod tests {
     }
 
     fn format_args(paths: Vec<PathBuf>, stdin: bool, diff: bool) -> FormatArgs {
-        FormatArgs {
+        let mut args = FormatArgs {
             diff,
-            no_cache: true,
             paths,
-            stdin,
             ..Default::default()
-        }
+        };
+        args.common.no_cache = true;
+        args.common.stdin = stdin;
+        args
     }
 
     fn run_check(args: CheckArgs) -> ExitStatus {
@@ -406,7 +408,7 @@ mod tests {
         std::fs::write(plain.join("b.py"), "x = 1\n").expect("writes");
 
         let mut args = check_args(vec![broken.join("a.py"), plain.join("b.py")], false);
-        args.output_format = OutputFormat::Json;
+        args.common.output_format = OutputFormat::Json;
         let mut stdout = Vec::new();
         let status = check_with_io(
             args,
@@ -439,7 +441,7 @@ mod tests {
         let (_tmp, file) = fixture("alpha = 1\nb = 22\n");
 
         let mut args = check_args(vec![file], false);
-        args.rules.ignore = vec![RuleId::from("align-equals")];
+        args.common.rules.ignore = vec![RuleId::from("align-equals")];
 
         assert_eq!(run_check(args), ExitStatus::Clean);
     }
@@ -467,7 +469,7 @@ mod tests {
         write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
 
         let mut args = check_args(vec![file], false);
-        args.rules.select = vec![RuleId::from("align-equals")];
+        args.common.rules.select = vec![RuleId::from("align-equals")];
 
         assert_eq!(run_check(args), ExitStatus::FormatChange);
     }
@@ -586,7 +588,7 @@ mod tests {
         let (tmp, _file) = fixture("alpha = 1\nb = 22\n");
 
         let mut args = format_args(vec![tmp.path().to_path_buf()], false, false);
-        args.output_format = OutputFormat::Json;
+        args.common.output_format = OutputFormat::Json;
         let mut stdout = Vec::new();
         let status = format_with_io(
             args,
@@ -637,7 +639,7 @@ mod tests {
         let stdin = Cursor::new(b"alpha = 1\nb = 22\n".to_vec());
         let mut stdout = Vec::new();
         let mut args = format_args(Vec::new(), true, false);
-        args.output_format = OutputFormat::Json;
+        args.common.output_format = OutputFormat::Json;
         let status = format_with_io(args, false, &windowed(), stdin, &mut stdout, io::sink())
             .expect("runs successfully");
         assert_eq!(status, ExitStatus::Clean);

@@ -45,4 +45,8 @@ export type PrimitiveSlug =
   | 'aligner' | 'binding-analysis' | 'cache' | 'colon-targets' | 'docstring' | 'edit'
   | 'orderer' | 'pipeline' | 'rule-id' | 'source' | 'suppression-map' | 'walker'
 
-export type PrimitiveLayer = 'analysis' | 'base' | 'orchestration'
+export const PRIMITIVE_LAYERS      = ['analysis', 'base', 'orchestration'] as const
+export const PRIMITIVE_STABILITIES = ['internal', 'public'] as const
+
+export type PrimitiveLayer     = (typeof PRIMITIVE_LAYERS)[number]
+export type PrimitiveStability = (typeof PRIMITIVE_STABILITIES)[number]

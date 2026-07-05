@@ -6,10 +6,9 @@ import matter from 'gray-matter'
 import { markdownH1 }                              from '../markdown/h1'
 import { isContentPage }                           from '../shared/content-page'
 import { memoizeByPath }                           from '../shared/memoize-by-path'
-import { type PrimitiveLayer, type PrimitiveSlug } from '../shared/registries'
+import { PRIMITIVE_LAYERS, PRIMITIVE_STABILITIES } from '../shared/registries'
+import type { PrimitiveLayer, PrimitiveSlug, PrimitiveStability } from '../shared/registries'
 import { requireString }                           from '../shared/require-string'
-
-const LAYERS: readonly PrimitiveLayer[] = ['analysis', 'base', 'orchestration']
 
 export interface DiscoveredPrimitive {
   consumedBy : readonly string[]
@@ -17,14 +16,30 @@ export interface DiscoveredPrimitive {
   layer      : PrimitiveLayer
   name       : string
   slug       : PrimitiveSlug
-  stability  : 'internal' | 'public'
+  stability  : PrimitiveStability
   summary    : string
   tagline    : string
 }
 
+function fieldMessage(slug: string, field: string): string {
+  return `Primitive "${slug}" has invalid or missing ${field}`
+}
+
+function requireMember<T extends string>(
+  value   : unknown,
+  allowed : readonly T[],
+  slug    : string,
+  field   : string
+): T {
+  if (!allowed.includes(value as T)) {
+    throw new Error(`${fieldMessage(slug, field)}: ${JSON.stringify(value)}`)
+  }
+  return value as T
+}
+
 function stringList(value: unknown, slug: string, field: string): string[] {
   if (!Array.isArray(value) || value.some(v => typeof v !== 'string')) {
-    throw new Error(`Primitive "${slug}" has invalid or missing ${field}`)
+    throw new Error(fieldMessage(slug, field))
   }
   return value as string[]
 }
@@ -36,17 +51,10 @@ export const discoverPrimitives = memoizeByPath((primitivesDir): DiscoveredPrimi
     const slug = path.basename(file, '.md') as PrimitiveSlug
     const fm   = matter.read(path.join(primitivesDir, file))
 
-    const { layer, stability } = fm.data
-    if (stability !== 'public' && stability !== 'internal') {
-      throw new Error(
-        `Primitive "${slug}" has invalid or missing stability: ${JSON.stringify(stability)}`
-      )
-    }
-    if (!LAYERS.includes(layer as PrimitiveLayer)) {
-      throw new Error(`Primitive "${slug}" has invalid or missing layer: ${JSON.stringify(layer)}`)
-    }
-    const summary = requireString(fm.data.summary, `Primitive "${slug}" has invalid or missing summary`)
-    const tagline = requireString(fm.data.tagline, `Primitive "${slug}" has invalid or missing tagline`)
+    const stability = requireMember(fm.data.stability, PRIMITIVE_STABILITIES, slug, 'stability')
+    const layer     = requireMember(fm.data.layer, PRIMITIVE_LAYERS, slug, 'layer')
+    const summary   = requireString(fm.data.summary, fieldMessage(slug, 'summary'))
+    const tagline   = requireString(fm.data.tagline, fieldMessage(slug, 'tagline'))
 
     const consumes   = stringList(fm.data.consumes, slug, 'consumes') as PrimitiveSlug[]
     const consumedBy = stringList(fm.data.consumedBy, slug, 'consumedBy')

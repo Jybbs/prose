@@ -22,6 +22,11 @@ export interface RuleDiscovery {
   strayPages : string[]
 }
 
+export const discoverRuleIndex = memoizeByPath(
+  (rulesDirectory): ReadonlyMap<string, DiscoveredRule> =>
+    new Map(discoverRules(rulesDirectory).rules.map(r => [r.slug, r]))
+)
+
 export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
   const families   = new Set<string>(FAMILY_ORDER)
   const rules      : DiscoveredRule[] = []

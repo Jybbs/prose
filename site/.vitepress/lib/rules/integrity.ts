@@ -1,5 +1,5 @@
-import type { DiscoveredPrimitive } from '../primitives/discovery'
-import type { RuleDiscovery }       from './discovery'
+import type { DiscoveredPrimitive }           from '../primitives/discovery'
+import type { DiscoveredRule, RuleDiscovery } from './discovery'
 
 // `consumedBy` names a primitive's consumers, which span rules, sibling
 // primitives, and the CLI, so the CLI is a legitimate consumer that owns
@@ -20,7 +20,7 @@ export function assertCorpusIntegrity(
   assertRelatedResolves(rules, ruleSlugs)
 }
 
-function assertOneFamilyPerSlug(rules: RuleDiscovery['rules']): void {
+function assertOneFamilyPerSlug(rules: readonly DiscoveredRule[]): void {
   const known = new Set<string>()
   for (const { slug } of rules) {
     if (known.has(slug)) {
@@ -52,7 +52,7 @@ function assertPrimitiveGraph(
 }
 
 function assertRelatedResolves(
-  rules     : RuleDiscovery['rules'],
+  rules     : readonly DiscoveredRule[],
   ruleSlugs : ReadonlySet<string>
 ): void {
   for (const { related, slug } of rules) {

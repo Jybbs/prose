@@ -1,5 +1,5 @@
-import { discoverRules, discoverRuleSlugs } from '../../lib/rules/discovery'
-import { fixtureDir }                       from '../support'
+import { discoverRuleIndex, discoverRules, discoverRuleSlugs } from '../../lib/rules/discovery'
+import { fixtureDir } from '../support'
 
 describe('discoverRules', () => {
   const fixture = (name: string): string => fixtureDir(import.meta.dirname, name)
@@ -11,6 +11,12 @@ describe('discoverRules', () => {
   it('returns the memoized result on a second call', () => {
     const dir = fixture('valid')
     expect(discoverRuleSlugs(dir)).toBe(discoverRuleSlugs(dir))
+  })
+
+  it('indexes discovered rules by slug', () => {
+    const dir = fixture('valid')
+    expect([...discoverRuleIndex(dir).keys()]).toEqual(discoverRuleSlugs(dir).map(r => r.slug))
+    expect(discoverRuleIndex(dir)).toBe(discoverRuleIndex(dir))
   })
 
   it('collects pages outside a family directory as strays', () => {

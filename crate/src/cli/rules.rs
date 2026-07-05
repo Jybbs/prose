@@ -19,7 +19,7 @@ struct RuleInfo {
 }
 
 /// Lists every registered rule in pipeline order, as an aligned table
-/// or the JSON the docs-site pipeline loader reads.
+/// or a JSON array.
 pub(crate) fn list<W: Write>(args: &RulesArgs, mut stdout: W) -> anyhow::Result<ExitStatus> {
     let rules: Vec<RuleInfo> = Pipeline::known_ids()
         .iter()
@@ -87,6 +87,16 @@ mod tests {
         assert_eq!(
             render(RulesFormat::Table).lines().count(),
             Pipeline::known_ids().len()
+        );
+    }
+
+    #[test]
+    fn table_right_aligns_single_digit_positions() {
+        let table = render(RulesFormat::Table);
+        let first = table.lines().next().expect("registry is non-empty");
+        assert!(
+            first.starts_with(' '),
+            "position 1 right-aligns under the widest position: {first:?}",
         );
     }
 }

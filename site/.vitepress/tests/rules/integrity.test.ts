@@ -11,9 +11,13 @@ const rule = (slug: string, related: readonly string[] = []): DiscoveredRule => 
   slug
 })
 
+type PrimitiveOverrides = Partial<Omit<DiscoveredPrimitive, 'consumes'>> & {
+  consumes?: readonly string[]
+}
+
 const primitive = (
   slug      : string,
-  overrides : Partial<DiscoveredPrimitive> = {}
+  overrides : PrimitiveOverrides = {}
 ): DiscoveredPrimitive => ({
   consumedBy : [],
   consumes   : [],
@@ -24,7 +28,7 @@ const primitive = (
   summary    : 'summary',
   tagline    : 'tagline',
   ...overrides
-})
+} as DiscoveredPrimitive)
 
 const corpus = (
   rules      : DiscoveredRule[],
@@ -47,7 +51,7 @@ describe('assertCorpusIntegrity', () => {
     ['a stray page outside a family directory', /must live in a family directory/,
       corpus([], [], ['orphan.md'])],
     ['a slug with pages in two families',       /more than one family directory/,
-      corpus([rule('dup'), rule('dup')])],
+      corpus([rule('dup'), { ...rule('dup'), family: 'layout' }])],
     ['a dangling related slug',                 /lists invalid related slug "ghost"/,
       corpus([rule('a', ['ghost'])])],
     ['an unknown consumed primitive',           /consumes unknown primitive "ghost"/,
