@@ -6,7 +6,7 @@ import { ogImagePath }                                     from '../config/og-ur
 import { markdownH1 }                                      from '../markdown/h1'
 import { type DiscoveredPrimitive, discoverPrimitives }    from '../primitives/discovery'
 import { type DiscoveredRule, discoverRuleSlugs }          from '../rules/discovery'
-import { parsePipeline }                                   from '../rules/pipeline-source'
+import { readPipeline }                                    from '../rules/pipeline'
 import { resolveToken }                                    from '../shared/css-token'
 import { FAMILY_META, type RuleCategory, type RuleFamily } from '../shared/registries'
 import { toTitleCase }                                     from '../shared/title-case'
@@ -32,7 +32,7 @@ export function enumeratePages(srcDir: string, pages: readonly string[]): readon
   const primitivesIndex = new Map(
     discoverPrimitives(path.join(srcDir, 'primitives')).map(p => [p.slug as string, p])
   )
-  const pipeline        = parsePipeline(import.meta.url)
+  const pipeline        = readPipeline(import.meta.url)
   const pipelinePos     = new Map(pipeline.map(r => [r.slug, r.position]))
   const out: OgPage[]   = []
   for (const rel of pages) {

@@ -13,7 +13,7 @@ import type {
   LandingTypingDemoResetRow
 } from '../lib/landing/typing-demo'
 import { precompileMagicMove } from '../lib/markdown/magic-move'
-import { repoRoot }            from '../lib/shared/paths'
+import { proseBinaryCandidates, repoRoot, resolveProseBinary } from '../lib/shared/paths'
 
 export type {
   LandingTypingDemoEditEntry,
@@ -34,12 +34,9 @@ export { data }
 const root = repoRoot(import.meta.url)
 
 export default defineLoader({
-  watch: [
-    path.join(root, 'target/release/prose'),
-    path.join(root, 'target/debug/prose')
-  ],
+  watch: proseBinaryCandidates(root),
   async load(): Promise<LandingTypingDemoData> {
-    const bin = proseBinary()
+    const bin = resolveProseBinary(root)
 
     const states: string[] = [SOURCE]
     for (let i = 0; i < RULES.length; i++) {
@@ -59,14 +56,6 @@ export default defineLoader({
     }
   }
 })
-
-function proseBinary(): string {
-  const found = ['target/release/prose', 'target/debug/prose']
-    .map(p => path.join(root, p))
-    .find(fs.existsSync)
-  if (found) return found
-  throw new Error('prose binary not found at target/{release,debug}/prose. Run `cargo build` first.')
-}
 
 function runProse(bin: string, source: string, select: string, configToml?: string): string {
   const args = ['format', '--stdin', '--select', select]

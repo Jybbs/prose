@@ -12,7 +12,12 @@ use super::{Cli, Command};
 /// error when `-` appears alongside other paths.
 pub(crate) fn normalize_stdin_dash(cli: &mut Cli) -> Option<clap::Error> {
     let (paths, stdin) = match &mut cli.command {
-        Command::Cache { .. } | Command::Completions { .. } | Command::Server(_) => return None,
+        Command::Cache { .. }
+        | Command::Completions { .. }
+        | Command::Rules(_)
+        | Command::Server(_) => {
+            return None;
+        }
         Command::Check(args) => (&mut args.paths, &mut args.stdin),
         Command::Format(args) => (&mut args.paths, &mut args.stdin),
     };

@@ -58,13 +58,5 @@ export const discoverPrimitives = memoizeByPath((primitivesDir): DiscoveredPrimi
 
     out.push({ consumedBy, consumes, layer, name, slug, stability, summary, tagline })
   }
-
-  const slugs = new Set(out.map(p => p.slug))
-  for (const p of out) {
-    for (const dep of p.consumes) {
-      if (!slugs.has(dep)) throw new Error(`Primitive "${p.slug}" consumes unknown primitive "${dep}"`)
-    }
-  }
-
   return out
 })

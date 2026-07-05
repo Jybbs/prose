@@ -1,5 +1,5 @@
-//! `check` / `format` shared args, the rule-filter, and the output
-//! format value-enum.
+//! `check` / `format` shared args, the rule-filter, the `rules`
+//! listing args, and the output-format value-enums.
 
 use std::path::PathBuf;
 
@@ -111,6 +111,20 @@ pub(crate) struct RuleFilter {
     /// configured-enabled set.
     #[arg(long, value_delimiter = ',', value_name = "RULES", value_parser = rule_id_parser())]
     pub(crate) select: Vec<RuleId>,
+}
+
+#[derive(Debug, clap::Args)]
+pub(crate) struct RulesArgs {
+    /// Output format for the rule listing.
+    #[arg(long, value_enum, default_value_t)]
+    pub(crate) output_format: RulesFormat,
+}
+
+#[derive(Clone, Copy, Debug, Default, clap::ValueEnum)]
+pub(crate) enum RulesFormat {
+    Json,
+    #[default]
+    Table,
 }
 
 /// Returns a value parser that accepts any registered rule slug and

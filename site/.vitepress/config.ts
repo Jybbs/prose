@@ -11,7 +11,8 @@ import { bodyLinkPlugin }                    from './lib/markdown/body-link-plug
 import { lintDecorationTransformer }         from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                   from './lib/markdown/prose-mark-plugin'
 import { discoverPrimitives }                from './lib/primitives/discovery'
-import { discoverRuleSlugs }                 from './lib/rules/discovery'
+import { discoverRules }                     from './lib/rules/discovery'
+import { assertCorpusIntegrity }             from './lib/rules/integrity'
 import { ruleLinkPlugin }                    from './lib/rules/link-plugin'
 import { canonicalUrl }                      from './lib/config/canonical-url'
 import { ogImageUrl }                        from './lib/config/og-url'
@@ -28,13 +29,16 @@ import { readCargoVersion }                            from './lib/shared/versio
 const repoDir              = repoRoot(import.meta.url)
 const version              = readCargoVersion(crateDir(import.meta.url))
 const pageTimestamps       = buildPageTimestamps(repoDir)
-const discoveredRules      = discoverRuleSlugs(rulesDir(import.meta.url))
+const ruleDiscovery        = discoverRules(rulesDir(import.meta.url))
+const discoveredRules      = ruleDiscovery.rules
 const discoveredPrimitives = discoverPrimitives(primitivesDir(import.meta.url))
 const primitiveNames       = new Map(discoveredPrimitives.map(p => [p.slug as string, p.name]))
 const validSlugs           = new Set(discoveredRules.map(r => r.slug))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const shikiDarkBg          = githubDark.colors?.['editor.background'] as string
 const themeColor           = resolveToken('prose-c-ube')
+
+assertCorpusIntegrity(ruleDiscovery, discoveredPrimitives)
 
 export default defineConfig({
   cacheDir      : `${repoDir}/.cache/vitepress`,

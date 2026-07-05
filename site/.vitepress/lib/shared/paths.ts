@@ -24,6 +24,16 @@ export function primitivesDir(metaUrl: string): string {
   return path.join(siteDir(metaUrl), 'primitives')
 }
 
+export function proseBinaryCandidates(repoRoot: string): string[] {
+  return ['target/release/prose', 'target/debug/prose'].map(p => path.join(repoRoot, p))
+}
+
+export function resolveProseBinary(repoRoot: string): string {
+  const found = proseBinaryCandidates(repoRoot).find(fs.existsSync)
+  if (found) return found
+  throw new Error('prose binary not found at target/{release,debug}/prose. Run `cargo build` first.')
+}
+
 export function rulesDir(metaUrl: string): string {
   return path.join(siteDir(metaUrl), 'rules')
 }

@@ -1,10 +1,10 @@
 import { defineLoader } from 'vitepress'
 
-import { discoverRuleSlugs }             from '../lib/rules/discovery'
-import { parsePipeline, ruleSourcePath } from '../lib/rules/pipeline-source'
-import { rulesDir }                      from '../lib/shared/paths'
-import { CATEGORY_META, FAMILY_META }    from '../lib/shared/registries'
-import type { RuleCategory, RuleFamily } from '../lib/shared/registries'
+import { discoverRuleSlugs }                         from '../lib/rules/discovery'
+import { readPipeline }                              from '../lib/rules/pipeline'
+import { proseBinaryCandidates, repoRoot, rulesDir } from '../lib/shared/paths'
+import { CATEGORY_META, FAMILY_META }                from '../lib/shared/registries'
+import type { RuleCategory, RuleFamily }             from '../lib/shared/registries'
 
 interface PipelineRule {
   category      : RuleCategory | null
@@ -23,17 +23,16 @@ interface PipelineData {
   rules : readonly PipelineRule[]
 }
 
-const ruleSource     = ruleSourcePath(import.meta.url)
 const rulesDirectory = rulesDir(import.meta.url)
 
 declare const data: PipelineData
 export { data }
 
 export default defineLoader({
-  watch: [ruleSource, `${rulesDirectory}/*.md`],
+  watch: [...proseBinaryCandidates(repoRoot(import.meta.url)), `${rulesDirectory}/*.md`],
   async load(): Promise<PipelineData> {
     const discovered = new Map(discoverRuleSlugs(rulesDirectory).map(r => [r.slug, r]))
-    const rules      = parsePipeline(import.meta.url).map(({ imperative, position, slug }) => {
+    const rules      = readPipeline(import.meta.url).map(({ imperative, position, slug }) => {
       const entry = discovered.get(slug)
       return {
         category      : entry?.category ?? null,

@@ -17,19 +17,24 @@ export interface DiscoveredRule {
   slug     : string
 }
 
-export const discoverRuleSlugs = memoizeByPath((rulesDirectory): DiscoveredRule[] => {
-  const families = new Set<string>(FAMILY_ORDER)
-  const out      : DiscoveredRule[] = []
-  const stray    : string[] = []
+export interface RuleDiscovery {
+  rules      : DiscoveredRule[]
+  strayPages : string[]
+}
+
+export const discoverRules = memoizeByPath((rulesDirectory): RuleDiscovery => {
+  const families   = new Set<string>(FAMILY_ORDER)
+  const rules      : DiscoveredRule[] = []
+  const strayPages : string[] = []
   for (const entry of fs.readdirSync(rulesDirectory, { withFileTypes: true })) {
     if (entry.isFile()) {
-      if (isContentPage(entry.name)) stray.push(entry.name)
+      if (isContentPage(entry.name)) strayPages.push(entry.name)
       continue
     }
     const directory = path.join(rulesDirectory, entry.name)
     const pages     = fs.readdirSync(directory).filter(isContentPage)
     if (!families.has(entry.name)) {
-      stray.push(...pages.map(f => `${entry.name}/${f}`))
+      strayPages.push(...pages.map(f => `${entry.name}/${f}`))
       continue
     }
     const family = entry.name as RuleFamily
@@ -41,7 +46,7 @@ export const discoverRuleSlugs = memoizeByPath((rulesDirectory): DiscoveredRule[
         `Rule "${slug}" has invalid or missing caption: ${JSON.stringify(fm.caption)}`
       )
       const relatedSlugs = Array.isArray(fm.related) ? fm.related as string[] : []
-      out.push({
+      rules.push({
         caption,
         category : categoryOf(family),
         family,
@@ -51,24 +56,10 @@ export const discoverRuleSlugs = memoizeByPath((rulesDirectory): DiscoveredRule[
       })
     }
   }
-  if (stray.length > 0) {
-    throw new Error(`Rule pages must live in a family directory, found stray: ${stray.join(', ')}`)
-  }
-
-  out.sort((a, b) => a.slug.localeCompare(b.slug))
-
-  const known = new Set<string>()
-  for (const { slug } of out) {
-    if (known.has(slug)) {
-      throw new Error(`Rule "${slug}" has pages in more than one family directory`)
-    }
-    known.add(slug)
-  }
-  for (const { related, slug } of out) {
-    for (const ref of related) {
-      if (!known.has(ref)) throw new Error(`Rule "${slug}" lists invalid related slug "${ref}"`)
-    }
-  }
-
-  return out
+  rules.sort((a, b) => a.slug.localeCompare(b.slug))
+  return { rules, strayPages }
 })
+
+export function discoverRuleSlugs(rulesDirectory: string): DiscoveredRule[] {
+  return discoverRules(rulesDirectory).rules
+}

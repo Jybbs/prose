@@ -128,6 +128,21 @@ prose completions zsh > "${fpath[1]}/_prose"
 
 The [**Shell Completions**](/integrations/shell-completions) integration page covers the install path for each shell.
 
+## `prose rules`
+
+Lists every registered rule in pipeline order, one row per rule carrying its one-based position, slug, and imperative. The JSON form emits the same listing as an array of `{slug, position, imperative}` records for scripting consumers.
+
+| Flag | Type | Default | Description |
+|---|---|---|---|
+| `--output-format` | `table` \| `json` | `table` | Listing shape |
+
+```bash
+prose rules
+prose rules --output-format json
+```
+
+The [**Pipeline Order**](/reference/pipeline-order) reference covers how the registry sequences the rules the listing reflects.
+
 ## `prose server`
 
 Runs a language server over stdio, so an editor gets format-on-save and live rule diagnostics from the same binary it already installs. The server tracks each open buffer, runs the [**pipeline**](/reference/pipeline-order) over the editor's live text on a `textDocument/formatting` request, and republishes findings on every open and change. It resolves the workspace `[tool.prose]` [**configuration**](/reference/configuration) the way `prose check` does, so an editor session and a command-line run over the same tree agree on the active rule set.

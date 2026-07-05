@@ -7,7 +7,9 @@ mod rule_args;
 mod server_args;
 mod validation;
 
-pub(crate) use rule_args::{CheckArgs, FormatArgs, OutputFormat, RuleFilter};
+pub(crate) use rule_args::{
+    CheckArgs, FormatArgs, OutputFormat, RuleFilter, RulesArgs, RulesFormat,
+};
 pub(crate) use server_args::{ServerArgs, Transport};
 pub(crate) use validation::{
     normalize_stdin_dash, report_clap_error, validate_diff_format_combination,
@@ -63,6 +65,9 @@ pub(crate) enum Command {
 
     /// Rewrite files to conform to the Prose style.
     Format(FormatArgs),
+
+    /// List the registered rules in pipeline order.
+    Rules(RulesArgs),
 
     /// Run the language server over stdio.
     Server(ServerArgs),
@@ -438,12 +443,37 @@ mod tests {
     }
 
     #[test]
+    fn normalize_stdin_dash_is_noop_for_rules() {
+        let mut cli = Cli::try_parse_from(["prose", "rules"]).expect("parses");
+        assert!(normalize_stdin_dash(&mut cli).is_none());
+    }
+
+    #[test]
     fn normalize_stdin_dash_leaves_dashless_paths_untouched() {
         let mut cli = Cli::try_parse_from(["prose", "check", "a.py", "b/"]).expect("parses");
         assert!(normalize_stdin_dash(&mut cli).is_none());
         let args = check_command(cli);
         assert_eq!(args.paths, [PathBuf::from("a.py"), PathBuf::from("b/")]);
         assert!(!args.stdin);
+    }
+
+    #[test]
+    fn rules_parses_with_default_table_format() {
+        let cli = Cli::try_parse_from(["prose", "rules"]).expect("parses");
+        let Command::Rules(args) = cli.command else {
+            panic!("expected Rules variant");
+        };
+        assert_matches!(args.output_format, RulesFormat::Table);
+    }
+
+    #[test]
+    fn rules_parses_with_output_format_json() {
+        let cli =
+            Cli::try_parse_from(["prose", "rules", "--output-format", "json"]).expect("parses");
+        let Command::Rules(args) = cli.command else {
+            panic!("expected Rules variant");
+        };
+        assert_matches!(args.output_format, RulesFormat::Json);
     }
 
     #[test]

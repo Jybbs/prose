@@ -1,7 +1,7 @@
-import { discoverRuleSlugs } from '../../lib/rules/discovery'
-import { fixtureDir }        from '../support'
+import { discoverRules, discoverRuleSlugs } from '../../lib/rules/discovery'
+import { fixtureDir }                       from '../support'
 
-describe('discoverRuleSlugs', () => {
+describe('discoverRules', () => {
   const fixture = (name: string): string => fixtureDir(import.meta.dirname, name)
 
   it('discovers rules across family directories, sorted by slug', () => {
@@ -13,12 +13,11 @@ describe('discoverRuleSlugs', () => {
     expect(discoverRuleSlugs(dir)).toBe(discoverRuleSlugs(dir))
   })
 
-  it.each([
-    ['stray-page',       /must live in a family directory/],
-    ['bad-caption',      /invalid or missing caption/],
-    ['duplicate-slug',   /more than one family directory/],
-    ['dangling-related', /lists invalid related slug/]
-  ])('rejects %s', (dir, message) => {
-    expect(() => discoverRuleSlugs(fixture(dir))).toThrow(message)
+  it('collects pages outside a family directory as strays', () => {
+    expect(discoverRules(fixture('stray-page')).strayPages).toEqual(['loose.md'])
+  })
+
+  it('rejects bad-caption', () => {
+    expect(() => discoverRules(fixture('bad-caption'))).toThrow(/invalid or missing caption/)
   })
 })
