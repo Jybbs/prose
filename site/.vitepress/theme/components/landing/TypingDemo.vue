@@ -1,60 +1,64 @@
 <script setup lang="ts">
-import { useIntersectionObserver, useMediaQuery }   from '@vueuse/core'
-import { ShikiMagicMovePrecompiled }                from 'shiki-magic-move/vue'
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { useIntersectionObserver }   from '@vueuse/core'
+import { ShikiMagicMovePrecompiled } from 'shiki-magic-move/vue'
+import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
-import { data }                                              from '../../../data/landing-typing-demo.data'
-import { applyCompletedEdits, EMPTY_SEGMENTS, resetText, segmentsForEdit } from '../../../lib/landing/typing-demo-buffer'
-import type { BufferSegments }                  from '../../../lib/landing/typing-demo-buffer'
-import { MAGIC_MOVE_MS, useTypingStateMachine } from './typing-state-machine'
-import type { Phase }                           from './typing-state-machine'
+import { data }                               from '../../../lib/landing/landing-typing-demo.data'
+import { useReducedMotion }                   from '../../../lib/composables/use-reduced-motion'
+import * as buffer                            from '../../../lib/landing/typing-demo-buffer'
+import { createTypingMachine, MAGIC_MOVE_MS } from '../../../lib/landing/typing-state-machine'
+import type { Phase }                         from '../../../lib/landing/typing-state-machine'
 
 const editProgress     = ref(0)
 const entryIndex       = ref(0)
 const phase            = ref<Phase>('starting')
 const pythonStateIndex = ref(0)
 
-const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
-const inView        = ref(false)
+const reducedMotion = useReducedMotion()
 const rootRef       = useTemplateRef<HTMLElement>('root')
 
-const { boot, freezeAtEnd, replay } = useTypingStateMachine(
-  data.entries,
-  data.resetRows,
-  { editProgress, entryIndex, phase, pythonStateIndex },
-  { inView, reducedMotion }
-)
+const machine = createTypingMachine({
+  entries       : data.entries,
+  onChange      : state => {
+    editProgress.value     = state.editProgress
+    entryIndex.value       = state.entryIndex
+    phase.value            = state.phase
+    pythonStateIndex.value = state.pythonStateIndex
+  },
+  reducedMotion : () => reducedMotion.value,
+  resetRows     : data.resetRows
+})
 
 const staticText = computed(() => {
   switch (phase.value) {
     case 'holdAtEnd':
     case 'reducedMotion':
-      return applyCompletedEdits(data.prelude, data.entries, data.entries.length)
+      return buffer.applyCompletedEdits(data.prelude, data.entries, data.entries.length)
     default:
       return data.prelude
   }
 })
 
-const segments = computed<BufferSegments>(() => {
+const segments = computed<buffer.BufferSegments>(() => {
   const entry = data.entries[entryIndex.value]
   switch (phase.value) {
     case 'editBackspacing':
     case 'editTyping':
     case 'holdAfterTyped':
     case 'holdBetweenEdits': {
-      const text = applyCompletedEdits(data.prelude, data.entries, entryIndex.value)
+      const text = buffer.applyCompletedEdits(data.prelude, data.entries, entryIndex.value)
       return entry
-        ? segmentsForEdit(entry, text, phase.value, editProgress.value)
-        : { ...EMPTY_SEGMENTS, before: text }
+        ? buffer.segmentsForEdit(entry, text, phase.value, editProgress.value)
+        : { ...buffer.EMPTY_SEGMENTS, before: text }
     }
     case 'resetBackspacing':
     case 'resetTyping':
       return {
-        ...EMPTY_SEGMENTS,
-        before: resetText(data.prelude, data.resetRows, phase.value, editProgress.value)
+        ...buffer.EMPTY_SEGMENTS,
+        before: buffer.resetText(data.prelude, data.resetRows, phase.value, editProgress.value)
       }
     default:
-      return { ...EMPTY_SEGMENTS, before: staticText.value }
+      return { ...buffer.EMPTY_SEGMENTS, before: staticText.value }
   }
 })
 
@@ -71,24 +75,26 @@ const showCaret = computed(() => {
 useIntersectionObserver(
   rootRef,
   ([entry]) => {
-    inView.value = entry.isIntersecting
+    machine.setInView(entry.isIntersecting)
   },
   { rootMargin: '-20% 0px -20% 0px', threshold: 0 }
 )
 
 onMounted(() => {
-  if (reducedMotion.value) freezeAtEnd()
-  else boot()
+  if (reducedMotion.value) machine.freezeAtEnd()
+  else machine.boot()
 })
+
+onUnmounted(machine.dispose)
 </script>
 
 <template>
   <div ref="root" class="typing-demo">
-    <section class="typing-demo-panel typing-demo-config" aria-label="prose config">
+    <section class="typing-demo-panel typing-demo-config panel panel-clip" aria-label="prose config">
       <header class="typing-demo-label">prose.toml</header>
       <pre class="typing-demo-config-code"><code><span class="typing-demo-config-prelude">{{ segments.before }}</span><span class="typing-demo-config-editing">{{ segments.editingLineBefore }}</span><span class="typing-demo-config-editing">{{ segments.editing }}<span v-if="showCaret" class="typing-demo-caret" aria-hidden="true" /></span><span class="typing-demo-config-editing">{{ segments.editingLineAfter }}</span><span class="typing-demo-config-prelude">{{ segments.after }}</span></code></pre>
     </section>
-    <section class="typing-demo-panel typing-demo-python" aria-label="Python source">
+    <section class="typing-demo-panel typing-demo-python panel panel-clip" aria-label="Python source">
       <header class="typing-demo-label">app.py</header>
       <ShikiMagicMovePrecompiled
         class    = "typing-demo-python-code"
@@ -102,7 +108,7 @@ onMounted(() => {
       v-if="reducedMotion"
       type="button"
       class="typing-demo-replay"
-      @click="replay"
+      @click="machine.replay"
     >Replay</button>
   </div>
 </template>

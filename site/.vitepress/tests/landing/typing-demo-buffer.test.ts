@@ -3,13 +3,7 @@ import { fc, test } from '@fast-check/vitest'
 import type {
   LandingTypingDemoEntry, LandingTypingDemoResetRow
 } from '../../lib/landing/typing-demo'
-import {
-  applyCompletedEdits,
-  editPlan,
-  EMPTY_SEGMENTS,
-  resetText,
-  segmentsForEdit
-} from '../../lib/landing/typing-demo-buffer'
+import * as buffer from '../../lib/landing/typing-demo-buffer'
 
 describe('editPlan', () => {
   it.each([
@@ -18,11 +12,11 @@ describe('editPlan', () => {
     ['abc',   'abcde', { fromCore: '',      prefix: 'abc', toCore: 'de' }],
     ['abcde', 'abc',   { fromCore: 'de',    prefix: 'abc', toCore: '' }]
   ])('splits %s and %s on their shared prefix', (from, to, expected) => {
-    expect(editPlan(from, to)).toEqual(expected)
+    expect(buffer.editPlan(from, to)).toEqual(expected)
   })
 
   test.prop([fc.string(), fc.string()])('reconstructs both inputs from prefix and cores', (from, to) => {
-    const { fromCore, prefix, toCore } = editPlan(from, to)
+    const { fromCore, prefix, toCore } = buffer.editPlan(from, to)
     expect(prefix + fromCore).toBe(from)
     expect(prefix + toCore).toBe(to)
   })
@@ -35,12 +29,12 @@ const entries: readonly LandingTypingDemoEntry[] = [
 
 describe('applyCompletedEdits', () => {
   it('applies edits up to the cursor, leaving later ones untouched', () => {
-    expect(applyCompletedEdits('a = false\nb = 0\n', entries, 1)).toBe('a = true\nb = 0\n')
-    expect(applyCompletedEdits('a = false\nb = 0\n', entries, 2)).toBe('a = true\nb = 1\n')
+    expect(buffer.applyCompletedEdits('a = false\nb = 0\n', entries, 1)).toBe('a = true\nb = 0\n')
+    expect(buffer.applyCompletedEdits('a = false\nb = 0\n', entries, 2)).toBe('a = true\nb = 1\n')
   })
 
   it('skips an edit whose anchor is absent', () => {
-    expect(applyCompletedEdits('unrelated', entries, 2)).toBe('unrelated')
+    expect(buffer.applyCompletedEdits('unrelated', entries, 2)).toBe('unrelated')
   })
 })
 
@@ -54,12 +48,12 @@ describe('segmentsForEdit', () => {
     ['editTyping',      2, 'tr'],
     ['holdAfterTyped',  0, 'true']
   ])('renders the editing segment for %s', (phase, progress, editing) => {
-    expect(segmentsForEdit(entry, 'before\nx = false\nafter', phase, progress).editing)
+    expect(buffer.segmentsForEdit(entry, 'before\nx = false\nafter', phase, progress).editing)
       .toBe(editing)
   })
 
   it('splits the surrounding lines into context', () => {
-    const seg = segmentsForEdit(entry, 'a\nx = false\nb', 'editTyping', 0)
+    const seg = buffer.segmentsForEdit(entry, 'a\nx = false\nb', 'editTyping', 0)
     expect({
       after             : seg.after,
       before            : seg.before,
@@ -69,14 +63,14 @@ describe('segmentsForEdit', () => {
   })
 
   it('handles an edit with no surrounding newlines', () => {
-    expect(segmentsForEdit(entry, 'x = false', 'editTyping', 0)).toEqual({
+    expect(buffer.segmentsForEdit(entry, 'x = false', 'editTyping', 0)).toEqual({
       after: '', before: '', editing: '', editingLineAfter: '', editingLineBefore: 'x = '
     })
   })
 
   it('returns the whole text as before when the anchor is absent', () => {
-    expect(segmentsForEdit(entry, 'no anchor', 'editTyping', 0))
-      .toEqual({ ...EMPTY_SEGMENTS, before: 'no anchor' })
+    expect(buffer.segmentsForEdit(entry, 'no anchor', 'editTyping', 0))
+      .toEqual({ ...buffer.EMPTY_SEGMENTS, before: 'no anchor' })
   })
 })
 
@@ -89,10 +83,10 @@ describe('resetText', () => {
     ['resetBackspacing', 1, 'x = tru\n'],
     ['resetTyping',      2, 'x = fa\n']
   ])('rewrites the row for %s', (phase, progress, expected) => {
-    expect(resetText('x = false\n', rows, phase, progress)).toBe(expected)
+    expect(buffer.resetText('x = false\n', rows, phase, progress)).toBe(expected)
   })
 
   it('skips a row whose anchor is absent', () => {
-    expect(resetText('unrelated', rows, 'resetTyping', 1)).toBe('unrelated')
+    expect(buffer.resetText('unrelated', rows, 'resetTyping', 1)).toBe('unrelated')
   })
 })

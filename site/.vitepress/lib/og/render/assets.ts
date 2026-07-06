@@ -4,41 +4,51 @@ import path              from 'node:path'
 
 import type { Font } from 'satori'
 
+import { svgViewBox } from '../../shared/svg-view-box'
+import { FONT }       from './parts'
+
 const require = createRequire(import.meta.url)
 
-export const BRAND_TITLE_ASPECT = 1031 / 380
+export interface BrandImage {
+  aspect : number
+  src    : string
+}
 
 export interface BrandAssets {
   fonts            : Font[]
   glyph            : string
-  titleWithTagline : string
-  wordmark         : string
+  titleWithTagline : BrandImage
+  wordmark         : BrandImage
 }
 
 const FONT_FACES: readonly Omit<Font, 'data'>[] = [
-  { name: 'Fraunces',       style: 'italic', weight: 400 },
-  { name: 'Fraunces',       style: 'normal', weight: 400 },
-  { name: 'Fraunces',       style: 'italic', weight: 500 },
-  { name: 'Fraunces',       style: 'normal', weight: 600 },
-  { name: 'Fraunces',       style: 'normal', weight: 700 },
-  { name: 'JetBrains Mono', style: 'normal', weight: 400 },
-  { name: 'JetBrains Mono', style: 'normal', weight: 500 },
-  { name: 'JetBrains Mono', style: 'normal', weight: 700 },
-  { name: 'Lora',           style: 'italic', weight: 400 },
-  { name: 'Lora',           style: 'normal', weight: 400 }
+  { name: FONT.display, style: 'italic', weight: 400 },
+  { name: FONT.display, style: 'normal', weight: 400 },
+  { name: FONT.display, style: 'italic', weight: 500 },
+  { name: FONT.display, style: 'normal', weight: 600 },
+  { name: FONT.display, style: 'normal', weight: 700 },
+  { name: FONT.mono,    style: 'normal', weight: 400 },
+  { name: FONT.mono,    style: 'normal', weight: 500 },
+  { name: FONT.mono,    style: 'normal', weight: 700 },
+  { name: FONT.body,    style: 'italic', weight: 400 },
+  { name: FONT.body,    style: 'normal', weight: 400 }
 ]
 
 export function loadBrandAssets(srcDir: string): BrandAssets {
   const fonts = FONT_FACES.map(face => ({ ...face, data: fs.readFileSync(fontFile(face)) }))
-  const glyphSvg            = fs.readFileSync(path.join(srcDir, 'public', 'logo.svg'))
-  const titleWithTaglineSvg = fs.readFileSync(path.join(srcDir, 'public', 'title-with-tagline.svg'))
-  const wordmarkSvg         = fs.readFileSync(path.join(srcDir, 'public', 'title.svg'))
+  const read  = (file: string): Buffer => fs.readFileSync(path.join(srcDir, 'public', file))
   return {
     fonts            : fonts,
-    glyph            : dataUri(glyphSvg),
-    titleWithTagline : dataUri(titleWithTaglineSvg),
-    wordmark         : dataUri(wordmarkSvg)
+    glyph            : dataUri(read('logo.svg')),
+    titleWithTagline : brandImage('title-with-tagline.svg', read),
+    wordmark         : brandImage('title.svg', read)
   }
+}
+
+function brandImage(file: string, read: (file: string) => Buffer): BrandImage {
+  const svg        = read(file)
+  const [, , w, h] = svgViewBox(svg.toString(), file).split(/\s+/).map(Number)
+  return { aspect: w / h, src: dataUri(svg) }
 }
 
 function fontFile(face: Omit<Font, 'data'>): string {

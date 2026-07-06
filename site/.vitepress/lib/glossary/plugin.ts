@@ -1,18 +1,20 @@
 import type MarkdownIt from 'markdown-it'
 
+import { isInert }           from '../markdown/inert-env'
 import { replaceTextTokens } from '../markdown/token-split'
 import { walkBodyInlines }   from '../markdown/walk'
+import { wordBounded }       from '../markdown/word-bounded'
 
-export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>): (md: MarkdownIt) => void {
+export function glossaryPlugin(
+  phraseToSlug : ReadonlyMap<string, string>,
+  hrefBySlug   : ReadonlyMap<string, string>
+): (md: MarkdownIt) => void {
   if (phraseToSlug.size === 0) {
     throw new Error('glossaryPlugin received an empty phrase map')
   }
 
   const phrases = [...phraseToSlug.keys()].toSorted((a, b) => b.length - a.length)
-  const pattern = new RegExp(
-    `(?<![A-Za-z0-9_-])(${phrases.map(p => RegExp.escape(p)).join('|')})(?![A-Za-z0-9_-])`,
-    'g'
-  )
+  const pattern = wordBounded(phrases.map(p => RegExp.escape(p)).join('|'))
 
   return function plugin(md: MarkdownIt): void {
     md.core.ruler.after('inline', 'glossary-decorate', state => {
@@ -32,11 +34,16 @@ export function glossaryPlugin(phraseToSlug: ReadonlyMap<string, string>): (md: 
       })
     })
 
-    md.renderer.rules.glossary_term = (tokens, idx) => {
+    md.renderer.rules.glossary_term = (tokens, idx, _options, env) => {
       const t       = tokens[idx]
-      const slug    = md.utils.escapeHtml(t.meta?.slug as string)
+      const rawSlug = t.meta?.slug as string
+      const slug    = md.utils.escapeHtml(rawSlug)
       const display = md.utils.escapeHtml(t.content)
-      return `<GlossaryTerm slug="${slug}">${display}</GlossaryTerm>`
+      if (!isInert(env)) return `<GlossaryTerm slug="${slug}">${display}</GlossaryTerm>`
+      const href = hrefBySlug.get(rawSlug)
+      return href === undefined
+        ? `<span class="glossary-term" data-term="${slug}">${display}</span>`
+        : `<a class="glossary-term" data-term="${slug}" href="${md.utils.escapeHtml(href)}">${display}</a>`
     }
   }
 }

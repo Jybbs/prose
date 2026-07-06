@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { data as primitiveMeta } from '../../../data/primitives.data'
+import { data as primitiveMeta } from '../../../lib/primitives/primitives.data'
 
 import type { PrimitiveLayer, PrimitiveSlug } from '../../../lib/shared/registries'
 
@@ -41,12 +41,12 @@ function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' 
       class="primitives-composition-band"
       :data-layer="band.key"
     >
-      <header class="primitives-composition-band-head">
+      <header class="primitives-composition-band-head band-head">
         <span class="primitives-composition-band-badge">
           <span class="primitives-composition-band-numeral" aria-hidden="true">{{ band.numeral }}</span>
         </span>
-        <span class="primitives-composition-band-name">{{ band.key }}</span>
-        <span class="primitives-composition-band-rule" aria-hidden="true"></span>
+        <span class="primitives-composition-band-name band-name">{{ band.key }}</span>
+        <span class="primitives-composition-band-rule band-rule" aria-hidden="true"></span>
       </header>
       <ul class="primitives-composition-band-cells">
         <li

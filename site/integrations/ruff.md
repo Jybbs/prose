@@ -1,3 +1,8 @@
+---
+summary: 'For projects that already run Ruff, the `extend-ignore` configuration that keeps Ruff’s `pycodestyle` codes from flagging the whitespace *Prose*’s alignment rules deliberately introduce.'
+tagline: 'alongside Ruff'
+---
+
 # Ruff
 
 <Tool slug="ruff" /> is the token-level formatter most commonly paired with *Prose*. *Prose* doesn't need Ruff to run, in that it produces a settled layout from any well-formed Python source, though pairing the two cleanly takes the small Ruff configuration laid out below.

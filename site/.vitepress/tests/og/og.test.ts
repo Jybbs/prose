@@ -1,20 +1,6 @@
 import { enumeratePages } from '../../lib/og/pages'
-import { resolveToken }   from '../../lib/shared/css-token'
+import { cardKeyer }      from '../../lib/og/render/cache'
 import { fixtureDir }     from '../support'
-
-describe('resolveToken', () => {
-  it('follows a single var() hop to a leaf hex', () => {
-    expect(resolveToken('prose-c-family-engine')).toMatch(/^#[0-9a-f]{6}$/i)
-  })
-
-  it('returns a non-aliased value directly', () => {
-    expect(resolveToken('prose-c-ube')).toMatch(/^#[0-9a-f]{6}$/i)
-  })
-
-  it('returns an empty string for an unknown token', () => {
-    expect(resolveToken('prose-c-not-a-real-token')).toBe('')
-  })
-})
 
 describe('enumeratePages', () => {
   const srcDir = fixtureDir(import.meta.dirname)
@@ -43,5 +29,21 @@ describe('enumeratePages', () => {
   it('falls back to internal stability and the titled slug for an undiscovered primitive', () => {
     const [page] = enumeratePages(srcDir, ['primitives/ghost.md'])
     expect(page).toMatchObject({ primitive: { stability: 'internal' }, title: 'Ghost' })
+  })
+})
+
+describe('cardKeyer', () => {
+  const brand = {
+    fonts            : [],
+    glyph            : 'g',
+    titleWithTagline : { aspect: 1, src: 't' },
+    wordmark         : { aspect: 1, src: 'w' }
+  }
+
+  it('keys stably per input and re-keys when the version or card changes', () => {
+    const keyOf = cardKeyer('0.1.0', brand)
+    expect(keyOf('landing')).toBe(cardKeyer('0.1.0', brand)('landing'))
+    expect(keyOf('landing')).not.toBe(cardKeyer('0.2.0', brand)('landing'))
+    expect(keyOf('landing')).not.toBe(keyOf({ breadcrumb: [], kind: 'usage', outputPath: 'o', title: 'T' }))
   })
 })

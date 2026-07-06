@@ -1,3 +1,8 @@
+---
+summary: 'Refuses a commit that would land unformatted code, gating the git staging boundary against layout drift.'
+tagline: 'git staging'
+---
+
 # Pre-Commit
 
 <Tool slug="precommit" /> wires *Prose* into the git commit boundary, so a staged change either matches the canonical layout or the commit fails. The hook runs against staged files only, which keeps the loop tight on edited code without re-walking the whole tree.

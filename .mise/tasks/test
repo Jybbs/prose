@@ -1,12 +1,8 @@
-#!/usr/bin/env bash
-#MISE description="Run the test suites including `insta` snapshots; pass `rust` or `site` to scope"
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Run the test suites including `insta` snapshots, scoped by a `rust` or `site` argument"
 #MISE wait_for=["bake"]
 
-set -euo pipefail
-
-case "${1:-all}" in
-  all)  cargo test --locked && (cd site && bunx vitest run) ;;
-  rust) cargo test --locked ;;
-  site) shift; (cd site && bunx vitest run "$@") ;;
-  *)    echo "usage: mise test [rust|site]" >&2; exit 2 ;;
-esac
+source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
+rust() { cargo test --locked; }
+site() { mise run build bin && (cd site && bunx vitest run "$@"); }
+scope "$@"

@@ -1,3 +1,8 @@
+---
+summary: 'Fails a PR check on a layout regression, with workflow-command annotations inline and SARIF upload to the Security tab.'
+tagline: 'CI runner · code scanning'
+---
+
 # GitHub Actions
 
 *Prose* compiles cleanly against the standard `ubuntu-latest` runner. The install step fetches the wheel through <Tool slug="uv" />, the check step runs `prose check`, and the exit code drives the gate. The shapes below trade verbosity for richer surfacing on the PR diff: minimal check, inline workflow-command annotations, and SARIF upload for [**Code Scanning**](https://docs.github.com/en/code-security/code-scanning).

@@ -9,13 +9,18 @@ export default defineConfig({
     root        : import.meta.dirname,
     include     : ['.vitepress/tests/**/*.test.ts'],
     reporters   : process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : ['default'],
+    resolveSnapshotPath : (testPath, extension) => testPath + extension,
     coverage: {
       provider         : 'v8',
       reporter         : ['text', 'lcovonly'],
       reportsDirectory : 'coverage',
       include          : ['.vitepress/lib/**'],
       exclude: [
-        '.vitepress/lib/og/render/**',
+        '.vitepress/lib/**/*.data.ts',
+        '.vitepress/lib/og/render/build.ts',
+        '.vitepress/lib/og/render/cache.ts',
+        '.vitepress/lib/og/render/pool.ts',
+        '.vitepress/lib/og/render/resvg-worker.mjs',
         '.vitepress/lib/rules/config-presets.ts',
         '.vitepress/lib/shared/fixture-tab.ts',
         '.vitepress/lib/shared/tools.ts'

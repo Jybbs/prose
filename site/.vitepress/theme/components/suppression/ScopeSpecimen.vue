@@ -1,23 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
-import { DECISIONS }               from './scope-decisions'
-import { SCOPE_META, SCOPE_ORDER } from './scope-meta'
+import { data as directives, type Directive }    from '../../../lib/suppression/directives.data'
+import { directiveHref, SCOPE_META, scopeBands } from '../../../lib/suppression/scopes'
+import type { ScopeKey }                         from '../../../lib/suppression/scopes'
 
 interface SpecimenLine {
   bracket : 'open' | 'close' | 'mid' | 'solo' | null
-  scope   : 'file' | 'block' | 'line' | 'dict' | null
+  scope   : ScopeKey | null
   text    : string
 }
 
-const DIRECTIVE_HREF: Record<string, string> = {
-  'block-fmt'       : '/reference/suppression-directives#block-markers',
-  'dict-keep'       : '/reference/suppression-directives#dict-literal-order-preservation',
-  'file-off'        : '/reference/suppression-directives#file-level-suppression',
-  'line-ignore'     : '/reference/suppression-directives#line-markers',
-  'line-skip'       : '/reference/suppression-directives#line-markers',
-  'line-skip-rules' : '/reference/suppression-directives#line-markers'
-}
+const LEGEND_IDS = [
+  'prose-off', 'fmt-off', 'fmt-skip', 'prose-skip-rules', 'prose-ignore-rules', 'prose-keep'
+]
 
 const lines: SpecimenLine[] = [
   { bracket : 'open',  scope : 'file',  text : '# prose: off' },
@@ -44,14 +38,31 @@ const lines: SpecimenLine[] = [
   { bracket : 'close', scope : 'file',  text : '' }
 ]
 
-const legend = computed(() => SCOPE_ORDER.map(scope => ({
-  items : DECISIONS.filter(d => d.scope === scope),
-  scope
-})))
+function legendDirective(id: string): Directive {
+  const directive = directives.find(d => d.id === id)
+  if (directive === undefined) {
+    throw new Error(`scope specimen: no directive with id "${id}"`)
+  }
+  return directive
+}
+
+const entries = LEGEND_IDS.map(id => {
+  const directive = legendDirective(id)
+  return {
+    form  : directive.pairRole === 'opens' && directive.pairId !== undefined
+      ? `${directive.form} … ${legendDirective(directive.pairId).form}`
+      : directive.form,
+    href  : directiveHref(directive.scope),
+    id    : id,
+    scope : directive.scope
+  }
+})
+
+const legend = scopeBands(entries)
 </script>
 
 <template>
-  <div class="scope-specimen">
+  <div class="scope-specimen panel">
     <pre class="scope-specimen-source"><code><span
       v-for="(line, idx) in lines"
       :key="idx"
@@ -77,7 +88,7 @@ const legend = computed(() => SCOPE_ORDER.map(scope => ({
             :key="d.id"
             class="scope-specimen-legend-directive"
           >
-            <a class="body-link" :href="DIRECTIVE_HREF[d.id]"><code>{{ d.directive }}</code></a>
+            <a class="body-link underline-draw" :href="d.href"><code>{{ d.form }}</code></a>
           </li>
         </ul>
       </li>

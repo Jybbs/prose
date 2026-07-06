@@ -1,5 +1,5 @@
 function familyColor(family: string | null): string {
-  return family ? `var(--prose-c-family-${family})` : 'var(--vp-c-divider)'
+  return family ? `var(--prose-family-${family})` : 'var(--vp-c-divider)'
 }
 
 export function railPaint(families: readonly (string | null)[], direction = 'to bottom'): string {

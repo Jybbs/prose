@@ -1,4 +1,4 @@
-import type { RenderedGlossaryEntry } from '../../data/glossary.data'
+import type { RenderedGlossaryEntry } from './glossary.data'
 
 export const compareCaseless = (a: string, b: string): number =>
   a.localeCompare(b, 'en', { sensitivity: 'base' })

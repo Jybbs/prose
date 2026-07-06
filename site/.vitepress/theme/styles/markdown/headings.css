@@ -14,5 +14,5 @@
 .vp-doc .header-anchor {
   font-family : var(--prose-font-display);
   font-style  : italic;
-  color       : var(--prose-c-celadon);
+  color       : var(--prose-palette-celadon);
 }

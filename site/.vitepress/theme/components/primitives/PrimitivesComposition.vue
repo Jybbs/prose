@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { data as primitives } from '../../../data/primitives-composition.data'
+import { data as primitives } from '../../../lib/primitives/primitives-composition.data'
 
-import type { PrimitiveLayer, PrimitiveSlug } from '../../../lib/shared/registries'
+import { PRIMITIVE_LAYER_NUMERALS } from '../../../lib/shared/registries'
+import type { PrimitiveSlug }       from '../../../lib/shared/registries'
 
 import PrimitivesCompositionDetail from './PrimitivesCompositionDetail.vue'
 import PrimitivesCompositionGrid   from './PrimitivesCompositionGrid.vue'
@@ -14,15 +15,13 @@ const props = defineProps<{
 
 const focused = ref<PrimitiveSlug | null>(props.initialFocus ?? null)
 
-const LAYER_NUMERAL: Record<PrimitiveLayer, string> = { analysis: 'III', base: 'I', orchestration: 'II' }
-
 const bands = computed(() => [
-  { entries : primitives.byLayer.analysis,      key : 'analysis'      as const, numeral : LAYER_NUMERAL.analysis      },
-  { entries : primitives.byLayer.orchestration, key : 'orchestration' as const, numeral : LAYER_NUMERAL.orchestration },
-  { entries : primitives.byLayer.base,          key : 'base'          as const, numeral : LAYER_NUMERAL.base          }
+  { entries : primitives.byLayer.analysis,      key : 'analysis'      as const, numeral : PRIMITIVE_LAYER_NUMERALS.analysis      },
+  { entries : primitives.byLayer.orchestration, key : 'orchestration' as const, numeral : PRIMITIVE_LAYER_NUMERALS.orchestration },
+  { entries : primitives.byLayer.base,          key : 'base'          as const, numeral : PRIMITIVE_LAYER_NUMERALS.base          }
 ])
 
-const focusedEntry = computed(() => focused.value === null ? null : primitives.entries.find(e => e.slug === focused.value) ?? null)
+const focusedEntry = computed(() => focused.value === null ? null : primitives.bySlug[focused.value] ?? null)
 
 const related = computed<Set<string>>(() => {
   const s = new Set<string>()
@@ -43,7 +42,7 @@ function clearFocus() {
 </script>
 
 <template>
-  <div class="primitives-composition" :data-layer="focusedEntry?.layer ?? 'empty'">
+  <div class="primitives-composition panel" :data-layer="focusedEntry?.layer ?? 'empty'">
     <PrimitivesCompositionGrid
       :bands   = "bands"
       :focused = "focused"

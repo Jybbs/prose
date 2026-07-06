@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import RunSummarySelect from '../../theme/components/reference/RunSummarySelect.vue'
+import RunSummarySelect    from '../../theme/components/reference/RunSummarySelect.vue'
+import { popperStubMount } from '../popper-stub'
 
 const options = [
   { id: 'a', mono: 'AA' },
@@ -9,11 +10,8 @@ const options = [
 ]
 
 const mountSelect = (modelValue: string) => mount(RunSummarySelect, {
-  props: { label: 'Verbosity', modelValue, options },
-  global: {
-    directives : { 'close-popper': {} },
-    stubs      : { VDropdown: { template: '<div><slot /><slot name="popper" /></div>' } }
-  }
+  props  : { label: 'Verbosity', modelValue, options },
+  global : popperStubMount
 })
 
 describe('RunSummarySelect', () => {

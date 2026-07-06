@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { useMediaQuery }                         from '@vueuse/core'
 import { computed, useTemplateRef, watchEffect } from 'vue'
 
 import LandingSection from '../LandingSection.vue'
 
-import { data as landing } from '../../../../data/landing.data'
-import { data as rules }   from '../../../../data/rules.data'
+import { data as landing }  from '../../../../lib/landing/landing.data'
+import { data as rules }    from '../../../../lib/rules/rules.data'
+import { useReducedMotion } from '../../../../lib/composables/use-reduced-motion'
 
-import { useCarouselMeasurement } from './use-carousel-measurement'
-import { useCarouselVelocity }    from './use-carousel-velocity'
+import { useCarouselMeasurement } from '../../../../lib/composables/use-carousel-measurement'
+import { useCarouselVelocity }    from '../../../../lib/composables/use-carousel-velocity'
 
 import SurfaceCardBase from './SurfaceCardBase.vue'
 
@@ -29,7 +29,7 @@ const heading = computed(() =>
 
 const trackRef      = useTemplateRef<HTMLElement>('track')
 const viewportRef   = useTemplateRef<HTMLElement>('viewport')
-const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+const reducedMotion = useReducedMotion()
 
 const { fits, halfWidth } = useCarouselMeasurement(trackRef, viewportRef, () => surfaceCards.value.length)
 const { offset, onPointerLeave, onPointerMove } = useCarouselVelocity(viewportRef, halfWidth, fits, {
@@ -85,8 +85,7 @@ const trackStyle = computed(() => ({
             :family="card.family"
             :number="card.number"
             :rules="card.rules"
-            :aria-hidden="copy === 2 ? 'true' : undefined"
-            :tabindex="copy === 2 ? -1 : undefined"
+            :inert="copy === 2"
           />
         </template>
       </div>

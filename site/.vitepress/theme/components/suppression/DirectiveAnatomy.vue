@@ -1,14 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
-import { SCOPE_META } from './scope-meta'
-
-import {
-  data as directives,
-  type Directive,
-  type PartRole,
-  type Scope
-} from '../../../data/directives.data'
+import { data as directives }     from '../../../lib/suppression/directives.data'
+import { useTabSelect }           from '../../../lib/composables/use-tab-select'
+import { type PartRole }          from '../../../lib/suppression/directive-parts'
+import { SCOPE_META, scopeBands } from '../../../lib/suppression/scopes'
 
 const ROLE_LABEL: Record<PartRole, string> = {
   action    : 'action',
@@ -17,31 +11,23 @@ const ROLE_LABEL: Record<PartRole, string> = {
   payload   : 'rule list'
 }
 
-const DIRECTIVE_SCOPE_ORDER: Scope[] = ['file', 'block', 'line']
+const bands = scopeBands(directives)
 
-const bands = computed(() => {
-  return DIRECTIVE_SCOPE_ORDER.map(scope => ({
-    scope,
-    items : directives.filter(d => d.scope === scope)
-  }))
-})
-
-const focusId = ref<string>('prose-ignore-rules')
-
-const focused = computed<Directive>(() =>
-  directives.find(d => d.id === focusId.value) ?? directives[0]
-)
+const { active: focused, selected: focusId } = useTabSelect(directives, d => d.id)
+focusId.value = 'prose-ignore-rules'
 
 function classifyLine(line: string): 'directive' | 'comment' | 'code' {
   const trimmed = line.trim()
-  if (trimmed.includes(' fmt:') || trimmed.includes(' yapf:') || trimmed.includes(' prose:')) return 'directive'
+  if (trimmed.includes(' fmt:') || trimmed.includes(' yapf:') || trimmed.includes(' prose:')) {
+    return 'directive'
+  }
   if (trimmed.startsWith('#')) return 'comment'
   return 'code'
 }
 </script>
 
 <template>
-  <div class="directive-anatomy">
+  <div class="directive-anatomy panel panel-clip">
     <div class="directive-anatomy-index" role="tablist" aria-label="Directive index">
       <section
         v-for="band in bands"
@@ -49,10 +35,10 @@ function classifyLine(line: string): 'directive' | 'comment' | 'code' {
         class="directive-anatomy-band"
         :data-scope="band.scope"
       >
-        <header class="directive-anatomy-band-head">
+        <header class="directive-anatomy-band-head band-head">
           <span class="directive-anatomy-band-badge" aria-hidden="true">{{ SCOPE_META[band.scope].pip }}</span>
-          <span class="directive-anatomy-band-name">{{ SCOPE_META[band.scope].label }}</span>
-          <span class="directive-anatomy-band-rule" aria-hidden="true"></span>
+          <span class="directive-anatomy-band-name band-name">{{ SCOPE_META[band.scope].label }}</span>
+          <span class="directive-anatomy-band-rule band-rule" aria-hidden="true"></span>
         </header>
         <div class="directive-anatomy-band-cells">
           <button

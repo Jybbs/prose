@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Tool from '../base/Tool.vue'
 
-import { data as editors } from '../../../data/editor-configs.data'
+import { data as editors } from '../../../lib/integrations/editor-configs.data'
 import { useTabSelect }    from '../../../lib/composables/use-tab-select'
 import { formatFolio }     from '../../../lib/shared/numerals'
 
@@ -9,18 +9,19 @@ const { selected: activeSlug } = useTabSelect(editors, e => e.slug)
 </script>
 
 <template>
-  <div class="editor-card">
+  <div class="editor-card panel panel-clip">
     <aside class="editor-card-index">
       <span class="kicker editor-card-edition">Editors &middot; {{ formatFolio(editors.length) }}</span>
       <ul class="editor-card-list" role="tablist">
-        <li v-for="(editor, i) in editors" :key="editor.slug">
+        <li v-for="(editor, i) in editors" :key="editor.slug" role="presentation">
           <button
             type="button"
             role="tab"
             class="editor-card-row"
             :class="{ 'is-active' : editor.slug === activeSlug }"
             :aria-selected="editor.slug === activeSlug"
-            @click="activeSlug = editor.slug"
+            @focus="activeSlug = editor.slug"
+            @mouseenter="activeSlug = editor.slug"
           >
             <span class="folio">№ {{ formatFolio(i + 1) }}</span>
             <span class="editor-card-row-mark" aria-hidden="true"><Tool :slug="editor.slug" bare /></span>

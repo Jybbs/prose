@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { data as tools } from '../../../data/tools.data'
+import { data as tools } from '../../../lib/shared/tools.data'
 import { lookup }        from '../../../lib/shared/lookup'
 
 const props = defineProps<{
@@ -14,7 +14,7 @@ const entry = computed(() => lookup(tools.entries, props.slug, 'Tool'))
 
 <template>
   <a
-    class="tool-mark"
+    class="tool-mark underline-draw"
     :class="{ 'tool-bare': bare }"
     :href="entry.href"
     :title="entry.name"

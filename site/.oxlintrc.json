@@ -1,13 +1,41 @@
 {
   "$schema" : "./node_modules/oxlint/configuration_schema.json",
-  "plugins" : ["typescript", "unicorn", "oxc", "vitest"],
+
+  "categories": {
+    "correctness" : "deny",
+    "pedantic"    : "deny",
+    "perf"        : "deny",
+    "suspicious"  : "deny"
+  },
+
+  "plugins" : ["import", "oxc", "promise", "typescript", "unicorn", "vitest"],
+
   "rules": {
-    "vitest/no-focused-tests"        : "error",
-    "vitest/no-disabled-tests"       : "error",
-    "vitest/no-identical-title"      : "error",
-    "vitest/valid-expect"            : "error",
-    "vitest/valid-describe-callback" : "error",
-    "vitest/no-standalone-expect"    : "off",
-    "vitest/expect-expect"           : "off"
-  }
+    "import/max-dependencies"                    : "off",
+    "import/no-unassigned-import"                : ["error", { "allow": ["**/*.css", "@fontsource-variable/*"] }],
+    "max-lines"                                  : "off",
+    "max-lines-per-function"                     : "off",
+    "no-await-in-loop"                           : "off",
+    "no-negated-condition"                       : "off",
+    "no-underscore-dangle"                       : ["error", { "allow": ["__raw"] }],
+    "oxc/no-map-spread"                          : "off",
+    "require-unicode-regexp"                     : "off",
+    "unicorn/consistent-function-scoping"        : "off",
+    "unicorn/no-array-callback-reference"        : "off",
+    "unicorn/no-array-sort"                      : "off",
+    "unicorn/no-negated-condition"               : "off",
+    "unicorn/prefer-math-trunc"                  : "off",
+    "unicorn/require-post-message-target-origin" : "off",
+    "vitest/expect-expect"                       : "off",
+    "vitest/no-conditional-in-test"              : "off",
+    "vitest/no-identical-title"                  : "error",
+    "vitest/no-standalone-expect"                : "off"
+  },
+
+  "overrides": [
+    {
+      "files" : ["**/tests/**"],
+      "rules" : { "no-throw-literal": "off" }
+    }
+  ]
 }

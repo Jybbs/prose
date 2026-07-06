@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { useResizeObserver }                     from '@vueuse/core'
-import { onMounted, ref, useTemplateRef, watch } from 'vue'
+import { ref, useTemplateRef, watch } from 'vue'
+
+import { useSettledMeasure } from '../../../lib/composables/use-settled-measure'
+import { middleEllipsis }    from '../../../lib/shared/middle-ellipsis'
 
 const props = withDefaults(
   defineProps<{
@@ -16,32 +18,17 @@ const display = ref(props.text)
 function fit() {
   const el = elRef.value
   if (!el) return
-  el.textContent = props.text
-  if (el.scrollWidth <= el.clientWidth + 1) { display.value = props.text; return }
-  if (props.text.length <= props.tail + 1)  { display.value = props.text; return }
-
-  let lo   = 0
-  let hi   = props.text.length - props.tail - 1
-  let best = -1
-  while (lo <= hi) {
-    const m        = Math.floor((lo + hi) / 2)
-    el.textContent = `${props.text.slice(0, m)}…${props.text.slice(-props.tail)}`
-    if (el.scrollWidth <= el.clientWidth + 1) { best = m; lo = m + 1 }
-    else                                       { hi = m - 1 }
+  const fits = (candidate: string): boolean => {
+    el.textContent = candidate
+    return el.scrollWidth <= el.clientWidth + 1
   }
-  display.value = best < 1
-    ? `…${props.text.slice(-props.tail)}`
-    : `${props.text.slice(0, best)}…${props.text.slice(-props.tail)}`
+  display.value = middleEllipsis(fits, props.tail, props.text)
+  // The probes above mutated the span directly, so restore the chosen text
+  // even when the ref value is unchanged and Vue skips the patch.
+  el.textContent = display.value
 }
 
-onMounted(async () => {
-  if (document.fonts?.ready) {
-    await document.fonts.ready
-  }
-  fit()
-})
-
-useResizeObserver(elRef, fit)
+useSettledMeasure(elRef, fit)
 watch(() => props.text, fit)
 </script>
 

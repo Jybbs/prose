@@ -31,14 +31,15 @@ const selected = computed(() =>
         <li
           v-for="o in options"
           :key="o.id"
-          role="option"
-          :aria-selected="o.id === model"
+          role="presentation"
         >
           <button
             v-close-popper
             type="button"
+            role="option"
             class="run-summary-opt"
             :class="{ 'is-active': o.id === model }"
+            :aria-selected="o.id === model"
             @click="model = o.id"
           >
             <span class="run-summary-opt-mono">{{ o.mono }}</span>

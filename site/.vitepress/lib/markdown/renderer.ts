@@ -1,8 +1,7 @@
-import type { DecorationItem }                          from '@shikijs/types'
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
-import { siteDir }       from '../shared/paths'
-import { encodeLintMeta } from './lint-decorations'
+import { siteDir }  from '../shared/paths'
+import { inertEnv } from './inert-env'
 
 let cachedRenderer: Promise<MarkdownRenderer> | null = null
 
@@ -16,14 +15,17 @@ type HtmlKey<K extends string> = `${K}Html`
 type Rendered<T, K extends string & keyof T> =
   Omit<T, K> & { [P in HtmlKey<K>]: T[K] extends readonly string[] ? string[] : string }
 
+export function renderBlockHtml(md: MarkdownRenderer, src: string): string {
+  return md.render(src, inertEnv())
+}
+
 export function renderFencedHtml(
-  md          : MarkdownRenderer,
-  code        : string,
-  language    : string,
-  decorations : readonly DecorationItem[] = []
+  md       : MarkdownRenderer,
+  code     : string,
+  language : string,
+  meta     : string = ''
 ): string {
-  const meta = decorations.length ? ` ${encodeLintMeta(decorations)}` : ''
-  return md.render(`\`\`\`${language}${meta}\n${code}\n\`\`\``)
+  return md.render(`\`\`\`${language}${meta ? ` ${meta}` : ''}\n${code}\n\`\`\``)
 }
 
 export function renderInlineField<T extends object, K extends string & keyof T>(
@@ -34,9 +36,13 @@ export function renderInlineField<T extends object, K extends string & keyof T>(
   return items.map(item => {
     const value     = item[field]
     const rendered  = Array.isArray(value)
-      ? (value as readonly string[]).map(s => md.renderInline(s))
-      : md.renderInline(value as string)
+      ? (value as readonly string[]).map(s => renderInlineHtml(md, s))
+      : renderInlineHtml(md, value as string)
     const { [field]: _, ...rest } = item
     return { ...rest, [`${field}Html`]: rendered } as Rendered<T, K>
   })
+}
+
+export function renderInlineHtml(md: MarkdownRenderer, src: string): string {
+  return md.renderInline(src, inertEnv())
 }

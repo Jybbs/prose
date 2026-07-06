@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { data as pipeline } from '../../../data/pipeline.data'
-import { data as rules }    from '../../../data/rules.data'
+import { data as pipeline } from '../../../lib/rules/pipeline.data'
+import { data as rules }    from '../../../lib/rules/rules.data'
 import { formatFolio }      from '../../../lib/shared/numerals'
 
 import MiddleEllipsis from '../base/MiddleEllipsis.vue'
 </script>
 
 <template>
-  <section class="pipeline-order" aria-label="Pipeline order">
+  <section class="pipeline-order panel" aria-label="Pipeline order">
     <header class="pipeline-order-masthead">
       <span class="kicker pipeline-order-edition">
         {{ pipeline.rules.length }} passes &middot; <code>src/rule.rs</code>

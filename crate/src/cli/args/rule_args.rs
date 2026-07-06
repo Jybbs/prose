@@ -1,5 +1,5 @@
-//! `check` / `format` shared args, the rule-filter, and the output
-//! format value-enum.
+//! `check` / `format` shared args, the rule-filter, the `rules`
+//! listing args, and the output-format value-enums.
 
 use std::path::PathBuf;
 
@@ -9,36 +9,13 @@ use crate::{pipeline::Pipeline, rule::RuleId};
 
 #[derive(Debug, Default, clap::Args)]
 pub(crate) struct CheckArgs {
-    /// Bypass the user-level cache for this invocation.
-    #[arg(long)]
-    pub(crate) no_cache: bool,
-
-    /// Output format for diagnostics.
-    #[arg(long, value_enum, default_value_t)]
-    pub(crate) output_format: OutputFormat,
+    #[command(flatten)]
+    pub(crate) common: RunArgs,
 
     /// Files or directories to check, or `-` to read source from
     /// stdin. Omit when using `--stdin`.
     #[arg(conflicts_with = "stdin", value_name = "PATH")]
     pub(crate) paths: Vec<PathBuf>,
-
-    /// Reduce the summary to a bare count line, dropping the section
-    /// anchors and color.
-    #[arg(short, long)]
-    pub(crate) quiet: bool,
-
-    #[command(flatten)]
-    pub(crate) rules: RuleFilter,
-
-    /// Read source from stdin instead of the filesystem. Equivalent
-    /// to passing `-` as the sole path.
-    #[arg(long)]
-    pub(crate) stdin: bool,
-
-    /// Treat stdin as this path, its extension selecting the source
-    /// type. A `.ipynb` name reads stdin as a notebook.
-    #[arg(long, value_name = "PATH")]
-    pub(crate) stdin_filename: Option<PathBuf>,
 
     /// Confirm each file's would-be rewrite re-parses, surfacing an
     /// unparseable rule output as a failure. Off by default.
@@ -48,40 +25,17 @@ pub(crate) struct CheckArgs {
 
 #[derive(Debug, Default, clap::Args)]
 pub(crate) struct FormatArgs {
+    #[command(flatten)]
+    pub(crate) common: RunArgs,
+
     /// Show a unified diff instead of writing changes.
     #[arg(long)]
     pub(crate) diff: bool,
-
-    /// Bypass the user-level cache for this invocation.
-    #[arg(long)]
-    pub(crate) no_cache: bool,
-
-    /// Output format for diagnostics.
-    #[arg(long, value_enum, default_value_t)]
-    pub(crate) output_format: OutputFormat,
 
     /// Files or directories to format, or `-` to read source from
     /// stdin. Omit when using `--stdin`.
     #[arg(conflicts_with = "stdin", value_name = "PATH")]
     pub(crate) paths: Vec<PathBuf>,
-
-    /// Reduce the summary to a bare count line, dropping the section
-    /// anchors and color.
-    #[arg(short, long)]
-    pub(crate) quiet: bool,
-
-    #[command(flatten)]
-    pub(crate) rules: RuleFilter,
-
-    /// Read source from stdin instead of the filesystem. Equivalent
-    /// to passing `-` as the sole path.
-    #[arg(long)]
-    pub(crate) stdin: bool,
-
-    /// Treat stdin as this path, its extension selecting the source
-    /// type. A `.ipynb` name reads stdin as a notebook.
-    #[arg(long, value_name = "PATH")]
-    pub(crate) stdin_filename: Option<PathBuf>,
 }
 
 #[derive(Clone, Copy, Debug, Default, clap::ValueEnum)]
@@ -111,6 +65,50 @@ pub(crate) struct RuleFilter {
     /// configured-enabled set.
     #[arg(long, value_delimiter = ',', value_name = "RULES", value_parser = rule_id_parser())]
     pub(crate) select: Vec<RuleId>,
+}
+
+#[derive(Debug, clap::Args)]
+pub(crate) struct RulesArgs {
+    /// Output format for the rule listing.
+    #[arg(long, value_enum, default_value_t)]
+    pub(crate) output_format: RulesFormat,
+}
+
+#[derive(Clone, Copy, Debug, Default, clap::ValueEnum)]
+pub(crate) enum RulesFormat {
+    Json,
+    #[default]
+    Table,
+}
+
+/// Run flags `check` and `format` share, flattened into both arg sets.
+#[derive(Debug, Default, clap::Args)]
+pub(crate) struct RunArgs {
+    /// Bypass the user-level cache for this invocation.
+    #[arg(long)]
+    pub(crate) no_cache: bool,
+
+    /// Output format for diagnostics.
+    #[arg(long, value_enum, default_value_t)]
+    pub(crate) output_format: OutputFormat,
+
+    /// Reduce the summary to a bare count line, dropping the section
+    /// anchors and color.
+    #[arg(short, long)]
+    pub(crate) quiet: bool,
+
+    #[command(flatten)]
+    pub(crate) rules: RuleFilter,
+
+    /// Read source from stdin instead of the filesystem. Equivalent
+    /// to passing `-` as the sole path.
+    #[arg(long)]
+    pub(crate) stdin: bool,
+
+    /// Treat stdin as this path, its extension selecting the source
+    /// type. A `.ipynb` name reads stdin as a notebook.
+    #[arg(long, value_name = "PATH")]
+    pub(crate) stdin_filename: Option<PathBuf>,
 }
 
 /// Returns a value parser that accepts any registered rule slug and

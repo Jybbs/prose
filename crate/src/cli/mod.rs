@@ -2,10 +2,11 @@
 //!
 //! Subcommands: `check` reports violations without modifying files,
 //! `format` rewrites in place (or prints a unified diff with
-//! `--diff`), `cache` manages the user-level content cache, and
-//! `completions` emits a shell-completion script. `check` and
-//! `format` accept positional paths, a `-` positional alias for
-//! stdin, and a `--stdin` flag, all mutually exclusive.
+//! `--diff`), `cache` manages the user-level content cache,
+//! `completions` emits a shell-completion script, and `rules` lists
+//! the registered rules in pipeline order. `check` and `format`
+//! accept positional paths, a `-` positional alias for stdin, and a
+//! `--stdin` flag, all mutually exclusive.
 //!
 //! Path mode parallelizes across files via `rayon`. Set
 //! `RAYON_NUM_THREADS=1` to force single-threaded execution when
@@ -13,11 +14,11 @@
 //!
 //! Layout: `args` houses every clap-derived type and parse-time
 //! validation. `cache` houses the `prose cache` subcommand handlers.
-//! `runner` houses the pipeline-orchestration helpers that translate
-//! parsed args into source loading, emitter dispatch, and diff
-//! rendering. `output` houses the human-readable run summary and its
-//! palette. `exit_status` carries the matrix every subcommand
-//! resolves into.
+//! `rules` houses the `prose rules` listing. `runner` houses the
+//! pipeline-orchestration helpers that translate parsed args into
+//! source loading, emitter dispatch, and diff rendering. `output`
+//! houses the human-readable run summary and its palette.
+//! `exit_status` carries the matrix every subcommand resolves into.
 
 use std::{
     io::{self, IsTerminal, Write},
@@ -33,6 +34,7 @@ pub(crate) mod args;
 mod cache;
 pub(crate) mod exit_status;
 mod output;
+mod rules;
 mod runner;
 
 use args::{
@@ -84,6 +86,7 @@ pub fn run() -> ExitCode {
         Command::Format(args) => {
             runner::format_with_io(args, verbose, &present, io::stdin(), stdout, stderr)
         }
+        Command::Rules(args) => rules::list(&args, stdout),
         Command::Server(_) => unreachable!("Server dispatched before the stdout lock"),
     };
     finalize(result).into()
@@ -91,9 +94,12 @@ pub fn run() -> ExitCode {
 
 fn command_quiet(command: &Command) -> bool {
     match command {
-        Command::Check(args) => args.quiet,
-        Command::Format(args) => args.quiet,
-        Command::Cache { .. } | Command::Completions { .. } | Command::Server(_) => false,
+        Command::Check(args) => args.common.quiet,
+        Command::Format(args) => args.common.quiet,
+        Command::Cache { .. }
+        | Command::Completions { .. }
+        | Command::Rules(_)
+        | Command::Server(_) => false,
     }
 }
 

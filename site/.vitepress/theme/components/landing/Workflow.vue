@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import LandingSection from './LandingSection.vue'
 
-import { data as landing } from '../../../data/landing.data'
+import { data as landing } from '../../../lib/landing/landing.data'
 import { toRoman }         from '../../../lib/shared/numerals'
 
 const chapters = computed(() =>
@@ -18,7 +18,7 @@ const chapters = computed(() =>
     kicker="The Workflow"
     variant="quickstart"
   >
-    <article class="landing-workflow">
+    <article class="landing-workflow panel">
       <section
         v-for="(chapter, idx) in chapters"
         :key="chapter.number"

@@ -2,8 +2,9 @@ import type MarkdownIt from 'markdown-it'
 
 import { replaceTextTokens } from './token-split'
 import { walkBodyInlines }   from './walk'
+import { wordBounded }       from './word-bounded'
 
-const PATTERN = /(?<![\w-])([Pp]rose)(?![\w-])/g
+const PATTERN = wordBounded('[Pp]rose')
 
 export function proseMarkPlugin(md: MarkdownIt): void {
   md.core.ruler.after('inline', 'prose-mark', state => {

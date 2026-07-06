@@ -1,0 +1,4 @@
+/* Pull floating-vue's theme sheet into a cascade layer. Unlayered rules
+   always outrank layered ones, so the site's own popper styles win over
+   the vendored tooltip and dropdown surfaces without matching specificity. */
+@import 'floating-vue/dist/style.css' layer(floating-vue);

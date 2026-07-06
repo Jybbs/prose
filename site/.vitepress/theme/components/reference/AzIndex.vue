@@ -1,35 +1,24 @@
 <script setup lang="ts">
-import { useTimeoutFn }  from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import { data as TOKENS }                                                    from '../../../data/tokens.data'
-import { DOMAIN_META, groupByDomain, sortedTokens, type Domain, type Token } from '../../../lib/tokens/sources'
+import { data as TOKENS } from '../../../lib/tokens/tokens.data'
+import * as sources       from '../../../lib/tokens/sources'
 
-const tabs = (Object.keys(DOMAIN_META) as Domain[]).sort()
+const tabs = (Object.keys(sources.DOMAIN_LABELS) as sources.Domain[]).sort()
 
-type View = 'all' | Domain
+type View = 'all' | sources.Domain
 
 const view  = ref<View>('all')
-const focus = ref<Token | null>(null)
-const popX  = ref(0)
-const popY  = ref(0)
+const focus = ref<sources.Token | null>(null)
 
-const { start: scheduleClear, stop: cancelClear } = useTimeoutFn(
-  () => { focus.value = null }, 220, { immediate: false }
-)
-
-const allGrouped    = computed(() => groupByDomain(sortedTokens(TOKENS, 'key')))
+const allGrouped    = computed(() => sources.groupByDomain(TOKENS))
 const visibleGroups = computed(() => {
   if (view.value === 'all') return allGrouped.value
   return allGrouped.value.filter(([d]) => d === view.value)
 })
 
-function onEnter(token: Token, event: MouseEvent | FocusEvent): void {
-  cancelClear()
-  focus.value = token
-  const rect  = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  popX.value  = rect.right + 14
-  popY.value  = rect.top
+function clearFocus(token: sources.Token): void {
+  if (focus.value?.key === token.key) focus.value = null
 }
 </script>
 
@@ -54,55 +43,48 @@ function onEnter(token: Token, event: MouseEvent | FocusEvent): void {
         :class="{ 'is-active': view === d }"
         :data-domain="d"
         @click="view = d"
-      >{{ DOMAIN_META[d].label }}</button>
+      >{{ sources.DOMAIN_LABELS[d] }}</button>
     </nav>
 
-    <div class="az-index-float-wrap">
-      <div class="az-index-float-keys-wrap" :data-dim="focus !== null">
-        <section
-          v-for="[domain, tokens] in visibleGroups"
-          :key="domain"
-          class="az-index-section"
-          :data-domain="domain"
-        >
-          <header class="az-index-section-head">
-            <span class="kicker az-index-section-folio">{{ DOMAIN_META[domain].label }}</span>
-            <span class="az-index-section-count">{{ tokens.length }} entries</span>
-          </header>
-          <ul class="az-index-keys">
-            <li v-for="token in tokens" :key="token.key" class="az-index-key" :data-domain="domain">
+    <div class="az-index-float-keys-wrap" :data-dim="focus !== null">
+      <section
+        v-for="[domain, tokens] in visibleGroups"
+        :key="domain"
+        class="az-index-section"
+        :data-domain="domain"
+      >
+        <header class="az-index-section-head">
+          <span class="kicker az-index-section-folio">{{ sources.DOMAIN_LABELS[domain] }}</span>
+          <span class="az-index-section-count">{{ tokens.length }} entries</span>
+        </header>
+        <ul class="az-index-keys">
+          <li v-for="token in tokens" :key="token.key" class="az-index-key" :data-domain="domain">
+            <VDropdown
+              theme="az-index"
+              @apply-show="focus = token"
+              @apply-hide="clearFocus(token)"
+            >
               <a
                 class="az-index-key-btn"
                 :href="token.href"
                 :aria-current="focus?.key === token.key ? 'true' : undefined"
-                @mouseenter="onEnter(token, $event)"
-                @mouseleave="scheduleClear"
-                @focus="onEnter(token, $event)"
-                @blur="scheduleClear"
               >{{ token.key }}</a>
-            </li>
-          </ul>
-        </section>
-      </div>
-
-      <div
-        v-if="focus"
-        class="az-index-float-pop"
-        :style="{ left: popX + 'px', top: popY + 'px' }"
-        @mouseenter="cancelClear"
-        @mouseleave="scheduleClear"
-      >
-        <aside class="az-index-detail" :data-domain="focus.domain">
-          <header class="az-index-detail-banner">
-            <span class="az-index-detail-kicker">{{ DOMAIN_META[focus.domain].label }}</span>
-          </header>
-          <div class="az-index-detail-body">
-            <code class="az-index-detail-key">{{ focus.key }}</code>
-            <p class="az-index-detail-blurb" v-html="focus.blurbHtml" />
-            <a class="az-index-detail-href" :href="focus.href">&rarr; {{ focus.href }}</a>
-          </div>
-        </aside>
-      </div>
+              <template #popper>
+                <aside class="az-index-detail" :data-domain="token.domain">
+                  <header class="az-index-detail-banner">
+                    <span class="az-index-detail-kicker">{{ sources.DOMAIN_LABELS[token.domain] }}</span>
+                  </header>
+                  <div class="az-index-detail-body">
+                    <code class="az-index-detail-key">{{ token.key }}</code>
+                    <p class="az-index-detail-blurb" v-html="token.blurbHtml" />
+                    <a class="az-index-detail-href" :href="token.href">&rarr; {{ token.href }}</a>
+                  </div>
+                </aside>
+              </template>
+            </VDropdown>
+          </li>
+        </ul>
+      </section>
     </div>
   </div>
 </template>

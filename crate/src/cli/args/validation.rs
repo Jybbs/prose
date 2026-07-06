@@ -12,9 +12,14 @@ use super::{Cli, Command};
 /// error when `-` appears alongside other paths.
 pub(crate) fn normalize_stdin_dash(cli: &mut Cli) -> Option<clap::Error> {
     let (paths, stdin) = match &mut cli.command {
-        Command::Cache { .. } | Command::Completions { .. } | Command::Server(_) => return None,
-        Command::Check(args) => (&mut args.paths, &mut args.stdin),
-        Command::Format(args) => (&mut args.paths, &mut args.stdin),
+        Command::Cache { .. }
+        | Command::Completions { .. }
+        | Command::Rules(_)
+        | Command::Server(_) => {
+            return None;
+        }
+        Command::Check(args) => (&mut args.paths, &mut args.common.stdin),
+        Command::Format(args) => (&mut args.paths, &mut args.common.stdin),
     };
     if !paths.iter().any(|p| p.as_os_str() == "-") {
         return None;
@@ -43,7 +48,7 @@ pub(crate) fn validate_diff_format_combination(cli: &Cli) -> Option<clap::Error>
     let Command::Format(args) = &cli.command else {
         return None;
     };
-    (args.diff && !args.output_format.is_text()).then(|| {
+    (args.diff && !args.common.output_format.is_text()).then(|| {
         Cli::command().error(
             ErrorKind::InvalidValue,
             "`--diff` requires `--output-format text`",

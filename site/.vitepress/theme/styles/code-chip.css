@@ -1,0 +1,8 @@
+.exit-code-entry-summary :where(code),
+.exit-code-entry-details :where(code),
+.glossary-tooltip-body code,
+.rule-card-caption :where(code) {
+  padding       : 2px 6px;
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
+}

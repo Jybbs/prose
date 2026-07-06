@@ -1,0 +1,18 @@
+.landing-definition-leader,
+.landing-cta-ledger-leader,
+.exit-code-index-leader {
+  align-self    : end;
+  border-bottom : 1px dotted color-mix(in srgb, var(--vp-c-text-3) 50%, transparent);
+  height        : 0;
+  margin-block  : 0;
+}
+
+.editor-card-row-leader,
+.pipeline-order-leader {
+  flex          : 1 1 auto;
+  min-width     : 8px;
+  align-self    : center;
+  height        : 1em;
+  border-bottom : 1px dotted var(--vp-c-divider);
+  transform     : translateY(-2px);
+}

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S bash -euo pipefail
 #MISE description="Sweep the docs site for dead code and unused dependencies with `knip`"
 #MISE dir="site"
 #MISE wait_for=["bake"]

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { data as rules } from '../../../data/rules.data'
+import { data as rules } from '../../../lib/rules/rules.data'
 import { lookup }        from '../../../lib/shared/lookup'
 
 const props = defineProps<{ slug : string }>()

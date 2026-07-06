@@ -1,0 +1,31 @@
+import { defineLoader } from 'vitepress'
+
+import { getRenderer, renderInlineField }             from '../markdown/renderer'
+import { RULE_CONFIG_PRESETS, type RuleConfigPreset } from './config-presets'
+
+interface RuleConfigRow {
+  default     : string
+  key         : string
+  meaningHtml : string
+  typeHtml    : string
+}
+
+type RuleConfigData = Record<RuleConfigPreset, readonly RuleConfigRow[]>
+
+declare const data: RuleConfigData
+export { data }
+
+export default defineLoader({
+  watch: [],
+  async load(): Promise<RuleConfigData> {
+    const md   = await getRenderer()
+    const out  = {} as Record<RuleConfigPreset, readonly RuleConfigRow[]>
+    type PresetEntry = [RuleConfigPreset, typeof RULE_CONFIG_PRESETS[RuleConfigPreset]]
+    for (const [preset, rows] of Object.entries(RULE_CONFIG_PRESETS) as PresetEntry[]) {
+      const withType    = renderInlineField(md, rows, 'type')
+      const withBoth    = renderInlineField(md, withType, 'meaning')
+      out[preset]       = withBoth
+    }
+    return out
+  }
+})

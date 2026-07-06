@@ -10,39 +10,6 @@
   --vp-font-family-base          : 'Lora Variable', Georgia, "Times New Roman", serif;
   --vp-font-family-mono          : 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --prose-c-apricot              : #e8876f;
-  --prose-c-casper               : #adbdcd;
-  --prose-c-celadon              : #8cc5a3;
-  --prose-c-chambray             : #7db3e0;
-  --prose-c-champagne            : #f0e9bc;
-  --prose-c-dexter               : #6db0b5;
-  --prose-c-eureka               : #e8c840;
-  --prose-c-grams-hair           : #f6f8fa;
-  --prose-c-heath                : #c08597;
-  --prose-c-oat                  : #cdbda5;
-  --prose-c-rainee               : #b8c8a8;
-  --prose-c-toronto              : #5069ad;
-  --prose-c-whiskey              : #d4a574;
-  --prose-c-woodsmoke            : #17171b;
-
-  --prose-c-accent               : var(--prose-c-chambray);
-  --prose-c-error                : var(--prose-c-apricot);
-  --prose-c-warning              : var(--prose-c-eureka);
-
-  --prose-c-family-alignment     : var(--prose-c-eureka);
-  --prose-c-family-cli           : var(--prose-c-ube-night);
-  --prose-c-family-docs          : var(--prose-c-celadon);
-  --prose-c-family-engine        : var(--prose-c-ube);
-  --prose-c-family-formatting    : var(--prose-c-heath);
-  --prose-c-family-layout        : var(--prose-c-toronto);
-  --prose-c-family-lint          : var(--prose-c-apricot);
-  --prose-c-family-ordering      : var(--prose-c-chambray);
-
-  --prose-c-section-integrations : var(--prose-c-rainee);
-  --prose-c-section-primitives   : var(--prose-c-dexter);
-  --prose-c-section-reference    : var(--prose-c-casper);
-  --prose-c-section-usage        : var(--prose-c-oat);
-
   --prose-radius                 : 8px;
   --prose-radius-sm              : 4px;
 
@@ -83,43 +50,38 @@
 
   --prose-pad-card-snug          : 10px 14px;
 
-  --prose-c-ube                  : #8a80cb;
-  --prose-c-ube-mid              : color-mix(in oklch, var(--prose-c-ube), white 18%);
-  --prose-c-ube-pale             : color-mix(in oklch, var(--prose-c-ube), white 36%);
-  --prose-c-ube-deep             : color-mix(in oklch, var(--prose-c-ube), black 22%);
-  --prose-c-ube-night            : color-mix(in oklch, var(--prose-c-ube), black 45%);
+  --prose-panel-wash             : color-mix(in srgb, var(--vp-c-bg-alt) 30%, var(--vp-c-bg));
 
-  --prose-link-hover             : var(--prose-c-ube-deep);
-
-  --vp-c-brand-1                 : var(--prose-c-ube);
-  --vp-c-brand-2                 : var(--prose-c-ube-mid);
-  --vp-c-brand-3                 : var(--prose-c-ube-pale);
-  --vp-c-brand-soft              : color-mix(in srgb, var(--prose-c-ube) 14%, transparent);
+  --vp-c-brand-1                 : var(--prose-palette-ube);
+  --vp-c-brand-2                 : var(--prose-palette-ube-mid);
+  --vp-c-brand-3                 : var(--prose-palette-ube-pale);
+  --vp-c-brand-soft              : color-mix(in srgb, var(--prose-palette-ube) 14%, transparent);
 
   --vp-c-tip-1                   : var(--vp-c-brand-1);
   --vp-c-tip-2                   : var(--vp-c-brand-3);
   --vp-c-tip-3                   : var(--vp-c-brand-3);
   --vp-c-tip-soft                : var(--vp-c-brand-soft);
 
-  --vp-button-brand-active-bg    : var(--prose-c-ube-deep);
+  --vp-button-brand-active-bg    : var(--prose-palette-ube-deep);
   --vp-button-brand-bg           : var(--vp-c-brand-1);
   --vp-button-brand-border       : transparent;
   --vp-button-brand-hover-bg     : var(--vp-c-brand-2);
   --vp-button-brand-hover-border : transparent;
 
-  --vp-code-block-bg             : var(--prose-c-grams-hair);
+  --vp-code-block-bg             : var(--prose-palette-grams-hair);
   --vp-code-font-size            : var(--prose-text-code);
   --vp-code-line-height          : 1.6;
 }
 
 .dark {
-  --vp-c-brand-1     : var(--prose-c-ube-pale);
-  --vp-c-brand-2     : var(--prose-c-ube-mid);
-  --vp-c-brand-3     : var(--prose-c-ube);
-  --vp-c-brand-soft  : color-mix(in srgb, var(--prose-c-ube-pale) 16%, transparent);
-  --vp-c-bg-soft     : var(--prose-c-woodsmoke);
-  --vp-code-block-bg : var(--prose-shiki-dark-bg);
-  --prose-link-hover : var(--prose-c-ube);
+  --vp-c-brand-1          : var(--prose-palette-ube-pale);
+  --vp-c-brand-2          : var(--prose-palette-ube-mid);
+  --vp-c-brand-3          : var(--prose-palette-ube);
+  --vp-c-brand-soft       : color-mix(in srgb, var(--prose-palette-ube-pale) 16%, transparent);
+  --vp-c-bg-soft          : var(--prose-palette-woodsmoke);
+  --vp-code-block-bg      : var(--prose-shiki-dark-bg);
+  --prose-role-emphasis   : var(--prose-palette-champagne);
+  --prose-role-link-hover : var(--prose-palette-ube);
 }
 
 .shiki,

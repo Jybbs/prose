@@ -2,7 +2,7 @@
 import { useRoute } from 'vitepress'
 import { computed } from 'vue'
 
-import { data as glossary } from '../../../data/glossary.data'
+import { data as glossary } from '../../../lib/glossary/glossary.data'
 import { lookup }           from '../../../lib/shared/lookup'
 
 const props = defineProps<{ slug: string }>()
@@ -38,7 +38,7 @@ const showLink = computed(() => {
       popperTriggers     : ['hover'],
       theme              : 'glossary'
     }"
-    class="glossary-anchor"
+    class="glossary-anchor underline-draw"
     tabindex="0"
   ><slot /></span>
 </template>

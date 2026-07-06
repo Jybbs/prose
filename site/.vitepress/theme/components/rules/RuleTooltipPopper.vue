@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import RuleCard from './RuleCard.vue'
 
-import type { RenderedRule } from '../../../data/rules.data'
+import type { RenderedRule } from '../../../lib/rules/rules.data'
 
 defineProps<{ rule: RenderedRule | null }>()
 </script>

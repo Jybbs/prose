@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["jinja2"]
+# dependencies = ["jinja2==3.1.6"]
 # ///
 """
 Render a Prose step summary and gate the workflow's exit code.
@@ -32,7 +32,7 @@ from tomllib import loads
 
 class Summary:
     """
-    Render a Prose CI, Draft, or Release step summary.
+    Render a Prose workflow step summary.
     """
 
     def __init__(self):
@@ -66,28 +66,25 @@ class Summary:
         with open(environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
             f.write(self.env.get_template(template).render(**context))
 
+    def _gate(self, template: str, signal: str, **context):
+        """
+        Render `template` and exit with the verdict of the `signal` env var.
+        """
+        failed = environ[signal] != "success"
+        self._emit(template, check_mark = "❌" if failed else "✅", **context)
+        raise SystemExit(failed)
+
     def ci(self):
         """
         Render the CI gate summary and exit with the matrix verdict.
         """
-        failed = environ["CHECK"] != "success"
-        self._emit(
-            "ci-summary.md.j2",
-            check_mark = "❌" if failed else "✅"
-        )
-        raise SystemExit(failed)
+        self._gate("ci-summary.md.j2", "CHECK")
 
     def deploy(self):
         """
         Render the Deploy gate summary and exit with the deploy verdict.
         """
-        failed = environ["DEPLOY"] != "success"
-        self._emit(
-            "deploy-summary.md.j2",
-            check_mark = "❌" if failed else "✅",
-            url        = environ.get("URL", "")
-        )
-        raise SystemExit(failed)
+        self._gate("deploy-summary.md.j2", "DEPLOY", url = environ.get("URL", ""))
 
     def draft(self):
         """

@@ -1,0 +1,9 @@
+component = 'base/Chip'
+
+[props]
+family  = 'alignment'
+title   = 'Alignment'
+variant = 'family-chip'
+
+[slots]
+default = 'Alignment'

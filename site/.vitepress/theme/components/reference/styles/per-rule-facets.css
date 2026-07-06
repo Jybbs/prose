@@ -1,0 +1,206 @@
+.per-rule-facets-section[data-family='generic'] {
+  --family-color : var(--prose-palette-casper);
+}
+
+.per-rule-facets {
+  display        : flex;
+  flex-direction : column;
+  gap            : 6px;
+  margin         : 1.5rem 0;
+}
+
+.per-rule-facets-head {
+  display     : flex;
+  align-items : center;
+  gap         : 9px;
+  width       : 100%;
+  padding     : 7px 0 7px 14px;
+  border      : none;
+  border-left : 2px solid var(--family-color);
+  background  : transparent;
+  text-align  : left;
+  cursor      : pointer;
+  transition  : opacity var(--prose-transition);
+}
+
+.per-rule-facets-head:hover {
+  opacity : 0.72;
+}
+
+.per-rule-facets-head:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 2px;
+}
+
+.per-rule-facets-chevron {
+  flex          : none;
+  width         : 0;
+  height        : 0;
+  border-top    : 4px solid transparent;
+  border-bottom : 4px solid transparent;
+  border-left   : 5px solid var(--family-color);
+  transition    : transform var(--prose-transition);
+}
+
+.per-rule-facets-head[aria-expanded='true'] .per-rule-facets-chevron {
+  transform : rotate(90deg);
+}
+
+.vp-doc .per-rule-facets-label {
+  margin : 0;
+  color  : color-mix(in srgb, var(--family-color) 76%, var(--vp-c-text-1));
+}
+
+.per-rule-facets-badge {
+  margin-right   : 3px;
+  font-size      : 0.85rem;
+  letter-spacing : 0;
+}
+
+.per-rule-facets-count {
+  color : var(--vp-c-text-3);
+}
+
+.per-rule-facets-count::before {
+  content : '·';
+  margin  : 0 0.5em;
+}
+
+.per-rule-facets-body {
+  padding : 10px 0 2px;
+}
+
+.per-rule-facets-rule {
+  padding-left : 14px;
+  border-left  : 2px solid var(--family-color);
+}
+
+.per-rule-facets-rule + .per-rule-facets-rule {
+  margin-top : 18px;
+}
+
+.vp-doc .per-rule-facets-rule-head {
+  display : flex;
+  margin  : 0 0 10px -14px;
+}
+
+.per-rule-facets-rule-head .v-popper--theme-rule-card {
+  display : flex;
+}
+
+.vp-doc .per-rule-facets-rule-head a.rule-link {
+  margin        : 0;
+  padding       : 3px 10px;
+  border-left   : none;
+  border-radius : 0 var(--prose-radius-sm) var(--prose-radius-sm) 0;
+  background    : var(--family-color);
+  box-shadow    : none;
+  font-size     : 0.85em;
+  color         : var(--vp-c-bg);
+}
+
+.vp-doc .per-rule-facets-rule-head a.rule-link:hover {
+  background : color-mix(in srgb, var(--family-color) 88%, var(--vp-c-text-1));
+}
+
+.per-rule-facets-scope {
+  display       : inline-block;
+  padding       : 3px 10px;
+  border-radius : 0 var(--prose-radius-sm) var(--prose-radius-sm) 0;
+  background    : var(--family-color);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : 0.85em;
+  color         : var(--vp-c-bg);
+}
+
+.per-rule-facets-list {
+  display        : flex;
+  flex-direction : column;
+  margin         : 0;
+  padding        : 0;
+}
+
+.per-rule-facets-entry {
+  padding : 10px 0;
+}
+
+.per-rule-facets-entry:first-child {
+  padding-top : 0;
+}
+
+.per-rule-facets-entry:last-child {
+  padding-bottom : 0;
+}
+
+.per-rule-facets-entry + .per-rule-facets-entry {
+  border-top : 1px solid var(--vp-c-divider);
+}
+
+.per-rule-facets-term {
+  display         : flex;
+  flex-wrap       : wrap;
+  align-items     : center;
+  justify-content : space-between;
+  gap             : 0.4rem 0.75rem;
+  margin          : 0;
+}
+
+.per-rule-facets-key {
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-md);
+  font-weight : 600;
+  color       : var(--vp-c-text-1);
+}
+
+.per-rule-facets-badges {
+  display     : inline-flex;
+  align-items : center;
+  gap         : 0.4rem;
+}
+
+.per-rule-facets-type {
+  padding       : 2px 0.5em;
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-c-bg-soft);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--prose-text-xs);
+  color         : var(--vp-c-text-2);
+}
+
+.per-rule-facets-default {
+  display       : inline-flex;
+  align-items   : baseline;
+  gap           : 0.4em;
+  padding       : 2px 0.5em;
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--family-color) 14%, transparent);
+  font-size     : var(--prose-text-xs);
+}
+
+.per-rule-facets-default-label {
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-label-size);
+  letter-spacing : var(--prose-label-tracking);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+}
+
+.per-rule-facets-default-value {
+  font-family : var(--vp-font-family-mono);
+  color       : var(--vp-c-text-1);
+}
+
+.vp-doc .per-rule-facets-meaning {
+  max-width    : 62ch;
+  margin       : 6px 0 0;
+  padding-left : 0.9rem;
+  font-size    : var(--prose-text-sm);
+  line-height  : 1.6;
+  color        : var(--vp-c-text-2);
+}
+
+@media (--prose-bp-mobile) {
+  .per-rule-facets-meaning {
+    padding-left : 0;
+  }
+}

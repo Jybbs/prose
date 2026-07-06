@@ -1,13 +1,11 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S bash -euo pipefail
 #MISE description="Re-resolve every lockfile against its manifest"
 #MISE sources=["site/package.json", "crate/Cargo.toml", "crate/pyproject.toml"]
 #MISE outputs=["site/bun.lock", "Cargo.lock", "crate/uv.lock"]
 # Re-resolves each ecosystem's lockfile and prints a `git diff --stat`
 # naming any lockfile that moved.
 
-set -euo pipefail
-
-(cd site && bun install)
+(cd site && bun install --ignore-scripts)
 cargo update --workspace
 uv lock --project crate
 git diff --stat site/bun.lock Cargo.lock crate/uv.lock

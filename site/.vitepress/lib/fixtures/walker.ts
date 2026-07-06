@@ -3,12 +3,12 @@ import path from 'node:path'
 
 import { parse } from 'smol-toml'
 
-import { LINT_FINDINGS_FILE } from './lint-findings'
+import { fixturesDirFrom } from '../shared/paths'
+import * as lintFindings   from './lint-findings'
 
-const FIXTURES_DIR  = 'tests/fixtures'
 const INPUT_FILE    = 'input.py'
 const META_FILE     = 'meta.toml'
-const SNAPSHOT_FILE = 'input.py.snap'
+const SNAPSHOT_FILE = snapshotPath(INPUT_FILE)
 
 interface FixtureDocs {
   canonical   ?: boolean
@@ -19,16 +19,26 @@ interface FixtureDocs {
 
 interface FixtureWalkEntry {
   caseName  : string
+  id        : string
   inputPath : string
   rule      : string
 }
 
+export function corpusLintFindings(crateDir: string): Map<string, lintFindings.LintFinding[]> {
+  const map = new Map<string, lintFindings.LintFinding[]>()
+  for (const { id, inputPath } of walkFixtures(crateDir)) {
+    const findings = lintFindings.readLintFindings(inputPath)
+    if (findings.length > 0) map.set(id, findings)
+  }
+  return map
+}
+
 export function fixtureWatchGlobs(crateDir: string): string[] {
-  const fixturesRoot = path.join(crateDir, FIXTURES_DIR)
+  const fixturesRoot = fixturesDirFrom(crateDir)
   return [
     `${fixturesRoot}/**/${INPUT_FILE}`,
     `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
-    `${fixturesRoot}/*/*/${LINT_FINDINGS_FILE}`,
+    `${fixturesRoot}/*/*/${lintFindings.LINT_FINDINGS_FILE}`,
     `${fixturesRoot}/*/*/${META_FILE}`
   ]
 }
@@ -39,6 +49,10 @@ export function readFixtureDocs(inputPath: string): FixtureDocs | undefined {
   return (parse(fs.readFileSync(metaPath, 'utf8')) as { docs?: FixtureDocs }).docs
 }
 
+export function snapshotPath(inputPath: string): string {
+  return `${inputPath}.snap`
+}
+
 export function subdirNames(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true })
     .filter(d => d.isDirectory())
@@ -47,13 +61,13 @@ export function subdirNames(dir: string): string[] {
 }
 
 export function* walkFixtures(crateDir: string): Generator<FixtureWalkEntry> {
-  const fixturesRoot = path.join(crateDir, FIXTURES_DIR)
+  const fixturesRoot = fixturesDirFrom(crateDir)
   for (const rule of subdirNames(fixturesRoot)) {
     const ruleDir = path.join(fixturesRoot, rule)
     for (const caseName of subdirNames(ruleDir)) {
       const inputPath = path.join(ruleDir, caseName, INPUT_FILE)
       if (!fs.existsSync(inputPath)) continue
-      yield { caseName, inputPath, rule }
+      yield { caseName, id: `${rule}/${caseName}`, inputPath, rule }
     }
   }
 }

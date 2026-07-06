@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import LandingSection      from './LandingSection.vue'
 
-import { data as tools } from '../../../data/tools.data'
+import { data as tools } from '../../../lib/shared/tools.data'
 import { externalAttrs } from '../../../lib/shared/links'
 import { lookup }        from '../../../lib/shared/lookup'
 
@@ -32,7 +32,7 @@ const entries = credits.map(({ role, slug }) => ({
     kicker="The Lineage"
     heading="Standing on <em>giants</em>."
   >
-    <div class="built-on-grid">
+    <div class="built-on-grid panel panel-clip">
       <a
         v-for="entry in entries"
         :key="entry.slug"

@@ -1,8 +1,11 @@
 import { SITE_HOSTNAME } from '../shared/constants'
 
 export function canonicalUrl(relativePath: string): string {
-  const slug = relativePath
+  return `${SITE_HOSTNAME}/${pagePath(relativePath)}`
+}
+
+export function pagePath(relativePath: string): string {
+  return relativePath
     .replace(/(^|\/)index\.md$/, '$1')
     .replace(/\.md$/, '')
-  return `${SITE_HOSTNAME}/${slug}`
 }

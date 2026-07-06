@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S bash -euo pipefail
 #MISE description="Detect unused dependencies in `Cargo.toml`"
-#MISE tools={"github:bnjbvr/cargo-machete" = "latest"}
+#MISE tools={"github:bnjbvr/cargo-machete" = "0.9.2"}
 
 cargo machete

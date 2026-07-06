@@ -1,8 +1,11 @@
 .vp-doc .custom-block {
-  position : relative;
-  margin   : 1.5rem 0;
-  padding  : 16px 18px 16px 22px;
-  overflow : hidden;
+  position      : relative;
+  margin        : 1.5rem 0;
+  padding       : 16px 18px 16px 22px;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg-soft);
+  overflow      : hidden;
 }
 
 .vp-doc .custom-block::before {
@@ -23,13 +26,13 @@
 }
 
 .vp-doc .custom-block.warning::before {
-  background: var(--prose-c-warning);
+  background: var(--prose-role-warning);
 }
 
 .vp-doc .custom-block.danger::before {
-  background: var(--prose-c-error);
+  background: var(--prose-role-error);
 }
 
 .vp-doc .custom-block.info::before {
-  background: var(--prose-c-accent);
+  background: var(--prose-role-accent);
 }

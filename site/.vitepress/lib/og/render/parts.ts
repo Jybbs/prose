@@ -2,10 +2,17 @@ import { createElement as h }       from 'satori/jsx'
 import type { JSXElement, JSXNode } from 'satori/jsx'
 import satori, { type Font }        from 'satori'
 
-import { BG, BODY, META_LABEL } from './colors'
+import { PALETTE } from '../../shared/palette'
 
 export const CARD_HEIGHT = 630
 export const CARD_WIDTH  = 1200
+
+// The exact family strings satori matches the loaded font faces against.
+export const FONT = {
+  body    : 'Lora',
+  display : 'Fraunces',
+  mono    : 'JetBrains Mono'
+} as const
 
 const BORDER     = 'rgba(255, 255, 255, 0.10)'
 const PANEL_FILL = 'rgba(255, 255, 255, 0.04)'
@@ -28,7 +35,7 @@ export function cardShell(...children: JSXNode[]): JSXNode {
   return el('div',
     {
       style: {
-        backgroundColor : BG,
+        backgroundColor : PALETTE.woodsmoke,
         display         : 'flex',
         flexDirection   : 'column',
         height          : '100%',
@@ -56,7 +63,7 @@ export function leftRail(color: string): JSXNode {
 export function monoLabel(color: string, size: number, track = '0.14em') {
   return {
     color         : color,
-    fontFamily    : 'JetBrains Mono',
+    fontFamily    : FONT.mono,
     fontSize      : size,
     fontWeight    : 500,
     letterSpacing : track
@@ -105,20 +112,20 @@ function metaRow(
     {
       style: { alignItems: 'baseline', display: 'flex', gap, justifyContent: 'space-between', marginBottom }
     },
-    el('div', { children: label, style: monoLabel(META_LABEL, 16) }),
+    el('div', { children: label, style: monoLabel(PALETTE['ube-mid'], 16) }),
     el('div', {
       children : value,
-      style    : { color: BODY, fontVariantNumeric: 'tabular-nums', ...valueStyle }
+      style    : { color: PALETTE.champagne, fontVariantNumeric: 'tabular-nums', ...valueStyle }
     })
   )
 }
 
 export function panelRow(label: string, value: string): JSXNode {
   return metaRow(label.toUpperCase(), value,
-    { fontFamily: 'JetBrains Mono', fontSize: 19, fontWeight: 500 }, 24, 8)
+    { fontFamily: FONT.mono, fontSize: 19, fontWeight: 500 }, 24, 8)
 }
 
 export function versionCallout(version: string): JSXNode {
   return metaRow('VERSION', version,
-    { fontFamily: 'Fraunces', fontSize: 72, fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1 }, 18)
+    { fontFamily: FONT.display, fontSize: 72, fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1 }, 18)
 }

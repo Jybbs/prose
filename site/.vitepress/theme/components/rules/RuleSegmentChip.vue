@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RenderedRule } from '../../../data/rules.data'
+import type { RenderedRule } from '../../../lib/rules/rules.data'
 
 defineProps<{
   segment     : { family: string | null; rule: RenderedRule | null; slug: string }

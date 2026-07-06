@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Fixture from '../fixtures/Fixture.vue'
 
-import { data as ruleFixtures } from '../../../data/rule-fixtures.data'
+import { data as ruleFixtures } from '../../../lib/rules/rule-fixtures.data'
 import { lookup }               from '../../../lib/shared/lookup'
 
 const props = defineProps<{ rule: string }>()

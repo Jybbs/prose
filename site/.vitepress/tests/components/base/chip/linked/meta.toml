@@ -1,0 +1,8 @@
+component = 'base/Chip'
+
+[props]
+href    = 'https://example.org/align-equals'
+variant = 'rule-chip'
+
+[slots]
+default = 'align-equals'

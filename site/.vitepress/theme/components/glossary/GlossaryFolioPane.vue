@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useGlossaryFolio }   from './use-glossary-folio'
+import { useGlossaryFolio }   from '../../../lib/composables/use-glossary-folio'
 import { formatFolio }        from '../../../lib/shared/numerals'
 import { GLOSSARY_FAMILY_META } from '../../../lib/shared/registries'
 
@@ -8,7 +8,7 @@ const { active, activeIndex, filtered, step } = useGlossaryFolio()
 
 <template>
   <div class="glossary-folio-stage" :data-family="active?.primaryFamily">
-    <article v-if="active" class="glossary-folio-pane">
+    <article v-if="active" class="glossary-folio-pane panel">
       <header class="glossary-folio-head">
         <p class="glossary-folio-folio">
           <span

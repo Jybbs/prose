@@ -9,36 +9,18 @@ import type { OgPage }      from '../pages'
 
 const OG_DIR = import.meta.dirname
 
-// render sources folded into every cache key, so a change here re-renders all cards
-const TEMPLATE_FILES: readonly string[] = [
-  'assets.ts', 'colors.ts', 'landing.ts', 'parts.ts', 'pool.ts', 'resvg-worker.mjs',
-  'template.ts', '../../shared/registries.ts', '../../../theme/styles/tokens.css'
-]
+const SHARED_SOURCES: readonly string[] = ['../../shared/palette.ts', '../../shared/registries.ts']
+
+const TEMPLATE_DIGEST = hash(
+  [...fs.readdirSync(OG_DIR).filter(file => !file.startsWith('.')).sort(), ...SHARED_SOURCES]
+    .map(file => fs.readFileSync(path.join(OG_DIR, file), 'utf8'))
+)
 
 type CardInput = OgPage | 'landing'
 
 export function cardKeyer(version: string, brand: BrandAssets): (card: CardInput) => string {
-  const base = { brand: hash(brand), template: templateDigest(), version }
+  const base = { brand: hash(brand), template: TEMPLATE_DIGEST, version }
   return card => hash({ base, card })
-}
-
-export async function readCard(cacheDir: string, key: string): Promise<Buffer | null> {
-  try {
-    return (await cacache.get(cacheDir, key)).data
-  }
-  catch {
-    // a miss or a failed integrity check both fall through to a fresh render
-    return null
-  }
-}
-
-export async function writeCard(cacheDir: string, key: string, png: Buffer): Promise<void> {
-  try {
-    await cacache.put(cacheDir, key, png)
-  }
-  catch {
-    // a failed write still leaves the rendered card in dist
-  }
 }
 
 export async function pruneCards(cacheDir: string, live: Iterable<string>): Promise<void> {
@@ -51,10 +33,25 @@ export async function pruneCards(cacheDir: string, live: Iterable<string>): Prom
     await cacache.verify(cacheDir)
   }
   catch {
-    // prune is best-effort housekeeping
+    // Prune is best-effort housekeeping
   }
 }
 
-function templateDigest(): string {
-  return hash(TEMPLATE_FILES.map(file => fs.readFileSync(path.join(OG_DIR, file))))
+export async function readCard(cacheDir: string, key: string): Promise<Buffer | null> {
+  try {
+    return (await cacache.get(cacheDir, key)).data
+  }
+  catch {
+    // A miss or a failed integrity check both fall through to a fresh render
+    return null
+  }
+}
+
+export async function writeCard(cacheDir: string, key: string, png: Buffer): Promise<void> {
+  try {
+    await cacache.put(cacheDir, key, png)
+  }
+  catch {
+    // A failed write still leaves the rendered card in dist
+  }
 }

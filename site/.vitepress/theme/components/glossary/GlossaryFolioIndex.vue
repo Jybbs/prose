@@ -3,7 +3,7 @@ import { useData }  from 'vitepress'
 import { computed } from 'vue'
 
 import { railPaint }        from '../../../lib/shared/family-rail'
-import { useGlossaryFolio } from './use-glossary-folio'
+import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
 
 const props = defineProps<{ forceRender?: boolean }>()
 
@@ -19,7 +19,7 @@ const { filtered, grouped, ordered, query, selected } = useGlossaryFolio()
 
 <template>
   <aside v-if="visible" class="glossary-folio-index" aria-label="Glossary index">
-    <div class="glossary-folio-search">
+    <div class="glossary-folio-search panel">
       <span class="vp-icon DocSearch-Search-Icon glossary-folio-search-glyph" aria-hidden="true"></span>
       <input
         v-model="query"
