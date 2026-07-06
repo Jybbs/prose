@@ -75,44 +75,13 @@ A list entry names a root package, so `myapp` matches `import myapp.db` and `fro
 
 ## Per-Rule Facets
 
-The `[rules]` table holds one entry per rule you change. A bare bool is the shorthand for `enabled` (*`alphabetize = false`*), an inline table sets a rule's facets (*`align-equals = { max-shift = 4 }`*), and a rule you do not name stays enabled at its defaults. The table below lists the facets each rule accepts, with the *Where* column resolving which rules share a facet. Generic facets *(`enabled`, `max-shift`)* apply to every rule in their column's named category. Rule-specific facets read inputs scoped to the named rule, even when two rules happen to spell their facet the same way *(the two `allow` rows are distinct, scoped to different rules and reading different inputs)*.
+The `[rules]` table holds one entry per rule you change. A bare bool is the shorthand for `enabled` (*`alphabetize = false`*), an inline table sets a rule's facets (*`align-equals = { max-shift = 4 }`*), and a rule you do not name stays enabled at its defaults. The facets below group by rule family and nest under the rule that reads each one, so the two `allow` facets stay distinct because they belong to different rules and read different inputs. The Generic group gathers the facets that cut across families, wherein `enabled` reaches every rule and `max-shift` every alignment rule.
 
-| Key | Type | Where | Default | Meaning |
-|---|---|---|---|---|
-| `enabled` | bool | every rule | `true` | Toggle the rule on or off |
-| `max-shift` | positive int \| `0` \| `false` | alignment rules | `16` | Width-spread budget for an alignment run. A positive `N` caps the spread, `0` forbids any shift so every row sits flush, and `false` lifts the cap so a contiguous run folds into one column. To leave one row out of an otherwise-aligned group, hold it with `# prose: skip` |
-| `group-methods` | bool | [[alphabetize]] | `true` | Group methods into dunders, properties, privates, and publics before sorting within each group. `false` sorts methods by plain name alone |
-| `sort-definitions` | bool | [[alphabetize]] | `true` | Reorder class and function definitions alphabetically, holding each behind any sibling it names at evaluation time. `false` freezes definitions in source order while other surfaces still sort |
-| `sort-docstring-entries` | bool | [[alphabetize]] | `true` | Reorder `name: description` entries within Title-case-headed docstring sections, parameter entries mirroring the signature as the rule leaves it and stragglers alphabetizing below. Set `false` to keep narrative-curated entry order while still sorting every other surface |
-| `sort-dunder-lists` | bool | [[alphabetize]] | `true` | Reorder the string items inside `__all__` and `__slots__`. `false` keeps a hand-curated public-API order |
-| `collapse` | bool | [[collection-layout]] | `true` | Join a fitting multi-line literal, subscript, or dict key back to one line. `false` freezes those shapes where they sit |
-| `explode` | bool | [[collection-layout]] | `true` | Expand an overflowing or over-count collection to one entry per line. `false` suppresses every expansion and leaves the count cap inert |
-| `max-atomics` | positive int \| `false` | [[collection-layout]] | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. `false` removes the cap and packs by width alone |
-| `max-dict-entries` | positive int \| `false` | [[collection-layout]] | `3` | Expand a dict once its entry count exceeds the cap, whatever its width. `false` disables the count trigger |
-| `wrap-dict-entries` | bool | [[collection-layout]] | `true` | Break an over-wide `key: value` at its `:` and hang the value beneath. `false` leaves the oversized entry on one line |
-| `max-args` | positive int \| `false` | [[call-layout]] | `3` | Explode a call to one keyword argument per line once its argument count exceeds the cap. `false` disables the count trigger and leaves every call inline |
-| `max-params` | positive int \| `false` | [[signature-layout]] | `4` | Expand a signature to one parameter per line once its parameter count exceeds the cap. `false` disables the count trigger and leaves only the `code-line-length` budget |
-| `allow` | list of module names | [[bare-imports]] | `[]` | Modules whose bare-import form is preserved whatever their attribute count |
-| `exempt-aliased` | bool | [[bare-imports]] | `true` | Exempt every aliased bare import (*`import x as y`*) from the rule |
-| `max-attributes` | positive int | [[bare-imports]] | `4` | Distinct-attribute count at or below which an unaliased bare import is flagged |
-| `allow` | list of names | [[reassigned-constants]] | `[]` | Module-level names exempted from the lint |
-| `allow-pattern` | regex | [[single-use-variables]] | `"^_"` | Binding names exempted from the lint |
+<PerRuleFacets />
 
 ## Rule Categories
 
-Rules sit in configuration buckets, with each bucket carrying a distinct facet shape.
-
-### Alignment Rules
-
-The rules that line columns vertically share one structural question, which is how far a row may shift to reach a shared column. `max-shift` answers it as a width-spread budget, wherein an alignment rule walks each run in source order and grows a group while its spread stays within the cap, breaking a fresh group at the first row that would exceed it. A positive `N` sets the budget, `0` forbids any shift so every row sits flush, and `false` lifts the cap so a contiguous run folds into one column. [[align-colons]] aligns `:` across its Python contexts, [[align-equals]] does the same for `=` in keyword arguments and assignments, [[align-comparisons]] lines up comparison operators across consecutive lines, [[align-imports]] lines up `as` aliases in `from … import` blocks, and [[align-match-case]] aligns the post-pattern `:` of match arms.
-
-### Toggle-Only Rules
-
-Some rules answer a single yes-or-no question with no parameters worth tuning, so each takes only a bare bool toggle. Reach for `<rule> = false` to silence a rule whose default doesn't fit the project: [[blank-lines]], [[group-imports]], [[band-constants]], [[docstring-wrap]], [[legacy-union-syntax]], [[docstring-frame]], [[docstring-expand]], [[step-narration]], [[strip-align-padding]], [[strip-trailing-commas]], and [[unused-future-annotations]].
-
-### Rule-Specific Facets
-
-Other rules read a project-specific input that *Prose* cannot guess from source alone, so each carries the facet shaped for its question. [[alphabetize]] takes `group-methods`, `sort-definitions`, `sort-docstring-entries`, and `sort-dunder-lists` to switch its sort passes on and off independently, [[bare-imports]] takes an `allow` list of modules whose bare-import form is preserved alongside an `exempt-aliased` toggle for the alias exemption and a `max-attributes` cap on the distinct-attribute count that draws the lint, [[collection-layout]] takes the `collapse`, `explode`, and `wrap-dict-entries` facets to switch its shape moves on and off independently, plus `max-atomics` to cap the inline-collection budget and `max-dict-entries` to expand a dict past an entry count, [[call-layout]] takes `max-args` to explode a call past an argument count, [[signature-layout]] takes `max-params` to expand a signature past a parameter count, [[reassigned-constants]] takes an `allow` list of exempt module-level names, and [[single-use-variables]] takes an `allow-pattern` regex for binding names that opt out of the lint.
+Every rule is either auto-fix or lint, and that split decides what a diagnostic does rather than how a rule is configured. An auto-fix rule rewrites the source under `prose format` and reports the pending edit under `prose check`, whereas a lint rule only reports and leaves the change to a human, because its fix turns on a judgment *Prose* declines to make. The distinction sets the `prose check` exit code, wherein a pending auto-fix returns `1` and a lint violation returns `2`, so a CI gate tells the two apart. Configuration stays identical across the split, leaving `<rule> = false` to silence either kind and the facets above to tune either kind.
 
 ## Key Naming
 
