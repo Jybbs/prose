@@ -30,11 +30,11 @@ const items = computed((): Item[] => [
 <template>
   <footer class="build-metadata">
     <span v-for="item in items" :key="item.label" class="build-metadata-item">
-      <span class="build-metadata-label">{{ item.label }}</span>
       <span class="build-metadata-value">
         <code v-if="item.code">{{ item.value }}</code>
         <template v-else>{{ item.value }}</template>
       </span>
+      <span class="build-metadata-label">{{ item.label }}</span>
     </span>
   </footer>
 </template>
