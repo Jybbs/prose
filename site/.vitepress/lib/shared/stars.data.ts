@@ -1,11 +1,14 @@
 import { defineLoader } from 'vitepress'
 
-import { REPO_SLUG }    from './constants'
-import { withFallback } from './with-fallback'
+import { conditionalFetch } from './conditional-fetch'
+import { REPO_SLUG }        from './constants'
+import { fetchCacheDir }    from './paths'
 
 interface StarsData {
   stars: string
 }
+
+const STAR_FMT = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
 
 declare const data: StarsData
 export { data }
@@ -13,18 +16,14 @@ export { data }
 export default defineLoader({
   watch: [],
   async load(): Promise<StarsData> {
-    if (process.env.PROSE_OFFLINE_DOCS === '1') return { stars: '0' }
-    const stars = await withFallback('stars:fetch', async () => {
-      const response = await fetch(`https://api.github.com/repos/${REPO_SLUG}`, {
-        headers: { 'User-Agent': 'prose-docs-build' }
-      })
-      if (!response.ok) throw new Error(`GitHub API returned ${response.status}`)
-      const body  = await response.json() as { stargazers_count?: number }
-      const count = body.stargazers_count ?? 0
-      return count < 1000
-        ? String(count)
-        : `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k`
-    }, '0')
-    return { stars }
+    const count = await conditionalFetch({
+      dir      : fetchCacheDir(import.meta.url),
+      fallback : 0,
+      headers  : { 'User-Agent': 'prose-docs-build' },
+      key      : 'stars',
+      parse    : payload => (payload as { stargazers_count?: number }).stargazers_count ?? 0,
+      url      : `https://api.github.com/repos/${REPO_SLUG}`
+    })
+    return { stars: STAR_FMT.format(count).toLowerCase() }
   }
 })

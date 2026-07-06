@@ -1,3 +1,5 @@
+import { errorMessage } from './error-message'
+
 export function withFallback<T>(
   label    : string,
   fn       : () => T | Promise<T>,
@@ -24,6 +26,5 @@ export function withFallbackSync<T>(
 }
 
 function warnFallback(label: string, err: unknown): void {
-  const message = Error.isError(err) ? err.message : err
-  console.warn(`[data:${label}] external call failed, using fallback:`, message)
+  console.warn(`[data:${label}] external call failed, using fallback:`, errorMessage(err))
 }

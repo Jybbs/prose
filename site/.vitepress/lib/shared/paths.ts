@@ -12,12 +12,20 @@ export function repoRoot(metaUrl: string): string {
   return dir
 }
 
+export function cacheDirFrom(root: string, name: string): string {
+  return path.join(root, '.cache', name)
+}
+
 export function crateDir(metaUrl: string): string {
   return crateDirFrom(repoRoot(metaUrl))
 }
 
 export function crateDirFrom(root: string): string {
   return path.join(root, 'crate')
+}
+
+export function fetchCacheDir(metaUrl: string): string {
+  return cacheDirFrom(repoRoot(metaUrl), 'fetch')
 }
 
 export function fixturesDir(metaUrl: string): string {
@@ -48,4 +56,8 @@ export function rulesDir(metaUrl: string): string {
 
 export function siteDir(metaUrl: string): string {
   return path.join(repoRoot(metaUrl), 'site')
+}
+
+export function vitepressCacheDir(metaUrl: string): string {
+  return cacheDirFrom(repoRoot(metaUrl), 'vitepress')
 }

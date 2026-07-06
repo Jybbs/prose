@@ -1,6 +1,7 @@
 import { defineLoader } from 'vitepress'
 
-import { withFallback } from '../shared/with-fallback'
+import { conditionalFetch } from '../shared/conditional-fetch'
+import { fetchCacheDir }    from '../shared/paths'
 
 export interface PyPIRelease {
   date      : string
@@ -53,21 +54,27 @@ function compareDesc(a: PyPIRelease, b: PyPIRelease): number {
       || b.version.localeCompare(a.version, undefined, { numeric: true })
 }
 
+function toReleases(payload: unknown): readonly PyPIRelease[] {
+  const entries = Object.entries((payload as PyPIPayload).releases)
+    .filter(([, files]) => files && files.length > 0)
+    .map(([version, files]) => {
+      const live = files.find(f => !f.yanked) ?? files[0]
+      return render(version, live.upload_time.slice(0, 10))
+    })
+    .toSorted(compareDesc)
+  return entries.length > 0 ? entries : FALLBACK
+}
+
 export default defineLoader({
   watch: [],
   load(): Promise<readonly PyPIRelease[]> {
-    return withFallback('pypi-releases:fetch', async () => {
-      const response = await fetch(ENDPOINT, { headers: { Accept: 'application/json' } })
-      if (!response.ok) throw new Error(`PyPI returned ${response.status}`)
-      const payload = await response.json() as PyPIPayload
-      const entries = Object.entries(payload.releases)
-        .filter(([, files]) => files && files.length > 0)
-        .map(([version, files]) => {
-          const live = files.find(f => !f.yanked) ?? files[0]
-          return render(version, live.upload_time.slice(0, 10))
-        })
-        .toSorted(compareDesc)
-      return entries.length > 0 ? entries : FALLBACK
-    }, FALLBACK)
+    return conditionalFetch({
+      dir      : fetchCacheDir(import.meta.url),
+      fallback : FALLBACK,
+      headers  : { Accept: 'application/json' },
+      key      : 'pypi-releases',
+      parse    : toReleases,
+      url      : ENDPOINT
+    })
   }
 })

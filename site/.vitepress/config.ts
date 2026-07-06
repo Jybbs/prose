@@ -51,7 +51,7 @@ const themeColor           = PALETTE.ube
 assertCorpusIntegrity(ruleDiscovery, discoveredPrimitives)
 
 export default defineConfig({
-  cacheDir      : `${repoDir}/.cache/vitepress`,
+  cacheDir      : paths.vitepressCacheDir(import.meta.url),
   cleanUrls     : true,
   description   : constants.SITE_TAGLINE,
   head: [

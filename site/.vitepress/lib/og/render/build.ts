@@ -2,7 +2,7 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import { ogImagePath }                  from '../../config/og-url'
-import { crateDirFrom }                 from '../../shared/paths'
+import { cacheDirFrom, crateDirFrom }   from '../../shared/paths'
 import { readCargoVersion }             from '../../shared/version'
 import { loadBrandAssets }              from './assets'
 import * as cache                       from './cache'
@@ -17,7 +17,7 @@ export async function buildOgCards(
   const repo     = path.dirname(srcDir)
   const brand    = loadBrandAssets(srcDir)
   const version  = readCargoVersion(crateDirFrom(repo))
-  const cacheDir = path.join(repo, '.cache', 'og')
+  const cacheDir = cacheDirFrom(repo, 'og')
   const keyOf    = cache.cardKeyer(version, brand)
 
   const tasks: readonly RenderTask[] = [
