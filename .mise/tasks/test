@@ -4,5 +4,5 @@
 
 source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
 rust() { cargo test --locked; }
-site() { (cd site && bunx vitest run "$@"); }
+site() { mise run build bin && (cd site && bunx vitest run "$@"); }
 scope "$@"
