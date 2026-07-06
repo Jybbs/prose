@@ -5,7 +5,7 @@ import DefaultTheme       from 'vitepress/theme'
 import FloatingVue            from 'floating-vue'
 import { enhanceAppWithTabs } from 'vitepress-plugin-tabs/client'
 
-import 'floating-vue/dist/style.css'
+import './styles/popper-vendor.css'
 import 'shiki-magic-move/style.css'
 import 'virtual:group-icons.css'
 
