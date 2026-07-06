@@ -1,5 +1,5 @@
 # Internal-link deploy gate over the built site. External URLs are excluded so
-# network flakiness cannot fail a deploy; they warrant a separate scheduled
-# sweep rather than a release-blocking check.
+# network flakiness cannot fail a deploy. The scheduled `sweep` task covers
+# them without blocking a release.
 fallback_extensions = ["html"]
 exclude             = ['^https?://', '^mailto:']

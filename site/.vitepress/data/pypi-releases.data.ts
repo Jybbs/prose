@@ -55,7 +55,7 @@ function compareDesc(a: PyPIRelease, b: PyPIRelease): number {
 
 export default defineLoader({
   watch: [],
-  async load(): Promise<readonly PyPIRelease[]> {
+  load(): Promise<readonly PyPIRelease[]> {
     return withFallback('pypi-releases:fetch', async () => {
       const response = await fetch(ENDPOINT, { headers: { Accept: 'application/json' } })
       if (!response.ok) throw new Error(`PyPI returned ${response.status}`)

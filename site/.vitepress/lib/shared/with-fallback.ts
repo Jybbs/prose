@@ -1,4 +1,4 @@
-export async function withFallback<T>(
+export function withFallback<T>(
   label    : string,
   fn       : () => T | Promise<T>,
   fallback : T

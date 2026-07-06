@@ -51,8 +51,8 @@ function updateWrapMarkers() {
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const next = items[i + 1]
-      if (next && next.offsetTop > item.offsetTop) item.setAttribute('data-suppress-dot', '')
-      else                                         item.removeAttribute('data-suppress-dot')
+      if (next && next.offsetTop > item.offsetTop) item.dataset.suppressDot = ''
+      else                                         delete item.dataset.suppressDot
     }
   }
 }

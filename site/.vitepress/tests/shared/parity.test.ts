@@ -1,7 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import postcss from 'postcss'
+import { parse } from 'postcss'
 
 import { glossary }          from '../../lib/glossary/entries'
 import { discoverRuleSlugs } from '../../lib/rules/discovery'
@@ -13,7 +13,7 @@ const styles = (name: string): string =>
 
 const accentSlugs = (): string[] => {
   const slugs = new Set<string>()
-  postcss.parse(styles('accents.css')).walkRules(rule => {
+  parse(styles('accents.css')).walkRules(rule => {
     for (const m of rule.selector.matchAll(/\[data-family="([a-z]+)"\]/g)) slugs.add(m[1])
   })
   return [...slugs].sort()

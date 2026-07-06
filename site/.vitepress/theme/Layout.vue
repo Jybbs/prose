@@ -14,8 +14,8 @@ provideCurrentRule()
 const family = useCurrentFamily()
 watchEffect(() => {
   if (typeof document === 'undefined') return
-  if (family.value) document.body.setAttribute('data-family', family.value)
-  else              document.body.removeAttribute('data-family')
+  if (family.value) document.body.dataset.family = family.value
+  else              delete document.body.dataset.family
 })
 </script>
 

@@ -17,6 +17,10 @@ describe('parsePipelineJson', () => {
   ])('rejects %s', (_name, payload, message) => {
     expect(() => parsePipelineJson(payload)).toThrow(message)
   })
+
+  it('throws a TypeError when position is not a number', () => {
+    expect(() => parsePipelineJson('[{"imperative":"x","slug":"a"}]')).toThrow(TypeError)
+  })
 })
 
 describe('readPipeline', () => {

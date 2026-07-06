@@ -124,7 +124,7 @@ export default defineConfig({
       pageData.frontmatter.name ??= toTitleCase(path.basename(pageData.relativePath, '.md'), '-')
     }
     if (pageData.relativePath.startsWith('primitives/') && !pageData.relativePath.endsWith('index.md')) {
-      const slug = pageData.relativePath.replace(/^primitives\/|\.md$/g, '')
+      const slug = pageData.relativePath.replaceAll(/^primitives\/|\.md$/g, '')
       pageData.frontmatter.name ??= primitiveIndex.get(slug)?.name
     }
   },

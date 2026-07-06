@@ -17,7 +17,7 @@ export function parsePipelineJson(text: string): readonly PipelineEntry[] {
   return parsed.map((entry, i) => {
     const { imperative, position, slug } = entry as Partial<PipelineEntry>
     if (typeof position !== 'number') {
-      throw new Error(`pipeline entry ${i} has invalid or missing position`)
+      throw new TypeError(`pipeline entry ${i} has invalid or missing position`)
     }
     return {
       imperative : requireString(imperative, `pipeline entry ${i} has invalid or missing imperative`),

@@ -7,7 +7,7 @@ const page    = fs.readFileSync(
   path.join(import.meta.dirname, '../../../reference/suppression-directives.md'), 'utf8'
 )
 const anchors = [...page.matchAll(/^## (.+)$/gm)].map(([, heading]) =>
-  heading.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''))
+  heading.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-').replaceAll(/^-|-$/g, ''))
 
 describe('directiveHref', () => {
   it.each(SCOPE_ORDER)('anchors the %s scope to a heading on the reference page', scope => {

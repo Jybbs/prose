@@ -178,7 +178,7 @@ ANSI color draws on the project palette, with **Ube** on the anchor, **Celadon**
 | `--color` | `always` \| `auto` \| `never` | `auto` | Colored output preference, applied to every subcommand |
 | `--verbose` | bool | off | Print a one-line cache hit/miss summary to stderr at the end of each `check` or `format` run |
 
-`--color auto` honors the [**`NO_COLOR`**](https://no-color.org/) environment variable and the terminal's TTY status. `--color always` forces ANSI sequences even when stdout is not a TTY *(useful for piping to `less -R`)*. `--color never` strips ANSI sequences unconditionally.
+`--color auto` honors the [**`NO_COLOR`**](https://github.com/jcs/no_color) environment variable and the terminal's TTY status. `--color always` forces ANSI sequences even when stdout is not a TTY *(useful for piping to `less -R`)*. `--color never` strips ANSI sequences unconditionally.
 
 `--verbose` writes one line of cache telemetry to stderr: `cache: N hits, M misses, T files`, or `cache: bypassed` when the cache is disabled. The [**Cache**](/reference/cache#hit-miss-telemetry) page covers the shape.
 

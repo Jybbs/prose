@@ -1,12 +1,12 @@
 import { converter, formatHex, parse } from 'culori'
-import postcss                          from 'postcss'
+import { parse as parseCss }           from 'postcss'
 
 import { PALETTE, paletteCss } from '../../lib/shared/palette'
 
 describe('paletteCss', () => {
   const css   = paletteCss()
   const decls : [string, string][] = []
-  postcss.parse(css).walkDecls(decl => void decls.push([decl.prop, decl.value]))
+  parseCss(css).walkDecls(decl => void decls.push([decl.prop, decl.value]))
 
   it('wraps the declarations in a :root block', () => {
     expect(css.startsWith(':root {\n')).toBe(true)

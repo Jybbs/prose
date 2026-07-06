@@ -16,28 +16,28 @@ export function crateDir(metaUrl: string): string {
   return crateDirFrom(repoRoot(metaUrl))
 }
 
-export function crateDirFrom(repoRoot: string): string {
-  return path.join(repoRoot, 'crate')
+export function crateDirFrom(root: string): string {
+  return path.join(root, 'crate')
 }
 
 export function fixturesDir(metaUrl: string): string {
   return fixturesDirFrom(crateDir(metaUrl))
 }
 
-export function fixturesDirFrom(crateDir: string): string {
-  return path.join(crateDir, 'tests', 'fixtures')
+export function fixturesDirFrom(crate: string): string {
+  return path.join(crate, 'tests', 'fixtures')
 }
 
 export function primitivesDir(metaUrl: string): string {
   return path.join(siteDir(metaUrl), 'primitives')
 }
 
-export function proseBinaryCandidates(repoRoot: string): string[] {
-  return ['target/release/prose', 'target/debug/prose'].map(p => path.join(repoRoot, p))
+export function proseBinaryCandidates(root: string): string[] {
+  return ['target/release/prose', 'target/debug/prose'].map(p => path.join(root, p))
 }
 
-export function resolveProseBinary(repoRoot: string): string {
-  const found = proseBinaryCandidates(repoRoot).find(fs.existsSync)
+export function resolveProseBinary(root: string): string {
+  const found = proseBinaryCandidates(root).find(fs.existsSync)
   if (found) return found
   throw new Error('prose binary not found at target/{release,debug}/prose. Run `cargo build` first.')
 }

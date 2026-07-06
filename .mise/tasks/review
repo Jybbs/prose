@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S bash -euo pipefail
 #MISE description="Interactively review pending snapshot diffs"
-#MISE tools={cargo-insta = "latest"}
+#MISE tools={cargo-insta = "1.48.0"}
 
 cargo insta review

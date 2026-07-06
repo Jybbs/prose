@@ -29,7 +29,7 @@ export { data }
 
 export default defineLoader({
   watch: [...paths.proseBinaryCandidates(paths.repoRoot(import.meta.url)), `${rulesDirectory}/*.md`],
-  async load(): Promise<PipelineData> {
+  load(): PipelineData {
     const discovered = discoverRuleIndex(rulesDirectory)
     const rules      = readPipeline(import.meta.url).map(({ imperative, position, slug }) => {
       const entry        = discovered.get(slug)

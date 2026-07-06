@@ -38,8 +38,8 @@ function loadLocalSvg(relative: string, viewBox: string): ToolIcon {
   const file = path.join(repoDir, 'site', '.vitepress', 'assets', relative)
   const raw  = fs.readFileSync(file, 'utf8')
   const body = raw
-    .replace(/<\?xml[^?]*\?>/g, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
+    .replaceAll(/<\?xml[^?]*\?>/g, '')
+    .replaceAll(/<!--[\s\S]*?-->/g, '')
     .replace(/<svg[^>]*>/, '')
     .replace(/<\/svg>\s*$/, '')
     .trim()
@@ -66,7 +66,7 @@ export { data }
 
 export default defineLoader({
   watch: [],
-  async load(): Promise<ToolsData> {
+  load(): ToolsData {
     return {
       entries: Object.fromEntries(
         Object.entries(TOOL_SEEDS).map(([slug, seed]) =>
