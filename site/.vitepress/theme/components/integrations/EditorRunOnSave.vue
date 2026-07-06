@@ -20,7 +20,8 @@ const { selected: activeSlug } = useTabSelect(editors, e => e.slug)
             class="editor-card-row"
             :class="{ 'is-active' : editor.slug === activeSlug }"
             :aria-selected="editor.slug === activeSlug"
-            @click="activeSlug = editor.slug"
+            @focus="activeSlug = editor.slug"
+            @mouseenter="activeSlug = editor.slug"
           >
             <span class="folio">№ {{ formatFolio(i + 1) }}</span>
             <span class="editor-card-row-mark" aria-hidden="true"><Tool :slug="editor.slug" bare /></span>

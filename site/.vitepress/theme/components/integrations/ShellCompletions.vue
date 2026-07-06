@@ -20,7 +20,8 @@ const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
           :class="{ 'is-active': shell.slug === activeSlug }"
           :aria-selected="shell.slug === activeSlug"
           :style="{ '--idx': i }"
-          @click="activeSlug = shell.slug"
+          @focus="activeSlug = shell.slug"
+          @mouseenter="activeSlug = shell.slug"
         >
           <span class="shell-card-tab-mark" aria-hidden="true"><Tool :slug="shell.slug" bare /></span>
           <em class="shell-card-tab-name">{{ shell.name }}</em>

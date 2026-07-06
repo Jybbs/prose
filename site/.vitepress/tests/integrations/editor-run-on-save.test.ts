@@ -34,13 +34,19 @@ describe('EditorRunOnSave', () => {
     expect(faces[1].attributes('style')).toContain('display: none')
   })
 
-  it('swaps the visible face when another row is clicked', async () => {
+  it('swaps the visible face when another row takes the pointer', async () => {
     const w = mountCard()
-    await w.findAll('.editor-card-row')[1].trigger('click')
+    await w.findAll('.editor-card-row')[1].trigger('mouseenter')
     const faces = w.findAll('.editor-card-face')
     expect(faces[0].attributes('style')).toContain('display: none')
     expect(faces[1].attributes('style') ?? '').not.toContain('display: none')
     expect(faces[1].get('.editor-card-face-target').text()).toBe('init.el')
+  })
+
+  it('swaps the visible face when another row takes focus', async () => {
+    const w = mountCard()
+    await w.findAll('.editor-card-row')[1].trigger('focus')
+    expect(w.findAll('.editor-card-face')[1].get('.editor-card-face-target').text()).toBe('init.el')
   })
 
   it('renders with no axe violations', async () => {

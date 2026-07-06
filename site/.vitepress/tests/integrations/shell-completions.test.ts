@@ -33,13 +33,19 @@ describe('ShellCompletions', () => {
     expect(w.get('.shell-card-modal .kicker').text()).toBe('completions bash')
   })
 
-  it('swaps the modal when another tab is clicked', async () => {
+  it('swaps the modal when another tab takes the pointer', async () => {
     const w = mountCard()
-    await w.findAll('.shell-card-tab')[1].trigger('click')
+    await w.findAll('.shell-card-tab')[1].trigger('mouseenter')
     expect(w.findAll('.shell-card-tab')[1].attributes('aria-selected')).toBe('true')
     expect(w.findAll('.shell-card-tab')[0].attributes('aria-selected')).toBe('false')
     expect(w.get('.shell-card-modal .kicker').text()).toBe('completions fish')
     expect(w.get('.shell-card-modal-note').text()).toBe('Completions load lazily.')
+  })
+
+  it('swaps the modal when another tab takes focus', async () => {
+    const w = mountCard()
+    await w.findAll('.shell-card-tab')[1].trigger('focus')
+    expect(w.get('.shell-card-modal .kicker').text()).toBe('completions fish')
   })
 
   it('renders with no axe violations', async () => {
