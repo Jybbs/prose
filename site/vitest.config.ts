@@ -9,6 +9,7 @@ export default defineConfig({
     root        : import.meta.dirname,
     include     : ['.vitepress/tests/**/*.test.ts'],
     reporters   : process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : ['default'],
+    resolveSnapshotPath : (testPath, extension) => testPath + extension,
     coverage: {
       provider         : 'v8',
       reporter         : ['text', 'lcovonly'],

@@ -7,7 +7,7 @@ import type { Component } from 'vue'
 import { subdirNames } from '../lib/fixtures/walker'
 
 const COMPONENT_MODULES = import.meta.glob<{ default: Component }>('../theme/components/**/*.vue')
-const FIXTURES_ROOT     = path.join(import.meta.dirname, '../../tests/fixtures')
+const FIXTURES_ROOT     = path.join(import.meta.dirname, 'components')
 
 export interface ComponentFixture {
   axeIgnore : readonly string[]
