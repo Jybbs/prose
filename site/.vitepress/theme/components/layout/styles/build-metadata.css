@@ -15,12 +15,13 @@
   display        : flex;
   flex-direction : column;
   align-items    : center;
-  gap            : 3px;
+  gap            : 1px;
 }
 
 .build-metadata-value {
-  font-size : var(--prose-text-md);
-  color     : var(--vp-c-text-1);
+  font-size   : var(--prose-text-md);
+  line-height : 1;
+  color       : var(--vp-c-text-1);
 }
 
 .build-metadata-value code {

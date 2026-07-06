@@ -6,7 +6,7 @@
 }
 
 .editor-card-index {
-  padding      : 18px 14px 18px 18px;
+  padding      : 14px 14px 18px 18px;
   border-right : 1px solid var(--vp-c-divider);
   background   : var(--vp-c-bg-soft);
 }
@@ -14,7 +14,7 @@
 .editor-card-edition {
   display        : block;
   margin-bottom  : 14px;
-  padding-bottom : 10px;
+  padding-bottom : 13px;
   border-bottom  : 2px double var(--vp-c-divider);
 }
 
@@ -137,7 +137,7 @@
   flex-direction : column;
 }
 
-.editor-card-face-code > div[class*='language-'] {
+.editor-card-face .editor-card-face-code > div[class*='language-'] {
   flex          : 1;
   margin        : 0;
   border-radius : 0;

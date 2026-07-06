@@ -60,7 +60,6 @@
   display        : flex;
   flex-direction : column;
   background     : var(--vp-c-bg);
-  box-shadow     : var(--prose-shadow-lift) color-mix(in srgb, var(--vp-c-text-1) 6%, transparent);
   min-height     : 260px;
 }
 
@@ -68,14 +67,14 @@
   display     : flex;
   align-items : center;
   gap         : 12px;
-  padding     : 14px 18px 10px;
+  padding     : 14px 18px;
 }
 
 .shell-card-modal-body {
   flex : 1 1 auto;
 }
 
-.shell-card-modal-code > div[class*='language-'] {
+.shell-card-modal .shell-card-modal-code > div[class*='language-'] {
   margin        : 0;
   border-radius : 0;
 }

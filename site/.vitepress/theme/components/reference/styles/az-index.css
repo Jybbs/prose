@@ -197,8 +197,8 @@ a.az-index-key-btn[aria-current="true"] {
   display          : flex;
   flex-direction   : column;
   align-items      : flex-start;
-  gap              : 0;
-  padding          : 8px 12px 8px;
+  gap              : 7px;
+  padding          : 10px 12px;
   background-color : var(--prose-panel-wash);
   background-image : radial-gradient(
     circle at 100% 0%,
@@ -222,7 +222,7 @@ a.az-index-key-btn[aria-current="true"] {
   margin      : 0;
   font-family : var(--vp-font-family-base);
   font-size   : var(--prose-text-sm);
-  line-height : 1;
+  line-height : 1.45;
   color       : var(--vp-c-text-1);
 }
 
