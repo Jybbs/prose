@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PyPIRelease } from '../../../data/pypi-releases.data'
+import type { PyPIRelease } from '../../../lib/landing/pypi-releases.data'
 import { externalAttrs }    from '../../../lib/shared/links'
 
 defineProps<{ release: PyPIRelease }>()

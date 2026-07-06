@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { data as pipeline } from '../../../data/pipeline.data'
-import { data as rules }    from '../../../data/rules.data'
+import { data as pipeline } from '../../../lib/rules/pipeline.data'
+import { data as rules }    from '../../../lib/rules/rules.data'
 import { formatFolio }      from '../../../lib/shared/numerals'
 
 import MiddleEllipsis from '../base/MiddleEllipsis.vue'

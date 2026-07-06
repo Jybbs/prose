@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Tool from '../base/Tool.vue'
 
-import { data as editors } from '../../../data/editor-configs.data'
+import { data as editors } from '../../../lib/integrations/editor-configs.data'
 import { useTabSelect }    from '../../../lib/composables/use-tab-select'
 import { formatFolio }     from '../../../lib/shared/numerals'
 

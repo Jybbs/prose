@@ -5,7 +5,7 @@ import Surfaces             from '../../theme/components/landing/surfaces/Surfac
 import { expectAccessible } from '../axe'
 import { domTest }          from '../dom'
 
-vi.mock('../../data/landing.data', () => ({
+vi.mock('../../lib/landing/landing.data', () => ({
   data: {
     surfaces: [
       { bodyHtml: 'Columns line up.', family: 'alignment', number: 'I'  },
@@ -15,7 +15,7 @@ vi.mock('../../data/landing.data', () => ({
   }
 }))
 
-vi.mock('../../data/rules.data', () => ({
+vi.mock('../../lib/rules/rules.data', () => ({
   data: {
     byFamily : { alignment: [{ href: '/rules/alignment/align-equals', slug: 'align-equals' }] },
     list     : [{ href: '/rules/alignment/align-equals', slug: 'align-equals' }]

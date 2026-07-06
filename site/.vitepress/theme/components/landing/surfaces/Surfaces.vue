@@ -3,8 +3,8 @@ import { computed, useTemplateRef, watchEffect } from 'vue'
 
 import LandingSection from '../LandingSection.vue'
 
-import { data as landing }  from '../../../../data/landing.data'
-import { data as rules }    from '../../../../data/rules.data'
+import { data as landing }  from '../../../../lib/landing/landing.data'
+import { data as rules }    from '../../../../lib/rules/rules.data'
 import { useReducedMotion } from '../../../../lib/composables/use-reduced-motion'
 
 import { useCarouselMeasurement } from './use-carousel-measurement'

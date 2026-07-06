@@ -6,8 +6,8 @@ import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch }
 
 import RuleCard from '../rules/RuleCard.vue'
 
-import { data as rules }     from '../../../data/rules.data'
-import type { RenderedRule } from '../../../data/rules.data'
+import { data as rules }     from '../../../lib/rules/rules.data'
+import type { RenderedRule } from '../../../lib/rules/rules.data'
 import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
 import { lintShorthand }     from '../../../lib/fixtures/lint-shorthand'
 import type { Shorthand }    from '../../../lib/fixtures/lint-shorthand'

@@ -1,6 +1,6 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 
-import { data as glossary, type RenderedGlossaryEntry } from '../../../data/glossary.data'
+import { data as glossary, type RenderedGlossaryEntry } from '../../../lib/glossary/glossary.data'
 import * as folio                                       from '../../../lib/glossary/folio'
 
 const ordered: readonly RenderedGlossaryEntry[] = Object.values(glossary.entries)

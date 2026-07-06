@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { data as cards } from '../../../data/integrations.data'
+import { data as cards } from '../../../lib/integrations/integrations.data'
 </script>
 
 <template>

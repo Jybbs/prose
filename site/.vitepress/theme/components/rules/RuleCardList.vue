@@ -3,7 +3,7 @@ import { computed, useTemplateRef } from 'vue'
 
 import RuleCard from './RuleCard.vue'
 
-import { data as rules }                 from '../../../data/rules.data'
+import { data as rules }                 from '../../../lib/rules/rules.data'
 import { useCurrentRule }                from '../../../lib/composables/route'
 import { useRuleCardNameSync }           from './use-rule-card-name-sync'
 import { lookup }                        from '../../../lib/shared/lookup'

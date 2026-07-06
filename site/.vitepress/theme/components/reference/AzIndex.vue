@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { data as TOKENS } from '../../../data/tokens.data'
+import { data as TOKENS } from '../../../lib/tokens/tokens.data'
 import * as sources       from '../../../lib/tokens/sources'
 
 const tabs = (Object.keys(sources.DOMAIN_LABELS) as sources.Domain[]).sort()

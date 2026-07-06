@@ -2,7 +2,7 @@
 import { useRoute } from 'vitepress'
 import { computed } from 'vue'
 
-import { data as glossary } from '../../../data/glossary.data'
+import { data as glossary } from '../../../lib/glossary/glossary.data'
 import { lookup }           from '../../../lib/shared/lookup'
 
 const props = defineProps<{ slug: string }>()

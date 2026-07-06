@@ -1,7 +1,7 @@
 import { defineLoader } from 'vitepress'
 
-import { REPO_SLUG }    from '../lib/shared/constants'
-import { withFallback } from '../lib/shared/with-fallback'
+import { REPO_SLUG }    from './constants'
+import { withFallback } from './with-fallback'
 
 interface StarsData {
   stars: string

@@ -2,7 +2,7 @@
 import { useElementHover, useElementSize, useMouseInElement } from '@vueuse/core'
 import { computed, ref, useTemplateRef }                      from 'vue'
 
-import type { RenderedRule } from '../../../../data/rules.data'
+import type { RenderedRule } from '../../../../lib/rules/rules.data'
 import { formatFolio }       from '../../../../lib/shared/numerals'
 import * as registries       from '../../../../lib/shared/registries'
 

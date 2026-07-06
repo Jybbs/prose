@@ -4,9 +4,9 @@ import path from 'node:path'
 import { parse }        from 'smol-toml'
 import { defineLoader } from 'vitepress'
 
-import { subdirNames } from '../lib/fixtures/walker'
-import { fixturesDir } from '../lib/shared/paths'
-import { toTitleCase } from '../lib/shared/title-case'
+import { subdirNames } from '../fixtures/walker'
+import { fixturesDir } from '../shared/paths'
+import { toTitleCase } from '../shared/title-case'
 
 interface CompositionCase {
   case  : string

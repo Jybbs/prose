@@ -1,11 +1,11 @@
 import { defineLoader } from 'vitepress'
 
-import { glossary }                       from '../lib/glossary/entries'
-import { entryHref }                      from '../lib/glossary/hrefs'
-import { getRenderer, renderInlineHtml }  from '../lib/markdown/renderer'
-import { discoverRuleIndex }              from '../lib/rules/discovery'
-import { rulesDir }                       from '../lib/shared/paths'
-import type { GlossaryFamily }            from '../lib/shared/registries'
+import { glossary }                       from './entries'
+import { entryHref }                      from './hrefs'
+import { getRenderer, renderInlineHtml }  from '../markdown/renderer'
+import { discoverRuleIndex }              from '../rules/discovery'
+import { rulesDir }                       from '../shared/paths'
+import type { GlossaryFamily }            from '../shared/registries'
 
 const ruleIndex = discoverRuleIndex(rulesDir(import.meta.url))
 

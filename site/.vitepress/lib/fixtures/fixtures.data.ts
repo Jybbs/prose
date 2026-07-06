@@ -3,11 +3,11 @@ import { existsSync } from 'node:fs'
 import { defineLoader }          from 'vitepress'
 import type { MarkdownRenderer } from 'vitepress'
 
-import { readFixtureToggle } from '../lib/fixtures/toggle'
-import * as walker           from '../lib/fixtures/walker'
-import { lintFenceMeta }     from '../lib/markdown/lint-decorations'
-import * as renderer         from '../lib/markdown/renderer'
-import { crateDir }          from '../lib/shared/paths'
+import { readFixtureToggle } from './toggle'
+import * as walker           from './walker'
+import { lintFenceMeta }     from '../markdown/lint-decorations'
+import * as renderer         from '../markdown/renderer'
+import { crateDir }          from '../shared/paths'
 
 const crate = crateDir(import.meta.url)
 

@@ -6,15 +6,15 @@ import path             from 'node:path'
 import type { KeyedTokensInfo } from 'shiki-magic-move/types'
 import { defineLoader }         from 'vitepress'
 
-import * as typingDemo         from '../lib/landing/typing-demo'
-import { precompileMagicMove } from '../lib/markdown/magic-move'
-import * as paths              from '../lib/shared/paths'
+import * as typingDemo         from './typing-demo'
+import { precompileMagicMove } from '../markdown/magic-move'
+import * as paths              from '../shared/paths'
 
 export type {
   LandingTypingDemoEditEntry,
   LandingTypingDemoEntry,
   LandingTypingDemoResetRow
-} from '../lib/landing/typing-demo'
+} from './typing-demo'
 
 interface LandingTypingDemoData {
   entries          : readonly typingDemo.LandingTypingDemoEntry[]

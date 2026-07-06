@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { data as landing } from '../../../data/landing.data'
-import { data as rules }   from '../../../data/rules.data'
+import { data as landing } from '../../../lib/landing/landing.data'
+import { data as rules }   from '../../../lib/rules/rules.data'
 import { FAMILY_META }     from '../../../lib/shared/registries'
 
 const clusters = computed(() =>

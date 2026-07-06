@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import * as renderer from '../lib/markdown/renderer'
+import * as renderer from '../markdown/renderer'
 
 interface ShellCompletion {
   caption  : string

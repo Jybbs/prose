@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Tool from '../base/Tool.vue'
 
-import { data as shells } from '../../../data/shell-completions.data'
+import { data as shells } from '../../../lib/integrations/shell-completions.data'
 import { useTabSelect }   from '../../../lib/composables/use-tab-select'
 
 const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)

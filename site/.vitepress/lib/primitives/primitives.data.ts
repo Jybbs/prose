@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { discoverPrimitiveIndex, discoverPrimitives } from '../lib/primitives/discovery'
-import type { DiscoveredPrimitive }                   from '../lib/primitives/discovery'
-import { primitivesDir }                              from '../lib/shared/paths'
+import { discoverPrimitiveIndex, discoverPrimitives } from './discovery'
+import type { DiscoveredPrimitive }                   from './discovery'
+import { primitivesDir }                              from '../shared/paths'
 
 interface PrimitivesData {
   bySlug : Record<string, DiscoveredPrimitive>

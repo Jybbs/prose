@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import ScopeSpecimen        from '../../theme/components/suppression/ScopeSpecimen.vue'
 import { expectAccessible } from '../axe'
 
-vi.mock('../../data/directives.data', () => ({
+vi.mock('../../lib/suppression/directives.data', () => ({
   data: [
     { form : '# prose: off',              id : 'prose-off',          scope : 'file'  },
     { form : '# fmt: off',                id : 'fmt-off',            scope : 'block',

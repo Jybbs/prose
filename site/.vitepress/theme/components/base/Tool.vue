@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { data as tools } from '../../../data/tools.data'
+import { data as tools } from '../../../lib/shared/tools.data'
 import { lookup }        from '../../../lib/shared/lookup'
 
 const props = defineProps<{

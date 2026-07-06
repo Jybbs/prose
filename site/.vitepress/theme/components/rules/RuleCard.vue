@@ -4,7 +4,7 @@ import { ref }              from 'vue'
 import MiddleEllipsis        from '../base/MiddleEllipsis.vue'
 import { useMeasuredCssVar } from './use-measured-css-var'
 
-import type { RenderedRule } from '../../../data/rules.data'
+import type { RenderedRule } from '../../../lib/rules/rules.data'
 
 const props = withDefaults(
   defineProps<{

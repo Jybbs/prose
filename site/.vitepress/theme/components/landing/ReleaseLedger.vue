@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { PyPIRelease } from '../../../data/pypi-releases.data'
+import type { PyPIRelease } from '../../../lib/landing/pypi-releases.data'
 import { externalAttrs }    from '../../../lib/shared/links'
 
 const props = defineProps<{ releases: readonly PyPIRelease[] }>()

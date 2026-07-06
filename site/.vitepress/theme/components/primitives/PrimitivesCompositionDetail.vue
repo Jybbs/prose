@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { data as primitives }    from '../../../data/primitives-composition.data'
-import { data as primitiveMeta } from '../../../data/primitives.data'
-import { data as rules }         from '../../../data/rules.data'
+import { data as primitives }    from '../../../lib/primitives/primitives-composition.data'
+import { data as primitiveMeta } from '../../../lib/primitives/primitives.data'
+import { data as rules }         from '../../../lib/rules/rules.data'
 import { useSettledMeasure }     from '../../../lib/composables/use-settled-measure'
 
 import { PRIMITIVE_LAYER_NUMERALS }           from '../../../lib/shared/registries'

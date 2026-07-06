@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import DirectiveAnatomy     from '../../theme/components/suppression/DirectiveAnatomy.vue'
 import { expectAccessible } from '../axe'
 
-vi.mock('../../data/directives.data', () => ({
+vi.mock('../../lib/suppression/directives.data', () => ({
   data: [
     {
       effectHtml : 'Suppresses every rewrite for the file.',

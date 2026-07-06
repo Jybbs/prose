@@ -1,9 +1,9 @@
 import { defineLoader } from 'vitepress'
 
-import { discoverRuleIndex } from '../lib/rules/discovery'
-import { readPipeline }      from '../lib/rules/pipeline'
-import * as paths            from '../lib/shared/paths'
-import * as registries       from '../lib/shared/registries'
+import { discoverRuleIndex } from './discovery'
+import { readPipeline }      from './pipeline'
+import * as paths            from '../shared/paths'
+import * as registries       from '../shared/registries'
 
 interface PipelineRule {
   category      : registries.RuleCategory | null

@@ -7,10 +7,10 @@ import type { IconifyJSON }       from '@iconify/types'
 import { getIconData, iconToSVG } from '@iconify/utils'
 import { defineLoader }           from 'vitepress'
 
-import { lookup }                    from '../lib/shared/lookup'
-import { repoRoot }                  from '../lib/shared/paths'
-import { svgViewBox }                from '../lib/shared/svg-view-box'
-import { TOOL_SEEDS, type ToolSlug } from '../lib/shared/tools'
+import { lookup }                    from './lookup'
+import { repoRoot }                  from './paths'
+import { svgViewBox }                from './svg-view-box'
+import { TOOL_SEEDS, type ToolSlug } from './tools'
 
 interface ToolIcon {
   body    : string

@@ -1,7 +1,7 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderInlineHtml } from '../lib/markdown/renderer'
-import * as sources                      from '../lib/tokens/sources'
+import { getRenderer, renderInlineHtml } from '../markdown/renderer'
+import * as sources                      from './sources'
 
 declare const data: readonly sources.Token[]
 export { data }

@@ -1,6 +1,6 @@
 import { fc, test } from '@fast-check/vitest'
 
-import type { RenderedGlossaryEntry } from '../../data/glossary.data'
+import type { RenderedGlossaryEntry } from '../../lib/glossary/glossary.data'
 import * as folio                     from '../../lib/glossary/folio'
 
 const entry = (

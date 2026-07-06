@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { data as directives, type Directive }    from '../../../data/directives.data'
+import { data as directives, type Directive }    from '../../../lib/suppression/directives.data'
 import { directiveHref, SCOPE_META, scopeBands } from '../../../lib/suppression/scopes'
 import type { ScopeKey }                         from '../../../lib/suppression/scopes'
 

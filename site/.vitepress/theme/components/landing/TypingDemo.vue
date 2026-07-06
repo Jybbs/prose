@@ -3,7 +3,7 @@ import { useIntersectionObserver }   from '@vueuse/core'
 import { ShikiMagicMovePrecompiled } from 'shiki-magic-move/vue'
 import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
-import { data }                               from '../../../data/landing-typing-demo.data'
+import { data }                               from '../../../lib/landing/landing-typing-demo.data'
 import { useReducedMotion }                   from '../../../lib/composables/use-reduced-motion'
 import * as buffer                            from '../../../lib/landing/typing-demo-buffer'
 import { createTypingMachine, MAGIC_MOVE_MS } from '../../../lib/landing/typing-state-machine'

@@ -2,11 +2,11 @@ import path from 'node:path'
 
 import { defineLoader } from 'vitepress'
 
-import { markdownH1 }                    from '../lib/markdown/h1'
-import { getRenderer, renderInlineHtml } from '../lib/markdown/renderer'
-import { matterPages }                   from '../lib/shared/content-page'
-import { siteDir }                       from '../lib/shared/paths'
-import { requireString }                 from '../lib/shared/require-string'
+import { markdownH1 }                    from '../markdown/h1'
+import { getRenderer, renderInlineHtml } from '../markdown/renderer'
+import { matterPages }                   from '../shared/content-page'
+import { siteDir }                       from '../shared/paths'
+import { requireString }                 from '../shared/require-string'
 
 interface IntegrationCard {
   href        : string

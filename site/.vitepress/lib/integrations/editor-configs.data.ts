@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderFencedHtml } from '../lib/markdown/renderer'
+import { getRenderer, renderFencedHtml } from '../markdown/renderer'
 
 interface EditorConfig {
   caption  : string

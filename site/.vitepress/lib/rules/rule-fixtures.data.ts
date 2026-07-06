@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { readFixtureToggle } from '../lib/fixtures/toggle'
-import * as walker           from '../lib/fixtures/walker'
-import { crateDir }          from '../lib/shared/paths'
+import { readFixtureToggle } from '../fixtures/toggle'
+import * as walker           from '../fixtures/walker'
+import { crateDir }          from '../shared/paths'
 
 interface RuleExample {
   case  : string

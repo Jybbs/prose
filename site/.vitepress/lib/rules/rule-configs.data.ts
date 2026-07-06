@@ -1,7 +1,7 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderInlineField }             from '../lib/markdown/renderer'
-import { RULE_CONFIG_PRESETS, type RuleConfigPreset } from '../lib/rules/config-presets'
+import { getRenderer, renderInlineField }             from '../markdown/renderer'
+import { RULE_CONFIG_PRESETS, type RuleConfigPreset } from './config-presets'
 
 interface RuleConfigRow {
   default     : string

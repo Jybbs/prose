@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { data as configs } from '../../../data/rule-configs.data'
+import { data as configs } from '../../../lib/rules/rule-configs.data'
 import { useCurrentRule }  from '../../../lib/composables/route'
 
 const current = useCurrentRule()

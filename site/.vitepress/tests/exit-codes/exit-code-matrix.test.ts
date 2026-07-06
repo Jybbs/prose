@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import ExitCodeMatrix       from '../../theme/components/exit-codes/ExitCodeMatrix.vue'
 import { expectAccessible } from '../axe'
 
-vi.mock('../../data/exit-codes.data', () => ({
+vi.mock('../../lib/exit-codes/exit-codes.data', () => ({
   data: [
     { code: 0, detailHtml: ['<code>prose check</code> passes.'], label: 'Clean',         summary: 'No diagnostics.' },
     { code: 3, detailHtml: ['<em>Parse</em> stops the run.'],    label: 'Parse failure', summary: 'A file failed to parse.' }

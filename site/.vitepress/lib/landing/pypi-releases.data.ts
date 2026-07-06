@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { withFallback } from '../lib/shared/with-fallback'
+import { withFallback } from '../shared/with-fallback'
 
 export interface PyPIRelease {
   date      : string

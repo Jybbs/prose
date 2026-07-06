@@ -7,7 +7,7 @@ const { route } = vi.hoisted(() => ({
 }))
 
 vi.mock('vitepress', () => ({ useData: () => ({ page: route }) }))
-vi.mock('../../data/rules.data', () => ({
+vi.mock('../../lib/rules/rules.data', () => ({
   data: { bySlug: { 'align-equals': { name: 'Align Equals', slug: 'align-equals' } } }
 }))
 

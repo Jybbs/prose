@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Chip from '../base/Chip.vue'
 
-import { data as stars } from '../../../data/stars.data'
+import { data as stars } from '../../../lib/shared/stars.data'
 import { REPO_URL }      from '../../../lib/shared/constants'
 </script>
 

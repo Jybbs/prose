@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import EditorRunOnSave      from '../../theme/components/integrations/EditorRunOnSave.vue'
 import { expectAccessible } from '../axe'
 
-vi.mock('../../data/editor-configs.data', () => ({
+vi.mock('../../lib/integrations/editor-configs.data', () => ({
   data: [
     {
       caption  : 'settings.json',

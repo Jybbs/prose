@@ -16,6 +16,7 @@ export default defineConfig({
       reportsDirectory : 'coverage',
       include          : ['.vitepress/lib/**'],
       exclude: [
+        '.vitepress/lib/**/*.data.ts',
         '.vitepress/lib/og/render/build.ts',
         '.vitepress/lib/og/render/cache.ts',
         '.vitepress/lib/og/render/pool.ts',

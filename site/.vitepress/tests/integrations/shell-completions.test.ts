@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import ShellCompletions     from '../../theme/components/integrations/ShellCompletions.vue'
 import { expectAccessible } from '../axe'
 
-vi.mock('../../data/shell-completions.data', () => ({
+vi.mock('../../lib/integrations/shell-completions.data', () => ({
   data: [
     {
       caption  : 'completions bash',

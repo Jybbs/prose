@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import * as renderer                     from '../lib/markdown/renderer'
-import { formatFolio }                   from '../lib/shared/numerals'
-import { FAMILY_ORDER, type RuleFamily } from '../lib/shared/registries'
+import * as renderer                     from '../markdown/renderer'
+import { formatFolio }                   from '../shared/numerals'
+import { FAMILY_ORDER, type RuleFamily } from '../shared/registries'
 
 export interface Step {
   bodyHtml : string

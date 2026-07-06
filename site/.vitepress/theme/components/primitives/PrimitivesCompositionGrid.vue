@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { data as primitiveMeta } from '../../../data/primitives.data'
+import { data as primitiveMeta } from '../../../lib/primitives/primitives.data'
 
 import type { PrimitiveLayer, PrimitiveSlug } from '../../../lib/shared/registries'
 

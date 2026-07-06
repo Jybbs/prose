@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderInlineField }     from '../lib/markdown/renderer'
-import { type DirectivePart, directiveParts } from '../lib/suppression/directive-parts'
-import type { ScopeKey }                      from '../lib/suppression/scopes'
+import { getRenderer, renderInlineField }     from '../markdown/renderer'
+import { type DirectivePart, directiveParts } from './directive-parts'
+import type { ScopeKey }                      from './scopes'
 
 export interface Directive {
   effectHtml  : string

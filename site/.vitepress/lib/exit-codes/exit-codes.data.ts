@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderInlineField } from '../lib/markdown/renderer'
+import { getRenderer, renderInlineField } from '../markdown/renderer'
 
 interface ExitCode {
   code        : number

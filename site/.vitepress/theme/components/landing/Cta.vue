@@ -2,7 +2,7 @@
 import { useClipboard } from '@vueuse/core'
 import { ref }          from 'vue'
 
-import { data as releases } from '../../../data/pypi-releases.data'
+import { data as releases } from '../../../lib/landing/pypi-releases.data'
 
 import ReleaseLedger from './ReleaseLedger.vue'
 import ReleaseStamp  from './ReleaseStamp.vue'
