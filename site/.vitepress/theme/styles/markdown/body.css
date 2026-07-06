@@ -1,6 +1,6 @@
 .vp-doc p em,
 .vp-doc li em {
-  color: var(--prose-palette-whiskey);
+  color: var(--prose-role-emphasis);
 }
 
 .vp-doc :not(pre) > code {
@@ -34,10 +34,10 @@ a.tool-mark:hover {
   font-family         : var(--vp-font-family-mono);
   font-weight         : normal;
   text-decoration     : none;
-  border-left         : 2px solid var(--family-color);
   border-radius       : var(--prose-radius-sm);
-  padding             : 3px 6px;
+  padding             : 3px 0.42em 3px calc(0.42em + 2px);
   background-color    : var(--vp-code-bg);
+  box-shadow          : inset 2px 0 0 var(--family-color);
   background-image    :
     linear-gradient(var(--family-color), var(--family-color)),
     linear-gradient(color-mix(in srgb, var(--family-color) 14%, transparent), color-mix(in srgb, var(--family-color) 14%, transparent));
@@ -54,6 +54,7 @@ a.tool-mark:hover {
 
 .vp-doc a.rule-link {
   font-size : 0.88em;
+  margin    : 0 0.1em;
 }
 
 .rule-card-caption a.rule-link {

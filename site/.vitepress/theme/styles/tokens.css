@@ -80,6 +80,7 @@
   --vp-c-brand-soft       : color-mix(in srgb, var(--prose-palette-ube-pale) 16%, transparent);
   --vp-c-bg-soft          : var(--prose-palette-woodsmoke);
   --vp-code-block-bg      : var(--prose-shiki-dark-bg);
+  --prose-role-emphasis   : var(--prose-palette-champagne);
   --prose-role-link-hover : var(--prose-palette-ube);
 }
 

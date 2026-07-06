@@ -45,6 +45,7 @@ export const FAMILIES: Record<GlossaryFamily, string> = {
 
 const ROLES = {
   accent       : PALETTE.chambray,
+  emphasis     : oklchMix(HUES.eureka, 'black', 36),
   error        : PALETTE.apricot,
   'link-hover' : PALETTE['ube-deep'],
   warning      : PALETTE.eureka
