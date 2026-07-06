@@ -9,10 +9,7 @@
   display        : flex;
   flex-direction : column;
   min-width      : 0;
-  border         : 1px solid var(--vp-c-divider);
-  border-radius  : var(--prose-radius);
   background     : var(--vp-code-block-bg);
-  overflow       : hidden;
 }
 
 .fixture-pair-landing .fixture-pair-code {
@@ -42,6 +39,8 @@
 }
 
 .fixture-pair-landing .fixture-pair-arrow {
+  display     : grid;
+  place-items : center;
   font-family : var(--prose-font-display);
   font-size   : 2.5rem;
   font-style  : italic;

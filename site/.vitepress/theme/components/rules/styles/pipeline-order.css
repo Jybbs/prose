@@ -1,9 +1,7 @@
 .pipeline-order {
-  margin        : 32px 0;
-  padding       : 22px 32px;
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg-soft);
+  margin     : 32px 0;
+  padding    : 22px 32px;
+  background : var(--vp-c-bg-soft);
 }
 
 .pipeline-order-masthead {
@@ -76,15 +74,6 @@
 
 .pipeline-order .pipeline-order-link:hover .pipeline-order-name {
   color : var(--family-color, var(--vp-c-brand-1));
-}
-
-.pipeline-order-leader {
-  flex          : 1 1 auto;
-  min-width     : 8px;
-  align-self    : center;
-  height        : 1em;
-  border-bottom : 1px dotted var(--vp-c-divider);
-  transform     : translateY(-2px);
 }
 
 .pipeline-order-name {

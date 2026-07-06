@@ -27,7 +27,7 @@ const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
         </button>
       </div>
 
-      <article class="shell-card-modal">
+      <article class="shell-card-modal panel panel-clip">
         <header class="shell-card-modal-head">
           <span class="shell-card-modal-mark" aria-hidden="true"><Tool :slug="active.slug" bare /></span>
           <span class="kicker">{{ active.caption }}</span>

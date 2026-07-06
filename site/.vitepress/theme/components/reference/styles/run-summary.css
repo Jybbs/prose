@@ -1,10 +1,7 @@
 .run-summary {
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-code-block-bg);
-  overflow      : hidden;
-  font-family   : var(--vp-font-family-mono);
-  font-size     : var(--prose-text-md);
+  background  : var(--vp-code-block-bg);
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-md);
 }
 
 .run-summary-bar {
@@ -79,17 +76,15 @@
 }
 
 .run-summary-cmd {
-  display       : flex;
-  flex-wrap     : wrap;
-  align-items   : baseline;
-  gap           : 0.5em;
-  padding       : 13px 17px;
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-code-block-bg);
-  font-family   : var(--vp-font-family-mono);
-  font-size     : var(--prose-text-md);
-  line-height   : 1.6;
+  display     : flex;
+  flex-wrap   : wrap;
+  align-items : baseline;
+  gap         : 0.5em;
+  padding     : 13px 17px;
+  background  : var(--vp-code-block-bg);
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-md);
+  line-height : 1.6;
 }
 
 .run-summary-cmd-prompt {

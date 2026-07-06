@@ -38,7 +38,7 @@ const activeRule = computed(() => props.rules[activeIdx.value])
 <template>
   <div
     ref="root"
-    class="surface-card surface-card-tab-index"
+    class="surface-card surface-card-tab-index panel"
     :data-family="family"
     :data-category="category"
     :data-active="active"

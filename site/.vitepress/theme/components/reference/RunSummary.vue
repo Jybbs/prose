@@ -5,7 +5,7 @@ defineProps<{ line: RenderedLine }>()
 </script>
 
 <template>
-  <div class="run-summary">
+  <div class="run-summary panel panel-clip">
     <div class="run-summary-bar">
       <span v-for="n in 3" :key="n" class="run-summary-dot" aria-hidden="true" />
       <span class="run-summary-title" aria-hidden="true">prose</span>

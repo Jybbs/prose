@@ -3,13 +3,11 @@
 }
 
 .glossary-folio-pane {
-  position      : relative;
-  margin        : 24px 0 0;
-  padding       : 16px 28px 18px 32px;
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg);
-  min-width     : 0;
+  position   : relative;
+  margin     : 24px 0 0;
+  padding    : 16px 28px 18px 32px;
+  background : var(--vp-c-bg);
+  min-width  : 0;
 }
 
 .glossary-folio-pane::before {

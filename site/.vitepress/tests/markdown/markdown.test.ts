@@ -87,12 +87,12 @@ describe('lintDecorations', () => {
     expect(decorations.lintDecorations(findings)).toEqual([
       {
         end        : { character: 3, line: 0 },
-        properties : { class: 'lint-flag', 'data-before': 'x', 'data-message': 'first', 'data-rule': 'a', 'data-suggested': 'y' },
+        properties : { class: 'lint-flag underline-draw', 'data-before': 'x', 'data-message': 'first', 'data-rule': 'a', 'data-suggested': 'y' },
         start      : { character: 0, line: 0 }
       },
       {
         end        : { character: 5, line: 1 },
-        properties : { class: 'lint-flag', 'data-message': 'second', 'data-rule': 'b' },
+        properties : { class: 'lint-flag underline-draw', 'data-message': 'second', 'data-rule': 'b' },
         start      : { character: 2, line: 1 }
       }
     ])
@@ -112,7 +112,7 @@ describe('lintDecorationTransformer', () => {
     preprocess('', options)
     expect(options.decorations).toEqual([{
       end        : { character: 3, line: 0 },
-      properties : { class: 'lint-flag', 'data-message': 'm', 'data-rule': 'a' },
+      properties : { class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' },
       start      : { character: 0, line: 0 }
     }])
   })

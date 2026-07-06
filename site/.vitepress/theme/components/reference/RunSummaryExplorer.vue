@@ -33,7 +33,7 @@ const streamOpts = computed<runSummary.SelectOption[]>(() => runSummary.STREAM_O
 <template>
   <div class="run-summary-explorer">
     <span class="kicker run-summary-explorer-kicker">Build A Run</span>
-    <div class="run-summary-cmd">
+    <div class="run-summary-cmd panel">
       <span class="run-summary-cmd-prompt" aria-hidden="true">$ prose</span>
       <RunSummarySelect v-model="outcomeId" :options="outcomeOpts" label="Run command" />
       <span class="run-summary-cmd-path" aria-hidden="true">.</span>

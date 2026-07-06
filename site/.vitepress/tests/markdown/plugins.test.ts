@@ -23,7 +23,7 @@ describe('proseMarkPlugin', () => {
 
 describe('bodyLinkPlugin', () => {
   it('adds the body-link class to inline links', () => {
-    expect(render(md => md.use(bodyLinkPlugin), '[docs](/x)')).toContain('class="body-link"')
+    expect(render(md => md.use(bodyLinkPlugin), '[docs](/x)')).toContain('class="body-link underline-draw"')
   })
 })
 
@@ -76,7 +76,8 @@ describe('ruleLinkPlugin', () => {
   })
 
   it('renders a primitive wiki-link as a body link', () => {
-    expect(run('see [[aligner]]')).toContain('href="/primitives/aligner"')
+    expect(run('see [[aligner]]'))
+      .toContain('<a class="body-link underline-draw" href="/primitives/aligner">')
   })
 
   it('promotes an inline-code rule slug to a doc link', () => {

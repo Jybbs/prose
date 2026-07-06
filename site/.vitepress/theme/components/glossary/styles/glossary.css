@@ -1,29 +1,35 @@
 .glossary-anchor {
+  --underline-accent : var(--prose-palette-celadon);
+
   cursor                : help;
-  text-decoration       : underline dotted var(--prose-palette-celadon) 1px;
+  text-decoration       : underline dotted var(--underline-accent) 1px;
   text-underline-offset : 3px;
   outline               : none;
-  background            : linear-gradient(var(--prose-palette-celadon), var(--prose-palette-celadon)) no-repeat left bottom / 0% 1px;
-  transition            : background-size var(--prose-transition-slow);
 }
 
 .glossary-anchor:hover {
   text-decoration : none;
-  background-size : 100% 1px;
 }
 
 .glossary-anchor:focus-visible {
   text-decoration-style : solid;
 }
 
+.v-popper--theme-glossary { --tooltip-accent : var(--prose-palette-celadon); }
+
 .v-popper--theme-glossary .v-popper__inner {
-  max-width   : 22rem;
-  min-width   : 14rem;
-  padding     : 12px 16px;
-  outline     : none;
-  color       : var(--vp-c-text-1);
-  font-size   : var(--prose-text-sm);
-  line-height : 1.5;
+  max-width     : 22rem;
+  min-width     : 14rem;
+  padding       : 12px 16px;
+  outline       : none;
+  border        : 2px solid color-mix(in srgb, var(--tooltip-accent) 55%, var(--vp-c-divider));
+  border-top    : 3px solid var(--tooltip-accent);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg);
+  box-shadow    : var(--prose-shadow-tooltip);
+  color         : var(--vp-c-text-1);
+  font-size     : var(--prose-text-sm);
+  line-height   : 1.5;
 }
 
 .v-popper--theme-glossary,
@@ -45,6 +51,7 @@
 
 .glossary-tooltip-title {
   margin      : 0;
+  font-family : var(--prose-font-display);
   font-size   : var(--prose-text-md);
   font-weight : 700;
   color       : var(--prose-palette-celadon);

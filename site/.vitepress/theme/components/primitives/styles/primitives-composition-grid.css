@@ -12,10 +12,9 @@
 }
 
 .primitives-composition-band-head {
-  display     : flex;
-  align-items : center;
-  gap         : 9px;
-  padding     : 2px 4px 4px;
+  --band-accent : var(--layer-accent);
+
+  padding : 2px 4px 4px;
 }
 
 .primitives-composition-band-badge {
@@ -37,21 +36,6 @@
   line-height : 1;
   color       : var(--vp-c-bg);
   user-select : none;
-}
-
-.primitives-composition-band-name {
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-meta);
-  letter-spacing : var(--prose-kicker-tracking);
-  text-transform : uppercase;
-  color          : color-mix(in srgb, var(--layer-accent) 75%, var(--vp-c-text-2));
-  flex-shrink    : 0;
-}
-
-.primitives-composition-band-rule {
-  flex-grow  : 1;
-  height     : 1px;
-  background : color-mix(in srgb, var(--layer-accent) 30%, var(--vp-c-divider));
 }
 
 .vp-doc .primitives-composition-band-cells,

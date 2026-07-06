@@ -38,7 +38,7 @@ const showLink = computed(() => {
       popperTriggers     : ['hover'],
       theme              : 'glossary'
     }"
-    class="glossary-anchor"
+    class="glossary-anchor underline-draw"
     tabindex="0"
   ><slot /></span>
 </template>

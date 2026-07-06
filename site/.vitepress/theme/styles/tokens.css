@@ -50,6 +50,8 @@
 
   --prose-pad-card-snug          : 10px 14px;
 
+  --prose-panel-wash             : color-mix(in srgb, var(--vp-c-bg-alt) 30%, var(--vp-c-bg));
+
   --vp-c-brand-1                 : var(--prose-palette-ube);
   --vp-c-brand-2                 : var(--prose-palette-ube-mid);
   --vp-c-brand-3                 : var(--prose-palette-ube-pale);

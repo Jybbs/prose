@@ -62,7 +62,7 @@ const legend = scopeBands(entries)
 </script>
 
 <template>
-  <div class="scope-specimen">
+  <div class="scope-specimen panel">
     <pre class="scope-specimen-source"><code><span
       v-for="(line, idx) in lines"
       :key="idx"
@@ -88,7 +88,7 @@ const legend = scopeBands(entries)
             :key="d.id"
             class="scope-specimen-legend-directive"
           >
-            <a class="body-link" :href="d.href"><code>{{ d.form }}</code></a>
+            <a class="body-link underline-draw" :href="d.href"><code>{{ d.form }}</code></a>
           </li>
         </ul>
       </li>

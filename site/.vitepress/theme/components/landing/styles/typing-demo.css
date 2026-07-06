@@ -12,13 +12,19 @@
   display        : flex;
   flex-direction : column;
   min-width      : 0;
-  border         : 1px solid var(--vp-c-divider);
-  border-radius  : var(--prose-radius);
   background     : var(--vp-code-block-bg);
-  overflow       : hidden;
 }
 
 .typing-demo-label {
+  position       : absolute;
+  bottom         : 6px;
+  right          : 10px;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-kicker-size-sm);
+  letter-spacing : var(--prose-meta-tracking);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+  opacity        : 0.55;
   pointer-events : none;
 }
 

@@ -9,7 +9,7 @@ import LandingSection from './LandingSection.vue'
     kicker="The Idea"
     variant="metaphor"
   >
-    <aside class="landing-definition">
+    <aside class="landing-definition panel">
       <p class="landing-definition-kicker kicker">— a definition —</p>
       <header class="landing-definition-head">
         <h3 class="landing-definition-word">prose</h3>

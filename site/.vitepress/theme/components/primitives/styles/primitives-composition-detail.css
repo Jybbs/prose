@@ -20,21 +20,13 @@
 }
 
 .primitives-composition-card-layer-numeral {
-  display         : inline-flex;
-  align-items     : center;
-  justify-content : center;
-  width           : 32px;
-  height          : 32px;
-  border-radius   : 50%;
-  font-family     : var(--prose-font-display);
-  font-style      : italic;
-  font-weight     : 500;
-  font-size       : 1.05rem;
-  line-height     : 1;
-  color           : var(--vp-c-bg);
-  background      : var(--layer-accent);
-  box-shadow      : 0 0 0 2px color-mix(in srgb, var(--layer-accent) 25%, var(--vp-c-bg));
-  flex-shrink     : 0;
+  width       : 32px;
+  height      : 32px;
+  font-size   : 1.05rem;
+  line-height : 1;
+  background  : var(--layer-accent);
+  box-shadow  : 0 0 0 2px color-mix(in srgb, var(--layer-accent) 25%, var(--vp-c-bg));
+  flex-shrink : 0;
 }
 
 .primitives-composition-card-head-text {
@@ -123,18 +115,10 @@
 }
 
 .primitives-composition-card-mention-chip {
-  display         : inline-flex;
-  align-items     : center;
-  justify-content : center;
-  width           : 18px;
-  height          : 18px;
-  border-radius   : 50%;
-  font-family     : var(--prose-font-display);
-  font-style      : italic;
-  font-weight     : 500;
-  font-size       : 0.7rem;
-  line-height     : 1;
-  color           : var(--vp-c-bg);
+  width       : 18px;
+  height      : 18px;
+  font-size   : 0.7rem;
+  line-height : 1;
 }
 
 .primitives-composition-card-mention-chip[data-layer="base"]          { background: var(--layer-base);          }

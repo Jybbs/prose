@@ -4,42 +4,26 @@
 .directive-anatomy [data-role="payload"]   { --part-color : color-mix(in srgb, var(--prose-palette-celadon) 70%, var(--vp-c-text-1)); }
 
 .directive-anatomy {
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  overflow      : hidden;
-  background    : color-mix(in srgb, var(--vp-c-bg-alt) 30%, var(--vp-c-bg));
+  background : var(--prose-panel-wash);
 }
 
 .directive-anatomy-index {
-  display              : flex;
-  flex-direction       : column;
-  gap                  : 20px;
-  padding              : 18px 20px 22px;
+  display        : flex;
+  flex-direction : column;
+  gap            : 20px;
+  padding        : 18px 20px 22px;
 }
 
 .directive-anatomy-band {
-  display              : flex;
-  flex-direction       : column;
-  gap                  : 8px;
+  display        : flex;
+  flex-direction : column;
+  gap            : 8px;
 }
 
 .directive-anatomy-band-head {
-  display     : flex;
-  align-items : center;
-  gap         : 9px;
-  padding     : 0 2px;
-}
+  --band-accent : var(--scope-tint);
 
-.directive-anatomy-band-badge,
-.scope-specimen-legend-pip {
-  display         : inline-flex;
-  align-items     : center;
-  justify-content : center;
-  border-radius   : 50%;
-  color           : var(--vp-c-bg);
-  font-family     : var(--prose-font-display);
-  font-style      : italic;
-  font-weight     : 500;
+  padding : 0 2px;
 }
 
 .directive-anatomy-band-badge {
@@ -49,21 +33,6 @@
   background  : color-mix(in srgb, var(--scope-tint) 80%, var(--vp-c-bg));
   font-size   : 0.92rem;
   line-height : 1;
-}
-
-.directive-anatomy-band-name {
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-meta);
-  letter-spacing : var(--prose-kicker-tracking);
-  text-transform : uppercase;
-  color          : color-mix(in srgb, var(--scope-tint) 75%, var(--vp-c-text-2));
-  flex-shrink    : 0;
-}
-
-.directive-anatomy-band-rule {
-  flex-grow  : 1;
-  height     : 1px;
-  background : color-mix(in srgb, var(--scope-tint) 30%, var(--vp-c-divider));
 }
 
 .directive-anatomy-band-cells {
@@ -126,12 +95,12 @@
 }
 
 .directive-anatomy-part-col {
-  display        : grid;
+  display            : grid;
   grid-template-rows : auto 28px auto;
-  align-items    : start;
-  justify-items  : center;
-  text-align     : center;
-  padding        : 0 6px;
+  align-items        : start;
+  justify-items      : center;
+  text-align         : center;
+  padding            : 0 6px;
 }
 
 .directive-anatomy-part {
@@ -148,10 +117,10 @@
 .directive-anatomy-part-col[data-role="action"] .directive-anatomy-part { font-weight : 600; }
 
 .directive-anatomy-tick {
-  display : block;
-  width   : 1px;
-  height  : 24px;
-  margin  : 2px 0;
+  display    : block;
+  width      : 1px;
+  height     : 24px;
+  margin     : 2px 0;
   background : color-mix(in srgb, var(--part-color, var(--vp-c-text-3)) 50%, var(--vp-c-divider));
 }
 

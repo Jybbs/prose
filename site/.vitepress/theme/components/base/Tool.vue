@@ -14,7 +14,7 @@ const entry = computed(() => lookup(tools.entries, props.slug, 'Tool'))
 
 <template>
   <a
-    class="tool-mark"
+    class="tool-mark underline-draw"
     :class="{ 'tool-bare': bare }"
     :href="entry.href"
     :title="entry.name"

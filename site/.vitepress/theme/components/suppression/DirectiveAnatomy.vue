@@ -27,7 +27,7 @@ function classifyLine(line: string): 'directive' | 'comment' | 'code' {
 </script>
 
 <template>
-  <div class="directive-anatomy">
+  <div class="directive-anatomy panel panel-clip">
     <div class="directive-anatomy-index" role="tablist" aria-label="Directive index">
       <section
         v-for="band in bands"
@@ -35,10 +35,10 @@ function classifyLine(line: string): 'directive' | 'comment' | 'code' {
         class="directive-anatomy-band"
         :data-scope="band.scope"
       >
-        <header class="directive-anatomy-band-head">
+        <header class="directive-anatomy-band-head band-head">
           <span class="directive-anatomy-band-badge" aria-hidden="true">{{ SCOPE_META[band.scope].pip }}</span>
-          <span class="directive-anatomy-band-name">{{ SCOPE_META[band.scope].label }}</span>
-          <span class="directive-anatomy-band-rule" aria-hidden="true"></span>
+          <span class="directive-anatomy-band-name band-name">{{ SCOPE_META[band.scope].label }}</span>
+          <span class="directive-anatomy-band-rule band-rule" aria-hidden="true"></span>
         </header>
         <div class="directive-anatomy-band-cells">
           <button

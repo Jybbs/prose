@@ -55,14 +55,12 @@
 }
 
 .glossary-folio-search {
-  display       : flex;
-  align-items   : center;
-  gap           : 10px;
-  padding       : 6px 14px;
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg-soft);
-  transition    : border-color var(--prose-transition), background var(--prose-transition);
+  display     : flex;
+  align-items : center;
+  gap         : 10px;
+  padding     : 6px 14px;
+  background  : var(--vp-c-bg-soft);
+  transition  : border-color var(--prose-transition), background var(--prose-transition);
 }
 
 .glossary-folio-search:hover {

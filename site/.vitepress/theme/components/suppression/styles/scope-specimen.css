@@ -3,9 +3,7 @@
   grid-template-columns : minmax(0, 1fr) minmax(180px, 220px);
   gap                   : 24px;
   margin                : 1.5rem 0;
-  border                : 1px solid var(--vp-c-divider);
-  border-radius         : var(--prose-radius);
-  background            : color-mix(in srgb, var(--vp-c-bg-alt) 30%, var(--vp-c-bg));
+  background            : var(--prose-panel-wash);
   padding               : 22px 24px;
 }
 
@@ -169,10 +167,6 @@
 .scope-specimen-legend-directive {
   margin       : 0;
   padding-left : 0;
-}
-
-.scope-specimen-legend-directive a {
-  text-decoration : none;
 }
 
 .vp-doc .scope-specimen-legend-directive code,

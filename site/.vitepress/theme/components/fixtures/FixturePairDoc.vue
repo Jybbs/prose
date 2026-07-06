@@ -141,7 +141,7 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
 </script>
 
 <template>
-  <div ref="root" class="fixture-pair fixture-pair-doc">
+  <div ref="root" class="fixture-pair fixture-pair-doc panel panel-clip">
     <component
       :is="panel"
       v-if="panel"

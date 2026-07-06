@@ -1,15 +1,10 @@
 .lint-flag {
-  --family-color : var(--prose-family-lint);
-  --lint-wave    : url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='8'%20height='4'%3E%3Cpath%20d='M0%203%20Q2%200%204%203%20T8%203'%20fill='none'%20stroke='%23000'%20stroke-width='1.1'/%3E%3C/svg%3E");
+  --family-color     : var(--prose-family-lint);
+  --lint-wave        : url('../../../../assets/lint-wave.svg');
+  --underline-accent : var(--family-color);
 
-  cursor     : help;
-  position   : relative;
-  background : linear-gradient(var(--family-color), var(--family-color)) no-repeat left bottom / 0% 1px;
-  transition : background-size var(--prose-transition-slow);
-}
-
-.lint-flag:hover {
-  background-size : 100% 1px;
+  cursor   : help;
+  position : relative;
 }
 
 /* Masked pseudo-element rather than `text-decoration`, which cannot

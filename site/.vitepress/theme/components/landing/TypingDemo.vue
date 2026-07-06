@@ -90,11 +90,11 @@ onUnmounted(machine.dispose)
 
 <template>
   <div ref="root" class="typing-demo">
-    <section class="typing-demo-panel typing-demo-config" aria-label="prose config">
+    <section class="typing-demo-panel typing-demo-config panel panel-clip" aria-label="prose config">
       <header class="typing-demo-label">prose.toml</header>
       <pre class="typing-demo-config-code"><code><span class="typing-demo-config-prelude">{{ segments.before }}</span><span class="typing-demo-config-editing">{{ segments.editingLineBefore }}</span><span class="typing-demo-config-editing">{{ segments.editing }}<span v-if="showCaret" class="typing-demo-caret" aria-hidden="true" /></span><span class="typing-demo-config-editing">{{ segments.editingLineAfter }}</span><span class="typing-demo-config-prelude">{{ segments.after }}</span></code></pre>
     </section>
-    <section class="typing-demo-panel typing-demo-python" aria-label="Python source">
+    <section class="typing-demo-panel typing-demo-python panel panel-clip" aria-label="Python source">
       <header class="typing-demo-label">app.py</header>
       <ShikiMagicMovePrecompiled
         class    = "typing-demo-python-code"

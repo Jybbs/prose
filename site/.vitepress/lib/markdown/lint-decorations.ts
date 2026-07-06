@@ -12,7 +12,7 @@ export function lintDecorations(findings: readonly LintFinding[]): DecorationIte
     .toSorted((a, b) => a.location.row - b.location.row || a.location.column - b.location.column)
     .map(finding => {
       const properties: Record<string, string> = {
-        class          : 'lint-flag',
+        class          : 'lint-flag underline-draw',
         'data-message' : finding.message,
         'data-rule'    : finding.code
       }

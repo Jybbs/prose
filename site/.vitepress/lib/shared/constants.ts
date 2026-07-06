@@ -1,6 +1,7 @@
-export const REPO_SLUG     = 'Jybbs/prose'
-export const REPO_URL      = `https://github.com/${REPO_SLUG}`
-export const SHIKI_THEMES  = { dark: 'github-dark', light: 'github-light' } as const
-export const SITE_ALT      = 'Prose, a Python typesetter for the reader.'
-export const SITE_HOSTNAME = 'https://prose.fyi'
-export const SITE_TAGLINE  = 'A Python typesetter for the reader.'
+export const BODY_LINK_CLASSES = 'body-link underline-draw'
+export const REPO_SLUG         = 'Jybbs/prose'
+export const REPO_URL          = `https://github.com/${REPO_SLUG}`
+export const SHIKI_THEMES      = { dark: 'github-dark', light: 'github-light' } as const
+export const SITE_ALT          = 'Prose, a Python typesetter for the reader.'
+export const SITE_HOSTNAME     = 'https://prose.fyi'
+export const SITE_TAGLINE      = 'A Python typesetter for the reader.'

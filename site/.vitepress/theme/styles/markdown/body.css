@@ -10,10 +10,9 @@
 .vp-doc a.body-link,
 .vp-doc a.tool-mark,
 a.tool-mark {
-  --link-underline : var(--vp-c-brand-1);
-  text-decoration  : none;
-  background       : linear-gradient(var(--link-underline), var(--link-underline)) no-repeat left bottom / 0% 1px;
-  transition       :
+  --underline-accent : var(--vp-c-brand-1);
+  text-decoration    : none;
+  transition         :
     background-size var(--prose-transition-slow),
     color           var(--prose-transition);
 }
@@ -21,9 +20,8 @@ a.tool-mark {
 .vp-doc a.body-link:hover,
 .vp-doc a.tool-mark:hover,
 a.tool-mark:hover {
-  --link-underline : var(--prose-role-link-hover);
-  background-size  : 100% 1px;
-  color            : var(--prose-role-link-hover);
+  --underline-accent : var(--prose-role-link-hover);
+  color              : var(--prose-role-link-hover);
 }
 
 .v-popper--theme-rule-card {
@@ -76,6 +74,7 @@ a.tool-mark:hover {
   background     : var(--vp-c-bg-soft);
   border-bottom  : 1px solid var(--vp-c-divider);
   letter-spacing : var(--prose-label-tracking);
+  font-weight    : 700;
 }
 
 .vp-doc td {

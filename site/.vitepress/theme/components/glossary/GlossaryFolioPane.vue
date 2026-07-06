@@ -8,7 +8,7 @@ const { active, activeIndex, filtered, step } = useGlossaryFolio()
 
 <template>
   <div class="glossary-folio-stage" :data-family="active?.primaryFamily">
-    <article v-if="active" class="glossary-folio-pane">
+    <article v-if="active" class="glossary-folio-pane panel">
       <header class="glossary-folio-head">
         <p class="glossary-folio-folio">
           <span

@@ -2,10 +2,7 @@
   display               : grid;
   grid-template-columns : 232px 1fr;
   margin                : 1.5rem 0;
-  border                : 1px solid var(--vp-c-divider);
-  border-radius         : var(--prose-radius);
   background            : var(--vp-c-bg);
-  overflow              : hidden;
 }
 
 .editor-card-index {
@@ -104,15 +101,6 @@
 
 .editor-card-row.is-active .editor-card-row-name {
   color : color-mix(in srgb, var(--prose-palette-celadon) 60%, var(--vp-c-text-1));
-}
-
-.editor-card-row-leader {
-  flex          : 1 1 auto;
-  min-width     : 6px;
-  align-self    : center;
-  height        : 1em;
-  border-bottom : 1px dotted var(--vp-c-divider);
-  transform     : translateY(-2px);
 }
 
 .editor-card-faces {

@@ -3,11 +3,9 @@
   --layer-orchestration : var(--prose-palette-whiskey);
   --layer-analysis      : var(--prose-palette-ube);
 
-  margin        : 1.5rem 0;
-  padding       : 12px 14px;
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg);
+  margin     : 1.5rem 0;
+  padding    : 12px 14px;
+  background : var(--vp-c-bg);
 }
 
 .primitives-composition [data-layer="base"]          { --layer-accent : var(--layer-base);          }

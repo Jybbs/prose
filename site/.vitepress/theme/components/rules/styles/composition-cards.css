@@ -2,10 +2,10 @@
    tree, over the shared .fixture-card chrome in fixture-card.css. Each row
    carries a folio number, a top-to-bottom gradient rail through every rule's
    family color in pipeline order, and a rule indicator. The indicator is a
-   filled family-colored block: collapsed, the rules are tall skinny ticks on
-   the right of the headline; hovering a tick unfurls it leftward into a
-   labeled rectangle in uppercase mono; clicking the card drops the rules into
-   a full-width segmented bar below the before/after pair, riding down with
+   filled family-colored block. Collapsed, the rules are tall skinny ticks on
+   the right of the headline, and hovering a tick unfurls it leftward into a
+   labeled rectangle in uppercase mono. Clicking the card drops the rules into
+   a full-width segmented bar below the before/after pair, descending with
    the card's growing edge then spreading leftward a beat later, the rule
    names fading in once the spread has landed. */
 
@@ -87,7 +87,7 @@
   text-overflow : ellipsis;
 }
 
-/* The filled block, shared by the ticks and the bar. Collapsed it rides a
+/* The filled block, shared by the ticks and the bar. Collapsed it sits on a
    0fr label track clipped by `min-width: 0` + `overflow: hidden`, so the
    reveal animates `grid-template-columns` to the label's natural width with
    no fake `max-width`. The label is uppercase mono in a darkened tone of the
@@ -174,8 +174,8 @@
   align-items : center;
 }
 
-/* Expanded: the segmented bar lives at the bottom of the body, so it rides
-   down with the card's growing edge (step one). It starts as a compact
+/* Expanded: the segmented bar lives at the bottom of the body, so it
+   descends with the card's growing edge (step one). It starts as a compact
    right-aligned cluster and, after the body has grown, spreads leftward to
    full width (step two). The spread's delay sequences it after the descent,
    and the labels fade in once the spread has landed. */

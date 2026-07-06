@@ -1,0 +1,8 @@
+.panel {
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+}
+
+.panel-clip {
+  overflow : hidden;
+}

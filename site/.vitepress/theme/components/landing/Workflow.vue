@@ -18,7 +18,7 @@ const chapters = computed(() =>
     kicker="The Workflow"
     variant="quickstart"
   >
-    <article class="landing-workflow">
+    <article class="landing-workflow panel">
       <section
         v-for="(chapter, idx) in chapters"
         :key="chapter.number"

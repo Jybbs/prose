@@ -9,7 +9,7 @@ const { selected: activeSlug } = useTabSelect(editors, e => e.slug)
 </script>
 
 <template>
-  <div class="editor-card">
+  <div class="editor-card panel panel-clip">
     <aside class="editor-card-index">
       <span class="kicker editor-card-edition">Editors &middot; {{ formatFolio(editors.length) }}</span>
       <ul class="editor-card-list" role="tablist">

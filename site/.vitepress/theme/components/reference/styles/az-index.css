@@ -199,7 +199,7 @@ a.az-index-key-btn[aria-current="true"] {
   align-items      : flex-start;
   gap              : 0;
   padding          : 8px 12px 8px;
-  background-color : color-mix(in srgb, var(--vp-c-bg-alt) 30%, var(--vp-c-bg));
+  background-color : var(--prose-panel-wash);
   background-image : radial-gradient(
     circle at 100% 0%,
     color-mix(in srgb, var(--domain-color, var(--prose-palette-ube)) 42%, transparent) 0%,

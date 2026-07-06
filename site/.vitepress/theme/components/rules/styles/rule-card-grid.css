@@ -9,6 +9,8 @@
 
 .vp-doc .rule-card,
 .rule-card {
+  --prose-panel-wash : color-mix(in srgb, var(--vp-c-bg-alt) 35%, var(--vp-c-bg));
+
   position              : relative;
   isolation             : isolate;
   display               : grid;
@@ -19,7 +21,7 @@
   min-height            : 64px;
   border                : 1px solid var(--vp-c-divider);
   border-radius         : var(--prose-radius-sm);
-  background            : color-mix(in srgb, var(--vp-c-bg-alt) 35%, var(--vp-c-bg));
+  background            : var(--prose-panel-wash);
   color                 : var(--vp-c-text-1);
   transition            :
     border-color var(--prose-transition-slow),
@@ -29,7 +31,7 @@
 .vp-doc .rule-card:hover,
 .rule-card:hover {
   border-color : color-mix(in srgb, var(--family-color) 40%, var(--vp-c-divider));
-  background   : color-mix(in srgb, var(--family-color) 4%, color-mix(in srgb, var(--vp-c-bg-alt) 35%, var(--vp-c-bg)));
+  background   : color-mix(in srgb, var(--family-color) 4%, var(--prose-panel-wash));
 }
 
 .rule-card-cover {

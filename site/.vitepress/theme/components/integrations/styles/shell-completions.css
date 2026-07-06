@@ -59,11 +59,8 @@
 .shell-card-modal {
   display        : flex;
   flex-direction : column;
-  border         : 1px solid var(--vp-c-divider);
-  border-radius  : var(--prose-radius);
   background     : var(--vp-c-bg);
   box-shadow     : var(--prose-shadow-lift) color-mix(in srgb, var(--vp-c-text-1) 6%, transparent);
-  overflow       : hidden;
   min-height     : 260px;
 }
 

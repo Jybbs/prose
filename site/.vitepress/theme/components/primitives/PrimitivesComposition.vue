@@ -42,7 +42,7 @@ function clearFocus() {
 </script>
 
 <template>
-  <div class="primitives-composition" :data-layer="focusedEntry?.layer ?? 'empty'">
+  <div class="primitives-composition panel" :data-layer="focusedEntry?.layer ?? 'empty'">
     <PrimitivesCompositionGrid
       :bands   = "bands"
       :focused = "focused"
