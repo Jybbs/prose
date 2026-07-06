@@ -4,10 +4,10 @@ import type { JSXNode } from 'satori/jsx'
 import { formatFolio }                from '../../shared/numerals'
 import { CATEGORY_META, FAMILY_META } from '../../shared/registries'
 
-import { type BrandAssets, BRAND_TITLE_ASPECT } from './assets'
-import { PALETTE }                              from '../../shared/palette'
-import type { OgPage }                          from '../pages'
-import * as parts                               from './parts'
+import type { BrandAssets, BrandImage } from './assets'
+import { PALETTE }                      from '../../shared/palette'
+import type { OgPage }                  from '../pages'
+import * as parts                       from './parts'
 
 const CODE_CHIP = {
   backgroundColor : 'rgba(255, 255, 255, 0.08)',
@@ -32,7 +32,7 @@ export function pageSvg(
   return parts.toSvg(buildCard(page, version, brand.wordmark, brand.glyph), brand.fonts)
 }
 
-function buildCard(page: OgPage, version: string, wordmark: string, glyph: string): JSXNode {
+function buildCard(page: OgPage, version: string, wordmark: BrandImage, glyph: string): JSXNode {
   const accent = page.accent ?? PALETTE.ube
   return parts.cardShell(
     watermarkLayer(glyph),
@@ -62,7 +62,7 @@ function dataPanel(page: OgPage, version: string, accent: string): JSXNode {
   )
 }
 
-function fitTitleSize(text: string, hasCaption: boolean): number {
+export function fitTitleSize(text: string, hasCaption: boolean): number {
   return TITLE_SIZES[hasCaption ? 'cap' : 'bare'].find(([max]) => text.length <= max)![1]
 }
 
@@ -162,7 +162,7 @@ function watermarkLayer(glyph: string): JSXNode {
   )
 }
 
-function wordmarkBlock(wordmark: string): JSXNode {
+function wordmarkBlock(wordmark: BrandImage): JSXNode {
   const height = 76
   return parts.el('div',
     {
@@ -177,9 +177,9 @@ function wordmarkBlock(wordmark: string): JSXNode {
     },
     parts.el('img', {
       height : height,
-      src    : wordmark,
+      src    : wordmark.src,
       style  : { display: 'flex' },
-      width  : Math.round(height * BRAND_TITLE_ASPECT)
+      width  : Math.round(height * wordmark.aspect)
     }),
     parts.el('div', {
       children : 'DOCS',

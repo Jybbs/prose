@@ -33,7 +33,12 @@ describe('enumeratePages', () => {
 })
 
 describe('cardKeyer', () => {
-  const brand = { fonts: [], glyph: 'g', titleWithTagline: 't', wordmark: 'w' }
+  const brand = {
+    fonts            : [],
+    glyph            : 'g',
+    titleWithTagline : { aspect: 1, src: 't' },
+    wordmark         : { aspect: 1, src: 'w' }
+  }
 
   it('keys stably per input and re-keys when the version or card changes', () => {
     const keyOf = cardKeyer('0.1.0', brand)

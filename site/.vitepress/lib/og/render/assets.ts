@@ -4,17 +4,21 @@ import path              from 'node:path'
 
 import type { Font } from 'satori'
 
-import { FONT } from './parts'
+import { svgViewBox } from '../../shared/svg-view-box'
+import { FONT }       from './parts'
 
 const require = createRequire(import.meta.url)
 
-export const BRAND_TITLE_ASPECT = 1031 / 380
+export interface BrandImage {
+  aspect : number
+  src    : string
+}
 
 export interface BrandAssets {
   fonts            : Font[]
   glyph            : string
-  titleWithTagline : string
-  wordmark         : string
+  titleWithTagline : BrandImage
+  wordmark         : BrandImage
 }
 
 const FONT_FACES: readonly Omit<Font, 'data'>[] = [
@@ -32,15 +36,19 @@ const FONT_FACES: readonly Omit<Font, 'data'>[] = [
 
 export function loadBrandAssets(srcDir: string): BrandAssets {
   const fonts = FONT_FACES.map(face => ({ ...face, data: fs.readFileSync(fontFile(face)) }))
-  const glyphSvg            = fs.readFileSync(path.join(srcDir, 'public', 'logo.svg'))
-  const titleWithTaglineSvg = fs.readFileSync(path.join(srcDir, 'public', 'title-with-tagline.svg'))
-  const wordmarkSvg         = fs.readFileSync(path.join(srcDir, 'public', 'title.svg'))
+  const read  = (file: string): Buffer => fs.readFileSync(path.join(srcDir, 'public', file))
   return {
     fonts            : fonts,
-    glyph            : dataUri(glyphSvg),
-    titleWithTagline : dataUri(titleWithTaglineSvg),
-    wordmark         : dataUri(wordmarkSvg)
+    glyph            : dataUri(read('logo.svg')),
+    titleWithTagline : brandImage('title-with-tagline.svg', read),
+    wordmark         : brandImage('title.svg', read)
   }
+}
+
+function brandImage(file: string, read: (file: string) => Buffer): BrandImage {
+  const svg        = read(file)
+  const [, , w, h] = svgViewBox(svg.toString(), file).split(/\s+/).map(Number)
+  return { aspect: w / h, src: dataUri(svg) }
 }
 
 function fontFile(face: Omit<Font, 'data'>): string {

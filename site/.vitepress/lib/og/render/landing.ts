@@ -1,8 +1,9 @@
 import type { JSXNode } from 'satori/jsx'
 
-import { type BrandAssets, BRAND_TITLE_ASPECT } from './assets'
-import { PALETTE }                              from '../../shared/palette'
-import * as parts                               from './parts'
+import type { BrandAssets, BrandImage } from './assets'
+import { SITE_HOSTNAME }                from '../../shared/constants'
+import { PALETTE }                      from '../../shared/palette'
+import * as parts                       from './parts'
 
 const ARTIFACT_LEFT = 120
 const TITLE_TOP     = 246
@@ -13,7 +14,7 @@ export function landingSvg(brand: BrandAssets, version: string): Promise<string>
   return parts.toSvg(buildLandingCard(version, brand.titleWithTagline), brand.fonts)
 }
 
-function buildLandingCard(version: string, titleWithTagline: string): JSXNode {
+function buildLandingCard(version: string, titleWithTagline: BrandImage): JSXNode {
   return parts.cardShell(
     parts.leftRail(PALETTE.ube),
     glyphBlock(),
@@ -24,7 +25,7 @@ function buildLandingCard(version: string, titleWithTagline: string): JSXNode {
 
 function dataPanel(version: string): JSXNode {
   return parts.panelShell(PALETTE.ube, '66',
-    parts.panelRow('URL', 'prose.fyi'),
+    parts.panelRow('URL', new URL(SITE_HOSTNAME).host),
     parts.panelDivider(),
     parts.versionCallout(version)
   )
@@ -76,8 +77,8 @@ function pilcrowMark(): JSXNode {
   })
 }
 
-function titleArtwork(src: string): JSXNode {
-  const height = Math.round(TITLE_WIDTH / BRAND_TITLE_ASPECT)
+function titleArtwork(mark: BrandImage): JSXNode {
+  const height = Math.round(TITLE_WIDTH / mark.aspect)
   return parts.el('div', {
     style: {
       display  : 'flex',
@@ -85,6 +86,6 @@ function titleArtwork(src: string): JSXNode {
       position : 'absolute',
       top      : TITLE_TOP
     },
-    children: parts.el('img', { height, src, width: TITLE_WIDTH })
+    children: parts.el('img', { height, src: mark.src, width: TITLE_WIDTH })
   })
 }

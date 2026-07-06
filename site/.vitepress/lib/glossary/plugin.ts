@@ -3,6 +3,7 @@ import type MarkdownIt from 'markdown-it'
 import { isInert }           from '../markdown/inert-env'
 import { replaceTextTokens } from '../markdown/token-split'
 import { walkBodyInlines }   from '../markdown/walk'
+import { wordBounded }       from '../markdown/word-bounded'
 
 export function glossaryPlugin(
   phraseToSlug : ReadonlyMap<string, string>,
@@ -13,10 +14,7 @@ export function glossaryPlugin(
   }
 
   const phrases = [...phraseToSlug.keys()].toSorted((a, b) => b.length - a.length)
-  const pattern = new RegExp(
-    `(?<![A-Za-z0-9_-])(${phrases.map(p => RegExp.escape(p)).join('|')})(?![A-Za-z0-9_-])`,
-    'g'
-  )
+  const pattern = wordBounded(phrases.map(p => RegExp.escape(p)).join('|'))
 
   return function plugin(md: MarkdownIt): void {
     md.core.ruler.after('inline', 'glossary-decorate', state => {

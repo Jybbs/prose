@@ -5,6 +5,8 @@ import { inlineCode }                     from '../../lib/shared/inline-code'
 import { externalAttrs }                  from '../../lib/shared/links'
 import { lookup }                         from '../../lib/shared/lookup'
 import { formatFolio, toRoman }           from '../../lib/shared/numerals'
+import { requireString }                  from '../../lib/shared/require-string'
+import { svgViewBox }                     from '../../lib/shared/svg-view-box'
 import { toTitleCase }                    from '../../lib/shared/title-case'
 import { withFallback, withFallbackSync } from '../../lib/shared/with-fallback'
 
@@ -89,11 +91,50 @@ test.prop([fc.integer({ min: 1, max: 3999 })])('toRoman round-trips through a pa
 
 describe('inlineCode', () => {
   it.each([
-    ['plain text',         'plain text'],
-    ['use `prose format`', 'use <code>prose format</code>'],
-    ['`a` then `b`',       '<code>a</code> then <code>b</code>']
-  ])('wraps backticks in %s', (input, expected) => {
+    ['plain text',           'plain text'],
+    ['use `prose format`',   'use <code>prose format</code>'],
+    ['`a` then `b`',         '<code>a</code> then <code>b</code>'],
+    ['<script>x</script>',   '&lt;script&gt;x&lt;/script&gt;'],
+    ['a & b',                'a &amp; b'],
+    ['`Optional[int] | X`',  '<code>Optional[int] | X</code>'],
+    ['`a < b` stays code',   '<code>a &lt; b</code> stays code']
+  ])('renders %s', (input, expected) => {
     expect(inlineCode(input)).toBe(expected)
+  })
+
+  test.prop([fc.string().filter(s => !/[&<>`]/.test(s))])(
+    'leaves markup-free text unchanged',
+    (text) => {
+      expect(inlineCode(text)).toBe(text)
+    }
+  )
+})
+
+describe('requireString', () => {
+  it('returns a non-empty string unchanged', () => {
+    expect(requireString('align-equals', 'missing slug')).toBe('align-equals')
+  })
+
+  it.each([
+    ['an empty string',      ''],
+    ['a whitespace string',  '   '],
+    ['a number',             7],
+    ['a null',               null],
+    ['an undefined',         undefined]
+  ])('throws the message for %s', (_name, value) => {
+    expect(() => requireString(value, 'missing slug')).toThrow('missing slug')
+  })
+})
+
+describe('svgViewBox', () => {
+  it('reads the viewBox off the svg tag', () => {
+    expect(svgViewBox('<svg xmlns="x" viewBox="0 0 24 24"><path/></svg>', 'icon.svg'))
+      .toBe('0 0 24 24')
+  })
+
+  it('names the asset when the viewBox is absent', () => {
+    expect(() => svgViewBox('<svg><path/></svg>', 'icon.svg'))
+      .toThrow('icon.svg carries no viewBox')
   })
 })
 

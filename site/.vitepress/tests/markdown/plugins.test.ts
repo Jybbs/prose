@@ -19,6 +19,11 @@ describe('proseMarkPlugin', () => {
     expect(render(md => md.use(proseMarkPlugin), 'Prose formats code'))
       .toContain('<span class="prose-mark">Prose</span>')
   })
+
+  it('keeps hyphenated and snake_case compounds literal', () => {
+    expect(render(md => md.use(proseMarkPlugin), 'the prose-mark class and prose_mark name'))
+      .not.toContain('<span class="prose-mark">')
+  })
 })
 
 describe('bodyLinkPlugin', () => {
@@ -39,6 +44,10 @@ describe('glossaryPlugin', () => {
   it('decorates a phrase only once per page', () => {
     const html = render(md => md.use(plugin), 'atom and atom')
     expect(html.match(/<GlossaryTerm/g)).toHaveLength(1)
+  })
+
+  it('keeps a phrase inside a compound literal', () => {
+    expect(render(md => md.use(plugin), 'an atom-splitter here')).not.toContain('GlossaryTerm')
   })
 
   it('emits an inert glossary anchor under the inertHtml env', () => {
