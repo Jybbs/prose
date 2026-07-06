@@ -2,7 +2,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { ref }           from 'vue'
 
-import { useCarouselMeasurement }           from '../../theme/components/landing/surfaces/use-carousel-measurement'
+import { useCarouselMeasurement }           from '../../lib/composables/use-carousel-measurement'
 import { domTest, mountSetup, rectElement } from '../dom'
 
 const fakeCard = (offsetLeft: number, offsetWidth: number): HTMLElement => {

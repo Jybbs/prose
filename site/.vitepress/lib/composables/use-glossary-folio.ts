@@ -1,7 +1,7 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 
-import { data as glossary, type RenderedGlossaryEntry } from '../../../lib/glossary/glossary.data'
-import * as folio                                       from '../../../lib/glossary/folio'
+import { data as glossary, type RenderedGlossaryEntry } from '../glossary/glossary.data'
+import * as folio                                       from '../glossary/folio'
 
 const ordered: readonly RenderedGlossaryEntry[] = Object.values(glossary.entries)
   .toSorted((a, b) => folio.compareCaseless(a.slug, b.slug))

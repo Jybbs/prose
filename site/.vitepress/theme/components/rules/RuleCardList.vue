@@ -5,7 +5,7 @@ import RuleCard from './RuleCard.vue'
 
 import { data as rules }                 from '../../../lib/rules/rules.data'
 import { useCurrentRule }                from '../../../lib/composables/route'
-import { useRuleCardNameSync }           from './use-rule-card-name-sync'
+import { useRuleCardNameSync }           from '../../../lib/composables/use-rule-card-name-sync'
 import { lookup }                        from '../../../lib/shared/lookup'
 import type { RuleCategory, RuleFamily } from '../../../lib/shared/registries'
 

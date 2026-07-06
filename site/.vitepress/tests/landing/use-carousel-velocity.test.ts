@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ref } from 'vue'
 
-import { useCarouselVelocity }     from '../../theme/components/landing/surfaces/use-carousel-velocity'
+import { useCarouselVelocity }     from '../../lib/composables/use-carousel-velocity'
 import { mountSetup, rectElement } from '../dom'
 
 const OPTIONS = { baseSpeedPxPerSec: 100, edgeMarginPx: 10, magnetGain: 2, maxPullPxPerSec: 400 }

@@ -2,7 +2,7 @@
 import { ref }              from 'vue'
 
 import MiddleEllipsis        from '../base/MiddleEllipsis.vue'
-import { useMeasuredCssVar } from './use-measured-css-var'
+import { useMeasuredCssVar } from '../../../lib/composables/use-measured-css-var'
 
 import type { RenderedRule } from '../../../lib/rules/rules.data'
 

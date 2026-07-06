@@ -1,6 +1,6 @@
 import { watch, type Ref, type WatchSource } from 'vue'
 
-import { useSettledMeasure } from '../../../lib/composables/use-settled-measure'
+import { useSettledMeasure } from './use-settled-measure'
 
 interface UseMeasuredCssVarOptions {
   measure   : () => number | null

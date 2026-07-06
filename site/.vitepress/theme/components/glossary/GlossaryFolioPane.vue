@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useGlossaryFolio }   from './use-glossary-folio'
+import { useGlossaryFolio }   from '../../../lib/composables/use-glossary-folio'
 import { formatFolio }        from '../../../lib/shared/numerals'
 import { GLOSSARY_FAMILY_META } from '../../../lib/shared/registries'
 

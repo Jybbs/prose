@@ -3,7 +3,7 @@ import { useData }  from 'vitepress'
 import { computed } from 'vue'
 
 import { railPaint }        from '../../../lib/shared/family-rail'
-import { useGlossaryFolio } from './use-glossary-folio'
+import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
 
 const props = defineProps<{ forceRender?: boolean }>()
 

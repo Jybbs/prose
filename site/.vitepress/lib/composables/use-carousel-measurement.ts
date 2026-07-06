@@ -1,7 +1,7 @@
 import { useElementBounding, useEventListener } from '@vueuse/core'
 import { ref, type Ref }                        from 'vue'
 
-import { useSettledMeasure } from '../../../../lib/composables/use-settled-measure'
+import { useSettledMeasure } from './use-settled-measure'
 
 interface CarouselMeasurement {
   fits      : Ref<boolean>
