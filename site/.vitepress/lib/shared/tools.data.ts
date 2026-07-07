@@ -9,7 +9,7 @@ import { defineLoader }           from 'vitepress'
 
 import { lookup }                    from './lookup'
 import { repoRoot }                  from './paths'
-import { svgViewBox }                from './svg-view-box'
+import { parseSvg }                  from './svg'
 import { TOOL_SEEDS, type ToolSlug } from './tools'
 
 interface ToolIcon {
@@ -36,16 +36,9 @@ const ICON_SETS: Record<string, IconifyJSON> = {
 const repoDir = repoRoot(import.meta.url)
 
 function loadLocalSvg(relative: string): ToolIcon {
-  const file    = path.join(repoDir, 'site', '.vitepress', 'assets', relative)
-  const raw     = fs.readFileSync(file, 'utf8')
-  const viewBox = svgViewBox(raw, relative)
-  const body    = raw
-    .replaceAll(/<\?xml[^?]*\?>/g, '')
-    .replaceAll(/<!--[\s\S]*?-->/g, '')
-    .replace(/<svg[^>]*>/, '')
-    .replace(/<\/svg>\s*$/, '')
-    .trim()
-  return { body: `<g fill="currentColor">${body}</g>`, viewBox }
+  const file   = path.join(repoDir, 'site', '.vitepress', 'assets', relative)
+  const parsed = parseSvg(fs.readFileSync(file, 'utf8'), relative)
+  return { body: `<g fill="currentColor">${parsed.body.trim()}</g>`, viewBox: parsed.attribs.viewBox }
 }
 
 const CUSTOM_ICONS: Record<string, ToolIcon> = {

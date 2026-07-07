@@ -1,11 +1,12 @@
 import { SITE_HOSTNAME } from '../shared/constants'
+import { stripSuffix }   from '../shared/strip-suffix'
 
 export function canonicalUrl(relativePath: string): string {
   return `${SITE_HOSTNAME}/${pagePath(relativePath)}`
 }
 
-export function pagePath(relativePath: string): string {
-  return relativePath
-    .replace(/(^|\/)index\.md$/, '$1')
-    .replace(/\.md$/, '')
+function pagePath(relativePath: string): string {
+  const route = stripSuffix(relativePath, '.md')
+  if (route === 'index') return ''
+  return route.endsWith('/index') ? stripSuffix(route, 'index') : route
 }

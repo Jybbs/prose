@@ -215,7 +215,7 @@
   background : var(--vp-c-divider);
 }
 
-.fixture-card-body-inner :deep(.fixture-pair-doc) {
+.fixture-card-body-inner .fixture-pair-doc {
   margin        : 0;
   border-radius : var(--prose-radius-sm);
 }

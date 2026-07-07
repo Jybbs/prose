@@ -4,6 +4,7 @@ import { computed } from 'vue'
 
 import { data as glossary } from '../../../lib/glossary/glossary.data'
 import { lookup }           from '../../../lib/shared/lookup'
+import { stripSuffix }      from '../../../lib/shared/strip-suffix'
 
 const props = defineProps<{ slug: string }>()
 
@@ -23,8 +24,8 @@ const tooltipHtml = computed(() => {
 const showLink = computed(() => {
   if (!entry.href) return false
   if (entry.href.includes('#')) return true
-  const current = route.path.replace(/\.html$/, '').replace(/\/$/, '')
-  return current !== entry.href.replace(/\/$/, '')
+  const current = stripSuffix(stripSuffix(route.path, '.html'), '/')
+  return current !== stripSuffix(entry.href, '/')
 })
 </script>
 

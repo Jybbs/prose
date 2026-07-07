@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useIntersectionObserver }   from '@vueuse/core'
-import { ShikiMagicMovePrecompiled } from 'shiki-magic-move/vue'
+import { ShikiMagicMovePrecompiled } from '@shikijs/magic-move/vue'
 import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
 import { data }                               from '../../../lib/landing/landing-typing-demo.data'

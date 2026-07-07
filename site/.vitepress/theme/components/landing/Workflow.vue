@@ -1,13 +1,13 @@
 <script setup lang="ts">
+import { romanize } from 'romans'
 import { computed } from 'vue'
 
 import LandingSection from './LandingSection.vue'
 
 import { data as landing } from '../../../lib/landing/landing.data'
-import { toRoman }         from '../../../lib/shared/numerals'
 
 const chapters = computed(() =>
-  landing.workflow.map((s, i) => ({ ...s, roman: toRoman(i + 1) }))
+  landing.workflow.map((s, i) => ({ ...s, roman: romanize(i + 1) }))
 )
 </script>
 

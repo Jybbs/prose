@@ -84,20 +84,16 @@ const STEP_SOURCES: readonly StepSource[] = [
 export default defineLoader({
   watch: [],
   async load(): Promise<LandingData> {
-    const md = await renderer.getRenderer()
+    const md       = await renderer.getRenderer()
+    const withBody = renderer.renderInlineField(md, STEP_SOURCES, 'body')
+    const workflow = await renderer.renderFencedField(md, withBody, 'code')
     return {
       surfaces : FAMILY_ORDER.map((family, i) => ({
         bodyHtml : renderer.renderInlineHtml(md, SURFACE_BODIES[family]),
         family,
         number   : formatFolio(i + 1)
       })),
-      workflow : STEP_SOURCES.map(src => ({
-        bodyHtml : renderer.renderInlineHtml(md, src.body),
-        codeHtml : renderer.renderFencedHtml(md, src.code, src.language),
-        language : src.language,
-        number   : src.number,
-        title    : src.title
-      }))
+      workflow
     }
   }
 })

@@ -3,6 +3,7 @@ import { useData }  from 'vitepress'
 import { computed } from 'vue'
 
 import { railPaint }        from '../../../lib/shared/family-rail'
+import { stripSuffix }      from '../../../lib/shared/strip-suffix'
 import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
 
 const props = defineProps<{ forceRender?: boolean }>()
@@ -10,7 +11,7 @@ const props = defineProps<{ forceRender?: boolean }>()
 const { page } = useData()
 
 const onGlossaryPage = computed(() =>
-  page.value.relativePath.replace(/\.md$/, '') === 'reference/glossary')
+  stripSuffix(page.value.relativePath, '.md') === 'reference/glossary')
 
 const visible = computed(() => props.forceRender || onGlossaryPage.value)
 

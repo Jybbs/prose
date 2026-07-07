@@ -3,12 +3,13 @@ import { computed, inject, provide, type ComputedRef, type InjectionKey }  from 
 
 import { data as rules, type RenderedRule } from '../rules/rules.data'
 import { FAMILY_META, type RuleFamily }     from '../shared/registries'
+import { stripSuffix }                      from '../shared/strip-suffix'
 
 const CURRENT_RULE_KEY: InjectionKey<ComputedRef<RenderedRule | null>> = Symbol('currentRule')
 
 function routeSegments(rel: string): readonly string[] {
   if (!rel.startsWith('rules/')) return []
-  return rel.slice('rules/'.length).replace(/\.md$/, '').split('/')
+  return stripSuffix(rel.slice('rules/'.length), '.md').split('/')
 }
 
 function buildCurrentRule(): ComputedRef<RenderedRule | null> {

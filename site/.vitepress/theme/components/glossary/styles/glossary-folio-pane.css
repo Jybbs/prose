@@ -180,7 +180,7 @@ code.glossary-folio-aliases-chip {
   color       : var(--vp-c-text-1);
 }
 
-.glossary-folio-body :deep(code) {
+.glossary-folio-body code {
   font-family : var(--vp-font-family-mono);
   font-size   : 0.84em;
   color       : color-mix(in srgb, var(--family-color) 60%, var(--vp-c-text-1));

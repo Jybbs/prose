@@ -6,7 +6,7 @@ import FloatingVue            from 'floating-vue'
 import { enhanceAppWithTabs } from 'vitepress-plugin-tabs/client'
 
 import './styles/popper-vendor.css'
-import 'shiki-magic-move/style.css'
+import '@shikijs/magic-move/style.css'
 import 'virtual:group-icons.css'
 
 import '@fontsource-variable/fraunces'
@@ -16,7 +16,8 @@ import '@fontsource-variable/jetbrains-mono/wght-italic.css'
 import '@fontsource-variable/lora'
 import '@fontsource-variable/lora/wght-italic.css'
 
-import Layout from './Layout.vue'
+import { stripSuffix } from '../lib/shared/strip-suffix'
+import Layout          from './Layout.vue'
 
 import 'virtual:prose-palette.css'
 import './styles/tokens.css'
@@ -50,7 +51,7 @@ const modules = import.meta.glob<{ default: Component }>(
 )
 const components = Object.fromEntries(
   Object.entries(modules)
-    .map(([p, mod]) => [p.split('/').pop()!.replace(/\.vue$/, ''), mod.default])
+    .map(([p, mod]) => [stripSuffix(p.split('/').pop()!, '.vue'), mod.default])
 )
 
 export default {

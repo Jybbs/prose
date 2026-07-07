@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useIntersectionObserver } from '@vueuse/core'
 import { PopperWrapper }           from 'floating-vue'
-import type { KeyedTokensInfo }    from 'shiki-magic-move/types'
+import type { KeyedTokensInfo }    from '@shikijs/magic-move/types'
 import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import RuleCard from '../rules/RuleCard.vue'
@@ -29,7 +29,7 @@ interface ActiveFinding {
 const reducedMotion = useReducedMotion()
 const root          = useTemplateRef<HTMLElement>('root')
 
-type Panel = typeof import('shiki-magic-move/vue').ShikiMagicMovePrecompiled | null
+type Panel = typeof import('@shikijs/magic-move/vue').ShikiMagicMovePrecompiled | null
 
 const animate   = ref(false)
 const animating = ref(false)
@@ -63,7 +63,7 @@ async function prepare(): Promise<void> {
   if (before === after) return
   const [{ precompileMagicMove }, { ShikiMagicMovePrecompiled }] = await Promise.all([
     import('../../../lib/markdown/magic-move'),
-    import('shiki-magic-move/vue')
+    import('@shikijs/magic-move/vue')
   ])
   const rootStyle = getComputedStyle(document.documentElement)
   steps.value    = await precompileMagicMove([before, after])

@@ -2,10 +2,11 @@ import fs                from 'node:fs'
 import { createRequire } from 'node:module'
 import path              from 'node:path'
 
-import type { Font } from 'satori'
+import { buildParsedSVG } from '@iconify/utils'
+import type { Font }      from 'satori'
 
-import { svgViewBox } from '../../shared/svg-view-box'
-import { FONT }       from './parts'
+import { parseSvg } from '../../shared/svg'
+import { FONT }     from './parts'
 
 const require = createRequire(import.meta.url)
 
@@ -47,7 +48,7 @@ export function loadBrandAssets(srcDir: string): BrandAssets {
 
 function brandImage(file: string, read: (file: string) => Buffer): BrandImage {
   const svg        = read(file)
-  const [, , w, h] = svgViewBox(svg.toString(), file).split(/\s+/).map(Number)
+  const [, , w, h] = buildParsedSVG(parseSvg(svg.toString(), file))!.viewBox
   return { aspect: w / h, src: dataUri(svg) }
 }
 

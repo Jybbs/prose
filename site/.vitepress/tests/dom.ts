@@ -73,3 +73,6 @@ export const rectElement = (rect: Partial<DOMRect>): HTMLElement => {
   el.getBoundingClientRect = () => rect as DOMRect
   return el
 }
+
+export const nextFrame = (): Promise<void> =>
+  new Promise(resolve => { requestAnimationFrame(() => resolve()) })

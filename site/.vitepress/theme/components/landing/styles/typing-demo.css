@@ -53,7 +53,7 @@
   transition : color var(--prose-transition);
 }
 
-.typing-demo-python-code :deep(pre) {
+.typing-demo-python-code pre {
   margin     : 0;
   padding    : 0;
   background : transparent;
