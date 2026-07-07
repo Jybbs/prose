@@ -1,44 +1,41 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
+import postcssGlobalData                          from '@csstools/postcss-global-data'
 import postcssCustomMedia                         from 'postcss-custom-media'
 import githubDark                                 from 'shiki/themes/github-dark.mjs'
 import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
-import { corpusLintFindings }               from './lib/fixtures/walker'
-import { buildPhraseToSlug }                from './lib/glossary/phrase-map'
-import { glossary }                         from './lib/glossary/entries'
-import { glossaryHrefs }                    from './lib/glossary/hrefs'
-import { glossaryPlugin }                   from './lib/glossary/plugin'
-import { bodyLinkPlugin }                   from './lib/markdown/body-link-plugin'
-import { lintDecorationTransformer }        from './lib/markdown/lint-decorations'
-import { proseMarkPlugin }                  from './lib/markdown/prose-mark-plugin'
+import { canonicalUrl }                               from './lib/config/canonical-url'
+import { pageHead }                                   from './lib/config/head'
+import { ROBOTS_TXT }                                 from './lib/config/robots'
+import { buildSidebar }                               from './lib/config/sidebar'
+import { corpusLintFindings }                         from './lib/fixtures/walker'
+import { glossary }                                   from './lib/glossary/entries'
+import { glossaryHrefs }                              from './lib/glossary/hrefs'
+import { buildPhraseToSlug }                          from './lib/glossary/phrase-map'
+import { glossaryPlugin }                             from './lib/glossary/plugin'
+import { bodyLinkPlugin }                             from './lib/markdown/body-link-plugin'
+import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
+import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
 import { discoverPrimitiveIndex, discoverPrimitives } from './lib/primitives/discovery'
-import { discoverRuleIndex, discoverRules } from './lib/rules/discovery'
-import { assertCorpusIntegrity }            from './lib/rules/integrity'
-import { ruleLinkPlugin }                   from './lib/rules/link-plugin'
-import { canonicalUrl }                     from './lib/config/canonical-url'
-import { pageHead }                         from './lib/config/head'
-import { ROBOTS_TXT }                       from './lib/config/robots'
-import { attachLastmod }                    from './lib/config/sitemap'
-import { PALETTE, paletteCss }              from './lib/shared/palette'
-import * as constants                       from './lib/shared/constants'
-import { buildPageTimestamps }              from './lib/config/page-timestamps'
-import * as paths                           from './lib/shared/paths'
-import { SECTIONS }                         from './lib/shared/registries'
-import { sectionRoute }                     from './lib/shared/routes'
-import { buildSidebar }                     from './lib/config/sidebar'
-import { toTitleCase }                      from './lib/shared/title-case'
-import { TOOL_SEEDS }                       from './lib/shared/tools'
-import { readCargoVersion }                 from './lib/shared/version'
+import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
+import { assertCorpusIntegrity }                      from './lib/rules/integrity'
+import { ruleLinkPlugin }                             from './lib/rules/link-plugin'
+import * as constants                                 from './lib/shared/constants'
+import { PALETTE, paletteCss }                        from './lib/shared/palette'
+import * as paths                                     from './lib/shared/paths'
+import { SECTIONS }                                   from './lib/shared/registries'
+import { sectionRoute }                               from './lib/shared/routes'
+import { toTitleCase }                                from './lib/shared/title-case'
+import { TOOL_SEEDS }                                 from './lib/shared/tools'
+import { readCargoVersion }                           from './lib/shared/version'
 
-const repoDir              = paths.repoRoot(import.meta.url)
 const crate                = paths.crateDir(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
 const version              = readCargoVersion(crate)
-const pageTimestamps       = buildPageTimestamps(repoDir)
 const ruleDiscovery        = discoverRules(rulesDirectory)
 const ruleIndex            = discoverRuleIndex(rulesDirectory)
 const discoveredRules      = ruleDiscovery.rules
@@ -61,7 +58,7 @@ export default defineConfig({
     ['meta', { content: 'Prose',                   property: 'og:site_name'  }],
     ['style', {}, `:root{--prose-shiki-dark-bg:${shikiDarkBg}}`]
   ],
-  lastUpdated   : false,
+  lastUpdated   : true,
   markdown: {
     codeTransformers : [lintDecorationTransformer(corpusLintFindings(crate))],
     config: md => {
@@ -75,10 +72,7 @@ export default defineConfig({
     lineNumbers : false,
     theme       : constants.SHIKI_THEMES
   },
-  sitemap: {
-    hostname       : constants.SITE_HOSTNAME,
-    transformItems : items => attachLastmod(items, pageTimestamps)
-  },
+  sitemap: { hostname: constants.SITE_HOSTNAME },
   themeConfig: {
     editLink: {
       pattern : `${constants.REPO_URL}/edit/main/site/:path`,
@@ -118,30 +112,26 @@ export default defineConfig({
     if (!pageData.description && typeof pageData.frontmatter.caption === 'string') {
       pageData.description = pageData.frontmatter.caption
     }
-    const ts = pageTimestamps.get(pageData.relativePath)
-    if (ts) pageData.lastUpdated = ts
     if (pageData.relativePath.startsWith('rules/') && !pageData.relativePath.endsWith('index.md')) {
       pageData.frontmatter.name ??= toTitleCase(path.basename(pageData.relativePath, '.md'), '-')
     }
     if (pageData.relativePath.startsWith('primitives/') && !pageData.relativePath.endsWith('index.md')) {
-      const slug = pageData.relativePath.replaceAll(/^primitives\/|\.md$/g, '')
+      const slug = path.basename(pageData.relativePath, '.md')
       pageData.frontmatter.name ??= primitiveIndex.get(slug)?.name
     }
   },
   vite: {
-    build: {
-      chunkSizeWarningLimit: 4000,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('/shiki-magic-move/')) return 'shiki-magic-move'
-            if (id.includes('/floating-vue/'))     return 'floating-vue'
-            if (id.includes('/@vueuse/'))          return 'vueuse'
-          }
-        }
+    build: { chunkSizeWarningLimit: 4000 },
+    css: {
+      postcss: {
+        plugins: [
+          postcssGlobalData({
+            files: [path.join(paths.siteDir(import.meta.url), '.vitepress/theme/styles/tokens.css')]
+          }),
+          postcssCustomMedia()
+        ]
       }
     },
-    css: { postcss: { plugins: [postcssCustomMedia()] } },
     plugins: [{
       load      : id => id === '\0virtual:prose-palette.css' ? paletteCss() : undefined,
       name      : 'prose-palette',

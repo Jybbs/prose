@@ -15,8 +15,20 @@ type HtmlKey<K extends string> = `${K}Html`
 type Rendered<T, K extends string & keyof T> =
   Omit<T, K> & { [P in HtmlKey<K>]: T[K] extends readonly string[] ? string[] : string }
 
-export function renderBlockHtml(md: MarkdownRenderer, src: string): string {
-  return md.render(src, inertEnv())
+export function renderBlockHtml(md: MarkdownRenderer, src: string): Promise<string> {
+  return md.renderAsync(src, inertEnv())
+}
+
+export function renderFencedField<T extends { language: string }, K extends string & keyof T>(
+  md    : MarkdownRenderer,
+  items : readonly T[],
+  field : K
+): Promise<Array<Rendered<T, K>>> {
+  return Promise.all(items.map(async item => {
+    const rendered = await renderFencedHtml(md, item[field] as string, item.language)
+    const { [field]: _, ...rest } = item
+    return { ...rest, [`${field}Html`]: rendered } as Rendered<T, K>
+  }))
 }
 
 export function renderFencedHtml(
@@ -24,8 +36,8 @@ export function renderFencedHtml(
   code     : string,
   language : string,
   meta     : string = ''
-): string {
-  return md.render(`\`\`\`${language}${meta ? ` ${meta}` : ''}\n${code}\n\`\`\``)
+): Promise<string> {
+  return md.renderAsync(`\`\`\`${language}${meta ? ` ${meta}` : ''}\n${code}\n\`\`\``)
 }
 
 export function renderInlineField<T extends object, K extends string & keyof T>(

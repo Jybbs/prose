@@ -25,6 +25,7 @@
     "unicorn/no-array-sort"                      : "off",
     "unicorn/no-negated-condition"               : "off",
     "unicorn/prefer-math-trunc"                  : "off",
+    "unicorn/prefer-number-coercion"             : "off",
     "unicorn/require-post-message-target-origin" : "off",
     "vitest/expect-expect"                       : "off",
     "vitest/no-conditional-in-test"              : "off",

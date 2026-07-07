@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useEventListener }         from '@vueuse/core'
-import { computed, onMounted, ref } from 'vue'
+import { useEventListener, useToggle } from '@vueuse/core'
+import { computed, onMounted, ref }    from 'vue'
 
 import FixtureNoChange    from './FixtureNoChange.vue'
 import FixturePairDoc     from './FixturePairDoc.vue'
@@ -31,11 +31,7 @@ const titleHtml  = computed(() => props.title ? inlineCode(props.title) : '')
 const ruleData = computed(() => rules.bySlug[props.rule.replaceAll('_', '-')] ?? null)
 const family   = computed(() => ruleData.value?.family ?? null)
 
-const isOpen = ref<boolean>(props.open === true)
-
-function toggle(): void {
-  isOpen.value = !isOpen.value
-}
+const [isOpen, toggle] = useToggle(props.open === true)
 
 function syncWithHash(): void {
   if (window.location.hash === `#${id.value}`) {
@@ -57,7 +53,7 @@ useEventListener('hashchange', syncWithHash)
     :data-edits="entry.changesSource"
     :data-lint="entry.hasFindings"
   >
-    <div class="fixture-card-summary-row" @click="toggle">
+    <div class="fixture-card-summary-row" @click="toggle()">
       <button
         type="button"
         class="fixture-card-summary"

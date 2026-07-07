@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderFencedHtml } from '../markdown/renderer'
+import { getRenderer, renderFencedField } from '../markdown/renderer'
 
 interface EditorConfig {
   caption  : string
@@ -110,14 +110,6 @@ Working directory : $ProjectFileDir$`,
 export default defineLoader({
   watch: [],
   async load(): Promise<readonly EditorConfig[]> {
-    const md = await getRenderer()
-    return SOURCES.map(src => ({
-      caption  : src.caption,
-      codeHtml : renderFencedHtml(md, src.code, src.language),
-      language : src.language,
-      name     : src.name,
-      slug     : src.slug,
-      target   : src.target
-    }))
+    return renderFencedField(await getRenderer(), SOURCES, 'code')
   }
 })

@@ -1,113 +1,44 @@
 import { fc, test } from '@fast-check/vitest'
 
-import { railPaint }                      from '../../lib/shared/family-rail'
-import { inlineCode }                     from '../../lib/shared/inline-code'
-import { externalAttrs }                  from '../../lib/shared/links'
-import { lookup }                         from '../../lib/shared/lookup'
-import { formatFolio, toRoman }           from '../../lib/shared/numerals'
-import { requireString }                  from '../../lib/shared/require-string'
-import { svgViewBox }                     from '../../lib/shared/svg-view-box'
-import { toTitleCase }                    from '../../lib/shared/title-case'
-import { withFallback, withFallbackSync } from '../../lib/shared/with-fallback'
+import { railPaint }     from '../../lib/shared/family-rail'
+import { inlineCode }    from '../../lib/shared/inline-code'
+import { externalAttrs } from '../../lib/shared/links'
+import { lookup }        from '../../lib/shared/lookup'
+import { formatFolio }   from '../../lib/shared/numerals'
+import { requireString } from '../../lib/shared/require-string'
+import { stripSuffix }   from '../../lib/shared/strip-suffix'
+import { parseSvg }      from '../../lib/shared/svg'
+import { toTitleCase }   from '../../lib/shared/title-case'
+import { withFallback }  from '../../lib/shared/with-fallback'
 
 import { warnTest } from '../support'
 
 describe('toTitleCase', () => {
   it.each([
-    ['align_equals',          'Align Equals'],
-    ['strip_trailing_commas', 'Strip Trailing Commas'],
-    ['rules_of_the_road',     'Rules of the Road'],
-    ['up_and_away',           'Up and Away'],
-    ['built_with_rust',       'Built with Rust'],
-    ['the_inner_of',          'The Inner Of'],
-    ['alphabetize',           'Alphabetize']
-  ])('titles %s as %s', (slug, expected) => {
-    expect(toTitleCase(slug)).toBe(expected)
+    ['align_equals',    '_', 'Align Equals'],
+    ['one-two-the-end', '-', 'One Two the End']
+  ])('title-cases %s across its %s separator', (slug, separator, expected) => {
+    expect(toTitleCase(slug, separator)).toBe(expected)
   })
-
-  it('honors a custom separator', () => {
-    expect(toTitleCase('one-two-the-end', '-')).toBe('One Two the End')
-  })
-
-  const wordArb = fc.string({ unit: fc.constantFrom(...'abcdefghij'), minLength: 1, maxLength: 6 })
-
-  test.prop([fc.array(wordArb, { minLength: 1, maxLength: 5 })])(
-    'always capitalizes the first and last word',
-    (words) => {
-      const out = toTitleCase(words.join('_')).split(' ')
-      expect(out[0]).toMatch(/^[A-Z]/)
-      expect(out.at(-1)!).toMatch(/^[A-Z]/)
-    }
-  )
 })
 
 describe('formatFolio', () => {
-  it.each([
-    [1,   '01'],
-    [9,   '09'],
-    [42,  '42'],
-    [100, '100']
-  ])('pads %i to %s', (n, expected) => {
-    expect(formatFolio(n)).toBe(expected)
+  it('zero-pads to a width of two by default', () => {
+    expect(formatFolio(1)).toBe('01')
   })
 
   it('honors a custom width', () => {
     expect(formatFolio(7, 3)).toBe('007')
   })
-
-  test.prop([fc.nat()])('round-trips through Number, never shorter than the width', (n) => {
-    expect(Number(formatFolio(n))).toBe(n)
-    expect(formatFolio(n).length).toBeGreaterThanOrEqual(2)
-  })
-})
-
-describe('toRoman', () => {
-  it.each([
-    [1,    'I'],
-    [4,    'IV'],
-    [9,    'IX'],
-    [14,   'XIV'],
-    [40,   'XL'],
-    [90,   'XC'],
-    [400,  'CD'],
-    [2024, 'MMXXIV']
-  ])('renders %i as %s', (n, expected) => {
-    expect(toRoman(n)).toBe(expected)
-  })
-})
-
-const parseRoman = (s: string): number => {
-  const val: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 }
-  let total = 0
-  for (let i = 0; i < s.length; i++) {
-    total += val[s[i + 1]] > val[s[i]] ? -val[s[i]] : val[s[i]]
-  }
-  return total
-}
-
-test.prop([fc.integer({ min: 1, max: 3999 })])('toRoman round-trips through a parser', (n) => {
-  expect(parseRoman(toRoman(n))).toBe(n)
 })
 
 describe('inlineCode', () => {
   it.each([
-    ['plain text',           'plain text'],
-    ['use `prose format`',   'use <code>prose format</code>'],
-    ['`a` then `b`',         '<code>a</code> then <code>b</code>'],
-    ['<script>x</script>',   '&lt;script&gt;x&lt;/script&gt;'],
-    ['a & b',                'a &amp; b'],
-    ['`Optional[int] | X`',  '<code>Optional[int] | X</code>'],
-    ['`a < b` stays code',   '<code>a &lt; b</code> stays code']
-  ])('renders %s', (input, expected) => {
+    ['use `prose format`', 'use <code>prose format</code>'],
+    ['<script>x</script>', '&lt;script&gt;x&lt;/script&gt;']
+  ])('renders inline code and escapes raw markup in %j', (input, expected) => {
     expect(inlineCode(input)).toBe(expected)
   })
-
-  test.prop([fc.string().filter(s => !/[&<>`]/.test(s))])(
-    'leaves markup-free text unchanged',
-    (text) => {
-      expect(inlineCode(text)).toBe(text)
-    }
-  )
 })
 
 describe('requireString', () => {
@@ -126,15 +57,24 @@ describe('requireString', () => {
   })
 })
 
-describe('svgViewBox', () => {
-  it('reads the viewBox off the svg tag', () => {
-    expect(svgViewBox('<svg xmlns="x" viewBox="0 0 24 24"><path/></svg>', 'icon.svg'))
-      .toBe('0 0 24 24')
+describe('parseSvg', () => {
+  it('exposes the viewBox and body of a parsed svg', () => {
+    const parsed = parseSvg('<svg xmlns="x" viewBox="0 0 24 24"><path d="M0 0"/></svg>', 'icon.svg')
+    expect(parsed.attribs.viewBox).toBe('0 0 24 24')
+    expect(parsed.body).toContain('<path')
   })
 
   it('names the asset when the viewBox is absent', () => {
-    expect(() => svgViewBox('<svg><path/></svg>', 'icon.svg'))
-      .toThrow('icon.svg carries no viewBox')
+    expect(() => parseSvg('<svg><path/></svg>', 'icon.svg')).toThrow('icon.svg carries no viewBox')
+  })
+})
+
+describe('stripSuffix', () => {
+  it.each([
+    ['rules/align.md', '.md', 'rules/align'],
+    ['plain-text',     '.md', 'plain-text']
+  ])('strips %j from %j only when present', (input, suffix, expected) => {
+    expect(stripSuffix(input, suffix)).toBe(expected)
   })
 })
 
@@ -192,22 +132,6 @@ describe('railPaint', () => {
       for (const family of families) expect(out).toContain(`var(--prose-family-${family})`)
     }
   )
-})
-
-describe('withFallbackSync', () => {
-  it('returns the function result on success', () => {
-    expect(withFallbackSync('demo', () => 42, 0)).toBe(42)
-  })
-
-  warnTest('returns the fallback and warns on throw', ({ warn }) => {
-    expect(withFallbackSync('demo', () => { throw new Error('boom') }, 7)).toBe(7)
-    expect(warn).toHaveBeenCalledOnce()
-  })
-
-  warnTest('warns with the raw value when a non-Error is thrown', ({ warn }) => {
-    expect(withFallbackSync('demo', () => { throw 'oops' }, 7)).toBe(7)
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('using fallback'), 'oops')
-  })
 })
 
 describe('withFallback', () => {

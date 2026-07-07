@@ -3,7 +3,7 @@ import fs               from 'node:fs'
 import os               from 'node:os'
 import path             from 'node:path'
 
-import type { KeyedTokensInfo } from 'shiki-magic-move/types'
+import type { KeyedTokensInfo } from '@shikijs/magic-move/types'
 import { defineLoader }         from 'vitepress'
 
 import * as typingDemo         from './typing-demo'

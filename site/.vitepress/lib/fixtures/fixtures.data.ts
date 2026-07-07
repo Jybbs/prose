@@ -25,9 +25,9 @@ type FixtureData = Record<string, Record<string, FixtureEntry>>
 declare const data: FixtureData
 export { data }
 
-function descriptionHtml(md: MarkdownRenderer, inputPath: string): string | undefined {
+async function descriptionHtml(md: MarkdownRenderer, inputPath: string): Promise<string | undefined> {
   const text = walker.readFixtureDocs(inputPath)?.description?.trim()
-  return text ? renderer.renderBlockHtml(md, text) : undefined
+  return text ? await renderer.renderBlockHtml(md, text) : undefined
 }
 
 export default defineLoader({
@@ -43,11 +43,11 @@ export default defineLoader({
         caseName,
         entry: {
           changesSource,
-          descriptionHtml : descriptionHtml(md, inputPath),
+          descriptionHtml : await descriptionHtml(md, inputPath),
           hasFindings,
           hasToggle,
-          inputHtml       : renderer.renderFencedHtml(md, inputRaw, 'python'),
-          outputHtml      : renderer.renderFencedHtml(md, output, 'python', hasFindings ? lintFenceMeta(id) : '')
+          inputHtml       : await renderer.renderFencedHtml(md, inputRaw, 'python'),
+          outputHtml      : await renderer.renderFencedHtml(md, output, 'python', hasFindings ? lintFenceMeta(id) : '')
         },
         rule
       }
