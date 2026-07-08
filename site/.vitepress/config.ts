@@ -121,7 +121,7 @@ export default defineConfig({
     }
   },
   vite: {
-    build: { chunkSizeWarningLimit: 4000 },
+    build: { chunkSizeWarningLimit: 5000 },
     css: {
       postcss: {
         plugins: [

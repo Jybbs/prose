@@ -106,8 +106,6 @@ div[class*='language-'] {
 .landing-cta-cmd > button.copy {
   direction              : ltr;
   position               : absolute;
-  top                    : 8px;
-  right                  : 8px;
   z-index                : 3;
   width                  : 28px;
   height                 : 28px;
@@ -121,6 +119,11 @@ div[class*='language-'] {
   opacity                : 0;
   cursor                 : pointer;
   transition             : border-color .25s, background-color .25s, opacity .25s;
+}
+
+:is(.vp-doc, body) div[class*='language-'] > button.copy {
+  top   : 8px;
+  right : 8px;
 }
 
 :is(.vp-doc, body) div[class*='language-']:hover > button.copy,

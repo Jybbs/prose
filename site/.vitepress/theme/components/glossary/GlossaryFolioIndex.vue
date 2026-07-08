@@ -20,15 +20,22 @@ const { filtered, grouped, ordered, query, selected } = useGlossaryFolio()
 
 <template>
   <aside v-if="visible" class="glossary-folio-index" aria-label="Glossary index">
-    <div class="glossary-folio-search panel">
-      <span class="vp-icon DocSearch-Search-Icon glossary-folio-search-glyph" aria-hidden="true"></span>
-      <input
-        v-model="query"
-        type="search"
-        class="glossary-folio-input"
-        aria-label="Filter glossary"
-      />
+    <div class="glossary-folio-search-header">
       <span class="glossary-folio-meta">{{ filtered.length }} of {{ ordered.length }}</span>
+      <div class="glossary-folio-search panel">
+        <svg class="glossary-folio-search-glyph" viewBox="0 0 24 24" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+            <path d="m21 21l-4.34-4.34" />
+            <circle cx="11" cy="11" r="8" />
+          </g>
+        </svg>
+        <input
+          v-model="query"
+          type="search"
+          class="glossary-folio-input"
+          aria-label="Filter glossary"
+        />
+      </div>
     </div>
     <div v-if="filtered.length === 0" class="glossary-folio-empty">
       No entries match <code>{{ query }}</code>.
