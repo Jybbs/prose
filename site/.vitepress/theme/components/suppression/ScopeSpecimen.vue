@@ -88,7 +88,7 @@ const legend = scopeBands(entries)
             :key="d.id"
             class="scope-specimen-legend-directive"
           >
-            <a class="body-link underline-draw" :href="d.href"><code>{{ d.form }}</code></a>
+            <a class="body-link" :href="d.href"><code>{{ d.form }}</code></a>
           </li>
         </ul>
       </li>

@@ -54,6 +54,12 @@
   margin         : 20px 0 0;
 }
 
+.glossary-folio-search-header {
+  display        : flex;
+  flex-direction : column;
+  gap            : 4px;
+}
+
 .glossary-folio-search {
   display     : flex;
   align-items : center;
@@ -74,6 +80,7 @@
 }
 
 .glossary-folio-search-glyph {
+  display     : block;
   flex-shrink : 0;
   width       : 14px;
   height      : 14px;
@@ -92,6 +99,10 @@
   outline     : none;
 }
 
+.glossary-folio-input:focus-visible {
+  outline : none;
+}
+
 .glossary-folio-input::placeholder {
   font-family : inherit;
   font-size   : inherit;
@@ -100,9 +111,7 @@
 }
 
 .glossary-folio-meta {
-  flex-shrink    : 0;
   margin-left    : auto;
-  padding-left   : 8px;
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-meta);
   letter-spacing : var(--prose-meta-tracking);
