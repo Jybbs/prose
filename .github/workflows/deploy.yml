@@ -8,6 +8,7 @@ on:
       - .github/actions/provision-bun/**
       - .github/actions/provision-cargo/**
       - .github/actions/provision-uv/**
+      - .github/actions/restore-og-cache/**
       - .github/workflows/deploy.yml
       - .mise/tasks/**
       - .nvmrc
@@ -17,6 +18,8 @@ on:
   push:
     branches : [main]
     paths    : *paths
+
+  workflow_dispatch:
 
 concurrency:
   cancel-in-progress : ${{ github.event_name == 'pull_request' }}
@@ -90,11 +93,7 @@ jobs:
       - *provision-bun
 
       - name : Restore the OG card cache
-        uses : actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          key          : og-cards-${{ runner.os }}-${{ github.sha }}
-          path         : .cache/og
-          restore-keys : og-cards-${{ runner.os }}-
+        uses : ./.github/actions/restore-og-cache
 
       - name : Build the site and check internal links
         run  : mise run links
