@@ -174,7 +174,7 @@ Every interactive `check` or `format` run closes with a one-line summary on **st
 
 <RunSummaryExplorer />
 
-A clean run anchors on 🪻, `check` violations on 🔖, and `format`'s applied or pending rewrites on 🗞️.
+A clean run anchors on 🪻, `check` violations or a `format` run's unfixed lint on 🔖, and `format`'s applied or pending rewrites on 🗞️.
 
 ANSI color draws on the project palette, with **Ube** on the anchor, **Celadon** on a clean count, and **Apricot** on a violation or change count. Each span renders as 24-bit color when the terminal advertises truecolor *(via `COLORTERM`)* and falls back to ANSI 8-color otherwise.
 

@@ -3,6 +3,7 @@
 
 use std::{
     collections::HashSet,
+    fmt,
     io::ErrorKind,
     path::{Path, PathBuf},
     sync::Mutex,
@@ -72,22 +73,21 @@ pub(super) enum ConfigNotice<'a> {
     UnknownKey(&'a str),
 }
 
-impl ConfigNotice<'_> {
-    /// Renders this notice to its stderr line, the string a run's
-    /// [`NoticeDedup`] keys on to print each distinct notice once.
-    fn render(&self) -> String {
+impl fmt::Display for ConfigNotice<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Precedence {
                 dir,
                 shadowed,
                 winner,
-            } => format!(
+            } => write!(
+                f,
                 "note: {} takes precedence over {} in {}",
                 winner.label(),
                 shadowed.label(),
                 dir.display(),
             ),
-            Self::UnknownKey(key) => format!("warning: unknown key `{key}` in [tool.prose]"),
+            Self::UnknownKey(key) => write!(f, "warning: unknown key `{key}` in [tool.prose]"),
         }
     }
 }
@@ -103,7 +103,7 @@ pub(crate) struct NoticeDedup {
 
 impl NoticeDedup {
     pub(super) fn emit(&self, notice: ConfigNotice<'_>) {
-        let line = notice.render();
+        let line = notice.to_string();
         let unseen = self
             .seen
             .lock()
@@ -122,7 +122,7 @@ pub(crate) fn config_rel_paths() -> [&'static str; ConfigForm::PRECEDENCE.len()]
 }
 
 pub(super) fn emit_notice(notice: ConfigNotice<'_>) {
-    eprintln!("{}", notice.render());
+    eprintln!("{notice}");
 }
 
 /// Extracts the `[tool.prose]` table from a TOML document, shared by the

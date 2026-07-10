@@ -66,11 +66,8 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
                 summary.files_changed += usize::from(file_changed(diagnostics, rewrite));
                 summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
                 summary.diagnostics_total += diagnostics.len();
-                summary.lint_total += diagnostics
-                    .iter()
-                    .filter(|d| d.severity == Severity::Lint)
-                    .count();
                 for diag in diagnostics {
+                    summary.lint_total += usize::from(diag.severity == Severity::Lint);
                     *summary.rules_fired.entry(diag.rule).or_default() += 1;
                 }
                 summary
@@ -189,9 +186,10 @@ pub(super) fn status_from_outcomes(
         .unwrap_or_default()
 }
 
-/// Resolves an outcome set into its closing [`Summary`], or `None`
-/// when a clean run is shadowed by a per-file failure already logged
-/// to stderr.
+/// Resolves an outcome set into its closing [`Summary`], or `None` when
+/// the clean line is suppressed, either by a per-file failure already
+/// logged to stderr or by a format run leaving lint whose disclosure is
+/// the lint-remainder line instead.
 fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> Option<Summary> {
     let failed = outcomes.iter().any(|o| matches!(o, FileOutcome::Failed(_)));
     let resolved = match mode {
@@ -212,8 +210,6 @@ fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> 
         },
     };
     match resolved {
-        // A format run leaving lint in place is not clean; its outcome
-        // is the lint-remainder line, so the clean line is suppressed.
         Summary::Clean if failed || summary.lint_total > 0 => None,
         resolved => Some(resolved),
     }
@@ -227,7 +223,6 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::*;
-    use crate::diagnostics::Severity;
     use crate::rule::RuleId;
     use crate::source::Source;
     use crate::testing::{FailingWriter, parse, range};

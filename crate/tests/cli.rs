@@ -843,6 +843,27 @@ fn format_json_rewrites_over_a_check_cache_entry() {
 }
 
 #[test]
+fn format_json_with_surviving_lint_exits_two_without_a_stderr_disclosure() {
+    let (_dir, path) = fixture("lint_only.py", "import os\nos.getcwd()\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["format", "--no-cache", "--output-format", "json"])
+        .arg(&path)
+        .assert()
+        .code(2);
+    let out = stdout_utf8(&assert);
+    assert!(
+        out.contains("\"code\""),
+        "the lint reaches stdout as json: {out:?}"
+    );
+    let err = stderr_utf8(&assert);
+    assert!(
+        !err.contains("lint diagnostic not shown"),
+        "a structured run must not repeat the lint on stderr: {err:?}",
+    );
+}
+
+#[test]
 fn format_no_cache_flag_rewrites_when_needed() {
     let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
     prose()
