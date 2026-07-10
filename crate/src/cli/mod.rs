@@ -15,6 +15,7 @@
 //!
 //! Layout: `args` houses every clap-derived type and parse-time
 //! validation. `cache` houses the `prose cache` subcommand handlers.
+//! `emit` houses the diagnostic emitters behind each output format.
 //! `rules` houses the `prose rules` listing. `runner` houses the
 //! pipeline-orchestration helpers that translate parsed args into
 //! source loading, emitter dispatch, and diff rendering. `schema`
@@ -34,6 +35,7 @@ use clap_complete::generate;
 
 pub(crate) mod args;
 mod cache;
+pub mod emit;
 pub(crate) mod exit_status;
 mod output;
 mod rules;

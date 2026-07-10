@@ -2,9 +2,10 @@ import type { DiscoveredPrimitive }           from '../primitives/discovery'
 import type { DiscoveredRule, RuleDiscovery } from './discovery'
 
 // `consumedBy` names a primitive's consumers, which span rules, sibling
-// primitives, and the CLI, so the CLI is a legitimate consumer that owns
-// no primitive page of its own.
-const CLI_CONSUMER = 'cli'
+// primitives, and the crate's consumer surfaces, so the CLI and the
+// WebAssembly bindings are legitimate consumers that own no primitive
+// page of their own.
+const SURFACE_CONSUMERS = new Set(['cli', 'wasm'])
 
 export function assertCorpusIntegrity(
   discovery  : RuleDiscovery,
@@ -36,7 +37,7 @@ function assertPrimitiveGraph(
 ): void {
   const primitiveSlugs   = new Set<string>(primitives.map(p => p.slug))
   const consumerResolves = (name: string): boolean =>
-    name === CLI_CONSUMER || primitiveSlugs.has(name) || ruleSlugs.has(name)
+    SURFACE_CONSUMERS.has(name) || primitiveSlugs.has(name) || ruleSlugs.has(name)
   for (const { consumedBy, consumes, slug } of primitives) {
     for (const dep of consumes) {
       if (!primitiveSlugs.has(dep)) {

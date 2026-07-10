@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/notebook/markdown_interleaved/input.ipynb
+---
+x  = 1
+yy = 2
+
+# --- cell 2 ---
+
+pass
+
+# --- cell 3 ---
+
+a  = 4
+bb = 5

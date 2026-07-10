@@ -34,6 +34,37 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
     outcome
 }
 
+/// Collects the as-written diagnostics, and with `validate` guards the
+/// would-be rewrite against an unparseable output. Shared by the
+/// module and notebook check passes.
+pub(super) fn diagnose_only(
+    source: Source,
+    pipeline: &Pipeline,
+    validate: bool,
+    notebook_index: Option<NotebookIndex>,
+) -> FileOutcome {
+    let file = source.source_file().clone();
+    let diagnostics = pipeline.diagnose(&source);
+    if validate
+        && has_format_change(&diagnostics)
+        && let Err(e) = pipeline.validate(source)
+    {
+        return failed(ExitStatus::ConfigError, e);
+    }
+    FileOutcome::Done {
+        cached: false,
+        diagnostics,
+        file,
+        notebook_index: notebook_index.map(Box::new),
+        rewrite: Rewrite::Skipped,
+    }
+}
+
+pub(super) fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
+    eprintln!("error: {e}");
+    FileOutcome::Failed(status)
+}
+
 pub(super) fn process_path(
     path: &Path,
     source_type: PySourceType,
@@ -79,17 +110,13 @@ pub(super) fn process_path(
             );
         }
     };
-    let outcome = if source_type.is_ipynb() {
-        notebook::process(text, path.display().to_string(), &resolved.pipeline, pass)
-    } else {
-        match Source::build_module(text, path.display().to_string(), source_type) {
-            Ok(source) => run_pipeline(source, &resolved.pipeline, pass),
-            Err(e) => failed(
-                ExitStatus::ParseError,
-                format_args!("parse error in `{}`: {e}", path.display()),
-            ),
-        }
-    };
+    let outcome = process_source(
+        text,
+        path.display().to_string(),
+        source_type,
+        &resolved.pipeline,
+        pass,
+    );
     if let (
         Some((c, k)),
         FileOutcome::Done {
@@ -128,16 +155,7 @@ pub(super) fn process_stdin(
     pipeline: &Pipeline,
     pass: Pass,
 ) -> FileOutcome {
-    if source_type.is_ipynb() {
-        return notebook::process(text, "<stdin>".to_owned(), pipeline, pass);
-    }
-    match Source::build_module(text, "<stdin>", source_type) {
-        Ok(source) => run_pipeline(source, pipeline, pass),
-        Err(e) => failed(
-            ExitStatus::ParseError,
-            format_args!("parse error in stdin: {e}"),
-        ),
-    }
+    process_source(text, "<stdin>".to_owned(), source_type, pipeline, pass)
 }
 
 /// Reads stdin to a string, mapping a read failure to a config-error
@@ -180,27 +198,6 @@ pub(super) fn rehydrate(
     })
 }
 
-/// Runs a text source through the pipeline. A check pass collects the
-/// as-written diagnostics through [`diagnose_only`]; a format pass
-/// builds the text rewrite through [`run_and_assemble`]. A module carries
-/// no notebook index.
-pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
-    if let Pass::Diagnose { validate } = pass {
-        return diagnose_only(source, pipeline, validate, None);
-    }
-    run_and_assemble(
-        source,
-        pipeline,
-        matches!(pass, Pass::Both),
-        None,
-        |formatted, file| {
-            formatted
-                .changed_from(file.source_text())
-                .map_or(Rewrite::Unchanged, |text| Rewrite::text(text.to_owned()))
-        },
-    )
-}
-
 /// Runs the pipeline and assembles the outcome, deferring the rewrite
 /// to `rewrite`. The caller handles the diagnose-only pass, while the
 /// `diagnose_as_written` flag adds the as-written diagnostics an output
@@ -229,39 +226,50 @@ pub(super) fn run_and_assemble(
     }
 }
 
-/// Collects the as-written diagnostics, and with `validate` guards the
-/// would-be rewrite against an unparseable output. Shared by the
-/// module and notebook check passes.
-pub(super) fn diagnose_only(
-    source: Source,
-    pipeline: &Pipeline,
-    validate: bool,
-    notebook_index: Option<NotebookIndex>,
-) -> FileOutcome {
-    let file = source.source_file().clone();
-    let diagnostics = pipeline.diagnose(&source);
-    if validate
-        && has_format_change(&diagnostics)
-        && let Err(e) = pipeline.validate(source)
-    {
-        return failed(ExitStatus::ConfigError, e);
+/// Runs a text source through the pipeline. A check pass collects the
+/// as-written diagnostics through [`diagnose_only`]; a format pass
+/// builds the text rewrite through [`run_and_assemble`]. A module carries
+/// no notebook index.
+pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
+    if let Pass::Diagnose { validate } = pass {
+        return diagnose_only(source, pipeline, validate, None);
     }
-    FileOutcome::Done {
-        cached: false,
-        diagnostics,
-        file,
-        notebook_index: notebook_index.map(Box::new),
-        rewrite: Rewrite::Skipped,
-    }
+    run_and_assemble(
+        source,
+        pipeline,
+        matches!(pass, Pass::Both),
+        None,
+        |formatted, file| {
+            formatted
+                .changed_from(file.source_text())
+                .map_or(Rewrite::Unchanged, |text| Rewrite::text(text.to_owned()))
+        },
+    )
 }
 
 pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
     failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
 }
 
-pub(super) fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
-    eprintln!("error: {e}");
-    FileOutcome::Failed(status)
+/// Routes a source text to the notebook or module pipeline path under
+/// its diagnostic `name`.
+fn process_source(
+    text: String,
+    name: String,
+    source_type: PySourceType,
+    pipeline: &Pipeline,
+    pass: Pass,
+) -> FileOutcome {
+    if source_type.is_ipynb() {
+        return notebook::process(text, name, pipeline, pass);
+    }
+    match Source::build_module(text, name.as_str(), source_type) {
+        Ok(source) => run_pipeline(source, pipeline, pass),
+        Err(e) => failed(
+            ExitStatus::ParseError,
+            format_args!("parse error in `{name}`: {e}"),
+        ),
+    }
 }
 
 #[cfg(test)]
