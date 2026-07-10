@@ -5,9 +5,9 @@ permissions : { contents: read }
 on:
   pull_request:
     paths:
-      - crate/pyproject.toml
-      - crate/Cargo.toml
       - .github/workflows/release.yml
+      - crate/Cargo.toml
+      - crate/pyproject.toml
 
   push:
     tags: ['[0-9]*']
