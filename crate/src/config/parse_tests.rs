@@ -1,10 +1,22 @@
 //! String-parsing-surface tests for `Config::from_prose_toml_str` and
 //! `Config::from_pyproject_str`.
 
+use std::fmt::Debug;
+
 use assert_matches::assert_matches;
 use rstest::rstest;
 
 use super::*;
+
+/// Asserts a parsed config survives a TOML dump and re-parse,
+/// comparing through `project`.
+fn assert_round_trips<T: Debug + PartialEq>(pyproject: &str, project: impl Fn(&Config) -> T) {
+    let config = Config::from_pyproject_str(pyproject).expect("parses");
+    let dumped = toml::to_string(&config).expect("Config serializes");
+    let reparsed = Config::from_prose_toml_str(&dumped).expect("reparses");
+
+    assert_eq!(project(&reparsed), project(&config));
+}
 
 fn assert_toml_error(toml: &str) {
     assert_matches!(Config::from_pyproject_str(toml), Err(ConfigError::Toml(_)));
@@ -169,6 +181,16 @@ fn import_line_length_negative_returns_toml_error() {
     assert_toml_error("[tool.prose]\nimport-line-length = -1\n");
 }
 
+#[rstest]
+#[case("100")]
+#[case("false")]
+fn import_line_length_round_trips_through_toml(#[case] value: &str) {
+    assert_round_trips(
+        &format!("[tool.prose]\nimport-line-length = {value}\n"),
+        |c| c.import_line_length,
+    );
+}
+
 #[test]
 fn import_line_length_true_returns_toml_error() {
     assert_toml_error("[tool.prose]\nimport-line-length = true\n");
@@ -246,13 +268,10 @@ fn inline_budget_round_trips_through_toml(
     #[case] cap_of: fn(&Config) -> Option<usize>,
     #[values("5", "false")] value: &str,
 ) {
-    let config =
-        Config::from_pyproject_str(&format!("[tool.prose.rules.{table}]\n{key} = {value}\n"))
-            .expect("parses");
-    let dumped = toml::to_string(&config).expect("Config serializes");
-    let reparsed = Config::from_prose_toml_str(&dumped).expect("reparses");
-
-    assert_eq!(cap_of(&reparsed), cap_of(&config));
+    assert_round_trips(
+        &format!("[tool.prose.rules.{table}]\n{key} = {value}\n"),
+        cap_of,
+    );
 }
 
 #[test]
@@ -285,16 +304,9 @@ fn max_shift_reads_each_value_form(#[case] value: &str, #[case] expected: MaxShi
 #[case("4")]
 #[case("false")]
 fn max_shift_round_trips_through_toml(#[case] value: &str) {
-    let config = Config::from_pyproject_str(&format!(
-        "[tool.prose.rules.align-equals]\nmax-shift = {value}\n"
-    ))
-    .expect("parses");
-    let dumped = toml::to_string(&config).expect("Config serializes");
-    let reparsed = Config::from_prose_toml_str(&dumped).expect("reparses");
-
-    assert_eq!(
-        reparsed.rules.align_equals.max_shift,
-        config.rules.align_equals.max_shift,
+    assert_round_trips(
+        &format!("[tool.prose.rules.align-equals]\nmax-shift = {value}\n"),
+        |c| c.rules.align_equals.max_shift,
     );
 }
 
@@ -448,4 +460,12 @@ fn target_version_extra_period_returns_toml_error() {
 #[test]
 fn target_version_invalid_value_returns_toml_error() {
     assert_toml_error("[tool.prose]\ntarget-version = \"py310\"\n");
+}
+
+#[test]
+fn uncapped_import_line_length_serializes_as_false() {
+    let config =
+        Config::from_pyproject_str("[tool.prose]\nimport-line-length = false\n").expect("parses");
+
+    assert!(config.to_toml().contains("import-line-length = false"));
 }

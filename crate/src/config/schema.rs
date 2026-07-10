@@ -1,17 +1,21 @@
 //! The per-rule config sub-tables, the rule-toggle macro, and the
 //! shared `MaxShift` and docstring-policy enums.
 
-use std::num::NonZeroUsize;
+use std::{borrow::Cow, num::NonZeroUsize};
 
 use regex_lite::Regex;
+use schemars::{JsonSchema, Schema, SchemaGenerator};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use super::de::{deserialize_optional_cap, deserialize_regex, serialize_regex};
+use super::de::{
+    deserialize_optional_cap, deserialize_regex, serialize_optional_cap, serialize_regex,
+};
+use super::json_schema::{cap_or_false_schema, optional_cap_schema};
 
 /// Alignment-rule config shared by every rule that aligns a token
 /// across consecutive lines. `max_shift` caps how far a row may shift
 /// to reach the column.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlignmentConfig {
     pub enabled: bool,
@@ -35,7 +39,7 @@ impl Default for AlignmentConfig {
 /// `false`. `sort_docstring_entries` gates the Google-style
 /// entry-section reorder. `sort_dunder_lists` reorders the `__all__`
 /// and `__slots__` string lists.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlphabetizeConfig {
     pub enabled: bool,
@@ -58,7 +62,7 @@ impl Default for AlphabetizeConfig {
 }
 
 /// Configuration for the `bare_imports` rule.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BareImportsConfig {
     pub allow: Vec<String>,
@@ -79,7 +83,7 @@ impl Default for BareImportsConfig {
 }
 
 /// Cache settings parsed from `[tool.prose.cache]`.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CacheConfig {
     pub enabled: bool,
@@ -99,7 +103,7 @@ impl Default for CacheConfig {
 ///
 /// `max_args` caps the count threshold. A positive integer enforces the
 /// cap. `false` disables the count trigger.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CallLayoutConfig {
     pub enabled: bool,
@@ -128,7 +132,7 @@ impl Default for CallLayoutConfig {
 /// `max_atomics` and `max_dict_entries` each take a positive integer or
 /// `false`. The integer sets the cap, and `false` disables it, leaving
 /// width as the only gate.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CollectionLayoutConfig {
     pub collapse: bool,
@@ -156,7 +160,7 @@ impl Default for CollectionLayoutConfig {
 ///
 /// `CodeLineLength` reuses `Config::code_line_length`.
 /// `DocstringLineLength` reuses `Config::docstring_line_length`.
-#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, JsonSchema, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DocstringStructuredPolicy {
     #[default]
@@ -167,7 +171,7 @@ pub enum DocstringStructuredPolicy {
 /// Settings parsed from `[tool.prose.imports]`. `first_party` lists
 /// the package names whose imports group with relative imports as
 /// local-package, keyed kebab-case under `first-party`.
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ImportsConfig {
     pub first_party: Vec<String>,
@@ -193,12 +197,19 @@ impl<'de> Deserialize<'de> for InlineBudget {
     }
 }
 
+impl JsonSchema for InlineBudget {
+    fn schema_name() -> Cow<'static, str> {
+        Cow::Borrowed("InlineBudget")
+    }
+
+    fn json_schema(generator: &mut SchemaGenerator) -> Schema {
+        optional_cap_schema(generator)
+    }
+}
+
 impl Serialize for InlineBudget {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self.0 {
-            Some(n) => serializer.serialize_u64(n.get() as u64),
-            None => serializer.serialize_bool(false),
-        }
+        serialize_optional_cap(&self.0, serializer)
     }
 }
 
@@ -238,6 +249,16 @@ impl<'de> Deserialize<'de> for MaxShift {
     }
 }
 
+impl JsonSchema for MaxShift {
+    fn schema_name() -> Cow<'static, str> {
+        Cow::Borrowed("MaxShift")
+    }
+
+    fn json_schema(generator: &mut SchemaGenerator) -> Schema {
+        cap_or_false_schema::<usize>(generator)
+    }
+}
+
 impl Serialize for MaxShift {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match *self {
@@ -249,7 +270,7 @@ impl Serialize for MaxShift {
 }
 
 /// Configuration for the `reassigned_constants` rule.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReassignedConstantsConfig {
     pub allow: Vec<String>,
@@ -269,7 +290,7 @@ impl Default for ReassignedConstantsConfig {
 ///
 /// `max_params` caps the count threshold. A positive integer enforces
 /// the cap. `false` disables the count trigger.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SignatureLayoutConfig {
     pub enabled: bool,
@@ -286,9 +307,10 @@ impl Default for SignatureLayoutConfig {
 }
 
 /// Configuration for the `single_use_variables` rule.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SingleUseVariablesConfig {
+    #[schemars(schema_with = "super::json_schema::allow_pattern_schema")]
     #[serde(
         deserialize_with = "deserialize_regex",
         serialize_with = "serialize_regex"
@@ -307,7 +329,7 @@ impl Default for SingleUseVariablesConfig {
 }
 
 /// Sub-table shape for rules whose only knob is `enabled`.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ToggleOnly {
     pub enabled: bool,

@@ -7,17 +7,19 @@
 //! [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
 //! [`Pipeline::with_filters`] from a registry table.
 
-use std::{fmt, str::FromStr};
+use std::{borrow::Cow, fmt, str::FromStr};
 
 use ruff_diagnostics::Edit;
+use schemars::{JsonSchema, Schema, SchemaGenerator, json_schema};
 use serde::{Deserialize, Serialize};
+use serde_json::Map;
 use thiserror::Error;
 
 use crate::{
     config::{
         AlignmentConfig, AlphabetizeConfig, BareImportsConfig, CallLayoutConfig,
         CollectionLayoutConfig, Config, ReassignedConstantsConfig, SignatureLayoutConfig,
-        SingleUseVariablesConfig, ToggleOnly,
+        SingleUseVariablesConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -180,14 +182,15 @@ const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
     true
 }
 
-/// Generates [`KNOWN_IDS`], [`RuleConfigs`], [`message_for_id`],
-/// [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
-/// [`Pipeline::with_filters`] from a registry table. Each row leads
-/// with the rule's kebab-case slug, then its `[tool.prose.rules]`
-/// field name, config sub-table type, rule struct, and one-line
-/// imperative. The slug is the single source consumed by
-/// `RuleId::from_str`, the `[tool.prose.rules.<slug>]` section name,
-/// the `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
+/// Generates [`KNOWN_IDS`], [`RuleConfigs`] with its bool-or-table
+/// `JsonSchema` impl, [`message_for_id`], [`Pipeline::for_rule`],
+/// [`Pipeline::with_defaults`], and [`Pipeline::with_filters`] from a
+/// registry table. Each row leads with the rule's kebab-case slug,
+/// then its `[tool.prose.rules]` field name, config sub-table type,
+/// rule struct, and one-line imperative. The slug is the single source
+/// consumed by `RuleId::from_str`, the `[tool.prose.rules.<slug>]`
+/// section name, the `# prose: ignore[<slug>]` directive, and
+/// `--select` / `--ignore`.
 ///
 /// The macro asserts each slug's kebab shape and cross-row uniqueness
 /// at compile time, and emits a `pub(crate) const SLUG: RuleId` on
@@ -211,6 +214,27 @@ macro_rules! register_rules {
                 #[serde(deserialize_with = "crate::config::deserialize_rule")]
                 pub $field: $config,
             )*
+        }
+
+        impl JsonSchema for RuleConfigs {
+            fn schema_name() -> Cow<'static, str> {
+                Cow::Borrowed("RuleConfigs")
+            }
+
+            fn json_schema(generator: &mut SchemaGenerator) -> Schema {
+                let mut properties = Map::new();
+                $(
+                    properties.insert(
+                        $slug.to_owned(),
+                        rule_schema::<$config>(generator).to_value(),
+                    );
+                )*
+                json_schema!({
+                    "type": "object",
+                    "description": "Per-rule configuration under `[tool.prose.rules]`.",
+                    "properties": properties,
+                })
+            }
         }
 
         // Routes a missing-`Default` error to the offending `$config`

@@ -65,6 +65,9 @@ pub(crate) enum Command {
         shell: Shell,
     },
 
+    /// Print the configuration's JSON Schema to stdout.
+    ConfigSchema,
+
     /// Rewrite files to conform to the Prose style.
     Format(FormatArgs),
 
@@ -360,6 +363,12 @@ mod tests {
     }
 
     #[test]
+    fn config_schema_parses() {
+        let cli = Cli::try_parse_from(["prose", "config-schema"]).expect("parses");
+        assert_matches!(cli.command, Command::ConfigSchema);
+    }
+
+    #[test]
     fn format_dash_routes_to_stdin() {
         let mut cli = Cli::try_parse_from(["prose", "format", "-"]).expect("parses");
         assert!(normalize_stdin_dash(&mut cli).is_none());
@@ -441,6 +450,12 @@ mod tests {
     #[test]
     fn normalize_stdin_dash_is_noop_for_completions() {
         let mut cli = Cli::try_parse_from(["prose", "completions", "bash"]).expect("parses");
+        assert!(normalize_stdin_dash(&mut cli).is_none());
+    }
+
+    #[test]
+    fn normalize_stdin_dash_is_noop_for_config_schema() {
+        let mut cli = Cli::try_parse_from(["prose", "config-schema"]).expect("parses");
         assert!(normalize_stdin_dash(&mut cli).is_none());
     }
 

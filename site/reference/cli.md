@@ -128,6 +128,17 @@ prose completions zsh > "${fpath[1]}/_prose"
 
 The [**Shell Completions**](/integrations/shell-completions) integration page covers the install path for each shell.
 
+## `prose config-schema`
+
+Prints the [JSON Schema](https://json-schema.org) for the `[tool.prose]` configuration, carrying every key's type, default, allowed values, and numeric range, with each `[rules]` entry mirroring the bare-bool-or-sub-table shape the loader reads. The output is pretty-printed, so redirecting it to a file lands a schema an editor or validator consumes directly.
+
+```bash
+prose config-schema
+prose config-schema > prose.schema.json
+```
+
+The [**Configuration**](/reference/configuration) reference walks the keys the schema describes.
+
 ## `prose rules`
 
 Lists every registered rule in pipeline order, one row per rule carrying its one-based position, slug, and imperative. The JSON form emits the same listing as an array of `{slug, position, imperative}` records for scripting consumers.

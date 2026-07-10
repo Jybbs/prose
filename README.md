@@ -33,7 +33,7 @@ The trade-offs minimalist formatters were built to avoid (*wider diffs, more ver
 uv tool install prose-formatter
 ```
 
-The binary exposes `format`, `check`, `rules`, `server`, `cache`, and `completions`:
+The binary exposes `format`, `check`, `rules`, `server`, `cache`, `completions`, and `config-schema`:
 
 ```bash
 prose format path/             # rewrite files in place

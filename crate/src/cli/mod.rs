@@ -3,9 +3,10 @@
 //! Subcommands: `check` reports violations without modifying files,
 //! `format` rewrites in place (or prints a unified diff with
 //! `--diff`), `cache` manages the user-level content cache,
-//! `completions` emits a shell-completion script, and `rules` lists
-//! the registered rules in pipeline order. `check` and `format`
-//! accept positional paths, a `-` positional alias for stdin, and a
+//! `completions` emits a shell-completion script, `config-schema`
+//! prints the configuration's JSON Schema, and `rules` lists the
+//! registered rules in pipeline order. `check` and `format` accept
+//! positional paths, a `-` positional alias for stdin, and a
 //! `--stdin` flag, all mutually exclusive.
 //!
 //! Path mode parallelizes across files via `rayon`. Set
@@ -14,6 +15,7 @@
 //!
 //! Layout: `args` houses every clap-derived type and parse-time
 //! validation. `cache` houses the `prose cache` subcommand handlers.
+//! `config_schema` houses the `prose config-schema` emission.
 //! `rules` houses the `prose rules` listing. `runner` houses the
 //! pipeline-orchestration helpers that translate parsed args into
 //! source loading, emitter dispatch, and diff rendering. `output`
@@ -32,6 +34,7 @@ use clap_complete::generate;
 
 pub(crate) mod args;
 mod cache;
+mod config_schema;
 pub(crate) mod exit_status;
 mod output;
 mod rules;
@@ -83,6 +86,7 @@ pub fn run() -> ExitCode {
             generate(shell, &mut Cli::command(), "prose", &mut io::stdout());
             Ok(ExitStatus::Clean)
         }
+        Command::ConfigSchema => config_schema::print(stdout),
         Command::Format(args) => {
             runner::format_with_io(args, verbose, &present, io::stdin(), stdout, stderr)
         }
@@ -98,6 +102,7 @@ fn command_quiet(command: &Command) -> bool {
         Command::Format(args) => args.common.quiet,
         Command::Cache { .. }
         | Command::Completions { .. }
+        | Command::ConfigSchema
         | Command::Rules(_)
         | Command::Server(_) => false,
     }

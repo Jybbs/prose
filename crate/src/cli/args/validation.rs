@@ -14,6 +14,7 @@ pub(crate) fn normalize_stdin_dash(cli: &mut Cli) -> Option<clap::Error> {
     let (paths, stdin) = match &mut cli.command {
         Command::Cache { .. }
         | Command::Completions { .. }
+        | Command::ConfigSchema
         | Command::Rules(_)
         | Command::Server(_) => {
             return None;

@@ -661,6 +661,14 @@ fn config_errors_exit_four(#[case] args: &[&str]) {
     prose().args(args).assert().code(4);
 }
 
+#[test]
+fn config_schema_subcommand_exits_zero_and_prints_the_schema() {
+    let assert = prose().arg("config-schema").assert().success();
+    let schema: serde_json::Value =
+        serde_json::from_str(&stdout_utf8(&assert)).expect("valid JSON");
+    assert!(schema["properties"]["rules"].is_object());
+}
+
 /// Each input drives a rule that net-shrinks the buffer (`collection-layout`
 /// collapsing or re-laying-out a literal), the shape that overran the
 /// rewritten buffer before reporting anchored to the source as written. A

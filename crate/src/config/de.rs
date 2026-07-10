@@ -1,5 +1,6 @@
-//! Serde `deserialize_with` helpers: the bool-or-table rule reader,
-//! the optional-cap parser, and the regex round-trip.
+//! Serde `deserialize_with` and `serialize_with` helpers: the
+//! bool-or-table rule reader, and the optional-cap and regex
+//! round-trips.
 
 use std::{fmt, marker::PhantomData, num::NonZeroUsize};
 
@@ -12,36 +13,6 @@ use serde::{
 use super::load::ConfigNotice;
 use super::schema::RuleToggle;
 use super::{Config, ConfigError};
-
-/// Resolves a rule's config from either a bare bool toggle or a
-/// sub-table. `deserialize_any` dispatches on the TOML value so the
-/// sub-table arm forwards a live map, preserving `serde_ignored`'s
-/// unknown-key tracking inside the table.
-pub(crate) fn deserialize_rule<'de, D, T>(deserializer: D) -> Result<T, D::Error>
-where
-    D: Deserializer<'de>,
-    T: RuleToggle + Deserialize<'de>,
-{
-    struct RuleVisitor<T>(PhantomData<T>);
-
-    impl<'de, T: RuleToggle + Deserialize<'de>> Visitor<'de> for RuleVisitor<T> {
-        type Value = T;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-            formatter.write_str("a boolean toggle or a rule sub-table")
-        }
-
-        fn visit_bool<E: serde::de::Error>(self, enabled: bool) -> Result<T, E> {
-            Ok(T::with_enabled(enabled))
-        }
-
-        fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<T, A::Error> {
-            T::deserialize(MapAccessDeserializer::new(map))
-        }
-    }
-
-    deserializer.deserialize_any(RuleVisitor(PhantomData))
-}
 
 /// Deserializes an optional cap a positive integer sets and `false`
 /// disables. `true` is rejected so the disable spelling stays
@@ -88,6 +59,48 @@ pub(super) fn deserialize_regex<'de, D: Deserializer<'de>>(
 ) -> Result<Regex, D::Error> {
     let pattern = String::deserialize(deserializer)?;
     Regex::new(&pattern).map_err(serde::de::Error::custom)
+}
+
+/// Resolves a rule's config from either a bare bool toggle or a
+/// sub-table. `deserialize_any` dispatches on the TOML value so the
+/// sub-table arm forwards a live map, preserving `serde_ignored`'s
+/// unknown-key tracking inside the table.
+pub(crate) fn deserialize_rule<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: RuleToggle + Deserialize<'de>,
+{
+    struct RuleVisitor<T>(PhantomData<T>);
+
+    impl<'de, T: RuleToggle + Deserialize<'de>> Visitor<'de> for RuleVisitor<T> {
+        type Value = T;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            formatter.write_str("a boolean toggle or a rule sub-table")
+        }
+
+        fn visit_bool<E: serde::de::Error>(self, enabled: bool) -> Result<T, E> {
+            Ok(T::with_enabled(enabled))
+        }
+
+        fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<T, A::Error> {
+            T::deserialize(MapAccessDeserializer::new(map))
+        }
+    }
+
+    deserializer.deserialize_any(RuleVisitor(PhantomData))
+}
+
+/// Serializes an optional cap as its integer, or `false` when uncapped,
+/// mirroring `deserialize_optional_cap`.
+pub(super) fn serialize_optional_cap<S: Serializer>(
+    cap: &Option<NonZeroUsize>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    match cap {
+        Some(n) => serializer.serialize_u64(n.get() as u64),
+        None => serializer.serialize_bool(false),
+    }
 }
 
 pub(super) fn serialize_regex<S: Serializer>(
