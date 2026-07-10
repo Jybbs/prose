@@ -10,7 +10,7 @@ use crate::pipeline::Pipeline;
 
 #[fixture]
 fn schema() -> Value {
-    serde_json::to_value(schema_for!(Config)).expect("schema serializes")
+    schema_for!(Config).to_value()
 }
 
 #[rstest]
@@ -19,6 +19,22 @@ fn allow_pattern_reads_a_regex_string_with_the_config_default(schema: Value) {
         schema["$defs"]["SingleUseVariablesConfig"]["properties"]["allow-pattern"],
         json!({ "type": "string", "format": "regex", "default": "^_" }),
     );
+}
+
+#[rstest]
+#[case::import_line_length("properties", "import-line-length", 1)]
+#[case::inline_budget("$defs", "InlineBudget", 1)]
+#[case::max_shift("$defs", "MaxShift", 0)]
+fn cap_schemas_accept_an_integer_or_false(
+    schema: Value,
+    #[case] section: &str,
+    #[case] key: &str,
+    #[case] minimum: u64,
+) {
+    let any_of = &schema[section][key]["anyOf"];
+
+    assert_eq!(any_of[0]["minimum"], json!(minimum));
+    assert_eq!(any_of[1], json!({ "const": false }));
 }
 
 #[rstest]
@@ -35,30 +51,6 @@ fn docstring_structured_policy_enumerates_kebab_variants(schema: Value) {
         schema["$defs"]["DocstringStructuredPolicy"]["enum"],
         json!(["code-line-length", "docstring-line-length"]),
     );
-}
-
-#[rstest]
-fn import_line_length_accepts_a_positive_integer_or_false(schema: Value) {
-    let any_of = &schema["properties"]["import-line-length"]["anyOf"];
-
-    assert_eq!(any_of[0]["minimum"], json!(1));
-    assert_eq!(any_of[1], json!({ "const": false }));
-}
-
-#[rstest]
-fn inline_budget_accepts_a_positive_integer_or_false(schema: Value) {
-    let any_of = &schema["$defs"]["InlineBudget"]["anyOf"];
-
-    assert_eq!(any_of[0]["minimum"], json!(1));
-    assert_eq!(any_of[1], json!({ "const": false }));
-}
-
-#[rstest]
-fn max_shift_accepts_a_non_negative_integer_or_false(schema: Value) {
-    let any_of = &schema["$defs"]["MaxShift"]["anyOf"];
-
-    assert_eq!(any_of[0]["minimum"], json!(0));
-    assert_eq!(any_of[1], json!({ "const": false }));
 }
 
 #[rstest]

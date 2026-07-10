@@ -14,9 +14,32 @@ use super::load::ConfigNotice;
 use super::schema::RuleToggle;
 use super::{Config, ConfigError};
 
+/// Deserializes a cap of integer type `T`, or `false` lifting it to
+/// `None`. `true` is rejected with `on_true` so the disable spelling
+/// stays unambiguous.
+pub(super) fn deserialize_cap_or_false<'de, T, D>(
+    deserializer: D,
+    on_true: &'static str,
+) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Value<T> {
+        Cap(T),
+        Off(bool),
+    }
+    match Value::deserialize(deserializer)? {
+        Value::Cap(n) => Ok(Some(n)),
+        Value::Off(false) => Ok(None),
+        Value::Off(true) => Err(serde::de::Error::custom(on_true)),
+    }
+}
+
 /// Deserializes an optional cap a positive integer sets and `false`
-/// disables. `true` is rejected so the disable spelling stays
-/// unambiguous. Shared by the `InlineBudget` layout caps and the
+/// disables. Shared by the `InlineBudget` layout caps and the
 /// top-level `import-line-length` key.
 pub(super) fn deserialize_optional_cap<'de, D>(
     deserializer: D,
@@ -24,19 +47,10 @@ pub(super) fn deserialize_optional_cap<'de, D>(
 where
     D: Deserializer<'de>,
 {
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum Value {
-        Cap(NonZeroUsize),
-        Off(bool),
-    }
-    match Value::deserialize(deserializer)? {
-        Value::Cap(n) => Ok(Some(n)),
-        Value::Off(false) => Ok(None),
-        Value::Off(true) => Err(serde::de::Error::custom(
-            "expected a positive integer or `false`, not `true`",
-        )),
-    }
+    deserialize_cap_or_false(
+        deserializer,
+        "expected a positive integer or `false`, not `true`",
+    )
 }
 
 pub(super) fn deserialize_prose<F>(

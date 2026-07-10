@@ -7,10 +7,13 @@ use regex_lite::Regex;
 use schemars::{JsonSchema, Schema, SchemaGenerator};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use super::de::{
-    deserialize_optional_cap, deserialize_regex, serialize_optional_cap, serialize_regex,
+use super::{
+    de::{
+        deserialize_cap_or_false, deserialize_optional_cap, deserialize_regex,
+        serialize_optional_cap, serialize_regex,
+    },
+    json_schema::{cap_or_false_schema, optional_cap_schema},
 };
-use super::json_schema::{cap_or_false_schema, optional_cap_schema};
 
 /// Alignment-rule config shared by every rule that aligns a token
 /// across consecutive lines. `max_shift` caps how far a row may shift
@@ -233,18 +236,12 @@ impl Default for MaxShift {
 
 impl<'de> Deserialize<'de> for MaxShift {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum Repr {
-            Cap(usize),
-            Switch(bool),
-        }
-        match Repr::deserialize(deserializer)? {
-            Repr::Cap(n) => Ok(NonZeroUsize::new(n).map_or(Self::NoShift, Self::Cap)),
-            Repr::Switch(false) => Ok(Self::Unlimited),
-            Repr::Switch(true) => Err(serde::de::Error::custom(
-                "`max-shift` accepts a non-negative integer or `false`, not `true`",
-            )),
+        match deserialize_cap_or_false::<usize, _>(
+            deserializer,
+            "`max-shift` accepts a non-negative integer or `false`, not `true`",
+        )? {
+            Some(n) => Ok(NonZeroUsize::new(n).map_or(Self::NoShift, Self::Cap)),
+            None => Ok(Self::Unlimited),
         }
     }
 }
