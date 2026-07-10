@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/blank_lines/module_def_to_control_flow_two_blanks/input.py
+---
+def load(queue):
+    return queue
+
+
+for item in queue:
+    process(item)
