@@ -26,6 +26,18 @@ Exit codes:
   3    Parse error: input could not be parsed as Python
   4    Config error: pyproject.toml, --select / --ignore, or arg validation";
 
+#[derive(Debug, Subcommand)]
+pub(crate) enum CacheAction {
+    /// Clear every cached entry and report the freed bytes.
+    Clean,
+
+    /// Evict oldest entries until the configured size cap is met.
+    Compact,
+
+    /// Print the cache directory, entry count, byte total, and mtimes.
+    Info,
+}
+
 #[derive(Debug, Parser)]
 #[command(
     about,
@@ -71,20 +83,11 @@ pub(crate) enum Command {
     /// List the registered rules in pipeline order.
     Rules(RulesArgs),
 
+    /// Print the configuration's JSON Schema to stdout.
+    Schema,
+
     /// Run the language server over stdio.
     Server(ServerArgs),
-}
-
-#[derive(Debug, Subcommand)]
-pub(crate) enum CacheAction {
-    /// Clear every cached entry and report the freed bytes.
-    Clean,
-
-    /// Evict oldest entries until the configured size cap is met.
-    Compact,
-
-    /// Print the cache directory, entry count, byte total, and mtimes.
-    Info,
 }
 
 #[cfg(test)]
@@ -100,18 +103,13 @@ mod tests {
     use crate::cli::exit_status::ExitStatus;
     use crate::rule::RuleId;
 
-    fn check_command(cli: Cli) -> CheckArgs {
-        let Command::Check(args) = cli.command else {
-            panic!("expected Check variant");
-        };
-        args
-    }
-
-    fn format_command(cli: Cli) -> FormatArgs {
-        let Command::Format(args) = cli.command else {
-            panic!("expected Format variant");
-        };
-        args
+    macro_rules! command_args {
+        ($cli:expr, $variant:ident) => {{
+            let Command::$variant(args) = $cli.command else {
+                panic!(concat!("expected ", stringify!($variant), " variant"));
+            };
+            args
+        }};
     }
 
     #[fixture]
@@ -153,7 +151,7 @@ mod tests {
     fn check_dash_routes_to_stdin() {
         let mut cli = Cli::try_parse_from(["prose", "check", "-"]).expect("parses");
         assert!(normalize_stdin_dash(&mut cli).is_none());
-        let args = check_command(cli);
+        let args = command_args!(cli, Check);
         assert!(args.paths.is_empty());
         assert!(args.common.stdin);
     }
@@ -161,7 +159,7 @@ mod tests {
     #[test]
     fn check_parses_with_no_input_source() {
         let cli = Cli::try_parse_from(["prose", "check"]).expect("parses");
-        let args = check_command(cli);
+        let args = command_args!(cli, Check);
         assert!(args.paths.is_empty());
         assert!(!args.common.stdin);
     }
@@ -170,7 +168,7 @@ mod tests {
     fn check_parses_with_output_format_github() {
         let cli =
             Cli::try_parse_from(["prose", "check", "--output-format", "github"]).expect("parses");
-        let args = check_command(cli);
+        let args = command_args!(cli, Check);
         assert_matches!(args.common.output_format, OutputFormat::Github);
     }
 
@@ -178,14 +176,14 @@ mod tests {
     fn check_parses_with_output_format_json() {
         let cli =
             Cli::try_parse_from(["prose", "check", "--output-format", "json"]).expect("parses");
-        let args = check_command(cli);
+        let args = command_args!(cli, Check);
         assert_matches!(args.common.output_format, OutputFormat::Json);
     }
 
     #[test]
     fn check_parses_with_paths() {
         let cli = Cli::try_parse_from(["prose", "check", "a.py", "b/"]).expect("parses");
-        let args = check_command(cli);
+        let args = command_args!(cli, Check);
         assert_eq!(args.paths, [PathBuf::from("a.py"), PathBuf::from("b/")]);
         assert!(!args.common.stdin);
     }
@@ -201,7 +199,7 @@ mod tests {
             "alphabetize",
         ])
         .expect("parses");
-        let args = check_command(cli);
+        let args = command_args!(cli, Check);
         assert_eq!(
             args.common.rules.select,
             [RuleId::from("align-equals"), RuleId::from("align-colons")],
@@ -212,7 +210,7 @@ mod tests {
     #[test]
     fn check_parses_with_stdin() {
         let cli = Cli::try_parse_from(["prose", "check", "--stdin"]).expect("parses");
-        let args = check_command(cli);
+        let args = command_args!(cli, Check);
         assert!(args.paths.is_empty());
         assert!(args.common.stdin);
     }
@@ -268,9 +266,10 @@ mod tests {
 
     #[test]
     fn check_validate_defaults_off_and_parses_when_set() {
-        assert!(!check_command(Cli::try_parse_from(["prose", "check"]).expect("parses")).validate);
+        let off = Cli::try_parse_from(["prose", "check"]).expect("parses");
+        assert!(!command_args!(off, Check).validate);
         let on = Cli::try_parse_from(["prose", "check", "--validate"]).expect("parses");
-        assert!(check_command(on).validate);
+        assert!(command_args!(on, Check).validate);
     }
 
     #[test]
@@ -363,7 +362,7 @@ mod tests {
     fn format_dash_routes_to_stdin() {
         let mut cli = Cli::try_parse_from(["prose", "format", "-"]).expect("parses");
         assert!(normalize_stdin_dash(&mut cli).is_none());
-        let args = format_command(cli);
+        let args = command_args!(cli, Format);
         assert!(args.paths.is_empty());
         assert!(args.common.stdin);
     }
@@ -371,7 +370,7 @@ mod tests {
     #[test]
     fn format_parses_with_diff_and_paths() {
         let cli = Cli::try_parse_from(["prose", "format", "--diff", "a.py"]).expect("parses");
-        let args = format_command(cli);
+        let args = command_args!(cli, Format);
         assert!(args.diff);
         assert_eq!(args.paths, [PathBuf::from("a.py")]);
         assert!(!args.common.stdin);
@@ -388,7 +387,7 @@ mod tests {
             "alphabetize",
         ])
         .expect("parses");
-        let args = format_command(cli);
+        let args = command_args!(cli, Format);
         assert_eq!(args.common.rules.select, [RuleId::from("align-equals")]);
         assert_eq!(args.common.rules.ignore, [RuleId::from("alphabetize")]);
     }
@@ -396,7 +395,7 @@ mod tests {
     #[test]
     fn format_parses_with_stdin() {
         let cli = Cli::try_parse_from(["prose", "format", "--stdin"]).expect("parses");
-        let args = format_command(cli);
+        let args = command_args!(cli, Format);
         assert!(args.paths.is_empty());
         assert!(args.common.stdin);
     }
@@ -438,15 +437,16 @@ mod tests {
         assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
     }
 
-    #[test]
-    fn normalize_stdin_dash_is_noop_for_completions() {
-        let mut cli = Cli::try_parse_from(["prose", "completions", "bash"]).expect("parses");
-        assert!(normalize_stdin_dash(&mut cli).is_none());
-    }
-
-    #[test]
-    fn normalize_stdin_dash_is_noop_for_rules() {
-        let mut cli = Cli::try_parse_from(["prose", "rules"]).expect("parses");
+    #[rstest]
+    fn normalize_stdin_dash_is_noop_for_pathless_commands(
+        #[values(
+            &["prose", "completions", "bash"][..],
+            &["prose", "rules"][..],
+            &["prose", "schema"][..]
+        )]
+        args: &[&str],
+    ) {
+        let mut cli = Cli::try_parse_from(args).expect("parses");
         assert!(normalize_stdin_dash(&mut cli).is_none());
     }
 
@@ -454,7 +454,7 @@ mod tests {
     fn normalize_stdin_dash_leaves_dashless_paths_untouched() {
         let mut cli = Cli::try_parse_from(["prose", "check", "a.py", "b/"]).expect("parses");
         assert!(normalize_stdin_dash(&mut cli).is_none());
-        let args = check_command(cli);
+        let args = command_args!(cli, Check);
         assert_eq!(args.paths, [PathBuf::from("a.py"), PathBuf::from("b/")]);
         assert!(!args.common.stdin);
     }
@@ -462,9 +462,7 @@ mod tests {
     #[test]
     fn rules_parses_with_default_table_format() {
         let cli = Cli::try_parse_from(["prose", "rules"]).expect("parses");
-        let Command::Rules(args) = cli.command else {
-            panic!("expected Rules variant");
-        };
+        let args = command_args!(cli, Rules);
         assert_matches!(args.output_format, RulesFormat::Table);
     }
 
@@ -472,18 +470,20 @@ mod tests {
     fn rules_parses_with_output_format_json() {
         let cli =
             Cli::try_parse_from(["prose", "rules", "--output-format", "json"]).expect("parses");
-        let Command::Rules(args) = cli.command else {
-            panic!("expected Rules variant");
-        };
+        let args = command_args!(cli, Rules);
         assert_matches!(args.output_format, RulesFormat::Json);
+    }
+
+    #[test]
+    fn schema_parses() {
+        let cli = Cli::try_parse_from(["prose", "schema"]).expect("parses");
+        assert_matches!(cli.command, Command::Schema);
     }
 
     #[test]
     fn server_parses_with_default_stdio_transport() {
         let cli = Cli::try_parse_from(["prose", "server"]).expect("parses");
-        let Command::Server(args) = cli.command else {
-            panic!("expected Server variant");
-        };
+        let args = command_args!(cli, Server);
         assert_matches!(args.transport, Transport::Stdio);
     }
 }

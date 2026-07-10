@@ -33,7 +33,7 @@ The trade-offs minimalist formatters were built to avoid (*wider diffs, more ver
 uv tool install prose-formatter
 ```
 
-The binary exposes `format`, `check`, `rules`, `server`, `cache`, and `completions`:
+The binary exposes `format`, `check`, `rules`, `server`, `cache`, `completions`, and `schema`:
 
 ```bash
 prose format path/             # rewrite files in place
@@ -42,6 +42,7 @@ prose format --diff path/      # show the diff without writing
 prose check --stdin < file.py  # read from stdin
 prose format - < file.py       # `-` reads from stdin too
 prose rules                    # list the rules in pipeline order
+prose schema                   # print the config's JSON Schema
 prose server                   # language server over stdio
 ```
 

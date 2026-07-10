@@ -93,6 +93,6 @@ fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, LineColumn)
 }
 
 fn write_json_line<T: Serialize>(writer: &mut dyn Write, value: &T) -> io::Result<()> {
-    serde_json::to_writer(&mut *writer, value).map_err(io::Error::other)?;
+    serde_json::to_writer(&mut *writer, value).map_err(io::Error::from)?;
     writer.write_all(b"\n")
 }

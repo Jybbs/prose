@@ -1,23 +1,20 @@
 import * as discovery from '../../lib/primitives/discovery'
-import { fixtureDir } from '../support'
+import * as support   from '../support'
 
 describe('discoverPrimitives', () => {
-  const fixture = (name: string): string => fixtureDir(import.meta.dirname, name)
+  const fixture = (name: string): string => support.fixtureDir(import.meta.dirname, name)
 
   it('discovers primitives sorted by filename', () => {
     expect(discovery.discoverPrimitives(fixture('valid'))).toMatchSnapshot()
   })
 
   it('returns the memoized result on a second call', () => {
-    const dir = fixture('valid')
-    expect(discovery.discoverPrimitives(dir)).toBe(discovery.discoverPrimitives(dir))
+    support.expectMemoized(discovery.discoverPrimitives, fixture('valid'))
   })
 
   it('indexes discovered primitives by slug', () => {
     const dir = fixture('valid')
-    expect([...discovery.discoverPrimitiveIndex(dir).keys()])
-      .toEqual(discovery.discoverPrimitives(dir).map(p => p.slug))
-    expect(discovery.discoverPrimitiveIndex(dir)).toBe(discovery.discoverPrimitiveIndex(dir))
+    support.expectSlugIndex(discovery.discoverPrimitiveIndex, discovery.discoverPrimitives, dir)
   })
 
   it.each([

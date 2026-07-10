@@ -204,19 +204,7 @@ mod tests {
     use crate::diagnostics::Severity;
     use crate::rule::RuleId;
     use crate::source::Source;
-    use crate::testing::{parse, range};
-
-    struct FailingWriter;
-
-    impl Write for FailingWriter {
-        fn flush(&mut self) -> io::Result<()> {
-            Ok(())
-        }
-
-        fn write(&mut self, _: &[u8]) -> io::Result<usize> {
-            Err(io::Error::other("simulated write failure"))
-        }
-    }
+    use crate::testing::{FailingWriter, parse, range};
 
     fn diagnostic(severity: Severity, range: TextRange, slug: &'static str) -> Diagnostic {
         Diagnostic {
@@ -283,7 +271,7 @@ mod tests {
     }
 
     #[test]
-    fn emit_outcomes_propagates_writer_failure() {
+    fn emit_outcomes_propagates_the_writer_failure_kind() {
         let source = parse("x = 1\n");
         let diags = vec![diagnostic(
             Severity::Format,
@@ -294,10 +282,14 @@ mod tests {
         let result = emit_outcomes(
             &outcomes,
             OutputFormat::Json,
-            &mut FailingWriter,
+            &mut FailingWriter(io::ErrorKind::BrokenPipe),
             &EmitterSummary::default(),
         );
-        assert!(result.is_err());
+        let err = result.expect_err("writer failure propagates");
+        assert_matches!(
+            err.downcast_ref::<io::Error>(),
+            Some(e) if e.kind() == io::ErrorKind::BrokenPipe
+        );
     }
 
     #[rstest]
