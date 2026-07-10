@@ -456,6 +456,16 @@ mod tests {
     }
 
     #[test]
+    fn module_band_plan_pins_an_inert_constant_referencing_an_effectful_one_in_a_notebook() {
+        let source = notebook(&["def helper():\n    return 1\nRAW = compute()\nSCALED = RAW\n"]);
+        let plan = plan_of(&source).expect("acyclic notebook plans");
+        assert!(
+            !plan.ranks.contains_key(&2),
+            "SCALED references effectful RAW, so anchoring propagates and it pins"
+        );
+    }
+
+    #[test]
     fn propagate_flips_slots_reachable_from_a_seed() {
         let deps = vec![vec![], vec![0], vec![1]];
         let mut state = vec![true, false, false];
