@@ -1,16 +1,24 @@
-//! Strips the pre-`:` padding on aligned contexts whose `:`s have no
-//! column to align to. A singleton group (one member, so no neighbor
-//! row), a multi-member group whose `:`s all share a source line (no
-//! column distinction across rows), and a multi-member group whose
-//! rows open at differing column baselines (no shared column the
-//! padding can reach) all reduce to "alignment is not happening
-//! here," at which point the pre-`:` gap is visual noise and the rule
-//! strips it. A multi-member group whose `:`s sit on distinct lines at
-//! one baseline belongs to `align_colons` and passes through this rule
-//! untouched. Runs after the alignment rules in
-//! `Pipeline::with_defaults` so it sees their output.
+//! Strips padding that aligns with nothing, in two shapes. The pre-`:`
+//! gap goes on an aligned context whose `:`s have no column to align
+//! to. A singleton group (one member, so no neighbor row), a
+//! multi-member group whose `:`s all share a source line (no column
+//! distinction across rows), and a multi-member group whose rows open
+//! at differing column baselines (no shared column the padding can
+//! reach) all reduce to "alignment is not happening here," at which
+//! point the pre-`:` gap is visual noise and the rule strips it. A
+//! multi-member group whose `:`s sit on distinct lines at one baseline
+//! belongs to `align_colons` and passes through this rule untouched.
+//! The interior gap goes on a bracket delimiter, a whitespace run
+//! directly after an opening `(` `[` `{` or before its closer when the
+//! run shares a line with the content it pads, so a closer on its own
+//! line keeps its leading indent. A bracket inside an f-string or
+//! t-string replacement field stays untouched, leaving a debug
+//! `f"{x = }"` and its format specs their spaces. Runs after the
+//! alignment rules in `Pipeline::with_defaults` so it sees their output.
 
 use ruff_diagnostics::Edit;
+use ruff_python_ast::token::TokenKind;
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
@@ -34,6 +42,7 @@ impl Rule for StripAlignPadding {
             source,
         };
         emitter.walk(source);
+        emitter.edits.extend(delimiter_padding_edits(source));
         singleton_groups(emitter.edits)
     }
 
@@ -74,8 +83,52 @@ impl ColonEmitter for Emitter<'_> {
     }
 }
 
+/// Deletes the whitespace run directly inside a bracket delimiter,
+/// after an opening `(` `[` `{` or before its closer, when the run
+/// shares a line with the neighbor it pads against. A closer on its own
+/// line keeps its leading indent, since the gap then spans a line
+/// break. Tokens inside an f-string or t-string replacement field stay
+/// untouched, tracked through `interp_depth`.
+fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
+    let tokens = source.tokens();
+    let mut interp_depth: u32 = 0;
+    let mut edits = Vec::new();
+    for (token, next) in tokens.iter().zip(tokens.iter().skip(1)) {
+        let kind = token.kind();
+        if matches!(kind, TokenKind::FStringStart | TokenKind::TStringStart) {
+            interp_depth += 1;
+        } else if kind.is_interpolated_string_end() {
+            interp_depth -= 1;
+        }
+        if interp_depth > 0 {
+            continue;
+        }
+        let gap = TextRange::new(token.end(), next.start());
+        if gap.is_empty() || source.contains_line_break(gap) {
+            continue;
+        }
+        if (is_opener(kind) && !next.kind().is_trivia())
+            || (is_closer(next.kind()) && !kind.is_trivia())
+        {
+            edits.push(Edit::range_deletion(gap));
+        }
+    }
+    edits
+}
+
+/// Returns `true` when `kind` is a closing bracket `)` `]` `}`.
+fn is_closer(kind: TokenKind) -> bool {
+    matches!(kind, TokenKind::Rpar | TokenKind::Rsqb | TokenKind::Rbrace)
+}
+
+/// Returns `true` when `kind` is an opening bracket `(` `[` `{`.
+fn is_opener(kind: TokenKind) -> bool {
+    matches!(kind, TokenKind::Lpar | TokenKind::Lsqb | TokenKind::Lbrace)
+}
+
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use ruff_text_size::{Ranged, TextSize};
 
     use super::*;
@@ -88,6 +141,72 @@ mod tests {
         };
         emitter.handle(members);
         emitter.edits
+    }
+
+    #[test]
+    fn delimiter_skips_closer_on_its_own_line() {
+        // The closer carries leading indent rather than interior padding
+        // once a line break separates it from the content.
+        assert!(delimiter_padding_edits(&parse("x = [\n    1\n    ]\n")).is_empty());
+    }
+
+    #[rstest]
+    fn delimiter_skips_interpolated_replacement_field(
+        #[values(
+            "v = f\"{ x }\"\n",
+            "v = f\"{ x = }\"\n",
+            "v = t\"{ x }\"\n",
+            "v = t\"{ x = }\"\n"
+        )]
+        src: &str,
+    ) {
+        // A debug `f"{ x = }"` or t-string echoes its interior spaces, so
+        // the replacement-field braces are left untouched.
+        assert!(delimiter_padding_edits(&parse(src)).is_empty());
+    }
+
+    #[test]
+    fn delimiter_skips_padding_before_a_comment() {
+        // Padding between an opener and a same-line comment is left, so the
+        // comment does not fuse onto the bracket.
+        assert!(delimiter_padding_edits(&parse("f(  # note\n    a,\n)\n")).is_empty());
+    }
+
+    #[test]
+    fn delimiter_strips_after_opener_and_before_closer() {
+        let edits = delimiter_padding_edits(&parse("f( 1 )\n"));
+        assert_eq!(edits.len(), 2);
+        assert_eq!(edits[0].range(), range(2, 3));
+        assert_eq!(edits[1].range(), range(4, 5));
+    }
+
+    #[test]
+    fn delimiter_strips_empty_pair_once() {
+        // Both sides of `f( )` qualify, yet the lone gap emits a single
+        // edit rather than an overlapping pair.
+        let edits = delimiter_padding_edits(&parse("f( )\n"));
+        assert_eq!(edits.len(), 1);
+        assert_eq!(edits[0].range(), range(2, 3));
+    }
+
+    #[rstest]
+    #[case(TokenKind::Rpar, true)]
+    #[case(TokenKind::Rsqb, true)]
+    #[case(TokenKind::Rbrace, true)]
+    #[case(TokenKind::Lpar, false)]
+    #[case(TokenKind::Name, false)]
+    fn is_closer_flags_closing_brackets(#[case] kind: TokenKind, #[case] expected: bool) {
+        assert_eq!(is_closer(kind), expected);
+    }
+
+    #[rstest]
+    #[case(TokenKind::Lpar, true)]
+    #[case(TokenKind::Lsqb, true)]
+    #[case(TokenKind::Lbrace, true)]
+    #[case(TokenKind::Rpar, false)]
+    #[case(TokenKind::Name, false)]
+    fn is_opener_flags_opening_brackets(#[case] kind: TokenKind, #[case] expected: bool) {
+        assert_eq!(is_opener(kind), expected);
     }
 
     #[test]

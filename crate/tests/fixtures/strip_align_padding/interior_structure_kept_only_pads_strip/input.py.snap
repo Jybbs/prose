@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/strip_align_padding/interior_structure_kept_only_pads_strip/input.py
+---
+sub = d[1]
+sliced = s[1 : 2]
+trailing = [1, 2,]

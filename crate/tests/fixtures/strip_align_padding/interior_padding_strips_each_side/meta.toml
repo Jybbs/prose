@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Padding Just Inside a Bracket Strips on Either Side"
+
+description = '''
+A space run directly after an opening `(`, `[`, or `{` or directly before its closer lines up with nothing, so the rule pulls the delimiter tight against its content wherever the pad appears.
+'''
