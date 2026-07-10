@@ -4,6 +4,7 @@ import path from 'node:path'
 import { parse } from 'postcss'
 
 import { glossary }          from '../../lib/glossary/entries'
+import * as typingDemo       from '../../lib/landing/typing-demo'
 import { discoverRuleSlugs } from '../../lib/rules/discovery'
 import { rulesDir }          from '../../lib/shared/paths'
 import * as registries       from '../../lib/shared/registries'
@@ -20,6 +21,7 @@ const accentSlugs = (): string[] => {
 }
 
 const glossaryFamilies = Object.keys(registries.GLOSSARY_FAMILY_META).sort()
+const slugs            = new Set(discoverRuleSlugs(rulesDir(import.meta.url)).map(r => r.slug))
 
 describe('family registry and stylesheet parity', () => {
   it('every glossary family has a [data-family] accent, with no orphans', () => {
@@ -33,12 +35,17 @@ describe('family registry and stylesheet parity', () => {
 })
 
 describe('glossary rule resolution', () => {
-  const slugs       = new Set(discoverRuleSlugs(rulesDir(import.meta.url)).map(r => r.slug))
   const ruleEntries = Object.entries(glossary).flatMap(([name, entry]) =>
     entry.rule ? [{ name, rule: entry.rule }] : []
   )
 
   it.each(ruleEntries)('$name resolves rule $rule to a discovered slug', ({ rule }) => {
+    expect(slugs.has(rule)).toBe(true)
+  })
+})
+
+describe('typing-demo rule resolution', () => {
+  it.each([...typingDemo.RULES])('demo rule %s is a discovered slug', rule => {
     expect(slugs.has(rule)).toBe(true)
   })
 })

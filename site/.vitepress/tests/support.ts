@@ -1,6 +1,19 @@
 import path from 'node:path'
 
-import { test as base, vi, type MockInstance } from 'vitest'
+import { expect, test as base, vi, type MockInstance } from 'vitest'
+
+export function expectMemoized<T>(fn: (dir: string) => T, dir: string): void {
+  expect(fn(dir)).toBe(fn(dir))
+}
+
+export function expectSlugIndex(
+  index : (dir: string) => ReadonlyMap<string, unknown>,
+  list  : (dir: string) => ReadonlyArray<{ slug: string }>,
+  dir   : string
+): void {
+  expect([...index(dir).keys()]).toEqual(list(dir).map(entry => entry.slug))
+  expectMemoized(index, dir)
+}
 
 export const fixtureDir = (metaDir: string, ...parts: string[]): string =>
   path.join(metaDir, 'fixtures', ...parts)

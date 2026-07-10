@@ -116,13 +116,10 @@ function buildResetRows(): LandingTypingDemoResetRow[] {
   const rows  : LandingTypingDemoResetRow[] = []
   const index = new Map<string, number>()
   for (const entry of ENTRIES) {
-    const at = index.get(entry.anchor)
-    if (at === undefined) {
-      index.set(entry.anchor, rows.length)
-      rows.push({ anchor: entry.anchor, end: entry.to, prelude: entry.from })
-    } else {
-      rows[at].end = entry.to
-    }
+    const at = index.getOrInsertComputed(entry.anchor, () =>
+      rows.push({ anchor: entry.anchor, end: entry.to, prelude: entry.from }) - 1
+    )
+    rows[at].end = entry.to
   }
   return rows
 }
