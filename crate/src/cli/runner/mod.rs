@@ -19,7 +19,7 @@ use super::{
 use crate::{
     cache::{Cache, Rewrite},
     config::Config,
-    diagnostics::{Diagnostic, Severity},
+    diagnostics::Diagnostic,
     pipeline::Pipeline,
 };
 
@@ -318,7 +318,7 @@ fn format_stdin<O: Write, E: Write>(
 }
 
 fn has_format_change(diagnostics: &[Diagnostic]) -> bool {
-    diagnostics.iter().any(|d| d.severity == Severity::Format)
+    diagnostics.iter().any(|d| d.severity.is_format())
 }
 
 /// Resolves the source type of stdin input from a `--stdin-filename`,

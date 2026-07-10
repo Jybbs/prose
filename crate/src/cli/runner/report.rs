@@ -14,7 +14,7 @@ use crate::{
         exit_status::ExitStatus,
         output::{self, Presentation, Summary},
     },
-    diagnostics::{Diagnostic, Severity},
+    diagnostics::Diagnostic,
 };
 
 pub(super) fn emit_outcomes<W: Write>(
@@ -68,7 +68,7 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
                 summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
                 summary.diagnostics_total += diagnostics.len();
                 for diag in diagnostics {
-                    summary.lint_total += usize::from(diag.severity == Severity::Lint);
+                    summary.lint_total += usize::from(diag.severity.is_lint());
                     *summary.rules_fired.entry(diag.rule).or_default() += 1;
                 }
                 summary
@@ -224,13 +224,15 @@ mod tests {
     use ruff_text_size::TextRange;
 
     use super::*;
+    use crate::diagnostics::Severity;
     use crate::rule::RuleId;
     use crate::source::Source;
     use crate::testing::{FailingWriter, parse, range};
 
     fn diagnostic(severity: Severity, range: TextRange, slug: &'static str) -> Diagnostic {
         Diagnostic {
-            fix: matches!(severity, Severity::Format)
+            fix: severity
+                .is_format()
                 .then(|| Fix::safe_edit(Edit::range_replacement("y".into(), range))),
             message: "test".into(),
             range,

@@ -295,12 +295,12 @@ mod tests {
         assert_eq!(diagnostics.len(), 2);
         let format = diagnostics
             .iter()
-            .find(|d| d.severity == Severity::Format)
+            .find(|d| d.severity.is_format())
             .expect("format finding");
         assert_eq!(format.rule.as_str(), "rewrite-x-to-y");
         let lint = diagnostics
             .iter()
-            .find(|d| d.severity == Severity::Lint)
+            .find(|d| d.severity.is_lint())
             .expect("lint finding");
         assert_eq!(lint.rule.as_str(), "flag-x");
         assert_eq!(lint.range, range(0, 1));
