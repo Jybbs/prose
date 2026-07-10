@@ -8,6 +8,7 @@ export default defineConfig({
     globals     : true,
     root        : import.meta.dirname,
     include     : ['.vitepress/tests/**/*.test.ts'],
+    exclude     : ['.vitepress/tests/wasm/**'],
     reporters   : process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : ['default'],
     resolveSnapshotPath : (testPath, extension) => testPath + extension,
     coverage: {

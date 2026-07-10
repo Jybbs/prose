@@ -1,0 +1,8 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Build the wasm module, emit its JS bindings, and run the browser smoke test against them"
+#MISE depends=["bake"]
+#MISE tools={"cargo:wasm-bindgen-cli" = "0.2.120"}
+
+mise run build wasm
+wasm-bindgen --target nodejs --out-dir site/.vitepress/tests/wasm/pkg target/wasm32-unknown-unknown/wasm-release/prose_wasm.wasm
+(cd site && bunx vitest run --config vitest.wasm.config.ts)

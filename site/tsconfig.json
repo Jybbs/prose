@@ -10,5 +10,6 @@
     ".vitepress/**/*.ts",
     ".vitepress/**/*.vue",
     "vitest.config.ts"
-  ]
+  ],
+  "exclude"         : [".vitepress/tests/wasm/**"]
 }
