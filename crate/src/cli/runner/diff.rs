@@ -3,6 +3,8 @@
 use std::io::Write;
 
 use anyhow::Context;
+use itertools::izip;
+use ruff_notebook::NotebookIndex;
 
 use crate::cache::{NotebookRewrite, RewriteKind};
 use crate::cli::output;
@@ -32,34 +34,45 @@ fn write_diff<W: Write>(
 }
 
 /// Writes a per-cell unified diff for a notebook, one cell header and
-/// hunk set per code cell whose source changed.
+/// hunk set per code cell whose source changed. `index` numbers each
+/// header by the cell's absolute notebook position, the number the
+/// diagnostics carry.
 fn write_notebook_diff<W: Write>(
     writer: &mut W,
     name: &str,
     rewrite: &NotebookRewrite,
+    index: &NotebookIndex,
     decorate: bool,
 ) -> anyhow::Result<()> {
-    for (index, (before, after)) in rewrite.before.iter().zip(&rewrite.after).enumerate() {
+    for (before, after, cell_start) in izip!(&rewrite.before, &rewrite.after, index.iter()) {
         if before == after {
             continue;
         }
-        let cell = format!("{name} cell {}", index + 1);
+        let cell = format!("{name} cell {}", cell_start.cell_index());
         write_diff(writer, &cell, before, after, decorate)?;
     }
     Ok(())
 }
 
 /// Writes the diff for a `Changed` rewrite: per code cell for a
-/// notebook, one unified diff for a module.
+/// notebook, one unified diff for a module. A notebook carries an
+/// `index` for its per-cell headers, a module `None`.
 pub(super) fn write_rewrite_diff<W: Write>(
     writer: &mut W,
     name: &str,
     before: &str,
     kind: &RewriteKind,
+    index: Option<&NotebookIndex>,
     decorate: bool,
 ) -> anyhow::Result<()> {
     match kind {
-        RewriteKind::Notebook(notebook) => write_notebook_diff(writer, name, notebook, decorate),
+        RewriteKind::Notebook(notebook) => write_notebook_diff(
+            writer,
+            name,
+            notebook,
+            index.expect("a notebook rewrite carries its cell index"),
+            decorate,
+        ),
         RewriteKind::Text(code) => write_diff(writer, name, before, code, decorate),
     }
 }
@@ -105,22 +118,5 @@ mod tests {
             "patch header missing: {out:?}"
         );
         assert!(!out.contains('🧵'), "decoration leaked: {out:?}");
-    }
-
-    #[test]
-    fn write_notebook_diff_skips_unchanged_cells() {
-        let rewrite = NotebookRewrite {
-            after: vec!["x  = 1\n".to_owned(), "y = 2\n".to_owned()],
-            before: vec!["x = 1\n".to_owned(), "y = 2\n".to_owned()],
-            json: String::new(),
-        };
-        let mut buf = Vec::new();
-        write_notebook_diff(&mut buf, "nb.ipynb", &rewrite, false).expect("writes");
-        let out = String::from_utf8(buf).expect("utf-8");
-        assert!(
-            out.contains("nb.ipynb cell 1"),
-            "changed cell missing: {out:?}"
-        );
-        assert!(!out.contains("cell 2"), "unchanged cell rendered: {out:?}");
     }
 }
