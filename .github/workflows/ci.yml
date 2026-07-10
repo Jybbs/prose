@@ -52,7 +52,7 @@ jobs:
             name       : 🗜️ Build
             shared-key : prose-build
           - command    : mise run build wasm
-            name       : 🕸️ Wasm
+            name       : 🛶 Wasm
             shared-key : prose-wasm
           - command    : mise run test rust
             name       : ⚖️ Test
