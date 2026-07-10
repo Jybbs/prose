@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+title       = "Interleaved Markdown Shifts Each Code Cell's Number"
+
+description = '''
+Markdown cells interleave with code, so the diff numbers each changed code cell
+by its absolute notebook position and skips an unchanged cell.
+'''
