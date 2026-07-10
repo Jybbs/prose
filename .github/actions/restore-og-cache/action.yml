@@ -1,0 +1,13 @@
+name        : Restore the OG card cache with a rolling commit key
+description : Restore `.cache/og` under a rolling commit-keyed entry with a prefix fallback, so every run reuses the newest card store and saves its own forward.
+
+runs:
+  using: composite
+
+  steps:
+    - name : Restore the OG card cache
+      uses : actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key          : og-cards-${{ runner.os }}-${{ github.sha }}
+        path         : .cache/og
+        restore-keys : og-cards-${{ runner.os }}-
