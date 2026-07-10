@@ -83,9 +83,8 @@ fn is_main_guard(stmt: &Stmt) -> bool {
 /// import pair lands 1 blank line across distinct canonical groups
 /// (bare, external `from`, local-package) and none within a group, while
 /// an ungrouped pair reads as one flat block and never divides. A
-/// top-level `FunctionDef` or `ClassDef` carries 2 blank lines before
-/// it. An `Assign` or `AnnAssign` following a top-level `FunctionDef` or
-/// `ClassDef` carries 2.
+/// top-level `FunctionDef` or `ClassDef` carries 2 blank lines on each
+/// side, whatever statement kind neighbors it.
 fn module_scope_blanks(
     prev: &Stmt,
     curr: &Stmt,
@@ -99,8 +98,8 @@ fn module_scope_blanks(
         return (blanks != 0).then_some(blanks);
     }
     match (prev, curr) {
-        (_, Stmt::FunctionDef(_) | Stmt::ClassDef(_)) => Some(2),
-        (Stmt::FunctionDef(_) | Stmt::ClassDef(_), Stmt::Assign(_) | Stmt::AnnAssign(_)) => Some(2),
+        (_, Stmt::FunctionDef(_) | Stmt::ClassDef(_))
+        | (Stmt::FunctionDef(_) | Stmt::ClassDef(_), _) => Some(2),
         _ => None,
     }
 }
@@ -266,40 +265,14 @@ mod tests {
     }
 
     #[rstest]
-    fn canonical_blanks_module_assignment_after_def_or_class_returns_two(
-        #[values(
-            "class C: pass\nPORT = 8080\n",
-            "class C: pass\nPORT: int = 8080\n",
-            "def f(): pass\nPORT = 8080\n",
-            "def f(): pass\nPORT: int = 8080\n"
-        )]
-        src: &str,
+    fn canonical_blanks_module_def_or_class_after_module_stmt_returns_two(
+        #[values("x = 1\nclass C: pass\n", "x = 1\ndef f(): pass\n")] src: &str,
     ) {
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
             canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             Some(2),
-        );
-    }
-
-    #[test]
-    fn canonical_blanks_module_class_after_module_stmt_returns_two() {
-        let s = parse("x = 1\nclass C: pass\n");
-        let body = &s.ast().body;
-        assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
-            Some(2)
-        );
-    }
-
-    #[test]
-    fn canonical_blanks_module_def_after_module_stmt_returns_two() {
-        let s = parse("x = 1\ndef f(): pass\n");
-        let body = &s.ast().body;
-        assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
-            Some(2)
         );
     }
 
@@ -352,6 +325,31 @@ mod tests {
         assert_eq!(
             canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             None
+        );
+    }
+
+    #[rstest]
+    fn canonical_blanks_module_statement_after_def_or_class_returns_two(
+        #[values(
+            "class C: pass\nPORT = 8080\n",
+            "class C: pass\nPORT: int = 8080\n",
+            "class C: pass\nlaunch()\n",
+            "class C: pass\nfor x in y:\n    pass\n",
+            "def f(): pass\nPORT = 8080\n",
+            "def f(): pass\nPORT: int = 8080\n",
+            "def f(): pass\nprint(1)\n",
+            "def f(): pass\nif ready:\n    go()\n",
+            "def f(): pass\nimport os\n",
+            "def f(): pass\nfrom os import path\n",
+            "async def f(): pass\nprint(1)\n"
+        )]
+        src: &str,
+    ) {
+        let s = parse(src);
+        let body = &s.ast().body;
+        assert_eq!(
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
+            Some(2),
         );
     }
 
