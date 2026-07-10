@@ -26,7 +26,7 @@ Rewrites Python files to conform to the *Prose* style. Returns exit code 0 once 
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, subtracting from whichever set would otherwise have run |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to format, or `-` to read source from stdin |
 
-Exit codes: `0` clean / rewrites applied, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*.
+Exit codes: `0` clean / rewrites applied, `1` pending `--diff` rewrite, `2` lint diagnostics surfaced, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*.
 
 ```bash
 prose format src/

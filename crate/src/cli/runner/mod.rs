@@ -31,9 +31,7 @@ mod resolve;
 
 use diff::write_rewrite_diff;
 use process::{apply_rewrite, process_path, process_paths, process_stdin, read_stdin};
-use report::{
-    emit_outcomes, emitter_summary, finish, render_summary, status_from_outcomes, summarize,
-};
+use report::{emit_outcomes, emitter_summary, finish, render_summary, status_from_outcomes};
 use resolve::{ConfigResolver, Resolved};
 
 /// One file's contribution to the run.
@@ -110,7 +108,10 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
     render_summary(
         &mut stderr,
         present,
-        summarize(&outcomes, &summary, Mode::Check),
+        &outcomes,
+        &summary,
+        Mode::Check,
+        false,
     );
     Ok(status)
 }
@@ -165,9 +166,9 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
 /// and the cache settings, while each path input re-resolves its own
 /// effective config through the resolver.
 fn build_run(rules: RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> {
-    let config = super::load_config_or_status()?;
-    let cache = open_cache(&config, no_cache);
     let resolver = ConfigResolver::new(rules.select, rules.ignore);
+    let config = super::load_config_or_status(resolver.notices())?;
+    let cache = open_cache(&config, no_cache);
     let cwd = resolver.seed(&config);
     Ok(RunSetup {
         cache,
@@ -217,11 +218,7 @@ fn format_paths_diff<O: Write, E: Write>(
     }
     let summary = emitter_summary(&outcomes);
     let status = finish(&outcomes, setup.cache.is_some(), verbose, false);
-    render_summary(
-        stderr,
-        present,
-        summarize(&outcomes, &summary, Mode::Preview),
-    );
+    render_summary(stderr, present, &outcomes, &summary, Mode::Preview, true);
     Ok(status)
 }
 
@@ -246,7 +243,10 @@ fn format_paths_rewrite<O: Write, E: Write>(
     render_summary(
         stderr,
         present,
-        summarize(&outcomes, &summary, Mode::Reformat),
+        &outcomes,
+        &summary,
+        Mode::Reformat,
+        format.is_text(),
     );
     Ok(status)
 }
@@ -292,7 +292,14 @@ fn format_stdin<O: Write, E: Write>(
     }
     let mode = if diff { Mode::Preview } else { Mode::Reformat };
     let status = status_from_outcomes(outcomes, !diff);
-    render_summary(stderr, present, summarize(outcomes, &summary, mode));
+    render_summary(
+        stderr,
+        present,
+        outcomes,
+        &summary,
+        mode,
+        diff || format.is_text(),
+    );
     Ok(status)
 }
 

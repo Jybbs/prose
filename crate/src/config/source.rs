@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 
 use super::de::deserialize_prose;
-use super::load::{ConfigNotice, emit_notice, walk_prose_table};
+use super::load::{ConfigNotice, NoticeDedup, walk_prose_table};
 use super::merge::merge_tables;
 use super::overrides::{Override, take_overrides};
 use super::{Config, ConfigError, script};
@@ -30,9 +30,13 @@ impl ConfigSource {
     ///
     /// Returns `ConfigError` when a config is found but fails to read,
     /// parse, or compile its overrides.
-    pub(crate) fn discover(from: &Path) -> Result<Option<Self>, ConfigError> {
-        match walk_prose_table(from, &mut emit_notice)? {
-            Some((anchor, table)) => Ok(Some(Self::build(anchor, table, &mut emit_notice)?)),
+    pub(crate) fn discover(
+        from: &Path,
+        notices: &NoticeDedup,
+    ) -> Result<Option<Self>, ConfigError> {
+        let mut on_notice = |n: ConfigNotice<'_>| notices.emit(n);
+        match walk_prose_table(from, &mut on_notice)? {
+            Some((anchor, table)) => Ok(Some(Self::build(anchor, table, &mut on_notice)?)),
             None => Ok(None),
         }
     }
@@ -44,12 +48,16 @@ impl ConfigSource {
     /// # Errors
     ///
     /// Returns `ConfigError` when the block is present but malformed.
-    pub(crate) fn from_script(file: &Path, bytes: &[u8]) -> Result<Option<Self>, ConfigError> {
+    pub(crate) fn from_script(
+        file: &Path,
+        bytes: &[u8],
+        notices: &NoticeDedup,
+    ) -> Result<Option<Self>, ConfigError> {
         let Some(table) = script::extract_prose_table(bytes)? else {
             return Ok(None);
         };
         let anchor = file.parent().unwrap_or(file).to_path_buf();
-        Ok(Some(Self::build(anchor, table, &mut emit_notice)?))
+        Ok(Some(Self::build(anchor, table, &mut |n| notices.emit(n))?))
     }
 
     fn build<F>(
@@ -114,6 +122,10 @@ mod tests {
     use crate::config::MaxShift;
     use crate::testing::write_pyproject;
 
+    fn discover(from: &Path) -> Result<Option<ConfigSource>, ConfigError> {
+        ConfigSource::discover(from, &NoticeDedup::default())
+    }
+
     fn line_length(config: &Config) -> Option<usize> {
         config.code_line_length.map(std::num::NonZeroUsize::get)
     }
@@ -125,9 +137,7 @@ mod tests {
         let nested = tmp.path().join("pkg/inner");
         std::fs::create_dir_all(&nested).expect("nested dirs create");
 
-        let source = ConfigSource::discover(&nested)
-            .expect("loads")
-            .expect("a source");
+        let source = discover(&nested).expect("loads").expect("a source");
 
         assert_eq!(
             line_length(&source.effective_config(&nested.join("m.py"))),
@@ -139,7 +149,7 @@ mod tests {
     fn discover_without_a_project_yields_none() {
         let tmp = TempDir::new().expect("tempdir");
 
-        assert!(ConfigSource::discover(tmp.path()).expect("loads").is_none());
+        assert!(discover(tmp.path()).expect("loads").is_none());
     }
 
     #[test]
@@ -149,9 +159,7 @@ mod tests {
             tmp.path(),
             "[tool.prose]\ncode-line-length = 88\n\n[[tool.prose.overrides]]\npaths = [\"gen/**\"]\ncode-line-length = 200\n",
         );
-        let source = ConfigSource::discover(tmp.path())
-            .expect("loads")
-            .expect("a source");
+        let source = discover(tmp.path()).expect("loads").expect("a source");
 
         assert_eq!(
             line_length(&source.effective_config(&tmp.path().join("gen/x.py"))),
@@ -167,9 +175,7 @@ mod tests {
     fn effective_toml_borrows_base_when_no_override_matches() {
         let tmp = TempDir::new().expect("tempdir");
         write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 88\n");
-        let source = ConfigSource::discover(tmp.path())
-            .expect("loads")
-            .expect("a source");
+        let source = discover(tmp.path()).expect("loads").expect("a source");
 
         assert_matches::assert_matches!(
             source.effective_toml(&tmp.path().join("a.py")),
@@ -184,9 +190,7 @@ mod tests {
             tmp.path(),
             "[tool.prose.rules]\nalphabetize = false\n[tool.prose.rules.align-equals]\nmax-shift = 8\n\n[[tool.prose.overrides]]\npaths = [\"wide/**\"]\n[tool.prose.overrides.rules.align-equals]\nmax-shift = 2\n",
         );
-        let source = ConfigSource::discover(tmp.path())
-            .expect("loads")
-            .expect("a source");
+        let source = discover(tmp.path()).expect("loads").expect("a source");
 
         let config = source.effective_config(&tmp.path().join("wide/x.py"));
 
@@ -204,9 +208,7 @@ mod tests {
             tmp.path(),
             "[tool.prose]\ncode-line-length = 88\ndocstring-line-length = 70\n\n[[tool.prose.overrides]]\npaths = [\"a.py\"]\ncode-line-length = 120\n",
         );
-        let source = ConfigSource::discover(tmp.path())
-            .expect("loads")
-            .expect("a source");
+        let source = discover(tmp.path()).expect("loads").expect("a source");
 
         let config = source.effective_config(&tmp.path().join("a.py"));
 
@@ -226,9 +228,7 @@ mod tests {
             tmp.path(),
             "[tool.prose]\ncode-line-length = 88\n\n[[tool.prose.overrides]]\npaths = [\"**\"]\ncode-line-length = 100\ndocstring-line-length = 70\n\n[[tool.prose.overrides]]\npaths = [\"a.py\"]\ncode-line-length = 120\n",
         );
-        let source = ConfigSource::discover(tmp.path())
-            .expect("loads")
-            .expect("a source");
+        let source = discover(tmp.path()).expect("loads").expect("a source");
 
         let config = source.effective_config(&tmp.path().join("a.py"));
 

@@ -43,6 +43,7 @@ pub(crate) struct EmitterSummary {
     pub(crate) files_changed: usize,
     pub(crate) files_visited: usize,
     pub(crate) files_with_diagnostics: usize,
+    pub(crate) lint_total: usize,
     pub(crate) rules_fired: BTreeMap<RuleId, usize>,
 }
 

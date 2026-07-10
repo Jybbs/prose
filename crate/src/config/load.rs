@@ -2,8 +2,10 @@
 //! table, the TOML reads, and the precedence / unknown-key notices.
 
 use std::{
+    collections::HashSet,
     io::ErrorKind,
     path::{Path, PathBuf},
+    sync::Mutex,
 };
 
 use serde::{Deserialize, de::IntoDeserializer};
@@ -70,6 +72,49 @@ pub(super) enum ConfigNotice<'a> {
     UnknownKey(&'a str),
 }
 
+impl ConfigNotice<'_> {
+    /// Renders this notice to its stderr line, the string a run's
+    /// [`NoticeDedup`] keys on to print each distinct notice once.
+    fn render(&self) -> String {
+        match self {
+            Self::Precedence {
+                dir,
+                shadowed,
+                winner,
+            } => format!(
+                "note: {} takes precedence over {} in {}",
+                winner.label(),
+                shadowed.label(),
+                dir.display(),
+            ),
+            Self::UnknownKey(key) => format!("warning: unknown key `{key}` in [tool.prose]"),
+        }
+    }
+}
+
+/// A run-scoped notice sink printing each distinct line once, however
+/// many config files a run loads. The cwd load and the parallel per-file
+/// resolutions share one, so a run reading the same `pyproject.toml` from
+/// both warns each key once rather than twice.
+#[derive(Default)]
+pub(crate) struct NoticeDedup {
+    seen: Mutex<HashSet<String>>,
+}
+
+impl NoticeDedup {
+    pub(super) fn emit(&self, notice: ConfigNotice<'_>) {
+        let line = notice.render();
+        let unseen = self
+            .seen
+            .lock()
+            .expect("notice dedup lock")
+            .insert(line.clone());
+        if unseen {
+            eprintln!("{line}");
+        }
+    }
+}
+
 /// The directory-relative path of every recognized config form, the
 /// set the server's file watcher registers against.
 pub(crate) fn config_rel_paths() -> [&'static str; ConfigForm::PRECEDENCE.len()] {
@@ -77,21 +122,7 @@ pub(crate) fn config_rel_paths() -> [&'static str; ConfigForm::PRECEDENCE.len()]
 }
 
 pub(super) fn emit_notice(notice: ConfigNotice<'_>) {
-    match notice {
-        ConfigNotice::Precedence {
-            dir,
-            shadowed,
-            winner,
-        } => eprintln!(
-            "note: {} takes precedence over {} in {}",
-            winner.label(),
-            shadowed.label(),
-            dir.display(),
-        ),
-        ConfigNotice::UnknownKey(key) => {
-            eprintln!("warning: unknown key `{key}` in [tool.prose]");
-        }
-    }
+    eprintln!("{}", notice.render());
 }
 
 /// Extracts the `[tool.prose]` table from a TOML document, shared by the

@@ -13,7 +13,7 @@ use std::{
 use lsp_types::Uri;
 
 use crate::{
-    config::{Config, ConfigSource},
+    config::{Config, ConfigSource, NoticeDedup},
     file_uri,
 };
 
@@ -78,7 +78,7 @@ impl DirSource {
     /// Walks `dir`'s ancestors for a project config, logging a
     /// present-but-broken config before reporting `Failed`.
     fn discover(dir: &Path) -> Self {
-        match ConfigSource::discover(dir) {
+        match ConfigSource::discover(dir, &NoticeDedup::default()) {
             Ok(Some(source)) => Self::Project(source),
             Ok(None) => Self::Bare,
             Err(err) => {
@@ -97,7 +97,7 @@ impl DirSource {
     /// when a bare document's block fails to load.
     fn config(&self, file: &Path, bytes: &[u8]) -> Option<Config> {
         match self {
-            Self::Bare => match ConfigSource::from_script(file, bytes) {
+            Self::Bare => match ConfigSource::from_script(file, bytes, &NoticeDedup::default()) {
                 Ok(source) => source.map(|source| source.effective_config(file)),
                 Err(err) => {
                     eprintln!(

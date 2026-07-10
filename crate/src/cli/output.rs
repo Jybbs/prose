@@ -35,6 +35,7 @@ impl Presentation {
 pub(super) enum Summary {
     Clean,
     Diagnostics { files: usize, total: usize },
+    LintRemainder { total: usize },
     Reformatted { files: usize },
     WouldReformat { files: usize },
 }
@@ -43,7 +44,7 @@ impl Summary {
     fn anchor(&self) -> &'static str {
         match self {
             Self::Clean => "🪻",
-            Self::Diagnostics { .. } => "🔖",
+            Self::Diagnostics { .. } | Self::LintRemainder { .. } => "🔖",
             Self::Reformatted { .. } | Self::WouldReformat { .. } => "🗞️",
         }
     }
@@ -58,6 +59,11 @@ impl Summary {
                     pluralize(*files, "file")
                 )
             }
+            Self::LintRemainder { total } => format!(
+                "{} not shown. Run `prose check` to see {} in full.",
+                pluralize(*total, "lint diagnostic"),
+                if *total == 1 { "it" } else { "them" },
+            ),
             Self::Reformatted { files } => format!("Reformatted {}.", pluralize(*files, "file")),
             Self::WouldReformat { files } => {
                 format!("{} would be reformatted.", pluralize(*files, "file"))
@@ -163,6 +169,14 @@ mod tests {
     #[case(Summary::Clean, "🪻 All clean.\n")]
     #[case(Summary::Diagnostics { files: 2, total: 5 }, "🔖 5 diagnostics in 2 files.\n")]
     #[case(Summary::Diagnostics { files: 1, total: 1 }, "🔖 1 diagnostic in 1 file.\n")]
+    #[case(
+        Summary::LintRemainder { total: 1 },
+        "🔖 1 lint diagnostic not shown. Run `prose check` to see it in full.\n"
+    )]
+    #[case(
+        Summary::LintRemainder { total: 3 },
+        "🔖 3 lint diagnostics not shown. Run `prose check` to see them in full.\n"
+    )]
     #[case(Summary::Reformatted { files: 4 }, "🗞️ Reformatted 4 files.\n")]
     #[case(Summary::Reformatted { files: 1 }, "🗞️ Reformatted 1 file.\n")]
     #[case(Summary::WouldReformat { files: 3 }, "🗞️ 3 files would be reformatted.\n")]
