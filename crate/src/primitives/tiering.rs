@@ -168,7 +168,7 @@ pub(crate) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
     tiers.into_iter().collect()
 }
 
-/// Walks a lambda's parameter defaults, pruning its body. The eval-time
+/// Walks a lambda's parameter defaults, pruning its body, the eval-time
 /// surface a lambda contributes when it binds.
 pub(crate) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda: &'a ExprLambda) {
     if let Some(params) = lambda.parameters.as_deref() {

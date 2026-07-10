@@ -46,7 +46,9 @@ struct ConstSite<'src> {
 /// Detects whether a constant's value runs code when it binds. Walks the
 /// value's evaluation-time surface, pruning each lambda body, and flips
 /// `effectful` on a call, comprehension, `await`, or notebook escape
-/// command.
+/// command. `ruff_python_ast::helpers::contains_effect` also classifies a
+/// subscript, an operator expression, and a walrus as effectful and walks
+/// lambda bodies, so it over-pins against this narrower split.
 struct EffectVisitor {
     effectful: bool,
 }
@@ -425,33 +427,17 @@ mod tests {
         assert!(plan.carries.is_empty());
     }
 
-    #[test]
-    fn module_band_plan_pins_an_await_constant_in_a_notebook() {
-        let source = notebook(&["def helper():\n    return 1\nDATA = await fetch()\n"]);
+    #[rstest]
+    #[case("DATA = await fetch()")]
+    #[case("CACHE = dict(size=10)")]
+    #[case("SHELL = !ls")]
+    fn module_band_plan_pins_an_effectful_constant_in_a_notebook(#[case] value_src: &str) {
+        let cell = format!("def helper():\n    return 1\n{value_src}\n");
+        let source = notebook(&[cell.as_str()]);
         let plan = plan_of(&source).expect("acyclic notebook plans");
         assert!(
             !plan.ranks.contains_key(&1),
-            "await runs code, so DATA pins in its cell"
-        );
-    }
-
-    #[test]
-    fn module_band_plan_pins_an_effectful_constant_in_a_notebook() {
-        let source = notebook(&["def helper():\n    return 1\nCACHE = dict(size=10)\n"]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
-        assert!(
-            !plan.ranks.contains_key(&1),
-            "dict(...) runs code, so CACHE pins in its cell"
-        );
-    }
-
-    #[test]
-    fn module_band_plan_pins_an_escape_command_in_a_notebook() {
-        let source = notebook(&["def helper():\n    return 1\nSHELL = !ls\n"]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
-        assert!(
-            !plan.ranks.contains_key(&1),
-            "an escape command runs code, so SHELL pins in its cell"
+            "{value_src} runs code, so it pins in its cell"
         );
     }
 
