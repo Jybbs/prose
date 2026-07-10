@@ -10,8 +10,8 @@ exits 0 when every pair agrees. Mismatches surface as `::error::`
 annotations naming the file pair and the divergent values.
 
 Initial pairs:
-    Rust version    `README.md` badge vs `crate/Cargo.toml` `rust-version`
-    Rust toolchain  `crate/Cargo.toml` `rust-version` vs `.mise/config.toml` pin
+    Rust version    `README.md` badge vs `Cargo.toml` `rust-version`
+    Rust toolchain  `Cargo.toml` `rust-version` vs `.mise/config.toml` pin
     Python version  `README.md` badge vs `crate/pyproject.toml` `requires-python`
 """
 
@@ -42,9 +42,10 @@ def major_minor(value: str) -> str:
 
 if __name__ == "__main__":
 
-    cargo   = loads(Path("crate/Cargo.toml").read_text(encoding="utf-8"))
+    cargo   = loads(Path("Cargo.toml").read_text(encoding="utf-8"))
     mise    = loads(Path(".mise/config.toml").read_text(encoding="utf-8"))
     project = loads(Path("crate/pyproject.toml").read_text(encoding="utf-8"))
+    rust    = cargo["workspace"]["package"]["rust-version"]
 
     # The mise `rust` pin is a bare version string or a table with `version`.
     mise_rust = mise["tools"]["rust"]
@@ -53,13 +54,13 @@ if __name__ == "__main__":
 
     pairs = [
         (
-            "README.md Rust badge ↔ crate/Cargo.toml rust-version",
+            "README.md Rust badge ↔ Cargo.toml rust-version",
             badge("rust.svg"),
-            major_minor(cargo["package"]["rust-version"])
+            major_minor(rust)
         ),
         (
-            "crate/Cargo.toml rust-version ↔ .mise/config.toml rust pin",
-            major_minor(cargo["package"]["rust-version"]),
+            "Cargo.toml rust-version ↔ .mise/config.toml rust pin",
+            major_minor(rust),
             major_minor(mise_rust)
         ),
         (

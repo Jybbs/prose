@@ -4,7 +4,8 @@ use std::io::{self, Write};
 
 use ruff_source_file::SourceFile;
 
-use crate::diagnostics::{Diagnostic, Emitter, EmitterSummary, Run, diagnostics, line_columns};
+use super::{Emitter, EmitterSummary, Run, diagnostics, line_columns};
+use crate::diagnostics::Diagnostic;
 
 pub(crate) struct Github;
 
@@ -50,17 +51,18 @@ fn emit_one(writer: &mut dyn Write, file: &SourceFile, diag: &Diagnostic) -> io:
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{format_diagnostic, parse, range};
+    use crate::{
+        cli::emit::emitted,
+        testing::{format_diagnostic, parse, range},
+    };
 
     fn emit_to_string(file: &SourceFile, diag: &Diagnostic) -> String {
-        let mut buf = Vec::<u8>::new();
-        Github
-            .emit(
-                &mut buf,
-                &[Run::new(file, std::slice::from_ref(diag), None)],
-                &EmitterSummary::default(),
-            )
-            .expect("emits");
+        let buf = emitted(
+            &Github,
+            file,
+            std::slice::from_ref(diag),
+            &EmitterSummary::default(),
+        );
         String::from_utf8(buf).expect("utf-8")
     }
 

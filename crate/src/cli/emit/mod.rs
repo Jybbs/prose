@@ -1,4 +1,4 @@
-//! Diagnostic model and output emitters.
+//! Output emitters rendering diagnostics in each CLI output format.
 
 use std::{
     collections::BTreeMap,
@@ -10,23 +10,21 @@ use ruff_source_file::{LineColumn, SourceFile};
 use ruff_text_size::TextRange;
 use serde::Serialize;
 
-use crate::rule::RuleId;
+use crate::{diagnostics::Diagnostic, rule::RuleId};
 
-pub(crate) mod github;
-pub(crate) mod json;
-pub(crate) mod model;
-pub(crate) mod sarif;
-pub(crate) mod text;
+mod github;
+mod json;
+mod sarif;
+mod text;
 
 pub use json::lint_records_json;
-pub use model::{Diagnostic, Severity};
 
-pub(crate) use github::Github;
-pub(crate) use json::Json;
-pub(crate) use sarif::Sarif;
-pub(crate) use text::Text;
+pub(super) use github::Github;
+pub(super) use json::Json;
+pub(super) use sarif::Sarif;
+pub(super) use text::Text;
 
-pub(crate) trait Emitter {
+pub(super) trait Emitter {
     fn emit(
         &self,
         writer: &mut dyn Write,
@@ -38,12 +36,12 @@ pub(crate) trait Emitter {
 /// Run-wide rollup accumulated across every processed file. Feeds both
 /// the JSON envelope's closing record and the human run summary.
 #[derive(Default)]
-pub(crate) struct EmitterSummary {
-    pub(crate) diagnostics_total: usize,
-    pub(crate) files_changed: usize,
-    pub(crate) files_visited: usize,
-    pub(crate) files_with_diagnostics: usize,
-    pub(crate) rules_fired: BTreeMap<RuleId, usize>,
+pub(super) struct EmitterSummary {
+    pub(super) diagnostics_total: usize,
+    pub(super) files_changed: usize,
+    pub(super) files_visited: usize,
+    pub(super) files_with_diagnostics: usize,
+    pub(super) rules_fired: BTreeMap<RuleId, usize>,
 }
 
 /// One file's diagnostics paired with the `SourceFile` they range into
@@ -51,14 +49,14 @@ pub(crate) struct EmitterSummary {
 /// position into a cell-relative one. The translator threads through
 /// this one seam rather than each emitter rebuilding it, modeled on
 /// ruff's `EmitterContext`.
-pub(crate) struct Run<'a> {
-    pub(crate) diagnostics: &'a [Diagnostic],
-    pub(crate) file: &'a SourceFile,
-    pub(crate) notebook_index: Option<&'a NotebookIndex>,
+pub(super) struct Run<'a> {
+    pub(super) diagnostics: &'a [Diagnostic],
+    pub(super) file: &'a SourceFile,
+    pub(super) notebook_index: Option<&'a NotebookIndex>,
 }
 
 impl<'a> Run<'a> {
-    pub(crate) fn new(
+    pub(super) fn new(
         file: &'a SourceFile,
         diagnostics: &'a [Diagnostic],
         notebook_index: Option<&'a NotebookIndex>,
@@ -95,4 +93,18 @@ fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, LineColumn)
 fn write_json_line<T: Serialize>(writer: &mut dyn Write, value: &T) -> io::Result<()> {
     serde_json::to_writer(&mut *writer, value).map_err(io::Error::from)?;
     writer.write_all(b"\n")
+}
+
+#[cfg(test)]
+fn emitted(
+    emitter: &dyn Emitter,
+    file: &SourceFile,
+    diagnostics: &[Diagnostic],
+    summary: &EmitterSummary,
+) -> Vec<u8> {
+    let mut buf = Vec::new();
+    emitter
+        .emit(&mut buf, &[Run::new(file, diagnostics, None)], summary)
+        .expect("emits");
+    buf
 }

@@ -1,8 +1,9 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Build the crate in debug mode, passing `bin` to build only the `prose` binary"
+#MISE description="Build the workspace in debug mode, passing `bin` to build only the `prose` binary or `wasm` to build the `prose_wasm` member for `wasm32-unknown-unknown` under `wasm-release`"
 
 case "${1:-all}" in
-  all) cargo build --all-targets --locked ;;
-  bin) cargo build --bin prose --locked ;;
-  *)   echo "usage: mise build [bin]" >&2; exit 2 ;;
+  all)  cargo build --all-targets --locked ;;
+  bin)  cargo build --bin prose --locked ;;
+  wasm) cargo build --package prose_wasm --profile wasm-release --target wasm32-unknown-unknown --locked ;;
+  *)    echo "usage: mise build [bin|wasm]" >&2; exit 2 ;;
 esac

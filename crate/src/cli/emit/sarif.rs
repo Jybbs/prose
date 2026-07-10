@@ -14,13 +14,8 @@ use serde_sarif::sarif::{
     Sarif as SarifDoc, ToolComponent,
 };
 
-use crate::{
-    diagnostics::{
-        Diagnostic, Emitter, EmitterSummary, Run, diagnostics, line_columns, write_json_line,
-    },
-    file_uri,
-    rule::RuleId,
-};
+use super::{Emitter, EmitterSummary, Run, diagnostics, line_columns, write_json_line};
+use crate::{diagnostics::Diagnostic, file_uri, rule::RuleId};
 
 pub(crate) struct Sarif;
 
@@ -136,21 +131,17 @@ mod tests {
     use serde_json::Value;
 
     use super::*;
-    use crate::testing::{format_diagnostic, parse, range};
+    use crate::{
+        cli::emit::emitted,
+        testing::{format_diagnostic, parse, range},
+    };
 
     fn diag() -> Diagnostic {
         format_diagnostic(range(0, 1))
     }
 
     fn emit_value(file: &SourceFile, diagnostics: &[Diagnostic]) -> Value {
-        let mut buf = Vec::<u8>::new();
-        Sarif
-            .emit(
-                &mut buf,
-                &[Run::new(file, diagnostics, None)],
-                &EmitterSummary::default(),
-            )
-            .expect("emits");
+        let buf = emitted(&Sarif, file, diagnostics, &EmitterSummary::default());
         serde_json::from_slice(&buf).expect("parses")
     }
 

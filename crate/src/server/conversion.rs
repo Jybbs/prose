@@ -1,25 +1,28 @@
-//! Maps prose's byte-offset model onto the protocol's line/character
-//! positions and diagnostic shape.
+//! Maps Prose's byte-offset model onto the protocol's line/character
+//! positions and diagnostic shape, and the protocol's document URIs
+//! onto filesystem paths.
 
-use lsp_types::{Diagnostic as LspDiagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
+use std::path::PathBuf;
+
+use lsp_types::{
+    Diagnostic as LspDiagnostic, DiagnosticSeverity, NumberOrString, Position, Range, Uri,
+};
 use ruff_source_file::PositionEncoding;
-use ruff_text_size::TextSize;
+use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
     diagnostics::{Diagnostic, Severity},
+    file_uri::SCHEME,
     source::Source,
 };
 
 /// The range spanning the whole document, from the start to the position
 /// past its final character.
 pub(super) fn full_document_range(source: &Source, encoding: PositionEncoding) -> Range {
-    Range {
-        end: position_of(source, TextSize::of(source.text()), encoding),
-        start: Position::default(),
-    }
+    range_of(source, source.module_range(), encoding)
 }
 
-/// Renders a prose diagnostic as a protocol diagnostic, tagging it with
+/// Renders a Prose diagnostic as a protocol diagnostic, tagging it with
 /// the rule slug and the `prose` source so the editor groups findings.
 pub(super) fn to_lsp(
     source: &Source,
@@ -29,14 +32,29 @@ pub(super) fn to_lsp(
     LspDiagnostic {
         code: Some(NumberOrString::String(diagnostic.rule.as_str().to_owned())),
         message: diagnostic.message.clone(),
-        range: Range {
-            end: position_of(source, diagnostic.range.end(), encoding),
-            start: position_of(source, diagnostic.range.start(), encoding),
-        },
+        range: range_of(source, diagnostic.range, encoding),
         severity: Some(severity_of(diagnostic.severity)),
         source: Some("prose".to_owned()),
         ..LspDiagnostic::default()
     }
+}
+
+/// Turns a `file://` URI into a filesystem path, or `None` for a URI that
+/// names no local file.
+pub(super) fn to_path(uri: &Uri) -> Option<PathBuf> {
+    uri.scheme().filter(|scheme| scheme.as_str() == SCHEME)?;
+    let decoded = uri.path().as_estr().decode().into_string().ok()?;
+    // A Windows drive arrives as `/C:/dir`, so drop its leading slash.
+    let path = match decoded.strip_prefix('/') {
+        Some(rest) if has_drive_prefix(rest) => rest,
+        _ => decoded.as_ref(),
+    };
+    Some(PathBuf::from(path))
+}
+
+/// Returns `true` when `s` opens with a `C:`-style Windows drive letter.
+fn has_drive_prefix(s: &str) -> bool {
+    matches!(s.as_bytes(), [drive, b':', ..] if drive.is_ascii_alphabetic())
 }
 
 /// Maps a byte offset to a protocol position in the negotiated encoding.
@@ -49,7 +67,15 @@ fn position_of(source: &Source, offset: TextSize, encoding: PositionEncoding) ->
     }
 }
 
-/// Maps prose's severity onto the protocol's: format findings to
+/// Maps a byte range to a protocol range in the negotiated encoding.
+fn range_of(source: &Source, range: TextRange, encoding: PositionEncoding) -> Range {
+    Range {
+        end: position_of(source, range.end(), encoding),
+        start: position_of(source, range.start(), encoding),
+    }
+}
+
+/// Maps Prose's severity onto the protocol's: format findings to
 /// `INFORMATION`, lint findings to `WARNING`.
 fn severity_of(severity: Severity) -> DiagnosticSeverity {
     match severity {
@@ -63,7 +89,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::{file_uri::from_path, server::uri, testing::parse};
 
     #[test]
     fn full_document_range_covers_a_multiline_buffer() {
@@ -146,5 +172,39 @@ mod tests {
         #[case] expected: DiagnosticSeverity,
     ) {
         assert_eq!(severity_of(severity), expected);
+    }
+
+    #[test]
+    fn to_path_decodes_percent_escapes() {
+        assert_eq!(
+            to_path(&uri("file:///tmp/a%20b.py")),
+            Some(PathBuf::from("/tmp/a b.py")),
+        );
+    }
+
+    #[test]
+    fn to_path_rejects_a_non_file_scheme() {
+        assert!(to_path(&uri("untitled:Untitled-1")).is_none());
+    }
+
+    #[test]
+    fn to_path_rejects_a_non_utf8_percent_escape() {
+        assert!(to_path(&uri("file:///%FF.py")).is_none());
+    }
+
+    #[rstest]
+    #[case("/tmp/My Project/mod.py")]
+    #[case("/tmp/café/mod.py")]
+    #[case("/tmp/a#b?c[d]/mod.py")]
+    fn to_path_round_trips_from_path(#[case] path: &str) {
+        assert_eq!(to_path(&uri(&from_path(path))), Some(PathBuf::from(path)));
+    }
+
+    #[test]
+    fn to_path_strips_a_windows_drive_slash() {
+        assert_eq!(
+            to_path(&uri("file:///C:/Users/x.py")),
+            Some(PathBuf::from("C:/Users/x.py")),
+        );
     }
 }
