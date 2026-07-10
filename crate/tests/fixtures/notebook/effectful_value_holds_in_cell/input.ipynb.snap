@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/notebook/effectful_value_holds_in_cell/input.ipynb
+---
+SEED = 42
+
+
+def helper():
+    return 1
+
+
+CACHE = dict(size=10)
