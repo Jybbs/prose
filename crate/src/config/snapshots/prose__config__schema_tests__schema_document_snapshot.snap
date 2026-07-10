@@ -1,0 +1,846 @@
+---
+source: crate/src/config/schema_tests.rs
+expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
+---
+{
+  "$defs": {
+    "AlignmentConfig": {
+      "description": "Alignment-rule config shared by every rule that aligns a token\nacross consecutive lines. `max_shift` caps how far a row may shift\nto reach the column.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-shift": {
+          "$ref": "#/$defs/MaxShift",
+          "default": 16
+        }
+      },
+      "type": "object"
+    },
+    "AlphabetizeConfig": {
+      "description": "Configuration for the `alphabetize` rule. Each facet gates one sort\npass and defaults `true`. `group_methods` keys methods on\n`(group, name)` for the dunder-property-private-public grouping,\ndropping to `name` alone when `false`. `sort_definitions` reorders\nclass and function definitions, freezing them in source order when\n`false`. `sort_docstring_entries` gates the Google-style\nentry-section reorder. `sort_dunder_lists` reorders the `__all__`\nand `__slots__` string lists.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "group-methods": {
+          "default": true,
+          "type": "boolean"
+        },
+        "sort-definitions": {
+          "default": true,
+          "type": "boolean"
+        },
+        "sort-docstring-entries": {
+          "default": true,
+          "type": "boolean"
+        },
+        "sort-dunder-lists": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "BareImportsConfig": {
+      "description": "Configuration for the `bare_imports` rule.",
+      "properties": {
+        "allow": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "exempt-aliased": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-attributes": {
+          "default": 4,
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "CacheConfig": {
+      "description": "Cache settings parsed from `[tool.prose.cache]`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-size-mib": {
+          "default": 100,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "CallLayoutConfig": {
+      "description": "Configuration for the `call_layout` rule.\n\n`max_args` caps the count threshold. A positive integer enforces the\ncap. `false` disables the count trigger.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-args": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 3
+        }
+      },
+      "type": "object"
+    },
+    "CollectionLayoutConfig": {
+      "description": "Configuration for the `collection_layout` rule.\n\n`collapse`, `explode`, and `wrap_dict_entries` each gate one shape\nmove and default `true`. `collapse` joins a fitting multi-line\nliteral, subscript, or dict key back to one line. `explode` drives\nevery expansion, the width-driven spread and the `max_dict_entries`\ncount trigger alike, so `false` leaves the count cap inert.\n`wrap_dict_entries` breaks an over-wide `key: value` at its `:` and\nhangs the value beneath.\n\n`max_atomics` and `max_dict_entries` each take a positive integer or\n`false`. The integer sets the cap, and `false` disables it, leaving\nwidth as the only gate.",
+      "properties": {
+        "collapse": {
+          "default": true,
+          "type": "boolean"
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "explode": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-atomics": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 8
+        },
+        "max-dict-entries": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 3
+        },
+        "wrap-dict-entries": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "DocstringStructuredPolicy": {
+      "description": "Which budget structured docstring sections wrap to.\n\n`CodeLineLength` reuses `Config::code_line_length`.\n`DocstringLineLength` reuses `Config::docstring_line_length`.",
+      "enum": [
+        "code-line-length",
+        "docstring-line-length"
+      ],
+      "type": "string"
+    },
+    "ImportsConfig": {
+      "description": "Settings parsed from `[tool.prose.imports]`. `first_party` lists\nthe package names whose imports group with relative imports as\nlocal-package, keyed kebab-case under `first-party`.",
+      "properties": {
+        "first-party": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "InlineBudget": {
+      "anyOf": [
+        {
+          "format": "uint",
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "const": false
+        }
+      ]
+    },
+    "MaxShift": {
+      "anyOf": [
+        {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "const": false
+        }
+      ]
+    },
+    "PythonVersion": {
+      "anyOf": [
+        {
+          "pattern": "^\\d+\\.\\d+$",
+          "type": "string"
+        },
+        {
+          "const": "3.7",
+          "description": "Python 3.7"
+        },
+        {
+          "const": "3.8",
+          "description": "Python 3.8"
+        },
+        {
+          "const": "3.9",
+          "description": "Python 3.9"
+        },
+        {
+          "const": "3.10",
+          "description": "Python 3.10"
+        },
+        {
+          "const": "3.11",
+          "description": "Python 3.11"
+        },
+        {
+          "const": "3.12",
+          "description": "Python 3.12"
+        },
+        {
+          "const": "3.13",
+          "description": "Python 3.13"
+        },
+        {
+          "const": "3.14",
+          "description": "Python 3.14"
+        },
+        {
+          "const": "3.15",
+          "description": "Python 3.15"
+        }
+      ]
+    },
+    "ReassignedConstantsConfig": {
+      "description": "Configuration for the `reassigned_constants` rule.",
+      "properties": {
+        "allow": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "RuleConfigs": {
+      "description": "Per-rule configuration under `[tool.prose.rules]`.",
+      "properties": {
+        "align-colons": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/AlignmentConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-shift": 16
+          }
+        },
+        "align-comparisons": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/AlignmentConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-shift": 16
+          }
+        },
+        "align-equals": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/AlignmentConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-shift": 16
+          }
+        },
+        "align-imports": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/AlignmentConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-shift": 16
+          }
+        },
+        "align-match-case": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/AlignmentConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-shift": 16
+          }
+        },
+        "alphabetize": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/AlphabetizeConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "group-methods": true,
+            "sort-definitions": true,
+            "sort-docstring-entries": true,
+            "sort-dunder-lists": true
+          }
+        },
+        "band-constants": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "bare-imports": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/BareImportsConfig"
+            }
+          ],
+          "default": {
+            "allow": [],
+            "enabled": true,
+            "exempt-aliased": true,
+            "max-attributes": 4
+          }
+        },
+        "blank-lines": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "call-layout": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/CallLayoutConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-args": 3
+          }
+        },
+        "collection-layout": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/CollectionLayoutConfig"
+            }
+          ],
+          "default": {
+            "collapse": true,
+            "enabled": true,
+            "explode": true,
+            "max-atomics": 8,
+            "max-dict-entries": 3,
+            "wrap-dict-entries": true
+          }
+        },
+        "docstring-expand": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "docstring-frame": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "docstring-wrap": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "group-imports": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "import-layout": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "legacy-union-syntax": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "reassigned-constants": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ReassignedConstantsConfig"
+            }
+          ],
+          "default": {
+            "allow": [],
+            "enabled": true
+          }
+        },
+        "shed-parentheses": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "signature-annotations": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "signature-layout": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/SignatureLayoutConfig"
+            }
+          ],
+          "default": {
+            "enabled": true,
+            "max-params": 4
+          }
+        },
+        "single-use-variables": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/SingleUseVariablesConfig"
+            }
+          ],
+          "default": {
+            "allow-pattern": "^_",
+            "enabled": true
+          }
+        },
+        "step-narration": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "strip-align-padding": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "strip-none-return": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "strip-trailing-commas": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "unsorted-parameters": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
+        "unused-future-annotations": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        }
+      },
+      "type": "object"
+    },
+    "SignatureLayoutConfig": {
+      "description": "Configuration for the `signature_layout` rule.\n\n`max_params` caps the count threshold. A positive integer enforces\nthe cap. `false` disables the count trigger.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-params": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 4
+        }
+      },
+      "type": "object"
+    },
+    "SingleUseVariablesConfig": {
+      "description": "Configuration for the `single_use_variables` rule.",
+      "properties": {
+        "allow-pattern": {
+          "default": "^_",
+          "format": "regex",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "ToggleOnly": {
+      "description": "Sub-table shape for rules whose only knob is `enabled`.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The resolved `prose` configuration, read from a `prose.toml` or\n`.config/prose.toml` document root, or a `pyproject.toml`\n`[tool.prose]` table.\n\n`code_line_length` defaults to `Some(88)`. `docstring_line_length`\ndefaults to `Some(76)`. `import_line_length` defaults to `Some(120)`,\nfalling back to `code_line_length` when `false`.\n`docstring_structured_policy` defaults to `CodeLineLength`.\n`imports.first_party` defaults to empty. `target_version` defaults\nto `None`. Per-rule settings live under `rules`.",
+  "properties": {
+    "cache": {
+      "$ref": "#/$defs/CacheConfig",
+      "default": {
+        "enabled": true,
+        "max-size-mib": 100
+      }
+    },
+    "code-line-length": {
+      "default": 88,
+      "format": "uint",
+      "minimum": 1,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "docstring-line-length": {
+      "default": 76,
+      "format": "uint",
+      "minimum": 1,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "docstring-structured-policy": {
+      "$ref": "#/$defs/DocstringStructuredPolicy",
+      "default": "code-line-length"
+    },
+    "import-line-length": {
+      "anyOf": [
+        {
+          "format": "uint",
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "const": false
+        }
+      ],
+      "default": 120
+    },
+    "imports": {
+      "$ref": "#/$defs/ImportsConfig",
+      "default": {
+        "first-party": []
+      }
+    },
+    "rules": {
+      "$ref": "#/$defs/RuleConfigs",
+      "default": {
+        "align-colons": {
+          "enabled": true,
+          "max-shift": 16
+        },
+        "align-comparisons": {
+          "enabled": true,
+          "max-shift": 16
+        },
+        "align-equals": {
+          "enabled": true,
+          "max-shift": 16
+        },
+        "align-imports": {
+          "enabled": true,
+          "max-shift": 16
+        },
+        "align-match-case": {
+          "enabled": true,
+          "max-shift": 16
+        },
+        "alphabetize": {
+          "enabled": true,
+          "group-methods": true,
+          "sort-definitions": true,
+          "sort-docstring-entries": true,
+          "sort-dunder-lists": true
+        },
+        "band-constants": {
+          "enabled": true
+        },
+        "bare-imports": {
+          "allow": [],
+          "enabled": true,
+          "exempt-aliased": true,
+          "max-attributes": 4
+        },
+        "blank-lines": {
+          "enabled": true
+        },
+        "call-layout": {
+          "enabled": true,
+          "max-args": 3
+        },
+        "collection-layout": {
+          "collapse": true,
+          "enabled": true,
+          "explode": true,
+          "max-atomics": 8,
+          "max-dict-entries": 3,
+          "wrap-dict-entries": true
+        },
+        "docstring-expand": {
+          "enabled": true
+        },
+        "docstring-frame": {
+          "enabled": true
+        },
+        "docstring-wrap": {
+          "enabled": true
+        },
+        "group-imports": {
+          "enabled": true
+        },
+        "import-layout": {
+          "enabled": true
+        },
+        "legacy-union-syntax": {
+          "enabled": true
+        },
+        "reassigned-constants": {
+          "allow": [],
+          "enabled": true
+        },
+        "shed-parentheses": {
+          "enabled": true
+        },
+        "signature-annotations": {
+          "enabled": true
+        },
+        "signature-layout": {
+          "enabled": true,
+          "max-params": 4
+        },
+        "single-use-variables": {
+          "allow-pattern": "^_",
+          "enabled": true
+        },
+        "step-narration": {
+          "enabled": true
+        },
+        "strip-align-padding": {
+          "enabled": true
+        },
+        "strip-none-return": {
+          "enabled": true
+        },
+        "strip-trailing-commas": {
+          "enabled": true
+        },
+        "unsorted-parameters": {
+          "enabled": true
+        },
+        "unused-future-annotations": {
+          "enabled": true
+        }
+      }
+    },
+    "target-version": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PythonVersion"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "Config",
+  "type": "object"
+}

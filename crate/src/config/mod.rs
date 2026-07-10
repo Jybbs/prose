@@ -16,16 +16,22 @@
 //! `Config::load` yields the base config. Per-file resolution, layering
 //! `[[tool.prose.overrides]]` globs and a standalone script's PEP 723
 //! block onto that base, lives in [`ConfigSource`].
+//!
+//! The whole tree implements `schemars::JsonSchema`, so `prose
+//! schema` prints a JSON Schema carrying every key's type, default,
+//! and range.
 
 use std::{collections::HashSet, num::NonZeroUsize, path::Path};
 
 use ruff_python_ast::PythonVersion;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub use crate::rule::RuleConfigs;
 
 mod de;
+mod json_schema;
 mod load;
 mod merge;
 mod overrides;
@@ -34,7 +40,8 @@ mod script;
 mod source;
 
 pub(crate) use de::deserialize_rule;
-use de::{deserialize_optional_cap, deserialize_prose};
+use de::{deserialize_optional_cap, deserialize_prose, serialize_optional_cap};
+pub(crate) use json_schema::rule_schema;
 pub(crate) use load::config_rel_paths;
 use load::{ConfigNotice, emit_notice, prose_table_from_str, walk_prose_table};
 pub use schema::*;
@@ -50,14 +57,18 @@ pub(crate) use source::ConfigSource;
 /// `docstring_structured_policy` defaults to `CodeLineLength`.
 /// `imports.first_party` defaults to empty. `target_version` defaults
 /// to `None`. Per-rule settings live under `rules`.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
     pub cache: CacheConfig,
     pub code_line_length: Option<NonZeroUsize>,
     pub docstring_line_length: Option<NonZeroUsize>,
     pub docstring_structured_policy: DocstringStructuredPolicy,
-    #[serde(deserialize_with = "deserialize_optional_cap")]
+    #[schemars(schema_with = "json_schema::optional_cap_schema")]
+    #[serde(
+        deserialize_with = "deserialize_optional_cap",
+        serialize_with = "serialize_optional_cap"
+    )]
     pub import_line_length: Option<NonZeroUsize>,
     pub imports: ImportsConfig,
     pub rules: RuleConfigs,
@@ -203,3 +214,5 @@ pub enum ConfigError {
 mod load_tests;
 #[cfg(test)]
 mod parse_tests;
+#[cfg(test)]
+mod schema_tests;

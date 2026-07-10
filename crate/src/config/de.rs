@@ -1,5 +1,6 @@
-//! Serde `deserialize_with` helpers: the bool-or-table rule reader,
-//! the optional-cap parser, and the regex round-trip.
+//! Serde `deserialize_with` and `serialize_with` helpers: the
+//! bool-or-table rule reader, and the optional-cap and regex
+//! round-trips.
 
 use std::{fmt, marker::PhantomData, num::NonZeroUsize};
 
@@ -12,6 +13,67 @@ use serde::{
 use super::load::ConfigNotice;
 use super::schema::RuleToggle;
 use super::{Config, ConfigError};
+
+/// Deserializes a cap of integer type `T`, or `false` lifting it to
+/// `None`. `true` is rejected with `on_true` so the disable spelling
+/// stays unambiguous.
+pub(super) fn deserialize_cap_or_false<'de, T, D>(
+    deserializer: D,
+    on_true: &'static str,
+) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Value<T> {
+        Cap(T),
+        Off(bool),
+    }
+    match Value::deserialize(deserializer)? {
+        Value::Cap(n) => Ok(Some(n)),
+        Value::Off(false) => Ok(None),
+        Value::Off(true) => Err(serde::de::Error::custom(on_true)),
+    }
+}
+
+/// Deserializes an optional cap a positive integer sets and `false`
+/// disables. Shared by the `InlineBudget` layout caps and the
+/// top-level `import-line-length` key.
+pub(super) fn deserialize_optional_cap<'de, D>(
+    deserializer: D,
+) -> Result<Option<NonZeroUsize>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_cap_or_false(
+        deserializer,
+        "expected a positive integer or `false`, not `true`",
+    )
+}
+
+pub(super) fn deserialize_prose<F>(
+    table: toml::Table,
+    on_notice: &mut F,
+) -> Result<Config, ConfigError>
+where
+    F: FnMut(ConfigNotice<'_>),
+{
+    Ok(serde_ignored::deserialize(
+        toml::Value::Table(table).into_deserializer(),
+        |path| {
+            on_notice(ConfigNotice::UnknownKey(&path.to_string()));
+        },
+    )?)
+}
+
+pub(super) fn deserialize_regex<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Regex, D::Error> {
+    let pattern = String::deserialize(deserializer)?;
+    Regex::new(&pattern).map_err(serde::de::Error::custom)
+}
 
 /// Resolves a rule's config from either a bare bool toggle or a
 /// sub-table. `deserialize_any` dispatches on the TOML value so the
@@ -43,51 +105,16 @@ where
     deserializer.deserialize_any(RuleVisitor(PhantomData))
 }
 
-/// Deserializes an optional cap a positive integer sets and `false`
-/// disables. `true` is rejected so the disable spelling stays
-/// unambiguous. Shared by the `InlineBudget` layout caps and the
-/// top-level `import-line-length` key.
-pub(super) fn deserialize_optional_cap<'de, D>(
-    deserializer: D,
-) -> Result<Option<NonZeroUsize>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum Value {
-        Cap(NonZeroUsize),
-        Off(bool),
+/// Serializes an optional cap as its integer, or `false` when uncapped,
+/// mirroring `deserialize_optional_cap`.
+pub(super) fn serialize_optional_cap<S: Serializer>(
+    cap: &Option<NonZeroUsize>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    match cap {
+        Some(n) => serializer.serialize_u64(n.get() as u64),
+        None => serializer.serialize_bool(false),
     }
-    match Value::deserialize(deserializer)? {
-        Value::Cap(n) => Ok(Some(n)),
-        Value::Off(false) => Ok(None),
-        Value::Off(true) => Err(serde::de::Error::custom(
-            "expected a positive integer or `false`, not `true`",
-        )),
-    }
-}
-
-pub(super) fn deserialize_prose<F>(
-    table: toml::Table,
-    on_notice: &mut F,
-) -> Result<Config, ConfigError>
-where
-    F: FnMut(ConfigNotice<'_>),
-{
-    Ok(serde_ignored::deserialize(
-        toml::Value::Table(table).into_deserializer(),
-        |path| {
-            on_notice(ConfigNotice::UnknownKey(&path.to_string()));
-        },
-    )?)
-}
-
-pub(super) fn deserialize_regex<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Regex, D::Error> {
-    let pattern = String::deserialize(deserializer)?;
-    Regex::new(&pattern).map_err(serde::de::Error::custom)
 }
 
 pub(super) fn serialize_regex<S: Serializer>(

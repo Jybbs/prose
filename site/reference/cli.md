@@ -143,6 +143,17 @@ prose rules --output-format json
 
 The [**Pipeline Order**](/reference/pipeline-order) reference covers how the registry sequences the rules the listing reflects.
 
+## `prose schema`
+
+Prints the [JSON Schema](https://json-schema.org) for the `[tool.prose]` configuration, carrying every key's type, default, allowed values, and numeric range, with each `[rules]` entry mirroring the bare-bool-or-sub-table shape the loader reads. The output is pretty-printed, so redirecting it to a file lands a schema an editor or validator consumes directly.
+
+```bash
+prose schema
+prose schema > prose.schema.json
+```
+
+The [**Configuration**](/reference/configuration) reference walks the keys the schema describes.
+
 ## `prose server`
 
 Runs a language server over stdio, so an editor gets format-on-save and live rule diagnostics from the same binary it already installs. The server tracks each open buffer, runs the [**pipeline**](/reference/pipeline-order) over the editor's live text on a `textDocument/formatting` request, and republishes findings on every open and change. It resolves the workspace `[tool.prose]` [**configuration**](/reference/configuration) the way `prose check` does, so an editor session and a command-line run over the same tree agree on the active rule set.

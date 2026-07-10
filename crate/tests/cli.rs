@@ -1088,6 +1088,14 @@ fn quiet_check_reduces_summary_to_a_bare_count() {
 }
 
 #[test]
+fn schema_subcommand_exits_zero_and_prints_the_schema() {
+    let assert = prose().arg("schema").assert().success();
+    let schema: serde_json::Value =
+        serde_json::from_str(&stdout_utf8(&assert)).expect("valid JSON");
+    assert!(schema["properties"]["rules"].is_object());
+}
+
+#[test]
 fn server_completes_a_stdio_session_over_the_real_binary() {
     let session = lsp_session(&[
         r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}"#,
