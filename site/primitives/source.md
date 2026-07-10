@@ -80,8 +80,10 @@ A downstream Rust crate consumes *Prose* the same way it consumes the `ruff_*` w
 
 ```toml
 [dependencies]
-prose = { git = "https://github.com/Jybbs/prose", tag = "0.2.3" }
+prose = { git = "https://github.com/Jybbs/prose", tag = "0.7.0" }
 ```
+
+The default `native` feature carries the command line, the cache, the language server, and the file walker. Depending with `default-features = false` drops that machinery, leaving the formatting core alone, which also builds for `wasm32-unknown-unknown`.
 
 The Python wheel exposes the binary rather than the library, so a Python consumer drives the same *Source* indirectly through the CLI surface that the [**Installation**](/usage/installation) chapter walks.
 

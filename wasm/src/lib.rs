@@ -61,6 +61,21 @@ mod tests {
     }
 
     #[test]
+    fn honors_a_rule_toggle() {
+        let aligned = try_format("", "aa = 1\nb = 2\n").expect("formats");
+        assert_eq!(aligned.formatted, "aa = 1\nb  = 2\n");
+        let toggled = try_format("rules.align-equals = false", "aa = 1\nb = 2\n").expect("formats");
+        assert_eq!(toggled.formatted, "aa = 1\nb = 2\n");
+    }
+
+    #[test]
+    fn lint_findings_do_not_error() {
+        let result =
+            try_format("", "import os\nos.getcwd()\n").expect("formats despite a lint finding");
+        assert_eq!(result.formatted, "import os\nos.getcwd()\n");
+    }
+
+    #[test]
     fn rejects_an_invalid_config() {
         assert_matches!(try_format("code-line-length = \"wide\"", "x = 1\n"), Err(_));
     }

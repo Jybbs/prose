@@ -103,7 +103,7 @@ fn main_loop(
     Ok(())
 }
 
-/// Registers a `workspace/didChangeWatchedFiles` watcher for prose's config
+/// Registers a `workspace/didChangeWatchedFiles` watcher for Prose's config
 /// files when the client supports dynamic registration, so editing any of
 /// them refreshes every open buffer. Clients without dynamic registration
 /// still pick up config changes on the next edit.
@@ -161,6 +161,11 @@ mod tests {
         TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
         TextDocumentPositionParams, TextEdit, Uri, VersionedTextDocumentIdentifier,
         WorkDoneProgressParams,
+        notification::{
+            DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, DidSaveTextDocument,
+            Initialized, PublishDiagnostics,
+        },
+        request::{Formatting, HoverRequest, Initialize, Shutdown},
     };
     use rstest::rstest;
     use serde::Serialize;
@@ -168,17 +173,6 @@ mod tests {
 
     use super::*;
     use crate::server;
-
-    const DID_CHANGE: &str = "textDocument/didChange";
-    const DID_CLOSE: &str = "textDocument/didClose";
-    const DID_OPEN: &str = "textDocument/didOpen";
-    const EXIT: &str = "exit";
-    const FORMATTING: &str = "textDocument/formatting";
-    const HOVER: &str = "textDocument/hover";
-    const INITIALIZE: &str = "initialize";
-    const INITIALIZED: &str = "initialized";
-    const PUBLISH_DIAGNOSTICS: &str = "textDocument/publishDiagnostics";
-    const SHUTDOWN: &str = "shutdown";
 
     fn uri() -> Uri {
         server::uri("file:///module.py")
@@ -204,7 +198,7 @@ mod tests {
     fn handshake(client: &Connection) -> InitializeResult {
         client
             .sender
-            .send(req(1, INITIALIZE, InitializeParams::default()))
+            .send(req(1, Initialize::METHOD, InitializeParams::default()))
             .expect("send initialize");
         let Message::Response(init) = recv(client) else {
             panic!("expected initialize response");
@@ -213,7 +207,7 @@ mod tests {
             serde_json::from_value(init.result.expect("initialize result")).expect("decodes");
         client
             .sender
-            .send(note(INITIALIZED, InitializedParams {}))
+            .send(note(Initialized::METHOD, InitializedParams {}))
             .expect("send initialized");
         result
     }
@@ -222,10 +216,13 @@ mod tests {
     fn teardown(client: &Connection, handle: thread::JoinHandle<anyhow::Result<()>>) {
         client
             .sender
-            .send(req(3, SHUTDOWN, ()))
+            .send(req(3, Shutdown::METHOD, ()))
             .expect("send shutdown");
         let _ = recv(client);
-        client.sender.send(note(EXIT, ())).expect("send exit");
+        client
+            .sender
+            .send(note(Exit::METHOD, ()))
+            .expect("send exit");
         handle
             .join()
             .expect("server thread joins")
@@ -236,7 +233,7 @@ mod tests {
         client
             .sender
             .send(note(
-                DID_OPEN,
+                DidOpenTextDocument::METHOD,
                 DidOpenTextDocumentParams {
                     text_document: TextDocumentItem {
                         uri: uri(),
@@ -254,7 +251,7 @@ mod tests {
             .sender
             .send(req(
                 2,
-                FORMATTING,
+                Formatting::METHOD,
                 DocumentFormattingParams {
                     text_document: TextDocumentIdentifier { uri: uri() },
                     options: FormattingOptions::default(),
@@ -274,7 +271,7 @@ mod tests {
         let Message::Notification(notification) = recv(client) else {
             panic!("expected publishDiagnostics");
         };
-        assert_eq!(notification.method, PUBLISH_DIAGNOSTICS);
+        assert_eq!(notification.method, PublishDiagnostics::METHOD);
         serde_json::from_value(notification.params).expect("decodes")
     }
 
@@ -283,7 +280,10 @@ mod tests {
         let (server, client) = Connection::memory();
         let handle = thread::spawn(move || serve(server));
         handshake(&client);
-        client.sender.send(note(EXIT, ())).expect("send exit");
+        client
+            .sender
+            .send(note(Exit::METHOD, ()))
+            .expect("send exit");
         handle
             .join()
             .expect("server thread joins")
@@ -300,7 +300,7 @@ mod tests {
         client
             .sender
             .send(note(
-                DID_CHANGE,
+                DidChangeTextDocument::METHOD,
                 DidChangeTextDocumentParams {
                     text_document: VersionedTextDocumentIdentifier {
                         uri: uri(),
@@ -328,7 +328,7 @@ mod tests {
         client
             .sender
             .send(note(
-                DID_CLOSE,
+                DidCloseTextDocument::METHOD,
                 DidCloseTextDocumentParams {
                     text_document: TextDocumentIdentifier { uri: uri() },
                 },
@@ -358,7 +358,7 @@ mod tests {
             .sender
             .send(req(
                 1,
-                INITIALIZE,
+                Initialize::METHOD,
                 serde_json::json!({
                     "capabilities": {
                         "workspace": {
@@ -373,12 +373,12 @@ mod tests {
         };
         client
             .sender
-            .send(note(INITIALIZED, InitializedParams {}))
+            .send(note(Initialized::METHOD, InitializedParams {}))
             .expect("send initialized");
         let Message::Request(registration) = recv(&client) else {
             panic!("expected registerCapability request");
         };
-        assert_eq!(registration.method, "client/registerCapability");
+        assert_eq!(registration.method, RegisterCapability::METHOD);
         let params: RegistrationParams = serde_json::from_value(registration.params.clone())
             .expect("decodes registration params");
         let options: DidChangeWatchedFilesRegistrationOptions = serde_json::from_value(
@@ -406,7 +406,10 @@ mod tests {
                 serde_json::Value::Null,
             )))
             .expect("ack registration");
-        client.sender.send(note(EXIT, ())).expect("send exit");
+        client
+            .sender
+            .send(note(Exit::METHOD, ()))
+            .expect("send exit");
         handle
             .join()
             .expect("server thread joins")
@@ -422,7 +425,7 @@ mod tests {
             .sender
             .send(req(
                 2,
-                FORMATTING,
+                Formatting::METHOD,
                 DocumentFormattingParams {
                     text_document: TextDocumentIdentifier { uri: uri() },
                     options: FormattingOptions::default(),
@@ -485,7 +488,10 @@ mod tests {
         handshake(&client);
         client
             .sender
-            .send(note(DID_OPEN, serde_json::json!({ "bogus": true })))
+            .send(note(
+                DidOpenTextDocument::METHOD,
+                serde_json::json!({ "bogus": true }),
+            ))
             .expect("send malformed didOpen");
         did_open(&client, "import os\nos.getcwd()\n");
         assert_eq!(published(&client).diagnostics.len(), 1);
@@ -499,7 +505,11 @@ mod tests {
         handshake(&client);
         client
             .sender
-            .send(req(2, FORMATTING, serde_json::json!({ "bogus": true })))
+            .send(req(
+                2,
+                Formatting::METHOD,
+                serde_json::json!({ "bogus": true }),
+            ))
             .expect("send malformed formatting");
         let Message::Response(response) = recv(&client) else {
             panic!("expected error response");
@@ -518,11 +528,11 @@ mod tests {
         handshake(&client);
         client
             .sender
-            .send(req(3, SHUTDOWN, ()))
+            .send(req(3, Shutdown::METHOD, ()))
             .expect("send shutdown");
         client
             .sender
-            .send(note("textDocument/didSave", serde_json::json!({})))
+            .send(note(DidSaveTextDocument::METHOD, serde_json::json!({})))
             .expect("send a non-exit message");
         handle
             .join()
@@ -547,7 +557,7 @@ mod tests {
         handshake(&client);
         client
             .sender
-            .send(note("textDocument/didSave", serde_json::json!({})))
+            .send(note(DidSaveTextDocument::METHOD, serde_json::json!({})))
             .expect("send unknown notification");
         did_open(&client, "import os\nos.getcwd()\n");
         assert_eq!(published(&client).diagnostics.len(), 1);
@@ -563,7 +573,7 @@ mod tests {
             .sender
             .send(req(
                 2,
-                HOVER,
+                HoverRequest::METHOD,
                 HoverParams {
                     text_document_position_params: TextDocumentPositionParams {
                         text_document: TextDocumentIdentifier { uri: uri() },
@@ -593,7 +603,7 @@ mod tests {
         client
             .sender
             .send(note(
-                "workspace/didChangeWatchedFiles",
+                DidChangeWatchedFiles::METHOD,
                 serde_json::json!({ "changes": [] }),
             ))
             .expect("send didChangeWatchedFiles");

@@ -1,6 +1,6 @@
 //! `prose server`: a Language Server Protocol server over stdio.
 //!
-//! Editors reach prose through a long-lived process rather than a
+//! Editors reach Prose through a long-lived process rather than a
 //! per-save shellout. The server tracks each open buffer, formats it on
 //! request, and republishes diagnostics on open and change, running the
 //! same `Pipeline` the CLI runs so an editor session and `prose check`

@@ -7,7 +7,7 @@
 //! nearest directory carrying any of them wins. A `prose.toml` or
 //! `.config/prose.toml` holds the config at its document root, whereas a
 //! `pyproject.toml` nests it under `[tool.prose]`. Reaching the root
-//! without a match resolves to full defaults, so prose works on a
+//! without a match resolves to full defaults, so Prose works on a
 //! fresh project with no configuration step.
 //!
 //! Each rule's configuration lives under `[tool.prose.rules]`, where

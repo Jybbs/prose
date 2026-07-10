@@ -8,7 +8,7 @@ use lsp_types::{
     Diagnostic as LspDiagnostic, DiagnosticSeverity, NumberOrString, Position, Range, Uri,
 };
 use ruff_source_file::PositionEncoding;
-use ruff_text_size::TextSize;
+use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
     diagnostics::{Diagnostic, Severity},
@@ -19,13 +19,10 @@ use crate::{
 /// The range spanning the whole document, from the start to the position
 /// past its final character.
 pub(super) fn full_document_range(source: &Source, encoding: PositionEncoding) -> Range {
-    Range {
-        end: position_of(source, TextSize::of(source.text()), encoding),
-        start: Position::default(),
-    }
+    range_of(source, source.module_range(), encoding)
 }
 
-/// Renders a prose diagnostic as a protocol diagnostic, tagging it with
+/// Renders a Prose diagnostic as a protocol diagnostic, tagging it with
 /// the rule slug and the `prose` source so the editor groups findings.
 pub(super) fn to_lsp(
     source: &Source,
@@ -35,10 +32,7 @@ pub(super) fn to_lsp(
     LspDiagnostic {
         code: Some(NumberOrString::String(diagnostic.rule.as_str().to_owned())),
         message: diagnostic.message.clone(),
-        range: Range {
-            end: position_of(source, diagnostic.range.end(), encoding),
-            start: position_of(source, diagnostic.range.start(), encoding),
-        },
+        range: range_of(source, diagnostic.range, encoding),
         severity: Some(severity_of(diagnostic.severity)),
         source: Some("prose".to_owned()),
         ..LspDiagnostic::default()
@@ -73,7 +67,15 @@ fn position_of(source: &Source, offset: TextSize, encoding: PositionEncoding) ->
     }
 }
 
-/// Maps prose's severity onto the protocol's: format findings to
+/// Maps a byte range to a protocol range in the negotiated encoding.
+fn range_of(source: &Source, range: TextRange, encoding: PositionEncoding) -> Range {
+    Range {
+        end: position_of(source, range.end(), encoding),
+        start: position_of(source, range.start(), encoding),
+    }
+}
+
+/// Maps Prose's severity onto the protocol's: format findings to
 /// `INFORMATION`, lint findings to `WARNING`.
 fn severity_of(severity: Severity) -> DiagnosticSeverity {
     match severity {
