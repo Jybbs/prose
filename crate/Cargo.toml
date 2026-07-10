@@ -10,25 +10,45 @@ repository   = "https://github.com/Jybbs/prose"
 rust-version = "1.96"
 version      = "0.7.0"
 
+[[bin]]
+name              = "prose"
+required-features = ["native"]
+
+[features]
+default = ["native"]
+native  = [
+    "dep:blake3",
+    "dep:clap",
+    "dep:clap_complete",
+    "dep:dirs",
+    "dep:ignore",
+    "dep:lsp-server",
+    "dep:lsp-types",
+    "dep:postcard",
+    "dep:rayon",
+    "dep:similar",
+    "dep:tempfile",
+]
+
 [dependencies]
 annotate-snippets  = "=0.12.16"
 anstream           = "1.0"
 anstyle            = "1.0"
 anstyle-query      = "1.1"
 anyhow             = "1.0"
-blake3             = "1"
-clap               = { version = "4.5", features = ["derive"] }
-clap_complete      = "4.5"
-dirs               = "6"
+blake3             = { version = "1", optional = true }
+clap               = { version = "4.5", features = ["derive"], optional = true }
+clap_complete      = { version = "4.5", optional = true }
+dirs               = { version = "6", optional = true }
 fluent-uri         = "0.4"
 fs-err             = "3"
 globset            = "0.4"
-ignore             = "0.4"
+ignore             = { version = "0.4", optional = true }
 itertools          = "0.15"
-lsp-server         = "0.7"
-lsp-types          = "0.97"
-postcard           = { version = "1", features = ["use-std"] }
-rayon              = "1.10"
+lsp-server         = { version = "0.7", optional = true }
+lsp-types          = { version = "0.97", optional = true }
+postcard           = { version = "1", features = ["use-std"], optional = true }
+rayon              = { version = "1.10", optional = true }
 regex-lite         = "0.1"
 ruff_diagnostics   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18", features = ["serde"] }
 ruff_notebook      = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18" }
@@ -42,8 +62,8 @@ serde              = { version = "1.0", features = ["derive"] }
 serde-sarif        = "0.8"
 serde_ignored      = "0.1"
 serde_json         = "1.0"
-similar            = "3"
-tempfile           = "3"
+similar            = { version = "3", optional = true }
+tempfile           = { version = "3", optional = true }
 textwrap           = { version = "0.16", default-features = false, features = ["smawk", "unicode-width"] }
 thiserror          = "2.0"
 toml               = "1"

@@ -1,7 +1,11 @@
 [workspace]
-members  = ["crate"]
+members  = ["crate", "wasm"]
 resolver = "3"
 
 [profile.release]
 panic = "abort"
 strip = "symbols"
+
+[profile.wasm-release]
+inherits = "release"
+strip    = "debuginfo"

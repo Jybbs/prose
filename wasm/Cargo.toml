@@ -1,0 +1,25 @@
+[package]
+description  = "WebAssembly bindings for the prose formatting core."
+edition      = "2024"
+license      = "MIT"
+name         = "prose_wasm"
+publish      = false
+repository   = "https://github.com/Jybbs/prose"
+rust-version = "1.96"
+version      = "0.0.0"
+
+[package.metadata.cargo-machete]
+ignored = ["getrandom", "uuid"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+console_error_panic_hook = "0.1"
+getrandom                = { version = "0.4", features = ["wasm_js"] }
+prose                    = { path = "../crate", default-features = false }
+uuid                     = { version = "1", features = ["js"] }
+wasm-bindgen             = "0.2"
+
+[dev-dependencies]
+assert_matches = "1"

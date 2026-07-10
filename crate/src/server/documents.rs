@@ -40,7 +40,7 @@ impl DocumentStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::uri;
+    use crate::server::uri;
 
     #[test]
     fn get_returns_none_for_absent_uri() {

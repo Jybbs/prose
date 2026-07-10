@@ -10,9 +10,10 @@
 //! `capabilities` advertises the server's surface and negotiates
 //! position encoding, `documents` holds the live buffers, `config_cache`
 //! resolves and memoizes each document's config, `analysis` runs the
-//! pipeline over a buffer, and `conversion` maps between prose's byte
-//! offsets and the protocol's line/character positions. This module holds
-//! only the stdio glue, the one piece that resists unit testing.
+//! pipeline over a buffer, and `conversion` maps between Prose's byte
+//! offsets and the protocol's positions and between document URIs and
+//! filesystem paths. This module holds only the stdio glue, the one
+//! piece that resists unit testing.
 
 use anyhow::Context;
 use lsp_server::Connection;
@@ -44,4 +45,9 @@ fn serve_stdio() -> anyhow::Result<ExitStatus> {
     dispatch::serve(connection)?;
     io_threads.join().context("joining server I/O threads")?;
     Ok(ExitStatus::Clean)
+}
+
+#[cfg(test)]
+fn uri(s: &str) -> lsp_types::Uri {
+    s.parse().expect("valid uri")
 }

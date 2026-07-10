@@ -167,7 +167,7 @@ mod tests {
     use serde_json::Value;
 
     use super::*;
-    use crate::testing;
+    use crate::server;
 
     const DID_CHANGE: &str = "textDocument/didChange";
     const DID_CLOSE: &str = "textDocument/didClose";
@@ -181,7 +181,7 @@ mod tests {
     const SHUTDOWN: &str = "shutdown";
 
     fn uri() -> Uri {
-        testing::uri("file:///module.py")
+        server::uri("file:///module.py")
     }
 
     fn note<P: Serialize>(method: &str, params: P) -> Message {
