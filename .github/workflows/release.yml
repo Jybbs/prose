@@ -5,9 +5,9 @@ permissions : { contents: read }
 on:
   pull_request:
     paths:
-      - crate/pyproject.toml
-      - crate/Cargo.toml
       - .github/workflows/release.yml
+      - crate/Cargo.toml
+      - crate/pyproject.toml
 
   push:
     tags: ['[0-9]*']
@@ -135,6 +135,18 @@ jobs:
 
       - name : Publish to PyPI
         run  : uv publish --trusted-publishing=always dist/*
+
+  deploy:
+    name            : 🪁 Deploy
+    needs           : publish
+    permissions     : { actions: write }
+    runs-on         : *ubuntu
+    timeout-minutes : 5
+
+    steps:
+      - name : Dispatch the deploy workflow
+        env  : { GH_TOKEN: "${{ github.token }}" }
+        run  : gh workflow run deploy.yml --ref main --repo ${{ github.repository }}
 
   gate:
     name            : 🗞️ Brief
