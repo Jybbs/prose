@@ -1,5 +1,5 @@
 ---
-consumedBy: [cli]
+consumedBy: [cli, wasm]
 consumes: [edit, rule-id, source, suppression-map]
 layer: orchestration
 stability: public

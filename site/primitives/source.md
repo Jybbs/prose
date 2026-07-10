@@ -1,5 +1,5 @@
 ---
-consumedBy: [aligner, binding-analysis, colon-targets, docstring, edit, orderer, pipeline, suppression-map, walker]
+consumedBy: [aligner, binding-analysis, colon-targets, docstring, edit, orderer, pipeline, suppression-map, walker, wasm]
 consumes: []
 layer: base
 stability: public

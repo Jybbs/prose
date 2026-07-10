@@ -52,11 +52,16 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn formats_an_empty_source() {
-        let Ok(result) = format("", "") else {
+    fn formatted(config_toml: &str, source: &str) -> FormatResult {
+        let Ok(result) = format(config_toml, source) else {
             panic!("format succeeds");
         };
+        result
+    }
+
+    #[test]
+    fn formats_an_empty_source() {
+        let result = formatted("", "");
         assert_eq!(result.formatted, "");
     }
 
@@ -87,17 +92,13 @@ mod tests {
 
     #[test]
     fn reports_the_effective_config() {
-        let Ok(result) = format("code-line-length = 100", "x = 1\n") else {
-            panic!("format succeeds");
-        };
+        let result = formatted("code-line-length = 100", "x = 1\n");
         assert!(result.config.contains("code-line-length = 100"));
     }
 
     #[test]
     fn rewrites_the_source() {
-        let Ok(result) = format("", "import b\nimport a\n") else {
-            panic!("format succeeds");
-        };
+        let result = formatted("", "import b\nimport a\n");
         assert_eq!(result.formatted, "import a\nimport b\n");
     }
 

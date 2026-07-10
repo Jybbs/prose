@@ -54,24 +54,21 @@ pub(super) fn serve(connection: Connection) -> anyhow::Result<()> {
         .initialize_finish(id, result)
         .context("finishing language-server handshake")?;
     let watching = register_config_watchers(&connection, &params.capabilities)?;
-    main_loop(&connection, encoding, watching)
+    main_loop(&connection, encoding, watching);
+    Ok(())
 }
 
 /// Reads each message until the client requests shutdown or sends a bare
 /// `exit`. A malformed message is logged and dropped rather than ending the
 /// session, so one bad payload never tears down a live editor.
-fn main_loop(
-    connection: &Connection,
-    encoding: PositionEncoding,
-    watching: bool,
-) -> anyhow::Result<()> {
+fn main_loop(connection: &Connection, encoding: PositionEncoding, watching: bool) {
     let mut documents = DocumentStore::default();
     let mut configs = ConfigCache::new(watching);
     for message in &connection.receiver {
         match message {
             Message::Notification(notification) => {
                 if notification.method == Exit::METHOD {
-                    return Ok(());
+                    return;
                 }
                 if let Err(err) = handle_notification(
                     connection,
@@ -84,7 +81,7 @@ fn main_loop(
                 }
             }
             Message::Request(request) => match connection.handle_shutdown(&request) {
-                Ok(true) => return Ok(()),
+                Ok(true) => return,
                 Ok(false) => {
                     if let Err(err) =
                         handle_request(connection, &documents, &mut configs, request, encoding)
@@ -94,13 +91,12 @@ fn main_loop(
                 }
                 Err(err) => {
                     eprintln!("prose server: shutdown handshake failed: {err}");
-                    return Ok(());
+                    return;
                 }
             },
             Message::Response(_) => {}
         }
     }
-    Ok(())
 }
 
 /// Registers a `workspace/didChangeWatchedFiles` watcher for Prose's config
