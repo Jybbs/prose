@@ -222,13 +222,9 @@ macro_rules! register_rules {
             }
 
             fn json_schema(generator: &mut SchemaGenerator) -> Schema {
-                let mut properties = Map::new();
-                $(
-                    properties.insert(
-                        $slug.to_owned(),
-                        rule_schema::<$config>(generator).to_value(),
-                    );
-                )*
+                let properties = Map::from_iter([$(
+                    ($slug.to_owned(), rule_schema::<$config>(generator).to_value()),
+                )*]);
                 json_schema!({
                     "type": "object",
                     "description": "Per-rule configuration under `[tool.prose.rules]`.",

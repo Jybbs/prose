@@ -1,6 +1,6 @@
 //! `prose rules` subcommand: the registered rules in pipeline order.
 
-use std::io::Write;
+use std::io::{self, Write};
 
 use serde::Serialize;
 
@@ -32,7 +32,7 @@ pub(crate) fn list<W: Write>(args: &RulesArgs, mut stdout: W) -> anyhow::Result<
         .collect();
     match args.output_format {
         RulesFormat::Json => {
-            serde_json::to_writer(&mut stdout, &rules)?;
+            serde_json::to_writer(&mut stdout, &rules).map_err(io::Error::from)?;
             writeln!(stdout)?;
         }
         RulesFormat::Table => write_table(&mut stdout, &rules)?,
@@ -40,7 +40,7 @@ pub(crate) fn list<W: Write>(args: &RulesArgs, mut stdout: W) -> anyhow::Result<
     Ok(ExitStatus::Clean)
 }
 
-fn write_table<W: Write>(mut stdout: W, rules: &[RuleInfo]) -> std::io::Result<()> {
+fn write_table<W: Write>(mut stdout: W, rules: &[RuleInfo]) -> io::Result<()> {
     let slug_width = rules.iter().map(|rule| rule.slug.len()).max().unwrap_or(0);
     let pos_width = rules.len().to_string().len();
     for rule in rules {

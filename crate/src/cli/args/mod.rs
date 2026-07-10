@@ -26,6 +26,18 @@ Exit codes:
   3    Parse error: input could not be parsed as Python
   4    Config error: pyproject.toml, --select / --ignore, or arg validation";
 
+#[derive(Debug, Subcommand)]
+pub(crate) enum CacheAction {
+    /// Clear every cached entry and report the freed bytes.
+    Clean,
+
+    /// Evict oldest entries until the configured size cap is met.
+    Compact,
+
+    /// Print the cache directory, entry count, byte total, and mtimes.
+    Info,
+}
+
 #[derive(Debug, Parser)]
 #[command(
     about,
@@ -65,29 +77,17 @@ pub(crate) enum Command {
         shell: Shell,
     },
 
-    /// Print the configuration's JSON Schema to stdout.
-    ConfigSchema,
-
     /// Rewrite files to conform to the Prose style.
     Format(FormatArgs),
 
     /// List the registered rules in pipeline order.
     Rules(RulesArgs),
 
+    /// Print the configuration's JSON Schema to stdout.
+    Schema,
+
     /// Run the language server over stdio.
     Server(ServerArgs),
-}
-
-#[derive(Debug, Subcommand)]
-pub(crate) enum CacheAction {
-    /// Clear every cached entry and report the freed bytes.
-    Clean,
-
-    /// Evict oldest entries until the configured size cap is met.
-    Compact,
-
-    /// Print the cache directory, entry count, byte total, and mtimes.
-    Info,
 }
 
 #[cfg(test)]
@@ -359,12 +359,6 @@ mod tests {
     }
 
     #[test]
-    fn config_schema_parses() {
-        let cli = Cli::try_parse_from(["prose", "config-schema"]).expect("parses");
-        assert_matches!(cli.command, Command::ConfigSchema);
-    }
-
-    #[test]
     fn format_dash_routes_to_stdin() {
         let mut cli = Cli::try_parse_from(["prose", "format", "-"]).expect("parses");
         assert!(normalize_stdin_dash(&mut cli).is_none());
@@ -447,8 +441,8 @@ mod tests {
     fn normalize_stdin_dash_is_noop_for_pathless_commands(
         #[values(
             &["prose", "completions", "bash"][..],
-            &["prose", "config-schema"][..],
-            &["prose", "rules"][..]
+            &["prose", "rules"][..],
+            &["prose", "schema"][..]
         )]
         args: &[&str],
     ) {
@@ -478,6 +472,12 @@ mod tests {
             Cli::try_parse_from(["prose", "rules", "--output-format", "json"]).expect("parses");
         let args = command_args!(cli, Rules);
         assert_matches!(args.output_format, RulesFormat::Json);
+    }
+
+    #[test]
+    fn schema_parses() {
+        let cli = Cli::try_parse_from(["prose", "schema"]).expect("parses");
+        assert_matches!(cli.command, Command::Schema);
     }
 
     #[test]

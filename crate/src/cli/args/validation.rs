@@ -8,14 +8,24 @@ use crate::cli::exit_status::ExitStatus;
 
 use super::{Cli, Command};
 
+/// Help / version land at `Clean`, every other clap error at `ConfigError`.
+pub(super) fn clap_error_status(kind: ErrorKind) -> ExitStatus {
+    match kind {
+        ErrorKind::DisplayHelp
+        | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand
+        | ErrorKind::DisplayVersion => ExitStatus::Clean,
+        _ => ExitStatus::ConfigError,
+    }
+}
+
 /// Resolves a `-` positional into stdin mode, surfacing a clap
 /// error when `-` appears alongside other paths.
 pub(crate) fn normalize_stdin_dash(cli: &mut Cli) -> Option<clap::Error> {
     let (paths, stdin) = match &mut cli.command {
         Command::Cache { .. }
         | Command::Completions { .. }
-        | Command::ConfigSchema
         | Command::Rules(_)
+        | Command::Schema
         | Command::Server(_) => {
             return None;
         }
@@ -55,14 +65,4 @@ pub(crate) fn validate_diff_format_combination(cli: &Cli) -> Option<clap::Error>
             "`--diff` requires `--output-format text`",
         )
     })
-}
-
-/// Help / version land at `Clean`, every other clap error at `ConfigError`.
-pub(super) fn clap_error_status(kind: ErrorKind) -> ExitStatus {
-    match kind {
-        ErrorKind::DisplayHelp
-        | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand
-        | ErrorKind::DisplayVersion => ExitStatus::Clean,
-        _ => ExitStatus::ConfigError,
-    }
 }

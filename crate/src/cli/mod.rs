@@ -3,8 +3,8 @@
 //! Subcommands: `check` reports violations without modifying files,
 //! `format` rewrites in place (or prints a unified diff with
 //! `--diff`), `cache` manages the user-level content cache,
-//! `completions` emits a shell-completion script, `config-schema`
-//! prints the configuration's JSON Schema, and `rules` lists the
+//! `completions` emits a shell-completion script, `schema` prints
+//! the configuration's JSON Schema, and `rules` lists the
 //! registered rules in pipeline order. `check` and `format` accept
 //! positional paths, a `-` positional alias for stdin, and a
 //! `--stdin` flag, all mutually exclusive.
@@ -15,12 +15,12 @@
 //!
 //! Layout: `args` houses every clap-derived type and parse-time
 //! validation. `cache` houses the `prose cache` subcommand handlers.
-//! `config_schema` houses the `prose config-schema` emission.
 //! `rules` houses the `prose rules` listing. `runner` houses the
 //! pipeline-orchestration helpers that translate parsed args into
-//! source loading, emitter dispatch, and diff rendering. `output`
-//! houses the human-readable run summary and its palette.
-//! `exit_status` carries the matrix every subcommand resolves into.
+//! source loading, emitter dispatch, and diff rendering. `schema`
+//! houses the `prose schema` emission. `output` houses the
+//! human-readable run summary and its palette. `exit_status`
+//! carries the matrix every subcommand resolves into.
 
 use std::{
     io::{self, IsTerminal, Write},
@@ -34,11 +34,11 @@ use clap_complete::generate;
 
 pub(crate) mod args;
 mod cache;
-mod config_schema;
 pub(crate) mod exit_status;
 mod output;
 mod rules;
 mod runner;
+mod schema;
 
 use args::{
     CacheAction, Cli, Command, normalize_stdin_dash, report_clap_error,
@@ -86,11 +86,11 @@ pub fn run() -> ExitCode {
             generate(shell, &mut Cli::command(), "prose", &mut io::stdout());
             Ok(ExitStatus::Clean)
         }
-        Command::ConfigSchema => config_schema::print(stdout),
         Command::Format(args) => {
             runner::format_with_io(args, verbose, &present, io::stdin(), stdout, stderr)
         }
         Command::Rules(args) => rules::list(&args, stdout),
+        Command::Schema => schema::print(stdout),
         Command::Server(_) => unreachable!("Server dispatched before the stdout lock"),
     };
     finalize(result).into()
@@ -102,8 +102,8 @@ fn command_quiet(command: &Command) -> bool {
         Command::Format(args) => args.common.quiet,
         Command::Cache { .. }
         | Command::Completions { .. }
-        | Command::ConfigSchema
         | Command::Rules(_)
+        | Command::Schema
         | Command::Server(_) => false,
     }
 }

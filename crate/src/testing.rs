@@ -1,6 +1,10 @@
 //! Helpers shared across `#[cfg(test)] mod tests` blocks.
 
-use std::{path::Path, str::FromStr};
+use std::{
+    io::{self, Write},
+    path::Path,
+    str::FromStr,
+};
 
 use lsp_types::Uri;
 use ruff_diagnostics::Edit;
@@ -17,6 +21,19 @@ use crate::{
     rule::{Rule, RuleId},
     source::Source,
 };
+
+/// Test-only writer whose `write` fails with the supplied kind.
+pub(crate) struct FailingWriter(pub(crate) io::ErrorKind);
+
+impl Write for FailingWriter {
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+        Err(self.0.into())
+    }
+}
 
 /// Test-only rule that returns the fix groups supplied at
 /// construction.

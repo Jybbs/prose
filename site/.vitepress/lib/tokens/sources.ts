@@ -75,9 +75,9 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'prose cache info',    href: '/reference/cache#prose-cache-info',    blurb: 'Print cache path, entry count, byte total, and mtimes.' },
     { key: 'prose check',         href: '/reference/cli#prose-check',           blurb: 'Verify without rewriting, resolving to a non-zero exit code when any rewrite pends.' },
     { key: 'prose completions',   href: '/reference/cli#prose-completions',     blurb: 'Emit shell-completion scripts for the active shell.' },
-    { key: 'prose config-schema', href: '/reference/cli#prose-config-schema',   blurb: 'Print the configuration\'s JSON Schema, every key with its type, default, and range.' },
     { key: 'prose format',        href: '/reference/cli#prose-format',          blurb: 'Apply every pending rewrite in place.' },
     { key: 'prose rules',         href: '/reference/cli#prose-rules',           blurb: 'List every registered rule in pipeline order.' },
+    { key: 'prose schema',        href: '/reference/cli#prose-schema',          blurb: 'Print the configuration\'s JSON Schema, every key with its type, default, and range.' },
     { key: 'prose server',        href: '/reference/cli#prose-server',          blurb: 'Serve format-on-save and live diagnostics over the language-server protocol.' }
   ],
   'suppression': [

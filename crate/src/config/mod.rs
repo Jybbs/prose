@@ -18,8 +18,8 @@
 //! block onto that base, lives in [`ConfigSource`].
 //!
 //! The whole tree implements `schemars::JsonSchema`, so `prose
-//! config-schema` prints a JSON Schema carrying every key's type,
-//! default, and range.
+//! schema` prints a JSON Schema carrying every key's type, default,
+//! and range.
 
 use std::{collections::HashSet, num::NonZeroUsize, path::Path};
 

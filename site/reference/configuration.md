@@ -1,6 +1,6 @@
 # Configuration
 
-*Prose* loads its configuration from a `prose.toml` file, a `.config/prose.toml`, or the `[tool.prose]` table of a `pyproject.toml`, walking upward from each input file's directory to the nearest one. With no configuration, every rule runs at its default, in that a project that writes no config gets the canonical *Prose* shape automatically. The whole key set is also available as a machine-readable [JSON Schema](https://json-schema.org) through [`prose config-schema`](/reference/cli#prose-config-schema).
+*Prose* loads its configuration from a `prose.toml` file, a `.config/prose.toml`, or the `[tool.prose]` table of a `pyproject.toml`, walking upward from each input file's directory to the nearest one. With no configuration, every rule runs at its default, in that a project that writes no config gets the canonical *Prose* shape automatically. The whole key set is also available as a machine-readable [JSON Schema](https://json-schema.org) through [`prose schema`](/reference/cli#prose-schema).
 
 A `prose.toml` keeps its keys at the document root, the form this page shows throughout, and a `.config/prose.toml` reads the same way for a project that keeps its tool config under a `.config/` directory. A `pyproject.toml` carries the same keys under a `[tool.prose]` prefix so the manifest can house other tools too, leaving every key below a `[tool.prose.<…>]` equivalent for projects that prefer one file.
 
