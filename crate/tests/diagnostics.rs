@@ -6,10 +6,11 @@
 
 mod common;
 
+use itertools::Itertools;
 use prose::{diagnostics::Diagnostic, source::Source};
 
 fn render(diagnostics: &[Diagnostic]) -> String {
-    let mut lines: Vec<String> = diagnostics
+    diagnostics
         .iter()
         .map(|d| {
             format!(
@@ -19,9 +20,8 @@ fn render(diagnostics: &[Diagnostic]) -> String {
                 end = u32::from(d.range.end()),
             )
         })
-        .collect();
-    lines.sort();
-    lines.join("\n")
+        .sorted()
+        .join("\n")
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn fixtures_emit_expected_diagnostics() {
         common::in_snapshot_dir(path, || {
             insta::assert_snapshot!("diagnostics", render(&diagnostics));
             if let Some(json) =
-                prose::diagnostics::lint_records_json(output.source_file(), &run_diagnostics)
+                prose::cli::emit::lint_records_json(output.source_file(), &run_diagnostics)
             {
                 insta::assert_snapshot!("lint_findings", json);
             }

@@ -20,7 +20,7 @@ coverage:
 flags:
   rust: &flag
     carryforward : true
-    paths        : [crate/src]
+    paths        : [crate/src, wasm/src]
   site:
     <<    : *flag
     paths : [site/.vitepress]

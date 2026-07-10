@@ -10,10 +10,11 @@ use crate::{
     cache::Rewrite,
     cli::{
         args::OutputFormat,
+        emit::{Emitter, EmitterSummary, Github, Json, Run, Sarif, Text},
         exit_status::ExitStatus,
         output::{self, Presentation, Summary},
     },
-    diagnostics::{Diagnostic, Emitter, EmitterSummary, Github, Json, Run, Sarif, Severity, Text},
+    diagnostics::{Diagnostic, Severity},
 };
 
 pub(super) fn emit_outcomes<W: Write>(

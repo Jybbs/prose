@@ -12,11 +12,9 @@ use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 use ruff_text_size::{Ranged, TextRange};
 use serde::Serialize;
 
+use super::{Emitter, EmitterSummary, Run, diagnostics, line_columns, write_json_line};
 use crate::{
-    diagnostics::{
-        Diagnostic, Emitter, EmitterSummary, Run, Severity, diagnostics, line_columns,
-        write_json_line,
-    },
+    diagnostics::{Diagnostic, Severity},
     rule::RuleId,
 };
 
@@ -213,6 +211,7 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::*;
+    use crate::cli::emit::emitted;
     use crate::source::Source;
     use crate::testing::{format_diagnostic, parse, range};
 
@@ -229,13 +228,7 @@ mod tests {
     }
 
     fn emit_text(source: &Source, diagnostics: &[Diagnostic], summary: &EmitterSummary) -> String {
-        let mut buf = Vec::<u8>::new();
-        Json.emit(
-            &mut buf,
-            &[Run::new(source.source_file(), diagnostics, None)],
-            summary,
-        )
-        .expect("emits");
+        let buf = emitted(&Json, source.source_file(), diagnostics, summary);
         String::from_utf8(buf).expect("utf-8")
     }
 

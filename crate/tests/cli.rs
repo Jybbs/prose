@@ -11,9 +11,11 @@ use rstest::rstest;
 use tempfile::{TempDir, tempdir};
 
 /// Snapshot notebook fixtures the CLI tests reuse from the shared
-/// tree, `ALIGNS` for the rewrite path and `EMPTY` for the no-op.
+/// tree, `ALIGNS` for the rewrite path, `EMPTY` for the no-op, and
+/// `INTERLEAVED` for interspersed-Markdown cell numbering.
 const ALIGNS: &str = include_str!("fixtures/notebook/code_cell_aligns/input.ipynb");
 const EMPTY: &str = include_str!("fixtures/notebook/empty/input.ipynb");
+const INTERLEAVED: &str = include_str!("fixtures/notebook/markdown_interleaved/input.ipynb");
 
 /// Two code cells, the second carrying a misaligned assignment pair so
 /// its diagnostic ranges into a row the first cell pushes past in the
@@ -1049,6 +1051,33 @@ fn notebook_check_validate_reports_the_pending_change() {
 }
 
 #[test]
+fn notebook_diff_numbers_interleaved_cells_by_absolute_position() {
+    let (_dir, path) = fixture("nb.ipynb", INTERLEAVED);
+    let assert = prose()
+        .args(["format", "--diff", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(1);
+    let stdout = stdout_utf8(&assert);
+    assert!(
+        stdout.contains("cell 2"),
+        "first code cell missing: {stdout:?}"
+    );
+    assert!(
+        stdout.contains("cell 5"),
+        "interspersed code cell mis-numbered: {stdout:?}"
+    );
+    assert!(
+        !stdout.contains("cell 4"),
+        "unchanged cell rendered: {stdout:?}"
+    );
+    assert!(
+        !stdout.contains("cell 1") && !stdout.contains("cell 3"),
+        "code-cell ordinal leaked: {stdout:?}"
+    );
+}
+
+#[test]
 fn notebook_diff_renders_per_cell_hunks() {
     let (_dir, path) = fixture("nb.ipynb", ALIGNS);
     let assert = prose()
@@ -1057,7 +1086,14 @@ fn notebook_diff_renders_per_cell_hunks() {
         .assert()
         .code(1);
     let stdout = stdout_utf8(&assert);
-    assert!(stdout.contains("cell 1"), "cell header missing: {stdout:?}");
+    assert!(
+        stdout.contains("cell 2"),
+        "absolute cell header missing: {stdout:?}"
+    );
+    assert!(
+        !stdout.contains("cell 1"),
+        "code-cell ordinal leaked: {stdout:?}"
+    );
     assert!(stdout.contains("-x = 1"), "before line missing: {stdout:?}");
     assert!(stdout.contains("+x  = 1"), "after line missing: {stdout:?}");
 }
@@ -1153,6 +1189,26 @@ fn notebook_non_python_through_stdin_is_echoed_verbatim() {
         .assert()
         .success();
     assert_eq!(stdout_utf8(&assert), NON_PYTHON);
+}
+
+#[test]
+fn notebook_stdin_diff_numbers_by_absolute_cell() {
+    let assert = prose()
+        .args([
+            "format",
+            "--diff",
+            "--stdin",
+            "--stdin-filename",
+            "nb.ipynb",
+        ])
+        .write_stdin(ALIGNS)
+        .assert()
+        .code(1);
+    let stdout = stdout_utf8(&assert);
+    assert!(
+        stdout.contains("cell 2"),
+        "absolute cell header missing: {stdout:?}"
+    );
 }
 
 #[test]

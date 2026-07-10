@@ -7,7 +7,7 @@
 //! nearest directory carrying any of them wins. A `prose.toml` or
 //! `.config/prose.toml` holds the config at its document root, whereas a
 //! `pyproject.toml` nests it under `[tool.prose]`. Reaching the root
-//! without a match resolves to full defaults, so prose works on a
+//! without a match resolves to full defaults, so Prose works on a
 //! fresh project with no configuration step.
 //!
 //! Each rule's configuration lives under `[tool.prose.rules]`, where
@@ -206,9 +206,8 @@ impl Config {
             .map_or_else(|| self.code_width(), NonZeroUsize::get)
     }
 
-    /// The config serialized to TOML, one component of the cache key
-    /// for a file it governs.
-    pub(crate) fn to_toml(&self) -> String {
+    /// The config serialized to TOML.
+    pub fn to_toml(&self) -> String {
         toml::to_string(self).expect("Config serializes")
     }
 }

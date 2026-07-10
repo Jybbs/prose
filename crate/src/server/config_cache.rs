@@ -12,10 +12,8 @@ use std::{
 
 use lsp_types::Uri;
 
-use crate::{
-    config::{Config, ConfigSource, NoticeDedup},
-    file_uri,
-};
+use super::conversion;
+use crate::config::{Config, ConfigSource, NoticeDedup};
 
 /// Resolves the configuration governing each document, memoizing each
 /// directory's project source only when a watcher can invalidate the
@@ -50,7 +48,7 @@ impl ConfigCache {
     /// document under neither a project nor a block, both draw the
     /// defaults.
     pub(super) fn resolve(&mut self, uri: &Uri, text: &str) -> Config {
-        let Some(path) = file_uri::to_path(uri) else {
+        let Some(path) = conversion::to_path(uri) else {
             return Config::default();
         };
         let dir = path.parent().unwrap_or(&path).to_path_buf();
@@ -116,7 +114,11 @@ impl DirSource {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{uri, write_prose_toml, write_pyproject};
+    use crate::{
+        file_uri,
+        server::uri,
+        testing::{write_prose_toml, write_pyproject},
+    };
 
     const SCRIPT: &str = "# /// script\n# [tool.prose]\n# code-line-length = 200\n# ///\nx = 1\n";
 
