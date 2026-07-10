@@ -51,6 +51,9 @@ jobs:
           - command    : mise run build
             name       : 🗜️ Build
             shared-key : prose-build
+          - command    : mise run build wasm
+            name       : 🛶 Wasm
+            shared-key : prose-wasm
           - command    : mise run test rust
             name       : ⚖️ Test
             shared-key : prose-test
