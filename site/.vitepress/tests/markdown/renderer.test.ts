@@ -1,6 +1,10 @@
 import * as renderer from '../../lib/markdown/renderer'
 
 describe('renderer', () => {
+  it('returns the memoized renderer on a second call', () => {
+    expect(renderer.getRenderer()).toBe(renderer.getRenderer())
+  })
+
   it('renders a fenced code block to highlighted HTML', async () => {
     const md  = await renderer.getRenderer()
     const out = await renderer.renderFencedHtml(md, 'x = 1', 'python')

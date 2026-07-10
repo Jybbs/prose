@@ -1,13 +1,13 @@
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
-import { siteDir }  from '../shared/paths'
-import { inertEnv } from './inert-env'
+import { memoizeByPath } from '../shared/memoize-by-path'
+import { siteDir }       from '../shared/paths'
+import { inertEnv }      from './inert-env'
 
-let cachedRenderer: Promise<MarkdownRenderer> | null = null
+const renderer = memoizeByPath(createMarkdownRenderer)
 
 export function getRenderer(): Promise<MarkdownRenderer> {
-  if (cachedRenderer === null) cachedRenderer = createMarkdownRenderer(siteDir(import.meta.url))
-  return cachedRenderer
+  return renderer(siteDir(import.meta.url))
 }
 
 type HtmlKey<K extends string> = `${K}Html`
