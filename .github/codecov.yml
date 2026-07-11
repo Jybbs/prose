@@ -1,5 +1,7 @@
 comment: false
 
+ignore: [wasm/src]
+
 coverage:
   precision : 2
   round     : down
@@ -20,7 +22,7 @@ coverage:
 flags:
   rust: &flag
     carryforward : true
-    paths        : [crate/src, wasm/src]
+    paths        : [crate/src]
   site:
     <<    : *flag
     paths : [site/.vitepress]

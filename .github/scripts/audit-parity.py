@@ -31,6 +31,16 @@ def badge(svg: str) -> str:
     raise SystemExit(f"::error::no README.md badge line carries {svg!r}")
 
 
+def cargo_lock_version(name: str) -> str:
+    """
+    Return the version `Cargo.lock` resolves for the `name` package.
+    """
+    for package in loads(Path("Cargo.lock").read_text(encoding="utf-8"))["package"]:
+        if package["name"] == name:
+            return package["version"]
+    raise SystemExit(f"::error::no Cargo.lock package named {name!r}")
+
+
 def major_minor(value: str) -> str:
     """
     Return `<major>.<minor>` from any string carrying a SemVer head.
@@ -38,6 +48,22 @@ def major_minor(value: str) -> str:
     if match := search(r"\d+\.\d+", value):
         return match.group(0)
     raise SystemExit(f"::error::cannot parse major.minor from {value!r}")
+
+
+def wasm_bindgen_pins() -> list[tuple[str, str]]:
+    """
+    Return each `(task, version)` where a mise task pins the `wasm-bindgen`
+    CLI, matched on the CLI name so the `wasm-bindgen/wasm-pack` sibling
+    never registers.
+    """
+    pins = []
+    for task in sorted(Path(".mise/tasks").iterdir()):
+        text = task.read_text(encoding="utf-8")
+        if match := search(r'wasm-bindgen"\s*=\s*"([^"]+)"', text):
+            pins.append((task.name, match.group(1)))
+    if not pins:
+        raise SystemExit("::error::no mise task pins wasm-bindgen")
+    return pins
 
 
 if __name__ == "__main__":
@@ -52,6 +78,7 @@ if __name__ == "__main__":
     if isinstance(mise_rust, dict):
         mise_rust = mise_rust["version"]
 
+    wasm_bindgen = cargo_lock_version("wasm-bindgen")
     pairs = [
         (
             "README.md Rust badge ↔ Cargo.toml rust-version",
@@ -67,6 +94,14 @@ if __name__ == "__main__":
             "README.md Python badge ↔ crate/pyproject.toml requires-python",
             badge("python.svg"),
             major_minor(project["project"]["requires-python"])
+        ),
+        *(
+            (
+                f".mise/tasks/{task} ↔ Cargo.lock wasm-bindgen",
+                version,
+                wasm_bindgen
+            )
+            for task, version in wasm_bindgen_pins()
         )
     ]
 
