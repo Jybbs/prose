@@ -1,20 +1,7 @@
-//! Strips padding that aligns with nothing, in two shapes. The pre-`:`
-//! gap goes on an aligned context whose `:`s have no column to align
-//! to. A singleton group (one member, so no neighbor row), a
-//! multi-member group whose `:`s all share a source line (no column
-//! distinction across rows), and a multi-member group whose rows open
-//! at differing column baselines (no shared column the padding can
-//! reach) all reduce to "alignment is not happening here," at which
-//! point the pre-`:` gap is visual noise and the rule strips it. A
-//! multi-member group whose `:`s sit on distinct lines at one baseline
-//! belongs to `align_colons` and passes through this rule untouched.
-//! The interior gap goes on a bracket delimiter, a whitespace run
-//! directly after an opening `(` `[` `{` or before its closer when the
-//! run shares a line with the content it pads, so a closer on its own
-//! line keeps its leading indent. A bracket inside an f-string or
-//! t-string replacement field stays untouched, leaving a debug
-//! `f"{x = }"` and its format specs their spaces. Runs after the
-//! alignment rules in `Pipeline::with_defaults` so it sees their output.
+//! Strips padding that aligns with nothing, in two shapes. It clears
+//! the pre-`:` gap on a colon context with no column to align to and
+//! the space just inside a bracket delimiter. Runs after the alignment
+//! rules in `Pipeline::with_defaults` so it sees their output.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::TokenKind;
