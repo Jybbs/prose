@@ -4,4 +4,5 @@ expression: render(&diagnostics)
 input_file: tests/fixtures/thematic/collapse_strips_colon_padding/input.py
 ---
 collection-layout@10..62
+miscased-constants@0..6
 strip-trailing-commas@60..61

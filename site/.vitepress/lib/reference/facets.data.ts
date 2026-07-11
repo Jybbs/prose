@@ -209,6 +209,17 @@ const SOURCES: readonly FacetFamilySource[] = [
         ]
       },
       {
+        rule   : 'miscased-constants',
+        facets : [
+          {
+            default : '""',
+            key     : 'allow-pattern',
+            meaning : 'Constant names exempted from the lint, such as old-style bare aliases.',
+            type    : 'regex'
+          }
+        ]
+      },
+      {
         rule   : 'reassigned-constants',
         facets : [
           {

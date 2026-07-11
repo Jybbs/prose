@@ -245,7 +245,7 @@ fn cache_compact_subcommand_exits_zero_and_reports_count() {
 
 #[test]
 fn cache_hit_produces_identical_diagnostics_to_miss() {
-    assert_cache_hit_matches_miss("ab.py", "ab = 1\nx = 2\n");
+    assert_cache_hit_matches_miss("ab.py", "AB = 1\nx = 2\n");
 }
 
 #[test]
@@ -255,7 +255,7 @@ fn cache_hit_renders_collapsing_literal_like_a_cold_run() {
 
 #[test]
 fn cache_hits_when_a_selection_is_repeated() {
-    let (_dir, path) = fixture("repeat.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("repeat.py", "AB = 1\nx = 2\n");
     let (mut cold, cache_dir) = prose_isolated();
     let _ = cold
         .args(["check", "--select", "align-equals"])
@@ -314,7 +314,7 @@ fn cache_invalidates_on_config_change() {
 #[test]
 fn cache_keys_each_file_against_its_governing_config() {
     let parent = tempdir().expect("tempdir");
-    let (suppressed, flagged) = sibling_projects(&parent, "alpha = 1\nb = 22\n");
+    let (suppressed, flagged) = sibling_projects(&parent, "ALPHA = 1\nb = 22\n");
 
     let out = assert_warm_run_matches_cold(&[&suppressed, &flagged]);
 
@@ -331,7 +331,7 @@ fn cache_misses_when_selection_changes_between_runs(
     #[case] seed_filter: &[&str],
     #[case] query_filter: &[&str],
 ) {
-    let (_dir, path) = fixture("reselect.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("reselect.py", "AB = 1\nx = 2\n");
     assert_reselect_misses(seed_filter, query_filter, &path);
 }
 
@@ -364,7 +364,7 @@ fn check_dash_clean_exits_zero() {
 fn check_dash_unaligned_exits_format_change() {
     prose()
         .args(["check", "-"])
-        .write_stdin("ab = 1\nx = 2\n")
+        .write_stdin("AB = 1\nx = 2\n")
         .assert()
         .code(1);
 }
@@ -372,7 +372,7 @@ fn check_dash_unaligned_exits_format_change() {
 #[test]
 fn check_file_in_another_project_draws_its_own_config() {
     let cwd_project = suppressed_project();
-    let (_dir, path) = fixture("unaligned.py", "alpha = 1\nb = 22\n");
+    let (_dir, path) = fixture("unaligned.py", "ALPHA = 1\nb = 22\n");
 
     prose()
         .args(["check", "--no-cache"])
@@ -415,7 +415,7 @@ fn check_json_counts_a_collapsing_literal_as_changed() {
 
 #[test]
 fn check_json_summary_counts_a_changed_file() {
-    let (_dir, path) = fixture("misaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("misaligned.py", "AB = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd
         .args(["check", "--output-format", "json"])
@@ -455,7 +455,7 @@ fn check_no_cache_flag_runs_clean() {
 #[test]
 fn check_relative_path_resolves_its_ancestor_config() {
     let project = suppressed_project();
-    write(project.path().join("unaligned.py"), "alpha = 1\nb = 22\n").expect("writes");
+    write(project.path().join("unaligned.py"), "ALPHA = 1\nb = 22\n").expect("writes");
 
     prose()
         .args(["check", "--no-cache", "unaligned.py"])
@@ -467,7 +467,7 @@ fn check_relative_path_resolves_its_ancestor_config() {
 #[test]
 fn check_resolves_each_files_config_from_its_own_project() {
     let parent = tempdir().expect("tempdir");
-    let (suppressed, flagged) = sibling_projects(&parent, "alpha = 1\nb = 22\n");
+    let (suppressed, flagged) = sibling_projects(&parent, "ALPHA = 1\nb = 22\n");
 
     let assert = prose()
         .args(["check", "--no-cache", "--output-format", "json"])
@@ -524,7 +524,7 @@ fn check_stdin_resolves_config_from_the_cwd() {
 
     prose()
         .args(["check", "--stdin"])
-        .write_stdin("alpha = 1\nb = 22\n")
+        .write_stdin("ALPHA = 1\nb = 22\n")
         .current_dir(project.path())
         .assert()
         .success();
@@ -534,14 +534,14 @@ fn check_stdin_resolves_config_from_the_cwd() {
 fn check_stdin_unaligned_exits_format_change() {
     prose()
         .args(["check", "--stdin"])
-        .write_stdin("ab = 1\nx = 2\n")
+        .write_stdin("AB = 1\nx = 2\n")
         .assert()
         .code(1);
 }
 
 #[test]
 fn check_unaligned_fixture_exits_format_change() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("unaligned.py", "AB = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     cmd.arg("check").arg(&path).assert().code(1);
 }
@@ -554,7 +554,7 @@ fn check_unparseable_fixture_exits_parse_error() {
 
 #[test]
 fn check_validate_bypasses_a_check_populated_cache_entry() {
-    let (_dir, path) = fixture("misaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("misaligned.py", "AB = 1\nx = 2\n");
     let (mut check_cmd, cache_dir) = prose_isolated();
     check_cmd.arg("check").arg(&path).assert().code(1);
     let assert = prose()
@@ -572,7 +572,7 @@ fn check_validate_bypasses_a_check_populated_cache_entry() {
 
 #[test]
 fn check_validate_flag_accepts_a_valid_rewrite() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("unaligned.py", "AB = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     cmd.args(["check", "--validate"])
         .arg(&path)
@@ -582,7 +582,7 @@ fn check_validate_flag_accepts_a_valid_rewrite() {
 
 #[test]
 fn check_violation_summary_anchors_with_bookmark() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("unaligned.py", "AB = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.arg("check").arg(&path).assert().code(1);
     let err = stderr_utf8(&assert);
@@ -669,7 +669,7 @@ fn config_errors_exit_four(#[case] args: &[&str]) {
 /// panic in the binary would surface as exit code 101, not the format-change 1.
 #[rstest]
 #[case::two_entry_dict("d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n")]
-#[case::three_entry_list("xs = [\n    1,\n    2,\n    3,\n]\n")]
+#[case::three_entry_list("XS = [\n    1,\n    2,\n    3,\n]\n")]
 #[case::noncollapsible_call_dict(
     "config = {\n        \"alpha\": build_widget(first_argument, second_argument, third_argument),\n        \"beta\": build_gadget(fourth_argument, fifth_argument, sixth_argument),\n}\n"
 )]
@@ -689,10 +689,10 @@ fn emitters_render_shrinking_literals_without_aborting(
 fn format_dash_rewrites_unaligned_stdin_to_stdout() {
     prose()
         .args(["format", "-"])
-        .write_stdin("ab = 1\nx = 2\n")
+        .write_stdin("AB = 1\nx = 2\n")
         .assert()
         .success()
-        .stdout("ab = 1\nx  = 2\n");
+        .stdout("AB = 1\nx  = 2\n");
 }
 
 #[test]
@@ -707,7 +707,7 @@ fn format_dash_writes_rewrite_to_stdout() {
 
 #[test]
 fn format_diff_off_tty_leaves_a_plain_patch() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("unaligned.py", "AB = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
     let stdout = stdout_utf8(&assert);
@@ -720,7 +720,7 @@ fn format_diff_off_tty_leaves_a_plain_patch() {
 
 #[test]
 fn format_diff_renders_diff_and_leaves_file_unchanged() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("unaligned.py", "AB = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
     let stdout = stdout_utf8(&assert);
@@ -734,12 +734,12 @@ fn format_diff_renders_diff_and_leaves_file_unchanged() {
         "diff missing after line: {stdout:?}"
     );
     let after = std::fs::read_to_string(&path).expect("reads");
-    assert_eq!(after, "ab = 1\nx = 2\n");
+    assert_eq!(after, "AB = 1\nx = 2\n");
 }
 
 #[test]
 fn format_diff_summary_reports_would_reformat() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("unaligned.py", "AB = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
     let err = stderr_utf8(&assert);
@@ -767,7 +767,7 @@ fn format_json_renders_collapsing_literal_without_aborting() {
 
 #[test]
 fn format_json_rewrites_over_a_check_cache_entry() {
-    let (_dir, path) = fixture("misaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("misaligned.py", "AB = 1\nx = 2\n");
     let (mut check_cmd, cache_dir) = prose_isolated();
     check_cmd.arg("check").arg(&path).assert().code(1);
     let assert = prose()
@@ -777,7 +777,7 @@ fn format_json_rewrites_over_a_check_cache_entry() {
         .assert()
         .success();
     let after = std::fs::read_to_string(&path).expect("reads");
-    assert_ne!(after, "ab = 1\nx = 2\n");
+    assert_ne!(after, "AB = 1\nx = 2\n");
     let stdout = stdout_utf8(&assert);
     assert!(
         stdout.contains("align-equals"),
@@ -787,19 +787,19 @@ fn format_json_rewrites_over_a_check_cache_entry() {
 
 #[test]
 fn format_no_cache_flag_rewrites_when_needed() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("unaligned.py", "AB = 1\nx = 2\n");
     prose()
         .args(["format", "--no-cache"])
         .arg(&path)
         .assert()
         .success();
     let after = std::fs::read_to_string(&path).expect("reads");
-    assert_ne!(after, "ab = 1\nx = 2\n");
+    assert_ne!(after, "AB = 1\nx = 2\n");
 }
 
 #[test]
 fn format_rewrite_summary_reports_reformatted() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("unaligned.py", "AB = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.arg("format").arg(&path).assert().success();
     let err = stderr_utf8(&assert);
@@ -808,7 +808,7 @@ fn format_rewrite_summary_reports_reformatted() {
 
 #[test]
 fn format_rewrites_after_check_populated_the_cache() {
-    let (_dir, path) = fixture("misaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("misaligned.py", "AB = 1\nx = 2\n");
     let (mut check_cmd, cache_dir) = prose_isolated();
     check_cmd.arg("check").arg(&path).assert().code(1);
     prose()
@@ -818,7 +818,7 @@ fn format_rewrites_after_check_populated_the_cache() {
         .assert()
         .success();
     let after = std::fs::read_to_string(&path).expect("reads");
-    assert_ne!(after, "ab = 1\nx = 2\n");
+    assert_ne!(after, "AB = 1\nx = 2\n");
 }
 
 #[test]
@@ -827,16 +827,16 @@ fn format_stdin_resolves_config_from_the_cwd() {
 
     prose()
         .args(["format", "--stdin"])
-        .write_stdin("alpha = 1\nb = 22\n")
+        .write_stdin("ALPHA = 1\nb = 22\n")
         .current_dir(project.path())
         .assert()
         .success()
-        .stdout("alpha = 1\nb = 22\n");
+        .stdout("ALPHA = 1\nb = 22\n");
 }
 
 #[test]
 fn format_unaligned_rewrites_and_re_check_is_clean() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("unaligned.py", "AB = 1\nx = 2\n");
     let (mut format_cmd, cache_dir) = prose_isolated();
     format_cmd.arg("format").arg(&path).assert().success();
     prose()
@@ -1129,7 +1129,7 @@ fn notebook_unparseable_cell_exits_parse_error() {
 
 #[test]
 fn quiet_check_reduces_summary_to_a_bare_count() {
-    let (_dir, path) = fixture("unaligned.py", "ab = 1\nx = 2\n");
+    let (_dir, path) = fixture("unaligned.py", "AB = 1\nx = 2\n");
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd
         .env("COLORTERM", "truecolor")

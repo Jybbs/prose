@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Bare Annotation Binds No Value"
+
+description = '''
+`max_retries: int` declares a type without a value, so there is no constant to classify and the lint stays silent.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Single-Character Names Are Spared"
+
+description = '''
+A lone letter at module scope usually names a mathematical scalar, and its SCREAMING form is a single capital, which linear algebra reads as a matrix. So `x` and `n` stay silent, where the suggestion would mislead more than help.
+'''

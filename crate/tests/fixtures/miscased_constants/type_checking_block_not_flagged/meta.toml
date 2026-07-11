@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A TYPE_CHECKING Block Stays Quiet"
+
+description = '''
+Bindings under `if TYPE_CHECKING:` carry type-only semantics distinct from runtime configuration, so `json_type` never flags.
+'''

@@ -456,7 +456,7 @@ mod tests {
 
     #[test]
     fn check_ignore_overrides_the_files_own_config() {
-        let (_tmp, file) = fixture("alpha = 1\nb = 22\n");
+        let (_tmp, file) = fixture("ALPHA = 1\nB = 22\n");
 
         let mut args = check_args(vec![file], false);
         args.common.rules.ignore = vec![RuleId::from("align-equals")];
@@ -466,7 +466,7 @@ mod tests {
 
     #[test]
     fn check_pending_format_returns_format_change() {
-        let (tmp, _file) = fixture("alpha = 1\nb = 22\n");
+        let (tmp, _file) = fixture("ALPHA = 1\nB = 22\n");
 
         let status = run_check(check_args(vec![tmp.path().to_path_buf()], false));
 
@@ -475,7 +475,7 @@ mod tests {
 
     #[test]
     fn check_resolves_config_from_the_files_own_ancestors() {
-        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
+        let (tmp, file) = fixture("ALPHA = 1\nB = 22\n");
         write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
 
         assert_eq!(run_check(check_args(vec![file], false)), ExitStatus::Clean);
@@ -483,7 +483,7 @@ mod tests {
 
     #[test]
     fn check_select_overrides_the_files_own_config() {
-        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
+        let (tmp, file) = fixture("ALPHA = 1\nB = 22\n");
         write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
 
         let mut args = check_args(vec![file], false);
@@ -547,7 +547,7 @@ mod tests {
 
     #[test]
     fn format_diff_resolves_config_from_the_files_own_ancestors() {
-        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
+        let (tmp, file) = fixture("ALPHA = 1\nB = 22\n");
         write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
 
         let status = run_format(format_args(vec![file], false, true));
@@ -576,7 +576,7 @@ mod tests {
 
     #[test]
     fn format_diff_returns_format_change_for_pending_change() {
-        let (tmp, _file) = fixture("alpha = 1\nb = 22\n");
+        let (tmp, _file) = fixture("ALPHA = 1\nB = 22\n");
 
         let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, true));
 
@@ -603,7 +603,7 @@ mod tests {
 
     #[test]
     fn format_paths_rewrite_emits_json_when_format_is_non_text() {
-        let (tmp, _file) = fixture("alpha = 1\nb = 22\n");
+        let (tmp, _file) = fixture("ALPHA = 1\nB = 22\n");
 
         let mut args = format_args(vec![tmp.path().to_path_buf()], false, false);
         args.common.output_format = OutputFormat::Json;
@@ -624,19 +624,19 @@ mod tests {
 
     #[test]
     fn format_rewrite_resolves_config_from_the_files_own_ancestors() {
-        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
+        let (tmp, file) = fixture("ALPHA = 1\nB = 22\n");
         write_pyproject(tmp.path(), "[tool.prose.rules]\nalign-equals = false\n");
 
         let status = run_format(format_args(vec![file.clone()], false, false));
 
         assert_eq!(status, ExitStatus::Clean);
         let after = std::fs::read_to_string(&file).expect("reads");
-        assert_eq!(after, "alpha = 1\nb = 22\n");
+        assert_eq!(after, "ALPHA = 1\nB = 22\n");
     }
 
     #[test]
     fn format_stdin_diff_writes_unified_hunks() {
-        let stdin = Cursor::new(b"alpha = 1\nb = 22\n".to_vec());
+        let stdin = Cursor::new(b"ALPHA = 1\nB = 22\n".to_vec());
         let mut stdout = Vec::new();
         let status = format_with_io(
             format_args(Vec::new(), true, true),
@@ -654,7 +654,7 @@ mod tests {
 
     #[test]
     fn format_stdin_emits_json_when_format_is_non_text() {
-        let stdin = Cursor::new(b"alpha = 1\nb = 22\n".to_vec());
+        let stdin = Cursor::new(b"ALPHA = 1\nB = 22\n".to_vec());
         let mut stdout = Vec::new();
         let mut args = format_args(Vec::new(), true, false);
         args.common.output_format = OutputFormat::Json;
@@ -707,18 +707,18 @@ mod tests {
 
     #[test]
     fn format_writes_and_returns_clean_for_pending_change() {
-        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
+        let (tmp, file) = fixture("ALPHA = 1\nB = 22\n");
 
         let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
 
         assert_eq!(status, ExitStatus::Clean);
         let after = std::fs::read_to_string(&file).expect("reads");
-        assert_ne!(after, "alpha = 1\nb = 22\n");
+        assert_ne!(after, "ALPHA = 1\nB = 22\n");
     }
 
     #[test]
     fn format_writes_return_config_error_when_target_is_readonly() {
-        let (tmp, file) = fixture("alpha = 1\nb = 22\n");
+        let (tmp, file) = fixture("ALPHA = 1\nB = 22\n");
         let mut perms = std::fs::metadata(&file).expect("metadata").permissions();
         perms.set_readonly(true);
         std::fs::set_permissions(&file, perms).expect("set_permissions");

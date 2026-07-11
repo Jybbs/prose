@@ -6,3 +6,7 @@ input_file: tests/fixtures/suppression/skip_redundant_inside_off_block/input.py
 align-equals@1..10
 align-equals@92..100
 band-constants@0..25
+miscased-constants@104..107
+miscased-constants@14..21
+miscased-constants@6..9
+miscased-constants@97..99

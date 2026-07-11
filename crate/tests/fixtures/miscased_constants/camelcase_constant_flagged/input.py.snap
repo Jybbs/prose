@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/camelcase_constant_flagged/input.py
+---
+maxRetries = 5

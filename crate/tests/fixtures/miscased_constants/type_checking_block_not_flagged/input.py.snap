@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/type_checking_block_not_flagged/input.py
+---
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    json_type = dict

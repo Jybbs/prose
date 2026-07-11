@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/lowercase_constant_flagged/input.py
+---
+max_retries = 5

@@ -6,15 +6,28 @@ use std::num::NonZeroUsize;
 use schemars::{JsonSchema, Schema, SchemaGenerator, json_schema};
 use serde::Serialize;
 
-use super::schema::SingleUseVariablesConfig;
+use super::schema::{MiscasedConstantsConfig, SingleUseVariablesConfig};
 
-/// Schema for `allow-pattern`, a regex carried as a string.
-pub(super) fn allow_pattern_schema(_generator: &mut SchemaGenerator) -> Schema {
+/// Schema for an `allow-pattern` regex carried as a string, annotated
+/// with `default`.
+fn allow_pattern_schema_with(default: &str) -> Schema {
     json_schema!({
         "type": "string",
         "format": "regex",
-        "default": SingleUseVariablesConfig::default().allow_pattern.as_str(),
+        "default": default,
     })
+}
+
+/// Schema for `single-use-variables`' `allow-pattern`, defaulting to
+/// the `^_` underscore-prefix pattern.
+pub(super) fn allow_pattern_schema(_generator: &mut SchemaGenerator) -> Schema {
+    allow_pattern_schema_with(SingleUseVariablesConfig::default().allow_pattern.as_str())
+}
+
+/// Schema for `miscased-constants`' `allow-pattern`, defaulting to the
+/// empty pattern that exempts nothing.
+pub(super) fn empty_allow_pattern_schema(_generator: &mut SchemaGenerator) -> Schema {
+    allow_pattern_schema_with(MiscasedConstantsConfig::default().allow_pattern.as_str())
 }
 
 /// Schema for a cap of integer type `T`, or `false` lifting it.

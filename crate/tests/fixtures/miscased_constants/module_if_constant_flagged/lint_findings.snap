@@ -1,0 +1,28 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/miscased_constants/module_if_constant_flagged/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 21,
+      "row": 4
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "default_encoding",
+          "content": "DEFAULT_ENCODING"
+        }
+      ]
+    },
+    "location": {
+      "column": 5,
+      "row": 4
+    },
+    "message": "Module constant `default_encoding` is not SCREAMING_CASE"
+  }
+]

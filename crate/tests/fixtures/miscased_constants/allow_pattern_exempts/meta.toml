@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "The Allow Pattern Spares a Project's Own Aliases"
+
+description = '''
+A project carrying old-style PascalCase aliases sets `allow-pattern = "^[A-Z][a-z]"`, so `Vector = list[float]` passes while the unmatched `timeout` still draws the `TIMEOUT` rename. The pattern is empty by default, exempting nothing.
+'''

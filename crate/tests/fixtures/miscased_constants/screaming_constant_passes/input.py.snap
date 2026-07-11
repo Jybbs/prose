@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/screaming_constant_passes/input.py
+---
+MAX_RETRIES = 5

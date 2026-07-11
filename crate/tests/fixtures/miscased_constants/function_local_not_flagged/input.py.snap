@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/function_local_not_flagged/input.py
+---
+def configure():
+    max_retries = 5
+    return max_retries

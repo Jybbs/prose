@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/underscore_and_dunder_pass/input.py
+---
+_cache = {}
+__version__ = "1.0"

@@ -176,6 +176,21 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         }
       ]
     },
+    "MiscasedConstantsConfig": {
+      "description": "Configuration for the `miscased_constants` rule.",
+      "properties": {
+        "allow-pattern": {
+          "default": "",
+          "format": "regex",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "PythonVersion": {
       "anyOf": [
         {
@@ -476,6 +491,20 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             }
           ],
           "default": {
+            "enabled": true
+          }
+        },
+        "miscased-constants": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/MiscasedConstantsConfig"
+            }
+          ],
+          "default": {
+            "allow-pattern": "",
             "enabled": true
           }
         },
@@ -789,6 +818,10 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "legacy-union-syntax": {
+          "enabled": true
+        },
+        "miscased-constants": {
+          "allow-pattern": "",
           "enabled": true
         },
         "reassigned-constants": {

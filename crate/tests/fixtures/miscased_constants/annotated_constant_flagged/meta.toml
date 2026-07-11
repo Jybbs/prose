@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Annotated Module Constant Is Flagged Too"
+
+description = '''
+An annotated assignment carrying a value reads the same as a bare one, so `timeout: int = 30` draws the `TIMEOUT` rename. A bare annotation with no value binds nothing and stays silent.
+'''
