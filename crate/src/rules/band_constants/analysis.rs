@@ -5,10 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use ruff_python_ast::{
-    Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef,
-    visitor::{Visitor as AstVisitor, walk_expr},
-};
+use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
 
@@ -18,12 +15,10 @@ use super::{
 };
 use crate::{
     primitives::{
-        binding::{
-            annotated_name_target, bare_import_bound_name, from_import_bound_name,
-            single_name_target,
-        },
+        binding::{bare_import_bound_name, from_import_bound_name, single_name_assignment},
         comments::{has_keep_marker, is_banner_block, leading_comment_block},
-        tiering::{eval_refs, eval_time_refs, tier_levels, walk_lambda_defaults},
+        effect::value_is_effectful,
+        tiering::{eval_refs, eval_time_refs, tier_levels},
     },
     source::Source,
     suppression::is_directive_comment,
@@ -41,32 +36,6 @@ struct ConstSite<'src> {
     idx: usize,
     name: &'src str,
     value_refs: Vec<&'src str>,
-}
-
-/// Detects whether a constant's value runs code when it binds. Walks the
-/// value's evaluation-time surface, pruning each lambda body, and flips
-/// `effectful` on a call, comprehension, `await`, or notebook escape
-/// command. `ruff_python_ast::helpers::contains_effect` also classifies a
-/// subscript, an operator expression, and a walrus as effectful and walks
-/// lambda bodies, so it over-pins against this narrower split.
-struct EffectVisitor {
-    effectful: bool,
-}
-
-impl<'src> AstVisitor<'src> for EffectVisitor {
-    fn visit_expr(&mut self, expr: &'src Expr) {
-        match expr {
-            Expr::Await(_)
-            | Expr::Call(_)
-            | Expr::DictComp(_)
-            | Expr::Generator(_)
-            | Expr::IpyEscapeCommand(_)
-            | Expr::ListComp(_)
-            | Expr::SetComp(_) => self.effectful = true,
-            Expr::Lambda(lambda) => walk_lambda_defaults(self, lambda),
-            _ => walk_expr(self, expr),
-        }
-    }
 }
 
 /// Builds the module-scope hoist plan, ranking each statement and
@@ -106,7 +75,8 @@ pub(super) fn module_band_plan<'src>(
         let gap_comment = idx.checked_sub(1).and_then(|prev| {
             leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
         });
-        let const_target = assign_run_target(stmt);
+        let const_target =
+            single_name_assignment(stmt).map(|(target, value, _)| (target.id.as_str(), value));
         // A definition, class, import, or any non-constant pins beneath an
         // own-line comment, bounding the bands to its side. A constant
         // instead forward-attaches a prose comment the way `blank-lines`
@@ -263,17 +233,6 @@ pub(super) fn module_band_plan<'src>(
     })
 }
 
-/// Returns the target name and optional value of an `Assign` or
-/// `AnnAssign` whose target is a single `Name`. `None` for any other
-/// shape.
-fn assign_run_target(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
-    match stmt {
-        Stmt::AnnAssign(a) => Some((annotated_name_target(a)?, a.value.as_deref())),
-        Stmt::Assign(a) => Some((single_name_target(a)?, Some(a.value.as_ref()))),
-        _ => None,
-    }
-}
-
 /// Closes `state` over `deps` to a fixed point, flipping a slot true
 /// once any slot it depends on is true, so an initially-seeded flag
 /// reaches every slot transitively downstream of a seed.
@@ -290,15 +249,6 @@ fn propagate(state: &mut [bool], deps: &[Vec<usize>]) {
     }
 }
 
-/// True when evaluating `value` runs code beyond reading names, meaning
-/// it carries a call, a comprehension, an `await`, or a notebook escape
-/// command outside a lambda body.
-fn value_is_effectful(value: &Expr) -> bool {
-    let mut visitor = EffectVisitor { effectful: false };
-    visitor.visit_expr(value);
-    visitor.effectful
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -311,18 +261,6 @@ mod tests {
         let body = &source.ast().body;
         let blocks = block_ranges(source, body, source.module_range());
         module_band_plan(source, body, &blocks, false, None)
-    }
-
-    #[test]
-    fn assign_run_target_unwraps_both_assign_kinds_and_filters_non_names() {
-        let s = parse("X = 1\nself.x = 1\ny: int = 2\nz: int\n(a, b) = (1, 2)\n");
-        let targets: Vec<Option<&str>> = s
-            .ast()
-            .body
-            .iter()
-            .map(|s| assign_run_target(s).map(|(name, _)| name))
-            .collect();
-        assert_eq!(targets, vec![Some("X"), None, Some("y"), Some("z"), None]);
     }
 
     #[test]
@@ -465,36 +403,5 @@ mod tests {
         let mut state = vec![false, true, false];
         propagate(&mut state, &deps);
         assert_eq!(state, vec![false, true, false]);
-    }
-
-    #[rstest]
-    #[case("call()", true)]
-    #[case("[make(), 1]", true)]
-    #[case("[n for n in seq]", true)]
-    #[case("{n for n in seq}", true)]
-    #[case("{k: v for k in seq}", true)]
-    #[case("(n for n in seq)", true)]
-    #[case("lambda k=make(): k", true)]
-    #[case("42", false)]
-    #[case("value", false)]
-    #[case("obj.attr", false)]
-    #[case("table[key]", false)]
-    #[case("BASE * 2", false)]
-    #[case("a if cond else b", false)]
-    #[case("[a, b, c]", false)]
-    #[case("(n := 5)", false)]
-    #[case("lambda row: row.compute()", false)]
-    #[case("lambda: compute()", false)]
-    fn value_is_effectful_splits_effectful_from_inert(
-        #[case] value_src: &str,
-        #[case] expected: bool,
-    ) {
-        let source = parse(&format!("X = {value_src}\n"));
-        let value = source.ast().body[0]
-            .as_assign_stmt()
-            .expect("an assignment")
-            .value
-            .as_ref();
-        assert_eq!(value_is_effectful(value), expected, "{value_src}");
     }
 }

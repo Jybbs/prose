@@ -266,6 +266,28 @@ impl Serialize for MaxShift {
     }
 }
 
+/// Configuration for the `miscased_constants` rule.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct MiscasedConstantsConfig {
+    #[schemars(schema_with = "super::json_schema::empty_allow_pattern_schema")]
+    #[serde(
+        deserialize_with = "deserialize_regex",
+        serialize_with = "serialize_regex"
+    )]
+    pub allow_pattern: Regex,
+    pub enabled: bool,
+}
+
+impl Default for MiscasedConstantsConfig {
+    fn default() -> Self {
+        Self {
+            allow_pattern: Regex::new("").expect("empty pattern compiles"),
+            enabled: true,
+        }
+    }
+}
+
 /// Configuration for the `reassigned_constants` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -369,6 +391,7 @@ impl_rule_toggle!(
     BareImportsConfig,
     CallLayoutConfig,
     CollectionLayoutConfig,
+    MiscasedConstantsConfig,
     ReassignedConstantsConfig,
     SignatureLayoutConfig,
     SingleUseVariablesConfig,

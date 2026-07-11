@@ -1,0 +1,112 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/suppression/prose_skip_pins_one_member/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "bar_baz",
+          "content": "BAR_BAZ"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Module constant `bar_baz` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 4,
+      "row": 2
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "foo",
+          "content": "FOO"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Module constant `foo` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 3,
+      "row": 5
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "aa",
+          "content": "AA"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 5
+    },
+    "message": "Module constant `aa` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 4,
+      "row": 6
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "bbb",
+          "content": "BBB"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 6
+    },
+    "message": "Module constant `bbb` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 5,
+      "row": 7
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "cccc",
+          "content": "CCCC"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 7
+    },
+    "message": "Module constant `cccc` is not SCREAMING_CASE"
+  }
+]

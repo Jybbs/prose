@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/annotated_constant_flagged/input.py
+---
+timeout: int = 30

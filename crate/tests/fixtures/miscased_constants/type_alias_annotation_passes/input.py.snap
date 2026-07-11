@@ -1,0 +1,8 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/type_alias_annotation_passes/input.py
+---
+from typing import TypeAlias
+
+Vector: TypeAlias = list[float]

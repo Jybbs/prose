@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Underscore-Led and Dunder Names Stay Private"
+
+description = '''
+A leading underscore marks deliberate module-private state, so `_cache` and the dunder `__version__` both drop out ahead of the casing gate.
+'''

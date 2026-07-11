@@ -134,6 +134,12 @@ Config {
         strip_align_padding: ToggleOnly {
             enabled: false,
         },
+        miscased_constants: MiscasedConstantsConfig {
+            allow_pattern: Regex(
+                "^_",
+            ),
+            enabled: false,
+        },
         reassigned_constants: ReassignedConstantsConfig {
             allow: [
                 "LOG_LEVEL",

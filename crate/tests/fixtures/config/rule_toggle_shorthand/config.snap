@@ -131,6 +131,12 @@ Config {
         strip_align_padding: ToggleOnly {
             enabled: true,
         },
+        miscased_constants: MiscasedConstantsConfig {
+            allow_pattern: Regex(
+                "",
+            ),
+            enabled: true,
+        },
         reassigned_constants: ReassignedConstantsConfig {
             allow: [],
             enabled: true,

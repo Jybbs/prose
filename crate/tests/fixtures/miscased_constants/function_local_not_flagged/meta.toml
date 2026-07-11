@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Function-Local Binding Is Not a Module Constant"
+
+description = '''
+The scan does not descend into a `def`, so a local `max_retries` is a working variable rather than a module constant and stays silent.
+'''

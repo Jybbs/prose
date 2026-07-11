@@ -17,6 +17,10 @@ describe('lintShorthand', () => {
       { after: 'from numpy import …', before: 'import numpy', kind: 'replace' }
     ],
     [
+      { flagged: 'max_retries', message: '', rule: 'miscased-constants', suggested: 'MAX_RETRIES' },
+      { after: 'MAX_RETRIES', before: 'max_retries', kind: 'replace' }
+    ],
+    [
       { flagged: 'MAX = 5', message: 'Constant `MAX` reassigned', rule: 'reassigned-constants' },
       { after: 'max', before: 'MAX', kind: 'replace' }
     ],
@@ -35,6 +39,7 @@ describe('lintShorthand', () => {
   it.each([
     ['a bare-imports without a flagged span',            { flagged: '', message: '', rule: 'bare-imports' }],
     ['a legacy-union-syntax missing its suggestion',     { before: 'Optional[int]', flagged: '', message: '', rule: 'legacy-union-syntax' }],
+    ['a miscased-constants without a suggested rename',  { flagged: 'max_retries', message: '', rule: 'miscased-constants' }],
     ['a reassigned-constants without a backticked name', { flagged: '', message: 'no name here', rule: 'reassigned-constants' }],
     ['a single-use-variables without an inlining hint',  { flagged: 'x', message: 'nope', rule: 'single-use-variables' }],
     ['a single-use-variables without a flagged span',    { flagged: '', message: 'Consider inlining `y`', rule: 'single-use-variables' }]

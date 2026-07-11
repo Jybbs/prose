@@ -1,0 +1,28 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/miscased_constants/allow_pattern_exempts/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 2
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "timeout",
+          "content": "TIMEOUT"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Module constant `timeout` is not SCREAMING_CASE"
+  }
+]

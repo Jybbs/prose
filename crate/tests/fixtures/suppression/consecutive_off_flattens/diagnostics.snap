@@ -6,3 +6,7 @@ input_file: tests/fixtures/suppression/consecutive_off_flattens/input.py
 align-equals@1..10
 align-equals@100..108
 band-constants@0..25
+miscased-constants@105..107
+miscased-constants@112..115
+miscased-constants@14..21
+miscased-constants@6..9

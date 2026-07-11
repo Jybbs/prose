@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/reassigned_name_passes/input.py
+---
+counter = 0
+counter = 1

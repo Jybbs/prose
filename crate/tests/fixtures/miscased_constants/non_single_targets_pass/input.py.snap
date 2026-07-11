@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/miscased_constants/non_single_targets_pass/input.py
+---
+first = second = 1
+first, second = 1, 2
+config.timeout = 30

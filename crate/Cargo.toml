@@ -50,6 +50,7 @@ dirs               = { version = "6", optional = true }
 fluent-uri         = { version = "0.4", optional = true }
 fs-err             = "3"
 globset            = "0.4"
+heck               = "0.5"
 ignore             = { version = "0.4", optional = true }
 itertools          = "0.15"
 lsp-server         = { version = "0.7", optional = true }

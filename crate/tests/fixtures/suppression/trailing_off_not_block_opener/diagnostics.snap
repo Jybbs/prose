@@ -6,3 +6,8 @@ input_file: tests/fixtures/suppression/trailing_off_not_block_opener/input.py
 align-equals@1..10
 align-equals@38..47
 band-constants@0..59
+miscased-constants@14..19
+miscased-constants@36..38
+miscased-constants@43..46
+miscased-constants@51..55
+miscased-constants@6..9

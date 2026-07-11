@@ -1446,6 +1446,7 @@ dependencies = [
  "fluent-uri 0.4.1",
  "fs-err",
  "globset",
+ "heck",
  "ignore",
  "indoc",
  "insta",
