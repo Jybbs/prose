@@ -593,6 +593,31 @@ fn check_violation_summary_anchors_with_bookmark() {
 }
 
 #[test]
+fn check_warns_a_precedence_note_once_across_both_config_loads() {
+    let project = tempdir().expect("tempdir");
+    write(project.path().join("prose.toml"), "code-line-length = 90\n").expect("writes prose.toml");
+    write(
+        project.path().join("pyproject.toml"),
+        "[tool.prose]\ncode-line-length = 100\n",
+    )
+    .expect("writes pyproject");
+    write(project.path().join("a.py"), "x = 1\n").expect("writes");
+
+    let assert = prose()
+        .args(["check", "--no-cache", "a.py"])
+        .current_dir(project.path())
+        .assert()
+        .success();
+
+    let err = stderr_utf8(&assert);
+    assert_eq!(
+        err.matches("takes precedence over").count(),
+        1,
+        "the precedence note must appear once, stderr was {err:?}",
+    );
+}
+
+#[test]
 fn color_always_summary_emits_truecolor_when_colorterm_set() {
     let (_dir, path) = fixture("clean.py", "x = 1\n");
     let (mut cmd, _cache_dir) = prose_isolated();
@@ -750,6 +775,40 @@ fn format_diff_summary_reports_would_reformat() {
 }
 
 #[test]
+fn format_discloses_surviving_lint_beside_a_rewrite() {
+    let (_dir, path) = fixture("both.py", "import os\n\nab = 1\nx = 2\n\nos.getcwd()\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["format", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(2);
+    let err = stderr_utf8(&assert);
+    assert!(err.contains("🗞️ Reformatted 1 file."), "stderr was {err:?}");
+    assert!(
+        err.contains("🔖 1 lint diagnostic not shown. Run `prose check` to see it in full."),
+        "stderr was {err:?}",
+    );
+}
+
+#[test]
+fn format_discloses_surviving_lint_when_nothing_reformats() {
+    let (_dir, path) = fixture("lint_only.py", "import os\nos.getcwd()\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["format", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(2);
+    let err = stderr_utf8(&assert);
+    assert!(
+        err.contains("🔖 1 lint diagnostic not shown. Run `prose check` to see it in full."),
+        "stderr was {err:?}",
+    );
+    assert!(!err.contains("All clean"), "the clean line leaked: {err:?}");
+}
+
+#[test]
 fn format_json_renders_collapsing_literal_without_aborting() {
     let (_dir, path) = fixture("collapse.py", "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n");
     let (mut cmd, _cache_dir) = prose_isolated();
@@ -782,6 +841,27 @@ fn format_json_rewrites_over_a_check_cache_entry() {
     assert!(
         stdout.contains("align-equals"),
         "json missing the diagnostic: {stdout}"
+    );
+}
+
+#[test]
+fn format_json_with_surviving_lint_exits_two_without_a_stderr_disclosure() {
+    let (_dir, path) = fixture("lint_only.py", "import os\nos.getcwd()\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["format", "--no-cache", "--output-format", "json"])
+        .arg(&path)
+        .assert()
+        .code(2);
+    let out = stdout_utf8(&assert);
+    assert!(
+        out.contains("\"code\""),
+        "the lint reaches stdout as json: {out:?}"
+    );
+    let err = stderr_utf8(&assert);
+    assert!(
+        !err.contains("lint diagnostic not shown"),
+        "a structured run must not repeat the lint on stderr: {err:?}",
     );
 }
 
@@ -845,6 +925,32 @@ fn format_unaligned_rewrites_and_re_check_is_clean() {
         .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .success();
+}
+
+#[test]
+fn format_warns_an_unknown_key_once_across_both_config_loads() {
+    let project = tempdir().expect("tempdir");
+    write(
+        project.path().join("pyproject.toml"),
+        "[tool.prose]\nmax-shft = 4\n",
+    )
+    .expect("writes pyproject");
+    let py = project.path().join("a.py");
+    write(&py, "ab = 1\nx = 2\n").expect("writes");
+
+    let assert = prose()
+        .args(["format", "--no-cache"])
+        .arg(&py)
+        .current_dir(project.path())
+        .assert()
+        .success();
+
+    let err = stderr_utf8(&assert);
+    assert_eq!(
+        err.matches("unknown key `max-shft`").count(),
+        1,
+        "the unknown key must warn once, stderr was {err:?}",
+    );
 }
 
 #[test]
