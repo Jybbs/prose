@@ -8,7 +8,7 @@ use ruff_notebook::NotebookIndex;
 use ruff_source_file::{OneIndexed, SourceFile};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
-use crate::diagnostics::{Emitter, EmitterSummary, Run, diagnostics};
+use super::{Emitter, EmitterSummary, Run, diagnostics};
 
 pub(crate) struct Text {
     renderer: Renderer,

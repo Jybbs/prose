@@ -1,34 +1,61 @@
 [package]
-categories   = ["development-tools"]
-description  = "A Python typesetter for the reader."
-edition      = "2024"
-keywords     = ["formatter", "linter", "python", "style"]
-license      = "MIT"
-name         = "prose"
-readme       = "../README.md"
-repository   = "https://github.com/Jybbs/prose"
-rust-version = "1.96"
-version      = "0.7.0"
+categories             = ["development-tools"]
+description            = "A Python typesetter for the reader."
+edition.workspace      = true
+keywords               = ["formatter", "linter", "python", "style"]
+license.workspace      = true
+name                   = "prose"
+readme                 = "../README.md"
+repository.workspace   = true
+rust-version.workspace = true
+version                = "0.7.0"
+
+[[bin]]
+name              = "prose"
+required-features = ["native"]
+
+[features]
+default = ["native"]
+native  = [
+    "dep:annotate-snippets",
+    "dep:anstream",
+    "dep:anstyle",
+    "dep:anstyle-query",
+    "dep:anyhow",
+    "dep:blake3",
+    "dep:clap",
+    "dep:clap_complete",
+    "dep:dirs",
+    "dep:fluent-uri",
+    "dep:ignore",
+    "dep:lsp-server",
+    "dep:lsp-types",
+    "dep:postcard",
+    "dep:rayon",
+    "dep:serde-sarif",
+    "dep:similar",
+    "dep:tempfile",
+]
 
 [dependencies]
-annotate-snippets  = "=0.12.16"
-anstream           = "1.0"
-anstyle            = "1.0"
-anstyle-query      = "1.1"
-anyhow             = "1.0"
-blake3             = "1"
-clap               = { version = "4.5", features = ["derive"] }
-clap_complete      = "4.5"
-dirs               = "6"
-fluent-uri         = "0.4"
+annotate-snippets  = { version = "=0.12.16", optional = true }
+anstream           = { version = "1.0", optional = true }
+anstyle            = { version = "1.0", optional = true }
+anstyle-query      = { version = "1.1", optional = true }
+anyhow             = { version = "1.0", optional = true }
+blake3             = { version = "1", optional = true }
+clap               = { version = "4.5", features = ["derive"], optional = true }
+clap_complete      = { version = "4.5", optional = true }
+dirs               = { version = "6", optional = true }
+fluent-uri         = { version = "0.4", optional = true }
 fs-err             = "3"
 globset            = "0.4"
-ignore             = "0.4"
+ignore             = { version = "0.4", optional = true }
 itertools          = "0.15"
-lsp-server         = "0.7"
-lsp-types          = "0.97"
-postcard           = { version = "1", features = ["use-std"] }
-rayon              = "1.10"
+lsp-server         = { version = "0.7", optional = true }
+lsp-types          = { version = "0.97", optional = true }
+postcard           = { version = "1", features = ["use-std"], optional = true }
+rayon              = { version = "1.10", optional = true }
 regex-lite         = "0.1"
 ruff_diagnostics   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18", features = ["serde"] }
 ruff_notebook      = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18" }
@@ -40,21 +67,21 @@ ruff_source_file   = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18
 ruff_text_size     = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18", features = ["serde"] }
 schemars           = "1"
 serde              = { version = "1.0", features = ["derive"] }
-serde-sarif        = "0.8"
+serde-sarif        = { version = "0.8", optional = true }
 serde_ignored      = "0.1"
 serde_json         = "1.0"
-similar            = "3"
-tempfile           = "3"
+similar            = { version = "3", optional = true }
+tempfile           = { version = "3", optional = true }
 textwrap           = { version = "0.16", default-features = false, features = ["smawk", "unicode-width"] }
 thiserror          = "2.0"
 toml               = "1"
 unicode-width      = "0.2"
 
 [dev-dependencies]
-assert_cmd            = "2"
-assert_matches        = "1"
-indoc                 = "2"
-insta                 = { version = "1.39", features = ["glob", "yaml"] }
-proptest              = "1"
-rstest                = "0.26"
-ruff_python_formatter = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18" }
+assert_cmd               = "2"
+assert_matches.workspace = true
+indoc                    = "2"
+insta                    = { version = "1.39", features = ["glob", "yaml"] }
+proptest                 = "1"
+rstest                   = "0.26"
+ruff_python_formatter    = { git = "https://github.com/astral-sh/ruff", tag = "0.15.18" }

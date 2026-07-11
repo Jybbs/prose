@@ -5,7 +5,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
+use ruff_python_ast::{
+    Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef,
+    visitor::{Visitor as AstVisitor, walk_expr},
+};
 use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
 
@@ -20,22 +23,50 @@ use crate::{
             single_name_target,
         },
         comments::{has_keep_marker, is_banner_block, leading_comment_block},
-        tiering::{eval_refs, eval_time_refs, tier_levels},
+        tiering::{eval_refs, eval_time_refs, tier_levels, walk_lambda_defaults},
     },
     source::Source,
     suppression::is_directive_comment,
 };
 
 /// A module-scope single-name assignment considered for hoisting,
-/// carrying its body index, target name, and the load-context names in
-/// its value and its non-deferred annotation. Value references pin the
-/// constant when unresolved, whereas annotation references only
-/// constrain band order.
+/// carrying its body index, target name, the load-context names in its
+/// value and its non-deferred annotation, and whether the value runs
+/// code at binding. Value references pin the constant when unresolved,
+/// whereas annotation references only constrain band order. `effectful`
+/// holds only inside a notebook cell, pinning the constant there.
 struct ConstSite<'src> {
     annot_refs: Vec<&'src str>,
+    effectful: bool,
     idx: usize,
     name: &'src str,
     value_refs: Vec<&'src str>,
+}
+
+/// Detects whether a constant's value runs code when it binds. Walks the
+/// value's evaluation-time surface, pruning each lambda body, and flips
+/// `effectful` on a call, comprehension, `await`, or notebook escape
+/// command. `ruff_python_ast::helpers::contains_effect` also classifies a
+/// subscript, an operator expression, and a walrus as effectful and walks
+/// lambda bodies, so it over-pins against this narrower split.
+struct EffectVisitor {
+    effectful: bool,
+}
+
+impl<'src> AstVisitor<'src> for EffectVisitor {
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        match expr {
+            Expr::Await(_)
+            | Expr::Call(_)
+            | Expr::DictComp(_)
+            | Expr::Generator(_)
+            | Expr::IpyEscapeCommand(_)
+            | Expr::ListComp(_)
+            | Expr::SetComp(_) => self.effectful = true,
+            Expr::Lambda(lambda) => walk_lambda_defaults(self, lambda),
+            _ => walk_expr(self, expr),
+        }
+    }
 }
 
 /// Builds the module-scope hoist plan, ranking each statement and
@@ -50,6 +81,7 @@ pub(super) fn module_band_plan<'src>(
 ) -> Option<BandPlan<'src>> {
     let analysis = source.binding_analysis();
     let builtins_minor = target_version.unwrap_or_default().minor;
+    let notebook = source.is_notebook();
     let suppression = source.suppression_map();
     let mut def_at: HashMap<&'src str, usize> = HashMap::new();
     let mut dup_defs: HashSet<&'src str> = HashSet::new();
@@ -120,6 +152,7 @@ pub(super) fn module_band_plan<'src>(
                             .as_ann_assign_stmt()
                             .filter(|_| !defer_annotations)
                             .map_or_else(Vec::new, |ann| eval_refs(&ann.annotation)),
+                        effectful: notebook && value.is_some_and(value_is_effectful),
                         idx,
                         name,
                         value_refs: value.map_or_else(Vec::new, eval_refs),
@@ -135,7 +168,7 @@ pub(super) fn module_band_plan<'src>(
     let mut reaches_def = vec![false; n];
     let mut deps: Vec<Vec<usize>> = vec![Vec::new(); n];
     for (s, site) in sites.iter().enumerate() {
-        if analysis.module_reassigned(site.name) {
+        if site.effectful || analysis.module_reassigned(site.name) {
             anchored[s] = true;
             continue;
         }
@@ -257,11 +290,22 @@ fn propagate(state: &mut [bool], deps: &[Vec<usize>]) {
     }
 }
 
+/// True when evaluating `value` runs code beyond reading names, meaning
+/// it carries a call, a comprehension, an `await`, or a notebook escape
+/// command outside a lambda body.
+fn value_is_effectful(value: &Expr) -> bool {
+    let mut visitor = EffectVisitor { effectful: false };
+    visitor.visit_expr(value);
+    visitor.effectful
+}
+
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::primitives::orderer::block_ranges;
-    use crate::testing::parse;
+    use crate::testing::{notebook, parse};
 
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
@@ -299,6 +343,17 @@ mod tests {
             plan.ranks[&1],
             BandRank::Leading,
             "dict is a builtin, so TABLE rides the leading band"
+        );
+    }
+
+    #[test]
+    fn module_band_plan_bands_an_inert_constant_in_a_notebook() {
+        let source = notebook(&["def helper():\n    return 1\nSEED = 42\n"]);
+        let plan = plan_of(&source).expect("acyclic notebook plans");
+        assert_eq!(
+            plan.ranks[&1],
+            BandRank::Leading,
+            "a literal is inert, so SEED bands even inside a cell"
         );
     }
 
@@ -372,6 +427,30 @@ mod tests {
         assert!(plan.carries.is_empty());
     }
 
+    #[rstest]
+    #[case("DATA = await fetch()")]
+    #[case("CACHE = dict(size=10)")]
+    #[case("SHELL = !ls")]
+    fn module_band_plan_pins_an_effectful_constant_in_a_notebook(#[case] value_src: &str) {
+        let cell = format!("def helper():\n    return 1\n{value_src}\n");
+        let source = notebook(&[cell.as_str()]);
+        let plan = plan_of(&source).expect("acyclic notebook plans");
+        assert!(
+            !plan.ranks.contains_key(&1),
+            "{value_src} runs code, so it pins in its cell"
+        );
+    }
+
+    #[test]
+    fn module_band_plan_pins_an_inert_constant_referencing_an_effectful_one_in_a_notebook() {
+        let source = notebook(&["def helper():\n    return 1\nRAW = compute()\nSCALED = RAW\n"]);
+        let plan = plan_of(&source).expect("acyclic notebook plans");
+        assert!(
+            !plan.ranks.contains_key(&2),
+            "SCALED references effectful RAW, so anchoring propagates and it pins"
+        );
+    }
+
     #[test]
     fn propagate_flips_slots_reachable_from_a_seed() {
         let deps = vec![vec![], vec![0], vec![1]];
@@ -386,5 +465,36 @@ mod tests {
         let mut state = vec![false, true, false];
         propagate(&mut state, &deps);
         assert_eq!(state, vec![false, true, false]);
+    }
+
+    #[rstest]
+    #[case("call()", true)]
+    #[case("[make(), 1]", true)]
+    #[case("[n for n in seq]", true)]
+    #[case("{n for n in seq}", true)]
+    #[case("{k: v for k in seq}", true)]
+    #[case("(n for n in seq)", true)]
+    #[case("lambda k=make(): k", true)]
+    #[case("42", false)]
+    #[case("value", false)]
+    #[case("obj.attr", false)]
+    #[case("table[key]", false)]
+    #[case("BASE * 2", false)]
+    #[case("a if cond else b", false)]
+    #[case("[a, b, c]", false)]
+    #[case("(n := 5)", false)]
+    #[case("lambda row: row.compute()", false)]
+    #[case("lambda: compute()", false)]
+    fn value_is_effectful_splits_effectful_from_inert(
+        #[case] value_src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(&format!("X = {value_src}\n"));
+        let value = source.ast().body[0]
+            .as_assign_stmt()
+            .expect("an assignment")
+            .value
+            .as_ref();
+        assert_eq!(value_is_effectful(value), expected, "{value_src}");
     }
 }

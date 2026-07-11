@@ -3,10 +3,8 @@
 use std::{
     io::{self, Write},
     path::Path,
-    str::FromStr,
 };
 
-use lsp_types::Uri;
 use ruff_diagnostics::Edit;
 use ruff_notebook::Notebook;
 use ruff_python_ast::{Expr, StmtClassDef, StmtFunctionDef};
@@ -146,10 +144,6 @@ pub(crate) fn run_rule(slug: &str, src: &str) -> String {
         .0
         .text()
         .to_owned()
-}
-
-pub(crate) fn uri(s: &str) -> Uri {
-    Uri::from_str(s).expect("valid uri")
 }
 
 pub(crate) fn write_dotconfig_prose_toml(dir: &Path, contents: &str) {

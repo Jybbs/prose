@@ -24,4 +24,5 @@ node_modules/
 site/.vitepress/dist/
 site/.vitepress/.temp/
 site/coverage/
+site/public/wasm/
 **/*.timestamp-*.mjs

@@ -202,6 +202,7 @@ fn format_paths_diff<O: Write, E: Write>(
     for outcome in &outcomes {
         if let FileOutcome::Done {
             file,
+            notebook_index,
             rewrite: Rewrite::Changed(kind),
             ..
         } = outcome
@@ -211,6 +212,7 @@ fn format_paths_diff<O: Write, E: Write>(
                 file.name(),
                 file.source_text(),
                 kind,
+                notebook_index.as_deref(),
                 present.decorate_diff(),
             )?;
         }
@@ -274,10 +276,22 @@ fn format_stdin<O: Write, E: Write>(
     };
     let outcomes = std::slice::from_ref(&outcome);
     let summary = emitter_summary(outcomes);
-    if let FileOutcome::Done { rewrite, .. } = &outcome {
+    if let FileOutcome::Done {
+        notebook_index,
+        rewrite,
+        ..
+    } = &outcome
+    {
         if diff {
             if let Rewrite::Changed(kind) = rewrite {
-                write_rewrite_diff(writer, "<stdin>", &original, kind, present.decorate_diff())?;
+                write_rewrite_diff(
+                    writer,
+                    "<stdin>",
+                    &original,
+                    kind,
+                    notebook_index.as_deref(),
+                    present.decorate_diff(),
+                )?;
             }
         } else if format.is_text() {
             let to_write: &[u8] = match rewrite {
