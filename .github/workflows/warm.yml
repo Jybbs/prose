@@ -66,6 +66,13 @@ jobs:
           - command    : mise run build
             name       : 🗜️ Build
             shared-key : prose-build
+          - command    : mise run build wasm
+            name       : 🛶 Wasm
+            shared-key : prose-wasm
+          - bun-lock   : site/bun.lock
+            command    : mise run smoke
+            name       : 🪃 Browser
+            shared-key : prose-smoke
           - command    : mise run test rust
             name       : ⚖️ Test
             shared-key : prose-test
