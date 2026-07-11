@@ -5,7 +5,10 @@ use std::{io::Write, time::SystemTime};
 use anyhow::Context;
 
 use super::{exit_status::ExitStatus, load_config_or_status};
-use crate::cache::{Cache, CleanReport};
+use crate::{
+    cache::{Cache, CleanReport},
+    config::NoticeDedup,
+};
 
 pub(crate) fn clean<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
     match Cache::open().and_then(|c| c.clean()) {
@@ -21,7 +24,7 @@ pub(crate) fn clean<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
 }
 
 pub(crate) fn compact<W: Write>(stdout: W) -> anyhow::Result<ExitStatus> {
-    let config = match load_config_or_status() {
+    let config = match load_config_or_status(&NoticeDedup::default()) {
         Ok(c) => c,
         Err(s) => return Ok(s),
     };

@@ -347,7 +347,7 @@ register_rules! {
     "docstring-wrap":            docstring_wrap:            ToggleOnly                => DocstringWrap           => "wrap docstring prose to the configured budget",
     "align-equals":              align_equals:              AlignmentConfig           => AlignEquals             => "align consecutive `=` operators",
     "align-comparisons":         align_comparisons:         AlignmentConfig           => AlignComparisons        => "align consecutive comparison operators",
-    "strip-align-padding":       strip_align_padding:       ToggleOnly                => StripAlignPadding       => "drop padding from a group with no column to align to",
+    "strip-align-padding":       strip_align_padding:       ToggleOnly                => StripAlignPadding       => "drop padding that lines up with nothing",
     "miscased-constants":        miscased_constants:        MiscasedConstantsConfig   => MiscasedConstants       => "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form",
     "reassigned-constants":      reassigned_constants:      ReassignedConstantsConfig => ReassignedConstants     => "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once",
     "step-narration":            step_narration:            ToggleOnly                => StepNarration           => "Numbered-step comment found. Consider extracting each step as a named function",

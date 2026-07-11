@@ -28,6 +28,13 @@ pub fn format(config_toml: &str, source: &str) -> Result<FormatResult, JsError> 
     try_format(config_toml, source).map_err(|error| JsError::new(&error.to_string()))
 }
 
+/// Panics unconditionally.
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn panic_for_test() {
+    panic!("prose_wasm smoke-test panic");
+}
+
 /// Installs the hook that forwards panic messages to the console.
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen(start)]
