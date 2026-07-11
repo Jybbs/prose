@@ -26,7 +26,7 @@ Rewrites Python files to conform to the *Prose* style. Returns exit code 0 once 
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, subtracting from whichever set would otherwise have run |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to format, or `-` to read source from stdin |
 
-Exit codes: `0` clean / rewrites applied, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*.
+Exit codes: `0` clean / rewrites applied, `1` pending `--diff` rewrite, `2` lint diagnostics surfaced, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*.
 
 ```bash
 prose format src/
@@ -174,7 +174,7 @@ Every interactive `check` or `format` run closes with a one-line summary on **st
 
 <RunSummaryExplorer />
 
-A clean run anchors on 🪻, `check` violations on 🔖, and `format`'s applied or pending rewrites on 🗞️.
+A clean run anchors on 🪻, `check` violations or a `format` run's unfixed lint on 🔖, and `format`'s applied or pending rewrites on 🗞️.
 
 ANSI color draws on the project palette, with **Ube** on the anchor, **Celadon** on a clean count, and **Apricot** on a violation or change count. Each span renders as 24-bit color when the terminal advertises truecolor *(via `COLORTERM`)* and falls back to ANSI 8-color otherwise.
 
