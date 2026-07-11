@@ -12,7 +12,7 @@ pub(crate) fn annotated_name_target(ann: &StmtAnnAssign) -> Option<&str> {
 
 /// The bare-`Name` target node of an `Stmt::AnnAssign`, carrying its
 /// range. `None` when the target is an attribute or subscript.
-pub(crate) fn annotated_name_target_expr(ann: &StmtAnnAssign) -> Option<&ExprName> {
+fn annotated_name_target_expr(ann: &StmtAnnAssign) -> Option<&ExprName> {
     ann.target.as_name_expr()
 }
 
@@ -49,6 +49,24 @@ fn is_type_checking_block(stmt: &StmtIf) -> bool {
     tail_identifier(stmt.test.as_ref()) == Some("TYPE_CHECKING")
 }
 
+/// The single bare-`Name` target of an `Stmt::Assign` or
+/// `Stmt::AnnAssign`, paired with its value and, for an annotated
+/// assignment, its annotation. The value is `None` for a bare annotation
+/// (`X: int`). `None` for any other statement or a non-single-name target.
+pub(crate) fn single_name_assignment(
+    stmt: &Stmt,
+) -> Option<(&ExprName, Option<&Expr>, Option<&Expr>)> {
+    match stmt {
+        Stmt::Assign(a) => Some((single_name_target_expr(a)?, Some(a.value.as_ref()), None)),
+        Stmt::AnnAssign(a) => Some((
+            annotated_name_target_expr(a)?,
+            a.value.as_deref(),
+            Some(a.annotation.as_ref()),
+        )),
+        _ => None,
+    }
+}
+
 /// The single bare-`Name` target name of an `Stmt::Assign`. `None` for
 /// a multi-target, destructuring, attribute, or subscript assignment.
 pub(crate) fn single_name_target(assign: &StmtAssign) -> Option<&str> {
@@ -58,7 +76,7 @@ pub(crate) fn single_name_target(assign: &StmtAssign) -> Option<&str> {
 /// The single bare-`Name` target node of an `Stmt::Assign`, carrying
 /// its range. `None` for a multi-target, destructuring, attribute, or
 /// subscript assignment.
-pub(crate) fn single_name_target_expr(assign: &StmtAssign) -> Option<&ExprName> {
+fn single_name_target_expr(assign: &StmtAssign) -> Option<&ExprName> {
     match assign.targets.as_slice() {
         [Expr::Name(name)] => Some(name),
         _ => None,
@@ -134,6 +152,31 @@ mod tests {
         let source = parse(src);
         let if_stmt = source.ast().body[0].as_if_stmt().expect("an if statement");
         assert_eq!(is_type_checking_block(if_stmt), expected);
+    }
+
+    #[test]
+    fn single_name_assignment_extracts_target_value_and_annotation() {
+        let source = parse("X = 1\ny: int = 2\nz: int\nself.x = 1\na, b = 1, 2\n");
+        let shapes: Vec<Option<(&str, bool, bool)>> = source
+            .ast()
+            .body
+            .iter()
+            .map(|stmt| {
+                single_name_assignment(stmt).map(|(target, value, annotation)| {
+                    (target.id.as_str(), value.is_some(), annotation.is_some())
+                })
+            })
+            .collect();
+        assert_eq!(
+            shapes,
+            vec![
+                Some(("X", true, false)),
+                Some(("y", true, true)),
+                Some(("z", false, true)),
+                None,
+                None,
+            ],
+        );
     }
 
     #[test]

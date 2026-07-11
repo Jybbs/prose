@@ -15,10 +15,7 @@ use super::{
 };
 use crate::{
     primitives::{
-        binding::{
-            annotated_name_target, bare_import_bound_name, from_import_bound_name,
-            single_name_target,
-        },
+        binding::{bare_import_bound_name, from_import_bound_name, single_name_assignment},
         comments::{has_keep_marker, is_banner_block, leading_comment_block},
         effect::value_is_effectful,
         tiering::{eval_refs, eval_time_refs, tier_levels},
@@ -78,7 +75,8 @@ pub(super) fn module_band_plan<'src>(
         let gap_comment = idx.checked_sub(1).and_then(|prev| {
             leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
         });
-        let const_target = assign_run_target(stmt);
+        let const_target =
+            single_name_assignment(stmt).map(|(target, value, _)| (target.id.as_str(), value));
         // A definition, class, import, or any non-constant pins beneath an
         // own-line comment, bounding the bands to its side. A constant
         // instead forward-attaches a prose comment the way `blank-lines`
@@ -235,17 +233,6 @@ pub(super) fn module_band_plan<'src>(
     })
 }
 
-/// Returns the target name and optional value of an `Assign` or
-/// `AnnAssign` whose target is a single `Name`. `None` for any other
-/// shape.
-fn assign_run_target(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
-    match stmt {
-        Stmt::AnnAssign(a) => Some((annotated_name_target(a)?, a.value.as_deref())),
-        Stmt::Assign(a) => Some((single_name_target(a)?, Some(a.value.as_ref()))),
-        _ => None,
-    }
-}
-
 /// Closes `state` over `deps` to a fixed point, flipping a slot true
 /// once any slot it depends on is true, so an initially-seeded flag
 /// reaches every slot transitively downstream of a seed.
@@ -274,18 +261,6 @@ mod tests {
         let body = &source.ast().body;
         let blocks = block_ranges(source, body, source.module_range());
         module_band_plan(source, body, &blocks, false, None)
-    }
-
-    #[test]
-    fn assign_run_target_unwraps_both_assign_kinds_and_filters_non_names() {
-        let s = parse("X = 1\nself.x = 1\ny: int = 2\nz: int\n(a, b) = (1, 2)\n");
-        let targets: Vec<Option<&str>> = s
-            .ast()
-            .body
-            .iter()
-            .map(|s| assign_run_target(s).map(|(name, _)| name))
-            .collect();
-        assert_eq!(targets, vec![Some("X"), None, Some("y"), Some("z"), None]);
     }
 
     #[test]

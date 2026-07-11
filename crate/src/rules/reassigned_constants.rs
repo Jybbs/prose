@@ -17,8 +17,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::binding::{
-        BindingAnalysis, annotated_name_target, is_screaming_case, single_name_target,
-        skips_module_scan,
+        BindingAnalysis, is_screaming_case, single_name_assignment, skips_module_scan,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -78,24 +77,13 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
         if skips_module_scan(stmt) {
             return;
         }
-        match stmt {
-            Stmt::Assign(a) => {
-                if let Some(name) = single_name_target(a)
-                    && is_reassigned_constant_target(name, Some(a.value.as_ref()), self.allow)
-                    && self.analysis.module_reassigned(name)
-                {
-                    self.emit(stmt, name);
-                }
+        if let Some((target, value, _)) = single_name_assignment(stmt) {
+            let name = target.id.as_str();
+            if is_reassigned_constant_target(name, value, self.allow)
+                && self.analysis.module_reassigned(name)
+            {
+                self.emit(stmt, name);
             }
-            Stmt::AnnAssign(a) => {
-                if let Some(name) = annotated_name_target(a)
-                    && is_reassigned_constant_target(name, a.value.as_deref(), self.allow)
-                    && self.analysis.module_reassigned(name)
-                {
-                    self.emit(stmt, name);
-                }
-            }
-            _ => {}
         }
         walk_stmt(self, stmt);
     }

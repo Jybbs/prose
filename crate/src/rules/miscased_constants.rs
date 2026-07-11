@@ -19,8 +19,8 @@ use crate::{
     diagnostics::Diagnostic,
     primitives::{
         binding::{
-            BindingAnalysis, annotated_name_target_expr, is_screaming_case,
-            single_name_target_expr, skips_module_scan, tail_identifier,
+            BindingAnalysis, is_screaming_case, single_name_assignment, skips_module_scan,
+            tail_identifier,
         },
         effect::value_is_effectful,
     },
@@ -85,12 +85,6 @@ impl Walker<'_> {
         ));
     }
 
-    fn flag_if_miscased(&mut self, target: &ExprName, value: &Expr, annotation: Option<&Expr>) {
-        if self.is_miscased(target.id.as_str(), value, annotation) {
-            self.emit(target);
-        }
-    }
-
     /// True when `name` is a module constant miscased against
     /// SCREAMING_CASE: a multi-character name with an inert `value`, no
     /// leading underscore, not already SCREAMING_CASE, never reassigned,
@@ -114,20 +108,10 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
         if skips_module_scan(stmt) {
             return;
         }
-        match stmt {
-            Stmt::Assign(a) => {
-                if let Some(target) = single_name_target_expr(a) {
-                    self.flag_if_miscased(target, a.value.as_ref(), None);
-                }
-            }
-            Stmt::AnnAssign(a) => {
-                if let Some(target) = annotated_name_target_expr(a)
-                    && let Some(value) = a.value.as_deref()
-                {
-                    self.flag_if_miscased(target, value, Some(a.annotation.as_ref()));
-                }
-            }
-            _ => {}
+        if let Some((target, Some(value), annotation)) = single_name_assignment(stmt)
+            && self.is_miscased(target.id.as_str(), value, annotation)
+        {
+            self.emit(target);
         }
         walk_stmt(self, stmt);
     }

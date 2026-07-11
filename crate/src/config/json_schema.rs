@@ -8,26 +8,10 @@ use serde::Serialize;
 
 use super::schema::{MiscasedConstantsConfig, SingleUseVariablesConfig};
 
-/// Schema for an `allow-pattern` regex carried as a string, annotated
-/// with `default`.
-fn allow_pattern_schema_with(default: &str) -> Schema {
-    json_schema!({
-        "type": "string",
-        "format": "regex",
-        "default": default,
-    })
-}
-
 /// Schema for `single-use-variables`' `allow-pattern`, defaulting to
 /// the `^_` underscore-prefix pattern.
 pub(super) fn allow_pattern_schema(_generator: &mut SchemaGenerator) -> Schema {
     allow_pattern_schema_with(SingleUseVariablesConfig::default().allow_pattern.as_str())
-}
-
-/// Schema for `miscased-constants`' `allow-pattern`, defaulting to the
-/// empty pattern that exempts nothing.
-pub(super) fn empty_allow_pattern_schema(_generator: &mut SchemaGenerator) -> Schema {
-    allow_pattern_schema_with(MiscasedConstantsConfig::default().allow_pattern.as_str())
 }
 
 /// Schema for a cap of integer type `T`, or `false` lifting it.
@@ -35,6 +19,12 @@ pub(super) fn cap_or_false_schema<T: JsonSchema>(generator: &mut SchemaGenerator
     json_schema!({
         "anyOf": [generator.subschema_for::<T>(), { "const": false }],
     })
+}
+
+/// Schema for `miscased-constants`' `allow-pattern`, defaulting to the
+/// empty pattern that exempts nothing.
+pub(super) fn empty_allow_pattern_schema(_generator: &mut SchemaGenerator) -> Schema {
+    allow_pattern_schema_with(MiscasedConstantsConfig::default().allow_pattern.as_str())
 }
 
 /// Schema for an optional cap a positive integer sets and `false`
@@ -52,5 +42,15 @@ where
     json_schema!({
         "anyOf": [{ "type": "boolean" }, generator.subschema_for::<T>()],
         "default": T::default(),
+    })
+}
+
+/// Schema for an `allow-pattern` regex carried as a string, annotated
+/// with `default`.
+fn allow_pattern_schema_with(default: &str) -> Schema {
+    json_schema!({
+        "type": "string",
+        "format": "regex",
+        "default": default,
     })
 }
