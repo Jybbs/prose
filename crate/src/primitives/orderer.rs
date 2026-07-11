@@ -147,7 +147,7 @@ pub(crate) fn assembled_cell_edits<'src>(
     forced: bool,
     mut gap: impl FnMut(usize) -> Option<&'src str>,
 ) -> Vec<Edit> {
-    if source.cell_offsets().is_empty() {
+    if !source.is_notebook() {
         let (text, span) = assemble_or_borrow(source, blocks, rendered, order, forced, gap);
         return match text {
             Cow::Borrowed(_) => Vec::new(),

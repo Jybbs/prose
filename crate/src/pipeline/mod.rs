@@ -170,7 +170,7 @@ impl Pipeline {
 /// woven text and, for a notebook, the `SourceMap` of cell-offset
 /// deltas. An ordinary module skips the map.
 fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<SourceMap>)> {
-    if source.cell_offsets().is_empty() {
+    if !source.is_notebook() {
         apply_edits(source.text(), edits).map(|text| (text, None))
     } else {
         apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
