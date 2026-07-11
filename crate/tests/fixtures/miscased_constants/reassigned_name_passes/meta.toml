@@ -3,5 +3,5 @@ previewable = true
 title       = "A Reassigned Name Behaves Like a Variable"
 
 description = '''
-`counter` is written twice, so it is mutable state rather than a constant, and the lint leaves it to its lowercase name. This is the mirror of [[reassigned-constants]], which flags a SCREAMING_CASE name that a later write contradicts.
+`counter` is written twice, so it is mutable state rather than a constant, and the lint leaves it to its lowercase name. This is the mirror of [[reassigned-constants]], which flags a `SCREAMING_CASE` name that a later write contradicts.
 '''
