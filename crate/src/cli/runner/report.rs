@@ -103,14 +103,9 @@ pub(super) fn finish(
 /// after its outcome line, `None` for a check run, a structured output
 /// whose emitters already printed the lint, or a run leaving none.
 fn lint_remainder(summary: &EmitterSummary, mode: Mode, text_output: bool) -> Option<Summary> {
-    match mode {
-        Mode::Check => None,
-        Mode::Preview | Mode::Reformat => {
-            (text_output && summary.lint_total > 0).then_some(Summary::LintRemainder {
-                total: summary.lint_total,
-            })
-        }
-    }
+    let total = summary.lint_total;
+    let discloses = !matches!(mode, Mode::Check) && text_output && total > 0;
+    discloses.then_some(Summary::LintRemainder { total })
 }
 
 /// Writes a run's closing summary: the rewrite or diagnostics outcome,
