@@ -52,6 +52,7 @@ prose server                   # language server over stdio
 
 The full edition lives at [prose.fyi](https://prose.fyi/):
 
+- The [**interactive sandbox**](https://prose.fyi/usage/sandbox) formats Python live in the browser, so a reader can watch a snippet settle into shape without installing anything.
 - The [**rule catalog**](https://prose.fyi/rules/) walks every rule with before/after fixtures and per-facet configuration.
 - The [**configuration reference**](https://prose.fyi/reference/configuration) covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml` config files, every key, and the `[rules]` toggles.
 - The [**cache reference**](https://prose.fyi/reference/cache) covers the cache directory, `--no-cache`, the `[cache]` table, and the `prose cache` subcommands.

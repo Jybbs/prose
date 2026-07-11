@@ -44,7 +44,7 @@ import.meta.glob('./components/**/*.css', { eager: true })
 
 const modules = import.meta.glob<{ default: Component }>(
   [
-    './components/{exit-codes,fixtures,glossary,integrations,primitives,reference,rules,suppression}/*.vue',
+    './components/{exit-codes,fixtures,glossary,integrations,primitives,reference,rules,sandbox,suppression}/*.vue',
     './components/base/Tool.vue'
   ],
   { eager: true }

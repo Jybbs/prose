@@ -176,6 +176,10 @@ exports[`buildSidebar > builds the route-keyed sidebar tree 1`] = `
           "text": "Quick Start",
         },
         {
+          "link": "/usage/sandbox",
+          "text": "Sandbox",
+        },
+        {
           "link": "/usage/suppression",
           "text": "Suppression",
         },

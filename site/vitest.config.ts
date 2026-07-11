@@ -22,6 +22,7 @@ export default defineConfig({
         '.vitepress/lib/og/render/pool.ts',
         '.vitepress/lib/og/render/resvg-worker.mjs',
         '.vitepress/lib/rules/config-presets.ts',
+        '.vitepress/lib/sandbox/load-module.ts',
         '.vitepress/lib/shared/fixture-tab.ts',
         '.vitepress/lib/shared/tools.ts'
       ],
