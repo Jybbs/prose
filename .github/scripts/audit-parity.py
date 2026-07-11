@@ -31,6 +31,16 @@ def badge(svg: str) -> str:
     raise SystemExit(f"::error::no README.md badge line carries {svg!r}")
 
 
+def cargo_lock_version(name: str) -> str:
+    """
+    Return the version `Cargo.lock` resolves for the `name` package.
+    """
+    for package in loads(Path("Cargo.lock").read_text(encoding="utf-8"))["package"]:
+        if package["name"] == name:
+            return package["version"]
+    raise SystemExit(f"::error::no Cargo.lock package named {name!r}")
+
+
 def major_minor(value: str) -> str:
     """
     Return `<major>.<minor>` from any string carrying a SemVer head.
@@ -38,6 +48,17 @@ def major_minor(value: str) -> str:
     if match := search(r"\d+\.\d+", value):
         return match.group(0)
     raise SystemExit(f"::error::cannot parse major.minor from {value!r}")
+
+
+def mise_task_tool(task: str, tool: str) -> str:
+    """
+    Return the version the `task` mise script's `#MISE tools=` line pins
+    for `tool`.
+    """
+    frontmatter = Path(f".mise/tasks/{task}").read_text(encoding="utf-8")
+    if match := search(rf'{tool}"\s*=\s*"([^"]+)"', frontmatter):
+        return match.group(1)
+    raise SystemExit(f"::error::.mise/tasks/{task} pins no {tool!r} version")
 
 
 if __name__ == "__main__":
@@ -67,6 +88,11 @@ if __name__ == "__main__":
             "README.md Python badge ↔ crate/pyproject.toml requires-python",
             badge("python.svg"),
             major_minor(project["project"]["requires-python"])
+        ),
+        (
+            ".mise/tasks/smoke wasm-bindgen-cli ↔ Cargo.lock wasm-bindgen",
+            mise_task_tool("smoke", "wasm-bindgen-cli"),
+            cargo_lock_version("wasm-bindgen")
         )
     ]
 

@@ -1,3 +1,6 @@
+[env]
+WASM_ARTIFACT = "target/wasm32-unknown-unknown/wasm-release/prose_wasm.wasm"
+
 [settings]
 idiomatic_version_file_enable_tools = ["node"]
 python.uv_venv_auto                 = "create|source"

@@ -9,7 +9,7 @@ rust-version.workspace = true
 ignored = ["getrandom", "uuid"]
 
 [package.metadata.wasm]
-max-bytes = 3145728
+max-mib = 3
 
 [lib]
 crate-type = ["cdylib"]

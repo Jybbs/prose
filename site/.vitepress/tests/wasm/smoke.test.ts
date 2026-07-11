@@ -1,4 +1,4 @@
-import { format } from './pkg/prose_wasm.js'
+import { format, panic_for_test } from './pkg/prose_wasm.js'
 
 describe('prose_wasm', () => {
   it('sorts imports through the instantiated module', () => {
@@ -11,5 +11,12 @@ describe('prose_wasm', () => {
 
   it('throws when the config is invalid', () => {
     expect(() => format('code-line-length = "wide"', 'x = 1\n')).toThrow(/code-line-length/)
+  })
+
+  it('triggers a panic that reaches the console', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(() => panic_for_test()).toThrow()
+    expect(spy.mock.calls.flat().join(' ')).toContain('smoke-test panic')
+    spy.mockRestore()
   })
 })
