@@ -1,6 +1,6 @@
 ---
-caption : "Strips padding from alignment groups that resolve to a single member."
-related : [align-colons, align-equals, align-imports, align-match-case]
+caption : "Strips padding that lines up with nothing, in one-member alignment groups and just inside bracket delimiters."
+related : [align-colons, align-equals, align-imports, align-match-case, strip-trailing-commas]
 layout  : doc
 ---
 
@@ -11,6 +11,8 @@ layout  : doc
 An alignment group exists to give the reader's eye a column to drop down. With **two or more members** the column carries information, where each row reads as a row in a table. With **exactly one member** the column becomes a single cell, and padding it to a width that no sibling matches adds visual noise without payoff. `strip-align-padding` strips the pre-`:` padding from every `:`-alignment context that resolves to a single member, so a one-key dict, a one-arg signature, or a one-field dataclass reads as **plain code** instead of a one-row table.
 
 The rule operates on the `:`-shaped contexts that [[align-colons]] covers (*dict literals, dataclass and Pydantic fields, function-signature annotations, docstring `Args:` blocks*) plus the single-expression `match`-arm context that [[align-match-case]] covers. Multi-member groups whose `:`s sit on distinct lines and open at a shared column pass through this rule untouched, since the colon-alignment surfaces own them. A run whose rows open at differing columns realizes no shared column, so its padding strips here the way a singleton's does. The `=`-alignment from [[align-equals]] and the `import`-keyword alignment from [[align-imports]] carry their own one-member fallbacks and don't need pruning here.
+
+`strip-align-padding` also clears the padding just inside a bracket delimiter, where no alignment rule ever lines anything up. A space run directly after an opening `(`, `[`, or `{`, or directly before its closer, lines up with nothing, so `int(a )` settles to `int(a)` and `[ 1, 2 ]` to `[1, 2]`. Each side strips on its own, and only where the pad shares a line with the content beside it, so a closer on its own line keeps its indent. The braces of an f-string or t-string replacement field are not delimiters this rule touches, wherein a debug `f"{ total = }"` keeps the spaces it echoes into its output. On a `[ 1, 2, ]`, [[strip-trailing-commas]] drops the comma while this rule clears both pads.
 
 <template #configuration>
 
