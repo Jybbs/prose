@@ -147,7 +147,7 @@ impl Source {
     /// Returns the source text of each notebook cell, the whole buffer
     /// as one slice for an ordinary module.
     pub fn cell_texts(&self) -> Vec<&str> {
-        if self.cell_offsets.is_empty() {
+        if !self.is_notebook() {
             return vec![self.text()];
         }
         self.cell_offsets
@@ -238,6 +238,12 @@ impl Source {
     /// preceding line.
     pub fn is_line_adjacent(&self, gap: TextRange) -> bool {
         !self.slice(gap).contains('#') && lines_before(gap.end(), self.text()) == 1
+    }
+
+    /// Returns `true` when this source is a notebook, carrying at least
+    /// one cell boundary. Always `false` for an ordinary module.
+    pub(crate) fn is_notebook(&self) -> bool {
+        !self.cell_offsets.is_empty()
     }
 
     /// Returns the line and column for a byte offset. Columns count
