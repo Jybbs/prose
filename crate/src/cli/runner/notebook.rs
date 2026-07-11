@@ -7,7 +7,7 @@ use ruff_notebook::{Notebook, NotebookIndex};
 use ruff_source_file::SourceFileBuilder;
 use ruff_text_size::{TextRange, TextSize};
 
-use super::process::{diagnose_only, failed, run_and_assemble};
+use super::process::{drive, failed};
 use super::{FileOutcome, Pass};
 use crate::{cache::Rewrite, cli::exit_status::ExitStatus, pipeline::Pipeline, source::Source};
 
@@ -91,15 +91,12 @@ pub(super) fn rehydrated(text: &str) -> Option<(String, NotebookIndex)> {
 /// it renders each diagnostic against its own cell.
 fn run(source: Source, mut notebook: Notebook, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
     let index = notebook.index().clone();
-    if let Pass::Diagnose { validate } = pass {
-        return diagnose_only(source, pipeline, validate, Some(index));
-    }
     let original_offsets: Box<[TextSize]> = source.cell_offsets().iter().copied().collect();
     let original_code = source.text().to_owned();
-    run_and_assemble(
+    drive(
         source,
         pipeline,
-        matches!(pass, Pass::Both),
+        pass,
         Some(index),
         move |formatted, _file| {
             build_rewrite(&mut notebook, &original_offsets, &original_code, formatted)
