@@ -50,15 +50,20 @@ def major_minor(value: str) -> str:
     raise SystemExit(f"::error::cannot parse major.minor from {value!r}")
 
 
-def mise_task_tool(task: str, tool: str) -> str:
+def wasm_bindgen_pins() -> list[tuple[str, str]]:
     """
-    Return the version the `task` mise script's `#MISE tools=` line pins
-    for `tool`.
+    Return each `(task, version)` where a mise task pins the `wasm-bindgen`
+    CLI, matched on the CLI name so the `wasm-bindgen/wasm-pack` sibling
+    never registers.
     """
-    frontmatter = Path(f".mise/tasks/{task}").read_text(encoding="utf-8")
-    if match := search(rf'{tool}"\s*=\s*"([^"]+)"', frontmatter):
-        return match.group(1)
-    raise SystemExit(f"::error::.mise/tasks/{task} pins no {tool!r} version")
+    pins = []
+    for task in sorted(Path(".mise/tasks").iterdir()):
+        text = task.read_text(encoding="utf-8")
+        if match := search(r'wasm-bindgen"\s*=\s*"([^"]+)"', text):
+            pins.append((task.name, match.group(1)))
+    if not pins:
+        raise SystemExit("::error::no mise task pins wasm-bindgen")
+    return pins
 
 
 if __name__ == "__main__":
@@ -73,6 +78,7 @@ if __name__ == "__main__":
     if isinstance(mise_rust, dict):
         mise_rust = mise_rust["version"]
 
+    wasm_bindgen = cargo_lock_version("wasm-bindgen")
     pairs = [
         (
             "README.md Rust badge ↔ Cargo.toml rust-version",
@@ -89,10 +95,13 @@ if __name__ == "__main__":
             badge("python.svg"),
             major_minor(project["project"]["requires-python"])
         ),
-        (
-            ".mise/tasks/smoke wasm-bindgen-cli ↔ Cargo.lock wasm-bindgen",
-            mise_task_tool("smoke", "wasm-bindgen-cli"),
-            cargo_lock_version("wasm-bindgen")
+        *(
+            (
+                f".mise/tasks/{task} ↔ Cargo.lock wasm-bindgen",
+                version,
+                wasm_bindgen
+            )
+            for task, version in wasm_bindgen_pins()
         )
     ]
 
