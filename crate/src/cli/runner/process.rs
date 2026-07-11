@@ -35,9 +35,8 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
 }
 
 /// Collects the as-written diagnostics, and with `validate` guards the
-/// would-be rewrite against an unparseable output. Shared by the
-/// module and notebook check passes.
-pub(super) fn diagnose_only(
+/// would-be rewrite against an unparseable output.
+fn diagnose_only(
     source: Source,
     pipeline: &Pipeline,
     validate: bool,
@@ -58,6 +57,22 @@ pub(super) fn diagnose_only(
         notebook_index: notebook_index.map(Box::new),
         rewrite: Rewrite::Skipped,
     }
+}
+
+/// Dispatches `source` by `pass`, collecting the as-written diagnostics on
+/// a check pass and building the rewrite through `rewrite` on a format
+/// pass. A notebook threads its `index`, a module passes `None`.
+pub(super) fn drive(
+    source: Source,
+    pipeline: &Pipeline,
+    pass: Pass,
+    index: Option<NotebookIndex>,
+    rewrite: impl FnOnce(&Source, &SourceFile) -> Rewrite,
+) -> FileOutcome {
+    if let Pass::Diagnose { validate } = pass {
+        return diagnose_only(source, pipeline, validate, index);
+    }
+    run_and_assemble(source, pipeline, matches!(pass, Pass::Both), index, rewrite)
 }
 
 pub(super) fn failed(status: ExitStatus, e: impl std::fmt::Display) -> FileOutcome {
@@ -202,7 +217,7 @@ pub(super) fn rehydrate(
 /// to `rewrite`. The caller handles the diagnose-only pass, while the
 /// `diagnose_as_written` flag adds the as-written diagnostics an output
 /// format renders beside the rewrite.
-pub(super) fn run_and_assemble(
+fn run_and_assemble(
     source: Source,
     pipeline: &Pipeline,
     diagnose_as_written: bool,
@@ -226,25 +241,15 @@ pub(super) fn run_and_assemble(
     }
 }
 
-/// Runs a text source through the pipeline. A check pass collects the
-/// as-written diagnostics through [`diagnose_only`]; a format pass
-/// builds the text rewrite through [`run_and_assemble`]. A module carries
-/// no notebook index.
+/// Runs a text source through the pipeline via [`drive`], building the
+/// text rewrite from the formatted output against the original. A module
+/// carries no notebook index.
 pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
-    if let Pass::Diagnose { validate } = pass {
-        return diagnose_only(source, pipeline, validate, None);
-    }
-    run_and_assemble(
-        source,
-        pipeline,
-        matches!(pass, Pass::Both),
-        None,
-        |formatted, file| {
-            formatted
-                .changed_from(file.source_text())
-                .map_or(Rewrite::Unchanged, |text| Rewrite::text(text.to_owned()))
-        },
-    )
+    drive(source, pipeline, pass, None, |formatted, file| {
+        formatted
+            .changed_from(file.source_text())
+            .map_or(Rewrite::Unchanged, |text| Rewrite::text(text.to_owned()))
+    })
 }
 
 pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {

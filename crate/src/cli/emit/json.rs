@@ -13,10 +13,7 @@ use ruff_text_size::{Ranged, TextRange};
 use serde::Serialize;
 
 use super::{Emitter, EmitterSummary, Run, diagnostics, line_columns, write_json_line};
-use crate::{
-    diagnostics::{Diagnostic, Severity},
-    rule::RuleId,
-};
+use crate::{diagnostics::Diagnostic, rule::RuleId};
 
 /// Bumps on any breaking change to existing field shapes, leaving
 /// additive fields to land unversioned.
@@ -179,7 +176,7 @@ impl<'a> JsonSummary<'a> {
 pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
     let records: Vec<JsonDiagnostic> = diagnostics
         .iter()
-        .filter(|diag| diag.severity == Severity::Lint)
+        .filter(|diag| diag.severity.is_lint())
         .map(|diag| JsonDiagnostic::new(file, None, diag, false))
         .collect();
     (!records.is_empty())
@@ -349,6 +346,7 @@ mod tests {
             files_changed: 1,
             files_visited: 1,
             files_with_diagnostics: 1,
+            lint_total: 1,
             rules_fired,
         };
 

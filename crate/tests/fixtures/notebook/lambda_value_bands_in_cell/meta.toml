@@ -1,0 +1,10 @@
+[docs]
+previewable = false
+title       = "Band a Lambda Constant Within a Cell"
+
+description = '''
+A `lambda` value is inert, since its body runs only when the lambda is
+later called rather than when the assignment binds, so
+`KEY = lambda row: row.score` still hoists into the leading band above the
+definition inside its cell.
+'''

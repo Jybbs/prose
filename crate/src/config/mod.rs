@@ -42,8 +42,8 @@ mod source;
 pub(crate) use de::deserialize_rule;
 use de::{deserialize_optional_cap, deserialize_prose, serialize_optional_cap};
 pub(crate) use json_schema::rule_schema;
-pub(crate) use load::config_rel_paths;
 use load::{ConfigNotice, emit_notice, prose_table_from_str, walk_prose_table};
+pub(crate) use load::{NoticeDedup, config_rel_paths};
 pub use schema::*;
 pub(crate) use source::ConfigSource;
 
@@ -134,6 +134,21 @@ impl Config {
     /// read, and `ConfigError::Toml` if its contents are not valid TOML.
     pub fn load<P: AsRef<Path>>(from: P) -> Result<Self, ConfigError> {
         Self::load_with_notices(from, emit_notice)
+    }
+
+    /// Loads the base config for `from`, routing its notices through a
+    /// run-scoped `dedup` so a run that reloads the same config per file
+    /// warns each key once across both loads.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ConfigError::Io` if a config file is found but cannot be
+    /// read, and `ConfigError::Toml` if its contents are not valid TOML.
+    pub(crate) fn load_deduped<P: AsRef<Path>>(
+        from: P,
+        dedup: &NoticeDedup,
+    ) -> Result<Self, ConfigError> {
+        Self::load_with_notices(from, |notice| dedup.emit(notice))
     }
 
     /// Deserializes a prose table into a base config, dropping the

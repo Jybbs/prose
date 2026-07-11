@@ -170,7 +170,7 @@ impl Pipeline {
 /// woven text and, for a notebook, the `SourceMap` of cell-offset
 /// deltas. An ordinary module skips the map.
 fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<SourceMap>)> {
-    if source.cell_offsets().is_empty() {
+    if !source.is_notebook() {
         apply_edits(source.text(), edits).map(|text| (text, None))
     } else {
         apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
@@ -295,12 +295,12 @@ mod tests {
         assert_eq!(diagnostics.len(), 2);
         let format = diagnostics
             .iter()
-            .find(|d| d.severity == Severity::Format)
+            .find(|d| d.severity.is_format())
             .expect("format finding");
         assert_eq!(format.rule.as_str(), "rewrite-x-to-y");
         let lint = diagnostics
             .iter()
-            .find(|d| d.severity == Severity::Lint)
+            .find(|d| d.severity.is_lint())
             .expect("lint finding");
         assert_eq!(lint.rule.as_str(), "flag-x");
         assert_eq!(lint.range, range(0, 1));

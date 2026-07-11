@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/strip_align_padding/interior_padding_strips_each_side/input.py
+---
+value = int(count)
+pair = wrap(1)
+items = [1, 2]
+mapping = {"key": 1}

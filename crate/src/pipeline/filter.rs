@@ -6,7 +6,7 @@ use ruff_diagnostics::Edit;
 use ruff_text_size::Ranged;
 
 use crate::{
-    diagnostics::{Diagnostic, Severity},
+    diagnostics::Diagnostic,
     rule::{Rule, RuleId},
     source::Source,
     suppression::SuppressionMap,
@@ -20,7 +20,7 @@ pub(super) fn drop_suppressed_lints(
 ) {
     if suppression.has_lint_suppression() {
         diagnostics.retain(|d| {
-            d.severity != Severity::Lint
+            !d.severity.is_lint()
                 || !suppression.is_lint_suppressed_at(source.line_index(d.start()), d.rule)
         });
     }

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE description="Produce the static docs bundle at `site/.vitepress/dist`"
-#MISE depends=["bake", "build bin"]
+#MISE depends=["bake", "build bin", "module"]
 #MISE dir="site"
 
 bunx vitepress build

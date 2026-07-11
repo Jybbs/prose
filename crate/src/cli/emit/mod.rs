@@ -41,6 +41,7 @@ pub(super) struct EmitterSummary {
     pub(super) files_changed: usize,
     pub(super) files_visited: usize,
     pub(super) files_with_diagnostics: usize,
+    pub(super) lint_total: usize,
     pub(super) rules_fired: BTreeMap<RuleId, usize>,
 }
 

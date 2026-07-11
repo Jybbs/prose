@@ -68,6 +68,7 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
                 summary.files_with_diagnostics += usize::from(!diagnostics.is_empty());
                 summary.diagnostics_total += diagnostics.len();
                 for diag in diagnostics {
+                    summary.lint_total += usize::from(diag.severity.is_lint());
                     *summary.rules_fired.entry(diag.rule).or_default() += 1;
                 }
                 summary
@@ -98,13 +99,32 @@ pub(super) fn finish(
     status_from_outcomes(outcomes, demote_format_change)
 }
 
+/// The surviving-lint disclosure a text-format `format` run appends
+/// after its outcome line, `None` for a check run, a structured output
+/// whose emitters already printed the lint, or a run leaving none.
+fn lint_remainder(summary: &EmitterSummary, mode: Mode, text_output: bool) -> Option<Summary> {
+    let total = summary.lint_total;
+    let discloses = !matches!(mode, Mode::Check) && text_output && total > 0;
+    discloses.then_some(Summary::LintRemainder { total })
+}
+
+/// Writes a run's closing summary: the rewrite or diagnostics outcome,
+/// then in a format mode whose diagnostics never reached stdout the
+/// surviving-lint disclosure. `text_output` is true for a text-format
+/// `format` run, whose lint the structured emitters never printed.
 pub(super) fn render_summary<E: Write>(
     stderr: &mut E,
     present: &Presentation,
-    summary: Option<Summary>,
+    outcomes: &[FileOutcome],
+    summary: &EmitterSummary,
+    mode: Mode,
+    text_output: bool,
 ) {
-    if let Some(summary) = summary {
-        let _ = output::report(stderr, present, &summary);
+    let lines = summarize(outcomes, summary, mode)
+        .into_iter()
+        .chain(lint_remainder(summary, mode, text_output));
+    for line in lines {
+        let _ = output::report(stderr, present, &line);
     }
 }
 
@@ -162,14 +182,11 @@ pub(super) fn status_from_outcomes(
         .unwrap_or_default()
 }
 
-/// Resolves an outcome set into its closing [`Summary`], or `None`
-/// when a clean run is shadowed by a per-file failure already logged
-/// to stderr.
-pub(super) fn summarize(
-    outcomes: &[FileOutcome],
-    summary: &EmitterSummary,
-    mode: Mode,
-) -> Option<Summary> {
+/// Resolves an outcome set into its closing [`Summary`], or `None` when
+/// the clean line is suppressed, either by a per-file failure already
+/// logged to stderr or by a format run leaving lint whose disclosure is
+/// the lint-remainder line instead.
+fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> Option<Summary> {
     let failed = outcomes.iter().any(|o| matches!(o, FileOutcome::Failed(_)));
     let resolved = match mode {
         Mode::Check => match summary.diagnostics_total {
@@ -189,7 +206,7 @@ pub(super) fn summarize(
         },
     };
     match resolved {
-        Summary::Clean if failed => None,
+        Summary::Clean if failed || summary.lint_total > 0 => None,
         resolved => Some(resolved),
     }
 }
@@ -209,7 +226,8 @@ mod tests {
 
     fn diagnostic(severity: Severity, range: TextRange, slug: &'static str) -> Diagnostic {
         Diagnostic {
-            fix: matches!(severity, Severity::Format)
+            fix: severity
+                .is_format()
                 .then(|| Fix::safe_edit(Edit::range_replacement("y".into(), range))),
             message: "test".into(),
             range,
@@ -331,6 +349,7 @@ mod tests {
         assert_eq!(summary.files_changed, 1);
         assert_eq!(summary.files_with_diagnostics, 1);
         assert_eq!(summary.diagnostics_total, 2);
+        assert_eq!(summary.lint_total, 1);
         assert_eq!(summary.rules_fired[&RuleId::from("align-equals")], 1);
         assert_eq!(
             summary.rules_fired[&RuleId::from("reassigned-constants")],
@@ -365,6 +384,31 @@ mod tests {
         assert!(!file_changed(&format, &Rewrite::Unchanged));
         assert!(!file_changed(&lint, &Rewrite::Skipped));
         assert!(!file_changed(&[], &Rewrite::Skipped));
+    }
+
+    #[rstest]
+    #[case(Mode::Check, true, 2, None)]
+    #[case(Mode::Reformat, true, 0, None)]
+    #[case(Mode::Reformat, false, 2, None)]
+    #[case(Mode::Preview, true, 3, Some(3))]
+    #[case(Mode::Reformat, true, 1, Some(1))]
+    fn lint_remainder_discloses_only_text_format_lint(
+        #[case] mode: Mode,
+        #[case] text_output: bool,
+        #[case] lint_total: usize,
+        #[case] expected: Option<usize>,
+    ) {
+        let summary = EmitterSummary {
+            lint_total,
+            ..EmitterSummary::default()
+        };
+        let got = lint_remainder(&summary, mode, text_output);
+        match expected {
+            None => assert_matches!(got, None),
+            Some(total) => {
+                assert_matches!(got, Some(Summary::LintRemainder { total: t }) if t == total)
+            }
+        }
     }
 
     #[test]
@@ -455,8 +499,30 @@ mod tests {
     }
 
     #[test]
+    fn summarize_reports_reformatted_alongside_surviving_lint() {
+        let summary = EmitterSummary {
+            files_changed: 2,
+            lint_total: 1,
+            ..EmitterSummary::default()
+        };
+        assert_matches!(
+            summarize(&[], &summary, Mode::Reformat),
+            Some(Summary::Reformatted { files: 2 })
+        );
+    }
+
+    #[test]
     fn summarize_suppresses_clean_summary_when_a_file_failed() {
         let outcomes = vec![FileOutcome::Failed(ExitStatus::ParseError)];
         assert!(summarize(&outcomes, &emitter_summary(&outcomes), Mode::Check).is_none());
+    }
+
+    #[test]
+    fn summarize_suppresses_the_clean_line_when_lint_survives_a_format_run() {
+        let summary = EmitterSummary {
+            lint_total: 1,
+            ..EmitterSummary::default()
+        };
+        assert!(summarize(&[], &summary, Mode::Reformat).is_none());
     }
 }

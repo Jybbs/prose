@@ -25,4 +25,5 @@ site/.vitepress/dist/
 site/.vitepress/.temp/
 site/.vitepress/tests/wasm/pkg/
 site/coverage/
+site/public/wasm/
 **/*.timestamp-*.mjs

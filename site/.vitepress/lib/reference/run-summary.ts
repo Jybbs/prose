@@ -1,5 +1,5 @@
 type CountTint  = 'apricot' | 'celadon'
-type OutcomeKey = 'check' | 'clean' | 'diff' | 'format'
+type OutcomeKey = 'check' | 'clean' | 'diff' | 'format' | 'lint'
 
 interface AxisOption {
   gloss : string
@@ -33,6 +33,7 @@ export const OUTCOMES: readonly Outcome[] = [
   { anchor: '🪻', args: 'check',         gloss: 'A clean run',       key: 'clean',  text: 'All clean.',                    tint: 'celadon' },
   { anchor: '🔖', args: 'check',         gloss: 'Violations found',  key: 'check',  text: '5 diagnostics in 2 files.',     tint: 'apricot' },
   { anchor: '🗞️', args: 'format',        gloss: 'Files reformatted', key: 'format', text: 'Reformatted 4 files.',          tint: 'apricot' },
+  { anchor: '🔖', args: 'format',        gloss: 'Lint left unfixed', key: 'lint',   text: '2 lint diagnostics not shown. Run `prose check` to see them in full.', tint: 'apricot' },
   { anchor: '🗞️', args: 'format --diff', gloss: 'A diff preview',    key: 'diff',   text: '3 files would be reformatted.', tint: 'apricot' }
 ]
 

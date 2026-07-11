@@ -49,7 +49,7 @@ use args::{
 use exit_status::ExitStatus;
 use output::Presentation;
 
-use crate::config::Config;
+use crate::config::{Config, NoticeDedup};
 
 pub fn run() -> ExitCode {
     let mut cli = match Cli::try_parse() {
@@ -127,8 +127,10 @@ fn is_broken_pipe(err: &anyhow::Error) -> bool {
 }
 
 /// Loads the config governing the current working directory, the base
-/// for stdin input and the run's cache settings.
-fn load_config_or_status() -> Result<Config, ExitStatus> {
+/// for stdin input and the run's cache settings. Routes notices through
+/// the run's `dedup` so the run warns each key once even when the
+/// per-file walk reloads the same config.
+fn load_config_or_status(dedup: &NoticeDedup) -> Result<Config, ExitStatus> {
     let fail = |e: anyhow::Error| {
         log_error_chain(&e);
         ExitStatus::ConfigError
@@ -136,7 +138,7 @@ fn load_config_or_status() -> Result<Config, ExitStatus> {
     let cwd = std::env::current_dir()
         .context("reading current working directory")
         .map_err(fail)?;
-    Config::load(&cwd)
+    Config::load_deduped(&cwd, dedup)
         .context("loading [tool.prose] config")
         .map_err(fail)
 }

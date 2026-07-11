@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/strip_align_padding/fstring_replacement_field_untouched/input.py
+---
+interp = f"{ value }"
+debug = f"{ total = }"
+padded = {1, 2}

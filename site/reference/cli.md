@@ -26,7 +26,7 @@ Rewrites Python files to conform to the *Prose* style. Returns exit code 0 once 
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, subtracting from whichever set would otherwise have run |
 | `PATH...` | one or more paths, or `-` | required when not `--stdin` | Files or directories to format, or `-` to read source from stdin |
 
-Exit codes: `0` clean / rewrites applied, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*.
+Exit codes: `0` clean / rewrites applied, `1` pending `--diff` rewrite, `2` lint diagnostics surfaced, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*.
 
 ```bash
 prose format src/
@@ -80,7 +80,7 @@ prose check - < module.py
 
 ## Notebook Inputs
 
-`format` and `check` accept Jupyter notebooks (`.ipynb`) alongside `.py` files, both in path-mode discovery and through `--stdin-filename`, whose extension selects the source type. *Prose* parses the notebook, runs the pipeline once over the concatenated code-cell source, and re-emits the JSON with outputs, metadata, and cell structure preserved, rewriting only the code each cell holds. The sibling-reordering rules (`alphabetize`, `band-constants`, `group-imports`) run cell-aware, sorting and banding within each cell yet never moving a member across a cell boundary, because a cell's place in the execution order forbids relocating code past it. A non-Python notebook, an R or Julia kernel, is passed over the way an excluded path is skipped. `format --diff` renders a unified diff per code cell under a `cell N` header, and `check` reports each diagnostic against its own cell, the text format printing the same `cell N` header and the JSON record carrying that number beside a cell-relative position. Every surface numbers a cell by its absolute position in the notebook, counting the Markdown cells alongside the code, so one code cell carries the same number in a diff header, a text report, and a JSON record.
+`format` and `check` accept Jupyter notebooks (`.ipynb`) alongside `.py` files, both in path-mode discovery and through `--stdin-filename`, whose extension selects the source type. *Prose* parses the notebook, runs the pipeline once over the concatenated code-cell source, and re-emits the JSON with outputs, metadata, and cell structure preserved, rewriting only the code each cell holds. The sibling-reordering rules (`alphabetize`, `band-constants`, `group-imports`) run cell-aware, sorting and banding within each cell yet never moving a member across a cell boundary, because a cell's place in the execution order forbids relocating code past it. Within a cell `band-constants` narrows further, banding only a constant whose value is inert *(a literal, a name, an attribute or subscript read, a display or operator expression over these, or a `lambda`)* and holding in place any value that carries a call, a comprehension, or an `await`, because evaluating such a value runs code and reordering it against the cell's other statements would change what the run computes. A non-Python notebook, an R or Julia kernel, is passed over the way an excluded path is skipped. `format --diff` renders a unified diff per code cell under a `cell N` header, and `check` reports each diagnostic against its own cell, the text format printing the same `cell N` header and the JSON record carrying that number beside a cell-relative position. Every surface numbers a cell by its absolute position in the notebook, counting the Markdown cells alongside the code, so one code cell carries the same number in a diff header, a text report, and a JSON record.
 
 ```bash
 prose format notebook.ipynb
@@ -174,7 +174,7 @@ Every interactive `check` or `format` run closes with a one-line summary on **st
 
 <RunSummaryExplorer />
 
-A clean run anchors on 🪻, `check` violations on 🔖, and `format`'s applied or pending rewrites on 🗞️.
+A clean run anchors on 🪻, `check` violations or a `format` run's unfixed lint on 🔖, and `format`'s applied or pending rewrites on 🗞️.
 
 ANSI color draws on the project palette, with **Ube** on the anchor, **Celadon** on a clean count, and **Apricot** on a violation or change count. Each span renders as 24-bit color when the terminal advertises truecolor *(via `COLORTERM`)* and falls back to ANSI 8-color otherwise.
 
