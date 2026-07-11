@@ -15,7 +15,7 @@ describe('prose_wasm', () => {
 
   it('triggers a panic that reaches the console', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    expect(() => panic_for_test()).toThrow()
+    expect(() => panic_for_test()).toThrow(/unreachable/)
     expect(spy.mock.calls.flat().join(' ')).toContain('smoke-test panic')
     spy.mockRestore()
   })
