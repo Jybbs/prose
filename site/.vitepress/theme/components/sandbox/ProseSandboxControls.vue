@@ -1,29 +1,28 @@
 <script setup lang="ts">
-import { onKeyStroke } from '@vueuse/core'
-import { computed, ref }    from 'vue'
+import { onKeyStroke }   from '@vueuse/core'
+import { computed, ref } from 'vue'
 
 import RuleCard     from '../rules/RuleCard.vue'
 import SandboxRuler from './SandboxRuler.vue'
 
-import type { ProseSandbox }       from '../../../lib/composables/use-prose-sandbox'
-import type { Facet, RuleControl } from '../../../lib/composables/use-chip-panel'
-import { data as rules }           from '../../../lib/rules/rules.data'
-import { useChipPanel }            from '../../../lib/composables/use-chip-panel'
+import * as chipPanel        from '../../../lib/composables/use-chip-panel'
+import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
+import { data as rules }     from '../../../lib/rules/rules.data'
 
 const props = defineProps<{
   sandbox : ProseSandbox
 }>()
 
-defineEmits<{ dragging: [key: string], preview: [key: string, value: number] }>()
+defineEmits<{ dragging: [key: string, hue: string], preview: [key: string, value: number] }>()
 
 const {
-  enabledFacet, isMoved, isOn, lengthValue, openFacets, openSlug, ruleData,
+  enabledFacet, isOn, lengthValue, openFacets, openSlug, ruleData,
   setLength, setPanel, subFacets, toggle, visible, visibleLengths
-} = useChipPanel(props.sandbox, rules.bySlug)
+} = chipPanel.useChipPanel(props.sandbox, rules.bySlug)
 
 const hoveredSlug = ref('')
 
-const hoverCard  = computed(() => ruleData(hoveredSlug.value))
+const hoverCard = computed(() => ruleData(hoveredSlug.value))
 
 // The idle banner ghost-renders a card so the hint state holds the exact
 // height a hovered card will take, whatever the viewport wraps it to.
@@ -42,24 +41,24 @@ const pinnedCard = computed(() => openRule.value ? ruleData(openRule.value.slug)
 // Escape closes the plate from anywhere on the page.
 onKeyStroke('Escape', () => { openSlug.value = '' })
 
-function boolValue(facet: Facet): boolean {
+function boolValue(facet: chipPanel.Facet): boolean {
   return props.sandbox.facetValue(openSlug.value, facet) === true
 }
 
-function hover(rule: RuleControl): void {
+function hover(rule: chipPanel.RuleControl): void {
   hoveredSlug.value = rule.slug
 }
 
-function numberValue(facet: Facet): number {
+function numberValue(facet: chipPanel.Facet): number {
   return props.sandbox.facetValue(openSlug.value, facet) as number
 }
 
-function textValue(facet: Facet): string {
+function textValue(facet: chipPanel.Facet): string {
   const value = props.sandbox.facetValue(openSlug.value, facet)
   return Array.isArray(value) ? value.join(', ') : String(value)
 }
 
-function writeText(facet: Facet, raw: string): void {
+function writeText(facet: chipPanel.Facet, raw: string): void {
   const value = facet.kind === 'stringList'
     ? raw.split(',').map(part => part.trim()).filter(Boolean)
     : raw
@@ -73,7 +72,7 @@ function writeText(facet: Facet, raw: string): void {
       :lengths="visibleLengths"
       :value-of="lengthValue"
       @set-length="setLength"
-      @dragging="$emit('dragging', $event)"
+      @dragging="(key, hue) => $emit('dragging', key, hue)"
       @preview="(key, value) => $emit('preview', key, value)"
     />
 
@@ -99,7 +98,6 @@ function writeText(facet: Facet, raw: string): void {
         :data-family="rule.family || null"
         :data-on="isOn(rule)"
         :data-active="rule.slug === (openSlug || hoveredSlug)"
-        :data-moved="isMoved(rule.slug)"
         @mouseover="hover(rule)"
         @focusin="hover(rule)"
       >

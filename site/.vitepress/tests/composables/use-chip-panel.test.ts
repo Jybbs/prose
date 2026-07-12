@@ -9,22 +9,18 @@ import { mountSetup }                from '../dom'
 
 const ALIGN: RuleControl = {
   family : 'alignment',
-  hint   : 'Aligns the `=` separator.',
-  label  : 'Align Equals',
   slug   : 'align-equals',
   facets : [
-    { default: true, hint: '', hintHtml: '', key: 'enabled', kind: 'bool', label: 'Enabled' },
-    { default: 16, hint: 'The width-spread budget.', hintHtml: 'The width-spread budget.', key: 'max-shift', kind: 'int', label: 'Max Shift' },
-    { default: true, hint: '', hintHtml: '', key: 'condense', kind: 'bool', label: 'Condense' }
+    { default: true, hintHtml: '', key: 'enabled', kind: 'bool', label: 'Enabled' },
+    { default: 16, hintHtml: 'The width-spread budget.', key: 'max-shift', kind: 'int', label: 'Max Shift' },
+    { default: true, hintHtml: '', key: 'condense', kind: 'bool', label: 'Condense' }
   ]
 }
 
 const BLANK: RuleControl = {
   family : 'formatting',
-  hint   : 'Normalizes blank lines.',
-  label  : 'Blank Lines',
   slug   : 'blank-lines',
-  facets : [{ default: 2, hint: '', hintHtml: '', key: 'gap', kind: 'int', label: 'Gap' }]
+  facets : [{ default: 2, hintHtml: '', key: 'gap', kind: 'int', label: 'Gap' }]
 }
 
 const CARDS = {
@@ -42,7 +38,6 @@ function fakeSandbox() {
     eligible,
     facetImpact,
     facetValue : (slug: string, facet: Facet) => overrides.get(`${slug}.${facet.key}`) ?? facet.default,
-    isMoved    : () => false,
     lengthImpact,
     lengths    : [
       { default: 88, key: 'code-line-length', label: 'Code' },

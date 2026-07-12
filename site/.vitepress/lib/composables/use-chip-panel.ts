@@ -1,9 +1,9 @@
 import { onClickOutside } from '@vueuse/core'
 import { computed, ref }  from 'vue'
 
+import type { RenderedRule }       from '../rules/rules.data'
 import type { Facet, RuleControl } from '../sandbox/config-schema.data'
 import type { ProseSandbox }       from './use-prose-sandbox'
-import type { RenderedRule }       from '../rules/rules.data'
 
 // The shared chip-panel view over one sandbox: eligibility-filtered rules and
 // the on/off toggles plus the facet-surface open state. The panel component
@@ -11,8 +11,8 @@ import type { RenderedRule }       from '../rules/rules.data'
 // in, keeping the composable free of the build-time loader.
 export function useChipPanel(sandbox: ProseSandbox, cards: Record<string, RenderedRule>) {
   const {
-    codeLineLength, eligible, facetImpact, facetValue, isMoved, lengthImpact,
-    lengthValue, lengths, refresh, rules: controls, setFacet, setLength
+    eligible, facetImpact, facetValue, lengthImpact, lengthValue, lengths,
+    refresh, rules: controls, setFacet, setLength
   } = sandbox
 
   const openSlug = ref('')
@@ -80,15 +80,11 @@ export function useChipPanel(sandbox: ProseSandbox, cards: Record<string, Render
   })
 
   return {
-    codeLineLength,
     enabledFacet,
-    isMoved,
     isOn,
     lengthValue,
-    lengths,
     openFacets,
     openSlug,
-    panel,
     refresh,
     ruleData,
     setLength,

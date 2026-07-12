@@ -35,7 +35,7 @@ const { copy, copied } = useClipboard({ source: installCmd, copiedDuring: 2000 }
       <p class="landing-cta-lede">
         Bring <em><span class="prose-mark">Prose</span></em> to your own pages and make the next save <em>legible</em>.
       </p>
-      <div class="landing-cta-cmd" aria-label="Install command">
+      <div class="landing-cta-cmd copy-host" aria-label="Install command">
         <span class="landing-cta-prompt" aria-hidden="true">$</span>
         <code>{{ installCmd }}</code>
         <button

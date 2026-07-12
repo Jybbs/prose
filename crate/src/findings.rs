@@ -10,26 +10,6 @@ use serde::Serialize;
 
 use crate::diagnostics::{Diagnostic, Severity};
 
-/// Renders the lint-severity diagnostics as the JSON records the docs
-/// site reads, or `None` when the run emitted none.
-pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
-    let records: Vec<JsonDiagnostic> = diagnostics
-        .iter()
-        .filter(|diag| diag.severity == Severity::Lint)
-        .map(|diag| JsonDiagnostic::new(file, None, diag, false))
-        .collect();
-    (!records.is_empty())
-        .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
-}
-
-pub(crate) fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, LineColumn) {
-    let code = file.to_source_code();
-    (
-        code.line_column(range.start()),
-        code.line_column(range.end()),
-    )
-}
-
 #[derive(Serialize)]
 pub(crate) struct JsonDiagnostic<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -130,6 +110,26 @@ impl From<LineColumn> for JsonLocation {
     fn from(LineColumn { line, column }: LineColumn) -> Self {
         Self { column, row: line }
     }
+}
+
+pub(crate) fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, LineColumn) {
+    let code = file.to_source_code();
+    (
+        code.line_column(range.start()),
+        code.line_column(range.end()),
+    )
+}
+
+/// Renders the lint-severity diagnostics as the JSON records the docs
+/// site reads, or `None` when the run emitted none.
+pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
+    let records: Vec<JsonDiagnostic> = diagnostics
+        .iter()
+        .filter(|diag| diag.severity == Severity::Lint)
+        .map(|diag| JsonDiagnostic::new(file, None, diag, false))
+        .collect();
+    (!records.is_empty())
+        .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
 }
 
 /// The start and end positions of `range` plus, for a notebook, the

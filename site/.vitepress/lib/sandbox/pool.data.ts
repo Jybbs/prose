@@ -2,9 +2,8 @@ import fs from 'node:fs'
 
 import { defineLoader } from 'vitepress'
 
-import { readFixtureDocs, walkFixtures } from '../fixtures/walker'
-import { fixtureWatchGlobs }             from '../fixtures/walker'
-import { crateDir }                      from '../shared/paths'
+import * as walker  from '../fixtures/walker'
+import { crateDir } from '../shared/paths'
 
 export interface SandboxCase {
   id     : string
@@ -22,11 +21,11 @@ export { data }
 const crate = crateDir(import.meta.url)
 
 export default defineLoader({
-  watch : fixtureWatchGlobs(crate),
+  watch : walker.fixtureWatchGlobs(crate),
   load  : (): SandboxPool => {
     const cases: SandboxCase[] = []
-    for (const { id, inputPath } of walkFixtures(crate)) {
-      const docs = readFixtureDocs(inputPath)
+    for (const { id, inputPath } of walker.walkFixtures(crate)) {
+      const docs = walker.readFixtureDocs(inputPath)
       if (!docs?.sandbox) continue
       cases.push({ id, source: fs.readFileSync(inputPath, 'utf8'), title: docs.title ?? id })
     }

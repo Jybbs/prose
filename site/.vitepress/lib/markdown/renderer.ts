@@ -1,7 +1,7 @@
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
-import { memoizeByPath } from '../shared/memoize-by-path'
-import { siteDir }       from '../shared/paths'
+import { memoizeByPath }           from '../shared/memoize-by-path'
+import { siteDir }                 from '../shared/paths'
 import { inertEnv, plainTermsEnv } from './inert-env'
 
 const renderer = memoizeByPath(createMarkdownRenderer)

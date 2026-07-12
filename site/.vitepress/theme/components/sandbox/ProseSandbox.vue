@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useClipboard, useStorage } from '@vueuse/core'
-import { computed, onMounted, ref } from 'vue'
+import { refAutoReset, useClipboard, useStorage } from '@vueuse/core'
+import { computed, onMounted, ref }               from 'vue'
 
 import { useProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { data as schema }  from '../../../lib/sandbox/config-schema.data'
@@ -9,12 +9,14 @@ import { data as pool }    from '../../../lib/sandbox/pool.data'
 const deckLocked     = useStorage('prose-sandbox-pinned', false)
 const deckOpen       = useStorage('prose-sandbox-deck-open', true)
 const draggingLength = ref('')
+const guideHue       = ref('')
 const previewLength  = ref(0)
-const refreshArmed   = ref(false)
+const refreshArmed   = refAutoReset(false, 4000)
 const sandbox        = useProseSandbox({ cases: pool.cases, schema })
 
-function onDragging(key: string): void {
+function onDragging(key: string, hue: string): void {
   draggingLength.value = key
+  guideHue.value       = hue
   if (key) previewLength.value = sandbox.lengthValue(key)
 }
 
@@ -40,7 +42,7 @@ const dirty = computed(() =>
 
 const announcement = computed(() => {
   const findings = sandbox.diagnostics.value.length
-  return `Formatted ${sandbox.formatted.value.split('\n').length} lines, ${findings} lint findings.`
+  return `Formatted ${sandbox.formatted.value.trimEnd().split('\n').length} lines, ${findings} lint findings.`
 })
 
 function refresh(): void {
@@ -50,7 +52,6 @@ function refresh(): void {
     return
   }
   refreshArmed.value = true
-  window.setTimeout(() => { refreshArmed.value = false }, 4000)
 }
 
 // The wasm glue imports client-side only, so the first random case formats
@@ -93,10 +94,11 @@ onMounted(sandbox.start)
     </section>
 
     <div class="sandbox-surfaces">
-      <div class="sandbox-py">
+      <div class="sandbox-py copy-host">
         <ProseSandboxSurface
           :sandbox="sandbox"
-          :guide="draggingLength === 'code-line-length' ? previewLength : null"
+          :guide="draggingLength ? previewLength : null"
+          :guide-hue="guideHue"
         />
         <button
           type="button"
@@ -338,17 +340,15 @@ onMounted(sandbox.start)
   .sandbox-deck-lock {
     display : none;
   }
+
+  .sandbox-surfaces {
+    grid-template-columns : 1fr;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sandbox-corner {
     transition : none;
-  }
-}
-
-@media (--prose-bp-tablet) {
-  .sandbox-surfaces {
-    grid-template-columns : 1fr;
   }
 }
 </style>

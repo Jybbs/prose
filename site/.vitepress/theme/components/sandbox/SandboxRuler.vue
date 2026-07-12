@@ -11,7 +11,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  dragging  : [key: string],
+  dragging  : [key: string, hue: string],
   preview   : [key: string, value: number],
   setLength : [key: string, value: number]
 }>()
@@ -135,7 +135,7 @@ function dragEnd(event: PointerEvent): void {
   if (held) emit('setLength', held.key, held.value)
   preview.value = null
   drag.value    = null
-  emit('dragging', '')
+  emit('dragging', '', '')
 }
 
 function dragMove(knob: LengthKnob, event: PointerEvent): void {
@@ -148,14 +148,14 @@ function dragMove(knob: LengthKnob, event: PointerEvent): void {
   emit('preview', knob.key, value)
 }
 
-function dragStart(knob: LengthKnob, event: PointerEvent): void {
+function dragStart(hue: string, knob: LengthKnob, event: PointerEvent): void {
   if (editing.value === knob.key || event.button !== 0 || !trackEl.value) return
   event.preventDefault()
   const stop = event.currentTarget as HTMLElement
   const rect = trackEl.value.getBoundingClientRect()
   const unit = rect.width / SPAN
   stop.setPointerCapture(event.pointerId)
-  emit('dragging', knob.key)
+  emit('dragging', knob.key, hue)
   drag.value = {
     key       : knob.key,
     live      : false,
@@ -261,7 +261,7 @@ function tierOf(key: string): number {
         :aria-valuemin="MIN"
         :aria-valuemax="MAX"
         :aria-valuenow="shownValue(knob)"
-        @pointerdown="dragStart(knob, $event)"
+        @pointerdown="dragStart(hueOf(index), knob, $event)"
         @pointermove="dragMove(knob, $event)"
         @pointerup="dragEnd"
         @pointercancel="dragEnd"

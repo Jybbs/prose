@@ -1,5 +1,5 @@
 import { getSingletonHighlighterCore, type HighlighterCore } from 'shiki/core'
-import { createJavaScriptRegexEngine }                        from 'shiki/engine/javascript'
+import { createJavaScriptRegexEngine }                       from 'shiki/engine/javascript'
 
 // The one client-side highlighter the magic-move precompiler and the
 // sandbox surfaces share. `getSingletonHighlighterCore` dedupes by

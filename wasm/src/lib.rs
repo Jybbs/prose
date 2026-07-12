@@ -7,14 +7,14 @@ use wasm_bindgen::prelude::*;
 
 /// The output of [`format`]: the rewritten source, the effective
 /// configuration serialized to TOML, the lint-severity findings as the
-/// JSON records the docs site decorates, and a JSON array of the distinct
-/// slugs of every rule that fired on the source.
+/// JSON records the docs site decorates, and the distinct slugs of
+/// every rule that fired on the source.
 #[derive(Debug)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct FormatResult {
     pub config: String,
     pub diagnostics: String,
-    pub fired_rules: String,
+    pub fired_rules: Vec<String>,
     pub formatted: String,
 }
 
@@ -45,15 +45,10 @@ fn try_format(config_toml: &str, source: &str) -> Result<FormatResult, Box<dyn E
     let (formatted, diagnostics) =
         Pipeline::with_defaults(&config).run(source.parse::<Source>()?)?;
     let fired: BTreeSet<&str> = diagnostics.iter().map(|diag| diag.rule.as_str()).collect();
-    let slugs = fired
-        .iter()
-        .map(|slug| format!("\"{slug}\""))
-        .collect::<Vec<_>>()
-        .join(",");
     Ok(FormatResult {
         config: config.to_toml(),
         diagnostics: lint_records_json(formatted.source_file(), &diagnostics).unwrap_or_default(),
-        fired_rules: format!("[{slugs}]"),
+        fired_rules: fired.into_iter().map(String::from).collect(),
         formatted: formatted.text().to_owned(),
     })
 }
@@ -101,13 +96,13 @@ mod tests {
     #[test]
     fn reports_the_rules_that_fired_on_the_source() {
         let result = formatted("", "aa = 1\nb = 2\n");
-        assert!(result.fired_rules.contains("align-equals"));
+        assert!(result.fired_rules.iter().any(|slug| slug == "align-equals"));
     }
 
     #[test]
-    fn leaves_fired_rules_an_empty_array_when_none_fire() {
+    fn leaves_fired_rules_empty_when_none_fire() {
         let result = formatted("", "x = 1\n");
-        assert_eq!(result.fired_rules, "[]");
+        assert!(result.fired_rules.is_empty());
     }
 
     #[test]

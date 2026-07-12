@@ -103,9 +103,7 @@ div[class*='language-'] {
 }
 
 :is(.vp-doc, body) div[class*='language-'] > button.copy,
-.sandbox-py > button.copy,
-.sandbox-toml > button.copy,
-.landing-cta-cmd > button.copy {
+.copy-host > button.copy {
   direction              : ltr;
   position               : absolute;
   z-index                : 3;
@@ -132,31 +130,21 @@ div[class*='language-'] {
 
 :is(.vp-doc, body) div[class*='language-']:hover > button.copy,
 :is(.vp-doc, body) div[class*='language-'] > button.copy:focus,
-.sandbox-py:hover > button.copy,
-.sandbox-py > button.copy:focus,
-.sandbox-toml:hover > button.copy,
-.sandbox-toml > button.copy:focus,
-.landing-cta-cmd:hover > button.copy,
-.landing-cta-cmd > button.copy:focus {
+.copy-host:hover > button.copy,
+.copy-host > button.copy:focus {
   opacity : 1;
 }
 
 :is(.vp-doc, body) div[class*='language-'] > button.copy:hover,
-.sandbox-py > button.copy:hover,
-.sandbox-toml > button.copy:hover,
-.landing-cta-cmd > button.copy:hover {
+.copy-host > button.copy:hover {
   border-color     : var(--vp-code-copy-code-hover-border-color);
   background-color : var(--vp-code-copy-code-hover-bg);
 }
 
 :is(.vp-doc, body) div[class*='language-'] > button.copy.copied,
 :is(.vp-doc, body) div[class*='language-'] > button.copy:hover.copied,
-.sandbox-py > button.copy.copied,
-.sandbox-py > button.copy:hover.copied,
-.sandbox-toml > button.copy.copied,
-.sandbox-toml > button.copy:hover.copied,
-.landing-cta-cmd > button.copy.copied,
-.landing-cta-cmd > button.copy:hover.copied {
+.copy-host > button.copy.copied,
+.copy-host > button.copy:hover.copied {
   border-color     : var(--vp-code-copy-code-hover-border-color);
   background-color : var(--vp-code-copy-code-hover-bg);
   background-image : var(--vp-icon-copied);

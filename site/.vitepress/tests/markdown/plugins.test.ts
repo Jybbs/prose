@@ -3,8 +3,9 @@ import type { MarkdownRenderer } from 'vitepress'
 
 import { glossaryPlugin }      from '../../lib/glossary/plugin'
 import { bodyLinkPlugin }      from '../../lib/markdown/body-link-plugin'
+import { plainTermsEnv }       from '../../lib/markdown/inert-env'
 import { proseMarkPlugin }     from '../../lib/markdown/prose-mark-plugin'
-import { renderInlineHtml }    from '../../lib/markdown/renderer'
+import { renderInlineHtml, renderPlainInlineHtml } from '../../lib/markdown/renderer'
 import type { DiscoveredRule } from '../../lib/rules/discovery'
 import { ruleLinkPlugin }      from '../../lib/rules/link-plugin'
 
@@ -61,11 +62,24 @@ describe('glossaryPlugin', () => {
       .toContain('<span class="glossary-term" data-term="atomic">atom</span>')
   })
 
+  it('flattens a phrase to plain text under the plain-terms env', () => {
+    const html = render(md => md.use(plugin), 'an atom here', plainTermsEnv())
+    expect(html).not.toContain('glossary-term')
+    expect(html).toContain('an atom here')
+  })
+
   it('renders inert through the loader wrapper', () => {
     const md = new MarkdownIt()
     md.use(plugin)
     expect(renderInlineHtml(md as unknown as MarkdownRenderer, 'an atom here'))
       .toContain('<a class="glossary-term"')
+  })
+
+  it('renders flattened terms through the plain loader wrapper', () => {
+    const md = new MarkdownIt()
+    md.use(plugin)
+    expect(renderPlainInlineHtml(md as unknown as MarkdownRenderer, 'an atom here'))
+      .not.toContain('glossary-term')
   })
 
   it('throws on an empty phrase map', () => {

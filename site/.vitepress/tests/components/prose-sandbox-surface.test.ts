@@ -2,7 +2,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { ref }                  from 'vue'
 
-import ProseSandboxSurface from '../../theme/components/sandbox/ProseSandboxSurface.vue'
+import ProseSandboxSurface   from '../../theme/components/sandbox/ProseSandboxSurface.vue'
 import type { ProseSandbox } from '../../lib/composables/use-prose-sandbox'
 import { domTest }           from '../dom'
 
@@ -26,11 +26,10 @@ vi.mock('@shikijs/magic-move/vue', () => ({
 }))
 
 const fakeSandbox = (formatted: string): ProseSandbox => ({
-  codeLineLength : ref(88),
-  diagnostics    : ref([]),
-  error          : ref(''),
-  formatted      : ref(formatted),
-  source         : ref(formatted)
+  diagnostics : ref([]),
+  error       : ref(''),
+  formatted   : ref(formatted),
+  source      : ref(formatted)
 } as unknown as ProseSandbox)
 
 const LintFlagPopperStub = { methods: { hide() {}, show() {} }, template: '<div class="popper-stub" />' }

@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { PopperWrapper }  from 'floating-vue'
+import { PopperWrapper }             from 'floating-vue'
 import { computed, ref, shallowRef } from 'vue'
 
 import RuleCard from './RuleCard.vue'
 
-import { data as rules }     from '../../../lib/rules/rules.data'
-import type { RenderedRule } from '../../../lib/rules/rules.data'
-import { lintShorthand }     from '../../../lib/fixtures/lint-shorthand'
-import type { Shorthand }    from '../../../lib/fixtures/lint-shorthand'
-import { inlineCode }        from '../../../lib/shared/inline-code'
+import { lintShorthand, type Shorthand }     from '../../../lib/fixtures/lint-shorthand'
+import { data as rules, type RenderedRule }  from '../../../lib/rules/rules.data'
+import { inlineCode }                        from '../../../lib/shared/inline-code'
 
 interface ActiveFinding {
   message   : string

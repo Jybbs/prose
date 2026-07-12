@@ -1,3 +1,4 @@
+import { execFileSync }  from 'node:child_process'
 import fs                from 'node:fs'
 import path              from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -44,14 +45,22 @@ export function proseBinaryCandidates(root: string): string[] {
   return ['target/release/prose', 'target/debug/prose'].map(p => path.join(root, p))
 }
 
-export function resolveProseBinary(root: string): string {
+export function rulesDir(metaUrl: string): string {
+  return path.join(siteDir(metaUrl), 'rules')
+}
+
+function resolveProseBinary(root: string): string {
   const found = proseBinaryCandidates(root).find(fs.existsSync)
   if (found) return found
   throw new Error('prose binary not found at target/{release,debug}/prose. Run `cargo build` first.')
 }
 
-export function rulesDir(metaUrl: string): string {
-  return path.join(siteDir(metaUrl), 'rules')
+export function runProse(
+  root    : string,
+  args    : readonly string[],
+  options : { cwd?: string, input?: string, stdio?: 'pipe' } = {}
+): string {
+  return execFileSync(resolveProseBinary(root), args, { encoding: 'utf8', ...options })
 }
 
 export function siteDir(metaUrl: string): string {

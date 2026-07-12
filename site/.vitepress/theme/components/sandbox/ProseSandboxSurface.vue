@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import type { KeyedTokensInfo } from '@shikijs/magic-move/types'
+import { promiseTimeout }       from '@vueuse/core'
 import { nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import LintFlagPopper    from '../rules/LintFlagPopper.vue'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
-import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
-import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
-import { lintDecorations }   from '../../../lib/markdown/lint-decorations'
-import { highlight }         from '../../../lib/sandbox/highlight'
+import type { ProseSandbox }     from '../../../lib/composables/use-prose-sandbox'
+import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
+import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
+import { magicMoveOptions, type MagicMovePanel } from '../../../lib/markdown/magic-move-options'
+import { highlight }             from '../../../lib/sandbox/highlight'
+import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
-const props = defineProps<{ guide?: number | null, sandbox: ProseSandbox }>()
+const props = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
 const { diagnostics, error, formatted, source } = props.sandbox
-
-type Panel = typeof import('@shikijs/magic-move/vue').ShikiMagicMovePrecompiled | null
 
 const MORPH_MS = 450
 
@@ -28,7 +29,7 @@ const draft       = ref('')
 const editing     = ref(false)
 const morphKey    = ref(0)
 const morphing    = ref(false)
-const panel       = shallowRef<Panel>(null)
+const panel       = shallowRef<MagicMovePanel>(null)
 const step        = ref(0)
 const steps       = shallowRef<readonly KeyedTokensInfo[]>([])
 const undrawn     = ref(false)
@@ -81,7 +82,7 @@ async function render(next: string): Promise<void> {
   // the step flip. A microtask alone leaves both measurements in one frame
   // and the morph degrades to a jump cut.
   await nextTick()
-  await paint()
+  await nextPaint()
   if (gen !== generation) return
   animate.value = true
   step.value    = 1
@@ -111,7 +112,7 @@ async function reflow(html: string, gen: number): Promise<void> {
   const added     = [...nextRules].filter(rule => !shownRules.has(rule))
   if (removed.length > 0 && display.value) {
     markUndrawn(display.value, removed)
-    await delay(ruleDrawMs())
+    await promiseTimeout(ruleDrawMs())
     if (gen !== generation) return
   }
   commit(html)
@@ -119,9 +120,8 @@ async function reflow(html: string, gen: number): Promise<void> {
   await nextTick()
   if (gen !== generation || !display.value) return
   const drawing = markUndrawn(display.value, added)
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    drawing.forEach(flag => flag.classList.remove('lint-undrawn'))
-  }))
+  await nextPaint()
+  drawing.forEach(flag => flag.classList.remove('lint-undrawn'))
 }
 
 // Stages the underlines of `rules` scaled to zero and returns the elements,
@@ -137,26 +137,13 @@ function markUndrawn(root: HTMLElement, rules: readonly string[]): HTMLElement[]
   return matched
 }
 
-// Stages the lint underlines undrawn, then lifts the class two frames later
+// Stages the lint underlines undrawn, then lifts the class after a paint
 // so their scaleX transition re-fires left to right.
-function drawSquiggles(): void {
+async function drawSquiggles(): Promise<void> {
   if (typeof requestAnimationFrame === 'undefined') return
   undrawn.value = true
-  requestAnimationFrame(() => requestAnimationFrame(() => { undrawn.value = false }))
-}
-
-function ruleDrawMs(): number {
-  return Number(getComputedStyle(document.documentElement).getPropertyValue('--prose-rule-draw-ms')) || MORPH_MS
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => { setTimeout(resolve, ms) })
-}
-
-function paint(): Promise<void> {
-  return new Promise(resolve => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-  })
+  await nextPaint()
+  undrawn.value = false
 }
 
 // The flat character offset under a point, walking the display's text nodes
@@ -179,8 +166,8 @@ function offsetAt(root: HTMLElement, x: number, y: number): number {
 // Editing works on the resultant text, so the box opens seeded with the
 // formatted output rather than the pristine source, with the caret landing
 // where the click did. A genuine edit is adopted as the new source and
-// reformats; a no-op click leaves the original source in place so a later
-// rule toggle still reformats from it.
+// reformats, whereas a no-op click leaves the original source in place so
+// a later rule toggle still reformats from it.
 function startEditing(event: MouseEvent | KeyboardEvent): void {
   const offset = event instanceof MouseEvent && display.value
     ? offsetAt(display.value, event.clientX, event.clientY)
@@ -213,7 +200,7 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
       v-if="guide != null"
       class="sandbox-surface-guide"
       aria-hidden="true"
-      :style="{ '--guide-col': guide }"
+      :style="{ '--guide-col': guide, '--guide-hue': guideHue || undefined }"
     />
     <header class="code-panel-label">app.py</header>
     <SandboxCodeEditor
@@ -232,7 +219,7 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
       :steps="[...steps]"
       :step="step"
       :animate="animate && !reducedMotion"
-      :options="{ containerStyle: false, delayMove: 0, duration: MORPH_MS, stagger: 3 }"
+      :options="magicMoveOptions(MORPH_MS)"
       @end="endMorph"
     />
     <div
@@ -266,7 +253,7 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
   bottom         : 1px;
   left           : calc(22px + var(--guide-col) * 1ch);
   width          : 0;
-  border-left    : 2px dotted color-mix(in srgb, var(--prose-palette-ube) 75%, transparent);
+  border-left    : 2px dotted color-mix(in srgb, var(--guide-hue, var(--prose-palette-ube)) 75%, transparent);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-xs);
   pointer-events : none;

@@ -1,12 +1,13 @@
 // The slice of the `--target web` glue the sandbox calls: the default init
 // and the `format` entry point returning the rewritten source, the effective
-// config, and the lint findings as a JSON records string.
+// config, the lint findings as a JSON records string, and the fired rules'
+// slugs.
 export interface ProseWasm {
   default : (init ?: unknown) => Promise<unknown>
   format  : (configToml: string, source: string) => {
     config      : string
     diagnostics : string
-    fired_rules : string
+    fired_rules : readonly string[]
     formatted   : string
   }
 }

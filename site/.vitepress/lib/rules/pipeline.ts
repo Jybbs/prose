@@ -1,7 +1,5 @@
-import { execFileSync } from 'node:child_process'
-
-import { repoRoot, resolveProseBinary } from '../shared/paths'
-import { requireString }                from '../shared/require-string'
+import { repoRoot, runProse } from '../shared/paths'
+import { requireString }      from '../shared/require-string'
 
 interface PipelineEntry {
   imperative : string
@@ -28,7 +26,5 @@ export function parsePipelineJson(text: string): readonly PipelineEntry[] {
 }
 
 export function readPipeline(metaUrl: string): readonly PipelineEntry[] {
-  const binary = resolveProseBinary(repoRoot(metaUrl))
-  const output = execFileSync(binary, ['rules', '--output-format', 'json'], { encoding: 'utf8' })
-  return parsePipelineJson(output)
+  return parsePipelineJson(runProse(repoRoot(metaUrl), ['rules', '--output-format', 'json']))
 }

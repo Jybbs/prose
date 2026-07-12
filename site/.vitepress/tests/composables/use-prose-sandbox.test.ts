@@ -36,22 +36,18 @@ const SCHEMA: SandboxSchema = {
   rules: [
     {
       family : 'alignment',
-      hint   : 'Aligns the `=` separator across assignments, parameter defaults, and exploded call kwargs.',
-      label  : 'Align Equals',
       slug   : 'align-equals',
       facets : [
-        { default: true, hint: '', hintHtml: '', key: 'enabled', kind: 'bool', label: 'Enabled' },
-        { default: 16, hint: 'The width-spread budget.', hintHtml: 'The width-spread budget.', key: 'max-shift', kind: 'int', label: 'Max Shift' },
-        { default: true, hint: '', hintHtml: '', key: 'condense', kind: 'bool', label: 'Condense' },
-        { default: [], hint: '', hintHtml: '', key: 'allow-pattern', kind: 'stringList', label: 'Allow Pattern' }
+        { default: true, hintHtml: '', key: 'enabled', kind: 'bool', label: 'Enabled' },
+        { default: 16, hintHtml: 'The width-spread budget.', key: 'max-shift', kind: 'int', label: 'Max Shift' },
+        { default: true, hintHtml: '', key: 'condense', kind: 'bool', label: 'Condense' },
+        { default: [], hintHtml: '', key: 'allow-pattern', kind: 'stringList', label: 'Allow Pattern' }
       ]
     },
     {
       family : 'formatting',
-      hint   : 'Normalizes blank-line counts to canonical values between adjacent statements.',
-      label  : 'Blank Lines',
       slug   : 'blank-lines',
-      facets : [{ default: true, hint: '', hintHtml: '', key: 'enabled', kind: 'bool', label: 'Enabled' }]
+      facets : [{ default: true, hintHtml: '', key: 'enabled', kind: 'bool', label: 'Enabled' }]
     }
   ]
 }
@@ -64,7 +60,7 @@ const CASES: readonly SandboxCase[] = [
 const ENABLED   = SCHEMA.rules[0].facets[0]
 const MAX_SHIFT = SCHEMA.rules[0].facets[1]
 
-const formatting = (formatted: string, diagnostics = '', firedRules = '[]'): Formatter =>
+const formatting = (formatted: string, diagnostics = '', firedRules: readonly string[] = []): Formatter =>
   () => ({ config: '', diagnostics, fired_rules: firedRules, formatted })
 
 const moduleWith = (format: Formatter): ProseWasm => ({ default: () => Promise.resolve(), format })
@@ -83,7 +79,6 @@ describe('useProseSandbox', () => {
     const api  = sandbox(load, { pick: () => 1 })
     await api.start()
     expect(api.source.value).toBe('seed b')
-    expect(api.activeCase.value.title).toBe('Case B')
     expect(api.formatted.value).toBe('OUT')
     expect(api.error.value).toBe('')
     expect(load).toHaveBeenLastCalledWith(0)
@@ -108,7 +103,7 @@ describe('useProseSandbox', () => {
   })
 
   it('computes the eligible rule set from the default run on the source', async () => {
-    const fired = '["align-equals","blank-lines"]'
+    const fired = ['align-equals', 'blank-lines']
     const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT', '', fired))))
     await api.start()
     expect(api.eligible.value).toEqual(['align-equals', 'blank-lines'])
@@ -121,7 +116,7 @@ describe('useProseSandbox', () => {
     const format: Formatter = config => ({
       config      : '',
       diagnostics : '',
-      fired_rules : '["align-equals","blank-lines"]',
+      fired_rules : ['align-equals', 'blank-lines'],
       formatted   : config.includes('max-shift = 1') ? 'SHIFTED' : 'OUT'
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
@@ -136,7 +131,7 @@ describe('useProseSandbox', () => {
     const format: Formatter = config => ({
       config      : '',
       diagnostics : config.includes('condense = false') ? '[{"code":"x"}]' : '',
-      fired_rules : '["align-equals"]',
+      fired_rules : ['align-equals'],
       formatted   : 'OUT'
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
@@ -150,7 +145,7 @@ describe('useProseSandbox', () => {
   it('fails a facet probe open when its run throws', async () => {
     const format: Formatter = config => {
       if (config.includes('max-shift')) throw new Error('bad config')
-      return { config: '', diagnostics: '', fired_rules: '["align-equals"]', formatted: 'OUT' }
+      return { config: '', diagnostics: '', fired_rules: ['align-equals'], formatted: 'OUT' }
     }
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
@@ -163,7 +158,7 @@ describe('useProseSandbox', () => {
     const format: Formatter = config => ({
       config      : '',
       diagnostics : '',
-      fired_rules : '[]',
+      fired_rules : [],
       formatted   : config.includes('code-line-length = 30') ? 'NARROW' : 'OUT'
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
@@ -175,7 +170,7 @@ describe('useProseSandbox', () => {
     const format = vi.fn<Formatter>((config, src) => ({
       config      : '',
       diagnostics : '',
-      fired_rules : src === 'seed a' ? '["align-equals"]' : '["blank-lines"]',
+      fired_rules : src === 'seed a' ? ['align-equals'] : ['blank-lines'],
       formatted   : 'OUT'
     }))
     const api = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 5 })
@@ -215,7 +210,6 @@ describe('useProseSandbox', () => {
     const api = sandbox(load)
     await api.start()
     expect(api.error.value).toBe('module offline')
-    expect(api.status.value).toBe('idle')
   })
 
   it('recovers from a panic trap by re-instantiating a fresh module', async () => {
@@ -232,23 +226,10 @@ describe('useProseSandbox', () => {
     expect(load).toHaveBeenNthCalledWith(2, 1)
   })
 
-  it('reports the loading status until the module resolves', async () => {
-    let release!: (module: ProseWasm) => void
-    const load: Loader = () => new Promise(resolve => { release = resolve })
-    const api = sandbox(load)
-    const pending = api.start()
-    expect(api.status.value).toBe('loading')
-    release(moduleWith(formatting('OUT')))
-    await pending
-    expect(api.status.value).toBe('idle')
-    expect(api.formatted.value).toBe('OUT')
-  })
-
   it('refresh moves to a different case', () => {
     const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))), { pick: () => 1 })
     api.refresh()
     expect(api.source.value).toBe('seed b')
-    expect(api.activeCase.value.title).toBe('Case B')
   })
 
   it('reads a facet default before any override', () => {
@@ -270,23 +251,15 @@ describe('useProseSandbox', () => {
       useProseSandbox({ cases: single, schema: SCHEMA, load: () => Promise.resolve(moduleWith(formatting('OUT'))) }))
     api.refresh()
     expect(api.source.value).toBe('lone')
-    expect(api.caseCount).toBe(1)
   })
 
   it('the default picker lands on a real, different case', () => {
     const api = mountSetup(() =>
       useProseSandbox({ cases: CASES, schema: SCHEMA, load: () => Promise.resolve(moduleWith(formatting('OUT'))) }))
-    const before = api.activeCase.value.id
+    const before = api.source.value
     api.refresh()
-    expect(CASES.map(c => c.id)).toContain(api.activeCase.value.id)
-    expect(api.activeCase.value.id).not.toBe(before)
-  })
-
-  it('marks a rule moved once it carries any override', () => {
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
-    expect(api.isMoved('align-equals')).toBe(false)
-    api.setFacet('align-equals', ENABLED, false)
-    expect(api.isMoved('align-equals')).toBe(true)
+    expect(CASES.map(c => c.source)).toContain(api.source.value)
+    expect(api.source.value).not.toBe(before)
   })
 
   it('writes a disabled rule into the config toml', () => {
@@ -313,9 +286,9 @@ describe('useProseSandbox', () => {
 
   it('writes and clears the code line length override', () => {
     const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
-    api.codeLineLength.value = 40
+    api.setLength('code-line-length', 40)
     expect(api.configToml.value).toContain('code-line-length = 40')
-    api.codeLineLength.value = 88
+    api.setLength('code-line-length', 88)
     expect(api.configToml.value).toBe('')
   })
 
@@ -414,7 +387,7 @@ describe('useProseSandbox', () => {
     await api.start()
     expect(api.source.value).toBe('saved source')
     expect(api.configToml.value).toBe('code-line-length = 40\n')
-    expect(api.codeLineLength.value).toBe(40)
+    expect(api.lengthValue('code-line-length')).toBe(40)
   })
 
   it('tolerates a corrupt saved config without throwing', async () => {

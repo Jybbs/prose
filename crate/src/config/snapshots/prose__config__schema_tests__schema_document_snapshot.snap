@@ -5,7 +5,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
 {
   "$defs": {
     "AlignmentConfig": {
-      "description": "Alignment-rule config shared by every rule that aligns a token\nacross consecutive lines. `max_shift` caps how far a row may shift\nto reach the column.",
+      "description": "Alignment-rule config shared by every rule that aligns a token\nacross consecutive lines.",
       "properties": {
         "enabled": {
           "default": true,
@@ -20,7 +20,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "AlphabetizeConfig": {
-      "description": "Configuration for the `alphabetize` rule. Each facet gates one sort\npass and defaults `true`. `group_methods` keys methods on\n`(group, name)` for the dunder-property-private-public grouping,\ndropping to `name` alone when `false`. `sort_definitions` reorders\nclass and function definitions, freezing them in source order when\n`false`. `sort_docstring_entries` gates the Google-style\nentry-section reorder. `sort_dunder_lists` reorders the `__all__`\nand `__slots__` string lists.",
+      "description": "Configuration for the `alphabetize` rule, each facet gating one\nsort pass and defaulting `true`.",
       "properties": {
         "enabled": {
           "default": true,
@@ -96,7 +96,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "CallLayoutConfig": {
-      "description": "Configuration for the `call_layout` rule.\n\n`max_args` caps the count threshold. A positive integer enforces the\ncap. `false` disables the count trigger.",
+      "description": "Configuration for the `call_layout` rule.",
       "properties": {
         "enabled": {
           "default": true,
@@ -111,7 +111,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "CollectionLayoutConfig": {
-      "description": "Configuration for the `collection_layout` rule.\n\n`collapse`, `explode`, and `wrap_dict_entries` each gate one shape\nmove and default `true`. `collapse` joins a fitting multi-line\nliteral, subscript, or dict key back to one line. `explode` drives\nevery expansion, the width-driven spread and the `max_dict_entries`\ncount trigger alike, so `false` leaves the count cap inert.\n`wrap_dict_entries` breaks an over-wide `key: value` at its `:` and\nhangs the value beneath.\n\n`max_atomics` and `max_dict_entries` each take a positive integer or\n`false`. The integer sets the cap, and `false` disables it, leaving\nwidth as the only gate.",
+      "description": "Configuration for the `collection_layout` rule, each shape facet\ngating one move and defaulting `true`.",
       "properties": {
         "collapse": {
           "default": true,
@@ -644,7 +644,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "type": "object"
     },
     "SignatureLayoutConfig": {
-      "description": "Configuration for the `signature_layout` rule.\n\n`max_params` caps the count threshold. A positive integer enforces\nthe cap. `false` disables the count trigger.",
+      "description": "Configuration for the `signature_layout` rule.",
       "properties": {
         "enabled": {
           "default": true,

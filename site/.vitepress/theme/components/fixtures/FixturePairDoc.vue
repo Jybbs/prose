@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { useIntersectionObserver } from '@vueuse/core'
 import type { KeyedTokensInfo }    from '@shikijs/magic-move/types'
+import { useIntersectionObserver } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import LintFlagPopper from '../rules/LintFlagPopper.vue'
 
-import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
-import type { FixtureTab }   from '../../../lib/shared/fixture-tab'
+import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
+import { magicMoveOptions, type MagicMovePanel } from '../../../lib/markdown/magic-move-options'
+import type { FixtureTab }       from '../../../lib/shared/fixture-tab'
+import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
 const props = defineProps<{
   activeTab  : FixtureTab
@@ -18,12 +20,10 @@ const reducedMotion = useReducedMotion()
 const root          = useTemplateRef<HTMLElement>('root')
 const popper        = useTemplateRef<InstanceType<typeof LintFlagPopper>>('popper')
 
-type Panel = typeof import('@shikijs/magic-move/vue').ShikiMagicMovePrecompiled | null
-
 const animate   = ref(false)
 const animating = ref(false)
 const duration  = ref(0)
-const panel     = shallowRef<Panel>(null)
+const panel     = shallowRef<MagicMovePanel>(null)
 const steps     = shallowRef<readonly KeyedTokensInfo[]>([])
 const undrawn   = ref(false)
 
@@ -50,20 +50,20 @@ async function prepare(): Promise<void> {
     import('../../../lib/markdown/magic-move'),
     import('@shikijs/magic-move/vue')
   ])
-  const rootStyle = getComputedStyle(document.documentElement)
   steps.value    = await precompileMagicMove([before, after])
-  duration.value = Number(rootStyle.getPropertyValue('--prose-rule-draw-ms'))
+  duration.value = ruleDrawMs()
   panel.value    = ShikiMagicMovePrecompiled
   await nextTick()
   animate.value = true
 }
 
 // Replays the left-to-right squiggle draw, staging `lint-undrawn` and
-// lifting it two frames later so the CSS transition re-fires.
-function drawSquiggles(): void {
+// lifting it after a paint so the CSS transition re-fires.
+async function drawSquiggles(): Promise<void> {
   if (typeof requestAnimationFrame === 'undefined') return
   undrawn.value = true
-  requestAnimationFrame(() => requestAnimationFrame(() => { undrawn.value = false }))
+  await nextPaint()
+  undrawn.value = false
 }
 
 // Magic-move owns the panel through the morph, and on settle the
@@ -109,7 +109,7 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       :steps="[...steps]"
       :step="step"
       :animate="animate && !reducedMotion"
-      :options="{ containerStyle: false, delayMove: 0, duration, stagger: 3 }"
+      :options="magicMoveOptions(duration)"
       @end="settle"
     />
     <div

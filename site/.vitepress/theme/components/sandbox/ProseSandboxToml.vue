@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core'
+import { promiseTimeout, useClipboard }                    from '@vueuse/core'
 import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
-import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
 import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
+import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
 import { codeHighlighter }   from '../../../lib/markdown/highlighter'
 import { highlight }         from '../../../lib/sandbox/highlight'
 import { SHIKI_THEMES }      from '../../../lib/shared/constants'
@@ -20,12 +20,8 @@ function escapeHtml(text: string): string {
   return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
 }
 
-function tokenStyle(style: unknown): string {
-  if (typeof style === 'string') return style
-  if (style && typeof style === 'object') {
-    return Object.entries(style).map(([key, value]) => `${key}:${String(value)}`).join(';')
-  }
-  return ''
+function tokenStyle(style: Record<string, string> | undefined): string {
+  return Object.entries(style ?? {}).map(([key, value]) => `${key}:${value}`).join(';')
 }
 
 async function tokenLines(text: string): Promise<TokenLine[]> {
@@ -52,7 +48,7 @@ function lineHtml(line: TokenLine, chars: number): string {
 const props = defineProps<{ sandbox: ProseSandbox }>()
 const { configError, configToml } = props.sandbox
 
-const { copy, copied } = useClipboard({ copiedDuring: 2000, source: configToml })
+const { copy, copied } = useClipboard({ source: configToml })
 
 const reducedMotion = useReducedMotion()
 const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
@@ -64,10 +60,6 @@ const typing      = ref(false)
 const typingHtml  = ref('')
 
 let generation = 0
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => { setTimeout(resolve, ms) })
-}
 
 async function settle(text: string): Promise<void> {
   displayHtml.value = text.trim() ? await highlight(text, 'toml') : ''
@@ -136,12 +128,12 @@ async function typeTo(next: string): Promise<void> {
   for (let chars = curMax; chars > floor; chars -= 1) {
     if (gen !== generation) return
     frame(curTokens, curLines, curMidEnd, chars - 1)
-    await sleep(STEP_MS)
+    await promiseTimeout(STEP_MS)
   }
   for (let chars = floor; chars < nextMax; chars += 1) {
     if (gen !== generation) return
     frame(nextTokens, nextLines, nextMidEnd, chars + 1)
-    await sleep(STEP_MS)
+    await promiseTimeout(STEP_MS)
   }
   if (gen !== generation) return
   shown.value = next
@@ -168,7 +160,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="code-panel sandbox-toml panel panel-clip" aria-label="prose.toml config">
+  <section class="code-panel sandbox-toml copy-host panel panel-clip" aria-label="prose.toml config">
     <header class="code-panel-label">prose.toml</header>
     <SandboxCodeEditor
       v-show="editing"
