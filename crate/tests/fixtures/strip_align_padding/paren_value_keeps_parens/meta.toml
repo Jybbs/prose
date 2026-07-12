@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Normalizing the Colon Gap Leaves a Parenthesized Value Intact"
+
+description = '''
+The run after the colon **settles to one space** by measuring against the value's parenthesis-aware start, so the wrapping `(` stays where it is. A `{"key":   (1, 2)}` reads as `{"key": (1, 2)}` with the tuple's parentheses untouched.
+'''

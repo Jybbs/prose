@@ -65,10 +65,10 @@ Config {
         strip_trailing_commas: ToggleOnly {
             enabled: false,
         },
-        docstring_expand: ToggleOnly {
+        docstring_frame: ToggleOnly {
             enabled: false,
         },
-        docstring_frame: ToggleOnly {
+        docstring_expand: ToggleOnly {
             enabled: false,
         },
         unused_future_annotations: ToggleOnly {

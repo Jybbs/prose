@@ -1,5 +1,6 @@
-//! Triple-quoted docstring body geometry: the inner body slice and
-//! the source indent prefix.
+//! Docstring body geometry: the inner body slice and the source indent
+//! prefix. `docstring_body` accepts any quote style, `triple_quoted_body`
+//! narrows to the canonical `"""` form.
 
 use ruff_python_ast::{StringFlags, StringLiteral};
 use ruff_python_trivia::{has_leading_content, leading_indentation};
@@ -22,20 +23,14 @@ impl DocstringBody<'_> {
     }
 }
 
-/// Returns the line indent prefix of the docstring at `lit.start()`,
-/// preserving the source's mix of tabs and spaces verbatim.
-pub(crate) fn indent_prefix<'a>(source: &'a Source, lit: &StringLiteral) -> &'a str {
-    leading_indentation(source.text().line_str(lit.start()))
-}
-
-/// Returns the body slice and source range when `lit` is triple-quoted
-/// and sits at the start of its own line. Returns `None` for
-/// non-triple-quoted literals and inline `def f(): """..."""` shapes.
-pub(crate) fn triple_quoted_body<'a>(
+/// Returns the body slice and source range of the docstring `lit` when
+/// it sits at the start of its own line, whatever its quote style.
+/// Returns `None` for an inline `def f(): """..."""` shape.
+pub(crate) fn docstring_body<'a>(
     source: &'a Source,
     lit: &StringLiteral,
 ) -> Option<DocstringBody<'a>> {
-    if !lit.flags.is_triple_quoted() || has_leading_content(lit.start(), source.text()) {
+    if has_leading_content(lit.start(), source.text()) {
         return None;
     }
     let range = TextRange::new(
@@ -46,4 +41,24 @@ pub(crate) fn triple_quoted_body<'a>(
         range,
         text: source.slice(range),
     })
+}
+
+/// Returns the line indent prefix of the docstring at `lit.start()`,
+/// preserving the source's mix of tabs and spaces verbatim.
+pub(crate) fn indent_prefix<'a>(source: &'a Source, lit: &StringLiteral) -> &'a str {
+    leading_indentation(source.text().line_str(lit.start()))
+}
+
+/// Returns the body slice of a triple-quoted `lit`, the `"""` or `'''`
+/// form `docstring-expand` and `docstring-wrap` act on once
+/// `docstring-frame` has canonicalized every docstring to `"""`.
+/// Returns `None` for a non-triple-quoted or inline literal.
+pub(crate) fn triple_quoted_body<'a>(
+    source: &'a Source,
+    lit: &StringLiteral,
+) -> Option<DocstringBody<'a>> {
+    if !lit.flags.is_triple_quoted() {
+        return None;
+    }
+    docstring_body(source, lit)
 }

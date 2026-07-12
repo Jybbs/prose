@@ -197,6 +197,9 @@ pub(super) fn collect_docstring_entry_edits(
             edits.extend(narrowed_replacement(source, span, text));
         }
     })
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
 /// Walks the AST collecting one non-overlapping leaf edit per outermost

@@ -36,12 +36,12 @@ The walker recurses through nested classes and functions, so a module with deepl
 A docstring rule reaches the walker through the closure-based helper:
 
 ```rust
-pub(crate) fn rewrite_docstrings<F>(source: &Source, f: F) -> Vec<Edit>
+pub(crate) fn rewrite_docstrings<F>(source: &Source, f: F) -> Vec<Vec<Edit>>
 where
     F: FnMut(&Source, &StringLiteral, &mut Vec<Edit>),
 ```
 
-`rewrite_docstrings` drives the walk across `source` and threads each discovered docstring through `f`, which receives the source, the literal, and the running edit buffer. The closure pushes whatever edits the rule needs per docstring, and the helper returns the accumulated `Vec<Edit>`.
+`rewrite_docstrings` drives the walk across `source` and threads each discovered docstring through `f`, which receives the source, the literal, and the running edit buffer. The closure pushes whatever edits the rule needs per docstring, and the helper returns one fix group per docstring, dropping any whose closure left the buffer empty.
 
 The walk itself runs through a module-private receiver trait:
 
@@ -58,8 +58,9 @@ trait DocstringHandler {
 The `pub(crate)` helpers reach for the docstring literal and its body:
 
 1. `body_docstring(body) -> Option<&StringLiteral>` returns a body's leading PEP 257 docstring literal, the shared detection point for consumers that already hold a `&[Stmt]` body rather than walking the whole module.
-2. `triple_quoted_body(source, lit) -> Option<DocstringBody>` returns the body slice between a triple-quoted docstring's opener and closer, paired with the source range the slice covers. Returns `None` for non-triple-quoted literals and for inline shapes like `def f(): """doc"""`.
-3. `indent_prefix(source, lit) -> &str` returns the whitespace preceding the docstring on its first line, useful when a rule rewraps the body and needs to re-indent the result.
+2. `docstring_body(source, lit) -> Option<DocstringBody>` returns the body slice between a docstring's opener and closer whatever its quote style, paired with the source range the slice covers. Returns `None` only for an inline shape like `def f(): "doc"`.
+3. `triple_quoted_body(source, lit) -> Option<DocstringBody>` narrows `docstring_body` to the canonical `"""` form, the slice `docstring-expand` and `docstring-wrap` act on once `docstring-frame` has requoted every docstring. Returns `None` for a non-triple-quoted literal.
+4. `indent_prefix(source, lit) -> &str` returns the whitespace preceding the docstring on its first line, useful when a rule rewraps the body and needs to re-indent the result.
 
 [[colon-targets]] finds leading docstrings through `body_docstring`, then scans their `Args:` lines itself when emitting members for colon alignment. The split is deliberate, because the two primitives answer structurally different questions. *Docstring* surfaces entry names and the byte range a reorder would carry along, whereas *Colon-Targets* surfaces each line's `:`-position for the aligner's padding math. Two views of the same source, each shaped for its consumer.
 
@@ -102,7 +103,7 @@ Section headings, blank lines between entries, and verbatim continuations *(inde
 
 ## How Multi-Line and Single-Line Rules Compose
 
-[[docstring-frame]] examines each discovered docstring to ensure the triple-quoted opener and closer sit on their own lines. [[docstring-expand]] expands docstrings that fit on one line into the canonical multi-line shape. Both rules read the literal's source position and emit edits that reshape the quote placement without touching the body text.
+[[docstring-frame]] canonicalizes each discovered docstring to the `"""` frame whatever quotes the source carried, and lands a multi-line opener and closer on their own lines. [[docstring-expand]] expands docstrings that fit on one line into the canonical multi-line shape. Both rules read the literal's source position and emit edits that reshape the quote placement without touching the body text.
 
 ## Build Pattern
 
@@ -111,16 +112,16 @@ A rule calls `rewrite_docstrings` from its `apply` method and supplies a closure
 ```rust
 impl Rule for MyRule {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
+        rewrite_docstrings(source, |source, lit, edits| {
             if let Some(edit) = consider(source, lit) {
                 edits.push(edit);
             }
-        }))
+        })
     }
 }
 ```
 
-`consider` is the rule-specific per-docstring decision, returning `Some(edit)` when the literal needs rewriting and `None` otherwise. Rule-specific configuration closes over `self` inside the closure, so a rule with line budgets, allow-patterns, or other facets reaches them directly without needing a separate accumulator struct. `singleton_groups` wraps each emitted edit into its own fix group on the way out, matching the `Vec<Vec<Edit>>` shape [[edit]] describes.
+`consider` is the rule-specific per-docstring decision, returning `Some(edit)` when the literal needs rewriting and `None` otherwise. Rule-specific configuration closes over `self` inside the closure, so a rule with line budgets, allow-patterns, or other facets reaches them directly without needing a separate accumulator struct. `rewrite_docstrings` gathers each docstring's edits into their own fix group, matching the `Vec<Vec<Edit>>` shape [[edit]] describes, so a requote and a reframe on one docstring commit as a single suppressible fix.
 
 ## Re-Using This Primitive
 

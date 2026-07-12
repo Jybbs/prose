@@ -42,7 +42,7 @@ The conflict table:
 | Code | Conflict | Reason |
 |---|---|---|
 | `COM812` | Lint re-adds trailing commas | [[strip-trailing-commas]] removes them in multi-line collections and signatures |
-| `E203` | Lint flags whitespace before `:` | [[align-colons]] produces it in dict literals, dataclass fields, function signatures, and docstring `Args:` blocks |
+| `E203` | Lint flags whitespace before `:` | [[align-colons]] produces it in dict literals, annotated assignments, function signatures, and docstring `Args:` blocks |
 | `E221` | Lint flags multiple spaces before `=` | [[align-equals]] produces it across consecutive assignments at the same indentation |
 | `E272` | Lint flags multiple spaces before `import` / `as` | [[align-imports]] produces it across `from ... import ...` and `import ... as ...` groups |
 | `E501` | Lint flags lines past `line-length` | A long member in an alignment group pads shorter lines rightward, occasionally past the configured limit |

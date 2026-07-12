@@ -1,7 +1,8 @@
-//! Strips padding that aligns with nothing, in two shapes. It clears
-//! the pre-`:` gap on a colon context with no column to align to and
-//! the space just inside a bracket delimiter. Runs after the alignment
-//! rules in `Pipeline::with_defaults` so it sees their output.
+//! Strips padding that aligns with nothing. On a colon context with no
+//! column to align to it clears the pre-colon gap and collapses the
+//! post-colon gap to one space, and it clears the space just inside a
+//! bracket delimiter. Runs after the alignment rules in
+//! `Pipeline::with_defaults` so it sees their output.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::TokenKind;
@@ -9,7 +10,11 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
-    primitives::{aligner, colon_targets::ColonEmitter, edit::singleton_groups},
+    primitives::{
+        aligner,
+        colon_targets::{ColonEmitter, ColonMember},
+        edit::singleton_groups,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -44,25 +49,34 @@ struct Emitter<'a> {
 }
 
 impl ColonEmitter for Emitter<'_> {
-    /// Emits a deletion edit per member for a group that is not an
+    /// Clears the pre-colon gap and collapses the post-colon gap to one
+    /// space for a group that is not an
     /// [`aligner::is_alignment_candidate`], so no shared column
     /// justifies the padding. A singleton has no neighbor row, a
     /// same-line group has no column distinction, and a distinct-line
     /// group whose rows open at differing baselines realizes no shared
     /// column. A distinct-line group at one baseline belongs to
-    /// `align_colons` and emits nothing here. The `width > 0` guard
-    /// rejects the edge case where a `:` sits on its own indented line
-    /// and the "gap" is leading indent rather than padding.
-    fn handle(&mut self, members: &[aligner::Member]) {
-        if aligner::is_alignment_candidate(self.source, members) {
+    /// `align_colons` and emits nothing here. The pre-colon `width > 0`
+    /// guard rejects the edge case where a `:` sits on its own indented
+    /// line and the gap is leading indent rather than padding. The
+    /// `value_gap` rewrite skips a value that opens on a later line.
+    fn handle(&mut self, members: &[ColonMember]) {
+        let aligned: Vec<aligner::Member> = members.iter().map(|m| m.member).collect();
+        if aligner::is_alignment_candidate(self.source, &aligned) {
             return;
         }
-        self.edits.extend(
-            members
-                .iter()
-                .filter(|m| m.width > 0 && !m.gap.is_empty())
-                .map(|m| Edit::range_deletion(m.gap)),
-        );
+        for m in members {
+            if m.member.width > 0 {
+                self.edits
+                    .extend(aligner::space_padding_edit(self.source, m.member.gap, 0));
+            }
+            if let Some(gap) = m.value_gap
+                && !self.source.contains_line_break(gap)
+            {
+                self.edits
+                    .extend(aligner::space_padding_edit(self.source, gap, 1));
+            }
+        }
     }
 
     fn rule(&self) -> RuleId {
@@ -122,11 +136,18 @@ mod tests {
     use crate::testing::{parse, range};
 
     fn run_strip(source: &Source, members: &[aligner::Member]) -> Vec<Edit> {
+        let colon_members: Vec<ColonMember> = members
+            .iter()
+            .map(|&member| ColonMember {
+                member,
+                value_gap: None,
+            })
+            .collect();
         let mut emitter = Emitter {
             edits: Vec::new(),
             source,
         };
-        emitter.handle(members);
+        emitter.handle(&colon_members);
         emitter.edits
     }
 
@@ -199,6 +220,31 @@ mod tests {
     #[test]
     fn strip_handles_empty_members_slice() {
         assert!(run_strip(&parse(""), &[]).is_empty());
+    }
+
+    #[test]
+    fn strip_leaves_a_value_gap_that_crosses_a_line_break() {
+        // A colon whose value opens on a later line keeps its placement:
+        // the pre-colon padding strips, but the post-colon gap is not
+        // collapsed across the break.
+        let source = parse("d = {\"k\"  :\n    v}\n");
+        let member = aligner::Member {
+            gap: range(8, 10),
+            line_start: TextSize::new(0),
+            op_width: 0,
+            width: 3,
+        };
+        let colon_member = ColonMember {
+            member,
+            value_gap: Some(range(11, 16)),
+        };
+        let mut emitter = Emitter {
+            edits: Vec::new(),
+            source: &source,
+        };
+        emitter.handle(&[colon_member]);
+        assert_eq!(emitter.edits.len(), 1);
+        assert_eq!(emitter.edits[0].range(), range(8, 10));
     }
 
     #[test]

@@ -75,10 +75,8 @@ impl Visitor<'_> {
             .walker
             .retain_unheld(group.iter().copied(), |m| m.member.line_start);
         let members: Vec<aligner::Member> = kept.iter().map(|m| m.member).collect();
-        if aligner::is_alignment_candidate(self.walker.source, &members) {
-            let gaps = self.value_gaps(&kept);
-            self.walker.emit_group_with_gaps(&members, gaps);
-        }
+        let gaps = self.value_gaps(&kept);
+        self.walker.emit_if_candidate_with_gaps(&members, gaps);
     }
 
     /// Emits `group` as one fix: the aligner's column when the members
