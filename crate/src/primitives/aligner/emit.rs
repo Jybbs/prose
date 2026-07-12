@@ -97,10 +97,7 @@ fn emit_with_paddings(
 fn fits_line_cap(source: &Source, group: &[Member], max_w: usize, cap: usize) -> bool {
     let max_op = max_op_width(group);
     group.iter().all(|m| {
-        let line = source
-            .slice(source.text().full_line_range(m.line_start))
-            .trim_end_matches(['\r', '\n'])
-            .width();
+        let line = source.text().line_str(m.line_start).width();
         let base = line - source.slice(m.gap).width();
         base + padding_width(*m, max_w, max_op, 1) <= cap || base + 1 > cap
     })

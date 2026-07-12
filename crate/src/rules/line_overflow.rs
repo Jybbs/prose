@@ -8,7 +8,7 @@
 //! surfaces here. Lint-only, emits no edits.
 
 use ruff_python_ast::{
-    Expr, Stmt, StmtFunctionDef,
+    Expr, Stmt, StmtFunctionDef, StmtMatch,
     helpers::is_compound_statement,
     visitor::{Visitor, walk_expr, walk_stmt},
 };
@@ -19,6 +19,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
+    primitives::docstring::body_docstring,
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -89,8 +90,8 @@ impl Spans<'_> {
     /// Records a leading docstring's whole range, the prose
     /// `docstring-wrap` reflows to the budget.
     fn note_docstring(&mut self, body: &[Stmt]) {
-        if let Some(range) = docstring_range(body) {
-            self.reshapeable.push(range);
+        if let Some(lit) = body_docstring(body) {
+            self.reshapeable.push(lit.range());
         }
     }
 
@@ -104,10 +105,7 @@ impl Spans<'_> {
 
     /// Records a single-statement match arm on one source line, the
     /// form `align-match-case` splits onto the next line.
-    fn note_match(&mut self, stmt: &Stmt) {
-        let Stmt::Match(m) = stmt else {
-            return;
-        };
+    fn note_match(&mut self, m: &StmtMatch) {
         for case in &m.cases {
             if let [body] = case.body.as_slice()
                 && !is_compound_statement(body)
@@ -128,14 +126,16 @@ impl Spans<'_> {
 
 impl<'a> Visitor<'a> for Spans<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
-        match expr {
-            Expr::Call(call) if !call.arguments.is_empty() => self.note_inline(call.range()),
-            Expr::Dict(_) | Expr::List(_) | Expr::Set(_) | Expr::Tuple(_)
-                if collection_len(expr) >= 2 =>
-            {
-                self.note_inline(expr.range());
-            }
-            _ => {}
+        let splittable = match expr {
+            Expr::Call(call) => !call.arguments.is_empty(),
+            Expr::Dict(d) => d.len() >= 2,
+            Expr::List(l) => l.len() >= 2,
+            Expr::Set(s) => s.len() >= 2,
+            Expr::Tuple(t) => t.len() >= 2,
+            _ => false,
+        };
+        if splittable {
+            self.note_inline(expr.range());
         }
         walk_expr(self, expr);
     }
@@ -154,32 +154,9 @@ impl<'a> Visitor<'a> for Spans<'a> {
                 self.note_signature(fd);
                 self.note_docstring(&fd.body);
             }
-            Stmt::Match(_) => self.note_match(stmt),
+            Stmt::Match(m) => self.note_match(m),
             _ => {}
         }
         walk_stmt(self, stmt);
     }
-}
-
-/// The element count of a `Dict`, `List`, `Set`, or `Tuple` literal,
-/// zero for any other expression.
-fn collection_len(expr: &Expr) -> usize {
-    match expr {
-        Expr::Dict(d) => d.len(),
-        Expr::List(l) => l.elts.len(),
-        Expr::Set(s) => s.elts.len(),
-        Expr::Tuple(t) => t.elts.len(),
-        _ => 0,
-    }
-}
-
-/// The range of `body`'s leading docstring, the string-literal
-/// expression statement a module, class, or function opens with.
-fn docstring_range(body: &[Stmt]) -> Option<TextRange> {
-    let first = body.first()?;
-    first
-        .as_expr_stmt()?
-        .value
-        .is_string_literal_expr()
-        .then(|| first.range())
 }

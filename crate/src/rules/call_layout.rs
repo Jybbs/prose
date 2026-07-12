@@ -163,7 +163,7 @@ impl Exploder<'_> {
     /// there crosses `code_line_length`.
     fn overflows_line(&self, call: &ExprCall) -> bool {
         let text = self.source.slice(call.range());
-        !text.contains('\n')
+        !self.source.contains_line_break(call.range())
             && self
                 .source
                 .column_overflows(call.start(), text.width(), self.code_line_length)
