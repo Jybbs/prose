@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Trailing Band Stratifies by Tier"
+
+description = '''
+A trailing band below the definitions stratifies by tier the same as a leading one, the two derived constants opening a blank sub-band beneath the base pair.
+'''

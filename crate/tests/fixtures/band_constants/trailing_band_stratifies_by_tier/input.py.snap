@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/trailing_band_stratifies_by_tier/input.py
+---
+def base():
+    return 1
+
+
+FIRST = base
+SECOND = base
+
+DERIVED_A = FIRST + SECOND
+DERIVED_B = FIRST * SECOND

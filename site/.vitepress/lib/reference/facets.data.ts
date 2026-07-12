@@ -110,6 +110,27 @@ const SOURCES: readonly FacetFamilySource[] = [
             type    : 'bool'
           }
         ]
+      },
+      {
+        rule   : 'band-constants',
+        facets : [
+          {
+            default : 'true',
+            key     : 'group-constants',
+            meaning : 'Cluster each band by subcategory, the type aliases first, then the `SCREAMING_CASE` '
+                    + 'constants, then the remaining module state, before sorting by name within each. '
+                    + '`false` sorts by tier and name alone.',
+            type    : 'bool'
+          },
+          {
+            default : '2',
+            key     : 'max-tiers',
+            meaning : 'Cap how many evaluation tiers open their own blank-separated sub-band, merging every '
+                    + 'deeper tier into the last. `1` holds the band tight and `false` opens one sub-band per '
+                    + 'tier.',
+            type    : 'positive int | false'
+          }
+        ]
       }
     ]
   },

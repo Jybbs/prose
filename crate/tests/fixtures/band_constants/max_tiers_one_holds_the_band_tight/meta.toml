@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "max-tiers = 1 Holds the Band Tight"
+
+description = '''
+`max-tiers = 1` holds the whole band tight, so no tier boundary opens a blank line.
+'''

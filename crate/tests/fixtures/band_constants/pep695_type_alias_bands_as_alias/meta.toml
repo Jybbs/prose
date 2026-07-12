@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A PEP 695 Type Alias Bands as an Alias"
+
+description = '''
+A PEP 695 `type` alias joins the band as an alias, clustering ahead of the `SCREAMING_CASE` constants.
+'''

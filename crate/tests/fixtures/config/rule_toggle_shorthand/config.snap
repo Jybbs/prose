@@ -52,8 +52,14 @@ Config {
         group_imports: ToggleOnly {
             enabled: true,
         },
-        band_constants: ToggleOnly {
+        band_constants: BandConstantsConfig {
             enabled: true,
+            group_constants: true,
+            max_tiers: InlineBudget(
+                Some(
+                    2,
+                ),
+            ),
         },
         alphabetize: AlphabetizeConfig {
             enabled: false,

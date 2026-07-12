@@ -38,7 +38,9 @@ use self::{
 
 pub(crate) struct BandConstants {
     first_party: Vec<String>,
+    group_constants: bool,
     group_imports: bool,
+    max_tiers: Option<usize>,
     target_version: Option<PythonVersion>,
 }
 
@@ -46,7 +48,9 @@ impl BandConstants {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),
+            group_constants: config.rules.band_constants.group_constants,
             group_imports: config.group_imports_enabled(),
+            max_tiers: config.rules.band_constants.max_tiers.cap(),
             target_version: config.target_version,
         }
     }
@@ -61,17 +65,20 @@ impl Rule for BandConstants {
         let bander = Bander {
             defer_annotations: defers_annotations(body),
             first_party: &self.first_party,
+            group_constants: self.group_constants,
             group_imports: self.group_imports,
+            max_tiers: self.max_tiers,
             source,
             target_version: self.target_version,
         };
         let layout = bander.band_layout(body, source.module_range());
+        let forced = layout.forced();
         let edits = assembled_cell_edits(
             source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
-            false,
+            forced,
             |i| bander.band_gap(&layout, body, i),
         );
         singleton_groups(edits)
@@ -92,11 +99,21 @@ struct BandLayout<'a> {
     rendered: Vec<Cow<'a, str>>,
 }
 
+impl BandLayout<'_> {
+    /// True when the band opens a tier blank, forcing an owned assembly
+    /// so the spacing lands even when the order is already settled.
+    fn forced(&self) -> bool {
+        self.band.as_ref().is_some_and(Banding::stratifies)
+    }
+}
+
 /// Invariant banding context threaded through the recursion.
 struct Bander<'a> {
     defer_annotations: bool,
     first_party: &'a [String],
+    group_constants: bool,
     group_imports: bool,
+    max_tiers: Option<usize>,
     source: &'a Source,
     target_version: Option<PythonVersion>,
 }
@@ -110,12 +127,13 @@ impl<'a> Bander<'a> {
     /// falling back to `Cow::Borrowed` over `source.slice(span)`.
     fn band_body(&self, body: &'a [Stmt], outer: TextRange) -> (Cow<'a, str>, TextRange) {
         let layout = self.band_layout(body, outer);
+        let forced = layout.forced();
         assemble_or_borrow(
             self.source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
-            false,
+            forced,
             |i| self.band_gap(&layout, body, i),
         )
     }
@@ -125,7 +143,7 @@ impl<'a> Bander<'a> {
     fn band_gap(&self, layout: &BandLayout<'_>, body: &[Stmt], i: usize) -> Option<&'static str> {
         layout.band.as_ref().and_then(|b| {
             banded_gap(
-                &b.ranks,
+                b,
                 body,
                 self.first_party,
                 self.group_imports,
@@ -177,9 +195,17 @@ impl<'a> Bander<'a> {
             body,
             blocks,
             self.defer_annotations,
+            self.group_constants,
             self.target_version,
         )?
-        .apply(body, sections, self.first_party, self.group_imports, order)
+        .apply(
+            body,
+            sections,
+            self.first_party,
+            self.group_imports,
+            self.max_tiers,
+            order,
+        )
     }
 
     /// Folds a banded compound arm into `block`. A class or function
@@ -235,7 +261,9 @@ mod tests {
         let bander = Bander {
             defer_annotations: false,
             first_party: &[],
+            group_constants: true,
             group_imports: true,
+            max_tiers: Some(2),
             source: &source,
             target_version: None,
         };

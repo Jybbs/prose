@@ -43,6 +43,12 @@ pub(crate) fn is_screaming_case(id: &str) -> bool {
         && chars.all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
 }
 
+/// True when `annotation` names `TypeAlias`, bare or attribute-qualified
+/// (`typing.TypeAlias`).
+pub(crate) fn is_type_alias(annotation: &Expr) -> bool {
+    tail_identifier(annotation) == Some("TypeAlias")
+}
+
 /// Returns `true` when `stmt.test` matches the bare `TYPE_CHECKING`
 /// name or any `<...>.TYPE_CHECKING` attribute access.
 fn is_type_checking_block(stmt: &StmtIf) -> bool {
@@ -139,6 +145,20 @@ mod tests {
         #[values("", "pi", "Pi", "pI", "_HIDDEN", "1ABC", "MAX_retries")] id: &str,
     ) {
         assert!(!is_screaming_case(id));
+    }
+
+    #[rstest]
+    #[case("x: TypeAlias", true)]
+    #[case("x: typing.TypeAlias", true)]
+    #[case("x: int", false)]
+    fn is_type_alias_matches_bare_and_qualified(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(&format!("{src} = 0\n"));
+        let annotation = source.ast().body[0]
+            .as_ann_assign_stmt()
+            .expect("an annotated assignment")
+            .annotation
+            .as_ref();
+        assert_eq!(is_type_alias(annotation), expected);
     }
 
     #[rstest]

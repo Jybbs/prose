@@ -34,7 +34,7 @@ mod names;
 
 pub(crate) use names::{
     annotated_name_target, bare_import_bound_name, from_import_bound_name, is_screaming_case,
-    single_name_assignment, single_name_target, skips_module_scan, tail_identifier,
+    is_type_alias, single_name_assignment, single_name_target, skips_module_scan, tail_identifier,
     top_level_module,
 };
 

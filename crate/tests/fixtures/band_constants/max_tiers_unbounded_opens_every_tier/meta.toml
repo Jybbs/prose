@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "max-tiers = false Opens Every Tier"
+
+description = '''
+`max-tiers = false` opens a blank sub-band at every evaluation tier, each holding two or more constants.
+'''

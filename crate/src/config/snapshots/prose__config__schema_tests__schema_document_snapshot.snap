@@ -44,6 +44,24 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       },
       "type": "object"
     },
+    "BandConstantsConfig": {
+      "description": "Configuration for the `band_constants` rule. `group_constants` gates\nthe subcategory clustering, keying each band on `(tier, subcategory,\nname)` and dropping to `(tier, name)` when `false`. `max_tiers` caps\nhow many evaluation tiers open their own blank-separated sub-band. A\npositive integer merges every tier at or beyond it into the last\nsub-band, `1` holds the band tight, and `false` opens one band per\ntier.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "group-constants": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-tiers": {
+          "$ref": "#/$defs/InlineBudget",
+          "default": 2
+        }
+      },
+      "type": "object"
+    },
     "BareImportsConfig": {
       "description": "Configuration for the `bare_imports` rule.",
       "properties": {
@@ -348,11 +366,13 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
               "type": "boolean"
             },
             {
-              "$ref": "#/$defs/ToggleOnly"
+              "$ref": "#/$defs/BandConstantsConfig"
             }
           ],
           "default": {
-            "enabled": true
+            "enabled": true,
+            "group-constants": true,
+            "max-tiers": 2
           }
         },
         "bare-imports": {
@@ -792,7 +812,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "sort-dunder-lists": true
         },
         "band-constants": {
-          "enabled": true
+          "enabled": true,
+          "group-constants": true,
+          "max-tiers": 2
         },
         "bare-imports": {
           "allow": [],

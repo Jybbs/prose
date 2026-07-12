@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/subcategory_clusters_within_each_tier/input.py
+---
+from typing import Callable
+
+Seconds = int
+MAX = 1
+
+Handler = Callable[[Seconds], None]
+TIMEOUT = MAX + 1
