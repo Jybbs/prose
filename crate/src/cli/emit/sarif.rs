@@ -15,7 +15,7 @@ use serde_sarif::sarif::{
 };
 
 use super::{Emitter, EmitterSummary, Run, diagnostics, write_json_line};
-use crate::{diagnostics::Diagnostic, file_uri, findings::line_columns, rule::RuleId};
+use crate::{diagnostics::Diagnostic, file_uri, findings::line_columns};
 
 pub(crate) struct Sarif;
 
@@ -38,14 +38,6 @@ fn artifact_location(file: &SourceFile) -> ArtifactLocation {
     ArtifactLocation::builder()
         .uri(file_uri::from_path(file.name()))
         .build()
-}
-
-fn collect_rule_ids(runs: &[Run<'_>]) -> Vec<RuleId> {
-    diagnostics(runs)
-        .map(|(_, _, d)| d.rule)
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .collect()
 }
 
 fn region(start: LineColumn, end: LineColumn) -> Region {
@@ -105,8 +97,10 @@ fn sarif_result(file: &SourceFile, diag: &Diagnostic) -> SarifResult {
 }
 
 fn sarif_run(runs: &[Run<'_>]) -> SarifRun {
-    let rules: Vec<ReportingDescriptor> = collect_rule_ids(runs)
-        .iter()
+    let rules: Vec<ReportingDescriptor> = diagnostics(runs)
+        .map(|(_, _, d)| d.rule)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
         .map(|id| ReportingDescriptor::builder().id(id.as_str()).build())
         .collect();
     let results: Vec<SarifResult> = diagnostics(runs)

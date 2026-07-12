@@ -12,7 +12,7 @@ import type { ProseSandbox }       from './use-prose-sandbox'
 export function useChipPanel(sandbox: ProseSandbox, cards: Record<string, RenderedRule>) {
   const {
     eligible, facetImpact, facetValue, lengthImpact, lengthValue, lengths,
-    refresh, rules: controls, setFacet, setLength
+    rules: controls, setFacet, setLength
   } = sandbox
 
   const openSlug = ref('')
@@ -85,7 +85,6 @@ export function useChipPanel(sandbox: ProseSandbox, cards: Record<string, Render
     lengthValue,
     openFacets,
     openSlug,
-    refresh,
     ruleData,
     setLength,
     setPanel,

@@ -6,6 +6,7 @@ import type { ProseSandbox, ProseSandboxOptions } from '../../lib/composables/us
 import type { SandboxSchema }                     from '../../lib/sandbox/config-schema.data'
 import type { ProseWasm }                         from '../../lib/sandbox/load-module'
 import type { SandboxCase }                       from '../../lib/sandbox/pool.data'
+import { encodeShare }                            from '../../lib/sandbox/share-link'
 import { mountSetup }                             from '../dom'
 
 type Formatter = ProseWasm['format']
@@ -65,6 +66,8 @@ const formatting = (formatted: string, diagnostics = '', firedRules: readonly st
 
 const moduleWith = (format: Formatter): ProseWasm => ({ default: () => Promise.resolve(), format })
 
+const okLoader: Loader = () => Promise.resolve(moduleWith(formatting('OUT')))
+
 const sandbox = (load: Loader, options: Partial<ProseSandboxOptions> = {}): ProseSandbox =>
   mountSetup(() => useProseSandbox({ cases: CASES, schema: SCHEMA, load, pick: () => 0, ...options }))
 
@@ -75,7 +78,7 @@ describe('useProseSandbox', () => {
   })
 
   it('starts on a picked case and reports the formatted output', async () => {
-    const load = vi.fn<Loader>(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const load = vi.fn<Loader>(okLoader)
     const api  = sandbox(load, { pick: () => 1 })
     await api.start()
     expect(api.source.value).toBe('seed b')
@@ -85,7 +88,7 @@ describe('useProseSandbox', () => {
   })
 
   it('loads the module once and reuses it across runs', async () => {
-    const load = vi.fn<Loader>(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const load = vi.fn<Loader>(okLoader)
     const api  = sandbox(load)
     await api.start()
     await api.start()
@@ -152,6 +155,22 @@ describe('useProseSandbox', () => {
     await vi.waitFor(() => {
       expect(api.facetImpact.value['align-equals']).toContain('max-shift')
     })
+  })
+
+  it('keeps a good format when the default-config probe run traps', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ configToml: 'code-line-length = 40\n', source: 'saved source' })
+    )
+    const format: Formatter = config => {
+      if (config === '') throw new WebAssembly.RuntimeError('unreachable')
+      return { config: '', diagnostics: '', fired_rules: [], formatted: 'OUT' }
+    }
+    const api = sandbox(() => Promise.resolve(moduleWith(format)))
+    await api.start()
+    expect(api.formatted.value).toBe('OUT')
+    expect(api.error.value).toBe('')
+    await vi.waitFor(() => expect(api.eligible.value).toEqual([]))
   })
 
   it('probes the length knobs and keeps only the impactful ones', async () => {
@@ -227,19 +246,19 @@ describe('useProseSandbox', () => {
   })
 
   it('refresh moves to a different case', () => {
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))), { pick: () => 1 })
+    const api = sandbox(okLoader, { pick: () => 1 })
     api.refresh()
     expect(api.source.value).toBe('seed b')
   })
 
   it('reads a facet default before any override', () => {
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     expect(api.facetValue('align-equals', ENABLED)).toBe(true)
     expect(api.facetValue('align-equals', MAX_SHIFT)).toBe(16)
   })
 
   it('reads a sub-facet value back from the written config', () => {
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     api.setFacet('align-equals', MAX_SHIFT, 4)
     expect(api.facetValue('align-equals', MAX_SHIFT)).toBe(4)
     expect(api.facetValue('align-equals', ENABLED)).toBe(true)
@@ -248,14 +267,14 @@ describe('useProseSandbox', () => {
   it('stays on the only case when the pool holds one', () => {
     const single = [{ id: 'x', source: 'lone', title: 'Only' }]
     const api = mountSetup(() =>
-      useProseSandbox({ cases: single, schema: SCHEMA, load: () => Promise.resolve(moduleWith(formatting('OUT'))) }))
+      useProseSandbox({ cases: single, schema: SCHEMA, load: okLoader }))
     api.refresh()
     expect(api.source.value).toBe('lone')
   })
 
   it('the default picker lands on a real, different case', () => {
     const api = mountSetup(() =>
-      useProseSandbox({ cases: CASES, schema: SCHEMA, load: () => Promise.resolve(moduleWith(formatting('OUT'))) }))
+      useProseSandbox({ cases: CASES, schema: SCHEMA, load: okLoader }))
     const before = api.source.value
     api.refresh()
     expect(CASES.map(c => c.source)).toContain(api.source.value)
@@ -263,14 +282,14 @@ describe('useProseSandbox', () => {
   })
 
   it('writes a disabled rule into the config toml', () => {
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     api.setFacet('align-equals', ENABLED, false)
     expect(api.configToml.value).toContain('align-equals = false')
     expect(api.facetValue('align-equals', ENABLED)).toBe(false)
   })
 
   it('writes a sub-facet override and clears it back to empty', () => {
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     api.setFacet('align-equals', MAX_SHIFT, 4)
     expect(api.configToml.value).toContain('max-shift = 4')
     api.setFacet('align-equals', MAX_SHIFT, 16)
@@ -278,14 +297,14 @@ describe('useProseSandbox', () => {
   })
 
   it('re-enabling a disabled rule drops the override', () => {
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     api.setFacet('align-equals', ENABLED, false)
     api.setFacet('align-equals', ENABLED, true)
     expect(api.configToml.value).toBe('')
   })
 
   it('writes and clears the code line length override', () => {
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     api.setLength('code-line-length', 40)
     expect(api.configToml.value).toContain('code-line-length = 40')
     api.setLength('code-line-length', 88)
@@ -294,7 +313,7 @@ describe('useProseSandbox', () => {
 
   it('projects a pasted config back onto the controls', async () => {
     vi.useFakeTimers()
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))), { debounceMs: 50 })
+    const api = sandbox(okLoader, { debounceMs: 50 })
     api.configToml.value = 'rules.align-equals = false\n'
     await vi.advanceTimersByTimeAsync(50)
     expect(api.facetValue('align-equals', ENABLED)).toBe(false)
@@ -302,9 +321,22 @@ describe('useProseSandbox', () => {
     vi.useRealTimers()
   })
 
+  it('reads a pasted table-form disable and re-enables around sibling overrides', async () => {
+    vi.useFakeTimers()
+    const api = sandbox(okLoader, { debounceMs: 50 })
+    api.configToml.value = '[rules.align-equals]\nenabled = false\nmax-shift = 4\n'
+    await vi.advanceTimersByTimeAsync(50)
+    expect(api.facetValue('align-equals', ENABLED)).toBe(false)
+    api.setFacet('align-equals', ENABLED, true)
+    expect(api.configToml.value).toContain('max-shift = 4')
+    expect(api.configToml.value).not.toContain('enabled')
+    expect(api.facetValue('align-equals', ENABLED)).toBe(true)
+    vi.useRealTimers()
+  })
+
   it('reports a config error for unparseable toml', async () => {
     vi.useFakeTimers()
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))), { debounceMs: 50 })
+    const api = sandbox(okLoader, { debounceMs: 50 })
     api.configToml.value = 'this is = = not valid ['
     await vi.advanceTimersByTimeAsync(50)
     expect(api.configError.value).not.toBe('')
@@ -329,7 +361,7 @@ describe('useProseSandbox', () => {
   })
 
   it('reads and writes a length knob and clears it back to default', () => {
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     expect(api.lengths).toEqual(SCHEMA.lengths)
     expect(api.lengthValue('docstring-line-length')).toBe(76)
     api.setLength('docstring-line-length', 70)
@@ -340,12 +372,12 @@ describe('useProseSandbox', () => {
   })
 
   it('falls back to the code line length for an unlisted knob', () => {
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     expect(api.lengthValue('import-line-length')).toBe(88)
   })
 
   it('builds a share link that restores the session ahead of the store', async () => {
-    const first = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const first = sandbox(okLoader)
     await first.start()
     first.source.value = 'shared source'
     const url = await first.share()
@@ -353,19 +385,19 @@ describe('useProseSandbox', () => {
     expect(window.location.hash).toBe('')
     window.localStorage.clear()
     window.history.replaceState(null, '', url?.slice(url.indexOf('#')))
-    const second = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const second = sandbox(okLoader)
     await second.start()
     expect(second.source.value).toBe('shared source')
   })
 
   it('shares an untouched pool case by its id and restores it with the config', async () => {
-    const first = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const first = sandbox(okLoader)
     await first.start()
     first.setFacet('align-equals', ENABLED, false)
     const url = await first.share()
     window.localStorage.clear()
     window.history.replaceState(null, '', url?.slice(url.indexOf('#')))
-    const second = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))), { pick: () => 1 })
+    const second = sandbox(okLoader, { pick: () => 1 })
     await second.start()
     expect(second.source.value).toBe('seed a')
     expect(second.facetValue('align-equals', ENABLED)).toBe(false)
@@ -373,7 +405,15 @@ describe('useProseSandbox', () => {
 
   it('ignores an undecodable share hash and seeds normally', async () => {
     window.history.replaceState(null, '', '#1.not-a-real-payload')
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
+    await api.start()
+    expect(api.source.value).toBe('seed a')
+  })
+
+  it('falls back to normal seeding when a share names an unknown case', async () => {
+    const payload = await encodeShare({ case: 'ghost/renamed_away', configToml: '' })
+    window.history.replaceState(null, '', `#1.${payload}`)
+    const api = sandbox(okLoader)
     await api.start()
     expect(api.source.value).toBe('seed a')
   })
@@ -383,7 +423,7 @@ describe('useProseSandbox', () => {
       STORAGE_KEY,
       JSON.stringify({ configToml: 'code-line-length = 40\n', source: 'saved source' })
     )
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     await api.start()
     expect(api.source.value).toBe('saved source')
     expect(api.configToml.value).toBe('code-line-length = 40\n')
@@ -395,21 +435,21 @@ describe('useProseSandbox', () => {
       STORAGE_KEY,
       JSON.stringify({ configToml: 'not = = valid [', source: 'saved source' })
     )
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     await api.start()
     expect(api.source.value).toBe('saved source')
   })
 
   it('ignores an unreadable store and seeds a fresh example', async () => {
     window.localStorage.setItem(STORAGE_KEY, '{ not json')
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))))
+    const api = sandbox(okLoader)
     await api.start()
     expect(api.source.value).toBe('seed a')
   })
 
   it('persists an edit to the store', async () => {
     vi.useFakeTimers()
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))), { debounceMs: 50 })
+    const api = sandbox(okLoader, { debounceMs: 50 })
     api.setFacet('align-equals', ENABLED, false)
     api.source.value = 'edited'
     await vi.advanceTimersByTimeAsync(50)
@@ -423,7 +463,7 @@ describe('useProseSandbox', () => {
     vi.useFakeTimers()
     const descriptor = Object.getOwnPropertyDescriptor(window, 'localStorage')
     Object.defineProperty(window, 'localStorage', { configurable: true, value: undefined })
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT'))), { debounceMs: 50 })
+    const api = sandbox(okLoader, { debounceMs: 50 })
     await api.start()
     api.source.value = 'x'
     await vi.advanceTimersByTimeAsync(50)

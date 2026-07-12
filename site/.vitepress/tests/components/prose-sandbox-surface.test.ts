@@ -89,4 +89,20 @@ describe('ProseSandboxSurface', () => {
     expect(display.html()).not.toContain('data-rule="r1"')
     expect(display.html()).toContain('x = 1')
   })
+
+  domTest('draws a newly enabled rule\'s squiggle onto unchanged code', async ({ reducedMotion }) => {
+    reducedMotion(false)
+    const sandbox = fakeSandbox('x = 1')
+    const wrapper = mountSurface(sandbox)
+    await flushPromises()
+    expect(wrapper.get('.sandbox-surface-display').html()).not.toContain('data-rule="r1"')
+
+    sandbox.diagnostics.value = [
+      { code: 'r1', end_location: { column: 2, row: 1 }, location: { column: 1, row: 1 }, message: 'm' }
+    ]
+    await flushPromises()
+    await new Promise<void>(resolve => { setTimeout(resolve, 550) })
+    await flushPromises()
+    expect(wrapper.get('.sandbox-surface-display').html()).toContain('data-rule="r1"')
+  })
 })

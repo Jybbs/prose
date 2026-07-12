@@ -5,8 +5,7 @@ use std::io::{self, Write};
 use ruff_source_file::SourceFile;
 
 use super::{Emitter, EmitterSummary, Run, diagnostics};
-use crate::diagnostics::Diagnostic;
-use crate::findings::line_columns;
+use crate::{diagnostics::Diagnostic, findings::line_columns};
 
 pub(crate) struct Github;
 

@@ -8,9 +8,16 @@ use std::{
 };
 
 use ignore::{WalkBuilder, types::TypesBuilder};
+use itertools::Itertools;
 use prose::pipeline::Pipeline;
 use regex_lite::Regex;
 use serde::Deserialize;
+
+const INPUT_SNAPS: [(&str, &str); 3] = [
+    ("input.py", "input.py.snap"),
+    ("input.ipynb", "input.ipynb.snap"),
+    ("input.toml", "config.snap"),
+];
 
 /// The `[docs]` block every fixture case carries. `title` and
 /// `description` document the case, `previewable` gates whether it
@@ -43,14 +50,13 @@ fn dir_name(path: &Path) -> String {
 }
 
 fn subdirs(dir: &Path) -> Vec<PathBuf> {
-    let mut out: Vec<PathBuf> = fs_err::read_dir(dir)
+    fs_err::read_dir(dir)
         .unwrap()
         .flatten()
         .map(|entry| entry.path())
         .filter(|path| path.is_dir())
-        .collect();
-    out.sort();
-    out
+        .sorted()
+        .collect()
 }
 
 #[test]
@@ -69,23 +75,18 @@ fn every_case_directory_is_well_formed() {
         domains.insert(domain.clone());
         for case_dir in subdirs(&domain_dir) {
             let id = format!("{domain}/{}", dir_name(&case_dir));
-            let has_py = case_dir.join("input.py").is_file();
-            let has_ipynb = case_dir.join("input.ipynb").is_file();
-            let has_toml = case_dir.join("input.toml").is_file();
-
-            if !has_py && !has_ipynb && !has_toml {
+            if INPUT_SNAPS
+                .iter()
+                .all(|(input, _)| !case_dir.join(input).is_file())
+            {
                 violations.push(format!(
                     "{id}: missing input.py, input.ipynb, and input.toml"
                 ));
             }
-            if has_py && !case_dir.join("input.py.snap").is_file() {
-                violations.push(format!("{id}: input.py without its input.py.snap"));
-            }
-            if has_ipynb && !case_dir.join("input.ipynb.snap").is_file() {
-                violations.push(format!("{id}: input.ipynb without its input.ipynb.snap"));
-            }
-            if has_toml && !case_dir.join("config.snap").is_file() {
-                violations.push(format!("{id}: input.toml without its config.snap"));
+            for (input, snap) in INPUT_SNAPS {
+                if case_dir.join(input).is_file() && !case_dir.join(snap).is_file() {
+                    violations.push(format!("{id}: {input} without its {snap}"));
+                }
             }
 
             let meta_path = case_dir.join("meta.toml");
@@ -117,7 +118,7 @@ fn every_case_directory_is_well_formed() {
                     violations.push(format!("{id}: canonical case must be previewable"));
                 }
             }
-            if docs.sandbox && !has_py {
+            if docs.sandbox && !case_dir.join("input.py").is_file() {
                 violations.push(format!("{id}: sandbox case must carry an input.py seed"));
             }
         }

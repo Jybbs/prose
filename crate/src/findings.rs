@@ -63,15 +63,15 @@ impl<'a> JsonEdit<'a> {
         edit: &'a Edit,
         full: bool,
     ) -> Self {
-        let (location, end_location) = if full {
-            let (start, end, _) = located(file, index, edit.range());
-            (
-                Some(JsonLocation::from(start)),
-                Some(JsonLocation::from(end)),
-            )
-        } else {
-            (None, None)
-        };
+        let (location, end_location) = full.then(|| located(file, index, edit.range())).map_or(
+            (None, None),
+            |(start, end, _)| {
+                (
+                    Some(JsonLocation::from(start)),
+                    Some(JsonLocation::from(end)),
+                )
+            },
+        );
         Self {
             before: &file.source_text()[edit.range()],
             content: edit.content().unwrap_or_default(),

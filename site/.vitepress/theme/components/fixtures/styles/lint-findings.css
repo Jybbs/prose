@@ -44,10 +44,11 @@
 }
 
 .lint-popover .rule-card {
-  min-height     : auto;
-  overflow       : hidden;
-  padding-bottom : 8px;
-  row-gap        : 8px;
+  grid-template-columns : auto auto 1fr;
+  min-height            : auto;
+  overflow              : hidden;
+  padding-bottom        : 8px;
+  row-gap               : 8px;
 }
 
 .lint-popover .rule-card-header {

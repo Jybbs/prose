@@ -42,7 +42,9 @@ const dirty = computed(() =>
 
 const announcement = computed(() => {
   const findings = sandbox.diagnostics.value.length
-  return `Formatted ${sandbox.formatted.value.trimEnd().split('\n').length} lines, ${findings} lint findings.`
+  const lines    = sandbox.formatted.value.trimEnd().split('\n').length
+  return `Formatted ${lines} ${lines === 1 ? 'line' : 'lines'}, `
+       + `${findings} lint ${findings === 1 ? 'finding' : 'findings'}.`
 })
 
 function refresh(): void {
@@ -79,7 +81,7 @@ onMounted(sandbox.start)
         :aria-label="deckLocked ? 'Unpin the configuration' : 'Pin the configuration while scrolling'"
         @click.stop="deckLocked = !deckLocked"
       >
-        <svg class="sandbox-deck-lock-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <svg class="sandbox-deck-lock-icon glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <rect x="5" y="11" width="14" height="9" rx="2" />
           <path :d="deckLocked ? 'M8 11V7a4 4 0 0 1 8 0v4' : 'M8 11V7a4 4 0 0 1 8 0'" />
         </svg>
@@ -116,7 +118,7 @@ onMounted(sandbox.start)
           :aria-label="refreshArmed ? 'Click again to proceed with a new example' : 'New example'"
           @click="refresh"
         >
-          <svg class="sandbox-corner-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <svg class="glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
             <path d="M21 3v5h-5" />
             <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
@@ -130,7 +132,7 @@ onMounted(sandbox.start)
           :aria-label="linkCopied ? 'Link copied' : 'Copy a link to this sandbox'"
           @click="shareLink"
         >
-          <svg class="sandbox-corner-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <svg class="glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path v-if="linkCopied" d="M4 12.5l5 5L20 6.5" />
             <template v-else>
               <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
@@ -236,15 +238,6 @@ onMounted(sandbox.start)
   outline-offset : 1px;
 }
 
-.sandbox-corner-icon {
-  width           : 14px;
-  height          : 14px;
-  stroke          : currentColor;
-  stroke-width    : 2;
-  stroke-linecap  : round;
-  stroke-linejoin : round;
-}
-
 .sandbox-announce {
   position : absolute;
   width    : 1px;
@@ -294,11 +287,7 @@ onMounted(sandbox.start)
 }
 
 .sandbox-deck-lock-icon {
-  width          : 15px;
-  height         : 15px;
-  stroke         : currentColor;
-  stroke-width   : 2;
-  stroke-linecap : round;
+  --glyph-size : 15px;
 }
 
 .sandbox-deck-body {

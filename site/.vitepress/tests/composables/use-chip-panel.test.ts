@@ -44,7 +44,6 @@ function fakeSandbox() {
       { default: 76, key: 'docstring-line-length', label: 'Docstring' }
     ],
     lengthValue: () => 88,
-    refresh    : () => {},
     rules      : [ALIGN, BLANK],
     setFacet   : (slug: string, facet: Facet, value: unknown) => {
       overrides.set(`${slug}.${facet.key}`, value)

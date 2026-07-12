@@ -80,7 +80,7 @@ fn diagnostics<'a>(
 }
 
 fn write_json_line<T: Serialize>(writer: &mut dyn Write, value: &T) -> io::Result<()> {
-    serde_json::to_writer(&mut *writer, value).map_err(io::Error::from)?;
+    serde_json::to_writer(&mut *writer, value)?;
     writer.write_all(b"\n")
 }
 

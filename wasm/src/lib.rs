@@ -67,6 +67,19 @@ mod tests {
     }
 
     #[test]
+    fn deduplicates_repeat_rule_firings() {
+        let result = formatted("", "aa = 1\nb = 2\n\ncc = 3\nd = 4\n");
+        assert_eq!(
+            result
+                .fired_rules
+                .iter()
+                .filter(|slug| *slug == "align-equals")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
     fn formats_an_empty_source() {
         let result = formatted("", "");
         assert_eq!(result.formatted, "");
@@ -81,22 +94,9 @@ mod tests {
     }
 
     #[test]
-    fn lint_findings_do_not_error() {
-        let result =
-            try_format("", "import os\nos.getcwd()\n").expect("formats despite a lint finding");
-        assert_eq!(result.formatted, "import os\nos.getcwd()\n");
-    }
-
-    #[test]
-    fn reports_lint_findings_against_the_output() {
-        let result = formatted("", "import os\nos.getcwd()\n");
-        assert!(result.diagnostics.contains("bare-imports"));
-    }
-
-    #[test]
-    fn reports_the_rules_that_fired_on_the_source() {
-        let result = formatted("", "aa = 1\nb = 2\n");
-        assert!(result.fired_rules.iter().any(|slug| slug == "align-equals"));
+    fn leaves_diagnostics_empty_when_none_fire() {
+        let result = formatted("", "x = 1\n");
+        assert_eq!(result.diagnostics, "");
     }
 
     #[test]
@@ -106,9 +106,10 @@ mod tests {
     }
 
     #[test]
-    fn leaves_diagnostics_empty_when_none_fire() {
-        let result = formatted("", "x = 1\n");
-        assert_eq!(result.diagnostics, "");
+    fn lint_findings_do_not_error() {
+        let result =
+            try_format("", "import os\nos.getcwd()\n").expect("formats despite a lint finding");
+        assert_eq!(result.formatted, "import os\nos.getcwd()\n");
     }
 
     #[test]
@@ -122,9 +123,21 @@ mod tests {
     }
 
     #[test]
+    fn reports_lint_findings_against_the_output() {
+        let result = formatted("", "import os\nos.getcwd()\n");
+        assert!(result.diagnostics.contains("bare-imports"));
+    }
+
+    #[test]
     fn reports_the_effective_config() {
         let result = formatted("code-line-length = 100", "x = 1\n");
         assert!(result.config.contains("code-line-length = 100"));
+    }
+
+    #[test]
+    fn reports_the_rules_that_fired_on_the_source() {
+        let result = formatted("", "aa = 1\nb = 2\n");
+        assert!(result.fired_rules.iter().any(|slug| slug == "align-equals"));
     }
 
     #[test]

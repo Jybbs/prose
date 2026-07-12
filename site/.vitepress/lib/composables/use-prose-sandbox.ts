@@ -95,16 +95,14 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   // stale loop, and a finished map is cached so a revisited source replays
   // without any probe runs.
   async function probeSource(current: ProseWasm, target: string): Promise<void> {
-    let baseline: probe.ProbeBaseline
-    let fired: readonly string[]
+    let baseline: ReturnType<ProseWasm['format']>
     try {
-      const run = current.format('', target)
-      baseline  = run
-      fired     = run.fired_rules
+      baseline = current.format('', target)
     } catch {
       eligible.value = []
       return
     }
+    const fired = baseline.fired_rules
     eligible.value = fired
     await promiseTimeout(0)
     if (eligibleSource !== target) return

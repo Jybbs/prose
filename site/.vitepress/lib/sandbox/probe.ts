@@ -6,7 +6,7 @@ import type { ProseWasm }         from './load-module'
 const INT_PROBES    = [1, 500] as const
 const LENGTH_PROBES = [30, 180] as const
 
-export type ProbeBaseline = { diagnostics: string, formatted: string }
+type ProbeBaseline = { diagnostics: string, formatted: string }
 
 // The probe values that could reveal a facet's effect on a source: a bool
 // flips its default and an int takes each extreme, whereas a string kind has

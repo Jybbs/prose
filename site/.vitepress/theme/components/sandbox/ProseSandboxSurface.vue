@@ -16,8 +16,6 @@ import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 const props = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
 const { diagnostics, error, formatted, source } = props.sandbox
 
-const MORPH_MS = 450
-
 const reducedMotion = useReducedMotion()
 const display       = useTemplateRef<HTMLElement>('display')
 const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
@@ -28,6 +26,7 @@ const displayHtml = ref('')
 const draft       = ref('')
 const editing     = ref(false)
 const morphKey    = ref(0)
+const morphMs     = ref(450)
 const morphing    = ref(false)
 const panel       = shallowRef<MagicMovePanel>(null)
 const step        = ref(0)
@@ -66,15 +65,14 @@ async function render(next: string): Promise<void> {
     drawSquiggles()
     return
   }
-  if (!panel.value) {
-    panel.value = (await import('@shikijs/magic-move/vue')).ShikiMagicMovePrecompiled
-  }
+  panel.value ??= (await import('@shikijs/magic-move/vue')).ShikiMagicMovePrecompiled
   const { precompileMagicMove } = await import('../../../lib/markdown/magic-move')
   const committed = await precompileMagicMove([from, next])
   if (gen !== generation) return
   steps.value     = committed
   step.value      = 0
   animate.value   = false
+  morphMs.value   = ruleDrawMs()
   morphKey.value += 1
   morphing.value  = true
   // The FLIP morph measures the rest state against the painted DOM, so the
@@ -86,7 +84,7 @@ async function render(next: string): Promise<void> {
   if (gen !== generation) return
   animate.value = true
   step.value    = 1
-  setTimeout(() => { if (gen === generation && morphing.value) endMorph() }, MORPH_MS + 250)
+  setTimeout(() => { if (gen === generation && morphing.value) endMorph() }, morphMs.value + 250)
 }
 
 // The morph settles onto the static display, so the squiggles draw back in
@@ -127,13 +125,9 @@ async function reflow(html: string, gen: number): Promise<void> {
 // Stages the underlines of `rules` scaled to zero and returns the elements,
 // so the caller can retract them or lift the class to draw them back.
 function markUndrawn(root: HTMLElement, rules: readonly string[]): HTMLElement[] {
-  const matched: HTMLElement[] = []
-  root.querySelectorAll<HTMLElement>('.lint-flag').forEach(flag => {
-    if (rules.includes(flag.dataset.rule ?? '')) {
-      flag.classList.add('lint-undrawn')
-      matched.push(flag)
-    }
-  })
+  const matched = [...root.querySelectorAll<HTMLElement>('.lint-flag')]
+    .filter(flag => rules.includes(flag.dataset.rule ?? ''))
+  matched.forEach(flag => flag.classList.add('lint-undrawn'))
   return matched
 }
 
@@ -219,7 +213,7 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
       :steps="[...steps]"
       :step="step"
       :animate="animate && !reducedMotion"
-      :options="magicMoveOptions(MORPH_MS)"
+      :options="magicMoveOptions(morphMs)"
       @end="endMorph"
     />
     <div
