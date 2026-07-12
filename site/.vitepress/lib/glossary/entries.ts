@@ -262,11 +262,11 @@ export const glossary: Record<string, GlossaryEntry> = {
   },
 
   'docstring': {
-    aliases    : ['docstrings', 'triple-quoted docstring'],
-    definition : 'A docstring is a triple-quoted string literal placed as the first statement '
-               + 'in a module, class, or function. *Prose* rewraps multi-line bodies under '
-               + '`docstring-wrap` and gates single-line shapes under '
-               + '`docstring-expand`.',
+    aliases    : ['docstrings'],
+    definition : 'A docstring is a string literal placed as the first statement in a module, '
+               + 'class, or function, whatever quotes surround it. *Prose* canonicalizes each '
+               + 'to the `"""` frame under `docstring-frame`, rewraps multi-line bodies under '
+               + '`docstring-wrap`, and gates single-line shapes under `docstring-expand`.',
     families   : ['docs', 'engine'],
     href       : '/primitives/docstring'
   },
@@ -299,9 +299,9 @@ export const glossary: Record<string, GlossaryEntry> = {
   'f-string': {
     aliases    : ['f-strings'],
     definition : 'An f-string is a Python string literal prefixed `f"..."` that interpolates '
-               + 'expressions inside `{}` placeholders. The `docstring` walker skips f-string '
-               + 'and other concatenated forms, so only plain triple-quoted string literals '
-               + 'count as docstrings.',
+               + 'expressions inside `{}` placeholders. The `docstring` walker skips an f-string '
+               + 'in docstring position, since Python assigns it no `__doc__`, leaving it outside '
+               + 'every docstring rule.',
     families   : ['formatting', 'docs'],
     href       : 'https://docs.python.org/3/reference/lexical_analysis.html#f-strings'
   },

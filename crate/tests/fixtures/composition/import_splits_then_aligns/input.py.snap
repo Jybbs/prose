@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/import_splits_then_aligns/input.py
+---
+from apps.io                import beta_helper
+from apps.io                import delta
+from apps.io                import gamma_helper
+from apps.registry.longpath import alpha

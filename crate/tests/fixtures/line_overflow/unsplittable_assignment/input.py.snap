@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/unsplittable_assignment/input.py
+---
+metrics.rolling.window.average = previous_value

@@ -1,5 +1,5 @@
 ---
-caption : "Drops a multi-line docstring's opener and closer onto their own lines."
+caption : "Canonicalizes a docstring's quotes and frames the opener and closer."
 related : [docstring-wrap, docstring-expand]
 layout  : doc
 ---
@@ -8,11 +8,11 @@ layout  : doc
 
 <RuleLayout rule="docstring_frame">
 
-A multi-line docstring whose opener or closer shares a line with the body reads as a fragment, with the prose flowing into the triple-quotes rather than sitting between them as a self-contained block. `docstring-frame` lands the opening `"""` flush with the docstring indent on its own line, drops the closing `"""` to its own line beneath the last content line, and leaves the prose body untouched between them.
+Python takes any string literal standing first in a module, class, or function as its docstring, whatever quotes surround it, and `docstring-frame` canonicalizes every one to the `"""` form because the quotes are the docstring's frame. A `'''`-delimited docstring, a plain `'...'` or `"..."`, and an already-`"""` docstring all settle on the same triple-double-quote delimiter, a raw `r` prefix kept verbatim on the opener since PEP 257 sanctions `r"""` for a docstring carrying a backslash.
 
-The rule fires on every multi-line docstring across module, class, and function scopes. Single-line docstrings (*opener, body, and closer all on one line*) are left alone for [[docstring-expand]] to handle. Pair with [[docstring-wrap]] for the description-prose wrap that runs after this rule canonicalizes the opener and closer.
+For a multi-line docstring the rule also lands the opening `"""` flush with the docstring indent on its own line and drops the closing `"""` to its own line beneath the last content line, leaving the prose body untouched between them. It runs ahead of [[docstring-expand]], so a requoted one-liner expands to the multi-line shape in the same pass, and [[docstring-wrap]] then wraps the description prose against its budget.
 
-The walker [[docstring]] reads against the PEP 257 definition, so f-string docstrings *(`f"""..."""`)* and concatenated string forms are excluded by construction. Raw-prefixed *(`r"""`)* and byte-prefixed *(`b"""`)* literals canonicalize the same way as plain triple-quoted forms, with the prefix preserved verbatim on the opener. An empty docstring *(`""""""`)* lands as an empty multi-line shape, leaving the opener and closer on their own lines with a blank line between them.
+The walker [[docstring]] reads against the PEP 257 definition, so an f-string docstring *(`f"""..."""`)*, a bytes literal *(`b"""..."""`)*, and concatenated string forms are excluded by construction, Python assigning none of them a `__doc__`. When re-delimiting to `"""` would break the string, wherein the body already holds a `"""` run or a single-line body ends in `"`, the rule keeps the original quotes rather than corrupt it.
 
 <template #related-after>
 

@@ -671,6 +671,7 @@ mod tests {
         config.rules.group_imports.enabled = false;
         config.rules.import_layout.enabled = false;
         config.rules.legacy_union_syntax.enabled = false;
+        config.rules.line_overflow.enabled = false;
         config.rules.miscased_constants.enabled = false;
         config.rules.reassigned_constants.enabled = false;
         config.rules.shed_parentheses.enabled = false;

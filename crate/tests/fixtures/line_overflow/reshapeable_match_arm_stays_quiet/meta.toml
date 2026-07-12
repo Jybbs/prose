@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Reshapeable Match Arm Stays Quiet"
+
+description = '''
+The over-cap `case` arm holds a single statement `align-match-case` could still split onto its own line, so `line-overflow` leaves it for that rule and emits nothing.
+'''

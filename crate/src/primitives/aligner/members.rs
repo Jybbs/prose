@@ -78,9 +78,10 @@ pub(crate) fn line_anchored_member_between(
 /// `qualify` and returning one group per run of contiguous qualified
 /// parameters. A parameter that fails to qualify breaks the current
 /// run without joining either neighbor. Empty runs are filtered out.
-pub(crate) fn parameter_split_groups<F>(params: &Parameters, qualify: F) -> Vec<Vec<Member>>
+pub(crate) fn parameter_split_groups<M, F>(params: &Parameters, qualify: F) -> Vec<Vec<M>>
 where
-    F: FnMut(AnyParameterRef<'_>) -> Option<Member>,
+    M: Copy,
+    F: FnMut(AnyParameterRef<'_>) -> Option<M>,
 {
     let qualified: Vec<_> = params.iter_source_order().map(qualify).collect();
     qualified

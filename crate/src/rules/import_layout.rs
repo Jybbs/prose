@@ -1,14 +1,11 @@
-//! Splits an over-budget `from <module> import …` into a run of bare
-//! `from <module> import …` statements, each repeating the module
-//! prefix and greedily packing the alphabetized names up to
-//! `Config::import_line_length`. A single-name import (a lone name or
-//! `from <module> import *`), an import already within budget, and a
-//! multi-line (parenthesized or backslash-continued) import stay
-//! untouched. When a packed line carries one name whose own
-//! `from <module> import <name>` still overflows, that name keeps its
-//! line rather than splitting further.
+//! Splits an over-budget `from <module> import …` into repeated-prefix
+//! lines, greedily packing the names up to `Config::import_line_length`,
+//! or up to the aligned prefix when `align-imports` pads the `import`
+//! keyword rightward. A single-name, within-budget, or multi-line import
+//! stays untouched, and a lone name whose own line overflows keeps it
+//! rather than splitting further.
 
-use std::ops::Range;
+use std::{collections::HashMap, ops::Range};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -16,23 +13,37 @@ use ruff_python_ast::{
     statement_visitor::{StatementVisitor, walk_stmt},
 };
 use ruff_python_trivia::indentation_at_offset;
-use ruff_text_size::Ranged;
+use ruff_text_size::{Ranged, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
-    primitives::edit::{narrowed_replacement, singleton_groups},
+    primitives::{
+        aligner,
+        edit::{narrowed_replacement, singleton_groups},
+    },
     rule::{Rule, RuleId},
+    rules::align_imports,
     source::Source,
 };
 
+/// Display width of the `import ` keyword and its trailing space, the
+/// distance from an aligned `import` column to the first name.
+const IMPORT_KEYWORD_WIDTH: usize = "import ".len();
+
 pub(crate) struct ImportLayout {
+    align_settings: Option<aligner::Settings>,
     import_line_length: usize,
 }
 
 impl ImportLayout {
     pub(crate) fn from_config(config: &Config) -> Self {
+        let align = &config.rules.align_imports;
         Self {
+            // Reserve the aligned prefix only when `align-imports` runs,
+            // carrying its `max-shift` but no line cap so a to-be-split
+            // import reads the column it aligns to once split.
+            align_settings: align.enabled.then(|| aligner::Settings::from(align)),
             import_line_length: config.import_width(),
         }
     }
@@ -40,7 +51,11 @@ impl ImportLayout {
 
 impl Rule for ImportLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        let columns = self.align_settings.map_or_else(HashMap::new, |settings| {
+            align_imports::aligned_import_columns(source, settings)
+        });
         let mut visitor = Layout {
+            columns,
             edits: Vec::new(),
             import_line_length: self.import_line_length,
             newline: source.newline_str(),
@@ -56,6 +71,7 @@ impl Rule for ImportLayout {
 }
 
 struct Layout<'a> {
+    columns: HashMap<TextSize, usize>,
     edits: Vec<Edit>,
     import_line_length: usize,
     newline: &'static str,
@@ -90,7 +106,14 @@ impl<'a> Layout<'a> {
             .map(|alias| self.source.slice(alias.range()))
             .collect();
         let widths: Vec<usize> = names.iter().map(|name| name.width()).collect();
-        let prefix_width = indent.chars().count() + prefix.width();
+        // Pack against the aligned prefix when `align-imports` will pad the
+        // `import` keyword rightward, so the names still clear the budget
+        // once the padding lands. An unaligned import reads its natural
+        // prefix width.
+        let prefix_width = self.columns.get(&node.start()).map_or_else(
+            || indent.chars().count() + prefix.width(),
+            |&column| column + IMPORT_KEYWORD_WIDTH,
+        );
         let single_line = prefix_width + widths.iter().sum::<usize>() + 2 * (widths.len() - 1);
         if single_line <= self.import_line_length {
             return;
@@ -175,6 +198,7 @@ mod tests {
     fn multi_line_import_is_left_untouched() {
         let source = parse("from pkg import (\n    alpha,\n    beta,\n    gamma,\n)\n");
         let rule = ImportLayout {
+            align_settings: None,
             import_line_length: 10,
         };
         assert!(rule.apply(&source).is_empty());
@@ -203,6 +227,7 @@ mod tests {
     fn semicolon_joined_import_is_left_untouched() {
         let source = parse("x = 1; from pkg import alpha, beta, gamma\n");
         let rule = ImportLayout {
+            align_settings: None,
             import_line_length: 10,
         };
         assert!(rule.apply(&source).is_empty());

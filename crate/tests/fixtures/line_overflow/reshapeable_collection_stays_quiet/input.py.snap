@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/reshapeable_collection_stays_quiet/input.py
+---
+data = {"first": 1, "second": 2, "third": 3}

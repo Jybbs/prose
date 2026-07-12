@@ -52,17 +52,10 @@ impl<'a> AlignWalker<'a> {
         }
     }
 
-    /// Aligns `members` as one fix group, recording it when the pass
-    /// rewrites at least one gap.
-    fn emit_group(&mut self, members: &[Member]) {
-        let edits = self.group_edits(members);
-        self.push_group(edits);
-    }
-
     /// Aligns `members` to their shared column and folds in a one-space
     /// rewrite of each gap in `gaps`, recording the combined fix as one
     /// group. The members-level analog of [`Self::push_with_gaps`],
-    /// pairing the column math of [`Self::emit_group`] with the gap
+    /// pairing the column math of [`Self::group_edits`] with the gap
     /// normalization.
     pub(crate) fn emit_group_with_gaps(
         &mut self,
@@ -76,8 +69,20 @@ impl<'a> AlignWalker<'a> {
     /// Aligns `members` as one fix group when they form an alignment
     /// candidate, recording nothing otherwise.
     pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
+        self.emit_if_candidate_with_gaps(members, std::iter::empty());
+    }
+
+    /// Aligns `members` as one fix group when they form an alignment
+    /// candidate, folding a one-space rewrite of each gap in `gaps` into
+    /// the same group. Records nothing otherwise. The candidate-gated
+    /// counterpart to [`Self::emit_group_with_gaps`].
+    pub(crate) fn emit_if_candidate_with_gaps(
+        &mut self,
+        members: &[Member],
+        gaps: impl IntoIterator<Item = TextRange>,
+    ) {
         if is_alignment_candidate(self.source, members) {
-            self.emit_group(members);
+            self.emit_group_with_gaps(members, gaps);
         }
     }
 
@@ -170,18 +175,23 @@ impl Member {
 /// Emission knobs shared by every alignment rule.
 ///
 /// `max_shift` caps the run's width spread. `strip_singleton`
-/// collapses a size-one group's gap to zero width.
+/// collapses a size-one group's gap to zero width. `line_length`
+/// carries the governing cap when the rule resolves within it, so a
+/// member whose aligned line would cross the cap partitions out of the
+/// run the way an over-`max_shift` outlier does.
 #[derive(Clone, Copy)]
 pub(crate) struct Settings {
+    line_length: Option<usize>,
     max_shift: MaxShift,
     strip_singleton: bool,
 }
 
 impl Settings {
     /// Builds the alignment settings carried by an alignment rule, with
-    /// `strip_singleton` off until a rule opts in.
+    /// `strip_singleton` off and no line cap until a rule opts in.
     fn aligned(max_shift: MaxShift) -> Self {
         Self {
+            line_length: None,
             max_shift,
             strip_singleton: false,
         }
@@ -192,6 +202,13 @@ impl Settings {
     /// space otherwise.
     fn suffix_len(self, member_count: usize) -> usize {
         usize::from(member_count != 1 || !self.strip_singleton)
+    }
+
+    /// Returns a copy of `self` carrying `cap` as the governing line
+    /// length the run resolves within.
+    pub(crate) fn with_line_length(mut self, cap: usize) -> Self {
+        self.line_length = Some(cap);
+        self
     }
 
     /// Returns a copy of `self` with `strip_singleton` enabled.

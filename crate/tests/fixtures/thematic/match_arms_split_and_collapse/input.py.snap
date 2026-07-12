@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/thematic/match_arms_split_and_collapse/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/match_arms_split_and_collapse/input.py
 ---
 SETTINGS = {"default_action": "noop"}
 
@@ -9,12 +9,21 @@ SETTINGS = {"default_action": "noop"}
 def dispatch(event):
 
     match event.kind:
-        case "create":
-            return Counter(action="create", source=event.src, timestamp=event.ts)
-        case "update":
-            return Counter(action="update", source=event.src, timestamp=event.ts)
-        case "delete":
-            return Counter(action="delete", source=event.src, timestamp=event.ts)
+        case "create": return Counter(
+            action    = "create",
+            source    = event.src,
+            timestamp = event.ts
+        )
+        case "update": return Counter(
+            action    = "update",
+            source    = event.src,
+            timestamp = event.ts
+        )
+        case "delete": return Counter(
+            action    = "delete",
+            source    = event.src,
+            timestamp = event.ts
+        )
         case _: return None
 
 

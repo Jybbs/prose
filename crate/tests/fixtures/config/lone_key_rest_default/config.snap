@@ -71,10 +71,10 @@ Config {
         strip_trailing_commas: ToggleOnly {
             enabled: true,
         },
-        docstring_expand: ToggleOnly {
+        docstring_frame: ToggleOnly {
             enabled: true,
         },
-        docstring_frame: ToggleOnly {
+        docstring_expand: ToggleOnly {
             enabled: true,
         },
         unused_future_annotations: ToggleOnly {
@@ -165,6 +165,9 @@ Config {
             enabled: true,
         },
         signature_annotations: ToggleOnly {
+            enabled: true,
+        },
+        line_overflow: ToggleOnly {
             enabled: true,
         },
     },

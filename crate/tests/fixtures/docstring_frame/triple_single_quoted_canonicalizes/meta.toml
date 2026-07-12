@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Triple-Single-Quoted Docstrings Convert to Triple Double"
+
+description = '''
+A triple-single-quoted docstring **converts to the canonical triple-double-quote form** PEP 257 sanctions. Its body and framing stay put, leaving the delimiters as the only change.
+'''
