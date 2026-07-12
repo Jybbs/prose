@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/width_trigger_explodes_keyword_call/input.py
+---
+def build(alpha, beta, gamma):
+    return (alpha, beta, gamma)
+
+
+config = build(
+    alpha=first_value_here,
+    beta=second_value_here,
+    gamma=third_value_here
+)

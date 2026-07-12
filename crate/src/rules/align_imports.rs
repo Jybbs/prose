@@ -9,13 +9,15 @@
 //! (parenthesized name lists, backslash continuations) skip alignment
 //! because shifting the keyword would break the continuation indent.
 
+use std::collections::HashMap;
+
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Stmt,
     statement_visitor::{StatementVisitor, walk_body},
     token::TokenKind,
 };
-use ruff_text_size::Ranged;
+use ruff_text_size::{Ranged, TextSize};
 
 use crate::{
     config::Config,
@@ -31,7 +33,8 @@ pub(crate) struct AlignImports {
 impl AlignImports {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: aligner::Settings::from(&config.rules.align_imports),
+            settings: aligner::Settings::from(&config.rules.align_imports)
+                .with_line_length(config.import_width()),
         }
     }
 }
@@ -68,53 +71,13 @@ impl Visitor<'_> {
     /// between two `from`-imports splits the surrounding run without
     /// merging its neighbors and without re-walking the body.
     fn process_body(&mut self, body: &[Stmt]) {
-        let rule = self.walker.rule;
-        let groups = aligner::keyed_line_adjacent_groups(self.walker.source, body, rule, |s| {
-            self.qualify_from(s)
-                .map(|m| (Form::From, m))
-                .or_else(|| self.qualify_import_as(s).map(|m| (Form::As, m)))
+        let source = self.walker.source;
+        let groups = aligner::keyed_line_adjacent_groups(source, body, self.walker.rule, |s| {
+            qualify(source, s)
         });
         for members in groups {
             self.walker.emit_if_candidate(&members);
         }
-    }
-
-    /// Builds an alignment member for a `from M import N` statement,
-    /// anchored at the `import` keyword. Returns `None` for any other
-    /// statement shape and for multi-line imports whose continuation
-    /// indent would misalign if the keyword shifted.
-    fn qualify_from(&self, stmt: &Stmt) -> Option<aligner::Member> {
-        let s = stmt.as_import_from_stmt()?;
-        if self.walker.source.contains_line_break(s.range) {
-            return None;
-        }
-        aligner::line_anchored_member_at_kind(
-            self.walker.source,
-            s.range.start(),
-            s.range,
-            TokenKind::Import,
-        )
-    }
-
-    /// Builds an alignment member for a single-name aliased import
-    /// (`import M as A`), anchored at the `as` keyword. Returns `None`
-    /// for bare imports, multi-name imports, multi-line imports, and any
-    /// other statement shape.
-    fn qualify_import_as(&self, stmt: &Stmt) -> Option<aligner::Member> {
-        let s = stmt.as_import_stmt()?;
-        if self.walker.source.contains_line_break(s.range) {
-            return None;
-        }
-        let [alias] = s.names.as_slice() else {
-            return None;
-        };
-        let asname = alias.asname.as_ref()?;
-        aligner::line_anchored_member_between(
-            self.walker.source,
-            alias.name.range(),
-            asname.start(),
-            TokenKind::As,
-        )
     }
 }
 
@@ -123,4 +86,67 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
         self.process_body(body);
         walk_body(self, body);
     }
+}
+
+/// Maps each aligned `from M import N` statement's start to the display
+/// column its `import` keyword lands at, so `import-layout` packs an
+/// over-budget import's names against the prefix width the alignment
+/// gives it. `settings` carries no line cap, so a to-be-split import
+/// reads the column it aligns to once split rather than the natural
+/// column the cap would leave it at unsplit.
+pub(crate) fn aligned_import_columns(
+    source: &Source,
+    settings: aligner::Settings,
+) -> HashMap<TextSize, usize> {
+    let groups =
+        aligner::keyed_line_adjacent_groups(source, &source.ast().body, AlignImports::SLUG, |s| {
+            qualify(source, s).map(|(form, m)| (form, (s.start(), m)))
+        });
+    let mut columns = HashMap::new();
+    for group in groups {
+        let members: Vec<aligner::Member> = group.iter().map(|(_, member)| *member).collect();
+        for ((start, _), column) in group
+            .iter()
+            .zip(aligner::operator_columns(source, &members, settings))
+        {
+            columns.insert(*start, column);
+        }
+    }
+    columns
+}
+
+/// Tags a statement with its import form and alignment member, or
+/// `None` for a statement that joins no alignment run.
+fn qualify(source: &Source, stmt: &Stmt) -> Option<(Form, aligner::Member)> {
+    qualify_from(source, stmt)
+        .map(|m| (Form::From, m))
+        .or_else(|| qualify_import_as(source, stmt).map(|m| (Form::As, m)))
+}
+
+/// Builds an alignment member for a `from M import N` statement,
+/// anchored at the `import` keyword. Returns `None` for any other
+/// statement shape and for multi-line imports whose continuation
+/// indent would misalign if the keyword shifted.
+fn qualify_from(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
+    let s = stmt.as_import_from_stmt()?;
+    if source.contains_line_break(s.range) {
+        return None;
+    }
+    aligner::line_anchored_member_at_kind(source, s.range.start(), s.range, TokenKind::Import)
+}
+
+/// Builds an alignment member for a single-name aliased import
+/// (`import M as A`), anchored at the `as` keyword. Returns `None`
+/// for bare imports, multi-name imports, multi-line imports, and any
+/// other statement shape.
+fn qualify_import_as(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
+    let s = stmt.as_import_stmt()?;
+    if source.contains_line_break(s.range) {
+        return None;
+    }
+    let [alias] = s.names.as_slice() else {
+        return None;
+    };
+    let asname = alias.asname.as_ref()?;
+    aligner::line_anchored_member_between(source, alias.name.range(), asname.start(), TokenKind::As)
 }

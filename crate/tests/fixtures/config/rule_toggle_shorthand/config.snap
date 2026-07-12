@@ -159,6 +159,9 @@ Config {
         signature_annotations: ToggleOnly {
             enabled: true,
         },
+        line_overflow: ToggleOnly {
+            enabled: true,
+        },
     },
     target_version: None,
 }

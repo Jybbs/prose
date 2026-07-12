@@ -43,6 +43,14 @@ The top-level keys carry settings that span multiple rules. They sit at the docu
 With no value set, every version-dependent arm skips rather than assume a default, leaving [[legacy-union-syntax]] and [[unused-future-annotations]] quiet on every project that has not opted into a target.
 :::
 
+## Lengths
+
+The `*-line-length` caps are hard constraints, and every shaping rule resolves within them rather than reading the budget as a hint. `code-line-length` governs code lines and `import-line-length` governs import lines, with the count knobs *(`max-args`, `max-params`, `max-dict-entries`)* choosing shapes only for the lines that already fit beneath a cap.
+
+A construct with a legal multi-line reshape takes it once its line crosses the cap, whatever a count threshold says, so a call over `code-line-length` explodes to one argument per line even at or under `max-args`, and a signature, collection, or `from` import does the same against its budget. An alignment run whose padding would carry a member past its cap reshapes that member first *(an import splits per [[import-layout]], a call or collection value explodes per its layout rule)* and then aligns within the cap, a member partitioning out of the run unpadded the way an over-`max-shift` outlier does only when no reshape can bring its aligned width under.
+
+A cap no legal form can satisfy *(a deep indent, a long identifier, a cap set below what a statement needs)* leaves the narrowest legal form standing, and [[line-overflow]] names that remainder, so an unsatisfiable cap reads as a finding in `prose check` and a squiggle in the sandbox rather than as a knob that did nothing.
+
 ## Cache
 
 The `[cache]` table tunes the user-level [**cache**](/reference/cache) that *Prose* keeps for repeat runs *(`[tool.prose.cache]` in a `pyproject.toml`)*. Both keys default to the canonical shape, so a project that does not write the table gets the cache at its full size.

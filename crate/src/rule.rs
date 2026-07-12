@@ -30,12 +30,13 @@ use crate::{
         call_layout::CallLayout, collection_layout::CollectionLayout,
         docstring_expand::DocstringExpand, docstring_frame::DocstringFrame,
         docstring_wrap::DocstringWrap, group_imports::GroupImports, import_layout::ImportLayout,
-        legacy_union_syntax::LegacyUnionSyntax, miscased_constants::MiscasedConstants,
-        reassigned_constants::ReassignedConstants, shed_parentheses::ShedParentheses,
-        signature_annotations::SignatureAnnotations, signature_layout::SignatureLayout,
-        single_use_variables::SingleUseVariables, step_narration::StepNarration,
-        strip_align_padding::StripAlignPadding, strip_none_return::StripNoneReturn,
-        strip_trailing_commas::StripTrailingCommas, unsorted_parameters::UnsortedParameters,
+        legacy_union_syntax::LegacyUnionSyntax, line_overflow::LineOverflow,
+        miscased_constants::MiscasedConstants, reassigned_constants::ReassignedConstants,
+        shed_parentheses::ShedParentheses, signature_annotations::SignatureAnnotations,
+        signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
+        step_narration::StepNarration, strip_align_padding::StripAlignPadding,
+        strip_none_return::StripNoneReturn, strip_trailing_commas::StripTrailingCommas,
+        unsorted_parameters::UnsortedParameters,
         unused_future_annotations::UnusedFutureAnnotations,
     },
     source::Source,
@@ -355,6 +356,7 @@ register_rules! {
     "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables      => "Binding is assigned and used once. Consider inlining",
     "unsorted-parameters":       unsorted_parameters:       ToggleOnly                => UnsortedParameters       => "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword",
     "signature-annotations":     signature_annotations:     ToggleOnly                => SignatureAnnotations    => "Flag a missing parameter or return type annotation",
+    "line-overflow":             line_overflow:             ToggleOnly                => LineOverflow            => "Flag a line over its length budget that no reshape can bring within",
 }
 
 #[cfg(test)]

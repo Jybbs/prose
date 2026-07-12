@@ -1,10 +1,12 @@
 //! Padding-width math and edit emission for the alignment rules.
 //! Splits each source-ordered run into the contiguous groups the
-//! `max-shift` cap allows and rewrites each member's gap to its
-//! group's column.
+//! `max-shift` and governing line-length caps allow and rewrites each
+//! member's gap to its group's column.
 
 use ruff_diagnostics::Edit;
+use ruff_source_file::LineRanges;
 use ruff_text_size::TextRange;
+use unicode_width::UnicodeWidthStr;
 
 use super::{Member, Settings, holds::is_alignment_candidate, members::baseline};
 use crate::{config::MaxShift, source::Source};
@@ -19,7 +21,7 @@ pub(super) fn emit_group(
     settings: Settings,
     edits: &mut Vec<Edit>,
 ) {
-    for (group, max_w) in reading_order_groups(members, settings.max_shift) {
+    for (group, max_w) in reading_order_groups(source, members, settings) {
         let suffix = settings.suffix_len(group.len());
         emit_with_paddings(source, group, max_w, max_op_width(group), suffix, edits);
     }
@@ -43,7 +45,7 @@ pub(crate) fn operator_columns(
             .collect();
     }
     let mut columns = Vec::with_capacity(members.len());
-    for (group, max_w) in reading_order_groups(members, settings.max_shift) {
+    for (group, max_w) in reading_order_groups(source, members, settings) {
         let suffix = settings.suffix_len(group.len());
         let max_op = max_op_width(group);
         columns.extend(
@@ -89,6 +91,41 @@ fn emit_with_paddings(
     }));
 }
 
+/// True when no member of `group` aligned to `max_w` has its line
+/// pushed past `cap` by the padding. A member already over `cap`
+/// unpadded stays in the run rather than partitioning to no gain.
+fn fits_line_cap(source: &Source, group: &[Member], max_w: usize, cap: usize) -> bool {
+    let max_op = max_op_width(group);
+    group.iter().all(|m| {
+        let line = source
+            .slice(source.text().full_line_range(m.line_start))
+            .trim_end_matches(['\r', '\n'])
+            .width();
+        let base = line - source.slice(m.gap).width();
+        base + padding_width(*m, max_w, max_op, 1) <= cap || base + 1 > cap
+    })
+}
+
+/// True when `group` may align as one column: its width spread stays
+/// within `shift_cap` and, when a `line_length` cap governs, every
+/// member's aligned line stays within it.
+fn group_holds(
+    source: &Source,
+    group: &[Member],
+    shift_cap: usize,
+    line_length: Option<usize>,
+) -> bool {
+    let max_w = group_max_width(group);
+    let min_w = group.iter().map(|m| m.width).min().unwrap_or(0);
+    max_w - min_w <= shift_cap
+        && line_length.is_none_or(|cap| fits_line_cap(source, group, max_w, cap))
+}
+
+/// The widest member width in `group`, zero for an empty slice.
+fn group_max_width(group: &[Member]) -> usize {
+    group.iter().map(|m| m.width).max().unwrap_or(0)
+}
+
 /// Returns the widest `op_width` in `members`, or `0` when the slice
 /// is empty.
 fn max_op_width(members: &[Member]) -> usize {
@@ -107,11 +144,17 @@ fn padding_width(member: Member, max_w: usize, max_op_w: usize, suffix_len: usiz
 /// aligner emits independently, each paired with its widest member's
 /// width. `Unlimited` gathers the whole run into one group, `NoShift`
 /// leaves every row its own singleton, and `Cap(n)` grows a group while
-/// its width spread stays within `n`, cutting a fresh group at the first
-/// row that would push the spread past it. Each group is a sub-slice, so
-/// a column never jumps a row it skipped.
-fn reading_order_groups(members: &[Member], max_shift: MaxShift) -> Vec<(&[Member], usize)> {
-    let cap = match max_shift {
+/// its width spread stays within `n`. A governing `line_length` cap
+/// grows a group only while every member's aligned line stays within it,
+/// cutting a fresh group at the first row that would push the spread or a
+/// line past its cap. Each group is a sub-slice, so a column never jumps
+/// a row it skipped.
+fn reading_order_groups<'m>(
+    source: &Source,
+    members: &'m [Member],
+    settings: Settings,
+) -> Vec<(&'m [Member], usize)> {
+    let shift_cap = match settings.max_shift {
         MaxShift::NoShift => {
             return members
                 .iter()
@@ -121,22 +164,20 @@ fn reading_order_groups(members: &[Member], max_shift: MaxShift) -> Vec<(&[Membe
         MaxShift::Unlimited => usize::MAX,
         MaxShift::Cap(n) => n.get(),
     };
+    if members.is_empty() {
+        return Vec::new();
+    }
     let mut groups = Vec::new();
     let mut start = 0;
-    let (mut min_w, mut max_w) = (usize::MAX, usize::MIN);
-    for (i, member) in members.iter().enumerate() {
-        let lo = min_w.min(member.width);
-        let hi = max_w.max(member.width);
-        if hi - lo > cap {
-            groups.push((&members[start..i], max_w));
-            (start, min_w, max_w) = (i, member.width, member.width);
-        } else {
-            (min_w, max_w) = (lo, hi);
+    for i in 1..members.len() {
+        if !group_holds(source, &members[start..=i], shift_cap, settings.line_length) {
+            let prev = &members[start..i];
+            groups.push((prev, group_max_width(prev)));
+            start = i;
         }
     }
-    if start < members.len() {
-        groups.push((&members[start..], max_w));
-    }
+    let last = &members[start..];
+    groups.push((last, group_max_width(last)));
     groups
 }
 

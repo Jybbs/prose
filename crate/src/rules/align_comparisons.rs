@@ -28,7 +28,8 @@ pub(crate) struct AlignComparisons {
 impl AlignComparisons {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: aligner::Settings::from(&config.rules.align_comparisons),
+            settings: aligner::Settings::from(&config.rules.align_comparisons)
+                .with_line_length(config.code_width()),
         }
     }
 }

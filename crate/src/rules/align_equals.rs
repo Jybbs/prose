@@ -40,7 +40,8 @@ pub(crate) struct AlignEquals {
 impl AlignEquals {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: aligner::Settings::from(&config.rules.align_equals),
+            settings: aligner::Settings::from(&config.rules.align_equals)
+                .with_line_length(config.code_width()),
         }
     }
 }
