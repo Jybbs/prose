@@ -2,7 +2,7 @@ import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
 import { memoizeByPath } from '../shared/memoize-by-path'
 import { siteDir }       from '../shared/paths'
-import { inertEnv }      from './inert-env'
+import { inertEnv, plainTermsEnv } from './inert-env'
 
 const renderer = memoizeByPath(createMarkdownRenderer)
 
@@ -57,4 +57,10 @@ export function renderInlineField<T extends object, K extends string & keyof T>(
 
 export function renderInlineHtml(md: MarkdownRenderer, src: string): string {
   return md.renderInline(src, inertEnv())
+}
+
+// Caption text renders inside cover-linked cards and hover poppers, where a
+// glossary anchor cannot receive its own click, so terms flatten to text.
+export function renderPlainInlineHtml(md: MarkdownRenderer, src: string): string {
+  return md.renderInline(src, plainTermsEnv())
 }

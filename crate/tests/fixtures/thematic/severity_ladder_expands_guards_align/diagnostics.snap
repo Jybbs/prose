@@ -1,0 +1,43 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/thematic/severity_ladder_expands_guards_align/input.py
+---
+align-comparisons@733..836
+align-equals@63..289
+alphabetize@86..1137
+band-constants@12..962
+bare-imports@7..11
+blank-lines@11..12
+blank-lines@294..295
+blank-lines@334..335
+blank-lines@616..617
+blank-lines@641..642
+blank-lines@857..858
+blank-lines@962..963
+call-layout@1027..1137
+collection-layout@67..130
+reassigned-constants@270..294
+reassigned-constants@617..641
+shed-parentheses@386..387
+shed-parentheses@414..415
+shed-parentheses@919..920
+shed-parentheses@959..960
+signature-annotations@299..307
+signature-annotations@308..318
+signature-annotations@320..332
+signature-annotations@646..659
+signature-annotations@660..670
+signature-annotations@672..686
+signature-annotations@688..699
+signature-annotations@862..877
+signature-annotations@878..886
+signature-annotations@967..971
+signature-annotations@972..984
+signature-annotations@986..994
+signature-annotations@996..1006
+step-narration@339..378
+step-narration@441..486
+strip-trailing-commas@129..130
+strip-trailing-commas@200..201
+unsorted-parameters@971..1007

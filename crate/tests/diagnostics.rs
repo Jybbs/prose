@@ -37,7 +37,7 @@ fn fixtures_emit_expected_diagnostics() {
         common::in_snapshot_dir(path, || {
             insta::assert_snapshot!("diagnostics", render(&diagnostics));
             if let Some(json) =
-                prose::cli::emit::lint_records_json(output.source_file(), &run_diagnostics)
+                prose::findings::lint_records_json(output.source_file(), &run_diagnostics)
             {
                 insta::assert_snapshot!("lint_findings", json);
             }

@@ -1,0 +1,33 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
+---
+align-colons@247..316
+align-equals@101..114
+align-equals@252..302
+alphabetize@7..804
+band-constants@7..589
+bare-imports@46..48
+blank-lines@10..11
+blank-lines@204..205
+blank-lines@236..237
+blank-lines@339..340
+blank-lines@38..39
+blank-lines@477..478
+blank-lines@48..49
+blank-lines@546..547
+blank-lines@589..590
+collection-layout@717..804
+group-imports@11..48
+signature-annotations@348..356
+signature-annotations@555..559
+signature-annotations@594..607
+signature-annotations@608..614
+signature-annotations@616..644
+signature-annotations@646..653
+signature-annotations@655..659
+signature-annotations@661..668
+signature-annotations@670..677
+signature-layout@608..677
+unsorted-parameters@607..678

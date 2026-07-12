@@ -23,7 +23,8 @@
   transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease, opacity var(--prose-transition);
 }
 
-.lint-undrawn .lint-flag::after {
+.lint-undrawn .lint-flag::after,
+.lint-flag.lint-undrawn::after {
   transform : scaleX(0);
 }
 

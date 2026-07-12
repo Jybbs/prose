@@ -54,9 +54,8 @@ The invocation shapes below cover almost every run, with an additional shape for
 
 - [**Installation**](/usage/installation) covers the package managers, post-install verification, and the platform matrix.
 - [**Quick Start**](/usage/quick-start) walks each run shape end to end against a sample project.
-- [**Sandbox**](/usage/sandbox) formats Python live in the browser, seeded with a case lifted from the fixture corpus.
 - [**Suppression**](/usage/suppression) covers `# fmt: off`, `# fmt: skip`, and `# prose: ignore[<rule>]`, with one opt-out surface per scope.
 
 ## See Also
 
-For the integration surfaces that hook `prose format` / `prose check` into the editor save event, the git staging boundary, and the CI gate, see [**Integrations**](/integrations/). For the rule catalog *Prose* actually runs, see [**Rules**](/rules/). For the primitive surface a downstream Rust caller links against, see [**Primitives**](/primitives/).
+For the integration surfaces that hook `prose format` / `prose check` into the editor save event, the git staging boundary, and the CI gate, see [**Integrations**](/integrations/). For the rule catalog *Prose* actually runs, see [**Rules**](/rules/). For the primitive surface a downstream Rust caller links against, see [**Primitives**](/primitives/). To watch the formatter run live in the browser, seeded from the fixture corpus, see the [**Sandbox**](/sandbox/).

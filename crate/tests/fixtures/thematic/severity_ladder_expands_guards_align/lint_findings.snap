@@ -1,0 +1,254 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/thematic/severity_ladder_expands_guards_align/input.py
+---
+[
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 12,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 1
+    },
+    "message": "Bare import `math` reaches 1 of its attributes. Rewrite as `from math import ...` naming only the symbols this module uses"
+  },
+  {
+    "code": "reassigned-constants",
+    "end_location": {
+      "column": 28,
+      "row": 15
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 15
+    },
+    "message": "Module-level `LATENCY_CEILING_MS` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+  },
+  {
+    "code": "reassigned-constants",
+    "end_location": {
+      "column": 25,
+      "row": 30
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 30
+    },
+    "message": "Module-level `LATENCY_CEILING_MS` is SCREAMING_CASE but reassigned. Rename it to lowercase or keep it write-once"
+  },
+  {
+    "code": "step-narration",
+    "end_location": {
+      "column": 44,
+      "row": 20
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 20
+    },
+    "message": "Numbered-step comment found. Consider extracting each step as a named function"
+  },
+  {
+    "code": "step-narration",
+    "end_location": {
+      "column": 50,
+      "row": 23
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 23
+    },
+    "message": "Numbered-step comment found. Consider extracting each step as a named function"
+  },
+  {
+    "code": "unsorted-parameters",
+    "end_location": {
+      "column": 45,
+      "row": 37
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 37
+    },
+    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 24,
+      "row": 18
+    },
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 18
+    },
+    "message": "Parameter `error_rate` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 38,
+      "row": 18
+    },
+    "fix": null,
+    "location": {
+      "column": 26,
+      "row": 18
+    },
+    "message": "Parameter `sample_count` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 13,
+      "row": 18
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 18
+    },
+    "message": "`classify` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 29,
+      "row": 33
+    },
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 33
+    },
+    "message": "Parameter `failures` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 20,
+      "row": 33
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 33
+    },
+    "message": "`next_poll_delay` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 22,
+      "row": 37
+    },
+    "fix": null,
+    "location": {
+      "column": 10,
+      "row": 37
+    },
+    "message": "Parameter `incident_key` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 32,
+      "row": 37
+    },
+    "fix": null,
+    "location": {
+      "column": 24,
+      "row": 37
+    },
+    "message": "Parameter `severity` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 44,
+      "row": 37
+    },
+    "fix": null,
+    "location": {
+      "column": 34,
+      "row": 37
+    },
+    "message": "Parameter `error_rate` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 9,
+      "row": 37
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 37
+    },
+    "message": "`page` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 29,
+      "row": 46
+    },
+    "fix": null,
+    "location": {
+      "column": 19,
+      "row": 46
+    },
+    "message": "Parameter `error_rate` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 45,
+      "row": 46
+    },
+    "fix": null,
+    "location": {
+      "column": 31,
+      "row": 46
+    },
+    "message": "Parameter `p95_latency_ms` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 58,
+      "row": 46
+    },
+    "fix": null,
+    "location": {
+      "column": 47,
+      "row": 46
+    },
+    "message": "Parameter `queue_depth` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 18,
+      "row": 46
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 46
+    },
+    "message": "`within_budget` returns a value but has no return type annotation"
+  }
+]

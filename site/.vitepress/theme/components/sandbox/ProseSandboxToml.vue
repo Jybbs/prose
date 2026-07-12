@@ -1,0 +1,219 @@
+<script setup lang="ts">
+import { useClipboard } from '@vueuse/core'
+import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+
+import SandboxCodeEditor from './SandboxCodeEditor.vue'
+
+import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
+import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
+import { codeHighlighter }   from '../../../lib/markdown/highlighter'
+import { highlight }         from '../../../lib/sandbox/highlight'
+import { SHIKI_THEMES }      from '../../../lib/shared/constants'
+
+const CARET   = '<span class="code-caret" aria-hidden="true"></span>'
+const STEP_MS = 12
+
+type Token     = { content: string, style: string }
+type TokenLine = readonly Token[]
+
+function escapeHtml(text: string): string {
+  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+}
+
+function tokenStyle(style: unknown): string {
+  if (typeof style === 'string') return style
+  if (style && typeof style === 'object') {
+    return Object.entries(style).map(([key, value]) => `${key}:${String(value)}`).join(';')
+  }
+  return ''
+}
+
+async function tokenLines(text: string): Promise<TokenLine[]> {
+  const highlighter = await codeHighlighter()
+  const { tokens } = highlighter.codeToTokens(text, { lang: 'toml', themes: SHIKI_THEMES })
+  return tokens.map(line => line.map(token => ({
+    content : token.content,
+    style   : tokenStyle(token.htmlStyle)
+  })))
+}
+
+function lineHtml(line: TokenLine, chars: number): string {
+  let remaining = chars
+  let html      = ''
+  for (const token of line) {
+    if (remaining <= 0) break
+    const slice = token.content.slice(0, remaining)
+    html      += `<span style="${token.style}">${escapeHtml(slice)}</span>`
+    remaining -= slice.length
+  }
+  return html
+}
+
+const props = defineProps<{ sandbox: ProseSandbox }>()
+const { configError, configToml } = props.sandbox
+
+const { copy, copied } = useClipboard({ copiedDuring: 2000, source: configToml })
+
+const reducedMotion = useReducedMotion()
+const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
+
+const displayHtml = ref('')
+const editing     = ref(false)
+const shown       = ref('')
+const typing      = ref(false)
+const typingHtml  = ref('')
+
+let generation = 0
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => { setTimeout(resolve, ms) })
+}
+
+async function settle(text: string): Promise<void> {
+  displayHtml.value = text.trim() ? await highlight(text, 'toml') : ''
+  typing.value      = false
+}
+
+// Types the panel-driven config change in the settled colors, tokenizing the
+// before and after once and rendering every frame from those tokens. A
+// single-line change sweeps as one caret from the shared character, whereas
+// a bulk change backspaces and retypes every affected line concurrently,
+// each under its own caret, the untouched lines holding still. A newer
+// change bumps the generation and abandons the stale run.
+async function typeTo(next: string): Promise<void> {
+  const gen = ++generation
+  if (reducedMotion.value) {
+    shown.value = next
+    await settle(next)
+    return
+  }
+  const current = shown.value
+  const [curTokens, nextTokens] = await Promise.all([tokenLines(current), tokenLines(next)])
+  if (gen !== generation) return
+  const curLines  = current.split('\n')
+  const nextLines = next.split('\n')
+  let prefix = 0
+  while (
+    prefix < curLines.length && prefix < nextLines.length &&
+    curLines[prefix] === nextLines[prefix]
+  ) prefix += 1
+  let suffix = 0
+  while (
+    suffix < curLines.length - prefix && suffix < nextLines.length - prefix &&
+    curLines[curLines.length - 1 - suffix] === nextLines[nextLines.length - 1 - suffix]
+  ) suffix += 1
+
+  function frame(tokens: TokenLine[], lines: readonly string[], midEnd: number, chars: number): void {
+    const parts: string[] = []
+    const texts: string[] = []
+    for (let index = 0; index < lines.length; index += 1) {
+      if (index < prefix || index >= midEnd) {
+        parts.push(lineHtml(tokens[index] ?? [], Number.POSITIVE_INFINITY))
+        texts.push(lines[index])
+        continue
+      }
+      const visible = Math.min(chars, lines[index].length)
+      parts.push(lineHtml(tokens[index] ?? [], visible) + CARET)
+      texts.push(lines[index].slice(0, visible))
+    }
+    typingHtml.value = parts.join('\n')
+    shown.value      = texts.join('\n')
+  }
+
+  typing.value = true
+  const curMidEnd  = curLines.length - suffix
+  const nextMidEnd = nextLines.length - suffix
+  const curMax     = Math.max(0, ...curLines.slice(prefix, curMidEnd).map(line => line.length))
+  const nextMax    = Math.max(0, ...nextLines.slice(prefix, nextMidEnd).map(line => line.length))
+  let floor = 0
+  if (curMidEnd - prefix <= 1 && nextMidEnd - prefix <= 1) {
+    const before = curMidEnd > prefix ? curLines[prefix] : ''
+    const after  = nextMidEnd > prefix ? nextLines[prefix] : ''
+    while (floor < before.length && floor < after.length && before[floor] === after[floor]) {
+      floor += 1
+    }
+  }
+  for (let chars = curMax; chars > floor; chars -= 1) {
+    if (gen !== generation) return
+    frame(curTokens, curLines, curMidEnd, chars - 1)
+    await sleep(STEP_MS)
+  }
+  for (let chars = floor; chars < nextMax; chars += 1) {
+    if (gen !== generation) return
+    frame(nextTokens, nextLines, nextMidEnd, chars + 1)
+    await sleep(STEP_MS)
+  }
+  if (gen !== generation) return
+  shown.value = next
+  await settle(next)
+}
+
+function startEditing(): void {
+  editing.value = true
+  nextTick(() => editor.value?.focus())
+}
+
+function stopEditing(): void {
+  editing.value = false
+  shown.value   = configToml.value
+  settle(configToml.value)
+}
+
+watch(configToml, next => { if (!editing.value) typeTo(next) })
+
+onMounted(() => {
+  shown.value = configToml.value
+  settle(configToml.value)
+})
+</script>
+
+<template>
+  <section class="code-panel sandbox-toml panel panel-clip" aria-label="prose.toml config">
+    <header class="code-panel-label">prose.toml</header>
+    <SandboxCodeEditor
+      v-show="editing"
+      ref="editor"
+      v-model="configToml"
+      lang="toml"
+      @blur="stopEditing"
+    />
+    <pre
+      v-show="!editing && typing"
+      class="code-panel-code sandbox-toml-typing shiki"
+      v-html="typingHtml"
+    />
+    <div
+      v-show="!editing && !typing"
+      class="code-panel-code sandbox-toml-display"
+      role="button"
+      tabindex="0"
+      @click="startEditing"
+      @keydown.enter.prevent="startEditing"
+      v-html="displayHtml"
+    />
+    <button
+      v-show="!editing"
+      type="button"
+      class="copy"
+      :class="{ copied }"
+      :title="copied ? 'Copied' : 'Copy prose.toml'"
+      @click="copy()"
+    />
+    <p v-if="configError" class="code-panel-error">{{ configError }}</p>
+  </section>
+</template>
+
+<style scoped>
+.sandbox-toml {
+  min-height : 30rem;
+}
+
+.sandbox-toml-typing {
+  color       : var(--vp-c-text-1);
+  white-space : pre;
+}
+
+.sandbox-toml-display {
+  cursor : text;
+}
+</style>

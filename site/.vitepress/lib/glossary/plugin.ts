@@ -1,6 +1,6 @@
 import type MarkdownIt from 'markdown-it'
 
-import { isInert }           from '../markdown/inert-env'
+import { isInert, isPlainTerms } from '../markdown/inert-env'
 import { replaceTextTokens } from '../markdown/token-split'
 import { walkBodyInlines }   from '../markdown/walk'
 import { wordBounded }       from '../markdown/word-bounded'
@@ -40,6 +40,7 @@ export function glossaryPlugin(
       const slug    = md.utils.escapeHtml(rawSlug)
       const display = md.utils.escapeHtml(t.content)
       if (!isInert(env)) return `<GlossaryTerm slug="${slug}">${display}</GlossaryTerm>`
+      if (isPlainTerms(env)) return display
       const href = hrefBySlug.get(rawSlug)
       return href === undefined
         ? `<span class="glossary-term" data-term="${slug}">${display}</span>`

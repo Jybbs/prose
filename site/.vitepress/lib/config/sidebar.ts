@@ -76,6 +76,7 @@ function sectionGroups(
   switch (slug) {
     case 'primitives' : return primitiveGroups(label, primitives)
     case 'rules'      : return ruleGroups(label, rules)
+    case 'sandbox'    : return []
     default           : return [{
       items : [
         { link: sectionRoute(slug), text: 'Overview' },

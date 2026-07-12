@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+sandbox     = true
+title       = "Async Client Drops the Future Import and Modernizes Its Legacy Typing"
+
+description = '''
+An async API client written against the old `typing` module opens on a grab-bag `from typing import …` line, dated `Optional` and `Union` aliases, and a handler register, then a poller with an over-wide signature and keyword call, and a queue consumer annotated through a quoted forward reference. **The unused future import falls away, the over-budget typing import splits and sorts, the legacy unions surface their `|` rewrites, the constants band and align, and the wide signature, call, and headers dict explode one-per-line**, with the half-annotated signatures and the assign-once decode result flagged alongside.
+'''

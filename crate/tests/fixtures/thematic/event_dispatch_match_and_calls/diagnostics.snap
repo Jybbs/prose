@@ -1,0 +1,21 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.py
+---
+align-match-case@310..415
+alphabetize@0..606
+band-constants@0..39
+blank-lines@24..25
+call-layout@204..287
+collection-layout@545..612
+docstring-expand@90..120
+group-imports@0..39
+signature-annotations@437..446
+signature-annotations@46..54
+signature-annotations@476..483
+signature-annotations@55..60
+signature-annotations@62..70
+signature-annotations@72..80
+single-use-variables@535..541
+unsorted-parameters@54..81

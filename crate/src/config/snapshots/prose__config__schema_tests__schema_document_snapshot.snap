@@ -13,7 +13,8 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "max-shift": {
           "$ref": "#/$defs/MaxShift",
-          "default": 16
+          "default": 16,
+          "description": "The width-spread budget a contiguous run may shift to reach the\nshared column, `0` forbidding any shift and `false` folding a run\ninto one column regardless of spread."
         }
       },
       "type": "object"
@@ -27,18 +28,22 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "group-methods": {
           "default": true,
+          "description": "Keys methods on the dunder-property-private-public grouping before\nname, dropping to name alone when `false`.",
           "type": "boolean"
         },
         "sort-definitions": {
           "default": true,
+          "description": "Reorders class and function definitions, freezing them in source\norder when `false`.",
           "type": "boolean"
         },
         "sort-docstring-entries": {
           "default": true,
+          "description": "Reorders Google-style docstring entry sections.",
           "type": "boolean"
         },
         "sort-dunder-lists": {
           "default": true,
+          "description": "Reorders the `__all__` and `__slots__` string lists.",
           "type": "boolean"
         }
       },
@@ -49,6 +54,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "properties": {
         "allow": {
           "default": [],
+          "description": "Module names left as bare imports regardless of attribute reach.",
           "items": {
             "type": "string"
           },
@@ -60,10 +66,12 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "exempt-aliased": {
           "default": true,
+          "description": "Exempts an aliased import from the rewrite.",
           "type": "boolean"
         },
         "max-attributes": {
           "default": 4,
+          "description": "The attribute-reach count above which a bare import stays as-is.",
           "format": "uint",
           "minimum": 0,
           "type": "integer"
@@ -96,7 +104,8 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "max-args": {
           "$ref": "#/$defs/InlineBudget",
-          "default": 3
+          "default": 3,
+          "description": "The inline argument count above which a call explodes one-per-line,\n`false` leaving width as the only trigger."
         }
       },
       "type": "object"
@@ -106,6 +115,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "properties": {
         "collapse": {
           "default": true,
+          "description": "Joins a fitting multi-line literal, subscript, or dict key back to\none line.",
           "type": "boolean"
         },
         "enabled": {
@@ -114,18 +124,22 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "explode": {
           "default": true,
+          "description": "Drives every expansion, the width spread and the entry-count cap\nalike, so `false` leaves the count cap inert.",
           "type": "boolean"
         },
         "max-atomics": {
           "$ref": "#/$defs/InlineBudget",
-          "default": 8
+          "default": 8,
+          "description": "The inline element count above which a collection explodes,\n`false` leaving width as the only trigger."
         },
         "max-dict-entries": {
           "$ref": "#/$defs/InlineBudget",
-          "default": 3
+          "default": 3,
+          "description": "The dict entry count above which the dict explodes, `false`\nleaving width as the only trigger."
         },
         "wrap-dict-entries": {
           "default": true,
+          "description": "Breaks an over-wide `key: value` at its `:` and hangs the value\nbeneath.",
           "type": "boolean"
         }
       },
@@ -225,6 +239,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "properties": {
         "allow": {
           "default": [],
+          "description": "Constant names exempt from the reassignment flag.",
           "items": {
             "type": "string"
           },
@@ -637,7 +652,8 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "max-params": {
           "$ref": "#/$defs/InlineBudget",
-          "default": 4
+          "default": 4,
+          "description": "The parameter count above which a signature explodes one-per-line,\n`false` leaving width as the only trigger."
         }
       },
       "type": "object"
@@ -647,6 +663,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "properties": {
         "allow-pattern": {
           "default": "^_",
+          "description": "A regex whose matching variable names are left un-inlined.",
           "format": "regex",
           "type": "string"
         },

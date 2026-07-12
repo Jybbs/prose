@@ -1,16 +1,20 @@
 //! WebAssembly bindings exposing the formatting core to JavaScript.
 
-use std::error::Error;
+use std::{collections::BTreeSet, error::Error};
 
-use prose::{config::Config, pipeline::Pipeline, source::Source};
+use prose::{config::Config, findings::lint_records_json, pipeline::Pipeline, source::Source};
 use wasm_bindgen::prelude::*;
 
-/// The output of [`format`]: the rewritten source and the effective
-/// configuration that produced it, serialized to TOML.
+/// The output of [`format`]: the rewritten source, the effective
+/// configuration serialized to TOML, the lint-severity findings as the
+/// JSON records the docs site decorates, and a JSON array of the distinct
+/// slugs of every rule that fired on the source.
 #[derive(Debug)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct FormatResult {
     pub config: String,
+    pub diagnostics: String,
+    pub fired_rules: String,
     pub formatted: String,
 }
 
@@ -38,10 +42,18 @@ pub fn start() {
 /// Runs the pipeline behind [`format`], boxing whichever error arises.
 fn try_format(config_toml: &str, source: &str) -> Result<FormatResult, Box<dyn Error>> {
     let config = Config::from_prose_toml_str(config_toml)?;
-    let (formatted, _diagnostics) =
+    let (formatted, diagnostics) =
         Pipeline::with_defaults(&config).run(source.parse::<Source>()?)?;
+    let fired: BTreeSet<&str> = diagnostics.iter().map(|diag| diag.rule.as_str()).collect();
+    let slugs = fired
+        .iter()
+        .map(|slug| format!("\"{slug}\""))
+        .collect::<Vec<_>>()
+        .join(",");
     Ok(FormatResult {
         config: config.to_toml(),
+        diagnostics: lint_records_json(formatted.source_file(), &diagnostics).unwrap_or_default(),
+        fired_rules: format!("[{slugs}]"),
         formatted: formatted.text().to_owned(),
     })
 }
@@ -78,6 +90,30 @@ mod tests {
         let result =
             try_format("", "import os\nos.getcwd()\n").expect("formats despite a lint finding");
         assert_eq!(result.formatted, "import os\nos.getcwd()\n");
+    }
+
+    #[test]
+    fn reports_lint_findings_against_the_output() {
+        let result = formatted("", "import os\nos.getcwd()\n");
+        assert!(result.diagnostics.contains("bare-imports"));
+    }
+
+    #[test]
+    fn reports_the_rules_that_fired_on_the_source() {
+        let result = formatted("", "aa = 1\nb = 2\n");
+        assert!(result.fired_rules.contains("align-equals"));
+    }
+
+    #[test]
+    fn leaves_fired_rules_an_empty_array_when_none_fire() {
+        let result = formatted("", "x = 1\n");
+        assert_eq!(result.fired_rules, "[]");
+    }
+
+    #[test]
+    fn leaves_diagnostics_empty_when_none_fire() {
+        let result = formatted("", "x = 1\n");
+        assert_eq!(result.diagnostics, "");
     }
 
     #[test]

@@ -6,8 +6,7 @@ use std::{
 };
 
 use ruff_notebook::NotebookIndex;
-use ruff_source_file::{LineColumn, SourceFile};
-use ruff_text_size::TextRange;
+use ruff_source_file::SourceFile;
 use serde::Serialize;
 
 use crate::{diagnostics::Diagnostic, rule::RuleId};
@@ -16,8 +15,6 @@ mod github;
 mod json;
 mod sarif;
 mod text;
-
-pub use json::lint_records_json;
 
 pub(super) use github::Github;
 pub(super) use json::Json;
@@ -80,14 +77,6 @@ fn diagnostics<'a>(
             .iter()
             .map(move |d| (run.file, run.notebook_index, d))
     })
-}
-
-fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, LineColumn) {
-    let code = file.to_source_code();
-    (
-        code.line_column(range.start()),
-        code.line_column(range.end()),
-    )
 }
 
 fn write_json_line<T: Serialize>(writer: &mut dyn Write, value: &T) -> io::Result<()> {

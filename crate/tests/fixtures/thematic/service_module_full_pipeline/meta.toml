@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+sandbox     = true
+title       = "Service Module Runs the Import, Constant, Dataclass, and Signature Pipeline"
+
+description = '''
+A service module opens with unsorted imports and a loose constant pool, then a dataclass with out-of-order annotated fields and interleaved methods, and closes on an over-wide function whose body reaches a bare import through one attribute. **The imports group and align, the constants band, the fields sort and align their `:` and `=` columns, the methods regroup, the signature and the returned dict explode one-per-line**, and the bare import surfaces a lint.
+'''

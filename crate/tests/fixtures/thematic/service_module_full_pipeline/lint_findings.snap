@@ -1,0 +1,150 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
+---
+[
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 10,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 1
+    },
+    "message": "Bare import `os` reaches 1 of its attributes. Rewrite as `from os import ...` naming only the symbols this module uses"
+  },
+  {
+    "code": "unsorted-parameters",
+    "end_location": {
+      "column": 2,
+      "row": 38
+    },
+    "fix": null,
+    "location": {
+      "column": 18,
+      "row": 31
+    },
+    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 13,
+      "row": 23
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 23
+    },
+    "message": "`_key` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 17,
+      "row": 26
+    },
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 26
+    },
+    "message": "`describe` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 11,
+      "row": 32
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 32
+    },
+    "message": "Parameter `method` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 33,
+      "row": 33
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 33
+    },
+    "message": "Parameter `fully_qualified_endpoint_url` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 12,
+      "row": 34
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 34
+    },
+    "message": "Parameter `headers` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 9,
+      "row": 35
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 35
+    },
+    "message": "Parameter `body` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 12,
+      "row": 36
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 36
+    },
+    "message": "Parameter `timeout` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 12,
+      "row": 37
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 37
+    },
+    "message": "Parameter `retries` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 18,
+      "row": 31
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 31
+    },
+    "message": "`build_request` returns a value but has no return type annotation"
+  }
+]

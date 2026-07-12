@@ -14,8 +14,9 @@ use serde::Deserialize;
 
 /// The `[docs]` block every fixture case carries. `title` and
 /// `description` document the case, `previewable` gates whether it
-/// renders on the docs site, and `canonical = true` marks the one lead
-/// example per rule page.
+/// renders on the docs site, `canonical = true` marks the one lead
+/// example per rule page, and `sandbox = true` opts the case into the
+/// interactive sandbox's seed pool.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Docs {
@@ -24,6 +25,8 @@ struct Docs {
     description: Option<String>,
     #[serde(default)]
     previewable: bool,
+    #[serde(default)]
+    sandbox: bool,
     title: Option<String>,
 }
 
@@ -113,6 +116,9 @@ fn every_case_directory_is_well_formed() {
                 if !docs.previewable {
                     violations.push(format!("{id}: canonical case must be previewable"));
                 }
+            }
+            if docs.sandbox && !has_py {
+                violations.push(format!("{id}: sandbox case must carry an input.py seed"));
             }
         }
     }

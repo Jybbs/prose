@@ -14,8 +14,8 @@ use serde_sarif::sarif::{
     Sarif as SarifDoc, ToolComponent,
 };
 
-use super::{Emitter, EmitterSummary, Run, diagnostics, line_columns, write_json_line};
-use crate::{diagnostics::Diagnostic, file_uri, rule::RuleId};
+use super::{Emitter, EmitterSummary, Run, diagnostics, write_json_line};
+use crate::{diagnostics::Diagnostic, file_uri, findings::line_columns, rule::RuleId};
 
 pub(crate) struct Sarif;
 

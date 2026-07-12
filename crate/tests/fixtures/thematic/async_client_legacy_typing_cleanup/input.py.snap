@@ -1,0 +1,77 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/input.py
+---
+import asyncio
+import json
+import logging
+
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Text
+from typing import Tuple, Union
+
+BACKOFF_CAPS   = {"default": 30.0}
+Interval       = Union[int, float]
+POLL_INTERVAL  = 2.5
+Payload        = Dict[Text, Any]
+RETRY_STATUSES = [429, 500, 502, 503]
+USER_AGENT     = "atlas-client/0.4"
+_handlers: Dict[Text, Callable] = {}
+log             = logging.getLogger("atlas.client")
+DEFAULT_HEADERS = {
+    "Accept"          : "application/json",
+    "Accept-Encoding" : "gzip",
+    "Connection"      : "keep-alive",
+    "User-Agent"      : USER_AGENT
+}
+Handler = Callable[[Payload], Awaitable[None]]
+
+
+async def consume(queue: "asyncio.Queue[Tuple[Text, Payload]]", limit=None):
+    done = 0
+    while limit is None or done < limit:
+        kind, payload = await queue.get()
+        handler       = _handlers.get(kind)
+        if handler is not None:
+            await handler(payload)
+        else:
+            log.warning("no handler registered for %s", kind)
+        done += 1
+        queue.task_done()
+
+
+def decode(raw) -> Optional[Payload]:
+    """
+    Decode one raw poll response into a payload.
+    """
+    parsed = json.loads(raw)
+    return parsed
+
+
+async def poll(
+    client,
+    endpoint : Text,
+    params   : Optional[Mapping[Text, Text]],
+    timeout  : Interval,
+    backoff  : Interval
+) -> AsyncIterator[Payload]:
+
+    while True:
+        response = await client.get(
+            follow_redirects = True,
+            headers          = DEFAULT_HEADERS,
+            params           = params,
+            timeout          = timeout,
+            url              = endpoint
+        )
+        if response.status in RETRY_STATUSES:
+            await asyncio.sleep(min(backoff, BACKOFF_CAPS["default"]))
+            continue
+        payload = decode(response.text)
+        if payload is not None:
+            yield payload
+        await asyncio.sleep(POLL_INTERVAL)
+
+
+def register(kind, handler: Handler):
+    _handlers[kind] = handler

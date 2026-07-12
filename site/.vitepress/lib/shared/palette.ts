@@ -58,6 +58,7 @@ export const SECTIONS: Record<Exclude<SectionSlug, 'rules'>, string> = {
   integrations : PALETTE.rainee,
   primitives   : PALETTE.dexter,
   reference    : PALETTE.casper,
+  sandbox      : PALETTE.whiskey,
   usage        : PALETTE.oat
 }
 

@@ -24,6 +24,7 @@ import { discoverPrimitiveIndex, discoverPrimitives } from './lib/primitives/dis
 import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
 import { assertCorpusIntegrity }                      from './lib/rules/integrity'
 import { ruleLinkPlugin }                             from './lib/rules/link-plugin'
+import { serveWasmPlugin }                            from './lib/sandbox/serve-plugin'
 import * as constants                                 from './lib/shared/constants'
 import { PALETTE, paletteCss }                        from './lib/shared/palette'
 import * as paths                                     from './lib/shared/paths'
@@ -136,7 +137,7 @@ export default defineConfig({
       load      : id => id === '\0virtual:prose-palette.css' ? paletteCss() : undefined,
       name      : 'prose-palette',
       resolveId : id => id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined
-    }, groupIconVitePlugin({
+    }, serveWasmPlugin(path.join(paths.siteDir(import.meta.url), 'public')), groupIconVitePlugin({
       customIcon: {
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),
         gha: TOOL_SEEDS.github.icon

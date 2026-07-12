@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+sandbox     = true
+title       = "Event Dispatch Splits Match Arms and Explodes a Keyword Call"
+
+description = '''
+An event dispatcher matches on a kind, one arm carrying an over-wide constructor call and the others staying terse, followed by a summarizer holding a five-entry totals dict. **The over-budget match arm and its call explode one-per-line with sorted, column-aligned keywords while the short arms collapse inline, the dict sorts and expands, and the single-line docstring reshapes to framed form**, with the assign-once total flagged for inlining.
+'''

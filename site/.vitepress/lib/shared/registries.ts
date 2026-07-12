@@ -43,7 +43,8 @@ export const SECTIONS = [
   { label: 'Reference',    slug: 'reference'    },
   { label: 'Integrations', slug: 'integrations' },
   { label: 'Rules',        slug: 'rules'        },
-  { label: 'Primitives',   slug: 'primitives'   }
+  { label: 'Primitives',   slug: 'primitives'   },
+  { label: 'Sandbox',      slug: 'sandbox'      }
 ] as const
 
 export type SectionSlug = (typeof SECTIONS)[number]['slug']
