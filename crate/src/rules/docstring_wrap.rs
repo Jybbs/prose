@@ -20,7 +20,7 @@ use crate::{
             DocstringBody, LineScan, LineScanner, ScannedLine, entry_head, indent_prefix,
             rewrite_docstrings, section_heading, triple_quoted_body,
         },
-        edit::{narrowed_replacement, singleton_groups},
+        edit::narrowed_replacement,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -47,7 +47,7 @@ impl DocstringWrap {
 
 impl Rule for DocstringWrap {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
+        rewrite_docstrings(source, |source, lit, edits| {
             let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline)
             else {
                 return;
@@ -58,7 +58,7 @@ impl Rule for DocstringWrap {
                 return;
             };
             edits.extend(narrowed_replacement(source, body.range, rewritten));
-        }))
+        })
     }
 
     fn id(&self) -> RuleId {

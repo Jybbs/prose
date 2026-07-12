@@ -25,7 +25,7 @@ mod body;
 mod scan;
 mod section;
 
-pub(crate) use body::{DocstringBody, indent_prefix, triple_quoted_body};
+pub(crate) use body::{DocstringBody, docstring_body, indent_prefix, triple_quoted_body};
 pub(crate) use scan::{LineScan, LineScanner, ScannedLine};
 pub(crate) use section::{entry_carrying_sections, entry_head, section_heading, unbracketed_colon};
 
@@ -76,16 +76,17 @@ pub(crate) fn body_docstring(body: &[Stmt]) -> Option<&StringLiteral> {
         .and_then(ExprStringLiteral::as_single_part_string)
 }
 
-/// Walks every docstring in `source` and collects the edits produced
-/// by `f` against each. The closure receives `source`, the docstring
-/// literal, and the running edit buffer. Returns the accumulated edits.
-pub(crate) fn rewrite_docstrings<F>(source: &Source, f: F) -> Vec<Edit>
+/// Walks every docstring in `source` and gathers the edits `f` produces
+/// against each into one fix group per docstring. The closure receives
+/// `source`, the docstring literal, and that docstring's edit buffer. A
+/// docstring whose buffer stays empty contributes no group.
+pub(crate) fn rewrite_docstrings<F>(source: &Source, f: F) -> Vec<Vec<Edit>>
 where
     F: FnMut(&Source, &StringLiteral, &mut Vec<Edit>),
 {
     struct Collector<'a, F> {
-        edits: Vec<Edit>,
         f: F,
+        groups: Vec<Vec<Edit>>,
         source: &'a Source,
     }
 
@@ -94,17 +95,21 @@ where
         F: FnMut(&Source, &StringLiteral, &mut Vec<Edit>),
     {
         fn handle(&mut self, lit: &StringLiteral) {
-            (self.f)(self.source, lit, &mut self.edits);
+            let mut edits = Vec::new();
+            (self.f)(self.source, lit, &mut edits);
+            if !edits.is_empty() {
+                self.groups.push(edits);
+            }
         }
     }
 
     let mut collector = Collector {
-        edits: Vec::new(),
         f,
+        groups: Vec::new(),
         source,
     };
     collector.walk(source);
-    collector.edits
+    collector.groups
 }
 
 #[cfg(test)]
@@ -180,13 +185,25 @@ mod tests {
     }
 
     #[test]
-    fn rewrite_docstrings_collects_edits_pushed_by_closure_per_docstring() {
+    fn rewrite_docstrings_drops_a_docstring_that_produces_no_edit() {
         let s = parse("\"\"\"M\"\"\"\ndef f():\n    \"\"\"f\"\"\"\n    pass\n");
-        let edits = rewrite_docstrings(&s, |_, lit, edits| {
+        let groups = rewrite_docstrings(&s, |_, lit, edits| {
+            if lit.value.to_string() == "f" {
+                edits.push(Edit::range_deletion(lit.range()));
+            }
+        });
+        assert_eq!(groups.len(), 1);
+    }
+
+    #[test]
+    fn rewrite_docstrings_groups_edits_per_docstring_in_source_order() {
+        let s = parse("\"\"\"M\"\"\"\ndef f():\n    \"\"\"f\"\"\"\n    pass\n");
+        let groups = rewrite_docstrings(&s, |_, lit, edits| {
             edits.push(Edit::range_deletion(lit.range()));
         });
-        assert_eq!(edits.len(), 2);
-        assert!(edits.windows(2).all(|w| w[0].start() < w[1].start()));
+        assert_eq!(groups.len(), 2);
+        assert!(groups.iter().all(|group| group.len() == 1));
+        assert!(groups.windows(2).all(|w| w[0][0].start() < w[1][0].start()));
     }
 
     #[test]
