@@ -36,9 +36,8 @@ impl Rule for DocstringFrame {
             let Some(body) = docstring_body(source, lit) else {
                 return;
             };
-            let multiline = body.is_multiline();
-            edits.extend(requote_edits(source, lit, &body, multiline));
-            if !multiline {
+            edits.extend(requote_edits(source, lit, &body));
+            if !body.is_multiline() {
                 return;
             }
             let leading_ok = body.text.starts_with(['\n', '\r']);
@@ -64,17 +63,13 @@ impl Rule for DocstringFrame {
 /// blank, or when re-delimiting would break the string, in that a `"""`
 /// run inside the body or a single-line body ending in `"` would abut
 /// the closer.
-fn requote_edits(
-    source: &Source,
-    lit: &StringLiteral,
-    body: &DocstringBody,
-    multiline: bool,
-) -> Vec<Edit> {
+fn requote_edits(source: &Source, lit: &StringLiteral, body: &DocstringBody) -> Vec<Edit> {
     let flags = lit.flags;
     if flags.quote_str() == "\"\"\"" || body.text.trim_whitespace().is_empty() {
         return Vec::new();
     }
-    let abuts_closer = body.text.contains("\"\"\"") || (!multiline && body.text.ends_with('"'));
+    let abuts_closer =
+        body.text.contains("\"\"\"") || (!body.is_multiline() && body.text.ends_with('"'));
     if abuts_closer {
         return Vec::new();
     }
@@ -97,6 +92,12 @@ mod tests {
     #[test]
     fn blank_body_is_left_alone() {
         let src = "def f():\n    '  '\n";
+        assert_eq!(run(src), src);
+    }
+
+    #[test]
+    fn inline_single_quoted_docstring_is_left_alone() {
+        let src = "def f(): 'doc'\n";
         assert_eq!(run(src), src);
     }
 
