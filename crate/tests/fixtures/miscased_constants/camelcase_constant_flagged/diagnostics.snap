@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: tests/fixtures/miscased_constants/camelcase_constant_flagged/input.py
+---
+miscased-constants@0..10

@@ -5,3 +5,5 @@ input_file: tests/fixtures/suppression/unmatched_off_suppresses_to_eof/input.py
 ---
 align-equals@1..10
 band-constants@0..25
+miscased-constants@14..21
+miscased-constants@6..9

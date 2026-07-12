@@ -1,0 +1,28 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/miscased_constants/lowercase_constant_flagged/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 12,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "max_retries",
+          "content": "MAX_RETRIES"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Module constant `max_retries` is not SCREAMING_CASE"
+  }
+]

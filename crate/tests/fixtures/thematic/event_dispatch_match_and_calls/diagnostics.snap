@@ -10,6 +10,7 @@ blank-lines@24..25
 call-layout@204..287
 collection-layout@545..612
 docstring-expand@90..120
+docstring-frame@491..530
 group-imports@0..39
 signature-annotations@437..446
 signature-annotations@46..54

@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/reshapeable_docstring_stays_quiet/input.py
+---
+"""Summarize what this module offers across its public surface.
+
+Extended notes continue in a second paragraph of prose here.
+"""

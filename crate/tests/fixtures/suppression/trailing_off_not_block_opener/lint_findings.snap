@@ -1,0 +1,112 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/suppression/trailing_off_not_block_opener/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 3,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "aa",
+          "content": "AA"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Module constant `aa` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 4,
+      "row": 2
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "bbb",
+          "content": "BBB"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Module constant `bbb` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 5,
+      "row": 3
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "cccc",
+          "content": "CCCC"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "Module constant `cccc` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 4,
+      "row": 4
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "foo",
+          "content": "FOO"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 4
+    },
+    "message": "Module constant `foo` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 6,
+      "row": 5
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "short",
+          "content": "SHORT"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 5
+    },
+    "message": "Module constant `short` is not SCREAMING_CASE"
+  }
+]

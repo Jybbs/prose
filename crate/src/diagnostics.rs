@@ -76,3 +76,13 @@ pub enum Severity {
     Format,
     Lint,
 }
+
+impl Severity {
+    pub(crate) fn is_format(self) -> bool {
+        matches!(self, Self::Format)
+    }
+
+    pub(crate) fn is_lint(self) -> bool {
+        matches!(self, Self::Lint)
+    }
+}

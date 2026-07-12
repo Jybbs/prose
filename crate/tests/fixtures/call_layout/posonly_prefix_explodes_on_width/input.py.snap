@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/posonly_prefix_explodes_on_width/input.py
+---
+def place(x, y, /, z):
+    return (x, y, z)
+
+
+result = place(
+    alpha_value,
+    beta_value,
+    gamma_value
+)

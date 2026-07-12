@@ -52,8 +52,14 @@ Config {
         group_imports: ToggleOnly {
             enabled: true,
         },
-        band_constants: ToggleOnly {
+        band_constants: BandConstantsConfig {
             enabled: true,
+            group_constants: true,
+            max_tiers: InlineBudget(
+                Some(
+                    2,
+                ),
+            ),
         },
         alphabetize: AlphabetizeConfig {
             enabled: true,
@@ -65,10 +71,10 @@ Config {
         strip_trailing_commas: ToggleOnly {
             enabled: true,
         },
-        docstring_expand: ToggleOnly {
+        docstring_frame: ToggleOnly {
             enabled: true,
         },
-        docstring_frame: ToggleOnly {
+        docstring_expand: ToggleOnly {
             enabled: true,
         },
         unused_future_annotations: ToggleOnly {
@@ -133,6 +139,12 @@ Config {
         strip_align_padding: ToggleOnly {
             enabled: true,
         },
+        miscased_constants: MiscasedConstantsConfig {
+            allow_pattern: Regex(
+                "",
+            ),
+            enabled: true,
+        },
         reassigned_constants: ReassignedConstantsConfig {
             allow: [],
             enabled: true,
@@ -153,6 +165,9 @@ Config {
             enabled: true,
         },
         signature_annotations: ToggleOnly {
+            enabled: true,
+        },
+        line_overflow: ToggleOnly {
             enabled: true,
         },
     },

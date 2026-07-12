@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Reshapeable Line Stays Quiet"
+
+description = '''
+The over-cap line carries an inline call `call-layout` could still explode, so `line-overflow` leaves it for that rule and emits nothing. Only the remainder no split can shorten surfaces as a finding.
+'''

@@ -1,0 +1,2 @@
+[rules]
+band-constants = { max-tiers = false }

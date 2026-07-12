@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Module-Level Conditional Is Still Module Scope"
+
+description = '''
+The scan descends into a top-level `if`, so `default_encoding` behind a platform guard draws the `DEFAULT_ENCODING` rename. Only a `def`, a `class`, or an `if TYPE_CHECKING:` block ends the descent.
+'''

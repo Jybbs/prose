@@ -1,0 +1,9 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/module_if_constant_flagged/input.py
+---
+import sys
+
+if sys.platform == "win32":
+    default_encoding = "utf-8"

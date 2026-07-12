@@ -10,21 +10,22 @@ import logging
 from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Text
 from typing import Tuple, Union
 
-BACKOFF_CAPS   = {"default": 30.0}
 Interval       = Union[int, float]
-POLL_INTERVAL  = 2.5
 Payload        = Dict[Text, Any]
+BACKOFF_CAPS   = {"default": 30.0}
+POLL_INTERVAL  = 2.5
 RETRY_STATUSES = [429, 500, 502, 503]
 USER_AGENT     = "atlas-client/0.4"
 _handlers: Dict[Text, Callable] = {}
-log             = logging.getLogger("atlas.client")
+log = logging.getLogger("atlas.client")
+
+Handler         = Callable[[Payload], Awaitable[None]]
 DEFAULT_HEADERS = {
     "Accept"          : "application/json",
     "Accept-Encoding" : "gzip",
     "Connection"      : "keep-alive",
     "User-Agent"      : USER_AGENT
 }
-Handler = Callable[[Payload], Awaitable[None]]
 
 
 async def consume(queue: "asyncio.Queue[Tuple[Text, Payload]]", limit=None):

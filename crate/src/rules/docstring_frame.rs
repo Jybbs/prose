@@ -1,18 +1,22 @@
-//! Enforces the canonical multi-line docstring shape: opening `"""`
-//! on its own line, body content, closing `"""` on its own line at
-//! the docstring's indent. Detects two violations and rewrites both
-//! with a single edit. Body content is preserved verbatim. Single-line
-//! docstrings belong to the companion rule `docstring-expand`
-//! and pass through this rule untouched.
+//! Canonicalizes every docstring to the `"""` frame. A docstring in any
+//! quote style (`'''`, `'...'`, `"..."`) is re-delimited to `"""` with
+//! its prefix kept verbatim, unless a `"""` run in the body or a
+//! single-line body ending in `"` would abut the closer. A multi-line
+//! docstring additionally lands its opener and closer on their own lines
+//! at the docstring's indent, the body between them preserved verbatim.
+//! Single-line docstrings expand under the companion rule
+//! `docstring-expand`, which runs on the reframed `"""` result.
 
 use ruff_diagnostics::Edit;
-use ruff_python_trivia::has_leading_content;
+use ruff_python_ast::{StringFlags, StringLiteral};
+use ruff_python_trivia::{PythonWhitespace, has_leading_content};
+use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
     primitives::{
-        docstring::{DocstringBody, indent_prefix, rewrite_docstrings, triple_quoted_body},
-        edit::{narrowed_replacement, singleton_groups},
+        docstring::{DocstringBody, docstring_body, indent_prefix, rewrite_docstrings},
+        edit::narrowed_replacement,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -28,11 +32,14 @@ impl DocstringFrame {
 
 impl Rule for DocstringFrame {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
-            let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline)
-            else {
+        rewrite_docstrings(source, |source, lit, edits| {
+            let Some(body) = docstring_body(source, lit) else {
                 return;
             };
+            edits.extend(requote_edits(source, lit, &body));
+            if !body.is_multiline() {
+                return;
+            }
             let leading_ok = body.text.starts_with(['\n', '\r']);
             let trailing_ok = !has_leading_content(body.range.end(), source.text());
             if leading_ok && trailing_ok {
@@ -43,12 +50,35 @@ impl Rule for DocstringFrame {
             let trailing = if trailing_ok { "" } else { pad.as_str() };
             let new_body = format!("{leading}{}{trailing}", body.text);
             edits.extend(narrowed_replacement(source, body.range, new_body));
-        }))
+        })
     }
 
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+}
+
+/// Edits re-delimiting `lit` to canonical `"""` with its prefix left in
+/// place. Empty when `lit` already opens with `"""`, when the body is
+/// blank, or when re-delimiting would break the string, in that a `"""`
+/// run inside the body or a single-line body ending in `"` would abut
+/// the closer.
+fn requote_edits(source: &Source, lit: &StringLiteral, body: &DocstringBody) -> Vec<Edit> {
+    let flags = lit.flags;
+    if flags.quote_str() == "\"\"\"" || body.text.trim_whitespace().is_empty() {
+        return Vec::new();
+    }
+    let abuts_closer =
+        body.text.contains("\"\"\"") || (!body.is_multiline() && body.text.ends_with('"'));
+    if abuts_closer {
+        return Vec::new();
+    }
+    let opener = TextRange::new(body.range.start() - flags.quote_len(), body.range.start());
+    let closer = TextRange::new(body.range.end(), body.range.end() + flags.closer_len());
+    [opener, closer]
+        .into_iter()
+        .filter_map(|range| narrowed_replacement(source, range, "\"\"\"".to_owned()))
+        .collect()
 }
 
 #[cfg(test)]
@@ -60,6 +90,26 @@ mod tests {
     }
 
     #[test]
+    fn blank_body_is_left_alone() {
+        let src = "def f():\n    '  '\n";
+        assert_eq!(run(src), src);
+    }
+
+    #[test]
+    fn inline_single_quoted_docstring_is_left_alone() {
+        let src = "def f(): 'doc'\n";
+        assert_eq!(run(src), src);
+    }
+
+    #[test]
+    fn multi_line_single_quoted_body_ending_in_quote_still_requotes() {
+        assert_eq!(
+            run("def f():\n    '''Line one.\n    Ends in quote\"'''\n"),
+            "def f():\n    \"\"\"\n    Line one.\n    Ends in quote\"\n    \"\"\"\n",
+        );
+    }
+
+    #[test]
     fn preserves_body_content_verbatim_including_inner_whitespace() {
         assert_eq!(
             run("def f():\n    \"\"\"  Summary.\n        indented\n    \"\"\"\n"),
@@ -68,16 +118,52 @@ mod tests {
     }
 
     #[test]
-    fn single_line_docstring_is_left_alone() {
+    fn raw_prefix_kept_on_requote() {
+        assert_eq!(
+            run("def f():\n    r\"summary\"\n"),
+            "def f():\n    r\"\"\"summary\"\"\"\n",
+        );
+    }
+
+    #[test]
+    fn single_line_body_ending_in_quote_is_left_alone() {
+        let src = "def f():\n    'ends\"'\n";
+        assert_eq!(run(src), src);
+    }
+
+    #[test]
+    fn single_line_double_quoted_requotes_to_triple() {
+        assert_eq!(
+            run("def f():\n    \"summary\"\n"),
+            "def f():\n    \"\"\"summary\"\"\"\n",
+        );
+    }
+
+    #[test]
+    fn single_line_single_quoted_requotes_to_triple() {
+        assert_eq!(
+            run("def f():\n    'summary'\n"),
+            "def f():\n    \"\"\"summary\"\"\"\n",
+        );
+    }
+
+    #[test]
+    fn single_line_triple_quoted_is_left_alone() {
         let src = "def f():\n    \"\"\"Summary.\"\"\"\n";
         assert_eq!(run(src), src);
     }
 
     #[test]
-    fn triple_single_quoted_multi_line_normalizes_under_its_own_quote_style() {
+    fn triple_quote_run_in_body_is_left_alone() {
+        let src = "def f():\n    'a \"\"\" b'\n";
+        assert_eq!(run(src), src);
+    }
+
+    #[test]
+    fn triple_single_quoted_multi_line_canonicalizes_to_double_quotes() {
         assert_eq!(
             run("def f():\n    '''Summary.\n    Trailing.\n    '''\n"),
-            "def f():\n    '''\n    Summary.\n    Trailing.\n    '''\n",
+            "def f():\n    \"\"\"\n    Summary.\n    Trailing.\n    \"\"\"\n",
         );
     }
 }

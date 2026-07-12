@@ -210,6 +210,7 @@ mod tests {
             files_changed: 1,
             files_visited: 1,
             files_with_diagnostics: 1,
+            lint_total: 1,
             rules_fired,
         };
 

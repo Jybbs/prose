@@ -66,6 +66,31 @@ impl Default for AlphabetizeConfig {
     }
 }
 
+/// Configuration for the `band_constants` rule. `group_constants` gates
+/// the subcategory clustering, keying each band on `(tier, subcategory,
+/// name)` and dropping to `(tier, name)` when `false`. `max_tiers` caps
+/// how many evaluation tiers open their own blank-separated sub-band. A
+/// positive integer merges every tier at or beyond it into the last
+/// sub-band, `1` holds the band tight, and `false` opens one band per
+/// tier.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct BandConstantsConfig {
+    pub enabled: bool,
+    pub group_constants: bool,
+    pub max_tiers: InlineBudget,
+}
+
+impl Default for BandConstantsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            group_constants: true,
+            max_tiers: InlineBudget(NonZeroUsize::new(2)),
+        }
+    }
+}
+
 /// Configuration for the `bare_imports` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -269,6 +294,28 @@ impl Serialize for MaxShift {
     }
 }
 
+/// Configuration for the `miscased_constants` rule.
+#[derive(Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct MiscasedConstantsConfig {
+    #[schemars(schema_with = "super::json_schema::empty_allow_pattern_schema")]
+    #[serde(
+        deserialize_with = "deserialize_regex",
+        serialize_with = "serialize_regex"
+    )]
+    pub allow_pattern: Regex,
+    pub enabled: bool,
+}
+
+impl Default for MiscasedConstantsConfig {
+    fn default() -> Self {
+        Self {
+            allow_pattern: Regex::new("").expect("empty pattern compiles"),
+            enabled: true,
+        }
+    }
+}
+
 /// Configuration for the `reassigned_constants` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -370,9 +417,11 @@ macro_rules! impl_rule_toggle {
 impl_rule_toggle!(
     AlignmentConfig,
     AlphabetizeConfig,
+    BandConstantsConfig,
     BareImportsConfig,
     CallLayoutConfig,
     CollectionLayoutConfig,
+    MiscasedConstantsConfig,
     ReassignedConstantsConfig,
     SignatureLayoutConfig,
     SingleUseVariablesConfig,

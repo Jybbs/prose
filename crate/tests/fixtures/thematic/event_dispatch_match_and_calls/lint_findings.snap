@@ -8,12 +8,12 @@ input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.p
     "code": "single-use-variables",
     "end_location": {
       "column": 11,
-      "row": 24
+      "row": 26
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 24
+      "row": 26
     },
     "message": "`totals` is assigned and used once. Consider inlining `{\n        \"created\" : 0,\n        \"deleted\" : 0,\n        \"failed\"  : 0,\n        \"skipped\" : 0,\n        \"updated\" : 0\n    }`"
   },

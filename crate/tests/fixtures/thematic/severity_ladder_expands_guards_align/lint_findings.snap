@@ -18,6 +18,27 @@ input_file: crate/tests/fixtures/thematic/severity_ladder_expands_guards_align/i
     "message": "Bare import `math` reaches 1 of its attributes. Rewrite as `from math import ...` naming only the symbols this module uses"
   },
   {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 22,
+      "row": 14
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "poll_interval_seconds",
+          "content": "POLL_INTERVAL_SECONDS"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 14
+    },
+    "message": "Module constant `poll_interval_seconds` is not SCREAMING_CASE"
+  },
+  {
     "code": "reassigned-constants",
     "end_location": {
       "column": 28,

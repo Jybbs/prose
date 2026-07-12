@@ -1,0 +1,91 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/suppression/skip_redundant_inside_off_block/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "bar_baz",
+          "content": "BAR_BAZ"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Module constant `bar_baz` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 4,
+      "row": 2
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "foo",
+          "content": "FOO"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Module constant `foo` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 3,
+      "row": 12
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "bb",
+          "content": "BB"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 12
+    },
+    "message": "Module constant `bb` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 4,
+      "row": 13
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "ccc",
+          "content": "CCC"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 13
+    },
+    "message": "Module constant `ccc` is not SCREAMING_CASE"
+  }
+]

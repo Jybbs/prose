@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/effectful_value_passes/input.py
+---
+logger = get_logger(__name__)
+app = build_application()

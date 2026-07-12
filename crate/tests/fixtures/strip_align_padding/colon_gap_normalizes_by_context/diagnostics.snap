@@ -1,0 +1,8 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/strip_align_padding/colon_gap_normalizes_by_context/input.py
+---
+strip-align-padding@18..21
+strip-align-padding@46..49
+strip-align-padding@67..67

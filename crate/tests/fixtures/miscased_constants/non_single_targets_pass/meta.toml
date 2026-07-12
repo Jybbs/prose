@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Chained, Tuple, and Attribute Targets Pass"
+
+description = '''
+Chained assignment (`first = second = 1`), tuple unpacking (`first, second = 1, 2`), and attribute targets (`config.timeout = 30`) all fall outside the single-name shape the rule reads, so each line passes silently whatever the casing of its names.
+'''

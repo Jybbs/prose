@@ -18,15 +18,36 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
     "message": "Bare import `os` reaches 1 of its attributes. Rewrite as `from os import ...` naming only the symbols this module uses"
   },
   {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 9
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "timeout",
+          "content": "TIMEOUT"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 9
+    },
+    "message": "Module constant `timeout` is not SCREAMING_CASE"
+  },
+  {
     "code": "unsorted-parameters",
     "end_location": {
       "column": 2,
-      "row": 38
+      "row": 40
     },
     "fix": null,
     "location": {
       "column": 18,
-      "row": 31
+      "row": 33
     },
     "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
   },
@@ -60,12 +81,12 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 11,
-      "row": 32
+      "row": 34
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 32
+      "row": 34
     },
     "message": "Parameter `method` has no type annotation"
   },
@@ -73,12 +94,12 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 33,
-      "row": 33
+      "row": 35
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 33
+      "row": 35
     },
     "message": "Parameter `fully_qualified_endpoint_url` has no type annotation"
   },
@@ -86,12 +107,12 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 12,
-      "row": 34
+      "row": 36
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 34
+      "row": 36
     },
     "message": "Parameter `headers` has no type annotation"
   },
@@ -99,12 +120,12 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 9,
-      "row": 35
+      "row": 37
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 35
+      "row": 37
     },
     "message": "Parameter `body` has no type annotation"
   },
@@ -112,12 +133,12 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 12,
-      "row": 36
+      "row": 38
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 36
+      "row": 38
     },
     "message": "Parameter `timeout` has no type annotation"
   },
@@ -125,12 +146,12 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 12,
-      "row": 37
+      "row": 39
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 37
+      "row": 39
     },
     "message": "Parameter `retries` has no type annotation"
   },
@@ -138,12 +159,12 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
     "code": "signature-annotations",
     "end_location": {
       "column": 18,
-      "row": 31
+      "row": 33
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 31
+      "row": 33
     },
     "message": "`build_request` returns a value but has no return type annotation"
   }

@@ -4,7 +4,7 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/thematic/severity_ladder_expands_guards_align/input.py
 ---
 align-comparisons@733..836
-align-equals@63..289
+align-equals@145..289
 alphabetize@86..1137
 band-constants@12..962
 bare-imports@7..11
@@ -17,6 +17,7 @@ blank-lines@857..858
 blank-lines@962..963
 call-layout@1027..1137
 collection-layout@67..130
+miscased-constants@243..264
 reassigned-constants@270..294
 reassigned-constants@617..641
 shed-parentheses@386..387

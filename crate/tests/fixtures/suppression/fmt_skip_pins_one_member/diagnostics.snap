@@ -5,3 +5,8 @@ input_file: tests/fixtures/suppression/fmt_skip_pins_one_member/input.py
 ---
 align-equals@1..69
 band-constants@0..25
+miscased-constants@14..21
+miscased-constants@49..51
+miscased-constants@56..59
+miscased-constants@6..9
+miscased-constants@64..68

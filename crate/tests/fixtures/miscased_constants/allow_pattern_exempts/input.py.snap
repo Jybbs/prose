@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/allow_pattern_exempts/input.py
+---
+Vector = list[float]
+timeout = 30

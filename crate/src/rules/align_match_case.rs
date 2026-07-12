@@ -97,10 +97,7 @@ impl Visitor<'_> {
     /// `[indent]case PATTERN[ if GUARD] : BODY` form for `case` would
     /// exceed `code_line_length`.
     fn overflows_budget(&self, case: &MatchCase, body_first: &Stmt) -> bool {
-        let pre_colon_end = case
-            .guard
-            .as_deref()
-            .map_or(case.pattern.end(), Ranged::end);
+        let pre_colon_end = colon_targets::match_case_pre_colon_end(case);
         let lhs_width = self
             .walker
             .source

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A TypeAlias-Annotated Target Is Exempt"
+
+description = '''
+A `TypeAlias` annotation marks the target a type rather than a constant, so `Vector` skips the gate structurally. An old-style bare alias without the annotation is spared through the `allow-pattern` instead.
+'''

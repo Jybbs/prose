@@ -9,7 +9,7 @@ use std::{
 };
 
 use ruff_python_ast::{
-    Expr, Stmt,
+    Expr, ExprLambda, Stmt,
     visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextSize};
@@ -32,11 +32,7 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
 
     fn visit_expr(&mut self, expr: &'src Expr) {
         match expr {
-            Expr::Lambda(lambda) => {
-                if let Some(params) = lambda.parameters.as_deref() {
-                    walk_parameters(self, params);
-                }
-            }
+            Expr::Lambda(lambda) => walk_lambda_defaults(self, lambda),
             Expr::Name(name) if name.ctx.is_load() => self.names.push(name.id.as_str()),
             _ => walk_expr(self, expr),
         }
@@ -170,6 +166,14 @@ pub(crate) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
         }
     }
     tiers.into_iter().collect()
+}
+
+/// Walks a lambda's parameter defaults, pruning its body, the eval-time
+/// surface a lambda contributes when it binds.
+pub(crate) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda: &'a ExprLambda) {
+    if let Some(params) = lambda.parameters.as_deref() {
+        walk_parameters(visitor, params);
+    }
 }
 
 /// Tiers `dep_sets` and assembles a per-statement `(tier, key)` lookup

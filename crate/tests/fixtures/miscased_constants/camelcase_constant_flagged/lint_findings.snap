@@ -1,0 +1,28 @@
+---
+source: tests/diagnostics.rs
+expression: json
+input_file: tests/fixtures/miscased_constants/camelcase_constant_flagged/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 11,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "maxRetries",
+          "content": "MAX_RETRIES"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Module constant `maxRetries` is not SCREAMING_CASE"
+  }
+]

@@ -3,4 +3,7 @@ source: tests/diagnostics.rs
 expression: render(&diagnostics)
 input_file: tests/fixtures/suppression/all_directives_preformatted_noop/input.py
 ---
-
+miscased-constants@0..7
+miscased-constants@12..15
+miscased-constants@132..134
+miscased-constants@140..143

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Aliases, Constants, and Module State Cluster within a Band"
+
+description = '''
+A band mixing type aliases, `SCREAMING_CASE` constants, and lowercase module state clusters each kind together, the aliases first, then the constants, then the state, alphabetized within each group.
+'''

@@ -25,7 +25,9 @@ def dispatch(event, registry, fallback):
 
 
 def summarize(records: Union[list, tuple], verbose):
-    "Build a compact digest of the records."
+    """
+    Build a compact digest of the records.
+    """
     totals = {
         "created" : 0,
         "deleted" : 0,

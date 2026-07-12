@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Subcategory Clustering Holds within Each Evaluation Tier"
+
+description = '''
+`Handler` names `Seconds`, so it **climbs into the derived tier**, and the subcategory clustering holds within each tier, the aliases `Seconds` and `Handler` leading their tiers ahead of the constants `MAX` and `TIMEOUT` across the blank line the tier split opens.
+'''

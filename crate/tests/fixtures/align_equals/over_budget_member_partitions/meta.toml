@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Over-Budget Row Partitions Out of the Aligned Run"
+
+description = '''
+`q`'s width sits well within `max-shift` of the run, but padding its `=` to the widest name would carry its long value past `code-line-length`. `q` partitions out unpadded while the two narrower rows align beneath the cap, so the alignment holds without any line crossing the budget.
+'''

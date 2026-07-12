@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::{
-    config::{Config, ConfigSource},
+    config::{Config, ConfigSource, NoticeDedup},
     pipeline::Pipeline,
     rule::RuleId,
 };
@@ -24,6 +24,7 @@ pub(super) struct ConfigResolver {
     built: Mutex<HashMap<String, Arc<Resolved>>>,
     default: Arc<Resolved>,
     ignore: Vec<RuleId>,
+    notices: NoticeDedup,
     select: Vec<RuleId>,
     sources: Mutex<HashMap<PathBuf, DirResolution>>,
 }
@@ -38,6 +39,7 @@ impl ConfigResolver {
             )])),
             default,
             ignore,
+            notices: NoticeDedup::default(),
             select,
             sources: Mutex::new(HashMap::new()),
         }
@@ -63,7 +65,7 @@ impl ConfigResolver {
             .lock()
             .expect("resolver lock")
             .entry(file.parent().unwrap_or(file).to_path_buf())
-            .or_insert_with_key(|dir| match ConfigSource::discover(dir) {
+            .or_insert_with_key(|dir| match ConfigSource::discover(dir, &self.notices) {
                 Ok(Some(source)) => DirResolution::Project(Arc::new(source)),
                 Ok(None) => DirResolution::Bare,
                 Err(e) => {
@@ -84,6 +86,12 @@ impl ConfigResolver {
         self.built_for(&source.effective_config(file))
     }
 
+    /// The run-scoped notice sink, shared with the cwd config load so
+    /// the two loads warn each key once between them.
+    pub(super) fn notices(&self) -> &NoticeDedup {
+        &self.notices
+    }
+
     /// Returns the resolution governing `path`, whose `bytes` supply the
     /// script block when no ancestor config exists. `None` when a found
     /// config or embedded block fails to load.
@@ -94,7 +102,7 @@ impl ConfigResolver {
         match self.dir_resolution(&file) {
             DirResolution::Failed => None,
             DirResolution::Project(source) => Some(self.resolve_within(&source, &file)),
-            DirResolution::Bare => match ConfigSource::from_script(&file, bytes) {
+            DirResolution::Bare => match ConfigSource::from_script(&file, bytes, &self.notices) {
                 Ok(Some(source)) => Some(self.resolve_within(&source, &file)),
                 Ok(None) => Some(Arc::clone(&self.default)),
                 Err(e) => {

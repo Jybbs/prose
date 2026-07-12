@@ -1,0 +1,6 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/bare_annotation_not_flagged/input.py
+---
+max_retries: int

@@ -44,6 +44,13 @@ export function lintShorthand(input: ShorthandInput): Shorthand | null {
       return flagged
         ? { after : `from ${flagged} import …`, before : `import ${flagged}`, kind : 'replace' }
         : null
+    case 'miscased-constants': {
+      // `flagged` spans the miscased name and `suggested` carries the
+      // SCREAMING_CASE rename from the display-only fix.
+      return flagged && suggested
+        ? { after : truncate(suggested), before : flagged, kind : 'replace' }
+        : null
+    }
     case 'reassigned-constants': {
       // The diagnostic spans the whole assignment, so the name comes from
       // the first backtick of reassigned_constants.rs's message, with the

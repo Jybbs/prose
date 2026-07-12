@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/subcategory_clusters_alias_constant_state/input.py
+---
+from typing import Callable
+
+Handler = Callable[[int], None]
+Interval = float
+DEFAULT = 10
+MAX = 100
+setting = "app"
+threshold = 5

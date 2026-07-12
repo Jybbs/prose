@@ -1,0 +1,7 @@
+---
+source: tests/integration.rs
+expression: snapshot
+input_file: tests/fixtures/miscased_constants/single_character_name_passes/input.py
+---
+x = 3
+n = 100

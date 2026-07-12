@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/miscased_constants/same_name_function_local_still_flags/input.py
+---
+max_retries = 5
+
+
+def configure(count):
+    max_retries = count
+    return max_retries

@@ -1,6 +1,6 @@
 ---
 caption : "Surfaces a module-level constant reassigned despite its `UPPER_SNAKE_CASE` casing."
-related : [step-narration, single-use-variables]
+related : [miscased-constants, single-use-variables, step-narration]
 layout  : doc
 ---
 

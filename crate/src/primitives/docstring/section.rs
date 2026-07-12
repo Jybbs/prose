@@ -12,9 +12,6 @@ use super::body::{DocstringBody, indent_prefix, triple_quoted_body};
 use super::scan::{LineScan, LineScanner, ScannedLine};
 use crate::source::Source;
 
-static ENTRY_HEAD: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(\w[\w.]*)\s*(\(.*\))?\s*$").expect("static pattern compiles"));
-
 static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[A-Z][A-Za-z]*( [A-Z][A-Za-z]*)*:").expect("static pattern compiles")
 });
@@ -154,18 +151,31 @@ pub(crate) fn entry_carrying_sections<'src>(
 }
 
 /// Parses `trimmed` as a Google-style `name: description` entry head,
-/// allowing a balanced parenthesized type group between the name and
-/// the `:` (e.g. `markup (str): A string.`). Returns the entry name
-/// and the description-start character column. `None` for any line
-/// that does not match the head shape or carries no description after
-/// the `:`.
+/// allowing a leading `*` or `**` on the name and a balanced
+/// parenthesized type group between the name and the `:` (e.g.
+/// `markup (str): A string.`, `*args: payload.`). Returns the entry
+/// name with any `*`/`**` prefix excluded, plus the description-start
+/// character column. `None` for any line that does not match the head
+/// shape or carries no description after the `:`.
 pub(crate) fn entry_head(trimmed: &str) -> Option<(&str, usize)> {
     let colon = unbracketed_colon(trimmed)?;
-    let name = ENTRY_HEAD
-        .captures(&trimmed[..colon])?
-        .get(1)
-        .expect("ENTRY_HEAD always captures the name group on a match")
-        .as_str();
+    let head = trimmed[..colon].trim_end();
+    let after_stars = head.trim_start_matches('*');
+    if head.len() - after_stars.len() > 2 {
+        return None;
+    }
+    let name_end = after_stars
+        .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_' || c == '.'))
+        .unwrap_or(after_stars.len());
+    let name = &after_stars[..name_end];
+    if !name.starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_') {
+        return None;
+    }
+    let paren_type = after_stars[name_end..].trim();
+    let has_type_group = paren_type.starts_with('(') && paren_type.ends_with(')');
+    if !(paren_type.is_empty() || has_type_group) {
+        return None;
+    }
     let description = trimmed[colon + 1..]
         .strip_prefix(char::is_whitespace)?
         .trim_start();
@@ -346,6 +356,14 @@ mod tests {
         assert!(entry_head("name (only: parens)").is_none());
         assert!(entry_head("two words (int): not an entry").is_none());
         assert!(entry_head("123: digits-only name").is_some());
+    }
+
+    #[test]
+    fn entry_head_strips_up_to_two_star_prefixes_from_the_name() {
+        assert_eq!(entry_head("*args: payload"), Some(("args", 7)));
+        assert_eq!(entry_head("**kwargs: extra"), Some(("kwargs", 10)));
+        assert_eq!(entry_head("**kwargs  : extra"), Some(("kwargs", 12)));
+        assert!(entry_head("***nope: three stars").is_none());
     }
 
     #[test]

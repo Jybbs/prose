@@ -8,7 +8,7 @@ use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 use ruff_text_size::{Ranged, TextRange};
 use serde::Serialize;
 
-use crate::diagnostics::{Diagnostic, Severity};
+use crate::diagnostics::Diagnostic;
 
 #[derive(Serialize)]
 pub(crate) struct JsonDiagnostic<'a> {
@@ -125,7 +125,7 @@ pub(crate) fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, 
 pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
     let records: Vec<JsonDiagnostic> = diagnostics
         .iter()
-        .filter(|diag| diag.severity == Severity::Lint)
+        .filter(|diag| diag.severity.is_lint())
         .map(|diag| JsonDiagnostic::new(file, None, diag, false))
         .collect();
     (!records.is_empty())

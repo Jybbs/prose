@@ -29,7 +29,9 @@ class ServiceConfig:
         return self.id
 
     def describe(self):
-        "One-line summary of the service endpoint and region."
+        """
+        One-line summary of the service endpoint and region.
+        """
         return f"{self.endpoint} in {self.region}"
 
 

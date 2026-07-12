@@ -7,7 +7,7 @@
 use std::collections::HashSet;
 
 use ruff_python_ast::{
-    Expr, Stmt, StmtIf,
+    Expr, Stmt,
     name::UnqualifiedName,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
@@ -17,7 +17,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::binding::{
-        BindingAnalysis, annotated_name_target, single_name_target, tail_identifier,
+        BindingAnalysis, is_screaming_case, single_name_assignment, skips_module_scan,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -74,26 +74,16 @@ impl Walker<'_> {
 
 impl<'a> StatementVisitor<'a> for Walker<'a> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        match stmt {
-            Stmt::FunctionDef(_) | Stmt::ClassDef(_) => return,
-            Stmt::If(if_stmt) if is_type_checking_block(if_stmt) => return,
-            Stmt::Assign(a) => {
-                if let Some(name) = single_name_target(a)
-                    && is_reassigned_constant_target(name, Some(a.value.as_ref()), self.allow)
-                    && self.analysis.module_reassigned(name)
-                {
-                    self.emit(stmt, name);
-                }
+        if skips_module_scan(stmt) {
+            return;
+        }
+        if let Some((target, value, _)) = single_name_assignment(stmt) {
+            let name = target.id.as_str();
+            if is_reassigned_constant_target(name, value, self.allow)
+                && self.analysis.module_reassigned(name)
+            {
+                self.emit(stmt, name);
             }
-            Stmt::AnnAssign(a) => {
-                if let Some(name) = annotated_name_target(a)
-                    && is_reassigned_constant_target(name, a.value.as_deref(), self.allow)
-                    && self.analysis.module_reassigned(name)
-                {
-                    self.emit(stmt, name);
-                }
-            }
-            _ => {}
         }
         walk_stmt(self, stmt);
     }
@@ -114,21 +104,6 @@ fn is_reassigned_constant_target(
         && !value.is_some_and(is_typing_constructor_call)
 }
 
-/// Returns `true` when `id` begins with an ASCII uppercase letter and
-/// every remaining character is an ASCII uppercase letter, digit, or
-/// underscore.
-fn is_screaming_case(id: &str) -> bool {
-    let mut chars = id.chars();
-    chars.next().is_some_and(|c| c.is_ascii_uppercase())
-        && chars.all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
-}
-
-/// Returns `true` when `stmt.test` matches the bare `TYPE_CHECKING`
-/// name or any `<...>.TYPE_CHECKING` attribute access.
-fn is_type_checking_block(stmt: &StmtIf) -> bool {
-    tail_identifier(stmt.test.as_ref()) == Some("TYPE_CHECKING")
-}
-
 /// Returns `true` when `value` is a call whose callable resolves to
 /// `TypeVar`, `ParamSpec`, `NewType`, or `TypeAliasType`, either bare
 /// (`TypeVar(...)`) or attribute-qualified (`typing.TypeVar(...)`).
@@ -141,25 +116,4 @@ fn is_typing_constructor_call(value: &Expr) -> bool {
         last,
         Some("NewType" | "ParamSpec" | "TypeAliasType" | "TypeVar"),
     )
-}
-
-#[cfg(test)]
-mod tests {
-    use rstest::rstest;
-
-    use super::*;
-
-    #[rstest]
-    fn is_screaming_case_accepts_canonical_constants(
-        #[values("PI", "MAX_RETRIES", "X1", "LOG_LEVEL_2")] id: &str,
-    ) {
-        assert!(is_screaming_case(id));
-    }
-
-    #[rstest]
-    fn is_screaming_case_rejects_mixed_and_lowercase_names(
-        #[values("", "pi", "Pi", "pI", "_HIDDEN", "1ABC", "MAX_retries")] id: &str,
-    ) {
-        assert!(!is_screaming_case(id));
-    }
 }
