@@ -1,6 +1,6 @@
 //! Member constructors for the `:` alignment contexts: dict items,
 //! annotated assignments in any scope, annotated function parameters,
-//! Google/numpy docstring `Args:` entries, and `match` arm cases. Each
+//! every Google-style docstring section, and `match` arm cases. Each
 //! [`ColonMember`] pairs the pre-colon alignment member with an optional
 //! post-colon `value_gap` an aligned or stripped row rewrites to one
 //! space. `align_colons` and `align_match_case` consume them to align
@@ -20,7 +20,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     primitives::{
         aligner,
-        docstring::{body_docstring, unbracketed_colon},
+        docstring::{body_docstring, entry_carrying_sections, unbracketed_colon},
         scope::scoped_body,
     },
     rule::RuleId,
@@ -31,7 +31,7 @@ use crate::{
 /// `member` with `value_gap`, the span from just past the colon to the
 /// value that an aligned or stripped row rewrites to one space. `None`
 /// leaves the post-colon spacing to another rule, as match arms defer to
-/// `align_match_case` and docstring args stay as written.
+/// `align_match_case` and docstring entries stay as written.
 #[derive(Clone, Copy)]
 pub(crate) struct ColonMember {
     pub(crate) member: aligner::Member,
@@ -49,7 +49,7 @@ impl ColonMember {
 }
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
-/// for annotated assignments, docstring args, dict entries, and
+/// for annotated assignments, docstring entries, dict entries, and
 /// parameters. `match_arms` is split out so a rule can opt out of
 /// match-arm alignment by overriding it to a no-op. `rule` names the
 /// consuming rule so the group builders can hold its skip-suppressed
@@ -114,7 +114,9 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
                 .match_arms(&match_case_members(self.source, &m.cases));
         }
         if let Some((body, _)) = scoped_body(stmt) {
-            self.emitter.handle(&docstring_args(self.source, body));
+            for group in docstring_sections(self.source, body) {
+                self.emitter.handle(&group);
+            }
         }
         walk_stmt(self, stmt);
     }
@@ -223,71 +225,36 @@ fn dict_member_groups(source: &Source, rule: RuleId, dict: &ExprDict) -> Vec<Vec
     })
 }
 
-/// Returns one alignment member per entry in the body's leading
-/// docstring's `Args:` section. Returns an empty `Vec` when the body
-/// has no leading docstring, when the docstring is implicitly
-/// concatenated, or when the docstring carries no `Args:` header.
-/// An entry is any line whose first non-whitespace content runs up
-/// to a `:` before the line ends. Continuation lines, blank lines,
-/// and the next section header end the block.
-fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<ColonMember> {
-    let Some(string_literal) = body_docstring(body) else {
+/// Returns one alignment group per Google-style section in the body's
+/// leading docstring, each carrying a member per `name: value` entry
+/// anchored on its head line's unbracketed `:`. Returns an empty `Vec`
+/// when the body has no leading docstring or carries no entry-bearing
+/// section. Each section is its own group, so one section's widths
+/// never shift another's column.
+fn docstring_sections(source: &Source, body: &[Stmt]) -> Vec<Vec<ColonMember>> {
+    let Some(lit) = body_docstring(body) else {
         return Vec::new();
     };
-    let text = source.slice(string_literal);
-    let mut lines = text.universal_newlines();
-    let Some(header_indent_len) = lines.find_map(|line| {
-        let stripped = line.trim_whitespace_start();
-        let after = stripped.strip_prefix("Args:")?;
-        after
-            .trim_whitespace()
-            .is_empty()
-            .then_some(line.len() - stripped.len())
-    }) else {
-        return Vec::new();
-    };
-
-    let mut members = Vec::new();
-    let mut entry_indent_len: Option<usize> = None;
-    for line in lines {
-        let stripped = line.trim_whitespace_start();
-        let line_indent_len = line.len() - stripped.len();
-
-        if stripped.is_empty() || line_indent_len <= header_indent_len {
-            break;
-        }
-
-        let expected = *entry_indent_len.get_or_insert(line_indent_len);
-        if line_indent_len > expected {
-            continue;
-        }
-        if line_indent_len < expected {
-            break;
-        }
-
-        if let Some(colon_rel) = find_entry_colon(stripped) {
-            let colon_start = string_literal.start()
-                + line.start()
-                + TextSize::of(&line[..line_indent_len + colon_rel]);
-            members.push(ColonMember::bare(aligner::line_anchored_member(
-                source,
-                colon_start,
-            )));
-        }
-    }
-    members
-}
-
-/// Finds the byte offset of the `:` within a docstring entry line's
-/// post-indent content. The pre-colon region may include the argument
-/// name and an optional parenthesized type (e.g. `x (int)`). Returns
-/// `None` when the line does not look like an entry.
-fn find_entry_colon(stripped: &str) -> Option<usize> {
-    let first = stripped.bytes().next()?;
-    if !(first.is_ascii_alphabetic() || first == b'_' || first == b'*') {
-        return None;
-    }
-    unbracketed_colon(stripped)
+    entry_carrying_sections(source, lit)
+        .iter()
+        .map(|section| {
+            section
+                .iter()
+                .filter_map(|entry| {
+                    let head = source.slice(entry.range).universal_newlines().next()?;
+                    let stripped = head.trim_whitespace_start();
+                    let colon_rel = unbracketed_colon(stripped)?;
+                    let indent_len = head.len() - stripped.len();
+                    let colon_start =
+                        entry.range.start() + TextSize::of(&head[..indent_len + colon_rel]);
+                    Some(ColonMember::bare(aligner::line_anchored_member(
+                        source,
+                        colon_start,
+                    )))
+                })
+                .collect()
+        })
+        .collect()
 }
 
 /// Returns one alignment member per `case` arm in `cases`.
@@ -349,39 +316,6 @@ mod tests {
             .as_dict_expr()
             .expect("dict");
         assert!(dict_item(&source, dict, &dict.items[0]).is_none());
-    }
-
-    #[test]
-    fn find_entry_colon_accepts_star_and_double_star() {
-        assert_eq!(find_entry_colon("*args: list"), Some(5));
-        assert_eq!(find_entry_colon("**kwargs: dict"), Some(8));
-    }
-
-    #[test]
-    fn find_entry_colon_accepts_underscore_led_name() {
-        assert_eq!(find_entry_colon("_arg: int"), Some(4));
-        assert_eq!(find_entry_colon("_: int"), Some(1));
-    }
-
-    #[test]
-    fn find_entry_colon_rejects_non_identifier_first_char() {
-        assert!(find_entry_colon("1arg: int").is_none());
-        assert!(find_entry_colon(": orphan").is_none());
-        assert!(find_entry_colon("").is_none());
-    }
-
-    #[test]
-    fn find_entry_colon_returns_none_when_no_top_level_colon() {
-        assert!(find_entry_colon("argname only").is_none());
-        assert!(find_entry_colon("name (only: parens)").is_none());
-    }
-
-    #[test]
-    fn find_entry_colon_skips_colons_inside_parens_and_brackets() {
-        assert_eq!(
-            find_entry_colon("x (Dict[str, int]): mapping"),
-            Some("x (Dict[str, int])".len()),
-        );
     }
 
     #[test]

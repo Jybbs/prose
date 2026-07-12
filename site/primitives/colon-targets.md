@@ -25,14 +25,14 @@ At `1.0` the trait promotes to `pub`, so a downstream can implement a `:`-contex
 1. **Dict items.** `{key: value, key: value}` literals, where each `key: value` pair contributes a member.
 2. **Annotated assignments.** Statements of the form `target: Annotation = default` in any scope *(module, function, or class body)*, where each annotation colon contributes a member.
 3. **Annotated function parameters.** `def f(param: T, param: T)` signatures, where each annotated parameter contributes a member.
-4. **Google / numpy docstring `Args:` entries.** Docstring structured sections, where each `name: description` line contributes a member.
+4. **Google-style docstring sections.** Every `Args:`, `Returns:`, `Raises:`, or other Title-case-headed section, where each `name: description` entry line contributes a member and each section aligns independently.
 5. **Match-arm cases.** `match x: case Pattern: ...`, where each case's pattern-to-body colon contributes a member.
 
 Each context resolves a `ColonMember`, pairing the pre-colon alignment `member` *(its `width` the display-column width of the left-hand side, its `gap` the whitespace immediately before the colon)* with an optional post-colon `value_gap` an aligned or stripped row rewrites to one space.
 
 ## Internal Surface
 
-The receiver trait carries the per-context handlers. `rule` and `handle` are the required methods, `rule` naming the consuming rule so the group builders can hold its skip-suppressed rows out of alignment, while `match_arms` carries a default a consuming rule overrides when it wants match-arm-specific behavior:
+The receiver trait carries the per-context handlers. `rule` and `handle` are the required methods, `rule` naming the consuming rule so the group builders can hold its skip-suppressed rows out of alignment, while `match_arms` carries a default a consuming rule overrides for match-arm-specific handling:
 
 ```rust
 pub(crate) trait ColonEmitter {
@@ -48,7 +48,7 @@ pub(crate) trait ColonEmitter {
 }
 ```
 
-`handle` is the catch-all for annotated assignments, docstring args, dict entries, and parameters. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[align-match-case]] owns the match-arm context)*, with its default delegating to `handle` for any rule that wants the unified callback.
+`handle` is the catch-all for annotated assignments, docstring entries, dict entries, and parameters. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[align-match-case]] owns the match-arm context)*, with its default delegating to `handle` for any rule that wants the unified callback.
 
 `walk(source)` is the provided driver across `source`'s module body, recursing into nested classes, functions, matches, and expressions so a single call covers the whole tree. A consuming rule never overrides `walk`, because calling the provided method is enough to drive the receiver across every relevant context.
 
@@ -66,7 +66,7 @@ Each context defines its own grouping shape, because what counts as *"adjacent"*
 2. **Annotated assignments** group via `line_adjacent_groups` over each scope's statements, treating any non-`target: T` statement as a divider.
 3. **Annotated function parameters** group via `parameter_split_groups`, splitting at the first parameter that does not qualify *(an un-annotated argument, a `*args` or `**kwargs`, a `/` or `*` separator)*.
 4. **Match arms** group one per `match` statement, with every arm's colon contributing a member. Patterns may span multiple lines, so the alignment column is per-`match` rather than per-line-run.
-5. **Docstring `Args:` entries** group one per docstring, with the structured-section parser invoked inline to find the entries.
+5. **Docstring sections** group one per Google-style section, with the structured-section parser invoked inline to find each section's entries, so a section's entries align without reaching across the section break.
 
 Each group is handed to the receiver as one `&[ColonMember]` slice, so the consumer aligns within the group without seeing cross-group state. The docstring-args context borrows [[docstring]]'s `body_docstring` to find a body's leading docstring literal, then runs its own line scan for each entry's `:` position, because the two primitives surface different shapes. [[docstring]] yields entry names with the byte range a reorder carries along, whereas the colon walker yields each line's colon anchor for the aligner's padding math.
 

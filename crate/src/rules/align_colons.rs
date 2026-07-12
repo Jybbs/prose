@@ -1,6 +1,6 @@
 //! Aligns `:` vertically in dict/mapping literals, annotated
-//! assignments, annotated function parameters, and Google/numpy
-//! docstring `Args:` sections. Single-line groups, single-item groups,
+//! assignments, annotated function parameters, and Google-style
+//! docstring sections. Single-line groups, single-item groups,
 //! and groups whose rows open at differing column baselines pass
 //! through, leaving them to `strip_align_padding` downstream. Each
 //! aligned `:` keeps a one-space buffer before the colon, and the dict,
