@@ -52,17 +52,10 @@ impl<'a> AlignWalker<'a> {
         }
     }
 
-    /// Aligns `members` as one fix group, recording it when the pass
-    /// rewrites at least one gap.
-    fn emit_group(&mut self, members: &[Member]) {
-        let edits = self.group_edits(members);
-        self.push_group(edits);
-    }
-
     /// Aligns `members` to their shared column and folds in a one-space
     /// rewrite of each gap in `gaps`, recording the combined fix as one
     /// group. The members-level analog of [`Self::push_with_gaps`],
-    /// pairing the column math of [`Self::emit_group`] with the gap
+    /// pairing the column math of [`Self::group_edits`] with the gap
     /// normalization.
     pub(crate) fn emit_group_with_gaps(
         &mut self,
@@ -76,9 +69,7 @@ impl<'a> AlignWalker<'a> {
     /// Aligns `members` as one fix group when they form an alignment
     /// candidate, recording nothing otherwise.
     pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
-        if is_alignment_candidate(self.source, members) {
-            self.emit_group(members);
-        }
+        self.emit_if_candidate_with_gaps(members, std::iter::empty());
     }
 
     /// Aligns `members` as one fix group when they form an alignment

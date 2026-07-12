@@ -66,8 +66,9 @@ impl ColonEmitter for Emitter<'_> {
             return;
         }
         for m in members {
-            if m.member.width > 0 && !m.member.gap.is_empty() {
-                self.edits.push(Edit::range_deletion(m.member.gap));
+            if m.member.width > 0 {
+                self.edits
+                    .extend(aligner::space_padding_edit(self.source, m.member.gap, 0));
             }
             if let Some(gap) = m.value_gap
                 && !self.source.contains_line_break(gap)
@@ -219,6 +220,31 @@ mod tests {
     #[test]
     fn strip_handles_empty_members_slice() {
         assert!(run_strip(&parse(""), &[]).is_empty());
+    }
+
+    #[test]
+    fn strip_leaves_a_value_gap_that_crosses_a_line_break() {
+        // A colon whose value opens on a later line keeps its placement:
+        // the pre-colon padding strips, but the post-colon gap is not
+        // collapsed across the break.
+        let source = parse("d = {\"k\"  :\n    v}\n");
+        let member = aligner::Member {
+            gap: range(8, 10),
+            line_start: TextSize::new(0),
+            op_width: 0,
+            width: 3,
+        };
+        let colon_member = ColonMember {
+            member,
+            value_gap: Some(range(11, 16)),
+        };
+        let mut emitter = Emitter {
+            edits: Vec::new(),
+            source: &source,
+        };
+        emitter.handle(&[colon_member]);
+        assert_eq!(emitter.edits.len(), 1);
+        assert_eq!(emitter.edits[0].range(), range(8, 10));
     }
 
     #[test]

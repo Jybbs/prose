@@ -124,10 +124,7 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
 /// `:` between the pattern (or its `if` guard) and the arm body's
 /// first statement.
 pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::Member> {
-    let pre_colon_end = case
-        .guard
-        .as_deref()
-        .map_or(case.pattern.end(), Ranged::end);
+    let pre_colon_end = match_case_pre_colon_end(case);
     let body_start = case.body.first()?.start();
     aligner::line_anchored_member_between(
         source,
@@ -135,6 +132,14 @@ pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::M
         body_start,
         TokenKind::Colon,
     )
+}
+
+/// The offset where a `match` arm's pre-colon left-hand side ends, the
+/// guard's end when the arm is guarded and the pattern's end otherwise.
+pub(crate) fn match_case_pre_colon_end(case: &MatchCase) -> TextSize {
+    case.guard
+        .as_deref()
+        .map_or(case.pattern.end(), Ranged::end)
 }
 
 /// Builds a [`ColonMember`] for an annotated assignment, anchored on the
