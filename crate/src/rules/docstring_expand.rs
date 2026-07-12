@@ -13,7 +13,7 @@ use crate::{
     config::Config,
     primitives::{
         docstring::{indent_prefix, rewrite_docstrings, triple_quoted_body},
-        edit::{narrowed_replacement, singleton_groups},
+        edit::narrowed_replacement,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -29,7 +29,7 @@ impl DocstringExpand {
 
 impl Rule for DocstringExpand {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        singleton_groups(rewrite_docstrings(source, |source, lit, edits| {
+        rewrite_docstrings(source, |source, lit, edits| {
             let Some(body) = triple_quoted_body(source, lit).filter(|b| !b.is_multiline()) else {
                 return;
             };
@@ -41,7 +41,7 @@ impl Rule for DocstringExpand {
             let newline = source.newline_str();
             let candidate = format!("{newline}{indent}{trimmed}{newline}{indent}");
             edits.extend(narrowed_replacement(source, body.range, candidate));
-        }))
+        })
     }
 
     fn id(&self) -> RuleId {
