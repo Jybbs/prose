@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Every Google-Style Docstring Section Aligns on Its Own Column"
+
+description = '''
+`align-colons` settles the `:` across `Args:`, `Returns:`, and every other Google-style section, each section resolving its own column so a wide `Args:` entry never shifts the `Returns:` table beside it.
+'''
