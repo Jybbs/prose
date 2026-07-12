@@ -81,6 +81,20 @@ impl<'a> AlignWalker<'a> {
         }
     }
 
+    /// Aligns `members` as one fix group when they form an alignment
+    /// candidate, folding a one-space rewrite of each gap in `gaps` into
+    /// the same group. Records nothing otherwise. The candidate-gated
+    /// counterpart to [`Self::emit_group_with_gaps`].
+    pub(crate) fn emit_if_candidate_with_gaps(
+        &mut self,
+        members: &[Member],
+        gaps: impl IntoIterator<Item = TextRange>,
+    ) {
+        if is_alignment_candidate(self.source, members) {
+            self.emit_group_with_gaps(members, gaps);
+        }
+    }
+
     /// Drops the held rows from `members`, then emits the survivors as
     /// one group when they still form an alignment candidate.
     pub(crate) fn emit_unheld(&mut self, members: impl IntoIterator<Item = Member>) {

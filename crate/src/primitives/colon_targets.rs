@@ -1,15 +1,17 @@
-//! Member constructors for the five `:` alignment contexts. The
-//! contexts are dict items, Pydantic-style class fields, annotated
-//! function parameters, Google/numpy docstring `Args:` entries, and
-//! `match` arm cases. `align_colons` and `align_match_case` consume
-//! them to align multi-item groups, whereas `strip_align_padding` consumes
-//! them to strip pre-colon padding from groups that have no column to
-//! align to.
+//! Member constructors for the `:` alignment contexts: dict items,
+//! annotated assignments in any scope, annotated function parameters,
+//! Google/numpy docstring `Args:` entries, and `match` arm cases. Each
+//! [`ColonMember`] pairs the pre-colon alignment member with an optional
+//! post-colon `value_gap` an aligned or stripped row rewrites to one
+//! space. `align_colons` and `align_match_case` consume them to align
+//! multi-item groups, whereas `strip_align_padding` consumes them to
+//! strip pre-colon padding and normalize the post-colon gap for groups
+//! that have no column to align to.
 
 use ruff_python_ast::{
-    AnyParameterRef, DictItem, Expr, MatchCase, Parameters, Stmt,
+    AnyNodeRef, AnyParameterRef, DictItem, Expr, ExprDict, ExprRef, MatchCase, Parameters, Stmt,
     token::TokenKind,
-    visitor::{Visitor as AstVisitor, walk_expr, walk_parameters, walk_stmt},
+    visitor::{Visitor as AstVisitor, walk_body, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::UniversalNewlines;
@@ -25,16 +27,38 @@ use crate::{
     source::Source,
 };
 
-/// Receiver for the colon-context walker. `handle` is the catch-all
-/// for class fields, docstring args, dict entries, and parameters.
-/// `match_arms` is split out so a rule can opt out of match-arm
-/// alignment by overriding it to a no-op. `rule` names the consuming
-/// rule so the group builders can hold its skip-suppressed rows out of
-/// alignment. Call `walk` to drive the emitter across `source`'s body.
-pub(crate) trait ColonEmitter {
-    fn handle(&mut self, _members: &[aligner::Member]) {}
+/// One row in a `:` alignment context, pairing the pre-colon alignment
+/// `member` with `value_gap`, the span from just past the colon to the
+/// value that an aligned or stripped row rewrites to one space. `None`
+/// leaves the post-colon spacing to another rule, as match arms defer to
+/// `align_match_case` and docstring args stay as written.
+#[derive(Clone, Copy)]
+pub(crate) struct ColonMember {
+    pub(crate) member: aligner::Member,
+    pub(crate) value_gap: Option<TextRange>,
+}
 
-    fn match_arms(&mut self, members: &[aligner::Member]) {
+impl ColonMember {
+    /// Pairs `member` with no post-colon gap.
+    fn bare(member: aligner::Member) -> Self {
+        Self {
+            member,
+            value_gap: None,
+        }
+    }
+}
+
+/// Receiver for the colon-context walker. `handle` is the catch-all
+/// for annotated assignments, docstring args, dict entries, and
+/// parameters. `match_arms` is split out so a rule can opt out of
+/// match-arm alignment by overriding it to a no-op. `rule` names the
+/// consuming rule so the group builders can hold its skip-suppressed
+/// rows out of alignment. Call `walk` to drive the emitter across
+/// `source`'s body.
+pub(crate) trait ColonEmitter {
+    fn handle(&mut self, members: &[ColonMember]);
+
+    fn match_arms(&mut self, members: &[ColonMember]) {
         self.handle(members);
     }
 
@@ -61,9 +85,16 @@ struct ContextVisitor<'a, E> {
 }
 
 impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
+    fn visit_body(&mut self, body: &'a [Stmt]) {
+        for group in annotated_assignment_groups(self.source, self.emitter.rule(), body) {
+            self.emitter.handle(&group);
+        }
+        walk_body(self, body);
+    }
+
     fn visit_expr(&mut self, expr: &'a Expr) {
         if let Expr::Dict(d) = expr {
-            for group in dict_member_groups(self.source, self.emitter.rule(), &d.items) {
+            for group in dict_member_groups(self.source, self.emitter.rule(), d) {
                 self.emitter.handle(&group);
             }
         }
@@ -78,17 +109,9 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
     }
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        match stmt {
-            Stmt::ClassDef(cd) => {
-                for group in class_field_groups(self.source, self.emitter.rule(), &cd.body) {
-                    self.emitter.handle(&group);
-                }
-            }
-            Stmt::Match(m) => {
-                self.emitter
-                    .match_arms(&match_case_members(self.source, &m.cases));
-            }
-            _ => {}
+        if let Stmt::Match(m) = stmt {
+            self.emitter
+                .match_arms(&match_case_members(self.source, &m.cases));
         }
         if let Some((body, _)) = scoped_body(stmt) {
             self.emitter.handle(&docstring_args(self.source, body));
@@ -106,44 +129,70 @@ pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::M
         .as_deref()
         .map_or(case.pattern.end(), Ranged::end);
     let body_start = case.body.first()?.start();
-    colon_member(
+    aligner::line_anchored_member_between(
         source,
         TextRange::new(case.pattern.start(), pre_colon_end),
         body_start,
+        TokenKind::Colon,
     )
 }
 
-/// Builds an alignment member for a class-body annotated assignment,
-/// anchored on the `:` between target and annotation. Returns `None`
-/// for any other statement shape.
-fn class_field(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
+/// Builds a [`ColonMember`] for an annotated assignment, anchored on the
+/// `:` between target and annotation. Returns `None` for any other
+/// statement shape.
+fn annotated_assignment(source: &Source, stmt: &Stmt) -> Option<ColonMember> {
     let ann = stmt.as_ann_assign_stmt()?;
-    colon_member(source, ann.target.range(), ann.annotation.start())
+    colon_member(
+        source,
+        ann.target.range(),
+        ann.annotation.as_ref().into(),
+        ann.into(),
+    )
 }
 
-/// Walks `body`, qualifying each statement through `class_field`,
+/// Walks `body`, qualifying each statement through `annotated_assignment`,
 /// and returns one group per run of contiguous line-adjacent
-/// annotated-assignment statements. A field skip-suppressed for `rule`
+/// annotated-assignment statements. A row skip-suppressed for `rule`
 /// drops out as a transparent hole per [`aligner::line_adjacent_groups`].
-fn class_field_groups(source: &Source, rule: RuleId, body: &[Stmt]) -> Vec<Vec<aligner::Member>> {
-    aligner::line_adjacent_groups(source, body, rule, |s| class_field(source, s))
+fn annotated_assignment_groups(
+    source: &Source,
+    rule: RuleId,
+    body: &[Stmt],
+) -> Vec<Vec<ColonMember>> {
+    aligner::line_adjacent_groups(source, body, rule, |s| annotated_assignment(source, s))
 }
 
-/// Builds a `:`-anchored alignment member whose left-hand side is `lhs`,
-/// searching for the colon between `lhs.end()` and `colon_end`. The scan
-/// opens past `lhs.end()` so a colon inside the left-hand side (a slice,
-/// a nested annotation) never anchors, and the member is rejected when
-/// the colon does not share `lhs`'s opening line.
-fn colon_member(source: &Source, lhs: TextRange, colon_end: TextSize) -> Option<aligner::Member> {
-    aligner::line_anchored_member_between(source, lhs, colon_end, TokenKind::Colon)
+/// Builds a `:`-anchored [`ColonMember`] whose left-hand side is `lhs`,
+/// searching for the colon between `lhs.end()` and `value`'s
+/// parenthesis-aware start recovered against `parent`. The scan opens
+/// past `lhs.end()` so a colon inside the left-hand side (a slice, a
+/// nested annotation) never anchors, and the member is rejected when the
+/// colon does not share `lhs`'s opening line. `value_gap` runs from just
+/// past the colon to that start, the span an aligned or stripped row
+/// rewrites to one space, so a wrapping `(` before the value stays put.
+fn colon_member(
+    source: &Source,
+    lhs: TextRange,
+    value: ExprRef,
+    parent: AnyNodeRef,
+) -> Option<ColonMember> {
+    let value_start = source.paren_aware_range(value, parent).start();
+    let member = aligner::line_anchored_member_between(source, lhs, value_start, TokenKind::Colon)?;
+    Some(ColonMember {
+        member,
+        value_gap: Some(TextRange::new(
+            member.gap.end() + TextSize::of(':'),
+            value_start,
+        )),
+    })
 }
 
 /// Builds an alignment member for a `key: value` dict entry, anchored
 /// on the `:` between key and value. Returns `None` for `**spread`
 /// entries that have no key.
-fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
+fn dict_item(source: &Source, dict: &ExprDict, item: &DictItem) -> Option<ColonMember> {
     let key = item.key.as_ref()?;
-    colon_member(source, key.range(), item.value.start())
+    colon_member(source, key.range(), (&item.value).into(), dict.into())
 }
 
 /// Returns one group per run of consecutive-line `key: value` entries
@@ -155,12 +204,8 @@ fn dict_item(source: &Source, item: &DictItem) -> Option<aligner::Member> {
 /// unpacking passes alignment through. A keyed entry whose `:` crosses a
 /// line break instead closes the run, so its neighbors do not align a
 /// column across the stranded colon.
-fn dict_member_groups(
-    source: &Source,
-    rule: RuleId,
-    items: &[DictItem],
-) -> Vec<Vec<aligner::Member>> {
-    aligner::adjacent_member_groups(source, items, false, |item| {
+fn dict_member_groups(source: &Source, rule: RuleId, dict: &ExprDict) -> Vec<Vec<ColonMember>> {
+    aligner::adjacent_member_groups(source, &dict.items, false, |item| {
         // A `**spread` (no key) or a skip-held entry joins no group yet
         // bridges the run, so the entries on either side align as one block.
         if item.key.is_none() || aligner::is_held(source, rule, item.start()) {
@@ -169,7 +214,7 @@ fn dict_member_groups(
         // A keyed entry whose colon sits on a later line carries no
         // single-line anchor, so it breaks the run rather than stranding
         // its colon inside a column its neighbors share.
-        dict_item(source, item).map_or(aligner::Slot::Break, aligner::Slot::Member)
+        dict_item(source, dict, item).map_or(aligner::Slot::Break, aligner::Slot::Member)
     })
 }
 
@@ -180,7 +225,7 @@ fn dict_member_groups(
 /// An entry is any line whose first non-whitespace content runs up
 /// to a `:` before the line ends. Continuation lines, blank lines,
 /// and the next section header end the block.
-fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
+fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<ColonMember> {
     let Some(string_literal) = body_docstring(body) else {
         return Vec::new();
     };
@@ -219,7 +264,10 @@ fn docstring_args(source: &Source, body: &[Stmt]) -> Vec<aligner::Member> {
             let colon_start = string_literal.start()
                 + line.start()
                 + TextSize::of(&line[..line_indent_len + colon_rel]);
-            members.push(aligner::line_anchored_member(source, colon_start));
+            members.push(ColonMember::bare(aligner::line_anchored_member(
+                source,
+                colon_start,
+            )));
         }
     }
     members
@@ -238,30 +286,35 @@ fn find_entry_colon(stripped: &str) -> Option<usize> {
 }
 
 /// Returns one alignment member per `case` arm in `cases`.
-fn match_case_members(source: &Source, cases: &[MatchCase]) -> Vec<aligner::Member> {
-    cases.iter().filter_map(|c| match_case(source, c)).collect()
+fn match_case_members(source: &Source, cases: &[MatchCase]) -> Vec<ColonMember> {
+    cases
+        .iter()
+        .filter_map(|c| match_case(source, c))
+        .map(ColonMember::bare)
+        .collect()
 }
 
 /// Builds an alignment member for an annotated function parameter,
 /// anchored on the `:` between name and annotation. Returns `None` for
 /// unannotated parameters, signaling a group break to callers.
-fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Member> {
+fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<ColonMember> {
     let annotation = param.annotation()?;
-    colon_member(source, param.name().range(), annotation.start())
+    colon_member(
+        source,
+        param.name().range(),
+        annotation.into(),
+        param.as_parameter().into(),
+    )
 }
 
 /// Walks `params` in source order and returns one group per run of
 /// contiguous annotated parameters, splitting at every unannotated
 /// parameter. A parameter skip-suppressed for `rule` drops out of its
 /// group as a transparent hole, leaving its neighbors to align.
-fn parameter_groups(
-    source: &Source,
-    rule: RuleId,
-    params: &Parameters,
-) -> Vec<Vec<aligner::Member>> {
+fn parameter_groups(source: &Source, rule: RuleId, params: &Parameters) -> Vec<Vec<ColonMember>> {
     aligner::parameter_split_groups(params, |p| parameter(source, p))
         .into_iter()
-        .map(|group| aligner::retain_unheld(source, rule, group, |m| m.line_start))
+        .map(|group| aligner::retain_unheld(source, rule, group, |m| m.member.line_start))
         .collect()
 }
 
@@ -271,12 +324,12 @@ mod tests {
     use crate::testing::parse;
 
     #[test]
-    fn class_field_rejects_cross_line_colon() {
+    fn annotated_assignment_rejects_cross_line_colon() {
         // The target ends on its own line and the annotation `:` opens
         // the next.
         let source = parse("class C:\n    x \\\n        : int\n");
         let class = source.ast().body[0].as_class_def_stmt().expect("class");
-        assert!(class_field(&source, &class.body[0]).is_none());
+        assert!(annotated_assignment(&source, &class.body[0]).is_none());
     }
 
     #[test]
@@ -290,7 +343,7 @@ mod tests {
             .value
             .as_dict_expr()
             .expect("dict");
-        assert!(dict_item(&source, &dict.items[0]).is_none());
+        assert!(dict_item(&source, dict, &dict.items[0]).is_none());
     }
 
     #[test]

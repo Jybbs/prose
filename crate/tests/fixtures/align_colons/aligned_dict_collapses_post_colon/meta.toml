@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Aligned Dict Collapses the Gap after Its Colons"
+
+description = '''
+Aligning the `:` column across a dict's entries also **settles the run after each colon to one space**, so a padded `"a":   1` reads as `"a" : 1` under the shared column. The value side no longer carries the stray padding a hand-aligned literal left behind.
+'''
