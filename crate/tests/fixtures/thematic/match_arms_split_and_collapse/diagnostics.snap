@@ -1,7 +1,7 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/thematic/match_arms_split_and_collapse/input.py
+input_file: crate/tests/fixtures/thematic/match_arms_split_and_collapse/input.py
 ---
 align-match-case@158..159
 align-match-case@251..252
@@ -10,6 +10,9 @@ align-match-case@65..66
 alphabetize@81..320
 band-constants@0..403
 blank-lines@20..21
+call-layout@174..227
+call-layout@267..320
+call-layout@81..134
 collection-layout@370..402
 signature-annotations@13..18
 signature-annotations@4..12

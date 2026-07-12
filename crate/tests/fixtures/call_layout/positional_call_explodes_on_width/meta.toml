@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Over-Budget Positional Call Explodes Positionally"
+
+description = '''
+The callee resolves outside the module, so the call cannot take keyword form. The width trigger still answers it, exploding the positional arguments one per line with the closing `)` at the call's indent, so no configuration leaves an over-cap call inline.
+'''

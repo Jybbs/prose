@@ -49,9 +49,9 @@ impl CollectionLayout {
         Self {
             // Reserve the column `align_equals` shifts a value to only when
             // it runs, since a disabled rule leaves the `=` unaligned.
-            align_equals: align_equals
-                .enabled
-                .then(|| aligner::Settings::from(align_equals)),
+            align_equals: align_equals.enabled.then(|| {
+                aligner::Settings::from(align_equals).with_line_length(config.code_width())
+            }),
             code_line_length: config.code_width(),
             collapse: rules.collapse,
             explode: rules.explode,

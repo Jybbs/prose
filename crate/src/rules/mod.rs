@@ -20,6 +20,7 @@ pub(crate) mod docstring_wrap;
 pub(crate) mod group_imports;
 pub(crate) mod import_layout;
 pub(crate) mod legacy_union_syntax;
+pub(crate) mod line_overflow;
 pub(crate) mod miscased_constants;
 pub(crate) mod reassigned_constants;
 pub(crate) mod shed_parentheses;

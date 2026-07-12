@@ -175,18 +175,23 @@ impl Member {
 /// Emission knobs shared by every alignment rule.
 ///
 /// `max_shift` caps the run's width spread. `strip_singleton`
-/// collapses a size-one group's gap to zero width.
+/// collapses a size-one group's gap to zero width. `line_length`
+/// carries the governing cap when the rule resolves within it, so a
+/// member whose aligned line would cross the cap partitions out of the
+/// run the way an over-`max_shift` outlier does.
 #[derive(Clone, Copy)]
 pub(crate) struct Settings {
+    line_length: Option<usize>,
     max_shift: MaxShift,
     strip_singleton: bool,
 }
 
 impl Settings {
     /// Builds the alignment settings carried by an alignment rule, with
-    /// `strip_singleton` off until a rule opts in.
+    /// `strip_singleton` off and no line cap until a rule opts in.
     fn aligned(max_shift: MaxShift) -> Self {
         Self {
+            line_length: None,
             max_shift,
             strip_singleton: false,
         }
@@ -197,6 +202,13 @@ impl Settings {
     /// space otherwise.
     fn suffix_len(self, member_count: usize) -> usize {
         usize::from(member_count != 1 || !self.strip_singleton)
+    }
+
+    /// Returns a copy of `self` carrying `cap` as the governing line
+    /// length the run resolves within.
+    pub(crate) fn with_line_length(mut self, cap: usize) -> Self {
+        self.line_length = Some(cap);
+        self
     }
 
     /// Returns a copy of `self` with `strip_singleton` enabled.

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "max-args = false Still Yields to the Width Trigger"
+
+description = '''
+`max-args = false` opts out of the count trigger, yet the width trigger stays live, so a call whose line crosses `code-line-length` still explodes. No configuration leaves an over-cap call inline.
+'''

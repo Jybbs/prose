@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/reshapeable_match_arm_stays_quiet/input.py
+---
+match command:
+    case "begin": run_the_initial_setup_routine()

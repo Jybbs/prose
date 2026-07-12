@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/composition/over_budget_colon_row_partitions/input.py
+---
+collection-layout@109..110

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Over-Budget Colon Row Partitions Out of the Run"
+
+description = '''
+The nested `"b"` value fits inline, yet padding its `:` to the wider `"aaaaaaaaaaaaa"` column would carry the row past `code-line-length`. `align-colons` **partitions the row out** unpadded the way an over-`max-shift` outlier breaks off, and with the lone remaining key no column survives, so the dict stays unaligned within the cap rather than padding past it.
+'''
