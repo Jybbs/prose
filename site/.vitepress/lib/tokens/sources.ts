@@ -50,9 +50,11 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'docstring-line-length',       href: '/reference/configuration#docstring-budgets',     blurb: 'Maximum column budget for docstring prose.' },
     { key: 'docstring-structured-policy', href: '/reference/configuration#docstring-budgets',     blurb: 'Budget policy for docstring structured sections.' },
     { key: 'enabled',                     href: '/reference/configuration#per-rule-facets',        blurb: 'Per-rule toggle, the bare bool in `[rules]`.' },
+    { key: 'group-constants',             href: '/reference/configuration#per-rule-facets',        blurb: 'Cluster each band by subcategory before sorting by name.' },
     { key: 'import-line-length',          href: '/reference/configuration#top-level-keys',        blurb: 'Import-wrap column budget, falls back to `code-line-length`.' },
     { key: 'imports.first-party',         href: '/reference/configuration#imports',               blurb: 'Package names lifted into the local-package import group.' },
     { key: 'max-shift',                   href: '/reference/configuration#per-rule-facets',        blurb: 'Per-rule width-spread budget for an alignment run.' },
+    { key: 'max-tiers',                   href: '/reference/configuration#per-rule-facets',        blurb: 'Cap the evaluation tiers that open their own sub-band.' },
     { key: 'overrides.paths',             href: '/reference/configuration#per-pattern-overrides', blurb: 'Glob list selecting the files an override entry applies its partial config to.' },
     { key: 'target-version',              href: '/reference/configuration#top-level-keys',        blurb: 'Python version the parser reads against.' }
   ],

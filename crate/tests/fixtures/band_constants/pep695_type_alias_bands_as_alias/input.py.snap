@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/pep695_type_alias_bands_as_alias/input.py
+---
+type Seconds = float
+COUNT = 5
+MAX = 10

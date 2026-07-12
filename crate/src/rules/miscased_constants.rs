@@ -19,8 +19,8 @@ use crate::{
     diagnostics::Diagnostic,
     primitives::{
         binding::{
-            BindingAnalysis, is_screaming_case, single_name_assignment, skips_module_scan,
-            tail_identifier,
+            BindingAnalysis, is_screaming_case, is_type_alias, single_name_assignment,
+            skips_module_scan,
         },
         effect::value_is_effectful,
     },
@@ -117,12 +117,6 @@ impl<'a> StatementVisitor<'a> for Walker<'a> {
     }
 }
 
-/// True when `annotation` names `TypeAlias`, bare or attribute-qualified
-/// (`typing.TypeAlias`).
-fn is_type_alias(annotation: &Expr) -> bool {
-    tail_identifier(annotation) == Some("TypeAlias")
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -148,20 +142,6 @@ mod tests {
         assert_eq!(fix.edits()[0].content(), Some("MAX_RETRIES"));
         assert!(only.message.contains("`max_retries`"));
         assert_eq!(&source.text()[only.range], "max_retries");
-    }
-
-    #[rstest]
-    #[case("x: TypeAlias", true)]
-    #[case("x: typing.TypeAlias", true)]
-    #[case("x: int", false)]
-    fn is_type_alias_matches_bare_and_qualified(#[case] src: &str, #[case] expected: bool) {
-        let source = parse(&format!("{src} = 0\n"));
-        let annotation = source.ast().body[0]
-            .as_ann_assign_stmt()
-            .expect("an annotated assignment")
-            .annotation
-            .as_ref();
-        assert_eq!(is_type_alias(annotation), expected);
     }
 
     #[test]

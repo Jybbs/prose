@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/lone_nested_constant_folds_below_its_tier/input.py
+---
+BASE = 1
+OTHER = 2
+DERIVED = BASE + 1

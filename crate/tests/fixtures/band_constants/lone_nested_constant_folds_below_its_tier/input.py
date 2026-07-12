@@ -1,0 +1,3 @@
+BASE = 1
+DERIVED = BASE + 1
+OTHER = 2

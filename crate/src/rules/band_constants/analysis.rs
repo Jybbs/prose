@@ -11,11 +11,14 @@ use ruff_text_size::{Ranged, TextRange};
 
 use super::{
     BandConstants,
-    plan::{BandPlan, BandRank},
+    plan::{BandPlan, BandRank, Subcategory},
 };
 use crate::{
     primitives::{
-        binding::{bare_import_bound_name, from_import_bound_name, single_name_assignment},
+        binding::{
+            bare_import_bound_name, from_import_bound_name, is_screaming_case, is_type_alias,
+            single_name_assignment,
+        },
         comments::{has_keep_marker, is_banner_block, leading_comment_block},
         effect::value_is_effectful,
         tiering::{eval_refs, eval_time_refs, tier_levels},
@@ -25,16 +28,18 @@ use crate::{
 };
 
 /// A module-scope single-name assignment considered for hoisting,
-/// carrying its body index, target name, the load-context names in its
-/// value and its non-deferred annotation, and whether the value runs
-/// code at binding. Value references pin the constant when unresolved,
-/// whereas annotation references only constrain band order. `effectful`
-/// holds only inside a notebook cell, pinning the constant there.
+/// carrying its body index, target name, subcategory, the load-context
+/// names in its value and its non-deferred annotation, and whether the
+/// value runs code at binding. Value references pin the constant when
+/// unresolved, whereas annotation references only constrain band order.
+/// `effectful` holds only inside a notebook cell, pinning the constant
+/// there.
 struct ConstSite<'src> {
     annot_refs: Vec<&'src str>,
     effectful: bool,
     idx: usize,
     name: &'src str,
+    subcategory: Subcategory,
     value_refs: Vec<&'src str>,
 }
 
@@ -46,6 +51,7 @@ pub(super) fn module_band_plan<'src>(
     body: &'src [Stmt],
     blocks: &[TextRange],
     defer_annotations: bool,
+    group_constants: bool,
     target_version: Option<PythonVersion>,
 ) -> Option<BandPlan<'src>> {
     let analysis = source.binding_analysis();
@@ -75,8 +81,7 @@ pub(super) fn module_band_plan<'src>(
         let gap_comment = idx.checked_sub(1).and_then(|prev| {
             leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
         });
-        let const_target =
-            single_name_assignment(stmt).map(|(target, value, _)| (target.id.as_str(), value));
+        let const_target = const_binding(stmt);
         // A definition, class, import, or any non-constant pins beneath an
         // own-line comment, bounding the bands to its side. A constant
         // instead forward-attaches a prose comment the way `blank-lines`
@@ -125,6 +130,11 @@ pub(super) fn module_band_plan<'src>(
                         effectful: notebook && value.is_some_and(value_is_effectful),
                         idx,
                         name,
+                        subcategory: if group_constants {
+                            subcategory_of(stmt, name)
+                        } else {
+                            Subcategory::default()
+                        },
                         value_refs: value.map_or_else(Vec::new, eval_refs),
                     });
                 }
@@ -169,7 +179,7 @@ pub(super) fn module_band_plan<'src>(
     propagate(&mut anchored, &deps);
     let mut trailing: Vec<bool> = (0..n).map(|s| reaches_def[s] && !anchored[s]).collect();
     propagate(&mut trailing, &deps);
-    let mut keys: HashMap<usize, (usize, &'src str)> = HashMap::new();
+    let mut keys: HashMap<usize, (usize, Subcategory, &'src str)> = HashMap::new();
     for band in [false, true] {
         let members: Vec<usize> = (0..n)
             .filter(|&s| !anchored[s] && trailing[s] == band)
@@ -186,7 +196,7 @@ pub(super) fn module_band_plan<'src>(
             })
             .collect();
         for (s, tier) in members.iter().copied().zip(tier_levels(&dep_sets)?) {
-            keys.insert(sites[s].idx, (tier, sites[s].name));
+            keys.insert(sites[s].idx, (tier, sites[s].subcategory, sites[s].name));
             ranks.insert(
                 sites[s].idx,
                 if band {
@@ -233,6 +243,20 @@ pub(super) fn module_band_plan<'src>(
     })
 }
 
+/// The target name and value of a module constant candidate: an `Assign`
+/// or initialized `AnnAssign` through `single_name_assignment`, or a
+/// PEP 695 `type X` alias statement, whose value is always inert. `None`
+/// for any other shape.
+fn const_binding(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
+    match stmt {
+        Stmt::TypeAlias(alias) => Some((
+            alias.name.as_name_expr()?.id.as_str(),
+            Some(alias.value.as_ref()),
+        )),
+        _ => single_name_assignment(stmt).map(|(target, value, _)| (target.id.as_str(), value)),
+    }
+}
+
 /// Closes `state` over `deps` to a fixed point, flipping a slot true
 /// once any slot it depends on is true, so an initially-seeded flag
 /// reaches every slot transitively downstream of a seed.
@@ -249,6 +273,25 @@ fn propagate(state: &mut [bool], deps: &[Vec<usize>]) {
     }
 }
 
+/// The subcategory a banded constant sorts into. A PEP 695 `type X`
+/// statement or a `TypeAlias`-annotated assignment reads as an alias, a
+/// `SCREAMING_CASE` name as a constant, a remaining name opening on an
+/// uppercase letter as an alias, and everything else as module state.
+fn subcategory_of(stmt: &Stmt, name: &str) -> Subcategory {
+    let annotated_alias = stmt
+        .as_ann_assign_stmt()
+        .is_some_and(|ann| is_type_alias(&ann.annotation));
+    if matches!(stmt, Stmt::TypeAlias(_)) || annotated_alias {
+        Subcategory::Alias
+    } else if is_screaming_case(name) {
+        Subcategory::Constant
+    } else if name.starts_with(|c: char| c.is_ascii_uppercase()) {
+        Subcategory::Alias
+    } else {
+        Subcategory::State
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -260,7 +303,16 @@ mod tests {
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
         let blocks = block_ranges(source, body, source.module_range());
-        module_band_plan(source, body, &blocks, false, None)
+        module_band_plan(source, body, &blocks, false, true, None)
+    }
+
+    #[test]
+    fn const_binding_accepts_a_type_alias_and_rejects_a_non_binding() {
+        let source = parse("type Seconds = float\nx, y = 1, 2\n");
+        let body = &source.ast().body;
+        let (name, _) = const_binding(&body[0]).expect("a type alias binds");
+        assert_eq!(name, "Seconds");
+        assert!(const_binding(&body[1]).is_none());
     }
 
     #[test]
@@ -403,5 +455,22 @@ mod tests {
         let mut state = vec![false, true, false];
         propagate(&mut state, &deps);
         assert_eq!(state, vec![false, true, false]);
+    }
+
+    #[rstest]
+    #[case("Handler = make", Subcategory::Alias)]
+    #[case("Payload: TypeAlias = dict", Subcategory::Alias)]
+    #[case("type Seconds = float", Subcategory::Alias)]
+    #[case("MAX_RETRIES = 5", Subcategory::Constant)]
+    #[case("threshold = 5", Subcategory::State)]
+    #[case("_cache = registry", Subcategory::State)]
+    fn subcategory_of_classifies_by_name_shape_and_structure(
+        #[case] src: &str,
+        #[case] expected: Subcategory,
+    ) {
+        let source = parse(&format!("{src}\n"));
+        let stmt = &source.ast().body[0];
+        let (name, _) = const_binding(stmt).expect("a constant binding");
+        assert_eq!(subcategory_of(stmt, name), expected);
     }
 }

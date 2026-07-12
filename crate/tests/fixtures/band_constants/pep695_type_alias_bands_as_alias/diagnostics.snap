@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/band_constants/pep695_type_alias_bands_as_alias/input.py
+---
+band-constants@0..39

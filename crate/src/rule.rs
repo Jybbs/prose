@@ -17,9 +17,10 @@ use thiserror::Error;
 
 use crate::{
     config::{
-        AlignmentConfig, AlphabetizeConfig, BareImportsConfig, CallLayoutConfig,
-        CollectionLayoutConfig, Config, MiscasedConstantsConfig, ReassignedConstantsConfig,
-        SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly, rule_schema,
+        AlignmentConfig, AlphabetizeConfig, BandConstantsConfig, BareImportsConfig,
+        CallLayoutConfig, CollectionLayoutConfig, Config, MiscasedConstantsConfig,
+        ReassignedConstantsConfig, SignatureLayoutConfig, SingleUseVariablesConfig, ToggleOnly,
+        rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -330,7 +331,7 @@ register_rules! {
     "shed-parentheses":          shed_parentheses:          ToggleOnly                => ShedParentheses         => "shed a redundant grouping parenthesis pair",
     "call-layout":               call_layout:               CallLayoutConfig          => CallLayout              => "explode call arguments to one keyword per line",
     "group-imports":             group_imports:             ToggleOnly                => GroupImports            => "group imports into bare, external, and local sections",
-    "band-constants":            band_constants:            ToggleOnly                => BandConstants           => "band module constants into leading and trailing bands",
+    "band-constants":            band_constants:            BandConstantsConfig       => BandConstants           => "band module constants into leading and trailing bands",
     "alphabetize":               alphabetize:               AlphabetizeConfig         => Alphabetize             => "alphabetize this group",
     "strip-trailing-commas":     strip_trailing_commas:     ToggleOnly                => StripTrailingCommas     => "strip trailing comma",
     "docstring-expand":          docstring_expand:          ToggleOnly                => DocstringExpand         => "expand single-line docstring to multi-line form",
