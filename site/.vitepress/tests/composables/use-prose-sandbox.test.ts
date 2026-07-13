@@ -360,6 +360,21 @@ describe('useProseSandbox', () => {
     vi.useRealTimers()
   })
 
+  it('formats a rule toggle without waiting out the typing debounce', async () => {
+    vi.useFakeTimers()
+    const format = vi.fn<Formatter>(formatting('OUT'))
+    const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
+    api.setFacet('align-equals', ENABLED, false)
+    api.setFacet('blank-lines', SCHEMA.rules[1].facets[0], false)
+    await flushPromises()
+    // The two toggles coalesce into one immediate display run, trailed only
+    // by the first format's eligibility baseline, with no timer advance.
+    expect(format).toHaveBeenCalledTimes(2)
+    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('align-equals = false'), 'seed a')
+    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('blank-lines = false'), 'seed a')
+    vi.useRealTimers()
+  })
+
   it('reads and writes a length knob and clears it back to default', () => {
     const api = sandbox(okLoader)
     expect(api.lengths).toEqual(SCHEMA.lengths)

@@ -10,5 +10,6 @@ export function nextPaint(): Promise<void> {
 // The squiggle-draw duration declared in `tokens.css`, read off the root
 // element, falling back when the custom property is absent.
 export function ruleDrawMs(fallback = 450): number {
-  return Number(getComputedStyle(document.documentElement).getPropertyValue('--prose-rule-draw-ms')) || fallback
+  const declared = getComputedStyle(document.documentElement).getPropertyValue('--prose-rule-draw-ms')
+  return Number(declared) || fallback
 }

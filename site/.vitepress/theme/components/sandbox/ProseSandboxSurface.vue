@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import type { KeyedTokensInfo } from '@shikijs/magic-move/types'
 import { promiseTimeout }       from '@vueuse/core'
-import { nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import LintFlagPopper    from '../rules/LintFlagPopper.vue'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
 import type { ProseSandbox }     from '../../../lib/composables/use-prose-sandbox'
 import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
+import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-draw'
 import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
-import { magicMoveOptions, type MagicMovePanel } from '../../../lib/markdown/magic-move-options'
+import * as magicMove            from '../../../lib/markdown/magic-move-options'
 import { highlight }             from '../../../lib/sandbox/highlight'
 import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
@@ -28,10 +29,17 @@ const editing     = ref(false)
 const morphKey    = ref(0)
 const morphMs     = ref(450)
 const morphing    = ref(false)
-const panel       = shallowRef<MagicMovePanel>(null)
+const panel       = shallowRef<magicMove.MagicMovePanel>(null)
 const step        = ref(0)
 const steps       = shallowRef<readonly KeyedTokensInfo[]>([])
-const undrawn     = ref(false)
+
+const { drawSquiggles, undrawn } = useSquiggleDraw()
+
+// The precompiled panel re-syncs its keys, with in-place side effects,
+// whenever these prop identities change, so they stay stable across
+// unrelated re-renders instead of rebuilding per template pass.
+const morphOptions = computed(() => magicMove.magicMoveOptions(morphMs.value, 0))
+const morphSteps   = computed(() => [...steps.value])
 
 let previous   = ''
 let generation = 0
@@ -41,10 +49,12 @@ let shownRules = new Set<string>()
 // squiggles, then morphs from the prior output when motion is allowed and
 // the surface is not mid-edit. Each transition mounts a fresh magic-move
 // instance keyed by `morphKey`, so it measures its rest state before the
-// step flip animates it, matching the fixture morph. A newer change bumps
-// the generation, so a superseded render abandons rather than racing on the
-// shared morph state, and a watchdog restores the static display if the
-// `@end` event is ever missed.
+// step flip animates it, matching the fixture morph. The settled html
+// lands on the static display only under the morph's cover, so the pane
+// never flashes the end state before the tokens slide. A newer change
+// bumps the generation, so a superseded render abandons rather than
+// racing on the shared morph state, and a watchdog restores the static
+// display if the `@end` event is ever missed.
 async function render(next: string): Promise<void> {
   const gen  = ++generation
   const from = previous
@@ -60,36 +70,43 @@ async function render(next: string): Promise<void> {
     await reflow(html, gen)
     return
   }
-  commit(html)
   if (from === '' || from === next || reducedMotion.value) {
+    commit(html)
     drawSquiggles()
     return
   }
   panel.value ??= (await import('@shikijs/magic-move/vue')).ShikiMagicMovePrecompiled
   const { precompileMagicMove } = await import('../../../lib/markdown/magic-move')
-  const committed = await precompileMagicMove([from, next])
+  // The morph renders a trailing newline as an extra `<br>` line the static
+  // display does not carry, so the states trim to the real last line.
+  const committed = await precompileMagicMove([from.trimEnd(), next.trimEnd()])
   if (gen !== generation) return
   steps.value     = committed
   step.value      = 0
-  animate.value   = false
+  animate.value   = true
   morphMs.value   = ruleDrawMs()
   morphKey.value += 1
   morphing.value  = true
   // The FLIP morph measures the rest state against the painted DOM, so the
   // fresh instance needs a real frame to lay the "from" tokens out before
   // the step flip. A microtask alone leaves both measurements in one frame
-  // and the morph degrades to a jump cut.
+  // and the morph degrades to a jump cut. Mounting with `animate` on runs
+  // the rest state through a real render, so the flip is no longer the
+  // renderer's first and its container-height transition engages.
   await nextTick()
   await nextPaint()
   if (gen !== generation) return
-  animate.value = true
-  step.value    = 1
+  commit(html)
+  step.value = 1
   setTimeout(() => { if (gen === generation && morphing.value) endMorph() }, morphMs.value + 250)
 }
 
 // The morph settles onto the static display, so the squiggles draw back in
-// the way the fixture cards do rather than snapping to full length.
+// the way the fixture cards do rather than snapping to full length. The
+// mount's rest-state render emits its own `end` before the flip, which the
+// step guard drops.
 function endMorph(): void {
+  if (step.value === 0) return
   morphing.value = false
   drawSquiggles()
 }
@@ -106,8 +123,8 @@ function commit(html: string): void {
 // they clear, then draw any freshly enabled underlines back in.
 async function reflow(html: string, gen: number): Promise<void> {
   const nextRules = new Set(diagnostics.value.map(finding => finding.code))
-  const removed   = [...shownRules].filter(rule => !nextRules.has(rule))
-  const added     = [...nextRules].filter(rule => !shownRules.has(rule))
+  const removed   = [...shownRules.difference(nextRules)]
+  const added     = [...nextRules.difference(shownRules)]
   if (removed.length > 0 && display.value) {
     markUndrawn(display.value, removed)
     await promiseTimeout(ruleDrawMs())
@@ -129,15 +146,6 @@ function markUndrawn(root: HTMLElement, rules: readonly string[]): HTMLElement[]
     .filter(flag => rules.includes(flag.dataset.rule ?? ''))
   matched.forEach(flag => flag.classList.add('lint-undrawn'))
   return matched
-}
-
-// Stages the lint underlines undrawn, then lifts the class after a paint
-// so their scaleX transition re-fires left to right.
-async function drawSquiggles(): Promise<void> {
-  if (typeof requestAnimationFrame === 'undefined') return
-  undrawn.value = true
-  await nextPaint()
-  undrawn.value = false
 }
 
 // The flat character offset under a point, walking the display's text nodes
@@ -210,10 +218,10 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
       :key="morphKey"
       v-show="!editing"
       class="code-panel-code"
-      :steps="[...steps]"
+      :steps="morphSteps"
       :step="step"
       :animate="animate && !reducedMotion"
-      :options="magicMoveOptions(morphMs)"
+      :options="morphOptions"
       @end="endMorph"
     />
     <div
@@ -237,8 +245,10 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
 </template>
 
 <style scoped>
-.sandbox-surface {
-  min-height : 30rem;
+/* Mid-resize the new layout overflows the still-animating height, so the
+   morph pane clips instead of flashing a scrollbar. */
+.sandbox-surface :deep(.shiki-magic-move-container) {
+  overflow : hidden;
 }
 
 .sandbox-surface-guide {

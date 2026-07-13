@@ -92,7 +92,7 @@ onUnmounted(machine.dispose)
   <div ref="root" class="typing-demo">
     <section class="code-panel typing-demo-config panel panel-clip" aria-label="prose config">
       <header class="code-panel-label">prose.toml</header>
-      <pre class="code-panel-code typing-demo-config-code"><code><span class="typing-demo-config-prelude">{{ segments.before }}</span><span class="typing-demo-config-editing">{{ segments.editingLineBefore }}</span><span class="typing-demo-config-editing">{{ segments.editing }}<span v-if="showCaret" class="code-caret" aria-hidden="true" /></span><span class="typing-demo-config-editing">{{ segments.editingLineAfter }}</span><span class="typing-demo-config-prelude">{{ segments.after }}</span></code></pre>
+      <pre class="code-panel-code code-typewriter"><code><span class="typing-demo-config-prelude">{{ segments.before }}</span><span class="typing-demo-config-editing">{{ segments.editingLineBefore }}</span><span class="typing-demo-config-editing">{{ segments.editing }}<span v-if="showCaret" class="code-caret" aria-hidden="true" /></span><span class="typing-demo-config-editing">{{ segments.editingLineAfter }}</span><span class="typing-demo-config-prelude">{{ segments.after }}</span></code></pre>
     </section>
     <section class="code-panel typing-demo-python panel panel-clip" aria-label="Python source">
       <header class="code-panel-label">app.py</header>

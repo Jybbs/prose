@@ -6,44 +6,11 @@ import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
 import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
-import { codeHighlighter }   from '../../../lib/markdown/highlighter'
 import { highlight }         from '../../../lib/sandbox/highlight'
-import { SHIKI_THEMES }      from '../../../lib/shared/constants'
+import * as typewriter       from '../../../lib/sandbox/typewriter'
 
 const CARET   = '<span class="code-caret" aria-hidden="true"></span>'
 const STEP_MS = 12
-
-type Token     = { content: string, style: string }
-type TokenLine = readonly Token[]
-
-function escapeHtml(text: string): string {
-  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-}
-
-function tokenStyle(style: Record<string, string> | undefined): string {
-  return Object.entries(style ?? {}).map(([key, value]) => `${key}:${value}`).join(';')
-}
-
-async function tokenLines(text: string): Promise<TokenLine[]> {
-  const highlighter = await codeHighlighter()
-  const { tokens } = highlighter.codeToTokens(text, { lang: 'toml', themes: SHIKI_THEMES })
-  return tokens.map(line => line.map(token => ({
-    content : token.content,
-    style   : tokenStyle(token.htmlStyle)
-  })))
-}
-
-function lineHtml(line: TokenLine, chars: number): string {
-  let remaining = chars
-  let html      = ''
-  for (const token of line) {
-    if (remaining <= 0) break
-    const slice = token.content.slice(0, remaining)
-    html      += `<span style="${token.style}">${escapeHtml(slice)}</span>`
-    remaining -= slice.length
-  }
-  return html
-}
 
 const props = defineProps<{ sandbox: ProseSandbox }>()
 const { configError, configToml } = props.sandbox
@@ -80,32 +47,27 @@ async function typeTo(next: string): Promise<void> {
     return
   }
   const current = shown.value
-  const [curTokens, nextTokens] = await Promise.all([tokenLines(current), tokenLines(next)])
+  const [curTokens, nextTokens] =
+    await Promise.all([typewriter.tokenLines(current), typewriter.tokenLines(next)])
   if (gen !== generation) return
-  const curLines  = current.split('\n')
-  const nextLines = next.split('\n')
-  let prefix = 0
-  while (
-    prefix < curLines.length && prefix < nextLines.length &&
-    curLines[prefix] === nextLines[prefix]
-  ) prefix += 1
-  let suffix = 0
-  while (
-    suffix < curLines.length - prefix && suffix < nextLines.length - prefix &&
-    curLines[curLines.length - 1 - suffix] === nextLines[nextLines.length - 1 - suffix]
-  ) suffix += 1
+  const plan = typewriter.typingPlan(current, next)
 
-  function frame(tokens: TokenLine[], lines: readonly string[], midEnd: number, chars: number): void {
+  function frame(
+    tokens : typewriter.TokenLine[],
+    lines  : readonly string[],
+    midEnd : number,
+    chars  : number
+  ): void {
     const parts: string[] = []
     const texts: string[] = []
     for (let index = 0; index < lines.length; index += 1) {
-      if (index < prefix || index >= midEnd) {
-        parts.push(lineHtml(tokens[index] ?? [], Number.POSITIVE_INFINITY))
+      if (index < plan.prefix || index >= midEnd) {
+        parts.push(typewriter.lineHtml(tokens[index] ?? [], Number.POSITIVE_INFINITY))
         texts.push(lines[index])
         continue
       }
       const visible = Math.min(chars, lines[index].length)
-      parts.push(lineHtml(tokens[index] ?? [], visible) + CARET)
+      parts.push(typewriter.lineHtml(tokens[index] ?? [], visible) + CARET)
       texts.push(lines[index].slice(0, visible))
     }
     typingHtml.value = parts.join('\n')
@@ -113,26 +75,14 @@ async function typeTo(next: string): Promise<void> {
   }
 
   typing.value = true
-  const curMidEnd  = curLines.length - suffix
-  const nextMidEnd = nextLines.length - suffix
-  const curMax     = Math.max(0, ...curLines.slice(prefix, curMidEnd).map(line => line.length))
-  const nextMax    = Math.max(0, ...nextLines.slice(prefix, nextMidEnd).map(line => line.length))
-  let floor = 0
-  if (curMidEnd - prefix <= 1 && nextMidEnd - prefix <= 1) {
-    const before = curMidEnd > prefix ? curLines[prefix] : ''
-    const after  = nextMidEnd > prefix ? nextLines[prefix] : ''
-    while (floor < before.length && floor < after.length && before[floor] === after[floor]) {
-      floor += 1
-    }
-  }
-  for (let chars = curMax; chars > floor; chars -= 1) {
+  for (let chars = plan.curMax; chars > plan.floor; chars -= 1) {
     if (gen !== generation) return
-    frame(curTokens, curLines, curMidEnd, chars - 1)
+    frame(curTokens, plan.curLines, plan.curMidEnd, chars - 1)
     await promiseTimeout(STEP_MS)
   }
-  for (let chars = floor; chars < nextMax; chars += 1) {
+  for (let chars = plan.floor; chars < plan.nextMax; chars += 1) {
     if (gen !== generation) return
-    frame(nextTokens, nextLines, nextMidEnd, chars + 1)
+    frame(nextTokens, plan.nextLines, plan.nextMidEnd, chars + 1)
     await promiseTimeout(STEP_MS)
   }
   if (gen !== generation) return
@@ -171,7 +121,7 @@ onMounted(() => {
     />
     <pre
       v-show="!editing && typing"
-      class="code-panel-code sandbox-toml-typing shiki"
+      class="code-panel-code code-typewriter shiki"
       v-html="typingHtml"
     />
     <div
@@ -196,15 +146,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.sandbox-toml {
-  min-height : 30rem;
-}
-
-.sandbox-toml-typing {
-  color       : var(--vp-c-text-1);
-  white-space : pre;
-}
-
 .sandbox-toml-display {
   cursor : text;
 }

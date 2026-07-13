@@ -55,6 +55,11 @@
   white-space : pre-wrap;
 }
 
+.code-typewriter {
+  color       : var(--vp-c-text-1);
+  white-space : pre;
+}
+
 .code-caret {
   display             : inline-block;
   width               : 0.5em;

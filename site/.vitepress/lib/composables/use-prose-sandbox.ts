@@ -1,6 +1,6 @@
 import { StorageSerializers, promiseTimeout, useStorage, watchDebounced } from '@vueuse/core'
-import { parse, stringify }        from 'smol-toml'
-import { computed, ref, type Ref } from 'vue'
+import { parse, stringify }               from 'smol-toml'
+import { computed, ref, toRaw, type Ref } from 'vue'
 
 import type { LintFinding }           from '../fixtures/lint-findings'
 import type * as configSchema         from '../sandbox/config-schema.data'
@@ -60,10 +60,10 @@ function randomOther(count: number, exclude: number): number {
   return roll >= exclude ? roll + 1 : roll
 }
 
-// A plain deep copy that also unwraps the reactive proxy, which
-// `structuredClone` rejects.
+// `structuredClone` rejects a reactive proxy, so unwrap to the raw
+// object first.
 function clone(config: ParsedConfig): ParsedConfig {
-  return JSON.parse(JSON.stringify(config)) as ParsedConfig
+  return structuredClone(toRaw(config))
 }
 
 export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
@@ -116,8 +116,9 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
       await promiseTimeout(0)
       if (eligibleSource !== target) return
       impact[rule.slug] = rule.facets
-        .filter(facet => facet.key !== 'enabled')
-        .filter(facet => probe.facetHasImpact(baseline, facet, current.format, rule.slug, target))
+        .filter(facet =>
+          facet.key !== 'enabled' &&
+          probe.facetHasImpact(baseline, facet, current.format, rule.slug, target))
         .map(facet => facet.key)
       facetImpact.value = { ...impact }
     }
@@ -152,6 +153,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
       else if (current === false) delete rules[slug]
       else if (typeof current === 'object') delete current.enabled
       commit(next)
+      eagerFormat()
       return
     }
     const table = typeof current === 'object' ? current : {}
@@ -160,6 +162,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     if (Object.keys(table).length === 0) delete rules[slug]
     else rules[slug] = table
     commit(next)
+    if (facet.kind === 'bool') eagerFormat()
   }
 
   function defaultLength(key: string): number {
@@ -176,6 +179,20 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     if (value === defaultLength(key)) delete next[key]
     else next[key] = value
     commit(next)
+  }
+
+  let eagerQueued = false
+
+  // A rule or switch toggle is a discrete action, so its format runs on
+  // the next microtask instead of waiting out the typing debounce, with a
+  // toggle-all burst coalescing into one run.
+  function eagerFormat(): void {
+    if (eagerQueued) return
+    eagerQueued = true
+    queueMicrotask(() => {
+      eagerQueued = false
+      void format()
+    })
   }
 
   async function instantiate(): Promise<ProseWasm> {

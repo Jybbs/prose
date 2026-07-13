@@ -2,17 +2,6 @@
 import { HASH_PREFIX, decodeShare, encodeShare } from '../../lib/sandbox/share-link'
 import type { SharedState }                      from '../../lib/sandbox/share-link'
 
-// Deflates an arbitrary value the way `encodeShare` does, so a test can
-// hand `decodeShare` a well-compressed payload of the wrong shape.
-async function encodeRaw(value: unknown): Promise<string> {
-  const bytes  = new TextEncoder().encode(JSON.stringify(value))
-  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))
-  const packed = new Uint8Array(await new Response(stream).arrayBuffer())
-  let binary = ''
-  for (const byte of packed) binary += String.fromCodePoint(byte)
-  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
-}
-
 describe('share-link', () => {
   it('round-trips a source-bearing session through the hash payload', async () => {
     const state: SharedState = { configToml: 'code-line-length = 40\n', source: 'x = 1\n' }
@@ -32,11 +21,11 @@ describe('share-link', () => {
   })
 
   it('rejects a well-compressed payload carrying neither source nor case', async () => {
-    expect(await decodeShare(`${HASH_PREFIX}${await encodeRaw({ configToml: '' })}`)).toBeNull()
+    expect(await decodeShare(`${HASH_PREFIX}${await encodeShare({ configToml: '' })}`)).toBeNull()
   })
 
   it('rejects a seeded payload whose configToml is not a string', async () => {
-    const payload = await encodeRaw({ configToml: 7, source: 'x = 1\n' })
+    const payload = await encodeShare({ configToml: 7, source: 'x = 1\n' } as unknown as SharedState)
     expect(await decodeShare(`${HASH_PREFIX}${payload}`)).toBeNull()
   })
 

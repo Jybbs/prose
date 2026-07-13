@@ -6,7 +6,7 @@ import * as paths                             from '../shared/paths'
 import type { RuleFamily }                    from '../shared/registries'
 import { toTitleCase }                        from '../shared/title-case'
 
-export type FacetKind = 'bool' | 'int' | 'string' | 'stringList'
+type FacetKind = 'bool' | 'int' | 'string' | 'stringList'
 
 export type FacetValue = boolean | number | string | readonly string[]
 

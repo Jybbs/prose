@@ -5,10 +5,11 @@ import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch }
 
 import LintFlagPopper from '../rules/LintFlagPopper.vue'
 
-import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
+import { useReducedMotion } from '../../../lib/composables/use-reduced-motion'
+import { useSquiggleDraw }  from '../../../lib/composables/use-squiggle-draw'
 import { magicMoveOptions, type MagicMovePanel } from '../../../lib/markdown/magic-move-options'
-import type { FixtureTab }       from '../../../lib/shared/fixture-tab'
-import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
+import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
+import { ruleDrawMs }       from '../../../lib/shared/paint'
 
 const props = defineProps<{
   activeTab  : FixtureTab
@@ -25,10 +26,17 @@ const animating = ref(false)
 const duration  = ref(0)
 const panel     = shallowRef<MagicMovePanel>(null)
 const steps     = shallowRef<readonly KeyedTokensInfo[]>([])
-const undrawn   = ref(false)
+
+const { drawSquiggles, undrawn } = useSquiggleDraw()
 
 const activeHtml = computed(() => props.activeTab === 'before' ? props.inputHtml : props.outputHtml)
 const step       = computed(() => props.activeTab === 'before' ? 0 : 1)
+
+// The precompiled panel re-syncs its keys, with in-place side effects,
+// whenever these prop identities change, so they stay stable across
+// unrelated re-renders instead of rebuilding per template pass.
+const morphOptions = computed(() => magicMoveOptions(duration.value))
+const morphSteps   = computed(() => [...steps.value])
 
 // Recover the source from a prebuilt highlight, reading only `<pre><code>` so
 // the lang chip and copy button stay out of the retokenized code.
@@ -57,14 +65,6 @@ async function prepare(): Promise<void> {
   animate.value = true
 }
 
-// Replays the left-to-right squiggle draw, staging `lint-undrawn` and
-// lifting it after a paint so the CSS transition re-fires.
-async function drawSquiggles(): Promise<void> {
-  if (typeof requestAnimationFrame === 'undefined') return
-  undrawn.value = true
-  await nextPaint()
-  undrawn.value = false
-}
 
 // Magic-move owns the panel through the morph, and on settle the
 // decorated static panel returns so its `.lint-flag` hovers work and the
@@ -106,10 +106,10 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       v-if="panel"
       v-show="animating"
       class="fixture-pair-panel"
-      :steps="[...steps]"
+      :steps="morphSteps"
       :step="step"
       :animate="animate && !reducedMotion"
-      :options="magicMoveOptions(duration)"
+      :options="morphOptions"
       @end="settle"
     />
     <div

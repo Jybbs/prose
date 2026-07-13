@@ -2,11 +2,13 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { ref }                  from 'vue'
 
-import ProseSandboxSurface   from '../../theme/components/sandbox/ProseSandboxSurface.vue'
-import type { ProseSandbox } from '../../lib/composables/use-prose-sandbox'
-import { domTest }           from '../dom'
+import ProseSandboxSurface    from '../../theme/components/sandbox/ProseSandboxSurface.vue'
+import type { ProseSandbox }  from '../../lib/composables/use-prose-sandbox'
+import { domTest, nextFrame } from '../dom'
 
 interface Decoration { properties: Record<string, string> }
+
+const drawSettled = (): Promise<void> => new Promise(resolve => { setTimeout(resolve, 550) })
 
 vi.mock('../../lib/sandbox/highlight', () => ({
   highlight: (code: string, _lang: string, decorations: Decoration[] = []) => {
@@ -63,10 +65,16 @@ describe('ProseSandboxSurface', () => {
 
     sandbox.formatted.value = 'x      = 1'
     await flushPromises()
-    await new Promise<void>(resolve => { requestAnimationFrame(() => resolve()) })
+    await nextFrame()
+    await nextFrame()
     await flushPromises()
 
+    // The settled html lands only after the morph mounts and paints, so the
+    // display assert waits out the two frames `nextPaint` spans.
     sandbox.formatted.value = 'x = 2'
+    await flushPromises()
+    await nextFrame()
+    await nextFrame()
     await flushPromises()
     expect(wrapper.get('.sandbox-surface-display').html()).toContain('x = 2')
   })
@@ -83,7 +91,7 @@ describe('ProseSandboxSurface', () => {
 
     sandbox.diagnostics.value = []
     await flushPromises()
-    await new Promise<void>(resolve => { setTimeout(resolve, 550) })
+    await drawSettled()
     await flushPromises()
     const display = wrapper.get('.sandbox-surface-display')
     expect(display.html()).not.toContain('data-rule="r1"')
@@ -101,7 +109,7 @@ describe('ProseSandboxSurface', () => {
       { code: 'r1', end_location: { column: 2, row: 1 }, location: { column: 1, row: 1 }, message: 'm' }
     ]
     await flushPromises()
-    await new Promise<void>(resolve => { setTimeout(resolve, 550) })
+    await drawSettled()
     await flushPromises()
     expect(wrapper.get('.sandbox-surface-display').html()).toContain('data-rule="r1"')
   })

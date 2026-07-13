@@ -6,22 +6,18 @@ import { useProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { data as schema }  from '../../../lib/sandbox/config-schema.data'
 import { data as pool }    from '../../../lib/sandbox/pool.data'
 
-const deckLocked     = useStorage('prose-sandbox-pinned', false)
-const deckOpen       = useStorage('prose-sandbox-deck-open', true)
-const draggingLength = ref('')
-const guideHue       = ref('')
-const previewLength  = ref(0)
-const refreshArmed   = refAutoReset(false, 4000)
-const sandbox        = useProseSandbox({ cases: pool.cases, schema })
+const deckLocked   = useStorage('prose-sandbox-pinned', false)
+const deckOpen     = useStorage('prose-sandbox-deck-open', true)
+const guide        = ref<{ hue: string, value: number } | null>(null)
+const refreshArmed = refAutoReset(false, 4000)
+const sandbox      = useProseSandbox({ cases: pool.cases, schema })
 
 function onDragging(key: string, hue: string): void {
-  draggingLength.value = key
-  guideHue.value       = hue
-  if (key) previewLength.value = sandbox.lengthValue(key)
+  guide.value = key ? { hue, value: sandbox.lengthValue(key) } : null
 }
 
 function onPreview(_key: string, value: number): void {
-  previewLength.value = value
+  if (guide.value) guide.value = { ...guide.value, value }
 }
 
 const { copied, copy } = useClipboard()
@@ -99,8 +95,8 @@ onMounted(sandbox.start)
       <div class="sandbox-py copy-host">
         <ProseSandboxSurface
           :sandbox="sandbox"
-          :guide="draggingLength ? previewLength : null"
-          :guide-hue="guideHue"
+          :guide="guide?.value ?? null"
+          :guide-hue="guide?.hue"
         />
         <button
           type="button"
@@ -163,6 +159,10 @@ onMounted(sandbox.start)
   grid-template-columns : minmax(0, 2fr) minmax(0, 1fr);
   gap                   : 1.25rem;
   align-items           : stretch;
+}
+
+.sandbox-surfaces > * {
+  min-height : 30rem;
 }
 
 .sandbox-py {

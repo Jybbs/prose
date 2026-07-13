@@ -67,10 +67,7 @@ mod tests {
     use super::*;
 
     fn formatted(config_toml: &str, source: &str) -> FormatResult {
-        let Ok(result) = format(config_toml, source) else {
-            panic!("format succeeds");
-        };
-        result
+        format(config_toml, source).unwrap_or_else(|_| panic!("format succeeds"))
     }
 
     #[test]

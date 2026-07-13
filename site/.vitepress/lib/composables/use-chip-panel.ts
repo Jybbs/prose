@@ -70,14 +70,9 @@ export function useChipPanel(sandbox: ProseSandbox, cards: Record<string, Render
     panel.value = el as HTMLElement | null
   }
 
-  // This close fires on the window capture phase, ahead of a gear's own click
-  // handler, which would then re-toggle the popover open. A click on a
-  // `data-gear` control is therefore left to that control's handler.
-  onClickOutside(panel, event => {
-    const target = event.target
-    if (target instanceof Element && target.closest('[data-gear]')) return
-    openSlug.value = ''
-  })
+  // A gear click toggles its own popover, so it stays with that handler
+  // rather than closing the plate first.
+  onClickOutside(panel, () => { openSlug.value = '' }, { ignore: ['[data-gear]'] })
 
   return {
     enabledFacet,

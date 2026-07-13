@@ -7,11 +7,6 @@
   max-width             : 1120px;
 }
 
-.typing-demo-config-code {
-  color       : var(--vp-c-text-1);
-  white-space : pre;
-}
-
 .typing-demo-config-prelude {
   color: var(--vp-c-text-3);
 }
