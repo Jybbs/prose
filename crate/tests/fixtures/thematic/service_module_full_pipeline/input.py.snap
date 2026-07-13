@@ -1,0 +1,52 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
+---
+import os
+import sys
+
+from dataclasses import dataclass, field
+from typing      import Optional
+
+DEFAULT_TAGS = ["alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta"]
+MAX_RETRIES  = 5
+timeout      = 30
+
+
+@dataclass
+class ServiceConfig:
+
+    endpoint : str            = ""
+    id       : int            = 0
+    labels   : Optional[list] = None
+    region   : str            = "us-east-1"
+
+    def __post_init__(self):
+        self.labels = self.labels or []
+
+    def _key(self):
+        return self.id
+
+    def describe(self):
+        """
+        One-line summary of the service endpoint and region.
+        """
+        return f"{self.endpoint} in {self.region}"
+
+
+def build_request(
+    method,
+    fully_qualified_endpoint_url,
+    headers,
+    body,
+    timeout,
+    retries
+):
+    result = os.getcwd()
+    return {
+        "body"    : body,
+        "headers" : headers,
+        "method"  : method,
+        "url"     : fully_qualified_endpoint_url
+    }

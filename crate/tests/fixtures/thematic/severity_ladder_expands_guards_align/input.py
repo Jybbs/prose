@@ -1,0 +1,28 @@
+import math
+from alerts.transport import notify
+SEVERITY_LADDER = {"critical": 0.40, "major": 0.15, "warning": 0.05, "info": 0.01,}
+PAGE_CHANNELS = ["oncall-primary", "oncall-secondary", "status-page",]
+SAMPLE_FLOOR = 20
+QUEUE_CEILING = 10000
+poll_interval_seconds = 30
+LATENCY_CEILING_MS = 250
+def classify(error_rate, sample_count):
+    # 1. discard windows too small to judge
+    if (sample_count < SAMPLE_FLOOR):
+        return None
+    # 2. walk the ladder from the worst tier down
+    for label, threshold in SEVERITY_LADDER.items():
+        if error_rate >= threshold:
+            return label
+    return None
+LATENCY_CEILING_MS = 400
+def within_budget(error_rate, p95_latency_ms, queue_depth):
+    return (
+        error_rate < SEVERITY_LADDER["warning"]
+        and p95_latency_ms <= LATENCY_CEILING_MS
+        and queue_depth < QUEUE_CEILING
+    )
+def next_poll_delay(failures):
+    return min(300, math.ceil((poll_interval_seconds * 1.8 ** failures)))
+def page(incident_key, severity, error_rate):
+    return notify(severity=severity, channel=PAGE_CHANNELS[0], incident_key=incident_key, summary=f"error rate {error_rate:.2%}")

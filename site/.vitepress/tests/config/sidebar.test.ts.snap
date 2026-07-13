@@ -160,6 +160,7 @@ exports[`buildSidebar > builds the route-keyed sidebar tree 1`] = `
       "text": "Ordering",
     },
   ],
+  "/sandbox/": [],
   "/usage/": [
     {
       "items": [

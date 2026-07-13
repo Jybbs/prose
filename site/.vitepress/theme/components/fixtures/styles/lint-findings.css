@@ -23,7 +23,8 @@
   transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease, opacity var(--prose-transition);
 }
 
-.lint-undrawn .lint-flag::after {
+.lint-undrawn .lint-flag::after,
+.lint-flag.lint-undrawn::after {
   transform : scaleX(0);
 }
 
@@ -43,10 +44,11 @@
 }
 
 .lint-popover .rule-card {
-  min-height     : auto;
-  overflow       : hidden;
-  padding-bottom : 8px;
-  row-gap        : 8px;
+  grid-template-columns : auto auto 1fr;
+  min-height            : auto;
+  overflow              : hidden;
+  padding-bottom        : 8px;
+  row-gap               : 8px;
 }
 
 .lint-popover .rule-card-header {

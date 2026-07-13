@@ -14,6 +14,7 @@ interface FixtureDocs {
   canonical   ?: boolean
   description ?: string
   previewable ?: boolean
+  sandbox     ?: boolean
   title       ?: string
 }
 

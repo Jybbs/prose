@@ -1,7 +1,6 @@
-import { execFileSync } from 'node:child_process'
-import fs               from 'node:fs'
-import os               from 'node:os'
-import path             from 'node:path'
+import fs   from 'node:fs'
+import os   from 'node:os'
+import path from 'node:path'
 
 import type { KeyedTokensInfo } from '@shikijs/magic-move/types'
 import { defineLoader }         from 'vitepress'
@@ -31,15 +30,13 @@ const root = paths.repoRoot(import.meta.url)
 export default defineLoader({
   watch: paths.proseBinaryCandidates(root),
   async load(): Promise<LandingTypingDemoData> {
-    const bin = paths.resolveProseBinary(root)
-
     const states: string[] = [typingDemo.SOURCE]
     for (let i = 0; i < typingDemo.RULES.length; i++) {
-      states.push(runProse(bin, typingDemo.SOURCE, typingDemo.RULES.slice(0, i + 1).join(',')))
+      states.push(formatState(typingDemo.SOURCE, typingDemo.RULES.slice(0, i + 1).join(',')))
     }
     for (const entry of typingDemo.ENTRIES) {
       if (entry.tail !== undefined) {
-        states.push(runProse(bin, typingDemo.SOURCE, typingDemo.RULES.join(','), entry.tail))
+        states.push(formatState(typingDemo.SOURCE, typingDemo.RULES.join(','), entry.tail))
       }
     }
 
@@ -52,15 +49,15 @@ export default defineLoader({
   }
 })
 
-function runProse(bin: string, source: string, select: string, configToml?: string): string {
+function formatState(source: string, select: string, configToml?: string): string {
   const args = ['format', '--stdin', '--select', select]
   if (configToml === undefined) {
-    return execFileSync(bin, args, { encoding: 'utf8', input: source, stdio: ['pipe', 'pipe', 'pipe'] })
+    return paths.runProse(root, args, { input: source, stdio: 'pipe' })
   }
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'prose-demo-'))
   try {
     fs.writeFileSync(path.join(tmpDir, 'prose.toml'), configToml)
-    return execFileSync(bin, args, { cwd: tmpDir, encoding: 'utf8', input: source, stdio: ['pipe', 'pipe', 'pipe'] })
+    return paths.runProse(root, args, { cwd: tmpDir, input: source, stdio: 'pipe' })
   } finally {
     fs.rmSync(tmpDir, { force: true, recursive: true })
   }

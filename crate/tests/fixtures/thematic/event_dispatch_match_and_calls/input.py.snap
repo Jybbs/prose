@@ -1,0 +1,38 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.py
+---
+import logging
+
+from typing import Union
+
+
+def dispatch(event, registry, fallback):
+    """
+    Route an event to its handler.
+    """
+    match event.kind:
+        case "create":
+            return registry.create(
+                actor     = event.actor,
+                priority  = event.priority,
+                source    = event.source,
+                timestamp = event.ts
+            )
+        case "update" : return registry.update(actor=event.actor, source=event.source)
+        case _        : return fallback
+
+
+def summarize(records: Union[list, tuple], verbose):
+    """
+    Build a compact digest of the records.
+    """
+    totals = {
+        "created" : 0,
+        "deleted" : 0,
+        "failed"  : 0,
+        "skipped" : 0,
+        "updated" : 0
+    }
+    return totals

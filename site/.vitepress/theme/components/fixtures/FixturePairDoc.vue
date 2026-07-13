@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import { useIntersectionObserver } from '@vueuse/core'
-import { PopperWrapper }           from 'floating-vue'
 import type { KeyedTokensInfo }    from '@shikijs/magic-move/types'
+import { useIntersectionObserver } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
-import RuleCard from '../rules/RuleCard.vue'
+import LintFlagPopper from '../rules/LintFlagPopper.vue'
 
-import { data as rules }     from '../../../lib/rules/rules.data'
-import type { RenderedRule } from '../../../lib/rules/rules.data'
-import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
-import { lintShorthand }     from '../../../lib/fixtures/lint-shorthand'
-import type { Shorthand }    from '../../../lib/fixtures/lint-shorthand'
-import type { FixtureTab }   from '../../../lib/shared/fixture-tab'
-import { inlineCode }        from '../../../lib/shared/inline-code'
+import { useReducedMotion } from '../../../lib/composables/use-reduced-motion'
+import { useSquiggleDraw }  from '../../../lib/composables/use-squiggle-draw'
+import { magicMoveOptions, type MagicMovePanel } from '../../../lib/markdown/magic-move-options'
+import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
+import { ruleDrawMs }       from '../../../lib/shared/paint'
 
 const props = defineProps<{
   activeTab  : FixtureTab
@@ -20,30 +17,26 @@ const props = defineProps<{
   outputHtml : string
 }>()
 
-interface ActiveFinding {
-  message   : string
-  rule      : RenderedRule
-  shorthand : Shorthand | null
-}
-
 const reducedMotion = useReducedMotion()
 const root          = useTemplateRef<HTMLElement>('root')
-
-type Panel = typeof import('@shikijs/magic-move/vue').ShikiMagicMovePrecompiled | null
+const popper        = useTemplateRef<InstanceType<typeof LintFlagPopper>>('popper')
 
 const animate   = ref(false)
 const animating = ref(false)
 const duration  = ref(0)
-const panel     = shallowRef<Panel>(null)
+const panel     = shallowRef<MagicMovePanel>(null)
 const steps     = shallowRef<readonly KeyedTokensInfo[]>([])
-const undrawn   = ref(false)
 
-const active      = ref<ActiveFinding | null>(null)
-const activeFlag  = shallowRef<HTMLElement | null>(null)
-const messageHtml = computed(() => inlineCode(active.value?.message ?? ''))
+const { drawSquiggles, undrawn } = useSquiggleDraw()
 
 const activeHtml = computed(() => props.activeTab === 'before' ? props.inputHtml : props.outputHtml)
 const step       = computed(() => props.activeTab === 'before' ? 0 : 1)
+
+// The precompiled panel re-syncs its keys, with in-place side effects,
+// whenever these prop identities change, so they stay stable across
+// unrelated re-renders instead of rebuilding per template pass.
+const morphOptions = computed(() => magicMoveOptions(duration.value))
+const morphSteps   = computed(() => [...steps.value])
 
 // Recover the source from a prebuilt highlight, reading only `<pre><code>` so
 // the lang chip and copy button stay out of the retokenized code.
@@ -65,21 +58,13 @@ async function prepare(): Promise<void> {
     import('../../../lib/markdown/magic-move'),
     import('@shikijs/magic-move/vue')
   ])
-  const rootStyle = getComputedStyle(document.documentElement)
   steps.value    = await precompileMagicMove([before, after])
-  duration.value = Number(rootStyle.getPropertyValue('--prose-rule-draw-ms'))
+  duration.value = ruleDrawMs()
   panel.value    = ShikiMagicMovePrecompiled
   await nextTick()
   animate.value = true
 }
 
-// Replays the left-to-right squiggle draw, staging `lint-undrawn` and
-// lifting it two frames later so the CSS transition re-fires.
-function drawSquiggles(): void {
-  if (typeof requestAnimationFrame === 'undefined') return
-  undrawn.value = true
-  requestAnimationFrame(() => requestAnimationFrame(() => { undrawn.value = false }))
-}
 
 // Magic-move owns the panel through the morph, and on settle the
 // decorated static panel returns so its `.lint-flag` hovers work and the
@@ -87,32 +72,6 @@ function drawSquiggles(): void {
 function settle(): void {
   animating.value = false
   drawSquiggles()
-}
-
-// The `.lint-flag` anchors sit inside `v-html` static HTML, so event
-// delegation finds them and the popper takes the hovered flag as a dynamic
-// reference node rather than wrapping each anchor in a component.
-function show(event: Event): void {
-  const flag = (event.target as HTMLElement).closest<HTMLElement>('.lint-flag')
-  const rule = flag?.dataset.rule ? rules.bySlug[flag.dataset.rule] : undefined
-  if (!flag || !rule) return
-  const message    = flag.dataset.message ?? ''
-  activeFlag.value = flag
-  active.value = {
-    message,
-    rule,
-    shorthand : lintShorthand({
-      before    : flag.dataset.before,
-      flagged   : flag.textContent ?? '',
-      message,
-      rule      : flag.dataset.rule ?? '',
-      suggested : flag.dataset.suggested
-    })
-  }
-}
-
-function hide(): void {
-  active.value = null
 }
 
 // Hand the panel to magic-move the instant the side flips, before its
@@ -147,49 +106,22 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       v-if="panel"
       v-show="animating"
       class="fixture-pair-panel"
-      :steps="[...steps]"
+      :steps="morphSteps"
       :step="step"
       :animate="animate && !reducedMotion"
-      :options="{ containerStyle: false, delayMove: 0, duration, stagger: 3 }"
+      :options="morphOptions"
       @end="settle"
     />
     <div
       v-show="!animating"
       class="fixture-pair-panel"
       :class="{ 'lint-undrawn': undrawn }"
-      @mouseover="show"
-      @mouseout="hide"
-      @focusin="show"
-      @focusout="hide"
+      @mouseover="popper?.show"
+      @mouseout="popper?.hide"
+      @focusin="popper?.show"
+      @focusout="popper?.hide"
       v-html="activeHtml"
     />
-    <PopperWrapper
-      theme="rule-card"
-      placement="bottom-start"
-      popper-class="lint-popover fam-lint"
-      :auto-hide="false"
-      :distance="6"
-      :handle-resize="false"
-      :popper-triggers="[]"
-      :reference-node="() => activeFlag!"
-      :shown="active !== null"
-      :triggers="[]"
-    >
-      <template #popper>
-        <RuleCard v-if="active" :rule="active.rule" :clickable="false">
-          <template #header>
-            <span v-if="active.shorthand?.kind === 'replace'" class="lint-shorthand">
-              <span class="lint-chip lint-chip-struck">{{ active.shorthand.before }}</span>
-              <span class="lint-into" aria-hidden="true">→</span>
-              <span class="lint-chip lint-chip-suggest">{{ active.shorthand.after }}</span>
-            </span>
-            <span v-else-if="active.shorthand?.kind === 'remove'" class="lint-shorthand">
-              <span class="lint-chip lint-chip-struck">{{ active.shorthand.text }}</span>
-            </span>
-            <span v-else class="lint-message" v-html="messageHtml" />
-          </template>
-        </RuleCard>
-      </template>
-    </PopperWrapper>
+    <LintFlagPopper ref="popper" />
   </div>
 </template>

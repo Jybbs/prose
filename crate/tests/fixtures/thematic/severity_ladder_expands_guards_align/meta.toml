@@ -1,0 +1,8 @@
+[docs]
+previewable = false
+sandbox     = true
+title       = "Severity Ladder Tables Expand and Guard Comparisons Align"
+
+description = '''
+An alerting module packs its severity ladder and channel roster inline with dangling commas, leaves its constant pool unsorted and unaligned, and threads a guard chain whose comparison operators drift out of column. **The tables explode one entry per line with `:` and `=` aligned, the constants band and sort, the guard chain's `<` and `<=` settle into one shared column, redundant parentheses shed, and the over-wide `notify` call splits with its kwargs sorted**, while the rebound `LATENCY_CEILING_MS`, the bare `import math`, and the numbered step comments each surface a lint.
+'''

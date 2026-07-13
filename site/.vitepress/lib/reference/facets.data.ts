@@ -42,7 +42,7 @@ interface FacetFamilySource {
   rules  : readonly RuleGroupSource[]
 }
 
-const SOURCES: readonly FacetFamilySource[] = [
+export const SOURCES: readonly FacetFamilySource[] = [
   {
     family: 'generic',
     rules: [

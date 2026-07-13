@@ -1,0 +1,111 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.py
+---
+[
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 11,
+      "row": 26
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 26
+    },
+    "message": "`totals` is assigned and used once. Consider inlining `{\n        \"created\" : 0,\n        \"deleted\" : 0,\n        \"failed\"  : 0,\n        \"skipped\" : 0,\n        \"updated\" : 0\n    }`"
+  },
+  {
+    "code": "unsorted-parameters",
+    "end_location": {
+      "column": 40,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 6
+    },
+    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 19,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 6
+    },
+    "message": "Parameter `event` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 29,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 6
+    },
+    "message": "Parameter `registry` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 39,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 31,
+      "row": 6
+    },
+    "message": "Parameter `fallback` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 13,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 6
+    },
+    "message": "`dispatch` returns a value but has no return type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 51,
+      "row": 22
+    },
+    "fix": null,
+    "location": {
+      "column": 44,
+      "row": 22
+    },
+    "message": "Parameter `verbose` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 14,
+      "row": 22
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 22
+    },
+    "message": "`summarize` returns a value but has no return type annotation"
+  }
+]

@@ -6,6 +6,7 @@
 
 pub mod config;
 pub mod diagnostics;
+pub mod findings;
 pub mod pipeline;
 mod primitives;
 pub mod rule;

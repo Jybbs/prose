@@ -1,16 +1,20 @@
 //! WebAssembly bindings exposing the formatting core to JavaScript.
 
-use std::error::Error;
+use std::{collections::BTreeSet, error::Error};
 
-use prose::{config::Config, pipeline::Pipeline, source::Source};
+use prose::{config::Config, findings::lint_records_json, pipeline::Pipeline, source::Source};
 use wasm_bindgen::prelude::*;
 
-/// The output of [`format`]: the rewritten source and the effective
-/// configuration that produced it, serialized to TOML.
+/// The output of [`format`]: the rewritten source, the effective
+/// configuration serialized to TOML, the lint-severity findings as the
+/// JSON records the docs site decorates, and the distinct slugs of
+/// every rule that fired on the source.
 #[derive(Debug)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct FormatResult {
     pub config: String,
+    pub diagnostics: String,
+    pub fired_rules: Vec<String>,
     pub formatted: String,
 }
 
@@ -45,10 +49,13 @@ pub fn start() {
 /// Runs the pipeline behind [`format`], boxing whichever error arises.
 fn try_format(config_toml: &str, source: &str) -> Result<FormatResult, Box<dyn Error>> {
     let config = Config::from_prose_toml_str(config_toml)?;
-    let (formatted, _diagnostics) =
+    let (formatted, diagnostics) =
         Pipeline::with_defaults(&config).run(source.parse::<Source>()?)?;
+    let fired: BTreeSet<&str> = diagnostics.iter().map(|diag| diag.rule.as_str()).collect();
     Ok(FormatResult {
         config: config.to_toml(),
+        diagnostics: lint_records_json(formatted.source_file(), &diagnostics).unwrap_or_default(),
+        fired_rules: fired.into_iter().map(String::from).collect(),
         formatted: formatted.text().to_owned(),
     })
 }
@@ -60,10 +67,20 @@ mod tests {
     use super::*;
 
     fn formatted(config_toml: &str, source: &str) -> FormatResult {
-        let Ok(result) = format(config_toml, source) else {
-            panic!("format succeeds");
-        };
-        result
+        format(config_toml, source).unwrap_or_else(|_| panic!("format succeeds"))
+    }
+
+    #[test]
+    fn deduplicates_repeat_rule_firings() {
+        let result = formatted("", "aa = 1\nb = 2\n\ncc = 3\nd = 4\n");
+        assert_eq!(
+            result
+                .fired_rules
+                .iter()
+                .filter(|slug| *slug == "align-equals")
+                .count(),
+            1
+        );
     }
 
     #[test]
@@ -78,6 +95,18 @@ mod tests {
         assert_eq!(aligned.formatted, "aa = 1\nb  = 2\n");
         let toggled = try_format("rules.align-equals = false", "aa = 1\nb = 2\n").expect("formats");
         assert_eq!(toggled.formatted, "aa = 1\nb = 2\n");
+    }
+
+    #[test]
+    fn leaves_diagnostics_empty_when_none_fire() {
+        let result = formatted("", "x = 1\n");
+        assert_eq!(result.diagnostics, "");
+    }
+
+    #[test]
+    fn leaves_fired_rules_empty_when_none_fire() {
+        let result = formatted("", "x = 1\n");
+        assert!(result.fired_rules.is_empty());
     }
 
     #[test]
@@ -98,9 +127,21 @@ mod tests {
     }
 
     #[test]
+    fn reports_lint_findings_against_the_output() {
+        let result = formatted("", "import os\nos.getcwd()\n");
+        assert!(result.diagnostics.contains("bare-imports"));
+    }
+
+    #[test]
     fn reports_the_effective_config() {
         let result = formatted("code-line-length = 100", "x = 1\n");
         assert!(result.config.contains("code-line-length = 100"));
+    }
+
+    #[test]
+    fn reports_the_rules_that_fired_on_the_source() {
+        let result = formatted("", "aa = 1\nb = 2\n");
+        assert!(result.fired_rules.iter().any(|slug| slug == "align-equals"));
     }
 
     #[test]

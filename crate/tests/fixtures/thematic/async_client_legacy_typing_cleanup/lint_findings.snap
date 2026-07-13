@@ -1,0 +1,263 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/input.py
+---
+[
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 15,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 1
+    },
+    "message": "Bare import `asyncio` reaches 1 of its attributes. Rewrite as `from asyncio import ...` naming only the symbols this module uses"
+  },
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 12,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 2
+    },
+    "message": "Bare import `json` reaches 1 of its attributes. Rewrite as `from json import ...` naming only the symbols this module uses"
+  },
+  {
+    "code": "bare-imports",
+    "end_location": {
+      "column": 15,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 8,
+      "row": 3
+    },
+    "message": "Bare import `logging` reaches 1 of its attributes. Rewrite as `from logging import ...` naming only the symbols this module uses"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 9,
+      "row": 8
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Interval",
+          "content": "INTERVAL"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 8
+    },
+    "message": "Module constant `Interval` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 9
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Payload",
+          "content": "PAYLOAD"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 9
+    },
+    "message": "Module constant `Payload` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 17
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Handler",
+          "content": "HANDLER"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 17
+    },
+    "message": "Module constant `Handler` is not SCREAMING_CASE"
+  },
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 35,
+      "row": 8
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Union[int, float]",
+          "content": "int | float"
+        }
+      ]
+    },
+    "location": {
+      "column": 18,
+      "row": 8
+    },
+    "message": "`Union[int, float]` is the legacy form. Use `int | float`"
+  },
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 37,
+      "row": 39
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Optional[Payload]",
+          "content": "Payload | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 20,
+      "row": 39
+    },
+    "message": "`Optional[Payload]` is the legacy form. Use `Payload | None`"
+  },
+  {
+    "code": "legacy-union-syntax",
+    "end_location": {
+      "column": 45,
+      "row": 50
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Optional[Mapping[Text, Text]]",
+          "content": "Mapping[Text, Text] | None"
+        }
+      ]
+    },
+    "location": {
+      "column": 16,
+      "row": 50
+    },
+    "message": "`Optional[Mapping[Text, Text]]` is the legacy form. Use `Mapping[Text, Text] | None`"
+  },
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 11,
+      "row": 43
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 43
+    },
+    "message": "`parsed` is assigned and used once. Consider inlining `json.loads(raw)`"
+  },
+  {
+    "code": "unsorted-parameters",
+    "end_location": {
+      "column": 2,
+      "row": 53
+    },
+    "fix": null,
+    "location": {
+      "column": 15,
+      "row": 47
+    },
+    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+  },
+  {
+    "code": "unsorted-parameters",
+    "end_location": {
+      "column": 37,
+      "row": 72
+    },
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 72
+    },
+    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 70,
+      "row": 26
+    },
+    "fix": null,
+    "location": {
+      "column": 65,
+      "row": 26
+    },
+    "message": "Parameter `limit` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 15,
+      "row": 39
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 39
+    },
+    "message": "Parameter `raw` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 11,
+      "row": 48
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 48
+    },
+    "message": "Parameter `client` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 18,
+      "row": 72
+    },
+    "fix": null,
+    "location": {
+      "column": 14,
+      "row": 72
+    },
+    "message": "Parameter `kind` has no type annotation"
+  }
+]

@@ -6,14 +6,10 @@ use std::{
     io::{self, Write},
 };
 
-use ruff_diagnostics::{Applicability, Edit, Fix};
-use ruff_notebook::NotebookIndex;
-use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
-use ruff_text_size::{Ranged, TextRange};
 use serde::Serialize;
 
-use super::{Emitter, EmitterSummary, Run, diagnostics, line_columns, write_json_line};
-use crate::{diagnostics::Diagnostic, rule::RuleId};
+use super::{Emitter, EmitterSummary, Run, diagnostics, write_json_line};
+use crate::{findings::JsonDiagnostic, rule::RuleId};
 
 /// Bumps on any breaking change to existing field shapes, leaving
 /// additive fields to land unversioned.
@@ -35,108 +31,6 @@ impl Emitter for Json {
             )?;
         }
         write_json_line(writer, &JsonRecord::Summary(JsonSummary::new(summary)))
-    }
-}
-
-#[derive(Serialize)]
-struct JsonDiagnostic<'a> {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    cell: Option<OneIndexed>,
-    code: &'a str,
-    end_location: JsonLocation,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    filename: Option<&'a str>,
-    fix: Option<JsonFix<'a>>,
-    location: JsonLocation,
-    message: &'a str,
-}
-
-impl<'a> JsonDiagnostic<'a> {
-    fn new(
-        file: &'a SourceFile,
-        index: Option<&NotebookIndex>,
-        diag: &'a Diagnostic,
-        full: bool,
-    ) -> Self {
-        let (start, end, cell) = located(file, index, diag.range);
-        Self {
-            cell,
-            code: diag.rule.as_str(),
-            end_location: end.into(),
-            filename: full.then(|| file.name()),
-            fix: diag
-                .fix
-                .as_ref()
-                .map(|fix| JsonFix::new(file, index, fix, full)),
-            location: start.into(),
-            message: &diag.message,
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct JsonEdit<'a> {
-    before: &'a str,
-    content: &'a str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    end_location: Option<JsonLocation>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    location: Option<JsonLocation>,
-}
-
-impl<'a> JsonEdit<'a> {
-    fn new(
-        file: &'a SourceFile,
-        index: Option<&NotebookIndex>,
-        edit: &'a Edit,
-        full: bool,
-    ) -> Self {
-        let (location, end_location) = if full {
-            let (start, end, _) = located(file, index, edit.range());
-            (
-                Some(JsonLocation::from(start)),
-                Some(JsonLocation::from(end)),
-            )
-        } else {
-            (None, None)
-        };
-        Self {
-            before: &file.source_text()[edit.range()],
-            content: edit.content().unwrap_or_default(),
-            end_location,
-            location,
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct JsonFix<'a> {
-    applicability: Applicability,
-    edits: Vec<JsonEdit<'a>>,
-}
-
-impl<'a> JsonFix<'a> {
-    fn new(file: &'a SourceFile, index: Option<&NotebookIndex>, fix: &'a Fix, full: bool) -> Self {
-        Self {
-            applicability: fix.applicability(),
-            edits: fix
-                .edits()
-                .iter()
-                .map(|edit| JsonEdit::new(file, index, edit, full))
-                .collect(),
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct JsonLocation {
-    column: OneIndexed,
-    row: OneIndexed,
-}
-
-impl From<LineColumn> for JsonLocation {
-    fn from(LineColumn { line, column }: LineColumn) -> Self {
-        Self { column, row: line }
     }
 }
 
@@ -171,44 +65,14 @@ impl<'a> JsonSummary<'a> {
     }
 }
 
-/// Renders the lint-severity diagnostics as the JSON records the docs
-/// site reads, or `None` when the run emitted none.
-pub fn lint_records_json(file: &SourceFile, diagnostics: &[Diagnostic]) -> Option<String> {
-    let records: Vec<JsonDiagnostic> = diagnostics
-        .iter()
-        .filter(|diag| diag.severity.is_lint())
-        .map(|diag| JsonDiagnostic::new(file, None, diag, false))
-        .collect();
-    (!records.is_empty())
-        .then(|| serde_json::to_string_pretty(&records).expect("lint records serialize"))
-}
-
-/// The start and end positions of `range` plus, for a notebook, the
-/// absolute cell holding it. A notebook translates the positions to
-/// cell-relative coordinates through the index, where a module leaves
-/// them absolute with no cell.
-fn located(
-    file: &SourceFile,
-    index: Option<&NotebookIndex>,
-    range: TextRange,
-) -> (LineColumn, LineColumn, Option<OneIndexed>) {
-    let (start, end) = line_columns(file, range);
-    match index {
-        Some(index) => (
-            index.translate_line_column(&start),
-            index.translate_line_column(&end),
-            index.cell(start.line),
-        ),
-        None => (start, end, None),
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use ruff_diagnostics::{Edit, Fix};
     use serde_json::{Value, json};
 
     use super::*;
     use crate::cli::emit::emitted;
+    use crate::diagnostics::Diagnostic;
     use crate::source::Source;
     use crate::testing::{format_diagnostic, parse, range};
 
