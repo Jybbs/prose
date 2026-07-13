@@ -17,12 +17,12 @@ tagline: name binding index
 
 The *BindingAnalysis* type itself is `pub` and re-exported at the crate root as `prose::BindingAnalysis`, so a downstream consumer can hold a reference to one through [**`Source::binding_analysis`**](/primitives/source). The accessor methods on the type are `pub(crate)` today, so the in-process API is reachable from within the *Prose* crate but not from a downstream Rust caller.
 
-A downstream consumer in `0.2.x` can:
+A downstream consumer can:
 
 - Pass a [[source]] into [**`Pipeline::run`**](/primitives/pipeline) and read diagnostics emitted by binding-aware rules like [[single-use-variables]].
 - Observe that the *BindingAnalysis* type exists and is reachable through `source.binding_analysis()`.
 
-A downstream consumer in `0.2.x` cannot:
+A downstream consumer cannot:
 
 - Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `first_write_offset`, `is_defined_before`, `module_attribute_count`, `module_function_reads`, `module_reassigned`, `module_used_bare`, `unpack_target`, `usage_count`, or `walrus_in_condition` on the returned reference. Every reader is `pub(crate)`.
 - Implement a custom rule that consumes the binding table. The `Rule` trait is `pub(crate)`.
@@ -48,7 +48,7 @@ For consumers reading this from within the *Prose* crate (*or for readers curiou
 - `usage_count(binding: BindingId) -> usize` counts every read site.
 - `walrus_in_condition(binding: BindingId) -> bool` reports whether a binding's walrus write lands in the test of an `if`, `elif`, or `while`, which [[single-use-variables]] reads to exempt that assign-and-test walrus from the lint.
 
-The supporting types `BindingId`, `ScopeId`, `BindingKind`, `ScopeKind`, `UnpackKind`, `Binding`, and `Scope` are also `pub(crate)` in `0.2.x`. `BindingKind` enumerates the categories of write event the table records: `Assignment`, `AugAssign`, `ClassDef`, `Comprehension`, `ExceptHandler`, `For`, `FunctionDef`, `Import`, `Parameter`, `Walrus`, `With`. `ScopeKind` covers `Class`, `Comprehension`, `Function`, `Module`, matching Python's lexical-scope categories. `UnpackKind` covers `Bare`, `Exempt`, and `Suggested`, the dispositions `unpack_target` reports for a multi-name unpack target.
+The supporting types `BindingId`, `ScopeId`, `BindingKind`, `ScopeKind`, `UnpackKind`, `Binding`, and `Scope` are also `pub(crate)` today. `BindingKind` enumerates the categories of write event the table records: `Assignment`, `AugAssign`, `ClassDef`, `Comprehension`, `ExceptHandler`, `For`, `FunctionDef`, `Import`, `Parameter`, `Walrus`, `With`. `ScopeKind` covers `Class`, `Comprehension`, `Function`, `Module`, matching Python's lexical-scope categories. `UnpackKind` covers `Bare`, `Exempt`, and `Suggested`, the dispositions `unpack_target` reports for a multi-name unpack target.
 
 ## Build Pattern
 
@@ -60,7 +60,7 @@ A fresh analysis is built each time [[source]] is constructed or reparsed, so th
 
 [[single-use-variables]] is the first rule to consume the table, counting writes and reads per binding to surface candidates for inlining. Future rules with binding-shaped questions (*unused imports, shadowing detection, ahead-of-use references, dead-store analysis*) reach for the same primitive without re-walking. The single-walk-per-source guarantee is what makes adding new binding-shaped rules cheap.
 
-The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page. In `0.2.x` the consumption path runs indirectly through diagnostics emitted by binding-aware rules rather than through direct method calls, and at `1.0` the readers open up so a downstream rule can query the table itself.
+The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page. The consumption path runs indirectly through diagnostics emitted by binding-aware rules rather than through direct method calls, and at `1.0` the readers open up so a downstream rule can query the table itself.
 
 <template #related>
 

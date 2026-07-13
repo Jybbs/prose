@@ -22,8 +22,10 @@ use super::{
 pub struct AlignmentConfig {
     pub enabled: bool,
     /// The width-spread budget a contiguous run may shift to reach the
-    /// shared column, `0` forbidding any shift and `false` folding a run
-    /// into one column regardless of spread.
+    /// shared column. A positive `N` caps the spread, `0` forbids any
+    /// shift so every row sits flush, and `false` lifts the cap so a
+    /// contiguous run folds into one column. To hold one row out of an
+    /// otherwise-aligned group, mark it with `# prose: skip`.
     pub max_shift: MaxShift,
 }
 
@@ -42,15 +44,23 @@ impl Default for AlignmentConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlphabetizeConfig {
     pub enabled: bool,
-    /// Keys methods on the dunder-property-private-public grouping before
-    /// name, dropping to name alone when `false`.
+    /// Groups methods into dunders, properties, privates, and publics
+    /// before sorting within each group. `false` sorts methods by plain
+    /// name alone.
     pub group_methods: bool,
-    /// Reorders class and function definitions, freezing them in source
-    /// order when `false`.
+    /// Reorders class and function definitions alphabetically, holding
+    /// each behind any sibling it names at evaluation time. `false`
+    /// freezes definitions in source order while other surfaces still
+    /// sort.
     pub sort_definitions: bool,
-    /// Reorders Google-style docstring entry sections.
+    /// Reorders `name: description` entries within Title-case-headed
+    /// docstring sections, parameter entries mirroring the signature as
+    /// the rule leaves it and stragglers alphabetizing below. `false`
+    /// keeps narrative-curated entry order while still sorting every
+    /// other surface.
     pub sort_docstring_entries: bool,
-    /// Reorders the `__all__` and `__slots__` string lists.
+    /// Reorders the string items inside `__all__` and `__slots__`.
+    /// `false` keeps a hand-curated public-API order.
     pub sort_dunder_lists: bool,
 }
 
@@ -66,18 +76,19 @@ impl Default for AlphabetizeConfig {
     }
 }
 
-/// Configuration for the `band_constants` rule. `group_constants` gates
-/// the subcategory clustering, keying each band on `(tier, subcategory,
-/// name)` and dropping to `(tier, name)` when `false`. `max_tiers` caps
-/// how many evaluation tiers open their own blank-separated sub-band. A
-/// positive integer merges every tier at or beyond it into the last
-/// sub-band, `1` holds the band tight, and `false` opens one band per
-/// tier.
+/// Configuration for the `band_constants` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BandConstantsConfig {
     pub enabled: bool,
+    /// Clusters each band by subcategory, the type aliases first, then
+    /// the `SCREAMING_CASE` constants, then the remaining module state,
+    /// before sorting by name within each. `false` sorts by tier and
+    /// name alone.
     pub group_constants: bool,
+    /// Caps how many evaluation tiers open their own blank-separated
+    /// sub-band, merging every deeper tier into the last. `1` holds the
+    /// band tight and `false` opens one sub-band per tier.
     pub max_tiers: InlineBudget,
 }
 
@@ -95,12 +106,14 @@ impl Default for BandConstantsConfig {
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct BareImportsConfig {
-    /// Module names left as bare imports regardless of attribute reach.
+    /// Modules whose bare-import form is preserved whatever their
+    /// attribute count.
     pub allow: Vec<String>,
     pub enabled: bool,
-    /// Exempts an aliased import from the rewrite.
+    /// Exempts every aliased bare import (`import x as y`) from the rule.
     pub exempt_aliased: bool,
-    /// The attribute-reach count above which a bare import stays as-is.
+    /// The distinct-attribute count at or below which an unaliased bare
+    /// import is flagged.
     pub max_attributes: usize,
 }
 
@@ -119,7 +132,9 @@ impl Default for BareImportsConfig {
 #[derive(Clone, Copy, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CacheConfig {
+    /// Toggles the cache globally.
     pub enabled: bool,
+    /// The LRU eviction cap on the cache directory.
     pub max_size_mib: u32,
 }
 
@@ -137,8 +152,9 @@ impl Default for CacheConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct CallLayoutConfig {
     pub enabled: bool,
-    /// The inline argument count above which a call explodes one-per-line,
-    /// `false` leaving width as the only trigger.
+    /// Explodes a call to one keyword argument per line once its argument
+    /// count exceeds the cap. `false` disables the count trigger and
+    /// leaves every call inline.
     pub max_args: InlineBudget,
 }
 
@@ -156,21 +172,24 @@ impl Default for CallLayoutConfig {
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct CollectionLayoutConfig {
-    /// Joins a fitting multi-line literal, subscript, or dict key back to
-    /// one line.
+    /// Joins a fitting multi-line literal, subscript, comprehension, or
+    /// dict key back to one line. `false` freezes those shapes where they
+    /// sit.
     pub collapse: bool,
     pub enabled: bool,
-    /// Drives every expansion, the width spread and the entry-count cap
-    /// alike, so `false` leaves the count cap inert.
+    /// Expands an overflowing or over-count collection to one entry per
+    /// line. `false` suppresses every expansion and leaves the count cap
+    /// inert.
     pub explode: bool,
-    /// The inline element count above which a collection explodes,
-    /// `false` leaving width as the only trigger.
+    /// Keeps short collections on one line when each entry is an atomic
+    /// literal and the run fits the cap. `false` removes the cap and
+    /// packs by width alone.
     pub max_atomics: InlineBudget,
-    /// The dict entry count above which the dict explodes, `false`
-    /// leaving width as the only trigger.
+    /// Expands a dict once its entry count exceeds the cap, whatever its
+    /// width. `false` disables the count trigger.
     pub max_dict_entries: InlineBudget,
     /// Breaks an over-wide `key: value` at its `:` and hangs the value
-    /// beneath.
+    /// beneath. `false` leaves the oversized entry on one line.
     pub wrap_dict_entries: bool,
 }
 
@@ -199,12 +218,12 @@ pub enum DocstringStructuredPolicy {
     DocstringLineLength,
 }
 
-/// Settings parsed from `[tool.prose.imports]`. `first_party` lists
-/// the package names whose imports group with relative imports as
-/// local-package, keyed kebab-case under `first-party`.
+/// Settings parsed from `[tool.prose.imports]`.
 #[derive(Debug, Default, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ImportsConfig {
+    /// Root package names whose imports lift into the local-package
+    /// group.
     pub first_party: Vec<String>,
 }
 
@@ -298,6 +317,8 @@ impl Serialize for MaxShift {
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct MiscasedConstantsConfig {
+    /// Constant names exempted from the lint, such as old-style bare
+    /// aliases.
     #[schemars(schema_with = "super::json_schema::empty_allow_pattern_schema")]
     #[serde(
         deserialize_with = "deserialize_regex",
@@ -320,7 +341,7 @@ impl Default for MiscasedConstantsConfig {
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ReassignedConstantsConfig {
-    /// Constant names exempt from the reassignment flag.
+    /// Module-level names exempted from the lint.
     pub allow: Vec<String>,
     pub enabled: bool,
 }
@@ -339,8 +360,9 @@ impl Default for ReassignedConstantsConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct SignatureLayoutConfig {
     pub enabled: bool,
-    /// The parameter count above which a signature explodes one-per-line,
-    /// `false` leaving width as the only trigger.
+    /// Expands a signature to one parameter per line once its parameter
+    /// count exceeds the cap. `false` disables the count trigger and
+    /// leaves only the `code-line-length` budget.
     pub max_params: InlineBudget,
 }
 
@@ -357,7 +379,7 @@ impl Default for SignatureLayoutConfig {
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct SingleUseVariablesConfig {
-    /// A regex whose matching variable names are left un-inlined.
+    /// Binding names exempted from the lint.
     #[schemars(schema_with = "super::json_schema::allow_pattern_schema")]
     #[serde(
         deserialize_with = "deserialize_regex",
@@ -380,6 +402,7 @@ impl Default for SingleUseVariablesConfig {
 #[derive(Clone, Copy, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct ToggleOnly {
+    /// Toggles the rule on or off.
     pub enabled: bool,
 }
 

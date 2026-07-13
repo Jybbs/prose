@@ -3,16 +3,17 @@ import path from 'node:path'
 import { defineLoader } from 'vitepress'
 
 import { markdownH1 }                    from '../markdown/h1'
-import { getRenderer, renderInlineHtml } from '../markdown/renderer'
+import { inlineNodes, type InlineNode }  from '../markdown/inline-nodes'
+import { getRenderer }                   from '../markdown/renderer'
 import { matterPages }                   from '../shared/content-page'
 import { siteDir }                       from '../shared/paths'
 import { requireString }                 from '../shared/require-string'
 
 interface IntegrationCard {
-  href        : string
-  summaryHtml : string
-  tagline     : string
-  title       : string
+  href         : string
+  summaryNodes : InlineNode[]
+  tagline      : string
+  title        : string
 }
 
 declare const data: readonly IntegrationCard[]
@@ -34,10 +35,10 @@ export default defineLoader({
         `integrations/${slug}.md has no H1 for its index card`
       )
       return {
-        href        : `/integrations/${slug}`,
-        summaryHtml : renderInlineHtml(md, summary),
-        tagline     : requireString(fm.tagline, fieldMessage(slug, 'tagline')),
-        title
+        href         : `/integrations/${slug}`,
+        summaryNodes : inlineNodes(md, summary),
+        tagline      : requireString(fm.tagline, fieldMessage(slug, 'tagline')),
+        title        : title
       }
     })
   }

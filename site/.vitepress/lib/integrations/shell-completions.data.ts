@@ -1,6 +1,7 @@
 import { defineLoader } from 'vitepress'
 
-import * as renderer from '../markdown/renderer'
+import type { InlineNode } from '../markdown/inline-nodes'
+import * as renderer       from '../markdown/renderer'
 
 interface ShellCompletion {
   caption  : string
@@ -9,7 +10,7 @@ interface ShellCompletion {
   language : string
   mono     : string
   name     : string
-  noteHtml : string
+  noteNodes : InlineNode[]
   slug     : string
   target   : string
 }
@@ -100,6 +101,6 @@ export default defineLoader({
   watch: [],
   async load(): Promise<readonly ShellCompletion[]> {
     const md = await renderer.getRenderer()
-    return renderer.renderFencedField(md, renderer.renderInlineField(md, SOURCES, 'note'), 'code')
+    return renderer.renderFencedField(md, renderer.inlineNodeField(md, SOURCES, 'note'), 'code')
   }
 })

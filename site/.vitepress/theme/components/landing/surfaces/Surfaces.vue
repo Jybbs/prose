@@ -81,7 +81,7 @@ const trackStyle = computed(() => ({
           <SurfaceCardBase
             v-for="card in surfaceCards"
             :key="`${copy}-${card.family}`"
-            :body-html="card.bodyHtml"
+            :body-nodes="card.bodyNodes"
             :family="card.family"
             :number="card.number"
             :rules="card.rules"

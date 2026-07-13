@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
+import InlineProse          from '../../theme/components/base/InlineProse.vue'
 import InlineRuleLink       from '../../theme/components/rules/InlineRuleLink.vue'
 import PerRuleFacets        from '../../theme/components/reference/PerRuleFacets.vue'
 import { expectAccessible } from '../axe'
@@ -14,7 +15,7 @@ vi.mock('../../lib/reference/facets.data', () => ({
       family: 'generic',
       label : 'Generic',
       rules : [
-        { rule: 'every rule', facets: [{ default: 'true', key: 'enabled', meaningHtml: 'Toggle the rule.', type: 'bool' }] }
+        { rule: 'every rule', facets: [{ default: 'true', key: 'enabled', meaningNodes: [{ kind: 'text', text: 'Toggle the rule.' }], type: 'bool' }] }
       ]
     },
     {
@@ -22,17 +23,18 @@ vi.mock('../../lib/reference/facets.data', () => ({
       family: 'layout',
       label : 'Layout',
       rules : [
-        { rule: 'call-layout', facets: [{ default: '3', key: 'max-args', meaningHtml: 'Explode a call.', type: 'positive int | false' }] },
+        { rule: 'call-layout', facets: [{ default: '3', key: 'max-args', meaningNodes: [{ kind: 'text', text: 'Explode a call.' }], type: 'positive int | false' }] },
         { rule: 'collection-layout', facets: [
-          { default: 'true', key: 'collapse', meaningHtml: 'Join with <code>false</code>.', type: 'bool' },
-          { default: '8', key: 'max-atomics', meaningHtml: 'Keep short.', type: 'positive int | false' }
+          { default: 'true', key: 'collapse', meaningNodes: [{ kind: 'text', text: 'Join with ' }, { kind: 'code', text: 'false' }, { kind: 'text', text: '.' }], type: 'bool' },
+          { default: '8', key: 'max-atomics', meaningNodes: [{ kind: 'text', text: 'Keep short.' }], type: 'positive int | false' }
         ] }
       ]
     }
   ]
 }))
 
-const mountFacets = () => mount(PerRuleFacets, { global: { stubs: { InlineRuleLink: true } } })
+const mountFacets = () =>
+  mount(PerRuleFacets, { global: { components: { InlineProse }, stubs: { InlineRuleLink: true } } })
 
 describe('PerRuleFacets', () => {
   it('renders one collapsible head per family, counting facets across its rules', () => {

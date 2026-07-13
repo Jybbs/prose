@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 import InlineRuleLink          from '../rules/InlineRuleLink.vue'
 import { data as facetGroups } from '../../../lib/reference/facets.data'
+import InlineProse             from '../base/InlineProse.vue'
 
 const open       = ref<Record<string, boolean>>({})
 const toggle     = (family: string): void => { open.value[family] = !open.value[family] }
@@ -50,7 +51,9 @@ const facetCount = (family: (typeof facetGroups)[number]): number =>
                   </span>
                 </span>
               </dt>
-              <dd class="per-rule-facets-meaning" v-html="facet.meaningHtml" />
+              <dd class="per-rule-facets-meaning">
+                <InlineProse :nodes="facet.meaningNodes" />
+              </dd>
             </div>
           </dl>
         </div>

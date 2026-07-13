@@ -1,13 +1,18 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderInlineField } from '../markdown/renderer'
-import { FAMILY_META, type RuleFamily }   from '../shared/registries'
+import { getRenderer }                  from '../markdown/renderer'
+import { inlineNodes, type InlineNode } from '../markdown/inline-nodes'
+import { discoverRuleIndex }            from '../rules/discovery'
+import * as paths                       from '../shared/paths'
+import { FAMILY_META, type RuleFamily } from '../shared/registries'
+
+import { rulePropsOf, typeOf, type SchemaProp, type SchemaProps } from '../shared/rule-schema'
 
 interface Facet {
-  default     : string
-  key         : string
-  meaningHtml : string
-  type        : string
+  default      : string
+  key          : string
+  meaningNodes : InlineNode[]
+  type         : string
 }
 
 interface RuleGroup {
@@ -22,262 +27,91 @@ interface FacetFamily {
   rules  : readonly RuleGroup[]
 }
 
+interface RuleDef {
+  anyOf   ?: readonly { $ref?: string }[]
+  default  : Record<string, unknown>
+}
+
+const ALIGNMENT_SCOPE = 'alignment rules'
+const EVERY_RULE      = 'every rule'
+const HOISTED         = new Set(['enabled', 'max-shift'])
+
+const root = paths.repoRoot(import.meta.url)
+
 declare const data: readonly FacetFamily[]
 export { data }
 
-interface FacetSource {
-  default : string
-  key     : string
-  meaning : string
-  type    : string
-}
-
-interface RuleGroupSource {
-  facets : readonly FacetSource[]
-  rule   : string
-}
-
-interface FacetFamilySource {
-  family : RuleFamily | 'generic'
-  rules  : readonly RuleGroupSource[]
-}
-
-export const SOURCES: readonly FacetFamilySource[] = [
-  {
-    family: 'generic',
-    rules: [
-      {
-        rule   : 'every rule',
-        facets : [
-          {
-            default : 'true',
-            key     : 'enabled',
-            meaning : 'Toggle the rule on or off.',
-            type    : 'bool'
-          }
-        ]
-      },
-      {
-        rule   : 'alignment rules',
-        facets : [
-          {
-            default : '16',
-            key     : 'max-shift',
-            meaning : 'Width-spread budget for an alignment run. A positive `N` caps the spread, `0` forbids any '
-                    + 'shift so every row sits flush, and `false` lifts the cap so a contiguous run folds into '
-                    + 'one column. To leave one row out of an otherwise-aligned group, hold it with '
-                    + '`# prose: skip`.',
-            type    : 'positive int | 0 | false'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    family: 'ordering',
-    rules: [
-      {
-        rule   : 'alphabetize',
-        facets : [
-          {
-            default : 'true',
-            key     : 'group-methods',
-            meaning : 'Group methods into dunders, properties, privates, and publics before sorting within each '
-                    + 'group. `false` sorts methods by plain name alone.',
-            type    : 'bool'
-          },
-          {
-            default : 'true',
-            key     : 'sort-definitions',
-            meaning : 'Reorder class and function definitions alphabetically, holding each behind any sibling it '
-                    + 'names at evaluation time. `false` freezes definitions in source order while other '
-                    + 'surfaces still sort.',
-            type    : 'bool'
-          },
-          {
-            default : 'true',
-            key     : 'sort-docstring-entries',
-            meaning : 'Reorder `name: description` entries within Title-case-headed docstring sections, parameter '
-                    + 'entries mirroring the signature as the rule leaves it and stragglers alphabetizing below. '
-                    + 'Set `false` to keep narrative-curated entry order while still sorting every other surface.',
-            type    : 'bool'
-          },
-          {
-            default : 'true',
-            key     : 'sort-dunder-lists',
-            meaning : 'Reorder the string items inside `__all__` and `__slots__`. `false` keeps a hand-curated '
-                    + 'public-API order.',
-            type    : 'bool'
-          }
-        ]
-      },
-      {
-        rule   : 'band-constants',
-        facets : [
-          {
-            default : 'true',
-            key     : 'group-constants',
-            meaning : 'Cluster each band by subcategory, the type aliases first, then the `SCREAMING_CASE` '
-                    + 'constants, then the remaining module state, before sorting by name within each. '
-                    + '`false` sorts by tier and name alone.',
-            type    : 'bool'
-          },
-          {
-            default : '2',
-            key     : 'max-tiers',
-            meaning : 'Cap how many evaluation tiers open their own blank-separated sub-band, merging every '
-                    + 'deeper tier into the last. `1` holds the band tight and `false` opens one sub-band per '
-                    + 'tier.',
-            type    : 'positive int | false'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    family: 'layout',
-    rules: [
-      {
-        rule   : 'collection-layout',
-        facets : [
-          {
-            default : 'true',
-            key     : 'collapse',
-            meaning : 'Join a fitting multi-line literal, subscript, or dict key back to one line. `false` '
-                    + 'freezes those shapes where they sit.',
-            type    : 'bool'
-          },
-          {
-            default : 'true',
-            key     : 'explode',
-            meaning : 'Expand an overflowing or over-count collection to one entry per line. `false` suppresses '
-                    + 'every expansion and leaves the count cap inert.',
-            type    : 'bool'
-          },
-          {
-            default : '8',
-            key     : 'max-atomics',
-            meaning : 'Keep short collections on one line when each entry is an atomic literal and the run fits '
-                    + 'the cap. `false` removes the cap and packs by width alone.',
-            type    : 'positive int | false'
-          },
-          {
-            default : '3',
-            key     : 'max-dict-entries',
-            meaning : 'Expand a dict once its entry count exceeds the cap, whatever its width. `false` disables '
-                    + 'the count trigger.',
-            type    : 'positive int | false'
-          },
-          {
-            default : 'true',
-            key     : 'wrap-dict-entries',
-            meaning : 'Break an over-wide `key: value` at its `:` and hang the value beneath. `false` leaves the '
-                    + 'oversized entry on one line.',
-            type    : 'bool'
-          }
-        ]
-      },
-      {
-        rule   : 'call-layout',
-        facets : [
-          {
-            default : '3',
-            key     : 'max-args',
-            meaning : 'Explode a call to one keyword argument per line once its argument count exceeds the cap. '
-                    + '`false` disables the count trigger and leaves every call inline.',
-            type    : 'positive int | false'
-          }
-        ]
-      },
-      {
-        rule   : 'signature-layout',
-        facets : [
-          {
-            default : '4',
-            key     : 'max-params',
-            meaning : 'Expand a signature to one parameter per line once its parameter count exceeds the cap. '
-                    + '`false` disables the count trigger and leaves only the `code-line-length` budget.',
-            type    : 'positive int | false'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    family: 'lint',
-    rules: [
-      {
-        rule   : 'bare-imports',
-        facets : [
-          {
-            default : '[]',
-            key     : 'allow',
-            meaning : 'Modules whose bare-import form is preserved whatever their attribute count.',
-            type    : 'list of module names'
-          },
-          {
-            default : 'true',
-            key     : 'exempt-aliased',
-            meaning : 'Exempt every aliased bare import (*`import x as y`*) from the rule.',
-            type    : 'bool'
-          },
-          {
-            default : '4',
-            key     : 'max-attributes',
-            meaning : 'Distinct-attribute count at or below which an unaliased bare import is flagged.',
-            type    : 'positive int'
-          }
-        ]
-      },
-      {
-        rule   : 'miscased-constants',
-        facets : [
-          {
-            default : '""',
-            key     : 'allow-pattern',
-            meaning : 'Constant names exempted from the lint, such as old-style bare aliases.',
-            type    : 'regex'
-          }
-        ]
-      },
-      {
-        rule   : 'reassigned-constants',
-        facets : [
-          {
-            default : '[]',
-            key     : 'allow',
-            meaning : 'Module-level names exempted from the lint.',
-            type    : 'list of names'
-          }
-        ]
-      },
-      {
-        rule   : 'single-use-variables',
-        facets : [
-          {
-            default : '"^_"',
-            key     : 'allow-pattern',
-            meaning : 'Binding names exempted from the lint.',
-            type    : 'regex'
-          }
-        ]
-      }
-    ]
-  }
-]
-
 export default defineLoader({
-  watch: [],
+  watch : paths.proseBinaryCandidates(root),
   async load(): Promise<readonly FacetFamily[]> {
-    const md = await getRenderer()
-    return SOURCES.map(family => ({
-      badge  : family.family === 'generic' ? '' : FAMILY_META[family.family].badge,
-      family : family.family,
-      label  : family.family === 'generic' ? 'Generic' : FAMILY_META[family.family].label,
-      rules  : family.rules.map(group => ({
-        facets : renderInlineField(md, group.facets, 'meaning'),
-        rule   : group.rule
-      }))
-    }))
+    const md     = await getRenderer()
+    const schema = JSON.parse(paths.runProse(root, ['schema']))
+    const index  = discoverRuleIndex(paths.rulesDir(import.meta.url))
+    const defs   = schema.$defs as Record<string, { properties: SchemaProps }>
+    const rules  = schema.$defs.RuleConfigs.properties as Record<string, RuleDef>
+
+    const facet = (key: string, prop: SchemaProp, value: unknown, meaning: string): Facet => ({
+      default      : JSON.stringify(value),
+      key          : key,
+      meaningNodes : inlineNodes(md, meaning),
+      type         : typeOf(prop).replaceAll('`', '')
+    })
+
+    const describe = (props: SchemaProps, key: string): string =>
+      (props[key] as { description?: string }).description ?? ''
+
+    // `enabled` and `max-shift` repeat across every rule and every alignment
+    // rule, so they read once as a scope rather than per rule.
+    const aligner = Object.entries(rules).find(([, def]) => 'max-shift' in def.default)!
+    const generic: FacetFamily = {
+      badge  : '',
+      family : 'generic',
+      label  : 'Generic',
+      rules  : [
+        {
+          rule   : EVERY_RULE,
+          facets : [facet(
+            'enabled',
+            defs.ToggleOnly.properties.enabled,
+            true,
+            describe(defs.ToggleOnly.properties, 'enabled')
+          )]
+        },
+        {
+          rule   : ALIGNMENT_SCOPE,
+          facets : [facet(
+            'max-shift',
+            defs.AlignmentConfig.properties['max-shift'],
+            aligner[1].default['max-shift'],
+            describe(defs.AlignmentConfig.properties, 'max-shift')
+          )]
+        }
+      ]
+    }
+
+    const groups = new Map<RuleFamily, RuleGroup[]>()
+    for (const [slug, def] of Object.entries(rules).toSorted(([a], [b]) => a.localeCompare(b))) {
+      const props  = rulePropsOf(defs, def)
+      const facets = Object.keys(def.default)
+        .filter(key => !HOISTED.has(key))
+        .toSorted((a, b) => a.localeCompare(b))
+        .map(key => facet(key, props[key], def.default[key], describe(props, key)))
+
+      const family = index.get(slug)?.family
+      if (facets.length === 0 || family === undefined) continue
+      groups.set(family, [...(groups.get(family) ?? []), { facets, rule: slug }])
+    }
+
+    return [
+      generic,
+      ...[...groups.entries()]
+        .toSorted(([a], [b]) => a.localeCompare(b))
+        .map(([family, ruleGroups]): FacetFamily => ({
+          badge  : FAMILY_META[family].badge,
+          family : family,
+          label  : FAMILY_META[family].label,
+          rules  : ruleGroups
+        }))
+    ]
   }
 })

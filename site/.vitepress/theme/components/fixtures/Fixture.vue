@@ -12,6 +12,7 @@ import { data as rules }    from '../../../lib/rules/rules.data'
 import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
 import { inlineCode }       from '../../../lib/shared/inline-code'
 import { lookup }           from '../../../lib/shared/lookup'
+import InlineProse          from '../base/InlineProse.vue'
 
 const props = defineProps<{
   case     : string
@@ -79,8 +80,8 @@ useEventListener('hashchange', syncWithHash)
     >
       <div class="fixture-card-body-inner">
         <div class="fixture-card-body-content">
-          <template v-if="entry.descriptionHtml">
-            <div class="fixture-card-desc" v-html="entry.descriptionHtml" />
+          <template v-if="entry.descriptionNodes">
+            <div class="fixture-card-desc"><InlineProse :nodes="entry.descriptionNodes" /></div>
             <div class="fixture-card-rule" aria-hidden="true" />
           </template>
           <FixturePairDoc
@@ -95,11 +96,9 @@ useEventListener('hashchange', syncWithHash)
   </section>
 
   <div v-else class="fixture">
-    <div
-      v-if="entry.descriptionHtml && variant !== 'landing'"
-      class="fixture-lead"
-      v-html="entry.descriptionHtml"
-    />
+    <div v-if="entry.descriptionNodes && variant !== 'landing'" class="fixture-lead">
+      <InlineProse :nodes="entry.descriptionNodes" />
+    </div>
     <header v-if="showToggle" class="fixture-bar">
       <FixtureToggle v-model="activeTab" />
     </header>

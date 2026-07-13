@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
+import InlineProse          from '../../theme/components/base/InlineProse.vue'
 import ShellCompletions     from '../../theme/components/integrations/ShellCompletions.vue'
 import { expectAccessible } from '../axe'
 
@@ -10,20 +11,21 @@ vi.mock('../../lib/integrations/shell-completions.data', () => ({
       caption  : 'completions bash',
       codeHtml : '<pre>prose completions bash</pre>',
       name     : 'Bash',
-      noteHtml : '<p>Reload the shell.</p>',
+      noteNodes : [{ kind: 'text', text: 'Reload the shell.' }],
       slug     : 'bash'
     },
     {
       caption  : 'completions fish',
       codeHtml : '<pre>prose completions fish</pre>',
       name     : 'fish',
-      noteHtml : '<p>Completions load lazily.</p>',
+      noteNodes : [{ kind: 'text', text: 'Completions load lazily.' }],
       slug     : 'fish'
     }
   ]
 }))
 
-const mountCard = () => mount(ShellCompletions, { global: { stubs: { Tool: true } } })
+const mountCard = () =>
+  mount(ShellCompletions, { global: { components: { InlineProse }, stubs: { Tool: true } } })
 
 describe('ShellCompletions', () => {
   it('opens on the first shell', () => {

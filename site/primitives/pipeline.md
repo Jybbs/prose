@@ -15,7 +15,7 @@ tagline: deterministic rule runner
 
 ## Public Surface
 
-`Pipeline` is fully public in `0.2.x`, so a downstream Rust consumer constructs one through the entry points below, runs it against a [[source]], and reads the returned text plus diagnostics. `Pipeline` is `Send + Sync`, which means a single instance can be shared across `rayon` workers via `Arc` and the same instance can drive many `run` calls in sequence, because `run` takes `&self` and consumes only the `Source` passed in.
+`Pipeline` is fully public today, so a downstream Rust consumer constructs one through the entry points below, runs it against a [[source]], and reads the returned text plus diagnostics. `Pipeline` is `Send + Sync`, which means a single instance can be shared across `rayon` workers via `Arc` and the same instance can drive many `run` calls in sequence, because `run` takes `&self` and consumes only the `Source` passed in.
 
 ### Constructors
 
@@ -64,7 +64,7 @@ Rule order is fixed and the same every run, so a given source plus configuration
 
 ## Internal Surface
 
-`Pipeline::from_rules` is `pub(crate)`, so a downstream cannot register a hand-rolled rule list in `0.2.x`. The `Rule` trait that concrete rules implement is also `pub(crate)`. Both surfaces stabilize toward `1.0`, where consumers will be able to compose custom rule sets and implement project-specific rules against a stable trait.
+`Pipeline::from_rules` is `pub(crate)`, so a downstream cannot register a hand-rolled rule list today. The `Rule` trait that concrete rules implement is also `pub(crate)`. Both surfaces stabilize toward `1.0`, where consumers will be able to compose custom rule sets and implement project-specific rules against a stable trait.
 
 ## Re-Using This Primitive
 

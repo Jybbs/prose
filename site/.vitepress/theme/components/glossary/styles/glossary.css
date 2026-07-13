@@ -7,6 +7,11 @@
   outline               : none;
 }
 
+a.glossary-anchor {
+  cursor : pointer;
+  color  : inherit;
+}
+
 .glossary-anchor:hover {
   text-decoration : none;
 }

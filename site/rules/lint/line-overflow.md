@@ -14,9 +14,7 @@ A line inside an import statement answers to `import-line-length`, every other l
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
+<RuleConfigTable />
 
 </template>
 

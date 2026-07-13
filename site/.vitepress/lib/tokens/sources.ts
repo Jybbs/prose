@@ -1,3 +1,5 @@
+import type { InlineNode } from '../markdown/inline-nodes'
+
 export type Domain =
   | 'cli-flag'
   | 'config-key'
@@ -13,11 +15,11 @@ interface TokenSource {
 }
 
 export interface Token {
-  blurbHtml : string
-  domain    : Domain
-  href      : string
-  key       : string
-  sort      : string
+  blurbNodes : InlineNode[]
+  domain     : Domain
+  href       : string
+  key        : string
+  sort       : string
 }
 
 export const DOMAIN_LABELS: Record<Domain, string> = {

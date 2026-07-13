@@ -5,6 +5,7 @@ import type { MarkdownRenderer } from 'vitepress'
 
 import { readFixtureToggle } from './toggle'
 import * as walker           from './walker'
+import { blockNodes, type InlineNode } from '../markdown/inline-nodes'
 import { lintFenceMeta }     from '../markdown/lint-decorations'
 import * as renderer         from '../markdown/renderer'
 import { crateDir }          from '../shared/paths'
@@ -13,7 +14,7 @@ const crate = crateDir(import.meta.url)
 
 interface FixtureEntry {
   changesSource    : boolean
-  descriptionHtml ?: string
+  descriptionNodes ?: InlineNode[]
   hasFindings      : boolean
   hasToggle        : boolean
   inputHtml        : string
@@ -25,9 +26,9 @@ type FixtureData = Record<string, Record<string, FixtureEntry>>
 declare const data: FixtureData
 export { data }
 
-async function descriptionHtml(md: MarkdownRenderer, inputPath: string): Promise<string | undefined> {
+function descriptionNodes(md: MarkdownRenderer, inputPath: string): InlineNode[] | undefined {
   const text = walker.readFixtureDocs(inputPath)?.description?.trim()
-  return text ? await renderer.renderBlockHtml(md, text) : undefined
+  return text ? blockNodes(md, text) : undefined
 }
 
 export default defineLoader({
@@ -43,7 +44,7 @@ export default defineLoader({
         caseName,
         entry: {
           changesSource,
-          descriptionHtml : await descriptionHtml(md, inputPath),
+          descriptionNodes : descriptionNodes(md, inputPath),
           hasFindings,
           hasToggle,
           inputHtml       : await renderer.renderFencedHtml(md, inputRaw, 'python'),

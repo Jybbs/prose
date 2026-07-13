@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import { data as TOKENS } from '../../../lib/tokens/tokens.data'
 import * as sources       from '../../../lib/tokens/sources'
+import InlineProse        from '../base/InlineProse.vue'
 
 const tabs = (Object.keys(sources.DOMAIN_LABELS) as sources.Domain[]).sort()
 
@@ -76,7 +77,7 @@ function clearFocus(token: sources.Token): void {
                   </header>
                   <div class="az-index-detail-body">
                     <code class="az-index-detail-key">{{ token.key }}</code>
-                    <p class="az-index-detail-blurb" v-html="token.blurbHtml" />
+                    <p class="az-index-detail-blurb"><InlineProse :nodes="token.blurbNodes" /></p>
                     <a class="az-index-detail-href" :href="token.href">&rarr; {{ token.href }}</a>
                   </div>
                 </aside>

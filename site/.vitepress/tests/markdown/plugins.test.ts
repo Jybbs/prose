@@ -53,18 +53,18 @@ describe('glossaryPlugin', () => {
 
   it('emits an inert glossary anchor under the inertHtml env', () => {
     expect(render(md => md.use(plugin), 'an atom here', { inertHtml: true }))
-      .toContain('<a class="glossary-term" data-term="atomic" href="/reference/glossary#atomic">atom</a>')
+      .toContain('<a class="glossary-anchor underline-draw" data-term="atomic" href="/reference/glossary#atomic">atom</a>')
   })
 
   it('emits an inert glossary span when the entry has no href', () => {
     const bare = glossaryPlugin(map, new Map())
     expect(render(md => md.use(bare), 'an atom here', { inertHtml: true }))
-      .toContain('<span class="glossary-term" data-term="atomic">atom</span>')
+      .toContain('<span class="glossary-anchor underline-draw" data-term="atomic">atom</span>')
   })
 
   it('flattens a phrase to plain text under the plain-terms env', () => {
     const html = render(md => md.use(plugin), 'an atom here', plainTermsEnv())
-    expect(html).not.toContain('glossary-term')
+    expect(html).not.toContain('glossary-anchor')
     expect(html).toContain('an atom here')
   })
 
@@ -72,14 +72,14 @@ describe('glossaryPlugin', () => {
     const md = new MarkdownIt()
     md.use(plugin)
     expect(renderInlineHtml(md as unknown as MarkdownRenderer, 'an atom here'))
-      .toContain('<a class="glossary-term"')
+      .toContain('<a class="glossary-anchor underline-draw"')
   })
 
   it('renders flattened terms through the plain loader wrapper', () => {
     const md = new MarkdownIt()
     md.use(plugin)
     expect(renderPlainInlineHtml(md as unknown as MarkdownRenderer, 'an atom here'))
-      .not.toContain('glossary-term')
+      .not.toContain('glossary-anchor')
   })
 
   it('throws on an empty phrase map', () => {

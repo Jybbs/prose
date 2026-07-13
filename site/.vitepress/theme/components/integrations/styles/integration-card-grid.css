@@ -35,7 +35,8 @@
 }
 
 .vp-doc .int-card .int-body a,
-.int-card .int-body a {
+.int-card .int-body a,
+.int-card .int-body .glossary-anchor {
   position : relative;
   z-index  : 1;
 }

@@ -8,6 +8,7 @@ import { useSettledMeasure }     from '../../../lib/composables/use-settled-meas
 
 import { PRIMITIVE_LAYER_NUMERALS }           from '../../../lib/shared/registries'
 import type { PrimitiveLayer, PrimitiveSlug } from '../../../lib/shared/registries'
+import InlineProse                            from '../base/InlineProse.vue'
 
 const props = defineProps<{
   focused : PrimitiveSlug | null
@@ -69,7 +70,7 @@ watch(focusedEntry, scheduleUpdate, { immediate: true })
         <span class="primitives-composition-card-layer-numeral" aria-hidden="true">{{ PRIMITIVE_LAYER_NUMERALS[focusedEntry.layer] }}</span>
         <div class="primitives-composition-card-head-text">
           <span class="primitives-composition-card-name">{{ primitiveMeta.bySlug[focusedEntry.slug].name }}</span>
-          <span class="primitives-composition-card-summary" v-html="focusedEntry.summaryHtml" />
+          <span class="primitives-composition-card-summary"><InlineProse :nodes="focusedEntry.summaryNodes" /></span>
         </div>
       </div>
       <template v-for="rel in relations" :key="rel.label">

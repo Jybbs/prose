@@ -1,19 +1,20 @@
 import { defineLoader } from 'vitepress'
 
+import { inlineNodes, type InlineNode }  from '../markdown/inline-nodes'
 import * as renderer                     from '../markdown/renderer'
 import { formatFolio }                   from '../shared/numerals'
 import { FAMILY_ORDER, type RuleFamily } from '../shared/registries'
 
 export interface Step {
-  bodyHtml : string
-  codeHtml : string
+  bodyNodes : InlineNode[]
+  codeHtml  : string
   language : string
   number   : string
   title    : string
 }
 
 export interface Surface {
-  bodyHtml : string
+  bodyNodes : InlineNode[]
   family   : RuleFamily
   number   : string
 }
@@ -47,7 +48,7 @@ const SURFACE_BODIES: Record<RuleFamily, string> = {
              + 'already knows where it sits.'
 }
 
-type StepSource = Omit<Step, 'bodyHtml' | 'codeHtml'> & { body: string; code: string }
+type StepSource = Omit<Step, 'bodyNodes' | 'codeHtml'> & { body: string; code: string }
 
 const STEP_SOURCES: readonly StepSource[] = [
   {
@@ -85,11 +86,11 @@ export default defineLoader({
   watch: [],
   async load(): Promise<LandingData> {
     const md       = await renderer.getRenderer()
-    const withBody = renderer.renderInlineField(md, STEP_SOURCES, 'body')
+    const withBody = renderer.inlineNodeField(md, STEP_SOURCES, 'body')
     const workflow = await renderer.renderFencedField(md, withBody, 'code')
     return {
       surfaces : FAMILY_ORDER.map((family, i) => ({
-        bodyHtml : renderer.renderInlineHtml(md, SURFACE_BODIES[family]),
+        bodyNodes : inlineNodes(md, SURFACE_BODIES[family]),
         family,
         number   : formatFolio(i + 1)
       })),

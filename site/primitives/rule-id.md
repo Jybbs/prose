@@ -15,7 +15,7 @@ Every rule needs a stable identifier the rest of the system can route off. The C
 
 ## Public Surface
 
-`RuleId` is fully public in `0.2.x`, so a downstream Rust consumer constructs *RuleId* values, parses them from CLI or config input, prints them, and uses them as `HashMap` keys without restriction.
+`RuleId` is fully public today, so a downstream Rust consumer constructs *RuleId* values, parses them from CLI or config input, prints them, and uses them as `HashMap` keys without restriction.
 
 ### Construction
 
@@ -31,7 +31,7 @@ Snake-case input *(`align_equals`)* is normalized to the canonical kebab form be
 
 ### Equality and Hashing
 
-*RuleId* derives `Clone, Copy, Eq, Hash, PartialEq`, so a downstream can use it as a `HashMap` key without ceremony. `Ord` / `PartialOrd` are not derived in `0.2.x`, so a consumer that needs sorted output sorts a slice by `RuleId::as_str` instead. *RuleId* is `Send + Sync` *(it wraps `&'static str`)*, which makes it cheap to ship across thread boundaries.
+*RuleId* derives `Clone, Copy, Eq, Hash, PartialEq`, so a downstream can use it as a `HashMap` key without ceremony. `Ord` / `PartialOrd` are not derived today, so a consumer that needs sorted output sorts a slice by `RuleId::as_str` instead. *RuleId* is `Send + Sync` *(it wraps `&'static str`)*, which makes it cheap to ship across thread boundaries.
 
 ## Registry Pattern
 

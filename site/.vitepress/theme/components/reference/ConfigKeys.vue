@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { data as configs } from '../../../lib/rules/rule-configs.data'
-import { useCurrentRule }  from '../../../lib/composables/route'
-import InlineProse         from '../base/InlineProse.vue'
+import { data, type ConfigKeys } from '../../../lib/reference/config-keys.data'
+import InlineProse               from '../base/InlineProse.vue'
 
-const current = useCurrentRule()
+const props = defineProps<{ section: keyof ConfigKeys }>()
 
-const rows = computed(() => configs[current.value?.slug ?? ''] ?? [])
+const rows = computed(() => data[props.section])
 </script>
 
 <template>
@@ -24,7 +23,10 @@ const rows = computed(() => configs[current.value?.slug ?? ''] ?? [])
       <tr v-for="row in rows" :key="row.key">
         <td><code>{{ row.key }}</code></td>
         <td><InlineProse :nodes="row.typeNodes" /></td>
-        <td><code>{{ row.default }}</code></td>
+        <td>
+          <code v-if="row.default !== 'unset'">{{ row.default }}</code>
+          <span v-else>unset</span>
+        </td>
         <td><InlineProse :nodes="row.meaningNodes" /></td>
       </tr>
     </tbody>

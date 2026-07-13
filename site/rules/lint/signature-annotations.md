@@ -16,9 +16,7 @@ Because *Prose* reads source rather than resolving types, the rule never synthes
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
+<RuleConfigTable />
 
 </template>
 

@@ -3,6 +3,7 @@ import { data as directives }     from '../../../lib/suppression/directives.data
 import { useTabSelect }           from '../../../lib/composables/use-tab-select'
 import { type PartRole }          from '../../../lib/suppression/directive-parts'
 import { SCOPE_META, scopeBands } from '../../../lib/suppression/scopes'
+import InlineProse                from '../base/InlineProse.vue'
 
 const ROLE_LABEL: Record<PartRole, string> = {
   action    : 'action',
@@ -74,7 +75,7 @@ function classifyLine(line: string): 'directive' | 'comment' | 'code' {
       </div>
 
       <div class="directive-anatomy-info">
-        <p class="directive-anatomy-effect" v-html="focused.effectHtml"></p>
+        <p class="directive-anatomy-effect"><InlineProse :nodes="focused.effectNodes" /></p>
         <pre class="directive-anatomy-pre"><code><span
           v-for="(line, j) in focused.example.split('\n')"
           :key="j"

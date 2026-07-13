@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { data as codes } from '../../../lib/exit-codes/exit-codes.data'
 import { useTabSelect }  from '../../../lib/composables/use-tab-select'
+import InlineProse       from '../base/InlineProse.vue'
 
 const { active: selectedRow, selected } = useTabSelect(codes, c => c.code)
 </script>
@@ -31,7 +32,7 @@ const { active: selectedRow, selected } = useTabSelect(codes, c => c.code)
       </header>
       <p class="exit-code-entry-summary">{{ selectedRow.summary }}</p>
       <ul class="exit-code-entry-details">
-        <li v-for="(html, idx) in selectedRow.detailHtml" :key="idx" v-html="html" />
+        <li v-for="(nodes, idx) in selectedRow.detailNodes" :key="idx"><InlineProse :nodes="nodes" /></li>
       </ul>
     </article>
   </div>

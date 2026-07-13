@@ -22,14 +22,7 @@ Each shape move sits behind its own facet, so a project can switch one off witho
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
-| `collapse` | bool | `true` | Join a fitting multi-line literal, subscript, comprehension, or dict key back to one line. Setting `false` freezes those shapes where they sit |
-| `explode` | bool | `true` | Expand an overflowing or over-count collection to one entry per line. Setting `false` suppresses every expansion and leaves `max-dict-entries` inert |
-| `max-atomics` | positive int \| `false` | `8` | Keep short collections on one line when each entry is an atomic literal and the run fits the cap. Setting `false` removes the cap and packs each line by width alone |
-| `max-dict-entries` | positive int \| `false` | `3` | Expand a dict once its entry count exceeds the cap, whatever its width. Setting `false` disables the count trigger and leaves width as the only dict gate |
-| `wrap-dict-entries` | bool | `true` | Break an over-wide `key: value` at its `:` and hang the value beneath. Setting `false` leaves the oversized entry on one line |
+<RuleConfigTable />
 
 A short tuple inside a function-call argument list, like `numpy.zeros((3, 4))`, stays inline at the default cap. A `dict` literal with eight non-atomic entries expands regardless of length. A four-entry `dict` expands at the default `max-dict-entries` of `3` even when it fits the line.
 

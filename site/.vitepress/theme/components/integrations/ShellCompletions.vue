@@ -3,6 +3,7 @@ import Tool from '../base/Tool.vue'
 
 import { data as shells } from '../../../lib/integrations/shell-completions.data'
 import { useTabSelect }   from '../../../lib/composables/use-tab-select'
+import InlineProse        from '../base/InlineProse.vue'
 
 const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
 </script>
@@ -35,7 +36,7 @@ const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
         </header>
         <div class="shell-card-modal-body">
           <div class="shell-card-modal-code" v-html="active.codeHtml"></div>
-          <p class="shell-card-modal-note" v-html="active.noteHtml"></p>
+          <p class="shell-card-modal-note"><InlineProse :nodes="active.noteNodes" /></p>
         </div>
       </article>
     </div>

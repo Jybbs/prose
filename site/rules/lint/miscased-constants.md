@@ -14,10 +14,7 @@ The condition reads inertness through the same classifier the notebook banding g
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
-| `allow-pattern` | regex | `""` | Constant names exempted from the lint |
+<RuleConfigTable />
 
 The `allow-pattern` regex is empty by default, exempting nothing beyond the structural carve-outs. A project carrying old-style PascalCase aliases (*`Vector = list[float]`*) sets it to spare them, whereas a `TypeAlias`-annotated target skips the gate without any configuration.
 

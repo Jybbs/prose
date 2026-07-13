@@ -14,9 +14,7 @@ The rewrite stays purely mechanical, firing only when the return annotation is a
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
+<RuleConfigTable />
 
 </template>
 

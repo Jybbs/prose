@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import LandingSection from './LandingSection.vue'
 
 import { data as landing } from '../../../lib/landing/landing.data'
+import InlineProse         from '../base/InlineProse.vue'
 
 const chapters = computed(() =>
   landing.workflow.map((s, i) => ({ ...s, roman: romanize(i + 1) }))
@@ -30,7 +31,7 @@ const chapters = computed(() =>
         </aside>
         <div class="landing-workflow-body">
           <h3 class="landing-workflow-title">{{ chapter.title }}</h3>
-          <p class="landing-workflow-prose" v-html="chapter.bodyHtml" />
+          <p class="landing-workflow-prose"><InlineProse :nodes="chapter.bodyNodes" /></p>
           <div class="landing-workflow-code" v-html="chapter.codeHtml" />
         </div>
       </section>
