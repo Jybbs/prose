@@ -10,14 +10,13 @@ export function proseMarkPlugin(md: MarkdownIt): void {
   md.core.ruler.after('inline', 'prose-mark', state => {
     walkBodyInlines(state, (block, children) => {
       block.children = replaceTextTokens(children, state.Token, PATTERN, (match, child) => {
-        const open    = new state.Token('html_inline', '', 0)
-        open.content  = '<span class="prose-mark">'
+        const open    = new state.Token('span_open', 'span', 1)
+        open.attrSet('class', 'prose-mark')
         open.level    = child.level
         const inner   = new state.Token('text', '', 0)
         inner.content = match[1]
-        inner.level   = child.level
-        const close   = new state.Token('html_inline', '', 0)
-        close.content = '</span>'
+        inner.level   = child.level + 1
+        const close   = new state.Token('span_close', 'span', -1)
         close.level   = child.level
         return [open, inner, close]
       })

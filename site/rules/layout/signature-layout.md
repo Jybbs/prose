@@ -14,10 +14,7 @@ The rule expands a signature when its inline form overflows the configured `code
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
-| `max-params` | positive int \| `false` | `4` | Cap on the parameter count an inline signature can carry. Setting `false` disables the count trigger and leaves only the line-length budget |
+<RuleConfigTable />
 
 The line-length budget comes from the top-level [`code-line-length`](/reference/configuration#top-level-keys) key *(default `88`)*, which the rule reads directly. Setting `max-params` to `false` makes the rule expand purely on line length, leaving inline-but-long signatures untouched when they fit the budget regardless of parameter count.
 

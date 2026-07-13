@@ -1,11 +1,12 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderInlineField }     from '../markdown/renderer'
+import { getRenderer, inlineNodeField }       from '../markdown/renderer'
+import type { InlineNode }                    from '../markdown/inline-nodes'
 import { type DirectivePart, directiveParts } from './directive-parts'
 import type { ScopeKey }                      from './scopes'
 
 export interface Directive {
-  effectHtml  : string
+  effectNodes : InlineNode[]
   example     : string
   form        : string
   id          : string
@@ -127,7 +128,7 @@ export default defineLoader({
   watch: [],
   async load(): Promise<readonly Directive[]> {
     const md = await getRenderer()
-    return renderInlineField(md, SOURCES, 'effect')
+    return inlineNodeField(md, SOURCES, 'effect')
       .map(source => ({ ...source, parts: directiveParts(source.form) }))
   }
 })

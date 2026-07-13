@@ -6,12 +6,13 @@ import * as folio                     from '../../lib/glossary/folio'
 const entry = (
   slug: string, overrides: Partial<RenderedGlossaryEntry> = {}
 ): RenderedGlossaryEntry => ({
-  aliases        : [],
-  definitionHtml : '',
-  families       : ['engine'],
-  initial        : slug[0]?.toUpperCase() ?? '#',
-  primaryFamily  : 'engine',
-  slug,
+  aliases         : [],
+  definitionHtml  : '',
+  definitionNodes : [],
+  families        : ['engine'],
+  initial         : slug[0]?.toUpperCase() ?? '#',
+  primaryFamily   : 'engine',
+  slug            : slug,
   ...overrides
 })
 

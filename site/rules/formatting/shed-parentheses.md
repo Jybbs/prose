@@ -16,9 +16,7 @@ A wrapped multi-line grouping folds onto one line when the bare form fits the bu
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
+<RuleConfigTable />
 
 </template>
 

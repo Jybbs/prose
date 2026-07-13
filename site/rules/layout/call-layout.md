@@ -18,10 +18,7 @@ The rule reshapes layout and nothing more, leaving argument order to [`alphabeti
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
-| `max-args` | positive int \| `false` | `3` | Cap on the argument count an inline call can carry. A call exceeding the cap explodes, so the default `3` explodes a call of four or more arguments. Setting `false` disables the count trigger and leaves every call inline |
+<RuleConfigTable />
 
 </template>
 

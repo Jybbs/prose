@@ -2,12 +2,13 @@
 import { mount } from '@vue/test-utils'
 
 import DirectiveAnatomy     from '../../theme/components/suppression/DirectiveAnatomy.vue'
+import InlineProse          from '../../theme/components/base/InlineProse.vue'
 import { expectAccessible } from '../axe'
 
 vi.mock('../../lib/suppression/directives.data', () => ({
   data: [
     {
-      effectHtml : 'Suppresses every rewrite for the file.',
+      effectNodes : [{ kind: 'text', text: 'Suppresses every rewrite for the file.' }],
       example    : '# prose: off',
       form       : '# prose: off',
       id         : 'prose-off',
@@ -19,7 +20,7 @@ vi.mock('../../lib/suppression/directives.data', () => ({
       scope      : 'file'
     },
     {
-      effectHtml : 'Opens a suppressed region.',
+      effectNodes : [{ kind: 'text', text: 'Opens a suppressed region.' }],
       example    : '# fmt: off',
       form       : '# fmt: off',
       id         : 'fmt-off',
@@ -33,7 +34,7 @@ vi.mock('../../lib/suppression/directives.data', () => ({
       scope      : 'block'
     },
     {
-      effectHtml : 'Only the listed lint rules skip the line.',
+      effectNodes : [{ kind: 'text', text: 'Only the listed lint rules skip the line.' }],
       example    : 'x = 1  # prose: ignore[<rule>]',
       form       : '# prose: ignore[<rule>, ...]',
       id         : 'prose-ignore-rules',
@@ -46,7 +47,7 @@ vi.mock('../../lib/suppression/directives.data', () => ({
       scope      : 'line'
     },
     {
-      effectHtml : 'Keeps the dict entries in authored order.',
+      effectNodes : [{ kind: 'text', text: 'Keeps the dict entries in authored order.' }],
       example    : 'config = {}  # prose: keep',
       form       : '# prose: keep',
       id         : 'prose-keep',
@@ -60,7 +61,7 @@ vi.mock('../../lib/suppression/directives.data', () => ({
   ]
 }))
 
-const mountAnatomy = () => mount(DirectiveAnatomy)
+const mountAnatomy = () => mount(DirectiveAnatomy, { global: { components: { InlineProse } } })
 
 describe('DirectiveAnatomy', () => {
   it('renders one band per scope in the shared order', () => {

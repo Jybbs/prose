@@ -2,12 +2,14 @@
 import { useElementHover, useElementSize, useMouseInElement } from '@vueuse/core'
 import { computed, ref, useTemplateRef }                      from 'vue'
 
+import type { InlineNode }   from '../../../../lib/markdown/inline-nodes'
 import type { RenderedRule } from '../../../../lib/rules/rules.data'
 import { formatFolio }       from '../../../../lib/shared/numerals'
 import * as registries       from '../../../../lib/shared/registries'
+import InlineProse           from '../../base/InlineProse.vue'
 
 const props = defineProps<{
-  bodyHtml : string
+  bodyNodes : InlineNode[]
   family   : registries.RuleFamily
   number   : string
   rules    : readonly RenderedRule[]
@@ -55,7 +57,7 @@ const activeRule = computed(() => props.rules[activeIdx.value])
     <span class="surface-card-number">— {{ number }}</span>
     <span class="surface-card-icon" aria-hidden="true">{{ meta.badge }}</span>
     <h3 class="surface-card-label">{{ meta.label }}</h3>
-    <p class="surface-card-blurb" v-html="bodyHtml" />
+    <p class="surface-card-blurb"><InlineProse :nodes="bodyNodes" /></p>
     <div class="surface-card-chips">
       <div class="tab-index">
         <div class="tab-row">

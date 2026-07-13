@@ -14,9 +14,7 @@ The lint fires only where acting on it could be reasonable, a module-level or ne
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
+<RuleConfigTable />
 
 The keyword-only block past the `*` is a separate matter. A keyword-only parameter binds by name at every call site, so reordering it is always behavior-preserving, and [[alphabetize]] sorts it as an auto-fix rather than reporting it here.
 

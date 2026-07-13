@@ -14,10 +14,7 @@ The rule consumes the per-`Source` [[binding-analysis]] table to count writes an
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
-| `allow-pattern` | regex | `"^_"` | Binding names exempted from the lint |
+<RuleConfigTable />
 
 The default `^_` exempts names starting with an underscore, matching the Python convention for intentionally-unused bindings. Projects with stricter naming can tighten the regex.
 

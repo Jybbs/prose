@@ -61,9 +61,14 @@ pub(crate) use source::ConfigSource;
 #[serde(default, rename_all = "kebab-case")]
 pub struct Config {
     pub cache: CacheConfig,
+    /// The line budget every length-aware rule honors.
     pub code_line_length: Option<NonZeroUsize>,
+    /// The description-prose budget for `docstring-wrap`.
     pub docstring_line_length: Option<NonZeroUsize>,
+    /// The budget structured docstring sections wrap to.
     pub docstring_structured_policy: DocstringStructuredPolicy,
+    /// The import-wrap budget for `import-layout`, falling back to
+    /// `code-line-length` when `false`.
     #[schemars(schema_with = "json_schema::optional_cap_schema")]
     #[serde(
         deserialize_with = "deserialize_optional_cap",
@@ -72,6 +77,8 @@ pub struct Config {
     pub import_line_length: Option<NonZeroUsize>,
     pub imports: ImportsConfig,
     pub rules: RuleConfigs,
+    /// The Python runtime the project ships to, read by the
+    /// version-gated rules.
     pub target_version: Option<PythonVersion>,
 }
 

@@ -29,13 +29,7 @@ When more than one of these forms share a directory, the higher-precedence one w
 
 The top-level keys carry settings that span multiple rules. They sit at the document root in a `prose.toml` and under `[tool.prose]` in a `pyproject.toml`.
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `code-line-length` | positive int | `88` | Honored by line-length-aware rules |
-| `docstring-line-length` | positive int | `76` | Description-prose budget for [[docstring-wrap]] |
-| `docstring-structured-policy` | `"code-line-length"` \| `"docstring-line-length"` | `"code-line-length"` | Source budget for structured docstring sections |
-| `import-line-length` | positive int \| `false` | `120` | Import-wrap budget for [[import-layout]], falling back to `code-line-length` when `false` |
-| `target-version` | `"3.X"` version string | unset | Python runtime the project ships to, consumed by version-gated rules |
+<ConfigKeys section="top" />
 
 `target-version` names the Python runtime a project ships to, taking the bare `major.minor` form (*`"3.13"`, `"3.14"`*) used by `mypy`'s `python_version` setting. Rules whose safety depends on the runtime read this field directly. [[legacy-union-syntax]] and [[unused-future-annotations]] are the two current consumers.
 
@@ -55,10 +49,7 @@ A cap no legal form can satisfy *(a deep indent, a long identifier, a cap set be
 
 The `[cache]` table tunes the user-level [**cache**](/reference/cache) that *Prose* keeps for repeat runs *(`[tool.prose.cache]` in a `pyproject.toml`)*. Both keys default to the canonical shape, so a project that does not write the table gets the cache at its full size.
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the cache globally |
-| `max-size-mib` | positive int | `100` | LRU eviction cap on the cache directory |
+<ConfigKeys section="cache" />
 
 ```toml
 [cache]
@@ -70,9 +61,7 @@ max-size-mib = 250
 
 The `[imports]` table names the project's first-party packages *(`[tool.prose.imports]` in a `pyproject.toml`)*, so [[group-imports]] places their imports with relative imports in the local-package section rather than the external `from` section. With no list, only relative imports (`from .`, `from ..pkg`) populate the local-package section.
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `first-party` | list of package names | `[]` | Root package names whose imports lift into the local-package group |
+<ConfigKeys section="imports" />
 
 ```toml
 [imports]

@@ -1,10 +1,11 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderInlineField } from '../markdown/renderer'
+import { getRenderer, inlineNodeField }   from '../markdown/renderer'
+import type { InlineNode }               from '../markdown/inline-nodes'
 
 interface ExitCode {
   code        : number
-  detailHtml  : readonly string[]
+  detailNodes : InlineNode[][]
   label       : string
   summary     : string
 }
@@ -75,6 +76,6 @@ export default defineLoader({
   watch: [],
   async load(): Promise<readonly ExitCode[]> {
     const md = await getRenderer()
-    return renderInlineField(md, SOURCES, 'detail')
+    return inlineNodeField(md, SOURCES, 'detail')
   }
 })

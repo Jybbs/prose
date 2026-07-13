@@ -1,7 +1,7 @@
 import * as sources from '../../lib/tokens/sources'
 
 const token = (key: string, domain: sources.Domain): sources.Token =>
-  ({ blurbHtml: '', domain, href: '', key, sort: key })
+  ({ blurbNodes: [], domain, href: '', key, sort: key })
 
 describe('stripPrefix', () => {
   it.each([

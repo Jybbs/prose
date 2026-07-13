@@ -1,6 +1,7 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderInlineHtml } from '../markdown/renderer'
+import { getRenderer }                  from '../markdown/renderer'
+import { inlineNodes } from '../markdown/inline-nodes'
 import * as sources                      from './sources'
 
 declare const data: readonly sources.Token[]
@@ -12,7 +13,7 @@ export default defineLoader({
     const md = await getRenderer()
     return Object.entries(sources.SOURCES).flatMap(([domain, domainSources]) =>
       domainSources.map(s => ({
-        blurbHtml : renderInlineHtml(md, s.blurb),
+        blurbNodes : inlineNodes(md, s.blurb),
         domain    : domain as sources.Domain,
         href      : s.href,
         key       : s.key,

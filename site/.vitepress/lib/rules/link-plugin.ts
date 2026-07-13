@@ -28,7 +28,9 @@ export function ruleLinkPlugin(
       if (!silent) {
         const token   = state.push('doc_link', '', 0)
         token.content = slug
-        token.meta    = { kind }
+        token.meta    = kind === 'rule'
+          ? { kind }
+          : { display: primitives.get(slug)!.name, kind }
       }
       state.pos = end + 2
       return true

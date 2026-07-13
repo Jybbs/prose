@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useGlossaryFolio }   from '../../../lib/composables/use-glossary-folio'
-import { formatFolio }        from '../../../lib/shared/numerals'
+import InlineProse              from '../base/InlineProse.vue'
+import { useGlossaryFolio }     from '../../../lib/composables/use-glossary-folio'
+import { formatFolio }          from '../../../lib/shared/numerals'
 import { GLOSSARY_FAMILY_META } from '../../../lib/shared/registries'
 
 const { active, activeIndex, filtered, step } = useGlossaryFolio()
@@ -40,7 +41,7 @@ const { active, activeIndex, filtered, step } = useGlossaryFolio()
         <span class="glossary-folio-aliases-label">also</span>
         <code v-for="alias in active.aliases" :key="alias" class="glossary-folio-aliases-chip">{{ alias }}</code>
       </p>
-      <div class="glossary-folio-body" v-html="active.definitionHtml" />
+      <div class="glossary-folio-body"><InlineProse :nodes="active.definitionNodes" /></div>
     </article>
   </div>
 </template>

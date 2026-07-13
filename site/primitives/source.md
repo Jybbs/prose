@@ -3,7 +3,7 @@ consumedBy: [aligner, binding-analysis, colon-targets, docstring, edit, orderer,
 consumes: []
 layer: base
 stability: public
-summary: "Owned wrapper bundling the original text, AST, tokens, line index, and supporting tables."
+summary: "Owned wrapper bundling the original text, AST, tokens, line index, and supporting tables. Every rule reads through this value."
 tagline: parsed-text wrapper
 ---
 
@@ -15,7 +15,7 @@ Every rule reads the source file through one shared value. *Source* bundles the 
 
 ## Public Surface
 
-`Source` is fully public in `0.2.x`, so a downstream Rust consumer can construct one, walk the AST, query offsets, and reparse after mutating the text without needing to reach inside the crate.
+`Source` is fully public today, so a downstream Rust consumer can construct one, walk the AST, query offsets, and reparse after mutating the text without needing to reach inside the crate.
 
 ### Construction
 
@@ -80,7 +80,7 @@ A downstream Rust crate consumes *Prose* the same way it consumes the `ruff_*` w
 
 ```toml
 [dependencies]
-prose = { git = "https://github.com/Jybbs/prose", tag = "0.7.0" }
+prose = { git = "https://github.com/Jybbs/prose", tag = "0.8.0" }
 ```
 
 The default `native` feature carries the command line, the cache, the language server, and the file walker. Depending with `default-features = false` drops that machinery, leaving the formatting core alone, which also builds for `wasm32-unknown-unknown`.

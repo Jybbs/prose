@@ -14,12 +14,7 @@ The rule weighs each imported namespace by the distinct attributes read off it a
 
 <template #configuration>
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `enabled` | bool | `true` | Toggle the rule on or off |
-| `allow` | list of module names | `[]` | Modules whose bare-import form is preserved whatever their attribute count |
-| `exempt-aliased` | bool | `true` | Exempt every aliased bare import (*`import x as y`*) from the rule |
-| `max-attributes` | integer | `4` | Distinct-attribute count at or below which a bare import is flagged |
+<RuleConfigTable />
 
 The `allow` list holds bare package names, where any dotted submodule of an allowlisted package inherits the exemption. Set `exempt-aliased` to `false` for a project that wants every import to name its symbols, aliased or not. Lower `max-attributes` to flag only the narrowest imports, or raise it to catch wider ones.
 

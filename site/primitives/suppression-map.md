@@ -15,9 +15,9 @@ Every source file in *Prose* gets a one-time scan for suppression directives dur
 
 ## Public Surface
 
-The *SuppressionMap* type itself is `pub(crate)` in `0.2.x`, so neither the type nor its methods are reachable from a downstream Rust consumer. The suppression behavior is reachable indirectly through [**`Pipeline::run`**](/primitives/pipeline), which already filters emitted edits and lint diagnostics against the map.
+The *SuppressionMap* type itself is `pub(crate)` today, so neither the type nor its methods are reachable from a downstream Rust consumer. The suppression behavior is reachable indirectly through [**`Pipeline::run`**](/primitives/pipeline), which already filters emitted edits and lint diagnostics against the map.
 
-A downstream consumer in `0.2.x` interacts with suppression through the user-facing surface:
+A downstream consumer interacts with suppression through the user-facing surface:
 
 - Source files declare directives inline (*`# fmt: off`, `# fmt: skip`, `# prose: skip[<rule>]`, `# prose: ignore[<rule>]`*).
 - The [[pipeline]] consumes the directives during `run`.
@@ -57,7 +57,7 @@ Rules do not consult the map directly, because the [[pipeline]] is the canonical
 
 A consumer reusing the suppression surface in a different formatter would build the same map shape and apply the same filter at their own edit-emission boundary, picking up the directive coverage *(format spans, line-level format markers, per-rule format directives, and per-line lint directives)* without re-implementing the scan.
 
-The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page. In `0.2.x` the consumption path runs indirectly through `Pipeline::run`'s suppressed-diagnostics behavior rather than direct method calls, and the user-facing surface lives entirely in the source-file directives the [**Suppression**](/usage/suppression) chapter covers.
+The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page. The consumption path runs indirectly through `Pipeline::run`'s suppressed-diagnostics behavior rather than direct method calls, and the user-facing surface lives entirely in the source-file directives the [**Suppression**](/usage/suppression) chapter covers.
 
 <template #related>
 

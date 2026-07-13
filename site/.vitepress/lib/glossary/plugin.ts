@@ -41,10 +41,11 @@ export function glossaryPlugin(
       const display = md.utils.escapeHtml(t.content)
       if (!isInert(env)) return `<GlossaryTerm slug="${slug}">${display}</GlossaryTerm>`
       if (isPlainTerms(env)) return display
-      const href = hrefBySlug.get(rawSlug)
+      const href  = hrefBySlug.get(rawSlug)
+      const shape = `class="glossary-anchor underline-draw" data-term="${slug}"`
       return href === undefined
-        ? `<span class="glossary-term" data-term="${slug}">${display}</span>`
-        : `<a class="glossary-term" data-term="${slug}" href="${md.utils.escapeHtml(href)}">${display}</a>`
+        ? `<span ${shape}>${display}</span>`
+        : `<a ${shape} href="${md.utils.escapeHtml(href)}">${display}</a>`
     }
   }
 }

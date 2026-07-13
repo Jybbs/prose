@@ -1,8 +1,9 @@
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
-import { memoizeByPath }           from '../shared/memoize-by-path'
-import { siteDir }                 from '../shared/paths'
-import { inertEnv, plainTermsEnv } from './inert-env'
+import { inlineNodes, type InlineNode } from './inline-nodes'
+import { memoizeByPath }                from '../shared/memoize-by-path'
+import { siteDir }                      from '../shared/paths'
+import { inertEnv, plainTermsEnv }      from './inert-env'
 
 const renderer = memoizeByPath(createMarkdownRenderer)
 
@@ -12,8 +13,31 @@ export function getRenderer(): Promise<MarkdownRenderer> {
 
 type HtmlKey<K extends string> = `${K}Html`
 
+type NodesKey<K extends string> = `${K}Nodes`
+
 type Rendered<T, K extends string & keyof T> =
   Omit<T, K> & { [P in HtmlKey<K>]: T[K] extends readonly string[] ? string[] : string }
+
+type Walked<T, K extends string & keyof T> =
+  Omit<T, K> & { [P in NodesKey<K>]: T[K] extends readonly string[] ? InlineNode[][] : InlineNode[] }
+
+// Prose a component renders as live markup walks to a node tree, whereas the
+// `*Html` renderers stay for the strings a popper or a plain-terms caption
+// consumes, where a mounted component cannot go.
+export function inlineNodeField<T extends object, K extends string & keyof T>(
+  md    : MarkdownRenderer,
+  items : readonly T[],
+  field : K
+): Array<Walked<T, K>> {
+  return items.map(item => {
+    const value  = item[field]
+    const walked = Array.isArray(value)
+      ? (value as readonly string[]).map(entry => inlineNodes(md, entry))
+      : inlineNodes(md, value as string)
+    const { [field]: _, ...rest } = item
+    return { ...rest, [`${field}Nodes`]: walked } as Walked<T, K>
+  })
+}
 
 export function renderBlockHtml(md: MarkdownRenderer, src: string): Promise<string> {
   return md.renderAsync(src, inertEnv())

@@ -6,6 +6,8 @@ import FixturePairDoc  from '../fixtures/FixturePairDoc.vue'
 import FixtureToggle   from '../fixtures/FixtureToggle.vue'
 import RuleSegmentChip from './RuleSegmentChip.vue'
 
+import type { InlineNode } from '../../../lib/markdown/inline-nodes'
+
 import { data as composition }  from '../../../lib/rules/composition.data'
 import { data as fixturesData } from '../../../lib/fixtures/fixtures.data'
 import { data as rules }        from '../../../lib/rules/rules.data'
@@ -13,6 +15,7 @@ import type { RenderedRule }    from '../../../lib/rules/rules.data'
 import { railPaint }            from '../../../lib/shared/family-rail'
 import type { FixtureTab }      from '../../../lib/shared/fixture-tab'
 import { formatFolio }          from '../../../lib/shared/numerals'
+import InlineProse              from '../base/InlineProse.vue'
 
 interface RuleSegment {
   family : string | null
@@ -24,7 +27,7 @@ interface RuleSegment {
 interface CardRow {
   case            : string
   changesSource   : boolean
-  descriptionHtml : string | undefined
+  descriptionNodes : InlineNode[] | undefined
   dominantFamily  : string | null
   hasToggle       : boolean
   headlinePaint   : string
@@ -43,7 +46,7 @@ const cards = computed<readonly CardRow[]>(() =>
     return {
       case            : entry.case,
       changesSource   : fixture?.changesSource ?? false,
-      descriptionHtml : fixture?.descriptionHtml,
+      descriptionNodes : fixture?.descriptionNodes,
       dominantFamily  : families[0] ?? null,
       hasToggle       : fixture?.hasToggle ?? false,
       headlinePaint   : railPaint(families, 'to right'),
@@ -123,8 +126,8 @@ function toggle(row: CardRow): void {
       >
         <div class="fixture-card-body-inner">
           <div class="fixture-card-body-content">
-            <template v-if="row.descriptionHtml">
-              <div class="fixture-card-desc" v-html="row.descriptionHtml" />
+            <template v-if="row.descriptionNodes">
+              <div class="fixture-card-desc"><InlineProse :nodes="row.descriptionNodes" /></div>
               <div class="fixture-card-rule" aria-hidden="true" />
             </template>
             <div v-if="activeCase === row.case" class="composition-cards-detail">

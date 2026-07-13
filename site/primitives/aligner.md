@@ -16,14 +16,14 @@ tagline: shared alignment math
 
 ## Public Surface
 
-*Aligner* lives at `crate/src/primitives/aligner/` and is `pub(crate)`, so the type is reachable from inside the *Prose* crate but not from a downstream Rust caller in `0.2.x`. The downstream-visible consequence is the diagnostic stream the alignment rules emit, with the resolved column landing in the `Edit` each rule produces.
+*Aligner* lives at `crate/src/primitives/aligner/` and is `pub(crate)`, so the type is reachable from inside the *Prose* crate but not from a downstream Rust caller today. The downstream-visible consequence is the diagnostic stream the alignment rules emit, with the resolved column landing in the `Edit` each rule produces.
 
-A downstream consumer in `0.2.x` can:
+A downstream consumer can:
 
 - Observe aligned source after running `prose format` or `prose check`
 - See the resolved padding in the diagnostic `fix` payload of any alignment rule
 
-A downstream consumer in `0.2.x` cannot directly construct a `Member`, drive `emit_group`, or read `Settings`. The `1.0` line opens the surface so a downstream can ship its own alignment rule against the same math.
+A downstream consumer cannot directly construct a `Member`, drive `emit_group`, or read `Settings`. The `1.0` line opens the surface so a downstream can ship its own alignment rule against the same math.
 
 ## Internal Surface
 
