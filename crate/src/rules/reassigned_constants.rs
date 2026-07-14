@@ -6,7 +6,7 @@
 
 use std::collections::HashSet;
 
-use ruff_python_ast::{Expr, Stmt};
+use ruff_python_ast::Expr;
 use ruff_text_size::Ranged;
 
 use crate::{
@@ -44,10 +44,11 @@ impl ReassignedConstants {
             && analysis.module_reassigned(name)
     }
 
-    fn reassigned(&self, stmt: &Stmt, name: &str) -> Diagnostic {
+    fn reassigned(&self, site: &ModuleAssignment) -> Diagnostic {
+        let name = site.target.id.as_str();
         Diagnostic::lint(
             self.id(),
-            stmt.range(),
+            site.stmt.range(),
             format!(
                 "Module-level `{name}` is SCREAMING_CASE but reassigned. \
                  Rename it to lowercase or keep it write-once",
@@ -66,7 +67,7 @@ impl Rule for ReassignedConstants {
         module_assignments(&source.ast().body)
             .iter()
             .filter(|site| self.is_reassigned_constant(site, analysis))
-            .map(|site| self.reassigned(site.stmt, site.target.id.as_str()))
+            .map(|site| self.reassigned(site))
             .collect()
     }
 }

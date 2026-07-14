@@ -33,7 +33,10 @@ use ruff_text_size::{TextRange, TextSize};
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::binding::{BindingAnalysis, BindingId, BindingKind, UnpackKind},
+    primitives::{
+        binding::{BindingAnalysis, BindingId, BindingKind, UnpackKind},
+        walk::any_over_stmts,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -65,22 +68,6 @@ impl Rule for SingleUseVariables {
         };
         visitor.visit_body(&source.ast().body);
         visitor.diagnostics
-    }
-}
-
-struct ScopeModifierWalker {
-    found: bool,
-}
-
-impl<'a> StatementVisitor<'a> for ScopeModifierWalker {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if self.found {
-            return;
-        }
-        match stmt {
-            Stmt::Global(_) | Stmt::Nonlocal(_) => self.found = true,
-            _ => walk_stmt(self, stmt),
-        }
     }
 }
 
@@ -158,9 +145,9 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 /// any descendant scope modifier as a signal that the analysis is
 /// no longer reliable.
 fn body_uses_scope_modifier(body: &[Stmt]) -> bool {
-    let mut walker = ScopeModifierWalker { found: false };
-    walker.visit_body(body);
-    walker.found
+    any_over_stmts(body, |stmt| {
+        matches!(stmt, Stmt::Global(_) | Stmt::Nonlocal(_))
+    })
 }
 
 #[cfg(test)]

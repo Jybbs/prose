@@ -1,0 +1,91 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/miscased_constants/pascal_case_constructed_values_flagged/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Palette",
+          "content": "PALETTE"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Module constant `Palette` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 2
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Timeout",
+          "content": "TIMEOUT"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Module constant `Timeout` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 7,
+      "row": 3
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Banner",
+          "content": "BANNER"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "Module constant `Banner` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 4
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "Ceiling",
+          "content": "CEILING"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 4
+    },
+    "message": "Module constant `Ceiling` is not SCREAMING_CASE"
+  }
+]

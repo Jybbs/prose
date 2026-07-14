@@ -8,7 +8,6 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     AnyParameterRef, Expr, PythonVersion, Stmt, StmtAnnAssign, StmtFunctionDef, StmtImportFrom,
     helpers::any_over_expr,
-    statement_visitor::{StatementVisitor, walk_stmt},
 };
 use ruff_source_file::LineRanges;
 use ruff_text_size::TextRange;
@@ -17,6 +16,7 @@ use crate::{
     config::Config,
     primitives::{
         binding::BindingAnalysis, edit::singleton_groups, imports::future_annotations_alias,
+        walk::any_over_stmts,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -60,64 +60,23 @@ impl Rule for UnusedFutureAnnotations {
     }
 }
 
-#[derive(Default)]
-struct AnnotationProbe {
-    found: bool,
-}
-
-impl<'a> StatementVisitor<'a> for AnnotationProbe {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if self.found {
-            return;
-        }
-        if statement_annotations(stmt).is_empty() {
-            walk_stmt(self, stmt);
-        } else {
-            self.found = true;
-        }
-    }
-}
-
-struct ResolutionChecker<'a> {
-    all_safe: bool,
-    analysis: &'a BindingAnalysis,
-}
-
-impl ResolutionChecker<'_> {
-    fn check_annotation(&mut self, annotation: &Expr) {
-        let unresolved = any_over_expr(annotation, &|expr: &Expr| {
-            expr.as_name_expr().is_some_and(|name| {
-                name.ctx.is_load()
-                    && !self
-                        .analysis
-                        .is_defined_before(name.id.as_str(), name.range.start())
-            })
-        });
-        if unresolved {
-            self.all_safe = false;
-        }
-    }
-}
-
-impl<'b> StatementVisitor<'b> for ResolutionChecker<'_> {
-    fn visit_stmt(&mut self, stmt: &'b Stmt) {
-        if !self.all_safe {
-            return;
-        }
-        for annotation in statement_annotations(stmt) {
-            self.check_annotation(annotation);
-        }
-        walk_stmt(self, stmt);
-    }
-}
-
 fn all_annotations_resolve_eagerly(source: &Source) -> bool {
-    let mut checker = ResolutionChecker {
-        all_safe: true,
-        analysis: source.binding_analysis(),
-    };
-    checker.visit_body(&source.ast().body);
-    checker.all_safe
+    let analysis = source.binding_analysis();
+    !any_over_stmts(&source.ast().body, |stmt| {
+        statement_annotations(stmt)
+            .iter()
+            .any(|annotation| annotation_is_unresolved(annotation, analysis))
+    })
+}
+
+/// True when `annotation` references a name no module-scope write
+/// defines before it.
+fn annotation_is_unresolved(annotation: &Expr, analysis: &BindingAnalysis) -> bool {
+    any_over_expr(annotation, &|expr: &Expr| {
+        expr.as_name_expr().is_some_and(|name| {
+            name.ctx.is_load() && !analysis.is_defined_before(name.id.as_str(), name.range.start())
+        })
+    })
 }
 
 fn edit_for(source: &Source, node: &StmtImportFrom, alias_idx: usize) -> Edit {
@@ -129,9 +88,7 @@ fn edit_for(source: &Source, node: &StmtImportFrom, alias_idx: usize) -> Edit {
 }
 
 fn has_any_annotation(body: &[Stmt]) -> bool {
-    let mut probe = AnnotationProbe::default();
-    probe.visit_body(body);
-    probe.found
+    any_over_stmts(body, |stmt| !statement_annotations(stmt).is_empty())
 }
 
 fn rule_fires(source: &Source, target: Option<PythonVersion>) -> bool {

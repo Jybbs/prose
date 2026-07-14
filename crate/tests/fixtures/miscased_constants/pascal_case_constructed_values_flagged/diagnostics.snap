@@ -1,0 +1,9 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/miscased_constants/pascal_case_constructed_values_flagged/input.py
+---
+miscased-constants@0..7
+miscased-constants@26..33
+miscased-constants@39..45
+miscased-constants@67..74
