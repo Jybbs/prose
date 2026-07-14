@@ -4,4 +4,7 @@
 #MISE dir="site"
 #MISE tools={"aqua:lycheeverse/lychee" = "0.24.2"}
 
-lychee --root-dir "$PWD/.vitepress/dist" .vitepress/dist
+lychee --offline \
+  --root-dir "$PWD/.vitepress/dist" \
+  --fallback-extensions html \
+  .vitepress/dist

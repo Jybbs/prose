@@ -2,8 +2,6 @@
 #MISE description="Re-resolve every lockfile against its manifest"
 #MISE sources=["site/package.json", "Cargo.toml", "crate/Cargo.toml", "wasm/Cargo.toml", "crate/pyproject.toml"]
 #MISE outputs=["site/bun.lock", "Cargo.lock", "crate/uv.lock"]
-# Re-resolves each ecosystem's lockfile and prints a `git diff --stat`
-# naming any lockfile that moved.
 
 (cd site && bun install --ignore-scripts)
 cargo update --workspace
