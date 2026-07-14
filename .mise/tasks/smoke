@@ -5,4 +5,4 @@
 
 mise run build wasm
 wasm-bindgen --target nodejs --out-dir site/.vitepress/tests/wasm/pkg "$WASM_ARTIFACT"
-(cd site && bunx vitest run --config vitest.wasm.config.ts)
+(cd site && bunx vitest run --project wasm)
