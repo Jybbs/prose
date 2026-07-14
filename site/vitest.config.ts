@@ -1,21 +1,42 @@
-import vue              from '@vitejs/plugin-vue'
+import vue                              from '@vitejs/plugin-vue'
 import { configDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  plugins: [vue()],
   test: {
-    environment : 'node',
-    globals     : true,
-    root        : import.meta.dirname,
-    include     : ['.vitepress/tests/**/*.test.ts'],
-    exclude     : [...configDefaults.exclude, '.vitepress/tests/wasm/**'],
-    reporters   : process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : ['default'],
+    environment         : 'node',
+    globals             : true,
+    reporters           : process.env.GITHUB_ACTIONS
+                        ? ['default', ['github-actions', { jobSummary: { enabled: false } }]]
+                        : ['default'],
     resolveSnapshotPath : (testPath, extension) => testPath + extension,
+    root                : import.meta.dirname,
+
+    projects: [
+      {
+        extends : true,
+        plugins : [vue()],
+        test    : {
+          exclude : [...configDefaults.exclude, '.vitepress/tests/wasm/**'],
+          include : ['.vitepress/tests/**/*.test.ts'],
+          name    : 'docs'
+        }
+      },
+
+      {
+        extends : true,
+        test    : {
+          include : ['.vitepress/tests/wasm/**/*.test.ts'],
+          name    : 'wasm'
+        }
+      }
+    ],
+
     coverage: {
       provider         : 'v8',
       reporter         : ['text', 'lcovonly'],
       reportsDirectory : 'coverage',
       include          : ['.vitepress/lib/**'],
+
       exclude: [
         '.vitepress/lib/**/*.data.ts',
         '.vitepress/lib/og/render/build.ts',
@@ -28,6 +49,7 @@ export default defineConfig({
         '.vitepress/lib/shared/fixture-tab.ts',
         '.vitepress/lib/shared/tools.ts'
       ],
+
       thresholds: {
         branches   : 90,
         functions  : 95,

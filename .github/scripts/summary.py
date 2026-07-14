@@ -19,6 +19,9 @@ Subcommands:
              `VALIDATE`, `PUBLISH`, plus the GitHub-runner defaults.
              Exits 0 when every required job succeeded. `PUBLISH` is
              required only on tag runs.
+    warm     Render the Warm gate summary. Reads `CHECKS` and `WHEELS`
+             plus the GitHub-runner defaults. Exits 0 when both are
+             success.
 
 Each subcommand appends to `$GITHUB_STEP_SUMMARY`.
 """
@@ -30,13 +33,21 @@ from sys     import argv
 from tomllib import loads
 
 
+def failed(*signals: str) -> bool:
+    """
+    Report whether any of the `signals` env vars is not a success.
+    """
+    return any(environ[signal] != "success" for signal in signals)
+
+
 class Summary:
     """
     Render a Prose workflow step summary.
     """
 
     def __init__(self):
-        here = Path(__file__).parent
+        self.here = Path(__file__).parent
+
         ref  = environ["REF"]
         repo = environ["GITHUB_REPOSITORY"]
         sha  = environ["SHA"]
@@ -45,7 +56,7 @@ class Summary:
         self.is_tag = environ.get("GITHUB_REF_TYPE") == "tag"
         self.env    = Environment(
             keep_trailing_newline = True,
-            loader                = FileSystemLoader(here / "templates"),
+            loader                = FileSystemLoader(self.here / "templates"),
             lstrip_blocks         = True,
             trim_blocks           = True
         )
@@ -57,41 +68,42 @@ class Summary:
             ref         = ref,
             tag_link    = f"[`{ref}`]({base}/releases/tag/{ref})"
         )
-        self.platforms = loads((here / "platforms.toml").read_text())["platforms"]
 
-    def _emit(self, template: str, **context):
+    def _emit(self, name: str, **context):
         """
-        Render `template` with `context` and append to `$GITHUB_STEP_SUMMARY`.
+        Render the `name` template with `context` and append to `$GITHUB_STEP_SUMMARY`.
         """
+        template = self.env.get_template(f"{name}-summary.md.j2")
+
         with open(environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
-            f.write(self.env.get_template(template).render(**context))
+            f.write(template.render(**context))
 
-    def _gate(self, template: str, signal: str, **context):
+    def _gate(self, name: str, *signals: str, **context):
         """
-        Render `template` and exit with the verdict of the `signal` env var.
+        Render the `name` template and exit with the verdict of the `signals` env vars.
         """
-        failed = environ[signal] != "success"
-        self._emit(template, check_mark = "❌" if failed else "✅", **context)
-        raise SystemExit(failed)
+        verdict = failed(*signals)
+        self._emit(name, check_mark = "❌" if verdict else "✅", **context)
+        raise SystemExit(verdict)
 
     def ci(self):
         """
         Render the CI gate summary and exit with the matrix verdict.
         """
-        self._gate("ci-summary.md.j2", "CHECK")
+        self._gate("ci", "CHECK")
 
     def deploy(self):
         """
         Render the Deploy gate summary and exit with the deploy verdict.
         """
-        self._gate("deploy-summary.md.j2", "DEPLOY", url = environ.get("URL", ""))
+        self._gate("deploy", "DEPLOY", url = environ.get("URL", ""))
 
     def draft(self):
         """
         Render the Draft summary across the cut, existing, and no-op states.
         """
         self._emit(
-            "draft-summary.md.j2",
+            "draft",
             draft_url = environ.get("DRAFT_URL", ""),
             state     = environ.get("DRAFT_STATE", ""),
             version   = environ["VERSION"]
@@ -101,36 +113,38 @@ class Summary:
         """
         Render the Release gate summary and exit with the pipeline verdict.
         """
+        platforms = loads((self.here / "platforms.toml").read_text())["platforms"]
         artifacts = [
             {
-                "label":  p["label"],
-                "mark":   "✅" if path else "❌",
-                "target": f"`{p['target']}`" if p.get("target") else "—"
+                "label"  : p["label"],
+                "mark"   : "✅" if path else "❌",
+                "target" : f"`{p['target']}`" if p.get("target") else "—"
             }
-            for p in self.platforms
+            for p in platforms
             for path in [next(Path("dist").glob(p["pattern"]), None)]
         ]
-        status = {k.lower(): environ[k] for k in [
-            "BUILD", "PUBLISH", "SDIST", "VALIDATE"
-        ]}
-        prepub_failed = any(
-            status[k] != "success" for k in ["build", "sdist", "validate"]
-        )
+
+        prepub_failed = failed("BUILD", "SDIST", "VALIDATE")
+        published     = not failed("PUBLISH")
 
         self._emit(
-            "release-summary.md.j2",
-            **status,
+            "release",
             platforms     = artifacts,
-            prepub_failed = prepub_failed
+            prepub_failed = prepub_failed,
+            published     = published
         )
 
-        raise SystemExit(
-            prepub_failed or (self.is_tag and status["publish"] != "success")
-        )
+        raise SystemExit(prepub_failed or (self.is_tag and not published))
+
+    def warm(self):
+        """
+        Render the Warm gate summary and exit with the cache-warm verdict.
+        """
+        self._gate("warm", "CHECKS", "WHEELS")
 
 
 if __name__ == "__main__":
 
-    if (cmd := argv[1]) not in {"ci", "deploy", "draft", "release"}:
+    if (cmd := argv[1]) not in {n for n in vars(Summary) if not n.startswith("_")}:
         raise SystemExit(f"unknown subcommand: {cmd}")
     getattr(Summary(), cmd)()
