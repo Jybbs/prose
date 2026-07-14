@@ -50,7 +50,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_value, parse};
 
     #[rstest]
     #[case("call()", true)]
@@ -75,11 +75,10 @@ mod tests {
         #[case] expected: bool,
     ) {
         let source = parse(&format!("X = {value_src}\n"));
-        let value = source.ast().body[0]
-            .as_assign_stmt()
-            .expect("an assignment")
-            .value
-            .as_ref();
-        assert_eq!(value_is_effectful(value), expected, "{value_src}");
+        assert_eq!(
+            value_is_effectful(first_value(&source)),
+            expected,
+            "{value_src}"
+        );
     }
 }

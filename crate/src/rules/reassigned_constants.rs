@@ -6,19 +6,13 @@
 
 use std::collections::HashSet;
 
-use ruff_python_ast::{
-    Expr, Stmt,
-    name::UnqualifiedName,
-    statement_visitor::{StatementVisitor, walk_stmt},
-};
+use ruff_python_ast::{Expr, Stmt, name::UnqualifiedName};
 use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::binding::{
-        BindingAnalysis, is_screaming_case, single_name_assignment, skips_module_scan,
-    },
+    primitives::binding::{is_screaming_case, module_assignments},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -33,6 +27,17 @@ impl ReassignedConstants {
             allow: Config::allow_set(&config.rules.reassigned_constants.allow),
         }
     }
+
+    fn reassigned(&self, stmt: &Stmt, name: &str) -> Diagnostic {
+        Diagnostic::lint(
+            self.id(),
+            stmt.range(),
+            format!(
+                "Module-level `{name}` is SCREAMING_CASE but reassigned. \
+                 Rename it to lowercase or keep it write-once",
+            ),
+        )
+    }
 }
 
 impl Rule for ReassignedConstants {
@@ -41,51 +46,16 @@ impl Rule for ReassignedConstants {
     }
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
-        let mut walker = Walker {
-            allow: &self.allow,
-            analysis: source.binding_analysis(),
-            diagnostics: Vec::new(),
-            rule: self.id(),
-        };
-        walker.visit_body(&source.ast().body);
-        walker.diagnostics
-    }
-}
-
-struct Walker<'a> {
-    allow: &'a HashSet<String>,
-    analysis: &'a BindingAnalysis,
-    diagnostics: Vec<Diagnostic>,
-    rule: RuleId,
-}
-
-impl Walker<'_> {
-    fn emit(&mut self, stmt: &Stmt, name: &str) {
-        self.diagnostics.push(Diagnostic::lint(
-            self.rule,
-            stmt.range(),
-            format!(
-                "Module-level `{name}` is SCREAMING_CASE but reassigned. \
-                 Rename it to lowercase or keep it write-once",
-            ),
-        ));
-    }
-}
-
-impl<'a> StatementVisitor<'a> for Walker<'a> {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if skips_module_scan(stmt) {
-            return;
-        }
-        if let Some((target, value, _)) = single_name_assignment(stmt) {
-            let name = target.id.as_str();
-            if is_reassigned_constant_target(name, value, self.allow)
-                && self.analysis.module_reassigned(name)
-            {
-                self.emit(stmt, name);
-            }
-        }
-        walk_stmt(self, stmt);
+        let analysis = source.binding_analysis();
+        module_assignments(&source.ast().body)
+            .iter()
+            .filter(|site| {
+                let name = site.target.id.as_str();
+                is_reassigned_constant_target(name, site.value, &self.allow)
+                    && analysis.module_reassigned(name)
+            })
+            .map(|site| self.reassigned(site.stmt, site.target.id.as_str()))
+            .collect()
     }
 }
 

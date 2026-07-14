@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lambda Value Is Spared"
+
+description = '''
+A lambda binds a callable rather than data, so `to_key` never draws a `TO_KEY` rename.
+'''

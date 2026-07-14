@@ -15,9 +15,10 @@ use super::{
 };
 use crate::{
     primitives::{
+        alias::value_is_alias,
         binding::{
-            bare_import_bound_name, from_import_bound_name, is_screaming_case, is_type_alias,
-            single_name_assignment,
+            bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
+            is_screaming_case, single_name_assignment,
         },
         comments::{has_keep_marker, is_banner_block, leading_comment_block},
         effect::value_is_effectful,
@@ -131,7 +132,7 @@ pub(super) fn module_band_plan<'src>(
                         idx,
                         name,
                         subcategory: if group_constants {
-                            subcategory_of(stmt, name)
+                            subcategory_of(stmt, name, value)
                         } else {
                             Subcategory::default()
                         },
@@ -275,17 +276,14 @@ fn propagate(state: &mut [bool], deps: &[Vec<usize>]) {
 
 /// The subcategory a banded constant sorts into. A PEP 695 `type X`
 /// statement or a `TypeAlias`-annotated assignment reads as an alias, a
-/// `SCREAMING_CASE` name as a constant, a remaining name opening on an
-/// uppercase letter as an alias, and everything else as module state.
-fn subcategory_of(stmt: &Stmt, name: &str) -> Subcategory {
-    let annotated_alias = stmt
-        .as_ann_assign_stmt()
-        .is_some_and(|ann| is_type_alias(&ann.annotation));
-    if matches!(stmt, Stmt::TypeAlias(_)) || annotated_alias {
+/// `SCREAMING_CASE` name as a constant, a remaining value that names an
+/// existing object as an alias, and everything else as module state.
+fn subcategory_of(stmt: &Stmt, name: &str, value: Option<&Expr>) -> Subcategory {
+    if is_explicit_type_alias(stmt) {
         Subcategory::Alias
     } else if is_screaming_case(name) {
         Subcategory::Constant
-    } else if name.starts_with(|c: char| c.is_ascii_uppercase()) {
+    } else if value.is_some_and(value_is_alias) {
         Subcategory::Alias
     } else {
         Subcategory::State
@@ -461,16 +459,19 @@ mod tests {
     #[case("Handler = make", Subcategory::Alias)]
     #[case("Payload: TypeAlias = dict", Subcategory::Alias)]
     #[case("type Seconds = float", Subcategory::Alias)]
+    #[case("Interval = int | float", Subcategory::Alias)]
+    #[case("opener = TarFile.open", Subcategory::Alias)]
     #[case("MAX_RETRIES = 5", Subcategory::Constant)]
+    #[case("Config = {\"debug\": True}", Subcategory::State)]
     #[case("threshold = 5", Subcategory::State)]
-    #[case("_cache = registry", Subcategory::State)]
-    fn subcategory_of_classifies_by_name_shape_and_structure(
+    #[case("_cache = {}", Subcategory::State)]
+    fn subcategory_of_classifies_by_value_shape_and_structure(
         #[case] src: &str,
         #[case] expected: Subcategory,
     ) {
         let source = parse(&format!("{src}\n"));
         let stmt = &source.ast().body[0];
-        let (name, _) = const_binding(stmt).expect("a constant binding");
-        assert_eq!(subcategory_of(stmt, name), expected);
+        let (name, value) = const_binding(stmt).expect("a constant binding");
+        assert_eq!(subcategory_of(stmt, name, value), expected);
     }
 }

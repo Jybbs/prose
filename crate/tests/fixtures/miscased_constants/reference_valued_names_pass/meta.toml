@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value That Names an Existing Object Is a Bare Alias"
+
+description = '''
+A bare name, an attribute, and a subscript each name an object that already exists, which is the shape a PEP 484 type alias takes, so none of them draws a `SCREAMING_CASE` rename. The rule reads the value rather than the name, leaving the lowercase `opener` spared alongside the PascalCase `Pen`.
+'''

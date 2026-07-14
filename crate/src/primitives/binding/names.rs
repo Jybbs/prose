@@ -31,6 +31,15 @@ pub(crate) fn from_import_bound_name(alias: &Alias) -> &str {
     alias.asname.as_ref().unwrap_or(&alias.name).as_str()
 }
 
+/// True when `stmt` declares a type alias explicitly, through a PEP 695
+/// `type X = ...` statement or a `TypeAlias`-annotated assignment.
+pub(crate) fn is_explicit_type_alias(stmt: &Stmt) -> bool {
+    matches!(stmt, Stmt::TypeAlias(_))
+        || stmt
+            .as_ann_assign_stmt()
+            .is_some_and(|ann| is_type_alias(&ann.annotation))
+}
+
 /// Returns `true` when `id` begins with an ASCII uppercase letter and
 /// every remaining character is an ASCII uppercase letter, digit, or
 /// underscore. A leading underscore fails the first test, so dunder and
@@ -45,7 +54,7 @@ pub(crate) fn is_screaming_case(id: &str) -> bool {
 
 /// True when `annotation` names `TypeAlias`, bare or attribute-qualified
 /// (`typing.TypeAlias`).
-pub(crate) fn is_type_alias(annotation: &Expr) -> bool {
+fn is_type_alias(annotation: &Expr) -> bool {
     tail_identifier(annotation) == Some("TypeAlias")
 }
 
@@ -91,7 +100,7 @@ fn single_name_target_expr(assign: &StmtAssign) -> Option<&ExprName> {
 
 /// True for a statement the module-constant scan does not descend into:
 /// a `def` or `class` scope, or an `if TYPE_CHECKING:` block.
-pub(crate) fn skips_module_scan(stmt: &Stmt) -> bool {
+pub(super) fn skips_module_scan(stmt: &Stmt) -> bool {
     matches!(stmt, Stmt::FunctionDef(_) | Stmt::ClassDef(_))
         || matches!(stmt, Stmt::If(s) if is_type_checking_block(s))
 }

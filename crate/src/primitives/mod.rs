@@ -1,5 +1,6 @@
 //! Shared primitives used across rule implementations.
 
+pub(crate) mod alias;
 pub(crate) mod aligner;
 pub(crate) mod binding;
 pub(crate) mod call_keywords;

@@ -30,11 +30,13 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use serde::Serialize;
 
+mod module_scan;
 mod names;
 
+pub(crate) use module_scan::{ModuleAssignment, module_assignments};
 pub(crate) use names::{
-    annotated_name_target, bare_import_bound_name, from_import_bound_name, is_screaming_case,
-    is_type_alias, single_name_assignment, single_name_target, skips_module_scan, tail_identifier,
+    annotated_name_target, bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
+    is_screaming_case, single_name_assignment, single_name_target, tail_identifier,
     top_level_module,
 };
 
@@ -823,6 +825,7 @@ fn resolve_in_chain(scopes: &[Scope], innermost: ScopeId, name: &str) -> Option<
 #[cfg(test)]
 mod tests {
     use assert_matches::assert_matches;
+    use indoc::indoc;
     use proptest::prelude::*;
     use rstest::rstest;
     use ruff_text_size::TextSize;
@@ -864,9 +867,13 @@ mod tests {
 
     #[test]
     fn deferred_read_resolves_to_an_enclosing_function_local() {
-        let analysis = analyze(
-            "def outer():\n    def inner():\n        return helper()\n    def helper():\n        return 1\n",
-        );
+        let analysis = analyze(indoc! {"
+            def outer():
+                def inner():
+                    return helper()
+                def helper():
+                    return 1
+        "});
         let outer = analysis
             .scopes
             .iter()

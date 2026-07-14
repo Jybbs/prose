@@ -91,6 +91,13 @@ pub(crate) fn first_expr(source: &Source) -> &Expr {
         .value
 }
 
+pub(crate) fn first_value(source: &Source) -> &Expr {
+    &source.ast().body[0]
+        .as_assign_stmt()
+        .expect("first statement is an assignment")
+        .value
+}
+
 /// Format diagnostic with a safe single-edit fix.
 pub(crate) fn format_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::format(
