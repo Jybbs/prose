@@ -1,0 +1,5 @@
+alt_path_sep = path_separators[1:]
+oldmod = sys.modules[__name__]
+first_sep = path_separators[0]
+Registry = dict[str, int]
+Choice = Literal["read", "write"]

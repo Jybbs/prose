@@ -1,10 +1,11 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/walrus_lifts_to_module_scope/input.py
+input_file: crate/tests/fixtures/binding_analysis/walrus_lifts_to_module_scope/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 0
     kinds:
@@ -12,10 +13,12 @@ bindings:
     name: xs
     read_offsets:
       - 34
+    runtime_read: false
     scope: 0
     write_offsets:
       - 0
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 29
     kinds:
@@ -23,10 +26,12 @@ bindings:
     name: x
     read_offsets:
       - 46
+    runtime_read: true
     scope: 1
     write_offsets:
       - 29
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 41
     kinds:
@@ -34,16 +39,19 @@ bindings:
     name: y
     read_offsets:
       - 23
+    runtime_read: false
     scope: 0
     write_offsets:
       - 41
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 15
     kinds:
       - Assignment
     name: vals
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 15

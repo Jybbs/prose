@@ -15,11 +15,8 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::{
-        alias::value_is_alias,
-        binding::{
-            BindingAnalysis, ModuleAssignment, is_explicit_type_alias, is_screaming_case,
-            module_assignments,
-        },
+        alias::{AliasContext, is_type_alias},
+        binding::{BindingAnalysis, ModuleAssignment, is_explicit_type_alias, is_screaming_case},
         effect::value_is_effectful,
     },
     rule::{Rule, RuleId},
@@ -39,9 +36,13 @@ impl MiscasedConstants {
 
     /// True when `site` binds a module constant miscased against
     /// `SCREAMING_CASE`, no carve-out from the module doc sparing it. The
-    /// value must be present, inert, and neither a lambda nor a value
-    /// that names an object which already exists.
-    fn is_miscased(&self, site: &ModuleAssignment, analysis: &BindingAnalysis) -> bool {
+    /// value must be present, inert, and neither a lambda nor a type.
+    fn is_miscased<'src>(
+        &self,
+        site: &ModuleAssignment<'src>,
+        ctx: &AliasContext<'src>,
+        analysis: &BindingAnalysis,
+    ) -> bool {
         let name = site.target.id.as_str();
         name.chars().count() > 1
             && !name.starts_with('_')
@@ -49,9 +50,10 @@ impl MiscasedConstants {
             && !analysis.module_reassigned(name)
             && !is_explicit_type_alias(site.stmt)
             && !Config::allow_matches(&self.allow_pattern, name)
-            && site.value.is_some_and(|value| {
-                !value.is_lambda_expr() && !value_is_alias(value) && !value_is_effectful(value)
-            })
+            && !is_type_alias(site, ctx)
+            && site
+                .value
+                .is_some_and(|value| !value.is_lambda_expr() && !value_is_effectful(value))
     }
 
     fn rename(&self, target: &ExprName) -> Diagnostic {
@@ -75,9 +77,10 @@ impl Rule for MiscasedConstants {
             return Vec::new();
         }
         let analysis = source.binding_analysis();
-        module_assignments(&source.ast().body)
+        let ctx = AliasContext::new(&source.ast().body, analysis);
+        ctx.sites()
             .iter()
-            .filter(|site| self.is_miscased(site, analysis))
+            .filter(|site| self.is_miscased(site, &ctx, analysis))
             .map(|site| self.rename(site.target))
             .collect()
     }

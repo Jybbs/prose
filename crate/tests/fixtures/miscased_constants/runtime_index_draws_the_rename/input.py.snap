@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/miscased_constants/runtime_index_draws_the_rename/input.py
+---
+alt_path_sep = path_separators[1:]
+oldmod = sys.modules[__name__]
+first_sep = path_separators[0]
+Registry = dict[str, int]
+Choice = Literal["read", "write"]

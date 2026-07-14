@@ -1,0 +1,28 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/miscased_constants/dict_lookup_draws_the_rename/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 9,
+      "row": 2
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "database",
+          "content": "DATABASE"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Module constant `database` is not SCREAMING_CASE"
+  }
+]

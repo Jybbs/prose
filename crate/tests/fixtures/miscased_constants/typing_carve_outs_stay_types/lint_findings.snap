@@ -1,0 +1,28 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/miscased_constants/typing_carve_outs_stay_types/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 12,
+      "row": 13
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "first_level",
+          "content": "FIRST_LEVEL"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 13
+    },
+    "message": "Module constant `first_level` is not SCREAMING_CASE"
+  }
+]

@@ -1,0 +1,70 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/miscased_constants/runtime_index_draws_the_rename/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 13,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "alt_path_sep",
+          "content": "ALT_PATH_SEP"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Module constant `alt_path_sep` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 7,
+      "row": 2
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "oldmod",
+          "content": "OLDMOD"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Module constant `oldmod` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 10,
+      "row": 3
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "first_sep",
+          "content": "FIRST_SEP"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "Module constant `first_sep` is not SCREAMING_CASE"
+  }
+]

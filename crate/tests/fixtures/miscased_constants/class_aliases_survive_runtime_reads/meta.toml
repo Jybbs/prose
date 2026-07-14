@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Class Alias Survives the Uses That Look Like Data"
+
+description = '''
+Four uses that look like handling data are things a class does too, so none of them draws a rename. An `Enum` is iterable, which keeps `for color in Colors:` off `Colors`. A class compares by equality, so `type(value) == Kind` says nothing about `Kind`. Typing-aware code compares type objects with `is`, as `base is Node` does, and reads a class alias for its methods, as `int_.from_bytes` reads `int`. What counts as data is the short list of operations a class raises `TypeError` on, an order comparison and arithmetic among them.
+'''

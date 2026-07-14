@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Index Into Data Is Not a Parametrized Type"
+
+description = '''
+A type never contains a slice, a dunder, or a bare integer, so each one marks its subscript an index into data and draws the rename. The check reads only the code in front of it, no import map and no type inference, and `dict[str, int]` and `Literal["read", "write"]` come through as the types they are.
+'''

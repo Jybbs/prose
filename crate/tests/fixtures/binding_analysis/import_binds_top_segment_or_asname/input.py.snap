@@ -1,66 +1,78 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/import_binds_top_segment_or_asname/input.py
+input_file: crate/tests/fixtures/binding_analysis/import_binds_top_segment_or_asname/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 7
     kinds:
       - Import
     name: a
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 7
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 16
     kinds:
       - Import
     name: b
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 16
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 29
     kinds:
       - Import
     name: g
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 29
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 52
     kinds:
       - Import
     name: i
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 52
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 68
     kinds:
       - Import
     name: l
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 68
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 98
     kinds:
       - Import
     name: annotations
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 98

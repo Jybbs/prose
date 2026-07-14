@@ -550,9 +550,11 @@ export const glossary: Record<string, GlossaryEntry> = {
   'type-alias': {
     aliases    : ['type aliases', 'bare type alias', 'alias value'],
     definition : 'A type alias is a name bound to an existing type rather than to new data '
-               + '(`Interval = int | float`, `Pen = Turtle`). `miscased-constants` reads the '
-               + 'shape of the value to spare one from the `SCREAMING_CASE` rename, and '
-               + '`band-constants` sorts the same statements into its alias sub-band.',
+               + '(`Interval = int | float`, `Pen = Turtle`). `miscased-constants` never '
+               + 'renames one, telling an alias from a constant by the shape of the value, by '
+               + 'what the file assigns its base, and by how the module uses the name. A value '
+               + 'it cannot pin down is left alone. `band-constants` sorts the same statements '
+               + 'into its alias sub-band.',
     families   : ['lint', 'ordering']
   },
 

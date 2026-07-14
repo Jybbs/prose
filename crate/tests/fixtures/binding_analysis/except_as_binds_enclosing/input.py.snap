@@ -1,10 +1,11 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/except_as_binds_enclosing/input.py
+input_file: crate/tests/fixtures/binding_analysis/except_as_binds_enclosing/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: ~
     kinds:
@@ -13,6 +14,7 @@ bindings:
     read_offsets:
       - 66
       - 79
+    runtime_read: false
     scope: 0
     write_offsets:
       - 53

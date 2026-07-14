@@ -21,10 +21,10 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ruff_python_ast::{
-    ExceptHandler, Expr, ExprDictComp, ExprGenerator, ExprLambda, ExprList, ExprListComp,
-    ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, ModModule, Parameters, Stmt,
-    StmtAnnAssign, StmtAssign, StmtAugAssign, StmtClassDef, StmtFor, StmtFunctionDef, StmtIf,
-    StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith,
+    CmpOp, ExceptHandler, Expr, ExprCompare, ExprDictComp, ExprGenerator, ExprLambda, ExprList,
+    ExprListComp, ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, ModModule, Operator,
+    Parameters, Stmt, StmtAnnAssign, StmtAssign, StmtAugAssign, StmtClassDef, StmtFor,
+    StmtFunctionDef, StmtIf, StmtImport, StmtImportFrom, StmtTry, StmtWhile, StmtWith, UnaryOp,
     visitor::{Visitor, walk_arguments, walk_expr, walk_parameters, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -75,6 +75,22 @@ enum ScopeKind {
     Module,
 }
 
+/// Where a module-scope name is read, which tells a type apart from the
+/// data a runtime object holds.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub(crate) enum ReadContext {
+    /// Every read sits where a type and a runtime object both stand: a
+    /// call argument, a callee, an attribute base, an identity test.
+    Ambiguous,
+    /// A read sits in an annotation or a type-alias value.
+    Annotation,
+    /// A read sits where only a runtime object stands, and none sits in
+    /// an annotation.
+    Runtime,
+    /// The module never reads the name.
+    Unread,
+}
+
 /// Disposition of a multi-name unpack target for the single-use lint.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum UnpackKind {
@@ -98,12 +114,14 @@ pub(crate) enum UnpackKind {
 /// every write is conditional.
 #[derive(Debug, Serialize)]
 struct Binding {
+    annotation_read: bool,
     attributes: BTreeSet<String>,
     bare_read: bool,
     first_unconditional_write: Option<TextSize>,
     kinds: Vec<BindingKind>,
     name: String,
     read_offsets: Vec<TextSize>,
+    runtime_read: bool,
     scope: ScopeId,
     write_offsets: Vec<TextSize>,
 }
@@ -201,6 +219,32 @@ impl BindingAnalysis {
             .is_some_and(|first| first < offset)
     }
 
+    /// Returns the recorded write kinds of the module-scope binding for
+    /// `name`, empty when `name` is unbound at module scope.
+    pub(crate) fn module_binding_kinds(&self, name: &str) -> &[BindingKind] {
+        self.module_binding(name)
+            .map_or(&[], |binding| binding.kinds.as_slice())
+    }
+
+    /// Returns where the module reads the module-scope binding for
+    /// `name`. An annotation read outranks every other, in that one use
+    /// of the name as a type settles it whatever else the module does
+    /// with it.
+    pub(crate) fn module_read_context(&self, name: &str) -> ReadContext {
+        let Some(binding) = self.module_binding(name) else {
+            return ReadContext::Unread;
+        };
+        if binding.annotation_read {
+            ReadContext::Annotation
+        } else if binding.runtime_read {
+            ReadContext::Runtime
+        } else if binding.read_offsets.is_empty() {
+            ReadContext::Unread
+        } else {
+            ReadContext::Ambiguous
+        }
+    }
+
     /// Returns the number of distinct attributes read off the
     /// module-scope binding for `name` (`os.environ` and `os.getcwd`
     /// count as two), or `0` when `name` is unbound at module scope.
@@ -264,6 +308,8 @@ impl BindingAnalysis {
 }
 
 struct Builder {
+    annotation_depth: usize,
+    annotation_offsets: HashSet<TextSize>,
     assignment_values: HashMap<TextSize, TextRange>,
     bindings: Vec<Binding>,
     condition_test_depth: usize,
@@ -271,6 +317,7 @@ struct Builder {
     conditional_depth: usize,
     deferred_reads: Vec<DeferredRead>,
     function_scope_at: HashMap<TextSize, ScopeId>,
+    runtime_offsets: HashSet<TextSize>,
     scope_stack: Vec<ScopeId>,
     scopes: Vec<Scope>,
     unpack_groups: Vec<UnpackGroup>,
@@ -279,6 +326,8 @@ struct Builder {
 impl Builder {
     fn new() -> Self {
         let mut builder = Self {
+            annotation_depth: 0,
+            annotation_offsets: HashSet::new(),
             assignment_values: HashMap::new(),
             bindings: Vec::new(),
             condition_test_depth: 0,
@@ -286,12 +335,54 @@ impl Builder {
             conditional_depth: 0,
             deferred_reads: Vec::new(),
             function_scope_at: HashMap::new(),
+            runtime_offsets: HashSet::new(),
             scope_stack: Vec::new(),
             scopes: Vec::new(),
             unpack_groups: Vec::new(),
         };
         builder.push_scope(ScopeKind::Module, None);
         builder
+    }
+
+    /// Runs `f` with annotation depth raised, so every read it reaches
+    /// records as a type use.
+    fn in_annotation(&mut self, f: impl FnOnce(&mut Self)) {
+        self.annotation_depth += 1;
+        f(self);
+        self.annotation_depth -= 1;
+    }
+
+    /// Records `expr` as read where only a runtime object stands. Only a
+    /// bare name marks, in that `if f(X):` reads `X` as a call argument
+    /// and settles nothing, whereas `if X:` truth-tests the object
+    /// itself. An annotation never marks, because a type stands there.
+    fn mark_runtime_read(&mut self, expr: &Expr) {
+        if self.annotation_depth > 0 {
+            return;
+        }
+        if let Expr::Name(name) = expr
+            && name.ctx.is_load()
+        {
+            self.runtime_offsets.insert(name.range().start());
+        }
+    }
+
+    /// Records each operand an order comparison tests, which ranks data
+    /// (`{open, stat} <= supports_dir_fd`) and raises `TypeError` on a
+    /// class. Every other operator marks nothing. Identity and
+    /// membership test type objects, which is how typing-aware code
+    /// reads them (`if base is Generic:`), and equality compares a class
+    /// as readily as a value (`if type(x) == Kind:`).
+    fn mark_comparison(&mut self, node: &ExprCompare) {
+        let operands: Vec<&Expr> = std::iter::once(node.left.as_ref())
+            .chain(node.comparators.iter())
+            .collect();
+        for (index, op) in node.ops.iter().enumerate() {
+            if matches!(op, CmpOp::Gt | CmpOp::GtE | CmpOp::Lt | CmpOp::LtE) {
+                self.mark_runtime_read(operands[index]);
+                self.mark_runtime_read(operands[index + 1]);
+            }
+        }
     }
 
     fn current_scope(&self) -> ScopeId {
@@ -347,7 +438,7 @@ impl Builder {
         }
         walk_parameters(self, &function.parameters);
         if let Some(returns) = &function.returns {
-            self.visit_expr(returns);
+            self.visit_annotation(returns);
         }
         self.record_identifier(&function.name, BindingKind::FunctionDef);
         let function_scope = self.in_scope(ScopeKind::Function, |b| {
@@ -379,6 +470,18 @@ impl Builder {
                     deferred.attribute.as_deref(),
                 );
             }
+        }
+        // Folded after the deferred reads land, so a forward reference
+        // from an annotation to a name bound later still records.
+        for binding in &mut self.bindings {
+            binding.annotation_read = binding
+                .read_offsets
+                .iter()
+                .any(|offset| self.annotation_offsets.contains(offset));
+            binding.runtime_read = binding
+                .read_offsets
+                .iter()
+                .any(|offset| self.runtime_offsets.contains(offset));
         }
         let mut unpack_targets = HashMap::new();
         for group in &self.unpack_groups {
@@ -532,6 +635,9 @@ impl Builder {
     }
 
     fn record_use(&mut self, name: &str, offset: TextSize, attribute: Option<&str>) {
+        if self.annotation_depth > 0 {
+            self.annotation_offsets.insert(offset);
+        }
         let innermost = self.current_scope();
         match resolve_in_chain(&self.scopes, innermost, name) {
             Some(binding) => self.record_resolved_read(binding, offset, attribute),
@@ -590,10 +696,12 @@ impl Builder {
             self.bindings.push(Binding {
                 name: name.to_owned(),
                 scope,
+                annotation_read: false,
                 attributes: BTreeSet::new(),
                 bare_read: false,
                 first_unconditional_write: None,
                 kinds: Vec::new(),
+                runtime_read: false,
                 write_offsets: Vec::new(),
                 read_offsets: Vec::new(),
             });
@@ -611,7 +719,7 @@ impl Builder {
     }
 
     fn visit_ann_assign(&mut self, node: &StmtAnnAssign) {
-        self.visit_expr(&node.annotation);
+        self.visit_annotation(&node.annotation);
         if let Some(value) = &node.value {
             self.visit_expr(value);
         }
@@ -666,10 +774,12 @@ impl Builder {
 
     /// Walks an `if`/`elif`/`else` chain with each branch body conditional.
     fn visit_if(&mut self, node: &StmtIf) {
+        self.mark_runtime_read(&node.test);
         self.in_condition_test(|b| b.visit_expr(&node.test));
         self.in_conditional(|b| b.visit_body(&node.body));
         for clause in &node.elif_else_clauses {
             if let Some(test) = &clause.test {
+                self.mark_runtime_read(test);
                 self.in_condition_test(|b| b.visit_expr(test));
             }
             self.in_conditional(|b| b.visit_body(&clause.body));
@@ -709,6 +819,7 @@ impl Builder {
     }
 
     fn visit_while(&mut self, node: &StmtWhile) {
+        self.mark_runtime_read(&node.test);
         self.in_condition_test(|b| b.visit_expr(&node.test));
         self.in_conditional(|b| {
             b.visit_body(&node.body);
@@ -728,12 +839,43 @@ impl Builder {
 }
 
 impl<'a> Visitor<'a> for Builder {
+    fn visit_annotation(&mut self, expr: &'a Expr) {
+        self.in_annotation(|b| b.visit_expr(expr));
+    }
+
     fn visit_expr(&mut self, expr: &'a Expr) {
         match expr {
             Expr::Name(name) => {
                 if name.ctx.is_load() {
                     self.record_read(name.id.as_str(), name.range().start());
                 }
+            }
+            Expr::BoolOp(node) => {
+                for value in &node.values {
+                    self.mark_runtime_read(value);
+                }
+                walk_expr(self, expr);
+            }
+            Expr::Compare(node) => {
+                self.mark_comparison(node);
+                walk_expr(self, expr);
+            }
+            Expr::BinOp(node) => {
+                if node.op != Operator::BitOr {
+                    self.mark_runtime_read(&node.left);
+                    self.mark_runtime_read(&node.right);
+                }
+                walk_expr(self, expr);
+            }
+            Expr::UnaryOp(node) => {
+                if node.op == UnaryOp::Not {
+                    self.mark_runtime_read(&node.operand);
+                }
+                walk_expr(self, expr);
+            }
+            Expr::If(node) => {
+                self.mark_runtime_read(&node.test);
+                walk_expr(self, expr);
             }
             Expr::Attribute(attr) => match attr.value.as_ref() {
                 Expr::Name(name) if name.ctx.is_load() => self.record_attribute_read(
@@ -788,6 +930,7 @@ impl<'a> Visitor<'a> for Builder {
             Stmt::Import(node) => self.visit_import(node),
             Stmt::ImportFrom(node) => self.visit_import_from(node),
             Stmt::Try(node) => self.visit_try(node),
+            Stmt::TypeAlias(node) => self.visit_annotation(&node.value),
             Stmt::While(node) => self.visit_while(node),
             Stmt::With(node) => self.visit_with(node),
             _ => walk_stmt(self, stmt),

@@ -1,40 +1,47 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/private_class_attr_scoped_to_class/input.py
+input_file: crate/tests/fixtures/binding_analysis/private_class_attr_scoped_to_class/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 6
     kinds:
       - ClassDef
     name: C
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 6
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 13
     kinds:
       - Assignment
     name: __secret
     read_offsets: []
+    runtime_read: false
     scope: 1
     write_offsets:
       - 13
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 35
     kinds:
       - FunctionDef
     name: get
     read_offsets: []
+    runtime_read: false
     scope: 1
     write_offsets:
       - 35
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 39
     kinds:
@@ -42,6 +49,7 @@ bindings:
     name: self
     read_offsets:
       - 61
+    runtime_read: false
     scope: 2
     write_offsets:
       - 39

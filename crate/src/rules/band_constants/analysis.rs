@@ -15,7 +15,7 @@ use super::{
 };
 use crate::{
     primitives::{
-        alias::value_is_alias,
+        alias::{AliasContext, value_is_alias},
         binding::{
             bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
             is_screaming_case, single_name_assignment,
@@ -56,6 +56,7 @@ pub(super) fn module_band_plan<'src>(
     target_version: Option<PythonVersion>,
 ) -> Option<BandPlan<'src>> {
     let analysis = source.binding_analysis();
+    let aliases = AliasContext::new(body, analysis);
     let builtins_minor = target_version.unwrap_or_default().minor;
     let notebook = source.is_notebook();
     let suppression = source.suppression_map();
@@ -132,7 +133,7 @@ pub(super) fn module_band_plan<'src>(
                         idx,
                         name,
                         subcategory: if group_constants {
-                            subcategory_of(stmt, name, value)
+                            subcategory_of(stmt, name, value, &aliases)
                         } else {
                             Subcategory::default()
                         },
@@ -278,12 +279,17 @@ fn propagate(state: &mut [bool], deps: &[Vec<usize>]) {
 /// statement or a `TypeAlias`-annotated assignment reads as an alias, a
 /// `SCREAMING_CASE` name as a constant, a remaining value that names an
 /// existing object as an alias, and everything else as module state.
-fn subcategory_of(stmt: &Stmt, name: &str, value: Option<&Expr>) -> Subcategory {
+fn subcategory_of<'src>(
+    stmt: &Stmt,
+    name: &str,
+    value: Option<&'src Expr>,
+    aliases: &AliasContext<'src>,
+) -> Subcategory {
     if is_explicit_type_alias(stmt) {
         Subcategory::Alias
     } else if is_screaming_case(name) {
         Subcategory::Constant
-    } else if value.is_some_and(value_is_alias) {
+    } else if value.is_some_and(|value| value_is_alias(value, aliases)) {
         Subcategory::Alias
     } else {
         Subcategory::State
@@ -465,13 +471,18 @@ mod tests {
     #[case("Config = {\"debug\": True}", Subcategory::State)]
     #[case("threshold = 5", Subcategory::State)]
     #[case("_cache = {}", Subcategory::State)]
+    #[case(
+        "SETTINGS = {\"db\": \"pg\"}\ndatabase = SETTINGS[\"db\"]",
+        Subcategory::State
+    )]
     fn subcategory_of_classifies_by_value_shape_and_structure(
         #[case] src: &str,
         #[case] expected: Subcategory,
     ) {
         let source = parse(&format!("{src}\n"));
-        let stmt = &source.ast().body[0];
+        let stmt = source.ast().body.last().expect("a statement");
+        let aliases = AliasContext::new(&source.ast().body, source.binding_analysis());
         let (name, value) = const_binding(stmt).expect("a constant binding");
-        assert_eq!(subcategory_of(stmt, name, value), expected);
+        assert_eq!(subcategory_of(stmt, name, value, &aliases), expected);
     }
 }

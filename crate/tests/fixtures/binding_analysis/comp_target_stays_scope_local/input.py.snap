@@ -1,10 +1,11 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/comp_target_stays_scope_local/input.py
+input_file: crate/tests/fixtures/binding_analysis/comp_target_stays_scope_local/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 0
     kinds:
@@ -12,20 +13,24 @@ bindings:
     name: xs
     read_offsets:
       - 51
+    runtime_read: false
     scope: 0
     write_offsets:
       - 0
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 17
     kinds:
       - Assignment
     name: x
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 17
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 46
     kinds:
@@ -33,16 +38,19 @@ bindings:
     name: x
     read_offsets:
       - 40
+    runtime_read: false
     scope: 1
     write_offsets:
       - 46
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 32
     kinds:
       - Assignment
     name: vals
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 32
