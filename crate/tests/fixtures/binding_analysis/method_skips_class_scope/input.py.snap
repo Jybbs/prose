@@ -1,10 +1,11 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/method_skips_class_scope/input.py
+input_file: crate/tests/fixtures/binding_analysis/method_skips_class_scope/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 0
     kinds:
@@ -12,46 +13,55 @@ bindings:
     name: x
     read_offsets:
       - 74
+    runtime_read: false
     scope: 0
     write_offsets:
       - 0
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 20
     kinds:
       - ClassDef
     name: C
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 20
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 27
     kinds:
       - Assignment
     name: x
     read_offsets: []
+    runtime_read: false
     scope: 1
     write_offsets:
       - 27
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 48
     kinds:
       - FunctionDef
     name: get
     read_offsets: []
+    runtime_read: false
     scope: 1
     write_offsets:
       - 48
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 52
     kinds:
       - Parameter
     name: self
     read_offsets: []
+    runtime_read: false
     scope: 2
     write_offsets:
       - 52

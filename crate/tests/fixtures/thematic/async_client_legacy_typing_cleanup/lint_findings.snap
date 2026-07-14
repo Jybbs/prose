@@ -44,69 +44,6 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
     "message": "Bare import `logging` reaches 1 of its attributes. Rewrite as `from logging import ...` naming only the symbols this module uses"
   },
   {
-    "code": "miscased-constants",
-    "end_location": {
-      "column": 9,
-      "row": 8
-    },
-    "fix": {
-      "applicability": "displayonly",
-      "edits": [
-        {
-          "before": "Interval",
-          "content": "INTERVAL"
-        }
-      ]
-    },
-    "location": {
-      "column": 1,
-      "row": 8
-    },
-    "message": "Module constant `Interval` is not SCREAMING_CASE"
-  },
-  {
-    "code": "miscased-constants",
-    "end_location": {
-      "column": 8,
-      "row": 9
-    },
-    "fix": {
-      "applicability": "displayonly",
-      "edits": [
-        {
-          "before": "Payload",
-          "content": "PAYLOAD"
-        }
-      ]
-    },
-    "location": {
-      "column": 1,
-      "row": 9
-    },
-    "message": "Module constant `Payload` is not SCREAMING_CASE"
-  },
-  {
-    "code": "miscased-constants",
-    "end_location": {
-      "column": 8,
-      "row": 17
-    },
-    "fix": {
-      "applicability": "displayonly",
-      "edits": [
-        {
-          "before": "Handler",
-          "content": "HANDLER"
-        }
-      ]
-    },
-    "location": {
-      "column": 1,
-      "row": 17
-    },
-    "message": "Module constant `Handler` is not SCREAMING_CASE"
-  },
-  {
     "code": "legacy-union-syntax",
     "end_location": {
       "column": 35,

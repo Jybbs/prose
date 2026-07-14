@@ -1,2 +1,2 @@
-Vector = list[float]
+Defaults = {"retries": 3}
 timeout = 30

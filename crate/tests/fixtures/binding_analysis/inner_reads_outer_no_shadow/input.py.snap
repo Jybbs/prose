@@ -1,20 +1,23 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/inner_reads_outer_no_shadow/input.py
+input_file: crate/tests/fixtures/binding_analysis/inner_reads_outer_no_shadow/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 4
     kinds:
       - FunctionDef
     name: outer
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 4
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 17
     kinds:
@@ -22,10 +25,12 @@ bindings:
     name: x
     read_offsets:
       - 56
+    runtime_read: false
     scope: 1
     write_offsets:
       - 17
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 32
     kinds:
@@ -33,6 +38,7 @@ bindings:
     name: inner
     read_offsets:
       - 70
+    runtime_read: false
     scope: 1
     write_offsets:
       - 32

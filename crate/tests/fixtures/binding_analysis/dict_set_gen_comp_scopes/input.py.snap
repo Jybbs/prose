@@ -1,10 +1,11 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/dict_set_gen_comp_scopes/input.py
+input_file: crate/tests/fixtures/binding_analysis/dict_set_gen_comp_scopes/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 0
     kinds:
@@ -14,10 +15,12 @@ bindings:
       - 57
       - 86
       - 119
+    runtime_read: false
     scope: 0
     write_offsets:
       - 0
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 49
     kinds:
@@ -25,10 +28,12 @@ bindings:
     name: k
     read_offsets:
       - 40
+    runtime_read: false
     scope: 1
     write_offsets:
       - 49
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 52
     kinds:
@@ -36,20 +41,24 @@ bindings:
     name: v
     read_offsets:
       - 43
+    runtime_read: false
     scope: 1
     write_offsets:
       - 52
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 29
     kinds:
       - Assignment
     name: mapping
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 29
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 78
     kinds:
@@ -57,40 +66,48 @@ bindings:
     name: k
     read_offsets:
       - 72
+    runtime_read: false
     scope: 2
     write_offsets:
       - 78
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 81
     kinds:
       - Comprehension
     name: _
     read_offsets: []
+    runtime_read: false
     scope: 2
     write_offsets:
       - 81
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 64
     kinds:
       - Assignment
     name: keys
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 64
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 111
     kinds:
       - Comprehension
     name: _
     read_offsets: []
+    runtime_read: false
     scope: 3
     write_offsets:
       - 111
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 114
     kinds:
@@ -98,16 +115,19 @@ bindings:
     name: v
     read_offsets:
       - 105
+    runtime_read: false
     scope: 3
     write_offsets:
       - 114
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 93
     kinds:
       - Assignment
     name: total
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 93

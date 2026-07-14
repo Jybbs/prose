@@ -1,27 +1,22 @@
-//! Flags a module-level single-name assignment whose inert value nothing
-//! reassigns and whose name is not SCREAMING_CASE. The carve-outs (a
-//! single-character name, a leading underscore, a `TypeAlias`-annotated
-//! target, the `if TYPE_CHECKING:` block, and the per-project
-//! `allow_pattern`) drop out ahead of the gate. The SCREAMING_CASE
-//! rename is a display-only suggestion, and notebooks are skipped whole.
+//! Flags a module-level single-name assignment whose value is inert,
+//! whose name nothing reassigns, and whose name is not `SCREAMING_CASE`,
+//! carving out a single-character name, a leading underscore, a
+//! `TypeAlias` annotation, an alias value, a lambda, the
+//! `if TYPE_CHECKING:` block, and the per-project `allow_pattern`. The
+//! rename is display-only, and notebooks are skipped whole.
 
 use heck::ToShoutySnakeCase;
 use regex_lite::Regex;
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    Expr, ExprName, Stmt,
-    statement_visitor::{StatementVisitor, walk_stmt},
-};
+use ruff_python_ast::ExprName;
 use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::{
-        binding::{
-            BindingAnalysis, is_screaming_case, is_type_alias, single_name_assignment,
-            skips_module_scan,
-        },
+        alias::{AliasContext, is_type_alias},
+        binding::{ModuleAssignment, is_explicit_type_alias, is_screaming_case},
         effect::value_is_effectful,
     },
     rule::{Rule, RuleId},
@@ -38,6 +33,33 @@ impl MiscasedConstants {
             allow_pattern: config.rules.miscased_constants.allow_pattern.clone(),
         }
     }
+
+    /// True when `site` binds a module constant miscased against
+    /// `SCREAMING_CASE`, no carve-out from the module doc sparing it. The
+    /// value must be present, inert, and neither a lambda nor a type.
+    fn is_miscased(&self, site: &ModuleAssignment<'_>, ctx: &AliasContext<'_>) -> bool {
+        let name = site.target.id.as_str();
+        name.chars().count() > 1
+            && !name.starts_with('_')
+            && !is_screaming_case(name)
+            && !ctx.analysis().module_reassigned(name)
+            && !is_explicit_type_alias(site.stmt)
+            && !Config::allow_matches(&self.allow_pattern, name)
+            && !is_type_alias(site, ctx)
+            && site
+                .value
+                .is_some_and(|value| !value.is_lambda_expr() && !value_is_effectful(value))
+    }
+
+    fn rename(&self, target: &ExprName) -> Diagnostic {
+        let name = target.id.as_str();
+        Diagnostic::suggestion(
+            self.id(),
+            target.range(),
+            format!("Module constant `{name}` is not SCREAMING_CASE"),
+            Edit::range_replacement(name.to_shouty_snake_case(), target.range()),
+        )
+    }
 }
 
 impl Rule for MiscasedConstants {
@@ -49,71 +71,12 @@ impl Rule for MiscasedConstants {
         if source.is_notebook() {
             return Vec::new();
         }
-        let mut walker = Walker {
-            allow_pattern: &self.allow_pattern,
-            analysis: source.binding_analysis(),
-            diagnostics: Vec::new(),
-            rule: self.id(),
-        };
-        walker.visit_body(&source.ast().body);
-        walker.diagnostics
-    }
-}
-
-struct Walker<'a> {
-    allow_pattern: &'a Regex,
-    analysis: &'a BindingAnalysis,
-    diagnostics: Vec<Diagnostic>,
-    rule: RuleId,
-}
-
-impl Walker<'_> {
-    /// True when `name` matches the configured allow pattern. The empty
-    /// default pattern matches every input, so it reads as "exempt
-    /// nothing" rather than "exempt everything".
-    fn allow_matches(&self, name: &str) -> bool {
-        !self.allow_pattern.as_str().is_empty() && self.allow_pattern.is_match(name)
-    }
-
-    fn emit(&mut self, target: &ExprName) {
-        let name = target.id.as_str();
-        self.diagnostics.push(Diagnostic::suggestion(
-            self.rule,
-            target.range(),
-            format!("Module constant `{name}` is not SCREAMING_CASE"),
-            Edit::range_replacement(name.to_shouty_snake_case(), target.range()),
-        ));
-    }
-
-    /// True when `name` is a module constant miscased against
-    /// SCREAMING_CASE: a multi-character name with an inert `value`, no
-    /// leading underscore, not already SCREAMING_CASE, never reassigned,
-    /// and outside the `TypeAlias`-annotation and allow-pattern
-    /// exemptions. A single-character name is spared, its lone-capital
-    /// SCREAMING form reading as a matrix and its lowercase form usually
-    /// a mathematical scalar.
-    fn is_miscased(&self, name: &str, value: &Expr, annotation: Option<&Expr>) -> bool {
-        name.chars().count() > 1
-            && !name.starts_with('_')
-            && !is_screaming_case(name)
-            && !self.analysis.module_reassigned(name)
-            && !annotation.is_some_and(is_type_alias)
-            && !self.allow_matches(name)
-            && !value_is_effectful(value)
-    }
-}
-
-impl<'a> StatementVisitor<'a> for Walker<'a> {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if skips_module_scan(stmt) {
-            return;
-        }
-        if let Some((target, Some(value), annotation)) = single_name_assignment(stmt)
-            && self.is_miscased(target.id.as_str(), value, annotation)
-        {
-            self.emit(target);
-        }
-        walk_stmt(self, stmt);
+        let ctx = AliasContext::new(&source.ast().body, source.binding_analysis());
+        ctx.sites()
+            .iter()
+            .filter(|site| self.is_miscased(site, &ctx))
+            .map(|site| self.rename(site.target))
+            .collect()
     }
 }
 

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Recursive Alias Rests on Its Annotation Alone"
+
+description = '''
+A recursive alias forward-references itself as a string, because `Tree` is unbound while its own value evaluates. The string constructs data, so the value-shape read alone would draw a rename, leaving the `TypeAlias` annotation the only thing that spares it.
+'''

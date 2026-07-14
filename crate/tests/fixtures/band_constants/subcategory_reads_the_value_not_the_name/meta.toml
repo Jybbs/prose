@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "The Sub-Band Reads the Value, Not the Name"
+
+description = '''
+The lowercase `opener` names an object that already exists, so it bands as an alias, while the PascalCase `Config` builds a dict and bands as module state. The value settles the sub-band, leaving the target's casing out of it.
+'''

@@ -15,9 +15,10 @@ use super::{
 };
 use crate::{
     primitives::{
+        alias::{AliasContext, value_is_alias},
         binding::{
-            bare_import_bound_name, from_import_bound_name, is_screaming_case, is_type_alias,
-            single_name_assignment,
+            bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
+            is_screaming_case, single_name_assignment,
         },
         comments::{has_keep_marker, is_banner_block, leading_comment_block},
         effect::value_is_effectful,
@@ -55,6 +56,7 @@ pub(super) fn module_band_plan<'src>(
     target_version: Option<PythonVersion>,
 ) -> Option<BandPlan<'src>> {
     let analysis = source.binding_analysis();
+    let aliases = group_constants.then(|| AliasContext::new(body, analysis));
     let builtins_minor = target_version.unwrap_or_default().minor;
     let notebook = source.is_notebook();
     let suppression = source.suppression_map();
@@ -130,11 +132,11 @@ pub(super) fn module_band_plan<'src>(
                         effectful: notebook && value.is_some_and(value_is_effectful),
                         idx,
                         name,
-                        subcategory: if group_constants {
-                            subcategory_of(stmt, name)
-                        } else {
-                            Subcategory::default()
-                        },
+                        subcategory: aliases
+                            .as_ref()
+                            .map_or_else(Subcategory::default, |aliases| {
+                                subcategory_of(stmt, name, value, aliases)
+                            }),
                         value_refs: value.map_or_else(Vec::new, eval_refs),
                     });
                 }
@@ -253,7 +255,7 @@ fn const_binding(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
             alias.name.as_name_expr()?.id.as_str(),
             Some(alias.value.as_ref()),
         )),
-        _ => single_name_assignment(stmt).map(|(target, value, _)| (target.id.as_str(), value)),
+        _ => single_name_assignment(stmt).map(|(target, value)| (target.id.as_str(), value)),
     }
 }
 
@@ -275,17 +277,19 @@ fn propagate(state: &mut [bool], deps: &[Vec<usize>]) {
 
 /// The subcategory a banded constant sorts into. A PEP 695 `type X`
 /// statement or a `TypeAlias`-annotated assignment reads as an alias, a
-/// `SCREAMING_CASE` name as a constant, a remaining name opening on an
-/// uppercase letter as an alias, and everything else as module state.
-fn subcategory_of(stmt: &Stmt, name: &str) -> Subcategory {
-    let annotated_alias = stmt
-        .as_ann_assign_stmt()
-        .is_some_and(|ann| is_type_alias(&ann.annotation));
-    if matches!(stmt, Stmt::TypeAlias(_)) || annotated_alias {
+/// `SCREAMING_CASE` name as a constant, a remaining value that names an
+/// existing object as an alias, and everything else as module state.
+fn subcategory_of(
+    stmt: &Stmt,
+    name: &str,
+    value: Option<&Expr>,
+    aliases: &AliasContext<'_>,
+) -> Subcategory {
+    if is_explicit_type_alias(stmt) {
         Subcategory::Alias
     } else if is_screaming_case(name) {
         Subcategory::Constant
-    } else if name.starts_with(|c: char| c.is_ascii_uppercase()) {
+    } else if value.is_some_and(|value| value_is_alias(value, aliases)) {
         Subcategory::Alias
     } else {
         Subcategory::State
@@ -461,16 +465,24 @@ mod tests {
     #[case("Handler = make", Subcategory::Alias)]
     #[case("Payload: TypeAlias = dict", Subcategory::Alias)]
     #[case("type Seconds = float", Subcategory::Alias)]
+    #[case("Interval = int | float", Subcategory::Alias)]
+    #[case("opener = TarFile.open", Subcategory::Alias)]
     #[case("MAX_RETRIES = 5", Subcategory::Constant)]
+    #[case("Config = {\"debug\": True}", Subcategory::State)]
     #[case("threshold = 5", Subcategory::State)]
-    #[case("_cache = registry", Subcategory::State)]
-    fn subcategory_of_classifies_by_name_shape_and_structure(
+    #[case("_cache = {}", Subcategory::State)]
+    #[case(
+        "SETTINGS = {\"db\": \"pg\"}\ndatabase = SETTINGS[\"db\"]",
+        Subcategory::State
+    )]
+    fn subcategory_of_classifies_by_value_shape_and_structure(
         #[case] src: &str,
         #[case] expected: Subcategory,
     ) {
         let source = parse(&format!("{src}\n"));
-        let stmt = &source.ast().body[0];
-        let (name, _) = const_binding(stmt).expect("a constant binding");
-        assert_eq!(subcategory_of(stmt, name), expected);
+        let stmt = source.ast().body.last().expect("a statement");
+        let aliases = AliasContext::new(&source.ast().body, source.binding_analysis());
+        let (name, value) = const_binding(stmt).expect("a constant binding");
+        assert_eq!(subcategory_of(stmt, name, value, &aliases), expected);
     }
 }

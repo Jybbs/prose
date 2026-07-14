@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/miscased_constants/reference_valued_names_pass/input.py
+---
+Pen = Turtle
+Vector = list[float]
+opener = TarFile.open

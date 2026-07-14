@@ -1,0 +1,11 @@
+import sys
+
+from typing import Literal
+
+alt_path_sep = path_separators[1:]
+oldmod = sys.modules[__name__]
+first_sep = path_separators[0]
+last_sep = path_separators[-1]
+Registry = dict[str, int]
+Choice = Literal["read", "write"]
+Offset = Literal[-1]

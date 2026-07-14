@@ -1,5 +1,6 @@
 //! Shared primitives used across rule implementations.
 
+pub(crate) mod alias;
 pub(crate) mod aligner;
 pub(crate) mod binding;
 pub(crate) mod call_keywords;
@@ -18,6 +19,7 @@ pub(crate) mod range;
 pub(crate) mod scope;
 pub(crate) mod sections;
 pub(crate) mod tiering;
+pub(crate) mod walk;
 
 /// PEP 8 indent step in spaces, the depth one nested level adds.
 pub(crate) const INDENT_STEP: usize = 4;

@@ -16,7 +16,7 @@ The rule consumes the per-`Source` [[binding-analysis]] table to count writes an
 
 <RuleConfigTable />
 
-The default `^_` exempts names starting with an underscore, matching the Python convention for intentionally-unused bindings. Projects with stricter naming can tighten the regex.
+The default `^_` exempts names starting with an underscore, matching the Python convention for intentionally-unused bindings. Projects with stricter naming can tighten the regex, and an empty pattern reads as exempting nothing rather than everything, the same reading [[miscased-constants]] gives its own empty default.
 
 </template>
 

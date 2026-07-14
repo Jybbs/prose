@@ -23,6 +23,7 @@
 
 use std::{collections::HashSet, num::NonZeroUsize, path::Path};
 
+use regex_lite::Regex;
 use ruff_python_ast::PythonVersion;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -180,6 +181,13 @@ impl Config {
             Some((_, table)) => Self::from_base_table(table, &mut on_notice),
             None => Ok(Self::default()),
         }
+    }
+
+    /// True when `name` matches `pattern`. An empty pattern matches every
+    /// input, so the emptiness test ahead of the match reads an unset
+    /// pattern as "exempt nothing" rather than "exempt everything".
+    pub(crate) fn allow_matches(pattern: &Regex, name: &str) -> bool {
+        !pattern.as_str().is_empty() && pattern.is_match(name)
     }
 
     pub(crate) fn allow_set(allow: &[String]) -> HashSet<String> {
