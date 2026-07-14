@@ -24,5 +24,47 @@ input_file: crate/tests/fixtures/miscased_constants/typing_carve_outs_stay_types
       "row": 13
     },
     "message": "Module constant `first_level` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 13,
+      "row": 14
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "default_flag",
+          "content": "DEFAULT_FLAG"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 14
+    },
+    "message": "Module constant `default_flag` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 10,
+      "row": 15
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "raw_codec",
+          "content": "RAW_CODEC"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 15
+    },
+    "message": "Module constant `raw_codec` is not SCREAMING_CASE"
   }
 ]

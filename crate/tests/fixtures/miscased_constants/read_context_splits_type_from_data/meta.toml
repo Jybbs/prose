@@ -3,5 +3,5 @@ previewable = true
 title       = "How the Module Uses a Name Settles What the Value Cannot"
 
 description = '''
-`path_sep = platform.path_sep` and `opener = TarFile.open` are the same shape, and nothing in either value says which holds data. How the module uses them does. It writes `if path_sep:`, and truth-testing a class is pointless, so `path_sep` draws the `PATH_SEP` rename, whereas `opener` is only ever called and keeps its name. A name used in an annotation is a type whatever else happens to it, which is what holds the imported `Vec` and the locally parametrized `Crate`.
+`path_sep = os.sep` and `opener = tarfile.TarFile.open` are the same shape, and nothing in either value says which one holds data. How the module uses them does. It writes `if path_sep:`, and truth-testing a class is pointless, so `path_sep` draws the `PATH_SEP` rename, whereas `opener` is only ever called and keeps its name. `Vec` and `Crate` are types on the shape of their values alone, one parametrizing an imported generic and the other a class declared here.
 '''

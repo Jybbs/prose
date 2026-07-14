@@ -3,5 +3,5 @@ previewable = true
 title       = "What `Literal` and `Annotated` Are Allowed to Contain"
 
 description = '''
-A bare integer, a bool, and a bytes string are things no type contains, which is what makes `LEVELS[1]` an index and draws the `FIRST_LEVEL` rename. `Literal` is the one construct that does contain them, so `Literal[1, 2, 3]` stays a type. PEP 593 lets every `Annotated` argument after the first be anything, so the `Field(gt=0)` call is metadata rather than a call in a type position, and the parameter list of a `Callable`, the empty `tuple[()]`, and the `...` of `Callable[..., int]` all stand as written.
+An integer, a bool, and a bytes string are three things no type contains, so `LEVELS[1]`, `OPTIONS[True]`, and `CODECS[b"gzip"]` all index data and draw the rename. `Literal` is the one construct that does contain them, which keeps `Literal[1, 2, 3]`, `Literal[True]`, `Literal[-1]`, and `Literal[b"gzip"]` types. PEP 593 lets every `Annotated` argument after the first be anything, so the `Field(gt=0)` call is metadata rather than a call in a type position, and the parameter list of a `Callable`, the empty `tuple[()]`, and the `...` of `Callable[..., int]` all stand as written.
 '''

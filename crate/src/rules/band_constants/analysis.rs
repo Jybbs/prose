@@ -56,7 +56,7 @@ pub(super) fn module_band_plan<'src>(
     target_version: Option<PythonVersion>,
 ) -> Option<BandPlan<'src>> {
     let analysis = source.binding_analysis();
-    let aliases = AliasContext::new(body, analysis);
+    let aliases = group_constants.then(|| AliasContext::new(body, analysis));
     let builtins_minor = target_version.unwrap_or_default().minor;
     let notebook = source.is_notebook();
     let suppression = source.suppression_map();
@@ -132,11 +132,11 @@ pub(super) fn module_band_plan<'src>(
                         effectful: notebook && value.is_some_and(value_is_effectful),
                         idx,
                         name,
-                        subcategory: if group_constants {
-                            subcategory_of(stmt, name, value, &aliases)
-                        } else {
-                            Subcategory::default()
-                        },
+                        subcategory: aliases
+                            .as_ref()
+                            .map_or_else(Subcategory::default, |aliases| {
+                                subcategory_of(stmt, name, value, aliases)
+                            }),
                         value_refs: value.map_or_else(Vec::new, eval_refs),
                     });
                 }

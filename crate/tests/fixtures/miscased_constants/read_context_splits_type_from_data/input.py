@@ -1,14 +1,20 @@
+import os
+import tarfile
+
 from numpy.typing import NDArray
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
 
 
 class Box(Generic[T]):
     pass
 
 
-path_sep = platform.path_sep
+path_sep = os.sep
+opener = tarfile.TarFile.open
 Vec = NDArray[float]
 Crate = Box[int]
-opener = TarFile.open
 
 if path_sep:
     pass

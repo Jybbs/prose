@@ -10,7 +10,7 @@ struct AnyProbe<F> {
     hit: F,
 }
 
-impl<'src, F: Fn(&Stmt) -> bool> StatementVisitor<'src> for AnyProbe<F> {
+impl<'src, F: FnMut(&Stmt) -> bool> StatementVisitor<'src> for AnyProbe<F> {
     fn visit_stmt(&mut self, stmt: &'src Stmt) {
         if self.found {
             return;
@@ -26,7 +26,7 @@ impl<'src, F: Fn(&Stmt) -> bool> StatementVisitor<'src> for AnyProbe<F> {
 /// True when any statement in `body` satisfies `hit`, descending through
 /// every compound body including nested `def` and `class` scopes and
 /// stopping at the first match.
-pub(crate) fn any_over_stmts(body: &[Stmt], hit: impl Fn(&Stmt) -> bool) -> bool {
+pub(crate) fn any_over_stmts(body: &[Stmt], hit: impl FnMut(&Stmt) -> bool) -> bool {
     let mut probe = AnyProbe { found: false, hit };
     probe.visit_body(body);
     probe.found
@@ -34,8 +34,6 @@ pub(crate) fn any_over_stmts(body: &[Stmt], hit: impl Fn(&Stmt) -> bool) -> bool
 
 #[cfg(test)]
 mod tests {
-    use std::cell::Cell;
-
     use indoc::indoc;
 
     use super::*;
@@ -62,15 +60,14 @@ mod tests {
 
     #[test]
     fn any_over_stmts_stops_at_the_first_match() {
-        let seen = Cell::new(0);
+        let mut seen = 0;
         let found = any_over_stmts(&parse("pass\npass\n").ast().body, |stmt| {
-            seen.set(seen.get() + 1);
+            seen += 1;
             matches!(stmt, Stmt::Pass(_))
         });
         assert!(found);
         assert_eq!(
-            seen.get(),
-            1,
+            seen, 1,
             "the walk stops rather than visiting the second pass"
         );
     }

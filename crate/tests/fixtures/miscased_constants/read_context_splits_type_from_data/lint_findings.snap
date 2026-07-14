@@ -8,7 +8,7 @@ input_file: crate/tests/fixtures/miscased_constants/read_context_splits_type_fro
     "code": "miscased-constants",
     "end_location": {
       "column": 9,
-      "row": 8
+      "row": 14
     },
     "fix": {
       "applicability": "displayonly",
@@ -21,7 +21,7 @@ input_file: crate/tests/fixtures/miscased_constants/read_context_splits_type_fro
     },
     "location": {
       "column": 1,
-      "row": 8
+      "row": 14
     },
     "message": "Module constant `path_sep` is not SCREAMING_CASE"
   }

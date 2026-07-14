@@ -9,40 +9,28 @@
 //! in a type is a slice, a dunder, a float, a call, or a comprehension,
 //! and a bare integer, bool, or bytes stands only inside `Literal`.
 //!
-//! `name_evidence` looks the base of a subscript up in the module
+//! `name_binds_data` looks the base of a subscript up in the module
 //! binding table, so `SETTINGS["db"]` is a lookup once `SETTINGS` is
 //! found assigned a dict display in the same file, and `Box[int]` is a
-//! type once `Box` is found declared by a `class` statement. An
-//! imported base yields `Unknown` and stays a type.
+//! type once `Box` is found declared by a `class` statement. An import,
+//! a rebind, and a call all leave the base undecided, which stays a
+//! type.
 //!
-//! `is_type_alias` adds the read contexts of the bound name, so a name
-//! the module truth-tests, order-compares, or does arithmetic on holds
-//! data, whereas one read in an annotation names a type.
-//! `band-constants` calls `value_is_alias` and skips this last check,
-//! sorting its sub-band on the value alone.
+//! `is_type_alias` adds `module_reads_as_data`, so a name the module
+//! truth-tests, order-compares, or does arithmetic on holds data,
+//! whereas one read in an annotation names a type. `band-constants`
+//! calls `value_is_alias` and skips this last check, sorting its
+//! sub-band on the value alone.
 
 use std::collections::{HashMap, HashSet};
 
 use ruff_python_ast::{
-    Expr, ExprAttribute, ExprBinOp, ExprNumberLiteral, ExprSubscript, ExprUnaryOp, Number,
-    Operator, Stmt, UnaryOp, helpers::is_dunder, name::UnqualifiedName,
+    Expr, ExprAttribute, ExprBinOp, ExprList, ExprNumberLiteral, ExprSubscript, ExprTuple,
+    ExprUnaryOp, Number, Operator, Stmt, UnaryOp, helpers::is_dunder, name::UnqualifiedName,
 };
 use ruff_python_stdlib::typing::{is_literal_member, is_pep_593_generic_member};
 
-use super::binding::{
-    BindingAnalysis, BindingKind, ModuleAssignment, ReadContext, module_assignments,
-};
-
-/// What the module proves about the object a name holds.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum Evidence {
-    /// The module builds the value out of data it constructs.
-    Runtime,
-    /// A `class` statement in the module binds the name.
-    Type,
-    /// The module settles nothing, so the name may hold either.
-    Unknown,
-}
+use super::binding::{BindingAnalysis, BindingKind, ModuleAssignment, module_assignments};
 
 /// The module-scope evidence the alias read consumes, pairing the
 /// binding table with every module-scope assignment and an index from
@@ -71,13 +59,18 @@ impl<'src> AliasContext<'src> {
     pub(crate) fn sites(&self) -> &[ModuleAssignment<'src>] {
         &self.sites
     }
+
+    /// The binding table the checks read.
+    pub(crate) fn analysis(&self) -> &'src BindingAnalysis {
+        self.analysis
+    }
 }
 
 /// True when `site` binds a type. The value must name an object that
 /// already exists and no read of the bound name may prove it holds data.
 pub(crate) fn is_type_alias<'src>(site: &ModuleAssignment<'src>, ctx: &AliasContext<'src>) -> bool {
     site.value.is_some_and(|value| value_is_alias(value, ctx))
-        && ctx.analysis.module_read_context(site.target.id.as_str()) != ReadContext::Runtime
+        && !ctx.analysis.module_reads_as_data(&site.target.id)
 }
 
 /// True when `value` names an object that already exists rather than
@@ -114,7 +107,10 @@ fn dotted_is_alias<'src>(
     visited: &mut HashSet<&'src str>,
 ) -> bool {
     !base.segments().iter().any(|segment| is_dunder(segment))
-        && head_evidence(base, ctx, visited) != Evidence::Runtime
+        && !base
+            .segments()
+            .first()
+            .is_some_and(|head| name_binds_data(head, ctx, visited))
 }
 
 /// True when `arm` is a type a PEP 604 union may carry, an alias value
@@ -151,13 +147,13 @@ fn subscript_is_runtime<'src>(
         Some(tail) if is_literal_member(tail) => runtime_only(slice, ctx, visited, true),
         // PEP 593 leaves every argument after the first arbitrary, so
         // `Annotated[int, Field(gt=0)]` reads only its type.
-        Some(tail) if is_pep_593_generic_member(tail) => match slice {
-            Expr::Tuple(tuple) => tuple
-                .elts
-                .first()
-                .is_some_and(|annotated| runtime_only(annotated, ctx, visited, false)),
-            single => runtime_only(single, ctx, visited, false),
-        },
+        Some(tail) if is_pep_593_generic_member(tail) => {
+            let annotated = slice
+                .as_tuple_expr()
+                .and_then(|tuple| tuple.elts.first())
+                .unwrap_or(slice);
+            runtime_only(annotated, ctx, visited, false)
+        }
         _ => runtime_only(slice, ctx, visited, false),
     }
 }
@@ -206,17 +202,21 @@ fn runtime_only<'src>(
                 || runtime_only(right, ctx, visited, in_literal)
         }
 
-        // Only the signed integer of `Literal[-1]`.
-        Expr::UnaryOp(ExprUnaryOp { op, operand, .. }) => !matches!(
-            (op, operand.as_ref()),
-            (
-                UnaryOp::UAdd | UnaryOp::USub,
-                Expr::NumberLiteral(ExprNumberLiteral {
-                    value: Number::Int(_),
-                    ..
-                })
-            )
-        ),
+        // A signed integer stands only inside `Literal`, so `items[-1]`
+        // indexes data whereas `Literal[-1]` names a type.
+        Expr::UnaryOp(ExprUnaryOp { op, operand, .. }) => {
+            !in_literal
+                || !matches!(
+                    (op, operand.as_ref()),
+                    (
+                        UnaryOp::UAdd | UnaryOp::USub,
+                        Expr::NumberLiteral(ExprNumberLiteral {
+                            value: Number::Int(_),
+                            ..
+                        })
+                    )
+                )
+        }
 
         // An int, a bool, and bytes ride on `Literal` alone.
         Expr::BooleanLiteral(_)
@@ -230,21 +230,13 @@ fn runtime_only<'src>(
 
         // A dunder names a runtime value, and a name the module binds to
         // data indexes it (`table[idx]` under `idx = 0`).
-        Expr::Name(name) => {
-            is_dunder(&name.id)
-                || name_evidence(name.id.as_str(), ctx, visited) == Evidence::Runtime
-        }
+        Expr::Name(name) => is_dunder(&name.id) || name_binds_data(&name.id, ctx, visited),
         Expr::Attribute(ExprAttribute { attr, value, .. }) => {
             is_dunder(attr) || runtime_only(value, ctx, visited, in_literal)
         }
 
         // A container inherits the proof its members carry.
-        Expr::List(list) => list
-            .elts
-            .iter()
-            .any(|element| runtime_only(element, ctx, visited, in_literal)),
-        Expr::Tuple(tuple) => tuple
-            .elts
+        Expr::List(ExprList { elts, .. }) | Expr::Tuple(ExprTuple { elts, .. }) => elts
             .iter()
             .any(|element| runtime_only(element, ctx, visited, in_literal)),
         Expr::Starred(starred) => runtime_only(&starred.value, ctx, visited, in_literal),
@@ -256,61 +248,36 @@ fn runtime_only<'src>(
     }
 }
 
-/// The evidence the module carries about the head of a dotted base, the
-/// `sys` of `sys.modules` and the `SETTINGS` of `SETTINGS["db"]`.
-fn head_evidence<'src>(
-    base: &UnqualifiedName<'_>,
-    ctx: &AliasContext<'src>,
-    visited: &mut HashSet<&'src str>,
-) -> Evidence {
-    base.segments()
-        .first()
-        .map_or(Evidence::Unknown, |head| name_evidence(head, ctx, visited))
-}
-
-/// The evidence the module carries about what `name` holds. A name the
-/// module never binds, imports, or rebinds settles nothing, because the
-/// object it holds is decided outside this file.
-fn name_evidence<'src>(
+/// True when this module binds `name` to data it builds. Anything the
+/// module leaves undecided reads as false, in that only a value built
+/// here proves the name holds data.
+fn name_binds_data<'src>(
     name: &str,
     ctx: &AliasContext<'src>,
     visited: &mut HashSet<&'src str>,
-) -> Evidence {
+) -> bool {
     let kinds = ctx.analysis.module_binding_kinds(name);
-    if kinds.is_empty() {
-        // A builtin, a star-import, or a runtime-injected global.
-        return Evidence::Unknown;
-    }
-    if kinds.contains(&BindingKind::ClassDef) {
-        return Evidence::Type;
-    }
-    if kinds.contains(&BindingKind::Import) || ctx.analysis.module_reassigned(name) {
-        return Evidence::Unknown;
+    // An unbound name is a builtin, a star-import, or a global injected
+    // at runtime. A `class` statement binds a type. An import and a
+    // rebind are both decided outside this assignment. None says data.
+    if kinds.is_empty()
+        || kinds.contains(&BindingKind::ClassDef)
+        || kinds.contains(&BindingKind::Import)
+        || ctx.analysis.module_reassigned(name)
+    {
+        return false;
     }
     let Some((&key, &value)) = ctx.values.get_key_value(name) else {
-        return Evidence::Unknown;
+        return false;
     };
+    // A cycle, as in `A = A[0]`.
     if !visited.insert(key) {
-        // A cycle, as in `A = A[0]`.
-        return Evidence::Unknown;
+        return false;
     }
-    value_evidence(value, ctx, visited)
-}
-
-/// The evidence a bound value carries. A call binds a type as readily as
-/// data (`T = TypeVar("T")`, `Point = namedtuple(...)`), and an
-/// attribute is undecidable in the module alone (`opener = TarFile.open`
-/// against `path_sep = os.sep`), so both settle nothing.
-fn value_evidence<'src>(
-    value: &'src Expr,
-    ctx: &AliasContext<'src>,
-    visited: &mut HashSet<&'src str>,
-) -> Evidence {
-    match value {
-        Expr::Attribute(_) | Expr::Call(_) => Evidence::Unknown,
-        _ if alias_value(value, ctx, visited) => Evidence::Type,
-        _ => Evidence::Runtime,
-    }
+    // A call binds a type as readily as data (`T = TypeVar("T")`), and
+    // an attribute is undecidable in the module alone
+    // (`opener = TarFile.open` against `path_sep = os.sep`).
+    !matches!(value, Expr::Attribute(_) | Expr::Call(_)) && !alias_value(value, ctx, visited)
 }
 
 #[cfg(test)]
@@ -383,6 +350,9 @@ mod tests {
     #[case::dunder_slice("X = sys.modules[__name__]", false)]
     #[case::dunder_base("X = __builtins__[\"open\"]", false)]
     #[case::int_index("X = path_separators[0]", false)]
+    #[case::negative_index("X = items[-1]", false)]
+    #[case::positive_signed_index("X = offsets[+1]", false)]
+    #[case::inverted_index("X = mask[~3]", false)]
     #[case::bool_index("X = options[True]", false)]
     #[case::float_index("X = table[3.14]", false)]
     #[case::call_slice("X = config[name.upper()]", false)]
@@ -406,6 +376,8 @@ mod tests {
     #[case::imported_literal("from typing import Literal\nX = Literal[\"read\"]", true)]
     #[case::local_alias_slice("Key = int\nX = dict[Key, str]", true)]
     #[case::reassigned_base("A = {}\nA = load()\nX = A[\"k\"]", true)]
+    #[case::rebound_dict_base("A = {}\nA = {\"k\": 1}\nX = A[\"k\"]", true)]
+    #[case::attribute_valued_base("sep = os.sep\nX = table[sep]", true)]
     #[case::self_indexing_base("A = A[0]\nX = A[1]", false)]
     #[case::mutually_cyclic_bases("A = B[int]\nB = A[int]\nX = A[str]", true)]
     fn the_module_binding_settles_the_base(#[case] src: &str, #[case] expected: bool) {

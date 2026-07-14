@@ -4,3 +4,5 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/miscased_constants/typing_carve_outs_stay_types/input.py
 ---
 miscased-constants@298..309
+miscased-constants@322..334
+miscased-constants@351..360

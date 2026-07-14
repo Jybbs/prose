@@ -16,7 +16,7 @@ use crate::{
     diagnostics::Diagnostic,
     primitives::{
         alias::{AliasContext, is_type_alias},
-        binding::{BindingAnalysis, ModuleAssignment, is_explicit_type_alias, is_screaming_case},
+        binding::{ModuleAssignment, is_explicit_type_alias, is_screaming_case},
         effect::value_is_effectful,
     },
     rule::{Rule, RuleId},
@@ -37,17 +37,12 @@ impl MiscasedConstants {
     /// True when `site` binds a module constant miscased against
     /// `SCREAMING_CASE`, no carve-out from the module doc sparing it. The
     /// value must be present, inert, and neither a lambda nor a type.
-    fn is_miscased<'src>(
-        &self,
-        site: &ModuleAssignment<'src>,
-        ctx: &AliasContext<'src>,
-        analysis: &BindingAnalysis,
-    ) -> bool {
+    fn is_miscased<'src>(&self, site: &ModuleAssignment<'src>, ctx: &AliasContext<'src>) -> bool {
         let name = site.target.id.as_str();
         name.chars().count() > 1
             && !name.starts_with('_')
             && !is_screaming_case(name)
-            && !analysis.module_reassigned(name)
+            && !ctx.analysis().module_reassigned(name)
             && !is_explicit_type_alias(site.stmt)
             && !Config::allow_matches(&self.allow_pattern, name)
             && !is_type_alias(site, ctx)
@@ -76,11 +71,10 @@ impl Rule for MiscasedConstants {
         if source.is_notebook() {
             return Vec::new();
         }
-        let analysis = source.binding_analysis();
-        let ctx = AliasContext::new(&source.ast().body, analysis);
+        let ctx = AliasContext::new(&source.ast().body, source.binding_analysis());
         ctx.sites()
             .iter()
-            .filter(|site| self.is_miscased(site, &ctx, analysis))
+            .filter(|site| self.is_miscased(site, &ctx))
             .map(|site| self.rename(site.target))
             .collect()
     }

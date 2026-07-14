@@ -8,7 +8,7 @@ input_file: crate/tests/fixtures/miscased_constants/runtime_index_draws_the_rena
     "code": "miscased-constants",
     "end_location": {
       "column": 13,
-      "row": 1
+      "row": 5
     },
     "fix": {
       "applicability": "displayonly",
@@ -21,7 +21,7 @@ input_file: crate/tests/fixtures/miscased_constants/runtime_index_draws_the_rena
     },
     "location": {
       "column": 1,
-      "row": 1
+      "row": 5
     },
     "message": "Module constant `alt_path_sep` is not SCREAMING_CASE"
   },
@@ -29,7 +29,7 @@ input_file: crate/tests/fixtures/miscased_constants/runtime_index_draws_the_rena
     "code": "miscased-constants",
     "end_location": {
       "column": 7,
-      "row": 2
+      "row": 6
     },
     "fix": {
       "applicability": "displayonly",
@@ -42,7 +42,7 @@ input_file: crate/tests/fixtures/miscased_constants/runtime_index_draws_the_rena
     },
     "location": {
       "column": 1,
-      "row": 2
+      "row": 6
     },
     "message": "Module constant `oldmod` is not SCREAMING_CASE"
   },
@@ -50,7 +50,7 @@ input_file: crate/tests/fixtures/miscased_constants/runtime_index_draws_the_rena
     "code": "miscased-constants",
     "end_location": {
       "column": 10,
-      "row": 3
+      "row": 7
     },
     "fix": {
       "applicability": "displayonly",
@@ -63,8 +63,29 @@ input_file: crate/tests/fixtures/miscased_constants/runtime_index_draws_the_rena
     },
     "location": {
       "column": 1,
-      "row": 3
+      "row": 7
     },
     "message": "Module constant `first_sep` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 9,
+      "row": 8
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "last_sep",
+          "content": "LAST_SEP"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 8
+    },
+    "message": "Module constant `last_sep` is not SCREAMING_CASE"
   }
 ]
