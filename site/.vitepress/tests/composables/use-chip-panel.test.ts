@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { ref } from 'vue'
+import { promiseTimeout } from '@vueuse/core'
+import { ref }            from 'vue'
 
 import { useChipPanel }              from '../../lib/composables/use-chip-panel'
 import type { Facet, RuleControl }   from '../../lib/composables/use-chip-panel'
@@ -27,28 +28,29 @@ const CARDS = {
   'align-equals': { href: '/rules/alignment/align-equals', slug: 'align-equals' } as RenderedRule
 }
 
-// A stateful stand-in for the sandbox: `setFacet` writes into a plain map the
-// `facetValue` reads resolve against, which is all the panel logic touches.
+// A stateful stand-in for the sandbox, where `setFacet` writes into a plain map
+// the `facetValue` reads resolve against, which is all the panel logic touches.
 function fakeSandbox() {
-  const overrides = new Map<string, unknown>()
+  const overrides    = new Map<string, unknown>()
   const eligible     = ref<readonly string[] | null>([])
   const facetImpact  = ref<Record<string, readonly string[]>>({})
   const lengthImpact = ref<readonly string[] | null>(null)
   const sandbox = {
-    eligible,
-    facetImpact,
-    facetValue : (slug: string, facet: Facet) => overrides.get(`${slug}.${facet.key}`) ?? facet.default,
-    lengthImpact,
-    lengths    : [
+    eligible     : eligible,
+    facetImpact  : facetImpact,
+    facetValue   : (slug: string, facet: Facet) =>
+      overrides.get(`${slug}.${facet.key}`) ?? facet.default,
+    lengthImpact : lengthImpact,
+    lengths      : [
       { default: 88, key: 'code-line-length', label: 'Code' },
       { default: 76, key: 'docstring-line-length', label: 'Docstring' }
     ],
-    lengthValue: () => 88,
-    rules      : [ALIGN, BLANK],
-    setFacet   : (slug: string, facet: Facet, value: unknown) => {
+    lengthValue  : () => 88,
+    rules        : [ALIGN, BLANK],
+    setFacet     : (slug: string, facet: Facet, value: unknown) => {
       overrides.set(`${slug}.${facet.key}`, value)
     },
-    setLength  : () => {}
+    setLength    : () => {}
   } as unknown as ProseSandbox
   return { eligible, facetImpact, lengthImpact, sandbox }
 }
@@ -140,7 +142,7 @@ describe('useChipPanel', () => {
     }
     press(gear)
     expect(api.openSlug.value).toBe('align-equals')
-    await new Promise(resolve => { setTimeout(resolve, 0) })
+    await promiseTimeout(0)
     press(away)
     expect(api.openSlug.value).toBe('')
     panel.remove()

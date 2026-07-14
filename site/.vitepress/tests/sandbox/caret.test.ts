@@ -24,7 +24,8 @@ const CASES = [
   {
     expected : 4,
     name     : 'an element node, by child index rather than text',
-    stub     : (root: HTMLElement) => caretApis({ offset: 1, offsetNode: root.querySelector('code')! })
+    stub     : (root: HTMLElement) =>
+      caretApis({ offset: 1, offsetNode: root.querySelector('code')! })
   },
   {
     expected : 0,
@@ -34,8 +35,10 @@ const CASES = [
   {
     expected : 6,
     name     : 'a legacy caret range when no caret position resolves',
-    stub     : (root: HTMLElement) =>
-      caretApis(undefined, { startContainer: root.querySelectorAll('span')[1].firstChild!, startOffset: 2 })
+    stub     : (root: HTMLElement) => caretApis(undefined, {
+      startContainer : root.querySelectorAll('span')[1].firstChild!,
+      startOffset    : 2
+    })
   },
   {
     expected : 0,
@@ -47,7 +50,6 @@ const CASES = [
 const codeRoot = (): HTMLElement => {
   const root = document.createElement('div')
   root.innerHTML = '<pre><code><span>def </span><span>run</span>():</code></pre>'
-  document.body.append(root)
   return root
 }
 

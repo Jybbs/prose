@@ -5,17 +5,11 @@ import { nextTick, ref }        from 'vue'
 
 import ProseSandboxToml      from '../../theme/components/sandbox/ProseSandboxToml.vue'
 import type { ProseSandbox } from '../../lib/composables/use-prose-sandbox'
-import { domTest }           from '../dom'
+import { domTest, isHidden } from '../dom'
 
 vi.mock('../../lib/sandbox/highlight', () => import('../highlight-stub'))
 
-vi.mock('../../lib/markdown/highlighter', () => ({
-  codeHighlighter: () => Promise.resolve({
-    codeToTokens: (text: string) => ({
-      tokens: text.split('\n').map(line => [{ content: line, htmlStyle: undefined }])
-    })
-  })
-}))
+vi.mock('../../lib/markdown/highlighter', () => import('../highlighter-stub'))
 
 const fakeSandbox = (configToml = ''): ProseSandbox => ({
   configError : ref(''),
@@ -23,11 +17,6 @@ const fakeSandbox = (configToml = ''): ProseSandbox => ({
 } as unknown as ProseSandbox)
 
 const mountToml = (sandbox: ProseSandbox) => mount(ProseSandboxToml, { props: { sandbox } })
-
-// happy-dom leaves `isVisible` truthy for a `v-show`-hidden element, so
-// visibility asserts on the inline style the directive writes.
-const hidden = (wrapper: ReturnType<typeof mountToml>, selector: string): boolean =>
-  wrapper.get(selector).attributes('style')?.includes('display: none') ?? false
 
 describe('ProseSandboxToml', () => {
   domTest('types a config change and settles onto the target text', async ({ reducedMotion }) => {
@@ -40,7 +29,7 @@ describe('ProseSandboxToml', () => {
     await vi.waitFor(() => {
       expect(wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 100')
     })
-    expect(hidden(wrapper, '.code-typewriter')).toBe(true)
+    expect(isHidden(wrapper.get('.code-typewriter'))).toBe(true)
   })
 
   domTest('abandons a stale run when a newer change lands mid-type', async ({ reducedMotion }) => {
@@ -50,10 +39,10 @@ describe('ProseSandboxToml', () => {
     await flushPromises()
 
     sandbox.configToml.value = 'rules.align-equals = false\nrules.blank-lines = false'
-    await vi.waitFor(() => expect(hidden(wrapper, '.code-typewriter')).toBe(false))
+    await vi.waitFor(() => expect(isHidden(wrapper.get('.code-typewriter'))).toBe(false))
     sandbox.configToml.value = 'code-line-length = 40'
     await vi.waitFor(() => {
-      expect(hidden(wrapper, '.sandbox-toml-display')).toBe(false)
+      expect(isHidden(wrapper.get('.sandbox-toml-display'))).toBe(false)
       expect(wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 40')
     })
     expect(wrapper.get('.sandbox-toml-display').html()).not.toContain('align-equals')
@@ -92,6 +81,6 @@ describe('ProseSandboxToml', () => {
     await vi.waitFor(() => {
       expect(wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 60')
     })
-    expect(hidden(wrapper, '.code-typewriter')).toBe(true)
+    expect(isHidden(wrapper.get('.code-typewriter'))).toBe(true)
   })
 })

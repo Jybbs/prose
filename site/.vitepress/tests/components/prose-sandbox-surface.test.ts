@@ -1,12 +1,13 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
+import { promiseTimeout }       from '@vueuse/core'
 import { ref }                  from 'vue'
 
 import ProseSandboxSurface    from '../../theme/components/sandbox/ProseSandboxSurface.vue'
 import type { ProseSandbox }  from '../../lib/composables/use-prose-sandbox'
 import { domTest, nextFrame } from '../dom'
 
-const drawSettled = (): Promise<void> => new Promise(resolve => { setTimeout(resolve, 550) })
+const drawSettled = (): Promise<void> => promiseTimeout(550)
 
 vi.mock('../../lib/sandbox/highlight', () => import('../highlight-stub'))
 
@@ -25,7 +26,17 @@ const fakeSandbox = (formatted: string): ProseSandbox => ({
   source      : ref(formatted)
 } as unknown as ProseSandbox)
 
-const LintFlagPopperStub = { methods: { hide() {}, show() {} }, template: '<div class="popper-stub" />' }
+const FINDING = {
+  code         : 'r1',
+  end_location : { column: 2, row: 1 },
+  location     : { column: 1, row: 1 },
+  message      : 'm'
+}
+
+const LintFlagPopperStub = {
+  methods  : { hide() {}, show() {} },
+  template : '<div class="popper-stub" />'
+}
 
 const mountSurface = (sandbox: ProseSandbox) =>
   mount(ProseSandboxSurface, {
@@ -73,9 +84,7 @@ describe('ProseSandboxSurface', () => {
   domTest('drops a disabled rule\'s squiggle while keeping the code', async ({ reducedMotion }) => {
     reducedMotion(false)
     const sandbox = fakeSandbox('x = 1')
-    sandbox.diagnostics.value = [
-      { code: 'r1', end_location: { column: 2, row: 1 }, location: { column: 1, row: 1 }, message: 'm' }
-    ]
+    sandbox.diagnostics.value = [FINDING]
     const wrapper = mountSurface(sandbox)
     await flushPromises()
     expect(wrapper.get('.sandbox-surface-display').html()).toContain('data-rule="r1"')
@@ -96,9 +105,7 @@ describe('ProseSandboxSurface', () => {
     await flushPromises()
     expect(wrapper.get('.sandbox-surface-display').html()).not.toContain('data-rule="r1"')
 
-    sandbox.diagnostics.value = [
-      { code: 'r1', end_location: { column: 2, row: 1 }, location: { column: 1, row: 1 }, message: 'm' }
-    ]
+    sandbox.diagnostics.value = [FINDING]
     await flushPromises()
     await drawSettled()
     await flushPromises()

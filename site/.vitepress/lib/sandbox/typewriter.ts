@@ -1,22 +1,29 @@
 import { codeHighlighter } from '../markdown/highlighter'
+import { commonPrefix }    from '../shared/common-prefix'
 import { SHIKI_THEMES }    from '../shared/constants'
+
+const CARET = '<span class="code-caret" aria-hidden="true"></span>'
 
 type Token = { content: string, style: string }
 
 export type TokenLine = readonly Token[]
 
-// The line diff a typing run animates: the untouched prefix and suffix,
-// the changed middle's bounds and widths, and the shared character floor
-// a single-line change sweeps from.
+// One side of a typing run, its lines, the width of its widest changed
+// line, and where its changed middle ends.
+export interface TypingSide {
+  lines  : string[]
+  max    : number
+  midEnd : number
+}
+
+// The line diff a typing run animates: the untouched prefix, each side's
+// changed middle, and the shared character floor a single-line change
+// sweeps from.
 export interface TypingPlan {
-  curLines   : string[]
-  curMax     : number
-  curMidEnd  : number
-  floor      : number
-  nextLines  : string[]
-  nextMax    : number
-  nextMidEnd : number
-  prefix     : number
+  cur    : TypingSide
+  floor  : number
+  next   : TypingSide
+  prefix : number
 }
 
 // The first `chars` characters of one tokenized line as styled spans.
@@ -43,14 +50,29 @@ export async function tokenLines(text: string): Promise<TokenLine[]> {
   })))
 }
 
+// One frame of a typing run, the held lines rendered whole and each line of
+// the changed middle truncated to `chars` under its own caret.
+export function typingFrame(
+  tokens : readonly TokenLine[],
+  side   : TypingSide,
+  prefix : number,
+  chars  : number
+): { html: string, text: string } {
+  const parts: string[] = []
+  const texts: string[] = []
+  side.lines.forEach((line, index) => {
+    const held    = index < prefix || index >= side.midEnd
+    const visible = held ? Number.POSITIVE_INFINITY : Math.min(chars, line.length)
+    parts.push(lineHtml(tokens[index] ?? [], visible) + (held ? '' : CARET))
+    texts.push(line.slice(0, visible))
+  })
+  return { html: parts.join('\n'), text: texts.join('\n') }
+}
+
 export function typingPlan(current: string, next: string): TypingPlan {
   const curLines  = current.split('\n')
   const nextLines = next.split('\n')
-  let prefix = 0
-  while (
-    prefix < curLines.length && prefix < nextLines.length &&
-    curLines[prefix] === nextLines[prefix]
-  ) prefix += 1
+  const prefix    = commonPrefix(curLines, nextLines)
   let suffix = 0
   while (
     suffix < curLines.length - prefix && suffix < nextLines.length - prefix &&
@@ -62,13 +84,16 @@ export function typingPlan(current: string, next: string): TypingPlan {
   const nextMax    = Math.max(0, ...nextLines.slice(prefix, nextMidEnd).map(line => line.length))
   let floor = 0
   if (curMidEnd - prefix <= 1 && nextMidEnd - prefix <= 1) {
-    const before = curMidEnd > prefix ? curLines[prefix] : ''
+    const before = curMidEnd  > prefix ? curLines[prefix]  : ''
     const after  = nextMidEnd > prefix ? nextLines[prefix] : ''
-    while (floor < before.length && floor < after.length && before[floor] === after[floor]) {
-      floor += 1
-    }
+    floor = commonPrefix(before, after)
   }
-  return { curLines, curMax, curMidEnd, floor, nextLines, nextMax, nextMidEnd, prefix }
+  return {
+    cur    : { lines: curLines,  max: curMax,  midEnd: curMidEnd },
+    floor  : floor,
+    next   : { lines: nextLines, max: nextMax, midEnd: nextMidEnd },
+    prefix : prefix
+  }
 }
 
 function escapeHtml(text: string): string {

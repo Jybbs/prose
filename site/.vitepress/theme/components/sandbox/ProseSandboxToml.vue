@@ -9,7 +9,6 @@ import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
 import { highlight }         from '../../../lib/sandbox/highlight'
 import * as typewriter       from '../../../lib/sandbox/typewriter'
 
-const CARET   = '<span class="code-caret" aria-hidden="true"></span>'
 const STEP_MS = 12
 
 const props = defineProps<{ sandbox: ProseSandbox }>()
@@ -52,39 +51,28 @@ async function typeTo(next: string): Promise<void> {
   if (gen !== generation) return
   const plan = typewriter.typingPlan(current, next)
 
-  function frame(
+  // Steps the caret from `from` to `to`, backspacing when the target is
+  // lower and typing when it is higher, and abandons on a newer change.
+  async function sweep(
     tokens : typewriter.TokenLine[],
-    lines  : readonly string[],
-    midEnd : number,
-    chars  : number
-  ): void {
-    const parts: string[] = []
-    const texts: string[] = []
-    for (let index = 0; index < lines.length; index += 1) {
-      if (index < plan.prefix || index >= midEnd) {
-        parts.push(typewriter.lineHtml(tokens[index] ?? [], Number.POSITIVE_INFINITY))
-        texts.push(lines[index])
-        continue
-      }
-      const visible = Math.min(chars, lines[index].length)
-      parts.push(typewriter.lineHtml(tokens[index] ?? [], visible) + CARET)
-      texts.push(lines[index].slice(0, visible))
+    side   : typewriter.TypingSide,
+    from   : number,
+    to     : number
+  ): Promise<void> {
+    const step = from < to ? 1 : -1
+    for (let chars = from; chars !== to; chars += step) {
+      if (gen !== generation) return
+      const { html, text } = typewriter.typingFrame(tokens, side, plan.prefix, chars + step)
+      typingHtml.value = html
+      shown            = text
+      await promiseTimeout(STEP_MS)
     }
-    typingHtml.value = parts.join('\n')
-    shown            = texts.join('\n')
   }
 
   typing.value = true
-  for (let chars = plan.curMax; chars > plan.floor; chars -= 1) {
-    if (gen !== generation) return
-    frame(curTokens, plan.curLines, plan.curMidEnd, chars - 1)
-    await promiseTimeout(STEP_MS)
-  }
-  for (let chars = plan.floor; chars < plan.nextMax; chars += 1) {
-    if (gen !== generation) return
-    frame(nextTokens, plan.nextLines, plan.nextMidEnd, chars + 1)
-    await promiseTimeout(STEP_MS)
-  }
+  await sweep(curTokens, plan.cur, plan.cur.max, plan.floor)
+  if (gen !== generation) return
+  await sweep(nextTokens, plan.next, plan.floor, plan.next.max)
   if (gen !== generation) return
   await settle(next)
 }
@@ -135,6 +123,7 @@ onMounted(() => settle(configToml.value))
       class="copy"
       :class="{ copied }"
       :title="copied ? 'Copied' : 'Copy prose.toml'"
+      :aria-label="copied ? 'Copied' : 'Copy prose.toml'"
       @click="copy()"
     />
     <p v-if="configError" class="code-panel-error">{{ configError }}</p>

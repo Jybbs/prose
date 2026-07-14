@@ -24,8 +24,10 @@ function syncScroll(): void {
 }
 
 defineExpose({
-  caret : (offset: number) => input.value?.setSelectionRange(offset, offset),
-  focus : () => input.value?.focus()
+  focus: (offset?: number) => {
+    input.value?.focus()
+    if (offset !== undefined) input.value?.setSelectionRange(offset, offset)
+  }
 })
 </script>
 
@@ -56,7 +58,6 @@ defineExpose({
 
 .code-editor-layer {
   white-space : pre;
-  tab-size    : 4;
 }
 
 .code-editor-input {

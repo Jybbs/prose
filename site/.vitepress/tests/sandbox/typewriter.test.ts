@@ -1,14 +1,7 @@
-import { lineHtml, tokenLines, typingPlan } from '../../lib/sandbox/typewriter'
-import type { TokenLine }                   from '../../lib/sandbox/typewriter'
+import { lineHtml, tokenLines, typingFrame, typingPlan } from '../../lib/sandbox/typewriter'
+import type { TokenLine, TypingSide }                    from '../../lib/sandbox/typewriter'
 
-vi.mock('../../lib/markdown/highlighter', () => ({
-  codeHighlighter: () => Promise.resolve({
-    codeToTokens: (text: string) => ({
-      tokens: text.split('\n').map(line =>
-        line === '' ? [] : [{ content: line, htmlStyle: { color: 'red' } }])
-    })
-  })
-}))
+vi.mock('../../lib/markdown/highlighter', () => import('../highlighter-stub'))
 
 const LINE: TokenLine = [
   { content: 'ab',  style: 'color:red' },
@@ -34,20 +27,46 @@ describe('tokenLines', () => {
       []
     ])
   })
+
+  it('leaves a token no theme rule matches as an empty style string', async () => {
+    expect(await tokenLines('  ')).toEqual([[{ content: '  ', style: '' }]])
+  })
+})
+
+describe('typingFrame', () => {
+  const SIDE: TypingSide    = { lines: ['a = 1', 'b = 2', 'c = 3'], max: 5, midEnd: 2 }
+  const TOKENS: TokenLine[] = SIDE.lines.map(line => [{ content: line, style: 'color:red' }])
+
+  it('holds the lines outside the changed middle and truncates the one inside it', () => {
+    const { html, text } = typingFrame(TOKENS, SIDE, 1, 2)
+    const lines = html.split('\n')
+    expect(text).toBe('a = 1\nb \nc = 3')
+    expect(lines[0]).toBe('<span style="color:red">a = 1</span>')
+    expect(lines[1]).toBe(
+      '<span style="color:red">b </span><span class="code-caret" aria-hidden="true"></span>'
+    )
+    expect(lines[2]).toBe('<span style="color:red">c = 3</span>')
+  })
+
+  it('renders an empty line when the tokens run short of the lines', () => {
+    const { html, text } = typingFrame([], SIDE, 1, 2)
+    expect(text).toBe('a = 1\nb \nc = 3')
+    expect(html.split('\n')[0]).toBe('')
+  })
 })
 
 describe('typingPlan', () => {
   it.each([
-    ['a\nb\nc', 'a\nx\nc', { curMax: 1, curMidEnd: 2, floor: 0, nextMax: 1, nextMidEnd: 2, prefix: 1 }],
-    ['a\nbb',   'a\nbc',   { curMax: 2, curMidEnd: 2, floor: 1, nextMax: 2, nextMidEnd: 2, prefix: 1 }],
-    ['',        'x = 1',   { curMax: 0, curMidEnd: 1, floor: 0, nextMax: 5, nextMidEnd: 1, prefix: 0 }],
-    ['same',    'same',    { curMax: 0, curMidEnd: 1, floor: 0, nextMax: 0, nextMidEnd: 1, prefix: 1 }],
-    ['a',       'a\nb',    { curMax: 0, curMidEnd: 1, floor: 0, nextMax: 1, nextMidEnd: 2, prefix: 1 }]
+    ['a\nb\nc', 'a\nx\nc', { cur: { max: 1, midEnd: 2 }, floor: 0, next: { max: 1, midEnd: 2 }, prefix: 1 }],
+    ['a\nbb',   'a\nbc',   { cur: { max: 2, midEnd: 2 }, floor: 1, next: { max: 2, midEnd: 2 }, prefix: 1 }],
+    ['',        'x = 1',   { cur: { max: 0, midEnd: 1 }, floor: 0, next: { max: 5, midEnd: 1 }, prefix: 0 }],
+    ['same',    'same',    { cur: { max: 0, midEnd: 1 }, floor: 0, next: { max: 0, midEnd: 1 }, prefix: 1 }],
+    ['a',       'a\nb',    { cur: { max: 0, midEnd: 1 }, floor: 0, next: { max: 1, midEnd: 2 }, prefix: 1 }]
   ])('plans the run from %j to %j', (current, next, expected) => {
     expect(typingPlan(current, next)).toEqual({
       ...expected,
-      curLines  : current.split('\n'),
-      nextLines : next.split('\n')
+      cur  : { ...expected.cur,  lines: current.split('\n') },
+      next : { ...expected.next, lines: next.split('\n') }
     })
   })
 
@@ -55,6 +74,6 @@ describe('typingPlan', () => {
     const plan = typingPlan('aa\nbb', 'ax\nbx')
     expect(plan.prefix).toBe(0)
     expect(plan.floor).toBe(0)
-    expect(plan.curMax).toBe(2)
+    expect(plan.cur.max).toBe(2)
   })
 })

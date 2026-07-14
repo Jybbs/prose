@@ -1,3 +1,5 @@
+import { commonPrefix } from '../shared/common-prefix'
+
 import type * as typingDemo from './typing-demo'
 
 export interface BufferSegments {
@@ -22,13 +24,12 @@ export function applyCompletedEdits(
   upTo    : number
 ): string {
   let text = base
-  for (let i = 0; i < upTo; i++) {
-    const e = entries[i]
-    if (e.kind !== 'edit') continue
-    const idx = text.indexOf(e.anchor + e.from)
-    if (idx === -1) continue
-    const valueStart = idx + e.anchor.length
-    text = text.slice(0, valueStart) + e.to + text.slice(valueStart + e.from.length)
+  for (const entry of entries.slice(0, upTo)) {
+    if (entry.kind !== 'edit') continue
+    const anchorIdx = text.indexOf(entry.anchor + entry.from)
+    if (anchorIdx === -1) continue
+    const valueStart = anchorIdx + entry.anchor.length
+    text = text.slice(0, valueStart) + entry.to + text.slice(valueStart + entry.from.length)
   }
   return text
 }
@@ -40,10 +41,8 @@ export function editPlan(from: string, to: string): {
   prefix   : string
   toCore   : string
 } {
-  let i = 0
-  const max = Math.min(from.length, to.length)
-  while (i < max && from[i] === to[i]) i += 1
-  return { fromCore: from.slice(i), prefix: from.slice(0, i), toCore: to.slice(i) }
+  const shared = commonPrefix(from, to)
+  return { fromCore: from.slice(shared), prefix: from.slice(0, shared), toCore: to.slice(shared) }
 }
 
 export function segmentsForEdit(

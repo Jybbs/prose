@@ -36,6 +36,7 @@
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-xs);
   line-height : 1.6;
+  tab-size    : 4;
   overflow    : auto;
 }
 

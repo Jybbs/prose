@@ -5,9 +5,12 @@ import SandboxCodeEditor from '../../theme/components/sandbox/SandboxCodeEditor.
 
 vi.mock('../../lib/sandbox/highlight', () => import('../highlight-stub'))
 
+const mountEditor = (modelValue: string) =>
+  mount(SandboxCodeEditor, { props: { lang: 'python', modelValue } })
+
 describe('SandboxCodeEditor', () => {
   it('tracks the textarea\'s horizontal scroll on the highlight layer', async () => {
-    const wrapper = mount(SandboxCodeEditor, { props: { lang: 'python', modelValue: 'x = 1' } })
+    const wrapper = mountEditor('x = 1')
     await flushPromises()
 
     const input = wrapper.get('textarea')
@@ -17,9 +20,19 @@ describe('SandboxCodeEditor', () => {
   })
 
   it('pads a trailing newline so the layer measures the textarea\'s height', async () => {
-    const wrapper = mount(SandboxCodeEditor, { props: { lang: 'python', modelValue: 'x = 1\n' } })
+    const wrapper = mountEditor('x = 1\n')
     await flushPromises()
 
     expect(wrapper.get('div.code-editor-layer').element.textContent).toBe('x = 1\n ')
+  })
+
+  it('seeds the caret at the offset it is focused with', async () => {
+    const wrapper = mountEditor('x = 1')
+    await flushPromises()
+
+    wrapper.vm.focus(3)
+    const input = wrapper.get('textarea').element
+    expect(input.selectionStart).toBe(3)
+    expect(input.selectionEnd).toBe(3)
   })
 })

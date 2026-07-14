@@ -80,10 +80,11 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   const parsed       = ref<ParsedConfig>({})
   const source       = ref(cases[0].source)
 
-  let activeIndex = 0
-  let module: ProseWasm | null = null
-  let reinit = 0
+  let activeIndex    = 0
   let eligibleSource = '\0'
+  let reinit         = 0
+
+  let module: ProseWasm | null = null
 
   const probed = new Map<string, SourceProbe>()
 
@@ -273,6 +274,11 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     }
   }
 
+  function seedCase(): void {
+    activeIndex  = pick(cases.length, activeIndex)
+    source.value = cases[activeIndex].source
+  }
+
   // A share link outranks the visitor's own saved session, which in turn
   // outranks seeding a fresh random example. The decode only defers the
   // format when a share payload is actually present.
@@ -288,8 +294,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     if (session) {
       adopt(session)
     } else {
-      activeIndex  = pick(cases.length, activeIndex)
-      source.value = cases[activeIndex].source
+      seedCase()
     }
     await format()
   }
@@ -297,8 +302,7 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   // A fresh example clears every edit, so a different case seeds the source
   // and the config resets to its defaults.
   function refresh(): void {
-    activeIndex      = pick(cases.length, activeIndex)
-    source.value     = cases[activeIndex].source
+    seedCase()
     parsed.value     = {}
     configToml.value = ''
   }

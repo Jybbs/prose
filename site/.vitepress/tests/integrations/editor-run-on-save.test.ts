@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 
 import EditorRunOnSave      from '../../theme/components/integrations/EditorRunOnSave.vue'
 import { expectAccessible } from '../axe'
+import { isHidden }         from '../dom'
 
 vi.mock('../../lib/integrations/editor-configs.data', () => ({
   data: [
@@ -30,16 +31,16 @@ describe('EditorRunOnSave', () => {
     const w = mountCard()
     expect(w.findAll('.editor-card-row')[0].attributes('aria-selected')).toBe('true')
     const faces = w.findAll('.editor-card-face')
-    expect(faces[0].attributes('style') ?? '').not.toContain('display: none')
-    expect(faces[1].attributes('style')).toContain('display: none')
+    expect(isHidden(faces[0])).toBe(false)
+    expect(isHidden(faces[1])).toBe(true)
   })
 
   it('swaps the visible face when another row takes the pointer', async () => {
     const w = mountCard()
     await w.findAll('.editor-card-row')[1].trigger('mouseenter')
     const faces = w.findAll('.editor-card-face')
-    expect(faces[0].attributes('style')).toContain('display: none')
-    expect(faces[1].attributes('style') ?? '').not.toContain('display: none')
+    expect(isHidden(faces[0])).toBe(true)
+    expect(isHidden(faces[1])).toBe(false)
     expect(faces[1].get('.editor-card-face-target').text()).toBe('init.el')
   })
 

@@ -41,6 +41,8 @@ const { drawSquiggles, undrawn } = useSquiggleDraw()
 const morphOptions = computed(() => magicMove.magicMoveOptions(morphMs.value, 0))
 const morphSteps   = computed(() => [...steps.value])
 
+const ruleCodes = computed(() => new Set(diagnostics.value.map(finding => finding.code)))
+
 const watchdog = useTimeoutFn(
   () => { if (morphing.value) endMorph() },
   () => morphMs.value + 250,
@@ -76,7 +78,7 @@ async function render(next: string): Promise<void> {
     await reflow(html, gen)
     return
   }
-  if (from === '' || from === next || reducedMotion.value) {
+  if (from === '' || reducedMotion.value) {
     commit(html)
     drawSquiggles()
     return
@@ -120,23 +122,22 @@ function endMorph(): void {
 // later diagnostics-only change can tell which underlines were dropped.
 function commit(html: string): void {
   displayHtml.value = html
-  shownRules        = new Set(diagnostics.value.map(finding => finding.code))
+  shownRules        = ruleCodes.value
 }
 
 // A lint toggle keeps the code but changes the finding set, so retract the
 // dropped rule's underlines against the current DOM, swap in the new set once
 // they clear, then draw any freshly enabled underlines back in.
 async function reflow(html: string, gen: number): Promise<void> {
-  const nextRules = new Set(diagnostics.value.map(finding => finding.code))
-  const removed   = [...shownRules.difference(nextRules)]
-  const added     = [...nextRules.difference(shownRules)]
-  if (removed.length > 0 && display.value) {
+  const removed = shownRules.difference(ruleCodes.value)
+  const added   = ruleCodes.value.difference(shownRules)
+  if (removed.size > 0 && display.value) {
     markUndrawn(display.value, removed)
     await promiseTimeout(ruleDrawMs())
     if (gen !== generation) return
   }
   commit(html)
-  if (added.length === 0) return
+  if (added.size === 0) return
   await nextTick()
   if (gen !== generation || !display.value) return
   const drawing = markUndrawn(display.value, added)
@@ -146,9 +147,9 @@ async function reflow(html: string, gen: number): Promise<void> {
 
 // Stages the underlines of `rules` scaled to zero and returns the elements,
 // so the caller can retract them or lift the class to draw them back.
-function markUndrawn(root: HTMLElement, rules: readonly string[]): HTMLElement[] {
+function markUndrawn(root: HTMLElement, rules: ReadonlySet<string>): HTMLElement[] {
   const matched = [...root.querySelectorAll<HTMLElement>('.lint-flag')]
-    .filter(flag => rules.includes(flag.dataset.rule ?? ''))
+    .filter(flag => rules.has(flag.dataset.rule ?? ''))
   matched.forEach(flag => flag.classList.add('lint-undrawn'))
   return matched
 }
@@ -166,10 +167,7 @@ function startEditing(event: MouseEvent | KeyboardEvent): void {
   draft.value    = formatted.value
   editing.value  = true
   morphing.value = false
-  nextTick(() => {
-    editor.value?.focus()
-    if (offset !== undefined) editor.value?.caret(offset)
-  })
+  nextTick(() => editor.value?.focus(offset))
 }
 
 function stopEditing(): void {
