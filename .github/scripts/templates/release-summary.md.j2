@@ -2,7 +2,7 @@
 
 {% if not is_tag -%}
 Build dry-run from {{ commit_link }}.
-{% elif publish == "success" -%}
+{% elif published -%}
 Published [*Prose* {{ ref }}]({{ pypi_url }}) from {{ commit_link }}, tagged {{ tag_link }}.
 {% elif prepub_failed -%}
 Pre-publish checks failed at {{ commit_link }} for tag {{ tag_link }}. Publish skipped.
@@ -17,7 +17,7 @@ Publish failed for tag {{ tag_link }} at {{ commit_link }}.
 {% for a in platforms %}
 | {{ a.label }} | {{ a.target }} | {{ a.mark }} |
 {% endfor %}
-{% if is_tag and publish == "success" %}
+{% if is_tag and published %}
 
 ### Install
 
