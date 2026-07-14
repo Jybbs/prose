@@ -1,5 +1,5 @@
 name        : 🪻 Warm
-run-name    : 🪻 Warm · ${{ github.head_ref || github.ref_name }}
+run-name    : 🪻 Warm · ${{ github.ref_name }}
 permissions : { contents: read }
 
 on:
@@ -49,7 +49,7 @@ jobs:
 
     env:
       CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
-      SHA           : ${{ github.sha }}
+      SHA           : &sha ${{ github.sha }}
 
     strategy:
       fail-fast: false
@@ -115,3 +115,23 @@ jobs:
 
       - name : Build release artifacts for ${{ matrix.target }}
         run  : mise exec -- cargo build --release --locked --target ${{ matrix.target }}
+
+  gate:
+    name    : 🗞️ Brief
+    if      : always()
+    needs   : [checks, wheels]
+    runs-on : *ubuntu
+
+    steps:
+      - *checkout
+
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+
+      - name : Summarize and gate
+        env:
+          CHECKS : ${{ needs.checks.result }}
+          REF    : ${{ github.ref_name }}
+          SHA    : *sha
+          WHEELS : ${{ needs.wheels.result }}
+        run  : ./.github/scripts/summary.py warm
