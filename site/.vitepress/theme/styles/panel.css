@@ -45,6 +45,10 @@
   background : transparent !important;
 }
 
+.code-panel-editable {
+  cursor : text;
+}
+
 .code-panel-error {
   margin      : 0;
   padding     : 10px 18px;

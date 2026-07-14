@@ -6,18 +6,9 @@ import ProseSandboxSurface    from '../../theme/components/sandbox/ProseSandboxS
 import type { ProseSandbox }  from '../../lib/composables/use-prose-sandbox'
 import { domTest, nextFrame } from '../dom'
 
-interface Decoration { properties: Record<string, string> }
-
 const drawSettled = (): Promise<void> => new Promise(resolve => { setTimeout(resolve, 550) })
 
-vi.mock('../../lib/sandbox/highlight', () => ({
-  highlight: (code: string, _lang: string, decorations: Decoration[] = []) => {
-    const flags = decorations
-      .map(item => `<span class="lint-flag" data-rule="${item.properties['data-rule']}">x</span>`)
-      .join('')
-    return Promise.resolve(`<pre class="shiki"><code>${code}${flags}</code></pre>`)
-  }
-}))
+vi.mock('../../lib/sandbox/highlight', () => import('../highlight-stub'))
 
 vi.mock('../../lib/markdown/magic-move', () => ({
   precompileMagicMove: () => Promise.resolve([{ tokens: [] }, { tokens: [] }])

@@ -22,13 +22,14 @@ const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('ed
 
 const displayHtml = ref('')
 const editing     = ref(false)
-const shown       = ref('')
 const typing      = ref(false)
 const typingHtml  = ref('')
 
 let generation = 0
+let shown      = ''
 
 async function settle(text: string): Promise<void> {
+  shown             = text
   displayHtml.value = text.trim() ? await highlight(text, 'toml') : ''
   typing.value      = false
 }
@@ -42,11 +43,10 @@ async function settle(text: string): Promise<void> {
 async function typeTo(next: string): Promise<void> {
   const gen = ++generation
   if (reducedMotion.value) {
-    shown.value = next
     await settle(next)
     return
   }
-  const current = shown.value
+  const current = shown
   const [curTokens, nextTokens] =
     await Promise.all([typewriter.tokenLines(current), typewriter.tokenLines(next)])
   if (gen !== generation) return
@@ -71,7 +71,7 @@ async function typeTo(next: string): Promise<void> {
       texts.push(lines[index].slice(0, visible))
     }
     typingHtml.value = parts.join('\n')
-    shown.value      = texts.join('\n')
+    shown            = texts.join('\n')
   }
 
   typing.value = true
@@ -86,27 +86,23 @@ async function typeTo(next: string): Promise<void> {
     await promiseTimeout(STEP_MS)
   }
   if (gen !== generation) return
-  shown.value = next
   await settle(next)
 }
 
 function startEditing(): void {
+  generation   += 1
   editing.value = true
   nextTick(() => editor.value?.focus())
 }
 
 function stopEditing(): void {
   editing.value = false
-  shown.value   = configToml.value
   settle(configToml.value)
 }
 
 watch(configToml, next => { if (!editing.value) typeTo(next) })
 
-onMounted(() => {
-  shown.value = configToml.value
-  settle(configToml.value)
-})
+onMounted(() => settle(configToml.value))
 </script>
 
 <template>
@@ -126,7 +122,7 @@ onMounted(() => {
     />
     <div
       v-show="!editing && !typing"
-      class="code-panel-code sandbox-toml-display"
+      class="code-panel-code code-panel-editable sandbox-toml-display"
       role="button"
       tabindex="0"
       @click="startEditing"
@@ -144,9 +140,3 @@ onMounted(() => {
     <p v-if="configError" class="code-panel-error">{{ configError }}</p>
   </section>
 </template>
-
-<style scoped>
-.sandbox-toml-display {
-  cursor : text;
-}
-</style>

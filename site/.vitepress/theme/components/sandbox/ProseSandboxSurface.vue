@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { KeyedTokensInfo } from '@shikijs/magic-move/types'
-import { promiseTimeout }       from '@vueuse/core'
+import type { KeyedTokensInfo }         from '@shikijs/magic-move/types'
+import { promiseTimeout, useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import LintFlagPopper    from '../rules/LintFlagPopper.vue'
@@ -11,6 +11,7 @@ import { useReducedMotion }      from '../../../lib/composables/use-reduced-moti
 import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-draw'
 import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
 import * as magicMove            from '../../../lib/markdown/magic-move-options'
+import { offsetAt }              from '../../../lib/sandbox/caret'
 import { highlight }             from '../../../lib/sandbox/highlight'
 import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
@@ -22,7 +23,6 @@ const display       = useTemplateRef<HTMLElement>('display')
 const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
 const popper        = useTemplateRef<InstanceType<typeof LintFlagPopper>>('popper')
 
-const animate     = ref(false)
 const displayHtml = ref('')
 const draft       = ref('')
 const editing     = ref(false)
@@ -40,6 +40,12 @@ const { drawSquiggles, undrawn } = useSquiggleDraw()
 // unrelated re-renders instead of rebuilding per template pass.
 const morphOptions = computed(() => magicMove.magicMoveOptions(morphMs.value, 0))
 const morphSteps   = computed(() => [...steps.value])
+
+const watchdog = useTimeoutFn(
+  () => { if (morphing.value) endMorph() },
+  () => morphMs.value + 250,
+  { immediate: false }
+)
 
 let previous   = ''
 let generation = 0
@@ -83,7 +89,6 @@ async function render(next: string): Promise<void> {
   if (gen !== generation) return
   steps.value     = committed
   step.value      = 0
-  animate.value   = true
   morphMs.value   = ruleDrawMs()
   morphKey.value += 1
   morphing.value  = true
@@ -98,7 +103,7 @@ async function render(next: string): Promise<void> {
   if (gen !== generation) return
   commit(html)
   step.value = 1
-  setTimeout(() => { if (gen === generation && morphing.value) endMorph() }, morphMs.value + 250)
+  watchdog.start()
 }
 
 // The morph settles onto the static display, so the squiggles draw back in
@@ -118,7 +123,7 @@ function commit(html: string): void {
   shownRules        = new Set(diagnostics.value.map(finding => finding.code))
 }
 
-// A lint toggle keeps the code but changes the finding set: retract the
+// A lint toggle keeps the code but changes the finding set, so retract the
 // dropped rule's underlines against the current DOM, swap in the new set once
 // they clear, then draw any freshly enabled underlines back in.
 async function reflow(html: string, gen: number): Promise<void> {
@@ -146,23 +151,6 @@ function markUndrawn(root: HTMLElement, rules: readonly string[]): HTMLElement[]
     .filter(flag => rules.includes(flag.dataset.rule ?? ''))
   matched.forEach(flag => flag.classList.add('lint-undrawn'))
   return matched
-}
-
-// The flat character offset under a point, walking the display's text nodes
-// up to the caret node the browser resolves there.
-function offsetAt(root: HTMLElement, x: number, y: number): number {
-  const position = document.caretPositionFromPoint?.(x, y)
-  const range    = position ? undefined : document.caretRangeFromPoint?.(x, y)
-  const target   = position?.offsetNode ?? range?.startContainer
-  const inNode   = position?.offset ?? range?.startOffset ?? 0
-  if (!target) return 0
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
-  let total = 0
-  for (let text = walker.nextNode(); text; text = walker.nextNode()) {
-    if (text === target) return total + inNode
-    total += text.textContent?.length ?? 0
-  }
-  return total
 }
 
 // Editing works on the resultant text, so the box opens seeded with the
@@ -220,14 +208,14 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
       class="code-panel-code"
       :steps="morphSteps"
       :step="step"
-      :animate="animate && !reducedMotion"
+      :animate="!reducedMotion"
       :options="morphOptions"
       @end="endMorph"
     />
     <div
       v-show="!morphing && !editing"
       ref="display"
-      class="code-panel-code sandbox-surface-display"
+      class="code-panel-code code-panel-editable sandbox-surface-display"
       :class="{ 'lint-undrawn': undrawn }"
       role="button"
       tabindex="0"
@@ -261,9 +249,5 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-xs);
   pointer-events : none;
-}
-
-.sandbox-surface-display {
-  cursor : text;
 }
 </style>

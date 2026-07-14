@@ -1,6 +1,6 @@
 import { StorageSerializers, promiseTimeout, useStorage, watchDebounced } from '@vueuse/core'
-import { parse, stringify }               from 'smol-toml'
-import { computed, ref, toRaw, type Ref } from 'vue'
+import { parse, stringify }     from 'smol-toml'
+import { ref, toRaw, type Ref } from 'vue'
 
 import type { LintFinding }           from '../fixtures/lint-findings'
 import type * as configSchema         from '../sandbox/config-schema.data'
@@ -69,8 +69,6 @@ function clone(config: ParsedConfig): ParsedConfig {
 export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   const { cases, schema, debounceMs = 250, load = loadModule, pick = randomOther } = options
 
-  const activeIndex  = ref(0)
-  const activeCase   = computed(() => cases[activeIndex.value])
   const configError  = ref('')
   const configToml   = ref('')
   const diagnostics  = ref<readonly LintFinding[]>([])
@@ -82,14 +80,15 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   const parsed       = ref<ParsedConfig>({})
   const source       = ref(cases[0].source)
 
+  let activeIndex = 0
   let module: ProseWasm | null = null
   let reinit = 0
   let eligibleSource = '\0'
 
   const probed = new Map<string, SourceProbe>()
 
-  // Probes a source in the background: the default run seeds the eligible set
-  // before the first await, then each eligible rule's sub-facets are probed
+  // Probes a source in the background, where the default run seeds the eligible
+  // set before the first await, then each eligible rule's sub-facets are probed
   // against that baseline one rule per macrotask, so the burst of probe runs
   // never blocks a display format. A source change mid-loop abandons the
   // stale loop, and a finished map is cached so a revisited source replays
@@ -289,19 +288,19 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     if (session) {
       adopt(session)
     } else {
-      activeIndex.value = pick(cases.length, activeIndex.value)
-      source.value      = activeCase.value.source
+      activeIndex  = pick(cases.length, activeIndex)
+      source.value = cases[activeIndex].source
     }
     await format()
   }
 
-  // A fresh example clears every edit: a different case seeds the source
+  // A fresh example clears every edit, so a different case seeds the source
   // and the config resets to its defaults.
   function refresh(): void {
-    activeIndex.value = pick(cases.length, activeIndex.value)
-    source.value      = activeCase.value.source
-    parsed.value      = {}
-    configToml.value  = ''
+    activeIndex      = pick(cases.length, activeIndex)
+    source.value     = cases[activeIndex].source
+    parsed.value     = {}
+    configToml.value = ''
   }
 
   watchDebounced(configToml, text => {
