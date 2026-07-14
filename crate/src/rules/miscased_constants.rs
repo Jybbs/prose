@@ -37,7 +37,7 @@ impl MiscasedConstants {
     /// True when `site` binds a module constant miscased against
     /// `SCREAMING_CASE`, no carve-out from the module doc sparing it. The
     /// value must be present, inert, and neither a lambda nor a type.
-    fn is_miscased<'src>(&self, site: &ModuleAssignment<'src>, ctx: &AliasContext<'src>) -> bool {
+    fn is_miscased(&self, site: &ModuleAssignment<'_>, ctx: &AliasContext<'_>) -> bool {
         let name = site.target.id.as_str();
         name.chars().count() > 1
             && !name.starts_with('_')

@@ -279,11 +279,11 @@ fn propagate(state: &mut [bool], deps: &[Vec<usize>]) {
 /// statement or a `TypeAlias`-annotated assignment reads as an alias, a
 /// `SCREAMING_CASE` name as a constant, a remaining value that names an
 /// existing object as an alias, and everything else as module state.
-fn subcategory_of<'src>(
+fn subcategory_of(
     stmt: &Stmt,
     name: &str,
-    value: Option<&'src Expr>,
-    aliases: &AliasContext<'src>,
+    value: Option<&Expr>,
+    aliases: &AliasContext<'_>,
 ) -> Subcategory {
     if is_explicit_type_alias(stmt) {
         Subcategory::Alias
