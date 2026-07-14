@@ -6,13 +6,15 @@
 
 use std::collections::HashSet;
 
-use ruff_python_ast::{Expr, Stmt, name::UnqualifiedName};
+use ruff_python_ast::{Expr, Stmt};
 use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::binding::{is_screaming_case, module_assignments},
+    primitives::binding::{
+        BindingAnalysis, ModuleAssignment, is_screaming_case, module_assignments, tail_identifier,
+    },
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -26,6 +28,20 @@ impl ReassignedConstants {
         Self {
             allow: Config::allow_set(&config.rules.reassigned_constants.allow),
         }
+    }
+
+    /// True when `site` binds a `SCREAMING_CASE` name outside the
+    /// per-project allowlist that the module reassigns, its value (when
+    /// present) being no `TypeVar` / `ParamSpec` / `NewType` /
+    /// `TypeAliasType` constructor. A `None` value covers the bare
+    /// annotation form `X: int`, and `SCREAMING_CASE` already rejects the
+    /// dunder names, which lead with `_`.
+    fn is_reassigned_constant(&self, site: &ModuleAssignment, analysis: &BindingAnalysis) -> bool {
+        let name = site.target.id.as_str();
+        is_screaming_case(name)
+            && !self.allow.contains(name)
+            && !site.value.is_some_and(is_typing_constructor_call)
+            && analysis.module_reassigned(name)
     }
 
     fn reassigned(&self, stmt: &Stmt, name: &str) -> Diagnostic {
@@ -49,41 +65,50 @@ impl Rule for ReassignedConstants {
         let analysis = source.binding_analysis();
         module_assignments(&source.ast().body)
             .iter()
-            .filter(|site| {
-                let name = site.target.id.as_str();
-                is_reassigned_constant_target(name, site.value, &self.allow)
-                    && analysis.module_reassigned(name)
-            })
+            .filter(|site| self.is_reassigned_constant(site, analysis))
             .map(|site| self.reassigned(site.stmt, site.target.id.as_str()))
             .collect()
     }
-}
-
-/// Returns `true` when `name` matches `SCREAMING_CASE`, is not in the
-/// per-project allowlist, and (when present) the right-hand side is not
-/// a `TypeVar` / `ParamSpec` / `NewType` / `TypeAliasType` constructor.
-/// `value = None` covers the bare annotation form `X: int`.
-/// `SCREAMING_CASE` already rejects dunder names, which lead with `_`.
-fn is_reassigned_constant_target(
-    name: &str,
-    value: Option<&Expr>,
-    allow: &HashSet<String>,
-) -> bool {
-    is_screaming_case(name)
-        && !allow.contains(name)
-        && !value.is_some_and(is_typing_constructor_call)
 }
 
 /// Returns `true` when `value` is a call whose callable resolves to
 /// `TypeVar`, `ParamSpec`, `NewType`, or `TypeAliasType`, either bare
 /// (`TypeVar(...)`) or attribute-qualified (`typing.TypeVar(...)`).
 fn is_typing_constructor_call(value: &Expr) -> bool {
-    let last = value
-        .as_call_expr()
-        .and_then(|call| UnqualifiedName::from_expr(&call.func))
-        .and_then(|q| q.segments().last().copied());
     matches!(
-        last,
+        value
+            .as_call_expr()
+            .and_then(|call| tail_identifier(&call.func)),
         Some("NewType" | "ParamSpec" | "TypeAliasType" | "TypeVar"),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+    use crate::testing::{first_value, parse};
+
+    #[rstest]
+    #[case("TypeVar(\"T\")", true)]
+    #[case("typing.TypeVar(\"T\")", true)]
+    #[case("NewType(\"UserId\", int)", true)]
+    #[case("ParamSpec(\"P\")", true)]
+    #[case("TypeAliasType(\"Seconds\", float)", true)]
+    #[case("registry[0].TypeVar(\"T\")", true)]
+    #[case("TypeVar", false)]
+    #[case("dict(timeout=30)", false)]
+    #[case("42", false)]
+    fn is_typing_constructor_call_reads_the_callable_tail(
+        #[case] value_src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(&format!("X = {value_src}\n"));
+        assert_eq!(
+            is_typing_constructor_call(first_value(&source)),
+            expected,
+            "{value_src}"
+        );
+    }
 }

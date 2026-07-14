@@ -1,6 +1,6 @@
 ---
 caption : "Surfaces a module-level constant whose name is not `SCREAMING_CASE`."
-related : [reassigned-constants, single-use-variables]
+related : [band-constants, reassigned-constants, single-use-variables]
 layout  : doc
 ---
 

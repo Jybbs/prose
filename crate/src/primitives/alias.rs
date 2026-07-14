@@ -42,6 +42,8 @@ mod tests {
     #[case("TarFile.open", true)]
     #[case("list[float]", true)]
     #[case("Union[int, float]", true)]
+    #[case("typing.Optional[int]", true)]
+    #[case("collections.abc.Sequence[int]", true)]
     #[case("Literal[\"read\", \"write\"]", true)]
     #[case("int | float", true)]
     #[case("int | None", true)]
@@ -61,6 +63,7 @@ mod tests {
     #[case("lambda row: row.id", false)]
     #[case("get_registry().default", false)]
     #[case("load()[0]", false)]
+    #[case("registry[0][1]", false)]
     fn value_is_alias_splits_named_objects_from_constructed_data(
         #[case] value_src: &str,
         #[case] expected: bool,

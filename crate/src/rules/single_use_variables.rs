@@ -11,7 +11,8 @@
 //! - Augmented assignments are skipped, since `x += 1` is both a read
 //!   and a write of `x`.
 //! - Names matching the configurable `allow_pattern` regex (default
-//!   `^_`) are skipped, exempting `_unused` and similar.
+//!   `^_`) are skipped, exempting `_unused` and similar, whereas an
+//!   empty pattern exempts nothing.
 //! - Only `Assignment` and `Walrus` writes flag, leaving parameters,
 //!   loop targets, `with`-targets, exception handlers, and nested
 //!   `def`/`class` bindings out of the diagnostic surface.
@@ -106,7 +107,7 @@ impl Visitor<'_> {
             return None;
         }
         let name = self.analysis.binding_name(binding);
-        if self.allow_pattern.is_match(name) {
+        if Config::allow_matches(self.allow_pattern, name) {
             return None;
         }
         let write_offset = self.analysis.first_write_offset(binding);
@@ -172,6 +173,19 @@ mod tests {
 
     fn first_function_body(source: &Source) -> &[Stmt] {
         &first_def(source).body
+    }
+
+    #[test]
+    fn an_empty_allow_pattern_exempts_nothing() {
+        let mut config = Config::default();
+        config.rules.single_use_variables.allow_pattern =
+            Regex::new("").expect("empty pattern compiles");
+        let source = parse("def f():\n    _unused = 1\n    return _unused\n");
+        let diagnostics = SingleUseVariables::from_config(&config).lint(&source);
+        assert!(
+            !diagnostics.is_empty(),
+            "the default `^_` would spare `_unused`, and an empty pattern spares nothing",
+        );
     }
 
     #[test]

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Subscript on a Dotted Base Reads as an Alias"
+
+description = '''
+No type system sits behind the value-shape read, so a subscript on a dotted base is an alias whatever its slice holds. That is what spares `Literal["read"]`, and by the same rule it spares the plain lookup `SETTINGS["db"]`, leaving `database` without the rename it would otherwise draw.
+'''

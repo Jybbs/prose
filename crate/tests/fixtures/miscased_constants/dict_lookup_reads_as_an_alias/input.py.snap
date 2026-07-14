@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/miscased_constants/dict_lookup_reads_as_an_alias/input.py
+---
+SETTINGS = {"db": "postgres"}
+database = SETTINGS["db"]

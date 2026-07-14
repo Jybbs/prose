@@ -248,14 +248,10 @@ mod tests {
     use ruff_diagnostics::Applicability;
 
     use super::*;
-    use crate::diagnostics::Severity;
-    use crate::testing::parse;
-
-    fn first_def(source: &Source) -> &StmtFunctionDef {
-        source.ast().body[0]
-            .as_function_def_stmt()
-            .expect("function def")
-    }
+    use crate::{
+        diagnostics::Severity,
+        testing::{first_def, parse},
+    };
 
     fn param_report<'a>(diagnostics: &'a [Diagnostic], name: &str) -> &'a Diagnostic {
         diagnostics

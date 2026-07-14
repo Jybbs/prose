@@ -1,9 +1,9 @@
-//! Flags a module-level single-name assignment whose inert value nothing
-//! reassigns and whose name is not `SCREAMING_CASE`, carving out a
-//! single-character name, a leading underscore, a `TypeAlias` annotation,
-//! an alias value, a lambda, the `if TYPE_CHECKING:` block, and the
-//! per-project `allow_pattern`. The rename is display-only, and notebooks
-//! are skipped whole.
+//! Flags a module-level single-name assignment whose value is inert,
+//! whose name nothing reassigns, and whose name is not `SCREAMING_CASE`,
+//! carving out a single-character name, a leading underscore, a
+//! `TypeAlias` annotation, an alias value, a lambda, the
+//! `if TYPE_CHECKING:` block, and the per-project `allow_pattern`. The
+//! rename is display-only, and notebooks are skipped whole.
 
 use heck::ToShoutySnakeCase;
 use regex_lite::Regex;
@@ -37,19 +37,10 @@ impl MiscasedConstants {
         }
     }
 
-    /// True when `name` matches the configured allow pattern. The empty
-    /// default pattern matches every input, so it reads as "exempt
-    /// nothing" rather than "exempt everything".
-    fn allow_matches(&self, name: &str) -> bool {
-        !self.allow_pattern.as_str().is_empty() && self.allow_pattern.is_match(name)
-    }
-
-    /// True when `name` is a module constant miscased against
-    /// `SCREAMING_CASE`. A value that names an existing object reads as a
-    /// bare type alias, a lambda binds a callable rather than data, and a
-    /// single-character name reads as a matrix in its lone-capital
-    /// SCREAMING form and a mathematical scalar in its lowercase one, so
-    /// each is spared.
+    /// True when `site` binds a module constant miscased against
+    /// `SCREAMING_CASE`, no carve-out from the module doc sparing it. The
+    /// value must be present, inert, and neither a lambda nor a value
+    /// that names an object which already exists.
     fn is_miscased(&self, site: &ModuleAssignment, analysis: &BindingAnalysis) -> bool {
         let name = site.target.id.as_str();
         name.chars().count() > 1
@@ -57,7 +48,7 @@ impl MiscasedConstants {
             && !is_screaming_case(name)
             && !analysis.module_reassigned(name)
             && !is_explicit_type_alias(site.stmt)
-            && !self.allow_matches(name)
+            && !Config::allow_matches(&self.allow_pattern, name)
             && site.value.is_some_and(|value| {
                 !value.is_lambda_expr() && !value_is_alias(value) && !value_is_effectful(value)
             })

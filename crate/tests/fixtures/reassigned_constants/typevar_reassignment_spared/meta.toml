@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Reassigned TypeVar Is Spared"
+
+description = '''
+`T` is `SCREAMING_CASE` and the module writes it twice, so the reassignment gate alone would flag it. The `TypeVar` constructor read is the only thing sparing it, which is the shape the carve-out exists for.
+'''

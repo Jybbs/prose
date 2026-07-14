@@ -26,7 +26,7 @@ impl<'src> StatementVisitor<'src> for Walker<'src> {
         if skips_module_scan(stmt) {
             return;
         }
-        if let Some((target, value, _)) = single_name_assignment(stmt) {
+        if let Some((target, value)) = single_name_assignment(stmt) {
             self.sites.push(ModuleAssignment {
                 stmt,
                 target,

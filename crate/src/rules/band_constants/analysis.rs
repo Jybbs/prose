@@ -254,7 +254,7 @@ fn const_binding(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
             alias.name.as_name_expr()?.id.as_str(),
             Some(alias.value.as_ref()),
         )),
-        _ => single_name_assignment(stmt).map(|(target, value, _)| (target.id.as_str(), value)),
+        _ => single_name_assignment(stmt).map(|(target, value)| (target.id.as_str(), value)),
     }
 }
 
