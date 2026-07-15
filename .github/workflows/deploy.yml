@@ -9,6 +9,7 @@ on:
       - .github/actions/provision-cargo/**
       - .github/actions/provision-uv/**
       - .github/actions/restore-og-cache/**
+      - .github/actions/restore-wasm-cache/**
       - .github/workflows/deploy.yml
       - .mise/tasks/**
       - .nvmrc
@@ -43,9 +44,6 @@ jobs:
             name    : 🪡 Typecheck
           - command : mise run lint site
             name    : 🧶 Lint
-          - binary  : true
-            command : mise run test site
-            name    : ⚖️ Test
           - binary  : true
             command : mise run upload site
             name    : ☂️ Coverage
@@ -89,6 +87,9 @@ jobs:
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
         with : { save: false, shared-key: prose-build }
+
+      - name : Restore the wasm build cache
+        uses : ./.github/actions/restore-wasm-cache
 
       - *provision-bun
 

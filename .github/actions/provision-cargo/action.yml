@@ -1,4 +1,4 @@
-name        : Provision the Cargo toolchain with a warm build cache
+name        : Provision Cargo
 description : Install mise tools (provisioning the Rust toolchain `.mise/config.toml` pins) and restore the Swatinem Cargo cache for the given `shared-key`. Setting `cache` to `false` skips both the Swatinem step and mise's toolchain write-back, for cells that touch neither `target/` nor the registry.
 
 inputs:
@@ -18,9 +18,14 @@ runs:
   using: composite
 
   steps:
-    - name  : Point the rustup home into the cached mise directory
-      run   : echo "MISE_RUSTUP_HOME=$HOME/.local/share/mise/rustup" >> "$GITHUB_ENV"
+    - name  : Point rustup and Cargo at the shared environment
       shell : bash
+      run   : |
+        {
+          echo "CARGO_PROFILE_DEV_DEBUG=line-tables-only"
+          echo "CARGO_TERM_COLOR=always"
+          echo "MISE_RUSTUP_HOME=$HOME/.local/share/mise/rustup"
+        } >> "$GITHUB_ENV"
 
     - name : Install mise tools
       uses : jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d

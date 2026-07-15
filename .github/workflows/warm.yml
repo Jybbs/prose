@@ -72,10 +72,8 @@ jobs:
           - bun-lock   : site/bun.lock
             command    : mise run smoke
             name       : 🪃 Browser
-            shared-key : prose-smoke
-          - command    : mise run test rust
-            name       : ⚖️ Test
-            shared-key : prose-test
+            save       : false
+            shared-key : prose-wasm
           - command    : mise run upload rust
             name       : ☂️ Coverage
             shared-key : prose-coverage
@@ -87,6 +85,7 @@ jobs:
         uses : ./.github/actions/provision-cargo
         with:
           cache      : ${{ matrix.cache }}
+          save       : ${{ matrix.save }}
           shared-key : ${{ matrix.shared-key }}
 
       - name : Provision bun
