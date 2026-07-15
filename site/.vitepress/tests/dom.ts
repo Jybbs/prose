@@ -3,6 +3,7 @@ import { mount }              from '@vue/test-utils'
 import { test as base }       from 'vitest'
 import { defineComponent, h } from 'vue'
 
+import type { DOMWrapper }        from '@vue/test-utils'
 import type { DetachedWindowAPI } from 'happy-dom'
 
 interface DomFixtures {
@@ -57,6 +58,11 @@ export const domTest = base.extend<DomFixtures>({
   }
 })
 
+// happy-dom leaves `isVisible` truthy for a `v-show`-hidden element, so
+// visibility reads the inline style the directive writes.
+export const isHidden = (element: Pick<DOMWrapper<Element>, 'attributes'>): boolean =>
+  element.attributes('style')?.includes('display: none') ?? false
+
 export const mountSetup = <T>(run: () => T): T => {
   let api!: T
   mount(defineComponent({
@@ -68,11 +74,11 @@ export const mountSetup = <T>(run: () => T): T => {
   return api
 }
 
+export const nextFrame = (): Promise<void> =>
+  new Promise(resolve => { requestAnimationFrame(() => resolve()) })
+
 export const rectElement = (rect: Partial<DOMRect>): HTMLElement => {
   const el = document.createElement('div')
   el.getBoundingClientRect = () => rect as DOMRect
   return el
 }
-
-export const nextFrame = (): Promise<void> =>
-  new Promise(resolve => { requestAnimationFrame(() => resolve()) })

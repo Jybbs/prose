@@ -73,6 +73,7 @@
 }
 
 .fixture-pair-doc {
+  position   : relative;
   background : var(--vp-code-block-bg);
 }
 

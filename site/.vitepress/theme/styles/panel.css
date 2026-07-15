@@ -36,6 +36,7 @@
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-xs);
   line-height : 1.6;
+  tab-size    : 4;
   overflow    : auto;
 }
 
@@ -43,6 +44,33 @@
   margin     : 0;
   padding    : 0;
   background : transparent !important;
+}
+
+.code-panel-editable {
+  cursor : text;
+}
+
+/* The 28px seat a panel's corner controls sit in. */
+.panel-seat {
+  display       : grid;
+  place-items   : center;
+  width         : 28px;
+  height        : 28px;
+  padding       : 0;
+  border        : 1px solid var(--vp-code-copy-code-border-color);
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-code-copy-code-bg);
+  color         : var(--vp-c-text-2);
+  cursor        : pointer;
+}
+
+.panel-seat:hover {
+  color : var(--vp-c-text-1);
+}
+
+.panel-seat:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 1px;
 }
 
 .code-panel-error {

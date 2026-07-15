@@ -1,3 +1,5 @@
+import { commonPrefix } from '../shared/common-prefix'
+
 import type * as typingDemo from './typing-demo'
 
 export interface BufferSegments {
@@ -16,21 +18,33 @@ export const EMPTY_SEGMENTS: BufferSegments = {
   editingLineBefore : ''
 }
 
+// The span of the value following `anchor`, or null when the anchor and its
+// current value are absent.
+function anchorRange(
+  text   : string,
+  anchor : string,
+  from   : string
+): { end: number, start: number } | null {
+  const anchorIdx = text.indexOf(anchor + from)
+  if (anchorIdx === -1) return null
+  const start = anchorIdx + anchor.length
+  return { end: start + from.length, start }
+}
+
+function spliceAfterAnchor(text: string, anchor: string, from: string, to: string): string {
+  const range = anchorRange(text, anchor, from)
+  if (!range) return text
+  return text.slice(0, range.start) + to + text.slice(range.end)
+}
+
 export function applyCompletedEdits(
   base    : string,
   entries : readonly typingDemo.LandingTypingDemoEntry[],
   upTo    : number
 ): string {
-  let text = base
-  for (let i = 0; i < upTo; i++) {
-    const e = entries[i]
-    if (e.kind !== 'edit') continue
-    const idx = text.indexOf(e.anchor + e.from)
-    if (idx === -1) continue
-    const valueStart = idx + e.anchor.length
-    text = text.slice(0, valueStart) + e.to + text.slice(valueStart + e.from.length)
-  }
-  return text
+  return entries.slice(0, upTo).reduce((text, entry) => entry.kind === 'edit'
+    ? spliceAfterAnchor(text, entry.anchor, entry.from, entry.to)
+    : text, base)
 }
 
 // Splits an edit into the prefix `from` and `to` share and their differing
@@ -40,10 +54,22 @@ export function editPlan(from: string, to: string): {
   prefix   : string
   toCore   : string
 } {
-  let i = 0
-  const max = Math.min(from.length, to.length)
-  while (i < max && from[i] === to[i]) i += 1
-  return { fromCore: from.slice(i), prefix: from.slice(0, i), toCore: to.slice(i) }
+  const shared = commonPrefix(from, to)
+  return { fromCore: from.slice(shared), prefix: from.slice(0, shared), toCore: to.slice(shared) }
+}
+
+export function resetText(
+  prelude  : string,
+  rows     : readonly typingDemo.LandingTypingDemoResetRow[],
+  phase    : string,
+  progress : number
+): string {
+  return rows.reduce((text, row) => {
+    const partial = phase === 'resetBackspacing'
+      ? row.end.slice(0, Math.max(0, row.end.length - progress))
+      : row.prelude.slice(0, progress)
+    return spliceAfterAnchor(text, row.anchor, row.prelude, partial)
+  }, prelude)
 }
 
 export function segmentsForEdit(
@@ -52,12 +78,10 @@ export function segmentsForEdit(
   phase        : string,
   editProgress : number
 ): BufferSegments {
-  const anchorIdx = text.indexOf(entry.anchor + entry.from)
-  if (anchorIdx === -1) return { ...EMPTY_SEGMENTS, before: text }
-  const valueStart = anchorIdx + entry.anchor.length
-  const valueEnd   = valueStart + entry.from.length
-  const fullBefore = text.slice(0, valueStart)
-  const fullAfter  = text.slice(valueEnd)
+  const range = anchorRange(text, entry.anchor, entry.from)
+  if (!range) return { ...EMPTY_SEGMENTS, before: text }
+  const fullBefore = text.slice(0, range.start)
+  const fullAfter  = text.slice(range.end)
 
   const lastNewline       = fullBefore.lastIndexOf('\n')
   const before            = lastNewline === -1 ? '' : fullBefore.slice(0, lastNewline + 1)
@@ -77,23 +101,4 @@ export function segmentsForEdit(
     editing = entry.to
   }
   return { after, before, editing, editingLineAfter, editingLineBefore }
-}
-
-export function resetText(
-  prelude  : string,
-  rows     : readonly typingDemo.LandingTypingDemoResetRow[],
-  phase    : string,
-  progress : number
-): string {
-  let text = prelude
-  for (const row of rows) {
-    const partial = phase === 'resetBackspacing'
-      ? row.end.slice(0, Math.max(0, row.end.length - progress))
-      : row.prelude.slice(0, progress)
-    const anchorIdx = text.indexOf(row.anchor + row.prelude)
-    if (anchorIdx === -1) continue
-    const valueStart = anchorIdx + row.anchor.length
-    text = text.slice(0, valueStart) + partial + text.slice(valueStart + row.prelude.length)
-  }
-  return text
 }

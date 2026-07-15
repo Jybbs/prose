@@ -2,12 +2,15 @@
 import { refAutoReset, useClipboard, useStorage } from '@vueuse/core'
 import { computed, onMounted, ref }               from 'vue'
 
+import CopyButton from '../base/CopyButton.vue'
+
 import { useProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { data as schema }  from '../../../lib/sandbox/config-schema.data'
 import { data as pool }    from '../../../lib/sandbox/pool.data'
 
 const deckLocked   = useStorage('prose-sandbox-pinned', false)
 const deckOpen     = useStorage('prose-sandbox-deck-open', true)
+const editing      = ref(false)
 const guide        = ref<{ hue: string, value: number } | null>(null)
 const refreshArmed = refAutoReset(false, 4000)
 const sandbox      = useProseSandbox({ cases: pool.cases, schema })
@@ -20,7 +23,6 @@ function onPreview(_key: string, value: number): void {
   if (guide.value) guide.value = { ...guide.value, value }
 }
 
-const { copied, copy } = useClipboard()
 const { copied: linkCopied, copy: copyLink } = useClipboard()
 
 async function shareLink(): Promise<void> {
@@ -58,7 +60,7 @@ onMounted(sandbox.start)
 </script>
 
 <template>
-  <div class="sandbox">
+  <div class="sandbox" :data-editing="editing || null">
     <section class="sandbox-deck panel" :data-locked="deckLocked">
       <button
         type="button"
@@ -94,21 +96,16 @@ onMounted(sandbox.start)
     <div class="sandbox-surfaces">
       <div class="sandbox-py copy-host">
         <ProseSandboxSurface
+          v-model:editing="editing"
           :sandbox="sandbox"
           :guide="guide?.value ?? null"
           :guide-hue="guide?.hue"
         />
+        <CopyButton v-show="!editing" label="Copy the formatted Python" :source="sandbox.formatted.value" />
         <button
+          v-show="!editing"
           type="button"
-          class="copy"
-          :class="{ copied }"
-          :title="copied ? 'Copied' : 'Copy the formatted Python'"
-          :aria-label="copied ? 'Copied' : 'Copy the formatted Python'"
-          @click="copy(sandbox.formatted.value)"
-        />
-        <button
-          type="button"
-          class="sandbox-corner sandbox-refresh"
+          class="panel-seat sandbox-corner sandbox-refresh"
           :data-armed="refreshArmed || null"
           :title="refreshArmed ? 'Click again to proceed with a new example' : 'New example'"
           :aria-label="refreshArmed ? 'Click again to proceed with a new example' : 'New example'"
@@ -122,8 +119,9 @@ onMounted(sandbox.start)
           </svg>
         </button>
         <button
+          v-show="!editing"
           type="button"
-          class="sandbox-corner sandbox-share"
+          class="panel-seat sandbox-corner sandbox-share"
           :title="linkCopied ? 'Link copied' : 'Copy a link to this sandbox'"
           :aria-label="linkCopied ? 'Link copied' : 'Copy a link to this sandbox'"
           @click="shareLink"
@@ -171,22 +169,35 @@ onMounted(sandbox.start)
   min-width : 0;
 }
 
+.sandbox-deck,
+.sandbox-toml {
+  transition : opacity var(--prose-transition);
+}
+
+.sandbox-py :deep(.sandbox-surface) {
+  transition : border-color var(--prose-transition);
+}
+
+/* An open source edit dims and disables the config deck and TOML panel, and
+   marks the panel under edit, so no other control fires against an unapplied edit. */
+.sandbox[data-editing] .sandbox-deck,
+.sandbox[data-editing] .sandbox-toml {
+  opacity        : 0.5;
+  pointer-events : none;
+}
+
+.sandbox[data-editing] :deep(.sandbox-surface) {
+  border-color : var(--vp-c-brand-1);
+}
+
+/* The seat itself comes from `.panel-seat`, leaving the corner to place it and
+   hold it hidden until the panel is hovered. */
 .sandbox-corner {
-  position      : absolute;
-  top           : 8px;
-  z-index       : 3;
-  display       : grid;
-  place-items   : center;
-  width         : 28px;
-  height        : 28px;
-  padding       : 0;
-  border        : 1px solid var(--vp-code-copy-code-border-color);
-  border-radius : var(--prose-radius-sm);
-  background    : var(--vp-code-copy-code-bg);
-  color         : var(--vp-c-text-2);
-  cursor        : pointer;
-  opacity       : 0;
-  transition    : opacity var(--prose-transition-slow), color var(--prose-transition);
+  position   : absolute;
+  top        : 8px;
+  z-index    : 3;
+  opacity    : 0;
+  transition : opacity var(--prose-transition-slow), color var(--prose-transition);
 }
 
 .sandbox-refresh {
@@ -222,10 +233,6 @@ onMounted(sandbox.start)
   letter-spacing : 0.04em;
   white-space    : nowrap;
   pointer-events : none;
-}
-
-.sandbox-corner:hover {
-  color : var(--vp-c-text-1);
 }
 
 .sandbox-refresh[data-armed] {

@@ -1,35 +1,39 @@
 <script setup lang="ts">
-import { promiseTimeout, useClipboard }                    from '@vueuse/core'
+import { promiseTimeout }                                  from '@vueuse/core'
 import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
+import CopyButton        from '../base/CopyButton.vue'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
 import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
 import { highlight }         from '../../../lib/sandbox/highlight'
 import * as typewriter       from '../../../lib/sandbox/typewriter'
+import { latestRun }         from '../../../lib/shared/latest-run'
 
-const CARET   = '<span class="code-caret" aria-hidden="true"></span>'
 const STEP_MS = 12
 
 const props = defineProps<{ sandbox: ProseSandbox }>()
 const { configError, configToml } = props.sandbox
-
-const { copy, copied } = useClipboard({ source: configToml })
 
 const reducedMotion = useReducedMotion()
 const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
 
 const displayHtml = ref('')
 const editing     = ref(false)
-const shown       = ref('')
 const typing      = ref(false)
 const typingHtml  = ref('')
 
-let generation = 0
+const run = latestRun()
+
+let shown = ''
 
 async function settle(text: string): Promise<void> {
-  displayHtml.value = text.trim() ? await highlight(text, 'toml') : ''
+  const superseded = run.begin()
+  shown = text
+  const html = text.trim() ? await highlight(text, 'toml') : ''
+  if (superseded()) return
+  displayHtml.value = html
   typing.value      = false
 }
 
@@ -38,75 +42,59 @@ async function settle(text: string): Promise<void> {
 // single-line change sweeps as one caret from the shared character, whereas
 // a bulk change backspaces and retypes every affected line concurrently,
 // each under its own caret, the untouched lines holding still. A newer
-// change bumps the generation and abandons the stale run.
+// change supersedes the run in flight, which abandons its sweep.
 async function typeTo(next: string): Promise<void> {
-  const gen = ++generation
+  const superseded = run.begin()
   if (reducedMotion.value) {
-    shown.value = next
     await settle(next)
     return
   }
-  const current = shown.value
+  const current = shown
   const [curTokens, nextTokens] =
     await Promise.all([typewriter.tokenLines(current), typewriter.tokenLines(next)])
-  if (gen !== generation) return
+  if (superseded()) return
   const plan = typewriter.typingPlan(current, next)
 
-  function frame(
+  // Steps the caret from `from` to `to`, backspacing when the target is
+  // lower and typing when it is higher, and abandons on a newer change.
+  async function sweep(
     tokens : typewriter.TokenLine[],
-    lines  : readonly string[],
-    midEnd : number,
-    chars  : number
-  ): void {
-    const parts: string[] = []
-    const texts: string[] = []
-    for (let index = 0; index < lines.length; index += 1) {
-      if (index < plan.prefix || index >= midEnd) {
-        parts.push(typewriter.lineHtml(tokens[index] ?? [], Number.POSITIVE_INFINITY))
-        texts.push(lines[index])
-        continue
-      }
-      const visible = Math.min(chars, lines[index].length)
-      parts.push(typewriter.lineHtml(tokens[index] ?? [], visible) + CARET)
-      texts.push(lines[index].slice(0, visible))
+    side   : typewriter.TypingSide,
+    from   : number,
+    to     : number
+  ): Promise<void> {
+    const step = from < to ? 1 : -1
+    for (let chars = from; chars !== to; chars += step) {
+      if (superseded()) return
+      const { html, text } = typewriter.typingFrame(tokens, side, plan.prefix, chars + step)
+      typingHtml.value = html
+      shown            = text
+      await promiseTimeout(STEP_MS)
     }
-    typingHtml.value = parts.join('\n')
-    shown.value      = texts.join('\n')
   }
 
   typing.value = true
-  for (let chars = plan.curMax; chars > plan.floor; chars -= 1) {
-    if (gen !== generation) return
-    frame(curTokens, plan.curLines, plan.curMidEnd, chars - 1)
-    await promiseTimeout(STEP_MS)
-  }
-  for (let chars = plan.floor; chars < plan.nextMax; chars += 1) {
-    if (gen !== generation) return
-    frame(nextTokens, plan.nextLines, plan.nextMidEnd, chars + 1)
-    await promiseTimeout(STEP_MS)
-  }
-  if (gen !== generation) return
-  shown.value = next
+  await sweep(curTokens, plan.cur, plan.cur.max, plan.floor)
+  if (superseded()) return
+  await sweep(nextTokens, plan.next, plan.floor, plan.next.max)
+  if (superseded()) return
   await settle(next)
 }
 
 function startEditing(): void {
+  run.cancel()
   editing.value = true
   nextTick(() => editor.value?.focus())
 }
 
 function stopEditing(): void {
   editing.value = false
-  shown.value   = configToml.value
   settle(configToml.value)
 }
 
 watch(configToml, next => { if (!editing.value) typeTo(next) })
 
-onMounted(() => {
-  shown.value = configToml.value
-  settle(configToml.value)
-})
+onMounted(() => settle(configToml.value))
 </script>
 
 <template>
@@ -126,27 +114,14 @@ onMounted(() => {
     />
     <div
       v-show="!editing && !typing"
-      class="code-panel-code sandbox-toml-display"
+      class="code-panel-code code-panel-editable sandbox-toml-display"
       role="button"
       tabindex="0"
       @click="startEditing"
       @keydown.enter.prevent="startEditing"
       v-html="displayHtml"
     />
-    <button
-      v-show="!editing"
-      type="button"
-      class="copy"
-      :class="{ copied }"
-      :title="copied ? 'Copied' : 'Copy prose.toml'"
-      @click="copy()"
-    />
+    <CopyButton v-show="!editing" label="Copy prose.toml" :source="configToml" />
     <p v-if="configError" class="code-panel-error">{{ configError }}</p>
   </section>
 </template>
-
-<style scoped>
-.sandbox-toml-display {
-  cursor : text;
-}
-</style>
