@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/miscased_constants/union_recursion_splits_names_from_literals/input.py
+---
+Interval = int | float
+permissions = 0o644 | 0o111

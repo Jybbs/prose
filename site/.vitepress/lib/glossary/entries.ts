@@ -547,6 +547,17 @@ export const glossary: Record<string, GlossaryEntry> = {
     href       : '/reference/configuration#top-level-keys'
   },
 
+  'type-alias': {
+    aliases    : ['type aliases', 'bare type alias', 'alias value'],
+    definition : 'A type alias is a name bound to an existing type rather than to new data '
+               + '(`Interval = int | float`, `Pen = Turtle`). `miscased-constants` never '
+               + 'renames one, telling an alias from a constant by the shape of the value, by '
+               + 'what the file assigns its base, and by how the module uses the name. A value '
+               + 'it cannot pin down is left alone. `band-constants` sorts the same statements '
+               + 'into its alias sub-band.',
+    families   : ['lint', 'ordering']
+  },
+
   'TYPE_CHECKING': {
     aliases    : ['typing.TYPE_CHECKING', 'if TYPE_CHECKING'],
     definition : '`TYPE_CHECKING` is a `typing` flag that is `False` at runtime and `True` to '

@@ -1,10 +1,11 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/for_target_name_and_tuple/input.py
+input_file: crate/tests/fixtures/binding_analysis/for_target_name_and_tuple/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 0
     kinds:
@@ -13,10 +14,12 @@ bindings:
     read_offsets:
       - 31
       - 60
+    runtime_read: false
     scope: 0
     write_offsets:
       - 0
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: ~
     kinds:
@@ -24,10 +27,12 @@ bindings:
     name: i
     read_offsets:
       - 45
+    runtime_read: false
     scope: 0
     write_offsets:
       - 26
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: ~
     kinds:
@@ -35,10 +40,12 @@ bindings:
     name: a
     read_offsets:
       - 74
+    runtime_read: true
     scope: 0
     write_offsets:
       - 52
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: ~
     kinds:
@@ -46,6 +53,7 @@ bindings:
     name: b
     read_offsets:
       - 78
+    runtime_read: true
     scope: 0
     write_offsets:
       - 55

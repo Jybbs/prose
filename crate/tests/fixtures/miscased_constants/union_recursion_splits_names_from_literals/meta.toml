@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A PEP 604 Union Recurses into Both Sides"
+
+description = '''
+A `|` union reads as an alias only when both sides name existing objects, so `int | float` is spared while the literal-valued `0o644 | 0o111` still draws the `PERMISSIONS` rename.
+'''

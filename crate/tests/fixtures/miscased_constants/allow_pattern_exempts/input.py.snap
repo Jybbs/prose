@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
+source: crate/tests/integration.rs
 expression: snapshot
-input_file: tests/fixtures/miscased_constants/allow_pattern_exempts/input.py
+input_file: crate/tests/fixtures/miscased_constants/allow_pattern_exempts/input.py
 ---
-Vector = list[float]
+Defaults = {"retries": 3}
 timeout = 30

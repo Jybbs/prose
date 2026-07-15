@@ -517,13 +517,10 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{first_class, first_def, parse};
+    use crate::testing::{first_class, first_def, first_value, parse};
 
     fn set_elts(source: &Source) -> &[ruff_python_ast::Expr] {
-        source.ast().body[0]
-            .as_assign_stmt()
-            .expect("assign statement")
-            .value
+        first_value(source)
             .as_set_expr()
             .expect("set value")
             .elts

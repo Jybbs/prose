@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "The Allow Pattern Spares a Project's Own Aliases"
+title       = "The Allow Pattern Spares a Project's Own Names"
 
 description = '''
-A project carrying old-style PascalCase aliases sets `allow-pattern = "^[A-Z][a-z]"`, so `Vector = list[float]` passes while the unmatched `timeout` still draws the `TIMEOUT` rename. The pattern is empty by default, exempting nothing.
+A project keeping a name out of `SCREAMING_CASE` on purpose sets `allow-pattern = "^[A-Z][a-z]"`, so the constructed `Defaults` dict passes while the unmatched `timeout` still draws the `TIMEOUT` rename. The pattern is empty by default, exempting nothing.
 '''

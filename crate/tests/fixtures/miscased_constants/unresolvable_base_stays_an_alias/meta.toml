@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Base the File Cannot Resolve Stays a Type"
+
+description = '''
+Pins what the rule misses. `SETTINGS` comes from an import and `registry` is bound by a call, so nothing in this file says what either holds, and a string-sliced subscript on them looks exactly like `Literal["db"]`. Both stay types and neither draws a rename. Settling them would take a cross-file import map, which is the machinery this rule does without.
+'''

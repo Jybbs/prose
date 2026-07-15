@@ -1,50 +1,59 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/global_nonlocal_decls_ignored/input.py
+input_file: crate/tests/fixtures/binding_analysis/global_nonlocal_decls_ignored/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 4
     kinds:
       - FunctionDef
     name: globalized
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 4
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 35
     kinds:
       - Assignment
     name: x
     read_offsets: []
+    runtime_read: false
     scope: 1
     write_offsets:
       - 35
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 47
     kinds:
       - FunctionDef
     name: nested
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 47
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 61
     kinds:
       - Assignment
     name: y
     read_offsets: []
+    runtime_read: false
     scope: 2
     write_offsets:
       - 61
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 75
     kinds:
@@ -52,16 +61,19 @@ bindings:
     name: inner
     read_offsets:
       - 121
+    runtime_read: false
     scope: 2
     write_offsets:
       - 75
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 111
     kinds:
       - Assignment
     name: y
     read_offsets: []
+    runtime_read: false
     scope: 3
     write_offsets:
       - 111

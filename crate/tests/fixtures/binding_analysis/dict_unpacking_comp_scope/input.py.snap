@@ -1,10 +1,11 @@
 ---
-source: tests/binding_analysis.rs
+source: crate/tests/binding_analysis.rs
 expression: source.binding_analysis()
-input_file: tests/fixtures/binding_analysis/dict_unpacking_comp_scope/input.py
+input_file: crate/tests/fixtures/binding_analysis/dict_unpacking_comp_scope/input.py
 ---
 bindings:
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 0
     kinds:
@@ -12,10 +13,12 @@ bindings:
     name: dicts
     read_offsets:
       - 52
+    runtime_read: false
     scope: 0
     write_offsets:
       - 0
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: true
     first_unconditional_write: 47
     kinds:
@@ -23,16 +26,19 @@ bindings:
     name: d
     read_offsets:
       - 41
+    runtime_read: false
     scope: 1
     write_offsets:
       - 47
-  - attributes: []
+  - annotation_read: false
+    attributes: []
     bare_read: false
     first_unconditional_write: 29
     kinds:
       - Assignment
     name: merged
     read_offsets: []
+    runtime_read: false
     scope: 0
     write_offsets:
       - 29

@@ -1,34 +1,35 @@
 //! Pure name helpers over import, assignment, and reference AST nodes:
 //! target extraction, the `SCREAMING_CASE` casing predicate, and the
-//! `TYPE_CHECKING` guard, independent of the binding table.
+//! `TypeAlias` and `TYPE_CHECKING` guards, independent of the binding
+//! table.
 
-use ruff_python_ast::{Alias, Expr, ExprName, Identifier, Stmt, StmtAnnAssign, StmtAssign, StmtIf};
+use ruff_python_ast::{Alias, Expr, ExprName, Stmt, StmtAnnAssign, StmtAssign, StmtIf};
 
 /// The bare-`Name` target name of an `Stmt::AnnAssign`. `None` when the
 /// target is an attribute or subscript (`self.x: int`, `d[k]: int`).
 pub(crate) fn annotated_name_target(ann: &StmtAnnAssign) -> Option<&str> {
-    Some(annotated_name_target_expr(ann)?.id.as_str())
-}
-
-/// The bare-`Name` target node of an `Stmt::AnnAssign`, carrying its
-/// range. `None` when the target is an attribute or subscript.
-fn annotated_name_target_expr(ann: &StmtAnnAssign) -> Option<&ExprName> {
-    ann.target.as_name_expr()
+    Some(ann.target.as_name_expr()?.id.as_str())
 }
 
 /// The module-scope name a bare `import a.b` alias binds: its `asname`,
 /// or the top-level segment of the dotted path.
 pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
-    alias
-        .asname
-        .as_ref()
-        .map_or_else(|| top_level_module(alias.name.as_str()), Identifier::as_str)
+    top_level_module(from_import_bound_name(alias))
 }
 
 /// The name a `from m import x` alias binds: its `asname`, or the
 /// imported name itself.
 pub(crate) fn from_import_bound_name(alias: &Alias) -> &str {
     alias.asname.as_ref().unwrap_or(&alias.name).as_str()
+}
+
+/// True when `stmt` declares a type alias explicitly, through a PEP 695
+/// `type X = ...` statement or a `TypeAlias`-annotated assignment.
+pub(crate) fn is_explicit_type_alias(stmt: &Stmt) -> bool {
+    matches!(stmt, Stmt::TypeAlias(_))
+        || stmt
+            .as_ann_assign_stmt()
+            .is_some_and(|ann| is_type_alias(&ann.annotation))
 }
 
 /// Returns `true` when `id` begins with an ASCII uppercase letter and
@@ -43,32 +44,14 @@ pub(crate) fn is_screaming_case(id: &str) -> bool {
         && chars.all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
 }
 
-/// True when `annotation` names `TypeAlias`, bare or attribute-qualified
-/// (`typing.TypeAlias`).
-pub(crate) fn is_type_alias(annotation: &Expr) -> bool {
-    tail_identifier(annotation) == Some("TypeAlias")
-}
-
-/// Returns `true` when `stmt.test` matches the bare `TYPE_CHECKING`
-/// name or any `<...>.TYPE_CHECKING` attribute access.
-fn is_type_checking_block(stmt: &StmtIf) -> bool {
-    tail_identifier(stmt.test.as_ref()) == Some("TYPE_CHECKING")
-}
-
 /// The single bare-`Name` target of an `Stmt::Assign` or
-/// `Stmt::AnnAssign`, paired with its value and, for an annotated
-/// assignment, its annotation. The value is `None` for a bare annotation
-/// (`X: int`). `None` for any other statement or a non-single-name target.
-pub(crate) fn single_name_assignment(
-    stmt: &Stmt,
-) -> Option<(&ExprName, Option<&Expr>, Option<&Expr>)> {
+/// `Stmt::AnnAssign`, paired with its value. The value is `None` for a
+/// bare annotation (`X: int`). `None` for any other statement or a
+/// non-single-name target.
+pub(crate) fn single_name_assignment(stmt: &Stmt) -> Option<(&ExprName, Option<&Expr>)> {
     match stmt {
-        Stmt::Assign(a) => Some((single_name_target_expr(a)?, Some(a.value.as_ref()), None)),
-        Stmt::AnnAssign(a) => Some((
-            annotated_name_target_expr(a)?,
-            a.value.as_deref(),
-            Some(a.annotation.as_ref()),
-        )),
+        Stmt::Assign(a) => Some((single_name_target_expr(a)?, Some(a.value.as_ref()))),
+        Stmt::AnnAssign(a) => Some((a.target.as_name_expr()?, a.value.as_deref())),
         _ => None,
     }
 }
@@ -79,19 +62,9 @@ pub(crate) fn single_name_target(assign: &StmtAssign) -> Option<&str> {
     Some(single_name_target_expr(assign)?.id.as_str())
 }
 
-/// The single bare-`Name` target node of an `Stmt::Assign`, carrying
-/// its range. `None` for a multi-target, destructuring, attribute, or
-/// subscript assignment.
-fn single_name_target_expr(assign: &StmtAssign) -> Option<&ExprName> {
-    match assign.targets.as_slice() {
-        [Expr::Name(name)] => Some(name),
-        _ => None,
-    }
-}
-
 /// True for a statement the module-constant scan does not descend into:
 /// a `def` or `class` scope, or an `if TYPE_CHECKING:` block.
-pub(crate) fn skips_module_scan(stmt: &Stmt) -> bool {
+pub(super) fn skips_module_scan(stmt: &Stmt) -> bool {
     matches!(stmt, Stmt::FunctionDef(_) | Stmt::ClassDef(_))
         || matches!(stmt, Stmt::If(s) if is_type_checking_block(s))
 }
@@ -112,6 +85,28 @@ pub(crate) fn tail_identifier(expr: &Expr) -> Option<&str> {
 /// full dotted path.
 pub(crate) fn top_level_module(dotted: &str) -> &str {
     dotted.split_once('.').map_or(dotted, |(head, _)| head)
+}
+
+/// True when `annotation` names `TypeAlias`, bare or attribute-qualified
+/// (`typing.TypeAlias`).
+fn is_type_alias(annotation: &Expr) -> bool {
+    tail_identifier(annotation) == Some("TypeAlias")
+}
+
+/// Returns `true` when `stmt.test` matches the bare `TYPE_CHECKING`
+/// name or any `<...>.TYPE_CHECKING` attribute access.
+fn is_type_checking_block(stmt: &StmtIf) -> bool {
+    tail_identifier(stmt.test.as_ref()) == Some("TYPE_CHECKING")
+}
+
+/// The single bare-`Name` target node of an `Stmt::Assign`, carrying
+/// its range. `None` for a multi-target, destructuring, attribute, or
+/// subscript assignment.
+fn single_name_target_expr(assign: &StmtAssign) -> Option<&ExprName> {
+    match assign.targets.as_slice() {
+        [Expr::Name(name)] => Some(name),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -175,24 +170,23 @@ mod tests {
     }
 
     #[test]
-    fn single_name_assignment_extracts_target_value_and_annotation() {
+    fn single_name_assignment_extracts_target_and_value() {
         let source = parse("X = 1\ny: int = 2\nz: int\nself.x = 1\na, b = 1, 2\n");
-        let shapes: Vec<Option<(&str, bool, bool)>> = source
+        let shapes: Vec<Option<(&str, bool)>> = source
             .ast()
             .body
             .iter()
             .map(|stmt| {
-                single_name_assignment(stmt).map(|(target, value, annotation)| {
-                    (target.id.as_str(), value.is_some(), annotation.is_some())
-                })
+                single_name_assignment(stmt)
+                    .map(|(target, value)| (target.id.as_str(), value.is_some()))
             })
             .collect();
         assert_eq!(
             shapes,
             vec![
-                Some(("X", true, false)),
-                Some(("y", true, true)),
-                Some(("z", false, true)),
+                Some(("X", true)),
+                Some(("y", true)),
+                Some(("z", false)),
                 None,
                 None,
             ],

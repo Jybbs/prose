@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/miscased_constants/pascal_case_constructed_values_flagged/input.py
+---
+Palette = {"ink": "#111"}
+Timeout = 30
+Banner = f"prose {VERSION}"
+Ceiling = BASE * 2
