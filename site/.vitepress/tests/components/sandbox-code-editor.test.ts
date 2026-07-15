@@ -25,14 +25,4 @@ describe('SandboxCodeEditor', () => {
 
     expect(wrapper.get('div.code-editor-layer').element.textContent).toBe('x = 1\n ')
   })
-
-  it('seeds the caret at the offset it is focused with', async () => {
-    const wrapper = mountEditor('x = 1')
-    await flushPromises()
-
-    wrapper.vm.focus(3)
-    const input = wrapper.get('textarea').element
-    expect(input.selectionStart).toBe(3)
-    expect(input.selectionEnd).toBe(3)
-  })
 })

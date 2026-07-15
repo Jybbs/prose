@@ -16,14 +16,17 @@ const fakeSandbox = (configToml = ''): ProseSandbox => ({
   configToml  : ref(configToml)
 } as unknown as ProseSandbox)
 
-const mountToml = (sandbox: ProseSandbox) => mount(ProseSandboxToml, { props: { sandbox } })
+const mountToml = async (sandbox: ProseSandbox) => {
+  const wrapper = mount(ProseSandboxToml, { props: { sandbox } })
+  await flushPromises()
+  return wrapper
+}
 
 describe('ProseSandboxToml', () => {
   domTest('types a config change and settles onto the target text', async ({ reducedMotion }) => {
     reducedMotion(false)
     const sandbox = fakeSandbox()
-    const wrapper = mountToml(sandbox)
-    await flushPromises()
+    const wrapper = await mountToml(sandbox)
 
     sandbox.configToml.value = 'code-line-length = 100'
     await vi.waitFor(() => {
@@ -35,8 +38,7 @@ describe('ProseSandboxToml', () => {
   domTest('abandons a stale run when a newer change lands mid-type', async ({ reducedMotion }) => {
     reducedMotion(false)
     const sandbox = fakeSandbox()
-    const wrapper = mountToml(sandbox)
-    await flushPromises()
+    const wrapper = await mountToml(sandbox)
 
     sandbox.configToml.value = 'rules.align-equals = false\nrules.blank-lines = false'
     await vi.waitFor(() => expect(isHidden(wrapper.get('.code-typewriter'))).toBe(false))
@@ -51,8 +53,7 @@ describe('ProseSandboxToml', () => {
   domTest('abandons the run when the reader clicks in mid-type', async ({ reducedMotion }) => {
     reducedMotion(false)
     const sandbox = fakeSandbox()
-    const wrapper = mountToml(sandbox)
-    await flushPromises()
+    const wrapper = await mountToml(sandbox)
 
     sandbox.configToml.value = 'code-line-length = 100'
     await nextTick()
@@ -74,8 +75,7 @@ describe('ProseSandboxToml', () => {
   domTest('snaps straight to the settled text under reduced motion', async ({ reducedMotion }) => {
     reducedMotion(true)
     const sandbox = fakeSandbox()
-    const wrapper = mountToml(sandbox)
-    await flushPromises()
+    const wrapper = await mountToml(sandbox)
 
     sandbox.configToml.value = 'code-line-length = 60'
     await vi.waitFor(() => {

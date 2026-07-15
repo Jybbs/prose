@@ -13,7 +13,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color : var(--vp-c-divider);
+  background-color : color-mix(in srgb, var(--prose-palette-ube) 45%, var(--vp-c-divider));
   border-radius    : var(--prose-radius-sm);
 }
 
@@ -23,7 +23,7 @@
 
 * {
   scrollbar-width : thin;
-  scrollbar-color : var(--vp-c-divider) transparent;
+  scrollbar-color : color-mix(in srgb, var(--prose-palette-ube) 45%, var(--vp-c-divider)) transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -23,12 +23,7 @@ function syncScroll(): void {
   if (layer.value && input.value) layer.value.scrollLeft = input.value.scrollLeft
 }
 
-defineExpose({
-  focus: (offset?: number) => {
-    input.value?.focus()
-    if (offset !== undefined) input.value?.setSelectionRange(offset, offset)
-  }
-})
+defineExpose({ focus: () => input.value?.focus() })
 </script>
 
 <template>

@@ -52,5 +52,8 @@
     "vitest"                              : "4.1.10",
     "vue"                                 : "3.5.39",
     "vue-tsc"                             : "3.3.6"
+  },
+  "patchedDependencies": {
+    "@shikijs/magic-move@4.3.1": "patches/magic-move-batch-get-animations.patch"
   }
 }

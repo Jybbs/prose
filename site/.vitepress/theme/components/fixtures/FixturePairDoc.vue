@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import type { KeyedTokensInfo }    from '@shikijs/magic-move/types'
-import { useIntersectionObserver } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import { useIntersectionObserver }                                   from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
+import CopyButton     from '../base/CopyButton.vue'
 import LintFlagPopper from '../rules/LintFlagPopper.vue'
 
+import { useMagicMove }     from '../../../lib/composables/use-magic-move'
 import { useReducedMotion } from '../../../lib/composables/use-reduced-motion'
 import { useSquiggleDraw }  from '../../../lib/composables/use-squiggle-draw'
-import { magicMoveOptions, type MagicMovePanel } from '../../../lib/markdown/magic-move-options'
 import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
-import { ruleDrawMs }       from '../../../lib/shared/paint'
 
 const props = defineProps<{
   activeTab  : FixtureTab
@@ -23,20 +22,22 @@ const popper        = useTemplateRef<InstanceType<typeof LintFlagPopper>>('poppe
 
 const animate   = ref(false)
 const animating = ref(false)
-const duration  = ref(0)
-const panel     = shallowRef<MagicMovePanel>(null)
-const steps     = shallowRef<readonly KeyedTokensInfo[]>([])
 
 const { drawSquiggles, undrawn } = useSquiggleDraw()
+
+const { morphOptions, morphSteps, panel, precompile, steps } = useMagicMove()
 
 const activeHtml = computed(() => props.activeTab === 'before' ? props.inputHtml : props.outputHtml)
 const step       = computed(() => props.activeTab === 'before' ? 0 : 1)
 
-// The precompiled panel re-syncs its keys, with in-place side effects,
-// whenever these prop identities change, so they stay stable across
-// unrelated re-renders instead of rebuilding per template pass.
-const morphOptions = computed(() => magicMoveOptions(duration.value))
-const morphSteps   = computed(() => [...steps.value])
+// The copy button and lang chip render as the component's own persistent
+// elements so they hold their place across the morph, and the static markup
+// drops them so the two do not double up. The source resolves client-side,
+// where `codeFrom` has a DOM to read.
+const activeCode   = computed(() => typeof window === 'undefined' ? '' : codeFrom(activeHtml.value))
+const strippedHtml = computed(() => activeHtml.value
+  .replace(/<button\b[^>]*class="copy"[^>]*>\s*<\/button>/, '')
+  .replace(/<span class="lang">[^<]*<\/span>/, ''))
 
 // Recover the source from a prebuilt highlight, reading only `<pre><code>` so
 // the lang chip and copy button stay out of the retokenized code.
@@ -54,17 +55,10 @@ async function prepare(): Promise<void> {
   const before = codeFrom(props.inputHtml)
   const after  = codeFrom(props.outputHtml)
   if (before === after) return
-  const [{ precompileMagicMove }, { ShikiMagicMovePrecompiled }] = await Promise.all([
-    import('../../../lib/markdown/magic-move'),
-    import('@shikijs/magic-move/vue')
-  ])
-  steps.value    = await precompileMagicMove([before, after])
-  duration.value = ruleDrawMs()
-  panel.value    = ShikiMagicMovePrecompiled
+  steps.value = await precompile(before, after)
   await nextTick()
   animate.value = true
 }
-
 
 // Magic-move owns the panel through the morph, and on settle the
 // decorated static panel returns so its `.lint-flag` hovers work and the
@@ -100,10 +94,10 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
 </script>
 
 <template>
-  <div ref="root" class="fixture-pair fixture-pair-doc panel panel-clip">
+  <div ref="root" class="fixture-pair fixture-pair-doc panel panel-clip copy-host">
     <component
       :is="panel"
-      v-if="panel"
+      v-if="panel && morphSteps.length"
       v-show="animating"
       class="fixture-pair-panel"
       :steps="morphSteps"
@@ -120,8 +114,10 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       @mouseout="popper?.hide"
       @focusin="popper?.show"
       @focusout="popper?.hide"
-      v-html="activeHtml"
+      v-html="strippedHtml"
     />
+    <CopyButton :source="activeCode" label="Copy code" />
+    <span class="lang">python</span>
     <LintFlagPopper ref="popper" />
   </div>
 </template>

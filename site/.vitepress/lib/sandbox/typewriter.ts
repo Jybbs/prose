@@ -1,3 +1,5 @@
+import { stringifyTokenStyle } from 'shiki/core'
+
 import { codeHighlighter } from '../markdown/highlighter'
 import { commonPrefix }    from '../shared/common-prefix'
 import { SHIKI_THEMES }    from '../shared/constants'
@@ -26,6 +28,10 @@ export interface TypingPlan {
   prefix : number
 }
 
+function escapeHtml(text: string): string {
+  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+}
+
 // The first `chars` characters of one tokenized line as styled spans.
 export function lineHtml(line: TokenLine, chars: number): string {
   let remaining = chars
@@ -46,7 +52,7 @@ export async function tokenLines(text: string): Promise<TokenLine[]> {
   const { tokens } = highlighter.codeToTokens(text, { lang: 'toml', themes: SHIKI_THEMES })
   return tokens.map(line => line.map(token => ({
     content : token.content,
-    style   : tokenStyle(token.htmlStyle)
+    style   : stringifyTokenStyle(token.htmlStyle ?? {})
   })))
 }
 
@@ -73,33 +79,23 @@ export function typingPlan(current: string, next: string): TypingPlan {
   const curLines  = current.split('\n')
   const nextLines = next.split('\n')
   const prefix    = commonPrefix(curLines, nextLines)
-  let suffix = 0
-  while (
-    suffix < curLines.length - prefix && suffix < nextLines.length - prefix &&
-    curLines[curLines.length - 1 - suffix] === nextLines[nextLines.length - 1 - suffix]
-  ) suffix += 1
+  const suffix    = commonPrefix(
+    curLines.slice(prefix).toReversed(),
+    nextLines.slice(prefix).toReversed()
+  )
   const curMidEnd  = curLines.length - suffix
   const nextMidEnd = nextLines.length - suffix
-  const curMax     = Math.max(0, ...curLines.slice(prefix, curMidEnd).map(line => line.length))
-  const nextMax    = Math.max(0, ...nextLines.slice(prefix, nextMidEnd).map(line => line.length))
-  let floor = 0
-  if (curMidEnd - prefix <= 1 && nextMidEnd - prefix <= 1) {
-    const before = curMidEnd  > prefix ? curLines[prefix]  : ''
-    const after  = nextMidEnd > prefix ? nextLines[prefix] : ''
-    floor = commonPrefix(before, after)
-  }
+  const curMid     = curLines.slice(prefix, curMidEnd)
+  const nextMid    = nextLines.slice(prefix, nextMidEnd)
+  const curMax     = Math.max(0, ...curMid.map(line => line.length))
+  const nextMax    = Math.max(0, ...nextMid.map(line => line.length))
+  const floor      = curMid.length <= 1 && nextMid.length <= 1
+    ? commonPrefix(curMid[0] ?? '', nextMid[0] ?? '')
+    : 0
   return {
     cur    : { lines: curLines,  max: curMax,  midEnd: curMidEnd },
     floor  : floor,
     next   : { lines: nextLines, max: nextMax, midEnd: nextMidEnd },
     prefix : prefix
   }
-}
-
-function escapeHtml(text: string): string {
-  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-}
-
-function tokenStyle(style: Record<string, string> | undefined): string {
-  return Object.entries(style ?? {}).map(([key, value]) => `${key}:${value}`).join(';')
 }

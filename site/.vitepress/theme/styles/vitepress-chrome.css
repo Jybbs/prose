@@ -78,7 +78,8 @@ div[class*='language-'] {
   line-height : 1.55;
 }
 
-:is(.vp-doc, body) div[class*='language-'] > span.lang {
+:is(.vp-doc, body) div[class*='language-'] > span.lang,
+.copy-host > span.lang {
   position       : absolute;
   top            : auto;
   right          : 10px;
@@ -97,7 +98,8 @@ div[class*='language-'] {
 
 :is(.vp-doc, body) div[class*='language-']:hover > span.lang,
 :is(.vp-doc, body) div[class*='language-']:hover > button.copy + span.lang,
-:is(.vp-doc, body) div[class*='language-'] > button.copy:focus + span.lang {
+:is(.vp-doc, body) div[class*='language-'] > button.copy:focus + span.lang,
+.copy-host:hover > span.lang {
   opacity    : 0;
   transition : opacity 0.5s ease;
 }
@@ -123,7 +125,8 @@ div[class*='language-'] {
 
 :is(.vp-doc, body) div[class*='language-'] > button.copy,
 .sandbox-py > button.copy,
-.sandbox-toml > button.copy {
+.sandbox-toml > button.copy,
+.fixture-pair-doc > button.copy {
   top   : 8px;
   right : 8px;
 }
@@ -149,6 +152,19 @@ div[class*='language-'] {
   background-color : var(--vp-code-copy-code-hover-bg);
   background-image : var(--vp-icon-copied);
   opacity          : 1;
+}
+
+/* CopyButton carries an inline glyph, so its copy control drops the VitePress
+   background icon and centers and colors the glyph like the panel-seat controls. */
+.copy-host > button.copy:has(> svg.glyph) {
+  display          : grid;
+  place-items      : center;
+  background-image : none;
+  color            : var(--vp-c-text-2);
+}
+
+.copy-host > button.copy:has(> svg.glyph):hover {
+  color : var(--vp-c-text-1);
 }
 
 :is(.vp-doc, body) div[class*='language-'] > button.copy.copied::before,

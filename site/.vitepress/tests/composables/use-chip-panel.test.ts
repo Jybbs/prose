@@ -35,7 +35,7 @@ function fakeSandbox() {
   const eligible     = ref<readonly string[] | null>([])
   const facetImpact  = ref<Record<string, readonly string[]>>({})
   const lengthImpact = ref<readonly string[] | null>(null)
-  const sandbox = {
+  const sandbox      = {
     eligible     : eligible,
     facetImpact  : facetImpact,
     facetValue   : (slug: string, facet: Facet) =>
@@ -128,7 +128,7 @@ describe('useChipPanel', () => {
 
   it('closes on an outside click but leaves a gear click to its own handler', async () => {
     const { sandbox } = fakeSandbox()
-    const api = mountSetup(() => useChipPanel(sandbox, CARDS))
+    const api   = mountSetup(() => useChipPanel(sandbox, CARDS))
     const panel = document.createElement('div')
     const gear  = document.createElement('button')
     const away  = document.createElement('div')

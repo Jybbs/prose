@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import type { KeyedTokensInfo }         from '@shikijs/magic-move/types'
-import { promiseTimeout, useTimeoutFn } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import { promiseTimeout, useTimeoutFn }                              from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import LintFlagPopper    from '../rules/LintFlagPopper.vue'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
+import { useMagicMove }          from '../../../lib/composables/use-magic-move'
 import type { ProseSandbox }     from '../../../lib/composables/use-prose-sandbox'
 import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
 import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-draw'
 import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
-import * as magicMove            from '../../../lib/markdown/magic-move-options'
-import { offsetAt }              from '../../../lib/sandbox/caret'
 import { highlight }             from '../../../lib/sandbox/highlight'
+import { latestRun }             from '../../../lib/shared/latest-run'
 import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
-const props = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
+const props   = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
+const editing = defineModel<boolean>('editing', { default: false })
 const { diagnostics, error, formatted, source } = props.sandbox
 
 const reducedMotion = useReducedMotion()
@@ -25,32 +25,25 @@ const popper        = useTemplateRef<InstanceType<typeof LintFlagPopper>>('poppe
 
 const displayHtml = ref('')
 const draft       = ref('')
-const editing     = ref(false)
 const morphKey    = ref(0)
-const morphMs     = ref(450)
 const morphing    = ref(false)
-const panel       = shallowRef<magicMove.MagicMovePanel>(null)
 const step        = ref(0)
-const steps       = shallowRef<readonly KeyedTokensInfo[]>([])
 
 const { drawSquiggles, undrawn } = useSquiggleDraw()
 
-// The precompiled panel re-syncs its keys, with in-place side effects,
-// whenever these prop identities change, so they stay stable across
-// unrelated re-renders instead of rebuilding per template pass.
-const morphOptions = computed(() => magicMove.magicMoveOptions(morphMs.value, 0))
-const morphSteps   = computed(() => [...steps.value])
+const { duration, morphOptions, morphSteps, panel, precompile, steps } = useMagicMove(0)
 
 const ruleCodes = computed(() => new Set(diagnostics.value.map(finding => finding.code)))
 
 const watchdog = useTimeoutFn(
   () => { if (morphing.value) endMorph() },
-  () => morphMs.value + 250,
+  () => duration.value + 250,
   { immediate: false }
 )
 
+const run = latestRun()
+
 let previous   = ''
-let generation = 0
 let shownRules = new Set<string>()
 
 // Renders the settled output as highlighted HTML carrying the lint
@@ -60,38 +53,34 @@ let shownRules = new Set<string>()
 // step flip animates it, matching the fixture morph. The settled html
 // lands on the static display only under the morph's cover, so the pane
 // never flashes the end state before the tokens slide. A newer change
-// bumps the generation, so a superseded render abandons rather than
-// racing on the shared morph state, and a watchdog restores the static
-// display if the `@end` event is ever missed.
+// supersedes the render in flight, so it abandons rather than racing on
+// the shared morph state, and a watchdog restores the static display if
+// the `@end` event is ever missed.
 async function render(next: string): Promise<void> {
-  const gen  = ++generation
-  const from = previous
-  const html = await highlight(next, 'python', lintDecorations(diagnostics.value))
-  if (gen !== generation) return
-  previous = next
+  const superseded = run.begin()
+  const from       = previous
+  const html       = await highlight(next, 'python', lintDecorations(diagnostics.value))
+  if (superseded()) return
   // Mid-edit the display sits behind the editor, so stage the html silently.
-  if (editing.value) { commit(html); return }
+  if (editing.value) { commit(html, next); return }
   // Same code with a changed finding set is a lint toggle, so retract the
   // dropped rule's underlines and draw any freshly enabled ones in place,
   // leaving the surviving underlines adhered rather than re-drawing them.
   if (from !== '' && from === next && !reducedMotion.value) {
-    await reflow(html, gen)
+    await reflow(html, next, superseded)
     return
   }
   if (from === '' || reducedMotion.value) {
-    commit(html)
+    commit(html, next)
     drawSquiggles()
     return
   }
-  panel.value ??= (await import('@shikijs/magic-move/vue')).ShikiMagicMovePrecompiled
-  const { precompileMagicMove } = await import('../../../lib/markdown/magic-move')
   // The morph renders a trailing newline as an extra `<br>` line the static
   // display does not carry, so the states trim to the real last line.
-  const committed = await precompileMagicMove([from.trimEnd(), next.trimEnd()])
-  if (gen !== generation) return
+  const committed = await precompile(from.trimEnd(), next.trimEnd())
+  if (superseded()) return
   steps.value     = committed
   step.value      = 0
-  morphMs.value   = ruleDrawMs()
   morphKey.value += 1
   morphing.value  = true
   // The FLIP morph measures the rest state against the painted DOM, so the
@@ -102,8 +91,8 @@ async function render(next: string): Promise<void> {
   // renderer's first and its container-height transition engages.
   await nextTick()
   await nextPaint()
-  if (gen !== generation) return
-  commit(html)
+  if (superseded()) return
+  commit(html, next)
   step.value = 1
   watchdog.start()
 }
@@ -118,30 +107,33 @@ function endMorph(): void {
   drawSquiggles()
 }
 
-// Publishes the highlighted output and records which rules it carries, so a
-// later diagnostics-only change can tell which underlines were dropped.
-function commit(html: string): void {
+// Publishes the highlighted output and records the text and the rules it
+// carries, so a later diagnostics-only change can tell which underlines were
+// dropped and a later morph starts from the text the display actually shows.
+function commit(html: string, text: string): void {
   displayHtml.value = html
+  previous          = text
   shownRules        = ruleCodes.value
 }
 
 // A lint toggle keeps the code but changes the finding set, so retract the
 // dropped rule's underlines against the current DOM, swap in the new set once
 // they clear, then draw any freshly enabled underlines back in.
-async function reflow(html: string, gen: number): Promise<void> {
+async function reflow(html: string, text: string, superseded: () => boolean): Promise<void> {
   const removed = shownRules.difference(ruleCodes.value)
   const added   = ruleCodes.value.difference(shownRules)
   if (removed.size > 0 && display.value) {
     markUndrawn(display.value, removed)
     await promiseTimeout(ruleDrawMs())
-    if (gen !== generation) return
+    if (superseded()) return
   }
-  commit(html)
+  commit(html, text)
   if (added.size === 0) return
   await nextTick()
-  if (gen !== generation || !display.value) return
+  if (superseded() || !display.value) return
   const drawing = markUndrawn(display.value, added)
   await nextPaint()
+  if (superseded()) return
   drawing.forEach(flag => flag.classList.remove('lint-undrawn'))
 }
 
@@ -154,24 +146,27 @@ function markUndrawn(root: HTMLElement, rules: ReadonlySet<string>): HTMLElement
   return matched
 }
 
-// Editing works on the resultant text, so the box opens seeded with the
-// formatted output rather than the pristine source, with the caret landing
-// where the click did. A genuine edit is adopted as the new source and
-// reformats, whereas a no-op click leaves the original source in place so
-// a later rule toggle still reformats from it.
-function startEditing(event: MouseEvent | KeyboardEvent): void {
-  const offset = event instanceof MouseEvent && display.value
-    ? offsetAt(display.value, event.clientX, event.clientY)
-    : undefined
+// The box holds the source the reader hands Prose, where the panel behind it
+// shows what Prose returned. Seeding it with the formatted output instead
+// would feed an already-formatted source back in, and since the formatter is
+// idempotent every rewriting rule would then have nothing left to do and drop
+// off the panel.
+function startEditing(): void {
   popper.value?.hide()
-  draft.value    = formatted.value
+  draft.value    = source.value
   editing.value  = true
   morphing.value = false
-  nextTick(() => editor.value?.focus(offset))
+  nextTick(() => editor.value?.focus())
 }
 
-function stopEditing(): void {
-  if (draft.value !== formatted.value) source.value = draft.value
+// Blur leaves the box open, so a reformat only ever runs on the reader asking
+// for one and never as a side effect of clicking away.
+function applyEdit(): void {
+  if (draft.value !== source.value) source.value = draft.value
+  editing.value = false
+}
+
+function cancelEdit(): void {
   editing.value = false
 }
 
@@ -190,14 +185,40 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
       aria-hidden="true"
       :style="{ '--guide-col': guide, '--guide-hue': guideHue || undefined }"
     />
-    <header class="code-panel-label">app.py</header>
+    <header v-show="!editing" class="code-panel-label">app.py</header>
     <SandboxCodeEditor
       v-show="editing"
       ref="editor"
       v-model="draft"
       lang="python"
-      @blur="stopEditing"
+      @keydown.esc="cancelEdit"
+      @keydown.enter.meta="applyEdit"
+      @keydown.enter.ctrl="applyEdit"
     />
+    <div v-show="editing" class="sandbox-surface-actions">
+      <button
+        type="button"
+        class="panel-seat sandbox-surface-action sandbox-surface-discard"
+        title="Discard the edit"
+        aria-label="Discard the edit"
+        @click="cancelEdit"
+      >
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="panel-seat sandbox-surface-action sandbox-surface-apply"
+        title="Format this source"
+        aria-label="Format this source"
+        @click="applyEdit"
+      >
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 12.5l5 5L20 6.5" />
+        </svg>
+      </button>
+    </div>
     <component
       :is="panel"
       v-if="panel && morphing"
@@ -235,6 +256,26 @@ onMounted(() => { if (formatted.value) render(formatted.value) })
    morph pane clips instead of flashing a scrollbar. */
 .sandbox-surface :deep(.shiki-magic-move-container) {
   overflow : hidden;
+}
+
+.sandbox-surface-actions {
+  position : absolute;
+  right    : 10px;
+  bottom   : 8px;
+  z-index  : 4;
+  display  : flex;
+  gap      : 4px;
+}
+
+/* The corners reveal on hover, whereas these hold visible, the pane having no
+   other way out. */
+.sandbox-surface-action {
+  transition : color var(--prose-transition), border-color var(--prose-transition);
+}
+
+.sandbox-surface-apply:hover {
+  border-color : var(--vp-c-brand-1);
+  color        : var(--vp-c-brand-1);
 }
 
 .sandbox-surface-guide {

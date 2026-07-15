@@ -77,6 +77,8 @@ describe('useProseSandbox', () => {
     window.history.replaceState(null, '', window.location.pathname)
   })
 
+  afterEach(() => { vi.useRealTimers() })
+
   it('starts on a picked case and reports the formatted output', async () => {
     const load = vi.fn<Loader>(okLoader)
     const api  = sandbox(load, { pick: () => 1 })
@@ -92,6 +94,13 @@ describe('useProseSandbox', () => {
     const api  = sandbox(load)
     await api.start()
     await api.start()
+    expect(load).toHaveBeenCalledTimes(1)
+  })
+
+  it('shares one instantiation across concurrent cold formats', async () => {
+    const load = vi.fn<Loader>(okLoader)
+    const api  = sandbox(load)
+    await Promise.all([api.start(), api.start()])
     expect(load).toHaveBeenCalledTimes(1)
   })
 
@@ -318,7 +327,6 @@ describe('useProseSandbox', () => {
     await vi.advanceTimersByTimeAsync(50)
     expect(api.facetValue('align-equals', ENABLED)).toBe(false)
     expect(api.configError.value).toBe('')
-    vi.useRealTimers()
   })
 
   it('reads a pasted table-form disable and re-enables around sibling overrides', async () => {
@@ -331,7 +339,6 @@ describe('useProseSandbox', () => {
     expect(api.configToml.value).toContain('max-shift = 4')
     expect(api.configToml.value).not.toContain('enabled')
     expect(api.facetValue('align-equals', ENABLED)).toBe(true)
-    vi.useRealTimers()
   })
 
   it('reports a config error for unparseable toml', async () => {
@@ -340,7 +347,6 @@ describe('useProseSandbox', () => {
     api.configToml.value = 'this is = = not valid ['
     await vi.advanceTimersByTimeAsync(50)
     expect(api.configError.value).not.toBe('')
-    vi.useRealTimers()
   })
 
   it('debounces rapid edits into a single format', async () => {
@@ -357,7 +363,6 @@ describe('useProseSandbox', () => {
     // new source, rather than a run per intermediate edit.
     expect(format).toHaveBeenCalledTimes(2)
     expect(api.formatted.value).toBe('OUT')
-    vi.useRealTimers()
   })
 
   it('formats a rule toggle without waiting out the typing debounce', async () => {
@@ -372,7 +377,6 @@ describe('useProseSandbox', () => {
     expect(format).toHaveBeenCalledTimes(2)
     expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('align-equals = false'), 'seed a')
     expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('blank-lines = false'), 'seed a')
-    vi.useRealTimers()
   })
 
   it('reads and writes a length knob and clears it back to default', () => {
@@ -471,7 +475,6 @@ describe('useProseSandbox', () => {
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(saved.source).toBe('edited')
     expect(saved.configToml).toContain('align-equals = false')
-    vi.useRealTimers()
   })
 
   it('runs without a store present', async () => {
@@ -485,6 +488,5 @@ describe('useProseSandbox', () => {
     expect(api.source.value).toBe('x')
     if (descriptor) Object.defineProperty(window, 'localStorage', descriptor)
     else delete (window as { localStorage?: unknown }).localStorage
-    vi.useRealTimers()
   })
 })

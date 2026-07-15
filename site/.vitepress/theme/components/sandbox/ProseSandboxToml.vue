@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { promiseTimeout, useClipboard }                    from '@vueuse/core'
+import { promiseTimeout }                                  from '@vueuse/core'
 import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
+import CopyButton        from '../base/CopyButton.vue'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
 import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
 import { highlight }         from '../../../lib/sandbox/highlight'
 import * as typewriter       from '../../../lib/sandbox/typewriter'
+import { latestRun }         from '../../../lib/shared/latest-run'
 
 const STEP_MS = 12
 
 const props = defineProps<{ sandbox: ProseSandbox }>()
 const { configError, configToml } = props.sandbox
-
-const { copy, copied } = useClipboard({ source: configToml })
 
 const reducedMotion = useReducedMotion()
 const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
@@ -24,12 +24,16 @@ const editing     = ref(false)
 const typing      = ref(false)
 const typingHtml  = ref('')
 
-let generation = 0
-let shown      = ''
+const run = latestRun()
+
+let shown = ''
 
 async function settle(text: string): Promise<void> {
-  shown             = text
-  displayHtml.value = text.trim() ? await highlight(text, 'toml') : ''
+  const superseded = run.begin()
+  shown = text
+  const html = text.trim() ? await highlight(text, 'toml') : ''
+  if (superseded()) return
+  displayHtml.value = html
   typing.value      = false
 }
 
@@ -38,9 +42,9 @@ async function settle(text: string): Promise<void> {
 // single-line change sweeps as one caret from the shared character, whereas
 // a bulk change backspaces and retypes every affected line concurrently,
 // each under its own caret, the untouched lines holding still. A newer
-// change bumps the generation and abandons the stale run.
+// change supersedes the run in flight, which abandons its sweep.
 async function typeTo(next: string): Promise<void> {
-  const gen = ++generation
+  const superseded = run.begin()
   if (reducedMotion.value) {
     await settle(next)
     return
@@ -48,7 +52,7 @@ async function typeTo(next: string): Promise<void> {
   const current = shown
   const [curTokens, nextTokens] =
     await Promise.all([typewriter.tokenLines(current), typewriter.tokenLines(next)])
-  if (gen !== generation) return
+  if (superseded()) return
   const plan = typewriter.typingPlan(current, next)
 
   // Steps the caret from `from` to `to`, backspacing when the target is
@@ -61,7 +65,7 @@ async function typeTo(next: string): Promise<void> {
   ): Promise<void> {
     const step = from < to ? 1 : -1
     for (let chars = from; chars !== to; chars += step) {
-      if (gen !== generation) return
+      if (superseded()) return
       const { html, text } = typewriter.typingFrame(tokens, side, plan.prefix, chars + step)
       typingHtml.value = html
       shown            = text
@@ -71,14 +75,14 @@ async function typeTo(next: string): Promise<void> {
 
   typing.value = true
   await sweep(curTokens, plan.cur, plan.cur.max, plan.floor)
-  if (gen !== generation) return
+  if (superseded()) return
   await sweep(nextTokens, plan.next, plan.floor, plan.next.max)
-  if (gen !== generation) return
+  if (superseded()) return
   await settle(next)
 }
 
 function startEditing(): void {
-  generation   += 1
+  run.cancel()
   editing.value = true
   nextTick(() => editor.value?.focus())
 }
@@ -117,15 +121,7 @@ onMounted(() => settle(configToml.value))
       @keydown.enter.prevent="startEditing"
       v-html="displayHtml"
     />
-    <button
-      v-show="!editing"
-      type="button"
-      class="copy"
-      :class="{ copied }"
-      :title="copied ? 'Copied' : 'Copy prose.toml'"
-      :aria-label="copied ? 'Copied' : 'Copy prose.toml'"
-      @click="copy()"
-    />
+    <CopyButton v-show="!editing" label="Copy prose.toml" :source="configToml" />
     <p v-if="configError" class="code-panel-error">{{ configError }}</p>
   </section>
 </template>

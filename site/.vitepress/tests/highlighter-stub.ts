@@ -9,9 +9,7 @@ export function codeHighlighter(): Promise<{
     codeToTokens: (text: string) => ({
       tokens: text.split('\n').map(line => {
         if (line === '') return []
-        return line.trim() === ''
-          ? [{ content: line, htmlStyle: undefined }]
-          : [{ content: line, htmlStyle: { color: 'red' } }]
+        return [{ content: line, htmlStyle: line.trim() === '' ? undefined : { color: 'red' } }]
       })
     })
   })
