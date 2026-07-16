@@ -4,9 +4,8 @@
 
 source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
 rust() {
-  rustup component add llvm-tools-preview
-  cargo llvm-cov --no-report --workspace --exclude prose_wasm --locked
-  cargo llvm-cov --no-report --package prose_wasm --locked
+  cargo llvm-cov clean --workspace
+  split_workspace cargo llvm-cov --no-report
   cargo llvm-cov report --lcov --output-path target/lcov.info
 }
 site() { mise run test site --coverage; }

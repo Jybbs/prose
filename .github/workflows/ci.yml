@@ -4,10 +4,12 @@ permissions : { contents: read }
 
 on:
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - LICENSE
-      - site/**
+    paths:
+      - '**'
+      - '!**.md'
+      - '!LICENSE'
+      - '!site/**'
+      - site/.vitepress/tests/wasm/**
 
   workflow_dispatch:
 
@@ -29,17 +31,13 @@ jobs:
 
       matrix:
         include:
-          - cache      : false
-            command    : mise run check
+          - command    : mise run check
             name       : 🪶 Format
-          - cache      : false
-            command    : mise run lockfile
+          - command    : mise run lockfile
             name       : 🪵 Lockfile
-          - cache      : false
-            command    : ./.github/scripts/audit-parity.py
+          - command    : ./.github/scripts/audit-parity.py
             name       : 🪷 Parity
-          - cache      : false
-            command    : mise run audit
+          - command    : mise run audit
             name       : 🪓 Unused
           - command    : mise run lint rust
             name       : 📎 Clippy
@@ -50,7 +48,7 @@ jobs:
           - command    : mise run build wasm
             name       : 🛶 Wasm
             shared-key : prose-wasm
-          - bun        : true
+          - bun-lock   : site/bun.lock
             command    : mise run smoke
             name       : 🪃 Browser
             save       : false
@@ -67,14 +65,13 @@ jobs:
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
         with:
-          cache      : ${{ matrix.cache }}
+          cache      : ${{ matrix.shared-key != '' }}
           save       : ${{ matrix.save }}
           shared-key : ${{ matrix.shared-key }}
 
       - name : Provision bun
-        if   : ${{ matrix.bun }}
         uses : ./.github/actions/provision-bun
-        with : { cache-dependency-glob: site/bun.lock }
+        with : { cache-dependency-glob: "${{ matrix.bun-lock }}" }
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}

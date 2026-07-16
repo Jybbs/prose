@@ -11,6 +11,7 @@ on:
       - .github/actions/restore-og-cache/**
       - .github/actions/restore-wasm-cache/**
       - .github/workflows/deploy.yml
+      - .mise/lib/**
       - .mise/tasks/**
       - .nvmrc
       - crate/Cargo.toml
@@ -62,7 +63,7 @@ jobs:
       - name : Provision Cargo
         if   : ${{ matrix.binary }}
         uses : ./.github/actions/provision-cargo
-        with : { save: false, shared-key: prose-build }
+        with : &prose-build { save: false, shared-key: prose-build }
 
       - &provision-bun
         name : Provision bun
@@ -86,7 +87,7 @@ jobs:
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
-        with : { save: false, shared-key: prose-build }
+        with : *prose-build
 
       - name : Restore the wasm build cache
         uses : ./.github/actions/restore-wasm-cache

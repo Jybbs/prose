@@ -1,10 +1,10 @@
 name        : Provision Cargo
-description : Install mise tools (provisioning the Rust toolchain `.mise/config.toml` pins) and restore the Swatinem Cargo cache for the given `shared-key`. Setting `cache` to `false` skips both the Swatinem step and mise's toolchain write-back, for cells that touch neither `target/` nor the registry.
+description : Install mise tools (provisioning the Rust toolchain `.mise/config.toml` pins) and restore the Swatinem Cargo cache for the given `shared-key`.
 
 inputs:
   cache:
     default     : true
-    description : When `false` the Swatinem Cargo cache step is skipped and the mise toolchain cache is not written back. Use for cells (*`Format`, `Unused`*) that populate neither `target/` nor `~/.cargo/registry/`.
+    description : When `false` the Swatinem Cargo cache step is skipped and the mise toolchain cache is not written back, for cells that populate neither `target/` nor `~/.cargo/registry/`.
 
   save:
     default     : true
