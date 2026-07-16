@@ -80,7 +80,7 @@ A downstream Rust crate consumes *Prose* the same way it consumes the `ruff_*` w
 
 ```toml
 [dependencies]
-prose = { git = "https://github.com/Jybbs/prose", tag = "0.8.0" }
+prose = { git = "https://github.com/Jybbs/prose", tag = "0.8.1" }
 ```
 
 The default `native` feature carries the command line, the cache, the language server, and the file walker. Depending with `default-features = false` drops that machinery, leaving the formatting core alone, which also builds for `wasm32-unknown-unknown`.

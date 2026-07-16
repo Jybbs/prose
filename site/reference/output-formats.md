@@ -125,7 +125,7 @@ A final record closes every `json` run, carrying run-wide rollup so a consumer r
   "diagnostics_total" : 12,
   "files_changed"     : 3,
   "files_visited"     : 47,
-  "prose_version"     : "0.8.0",
+  "prose_version"     : "0.8.1",
   "rules_fired"       : { "align-equals": 8, "alphabetize": 4 },
   "schema_version"    : 1
 }
