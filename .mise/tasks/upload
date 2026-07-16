@@ -3,6 +3,7 @@
 #MISE tools={"pipx:codecov-cli" = "11.2.8"}
 
 source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
-rust() { mise run coverage rust && codecovcli upload-process --flag rust --file target/lcov.info --sha "$SHA"; }
-site() { mise run coverage site && codecovcli upload-process --flag site --file site/coverage/lcov.info --sha "$SHA"; }
+rust()   { upload rust target/lcov.info; }
+site()   { upload site site/coverage/lcov.info; }
+upload() { mise run coverage "$1" && codecovcli upload-process --flag "$1" --file "$2" --sha "$SHA"; }
 scope "$@"

@@ -9,7 +9,9 @@ on:
       - .github/actions/provision-cargo/**
       - .github/actions/provision-uv/**
       - .github/actions/restore-og-cache/**
+      - .github/actions/restore-wasm-cache/**
       - .github/workflows/deploy.yml
+      - .mise/lib/**
       - .mise/tasks/**
       - .nvmrc
       - crate/Cargo.toml
@@ -44,9 +46,6 @@ jobs:
           - command : mise run lint site
             name    : 🧶 Lint
           - binary  : true
-            command : mise run test site
-            name    : ⚖️ Test
-          - binary  : true
             command : mise run upload site
             name    : ☂️ Coverage
           - command : mise run cruft
@@ -64,7 +63,7 @@ jobs:
       - name : Provision Cargo
         if   : ${{ matrix.binary }}
         uses : ./.github/actions/provision-cargo
-        with : { save: false, shared-key: prose-build }
+        with : &prose-build { save: false, shared-key: prose-build }
 
       - &provision-bun
         name : Provision bun
@@ -88,7 +87,10 @@ jobs:
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
-        with : { save: false, shared-key: prose-build }
+        with : *prose-build
+
+      - name : Restore the wasm build cache
+        uses : ./.github/actions/restore-wasm-cache
 
       - *provision-bun
 

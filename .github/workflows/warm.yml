@@ -7,16 +7,16 @@ on:
     branches:
       - main
     paths:
-      - Cargo.toml
-      - crate/Cargo.toml
-      - Cargo.lock
-      - .mise/config.toml
-      - site/package.json
-      - site/bun.lock
       - .github/actions/provision-bun/**
       - .github/actions/provision-cargo/**
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
+      - .mise/config.toml
+      - Cargo.lock
+      - Cargo.toml
+      - crate/Cargo.toml
+      - site/bun.lock
+      - site/package.json
 
   workflow_dispatch:
 
@@ -36,7 +36,8 @@ jobs:
         name : Check out repository
         uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
-      - name : Provision uv
+      - &provision-uv
+        name : Provision uv
         uses : ./.github/actions/provision-uv
 
       - name : Emit build matrix
@@ -57,7 +58,6 @@ jobs:
       matrix:
         include:
           - bun-lock   : site/bun.lock
-            cache      : false
             command    : mise run bake
             name       : 🥐 Bun
           - command    : mise run lint rust
@@ -72,10 +72,8 @@ jobs:
           - bun-lock   : site/bun.lock
             command    : mise run smoke
             name       : 🪃 Browser
-            shared-key : prose-smoke
-          - command    : mise run test rust
-            name       : ⚖️ Test
-            shared-key : prose-test
+            save       : false
+            shared-key : prose-wasm
           - command    : mise run upload rust
             name       : ☂️ Coverage
             shared-key : prose-coverage
@@ -86,7 +84,8 @@ jobs:
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
         with:
-          cache      : ${{ matrix.cache }}
+          cache      : ${{ matrix.shared-key != '' }}
+          save       : ${{ matrix.save }}
           shared-key : ${{ matrix.shared-key }}
 
       - name : Provision bun
@@ -125,8 +124,7 @@ jobs:
     steps:
       - *checkout
 
-      - name : Provision uv
-        uses : ./.github/actions/provision-uv
+      - *provision-uv
 
       - name : Summarize and gate
         env:

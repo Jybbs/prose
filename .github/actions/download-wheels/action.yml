@@ -1,4 +1,4 @@
-name        : Download wheel artifacts
+name        : Download wheels
 description : Pull every `wheels-*` artifact uploaded by the build matrix into `dist/`, with one site for the `actions/download-artifact` SHA pin.
 
 runs:

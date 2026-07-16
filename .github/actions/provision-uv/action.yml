@@ -1,4 +1,4 @@
-name        : Provision uv with a warm wheel cache
+name        : Provision uv
 description : Install the uv binary and restore `~/.cache/uv` keyed off the PEP 723 scripts so subsequent `uv run --script` invocations skip the PyPI fetch. Callers that do not run scripts (*publish job downloading wheels*) may pass an empty `cache-dependency-glob` to skip the cache key.
 
 inputs:
