@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `KW_ONLY` Sentinel Splits the Field Run"
+
+description = '''
+A `_: KW_ONLY` pseudo-field marks where a dataclass stops binding by position, so the fields above it **hold their slots** while the fields below it **sort**. The sentinel itself stays put, keeping the boundary where the author drew it.
+'''

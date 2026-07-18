@@ -244,9 +244,9 @@ export const glossary: Record<string, GlossaryEntry> = {
   'dataclass': {
     aliases    : ['dataclasses', 'dataclass field', 'dataclass fields'],
     definition : 'A dataclass is a class decorated with `@dataclass` whose body lists typed '
-               + 'field declarations. `alphabetize` reorders the fields (required before '
-               + 'optional), `align-colons` aligns their annotation colons, and `align-equals` '
-               + 'aligns their default-value `=` signs.',
+               + 'field declarations. Those fields become the generated `__init__`\'s positional '
+               + 'parameters, so `alphabetize` holds their source order, `align-colons` aligns '
+               + 'their annotation colons, and `align-equals` aligns their default-value `=` signs.',
     families   : ['ordering', 'alignment'],
     href       : 'https://docs.python.org/3/library/dataclasses.html'
   },
@@ -571,8 +571,8 @@ export const glossary: Record<string, GlossaryEntry> = {
   'TypedDict': {
     aliases    : ['typeddict'],
     definition : 'A `TypedDict` is a `typing.TypedDict` subclass declaring a dict\'s '
-               + 'key-to-value-type contract. `alphabetize` sorts its fields the same way it '
-               + 'sorts `dataclass` and Pydantic fields.',
+               + 'key-to-value-type contract. It accepts no positional field arguments, so '
+               + '`alphabetize` sorts its fields the same way it sorts Pydantic fields.',
     families   : ['ordering', 'alignment'],
     href       : 'https://docs.python.org/3/library/typing.html#typing.TypedDict'
   },

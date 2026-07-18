@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Dataclass Fields Hold Their Positional Order"
+
+description = '''
+A `@dataclass` generates an `__init__` whose parameters follow the field run in order, so every field **holds its source slot**. Sorting them would rebind each positional call site, which a single-file rewrite cannot reach.
+'''

@@ -15,21 +15,25 @@
 //!
 //! Positional-or-keyword parameters never reorder, free function and
 //! method alike, because no single-file rewrite can keep every caller's
-//! positional binding intact. Only the keyword-only block past `*` sorts.
+//! positional binding intact. Only the keyword-only block past `*`
+//! sorts. A class whose header generates a field-ordered constructor
+//! holds its annotated field run for that same reason, leaving the
+//! block past a `KW_ONLY` sentinel to sort.
 
 use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Decorator, Stmt, StmtAnnAssign, StmtFunctionDef,
-    helpers::{any_over_expr, is_compound_statement, is_dunder, map_callable},
+    Stmt, StmtAnnAssign, StmtFunctionDef,
+    helpers::{any_over_expr, is_compound_statement, is_dunder},
 };
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
     primitives::{
-        binding::{annotated_name_target, single_name_target, tail_identifier},
+        binding::{annotated_name_target, decorator_simple_name, single_name_target},
+        constructor::keyword_field_start,
         edit::{apply_inline_edits, singleton_groups, splice_bodies},
         imports::{defers_annotations, import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
@@ -93,6 +97,7 @@ impl Rule for Alphabetize {
             first_party: &self.first_party,
             group_imports: self.group_imports,
             group_methods: self.group_methods,
+            keyword_fields_from: TextSize::default(),
             leaf_edits: &leaf_edits,
             sort_definitions: self.sort_definitions,
             source,
@@ -125,13 +130,16 @@ struct BodyLayout<'a> {
     rendered: Vec<Cow<'a, str>>,
 }
 
-/// Invariant context threaded through the body-rewrite recursion.
+/// Context threaded through the body-rewrite recursion, every field
+/// invariant but `keyword_fields_from`, which each class header refreshes
+/// for its own body.
 #[derive(Clone, Copy)]
 struct RewriteCtx<'a> {
     defer_annotations: bool,
     first_party: &'a [String],
     group_imports: bool,
     group_methods: bool,
+    keyword_fields_from: TextSize,
     leaf_edits: &'a [Edit],
     sort_definitions: bool,
     source: &'a Source,
@@ -159,6 +167,7 @@ fn body_layout<'a>(
         first_party,
         group_imports,
         group_methods,
+        keyword_fields_from,
         sort_definitions,
         source,
         ..
@@ -183,7 +192,13 @@ fn body_layout<'a>(
                     });
                 }
                 if in_class {
-                    permute_class_assigns(&mut order, body, section.clone(), defer_annotations);
+                    permute_class_assigns(
+                        &mut order,
+                        body,
+                        section.clone(),
+                        defer_annotations,
+                        keyword_fields_from,
+                    );
                 }
                 if sort_definitions && !(in_class && class_pins_methods(members)) {
                     permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
@@ -229,10 +244,6 @@ fn class_pins_methods(body: &[Stmt]) -> bool {
             .iter()
             .filter_map(Stmt::as_function_def_stmt)
             .any(pins_positional_params)
-}
-
-fn decorator_simple_name(decorator: &Decorator) -> Option<&str> {
-    tail_identifier(map_callable(&decorator.expression))
 }
 
 /// True when an annotated assignment carries a default, either
@@ -337,6 +348,10 @@ fn rewrite_stmt<'a>(
     if body.is_empty() {
         return apply_inline_edits(ctx.source, block, ctx.leaf_edits);
     }
+    let ctx = stmt.as_class_def_stmt().map_or(ctx, |class| RewriteCtx {
+        keyword_fields_from: keyword_field_start(class),
+        ..ctx
+    });
     let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope);
     splice_bodies(ctx.source, block, [(body_text, body_span)], ctx.leaf_edits)
 }
@@ -351,10 +366,9 @@ fn simple_name_assign(stmt: &Stmt) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
-    use rstest::rstest;
 
     use super::*;
-    use crate::testing::{applied_text, first_class, first_def, parse};
+    use crate::testing::{applied_text, first_class, parse};
 
     #[test]
     fn ann_assign_with_named_field_filters_to_name_targets() {
@@ -396,33 +410,6 @@ mod tests {
             bar_pos < alpha_pos,
             "docstring entries should keep source order when sort-docstring-entries is off",
         );
-    }
-
-    #[rstest]
-    #[case("@property\ndef f(): pass\n", Some("property"))]
-    #[case("@functools.cached_property\ndef f(): pass\n", Some("cached_property"))]
-    #[case("@click.option(\"--name\")\ndef f(): pass\n", Some("option"))]
-    #[case(
-        "@pytest.mark.parametrize(\"a\", [1])\ndef f(): pass\n",
-        Some("parametrize")
-    )]
-    #[case("@functools.wraps(other)\ndef f(): pass\n", Some("wraps"))]
-    fn decorator_simple_name_extracts_rightmost_segment(
-        #[case] src: &str,
-        #[case] expected: Option<&str>,
-    ) {
-        let s = parse(src);
-        let f = first_def(&s);
-        let decorator = f.decorator_list.first().expect("one decorator");
-        assert_eq!(decorator_simple_name(decorator), expected);
-    }
-
-    #[test]
-    fn decorator_simple_name_returns_none_for_complex_expressions() {
-        let s = parse("@(some_factory())()\ndef f(): pass\n");
-        let f = first_def(&s);
-        let decorator = f.decorator_list.first().expect("one decorator");
-        assert_eq!(decorator_simple_name(decorator), None);
     }
 
     #[test]

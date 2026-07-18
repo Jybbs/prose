@@ -1,11 +1,10 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/thematic/dataclass_fields_and_docstring_reshape/input.py
+input_file: crate/tests/fixtures/thematic/dataclass_fields_and_docstring_reshape/input.py
 ---
 align-colons@74..186
 align-equals@79..192
-alphabetize@69..195
 blank-lines@196..197
 blank-lines@64..65
 docstring-expand@231..261

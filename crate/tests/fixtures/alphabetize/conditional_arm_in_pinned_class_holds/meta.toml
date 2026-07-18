@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Conditional Arm Inherits the Enclosing Pin"
+
+description = '''
+Fields declared under a conditional inside a pinned class **hold their slots** alongside the fields around it, since the arm sits in the same class body the generated constructor reads.
+'''

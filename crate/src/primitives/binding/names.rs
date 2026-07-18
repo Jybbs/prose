@@ -1,9 +1,12 @@
 //! Pure name helpers over import, assignment, and reference AST nodes:
-//! target extraction, the `SCREAMING_CASE` casing predicate, and the
-//! `TypeAlias` and `TYPE_CHECKING` guards, independent of the binding
-//! table.
+//! target extraction, decorator and type-reference name reading, the
+//! `SCREAMING_CASE` casing predicate, and the `TypeAlias` and
+//! `TYPE_CHECKING` guards, independent of the binding table.
 
-use ruff_python_ast::{Alias, Expr, ExprName, Stmt, StmtAnnAssign, StmtAssign, StmtIf};
+use ruff_python_ast::{
+    Alias, Decorator, Expr, ExprName, Stmt, StmtAnnAssign, StmtAssign, StmtIf,
+    helpers::{map_callable, map_subscript},
+};
 
 /// The bare-`Name` target name of an `Stmt::AnnAssign`. `None` when the
 /// target is an attribute or subscript (`self.x: int`, `d[k]: int`).
@@ -15,6 +18,13 @@ pub(crate) fn annotated_name_target(ann: &StmtAnnAssign) -> Option<&str> {
 /// or the top-level segment of the dotted path.
 pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
     top_level_module(from_import_bound_name(alias))
+}
+
+/// The trailing identifier of a decorator's callable, so `@a.b.c(...)`
+/// and `@c` both read as `c`. `None` where the callable is neither a
+/// name nor an attribute access.
+pub(crate) fn decorator_simple_name(decorator: &Decorator) -> Option<&str> {
+    tail_identifier(map_callable(&decorator.expression))
 }
 
 /// The name a `from m import x` alias binds: its `asname`, or the
@@ -87,6 +97,13 @@ pub(crate) fn top_level_module(dotted: &str) -> &str {
     dotted.split_once('.').map_or(dotted, |(head, _)| head)
 }
 
+/// The head identifier of a type reference, read past any subscript, so
+/// `Foo`, `pkg.Foo`, and `Foo[Bar]` all read as `Foo`. `None` where the
+/// head is neither a name nor an attribute access.
+pub(crate) fn type_head_identifier(expr: &Expr) -> Option<&str> {
+    tail_identifier(map_subscript(expr))
+}
+
 /// True when `annotation` names `TypeAlias`, bare or attribute-qualified
 /// (`typing.TypeAlias`).
 fn is_type_alias(annotation: &Expr) -> bool {
@@ -114,7 +131,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_def, parse};
 
     #[test]
     fn annotated_name_target_keeps_only_name_targets() {
@@ -126,6 +143,37 @@ mod tests {
             .map(|stmt| annotated_name_target(stmt.as_ann_assign_stmt().expect("ann assign")))
             .collect();
         assert_eq!(targets, vec![Some("x"), None]);
+    }
+
+    #[rstest]
+    #[case("@property\ndef f(): pass\n", Some("property"))]
+    #[case("@functools.cached_property\ndef f(): pass\n", Some("cached_property"))]
+    #[case("@click.option(\"--name\")\ndef f(): pass\n", Some("option"))]
+    #[case(
+        "@pytest.mark.parametrize(\"a\", [1])\ndef f(): pass\n",
+        Some("parametrize")
+    )]
+    #[case("@functools.wraps(other)\ndef f(): pass\n", Some("wraps"))]
+    fn decorator_simple_name_reads_the_rightmost_segment(
+        #[case] src: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        let source = parse(src);
+        let decorator = first_def(&source)
+            .decorator_list
+            .first()
+            .expect("one decorator");
+        assert_eq!(decorator_simple_name(decorator), expected);
+    }
+
+    #[test]
+    fn decorator_simple_name_returns_none_for_complex_expressions() {
+        let source = parse("@(some_factory())()\ndef f(): pass\n");
+        let decorator = first_def(&source)
+            .decorator_list
+            .first()
+            .expect("one decorator");
+        assert_eq!(decorator_simple_name(decorator), None);
     }
 
     #[rstest]

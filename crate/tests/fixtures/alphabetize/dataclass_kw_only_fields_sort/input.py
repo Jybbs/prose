@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Posting:
-    title: str = "Untitled"
+    title: str
     company: str
-    description: str | None = None
     date_posted: str

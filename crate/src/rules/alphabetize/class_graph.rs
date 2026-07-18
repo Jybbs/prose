@@ -4,20 +4,68 @@
 //! one shared dependency graph, so a member never sorts above a sibling,
 //! or below a definition, that reads it at class-definition time. Each
 //! family still redistributes only across the slots it already holds.
+//! A field bound by position in a generated constructor holds its slot
+//! while the constants around it sort on.
 //! Reverts the reorder on a duplicate name, a reference cycle, or an
 //! assembled order that would seat a referent after a reader.
 
 use std::{collections::HashMap, ops::Range};
 
-use ruff_python_ast::{Expr, Stmt, helpers::map_subscript};
-use ruff_text_size::Ranged;
+use ruff_python_ast::{Expr, Stmt};
+use ruff_text_size::{Ranged, TextSize};
 
 use super::{ann_assign_with_named_field, has_default, simple_name_assign};
 use crate::primitives::{
-    binding::tail_identifier,
+    binding::type_head_identifier,
     orderer::{permute_in_place, slot_positions},
     tiering::{def_run_tier_keys, eval_time_refs},
 };
+
+/// Sorts a section's constant and data-field families through one tiered
+/// dependency graph, rewriting `order` in place. Tiering and the
+/// soundness check scope to `range`, so a marker-divided section sorts on
+/// its own. A field starting below `keyword_fields_from` holds its slot
+/// while the constants around it still sort. Leaves `order` untouched
+/// when fewer than two members reorder, a name repeats, the reference
+/// graph cycles, or the sorted order would strand a reader.
+pub(super) fn permute_class_assigns(
+    order: &mut [usize],
+    body: &[Stmt],
+    range: Range<usize>,
+    defer_annotations: bool,
+    keyword_fields_from: TextSize,
+) {
+    let Some(tier_keys) = def_run_tier_keys(&body[range.clone()], defer_annotations, |stmt| {
+        class_assign_member(stmt).map(|(name, _)| (name, name))
+    }) else {
+        return;
+    };
+    if tier_keys.len() < 2 {
+        return;
+    }
+    let member_at: HashMap<&str, usize> = body[range.clone()]
+        .iter()
+        .enumerate()
+        .filter_map(|(i, stmt)| class_assign_member(stmt).map(|(name, _)| (name, range.start + i)))
+        .collect();
+    let snapshot = order.to_vec();
+    permute_in_place(order, body, range.clone(), |stmt| {
+        let (ann, _) = ann_assign_with_named_field(stmt)?;
+        if is_classvar(&ann.annotation) || stmt.start() < keyword_fields_from {
+            return None;
+        }
+        let (tier, name) = tier_keys[&stmt.start()];
+        Some((tier, u8::from(has_default(ann)), name))
+    });
+    permute_in_place(order, body, range.clone(), |stmt| {
+        class_assign_member(stmt)
+            .filter(|&(_, is_const)| is_const)
+            .map(|_| tier_keys[&stmt.start()])
+    });
+    if !order_is_sound(order, body, &range, &member_at, defer_annotations) {
+        order.copy_from_slice(&snapshot);
+    }
+}
 
 /// Classifies a class-body statement as a single-name assignment,
 /// returning its target name and whether it is a constant (`true`) or a
@@ -35,7 +83,7 @@ fn class_assign_member(stmt: &Stmt) -> Option<(&str, bool)> {
 /// bare `ClassVar` and the subscripted `ClassVar[...]` forms named
 /// directly or through a module attribute (`typing.ClassVar`).
 fn is_classvar(annotation: &Expr) -> bool {
-    tail_identifier(map_subscript(annotation)) == Some("ClassVar")
+    type_head_identifier(annotation) == Some("ClassVar")
 }
 
 /// True when every reader in `range` keeps each assignment member it
@@ -66,78 +114,29 @@ fn order_is_sound(
     })
 }
 
-/// Sorts a section's constant and data-field families through one tiered
-/// dependency graph, rewriting `order` in place. Tiering and the
-/// soundness check scope to `range`, so a marker-divided section sorts on
-/// its own. Leaves `order` untouched when fewer than two members reorder,
-/// a name repeats, the reference graph cycles, or the sorted order would
-/// strand a reader.
-pub(super) fn permute_class_assigns(
-    order: &mut [usize],
-    body: &[Stmt],
-    range: Range<usize>,
-    defer_annotations: bool,
-) {
-    let Some(tier_keys) = def_run_tier_keys(&body[range.clone()], defer_annotations, |stmt| {
-        class_assign_member(stmt).map(|(name, _)| (name, name))
-    }) else {
-        return;
-    };
-    if tier_keys.len() < 2 {
-        return;
-    }
-    let member_at: HashMap<&str, usize> = body[range.clone()]
-        .iter()
-        .enumerate()
-        .filter_map(|(i, stmt)| class_assign_member(stmt).map(|(name, _)| (name, range.start + i)))
-        .collect();
-    let snapshot = order.to_vec();
-    permute_in_place(order, body, range.clone(), |stmt| {
-        let (ann, _) = ann_assign_with_named_field(stmt)?;
-        if is_classvar(&ann.annotation) {
-            return None;
-        }
-        let (tier, name) = tier_keys[&stmt.range().start()];
-        Some((tier, u8::from(has_default(ann)), name))
-    });
-    permute_in_place(order, body, range.clone(), |stmt| {
-        class_assign_member(stmt)
-            .filter(|&(_, is_const)| is_const)
-            .map(|_| tier_keys[&stmt.range().start()])
-    });
-    if !order_is_sound(order, body, &range, &member_at, defer_annotations) {
-        order.copy_from_slice(&snapshot);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{first_class, parse};
+    use crate::{
+        primitives::constructor::keyword_field_start,
+        testing::{first_class, parse},
+    };
 
     fn class_order(src: &str) -> Vec<usize> {
         let source = parse(src);
-        let body = &first_class(&source).body;
+        let class = first_class(&source);
+        let body = &class.body;
         let mut order: Vec<usize> = (0..body.len()).collect();
-        permute_class_assigns(&mut order, body, 0..body.len(), false);
+        permute_class_assigns(
+            &mut order,
+            body,
+            0..body.len(),
+            false,
+            keyword_field_start(class),
+        );
         order
-    }
-
-    #[rstest]
-    #[case("x: ClassVar = 1", true)]
-    #[case("x: ClassVar[int] = 1", true)]
-    #[case("x: typing.ClassVar[int] = 1", true)]
-    #[case("x: int = 1", false)]
-    #[case("x: list[int] = []", false)]
-    #[case("x: Final[int] = 1", false)]
-    fn is_classvar_keys_off_the_annotation_head(#[case] src: &str, #[case] expected: bool) {
-        let source = parse(src);
-        let ann = source.ast().body[0]
-            .as_ann_assign_stmt()
-            .expect("annotated assignment");
-        assert_eq!(is_classvar(&ann.annotation), expected);
     }
 
     #[rstest]
@@ -155,18 +154,30 @@ mod tests {
     }
 
     #[test]
-    fn sorts_fields_below_a_derived_constant() {
-        let order =
-            class_order("class C:\n    width: int = 10\n    height: int = 20\n    HALF = width\n");
-        assert_eq!(order, vec![1, 0, 2], "fields sort and HALF stays sound");
+    fn declines_a_cross_family_cycle() {
+        let order = class_order("class C:\n    A: int = B\n    B = A\n");
+        assert_eq!(order, vec![0, 1], "a cross-family cycle keeps source order");
     }
 
     #[test]
-    fn routes_a_classvar_among_the_bare_constants() {
-        let order = class_order(
-            "class C:\n    TIMEOUT = 30\n    RETRIES: ClassVar[int] = 3\n    host: str\n    port: int\n",
-        );
-        assert_eq!(order, vec![1, 0, 2, 3], "RETRIES sorts ahead of TIMEOUT");
+    fn holds_a_generated_constructors_field_run() {
+        let order = class_order("@dataclass\nclass C:\n    width: int\n    height: int\n");
+        assert_eq!(order, vec![0, 1], "the field run holds its source order");
+    }
+
+    #[rstest]
+    #[case("x: ClassVar = 1", true)]
+    #[case("x: ClassVar[int] = 1", true)]
+    #[case("x: typing.ClassVar[int] = 1", true)]
+    #[case("x: int = 1", false)]
+    #[case("x: list[int] = []", false)]
+    #[case("x: Final[int] = 1", false)]
+    fn is_classvar_keys_off_the_annotation_head(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        let ann = source.ast().body[0]
+            .as_ann_assign_stmt()
+            .expect("annotated assignment");
+        assert_eq!(is_classvar(&ann.annotation), expected);
     }
 
     #[test]
@@ -193,8 +204,33 @@ mod tests {
     }
 
     #[test]
-    fn declines_a_cross_family_cycle() {
-        let order = class_order("class C:\n    A: int = B\n    B = A\n");
-        assert_eq!(order, vec![0, 1], "a cross-family cycle keeps source order");
+    fn routes_a_classvar_among_the_bare_constants() {
+        let order = class_order(
+            "class C:\n    TIMEOUT = 30\n    RETRIES: ClassVar[int] = 3\n    host: str\n    port: int\n",
+        );
+        assert_eq!(order, vec![1, 0, 2, 3], "RETRIES sorts ahead of TIMEOUT");
+    }
+
+    #[test]
+    fn sorts_constants_around_a_pinned_field_run() {
+        let order = class_order(
+            "@dataclass\nclass C:\n    ZEBRA = 1\n    APPLE = 2\n    width: int\n    height: int\n",
+        );
+        assert_eq!(order, vec![1, 0, 2, 3], "constants sort, fields hold");
+    }
+
+    #[test]
+    fn sorts_fields_below_a_derived_constant() {
+        let order =
+            class_order("class C:\n    width: int = 10\n    height: int = 20\n    HALF = width\n");
+        assert_eq!(order, vec![1, 0, 2], "fields sort and HALF stays sound");
+    }
+
+    #[test]
+    fn sorts_only_the_fields_below_a_kw_only_sentinel() {
+        let order = class_order(
+            "@dataclass\nclass C:\n    width: int\n    _: KW_ONLY\n    zebra: int\n    apple: int\n",
+        );
+        assert_eq!(order, vec![0, 1, 3, 2], "the sentinel splits the run");
     }
 }
