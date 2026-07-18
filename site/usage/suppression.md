@@ -41,7 +41,7 @@ The **`ignore`** family covers lint suppression. `# prose: ignore[<rule>]` exemp
 
 ### Pinning a Dict Literal
 
-`# prose: keep` is the one directive tied to a single rule. [[alphabetize]] reorders dict entries by key as its default, which is the wrong call when source order encodes meaning *(a pipeline whose stages run in declared order, a state machine whose transitions read top-to-bottom as a narrative, a dispatch table whose first match wins)*. The marker on the opening `{` line tells [[alphabetize]] to leave that one literal's authored order alone, and no other rule notices the directive.
+`# prose: keep` is the one directive tied to a single rule. [[alphabetize]] reorders dict entries by key as its default, which is the wrong call when source order encodes meaning *(a pipeline whose stages run in declared order, a state machine whose transitions read top-to-bottom as a narrative, a dispatch table whose first match wins)*. The marker on the opening `{` line tells [[alphabetize]] to leave that one literal's authored order alone, and no other rule notices the directive. Where a whole project reads its dicts positionally, the `sort-dict-keys` facet turns the reorder off everywhere and leaves the directive for the remaining exceptions.
 
 ```python
 stages = {  # prose: keep

@@ -65,7 +65,7 @@ pub(crate) fn forward_offsets(offsets: &CellOffsets, map: &SourceMap) -> CellOff
 /// Folds any leaf edits whose range falls inside `range` into the
 /// source slice for that range. Returns `Cow::Borrowed` when no leaf
 /// edit applies or the in-range edits overlap. `edits` must be sorted
-/// by `range().start()`, an invariant that `collect_leaf_edits` upholds
+/// by `start()`, an invariant that `collect_leaf_edits` upholds
 /// via the AST visitor's source-order pre-order walk.
 pub(crate) fn apply_inline_edits<'src>(
     source: &'src Source,

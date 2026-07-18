@@ -17,6 +17,7 @@ A reader who already knows the codebase carries a **mental map** of where things
 | **Enum members** | Alphabetical |
 | **Dataclass and Pydantic fields** | Required before optional |
 | **Parameters and keyword arguments** | Keyword-only and call keywords alphabetical, positional held |
+| **Dict literal keys** | Single-line entries before multi-line, alphabetical within each |
 | **Imports** | Alphabetical within each [[group-imports]] section |
 | **Docstring entries** | Parameter entries mirror the signature, all else alphabetical |
 
@@ -31,6 +32,8 @@ A recognized **section marker** splits a sort run into sections that each alphab
 `alphabetize` never reorders a function's positional-or-keyword parameters, free function and method alike, because a parameter's slot is part of the call contract and a single-file formatter cannot reach the callers a reorder would rebind (*another module's positional call, a framework invoking a hook by slot, a dynamically-dispatched method*). The keyword-only block past the `*` still sorts, since a keyword-only parameter binds by name at every call site. The companion [[unsorted-parameters]] lint reports a free function whose positional run sits out of order, where a reorder is at least worth a human's read of the callers.
 
 At a call site, keyword arguments already in `name=value` form alphabetize, on any callee including a method, because their order never affects which parameter each binds. Positional arguments hold their slot, since naming them would require resolving the callee's signature, which *Prose* does only for a plain in-module function and never for a method.
+
+A dict literal's keys sort by default, because most dicts are lookup tables nobody iterates and the sort gives them the same landmarks every other surface gets. Dict insertion order has been a language guarantee since Python 3.7 though, observable through iteration, `.items()`, and `**` expansion, so a dict that feeds a rendered table or a serialized payload changes what a program outputs once its keys move. Setting `sort-dict-keys = false` holds every dict in its authored order across a project, whereas `# prose: keep` holds the one literal that matters, the facet setting the default and the directive overriding a single site. Set literals sort on regardless, since a set carries no observable order to disturb.
 
 A docstring entry naming a parameter of the signature it documents takes that parameter's position as the rule leaves the signature, which for the positional run is source order and for the keyword-only block is sorted order. An entry naming nothing in the signature (*a parameter renamed or removed since the docs were written*) sinks below the mirrored entries, stragglers alphabetizing among themselves. A section with no parameter entries (*`Raises:`, `Returns:`*) alphabetizes throughout.
 

@@ -65,6 +65,7 @@ Config {
             enabled: false,
             group_methods: false,
             sort_definitions: false,
+            sort_dict_keys: false,
             sort_docstring_entries: false,
             sort_dunder_lists: false,
         },

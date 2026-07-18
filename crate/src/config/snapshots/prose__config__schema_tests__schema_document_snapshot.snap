@@ -36,6 +36,11 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "description": "Reorders class and function definitions alphabetically, holding\neach behind any sibling it names at evaluation time. `false`\nfreezes definitions in source order while other surfaces still\nsort.",
           "type": "boolean"
         },
+        "sort-dict-keys": {
+          "default": true,
+          "description": "Reorders the keyed entries of a dict literal, single-line entries\nbefore multi-line and alphabetical by key within each. `false`\nkeeps the authored order, which iteration, `.items()`, and `**`\nexpansion all observe.",
+          "type": "boolean"
+        },
         "sort-docstring-entries": {
           "default": true,
           "description": "Reorders `name: description` entries within Title-case-headed\ndocstring sections, parameter entries mirroring the signature as\nthe rule leaves it and stragglers alphabetizing below. `false`\nkeeps narrative-curated entry order while still sorting every\nother surface.",
@@ -377,6 +382,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true,
             "group-methods": true,
             "sort-definitions": true,
+            "sort-dict-keys": true,
             "sort-docstring-entries": true,
             "sort-dunder-lists": true
           }
@@ -836,6 +842,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true,
           "group-methods": true,
           "sort-definitions": true,
+          "sort-dict-keys": true,
           "sort-docstring-entries": true,
           "sort-dunder-lists": true
         },

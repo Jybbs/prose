@@ -53,6 +53,7 @@ fn alphabetize_facet_false_in_sub_table_leaves_siblings_default() {
     assert!(!rules.group_methods);
     assert!(rules.enabled);
     assert!(rules.sort_definitions);
+    assert!(rules.sort_dict_keys);
     assert!(rules.sort_docstring_entries);
     assert!(rules.sort_dunder_lists);
 }
@@ -87,16 +88,6 @@ fn docstring_line_length_explicit_override_takes_effect() {
 }
 
 #[test]
-fn docstring_line_length_negative_returns_toml_error() {
-    assert_toml_error("[tool.prose]\ndocstring-line-length = -1\n");
-}
-
-#[test]
-fn docstring_line_length_zero_returns_toml_error() {
-    assert_toml_error("[tool.prose]\ndocstring-line-length = 0\n");
-}
-
-#[test]
 fn docstring_structured_policy_defaults_to_code_line_length_when_field_absent() {
     let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
 
@@ -117,11 +108,6 @@ fn docstring_structured_policy_explicit_override_to_docstring_line_length() {
         config.docstring_structured_policy,
         DocstringStructuredPolicy::DocstringLineLength
     );
-}
-
-#[test]
-fn docstring_structured_policy_invalid_value_returns_toml_error() {
-    assert_toml_error("[tool.prose]\ndocstring-structured-policy = \"nonsense\"\n");
 }
 
 #[test]
@@ -176,11 +162,6 @@ fn import_line_length_false_falls_back_to_code_line_length() {
     assert_eq!(config.import_width(), config.code_width());
 }
 
-#[test]
-fn import_line_length_negative_returns_toml_error() {
-    assert_toml_error("[tool.prose]\nimport-line-length = -1\n");
-}
-
 #[rstest]
 #[case("100")]
 #[case("false")]
@@ -189,16 +170,6 @@ fn import_line_length_round_trips_through_toml(#[case] value: &str) {
         &format!("[tool.prose]\nimport-line-length = {value}\n"),
         |c| c.import_line_length,
     );
-}
-
-#[test]
-fn import_line_length_true_returns_toml_error() {
-    assert_toml_error("[tool.prose]\nimport-line-length = true\n");
-}
-
-#[test]
-fn import_line_length_zero_returns_toml_error() {
-    assert_toml_error("[tool.prose]\nimport-line-length = 0\n");
 }
 
 #[test]
@@ -274,16 +245,30 @@ fn inline_budget_round_trips_through_toml(
     );
 }
 
+#[rstest]
+#[case::docstring_line_length_negative("[tool.prose]\ndocstring-line-length = -1\n")]
+#[case::docstring_line_length_zero("[tool.prose]\ndocstring-line-length = 0\n")]
+#[case::docstring_structured_policy("[tool.prose]\ndocstring-structured-policy = \"nonsense\"\n")]
+#[case::import_line_length_negative("[tool.prose]\nimport-line-length = -1\n")]
+#[case::import_line_length_true("[tool.prose]\nimport-line-length = true\n")]
+#[case::import_line_length_zero("[tool.prose]\nimport-line-length = 0\n")]
+#[case::max_shift_negative("[tool.prose.rules.align-equals]\nmax-shift = -1\n")]
+#[case::max_shift_true("[tool.prose.rules.align-equals]\nmax-shift = true\n")]
+#[case::rules_non_bool_non_table("[tool.prose.rules]\nalign-equals = 5\n")]
+#[case::single_use_variables_allow_pattern(
+    "[tool.prose.rules.single-use-variables]\nallow-pattern = \"[unclosed\"\n"
+)]
+#[case::target_version_extra_period("[tool.prose]\ntarget-version = \"3.14.0\"\n")]
+#[case::target_version_invalid("[tool.prose]\ntarget-version = \"py310\"\n")]
+fn invalid_value_returns_toml_error(#[case] toml: &str) {
+    assert_toml_error(toml);
+}
+
 #[test]
 fn max_shift_default_is_sixteen() {
     let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
 
     assert_eq!(config.rules.align_equals.max_shift, cap(16));
-}
-
-#[test]
-fn max_shift_negative_returns_toml_error() {
-    assert_toml_error("[tool.prose.rules.align-equals]\nmax-shift = -1\n");
 }
 
 #[rstest]
@@ -311,11 +296,6 @@ fn max_shift_round_trips_through_toml(#[case] value: &str) {
 }
 
 #[test]
-fn max_shift_true_returns_toml_error() {
-    assert_toml_error("[tool.prose.rules.align-equals]\nmax-shift = true\n");
-}
-
-#[test]
 fn rules_bare_bool_false_leaves_other_knobs_default() {
     let config =
         Config::from_pyproject_str("[tool.prose.rules]\nalphabetize = false\n").expect("parses");
@@ -323,6 +303,7 @@ fn rules_bare_bool_false_leaves_other_knobs_default() {
     assert!(!config.rules.alphabetize.enabled);
     assert!(config.rules.alphabetize.group_methods);
     assert!(config.rules.alphabetize.sort_definitions);
+    assert!(config.rules.alphabetize.sort_dict_keys);
     assert!(config.rules.alphabetize.sort_docstring_entries);
     assert!(config.rules.alphabetize.sort_dunder_lists);
 }
@@ -378,11 +359,6 @@ fn rules_inline_table_sets_knob_and_stays_enabled() {
 }
 
 #[test]
-fn rules_non_bool_non_table_value_returns_toml_error() {
-    assert_toml_error("[tool.prose.rules]\nalign-equals = 5\n");
-}
-
-#[test]
 fn rules_subtable_form_still_parses() {
     let config = Config::from_pyproject_str(
         "[tool.prose.rules.align-equals]\nenabled = false\nmax-shift = 4\n",
@@ -417,11 +393,6 @@ fn single_use_variables_explicit_allow_pattern_takes_effect() {
 }
 
 #[test]
-fn single_use_variables_invalid_allow_pattern_returns_toml_error() {
-    assert_toml_error("[tool.prose.rules.single-use-variables]\nallow-pattern = \"[unclosed\"\n");
-}
-
-#[test]
 fn target_version_accepts_unrecognized_minor() {
     let config =
         Config::from_pyproject_str("[tool.prose]\ntarget-version = \"3.99\"\n").expect("parses");
@@ -450,16 +421,6 @@ fn target_version_every_variant_round_trips_through_serde() {
 
         assert_eq!(config.target_version, Some(version));
     }
-}
-
-#[test]
-fn target_version_extra_period_returns_toml_error() {
-    assert_toml_error("[tool.prose]\ntarget-version = \"3.14.0\"\n");
-}
-
-#[test]
-fn target_version_invalid_value_returns_toml_error() {
-    assert_toml_error("[tool.prose]\ntarget-version = \"py310\"\n");
 }
 
 #[test]
