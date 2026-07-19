@@ -1,5 +1,5 @@
 name        : Provision Cargo
-description : Install mise tools (provisioning the Rust toolchain `.mise/config.toml` pins) and restore the Swatinem Cargo cache for the given `shared-key`.
+description : Install the `.mise/config.toml` tools (the Rust toolchain among them) and restore the Swatinem Cargo cache for the given `shared-key`. Both archives restore everywhere and save only where `save` stays true, which is `warm.yml` alone, so every other workflow reads the entries `main` owns without writing its own.
 
 inputs:
   cache:
@@ -8,34 +8,40 @@ inputs:
 
   save:
     default     : true
-    description : When `false` the Swatinem cache is restored but never saved, so a job reads a warm cache another job owns without saving back its own variant. Pairs with a `shared-key` a build cell elsewhere populates.
+    description : When `false` both the Swatinem cache and the mise archive are restored but never saved, so a consumer job reads the warm entries `warm.yml` owns without writing variants of its own.
 
   shared-key:
     default     : prose
     description : Swatinem cache scope. Distinct keys allow per-profile cache isolation.
 
+  tools:
+    default     : ''
+    description : Space-separated subset of `.mise/config.toml` tools to install, passed to `mise install`. Empty installs the full toolset. A narrowed list lands in the archive key through the action's `install_args` hash, so jobs sharing one list share one entry.
+
 runs:
   using: composite
 
   steps:
-    - name  : Point rustup and Cargo at the shared environment
+    - name  : Point mise, rustup, and Cargo at the shared environment
       shell : bash
       run   : |
         {
           echo "CARGO_PROFILE_DEV_DEBUG=line-tables-only"
           echo "CARGO_TERM_COLOR=always"
+          echo "MISE_AUTO_INSTALL=false"
           echo "MISE_RUSTUP_HOME=$HOME/.local/share/mise/rustup"
         } >> "$GITHUB_ENV"
 
     - name : Install mise tools
       uses : jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea
       with:
-        cache_save : ${{ inputs.cache != 'false' }}
+        cache_save   : ${{ inputs.cache != 'false' && inputs.save != 'false' }}
+        install_args : ${{ inputs.tools }}
 
     - name : Restore Cargo cache
       if   : ${{ inputs.cache != 'false' }}
       uses : Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
       with:
-        cache-on-failure : 'true'
+        cache-on-failure : 'false'
         save-if          : ${{ inputs.save != 'false' }}
         shared-key       : ${{ inputs.shared-key }}

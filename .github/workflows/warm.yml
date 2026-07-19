@@ -7,16 +7,21 @@ on:
     branches:
       - main
     paths:
+      - .github/actions/build-wheel/**
       - .github/actions/provision-bun/**
       - .github/actions/provision-cargo/**
+      - .github/actions/provision-uv/**
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
       - .mise/config.toml
+      - .mise/lib/**
+      - .mise/tasks/**
       - Cargo.lock
       - Cargo.toml
       - crate/Cargo.toml
       - site/bun.lock
       - site/package.json
+      - wasm/Cargo.toml
 
   workflow_dispatch:
 
@@ -45,8 +50,9 @@ jobs:
         run  : ./.github/scripts/emit-matrix.py
 
   checks:
-    name    : ${{ matrix.name }}
-    runs-on : *ubuntu
+    name            : ${{ matrix.name }}
+    runs-on         : *ubuntu
+    timeout-minutes : 15
 
     env:
       CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
@@ -63,9 +69,9 @@ jobs:
           - command    : mise run lint rust
             name       : 📎 Clippy
             shared-key : prose-clippy
-          - command    : mise run build
+          - command    : mise run build && mise run build bin
             name       : 🗜️ Build
-            shared-key : prose-build
+            shared-key : prose-debug
           - command    : mise run build wasm
             name       : 🛶 Wasm
             shared-key : prose-wasm
@@ -108,18 +114,22 @@ jobs:
     steps:
       - *checkout
 
-      - name : Provision Cargo
-        uses : ./.github/actions/provision-cargo
-        with : { shared-key: "prose-wheel-${{ matrix.name }}" }
-
-      - name : Build release artifacts for ${{ matrix.target }}
-        run  : mise exec -- cargo build --release --locked --target ${{ matrix.target }}
+      - name : Warm the wheel build for ${{ matrix.target }}
+        uses : ./.github/actions/build-wheel
+        with:
+          args      : --release --locked ${{ matrix.args }}
+          command   : build
+          manylinux : ${{ matrix.manylinux }}
+          name      : ${{ matrix.name }}
+          target    : ${{ matrix.target }}
+          upload    : 'false'
 
   gate:
-    name    : 🗞️ Brief
-    if      : always()
-    needs   : [checks, wheels]
-    runs-on : *ubuntu
+    name            : 🗞️ Brief
+    if              : always()
+    needs           : [checks, wheels]
+    runs-on         : *ubuntu
+    timeout-minutes : 5
 
     steps:
       - *checkout

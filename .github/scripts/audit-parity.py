@@ -8,11 +8,6 @@ Audit cross-config version pins for drift.
 Reads each pair's two sources, normalizes per the pair's rule, and
 exits 0 when every pair agrees. Mismatches surface as `::error::`
 annotations naming the file pair and the divergent values.
-
-Initial pairs:
-    Rust version    `README.md` badge vs `Cargo.toml` `rust-version`
-    Rust toolchain  `Cargo.toml` `rust-version` vs `.mise/config.toml` pin
-    Python version  `README.md` badge vs `crate/pyproject.toml` `requires-python`
 """
 
 from pathlib import Path
@@ -20,14 +15,14 @@ from re      import search
 from tomllib import loads
 
 
-def action_uv_version() -> str:
+def action_pin(action: str, key: str) -> str:
     """
-    Return the `version` input pinned in the `provision-uv` composite action.
+    Return the `key` input pinned in the `action` composite action.
     """
-    text = Path(".github/actions/provision-uv/action.yml").read_text(encoding="utf-8")
-    if match := search(r"version\s*:\s*(\S+)", text):
+    path = Path(f".github/actions/{action}/action.yml")
+    if match := search(rf"{key}\s*:\s*v?(\S+)", path.read_text(encoding="utf-8")):
         return match.group(1)
-    raise SystemExit("::error::no version pin in provision-uv/action.yml")
+    raise SystemExit(f"::error::no {key} pin in {action}/action.yml")
 
 
 def badge(svg: str) -> str:
@@ -39,6 +34,20 @@ def badge(svg: str) -> str:
         if svg in line and (match := search(r"(\d+\.\d+)\+", line)):
             return match.group(1)
     raise SystemExit(f"::error::no README.md badge line carries {svg!r}")
+
+
+def build_requirement(name: str) -> str:
+    """
+    Return the exact version `crate/pyproject.toml` pins for the `name`
+    build requirement.
+    """
+    project = loads(Path("crate/pyproject.toml").read_text(encoding="utf-8"))
+    for requirement in project["build-system"]["requires"]:
+        if requirement.startswith(name):
+            if match := search(r"==\s*(\S+)", requirement):
+                return match.group(1)
+            raise SystemExit(f"::error::{name} build requirement is not an exact pin")
+    raise SystemExit(f"::error::no build-system requirement named {name!r}")
 
 
 def cargo_lock_version(name: str) -> str:
@@ -73,7 +82,7 @@ if __name__ == "__main__":
         mise_rust = mise_rust["version"]
 
     wasm_bindgen = cargo_lock_version("wasm-bindgen")
-    pairs = [
+    pairs        = [
         (
             "README.md Rust badge ↔ Cargo.toml rust-version",
             badge("rust.svg"),
@@ -92,7 +101,17 @@ if __name__ == "__main__":
         (
             ".mise/config.toml uv pin ↔ provision-uv action version",
             mise["tools"]["uv"],
-            action_uv_version()
+            action_pin("provision-uv", "version")
+        ),
+        (
+            ".mise/config.toml maturin pin ↔ build-wheel action maturin-version",
+            mise["tools"]["maturin"],
+            action_pin("build-wheel", "maturin-version")
+        ),
+        (
+            ".mise/config.toml maturin pin ↔ crate/pyproject.toml build requirement",
+            mise["tools"]["maturin"],
+            build_requirement("maturin")
         ),
         (
             ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",

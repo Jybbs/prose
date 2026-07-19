@@ -6,9 +6,13 @@
 Emit the wheel build matrix as JSON for `release.yml` to consume.
 
 Reads `platforms.toml`, keeps the entries that carry a `runner` (every
-wheel row does, the sdist row does not), drops the summary-only fields
-(`label`, `pattern`), and writes `matrix=<json>` to `$GITHUB_OUTPUT`
-for the `build` job to read via `fromJSON(needs.plan.outputs.matrix)`.
+wheel row does, the sdist row does not), drops the fields no matrix row
+consumes (`label`, `pattern`, `smoke`), and writes `matrix=<json>` to
+`$GITHUB_OUTPUT` for the `build` job to read via
+`fromJSON(needs.plan.outputs.matrix)`.
+
+Also writes `smoke=wheels-<name>`, naming the artifact the `validate`
+job installs, taken from the row flagged `smoke`.
 """
 
 from json    import dumps
@@ -22,9 +26,11 @@ if __name__ == "__main__":
     here      = Path(__file__).parent
     platforms = loads((here / "platforms.toml").read_text())["platforms"]
     include   = [
-        {k: v for k, v in p.items() if k not in {"label", "pattern"}}
+        {k: v for k, v in p.items() if k not in {"label", "pattern", "smoke"}}
         for p in platforms if "runner" in p
     ]
+    smoke     = next(p["name"] for p in platforms if p.get("smoke"))
 
     with open(environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
         f.write(f"matrix={dumps({'include': include})}\n")
+        f.write(f"smoke=wheels-{smoke}\n")

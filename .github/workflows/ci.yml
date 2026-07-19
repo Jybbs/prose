@@ -19,8 +19,9 @@ concurrency:
 
 jobs:
   check:
-    name    : ${{ matrix.name }}
-    runs-on : &ubuntu ubuntu-latest
+    name            : ${{ matrix.name }}
+    runs-on         : &ubuntu ubuntu-latest
+    timeout-minutes : 15
 
     env:
       CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
@@ -44,14 +45,13 @@ jobs:
             shared-key : prose-clippy
           - command    : mise run build
             name       : 🗜️ Build
-            shared-key : prose-build
+            shared-key : prose-debug
           - command    : mise run build wasm
             name       : 🛶 Wasm
             shared-key : prose-wasm
           - bun-lock   : site/bun.lock
             command    : mise run smoke
             name       : 🪃 Browser
-            save       : false
             shared-key : prose-wasm
           - command    : mise run upload rust
             name       : ☂️ Coverage
@@ -66,27 +66,31 @@ jobs:
         uses : ./.github/actions/provision-cargo
         with:
           cache      : ${{ matrix.shared-key != '' }}
-          save       : ${{ matrix.save }}
+          save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
 
       - name : Provision bun
         uses : ./.github/actions/provision-bun
-        with : { cache-dependency-glob: "${{ matrix.bun-lock }}" }
+        with:
+          cache-dependency-glob : ${{ matrix.bun-lock }}
+          save                  : *no-save
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}
 
   gate:
-    name    : 🗞️ Brief
-    if      : always()
-    needs   : check
-    runs-on : *ubuntu
+    name            : 🗞️ Brief
+    if              : always()
+    needs           : check
+    runs-on         : *ubuntu
+    timeout-minutes : 5
 
     steps:
       - *checkout
 
       - name : Provision uv
         uses : ./.github/actions/provision-uv
+        with : { save: *no-save }
 
       - name : Summarize and gate
         env:
