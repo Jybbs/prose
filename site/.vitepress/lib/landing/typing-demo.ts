@@ -11,7 +11,7 @@ export type LandingTypingDemoEntry = LandingTypingDemoEditEntry
 
 export const SOURCE = `from pathlib import Path
 from dataclasses import dataclass
-@dataclass
+@dataclass(kw_only=True)
 class Config:
     """Connection knobs read at startup from the project's pyproject.toml, with command-line overrides applied last."""
     timeout: int | None = None

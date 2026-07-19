@@ -466,9 +466,10 @@ export const glossary: Record<string, GlossaryEntry> = {
   'Pydantic': {
     aliases    : ['pydantic', 'Pydantic field', 'Pydantic fields'],
     definition : 'Pydantic is a widely used data-validation library whose models declare typed '
-               + 'fields in the class body. `alphabetize` sorts those fields with required '
-               + 'before optional, and `align-colons` aligns the annotation colons across the '
-               + 'field block.',
+               + 'fields in the class body. `alphabetize` sorts a `BaseModel`\'s fields with '
+               + 'required before optional, and holds a `pydantic.dataclasses` field run in '
+               + 'source order because that decorator generates a positional constructor. '
+               + '`align-colons` aligns the annotation colons across either field block.',
     families   : ['ordering', 'alignment'],
     href       : 'https://docs.pydantic.dev/'
   },
@@ -572,7 +573,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['typeddict'],
     definition : 'A `TypedDict` is a `typing.TypedDict` subclass declaring a dict\'s '
                + 'key-to-value-type contract. It accepts no positional field arguments, so '
-               + '`alphabetize` sorts its fields the same way it sorts Pydantic fields.',
+               + '`alphabetize` sorts its fields the same way it sorts `BaseModel` fields.',
     families   : ['ordering', 'alignment'],
     href       : 'https://docs.python.org/3/library/typing.html#typing.TypedDict'
   },

@@ -5,7 +5,7 @@
 //! or below a definition, that reads it at class-definition time. Each
 //! family still redistributes only across the slots it already holds.
 //! A field bound by position in a generated constructor holds its slot
-//! while the constants around it sort on.
+//! while the constants around it still sort.
 //! Reverts the reorder on a duplicate name, a reference cycle, or an
 //! assembled order that would seat a referent after a reader.
 
@@ -14,7 +14,7 @@ use std::{collections::HashMap, ops::Range};
 use ruff_python_ast::{Expr, Stmt};
 use ruff_text_size::{Ranged, TextSize};
 
-use super::{ann_assign_with_named_field, has_default, simple_name_assign};
+use super::members::{ann_assign_with_named_field, has_default, simple_name_assign};
 use crate::primitives::{
     binding::type_head_identifier,
     orderer::{permute_in_place, slot_positions},

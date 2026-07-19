@@ -15,7 +15,7 @@ A reader who already knows the codebase carries a **mental map** of where things
 | **Classes in a module** | Alphabetical |
 | **Methods in a class** | Dunders, properties, private, public |
 | **Enum members** | Alphabetical |
-| **Pydantic and `TypedDict` fields** | Required before optional |
+| **Pydantic `BaseModel` and `TypedDict` fields** | Required before optional |
 | **Dataclass and `NamedTuple` fields** | Source order held |
 | **Parameters and keyword arguments** | Keyword-only and call keywords alphabetical, positional held |
 | **Imports** | Alphabetical within each [[group-imports]] section |

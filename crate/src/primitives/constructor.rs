@@ -3,10 +3,13 @@
 //! run into that constructor's positional-or-keyword parameters, so the
 //! rules that reorder class members hold the run in source order.
 
-use ruff_python_ast::{Arguments, Decorator, Stmt, StmtClassDef};
+use ruff_python_ast::{Arguments, Stmt, StmtClassDef, helpers::is_const_true};
 use ruff_text_size::{Ranged, TextSize};
 
-use crate::primitives::binding::{decorator_simple_name, tail_identifier, type_head_identifier};
+use crate::primitives::{
+    binding::{tail_identifier, type_head_identifier},
+    decorator::{decorator_arguments, decorator_simple_name},
+};
 
 /// The offset from which a class's annotated fields bind by name rather
 /// than by position. A field starting below it holds its source slot.
@@ -31,44 +34,27 @@ pub(crate) fn keyword_field_start(class: &StmtClassDef) -> TextSize {
 fn declares_kw_only(arguments: Option<&Arguments>) -> bool {
     arguments
         .and_then(|args| args.find_keyword("kw_only"))
-        .and_then(|kw| kw.value.as_boolean_literal_expr())
-        .is_some_and(|literal| literal.value)
-}
-
-/// The argument list a decorator carries when applied as a call, `None`
-/// where it is applied bare.
-fn decorator_arguments(decorator: &Decorator) -> Option<&Arguments> {
-    decorator
-        .expression
-        .as_call_expr()
-        .map(|call| &call.arguments)
+        .is_some_and(|kw| is_const_true(&kw.value))
 }
 
 /// True when the class header names a constructor generator that binds
 /// the annotated field run by position, named by either a base class or
-/// a decorator. The decorator roster mirrors the `attrs` and
-/// `dataclasses` entry points `ruff_linter` recognizes, which the
-/// `pydantic.dataclasses` re-export shares on its tail segment.
-/// Resolution reads that tail segment alone, so an aliased or
-/// dotted import matches alike and a same-named local shadow pins a run
-/// that would otherwise sort.
+/// a decorator. Each name resolves on its tail segment, so a dotted or
+/// aliased import matches alike and a same-named local shadow pins a
+/// run that would otherwise sort.
 fn generates_positional_init(class: &StmtClassDef) -> bool {
-    let header = class.arguments.as_deref();
-    let based = header.is_some_and(|arguments| {
-        arguments.args.iter().any(|base| {
-            type_head_identifier(base).is_some_and(|name| matches!(name, "NamedTuple" | "Struct"))
-        })
-    });
-    if based && !declares_kw_only(header) {
+    let based = class
+        .bases()
+        .iter()
+        .any(|base| matches!(type_head_identifier(base), Some("NamedTuple" | "Struct")));
+    if based && !declares_kw_only(class.arguments.as_deref()) {
         return true;
     }
     class.decorator_list.iter().any(|decorator| {
-        decorator_simple_name(decorator).is_some_and(|name| {
-            matches!(
-                name,
-                "attributes" | "attrs" | "dataclass" | "define" | "frozen" | "mutable" | "s"
-            )
-        }) && !declares_kw_only(decorator_arguments(decorator))
+        matches!(
+            decorator_simple_name(decorator),
+            Some("attributes" | "attrs" | "dataclass" | "define" | "frozen" | "mutable" | "s")
+        ) && !declares_kw_only(decorator_arguments(decorator))
     })
 }
 
