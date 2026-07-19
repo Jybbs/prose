@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Method's Parameters Draw the Same Report"
+
+description = '''
+A class-body method with out-of-order parameters **draws the diagnostic a free function draws**. Its callers bind by slot exactly as a free function's do, so the run reads the same way, with the `self` receiver dropping out rather than silencing the check.
+'''

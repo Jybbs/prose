@@ -1,5 +1,5 @@
 //! Parameter-reorder primitives shared by `alphabetize`, the
-//! `unsorted-parameters` lint, and `call-layout`. The sort key drives
+//! `unsorted-positionals` lint, and `call-layout`. The sort key drives
 //! the keyword-only sort and docstring mirror, and the decorator
 //! predicate gates the rules that must not reorder a positionally-bound
 //! signature.

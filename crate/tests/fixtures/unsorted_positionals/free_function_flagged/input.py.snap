@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/unsorted_parameters/free_function_flagged/input.py
+input_file: crate/tests/fixtures/unsorted_positionals/free_function_flagged/input.py
 ---
 def merge(target, source, fallback=None):
     return target

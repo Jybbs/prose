@@ -39,7 +39,20 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
     "message": "Module constant `timeout` is not SCREAMING_CASE"
   },
   {
-    "code": "unsorted-parameters",
+    "code": "unsorted-positionals",
+    "end_location": {
+      "column": 37,
+      "row": 18
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 15
+    },
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+  },
+  {
+    "code": "unsorted-positionals",
     "end_location": {
       "column": 2,
       "row": 40
@@ -49,7 +62,7 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
       "column": 18,
       "row": 33
     },
-    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
   },
   {
     "code": "signature-annotations",

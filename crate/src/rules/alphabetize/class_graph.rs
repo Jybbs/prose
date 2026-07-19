@@ -11,12 +11,13 @@
 
 use std::{collections::HashMap, ops::Range};
 
-use ruff_python_ast::{Expr, Stmt};
+use ruff_python_ast::Stmt;
 use ruff_text_size::{Ranged, TextSize};
 
-use super::members::{ann_assign_with_named_field, has_default, simple_name_assign};
+use super::members::simple_name_assign;
 use crate::primitives::{
-    binding::type_head_identifier,
+    binding::{ann_assign_with_named_field, is_classvar},
+    constructor::classify_field,
     orderer::{permute_in_place, slot_positions},
     tiering::{def_run_tier_keys, eval_time_refs},
 };
@@ -50,12 +51,12 @@ pub(super) fn permute_class_assigns(
         .collect();
     let snapshot = order.to_vec();
     permute_in_place(order, body, range.clone(), |stmt| {
-        let (ann, _) = ann_assign_with_named_field(stmt)?;
-        if is_classvar(&ann.annotation) || stmt.start() < keyword_fields_from {
+        if stmt.start() < keyword_fields_from {
             return None;
         }
+        let (default, _) = classify_field(stmt)?;
         let (tier, name) = tier_keys[&stmt.start()];
-        Some((tier, u8::from(has_default(ann)), name))
+        Some((tier, default, name))
     });
     permute_in_place(order, body, range.clone(), |stmt| {
         class_assign_member(stmt)
@@ -77,13 +78,6 @@ fn class_assign_member(stmt: &Stmt) -> Option<(&str, bool)> {
         Some((ann, name)) => Some((name, is_classvar(&ann.annotation))),
         None => simple_name_assign(stmt).map(|name| (name, true)),
     }
-}
-
-/// True when an annotation's outermost head is `ClassVar`, covering the
-/// bare `ClassVar` and the subscripted `ClassVar[...]` forms named
-/// directly or through a module attribute (`typing.ClassVar`).
-fn is_classvar(annotation: &Expr) -> bool {
-    type_head_identifier(annotation) == Some("ClassVar")
 }
 
 /// True when every reader in `range` keeps each assignment member it
@@ -163,21 +157,6 @@ mod tests {
     fn holds_a_generated_constructors_field_run() {
         let order = class_order("@dataclass\nclass C:\n    width: int\n    height: int\n");
         assert_eq!(order, vec![0, 1], "the field run holds its source order");
-    }
-
-    #[rstest]
-    #[case("x: ClassVar = 1", true)]
-    #[case("x: ClassVar[int] = 1", true)]
-    #[case("x: typing.ClassVar[int] = 1", true)]
-    #[case("x: int = 1", false)]
-    #[case("x: list[int] = []", false)]
-    #[case("x: Final[int] = 1", false)]
-    fn is_classvar_keys_off_the_annotation_head(#[case] src: &str, #[case] expected: bool) {
-        let source = parse(src);
-        let ann = source.ast().body[0]
-            .as_ann_assign_stmt()
-            .expect("annotated assignment");
-        assert_eq!(is_classvar(&ann.annotation), expected);
     }
 
     #[test]

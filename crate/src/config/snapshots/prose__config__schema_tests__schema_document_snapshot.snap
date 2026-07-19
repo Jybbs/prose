@@ -688,7 +688,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
-        "unsorted-parameters": {
+        "unsorted-positionals": {
           "anyOf": [
             {
               "type": "boolean"
@@ -927,7 +927,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "strip-trailing-commas": {
           "enabled": true
         },
-        "unsorted-parameters": {
+        "unsorted-positionals": {
           "enabled": true
         },
         "unused-future-annotations": {

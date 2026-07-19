@@ -245,9 +245,10 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['dataclasses', 'dataclass field', 'dataclass fields'],
     definition : 'A dataclass is a class decorated with `@dataclass` whose body lists typed '
                + 'field declarations. Those fields become the generated `__init__`\'s positional '
-               + 'parameters, so `alphabetize` holds their source order, `align-colons` aligns '
-               + 'their annotation colons, and `align-equals` aligns their default-value `=` signs.',
-    families   : ['ordering', 'alignment'],
+               + 'parameters, so `alphabetize` holds their source order and `unsorted-positionals` '
+               + 'reports an out-of-order run, while `align-colons` aligns their annotation colons '
+               + 'and `align-equals` aligns their default-value `=` signs.',
+    families   : ['ordering', 'alignment', 'lint'],
     href       : 'https://docs.python.org/3/library/dataclasses.html'
   },
 

@@ -120,7 +120,7 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
     "message": "`parsed` is assigned and used once. Consider inlining `json.loads(raw)`"
   },
   {
-    "code": "unsorted-parameters",
+    "code": "unsorted-positionals",
     "end_location": {
       "column": 2,
       "row": 53
@@ -130,10 +130,10 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
       "column": 15,
       "row": 47
     },
-    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
   },
   {
-    "code": "unsorted-parameters",
+    "code": "unsorted-positionals",
     "end_location": {
       "column": 37,
       "row": 72
@@ -143,7 +143,7 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
       "column": 13,
       "row": 72
     },
-    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
   },
   {
     "code": "signature-annotations",

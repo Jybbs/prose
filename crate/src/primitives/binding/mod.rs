@@ -36,9 +36,9 @@ mod names;
 
 pub(crate) use module_scan::{ModuleAssignment, module_assignments};
 pub(crate) use names::{
-    annotated_name_target, bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
-    is_screaming_case, single_name_assignment, single_name_target, tail_identifier,
-    top_level_module, type_head_identifier,
+    ann_assign_with_named_field, bare_import_bound_name, from_import_bound_name, is_classvar,
+    is_explicit_type_alias, is_screaming_case, single_name_assignment, single_name_target,
+    tail_identifier, top_level_module, type_head_identifier,
 };
 
 /// Stable handle to a binding in `BindingAnalysis`. Cheap to copy.

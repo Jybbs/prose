@@ -18,7 +18,7 @@ input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.p
     "message": "`totals` is assigned and used once. Consider inlining `{\n        \"created\" : 0,\n        \"deleted\" : 0,\n        \"failed\"  : 0,\n        \"skipped\" : 0,\n        \"updated\" : 0\n    }`"
   },
   {
-    "code": "unsorted-parameters",
+    "code": "unsorted-positionals",
     "end_location": {
       "column": 40,
       "row": 6
@@ -28,7 +28,7 @@ input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.p
       "column": 13,
       "row": 6
     },
-    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
   },
   {
     "code": "signature-annotations",

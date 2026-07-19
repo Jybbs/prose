@@ -1,16 +1,17 @@
 //! Pure name helpers over import, assignment, and reference AST nodes:
 //! target extraction, type-reference name reading, the `SCREAMING_CASE`
-//! casing predicate, and the `TypeAlias` and `TYPE_CHECKING` guards,
-//! independent of the binding table.
+//! casing predicate, and the `ClassVar`, `TypeAlias`, and `TYPE_CHECKING`
+//! guards, independent of the binding table.
 
 use ruff_python_ast::{
     Alias, Expr, ExprName, Stmt, StmtAnnAssign, StmtAssign, StmtIf, helpers::map_subscript,
 };
 
-/// The bare-`Name` target name of an `Stmt::AnnAssign`. `None` when the
-/// target is an attribute or subscript (`self.x: int`, `d[k]: int`).
-pub(crate) fn annotated_name_target(ann: &StmtAnnAssign) -> Option<&str> {
-    Some(ann.target.as_name_expr()?.id.as_str())
+/// Returns the `StmtAnnAssign` and its target name when the statement is
+/// an annotated assignment whose target is a single `Name`.
+pub(crate) fn ann_assign_with_named_field(stmt: &Stmt) -> Option<(&StmtAnnAssign, &str)> {
+    let ann = stmt.as_ann_assign_stmt()?;
+    Some((ann, annotated_name_target(ann)?))
 }
 
 /// The module-scope name a bare `import a.b` alias binds: its `asname`,
@@ -23,6 +24,13 @@ pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
 /// imported name itself.
 pub(crate) fn from_import_bound_name(alias: &Alias) -> &str {
     alias.asname.as_ref().unwrap_or(&alias.name).as_str()
+}
+
+/// True when an annotation's outermost head is `ClassVar`, covering the
+/// bare `ClassVar` and the subscripted `ClassVar[...]` forms named
+/// directly or through a module attribute (`typing.ClassVar`).
+pub(crate) fn is_classvar(annotation: &Expr) -> bool {
+    type_head_identifier(annotation) == Some("ClassVar")
 }
 
 /// True when `stmt` declares a type alias explicitly, through a PEP 695
@@ -96,6 +104,12 @@ pub(crate) fn type_head_identifier(expr: &Expr) -> Option<&str> {
     tail_identifier(map_subscript(expr))
 }
 
+/// The bare-`Name` target name of an `Stmt::AnnAssign`. `None` when the
+/// target is an attribute or subscript (`self.x: int`, `d[k]: int`).
+fn annotated_name_target(ann: &StmtAnnAssign) -> Option<&str> {
+    Some(ann.target.as_name_expr()?.id.as_str())
+}
+
 /// True when `annotation` names `TypeAlias`, bare or attribute-qualified
 /// (`typing.TypeAlias`).
 fn is_type_alias(annotation: &Expr) -> bool {
@@ -126,15 +140,30 @@ mod tests {
     use crate::testing::parse;
 
     #[test]
-    fn annotated_name_target_keeps_only_name_targets() {
-        let source = parse("x: int = 1\nself.x: int = 1\n");
-        let targets: Vec<Option<&str>> = source
+    fn ann_assign_with_named_field_filters_to_name_targets() {
+        let source = parse("x: int = 1\nself.x: int = 1\nX = 1\n");
+        let names: Vec<Option<&str>> = source
             .ast()
             .body
             .iter()
-            .map(|stmt| annotated_name_target(stmt.as_ann_assign_stmt().expect("ann assign")))
+            .map(|stmt| ann_assign_with_named_field(stmt).map(|(_, name)| name))
             .collect();
-        assert_eq!(targets, vec![Some("x"), None]);
+        assert_eq!(names, vec![Some("x"), None, None]);
+    }
+
+    #[rstest]
+    #[case("x: ClassVar = 1", true)]
+    #[case("x: ClassVar[int] = 1", true)]
+    #[case("x: typing.ClassVar[int] = 1", true)]
+    #[case("x: int = 1", false)]
+    #[case("x: list[int] = []", false)]
+    #[case("x: Final[int] = 1", false)]
+    fn is_classvar_keys_off_the_annotation_head(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        let ann = source.ast().body[0]
+            .as_ann_assign_stmt()
+            .expect("annotated assignment");
+        assert_eq!(is_classvar(&ann.annotation), expected);
     }
 
     #[rstest]

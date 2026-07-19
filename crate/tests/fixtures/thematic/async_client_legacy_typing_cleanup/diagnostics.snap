@@ -37,6 +37,6 @@ strip-align-padding@466..469
 strip-none-return@1505..1513
 strip-none-return@680..688
 strip-trailing-commas@438..439
-unsorted-parameters@656..680
-unsorted-parameters@874..975
+unsorted-positionals@656..680
+unsorted-positionals@874..975
 unused-future-annotations@0..35

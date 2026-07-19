@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A Positional-Binding Decorator Silences the Lint"
 
 description = '''

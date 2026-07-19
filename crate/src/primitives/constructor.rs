@@ -1,15 +1,32 @@
 //! Generated-constructor detection. A class header naming a
 //! field-ordered constructor generator turns the body's annotated field
 //! run into that constructor's positional-or-keyword parameters, so the
-//! rules that reorder class members hold the run in source order.
+//! rules that reorder class members hold the run in source order and the
+//! lint that reports an out-of-order run reads the same fields.
 
-use ruff_python_ast::{Arguments, Stmt, StmtClassDef, helpers::is_const_true};
+use ruff_python_ast::{
+    Arguments, Stmt, StmtAnnAssign, StmtClassDef,
+    helpers::{any_over_expr, is_const_true},
+};
 use ruff_text_size::{Ranged, TextSize};
 
 use crate::primitives::{
-    binding::{tail_identifier, type_head_identifier},
+    binding::{ann_assign_with_named_field, is_classvar, tail_identifier, type_head_identifier},
     decorator::{decorator_arguments, decorator_simple_name},
 };
+
+/// The sort key of a class-body statement read as one of the parameters
+/// a generated constructor takes: `0` for a required field and `1` for
+/// one carrying a default, then the field name. `None` for a statement
+/// the generated signature omits, covering any non-field statement, a
+/// `ClassVar` declaration, and the `KW_ONLY` sentinel.
+pub(crate) fn classify_field(stmt: &Stmt) -> Option<(u8, &str)> {
+    let (ann, name) = ann_assign_with_named_field(stmt)?;
+    if is_classvar(&ann.annotation) || is_kw_only_sentinel(ann) {
+        return None;
+    }
+    Some((u8::from(has_default(ann)), name))
+}
 
 /// The offset from which a class's annotated fields bind by name rather
 /// than by position. A field starting below it holds its source slot.
@@ -24,7 +41,7 @@ pub(crate) fn keyword_field_start(class: &StmtClassDef) -> TextSize {
     class
         .body
         .iter()
-        .find(|stmt| is_kw_only_sentinel(stmt))
+        .find(|stmt| stmt.as_ann_assign_stmt().is_some_and(is_kw_only_sentinel))
         .map_or(class.end(), Ranged::end)
 }
 
@@ -58,13 +75,26 @@ fn generates_positional_init(class: &StmtClassDef) -> bool {
     })
 }
 
-/// True when a statement is the `dataclasses.KW_ONLY` sentinel, the
-/// pseudo-field whose annotation makes every field below it
-/// keyword-only.
-fn is_kw_only_sentinel(stmt: &Stmt) -> bool {
-    stmt.as_ann_assign_stmt()
-        .and_then(|ann| tail_identifier(&ann.annotation))
-        == Some("KW_ONLY")
+/// True when an annotated assignment carries a default, either
+/// directly via `= value` or through any nested `Call` in the
+/// annotation that carries a `default` or `default_factory` keyword.
+fn has_default(ann: &StmtAnnAssign) -> bool {
+    ann.value.is_some()
+        || any_over_expr(&ann.annotation, |e| {
+            e.as_call_expr().is_some_and(|c| {
+                c.arguments
+                    .keywords
+                    .iter()
+                    .any(|kw| matches!(kw.arg.as_deref(), Some("default" | "default_factory")))
+            })
+        })
+}
+
+/// True when an annotated assignment is the `dataclasses.KW_ONLY`
+/// sentinel, the pseudo-field whose annotation makes every field below
+/// it keyword-only.
+fn is_kw_only_sentinel(ann: &StmtAnnAssign) -> bool {
+    tail_identifier(&ann.annotation) == Some("KW_ONLY")
 }
 
 #[cfg(test)]
@@ -85,6 +115,22 @@ mod tests {
             .iter()
             .filter(|stmt| stmt.start() < start)
             .count()
+    }
+
+    #[rstest]
+    #[case("x: int", Some((0, "x")))]
+    #[case("x: int = 1", Some((1, "x")))]
+    #[case("x: Annotated[int, Field(default=1)]", Some((1, "x")))]
+    #[case("x: ClassVar[int] = 1", None)]
+    #[case("_: KW_ONLY", None)]
+    #[case("X = 1", None)]
+    #[case("self.x: int = 1", None)]
+    fn classify_field_keys_required_before_defaulted(
+        #[case] src: &str,
+        #[case] expected: Option<(u8, &str)>,
+    ) {
+        let source = parse(src);
+        assert_eq!(classify_field(&source.ast().body[0]), expected);
     }
 
     #[test]
