@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/plain_class_fields_unflagged/input.py
+---
+class Endpoint:
+    timeout: float
+    method: str

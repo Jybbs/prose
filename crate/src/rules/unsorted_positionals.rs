@@ -2,19 +2,14 @@
 //! of alphabetical order, covering a function's positional-or-keyword
 //! parameters, free function and method alike, and the annotated field
 //! run of a class whose header generates a positional constructor.
-//! Report-only, since reordering a run rebinds every positional call
-//! site and a single-file formatter cannot prove that every caller binds
-//! by keyword.
+//! Lint-only, emits no edits.
 //!
 //! A positional-binding-decorated function is skipped whole. `self` /
 //! `cls`, the positional-only parameters, a `ClassVar` declaration, and
 //! the `KW_ONLY` sentinel merely drop from the run, leaving the rest of
 //! it still evaluated.
 
-use ruff_python_ast::{
-    Stmt, StmtClassDef,
-    statement_visitor::{StatementVisitor, walk_stmt},
-};
+use ruff_python_ast::{Stmt, StmtClassDef};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
@@ -24,6 +19,7 @@ use crate::{
         constructor::{classify_field, keyword_field_start},
         orderer::blocks_span,
         params::{params_unsorted, pins_positional_params},
+        walk::filter_map_over_stmts,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -43,29 +39,11 @@ impl Rule for UnsortedPositionals {
     }
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
-        let mut visitor = Visitor {
-            diagnostics: Vec::new(),
-            message: self.message(),
-            rule: self.id(),
-        };
-        visitor.visit_body(&source.ast().body);
-        visitor.diagnostics
-    }
-}
-
-struct Visitor {
-    diagnostics: Vec<Diagnostic>,
-    message: &'static str,
-    rule: RuleId,
-}
-
-impl<'a> StatementVisitor<'a> for Visitor {
-    fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if let Some(range) = unsorted_run(stmt) {
-            self.diagnostics
-                .push(Diagnostic::lint(self.rule, range, self.message.to_owned()));
-        }
-        walk_stmt(self, stmt);
+        let message = self.message();
+        let rule = self.id();
+        filter_map_over_stmts(&source.ast().body, |stmt| {
+            unsorted_run(stmt).map(|range| Diagnostic::lint(rule, range, message.to_owned()))
+        })
     }
 }
 
@@ -131,7 +109,12 @@ mod tests {
 
     #[test]
     fn flags_a_function_nested_in_a_method() {
-        let source = parse("class C:\n    def m(self):\n        def inner(target, source): pass\n");
+        let src = indoc! {"
+            class C:
+                def m(self):
+                    def inner(target, source): pass
+        "};
+        let source = parse(src);
         assert_eq!(flagged(&source), vec!["(target, source)"]);
     }
 
@@ -147,7 +130,13 @@ mod tests {
 
     #[test]
     fn flags_the_field_run_of_a_generated_constructor() {
-        let source = parse("@dataclass\nclass C:\n    width: int\n    height: int\n");
+        let src = indoc! {"
+            @dataclass
+            class C:
+                width: int
+                height: int
+        "};
+        let source = parse(src);
         assert_eq!(flagged(&source), vec!["width: int\n    height: int"]);
     }
 
@@ -160,12 +149,6 @@ mod tests {
     #[test]
     fn respects_the_required_before_optional_partition() {
         let source = parse("def f(source, target, fallback=None): pass\n");
-        assert!(flagged(&source).is_empty());
-    }
-
-    #[test]
-    fn stays_silent_on_a_positional_binding_decorator() {
-        let source = parse("@click.argument(\"x\")\ndef f(target, source): pass\n");
         assert!(flagged(&source).is_empty());
     }
 }

@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/pinned_method_beside_a_flagged_run/input.py
+---
+from dataclasses import dataclass
+
+
+@dataclass
+class Report:
+    zebra: int
+    apple: int
+
+    @click.argument("path")
+    def render(self, target, source):
+        return target

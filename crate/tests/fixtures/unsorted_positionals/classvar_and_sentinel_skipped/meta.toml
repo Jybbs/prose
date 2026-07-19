@@ -1,6 +1,6 @@
 [docs]
 previewable = true
-title       = "A `ClassVar` and the `KW_ONLY` Sentinel Drop From the Run"
+title       = "A `ClassVar` and the `KW_ONLY` Sentinel Drop from the Run"
 
 description = '''
 Neither the `ClassVar` constant nor the `KW_ONLY` sentinel becomes a constructor parameter, so both **drop out of the run rather than counting against it**. What remains before the sentinel is `alpha, beta`, already in order, and the `zulu, yankee` pair below it binds by name, leaving the class **without a diagnostic**.

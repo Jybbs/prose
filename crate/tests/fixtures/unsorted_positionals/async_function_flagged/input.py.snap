@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/async_function_flagged/input.py
+---
+async def fetch(target, source):
+    return target

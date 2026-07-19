@@ -52,6 +52,8 @@ mod tests {
     #[case("def f(b, a, /): pass\n", false)]
     #[case("def f(a, b, *, d, c): pass\n", false)]
     #[case("def f(x, /, b, a): pass\n", true)]
+    #[case("def f(zebra, apple=1): pass\n", false)]
+    #[case("def f(b=1, a=2): pass\n", true)]
     fn params_unsorted_tracks_only_the_positional_or_keyword_args(
         #[case] src: &str,
         #[case] expected: bool,

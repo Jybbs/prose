@@ -14,9 +14,8 @@ use std::{collections::HashMap, ops::Range};
 use ruff_python_ast::Stmt;
 use ruff_text_size::{Ranged, TextSize};
 
-use super::members::simple_name_assign;
 use crate::primitives::{
-    binding::{ann_assign_with_named_field, is_classvar},
+    binding::{ann_assign_with_named_field, is_classvar, single_name_target},
     constructor::classify_field,
     orderer::{permute_in_place, slot_positions},
     tiering::{def_run_tier_keys, eval_time_refs},
@@ -76,7 +75,7 @@ pub(super) fn permute_class_assigns(
 fn class_assign_member(stmt: &Stmt) -> Option<(&str, bool)> {
     match ann_assign_with_named_field(stmt) {
         Some((ann, name)) => Some((name, is_classvar(&ann.annotation))),
-        None => simple_name_assign(stmt).map(|name| (name, true)),
+        None => single_name_target(stmt.as_assign_stmt()?).map(|name| (name, true)),
     }
 }
 
@@ -139,6 +138,7 @@ mod tests {
     #[case("x: int = 1", Some(("x", false)))]
     #[case("x, y = 1, 2", None)]
     #[case("self.x = 1", None)]
+    #[case("self.x: int = 1", None)]
     fn class_assign_member_routes_constants_and_fields(
         #[case] src: &str,
         #[case] expected: Option<(&str, bool)>,

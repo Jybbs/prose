@@ -1,8 +1,6 @@
 //! Generated-constructor detection. A class header naming a
 //! field-ordered constructor generator turns the body's annotated field
-//! run into that constructor's positional-or-keyword parameters, so the
-//! rules that reorder class members hold the run in source order and the
-//! lint that reports an out-of-order run reads the same fields.
+//! run into that constructor's positional-or-keyword parameters.
 
 use ruff_python_ast::{
     Arguments, Stmt, StmtAnnAssign, StmtClassDef,
@@ -64,15 +62,13 @@ fn generates_positional_init(class: &StmtClassDef) -> bool {
         .bases()
         .iter()
         .any(|base| matches!(type_head_identifier(base), Some("NamedTuple" | "Struct")));
-    if based && !declares_kw_only(class.arguments.as_deref()) {
-        return true;
-    }
-    class.decorator_list.iter().any(|decorator| {
-        matches!(
-            decorator_simple_name(decorator),
-            Some("attributes" | "attrs" | "dataclass" | "define" | "frozen" | "mutable" | "s")
-        ) && !declares_kw_only(decorator_arguments(decorator))
-    })
+    (based && !declares_kw_only(class.arguments.as_deref()))
+        || class.decorator_list.iter().any(|decorator| {
+            matches!(
+                decorator_simple_name(decorator),
+                Some("attributes" | "attrs" | "dataclass" | "define" | "frozen" | "mutable" | "s")
+            ) && !declares_kw_only(decorator_arguments(decorator))
+        })
 }
 
 /// True when an annotated assignment carries a default, either
@@ -121,6 +117,7 @@ mod tests {
     #[case("x: int", Some((0, "x")))]
     #[case("x: int = 1", Some((1, "x")))]
     #[case("x: Annotated[int, Field(default=1)]", Some((1, "x")))]
+    #[case("x: Annotated[list, Field(default_factory=list)]", Some((1, "x")))]
     #[case("x: ClassVar[int] = 1", None)]
     #[case("_: KW_ONLY", None)]
     #[case("X = 1", None)]
@@ -158,6 +155,8 @@ mod tests {
     #[case("@pydantic.dataclasses.dataclass\nclass C:\n    b: int\n", 1)]
     #[case("@dataclass(frozen=True)\nclass C:\n    b: int\n", 1)]
     #[case("@attr.s\nclass C:\n    b: int\n", 1)]
+    #[case("@attr.attrs\nclass C:\n    b: int\n", 1)]
+    #[case("@attr.attributes\nclass C:\n    b: int\n", 1)]
     #[case("@attrs.define\nclass C:\n    b: int\n", 1)]
     #[case("@attrs.frozen\nclass C:\n    b: int\n", 1)]
     #[case("@attrs.mutable\nclass C:\n    b: int\n", 1)]

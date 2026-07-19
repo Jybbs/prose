@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/classvar_inside_a_flagged_run/input.py
+---
+from dataclasses import dataclass
+from typing import ClassVar
+
+
+@dataclass
+class Palette:
+    zebra: int
+    DEFAULT: ClassVar[str] = "muted"
+    apple: int

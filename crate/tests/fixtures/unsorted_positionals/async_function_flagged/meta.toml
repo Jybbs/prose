@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An `async` Function Reads the Same as a Plain One"
+
+description = '''
+An `async def` carries the same positional-or-keyword parameters a plain `def` does, so an out-of-order run **draws the same diagnostic**. Nothing about the coroutine changes how a caller binds by slot.
+'''

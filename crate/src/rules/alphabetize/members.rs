@@ -1,12 +1,10 @@
-//! Class-body member classifiers. Reads a statement as a simple
-//! assignment, reports the method group, and names the decorator
-//! condition that pins a method run.
+//! Class-body member classifiers. Reports the method group and names
+//! the decorator condition that pins a method run.
 
 use ruff_python_ast::{Stmt, StmtFunctionDef, helpers::is_dunder};
 
 use crate::primitives::{
-    binding::{ann_assign_with_named_field, single_name_target},
-    decorator::decorator_simple_name,
+    binding::ann_assign_with_named_field, decorator::decorator_simple_name,
     params::pins_positional_params,
 };
 
@@ -45,19 +43,35 @@ pub(super) fn method_group(f: &StmtFunctionDef) -> u8 {
     }
 }
 
-/// Returns the simple name assigned by an `Stmt::Assign` whose
-/// target is a single `Name`. `None` for multi-target,
-/// destructuring, attribute, or subscript targets.
-pub(super) fn simple_name_assign(stmt: &Stmt) -> Option<&str> {
-    single_name_target(stmt.as_assign_stmt()?)
-}
-
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
+    use rstest::rstest;
 
     use super::*;
     use crate::testing::{first_class, parse};
+
+    #[rstest]
+    #[case(
+        "class C:\n    a: int\n    b: int\n    @route(path)\n    def run(self): pass\n",
+        true
+    )]
+    #[case("class C:\n    a: int\n    b: int\n    def run(self): pass\n", false)]
+    #[case(
+        "class C:\n    a: int\n    @route(path)\n    def run(self): pass\n",
+        false
+    )]
+    #[case(
+        "class C:\n    a: int\n    b: int\n    @cache\n    def run(self): pass\n",
+        false
+    )]
+    fn class_pins_methods_needs_two_fields_and_a_positional_decorator(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let s = parse(src);
+        assert_eq!(class_pins_methods(&first_class(&s).body), expected);
+    }
 
     #[test]
     fn method_group_orders_dunder_property_private_public() {
@@ -78,12 +92,5 @@ mod tests {
             .map(method_group)
             .collect();
         assert_eq!(groups, vec![0, 1, 2, 3]);
-    }
-
-    #[test]
-    fn simple_name_assign_filters_to_single_name_targets() {
-        let s = parse("X = 1\nself.x = 1\nx, y = 1, 2\n");
-        let names: Vec<Option<&str>> = s.ast().body.iter().map(simple_name_assign).collect();
-        assert_eq!(names, vec![Some("X"), None, None]);
     }
 }
