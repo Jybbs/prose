@@ -119,13 +119,13 @@ The [**Editor**](/integrations/editor) integration page covers wiring this forma
 
 A final record closes every `json` run, carrying run-wide rollup so a consumer reads file and rule counts without re-aggregating the per-diagnostic stream. It emits even when the run surfaces zero diagnostics, where every count lands at zero and the envelope is the stream's only line.
 
-```json
+```json-vue
 {
   "kind"              : "summary",
   "diagnostics_total" : 12,
   "files_changed"     : 3,
   "files_visited"     : 47,
-  "prose_version"     : "0.8.1",
+  "prose_version"     : "{{ $frontmatter.proseVersion }}",
   "rules_fired"       : { "align-equals": 8, "alphabetize": 4 },
   "schema_version"    : 1
 }

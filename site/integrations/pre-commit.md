@@ -43,9 +43,9 @@ The [**Ruff**](/integrations/ruff) integration page covers the `extend-ignore` c
 
 The [**`pre-commit`-managed Ruff hook**](https://github.com/astral-sh/ruff-pre-commit) handles the Ruff side without requiring a system install. Add this block above the `repo: local` from the Local Hook section:
 
-```yaml
+```yaml-vue
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.15.10
+  rev: v{{ $frontmatter.ruffVersion }}
   hooks:
     - id: ruff-format
 ```
