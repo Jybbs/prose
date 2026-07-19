@@ -41,7 +41,7 @@ def build_requirement(name: str) -> str:
     Return the exact version `crate/pyproject.toml` pins for the `name`
     build requirement.
     """
-    project = loads(Path("crate/pyproject.toml").read_text(encoding="utf-8"))
+    project = toml("crate/pyproject.toml")
     for requirement in project["build-system"]["requires"]:
         if requirement.startswith(name):
             if match := search(r"==\s*(\S+)", requirement):
@@ -54,7 +54,7 @@ def cargo_lock_version(name: str) -> str:
     """
     Return the version `Cargo.lock` resolves for the `name` package.
     """
-    for package in loads(Path("Cargo.lock").read_text(encoding="utf-8"))["package"]:
+    for package in toml("Cargo.lock")["package"]:
         if package["name"] == name:
             return package["version"]
     raise SystemExit(f"::error::no Cargo.lock package named {name!r}")
@@ -69,20 +69,25 @@ def major_minor(value: str) -> str:
     raise SystemExit(f"::error::cannot parse major.minor from {value!r}")
 
 
+def toml(path: str) -> dict:
+    """
+    Return the parsed TOML mapping at `path`.
+    """
+    return loads(Path(path).read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
 
-    cargo   = loads(Path("Cargo.toml").read_text(encoding="utf-8"))
-    mise    = loads(Path(".mise/config.toml").read_text(encoding="utf-8"))
-    project = loads(Path("crate/pyproject.toml").read_text(encoding="utf-8"))
+    cargo   = toml("Cargo.toml")
+    mise    = toml(".mise/config.toml")
+    project = toml("crate/pyproject.toml")
     rust    = cargo["workspace"]["package"]["rust-version"]
 
     # The mise `rust` pin is a bare version string or a table with `version`.
-    mise_rust = mise["tools"]["rust"]
-    if isinstance(mise_rust, dict):
+    if isinstance(mise_rust := mise["tools"]["rust"], dict):
         mise_rust = mise_rust["version"]
 
-    wasm_bindgen = cargo_lock_version("wasm-bindgen")
-    pairs        = [
+    pairs = [
         (
             "README.md Rust badge ↔ Cargo.toml rust-version",
             badge("rust.svg"),
@@ -116,7 +121,7 @@ if __name__ == "__main__":
         (
             ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",
             mise["tools"]["github:rustwasm/wasm-bindgen"],
-            wasm_bindgen
+            cargo_lock_version("wasm-bindgen")
         )
     ]
 

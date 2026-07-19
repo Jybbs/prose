@@ -11,6 +11,7 @@ on:
       - .github/actions/provision-bun/**
       - .github/actions/provision-cargo/**
       - .github/actions/provision-uv/**
+      - .github/scripts/emit-matrix.py
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
       - .mise/config.toml
@@ -78,7 +79,7 @@ jobs:
           - bun-lock   : site/bun.lock
             command    : mise run smoke
             name       : 🪃 Browser
-            save       : false
+            save       : 'false'
             shared-key : prose-wasm
           - command    : mise run upload rust
             name       : ☂️ Coverage
@@ -105,7 +106,7 @@ jobs:
     name            : 🔥 ${{ matrix.name }}
     needs           : plan
     runs-on         : ${{ matrix.runner }}
-    timeout-minutes : 20
+    timeout-minutes : 30
 
     strategy:
       fail-fast : false
@@ -117,7 +118,7 @@ jobs:
       - name : Warm the wheel build for ${{ matrix.target }}
         uses : ./.github/actions/build-wheel
         with:
-          args      : --release --locked ${{ matrix.args }}
+          args      : ${{ matrix.args }}
           command   : build
           manylinux : ${{ matrix.manylinux }}
           name      : ${{ matrix.name }}

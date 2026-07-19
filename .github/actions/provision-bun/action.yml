@@ -1,5 +1,5 @@
 name        : Provision bun
-description : Restore `~/.bun/install/cache` and `site/node_modules` keyed off `site/bun.lock` so subsequent `bun install --frozen-lockfile` invocations skip the resolve and link work. Assumes bun is already on PATH from an earlier `provision-cargo` or `jdx/mise-action` step.
+description : Restore `~/.bun/install/cache` and `site/node_modules` keyed off `site/bun.lock` so subsequent `bun install --frozen-lockfile` invocations skip the resolve and link work. Assumes bun is already on PATH from an earlier `provision-cargo` step.
 
 inputs:
   cache-dependency-glob:

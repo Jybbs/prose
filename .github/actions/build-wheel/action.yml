@@ -8,7 +8,7 @@ inputs:
 
   args:
     default     : ''
-    description : Additional flags passed to maturin
+    description : Per-platform flags appended to the fixed `--release --locked` build flags
 
   manylinux:
     default     : ''
@@ -46,7 +46,7 @@ runs:
       env  : { PIP_BREAK_SYSTEM_PACKAGES: '1' }
       uses : PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b
       with:
-        args              : ${{ inputs.args }}
+        args              : ${{ inputs.command == 'build' && format('--release --locked {0}', inputs.args) || inputs.args }}
         command           : ${{ inputs.command }}
         manylinux         : ${{ inputs.manylinux }}
         maturin-version   : v1.14.1

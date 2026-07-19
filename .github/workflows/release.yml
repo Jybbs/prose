@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - .github/actions/build-wheel/**
+      - .github/scripts/emit-matrix.py
       - .github/scripts/platforms.toml
       - .github/workflows/release.yml
       - crate/Cargo.toml
@@ -69,7 +70,7 @@ jobs:
       - name : Build wheel
         uses : ./.github/actions/build-wheel
         with:
-          args      : --release --locked ${{ matrix.args }}
+          args      : ${{ matrix.args }}
           command   : build
           manylinux : ${{ matrix.manylinux }}
           name      : ${{ matrix.name }}
