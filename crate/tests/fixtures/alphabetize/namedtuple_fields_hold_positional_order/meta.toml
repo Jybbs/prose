@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`NamedTuple` Fields Hold Their Positional Order"
+
+description = '''
+A `NamedTuple` base makes the field run the tuple's element order, so `Point(1, 2)` binds by slot and every field **holds its source position**. The `y` and `x` pair reads in the order the author chose rather than alphabetically.
+'''

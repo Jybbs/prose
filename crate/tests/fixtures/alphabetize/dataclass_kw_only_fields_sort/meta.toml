@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `kw_only` Dataclass Sorts Its Fields"
+
+description = '''
+`@dataclass(kw_only=True)` generates an `__init__` that accepts no positional field arguments, so every call site binds by name and the field run **sorts freely**. Only a literal `True` unlocks the sort, leaving a computed value pinned.
+'''

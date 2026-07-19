@@ -1,9 +1,11 @@
 //! Pure name helpers over import, assignment, and reference AST nodes:
-//! target extraction, the `SCREAMING_CASE` casing predicate, and the
-//! `TypeAlias` and `TYPE_CHECKING` guards, independent of the binding
-//! table.
+//! target extraction, type-reference name reading, the `SCREAMING_CASE`
+//! casing predicate, and the `TypeAlias` and `TYPE_CHECKING` guards,
+//! independent of the binding table.
 
-use ruff_python_ast::{Alias, Expr, ExprName, Stmt, StmtAnnAssign, StmtAssign, StmtIf};
+use ruff_python_ast::{
+    Alias, Expr, ExprName, Stmt, StmtAnnAssign, StmtAssign, StmtIf, helpers::map_subscript,
+};
 
 /// The bare-`Name` target name of an `Stmt::AnnAssign`. `None` when the
 /// target is an attribute or subscript (`self.x: int`, `d[k]: int`).
@@ -85,6 +87,13 @@ pub(crate) fn tail_identifier(expr: &Expr) -> Option<&str> {
 /// full dotted path.
 pub(crate) fn top_level_module(dotted: &str) -> &str {
     dotted.split_once('.').map_or(dotted, |(head, _)| head)
+}
+
+/// The head identifier of a type reference, read past any subscript, so
+/// `Foo`, `pkg.Foo`, and `Foo[Bar]` all read as `Foo`. `None` where the
+/// head is neither a name nor an attribute access.
+pub(crate) fn type_head_identifier(expr: &Expr) -> Option<&str> {
+    tail_identifier(map_subscript(expr))
 }
 
 /// True when `annotation` names `TypeAlias`, bare or attribute-qualified
@@ -211,5 +220,24 @@ mod tests {
         assert_eq!(top_level_module("a.b"), "a");
         assert_eq!(top_level_module("a.b.c"), "a");
         assert_eq!(top_level_module(""), "");
+    }
+
+    #[rstest]
+    #[case("x: Foo", Some("Foo"))]
+    #[case("x: pkg.Foo", Some("Foo"))]
+    #[case("x: Foo[Bar]", Some("Foo"))]
+    #[case("x: pkg.Foo[Bar]", Some("Foo"))]
+    #[case("x: (1, 2)", None)]
+    fn type_head_identifier_reads_past_the_subscript(
+        #[case] src: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        let source = parse(&format!("{src} = 0\n"));
+        let annotation = source.ast().body[0]
+            .as_ann_assign_stmt()
+            .expect("an annotated assignment")
+            .annotation
+            .as_ref();
+        assert_eq!(type_head_identifier(annotation), expected);
     }
 }

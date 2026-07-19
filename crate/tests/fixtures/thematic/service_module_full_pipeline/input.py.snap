@@ -17,10 +17,10 @@ timeout      = 30
 @dataclass
 class ServiceConfig:
 
+    region   : str            = "us-east-1"
     endpoint : str            = ""
     id       : int            = 0
     labels   : Optional[list] = None
-    region   : str            = "us-east-1"
 
     def __post_init__(self):
         self.labels = self.labels or []

@@ -6,6 +6,8 @@
 
 use ruff_python_ast::{ParameterWithDefault, Parameters, StmtFunctionDef};
 
+use crate::primitives::decorator::decorator_arguments;
+
 /// Composite parameter sort key. Required parameters (no default)
 /// sort before optional parameters (has default), each sub-group by
 /// name. `self` and `cls` pin in place.
@@ -28,11 +30,9 @@ pub(crate) fn params_unsorted(params: &Parameters) -> bool {
 /// arguments, signalling the decorator may bind values into the
 /// signature by position.
 pub(crate) fn pins_positional_params(f: &StmtFunctionDef) -> bool {
-    f.decorator_list.iter().any(|d| {
-        d.expression
-            .as_call_expr()
-            .is_some_and(|c| !c.arguments.args.is_empty())
-    })
+    f.decorator_list
+        .iter()
+        .any(|d| decorator_arguments(d).is_some_and(|a| !a.args.is_empty()))
 }
 
 #[cfg(test)]
