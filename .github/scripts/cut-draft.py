@@ -6,8 +6,8 @@
 Cut a draft release for `$VERSION`, or report when one already exists.
 
 Probes `gh release view` for the version. A missing release is cut with
-`gh release create --draft`, an existing draft is left untouched, and an
-existing published release is skipped. Writes `state` (one of `cut`,
+`gh release create --draft`, an existing draft is left untouched, and
+an existing published release is skipped. Writes `state` (one of `cut`,
 `drafted`, `published`) and the release `url` to `$GITHUB_OUTPUT`.
 """
 
@@ -16,14 +16,14 @@ from os         import environ
 from subprocess import run
 
 
-def cut_draft(version: str, repo: str) -> str:
+def cut_draft(repo: str, version: str) -> str:
     """
     Create a draft release for the version and return its URL.
     """
     return run(
         [
-            "gh", "release", "create", version, "--repo", repo,
-            "--target", "main", "--generate-notes", "--draft"
+            "gh", "release", "create", version, "--repo",
+            repo, "--target", "main", "--generate-notes", "--draft"
         ],
         capture_output = True,
         check          = True,
@@ -31,7 +31,7 @@ def cut_draft(version: str, repo: str) -> str:
     ).stdout.strip()
 
 
-def existing_release(version: str, repo: str) -> dict | None:
+def existing_release(repo: str, version: str) -> dict | None:
     """
     Return the `isDraft`/`url` record for the version's release, or `None`
     when no release exists for it.
@@ -48,11 +48,11 @@ if __name__ == "__main__":
 
     version = environ["VERSION"]
     repo    = environ["GITHUB_REPOSITORY"]
-    release = existing_release(version, repo)
+    release = existing_release(repo, version)
 
     if release is None:
         state = "cut"
-        url   = cut_draft(version, repo)
+        url   = cut_draft(repo, version)
     elif release["isDraft"]:
         state = "drafted"
         url   = release["url"]

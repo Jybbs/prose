@@ -39,7 +39,7 @@ jobs:
       - &provision-uv
         name : Provision uv
         uses : ./.github/actions/provision-uv
-        with : { save: 'false' }
+        with : { save: &no-save 'false' }
 
       - name : Emit build matrix
         id   : matrix
@@ -74,7 +74,7 @@ jobs:
           command   : build
           manylinux : ${{ matrix.manylinux }}
           name      : ${{ matrix.name }}
-          save      : 'false'
+          save      : *no-save
           target    : ${{ matrix.target }}
 
   sdist:

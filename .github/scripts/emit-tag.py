@@ -5,10 +5,10 @@
 """
 Emit the release tag for `draft.yml` to consume.
 
-Reads `[package].version` from `crate/Cargo.toml` at HEAD and HEAD~1, writes
-`version=<tag>` and `changed=<true|false>` to `$GITHUB_OUTPUT`. The `changed`
-flag holds when the two versions differ, counting a HEAD~1 that lacks the
-manifest or carries no parseable version as changed.
+Reads `[package].version` from `crate/Cargo.toml` at HEAD and HEAD~1,
+writes `version=<tag>` and `changed=<true|false>` to `$GITHUB_OUTPUT`. The
+`changed` flag holds when the two versions differ, counting a HEAD~1 that
+lacks the manifest or carries no parseable version as changed.
 """
 
 from os         import environ

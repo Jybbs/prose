@@ -71,16 +71,16 @@ class Summary:
 
     def _emit(self, name: str, **context):
         """
-        Render the `name` template with `context` and append to `$GITHUB_STEP_SUMMARY`.
+        Render the `name` template with `context` and append to
+        `$GITHUB_STEP_SUMMARY`.
         """
-        template = self.env.get_template(f"{name}-summary.md.j2")
-
         with open(environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
-            f.write(template.render(**context))
+            f.write(self.env.get_template(f"{name}-summary.md.j2").render(**context))
 
     def _gate(self, name: str, *signals: str, **context):
         """
-        Render the `name` template and exit with the verdict of the `signals` env vars.
+        Render the `name` template and exit with the verdict of the
+        `signals` env vars.
         """
         verdict = failed(*signals)
         self._emit(name, check_mark = "❌" if verdict else "✅", **context)
@@ -113,14 +113,13 @@ class Summary:
         """
         Render the Release gate summary and exit with the pipeline verdict.
         """
-        platforms = loads((self.here / "platforms.toml").read_text())["platforms"]
         artifacts = [
             {
                 "label"  : p["label"],
                 "mark"   : "✅" if path else "❌",
                 "target" : f"`{p['target']}`" if p.get("target") else "—"
             }
-            for p in platforms
+            for p in loads((self.here / "platforms.toml").read_text())["platforms"]
             for path in [next(Path("dist").glob(p["pattern"]), None)]
         ]
 
@@ -134,7 +133,7 @@ class Summary:
             published     = published
         )
 
-        raise SystemExit(prepub_failed or (self.is_tag and not published))
+        raise SystemExit(prepub_failed or self.is_tag and not published)
 
     def warm(self):
         """

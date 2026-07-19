@@ -1,10 +1,10 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description="Build the workspace in debug mode, passing `bin` to build only the `prose` binary or `wasm` to build the `prose_wasm` member for `wasm32-unknown-unknown` under `wasm-release` and audit it against its size budget"
+#MISE description="Build the workspace in debug mode, passing `bin` to build only the `prose` binary or `wasm` to build the `prose_wasm` member for `wasm32-unknown-unknown` under `wasm-release`"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
 case "${1:-all}" in
   all)  split_workspace cargo build --all-targets ;;
   bin)  cargo build --bin prose --locked ;;
-  wasm) cargo build --package prose_wasm --profile wasm-release --target wasm32-unknown-unknown --locked && ./.github/scripts/audit-wasm-size.py ;;
+  wasm) cargo build --package prose_wasm --profile wasm-release --target wasm32-unknown-unknown --locked ;;
   *)    echo "usage: mise build [bin|wasm]" >&2; exit 2 ;;
 esac

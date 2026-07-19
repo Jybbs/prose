@@ -42,6 +42,5 @@ runs:
       if   : ${{ inputs.cache != 'false' }}
       uses : Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
       with:
-        cache-on-failure : 'false'
-        save-if          : ${{ inputs.save != 'false' }}
-        shared-key       : ${{ inputs.shared-key }}
+        save-if    : ${{ inputs.save != 'false' }}
+        shared-key : ${{ inputs.shared-key }}
