@@ -2,7 +2,6 @@ from typing import NamedTuple
 
 
 class Point(NamedTuple):
-    z: int = 0
+    y: int
     x: int
     color: str = "black"
-    y: int

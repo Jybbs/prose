@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize/dataclass_kw_only_sentinel_splits_run/input.py
+---
+from dataclasses import KW_ONLY, dataclass
+
+
+@dataclass
+class Posting:
+    title: str
+    company: str
+    _: KW_ONLY
+    date_posted: str
+    url: str

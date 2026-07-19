@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize/attrs_define_fields_hold_positional_order/input.py
+---
+import attrs
+
+
+@attrs.define
+class Posting:
+    title: str
+    company: str
+    date_posted: str

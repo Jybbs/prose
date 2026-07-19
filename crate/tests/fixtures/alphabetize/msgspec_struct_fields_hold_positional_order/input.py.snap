@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize/msgspec_struct_fields_hold_positional_order/input.py
+---
+import msgspec
+
+
+class Posting(msgspec.Struct):
+    title: str
+    company: str
+    date_posted: str
