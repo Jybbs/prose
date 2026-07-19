@@ -27,7 +27,6 @@ pub(crate) fn walk(
                     .is_some_and(|ft| ft.is_file())
                     .then(|| PySourceType::try_from_path(e.path()))
                     .flatten()
-                    .filter(|t| t.is_py_file_or_stub() || t.is_ipynb())
                     .map(|t| (e.into_path(), t))
             })
             .transpose()

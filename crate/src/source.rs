@@ -234,8 +234,8 @@ impl Source {
     /// Returns `true` when the gap between two AST nodes carries
     /// exactly one newline and no comment, meaning the surrounding
     /// nodes sit on directly adjacent source lines. Contrast
-    /// [`Self::consecutive_lines`], which rides a trailing comment on the
-    /// preceding line.
+    /// [`Self::consecutive_lines`], which tolerates a trailing comment
+    /// on the preceding line.
     pub fn is_line_adjacent(&self, gap: TextRange) -> bool {
         !self.slice(gap).contains('#') && lines_before(gap.end(), self.text()) == 1
     }

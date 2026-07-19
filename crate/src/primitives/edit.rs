@@ -81,8 +81,9 @@ pub(crate) fn apply_inline_edits<'src>(
 /// the slide preserves their order.
 pub(crate) fn forward_offsets(offsets: &CellOffsets, map: &SourceMap) -> CellOffsets {
     let mut forwarded = offsets.clone();
-    for offset in forwarded.iter_mut() {
-        *offset = forward_offset(*offset, map);
+    let last = forwarded.len().saturating_sub(1);
+    for (i, offset) in forwarded.iter_mut().enumerate() {
+        *offset = forward_offset(*offset, map, i == last);
     }
     forwarded
 }
@@ -186,18 +187,23 @@ fn concat_or_borrow<'src>(
 
 /// Shifts a single offset by the delta of the nearest marker at or
 /// before it, the per-boundary slide [`forward_offsets`] maps over a
-/// notebook's cell offsets. Markers sharing the offset's exact source
-/// resolve to the first pushed, so an insertion landing on a cell
-/// boundary stays inside the cell it opens.
-fn forward_offset(offset: TextSize, map: &SourceMap) -> TextSize {
+/// notebook's cell offsets. Markers sharing an interior offset's exact
+/// source resolve to the first pushed, so an insertion landing on a
+/// cell boundary stays inside the cell it opens, whereas the final
+/// boundary resolves to the last pushed, keeping an end-of-buffer
+/// insertion inside the last cell.
+fn forward_offset(offset: TextSize, map: &SourceMap, is_final: bool) -> TextSize {
     let markers = map.markers();
-    let index = markers.partition_point(|marker| marker.source() <= offset);
-    let marker = markers[..index]
-        .iter()
-        .rev()
-        .take_while(|marker| marker.source() == offset)
-        .last()
-        .or_else(|| markers[..index].last());
+    let marker = if is_final {
+        let upto = markers.partition_point(|marker| marker.source() <= offset);
+        markers[..upto].last()
+    } else {
+        let index = markers.partition_point(|marker| marker.source() < offset);
+        markers
+            .get(index)
+            .filter(|marker| marker.source() == offset)
+            .or_else(|| markers[..index].last())
+    };
     marker.map_or(offset, |marker| match marker.source().cmp(&marker.dest()) {
         Ordering::Less => offset + (marker.dest() - marker.source()),
         Ordering::Greater => offset - (marker.source() - marker.dest()),
@@ -331,6 +337,19 @@ mod tests {
     }
 
     #[test]
+    fn apply_edits_mapped_declines_overlapping_edits() {
+        let out = apply_edits_mapped(
+            "abcdef",
+            vec![
+                Edit::range_replacement("X".to_owned(), range(0, 3)),
+                Edit::range_replacement("Y".to_owned(), range(2, 4)),
+            ],
+        );
+
+        assert!(out.is_none());
+    }
+
+    #[test]
     fn apply_edits_mapped_pairs_each_edit_with_its_woven_offset() {
         let (text, map) = apply_edits_mapped(
             "abcdef",
@@ -345,19 +364,6 @@ mod tests {
         assert_eq!(markers[0].dest(), TextSize::new(1));
         assert_eq!(markers[1].source(), TextSize::new(2));
         assert_eq!(markers[1].dest(), TextSize::new(3));
-    }
-
-    #[test]
-    fn apply_edits_mapped_declines_overlapping_edits() {
-        let out = apply_edits_mapped(
-            "abcdef",
-            vec![
-                Edit::range_replacement("X".to_owned(), range(0, 3)),
-                Edit::range_replacement("Y".to_owned(), range(2, 4)),
-            ],
-        );
-
-        assert!(out.is_none());
     }
 
     #[test]
@@ -412,7 +418,10 @@ mod tests {
         .expect("woven");
 
         assert_eq!(text, "abXXcdef");
-        assert_eq!(forward_offset(TextSize::new(2), &map), TextSize::new(2));
+        assert_eq!(
+            forward_offset(TextSize::new(2), &map, false),
+            TextSize::new(2)
+        );
     }
 
     #[test]
@@ -421,7 +430,10 @@ mod tests {
             apply_edits_mapped("abcdef", vec![Edit::insertion("X".to_owned(), 3u32.into())])
                 .expect("woven");
 
-        assert_eq!(forward_offset(TextSize::new(1), &map), TextSize::new(1));
+        assert_eq!(
+            forward_offset(TextSize::new(1), &map, false),
+            TextSize::new(1)
+        );
     }
 
     #[test]
@@ -433,7 +445,10 @@ mod tests {
         .expect("woven");
 
         assert_eq!(text, "Xbc");
-        assert_eq!(forward_offset(TextSize::new(2), &map), TextSize::new(2));
+        assert_eq!(
+            forward_offset(TextSize::new(2), &map, false),
+            TextSize::new(2)
+        );
     }
 
     #[test]
@@ -442,8 +457,14 @@ mod tests {
             apply_edits_mapped("abcdef", vec![Edit::range_deletion(range(1, 3))]).expect("woven");
 
         assert_eq!(text, "adef");
-        assert_eq!(forward_offset(TextSize::new(0), &map), TextSize::new(0));
-        assert_eq!(forward_offset(TextSize::new(5), &map), TextSize::new(3));
+        assert_eq!(
+            forward_offset(TextSize::new(0), &map, false),
+            TextSize::new(0)
+        );
+        assert_eq!(
+            forward_offset(TextSize::new(5), &map, false),
+            TextSize::new(3)
+        );
     }
 
     #[test]
@@ -455,8 +476,31 @@ mod tests {
         .expect("woven");
 
         assert_eq!(text, "abXXcdef");
-        assert_eq!(forward_offset(TextSize::new(1), &map), TextSize::new(1));
-        assert_eq!(forward_offset(TextSize::new(4), &map), TextSize::new(6));
+        assert_eq!(
+            forward_offset(TextSize::new(1), &map, false),
+            TextSize::new(1)
+        );
+        assert_eq!(
+            forward_offset(TextSize::new(4), &map, false),
+            TextSize::new(6)
+        );
+    }
+
+    #[test]
+    fn forward_offset_slides_the_final_boundary_past_an_end_insertion() {
+        let (text, map) =
+            apply_edits_mapped("abc", vec![Edit::insertion("XX".to_owned(), 3u32.into())])
+                .expect("woven");
+
+        assert_eq!(text, "abcXX");
+        assert_eq!(
+            forward_offset(TextSize::new(3), &map, true),
+            TextSize::new(5)
+        );
+        assert_eq!(
+            forward_offset(TextSize::new(3), &map, false),
+            TextSize::new(3)
+        );
     }
 
     #[test]

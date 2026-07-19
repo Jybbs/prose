@@ -418,6 +418,22 @@ mod tests {
     }
 
     #[test]
+    fn run_applies_a_reordering_rule_on_a_notebook() {
+        // 325 held a sibling reorder out of the notebook path entirely;
+        // 326 runs it cell-aware, so a rewrite now lands on the cell.
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
+            id: RuleId::from("rewrite-x-to-y"),
+        })]);
+        let source = notebook(&["x = 1"]);
+
+        let (result, diagnostics) = pipeline.run(source).expect("notebook run succeeds");
+
+        assert_eq!(result.text(), "y = 1\n");
+        assert_eq!(diagnostics.len(), 1);
+    }
+
+    #[test]
     fn run_declines_an_overlapping_group_as_a_no_op() {
         let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
             groups: vec![vec![
@@ -549,22 +565,6 @@ mod tests {
         assert_eq!(diagnostics[0].rule.as_str(), "rewrite-x-to-y");
         assert_eq!(diagnostics[0].severity, Severity::Format);
         assert!(diagnostics[0].fix.is_some());
-    }
-
-    #[test]
-    fn run_applies_a_reordering_rule_on_a_notebook() {
-        // 325 held a sibling reorder out of the notebook path entirely;
-        // 326 runs it cell-aware, so a rewrite now lands on the cell.
-        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-            groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
-            id: RuleId::from("rewrite-x-to-y"),
-        })]);
-        let source = notebook(&["x = 1"]);
-
-        let (result, diagnostics) = pipeline.run(source).expect("notebook run succeeds");
-
-        assert_eq!(result.text(), "y = 1\n");
-        assert_eq!(diagnostics.len(), 1);
     }
 
     #[test]

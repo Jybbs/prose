@@ -34,31 +34,6 @@ pub(super) fn apply_rewrite(path: &Path, outcome: FileOutcome) -> FileOutcome {
     outcome
 }
 
-/// Collects the as-written diagnostics, and with `validate` guards the
-/// would-be rewrite against an unparseable output.
-fn diagnose_only(
-    source: Source,
-    pipeline: &Pipeline,
-    validate: bool,
-    notebook_index: Option<NotebookIndex>,
-) -> FileOutcome {
-    let file = source.source_file().clone();
-    let diagnostics = pipeline.diagnose(&source);
-    if validate
-        && has_format_change(&diagnostics)
-        && let Err(e) = pipeline.validate(source)
-    {
-        return failed(ExitStatus::ConfigError, e);
-    }
-    FileOutcome::Done {
-        cached: false,
-        diagnostics,
-        file,
-        notebook_index: notebook_index.map(Box::new),
-        rewrite: Rewrite::Skipped,
-    }
-}
-
 /// Dispatches `source` by `pass`, collecting the as-written diagnostics on
 /// a check pass and building the rewrite through `rewrite` on a format
 /// pass. A notebook threads its `index`, a module passes `None`.
@@ -213,6 +188,67 @@ pub(super) fn rehydrate(
     })
 }
 
+/// Runs a text source through the pipeline via [`drive`], building the
+/// text rewrite from the formatted output against the original. A module
+/// carries no notebook index.
+pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
+    drive(source, pipeline, pass, None, |formatted, file| {
+        formatted
+            .changed_from(file.source_text())
+            .map_or(Rewrite::Unchanged, |text| Rewrite::text(text.to_owned()))
+    })
+}
+
+pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
+    failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
+}
+
+/// Collects the as-written diagnostics, and with `validate` guards the
+/// would-be rewrite against an unparseable output.
+fn diagnose_only(
+    source: Source,
+    pipeline: &Pipeline,
+    validate: bool,
+    notebook_index: Option<NotebookIndex>,
+) -> FileOutcome {
+    let file = source.source_file().clone();
+    let diagnostics = pipeline.diagnose(&source);
+    if validate
+        && has_format_change(&diagnostics)
+        && let Err(e) = pipeline.validate(source)
+    {
+        return failed(ExitStatus::ConfigError, e);
+    }
+    FileOutcome::Done {
+        cached: false,
+        diagnostics,
+        file,
+        notebook_index: notebook_index.map(Box::new),
+        rewrite: Rewrite::Skipped,
+    }
+}
+
+/// Routes a source text to the notebook or module pipeline path under
+/// its diagnostic `name`.
+fn process_source(
+    text: String,
+    name: String,
+    source_type: PySourceType,
+    pipeline: &Pipeline,
+    pass: Pass,
+) -> FileOutcome {
+    if source_type.is_ipynb() {
+        return notebook::process(text, name, pipeline, pass);
+    }
+    match Source::build_module(text, name.as_str(), source_type) {
+        Ok(source) => run_pipeline(source, pipeline, pass),
+        Err(e) => failed(
+            ExitStatus::ParseError,
+            format_args!("parse error in `{name}`: {e}"),
+        ),
+    }
+}
+
 /// Runs the pipeline and assembles the outcome, deferring the rewrite
 /// to `rewrite`. The caller handles the diagnose-only pass, while the
 /// `diagnose_as_written` flag adds the as-written diagnostics an output
@@ -238,42 +274,6 @@ fn run_and_assemble(
             }
         }
         Err(e) => failed(ExitStatus::ConfigError, e),
-    }
-}
-
-/// Runs a text source through the pipeline via [`drive`], building the
-/// text rewrite from the formatted output against the original. A module
-/// carries no notebook index.
-pub(super) fn run_pipeline(source: Source, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
-    drive(source, pipeline, pass, None, |formatted, file| {
-        formatted
-            .changed_from(file.source_text())
-            .map_or(Rewrite::Unchanged, |text| Rewrite::text(text.to_owned()))
-    })
-}
-
-pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
-    failed(ExitStatus::ConfigError, format_args!("cannot walk: {err}"))
-}
-
-/// Routes a source text to the notebook or module pipeline path under
-/// its diagnostic `name`.
-fn process_source(
-    text: String,
-    name: String,
-    source_type: PySourceType,
-    pipeline: &Pipeline,
-    pass: Pass,
-) -> FileOutcome {
-    if source_type.is_ipynb() {
-        return notebook::process(text, name, pipeline, pass);
-    }
-    match Source::build_module(text, name.as_str(), source_type) {
-        Ok(source) => run_pipeline(source, pipeline, pass),
-        Err(e) => failed(
-            ExitStatus::ParseError,
-            format_args!("parse error in `{name}`: {e}"),
-        ),
     }
 }
 

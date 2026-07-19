@@ -99,15 +99,6 @@ pub(super) fn finish(
     status_from_outcomes(outcomes, demote_format_change)
 }
 
-/// The surviving-lint disclosure a text-format `format` run appends
-/// after its outcome line, `None` for a check run, a structured output
-/// whose emitters already printed the lint, or a run leaving none.
-fn lint_remainder(summary: &EmitterSummary, mode: Mode, text_output: bool) -> Option<Summary> {
-    let total = summary.lint_total;
-    let discloses = !matches!(mode, Mode::Check) && text_output && total > 0;
-    discloses.then_some(Summary::LintRemainder { total })
-}
-
 /// Writes a run's closing summary: the rewrite or diagnostics outcome,
 /// then in a format mode whose diagnostics never reached stdout the
 /// surviving-lint disclosure. `text_output` is true for a text-format
@@ -180,6 +171,15 @@ pub(super) fn status_from_outcomes(
         })
         .max()
         .unwrap_or_default()
+}
+
+/// The surviving-lint disclosure a text-format `format` run appends
+/// after its outcome line, `None` for a check run, a structured output
+/// whose emitters already printed the lint, or a run leaving none.
+fn lint_remainder(summary: &EmitterSummary, mode: Mode, text_output: bool) -> Option<Summary> {
+    let total = summary.lint_total;
+    let discloses = !matches!(mode, Mode::Check) && text_output && total > 0;
+    discloses.then_some(Summary::LintRemainder { total })
 }
 
 /// Resolves an outcome set into its closing [`Summary`], or `None` when

@@ -21,6 +21,7 @@ use crate::{
         binding::single_name_target,
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement},
+        insert_sorted_by_key,
         orderer::{any_sibling_shares_line, permute_full, reorder_separated, reorder_text},
         params::classify_param,
     },
@@ -102,7 +103,9 @@ impl<'a> LeafCollector<'a> {
             return;
         };
         self.edits.retain(|e| !span.contains_range(e.range()));
-        insert_by_start(&mut self.edits, Edit::range_replacement(text, span));
+        insert_sorted_by_key(&mut self.edits, Edit::range_replacement(text, span), |e| {
+            e.start()
+        });
     }
 
     fn try_emit_inline_reorder<T, S>(
@@ -228,13 +231,6 @@ fn entry_key<'e>(name: &'e str, signature: Option<&Vec<&str>>) -> (usize, &'e st
         Some(i) => (i, ""),
         None => (usize::MAX, name),
     }
-}
-
-/// Inserts `edit` into a `Vec<Edit>` kept sorted by `start()`,
-/// preserving that order.
-fn insert_by_start(edits: &mut Vec<Edit>, edit: Edit) {
-    let slot = edits.partition_point(|e| e.start() < edit.start());
-    edits.insert(slot, edit);
 }
 
 /// Returns the elements of a list or tuple expression. `None` for

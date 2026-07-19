@@ -25,3 +25,10 @@ pub(crate) mod walk;
 
 /// PEP 8 indent step in spaces, the depth one nested level adds.
 pub(crate) const INDENT_STEP: usize = 4;
+
+/// Inserts `item` into `vec` at the slot keeping it ascending by
+/// `key`, before any element whose key compares equal.
+pub(crate) fn insert_sorted_by_key<T, K: Ord>(vec: &mut Vec<T>, item: T, key: impl Fn(&T) -> K) {
+    let slot = vec.partition_point(|existing| key(existing) < key(&item));
+    vec.insert(slot, item);
+}
