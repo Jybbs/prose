@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Dict Keys Keep Their Order When Sorting Is Off"
+
+description = '''
+With `sort-dict-keys = false`, the dict literal **keeps its authored key order**, which iteration and `**` expansion observe. Both set literals still sort, the one nested inside a held dict value as well as the one beside it, because a set carries no observable order to disturb.
+'''

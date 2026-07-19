@@ -30,6 +30,7 @@ use crate::{
 struct LeafCollector<'a> {
     edits: Vec<Edit>,
     param_docs: HashMap<TextSize, Vec<&'a str>>,
+    sort_dict_keys: bool,
     sort_dunder_lists: bool,
     source: &'a Source,
 }
@@ -50,27 +51,22 @@ impl<'a> LeafCollector<'a> {
     }
 
     fn emit_dict(&mut self, d: &'a ExprDict) {
-        if let Some((span, text)) = rewrite_dict_text(self.source, d, &self.edits) {
+        if self.sort_dict_keys
+            && let Some((span, text)) = rewrite_dict_text(self.source, d, &self.edits)
+        {
             self.fold_into(span, text);
         }
     }
 
     fn emit_dunder_list(&mut self, assign: &'a StmtAssign) {
-        if !self.sort_dunder_lists {
-            return;
+        if self.sort_dunder_lists
+            && matches!(single_name_target(assign), Some("__all__" | "__slots__"))
+            && let Some(elements) = sequence_elts(&assign.value)
+        {
+            self.try_emit_inline_reorder(elements, |e| {
+                Some(e.as_string_literal_expr()?.value.to_str())
+            });
         }
-        let Some(name) = single_name_target(assign) else {
-            return;
-        };
-        if !matches!(name, "__all__" | "__slots__") {
-            return;
-        }
-        let Some(elements) = sequence_elts(&assign.value) else {
-            return;
-        };
-        self.try_emit_inline_reorder(elements, |e| {
-            Some(e.as_string_literal_expr()?.value.to_str())
-        });
     }
 
     fn emit_id_run(&mut self, names: &'a [Identifier]) {
@@ -205,14 +201,18 @@ pub(super) fn collect_docstring_entry_edits(
 /// Walks the AST collecting one non-overlapping leaf edit per outermost
 /// reordering structure, each folding its nested reorders in, and maps
 /// each function docstring's start to its signature-order names, the
-/// mirror key for docstring-entry sorting.
+/// mirror key for docstring-entry sorting. `sort_dict_keys` and
+/// `sort_dunder_lists` gate the dict-literal and `__all__` / `__slots__`
+/// reorders, every other shape sorting regardless.
 pub(super) fn collect_leaf_edits(
     source: &Source,
+    sort_dict_keys: bool,
     sort_dunder_lists: bool,
 ) -> (Vec<Edit>, HashMap<TextSize, Vec<&str>>) {
     let mut collector = LeafCollector {
         edits: Vec::new(),
         param_docs: HashMap::new(),
+        sort_dict_keys,
         sort_dunder_lists,
         source,
     };
@@ -230,10 +230,10 @@ fn entry_key<'e>(name: &'e str, signature: Option<&Vec<&str>>) -> (usize, &'e st
     }
 }
 
-/// Inserts `edit` into a `Vec<Edit>` kept sorted by `range().start()`,
+/// Inserts `edit` into a `Vec<Edit>` kept sorted by `start()`,
 /// preserving that order.
 fn insert_by_start(edits: &mut Vec<Edit>, edit: Edit) {
-    let slot = edits.partition_point(|e| e.range().start() < edit.range().start());
+    let slot = edits.partition_point(|e| e.start() < edit.start());
     edits.insert(slot, edit);
 }
 
@@ -274,6 +274,20 @@ mod tests {
     use super::*;
     use crate::testing::{applied_text, parse};
 
+    /// The source with every docstring-entry reorder applied.
+    fn entry_sorted_text(src: &str) -> String {
+        let source = parse(src);
+        let (_, param_docs) = collect_leaf_edits(&source, true, true);
+        let edits = collect_docstring_entry_edits(&source, &param_docs);
+        applied_text(&source, edits)
+    }
+
+    /// The byte offset of `needle` within `text`.
+    fn offset_of(text: &str, needle: &str) -> usize {
+        text.find(needle)
+            .unwrap_or_else(|| panic!("{needle} present"))
+    }
+
     #[rstest]
     #[case(indoc! {"
         class C:
@@ -303,14 +317,8 @@ mod tests {
             \"\"\"
     "})]
     fn collect_docstring_entry_edits_mirrors_source_order_signature(#[case] src: &str) {
-        let source = parse(src);
-        let (_, param_docs) = collect_leaf_edits(&source, true);
-        let edits = collect_docstring_entry_edits(&source, &param_docs);
-        let text = applied_text(&source, edits);
-        let pos = |needle: &str| {
-            text.find(needle)
-                .unwrap_or_else(|| panic!("{needle} present"))
-        };
+        let text = entry_sorted_text(src);
+        let pos = |needle: &str| offset_of(&text, needle);
         assert!(
             pos("b: two") < pos("a: one"),
             "parameter entries mirror the un-reordered signature"
@@ -334,14 +342,8 @@ mod tests {
                     alpha: b
                 \"\"\"
         "};
-        let source = parse(src);
-        let (_, param_docs) = collect_leaf_edits(&source, true);
-        let edits = collect_docstring_entry_edits(&source, &param_docs);
-        let text = applied_text(&source, edits);
-        let pos = |needle: &str| {
-            text.find(needle)
-                .unwrap_or_else(|| panic!("{needle} present"))
-        };
+        let text = entry_sorted_text(src);
+        let pos = |needle: &str| offset_of(&text, needle);
         assert!(
             pos("zebra:") < pos("apple:"),
             "the vararg mirrors ahead of the kwarg, both in signature order"
@@ -361,14 +363,8 @@ mod tests {
                         target: Mapping receiving the update.
                     \"\"\"
         "};
-        let source = parse(src);
-        let (_, param_docs) = collect_leaf_edits(&source, true);
-        let edits = collect_docstring_entry_edits(&source, &param_docs);
-        let text = applied_text(&source, edits);
-        let pos = |needle: &str| {
-            text.find(needle)
-                .unwrap_or_else(|| panic!("{needle} present"))
-        };
+        let text = entry_sorted_text(src);
+        let pos = |needle: &str| offset_of(&text, needle);
         assert!(
             pos("target:") < pos("source:") && pos("source:") < pos("retries:"),
             "parameter entries mirror the signature and the stale entry sinks"
@@ -400,7 +396,7 @@ mod tests {
         #[case] expected: &str,
     ) {
         let source = parse(src);
-        let (edits, _) = collect_leaf_edits(&source, true);
+        let (edits, _) = collect_leaf_edits(&source, true, true);
         assert_eq!(applied_text(&source, edits), expected);
     }
 
@@ -414,11 +410,12 @@ mod tests {
             foo(b=2, a=1)
         "};
         let source = parse(src);
-        let (edits, _) = collect_leaf_edits(&source, true);
+        let (edits, _) = collect_leaf_edits(&source, true, true);
         assert!(edits.len() >= 5, "fixture must trigger multiple producers");
         assert!(
             edits.is_sorted(),
-            "leaf edits must be emitted in source order, since partition_point in apply_inline_edits relies on it",
+            "leaf edits must be emitted in source order, since partition_point in \
+             apply_inline_edits relies on it",
         );
     }
 }

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Only Dict Keys Hold When Sorting Is Off"
+
+description = '''
+With `sort-dict-keys = false`, the dict literal is the only surface that holds. The imports still sort, `__all__` still sorts through the untouched `sort-dunder-lists` facet, and the call keywords still sort, because the facet gates the dict-literal reorder alone.
+'''

@@ -53,6 +53,11 @@ pub struct AlphabetizeConfig {
     /// freezes definitions in source order while other surfaces still
     /// sort.
     pub sort_definitions: bool,
+    /// Reorders the keyed entries of a dict literal, single-line entries
+    /// before multi-line and alphabetical by key within each. `false`
+    /// keeps the authored order, which iteration, `.items()`, and `**`
+    /// expansion all observe.
+    pub sort_dict_keys: bool,
     /// Reorders `name: description` entries within Title-case-headed
     /// docstring sections, parameter entries mirroring the signature as
     /// the rule leaves it and stragglers alphabetizing below. `false`
@@ -70,6 +75,7 @@ impl Default for AlphabetizeConfig {
             enabled: true,
             group_methods: true,
             sort_definitions: true,
+            sort_dict_keys: true,
             sort_docstring_entries: true,
             sort_dunder_lists: true,
         }
@@ -355,6 +361,13 @@ impl Default for ReassignedConstantsConfig {
     }
 }
 
+/// A per-rule config a bare bool can toggle. `with_enabled` is the
+/// shorthand for the `{ enabled = <bool> }` table under
+/// `[tool.prose.rules]`, leaving every other knob at its default.
+pub(crate) trait RuleToggle: Default {
+    fn with_enabled(enabled: bool) -> Self;
+}
+
 /// Configuration for the `signature_layout` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -416,13 +429,6 @@ impl RuleToggle for ToggleOnly {
     fn with_enabled(enabled: bool) -> Self {
         Self { enabled }
     }
-}
-
-/// A per-rule config a bare bool can toggle. `with_enabled` is the
-/// shorthand for the `{ enabled = <bool> }` table under
-/// `[tool.prose.rules]`, leaving every other knob at its default.
-pub(crate) trait RuleToggle: Default {
-    fn with_enabled(enabled: bool) -> Self;
 }
 
 /// Implements [`RuleToggle`] for configs carrying knobs beyond

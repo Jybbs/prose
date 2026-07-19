@@ -2,16 +2,16 @@
 //! meaning. The covered shapes are classes and functions in a body,
 //! class-scope `Stmt::AnnAssign` field declarations and `Stmt::Assign`
 //! runs with simple `Name` targets, function and lambda keyword-only
-//! parameters, call kwargs, set literal elements, import names and their
-//! alias lists within each section, `global` and `nonlocal` name lists,
-//! `del` target lists, and the
-//! string literals inside `__all__` / `__slots__`.
+//! parameters, call kwargs, dict-literal keys, set literal elements,
+//! import names and their alias lists within each section, `global` and
+//! `nonlocal` name lists, `del` target lists, and the string literals
+//! inside `__all__` / `__slots__`.
 //!
-//! Sorting flows through `primitives::orderer::reorder_text`. A
-//! recursive `Cow<'src, str>` rewriter folds inner sorts into the
-//! outer scope's replacement text, so each outermost reordering scope
-//! emits a single edit covering its descendants, or one edit per cell
-//! over a notebook.
+//! Sorting flows through the `primitives::orderer` permute and assemble
+//! primitives. A recursive `Cow<'src, str>` rewriter folds inner sorts
+//! into the outer scope's replacement text, so each outermost reordering
+//! scope emits a single edit covering its descendants, or one edit per
+//! cell over a notebook.
 //!
 //! Positional-or-keyword parameters never reorder, free function and
 //! method alike, because no single-file rewrite can keep every caller's
@@ -60,6 +60,7 @@ pub(crate) struct Alphabetize {
     group_imports: bool,
     group_methods: bool,
     sort_definitions: bool,
+    sort_dict_keys: bool,
     sort_docstring_entries: bool,
     sort_dunder_lists: bool,
 }
@@ -72,6 +73,7 @@ impl Alphabetize {
             group_imports: config.group_imports_enabled(),
             group_methods: alphabetize.group_methods,
             sort_definitions: alphabetize.sort_definitions,
+            sort_dict_keys: alphabetize.sort_dict_keys,
             sort_docstring_entries: alphabetize.sort_docstring_entries,
             sort_dunder_lists: alphabetize.sort_dunder_lists,
         }
@@ -84,7 +86,8 @@ impl Rule for Alphabetize {
         if body.is_empty() {
             return Vec::new();
         }
-        let (mut leaf_edits, param_docs) = collect_leaf_edits(source, self.sort_dunder_lists);
+        let (mut leaf_edits, param_docs) =
+            collect_leaf_edits(source, self.sort_dict_keys, self.sort_dunder_lists);
         if self.sort_docstring_entries {
             leaf_edits.extend(collect_docstring_entry_edits(source, &param_docs));
             leaf_edits.sort_unstable();
@@ -302,6 +305,20 @@ mod tests {
 
     use super::*;
     use crate::testing::{applied_text, parse};
+
+    #[test]
+    fn apply_skips_dict_key_reorder_when_config_disables_it() {
+        let src = "row = {\"model\": 1, \"epochs\": 2}\ntags = {\"zeta\", \"alpha\"}\n";
+        let mut config = Config::default();
+        config.rules.alphabetize.sort_dict_keys = false;
+        let rule = Alphabetize::from_config(&config);
+        let source = parse(src);
+        let edits = rule.apply(&source).into_iter().flatten().collect();
+        assert_eq!(
+            applied_text(&source, edits),
+            "row = {\"model\": 1, \"epochs\": 2}\ntags = {\"alpha\", \"zeta\"}\n",
+        );
+    }
 
     #[test]
     fn apply_skips_docstring_entry_reorder_when_config_disables_it() {
