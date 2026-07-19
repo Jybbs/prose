@@ -4,7 +4,7 @@ import path from 'node:path'
 import postcssGlobalData                          from '@csstools/postcss-global-data'
 import postcssCustomMedia                         from 'postcss-custom-media'
 import githubDark                                 from 'shiki/themes/github-dark.mjs'
-import { defineConfig }                           from 'vitepress'
+import { defineConfig, type PageData }            from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
@@ -32,11 +32,13 @@ import { SECTIONS }                                   from './lib/shared/registr
 import { sectionRoute }                               from './lib/shared/routes'
 import { toTitleCase }                                from './lib/shared/title-case'
 import { TOOL_SEEDS }                                 from './lib/shared/tools'
-import { readCargoVersion }                           from './lib/shared/version'
+import * as version                                   from './lib/shared/version'
 
 const crate                = paths.crateDir(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
-const version              = readCargoVersion(crate)
+const proseVersion         = version.readCargoVersion(crate)
+const requiresPython       = version.readRequiresPython(crate)
+const ruffTag              = version.readRuffTag(crate)
 const ruleDiscovery        = discoverRules(rulesDirectory)
 const ruleIndex            = discoverRuleIndex(rulesDirectory)
 const discoveredRules      = ruleDiscovery.rules
@@ -47,6 +49,16 @@ const shikiDarkBg          = githubDark.colors?.['editor.background'] as string
 const themeColor           = PALETTE.ube
 
 assertCorpusIntegrity(ruleDiscovery, discoveredPrimitives)
+
+function injectSectionName(
+  pageData: PageData,
+  prefix: string,
+  resolve: (slug: string) => string | undefined
+): void {
+  const { relativePath } = pageData
+  if (!relativePath.startsWith(prefix) || relativePath.endsWith('index.md')) return
+  pageData.frontmatter.name ??= resolve(path.basename(relativePath, '.md'))
+}
 
 export default defineConfig({
   cacheDir      : paths.vitepressCacheDir(import.meta.url),
@@ -83,7 +95,7 @@ export default defineConfig({
     nav: [
       ...SECTIONS.map(({ label, slug }) =>
         ({ activeMatch: sectionRoute(slug), link: sectionRoute(slug), text: label })),
-      { link: `${constants.REPO_URL}/releases`, text: `v${version}` }
+      { link: `${constants.REPO_URL}/releases`, text: `v${proseVersion}` }
     ],
     outline   : { level: [2, 3] },
     search    : { provider: 'local' },
@@ -101,10 +113,13 @@ export default defineConfig({
     await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
   },
   transformHead({ pageData }) {
-    return pageHead(pageData, version)
+    return pageHead(pageData, proseVersion)
   },
   transformPageData(pageData) {
     pageData.frontmatter ||= {}
+    pageData.frontmatter.proseVersion   = proseVersion
+    pageData.frontmatter.requiresPython = requiresPython
+    pageData.frontmatter.ruffVersion    = ruffTag
     pageData.frontmatter.head ??= []
     pageData.frontmatter.head.push([
       'link',
@@ -113,13 +128,8 @@ export default defineConfig({
     if (!pageData.description && typeof pageData.frontmatter.caption === 'string') {
       pageData.description = pageData.frontmatter.caption
     }
-    if (pageData.relativePath.startsWith('rules/') && !pageData.relativePath.endsWith('index.md')) {
-      pageData.frontmatter.name ??= toTitleCase(path.basename(pageData.relativePath, '.md'), '-')
-    }
-    if (pageData.relativePath.startsWith('primitives/') && !pageData.relativePath.endsWith('index.md')) {
-      const slug = path.basename(pageData.relativePath, '.md')
-      pageData.frontmatter.name ??= primitiveIndex.get(slug)?.name
-    }
+    injectSectionName(pageData, 'rules/', slug => toTitleCase(slug, '-'))
+    injectSectionName(pageData, 'primitives/', slug => primitiveIndex.get(slug)?.name)
   },
   vite: {
     build: { chunkSizeWarningLimit: 5000 },
@@ -136,7 +146,8 @@ export default defineConfig({
     plugins: [{
       load      : id => id === '\0virtual:prose-palette.css' ? paletteCss() : undefined,
       name      : 'prose-palette',
-      resolveId : id => id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined
+      resolveId : id =>
+        id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined
     }, serveWasmPlugin(path.join(paths.siteDir(import.meta.url), 'public')), groupIconVitePlugin({
       customIcon: {
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),

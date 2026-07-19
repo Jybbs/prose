@@ -78,9 +78,9 @@ A consumer that wants the full rule loop instead builds a [[pipeline]] from a `C
 
 A downstream Rust crate consumes *Prose* the same way it consumes the `ruff_*` workspace, through a Git dependency pinned to a release tag:
 
-```toml
+```toml-vue
 [dependencies]
-prose = { git = "https://github.com/Jybbs/prose", tag = "0.8.1" }
+prose = { git = "https://github.com/Jybbs/prose", tag = "{{ $frontmatter.proseVersion }}" }
 ```
 
 The default `native` feature carries the command line, the cache, the language server, and the file walker. Depending with `default-features = false` drops that machinery, leaving the formatting core alone, which also builds for `wasm32-unknown-unknown`.

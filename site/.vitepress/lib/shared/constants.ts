@@ -1,4 +1,5 @@
 export const BODY_LINK_CLASSES = 'body-link underline-draw'
+export const PYPI_PACKAGE      = 'prose-formatter'
 export const REPO_SLUG         = 'Jybbs/prose'
 export const REPO_URL          = `https://github.com/${REPO_SLUG}`
 export const SHIKI_THEMES      = { dark: 'github-dark', light: 'github-light' } as const

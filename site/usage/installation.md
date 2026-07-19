@@ -30,11 +30,11 @@ Pre-built wheels cover the following targets:
 | `aarch64-apple-darwin` | macOS Apple Silicon |
 | `x86_64-pc-windows-msvc` | Windows x86_64 |
 
-A source distribution rides alongside the wheels for any target outside this matrix *(musl-based Linux distros, FreeBSD, 32-bit architectures)*. Installing the sdist requires a Rust toolchain on the install host, because the installer builds the binary from source rather than fetching a pre-built artifact.
+A source distribution ships alongside the wheels for any target outside this matrix *(musl-based Linux distros, FreeBSD, 32-bit architectures)*. Installing the sdist requires a Rust toolchain on the install host, because the installer builds the binary from source rather than fetching a pre-built artifact.
 
 ## Python Compatibility
 
-The install path needs Python **3.10 or newer**, which is the lower bound declared in the wheel's `requires-python` metadata. The Python interpreter is used only by the installer *(uv, pip, pipx)* to land the binary on `PATH`, and the running formatter doesn't load it on the hot path. For the runtime version a project's source itself targets *(read by [[legacy-union-syntax]] and [[unused-future-annotations]] when judging safety)*, see the `target-version` field in the [**Configuration**](/reference/configuration) reference.
+The install path needs Python **{{ $frontmatter.requiresPython }} or newer**, which is the lower bound declared in the wheel's `requires-python` metadata. The Python interpreter is used only by the installer *(uv, pip, pipx)* to land the binary on `PATH`, and the running formatter doesn't load it on the hot path. For the runtime version a project's source itself targets *(read by [[legacy-union-syntax]] and [[unused-future-annotations]] when judging safety)*, see the `target-version` field in the [**Configuration**](/reference/configuration) reference.
 
 ## Next Steps
 

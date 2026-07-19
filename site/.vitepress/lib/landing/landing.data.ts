@@ -2,6 +2,7 @@ import { defineLoader } from 'vitepress'
 
 import { inlineNodes, type InlineNode }  from '../markdown/inline-nodes'
 import * as renderer                     from '../markdown/renderer'
+import { PYPI_PACKAGE }                  from '../shared/constants'
 import { formatFolio }                   from '../shared/numerals'
 import { FAMILY_ORDER, type RuleFamily } from '../shared/registries'
 
@@ -53,7 +54,7 @@ type StepSource = Omit<Step, 'bodyNodes' | 'codeHtml'> & { body: string; code: s
 const STEP_SOURCES: readonly StepSource[] = [
   {
     body     : 'Fetch the wheel and expose the `prose` binary.',
-    code     : 'uv tool install prose-formatter',
+    code     : `uv tool install ${PYPI_PACKAGE}`,
     language : 'bash',
     number   : '01',
     title    : 'Install'

@@ -1,6 +1,7 @@
 import { defineLoader } from 'vitepress'
 
 import { conditionalFetch } from '../shared/conditional-fetch'
+import { PYPI_PACKAGE }     from '../shared/constants'
 import { fetchCacheDir }    from '../shared/paths'
 
 export interface PyPIRelease {
@@ -24,12 +25,11 @@ interface PyPIPayload {
   releases : Record<string, readonly PyPIReleaseFile[]>
 }
 
-const PACKAGE   = 'prose-formatter'
-const ENDPOINT  = `https://pypi.org/pypi/${PACKAGE}/json`
+const ENDPOINT  = `https://pypi.org/pypi/${PYPI_PACKAGE}/json`
 const MONTH_FMT = new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'UTC' })
 
 function projectUrl(version: string): string {
-  return `https://pypi.org/project/${PACKAGE}/${version}/`
+  return `https://pypi.org/project/${PYPI_PACKAGE}/${version}/`
 }
 
 function render(version: string, date: string): PyPIRelease {
@@ -46,7 +46,7 @@ function render(version: string, date: string): PyPIRelease {
 }
 
 const FALLBACK: readonly PyPIRelease[] = (
-  [['0.2.0', '2026-04-09'], ['0.1.0', '2026-01-14']] as const
+  [['0.8.1', '2026-07-16'], ['0.8.0', '2026-07-13']] as const
 ).map(([version, date]) => render(version, date))
 
 function compareDesc(a: PyPIRelease, b: PyPIRelease): number {

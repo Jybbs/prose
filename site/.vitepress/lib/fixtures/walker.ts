@@ -1,9 +1,8 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { parse } from 'smol-toml'
-
 import { fixturesDirFrom } from '../shared/paths'
+import { parseToml }       from '../shared/toml'
 import * as lintFindings   from './lint-findings'
 
 const INPUT_FILE    = 'input.py'
@@ -47,7 +46,7 @@ export function fixtureWatchGlobs(crateDir: string): string[] {
 export function readFixtureDocs(inputPath: string): FixtureDocs | undefined {
   const metaPath = path.join(path.dirname(inputPath), META_FILE)
   if (!fs.existsSync(metaPath)) return undefined
-  return (parse(fs.readFileSync(metaPath, 'utf8')) as { docs?: FixtureDocs }).docs
+  return (parseToml(metaPath) as { docs?: FixtureDocs }).docs
 }
 
 export function snapshotPath(inputPath: string): string {
