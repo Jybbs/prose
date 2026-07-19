@@ -1,11 +1,11 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: json
-input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
+input_file: crate/tests/fixtures/thematic/args_returns_docstring_wraps/input.py
 ---
 [
   {
-    "code": "unsorted-parameters",
+    "code": "unsorted-positionals",
     "end_location": {
       "column": 40,
       "row": 1
@@ -15,7 +15,7 @@ input_file: tests/fixtures/thematic/args_returns_docstring_wraps/input.py
       "column": 11,
       "row": 1
     },
-    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
   },
   {
     "code": "signature-annotations",

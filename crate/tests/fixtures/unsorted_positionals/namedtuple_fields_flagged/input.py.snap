@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/namedtuple_fields_flagged/input.py
+---
+from typing import NamedTuple
+
+
+class ModelSpec(NamedTuple):
+    display: str
+    build: type

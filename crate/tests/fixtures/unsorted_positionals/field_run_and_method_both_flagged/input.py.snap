@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/field_run_and_method_both_flagged/input.py
+---
+from dataclasses import dataclass
+
+
+@dataclass
+class Report:
+    width: int
+    height: int
+
+    def render(self, target, source):
+        return target

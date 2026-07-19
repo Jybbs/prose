@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Field Run and a Method Draw Separate Reports"
+
+description = '''
+A method inside a generated-constructor class **drops out of the field run rather than counting against it**, so the run covers `width` and `height` alone. The method's own parameters are a positional run in their own right, leaving the class with **two diagnostics** that name different constructs.
+'''

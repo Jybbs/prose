@@ -1,0 +1,20 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/unsorted_positionals/namedtuple_fields_flagged/input.py
+---
+[
+  {
+    "code": "unsorted-positionals",
+    "end_location": {
+      "column": 16,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 5
+    },
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+  }
+]

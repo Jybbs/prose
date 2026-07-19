@@ -1,0 +1,6 @@
+---
+source: tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/unsorted_positionals/decorator_bound_unflagged/input.py
+---
+

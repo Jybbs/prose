@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/keyword_only_fields_unflagged/input.py
+---
+from dataclasses import dataclass
+
+
+@dataclass(kw_only=True)
+class Request:
+    timeout: float
+    method: str
+    body: bytes | None = None

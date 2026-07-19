@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pinned Method Leaves the Field Run Still Reported"
+
+description = '''
+A positional-binding decorator silences the method's own parameters while the class's field run **still draws its diagnostic**. The two skips are independent, in that one reads the decorator list and the other reads the class header.
+'''

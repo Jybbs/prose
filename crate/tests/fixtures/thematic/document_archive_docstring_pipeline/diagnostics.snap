@@ -38,4 +38,5 @@ signature-layout@360..421
 single-use-variables@1150..1156
 single-use-variables@580..586
 strip-none-return@924..932
-unsorted-parameters@359..422
+unsorted-positionals@1378..1398
+unsorted-positionals@359..422

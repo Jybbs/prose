@@ -57,7 +57,7 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "message": "`digest` is assigned and used once. Consider inlining `hashlib.sha256(payload.encode(encoding)).hexdigest()`"
   },
   {
-    "code": "unsorted-parameters",
+    "code": "unsorted-positionals",
     "end_location": {
       "column": 2,
       "row": 39
@@ -67,7 +67,20 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
       "column": 19,
       "row": 33
     },
-    "message": "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword"
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+  },
+  {
+    "code": "unsorted-positionals",
+    "end_location": {
+      "column": 37,
+      "row": 57
+    },
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 57
+    },
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
   },
   {
     "code": "signature-annotations",

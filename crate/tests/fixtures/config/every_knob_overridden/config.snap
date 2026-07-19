@@ -165,7 +165,7 @@ Config {
             ),
             enabled: false,
         },
-        unsorted_parameters: ToggleOnly {
+        unsorted_positionals: ToggleOnly {
             enabled: false,
         },
         signature_annotations: ToggleOnly {

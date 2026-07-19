@@ -1,0 +1,33 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/unsorted_positionals/field_run_and_method_both_flagged/input.py
+---
+[
+  {
+    "code": "unsorted-positionals",
+    "end_location": {
+      "column": 16,
+      "row": 7
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 6
+    },
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+  },
+  {
+    "code": "unsorted-positionals",
+    "end_location": {
+      "column": 37,
+      "row": 9
+    },
+    "fix": null,
+    "location": {
+      "column": 15,
+      "row": 9
+    },
+    "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
+  }
+]

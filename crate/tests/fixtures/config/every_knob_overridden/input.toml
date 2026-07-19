@@ -33,5 +33,5 @@ step-narration            = false
 strip-align-padding       = false
 strip-none-return         = false
 strip-trailing-commas     = false
-unsorted-parameters       = false
+unsorted-positionals      = false
 unused-future-annotations = false
