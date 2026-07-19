@@ -321,14 +321,6 @@ fn has_format_change(diagnostics: &[Diagnostic]) -> bool {
     diagnostics.iter().any(|d| d.severity.is_format())
 }
 
-/// Resolves the source type of stdin input from a `--stdin-filename`,
-/// defaulting to Python when none is given.
-fn stdin_source_type(filename: Option<&Path>) -> PySourceType {
-    filename
-        .and_then(PySourceType::try_from_path)
-        .unwrap_or_default()
-}
-
 fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
     if no_cache || !config.cache.enabled {
         return None;
@@ -339,11 +331,19 @@ fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
         .ok()
 }
 
+/// Resolves the source type of stdin input from a `--stdin-filename`,
+/// defaulting to Python when none is given.
+fn stdin_source_type(filename: Option<&Path>) -> PySourceType {
+    filename
+        .and_then(PySourceType::try_from_path)
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use std::io::{self, Cursor};
 
-    use assert_matches::assert_matches;
     use tempfile::TempDir;
 
     use super::*;

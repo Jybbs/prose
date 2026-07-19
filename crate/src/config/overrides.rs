@@ -86,9 +86,8 @@ fn compile_globs(patterns: &[String]) -> Result<GlobSet, ConfigError> {
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use std::path::Path;
-
-    use assert_matches::assert_matches;
 
     use super::*;
 

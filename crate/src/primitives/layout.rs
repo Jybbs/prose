@@ -70,7 +70,8 @@ pub(crate) fn reindent_block(block: &str, to: usize) -> Cow<'_, str> {
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
+
     use rstest::rstest;
 
     use super::*;

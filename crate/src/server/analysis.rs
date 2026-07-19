@@ -47,7 +47,8 @@ pub(super) fn format_edits(
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
+
     use lsp_types::{DiagnosticSeverity, NumberOrString, Position};
 
     use super::*;

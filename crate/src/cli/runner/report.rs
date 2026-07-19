@@ -99,15 +99,6 @@ pub(super) fn finish(
     status_from_outcomes(outcomes, demote_format_change)
 }
 
-/// The surviving-lint disclosure a text-format `format` run appends
-/// after its outcome line, `None` for a check run, a structured output
-/// whose emitters already printed the lint, or a run leaving none.
-fn lint_remainder(summary: &EmitterSummary, mode: Mode, text_output: bool) -> Option<Summary> {
-    let total = summary.lint_total;
-    let discloses = !matches!(mode, Mode::Check) && text_output && total > 0;
-    discloses.then_some(Summary::LintRemainder { total })
-}
-
 /// Writes a run's closing summary: the rewrite or diagnostics outcome,
 /// then in a format mode whose diagnostics never reached stdout the
 /// surviving-lint disclosure. `text_output` is true for a text-format
@@ -182,6 +173,15 @@ pub(super) fn status_from_outcomes(
         .unwrap_or_default()
 }
 
+/// The surviving-lint disclosure a text-format `format` run appends
+/// after its outcome line, `None` for a check run, a structured output
+/// whose emitters already printed the lint, or a run leaving none.
+fn lint_remainder(summary: &EmitterSummary, mode: Mode, text_output: bool) -> Option<Summary> {
+    let total = summary.lint_total;
+    let discloses = !matches!(mode, Mode::Check) && text_output && total > 0;
+    discloses.then_some(Summary::LintRemainder { total })
+}
+
 /// Resolves an outcome set into its closing [`Summary`], or `None` when
 /// the clean line is suppressed, either by a per-file failure already
 /// logged to stderr or by a format run leaving lint whose disclosure is
@@ -213,7 +213,8 @@ fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> 
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
+
     use rstest::rstest;
     use ruff_diagnostics::{Edit, Fix};
     use ruff_text_size::TextRange;

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE description="Generate coverage and upload it to Codecov, scoped by a `rust` or `site` argument"
-#MISE tools={"pipx:codecov-cli" = "11.2.8"}
+#MISE tools={"pipx:codecov-cli" = "11.3.1"}
 
 source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
 rust()   { upload rust target/lcov.info; }

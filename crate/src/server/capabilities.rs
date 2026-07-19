@@ -42,7 +42,8 @@ fn encoding_kind(encoding: PositionEncoding) -> PositionEncodingKind {
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
+
     use lsp_types::GeneralClientCapabilities;
     use rstest::rstest;
 

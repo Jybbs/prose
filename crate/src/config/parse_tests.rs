@@ -1,9 +1,9 @@
 //! String-parsing-surface tests for `Config::from_prose_toml_str` and
 //! `Config::from_pyproject_str`.
 
+use std::assert_matches;
 use std::fmt::Debug;
 
-use assert_matches::assert_matches;
 use rstest::rstest;
 
 use super::*;

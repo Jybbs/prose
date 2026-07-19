@@ -31,6 +31,8 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use serde::Serialize;
 
+use super::insert_sorted_by_key;
+
 mod module_scan;
 mod names;
 
@@ -204,28 +206,19 @@ impl BindingAnalysis {
             .is_some_and(|first| first < offset)
     }
 
-    /// Returns the recorded write kinds of the module-scope binding for
-    /// `name`, empty when `name` is unbound at module scope.
-    pub(crate) fn module_binding_kinds(&self, name: &str) -> &[BindingKind] {
-        self.module_binding(name)
-            .map_or(&[], |binding| binding.kinds.as_slice())
-    }
-
-    /// Returns `true` when the module reads the module-scope binding for
-    /// `name` somewhere only data stands and nowhere a type stands. One
-    /// read in an annotation outranks every data read, and a name the
-    /// module never reads yields `false`.
-    pub(crate) fn module_reads_as_data(&self, name: &str) -> bool {
-        self.module_binding(name)
-            .is_some_and(|binding| binding.runtime_read && !binding.annotation_read)
-    }
-
     /// Returns the number of distinct attributes read off the
     /// module-scope binding for `name` (`os.environ` and `os.getcwd`
     /// count as two), or `0` when `name` is unbound at module scope.
     pub(crate) fn module_attribute_count(&self, name: &str) -> usize {
         self.module_binding(name)
             .map_or(0, |binding| binding.attributes.len())
+    }
+
+    /// Returns the recorded write kinds of the module-scope binding for
+    /// `name`, empty when `name` is unbound at module scope.
+    pub(crate) fn module_binding_kinds(&self, name: &str) -> &[BindingKind] {
+        self.module_binding(name)
+            .map_or(&[], |binding| binding.kinds.as_slice())
     }
 
     /// Returns the read offsets of the module-scope binding for `name`
@@ -244,6 +237,15 @@ impl BindingAnalysis {
         let binding = self.module_binding(name)?;
         (binding.kinds == [BindingKind::FunctionDef] && binding.write_offsets.len() == 1)
             .then_some(binding.read_offsets.as_slice())
+    }
+
+    /// Returns `true` when the module reads the module-scope binding for
+    /// `name` somewhere only data stands and nowhere a type stands. One
+    /// read in an annotation outranks every data read, and a name the
+    /// module never reads yields `false`.
+    pub(crate) fn module_reads_as_data(&self, name: &str) -> bool {
+        self.module_binding(name)
+            .is_some_and(|binding| binding.runtime_read && !binding.annotation_read)
     }
 
     /// Returns `true` when the module-scope binding for `name` carries
@@ -317,64 +319,6 @@ impl Builder {
         };
         builder.push_scope(ScopeKind::Module, None);
         builder
-    }
-
-    /// Runs `f` with annotation depth raised, so every read it reaches
-    /// records as a type use.
-    fn in_annotation(&mut self, f: impl FnOnce(&mut Self)) {
-        self.annotation_depth += 1;
-        f(self);
-        self.annotation_depth -= 1;
-    }
-
-    /// Records `expr` as read where only a runtime object stands. Only a
-    /// bare name marks, in that `if f(X):` reads `X` as a call argument
-    /// and settles nothing, whereas `if X:` truth-tests the object
-    /// itself. An annotation never marks, because a type stands there.
-    fn mark_runtime_read(&mut self, expr: &Expr) {
-        if self.annotation_depth > 0 {
-            return;
-        }
-        if let Expr::Name(name) = expr
-            && name.ctx.is_load()
-        {
-            self.runtime_offsets.insert(name.range().start());
-        }
-    }
-
-    /// Marks every operand of `expr` that stands where only data stands.
-    /// A class raises `TypeError` on each of these, whereas it iterates,
-    /// compares by equality, and answers `is` like any other object.
-    fn mark_runtime_operands(&mut self, expr: &Expr) {
-        match expr {
-            Expr::BinOp(node) if node.op != Operator::BitOr => {
-                self.mark_runtime_read(&node.left);
-                self.mark_runtime_read(&node.right);
-            }
-            Expr::BoolOp(node) => {
-                for value in &node.values {
-                    self.mark_runtime_read(value);
-                }
-            }
-            Expr::Compare(node) => self.mark_comparison(node),
-            Expr::If(node) => self.mark_runtime_read(&node.test),
-            Expr::UnaryOp(node) if node.op == UnaryOp::Not => {
-                self.mark_runtime_read(&node.operand);
-            }
-            _ => {}
-        }
-    }
-
-    /// Marks each operand an order comparison ranks (`{open, stat} <=
-    /// supports_dir_fd`).
-    fn mark_comparison(&mut self, node: &ExprCompare) {
-        let operands = std::iter::once(node.left.as_ref()).chain(&node.comparators);
-        for ((left, right), op) in operands.tuple_windows().zip(&node.ops) {
-            if matches!(op, CmpOp::Gt | CmpOp::GtE | CmpOp::Lt | CmpOp::LtE) {
-                self.mark_runtime_read(left);
-                self.mark_runtime_read(right);
-            }
-        }
     }
 
     fn current_scope(&self) -> ScopeId {
@@ -519,6 +463,14 @@ impl Builder {
         }
     }
 
+    /// Runs `f` with annotation depth raised, so every read it reaches
+    /// records as a type use.
+    fn in_annotation(&mut self, f: impl FnOnce(&mut Self)) {
+        self.annotation_depth += 1;
+        f(self);
+        self.annotation_depth -= 1;
+    }
+
     /// Runs `f` with condition-test depth raised, so a `:=` reached
     /// while visiting an `if`/`elif`/`while` test records into
     /// `condition_test_walruses`.
@@ -546,6 +498,56 @@ impl Builder {
         f(self);
         self.pop_scope();
         id
+    }
+
+    /// Marks each operand an order comparison ranks (`{open, stat} <=
+    /// supports_dir_fd`).
+    fn mark_comparison(&mut self, node: &ExprCompare) {
+        let operands = std::iter::once(node.left.as_ref()).chain(&node.comparators);
+        for ((left, right), op) in operands.tuple_windows().zip(&node.ops) {
+            if matches!(op, CmpOp::Gt | CmpOp::GtE | CmpOp::Lt | CmpOp::LtE) {
+                self.mark_runtime_read(left);
+                self.mark_runtime_read(right);
+            }
+        }
+    }
+
+    /// Marks every operand of `expr` that stands where only data stands.
+    /// A class raises `TypeError` on each of these, whereas it iterates,
+    /// compares by equality, and answers `is` like any other object.
+    fn mark_runtime_operands(&mut self, expr: &Expr) {
+        match expr {
+            Expr::BinOp(node) if node.op != Operator::BitOr => {
+                self.mark_runtime_read(&node.left);
+                self.mark_runtime_read(&node.right);
+            }
+            Expr::BoolOp(node) => {
+                for value in &node.values {
+                    self.mark_runtime_read(value);
+                }
+            }
+            Expr::Compare(node) => self.mark_comparison(node),
+            Expr::If(node) => self.mark_runtime_read(&node.test),
+            Expr::UnaryOp(node) if node.op == UnaryOp::Not => {
+                self.mark_runtime_read(&node.operand);
+            }
+            _ => {}
+        }
+    }
+
+    /// Records `expr` as read where only a runtime object stands. Only a
+    /// bare name marks, in that `if f(X):` reads `X` as a call argument
+    /// and settles nothing, whereas `if X:` truth-tests the object
+    /// itself. An annotation never marks, because a type stands there.
+    fn mark_runtime_read(&mut self, expr: &Expr) {
+        if self.annotation_depth > 0 {
+            return;
+        }
+        if let Expr::Name(name) = expr
+            && name.ctx.is_load()
+        {
+            self.runtime_offsets.insert(name.range().start());
+        }
     }
 
     fn pop_scope(&mut self) {
@@ -589,10 +591,7 @@ impl Builder {
     /// the attribute it accessed.
     fn record_resolved_read(&mut self, id: BindingId, offset: TextSize, attribute: Option<&str>) {
         let binding = &mut self.bindings[id.0 as usize];
-        let slot = binding
-            .read_offsets
-            .partition_point(|&existing| existing < offset);
-        binding.read_offsets.insert(slot, offset);
+        insert_sorted_by_key(&mut binding.read_offsets, offset, |&existing| existing);
         match attribute {
             Some(attribute) => {
                 binding.attributes.insert(attribute.to_owned());
@@ -686,16 +685,16 @@ impl Builder {
                 BindingId(u32::try_from(self.bindings.len()).expect("binding count fits in u32"));
             scope_data.bindings.insert(name.to_owned(), id);
             self.bindings.push(Binding {
-                name: name.to_owned(),
-                scope,
                 annotation_read: false,
                 attributes: BTreeSet::new(),
                 bare_read: false,
                 first_unconditional_write: None,
                 kinds: Vec::new(),
-                runtime_read: false,
-                write_offsets: Vec::new(),
+                name: name.to_owned(),
                 read_offsets: Vec::new(),
+                runtime_read: false,
+                scope,
+                write_offsets: Vec::new(),
             });
             id
         };
@@ -936,7 +935,8 @@ fn resolve_in_chain(scopes: &[Scope], innermost: ScopeId, name: &str) -> Option<
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
+
     use indoc::indoc;
     use proptest::prelude::*;
     use rstest::rstest;
@@ -1045,6 +1045,25 @@ mod tests {
     }
 
     #[test]
+    fn module_attribute_count_counts_distinct_attributes() {
+        let analysis = analyze("import os\nos.environ\nos.getcwd()\nos.environ\n");
+        assert_eq!(analysis.module_attribute_count("os"), 2);
+    }
+
+    #[rstest]
+    #[case("import os\n")]
+    #[case("import os\nfoo(os)\n")]
+    fn module_attribute_count_is_zero_without_attribute_reads(#[case] src: &str) {
+        assert_eq!(analyze(src).module_attribute_count("os"), 0);
+    }
+
+    #[test]
+    fn module_attribute_count_records_the_first_segment_of_a_chain() {
+        let analysis = analyze("import os\nos.path.join('a', 'b')\n");
+        assert_eq!(analysis.module_attribute_count("os"), 1);
+    }
+
+    #[test]
     fn module_function_reads_counts_each_in_module_reference() {
         let analysis = analyze("def f(b, a):\n    pass\n\n\nf(1, 2)\nf(3, 4)\n");
         let reads = analysis.module_function_reads("f").expect("unique def");
@@ -1118,36 +1137,19 @@ mod tests {
         assert!(analyze(src).module_function_reads("f").is_none());
     }
 
-    #[test]
-    fn type_alias_records_the_reads_in_its_bound() {
-        let analysis = analyze(indoc! {"
-            import collections.abc
-            type Registry[T: collections.abc.Mapping] = dict[str, T]
-        "});
-        assert_eq!(
-            analysis.module_attribute_count("collections"),
-            1,
-            "the PEP 695 bound reads `collections.abc`",
-        );
-    }
-
-    #[test]
-    fn module_attribute_count_counts_distinct_attributes() {
-        let analysis = analyze("import os\nos.environ\nos.getcwd()\nos.environ\n");
-        assert_eq!(analysis.module_attribute_count("os"), 2);
-    }
-
-    #[test]
-    fn module_attribute_count_records_the_first_segment_of_a_chain() {
-        let analysis = analyze("import os\nos.path.join('a', 'b')\n");
-        assert_eq!(analysis.module_attribute_count("os"), 1);
+    #[rstest]
+    #[case("X = 1\n")]
+    #[case("x = 1\n")]
+    fn module_reassigned_is_false_for_write_once_or_unbound(#[case] src: &str) {
+        assert!(!analyze(src).module_reassigned("X"));
     }
 
     #[rstest]
-    #[case("import os\n")]
-    #[case("import os\nfoo(os)\n")]
-    fn module_attribute_count_is_zero_without_attribute_reads(#[case] src: &str) {
-        assert_eq!(analyze(src).module_attribute_count("os"), 0);
+    #[case("X = 1\nX = 2\n")]
+    #[case("X = 1\nX += 1\n")]
+    #[case("X += 1\n")]
+    fn module_reassigned_is_true_when_written_twice_or_augmented(#[case] src: &str) {
+        assert!(analyze(src).module_reassigned("X"));
     }
 
     #[test]
@@ -1163,19 +1165,17 @@ mod tests {
         assert!(analyze(src).module_used_bare("os"));
     }
 
-    #[rstest]
-    #[case("X = 1\n")]
-    #[case("x = 1\n")]
-    fn module_reassigned_is_false_for_write_once_or_unbound(#[case] src: &str) {
-        assert!(!analyze(src).module_reassigned("X"));
-    }
-
-    #[rstest]
-    #[case("X = 1\nX = 2\n")]
-    #[case("X = 1\nX += 1\n")]
-    #[case("X += 1\n")]
-    fn module_reassigned_is_true_when_written_twice_or_augmented(#[case] src: &str) {
-        assert!(analyze(src).module_reassigned("X"));
+    #[test]
+    fn type_alias_records_the_reads_in_its_bound() {
+        let analysis = analyze(indoc! {"
+            import collections.abc
+            type Registry[T: collections.abc.Mapping] = dict[str, T]
+        "});
+        assert_eq!(
+            analysis.module_attribute_count("collections"),
+            1,
+            "the PEP 695 bound reads `collections.abc`",
+        );
     }
 
     #[rstest]
