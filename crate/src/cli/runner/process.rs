@@ -279,7 +279,8 @@ fn process_source(
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
+
     use ruff_diagnostics::Edit;
     use tempfile::TempDir;
 

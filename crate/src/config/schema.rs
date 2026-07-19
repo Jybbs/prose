@@ -325,7 +325,10 @@ impl Serialize for MaxShift {
 pub struct MiscasedConstantsConfig {
     /// Constant names exempted from the lint, such as old-style bare
     /// aliases.
-    #[schemars(schema_with = "super::json_schema::empty_allow_pattern_schema")]
+    #[schemars(
+        with = "String",
+        extend("format" = "regex", "default" = Self::default().allow_pattern.as_str())
+    )]
     #[serde(
         deserialize_with = "deserialize_regex",
         serialize_with = "serialize_regex"
@@ -393,7 +396,10 @@ impl Default for SignatureLayoutConfig {
 #[serde(default, rename_all = "kebab-case")]
 pub struct SingleUseVariablesConfig {
     /// Binding names exempted from the lint.
-    #[schemars(schema_with = "super::json_schema::allow_pattern_schema")]
+    #[schemars(
+        with = "String",
+        extend("format" = "regex", "default" = Self::default().allow_pattern.as_str())
+    )]
     #[serde(
         deserialize_with = "deserialize_regex",
         serialize_with = "serialize_regex"

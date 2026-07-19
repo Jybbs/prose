@@ -116,6 +116,8 @@ impl ConfigSource {
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
+
     use tempfile::TempDir;
 
     use super::*;
@@ -177,7 +179,7 @@ mod tests {
         write_pyproject(tmp.path(), "[tool.prose]\ncode-line-length = 88\n");
         let source = discover(tmp.path()).expect("loads").expect("a source");
 
-        assert_matches::assert_matches!(
+        assert_matches!(
             source.effective_toml(&tmp.path().join("a.py")),
             Cow::Borrowed(_)
         );

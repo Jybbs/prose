@@ -341,9 +341,9 @@ fn open_cache(config: &Config, no_cache: bool) -> Option<Cache> {
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use std::io::{self, Cursor};
 
-    use assert_matches::assert_matches;
     use tempfile::TempDir;
 
     use super::*;

@@ -213,7 +213,8 @@ fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> 
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
+
     use rstest::rstest;
     use ruff_diagnostics::{Edit, Fix};
     use ruff_text_size::TextRange;

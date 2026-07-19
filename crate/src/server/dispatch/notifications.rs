@@ -1,18 +1,16 @@
 //! LSP notification routing: decode and dispatch document open /
 //! change / close and watched-file events into republished diagnostics.
 
-use anyhow::Context;
-use lsp_server::{Connection, Message, Notification};
+use lsp_server::{Connection, ExtractError, Message, Notification};
 use lsp_types::{
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    PublishDiagnosticsParams, Uri,
+    DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, PublishDiagnosticsParams, Uri,
     notification::{
         DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument, DidOpenTextDocument,
         Notification as NotificationTrait, PublishDiagnostics,
     },
 };
 use ruff_source_file::PositionEncoding;
-use serde::de::DeserializeOwned;
 
 use super::send;
 use crate::server::{analysis, config_cache::ConfigCache, documents::DocumentStore};
@@ -28,42 +26,51 @@ pub(super) fn handle_notification(
     notification: Notification,
     encoding: PositionEncoding,
 ) -> anyhow::Result<()> {
-    if notification.method == DidChangeWatchedFiles::METHOD {
-        configs.clear();
-        return republish_all(connection, documents, configs, encoding);
-    }
-    let uri = if notification.method == DidOpenTextDocument::METHOD {
-        let params: DidOpenTextDocumentParams = decode(notification)?;
-        let version = params.text_document.version;
-        documents.set(
-            params.text_document.uri.clone(),
-            params.text_document.text,
-            version,
-        );
-        params.text_document.uri
-    } else if notification.method == DidChangeTextDocument::METHOD {
-        let mut params: DidChangeTextDocumentParams = decode(notification)?;
-        let version = params.text_document.version;
-        let uri = params.text_document.uri;
-        if let Some(change) = params.content_changes.pop() {
-            documents.set(uri.clone(), change.text, version);
+    let notification = match notification.extract(DidChangeWatchedFiles::METHOD) {
+        Ok(DidChangeWatchedFilesParams { .. }) => {
+            configs.clear();
+            return republish_all(connection, documents, configs, encoding);
         }
-        uri
-    } else if notification.method == DidCloseTextDocument::METHOD {
-        let params: DidCloseTextDocumentParams = decode(notification)?;
-        documents.remove(&params.text_document.uri);
-        params.text_document.uri
-    } else {
-        return Ok(());
+        Err(ExtractError::MethodMismatch(notification)) => notification,
+        Err(error) => return Err(error.into()),
     };
-    publish(connection, documents, configs, &uri, encoding)
-}
-
-/// Deserializes a notification's params, contextualizing a decode
-/// failure with the method that carried the malformed payload.
-fn decode<P: DeserializeOwned>(notification: Notification) -> anyhow::Result<P> {
-    serde_json::from_value(notification.params)
-        .with_context(|| format!("decoding `{}` params", notification.method))
+    let notification = match notification.extract(DidOpenTextDocument::METHOD) {
+        Ok(DidOpenTextDocumentParams { text_document }) => {
+            documents.set(
+                text_document.uri.clone(),
+                text_document.text,
+                text_document.version,
+            );
+            return publish(connection, documents, configs, &text_document.uri, encoding);
+        }
+        Err(ExtractError::MethodMismatch(notification)) => notification,
+        Err(error) => return Err(error.into()),
+    };
+    let notification = match notification.extract(DidChangeTextDocument::METHOD) {
+        Ok(DidChangeTextDocumentParams {
+            text_document,
+            mut content_changes,
+        }) => {
+            if let Some(change) = content_changes.pop() {
+                documents.set(
+                    text_document.uri.clone(),
+                    change.text,
+                    text_document.version,
+                );
+            }
+            return publish(connection, documents, configs, &text_document.uri, encoding);
+        }
+        Err(ExtractError::MethodMismatch(notification)) => notification,
+        Err(error) => return Err(error.into()),
+    };
+    match notification.extract(DidCloseTextDocument::METHOD) {
+        Ok(DidCloseTextDocumentParams { text_document }) => {
+            documents.remove(&text_document.uri);
+            publish(connection, documents, configs, &text_document.uri, encoding)
+        }
+        Err(ExtractError::MethodMismatch(_)) => Ok(()),
+        Err(error) => Err(error.into()),
+    }
 }
 
 /// Recomputes and publishes the tracked buffer's diagnostics, sending an

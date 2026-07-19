@@ -388,7 +388,8 @@ pub enum SourceError {
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
+
     use rstest::rstest;
     use ruff_python_ast::token::TokenKind;
     use ruff_source_file::OneIndexed;

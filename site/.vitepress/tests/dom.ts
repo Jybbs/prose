@@ -58,8 +58,9 @@ export const domTest = base.extend<DomFixtures>({
   }
 })
 
-// happy-dom leaves `isVisible` truthy for a `v-show`-hidden element, so
-// visibility reads the inline style the directive writes.
+// happy-dom's `checkVisibility` reports false for a detached element, and
+// these mounts render detached, so visibility reads the inline style the
+// `v-show` directive writes.
 export const isHidden = (element: Pick<DOMWrapper<Element>, 'attributes'>): boolean =>
   element.attributes('style')?.includes('display: none') ?? false
 

@@ -92,9 +92,9 @@ pub(crate) enum Command {
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use std::path::PathBuf;
 
-    use assert_matches::assert_matches;
     use clap::{CommandFactory, error::ErrorKind};
     use rstest::{fixture, rstest};
 

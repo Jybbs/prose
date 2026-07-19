@@ -147,6 +147,7 @@ fn register_config_watchers(
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use std::thread;
 
     use lsp_server::{ErrorCode, Notification, RequestId, Response};
@@ -199,8 +200,8 @@ mod tests {
         let Message::Response(init) = recv(client) else {
             panic!("expected initialize response");
         };
-        let result =
-            serde_json::from_value(init.result.expect("initialize result")).expect("decodes");
+        let result = serde_json::from_value(init.response_result.expect("initialize result"))
+            .expect("decodes");
         client
             .sender
             .send(note(Initialized::METHOD, InitializedParams {}))
@@ -258,9 +259,11 @@ mod tests {
         let Message::Response(response) = recv(client) else {
             panic!("expected formatting response");
         };
-        serde_json::from_value::<Option<Vec<TextEdit>>>(response.result.expect("formatting result"))
-            .expect("decodes")
-            .unwrap_or_default()
+        serde_json::from_value::<Option<Vec<TextEdit>>>(
+            response.response_result.expect("formatting result"),
+        )
+        .expect("decodes")
+        .unwrap_or_default()
     }
 
     fn published(client: &Connection) -> PublishDiagnosticsParams {
@@ -432,7 +435,7 @@ mod tests {
         let Message::Response(response) = recv(&client) else {
             panic!("expected formatting response");
         };
-        assert_eq!(response.result, Some(Value::Null));
+        assert_matches!(response.response_result, Ok(Value::Null));
         teardown(&client, handle);
     }
 
@@ -511,9 +514,26 @@ mod tests {
             panic!("expected error response");
         };
         assert_eq!(
-            response.error.expect("error").code,
+            response.response_result.expect_err("error").code,
             ErrorCode::InvalidParams as i32
         );
+        teardown(&client, handle);
+    }
+
+    #[test]
+    fn malformed_watched_files_notification_is_dropped_and_server_survives() {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        handshake(&client);
+        client
+            .sender
+            .send(note(
+                DidChangeWatchedFiles::METHOD,
+                serde_json::json!({ "bogus": true }),
+            ))
+            .expect("send malformed didChangeWatchedFiles");
+        did_open(&client, "import os\nos.getcwd()\n");
+        assert_eq!(published(&client).diagnostics.len(), 1);
         teardown(&client, handle);
     }
 
@@ -583,7 +603,7 @@ mod tests {
             panic!("expected error response");
         };
         assert_eq!(
-            response.error.expect("error").code,
+            response.response_result.expect_err("error").code,
             ErrorCode::MethodNotFound as i32
         );
         teardown(&client, handle);

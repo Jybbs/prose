@@ -1,6 +1,7 @@
 //! Filesystem-loading-surface tests for `Config::load`.
 
-use assert_matches::assert_matches;
+use std::assert_matches;
+
 use indoc::indoc;
 use tempfile::TempDir;
 

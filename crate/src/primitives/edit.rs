@@ -186,17 +186,23 @@ fn concat_or_borrow<'src>(
 
 /// Shifts a single offset by the delta of the nearest marker at or
 /// before it, the per-boundary slide [`forward_offsets`] maps over a
-/// notebook's cell offsets.
+/// notebook's cell offsets. Markers sharing the offset's exact source
+/// resolve to the first pushed, so an insertion landing on a cell
+/// boundary stays inside the cell it opens.
 fn forward_offset(offset: TextSize, map: &SourceMap) -> TextSize {
-    map.markers()
+    let markers = map.markers();
+    let index = markers.partition_point(|marker| marker.source() <= offset);
+    let marker = markers[..index]
         .iter()
         .rev()
-        .find(|marker| marker.source() <= offset)
-        .map_or(offset, |marker| match marker.source().cmp(&marker.dest()) {
-            Ordering::Less => offset + (marker.dest() - marker.source()),
-            Ordering::Greater => offset - (marker.source() - marker.dest()),
-            Ordering::Equal => offset,
-        })
+        .take_while(|marker| marker.source() == offset)
+        .last()
+        .or_else(|| markers[..index].last());
+    marker.map_or(offset, |marker| match marker.source().cmp(&marker.dest()) {
+        Ordering::Less => offset + (marker.dest() - marker.source()),
+        Ordering::Greater => offset - (marker.source() - marker.dest()),
+        Ordering::Equal => offset,
+    })
 }
 
 /// Trims a candidate replacement to its minimal spanning range by
@@ -267,7 +273,7 @@ fn weave<'a>(
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
 
     use super::*;
     use crate::testing::{parse, range};
@@ -395,6 +401,18 @@ mod tests {
         );
 
         assert_matches!(result, Cow::Owned(text) if text == "XYef");
+    }
+
+    #[test]
+    fn forward_offset_keeps_a_boundary_before_an_insertion_at_it() {
+        let (text, map) = apply_edits_mapped(
+            "abcdef",
+            vec![Edit::insertion("XX".to_owned(), 2u32.into())],
+        )
+        .expect("woven");
+
+        assert_eq!(text, "abXXcdef");
+        assert_eq!(forward_offset(TextSize::new(2), &map), TextSize::new(2));
     }
 
     #[test]

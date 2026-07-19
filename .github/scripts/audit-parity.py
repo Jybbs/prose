@@ -20,6 +20,16 @@ from re      import search
 from tomllib import loads
 
 
+def action_uv_version() -> str:
+    """
+    Return the `version` input pinned in the `provision-uv` composite action.
+    """
+    text = Path(".github/actions/provision-uv/action.yml").read_text(encoding="utf-8")
+    if match := search(r"version\s*:\s*(\S+)", text):
+        return match.group(1)
+    raise SystemExit("::error::no version pin in provision-uv/action.yml")
+
+
 def badge(svg: str) -> str:
     """
     Return the `<major>.<minor>` token from the README badge line whose
@@ -48,22 +58,6 @@ def major_minor(value: str) -> str:
     if match := search(r"\d+\.\d+", value):
         return match.group(0)
     raise SystemExit(f"::error::cannot parse major.minor from {value!r}")
-
-
-def wasm_bindgen_pins() -> list[tuple[str, str]]:
-    """
-    Return each `(task, version)` where a mise task pins the `wasm-bindgen`
-    CLI, matched on the CLI name so the `wasm-bindgen/wasm-pack` sibling
-    never registers.
-    """
-    pins = []
-    for task in sorted(Path(".mise/tasks").iterdir()):
-        text = task.read_text(encoding="utf-8")
-        if match := search(r'wasm-bindgen"\s*=\s*"([^"]+)"', text):
-            pins.append((task.name, match.group(1)))
-    if not pins:
-        raise SystemExit("::error::no mise task pins wasm-bindgen")
-    return pins
 
 
 if __name__ == "__main__":
@@ -95,13 +89,15 @@ if __name__ == "__main__":
             badge("python.svg"),
             major_minor(project["project"]["requires-python"])
         ),
-        *(
-            (
-                f".mise/tasks/{task} ↔ Cargo.lock wasm-bindgen",
-                version,
-                wasm_bindgen
-            )
-            for task, version in wasm_bindgen_pins()
+        (
+            ".mise/config.toml uv pin ↔ provision-uv action version",
+            mise["tools"]["uv"],
+            action_uv_version()
+        ),
+        (
+            ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",
+            mise["tools"]["github:rustwasm/wasm-bindgen"],
+            wasm_bindgen
         )
     ]
 

@@ -179,9 +179,9 @@ fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<Sou
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use std::sync::{Arc, Mutex};
 
-    use assert_matches::assert_matches;
     use ruff_diagnostics::Edit;
     use ruff_text_size::TextRange;
 

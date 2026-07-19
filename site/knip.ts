@@ -7,13 +7,12 @@ const pageScript = (text: string): string => {
 }
 
 const config: KnipConfig = {
-  entry     : ['**/*.md', '.vitepress/**/*.data.ts', '.vitepress/lib/og/render/resvg-worker.mjs'],
+  entry     : ['**/*.md', '.vitepress/**/*.data.ts'],
   project   : ['.vitepress/**/*.{ts,vue,mjs}'],
   ignoreDependencies: [
     '@fontsource/fraunces',
     '@fontsource/jetbrains-mono',
     '@fontsource/lora',
-    '@shikijs/types',
     'oxlint',
     'vue-tsc'
   ],

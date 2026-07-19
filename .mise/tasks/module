@@ -1,7 +1,7 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE description="Build the `prose_wasm` web module into `site/public/wasm` with `wasm-pack`"
 #MISE dir="wasm"
-#MISE tools={"aqua:wasm-bindgen/wasm-pack" = "0.15.0", "github:rustwasm/wasm-bindgen" = "0.2.120"}
+#MISE tools={"aqua:wasm-bindgen/wasm-pack" = "0.15.0"}
 
 out=../site/public/wasm
 wasm-pack build --target web --profile wasm-release --no-pack --out-dir "$out" -- --locked

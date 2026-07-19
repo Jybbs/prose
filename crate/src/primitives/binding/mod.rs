@@ -936,7 +936,8 @@ fn resolve_in_chain(scopes: &[Scope], innermost: ScopeId, name: &str) -> Option<
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
+
     use indoc::indoc;
     use proptest::prelude::*;
     use rstest::rstest;

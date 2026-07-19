@@ -7,8 +7,9 @@ python.uv_venv_auto                 = "create|source"
 task.source_freshness_hash_contents = true
 
 [tools]
-bun     = "1.3.14"
-maturin = "1.14.1"
-python  = "3.14"
-rust    = { version = "1.96", components = "clippy, rustfmt", targets = "wasm32-unknown-unknown" }
-uv      = "0.11.26"
+bun                            = "1.3.14"
+"github:rustwasm/wasm-bindgen" = "0.2.126"
+maturin                        = "1.14.1"
+python                         = "3.14"
+rust                           = { version = "1.97.1", components = "clippy, rustfmt", targets = "wasm32-unknown-unknown" }
+uv                             = "0.11.29"

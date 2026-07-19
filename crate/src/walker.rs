@@ -1,13 +1,13 @@
 //! Recursive path discovery for the `check` and `format` subcommands.
 //!
-//! Wraps `ignore::WalkBuilder`, honoring `.gitignore`, `.ignore`, the
+//! Wraps `ignore::Walk`, honoring `.gitignore`, `.ignore`, the
 //! user's global ignore file, and hidden-file conventions. Yields
 //! Python source files (`.py`, `.pyi`, `.pyw`) and Jupyter notebooks
 //! (`.ipynb`) under the input paths, each paired with its source type.
 
 use std::path::PathBuf;
 
-use ignore::WalkBuilder;
+use ignore::Walk;
 use ruff_python_ast::PySourceType;
 
 /// Walks `paths` recursively and yields the formattable files under
@@ -20,29 +20,18 @@ use ruff_python_ast::PySourceType;
 pub(crate) fn walk(
     paths: &[PathBuf],
 ) -> impl Iterator<Item = Result<(PathBuf, PySourceType), ignore::Error>> + Send + use<> {
-    let builder = paths.split_first().map(|(first, rest)| {
-        let mut builder = WalkBuilder::new(first);
-        for path in rest {
-            builder.add(path);
-        }
-        builder
-    });
-
-    builder
-        .into_iter()
-        .flat_map(|b| b.build())
-        .filter_map(|entry| {
-            entry
-                .map(|e| {
-                    e.file_type()
-                        .is_some_and(|ft| ft.is_file())
-                        .then(|| PySourceType::try_from_path(e.path()))
-                        .flatten()
-                        .filter(|t| t.is_py_file_or_stub() || t.is_ipynb())
-                        .map(|t| (e.into_path(), t))
-                })
-                .transpose()
-        })
+    Walk::from_iter(paths).filter_map(|entry| {
+        entry
+            .map(|e| {
+                e.file_type()
+                    .is_some_and(|ft| ft.is_file())
+                    .then(|| PySourceType::try_from_path(e.path()))
+                    .flatten()
+                    .filter(|t| t.is_py_file_or_stub() || t.is_ipynb())
+                    .map(|t| (e.into_path(), t))
+            })
+            .transpose()
+    })
 }
 
 #[cfg(test)]

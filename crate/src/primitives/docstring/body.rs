@@ -33,10 +33,7 @@ pub(crate) fn docstring_body<'a>(
     if has_leading_content(lit.start(), source.text()) {
         return None;
     }
-    let range = TextRange::new(
-        lit.start() + lit.flags.opener_len(),
-        lit.end() - lit.flags.closer_len(),
-    );
+    let range = lit.content_range();
     Some(DocstringBody {
         range,
         text: source.slice(range),
