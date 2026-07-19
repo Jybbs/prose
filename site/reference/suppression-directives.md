@@ -65,7 +65,7 @@ config = {  # prose: keep
 }
 ```
 
-The directive scopes to that one dict literal and doesn't affect any other rule.
+The directive scopes to that one dict literal, where [[alphabetize]] holds the entry order and [[band-constants]] leaves the statement out of the leading band.
 
 ## Composition
 

@@ -361,6 +361,13 @@ impl Default for ReassignedConstantsConfig {
     }
 }
 
+/// A per-rule config a bare bool can toggle. `with_enabled` is the
+/// shorthand for the `{ enabled = <bool> }` table under
+/// `[tool.prose.rules]`, leaving every other knob at its default.
+pub(crate) trait RuleToggle: Default {
+    fn with_enabled(enabled: bool) -> Self;
+}
+
 /// Configuration for the `signature_layout` rule.
 #[derive(Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -422,13 +429,6 @@ impl RuleToggle for ToggleOnly {
     fn with_enabled(enabled: bool) -> Self {
         Self { enabled }
     }
-}
-
-/// A per-rule config a bare bool can toggle. `with_enabled` is the
-/// shorthand for the `{ enabled = <bool> }` table under
-/// `[tool.prose.rules]`, leaving every other knob at its default.
-pub(crate) trait RuleToggle: Default {
-    fn with_enabled(enabled: bool) -> Self;
 }
 
 /// Implements [`RuleToggle`] for configs carrying knobs beyond

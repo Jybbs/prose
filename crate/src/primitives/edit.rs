@@ -49,19 +49,6 @@ pub(crate) fn apply_edits_mapped(text: &str, mut edits: Vec<Edit>) -> Option<(St
     Some((woven, source_map))
 }
 
-/// Forwards each cell boundary in `offsets` through `map`, shifting it
-/// by the delta of the nearest marker at or before it, the slide that
-/// keeps notebook cell boundaries current across a reparse. The cloned
-/// offsets and the markers both run ascending by source position, so
-/// the slide preserves their order.
-pub(crate) fn forward_offsets(offsets: &CellOffsets, map: &SourceMap) -> CellOffsets {
-    let mut forwarded = offsets.clone();
-    for offset in forwarded.iter_mut() {
-        *offset = forward_offset(*offset, map);
-    }
-    forwarded
-}
-
 /// Folds any leaf edits whose range falls inside `range` into the
 /// source slice for that range. Returns `Cow::Borrowed` when no leaf
 /// edit applies or the in-range edits overlap. `edits` must be sorted
@@ -87,70 +74,17 @@ pub(crate) fn apply_inline_edits<'src>(
     }
 }
 
-/// Returns `Cow::Borrowed` of `source.slice(span)` when every part is
-/// still a borrow of source, signalling no descendant rewrite fired.
-/// Otherwise concatenates the parts into a single owned string covering
-/// the same span.
-fn concat_or_borrow<'src>(
-    parts: &[Cow<'src, str>],
-    source: &'src Source,
-    span: TextRange,
-) -> Cow<'src, str> {
-    if any_owned(parts) {
-        Cow::Owned(parts.concat())
-    } else {
-        Cow::Borrowed(source.slice(span))
+/// Forwards each cell boundary in `offsets` through `map`, shifting it
+/// by the delta of the nearest marker at or before it, the slide that
+/// keeps notebook cell boundaries current across a reparse. The cloned
+/// offsets and the markers both run ascending by source position, so
+/// the slide preserves their order.
+pub(crate) fn forward_offsets(offsets: &CellOffsets, map: &SourceMap) -> CellOffsets {
+    let mut forwarded = offsets.clone();
+    for offset in forwarded.iter_mut() {
+        *offset = forward_offset(*offset, map);
     }
-}
-
-/// Shifts a single offset by the delta of the nearest marker at or
-/// before it, the per-boundary slide [`forward_offsets`] maps over a
-/// notebook's cell offsets.
-fn forward_offset(offset: TextSize, map: &SourceMap) -> TextSize {
-    map.markers()
-        .iter()
-        .rev()
-        .find(|marker| marker.source() <= offset)
-        .map_or(offset, |marker| match marker.source().cmp(&marker.dest()) {
-            Ordering::Less => offset + (marker.dest() - marker.source()),
-            Ordering::Greater => offset - (marker.source() - marker.dest()),
-            Ordering::Equal => offset,
-        })
-}
-
-/// Trims a candidate replacement to its minimal spanning range by
-/// stripping the longest common codepoint prefix and suffix shared
-/// with `source_slice`. Returns `None` when `text` already equals
-/// `source_slice` (no edit needed). Walks codepoint-by-codepoint so
-/// the trim never lands inside a multibyte UTF-8 sequence.
-fn narrow_edit(
-    mut text: String,
-    span: TextRange,
-    source_slice: &str,
-) -> Option<(TextRange, String)> {
-    if text == source_slice {
-        return None;
-    }
-    let prefix_len: TextSize = text
-        .chars()
-        .zip(source_slice.chars())
-        .take_while(|(a, b)| a == b)
-        .map(|(c, _)| c.text_len())
-        .sum();
-    let prefix_bytes = prefix_len.to_usize();
-    let text_tail = &text[prefix_bytes..];
-    let source_tail = &source_slice[prefix_bytes..];
-    let suffix_len: TextSize = text_tail
-        .chars()
-        .rev()
-        .zip(source_tail.chars().rev())
-        .take_while(|(a, b)| a == b)
-        .map(|(c, _)| c.text_len())
-        .sum();
-    let suffix_bytes = suffix_len.to_usize();
-    text.truncate(text.len() - suffix_bytes);
-    text.drain(..prefix_bytes);
-    Some((span.add_start(prefix_len).sub_end(suffix_len), text))
+    forwarded
 }
 
 /// Narrows `text` against the source slice covered by `span` and
@@ -232,6 +166,72 @@ pub(crate) fn splice_reparse<T, E>(
         source.slice(TextRange::new(inner.end(), outer.end())),
     );
     parse(&candidate)
+}
+
+/// Returns `Cow::Borrowed` of `source.slice(span)` when every part is
+/// still a borrow of source, signalling no descendant rewrite fired.
+/// Otherwise concatenates the parts into a single owned string covering
+/// the same span.
+fn concat_or_borrow<'src>(
+    parts: &[Cow<'src, str>],
+    source: &'src Source,
+    span: TextRange,
+) -> Cow<'src, str> {
+    if any_owned(parts) {
+        Cow::Owned(parts.concat())
+    } else {
+        Cow::Borrowed(source.slice(span))
+    }
+}
+
+/// Shifts a single offset by the delta of the nearest marker at or
+/// before it, the per-boundary slide [`forward_offsets`] maps over a
+/// notebook's cell offsets.
+fn forward_offset(offset: TextSize, map: &SourceMap) -> TextSize {
+    map.markers()
+        .iter()
+        .rev()
+        .find(|marker| marker.source() <= offset)
+        .map_or(offset, |marker| match marker.source().cmp(&marker.dest()) {
+            Ordering::Less => offset + (marker.dest() - marker.source()),
+            Ordering::Greater => offset - (marker.source() - marker.dest()),
+            Ordering::Equal => offset,
+        })
+}
+
+/// Trims a candidate replacement to its minimal spanning range by
+/// stripping the longest common codepoint prefix and suffix shared
+/// with `source_slice`. Returns `None` when `text` already equals
+/// `source_slice` (no edit needed). Walks codepoint-by-codepoint so
+/// the trim never lands inside a multibyte UTF-8 sequence.
+fn narrow_edit(
+    mut text: String,
+    span: TextRange,
+    source_slice: &str,
+) -> Option<(TextRange, String)> {
+    if text == source_slice {
+        return None;
+    }
+    let prefix_len: TextSize = text
+        .chars()
+        .zip(source_slice.chars())
+        .take_while(|(a, b)| a == b)
+        .map(|(c, _)| c.text_len())
+        .sum();
+    let prefix_bytes = prefix_len.to_usize();
+    let text_tail = &text[prefix_bytes..];
+    let source_tail = &source_slice[prefix_bytes..];
+    let suffix_len: TextSize = text_tail
+        .chars()
+        .rev()
+        .zip(source_tail.chars().rev())
+        .take_while(|(a, b)| a == b)
+        .map(|(c, _)| c.text_len())
+        .sum();
+    let suffix_bytes = suffix_len.to_usize();
+    text.truncate(text.len() - suffix_bytes);
+    text.drain(..prefix_bytes);
+    Some((span.add_start(prefix_len).sub_end(suffix_len), text))
 }
 
 /// Weaves `edits` into the `span` slice of `text` and returns the

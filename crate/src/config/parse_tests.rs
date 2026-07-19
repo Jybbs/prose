@@ -43,6 +43,12 @@ fn max_params_cap(config: &Config) -> Option<usize> {
     config.rules.signature_layout.max_params.cap()
 }
 
+/// A config parsed from an empty `[tool.prose]` table, every key at its
+/// default.
+fn parsed_defaults() -> Config {
+    Config::from_pyproject_str("[tool.prose]\n").expect("parses")
+}
+
 #[test]
 fn alphabetize_facet_false_in_sub_table_leaves_siblings_default() {
     let config =
@@ -74,7 +80,7 @@ fn collection_layout_facet_false_in_sub_table_leaves_siblings_default() {
 
 #[test]
 fn docstring_line_length_defaults_to_76_when_field_absent() {
-    let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+    let config = parsed_defaults();
 
     assert_eq!(config.docstring_line_length, NonZeroUsize::new(76));
 }
@@ -89,7 +95,7 @@ fn docstring_line_length_explicit_override_takes_effect() {
 
 #[test]
 fn docstring_structured_policy_defaults_to_code_line_length_when_field_absent() {
-    let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+    let config = parsed_defaults();
 
     assert_eq!(
         config.docstring_structured_policy,
@@ -140,7 +146,7 @@ fn from_pyproject_str_with_unknown_key_warns_and_returns_config() {
 
 #[test]
 fn import_line_length_defaults_to_120_when_field_absent() {
-    let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+    let config = parsed_defaults();
 
     assert_eq!(config.import_line_length, NonZeroUsize::new(120));
 }
@@ -182,7 +188,7 @@ fn import_width_uses_import_line_length_when_set() {
 
 #[test]
 fn imports_first_party_defaults_to_empty_when_absent() {
-    let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+    let config = parsed_defaults();
 
     assert!(config.imports.first_party.is_empty());
 }
@@ -266,7 +272,7 @@ fn invalid_value_returns_toml_error(#[case] toml: &str) {
 
 #[test]
 fn max_shift_default_is_sixteen() {
-    let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+    let config = parsed_defaults();
 
     assert_eq!(config.rules.align_equals.max_shift, cap(16));
 }
@@ -408,7 +414,7 @@ fn target_version_accepts_unrecognized_minor() {
 
 #[test]
 fn target_version_defaults_to_none_when_field_absent() {
-    let config = Config::from_pyproject_str("[tool.prose]\n").expect("parses");
+    let config = parsed_defaults();
 
     assert_eq!(config.target_version, None);
 }

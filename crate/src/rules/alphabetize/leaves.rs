@@ -59,21 +59,14 @@ impl<'a> LeafCollector<'a> {
     }
 
     fn emit_dunder_list(&mut self, assign: &'a StmtAssign) {
-        if !self.sort_dunder_lists {
-            return;
+        if self.sort_dunder_lists
+            && matches!(single_name_target(assign), Some("__all__" | "__slots__"))
+            && let Some(elements) = sequence_elts(&assign.value)
+        {
+            self.try_emit_inline_reorder(elements, |e| {
+                Some(e.as_string_literal_expr()?.value.to_str())
+            });
         }
-        let Some(name) = single_name_target(assign) else {
-            return;
-        };
-        if !matches!(name, "__all__" | "__slots__") {
-            return;
-        }
-        let Some(elements) = sequence_elts(&assign.value) else {
-            return;
-        };
-        self.try_emit_inline_reorder(elements, |e| {
-            Some(e.as_string_literal_expr()?.value.to_str())
-        });
     }
 
     fn emit_id_run(&mut self, names: &'a [Identifier]) {
@@ -208,7 +201,9 @@ pub(super) fn collect_docstring_entry_edits(
 /// Walks the AST collecting one non-overlapping leaf edit per outermost
 /// reordering structure, each folding its nested reorders in, and maps
 /// each function docstring's start to its signature-order names, the
-/// mirror key for docstring-entry sorting.
+/// mirror key for docstring-entry sorting. `sort_dict_keys` and
+/// `sort_dunder_lists` gate the dict-literal and `__all__` / `__slots__`
+/// reorders, every other shape sorting regardless.
 pub(super) fn collect_leaf_edits(
     source: &Source,
     sort_dict_keys: bool,

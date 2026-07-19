@@ -7,11 +7,11 @@
 //! `nonlocal` name lists, `del` target lists, and the string literals
 //! inside `__all__` / `__slots__`.
 //!
-//! Sorting flows through `primitives::orderer::reorder_text`. A
-//! recursive `Cow<'src, str>` rewriter folds inner sorts into the
-//! outer scope's replacement text, so each outermost reordering scope
-//! emits a single edit covering its descendants, or one edit per cell
-//! over a notebook.
+//! Sorting flows through the `primitives::orderer` permute and assemble
+//! primitives. A recursive `Cow<'src, str>` rewriter folds inner sorts
+//! into the outer scope's replacement text, so each outermost reordering
+//! scope emits a single edit covering its descendants, or one edit per
+//! cell over a notebook.
 //!
 //! Positional-or-keyword parameters never reorder, free function and
 //! method alike, because no single-file rewrite can keep every caller's
