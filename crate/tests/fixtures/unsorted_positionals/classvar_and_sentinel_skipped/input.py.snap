@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/classvar_and_sentinel_skipped/input.py
+---
+from dataclasses import KW_ONLY, dataclass
+from typing import ClassVar
+
+
+@dataclass
+class Session:
+    REGISTRY: ClassVar[dict] = {}
+    alpha: int
+    beta: int
+    _: KW_ONLY
+    zulu: str
+    yankee: str

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `ClassVar` Between Two Fields Sits Inside the Reported Span"
+
+description = '''
+A `ClassVar` drops out of the run without ending it, so `zebra` and `apple` still read as one out-of-order pair and **draw a diagnostic**. The report spans the run first field to last, carrying the `ClassVar` line along with it even though that constant is no constructor parameter.
+'''

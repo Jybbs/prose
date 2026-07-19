@@ -37,7 +37,7 @@ use crate::{
         signature_layout::SignatureLayout, single_use_variables::SingleUseVariables,
         step_narration::StepNarration, strip_align_padding::StripAlignPadding,
         strip_none_return::StripNoneReturn, strip_trailing_commas::StripTrailingCommas,
-        unsorted_parameters::UnsortedParameters,
+        unsorted_positionals::UnsortedPositionals,
         unused_future_annotations::UnusedFutureAnnotations,
     },
     source::Source,
@@ -355,7 +355,7 @@ register_rules! {
     "step-narration":            step_narration:            ToggleOnly                => StepNarration           => "Numbered-step comment found. Consider extracting each step as a named function",
     "legacy-union-syntax":       legacy_union_syntax:       ToggleOnly                => LegacyUnionSyntax       => "Rewrite legacy `Optional`/`Union` to PEP 604 union syntax",
     "single-use-variables":      single_use_variables:      SingleUseVariablesConfig  => SingleUseVariables      => "Binding is assigned and used once. Consider inlining",
-    "unsorted-parameters":       unsorted_parameters:       ToggleOnly                => UnsortedParameters       => "Function parameters are out of alphabetical order. Reordering changes positional call sites, so apply it by hand where every caller binds by keyword",
+    "unsorted-positionals":      unsorted_positionals:      ToggleOnly                => UnsortedPositionals     => "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword",
     "signature-annotations":     signature_annotations:     ToggleOnly                => SignatureAnnotations    => "Flag a missing parameter or return type annotation",
     "line-overflow":             line_overflow:             ToggleOnly                => LineOverflow            => "Flag a line over its length budget that no reshape can bring within",
 }

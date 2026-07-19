@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Generated Constructor's Field Run Is Flagged"
+
+description = '''
+A `@dataclass` whose annotated fields sit out of order **draws a report-only diagnostic across the run**. The decorator turns those fields into the constructor's positional parameters, so `Window(1920, 1080)` binds them in source order and a reorder would transpose every such call. The defaulted `title` sorts after the required pair, which is the only order Python permits.
+'''

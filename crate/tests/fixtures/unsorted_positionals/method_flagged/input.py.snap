@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/method_flagged/input.py
+---
+class Catalog:
+    def update(self, target, source):
+        return target

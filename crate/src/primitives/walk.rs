@@ -23,6 +23,18 @@ impl<'src, F: FnMut(&Stmt) -> bool> StatementVisitor<'src> for AnyProbe<F> {
     }
 }
 
+struct Collector<F, T> {
+    found: Vec<T>,
+    probe: F,
+}
+
+impl<'src, F: FnMut(&Stmt) -> Option<T>, T> StatementVisitor<'src> for Collector<F, T> {
+    fn visit_stmt(&mut self, stmt: &'src Stmt) {
+        self.found.extend((self.probe)(stmt));
+        walk_stmt(self, stmt);
+    }
+}
+
 /// True when any statement in `body` satisfies `hit`, descending through
 /// every compound body including nested `def` and `class` scopes and
 /// stopping at the first match.
@@ -32,12 +44,33 @@ pub(crate) fn any_over_stmts(body: &[Stmt], hit: impl FnMut(&Stmt) -> bool) -> b
     probe.found
 }
 
+/// Every `Some` that `probe` returns over `body`, descending through
+/// every compound body including nested `def` and `class` scopes.
+pub(crate) fn filter_map_over_stmts<T>(
+    body: &[Stmt],
+    probe: impl FnMut(&Stmt) -> Option<T>,
+) -> Vec<T> {
+    let mut collector = Collector {
+        found: Vec::new(),
+        probe,
+    };
+    collector.visit_body(body);
+    collector.found
+}
+
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
 
     use super::*;
     use crate::testing::parse;
+
+    /// The name of every `def` in `src`, in walk order.
+    fn def_names(src: &str) -> Vec<String> {
+        filter_map_over_stmts(&parse(src).ast().body, |stmt| {
+            Some(stmt.as_function_def_stmt()?.name.to_string())
+        })
+    }
 
     fn has_pass(src: &str) -> bool {
         any_over_stmts(&parse(src).ast().body, |stmt| matches!(stmt, Stmt::Pass(_)))
@@ -70,5 +103,25 @@ mod tests {
             seen, 1,
             "the walk stops rather than visiting the second pass"
         );
+    }
+
+    #[test]
+    fn filter_map_over_stmts_collects_through_a_nested_scope() {
+        let names = def_names(indoc! {"
+            class C:
+                def outer():
+                    def inner():
+                        pass
+        "});
+        assert_eq!(
+            names,
+            vec!["outer", "inner"],
+            "the walk does not stop at outer"
+        );
+    }
+
+    #[test]
+    fn filter_map_over_stmts_is_empty_when_nothing_matches() {
+        assert!(def_names("x = 1\n").is_empty());
     }
 }

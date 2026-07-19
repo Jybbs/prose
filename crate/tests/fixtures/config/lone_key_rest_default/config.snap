@@ -162,7 +162,7 @@ Config {
             ),
             enabled: true,
         },
-        unsorted_parameters: ToggleOnly {
+        unsorted_positionals: ToggleOnly {
             enabled: true,
         },
         signature_annotations: ToggleOnly {
