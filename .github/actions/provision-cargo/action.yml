@@ -28,7 +28,6 @@ runs:
         {
           echo "CARGO_PROFILE_DEV_DEBUG=line-tables-only"
           echo "CARGO_TERM_COLOR=always"
-          echo "MISE_AUTO_INSTALL=false"
           echo "MISE_RUSTUP_HOME=$HOME/.local/share/mise/rustup"
         } >> "$GITHUB_ENV"
 

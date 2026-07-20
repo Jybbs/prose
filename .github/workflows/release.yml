@@ -1,6 +1,7 @@
 name        : 🪻 Release
 run-name    : 🪻 Release · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
+env         : { MISE_AUTO_INSTALL: false }
 
 on:
   pull_request:
@@ -106,10 +107,7 @@ jobs:
         uses : ./.github/actions/download-wheels
         with : { pattern: "${{ needs.plan.outputs.smoke }}" }
 
-      - &provision-uv-nocache
-        name : Provision uv
-        uses : ./.github/actions/provision-uv
-        with : { cache-dependency-glob: "" }
+      - *provision-uv
 
       - name : Smoke-install built wheel
         run  : |
@@ -134,7 +132,7 @@ jobs:
       - name : Download all artifacts
         uses : ./.github/actions/download-wheels
 
-      - *provision-uv-nocache
+      - *provision-uv
 
       - name : Attest SLSA provenance to GitHub
         uses : actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6

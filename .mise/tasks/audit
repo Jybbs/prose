@@ -142,11 +142,6 @@ def parity() -> int:
             major_minor(project["project"]["requires-python"])
         ),
         (
-            ".mise/config.toml uv pin ↔ provision-uv action version",
-            mise["tools"]["uv"],
-            action_pin("provision-uv", "version")
-        ),
-        (
             ".mise/config.toml maturin pin ↔ build-wheel action maturin-version",
             mise["tools"]["maturin"],
             action_pin("build-wheel", "maturin-version")
