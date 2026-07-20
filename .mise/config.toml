@@ -1,3 +1,5 @@
+min_version = "2026.6.11"
+
 [env]
 WASM_ARTIFACT = "target/wasm32-unknown-unknown/wasm-release/prose_wasm.wasm"
 
