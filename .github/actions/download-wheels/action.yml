@@ -1,5 +1,10 @@
 name        : Download wheels
-description : Pull every `wheels-*` artifact uploaded by the build matrix into `dist/`, with one site for the `actions/download-artifact` SHA pin.
+description : Pull `wheels-*` artifacts uploaded by the build matrix into `dist/`, with one site for the `actions/download-artifact` SHA pin. A narrowed `pattern` pulls the single artifact a job installs, leaving the default for jobs that read every platform.
+
+inputs:
+  pattern:
+    default     : wheels-*
+    description : Glob matching the artifact names to download.
 
 runs:
   using: composite
@@ -10,4 +15,4 @@ runs:
       with:
         merge-multiple : true
         path           : dist
-        pattern        : wheels-*
+        pattern        : ${{ inputs.pattern }}

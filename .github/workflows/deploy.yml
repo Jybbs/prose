@@ -11,6 +11,7 @@ on:
       - .github/actions/restore-og-cache/**
       - .github/actions/restore-wasm-cache/**
       - .github/workflows/deploy.yml
+      - .mise/config.toml
       - .mise/lib/**
       - .mise/tasks/**
       - .nvmrc
@@ -29,8 +30,9 @@ concurrency:
 
 jobs:
   checks:
-    name    : ${{ matrix.name }}
-    runs-on : &ubuntu ubuntu-latest
+    name            : ${{ matrix.name }}
+    runs-on         : &ubuntu ubuntu-latest
+    timeout-minutes : 15
 
     env:
       CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
@@ -41,33 +43,32 @@ jobs:
 
       matrix:
         include:
-          - command : mise run typecheck
-            name    : 🪡 Typecheck
-          - command : mise run lint site
-            name    : 🧶 Lint
-          - binary  : true
-            command : mise run upload site
-            name    : ☂️ Coverage
-          - command : mise run cruft
-            name    : 🧹 Cruft
+          - command    : mise run typecheck
+            name       : 🪡 Typecheck
+          - command    : mise run lint site
+            name       : 🧶 Lint
+          - command    : mise run upload site
+            name       : ☂️ Coverage
+            shared-key : &debug-key prose-debug
+          - command    : mise run cruft
+            name       : 🧹 Cruft
 
     steps:
       - &checkout
         name : Check out repository
         uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
-      - name : Install mise tools
-        if   : ${{ !matrix.binary }}
-        uses : jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea
-
       - name : Provision Cargo
-        if   : ${{ matrix.binary }}
         uses : ./.github/actions/provision-cargo
-        with : &prose-build { save: false, shared-key: prose-build }
+        with:
+          cache      : ${{ matrix.shared-key != '' }}
+          save       : &no-save 'false'
+          shared-key : ${{ matrix.shared-key }}
 
       - &provision-bun
         name : Provision bun
         uses : ./.github/actions/provision-bun
+        with : { save: &save "${{ github.event_name != 'pull_request' }}" }
 
       - name : Install dependencies
         run  : mise run bake
@@ -76,18 +77,19 @@ jobs:
         run  : ${{ matrix.command }}
 
   deploy:
-    name        : 🪁 Deploy
-    needs       : checks
-    outputs     : { url: "${{ steps.publish.outputs.deployment-url }}" }
-    permissions : { contents: read, deployments: write }
-    runs-on     : *ubuntu
+    name            : 🪁 Deploy
+    needs           : checks
+    outputs         : { url: "${{ steps.publish.outputs.deployment-url }}" }
+    permissions     : { contents: read, deployments: write }
+    runs-on         : *ubuntu
+    timeout-minutes : 15
 
     steps:
       - *checkout
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
-        with : *prose-build
+        with : { save: *no-save, shared-key: *debug-key }
 
       - name : Restore the wasm build cache
         uses : ./.github/actions/restore-wasm-cache
@@ -96,6 +98,7 @@ jobs:
 
       - name : Restore the OG card cache
         uses : ./.github/actions/restore-og-cache
+        with : { save: *save }
 
       - name : Build the site and check internal links
         run  : mise run links
@@ -108,17 +111,37 @@ jobs:
           apiToken  : ${{ secrets.CLOUDFLARE_TOKEN }}
           command   : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ github.head_ref || github.ref_name }} --commit-dirty=true
 
+  prune:
+    name            : 🍂 Prune
+    if              : github.event_name != 'pull_request'
+    needs           : deploy
+    permissions     : { actions: write }
+    runs-on         : *ubuntu
+    timeout-minutes : 5
+
+    steps:
+      - name : Prune superseded OG card caches
+        env:
+          GH_REPO  : ${{ github.repository }}
+          GH_TOKEN : ${{ github.token }}
+        run  : |
+          gh cache list --key og-cards- --json id,key \
+            --jq '.[] | select(.key | endswith(env.GITHUB_SHA) | not) | .id' \
+            | xargs -rn1 gh cache delete
+
   gate:
-    name    : 🗞️ Brief
-    if      : always()
-    needs   : deploy
-    runs-on : *ubuntu
+    name            : 🗞️ Brief
+    if              : always()
+    needs           : deploy
+    runs-on         : *ubuntu
+    timeout-minutes : 5
 
     steps:
       - *checkout
 
       - name : Provision uv
         uses : ./.github/actions/provision-uv
+        with : { save: *save }
 
       - name : Summarize and gate
         env:

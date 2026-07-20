@@ -2,7 +2,6 @@
 #MISE description="Check the built site for broken internal links with `lychee`"
 #MISE depends=["press"]
 #MISE dir="site"
-#MISE tools={"aqua:lycheeverse/lychee" = "0.24.2"}
 
 lychee --offline \
   --root-dir "$PWD/.vitepress/dist" \

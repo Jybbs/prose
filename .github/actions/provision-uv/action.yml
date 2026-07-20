@@ -1,10 +1,14 @@
 name        : Provision uv
-description : Install the uv binary and restore `~/.cache/uv` keyed off the PEP 723 scripts so subsequent `uv run --script` invocations skip the PyPI fetch. Callers that do not run scripts (*publish job downloading wheels*) may pass an empty `cache-dependency-glob` to skip the cache key.
+description : Install the uv binary and restore `~/.cache/uv` keyed off the PEP 723 scripts so subsequent `uv run --script` invocations skip the PyPI fetch. Callers that do not run scripts (the release jobs installing built wheels) pass an empty `cache-dependency-glob` to skip the cache entirely.
 
 inputs:
   cache-dependency-glob:
     default     : .github/scripts/*.py
     description : Files whose hash keys the uv cache. Empty disables the cache.
+
+  save:
+    default     : true
+    description : When `false` the cache restores but never saves, for runs that read the entries `main` owns rather than writing their own.
 
 runs:
   using: composite
@@ -14,5 +18,6 @@ runs:
       uses : astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990
       with:
         cache-dependency-glob : ${{ inputs.cache-dependency-glob }}
-        enable-cache          : true
+        enable-cache          : ${{ inputs.cache-dependency-glob != '' }}
+        save-cache            : ${{ inputs.save }}
         version               : 0.11.29

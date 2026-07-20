@@ -1,14 +1,17 @@
 [[platforms]]
+args      = "--zig"
 label     = "🐧 Linux x86_64"
-manylinux = "auto"
+manylinux = "2_17"
 name      = "linux-x86_64"
 pattern   = "*manylinux*x86_64.whl"
 runner    = "ubuntu-latest"
+smoke     = true
 target    = "x86_64-unknown-linux-gnu"
 
 [[platforms]]
+args      = "--zig"
 label     = "🐧 Linux aarch64"
-manylinux = "auto"
+manylinux = "2_17"
 name      = "linux-aarch64"
 pattern   = "*manylinux*aarch64.whl"
 runner    = "ubuntu-24.04-arm"

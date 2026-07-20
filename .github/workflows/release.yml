@@ -5,12 +5,16 @@ permissions : { contents: read }
 on:
   pull_request:
     paths:
+      - .github/actions/**
+      - .github/scripts/**
       - .github/workflows/release.yml
       - crate/Cargo.toml
       - crate/pyproject.toml
 
   push:
     tags: ['[0-9]*']
+
+  workflow_dispatch:
 
 concurrency:
   cancel-in-progress : ${{ github.event_name == 'pull_request' }}
@@ -19,9 +23,12 @@ concurrency:
 jobs:
   plan:
     name            : 🗺️ Plan
-    outputs         : { matrix: "${{ steps.matrix.outputs.matrix }}" }
     runs-on         : &ubuntu ubuntu-latest
     timeout-minutes : 5
+
+    outputs:
+      matrix : ${{ steps.matrix.outputs.matrix }}
+      smoke  : ${{ steps.matrix.outputs.smoke }}
 
     steps:
       - &checkout
@@ -31,6 +38,7 @@ jobs:
       - &provision-uv
         name : Provision uv
         uses : ./.github/actions/provision-uv
+        with : { save: &no-save 'false' }
 
       - name : Emit build matrix
         id   : matrix
@@ -61,10 +69,11 @@ jobs:
       - name : Build wheel
         uses : ./.github/actions/build-wheel
         with:
-          args      : --release --locked
+          args      : ${{ matrix.args }}
           command   : build
           manylinux : ${{ matrix.manylinux }}
           name      : ${{ matrix.name }}
+          save      : *no-save
           target    : ${{ matrix.target }}
 
   sdist:
@@ -86,16 +95,16 @@ jobs:
 
   validate:
     name            : 🕯️ Validate
-    needs           : [build, sdist]
+    needs           : [build, plan, sdist]
     runs-on         : *ubuntu
     timeout-minutes : 10
 
     steps:
       - *checkout
 
-      - &download-wheels
-        name : Download all artifacts
+      - name : Download the smoke-test wheel
         uses : ./.github/actions/download-wheels
+        with : { pattern: "${{ needs.plan.outputs.smoke }}" }
 
       - &provision-uv-nocache
         name : Provision uv
@@ -122,7 +131,8 @@ jobs:
     steps:
       - *checkout
 
-      - *download-wheels
+      - name : Download all artifacts
+        uses : ./.github/actions/download-wheels
 
       - *provision-uv-nocache
 

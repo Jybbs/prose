@@ -1,6 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE description="Generate an LCOV coverage report, scoped by a `rust` or `site` argument"
-#MISE tools={"aqua:taiki-e/cargo-llvm-cov" = "0.8.7"}
 
 source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
 rust() {
