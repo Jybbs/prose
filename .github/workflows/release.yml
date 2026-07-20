@@ -2,12 +2,17 @@ name        : 🪻 Release
 run-name    : 🪻 Release · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
 
+env:
+  REF : ${{ github.head_ref || github.ref_name }}
+  SHA : ${{ github.event.pull_request.head.sha || github.sha }}
+
 on:
   pull_request:
     paths:
       - .github/actions/**
       - .github/scripts/**
       - .github/workflows/release.yml
+      - .mise/**
       - crate/Cargo.toml
       - crate/pyproject.toml
 
@@ -24,7 +29,7 @@ jobs:
   plan:
     name            : 🗺️ Plan
     runs-on         : &ubuntu ubuntu-latest
-    timeout-minutes : 5
+    timeout-minutes : &timeout 15
 
     outputs:
       matrix : ${{ steps.matrix.outputs.matrix }}
@@ -42,10 +47,7 @@ jobs:
 
       - name : Emit build matrix
         id   : matrix
-        run  : ./.github/scripts/emit-matrix.py
-
-      - name : Parse tag and validate versions
-        run  : ./.github/scripts/parse-version.py
+        run  : mise run gha:plan
 
   build:
     name            : 🎻 ${{ matrix.name }}
@@ -64,7 +66,7 @@ jobs:
 
       - &rewrite-readme
         name : Rewrite README for PyPI
-        run  : ./.github/scripts/transform_readme.py
+        run  : mise run gha:readme
 
       - name : Build wheel
         uses : ./.github/actions/build-wheel
@@ -80,7 +82,7 @@ jobs:
     name            : 🚢 sdist
     needs           : plan
     runs-on         : *ubuntu
-    timeout-minutes : 10
+    timeout-minutes : *timeout
 
     steps:
       - *checkout
@@ -97,7 +99,7 @@ jobs:
     name            : 🕯️ Validate
     needs           : [build, plan, sdist]
     runs-on         : *ubuntu
-    timeout-minutes : 10
+    timeout-minutes : *timeout
 
     steps:
       - *checkout
@@ -106,15 +108,10 @@ jobs:
         uses : ./.github/actions/download-wheels
         with : { pattern: "${{ needs.plan.outputs.smoke }}" }
 
-      - &provision-uv-nocache
-        name : Provision uv
-        uses : ./.github/actions/provision-uv
-        with : { cache-dependency-glob: "" }
+      - *provision-uv
 
       - name : Smoke-install built wheel
-        run  : |
-          uv tool install --no-index --find-links=dist prose-formatter
-          prose --version
+        run  : mise run gha:validate
 
   publish:
     name            : 📯 Publish to PyPI
@@ -122,7 +119,7 @@ jobs:
     needs           : validate
     permissions     : { attestations: write, id-token: write }
     runs-on         : *ubuntu
-    timeout-minutes : 10
+    timeout-minutes : *timeout
 
     environment:
       name : release
@@ -134,7 +131,7 @@ jobs:
       - name : Download all artifacts
         uses : ./.github/actions/download-wheels
 
-      - *provision-uv-nocache
+      - *provision-uv
 
       - name : Attest SLSA provenance to GitHub
         uses : actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6
@@ -144,14 +141,14 @@ jobs:
         uses : astral-sh/attest-action@f589a42a7efb6fe400b4f400de60b4bc90390027
 
       - name : Publish to PyPI
-        run  : uv publish --trusted-publishing=always dist/*
+        run  : mise run gha:publish
 
   deploy:
     name            : 🪁 Deploy
     needs           : publish
     permissions     : { actions: write }
     runs-on         : *ubuntu
-    timeout-minutes : 5
+    timeout-minutes : *timeout
 
     steps:
       - name : Dispatch the deploy workflow
@@ -163,7 +160,7 @@ jobs:
     if              : always()
     needs           : [build, sdist, validate, publish]
     runs-on         : *ubuntu
-    timeout-minutes : 5
+    timeout-minutes : *timeout
 
     steps:
       - *checkout
@@ -178,8 +175,6 @@ jobs:
         env:
           BUILD    : ${{ needs.build.result }}
           PUBLISH  : ${{ needs.publish.result }}
-          REF      : ${{ github.head_ref || github.ref_name }}
           SDIST    : ${{ needs.sdist.result }}
-          SHA      : ${{ github.event.pull_request.head.sha || github.sha }}
           VALIDATE : ${{ needs.validate.result }}
-        run  : ./.github/scripts/summary.py release
+        run  : mise run gha:brief release

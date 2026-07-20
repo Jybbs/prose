@@ -1,0 +1,10 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias="pack"
+#MISE description="Build the `prose_wasm` web module into `site/public/wasm` with `wasm-pack`"
+#MISE dir="wasm"
+#MISE outputs=["../site/public/wasm/*"]
+#MISE sources=["../.mise/config.toml", "../Cargo.lock", "../Cargo.toml", "../crate/Cargo.toml", "../crate/src/**/*.rs", "Cargo.toml", "src/**/*.rs"]
+
+out=../site/public/wasm
+wasm-pack build --target web --profile wasm-release --no-pack --out-dir "$out" -- --locked
+rm -f "$out/.gitignore"

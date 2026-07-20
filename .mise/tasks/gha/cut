@@ -1,0 +1,108 @@
+#!/usr/bin/env -S uv run --script
+#MISE description="Cut a draft release when the crate version moves, emitting version, state, and URL"
+# /// script
+# requires-python = ">=3.11"
+# ///
+"""
+Cut a draft release when `crate/Cargo.toml`'s version moves.
+
+Reads `[package].version` at HEAD and HEAD~1, treating a HEAD~1 that
+lacks the manifest or carries no parseable version as changed. When the
+version moved, or the run is a `workflow_dispatch`, probes `gh release
+view`: a missing release is cut with `gh release create --draft`, an
+existing draft is left untouched, and a published release is skipped.
+Emits `version=`, `state=` (one of `cut`, `drafted`, `published`, or
+empty when nothing happened), and `url=` to `$GITHUB_OUTPUT` when it is
+set, stdout otherwise, with annotations on stderr.
+"""
+
+from json       import loads as from_json
+from os         import environ
+from pathlib    import Path
+from subprocess import run
+from sys        import stderr
+from tomllib    import TOMLDecodeError, loads as from_toml
+
+
+def cut_draft(repo: str, version: str) -> str:
+    """
+    Create a draft release for the version and return its URL.
+    """
+    return run(
+        [
+            "gh", "release", "create", version, "--repo",
+            repo, "--target", "main", "--generate-notes", "--draft"
+        ],
+        capture_output = True,
+        check          = True,
+        text           = True
+    ).stdout.strip()
+
+
+def emit(*lines: str):
+    """
+    Append `lines` to `$GITHUB_OUTPUT`, or print them when it is unset.
+    """
+    if path := environ.get("GITHUB_OUTPUT"):
+        with open(path, "a", encoding="utf-8") as f:
+            f.writelines(f"{line}\n" for line in lines)
+    else:
+        print("\n".join(lines))
+
+
+def existing_release(repo: str, version: str) -> dict | None:
+    """
+    Return the `isDraft`/`url` record for the version's release, or `None`
+    when no release exists for it.
+    """
+    probe = run(
+        ["gh", "release", "view", version, "--repo", repo, "--json", "isDraft,url"],
+        capture_output = True,
+        text           = True
+    )
+    return from_json(probe.stdout) if probe.returncode == 0 else None
+
+
+def previous_version() -> str | None:
+    """
+    Return `[package].version` from `crate/Cargo.toml` at HEAD~1, or `None`
+    when HEAD~1 lacks the manifest or carries no parseable version.
+    """
+    show = run(
+        ["git", "show", "HEAD~1:crate/Cargo.toml"],
+        capture_output = True,
+        text           = True
+    )
+    if show.returncode != 0:
+        return None
+    try:
+        return from_toml(show.stdout)["package"]["version"]
+    except (KeyError, TOMLDecodeError):
+        return None
+
+
+if __name__ == "__main__":
+
+    head    = from_toml(Path("crate/Cargo.toml").read_text())["package"]["version"]
+    changed = previous_version() != head
+    forced  = environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    state   = ""
+    url     = ""
+
+    if changed or forced:
+        repo    = environ["GITHUB_REPOSITORY"]
+        release = existing_release(repo, head)
+
+        if release is None:
+            state = "cut"
+            url   = cut_draft(repo, head)
+        elif release["isDraft"]:
+            state = "drafted"
+            url   = release["url"]
+            print(f"::notice::Draft for {head} already exists, leaving it untouched.", file = stderr)
+        else:
+            state = "published"
+            url   = release["url"]
+            print(f"::warning::{head} is already published, skipping the draft cut.", file = stderr)
+
+    emit(f"version={head}", f"state={state}", f"url={url}")

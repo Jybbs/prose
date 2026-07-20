@@ -1,7 +1,0 @@
-#!/usr/bin/env -S bash -euo pipefail
-#MISE description="Run the linters including `clippy`, scoped by a `rust` or `site` argument"
-
-source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
-rust() { cargo clippy --all-targets --locked -- -D warnings; }
-site() { (cd site && bunx oxlint .vitepress "$@"); }
-scope "$@"

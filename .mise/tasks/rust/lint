@@ -1,0 +1,4 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Run `clippy` across every target"
+
+cargo clippy --all-targets --locked -- -D warnings

@@ -1,0 +1,5 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Run the Rust test suites including `insta` snapshots"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
+split_workspace cargo test

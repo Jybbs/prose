@@ -5,5 +5,5 @@
 
 Built from {{ commit_link }} on `{{ ref }}`.
 {% else -%}
-{{ check_mark }} **Build failed** at {{ commit_link }} on `{{ ref }}`.
+{{ check_mark }} **{{ stage }} failed** at {{ commit_link }} on `{{ ref }}`.
 {% endif %}

@@ -2,6 +2,10 @@ name        : 🪻 CI
 run-name    : 🪻 CI · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
 
+env:
+  REF : ${{ github.head_ref || github.ref_name }}
+  SHA : ${{ github.event.pull_request.head.sha || github.sha }}
+
 on:
   pull_request:
     paths:
@@ -20,40 +24,37 @@ concurrency:
 jobs:
   check:
     name            : ${{ matrix.name }}
+    env             : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
     runs-on         : &ubuntu ubuntu-latest
-    timeout-minutes : 15
-
-    env:
-      CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
-      SHA           : &sha ${{ github.event.pull_request.head.sha || github.sha }}
+    timeout-minutes : &timeout 15
 
     strategy:
       fail-fast: false
 
       matrix:
         include:
-          - command    : mise run check
+          - command    : mise run rust:check
             name       : 🪶 Format
-          - command    : mise run lockfile
+          - command    : mise run lock:check
             name       : 🪵 Lockfile
-          - command    : ./.github/scripts/audit-parity.py
-            name       : 🪷 Parity
-          - command    : mise run audit
+          - command    : mise run repo:audit
+            name       : 🪷 Audit
+          - command    : mise run rust:unused
             name       : 🪓 Unused
-          - command    : mise run lint rust
+          - command    : mise run rust:lint
             name       : 📎 Clippy
             shared-key : prose-clippy
-          - command    : mise run build
+          - command    : mise run rust:build
             name       : 🗜️ Build
             shared-key : prose-debug
-          - command    : mise run build wasm
+          - command    : mise run wasm:build
             name       : 🛶 Wasm
             shared-key : prose-wasm
           - bun-lock   : site/bun.lock
-            command    : mise run smoke
+            command    : mise run wasm:smoke
             name       : 🪃 Browser
             shared-key : prose-wasm
-          - command    : mise run upload rust
+          - command    : mise run rust:upload
             name       : ☂️ Coverage
             shared-key : prose-coverage
 
@@ -83,7 +84,7 @@ jobs:
     if              : always()
     needs           : check
     runs-on         : *ubuntu
-    timeout-minutes : 5
+    timeout-minutes : *timeout
 
     steps:
       - *checkout
@@ -93,8 +94,5 @@ jobs:
         with : { save: *no-save }
 
       - name : Summarize and gate
-        env:
-          CHECK : ${{ needs.check.result }}
-          REF   : ${{ github.head_ref || github.ref_name }}
-          SHA   : *sha
-        run  : ./.github/scripts/summary.py ci
+        env  : { CHECK: "${{ needs.check.result }}" }
+        run  : mise run gha:brief ci

@@ -1,6 +1,0 @@
-#!/usr/bin/env -S bash -euo pipefail
-#MISE description="Type-check the docs-site TypeScript with `vue-tsc`"
-#MISE depends=["bake"]
-#MISE dir="site"
-
-bunx vue-tsc --noEmit

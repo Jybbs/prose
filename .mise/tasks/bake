@@ -1,6 +1,0 @@
-#!/usr/bin/env -S bash -euo pipefail
-#MISE description="Install bun dependencies against the frozen lockfile"
-#MISE dir="site"
-#MISE sources=["site/package.json", "site/bun.lock"]
-
-bun install --frozen-lockfile --ignore-scripts

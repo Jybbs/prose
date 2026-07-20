@@ -1,0 +1,25 @@
+name        : Restore wasm cache
+description : Restore `site/public/wasm` under an exact key derived from the wasm sources, so a site build reuses the cached module instead of running `wasm-pack`.
+
+inputs:
+  save:
+    default     : true
+    description : When `false` the cache restores but never saves.
+
+outputs:
+  cache-hit:
+    description : Whether the module restored under an exact key match.
+    value       : ${{ steps.entry.outputs.cache-hit }}
+
+runs:
+  using: composite
+
+  steps:
+    - name : Restore the wasm module
+      id   : entry
+      uses : ./.github/actions/restore
+      with:
+        key   : wasm-module-${{ runner.os }}-${{ hashFiles('.mise/config.toml', 'Cargo.lock', 'Cargo.toml', 'crate/Cargo.toml', 'crate/src/**', 'wasm/**') }}
+        path  : site/public/wasm
+        save  : ${{ inputs.save }}
+        touch : true

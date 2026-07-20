@@ -1,4 +1,0 @@
-#!/usr/bin/env -S bash -euo pipefail
-#MISE description="Verify Rust source matches `rustfmt` without rewriting"
-
-cargo fmt --all --check

@@ -1,5 +1,0 @@
-#!/usr/bin/env -S bash -euo pipefail
-#MISE description="Build the `maturin` wheel into the active virtualenv"
-#MISE dir="crate"
-
-maturin develop

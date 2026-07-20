@@ -1,5 +1,5 @@
 name        : Provision bun
-description : Restore `~/.bun/install/cache` and `site/node_modules` keyed off `site/bun.lock` so subsequent `bun install --frozen-lockfile` invocations skip the resolve and link work. Assumes bun is already on PATH from an earlier `provision-cargo` step.
+description : Restore `~/.bun/install/cache` and `site/node_modules` keyed off `site/bun.lock`, so a later `bun install` skips the resolve and link work. Assumes bun is already on PATH.
 
 inputs:
   cache-dependency-glob:
@@ -8,26 +8,18 @@ inputs:
 
   save:
     default     : true
-    description : When `false` the restore-only variant of the cache action runs, so a pull-request run reads the entry `main` owns without saving one to its own ref.
+    description : When `false` the cache restores but never saves.
 
 runs:
   using: composite
 
   steps:
     - name : Restore bun cache
-      if   : ${{ inputs.cache-dependency-glob != '' && inputs.save != 'false' }}
-      uses : actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if   : ${{ inputs.cache-dependency-glob != '' }}
+      uses : ./.github/actions/restore
       with:
         key  : bun-deps-${{ runner.os }}-${{ hashFiles(inputs.cache-dependency-glob) }}
         path : |
           ~/.bun/install/cache
           site/node_modules
-
-    - name : Restore bun cache without saving
-      if   : ${{ inputs.cache-dependency-glob != '' && inputs.save == 'false' }}
-      uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        key  : bun-deps-${{ runner.os }}-${{ hashFiles(inputs.cache-dependency-glob) }}
-        path : |
-          ~/.bun/install/cache
-          site/node_modules
+        save : ${{ inputs.save }}

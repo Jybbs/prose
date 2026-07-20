@@ -1,5 +1,0 @@
-#!/usr/bin/env -S bash -euo pipefail
-#MISE description="Run the VitePress dev server against `site/`"
-#MISE dir="site"
-
-bunx vitepress dev

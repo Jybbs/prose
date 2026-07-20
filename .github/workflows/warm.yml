@@ -2,16 +2,16 @@ name        : 🪻 Warm
 run-name    : 🪻 Warm · ${{ github.ref_name }}
 permissions : { contents: read }
 
+env:
+  REF : ${{ github.head_ref || github.ref_name }}
+  SHA : ${{ github.event.pull_request.head.sha || github.sha }}
+
 on:
   push:
     branches:
       - main
     paths:
-      - .github/actions/build-wheel/**
-      - .github/actions/provision-bun/**
-      - .github/actions/provision-cargo/**
-      - .github/actions/provision-uv/**
-      - .github/scripts/emit-matrix.py
+      - .github/actions/**
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
       - .mise/config.toml
@@ -35,7 +35,7 @@ jobs:
     name            : 🗺️ Plan
     outputs         : { matrix: "${{ steps.matrix.outputs.matrix }}" }
     runs-on         : &ubuntu ubuntu-latest
-    timeout-minutes : 5
+    timeout-minutes : &timeout 15
 
     steps:
       - &checkout
@@ -48,16 +48,13 @@ jobs:
 
       - name : Emit build matrix
         id   : matrix
-        run  : ./.github/scripts/emit-matrix.py
+        run  : mise run gha:plan
 
   checks:
     name            : ${{ matrix.name }}
+    env             : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
     runs-on         : *ubuntu
-    timeout-minutes : 15
-
-    env:
-      CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
-      SHA           : &sha ${{ github.sha }}
+    timeout-minutes : *timeout
 
     strategy:
       fail-fast: false
@@ -65,23 +62,24 @@ jobs:
       matrix:
         include:
           - bun-lock   : site/bun.lock
-            command    : mise run bake
+            command    : mise run site:bake
             name       : 🥐 Bun
-          - command    : mise run lint rust
+          - command    : mise run rust:lint
             name       : 📎 Clippy
             shared-key : prose-clippy
-          - command    : mise run build && mise run build bin
+          - command    : mise run rust:build
             name       : 🗜️ Build
             shared-key : prose-debug
-          - command    : mise run build wasm
+          - command    : mise run wasm:build && mise run wasm:pack
             name       : 🛶 Wasm
+            pack       : true
             shared-key : prose-wasm
           - bun-lock   : site/bun.lock
-            command    : mise run smoke
+            command    : mise run wasm:smoke
             name       : 🪃 Browser
             save       : 'false'
             shared-key : prose-wasm
-          - command    : mise run upload rust
+          - command    : mise run rust:upload
             name       : ☂️ Coverage
             shared-key : prose-coverage
 
@@ -98,6 +96,10 @@ jobs:
       - name : Provision bun
         uses : ./.github/actions/provision-bun
         with : { cache-dependency-glob: "${{ matrix.bun-lock }}" }
+
+      - name : Restore the wasm module
+        if   : ${{ matrix.pack }}
+        uses : ./.github/actions/restore-wasm
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}
@@ -130,7 +132,7 @@ jobs:
     if              : always()
     needs           : [checks, wheels]
     runs-on         : *ubuntu
-    timeout-minutes : 5
+    timeout-minutes : *timeout
 
     steps:
       - *checkout
@@ -140,7 +142,5 @@ jobs:
       - name : Summarize and gate
         env:
           CHECKS : ${{ needs.checks.result }}
-          REF    : ${{ github.ref_name }}
-          SHA    : *sha
           WHEELS : ${{ needs.wheels.result }}
-        run  : ./.github/scripts/summary.py warm
+        run  : mise run gha:brief warm
