@@ -1,7 +1,6 @@
 name        : 🪻 Draft
 run-name    : 🪻 Draft · ${{ github.ref_name }}
 permissions : { contents: read }
-env         : { MISE_AUTO_INSTALL: false }
 
 on:
   push:
