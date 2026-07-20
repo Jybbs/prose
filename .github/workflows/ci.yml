@@ -35,7 +35,7 @@ jobs:
         include:
           - command    : mise run rust:check
             name       : 🪶 Format
-          - command    : mise run lockfile
+          - command    : mise run lock:check
             name       : 🪵 Lockfile
           - command    : mise run audit
             name       : 🪷 Audit

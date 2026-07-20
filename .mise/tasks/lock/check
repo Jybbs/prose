@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
+#MISE alias="lockfile"
 #MISE description="Verify every lockfile is in sync with its manifest"
 #MISE sources=["site/package.json", "Cargo.toml", "crate/Cargo.toml", "wasm/Cargo.toml", "crate/pyproject.toml", "site/bun.lock", "Cargo.lock", "crate/uv.lock"]
 
