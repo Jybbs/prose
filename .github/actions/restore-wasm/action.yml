@@ -19,7 +19,7 @@ runs:
       id   : save
       if   : ${{ inputs.save != 'false' }}
       uses : actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with : &entry
+      with:
         key  : wasm-module-${{ runner.os }}-${{ hashFiles('.mise/config.toml', 'Cargo.lock', 'Cargo.toml', 'crate/Cargo.toml', 'crate/src/**', 'wasm/**') }}
         path : site/public/wasm
 
@@ -27,7 +27,9 @@ runs:
       id   : restore
       if   : ${{ inputs.save == 'false' }}
       uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with : *entry
+      with:
+        key  : wasm-module-${{ runner.os }}-${{ hashFiles('.mise/config.toml', 'Cargo.lock', 'Cargo.toml', 'crate/Cargo.toml', 'crate/src/**', 'wasm/**') }}
+        path : site/public/wasm
 
     - name  : Stamp the restored module forward
       if    : ${{ steps.save.outputs.cache-hit == 'true' || steps.restore.outputs.cache-hit == 'true' }}
