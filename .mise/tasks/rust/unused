@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
+#MISE alias="unused"
 #MISE description="Detect unused dependencies in `Cargo.toml`"
 
 cargo machete

@@ -1,8 +1,0 @@
-#!/usr/bin/env -S bash -euo pipefail
-#MISE description="Run the test suites including `insta` snapshots, scoped by a `rust` or `site` argument"
-#MISE wait_for=["bake"]
-
-source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
-rust() { split_workspace cargo test; }
-site() { mise run build bin && (cd site && bunx vitest run --project docs "$@"); }
-scope "$@"

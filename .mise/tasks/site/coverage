@@ -1,0 +1,3 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Generate the docs-site LCOV report"
+#MISE depends=["site:test --coverage"]

@@ -2,6 +2,6 @@
 #MISE alias="cruft"
 #MISE description="Sweep the docs site for dead code and unused dependencies with `knip`"
 #MISE dir="site"
-#MISE wait_for=["bake"]
+#MISE wait_for=["site:bake"]
 
 bunx knip

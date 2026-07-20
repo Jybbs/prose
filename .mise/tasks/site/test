@@ -1,0 +1,7 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Run the docs-site `vitest` suite"
+#MISE depends=["rust:bin"]
+#MISE dir="site"
+#MISE wait_for=["site:bake"]
+
+bunx vitest run --project docs "$@"

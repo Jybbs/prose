@@ -1,8 +1,0 @@
-#!/usr/bin/env -S bash -euo pipefail
-#MISE description="Generate coverage and upload it to Codecov, scoped by a `rust` or `site` argument"
-
-source "$MISE_PROJECT_ROOT/.mise/lib/scope.bash"
-rust()   { upload rust target/lcov.info; }
-site()   { upload site site/coverage/lcov.info; }
-upload() { mise run coverage "$1" && codecovcli upload-process --flag "$1" --file "$2" --sha "$SHA"; }
-scope "$@"

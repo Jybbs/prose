@@ -1,4 +1,4 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE description="Full local CI sweep"
-#MISE depends=["audit", "bake", "check", "cruft", "links", "lint", "lockfile", "press", "test rust", "test site", "typecheck", "unused"]
-#MISE depends_post=["wheel"]
+#MISE depends=["audit", "lockfile", "rust:check", "rust:lint", "rust:test", "rust:unused", "site:bake", "site:cruft", "site:links", "site:press", "site:test", "site:typecheck"]
+#MISE depends_post=["rust:wheel"]

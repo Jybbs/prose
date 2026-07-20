@@ -1,0 +1,4 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Build only the `prose` binary"
+
+cargo build --bin prose --locked

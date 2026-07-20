@@ -1,7 +1,7 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias="links"
 #MISE description="Check the built site for broken internal links with `lychee`"
-#MISE depends=["press"]
+#MISE depends=["site:press"]
 #MISE dir="site"
 
 lychee --offline \

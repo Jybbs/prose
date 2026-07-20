@@ -1,0 +1,5 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Build the workspace in debug mode"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
+split_workspace cargo build --all-targets

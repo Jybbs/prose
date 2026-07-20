@@ -66,24 +66,24 @@ jobs:
       matrix:
         include:
           - bun-lock   : site/bun.lock
-            command    : mise run bake
+            command    : mise run site:bake
             name       : 🥐 Bun
-          - command    : mise run lint rust
+          - command    : mise run rust:lint
             name       : 📎 Clippy
             shared-key : prose-clippy
-          - command    : mise run build && mise run build bin
+          - command    : mise run rust:build && mise run rust:bin
             name       : 🗜️ Build
             shared-key : prose-debug
-          - command    : mise run build wasm && mise run pack
+          - command    : mise run wasm:build && mise run wasm:pack
             name       : 🛶 Wasm
             pack       : true
             shared-key : prose-wasm
           - bun-lock   : site/bun.lock
-            command    : mise run smoke
+            command    : mise run wasm:smoke
             name       : 🪃 Browser
             save       : 'false'
             shared-key : prose-wasm
-          - command    : mise run upload rust
+          - command    : mise run rust:upload
             name       : ☂️ Coverage
             shared-key : prose-coverage
 

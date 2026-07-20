@@ -44,14 +44,14 @@ jobs:
 
       matrix:
         include:
-          - command    : mise run typecheck
+          - command    : mise run site:typecheck
             name       : 🪡 Typecheck
-          - command    : mise run lint site
+          - command    : mise run site:lint
             name       : 🧶 Lint
-          - command    : mise run upload site
+          - command    : mise run site:upload
             name       : ☂️ Coverage
             shared-key : &debug-key prose-debug
-          - command    : mise run cruft
+          - command    : mise run site:cruft
             name       : 🧹 Cruft
 
     steps:
@@ -72,7 +72,7 @@ jobs:
         with : { save: &save "${{ github.event_name != 'pull_request' }}" }
 
       - name : Install dependencies
-        run  : mise run bake
+        run  : mise run site:bake
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}
@@ -108,7 +108,7 @@ jobs:
         with : { save: *save }
 
       - name : Build the site and check internal links
-        run  : mise run links
+        run  : mise run site:links
 
       - name : Upload the site bundle
         uses : actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

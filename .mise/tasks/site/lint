@@ -1,0 +1,5 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Lint the docs-site TypeScript with `oxlint`"
+#MISE dir="site"
+
+bunx oxlint .vitepress "$@"

@@ -33,28 +33,28 @@ jobs:
 
       matrix:
         include:
-          - command    : mise run check
+          - command    : mise run rust:check
             name       : 🪶 Format
           - command    : mise run lockfile
             name       : 🪵 Lockfile
           - command    : mise run audit
             name       : 🪷 Audit
-          - command    : mise run unused
+          - command    : mise run rust:unused
             name       : 🪓 Unused
-          - command    : mise run lint rust
+          - command    : mise run rust:lint
             name       : 📎 Clippy
             shared-key : prose-clippy
-          - command    : mise run build
+          - command    : mise run rust:build
             name       : 🗜️ Build
             shared-key : prose-debug
-          - command    : mise run build wasm
+          - command    : mise run wasm:build
             name       : 🛶 Wasm
             shared-key : prose-wasm
           - bun-lock   : site/bun.lock
-            command    : mise run smoke
+            command    : mise run wasm:smoke
             name       : 🪃 Browser
             shared-key : prose-wasm
-          - command    : mise run upload rust
+          - command    : mise run rust:upload
             name       : ☂️ Coverage
             shared-key : prose-coverage
 
