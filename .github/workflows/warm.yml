@@ -11,11 +11,7 @@ on:
     branches:
       - main
     paths:
-      - .github/actions/build-wheel/**
-      - .github/actions/provision-bun/**
-      - .github/actions/provision-cargo/**
-      - .github/actions/provision-uv/**
-      - .github/actions/restore-wasm/**
+      - .github/actions/**
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
       - .mise/config.toml
@@ -71,7 +67,7 @@ jobs:
           - command    : mise run rust:lint
             name       : 📎 Clippy
             shared-key : prose-clippy
-          - command    : mise run rust:build && mise run rust:bin
+          - command    : mise run rust:build
             name       : 🗜️ Build
             shared-key : prose-debug
           - command    : mise run wasm:build && mise run wasm:pack

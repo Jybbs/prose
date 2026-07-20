@@ -9,29 +9,17 @@ inputs:
 outputs:
   cache-hit:
     description : Whether the module restored under an exact key match.
-    value       : ${{ steps.save.outputs.cache-hit || steps.restore.outputs.cache-hit }}
+    value       : ${{ steps.entry.outputs.cache-hit }}
 
 runs:
   using: composite
 
   steps:
     - name : Restore the wasm module
-      id   : save
-      if   : ${{ inputs.save != 'false' }}
-      uses : actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      id   : entry
+      uses : ./.github/actions/restore
       with:
-        key  : wasm-module-${{ runner.os }}-${{ hashFiles('.mise/config.toml', 'Cargo.lock', 'Cargo.toml', 'crate/Cargo.toml', 'crate/src/**', 'wasm/**') }}
-        path : site/public/wasm
-
-    - name : Restore the wasm module without saving
-      id   : restore
-      if   : ${{ inputs.save == 'false' }}
-      uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        key  : wasm-module-${{ runner.os }}-${{ hashFiles('.mise/config.toml', 'Cargo.lock', 'Cargo.toml', 'crate/Cargo.toml', 'crate/src/**', 'wasm/**') }}
-        path : site/public/wasm
-
-    - name  : Stamp the restored module forward
-      if    : ${{ steps.save.outputs.cache-hit == 'true' || steps.restore.outputs.cache-hit == 'true' }}
-      run   : find site/public/wasm -type f -exec touch {} +
-      shell : bash
+        key   : wasm-module-${{ runner.os }}-${{ hashFiles('.mise/config.toml', 'Cargo.lock', 'Cargo.toml', 'crate/Cargo.toml', 'crate/src/**', 'wasm/**') }}
+        path  : site/public/wasm
+        save  : ${{ inputs.save }}
+        touch : true

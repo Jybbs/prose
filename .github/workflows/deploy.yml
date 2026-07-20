@@ -9,11 +9,7 @@ env:
 on:
   pull_request:
     paths: &paths
-      - .github/actions/provision-bun/**
-      - .github/actions/provision-cargo/**
-      - .github/actions/provision-uv/**
-      - .github/actions/restore-og/**
-      - .github/actions/restore-wasm/**
+      - .github/actions/**
       - .github/workflows/deploy.yml
       - .mise/config.toml
       - .mise/lib/**
@@ -104,8 +100,12 @@ jobs:
       - *provision-bun
 
       - name : Restore the OG card cache
-        uses : ./.github/actions/restore-og
-        with : { save: *save }
+        uses : ./.github/actions/restore
+        with:
+          key          : og-cards-${{ runner.os }}-${{ github.sha }}
+          path         : .cache/og
+          restore-keys : og-cards-${{ runner.os }}-
+          save         : *save
 
       - name : Build the site and check internal links
         run  : mise run site:links

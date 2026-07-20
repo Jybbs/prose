@@ -15,19 +15,11 @@ runs:
 
   steps:
     - name : Restore bun cache
-      if   : ${{ inputs.cache-dependency-glob != '' && inputs.save != 'false' }}
-      uses : actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if   : ${{ inputs.cache-dependency-glob != '' }}
+      uses : ./.github/actions/restore
       with:
         key  : bun-deps-${{ runner.os }}-${{ hashFiles(inputs.cache-dependency-glob) }}
         path : |
           ~/.bun/install/cache
           site/node_modules
-
-    - name : Restore bun cache without saving
-      if   : ${{ inputs.cache-dependency-glob != '' && inputs.save == 'false' }}
-      uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        key  : bun-deps-${{ runner.os }}-${{ hashFiles(inputs.cache-dependency-glob) }}
-        path : |
-          ~/.bun/install/cache
-          site/node_modules
+        save : ${{ inputs.save }}
