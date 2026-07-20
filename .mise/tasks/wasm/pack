@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
+#MISE alias="pack"
 #MISE description="Build the `prose_wasm` web module into `site/public/wasm` with `wasm-pack`"
 #MISE dir="wasm"
 #MISE outputs=["../site/public/wasm/*"]

@@ -56,10 +56,9 @@ jobs:
 
   checks:
     name            : ${{ matrix.name }}
+    env             : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
     runs-on         : *ubuntu
     timeout-minutes : *timeout
-
-    env : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
 
     strategy:
       fail-fast: false

@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
+#MISE alias="bake"
 #MISE description="Install bun dependencies against the frozen lockfile"
 #MISE dir="site"
 #MISE sources=["bun.lock", "package.json"]

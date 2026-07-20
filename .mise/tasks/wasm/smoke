@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
+#MISE alias="smoke"
 #MISE description="Build the wasm module, emit its JS bindings, and run the browser smoke test against them"
 #MISE depends=["bake"]
 

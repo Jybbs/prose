@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
+#MISE alias="press"
 #MISE description="Produce the static docs bundle at `site/.vitepress/dist`"
 #MISE depends=["bake", "build bin", "pack"]
 #MISE dir="site"

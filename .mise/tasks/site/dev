@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
+#MISE alias="dev"
 #MISE description="Run the VitePress dev server against `site/`"
 #MISE dir="site"
 
