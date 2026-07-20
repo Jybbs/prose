@@ -2,6 +2,10 @@ name        : 🪻 CI
 run-name    : 🪻 CI · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
 
+env:
+  REF : ${{ github.head_ref || github.ref_name }}
+  SHA : ${{ github.event.pull_request.head.sha || github.sha }}
+
 on:
   pull_request:
     paths:
@@ -23,9 +27,7 @@ jobs:
     runs-on         : &ubuntu ubuntu-latest
     timeout-minutes : &timeout 15
 
-    env:
-      CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
-      SHA           : &sha ${{ github.event.pull_request.head.sha || github.sha }}
+    env : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
 
     strategy:
       fail-fast: false
@@ -93,8 +95,5 @@ jobs:
         with : { save: *no-save }
 
       - name : Summarize and gate
-        env:
-          CHECK : ${{ needs.check.result }}
-          REF   : ${{ github.head_ref || github.ref_name }}
-          SHA   : *sha
-        run  : ./.github/scripts/summary.py ci
+        env  : { CHECK: "${{ needs.check.result }}" }
+        run  : mise run gha:brief ci

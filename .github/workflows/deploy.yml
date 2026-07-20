@@ -2,6 +2,10 @@ name        : 🪻 Deploy
 run-name    : 🪻 Deploy · ${{ github.head_ref || github.ref_name }}
 permissions : { contents: read }
 
+env:
+  REF : ${{ github.head_ref || github.ref_name }}
+  SHA : ${{ github.event.pull_request.head.sha || github.sha }}
+
 on:
   pull_request:
     paths: &paths
@@ -34,9 +38,7 @@ jobs:
     runs-on         : &ubuntu ubuntu-latest
     timeout-minutes : &timeout 15
 
-    env:
-      CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
-      SHA           : &sha ${{ github.event.pull_request.head.sha || github.sha }}
+    env : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
 
     strategy:
       fail-fast: false
@@ -136,7 +138,7 @@ jobs:
         with:
           accountId : ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           apiToken  : ${{ secrets.CLOUDFLARE_TOKEN }}
-          command   : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ github.head_ref || github.ref_name }} --commit-dirty=true
+          command   : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ env.REF }} --commit-dirty=true
 
   prune:
     name            : 🍂 Prune
@@ -175,7 +177,5 @@ jobs:
           CHECKS : ${{ needs.checks.result }}
           DEPLOY : ${{ needs.deploy.result }}
           PRESS  : ${{ needs.press.result }}
-          REF    : ${{ github.head_ref || github.ref_name }}
-          SHA    : *sha
           URL    : ${{ needs.deploy.outputs.url }}
-        run  : ./.github/scripts/summary.py deploy
+        run  : mise run gha:brief deploy

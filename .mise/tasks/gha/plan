@@ -1,0 +1,66 @@
+#!/usr/bin/env -S uv run --script
+#MISE description="Verify a tagged release and emit the wheel build matrix"
+# /// script
+# requires-python = ">=3.11"
+# ///
+"""
+Plan a wheel run, verifying a tagged release before emitting its matrix.
+
+On a tag run, exits nonzero with an `::error::` unless `crate/Cargo.toml`
+carries the tag's version. Reads `.github/scripts/platforms.toml`, keeps
+the entries that carry a `runner` (every wheel row does, the sdist row
+does not), drops the fields no matrix row consumes (`label`, `pattern`,
+`smoke`), and emits `matrix=<json>` plus `smoke=wheels-<name>`, naming
+the artifact the release validate job installs. Lines land in
+`$GITHUB_OUTPUT` when it is set, stdout otherwise.
+"""
+
+from json    import dumps
+from os      import environ
+from pathlib import Path
+from tomllib import loads
+
+
+def emit(*lines: str):
+    """
+    Append `lines` to `$GITHUB_OUTPUT`, or print them when it is unset.
+    """
+    if path := environ.get("GITHUB_OUTPUT"):
+        with open(path, "a", encoding="utf-8") as f:
+            f.writelines(f"{line}\n" for line in lines)
+    else:
+        print("\n".join(lines))
+
+
+def verify_tag():
+    """
+    Exit nonzero when a tag run's `crate/Cargo.toml` disagrees with the tag.
+    """
+    if environ.get("GITHUB_REF_TYPE") != "tag":
+        return
+
+    expected = environ["GITHUB_REF_NAME"]
+    actual   = loads(Path("crate/Cargo.toml").read_text())["package"]["version"]
+
+    if actual != expected:
+        raise SystemExit(
+            f"::error::crate/Cargo.toml version mismatch: "
+            f"expected {expected}, got {actual}"
+        )
+
+
+if __name__ == "__main__":
+
+    verify_tag()
+
+    platforms = loads(Path(".github/scripts/platforms.toml").read_text())["platforms"]
+    include   = [
+        {k: v for k, v in p.items() if k not in {"label", "pattern", "smoke"}}
+        for p in platforms if "runner" in p
+    ]
+    smoke = next(p["name"] for p in platforms if p.get("smoke"))
+
+    emit(
+        f"matrix={dumps({'include': include})}",
+        f"smoke=wheels-{smoke}"
+    )

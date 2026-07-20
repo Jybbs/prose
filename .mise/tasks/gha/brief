@@ -1,4 +1,5 @@
 #!/usr/bin/env -S uv run --script
+#MISE description="Render a workflow step summary and exit with its gate verdict"
 # /// script
 # requires-python = ">=3.11"
 # dependencies = ["jinja2==3.1.6"]
@@ -23,7 +24,8 @@ Subcommands:
              plus the GitHub-runner defaults. Exits 0 when both are
              success.
 
-Each subcommand appends to `$GITHUB_STEP_SUMMARY`.
+Each subcommand renders into `$GITHUB_STEP_SUMMARY` when it is set,
+stdout otherwise.
 """
 
 from jinja2  import Environment, FileSystemLoader
@@ -46,7 +48,7 @@ class Summary:
     """
 
     def __init__(self):
-        self.here = Path(__file__).parent
+        self.here = Path(".github/scripts")
 
         ref  = environ["REF"]
         repo = environ["GITHUB_REPOSITORY"]
@@ -71,11 +73,16 @@ class Summary:
 
     def _emit(self, name: str, **context):
         """
-        Render the `name` template with `context` and append to
-        `$GITHUB_STEP_SUMMARY`.
+        Render the `name` template into `$GITHUB_STEP_SUMMARY`, or to
+        stdout when it is unset.
         """
-        with open(environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
-            f.write(self.env.get_template(f"{name}-summary.md.j2").render(**context))
+        text = self.env.get_template(f"{name}-summary.md.j2").render(**context)
+
+        if path := environ.get("GITHUB_STEP_SUMMARY"):
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(text)
+        else:
+            print(text, end = "")
 
     def _gate(self, name: str, *signals: str, **context):
         """

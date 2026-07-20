@@ -1,0 +1,3 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Publish the built distributions to PyPI through trusted publishing"
+uv publish --trusted-publishing=always dist/*

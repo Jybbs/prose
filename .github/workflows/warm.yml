@@ -2,6 +2,10 @@ name        : 🪻 Warm
 run-name    : 🪻 Warm · ${{ github.ref_name }}
 permissions : { contents: read }
 
+env:
+  REF : ${{ github.head_ref || github.ref_name }}
+  SHA : ${{ github.event.pull_request.head.sha || github.sha }}
+
 on:
   push:
     branches:
@@ -12,7 +16,6 @@ on:
       - .github/actions/provision-cargo/**
       - .github/actions/provision-uv/**
       - .github/actions/restore-wasm/**
-      - .github/scripts/emit-matrix.py
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
       - .mise/config.toml
@@ -49,16 +52,14 @@ jobs:
 
       - name : Emit build matrix
         id   : matrix
-        run  : ./.github/scripts/emit-matrix.py
+        run  : mise run gha:plan
 
   checks:
     name            : ${{ matrix.name }}
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
-    env:
-      CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
-      SHA           : &sha ${{ github.sha }}
+    env : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
 
     strategy:
       fail-fast: false
@@ -146,7 +147,5 @@ jobs:
       - name : Summarize and gate
         env:
           CHECKS : ${{ needs.checks.result }}
-          REF    : ${{ github.ref_name }}
-          SHA    : *sha
           WHEELS : ${{ needs.wheels.result }}
-        run  : ./.github/scripts/summary.py warm
+        run  : mise run gha:brief warm

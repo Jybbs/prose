@@ -2,6 +2,10 @@ name        : 🪻 Draft
 run-name    : 🪻 Draft · ${{ github.ref_name }}
 permissions : { contents: read }
 
+env:
+  REF : ${{ github.head_ref || github.ref_name }}
+  SHA : ${{ github.event.pull_request.head.sha || github.sha }}
+
 on:
   push:
     branches : [main]
@@ -30,23 +34,14 @@ jobs:
       - name : Provision uv
         uses : ./.github/actions/provision-uv
 
-      - name : Emit release tag
-        id   : tag
-        run  : ./.github/scripts/emit-tag.py
-
       - name : 🌱 Cut draft
         id   : cut
-        if   : github.event_name == 'workflow_dispatch' || steps.tag.outputs.changed == 'true'
-        env:
-          GH_TOKEN : ${{ github.token }}
-          VERSION  : ${{ steps.tag.outputs.version }}
-        run  : ./.github/scripts/cut-draft.py
+        env  : { GH_TOKEN: "${{ github.token }}" }
+        run  : mise run gha:cut
 
       - name : 🗞️ Brief
         env:
           DRAFT_STATE : ${{ steps.cut.outputs.state }}
           DRAFT_URL   : ${{ steps.cut.outputs.url }}
-          REF         : ${{ github.ref_name }}
-          SHA         : ${{ github.sha }}
-          VERSION     : ${{ steps.tag.outputs.version }}
-        run  : ./.github/scripts/summary.py draft
+          VERSION     : ${{ steps.cut.outputs.version }}
+        run  : mise run gha:brief draft
