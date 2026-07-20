@@ -37,7 +37,7 @@ jobs:
             name       : 🪶 Format
           - command    : mise run lock:check
             name       : 🪵 Lockfile
-          - command    : mise run audit
+          - command    : mise run repo:audit
             name       : 🪷 Audit
           - command    : mise run rust:unused
             name       : 🪓 Unused
