@@ -9,9 +9,9 @@ Render a Prose step summary and gate the workflow's exit code.
 Subcommands:
     ci       Render the CI gate summary. Reads `CHECK` plus the
              GitHub-runner defaults. Exits 0 when `CHECK` is success.
-    deploy   Render the Deploy gate summary. Reads `DEPLOY` and `URL`
-             plus the GitHub-runner defaults. Exits 0 when `DEPLOY` is
-             success.
+    deploy   Render the Deploy gate summary. Reads `CHECKS`, `PRESS`,
+             `DEPLOY`, and `URL` plus the GitHub-runner defaults. Exits
+             0 when every one of them is success.
     draft    Render the Draft summary. Reads `DRAFT_STATE`,
              `DRAFT_URL`, and `VERSION`, plus the GitHub-runner
              defaults.
@@ -96,7 +96,17 @@ class Summary:
         """
         Render the Deploy gate summary and exit with the deploy verdict.
         """
-        self._gate("deploy", "DEPLOY", url = environ.get("URL", ""))
+        stages = {
+            "CHECKS" : "Checks",
+            "PRESS"  : "Press",
+            "DEPLOY" : "Publish"
+        }
+
+        self._gate(
+            "deploy", *stages,
+            stage = next((s for k, s in stages.items() if failed(k)), ""),
+            url   = environ.get("URL", "")
+        )
 
     def draft(self):
         """

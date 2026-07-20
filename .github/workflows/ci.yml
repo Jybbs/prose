@@ -21,7 +21,7 @@ jobs:
   check:
     name            : ${{ matrix.name }}
     runs-on         : &ubuntu ubuntu-latest
-    timeout-minutes : 15
+    timeout-minutes : &timeout 15
 
     env:
       CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
@@ -83,7 +83,7 @@ jobs:
     if              : always()
     needs           : check
     runs-on         : *ubuntu
-    timeout-minutes : 5
+    timeout-minutes : *timeout
 
     steps:
       - *checkout

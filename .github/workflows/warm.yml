@@ -11,6 +11,7 @@ on:
       - .github/actions/provision-bun/**
       - .github/actions/provision-cargo/**
       - .github/actions/provision-uv/**
+      - .github/actions/restore-wasm/**
       - .github/scripts/emit-matrix.py
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
@@ -35,7 +36,7 @@ jobs:
     name            : 🗺️ Plan
     outputs         : { matrix: "${{ steps.matrix.outputs.matrix }}" }
     runs-on         : &ubuntu ubuntu-latest
-    timeout-minutes : 5
+    timeout-minutes : &timeout 15
 
     steps:
       - &checkout
@@ -53,7 +54,7 @@ jobs:
   checks:
     name            : ${{ matrix.name }}
     runs-on         : *ubuntu
-    timeout-minutes : 15
+    timeout-minutes : *timeout
 
     env:
       CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
@@ -73,8 +74,9 @@ jobs:
           - command    : mise run build && mise run build bin
             name       : 🗜️ Build
             shared-key : prose-debug
-          - command    : mise run build wasm
+          - command    : mise run build wasm && mise run pack
             name       : 🛶 Wasm
+            pack       : true
             shared-key : prose-wasm
           - bun-lock   : site/bun.lock
             command    : mise run smoke
@@ -98,6 +100,10 @@ jobs:
       - name : Provision bun
         uses : ./.github/actions/provision-bun
         with : { cache-dependency-glob: "${{ matrix.bun-lock }}" }
+
+      - name : Restore the wasm module
+        if   : ${{ matrix.pack }}
+        uses : ./.github/actions/restore-wasm
 
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}
@@ -130,7 +136,7 @@ jobs:
     if              : always()
     needs           : [checks, wheels]
     runs-on         : *ubuntu
-    timeout-minutes : 5
+    timeout-minutes : *timeout
 
     steps:
       - *checkout

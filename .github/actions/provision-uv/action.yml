@@ -1,5 +1,5 @@
 name        : Provision uv
-description : Install the uv binary and restore `~/.cache/uv` keyed off the PEP 723 scripts so subsequent `uv run --script` invocations skip the PyPI fetch. Callers that do not run scripts (the release jobs installing built wheels) pass an empty `cache-dependency-glob` to skip the cache entirely.
+description : Install the uv binary and restore `~/.cache/uv` keyed off the PEP 723 scripts, so a later `uv run --script` skips the PyPI fetch.
 
 inputs:
   cache-dependency-glob:
@@ -8,7 +8,7 @@ inputs:
 
   save:
     default     : true
-    description : When `false` the cache restores but never saves, for runs that read the entries `main` owns rather than writing their own.
+    description : When `false` the cache restores but never saves.
 
 runs:
   using: composite

@@ -8,8 +8,8 @@ on:
       - .github/actions/provision-bun/**
       - .github/actions/provision-cargo/**
       - .github/actions/provision-uv/**
-      - .github/actions/restore-og-cache/**
-      - .github/actions/restore-wasm-cache/**
+      - .github/actions/restore-og/**
+      - .github/actions/restore-wasm/**
       - .github/workflows/deploy.yml
       - .mise/config.toml
       - .mise/lib/**
@@ -32,7 +32,7 @@ jobs:
   checks:
     name            : ${{ matrix.name }}
     runs-on         : &ubuntu ubuntu-latest
-    timeout-minutes : 15
+    timeout-minutes : &timeout 15
 
     env:
       CODECOV_TOKEN : ${{ secrets.CODECOV_TOKEN }}
@@ -76,13 +76,10 @@ jobs:
       - name : ${{ matrix.command }}
         run  : ${{ matrix.command }}
 
-  deploy:
-    name            : 🪁 Deploy
-    needs           : checks
-    outputs         : { url: "${{ steps.publish.outputs.deployment-url }}" }
-    permissions     : { contents: read, deployments: write }
+  press:
+    name            : 🎞️ Press
     runs-on         : *ubuntu
-    timeout-minutes : 15
+    timeout-minutes : *timeout
 
     steps:
       - *checkout
@@ -91,17 +88,47 @@ jobs:
         uses : ./.github/actions/provision-cargo
         with : { save: *no-save, shared-key: *debug-key }
 
+      - name : Restore the wasm module
+        id   : wasm-module
+        uses : ./.github/actions/restore-wasm
+        with : { save: *save }
+
       - name : Restore the wasm build cache
-        uses : ./.github/actions/restore-wasm-cache
+        if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}
+        uses : Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
+        with:
+          save-if    : 'false'
+          shared-key : prose-wasm
 
       - *provision-bun
 
       - name : Restore the OG card cache
-        uses : ./.github/actions/restore-og-cache
+        uses : ./.github/actions/restore-og
         with : { save: *save }
 
       - name : Build the site and check internal links
         run  : mise run links
+
+      - name : Upload the site bundle
+        uses : actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          if-no-files-found : error
+          name              : &bundle site-bundle
+          path              : &dist site/.vitepress/dist
+          retention-days    : 1
+
+  deploy:
+    name            : 🪁 Deploy
+    needs           : [checks, press]
+    outputs         : { url: "${{ steps.publish.outputs.deployment-url }}" }
+    permissions     : { contents: read, deployments: write }
+    runs-on         : *ubuntu
+    timeout-minutes : *timeout
+
+    steps:
+      - name : Download the site bundle
+        uses : actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with : { name: *bundle, path: *dist }
 
       - name : Deploy to Cloudflare Pages
         id   : publish
@@ -114,10 +141,10 @@ jobs:
   prune:
     name            : 🍂 Prune
     if              : github.event_name != 'pull_request'
-    needs           : deploy
+    needs           : press
     permissions     : { actions: write }
     runs-on         : *ubuntu
-    timeout-minutes : 5
+    timeout-minutes : *timeout
 
     steps:
       - name : Prune superseded OG card caches
@@ -132,9 +159,9 @@ jobs:
   gate:
     name            : 🗞️ Brief
     if              : always()
-    needs           : deploy
+    needs           : [checks, deploy, press]
     runs-on         : *ubuntu
-    timeout-minutes : 5
+    timeout-minutes : *timeout
 
     steps:
       - *checkout
@@ -145,7 +172,9 @@ jobs:
 
       - name : Summarize and gate
         env:
+          CHECKS : ${{ needs.checks.result }}
           DEPLOY : ${{ needs.deploy.result }}
+          PRESS  : ${{ needs.press.result }}
           REF    : ${{ github.head_ref || github.ref_name }}
           SHA    : *sha
           URL    : ${{ needs.deploy.outputs.url }}

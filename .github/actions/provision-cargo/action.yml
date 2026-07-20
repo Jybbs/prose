@@ -1,5 +1,5 @@
 name        : Provision Cargo
-description : Install the `.mise/config.toml` tools (the Rust toolchain among them) and restore the Swatinem Cargo cache for the given `shared-key`. Both archives restore everywhere and save only where `save` stays true, which is `warm.yml` alone, so every other workflow reads the entries `main` owns without writing its own.
+description : Install the `.mise/config.toml` tools, the Rust toolchain among them, and restore the Swatinem Cargo cache for the given `shared-key`.
 
 inputs:
   shared-key:
@@ -8,15 +8,15 @@ inputs:
 
   cache:
     default     : true
-    description : When `false` the Swatinem Cargo cache step is skipped and the mise toolchain cache is not written back, for cells that populate neither `target/` nor `~/.cargo/registry/`.
+    description : When `false` the Swatinem cache step is skipped and the mise archive is not written back.
 
   save:
     default     : true
-    description : When `false` both the Swatinem cache and the mise archive are restored but never saved, so a consumer job reads the warm entries `warm.yml` owns without writing variants of its own.
+    description : When `false` the caches restore but never save. `warm.yml` is the only caller that saves.
 
   tools:
     default     : ''
-    description : Space-separated subset of `.mise/config.toml` tools to install, passed to `mise install`. Empty installs the full toolset. A narrowed list lands in the archive key through the action's `install_args` hash, so jobs sharing one list share one entry.
+    description : Space-separated subset of `.mise/config.toml` tools to install. Empty installs the full toolset.
 
 runs:
   using: composite

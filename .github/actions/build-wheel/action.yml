@@ -1,5 +1,5 @@
 name        : Build wheel
-description : Provisions a Rust-only Cargo environment via the shared `provision-cargo` action, runs `maturin-action`, and uploads the resulting artifact. Cache scope is keyed by `name`, so `warm.yml` populating `prose-dist-<name>` on main pushes warms subsequent PR and tag runs that build the same target through this same invocation. The sdist command skips Cargo provisioning, taking `cargo` from the runner image for the `cargo metadata` call that packaging makes. Caller must check out the repo, and a caller shipping the artifact rewrites the README first.
+description : Provision a Rust-only Cargo environment, run `maturin-action`, and upload the resulting artifact. Callers check out the repo first, and rewrite the README before shipping one.
 
 inputs:
   command:

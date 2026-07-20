@@ -1,5 +1,5 @@
 name        : Download wheels
-description : Pull `wheels-*` artifacts uploaded by the build matrix into `dist/`, with one site for the `actions/download-artifact` SHA pin. A narrowed `pattern` pulls the single artifact a job installs, leaving the default for jobs that read every platform.
+description : Pull `wheels-*` artifacts uploaded by the build matrix into `dist/`.
 
 inputs:
   pattern:
