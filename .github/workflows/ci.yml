@@ -36,9 +36,9 @@ jobs:
             name       : 🪶 Format
           - command    : mise run lockfile
             name       : 🪵 Lockfile
-          - command    : ./.github/scripts/audit-parity.py && ./.github/scripts/audit-manifests.py
-            name       : 🪷 Parity
           - command    : mise run audit
+            name       : 🪷 Audit
+          - command    : mise run unused
             name       : 🪓 Unused
           - command    : mise run lint rust
             name       : 📎 Clippy
