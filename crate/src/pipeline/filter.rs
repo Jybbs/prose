@@ -11,6 +11,7 @@ use crate::{
     source::Source,
     suppression::SuppressionMap,
 };
+
 /// Drops the lint diagnostics a `# prose: ignore[<id>]` directive
 /// covers, matched per line and rule.
 pub(super) fn drop_suppressed_lints(

@@ -2,9 +2,10 @@
 //!
 //! Each rule returns a `Vec<Edit>` and a `Vec<TextRange>` of lint
 //! ranges. The pipeline sorts and applies the edits into a fresh
-//! buffer, then reparses before handing the new `Source` to the next
-//! rule. Alignment rules run last so earlier rewrites settle before
-//! padding widths are computed.
+//! buffer, then reparses and confirms the result still compiles
+//! before handing the new `Source` to the next rule. Alignment rules
+//! run last so earlier rewrites settle before padding widths are
+//! computed.
 
 use ruff_diagnostics::{Edit, SourceMap};
 
@@ -17,10 +18,12 @@ use crate::{
 
 mod error;
 mod filter;
+mod validity;
 
 pub use error::PipelineError;
 use error::reparse_or_reject;
 use filter::{drop_suppressed_lints, prepared_groups, unsuppressed_lints};
+use validity::compiles;
 
 /// Ordered sequence of enabled rules, run against each source file.
 pub struct Pipeline {
@@ -62,12 +65,7 @@ impl Pipeline {
         for rule in &self.rules {
             let rule_id = rule.id();
             let groups = prepared_groups(&**rule, source, suppression, rule_id);
-            let message = rule.message();
-            diagnostics.extend(
-                groups
-                    .into_iter()
-                    .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
-            );
+            diagnostics.extend(format_findings(&**rule, groups));
             diagnostics.extend(unsuppressed_lints(&**rule, source, suppression));
         }
         drop_suppressed_lints(&mut diagnostics, source, suppression);
@@ -101,12 +99,14 @@ impl Pipeline {
     ///
     /// # Errors
     ///
-    /// Returns `PipelineError::Reparse` when a rule's edit list
-    /// produces text that does not re-parse as Python.
+    /// Returns `PipelineError::Reparse` when a rule's edit list produces
+    /// text that does not re-parse as Python, and
+    /// `PipelineError::Compile` when it parses but no longer compiles.
     pub fn run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
         if source.suppression_map().file_is_suppressed() {
             return Ok((source, Vec::new()));
         }
+        let input_compiles = compiles(&source);
         let (source, mut diagnostics) = self.rules.iter().try_fold(
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
@@ -117,7 +117,6 @@ impl Pipeline {
                 if groups.is_empty() {
                     return Ok((source, diagnostics));
                 }
-                let message = rule.message();
                 let Some((new_text, map)) = weave_groups(&source, groups.concat()) else {
                     return Ok((source, diagnostics));
                 };
@@ -125,12 +124,8 @@ impl Pipeline {
                     new_text != source.text(),
                     "rule `{rule_id}` emitted edits that produced identical text",
                 );
-                diagnostics.extend(
-                    groups
-                        .into_iter()
-                        .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
-                );
-                let next = reparse_or_reject(&source, new_text, rule_id, map)?;
+                diagnostics.extend(format_findings(&**rule, groups));
+                let next = reparse_or_reject(&source, new_text, rule_id, map, input_compiles)?;
                 Ok((next, diagnostics))
             },
         )?;
@@ -139,16 +134,18 @@ impl Pipeline {
     }
 
     /// Replays the editing rules to surface a rule whose output fails to
-    /// re-parse, discarding the rewritten text and the diagnostics
-    /// [`run`](Self::run) would build. `check` calls this when
+    /// re-parse or to compile, discarding the rewritten text and the
+    /// diagnostics [`run`](Self::run) would build. `check` calls this when
     /// [`diagnose`](Self::diagnose) flags format work, in place of the
     /// full `run`.
     ///
     /// # Errors
     ///
     /// Returns `PipelineError::Reparse` when a rule's edit list produces
-    /// text that does not re-parse as Python.
+    /// text that does not re-parse as Python, and
+    /// `PipelineError::Compile` when it parses but no longer compiles.
     pub(crate) fn validate(&self, source: Source) -> Result<(), PipelineError> {
+        let input_compiles = compiles(&source);
         self.rules
             .iter()
             .try_fold(source, |source, rule| {
@@ -160,10 +157,17 @@ impl Pipeline {
                 let Some((new_text, map)) = weave_groups(&source, groups.concat()) else {
                     return Ok(source);
                 };
-                reparse_or_reject(&source, new_text, rule_id, map)
+                reparse_or_reject(&source, new_text, rule_id, map, input_compiles)
             })
             .map(drop)
     }
+}
+
+fn format_findings(rule: &dyn Rule, groups: Vec<Vec<Edit>>) -> impl Iterator<Item = Diagnostic> {
+    let (rule_id, message) = (rule.id(), rule.message());
+    groups
+        .into_iter()
+        .map(move |group| Diagnostic::format(rule_id, group, message.to_owned()))
 }
 
 /// Splices a rule's concatenated edits into `source`, returning the
@@ -190,7 +194,8 @@ mod tests {
     use crate::diagnostics::Severity;
     use crate::primitives::edit::singleton_groups;
     use crate::testing::{
-        GroupSentinelRule, assert_send_sync, breaks_parse, notebook, parse, range,
+        FUTURE_LEAD, GroupSentinelRule, assert_send_sync, breaks_compile, breaks_parse, notebook,
+        parse, range,
     };
 
     /// Test-only lint-only rule that returns the range list supplied
@@ -255,7 +260,10 @@ mod tests {
 
     impl Rule for TextCapturingRule {
         fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-            self.seen.lock().unwrap().push(source.text().to_owned());
+            self.seen
+                .lock()
+                .expect("seen mutex")
+                .push(source.text().to_owned());
             singleton_groups(self.edits.clone())
         }
 
@@ -270,6 +278,16 @@ mod tests {
 
     fn registered_slugs(pipeline: &Pipeline) -> Vec<&'static str> {
         pipeline.rule_ids().map(|id| id.as_str()).collect()
+    }
+
+    #[test]
+    fn compile_failure_surfaces_rule_id() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_compile())]);
+        let source = parse(FUTURE_LEAD);
+
+        let err = pipeline.run(source).expect_err("compile check should fail");
+
+        assert_matches!(err, PipelineError::Compile { rule, .. } if rule.as_str() == "breaks-compile");
     }
 
     #[test]
@@ -350,7 +368,7 @@ mod tests {
 
         pipeline.run(source).expect("both stages succeed");
 
-        assert_eq!(*seen.lock().unwrap(), ["x = 1\n", "y = 1\n"]);
+        assert_eq!(*seen.lock().expect("seen mutex"), ["x = 1\n", "y = 1\n"]);
     }
 
     #[test]
@@ -388,9 +406,7 @@ mod tests {
 
         let err = pipeline.run(source).expect_err("reparse should fail");
 
-        match err {
-            PipelineError::Reparse { rule, .. } => assert_eq!(rule.as_str(), "breaks-parse"),
-        }
+        assert_matches!(err, PipelineError::Reparse { rule, .. } if rule.as_str() == "breaks-parse");
     }
 
     #[test]
@@ -414,13 +430,14 @@ mod tests {
 
         pipeline.run(source).expect("all rules succeed");
 
-        assert_eq!(*log.lock().unwrap(), ["first", "second", "third"]);
+        assert_eq!(
+            *log.lock().expect("log mutex"),
+            ["first", "second", "third"]
+        );
     }
 
     #[test]
     fn run_applies_a_reordering_rule_on_a_notebook() {
-        // 325 held a sibling reorder out of the notebook path entirely;
-        // 326 runs it cell-aware, so a rewrite now lands on the cell.
         let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
             groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
             id: RuleId::from("rewrite-x-to-y"),
@@ -580,7 +597,7 @@ mod tests {
 
         assert_eq!(result.text(), "# prose: off\nx = 1\n");
         assert!(diagnostics.is_empty());
-        assert!(log.lock().unwrap().is_empty());
+        assert!(log.lock().expect("log mutex").is_empty());
     }
 
     #[test]
@@ -612,6 +629,27 @@ mod tests {
     }
 
     #[test]
+    fn run_skips_the_compile_gate_when_the_input_does_not_compile() {
+        // The demoted `__future__` import arrives in the source, so the
+        // rewrite of `os` to `sys` leaves the module exactly as
+        // uncompilable as it was found and the run carries it through.
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![Edit::range_replacement("sys".to_owned(), range(7, 9))]],
+            id: RuleId::from("rewrite-os-to-sys"),
+        })]);
+        let source = parse("import os\nfrom __future__ import annotations\n");
+
+        let (result, _) = pipeline
+            .run(source)
+            .expect("disarmed gate lets the run pass");
+
+        assert_eq!(
+            result.text(),
+            "import sys\nfrom __future__ import annotations\n"
+        );
+    }
+
+    #[test]
     fn validate_passes_a_clean_rewrite() {
         let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
             groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
@@ -631,6 +669,17 @@ mod tests {
         let source = parse("x = 1\n");
 
         assert!(pipeline.validate(source).is_ok());
+    }
+
+    #[test]
+    fn validate_surfaces_uncompilable_rule_output() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(breaks_compile())]);
+        let source = parse(FUTURE_LEAD);
+
+        assert_matches!(
+            pipeline.validate(source),
+            Err(PipelineError::Compile { rule, .. }) if rule.as_str() == "breaks-compile"
+        );
     }
 
     #[test]

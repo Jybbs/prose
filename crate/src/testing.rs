@@ -8,7 +8,7 @@ use std::{
 use ruff_diagnostics::Edit;
 use ruff_notebook::Notebook;
 use ruff_python_ast::{Expr, StmtClassDef, StmtFunctionDef};
-use ruff_text_size::TextRange;
+use ruff_text_size::{TextLen, TextRange};
 use serde_json::{Value, json};
 
 use crate::{
@@ -19,6 +19,10 @@ use crate::{
     rule::{Rule, RuleId},
     source::Source,
 };
+
+/// Module source leading with a `__future__` import, the input
+/// [`breaks_compile`] demotes.
+pub(crate) const FUTURE_LEAD: &str = "from __future__ import annotations\nimport os\n";
 
 /// Test-only writer whose `write` fails with the supplied kind.
 pub(crate) struct FailingWriter(pub(crate) io::ErrorKind);
@@ -59,6 +63,19 @@ pub(crate) fn applied_text(source: &Source, edits: Vec<Edit>) -> String {
 }
 
 pub(crate) fn assert_send_sync<T: Send + Sync>() {}
+
+/// Returns a rule whose single edit demotes a leading `__future__`
+/// import below the import after it, output that parses and no longer
+/// compiles. Pair it with [`FUTURE_LEAD`] as the source.
+pub(crate) fn breaks_compile() -> GroupSentinelRule {
+    GroupSentinelRule {
+        groups: vec![vec![Edit::range_replacement(
+            "import os\nfrom __future__ import annotations".to_owned(),
+            TextRange::up_to(FUTURE_LEAD.trim_end().text_len()),
+        )]],
+        id: RuleId::from("breaks-compile"),
+    }
+}
 
 /// Returns a rule whose single edit rewrites the leading statement
 /// into unparseable source.

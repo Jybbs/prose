@@ -54,6 +54,7 @@ impl Rule for BlankLines {
             group_imports: self.group_imports,
             source,
         };
+        walker.open_module(body);
         walker.pair_siblings(body, BodyScope::Module);
         walker.visit_body(body);
         singleton_groups(walker.edits)
@@ -80,12 +81,13 @@ impl Walker<'_> {
         if lines_before(line_start, text) == target_newlines {
             return;
         }
-        let span_start = whitespace_start_before(text, line_start);
+        let span = TextRange::new(whitespace_start_before(text, line_start), line_start);
         let replacement = self.source.newline_str().repeat(target_newlines as usize);
-        self.edits.push(Edit::range_replacement(
-            replacement,
-            TextRange::new(span_start, line_start),
-        ));
+        self.edits.push(if replacement.is_empty() {
+            Edit::range_deletion(span)
+        } else {
+            Edit::range_replacement(replacement, span)
+        });
     }
 
     /// Places `target_newlines` line breaks between `block_end` and
@@ -106,15 +108,27 @@ impl Walker<'_> {
         ));
     }
 
+    /// Clears the blank lines opening a module, the one gap no sibling
+    /// pair reaches. Fires only when nothing but whitespace precedes the
+    /// first statement or the comment block attached above it.
+    fn open_module(&mut self, body: &[Stmt]) {
+        let Some(first) = body.first() else {
+            return;
+        };
+        let block = leading_comment_block(self.source, TextSize::default(), first.start());
+        let start = block.map_or_else(
+            || self.source.text().line_start(first.start()),
+            TextRange::start,
+        );
+        if self.source.slice(TextRange::up_to(start)).trim().is_empty() {
+            self.normalize_above(start, 0);
+        }
+    }
+
     fn pair_in_scope(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
         if let Some(first) = body.first() {
             let prev_end = header_signature_end(self.source, first.start());
-            // A single-line suite opens its body on the header line, leaving no
-            // own-line gap above it to normalize. Pairing it would collide with
-            // the sibling pair over the gap above the header's own line.
-            if !self.source.same_line(prev_end, first.start()) {
-                self.pair_with_end(header, prev_end, first, scope);
-            }
+            self.pair_with_end(header, prev_end, first, scope);
         }
         self.pair_siblings(body, scope);
     }
@@ -125,10 +139,14 @@ impl Walker<'_> {
         }
     }
 
+    /// Normalizes the gap above `curr`, whose predecessor ends at
+    /// `prev_end`. A pair sharing one physical line has no own-line gap
+    /// above `curr`, so it passes through untouched.
     fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
-        if self
-            .source
-            .has_cell_boundary(TextRange::new(prev_end, curr.start()))
+        if self.source.same_line(prev_end, curr.start())
+            || self
+                .source
+                .has_cell_boundary(TextRange::new(prev_end, curr.start()))
         {
             return;
         }

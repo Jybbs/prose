@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pragma Comment Holds Above the `__future__` Import"
+
+description = '''
+A comment attached directly above the directive travels with its statement through a reorder, so pinning the import at the front keeps the comment at the top of the file rather than carrying it down among the partitioned imports.
+'''
