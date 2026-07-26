@@ -48,15 +48,16 @@ pub struct Diagnostic {
 
 `Severity::Format` carries a `Some(fix)` payload the pipeline applies, whereas `Severity::Lint` carries `fix: None` and reports a finding the user has to resolve themselves. Consumers building structured output formats *(JSON, SARIF, GitHub annotations)* route by `rule` to associate findings with the originating slug.
 
-`PipelineError` is `pub` and carries one variant:
+`PipelineError` is `pub` and carries a variant per failure the pipeline can surface:
 
 ```rust
 pub enum PipelineError {
+    Cell { cell: OneIndexed, rule: RuleId, source: ParseError },
     Reparse { rule: RuleId, source: ParseError },
 }
 ```
 
-The variant captures the rule whose output failed to reparse plus the underlying `ParseError`. A `Reparse` error means a rule produced syntactically invalid Python, which is a rule-authoring bug, not a consumer-recoverable condition. The intermediate `Source` is dropped, leaving no partial output for the caller to inspect.
+Each variant captures the rule whose output failed plus the underlying `ParseError`. A `Reparse` error means a rule produced syntactically invalid Python, whereas a `Cell` error means a notebook cell that parsed on its own before the rule ran no longer does, and names that cell by its position in the notebook. Both are rule-authoring bugs rather than consumer-recoverable conditions. The intermediate `Source` is dropped either way, leaving no partial output for the caller to inspect.
 
 ## Determinism
 

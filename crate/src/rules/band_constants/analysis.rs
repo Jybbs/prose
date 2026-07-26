@@ -121,7 +121,13 @@ pub(super) fn module_band_plan<'src>(
                     {
                         continue;
                     }
-                    if let Some(block) = gap_comment {
+                    // A gap comment on the far side of a cell boundary
+                    // stays in the cell that holds it, so the constant
+                    // bands without it.
+                    if let Some(block) = gap_comment
+                        && !source
+                            .has_cell_boundary(TextRange::new(block.start(), blocks[idx].start()))
+                    {
                         carries.push((idx, block));
                     }
                     sites.push(ConstSite {

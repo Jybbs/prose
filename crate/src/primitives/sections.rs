@@ -27,13 +27,12 @@ impl Sections {
     /// `blocks` must be in source order. A cell boundary abuts its
     /// neighbors with no gap, the synthetic separator folding into the
     /// preceding block, so the split reads the members' cells through
-    /// `cell_content_range` rather than the empty gap between blocks.
+    /// `same_cell` rather than the empty gap between blocks.
     pub(crate) fn of(source: &Source, blocks: &[TextRange]) -> Self {
         let mut ranges = Vec::new();
         let mut start = 0;
         for i in 1..blocks.len() {
-            let crosses_cell = source.cell_content_range(blocks[i - 1].start())
-                != source.cell_content_range(blocks[i].start());
+            let crosses_cell = !source.same_cell(blocks[i - 1].start(), blocks[i].start());
             let gap = TextRange::new(blocks[i - 1].end(), blocks[i].start());
             if crosses_cell || marker_in_gap(source, gap) {
                 ranges.push(start..i);

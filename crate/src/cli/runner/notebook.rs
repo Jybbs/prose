@@ -3,9 +3,8 @@
 //! metadata, and structure preserved.
 
 use ruff_diagnostics::SourceMap;
-use ruff_notebook::{Notebook, NotebookIndex};
+use ruff_notebook::{CellOffsets, Notebook, NotebookIndex};
 use ruff_source_file::SourceFileBuilder;
-use ruff_text_size::{TextRange, TextSize};
 
 use super::process::{drive, failed};
 use super::{FileOutcome, Pass};
@@ -15,7 +14,7 @@ use crate::{cache::Rewrite, cli::exit_status::ExitStatus, pipeline::Pipeline, so
 /// run's deltas before re-emitting the JSON.
 fn build_rewrite(
     notebook: &mut Notebook,
-    original_offsets: &[TextSize],
+    original_offsets: &CellOffsets,
     original_code: &str,
     formatted: &Source,
 ) -> Rewrite {
@@ -91,7 +90,7 @@ pub(super) fn rehydrated(text: &str) -> Option<(String, NotebookIndex)> {
 /// it renders each diagnostic against its own cell.
 fn run(source: Source, mut notebook: Notebook, pipeline: &Pipeline, pass: Pass) -> FileOutcome {
     let index = notebook.index().clone();
-    let original_offsets: Box<[TextSize]> = source.cell_offsets().iter().copied().collect();
+    let original_offsets = source.cell_offsets().clone();
     let original_code = source.text().to_owned();
     drive(
         source,
@@ -105,16 +104,17 @@ fn run(source: Source, mut notebook: Notebook, pipeline: &Pipeline, pass: Pass) 
 }
 
 /// Splits `code` into its per-cell sources at `offsets`.
-fn slice_cells(code: &str, offsets: &[TextSize]) -> Vec<String> {
+fn slice_cells(code: &str, offsets: &CellOffsets) -> Vec<String> {
     offsets
-        .windows(2)
-        .map(|pair| code[TextRange::new(pair[0], pair[1])].to_owned())
+        .ranges()
+        .map(|range| code[range].to_owned())
         .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::notebook;
 
     #[test]
     fn rehydrated_returns_none_for_malformed_json() {
@@ -123,10 +123,9 @@ mod tests {
 
     #[test]
     fn slice_cells_splits_each_cell_at_its_boundary() {
-        let cells = slice_cells(
-            "a\nb\n",
-            &[TextSize::new(0), TextSize::new(2), TextSize::new(4)],
-        );
-        assert_eq!(cells, vec!["a\n".to_owned(), "b\n".to_owned()]);
+        let source = notebook(&["a = 1\n", "b = 2\n"]);
+
+        let cells = slice_cells(source.text(), source.cell_offsets());
+        assert_eq!(cells, vec!["a = 1\n\n".to_owned(), "b = 2\n\n".to_owned()]);
     }
 }

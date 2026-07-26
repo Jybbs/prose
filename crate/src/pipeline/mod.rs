@@ -102,7 +102,9 @@ impl Pipeline {
     /// # Errors
     ///
     /// Returns `PipelineError::Reparse` when a rule's edit list
-    /// produces text that does not re-parse as Python.
+    /// produces text that does not re-parse as Python, and
+    /// `PipelineError::Cell` when a notebook cell that parsed on its own
+    /// before the rule ran no longer does.
     pub fn run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
         if source.suppression_map().file_is_suppressed() {
             return Ok((source, Vec::new()));
@@ -147,7 +149,9 @@ impl Pipeline {
     /// # Errors
     ///
     /// Returns `PipelineError::Reparse` when a rule's edit list produces
-    /// text that does not re-parse as Python.
+    /// text that does not re-parse as Python, and `PipelineError::Cell`
+    /// when a notebook cell that parsed on its own before the rule ran no
+    /// longer does.
     pub(crate) fn validate(&self, source: Source) -> Result<(), PipelineError> {
         self.rules
             .iter()
@@ -386,11 +390,10 @@ mod tests {
         let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
         let source = parse("x = 1\n");
 
-        let err = pipeline.run(source).expect_err("reparse should fail");
-
-        match err {
-            PipelineError::Reparse { rule, .. } => assert_eq!(rule.as_str(), "breaks-parse"),
-        }
+        assert_matches!(
+            pipeline.run(source),
+            Err(PipelineError::Reparse { rule, .. }) if rule.as_str() == "breaks-parse"
+        );
     }
 
     #[test]

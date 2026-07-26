@@ -132,13 +132,16 @@ pub(crate) fn assemble_separated(
 
 /// Assembles a body rewrite into edits: one narrowed edit per notebook
 /// cell the `blocks` span, or a single body-spanning edit for an ordinary
-/// module. The arguments mirror [`assemble_or_borrow`]. `order` never
-/// crosses a cell boundary, the invariant [`Sections`](crate::primitives::sections::Sections)
-/// upholds, so each cell's slots stay a contiguous run that reassembles
-/// against the cell's own block span. That span ends exactly at the cell
-/// boundary, the last member's block folding in the synthetic separator,
-/// so every emitted edit lands inside one cell and its woven offset slides
-/// in bounds.
+/// module. The arguments mirror [`assemble_or_borrow`]. Each block opens
+/// inside one cell, the floor [`block_range`] applies, and `order` never
+/// crosses a cell boundary, the invariant
+/// [`Sections`](crate::primitives::sections::Sections) upholds, so the run
+/// this walks and the sections that permuted it partition the slots the
+/// same way and each cell's slots stay a contiguous run that reassembles
+/// against the cell's own block span.
+/// That span ends exactly at the cell boundary, the last member's block
+/// folding in the synthetic separator, so every emitted edit lands inside
+/// one cell and its woven offset slides in bounds.
 pub(crate) fn assembled_cell_edits<'src>(
     source: &'src Source,
     blocks: &[TextRange],
@@ -159,9 +162,8 @@ pub(crate) fn assembled_cell_edits<'src>(
     let mut edits = Vec::new();
     let mut start = 0;
     while start < blocks.len() {
-        let cell = source.cell_content_range(blocks[start].start());
         let mut end = start + 1;
-        while end < blocks.len() && source.cell_content_range(blocks[end].start()) == cell {
+        while end < blocks.len() && source.same_cell(blocks[start].start(), blocks[end].start()) {
             end += 1;
         }
         let rebased: Vec<usize> = order[start..end].iter().map(|&slot| slot - start).collect();
@@ -185,9 +187,10 @@ pub(crate) fn assembled_cell_edits<'src>(
 /// Returns the source-level extent of `items[i]`: its own range, any
 /// comment-only lines directly above it (no intervening blank line), and its
 /// trailing comma and inline comment. Bounded below by the previous item's end
-/// (or `outer.start()` for the first), and forward by the next item's start, or
-/// for the last item by [`tail_end`], which stops at a closing delimiter on the
-/// line rather than crossing it.
+/// (or `outer.start()` for the first) and by the start of the item's own
+/// notebook cell, and forward by the next item's start, or for the last item
+/// by [`tail_end`], which stops at a closing delimiter on the line rather than
+/// crossing it.
 pub(crate) fn block_range<T: Ranged>(
     source: &Source,
     items: &[T],
@@ -195,7 +198,13 @@ pub(crate) fn block_range<T: Ranged>(
     outer: TextRange,
 ) -> TextRange {
     let item = items[i].range();
-    let lower = items[..i].last().map_or(outer.start(), Ranged::end);
+    let cell_floor = source
+        .cell_content_range(item.start())
+        .map_or(outer.start(), TextRange::start);
+    let lower = items[..i]
+        .last()
+        .map_or(outer.start(), Ranged::end)
+        .max(cell_floor);
     let forward = match items.get(i + 1) {
         Some(next) => source.text().line_end(item.end()).min(next.start()),
         None => tail_end(source, item.end()),

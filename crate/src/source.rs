@@ -4,7 +4,7 @@ use std::{path::Path, str::FromStr};
 
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{
-    AnyNodeRef, ExprRef, ModModule, PySourceType,
+    AnyNodeRef, ExprRef, ModModule, PySourceType, Stmt,
     token::{Token, Tokens},
 };
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
@@ -52,28 +52,14 @@ impl Source {
         source_type: PySourceType,
         cell_offsets: CellOffsets,
     ) -> Result<Self, ParseError> {
-        let Some(parsed) = parse(&text, ParseOptions::from(source_type))?.try_into_module() else {
-            unreachable!("module-mode parse never yields a bare expression");
-        };
-        let file = SourceFileBuilder::new(name, text).finish();
-        let comment_ranges = CommentRanges::from(parsed.tokens());
-        let first_code_offset = parsed.syntax().body.first().map(Ranged::start);
-        let suppression = Box::new(SuppressionMap::from_comments(
-            &file.to_source_code(),
-            &comment_ranges,
-            first_code_offset,
-            &cell_offsets,
-        ));
-        let binding_analysis = Box::new(BindingAnalysis::new(parsed.syntax()));
-        Ok(Self {
-            binding_analysis,
-            cell_offsets,
-            comment_ranges,
-            file,
-            parsed,
+        let parsed = parse_typed_module(&text, source_type)?;
+        Ok(Self::from_parsed(
+            text,
+            name,
             source_type,
-            suppression,
-        })
+            cell_offsets,
+            parsed,
+        ))
     }
 
     /// Builds a source carrying no notebook cell boundaries.
@@ -98,6 +84,36 @@ impl Source {
             PySourceType::Ipynb,
             notebook.cell_offsets().clone(),
         )
+    }
+
+    /// Wraps an already-parsed module in its indexes, the shared tail of
+    /// every constructor.
+    fn from_parsed(
+        text: String,
+        name: impl Into<Box<str>>,
+        source_type: PySourceType,
+        cell_offsets: CellOffsets,
+        parsed: Parsed<ModModule>,
+    ) -> Self {
+        let file = SourceFileBuilder::new(name, text).finish();
+        let comment_ranges = CommentRanges::from(parsed.tokens());
+        let first_code_offset = parsed.syntax().body.first().map(Ranged::start);
+        let suppression = Box::new(SuppressionMap::from_comments(
+            &file.to_source_code(),
+            &comment_ranges,
+            first_code_offset,
+            &cell_offsets,
+        ));
+        let binding_analysis = Box::new(BindingAnalysis::new(parsed.syntax()));
+        Self {
+            binding_analysis,
+            cell_offsets,
+            comment_ranges,
+            file,
+            parsed,
+            source_type,
+            suppression,
+        }
     }
 
     /// Reads a file from disk and parses it. An `.ipynb` routes through
@@ -133,15 +149,27 @@ impl Source {
     /// `offset`, with the synthetic cell separator excluded, or `None`
     /// for an ordinary module or an offset past the last cell.
     pub(crate) fn cell_content_range(&self, offset: TextSize) -> Option<TextRange> {
+        let opened = self.cell_offsets.partition_point(|&start| start <= offset);
         self.cell_offsets
             .content_ranges()
-            .find(|range| range.contains(offset))
+            .nth(opened.checked_sub(1)?)
+            .filter(|range| range.contains(offset))
     }
 
     /// Returns the notebook cell boundaries in the concatenated buffer,
     /// empty for an ordinary module.
     pub(crate) fn cell_offsets(&self) -> &CellOffsets {
         &self.cell_offsets
+    }
+
+    /// Returns `true` when the cell boundary at `index` sits on a
+    /// statement boundary, meaning at a line start with no statement of
+    /// the module body spanning it. An index past the last boundary
+    /// qualifies, as does every boundary of an ordinary module.
+    pub(crate) fn cell_splits_cleanly(&self, index: usize) -> bool {
+        self.cell_offsets
+            .get(index)
+            .is_none_or(|&offset| splits_statements(offset, &self.ast().body, self.text()))
     }
 
     /// Returns the source text of each notebook cell, the whole buffer
@@ -295,10 +323,34 @@ impl Source {
             .next()
     }
 
+    /// Recuts `offsets` onto the statement boundaries `body` and `text`
+    /// carry. A boundary that split this source's statements and splits
+    /// none of the replacement's moves back to the start of the statement
+    /// it now falls inside. A boundary that already ran through a
+    /// statement here holds where it is, as does one whose recut would
+    /// not clear the boundary before it, leaving the offsets strictly
+    /// ascending so every cell keeps room for its separator.
+    fn recut_cells(&self, mut offsets: CellOffsets, body: &[Stmt], text: &str) -> CellOffsets {
+        for index in 1..offsets.len().saturating_sub(1) {
+            let offset = offsets[index];
+            if splits_statements(offset, body, text) || !self.cell_splits_cleanly(index) {
+                continue;
+            }
+            let line_start = text.line_start(offset);
+            let cut = statement_spanning(line_start, body).map_or(line_start, Ranged::start);
+            if cut > offsets[index - 1] {
+                offsets[index] = cut;
+            }
+        }
+        offsets
+    }
+
     /// Reparses with replacement source text, preserving the original
     /// name, and carrying `cell_offsets` forward so a notebook keeps its
-    /// cell boundaries across a rule. Diagnostic labels keep the original
-    /// path or `<source>` placeholder.
+    /// cell boundaries across a rule. A boundary the edits slid off a
+    /// statement recuts onto one the replacement text actually carries,
+    /// where a boundary this source already ran through a statement holds.
+    /// Diagnostic labels keep the original path or `<source>` placeholder.
     ///
     /// # Errors
     ///
@@ -308,7 +360,23 @@ impl Source {
         text: String,
         cell_offsets: CellOffsets,
     ) -> Result<Self, ParseError> {
-        Self::build(text, self.file.name(), self.source_type, cell_offsets)
+        let parsed = parse_typed_module(&text, self.source_type)?;
+        let cell_offsets = self.recut_cells(cell_offsets, &parsed.syntax().body, &text);
+        Ok(Self::from_parsed(
+            text,
+            self.file.name(),
+            self.source_type,
+            cell_offsets,
+            parsed,
+        ))
+    }
+
+    /// Returns `true` when `a` and `b` sit in one notebook cell, the wall
+    /// a sibling reorder never moves a member across and the partition a
+    /// per-cell emit groups by. Always `true` for an ordinary module,
+    /// which carries no cell boundary.
+    pub(crate) fn same_cell(&self, a: TextSize, b: TextSize) -> bool {
+        self.cell_content_range(a) == self.cell_content_range(b)
     }
 
     /// Returns `true` when `a` and `b` sit on one physical source line,
@@ -386,6 +454,30 @@ pub enum SourceError {
     Parse(#[from] ParseError),
 }
 
+/// Parses `text` in `source_type`'s mode as a module.
+fn parse_typed_module(
+    text: &str,
+    source_type: PySourceType,
+) -> Result<Parsed<ModModule>, ParseError> {
+    let Some(parsed) = parse(text, ParseOptions::from(source_type))?.try_into_module() else {
+        unreachable!("module-mode parse never yields a bare expression");
+    };
+    Ok(parsed)
+}
+
+/// Returns `true` when `offset` opens a statement boundary in `text`,
+/// sitting at a line start with no statement of `body` spanning it.
+fn splits_statements(offset: TextSize, body: &[Stmt], text: &str) -> bool {
+    offset == text.line_start(offset) && statement_spanning(offset, body).is_none()
+}
+
+/// Returns the statement of `body` that `offset` falls strictly inside,
+/// or `None` when `offset` sits at a statement's own start or between two.
+fn statement_spanning(offset: TextSize, body: &[Stmt]) -> Option<&Stmt> {
+    body.iter()
+        .find(|stmt| stmt.start() < offset && offset < stmt.end())
+}
+
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
@@ -397,6 +489,20 @@ mod tests {
 
     use super::*;
     use crate::testing::{assert_send_sync, notebook, parse, range};
+
+    /// Replaces `before`'s interior boundaries with `drifts` in order and
+    /// its closing offset with `after`'s length, the shape a rule's edits
+    /// leave behind when they slide a boundary off its statement.
+    fn drifted_offsets(before: &Source, after: &Source, drifts: &[u32]) -> CellOffsets {
+        let mut offsets = before.cell_offsets().clone();
+        for (slot, &drift) in drifts.iter().enumerate() {
+            offsets[slot + 1] = TextSize::new(drift);
+        }
+        *offsets
+            .last_mut()
+            .expect("a notebook carries a closing offset") = after.text().text_len();
+        offsets
+    }
 
     fn line_column(line: usize, column: usize) -> LineColumn {
         LineColumn {
@@ -439,6 +545,26 @@ mod tests {
             nb.cell_offsets().len() >= 2,
             "two cells open at least two boundaries",
         );
+    }
+
+    #[test]
+    fn cell_splits_cleanly_breaks_where_a_cell_opens_inside_a_statement() {
+        let nb = notebook(&["def helper():", "    return 1\n"]);
+        assert!(nb.cell_splits_cleanly(0));
+        assert!(!nb.cell_splits_cleanly(1));
+    }
+
+    #[test]
+    fn cell_splits_cleanly_holds_at_every_boundary_of_whole_statements() {
+        let nb = notebook(&["x = 1\n", "y = 2\n"]);
+        assert!((0..nb.cell_offsets().len()).all(|index| nb.cell_splits_cleanly(index)));
+    }
+
+    #[test]
+    fn cell_splits_cleanly_holds_past_the_last_boundary_and_for_a_module() {
+        let nb = notebook(&["x = 1\n", "y = 2\n"]);
+        assert!(nb.cell_splits_cleanly(nb.cell_offsets().len()));
+        assert!(parse("x = 1\n").cell_splits_cleanly(0));
     }
 
     #[test]
@@ -604,6 +730,71 @@ mod tests {
     fn parse_error_returns_ruff_parse_error() {
         let result: Result<Source, ParseError> = Source::from_str("def foo(");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn recut_cells_holds_a_cut_that_would_not_clear_the_previous_boundary() {
+        let before = notebook(&["x = 1\n", "y = 2\n", "z = 3\n"]);
+        let after = parse("def helper():\n    a = 1\n    b = 2\n");
+        let offsets = drifted_offsets(&before, &after, &[18, 28]);
+
+        // Both boundaries land inside the one `def`, whose start sits at
+        // the opening offset, so moving either would collapse a cell to
+        // nothing and leave `content_ranges` without its separator.
+        let recut = before.recut_cells(offsets, &after.ast().body, after.text());
+        assert_eq!(recut[1], TextSize::new(18));
+        assert_eq!(recut[2], TextSize::new(28));
+        assert!(recut.windows(2).all(|pair| pair[0] < pair[1]));
+    }
+
+    #[rstest]
+    #[case::holds_a_boundary_already_on_a_statement(
+        &["x = 1\n", "y = 2\n"],
+        "x = 1\ny = 2\n",
+        6,
+        6,
+    )]
+    #[case::holds_an_authored_mid_statement_split(
+        &["def helper():", "    return 1\n"],
+        "x = 1\ndef helper():\n    return 1\n",
+        20,
+        20,
+    )]
+    #[case::moves_onto_the_spanning_statement_start(
+        &["x = 1\n", "y = 2\n"],
+        "x = 1\ndef helper():\n    return 1\n",
+        20,
+        6,
+    )]
+    #[case::pulls_back_to_the_line_start(
+        &["x = 1\n", "y = 2\n"],
+        "x = 1\n\n# note\ny = 2\n",
+        10,
+        7,
+    )]
+    fn recut_cells_lands_a_drifted_boundary(
+        #[case] cells: &[&str],
+        #[case] replacement: &str,
+        #[case] drift: u32,
+        #[case] expected: u32,
+    ) {
+        let before = notebook(cells);
+        let after = parse(replacement);
+        let offsets = drifted_offsets(&before, &after, &[drift]);
+
+        let recut = before.recut_cells(offsets, &after.ast().body, after.text());
+        assert_eq!(recut[1], TextSize::new(expected));
+    }
+
+    #[test]
+    fn recut_cells_leaves_an_ordinary_module_offsets_untouched() {
+        let module = parse("x = 1\n");
+        let recut = module.recut_cells(
+            module.cell_offsets().clone(),
+            &module.ast().body,
+            module.text(),
+        );
+        assert!(recut.is_empty());
     }
 
     #[test]
