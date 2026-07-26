@@ -116,10 +116,12 @@ pub(crate) fn resolve_call_params<'src>(
         .copied()
 }
 
-/// True for a bare generator expression or a named expression, the
-/// shapes a call's positional slot accepts and its keyword slot rejects.
+/// True for the argument shapes whose source slice does not parse after
+/// a `name=` prefix, a named expression, a `yield`, a `yield from`, and
+/// a generator expression carrying no parentheses of its own.
 fn requires_grouping(arg: &Expr) -> bool {
-    arg.is_named_expr() || arg.as_generator_expr().is_some_and(|g| !g.parenthesized)
+    matches!(arg, Expr::Named(_) | Expr::Yield(_) | Expr::YieldFrom(_))
+        || arg.as_generator_expr().is_some_and(|g| !g.parenthesized)
 }
 
 #[cfg(test)]
