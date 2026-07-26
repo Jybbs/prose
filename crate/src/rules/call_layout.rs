@@ -4,15 +4,17 @@
 //! trigger fires on any call whose line crosses `code_line_length`,
 //! exploding a keyword-expressible call in keyword form and any other
 //! call positionally. The closing `)` drops to the call's own indent,
-//! and a nested call in an argument value explodes in the same pass.
-//! Argument order, `=` alignment, and trailing-comma policy stay with
-//! `alphabetize`, `align_equals`, and `strip_trailing_commas`.
+//! and a nested call in an argument value explodes in the same pass. A
+//! replacement field is opaque, so neither trigger reaches a call inside
+//! an f-string or t-string. Argument order, `=` alignment, and
+//! trailing-comma policy stay with `alphabetize`, `align_equals`, and
+//! `strip_trailing_commas`.
 
 use std::collections::HashMap;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    ArgOrKeyword, Arguments, Expr, ExprCall, Parameters, StringLike,
+    ArgOrKeyword, Arguments, Expr, ExprCall, InterpolatedStringElement, Parameters, StringLike,
     helpers::any_over_expr,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
@@ -224,12 +226,35 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         }
         walk_expr(self, expr);
     }
+
+    /// Leaves a replacement field unwalked, so a call inside an f-string
+    /// or t-string keeps its source shape.
+    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 }
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::testing::{applied_text, parse};
+
+    #[rstest]
+    fn a_call_inside_a_replacement_field_emits_no_edit(#[values("f", "t")] prefix: &str) {
+        // The narration runs long enough that the call inside it clears
+        // the width trigger from its own column.
+        let src = format!(
+            "value = {prefix}\"a fairly long narration wrapping the gathered \
+             values {{gather(alpha, beta, gamma)}}\"\n"
+        );
+        let source = parse(&src);
+        assert!(
+            CallLayout::from_config(&Config::default())
+                .apply(&source)
+                .is_empty(),
+            "replacement field should emit no edit:\n{src}",
+        );
+    }
 
     #[test]
     fn keyword_value_spanning_a_multiline_string_holds_the_floor() {

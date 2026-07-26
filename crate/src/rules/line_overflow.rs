@@ -5,10 +5,12 @@
 //! a multi-element collection, a multi-name `from` import, a signature
 //! carrying parameters, a single-statement match arm) is left for that
 //! rule, so only the narrowest legal form that no split can shorten
-//! surfaces here. Lint-only, emits no edits.
+//! surfaces here. A construct inside an f-string or t-string replacement
+//! field sits beyond every rule that could split it, so the line
+//! carrying it is left for none. Lint-only, emits no edits.
 
 use ruff_python_ast::{
-    Expr, Stmt, StmtFunctionDef, StmtMatch,
+    Expr, InterpolatedStringElement, Stmt, StmtFunctionDef, StmtMatch,
     helpers::is_compound_statement,
     visitor::{Visitor, walk_expr, walk_stmt},
 };
@@ -139,6 +141,11 @@ impl<'a> Visitor<'a> for Spans<'a> {
         }
         walk_expr(self, expr);
     }
+
+    /// Leaves a replacement field unwalked, so a construct inside an
+    /// f-string or t-string records no reshapeable span and the line
+    /// carrying it answers to its budget.
+    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         match stmt {

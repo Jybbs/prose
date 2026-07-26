@@ -5,8 +5,8 @@
 //! dict over `max_dict_entries` expands whatever its width, taking any
 //! enclosing collection with it. An over-wide dict entry breaks at `:`
 //! and hangs its value. A subscript and a comprehension only ever
-//! collapse, and a comment or a folded multi-line string holds a
-//! construct at its source shape.
+//! collapse, and a comment, an f-string or t-string replacement field,
+//! or a folded multi-line string holds a construct at its source shape.
 //!
 //! Both fit checks stay invariant to the later alignment: a dict entry
 //! measures at its canonical `": "`, and a collapse tests against the
@@ -15,8 +15,11 @@
 use std::collections::HashMap;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{helpers::any_over_body, visitor::Visitor};
-use ruff_text_size::Ranged;
+use ruff_python_ast::{
+    Expr, InterpolatedStringElement, Stmt,
+    visitor::{Visitor, walk_expr},
+};
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
@@ -69,16 +72,7 @@ impl Rule for CollectionLayout {
         // leaves no tripping dicts and the cap goes inert. Precomputed once
         // so the per-node check is a containment scan rather than a re-walk.
         let count_cap = self.max_dict_entries.filter(|_| self.explode);
-        let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
-            let mut ranges = Vec::new();
-            any_over_body(body, |expr| {
-                if expr.as_dict_expr().is_some_and(|dict| dict.len() > cap) {
-                    ranges.push(expr.range());
-                }
-                false
-            });
-            ranges
-        });
+        let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| over_count_dicts(body, cap));
         let reservations = self.align_equals.map_or_else(HashMap::new, |settings| {
             reserve::reserved_columns(source, settings)
         });
@@ -101,4 +95,38 @@ impl Rule for CollectionLayout {
     fn id(&self) -> RuleId {
         Self::SLUG
     }
+}
+
+/// Collects the range of every `Dict` literal carrying more than `cap`
+/// entries.
+struct DictScan {
+    cap: usize,
+    ranges: Vec<TextRange>,
+}
+
+impl<'a> Visitor<'a> for DictScan {
+    fn visit_expr(&mut self, expr: &'a Expr) {
+        if let Some(dict) = expr.as_dict_expr()
+            && dict.len() > self.cap
+        {
+            self.ranges.push(expr.range());
+        }
+        walk_expr(self, expr);
+    }
+
+    /// Leaves a replacement field unwalked, so a dict inside an f-string
+    /// or t-string trips the count cap neither for itself nor for the
+    /// collection enclosing the literal.
+    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
+}
+
+/// The range of every `Dict` literal in `body` carrying more than `cap`
+/// entries, the shape the count cap expands whatever its width.
+fn over_count_dicts(body: &[Stmt], cap: usize) -> Vec<TextRange> {
+    let mut scan = DictScan {
+        cap,
+        ranges: Vec::new(),
+    };
+    scan.visit_body(body);
+    scan.ranges
 }

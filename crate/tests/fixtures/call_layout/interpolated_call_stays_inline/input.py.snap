@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/interpolated_call_stays_inline/input.py
+---
+raise ValueError(
+    f"mean must have X elements if it is an iterable, but instead got only {len(image_mean)}"
+)

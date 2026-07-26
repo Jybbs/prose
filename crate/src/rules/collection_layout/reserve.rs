@@ -1,14 +1,16 @@
 //! Predicts the column `align_equals` shifts each assignment and keyword
 //! value to, so the collapse decision tests a literal against the
-//! position it lands at after alignment rather than its current one. A
-//! row whose value spans lines groups as if single-line, since a
-//! collapsing collection becomes single-line before `align_equals` runs,
-//! and a wider sibling then joins the run the collapse closes.
+//! position it lands at after alignment rather than its current one. No
+//! column is reserved for a value inside an f-string or t-string
+//! replacement field. A row whose value spans lines groups as if
+//! single-line, since a collapsing collection becomes single-line before
+//! `align_equals` runs, and a wider sibling then joins the run the
+//! collapse closes.
 
 use std::collections::HashMap;
 
 use ruff_python_ast::{
-    Expr, Stmt,
+    Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor, walk_body, walk_expr},
 };
 use ruff_text_size::TextSize;
@@ -65,6 +67,10 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
         }
         walk_expr(self, expr);
     }
+
+    /// Leaves a replacement field unwalked, so no column is reserved for
+    /// a keyword inside an f-string or t-string.
+    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 }
 
 /// Maps each `align_equals`-aligned value's start offset to the display

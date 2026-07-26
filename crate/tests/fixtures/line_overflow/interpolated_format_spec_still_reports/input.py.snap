@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/interpolated_format_spec_still_reports/input.py
+---
+label = f"{amount:{compute(width, pad)}} of the running total"
