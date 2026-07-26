@@ -6,6 +6,7 @@
 
 use std::collections::HashMap;
 
+use itertools::Itertools;
 use ruff_python_ast::Stmt;
 use ruff_text_size::TextRange;
 
@@ -17,7 +18,7 @@ use crate::primitives::{
 
 /// The applied banding: a band rank per banded statement, the rendered
 /// tier each banded constant sits in, the member count per rendered
-/// tier, and the prose comment each carries up with it.
+/// tier, and the prose comment each banded statement carries up with it.
 pub(super) struct Banding {
     pub(super) carries: Vec<(usize, TextRange)>,
     ranks: HashMap<usize, BandRank>,
@@ -31,12 +32,11 @@ impl Banding {
     /// nested constant folds tight into the tier above and aligns with it.
     fn opens_band(&self, idx: usize) -> bool {
         let tier = self.rendered_tier(idx);
-        let members = self
-            .tier_sizes
-            .get(&(self.ranks[&idx], tier))
-            .copied()
-            .unwrap_or(0);
-        tier > 0 && members >= 2
+        tier > 0
+            && self
+                .tier_sizes
+                .get(&(self.ranks[&idx], tier))
+                .is_some_and(|&members| members >= 2)
     }
 
     /// The rendered tier `idx` sits in, the true tier already clamped
@@ -56,7 +56,8 @@ impl Banding {
 /// The module-scope hoist plan: a band rank per banded statement, the
 /// intra-band `(tier, subcategory, name)` key per banded constant, the
 /// eager-reference edges the order keeps backward, and the comment each
-/// carries. A statement absent from `ranks` is a pinned anchor.
+/// banded statement carries. A statement absent from `ranks` is a pinned
+/// anchor.
 pub(super) struct BandPlan<'src> {
     pub(super) carries: Vec<(usize, TextRange)>,
     pub(super) edges: Vec<(usize, usize)>,
@@ -157,10 +158,9 @@ impl BandPlan<'_> {
                 )
             })
             .collect();
-        let mut tier_sizes: HashMap<(BandRank, usize), usize> = HashMap::new();
-        for (&idx, &tier) in &tiers {
-            *tier_sizes.entry((self.ranks[&idx], tier)).or_default() += 1;
-        }
+        let tier_sizes = tiers
+            .iter()
+            .counts_by(|(&idx, &tier)| (self.ranks[&idx], tier));
         let banding = Banding {
             carries: self.carries,
             ranks: self.ranks,

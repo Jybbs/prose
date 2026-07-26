@@ -10,7 +10,7 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{PythonVersion, Stmt, helpers::is_compound_statement};
-use ruff_text_size::TextRange;
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
@@ -154,7 +154,7 @@ impl<'a> Bander<'a> {
     }
 
     /// Renders `body`, builds the module band over it, and folds each
-    /// carried comment up with its constant, leaving the assembly to the
+    /// carried comment up with its statement, leaving the assembly to the
     /// caller. The section partition walls each notebook cell, so a band
     /// never crosses one.
     fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
@@ -170,7 +170,7 @@ impl<'a> Bander<'a> {
             })
             .flatten();
         if let Some(b) = &band {
-            apply_band_carries(self.source, b, &mut blocks, &mut rendered);
+            apply_band_carries(self.source, b, body, &mut blocks, &mut rendered);
         }
         BandLayout {
             band,
@@ -182,7 +182,7 @@ impl<'a> Bander<'a> {
 
     /// Builds the hoist plan over `body` and applies it to `order`,
     /// seating the leading band beneath the import run each section opens.
-    /// Returns the [`Banding`] when constants relocated soundly.
+    /// Returns the [`Banding`] when the members relocated soundly.
     fn band_module_constants(
         &self,
         body: &'a [Stmt],
@@ -224,22 +224,27 @@ impl<'a> Bander<'a> {
     }
 }
 
-/// Relocates each carried comment up with its banded constant, extending
-/// the constant's block back over the comment and prepending it to the
-/// rendered text so the hoist moves the comment rather than stranding it.
+/// Relocates each carried comment up with its banded statement,
+/// extending the statement's block back over the comment and prepending
+/// it to the rendered text so the hoist moves the comment rather than
+/// stranding it. The comment forward-attaches to a block opening on its
+/// statement's own line, whereas a block already opening on an attached
+/// comment keeps the source separation between the two.
 fn apply_band_carries(
     source: &Source,
     band: &Banding,
+    body: &[Stmt],
     blocks: &mut [TextRange],
     rendered: &mut [Cow<'_, str>],
 ) {
     for &(idx, comment) in &band.carries {
-        let carried = format!(
-            "{}{}{}",
-            source.slice(comment),
-            source.newline_str(),
-            rendered[idx],
-        );
+        let block_start = blocks[idx].start();
+        let separator = if source.same_line(block_start, body[idx].start()) {
+            source.newline_str()
+        } else {
+            source.slice(TextRange::new(comment.end(), block_start))
+        };
+        let carried = format!("{}{separator}{}", source.slice(comment), rendered[idx]);
         blocks[idx] = comment.cover(blocks[idx]);
         rendered[idx] = Cow::Owned(carried);
     }

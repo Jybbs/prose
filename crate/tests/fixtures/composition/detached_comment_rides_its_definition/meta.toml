@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Detached Comment Rides the Definition It Heads"
+
+description = '''
+A free-floating comment block, set off by a blank line above and below, sits between the module constants and a def-run that `alphabetize` reorders. `band-constants` forward-attaches the block to `rgb_to_yiq`, the definition it heads, so the comment **travels with that definition** through the sort rather than stranding above whichever def lands beneath the band.
+'''

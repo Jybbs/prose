@@ -45,7 +45,7 @@ struct ConstSite<'src> {
 }
 
 /// Builds the module-scope hoist plan, ranking each statement and
-/// pairing each banded constant with the comment it carries. Returns
+/// pairing each banded statement with the comment it carries. Returns
 /// `None` when a constant band's reference graph carries a cycle.
 pub(super) fn module_band_plan<'src>(
     source: &'src Source,
@@ -83,18 +83,17 @@ pub(super) fn module_band_plan<'src>(
         let gap_comment = idx.checked_sub(1).and_then(|prev| {
             leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
         });
-        let const_target = const_binding(stmt);
-        // A definition, class, import, or any non-constant pins beneath an
-        // own-line comment, bounding the bands to its side. A constant
-        // instead forward-attaches a prose comment the way `blank-lines`
-        // settles it, while a banner section divider or a suppression
-        // directive pins the constant too, since neither may relocate.
-        if gap_comment.is_some_and(|block| {
-            const_target.is_none()
-                || is_banner_block(source, block)
+        // A prose comment forward-attaches to the statement below it, so
+        // that statement bands and carries the comment with it. A banner
+        // section divider or a suppression directive pins the statement
+        // instead, since neither may relocate.
+        if let Some(block) = gap_comment {
+            if is_banner_block(source, block)
                 || source.slice(block).lines().any(is_directive_comment)
-        }) {
-            continue;
+            {
+                continue;
+            }
+            carries.push((idx, block));
         }
         match stmt {
             Stmt::ClassDef(StmtClassDef { name, .. })
@@ -113,16 +112,13 @@ pub(super) fn module_band_plan<'src>(
                 ranks.insert(idx, BandRank::Import);
             }
             _ => {
-                if let Some((name, value)) = const_target {
+                if let Some((name, value)) = const_binding(stmt) {
                     // A `# prose: keep` dict pins its statement, so the
                     // marker freezes module position as well as entry order.
                     if let Some(Expr::Dict(dict)) = value
                         && has_keep_marker(source, dict)
                     {
                         continue;
-                    }
-                    if let Some(block) = gap_comment {
-                        carries.push((idx, block));
                     }
                     sites.push(ConstSite {
                         annot_refs: stmt
@@ -234,8 +230,9 @@ pub(super) fn module_band_plan<'src>(
             }
         }
     }
-    // A carried comment only travels when its constant bands, leaving an
-    // anchored constant's comment in its source gap.
+    // A carried comment only travels when its statement bands, leaving a
+    // pinned anchor's comment in the source gap the assembly copies
+    // verbatim.
     carries.retain(|(idx, _)| ranks.contains_key(idx));
     Some(BandPlan {
         carries,
@@ -364,20 +361,22 @@ mod tests {
         assert_eq!(plan.ranks[&2], BandRank::Trailing, "TRAIL names make");
     }
 
-    #[test]
-    fn module_band_plan_carries_a_prose_comment_into_the_band() {
-        let source = parse("def f():\n    pass\n\n# note\n\nX = 1\n");
+    #[rstest]
+    #[case("def f():\n    pass\n\n# note\n\nX = 1\n", BandRank::Leading)]
+    #[case("X = 1\n\n# note\n\ndef f():\n    pass\n", BandRank::Definition)]
+    #[case("X = 1\n\n# note\n\nimport os\n", BandRank::Import)]
+    fn module_band_plan_carries_a_prose_comment_into_the_band(
+        #[case] src: &str,
+        #[case] expected: BandRank,
+    ) {
+        let source = parse(src);
         let plan = plan_of(&source).expect("acyclic module plans");
-        assert_eq!(
-            plan.ranks[&1],
-            BandRank::Leading,
-            "X leads, hoisting above f"
-        );
+        assert_eq!(plan.ranks[&1], expected);
         let (idx, comment) = plan
             .carries
             .first()
             .copied()
-            .expect("X carries its comment");
+            .expect("the member below the comment carries it");
         assert_eq!(idx, 1);
         assert_eq!(source.slice(comment), "# note");
     }
@@ -399,24 +398,28 @@ mod tests {
         );
     }
 
-    #[test]
-    fn module_band_plan_pins_a_constant_below_a_banner() {
-        let source = parse("def f():\n    pass\n\n# =====\n\nX = 1\n");
+    #[rstest]
+    #[case("def f():\n    pass\n\n# =====\n\nX = 1\n")]
+    #[case("X = 1\n\n# =====\n\ndef f():\n    pass\n")]
+    fn module_band_plan_pins_a_member_below_a_banner(#[case] src: &str) {
+        let source = parse(src);
         let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&1),
-            "a banner divides sections, so X pins below it"
+            "a banner divides sections, so the member below it pins"
         );
         assert!(plan.carries.is_empty());
     }
 
-    #[test]
-    fn module_band_plan_pins_a_constant_below_a_directive() {
-        let source = parse("def f():\n    pass\n\n# fmt: on\n\nX = 1\n");
+    #[rstest]
+    #[case("def f():\n    pass\n\n# fmt: on\n\nX = 1\n")]
+    #[case("X = 1\n\n# fmt: on\n\ndef f():\n    pass\n")]
+    fn module_band_plan_pins_a_member_below_a_directive(#[case] src: &str) {
+        let source = parse(src);
         let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&1),
-            "a format directive drives its own line, so X pins below it"
+            "a format directive drives its own line, so the member below it pins"
         );
         assert!(plan.carries.is_empty());
     }
