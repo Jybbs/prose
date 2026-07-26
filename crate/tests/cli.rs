@@ -1,10 +1,7 @@
 //! End-to-end tests against the `prose` binary, exercising
 //! `cli::run` and the exit-code matrix.
 
-use std::{
-    fs::write,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use assert_cmd::{Command, assert::Assert};
 use rstest::rstest;
@@ -17,46 +14,6 @@ const ALIGNS: &str = include_str!("fixtures/notebook/code_cell_aligns/input.ipyn
 const EMPTY: &str = include_str!("fixtures/notebook/empty/input.ipynb");
 const INTERLEAVED: &str = include_str!("fixtures/notebook/markdown_interleaved/input.ipynb");
 
-/// The unaligned two-assignment source the reformat and config-resolution
-/// tests reuse. `AB` is SCREAMING_CASE and `x` a single character, so the
-/// lint rules pass it silently while `align-equals` still reshapes it.
-const UNALIGNED: &str = "AB = 1\nx = 2\n";
-
-/// An unaligned assignment pair whose first value holds a literal
-/// `U+001B`, the byte an ANSI-stripping writer reads as an escape
-/// opener and drops along with the character after it.
-const ESCAPE_IN_LITERAL: &str = "AB = \"X\u{1b}Y\"\nc = 2\n";
-
-/// Two code cells, the second carrying a misaligned assignment pair so
-/// its diagnostic ranges into a row the first cell pushes past in the
-/// concatenated source, proving the report translates it cell-relative.
-const TWO_CODE_CELLS: &str = r#"{
-  "cells": [
-    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["import os\n", "import sys"]},
-    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["x = 1\n", "yyy = 2"]}
-  ],
-  "metadata": {
-    "language_info": {"name": "python"}
-  },
-  "nbformat": 4,
-  "nbformat_minor": 5
-}"#;
-
-/// A two-cell notebook whose out-of-order imports sit in the first cell,
-/// so the lone diagnostic falls in a non-last cell and the text emitter
-/// renders it under that cell's header.
-const FIRST_CELL_UNSORTED: &str = r#"{
-  "cells": [
-    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["import sys\n", "import os"]},
-    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["value = 1\n"]}
-  ],
-  "metadata": {
-    "language_info": {"name": "python"}
-  },
-  "nbformat": 4,
-  "nbformat_minor": 5
-}"#;
-
 /// A Python notebook whose sole code cell uses CRLF line endings. The
 /// rewrite aligns the assignment while preserving each `\r\n`.
 const CRLF_CELLS: &str = r#"{
@@ -68,6 +25,27 @@ const CRLF_CELLS: &str = r#"{
       "outputs": [],
       "source": ["ab = 1\r\n", "x = 2\r\n"]
     }
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
+/// The aligned rewrite of `ESCAPE_IN_LITERAL`, its `U+001B` intact.
+const ESCAPE_ALIGNED: &str = "AB = \"X\u{1b}Y\"\nc  = 2\n";
+
+/// An unaligned assignment pair whose first value holds a literal `U+001B`.
+const ESCAPE_IN_LITERAL: &str = "AB = \"X\u{1b}Y\"\nc = 2\n";
+
+/// A two-cell notebook whose out-of-order imports sit in the first cell,
+/// so the lone diagnostic falls in a non-last cell and the text emitter
+/// renders it under that cell's header.
+const FIRST_CELL_UNSORTED: &str = r#"{
+  "cells": [
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["import sys\n", "import os"]},
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["value = 1\n"]}
   ],
   "metadata": {
     "language_info": {"name": "python"}
@@ -95,6 +73,30 @@ const NON_PYTHON: &str = r#"{
   "nbformat_minor": 5
 }"#;
 
+/// A `[tool.prose]` table disabling the rule the shared fixture
+/// content fires, so a file governed by it checks clean.
+const SUPPRESSING_PYPROJECT: &str = "[tool.prose.rules]\nalign-equals = false\n";
+
+/// Two code cells, the second carrying a misaligned assignment pair so
+/// its diagnostic ranges into a row the first cell pushes past in the
+/// concatenated source, proving the report translates it cell-relative.
+const TWO_CODE_CELLS: &str = r#"{
+  "cells": [
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["import os\n", "import sys"]},
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["x = 1\n", "yyy = 2"]}
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
+/// The unaligned two-assignment source the reformat and config-resolution
+/// tests reuse. `AB` is SCREAMING_CASE and `x` a single character, so the
+/// lint rules pass it silently while `align-equals` still reshapes it.
+const UNALIGNED: &str = "AB = 1\nx = 2\n";
+
 /// A Python notebook whose sole code cell does not parse.
 const UNPARSEABLE_CELL: &str = r#"{
   "cells": [
@@ -113,13 +115,17 @@ const UNPARSEABLE_CELL: &str = r#"{
   "nbformat_minor": 5
 }"#;
 
-/// A `[tool.prose]` table disabling the rule the shared fixture
-/// content fires, so a file governed by it checks clean.
-const SUPPRESSING_PYPROJECT: &str = "[tool.prose.rules]\nalign-equals = false\n";
-
 fn assert_cache_hit_matches_miss(name: &str, source: &str) {
     let (_dir, path) = fixture(name, source);
     assert_warm_run_matches_cold(&[&path]);
+}
+
+fn assert_patch_keeps_escape(assert: &Assert) {
+    let stdout = stdout_utf8(assert);
+    assert!(
+        stdout.contains("AB = \"X\u{1b}Y\""),
+        "escape byte dropped from the patch: {stdout:?}"
+    );
 }
 
 /// Seeds an isolated cache by checking `path` under `seed_filter`, then
@@ -189,7 +195,7 @@ fn check_json_summary(name: &str, source: &str, code: i32) -> serde_json::Value 
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
     let dir = tempdir().expect("tempdir");
     let path = dir.path().join(name);
-    write(&path, source).expect("writes");
+    std::fs::write(&path, source).expect("writes");
     (dir, path)
 }
 
@@ -220,11 +226,12 @@ fn sibling_projects(parent: &TempDir, source: &str) -> (PathBuf, PathBuf) {
     let flagged = parent.path().join("flagged");
     std::fs::create_dir_all(&suppressed).expect("dirs create");
     std::fs::create_dir_all(&flagged).expect("dirs create");
-    write(suppressed.join("pyproject.toml"), SUPPRESSING_PYPROJECT).expect("writes pyproject");
+    std::fs::write(suppressed.join("pyproject.toml"), SUPPRESSING_PYPROJECT)
+        .expect("writes pyproject");
     let x = suppressed.join("x.py");
     let y = flagged.join("y.py");
-    write(&x, source).expect("writes");
-    write(&y, source).expect("writes");
+    std::fs::write(&x, source).expect("writes");
+    std::fs::write(&y, source).expect("writes");
     (x, y)
 }
 
@@ -244,7 +251,8 @@ fn summary_line(out: &str) -> serde_json::Value {
 /// fixture content fires.
 fn suppressed_project() -> TempDir {
     let dir = tempdir().expect("tempdir");
-    write(dir.path().join("pyproject.toml"), SUPPRESSING_PYPROJECT).expect("writes pyproject");
+    std::fs::write(dir.path().join("pyproject.toml"), SUPPRESSING_PYPROJECT)
+        .expect("writes pyproject");
     dir
 }
 
@@ -457,7 +465,7 @@ fn check_no_cache_flag_runs_clean() {
 #[test]
 fn check_relative_path_resolves_its_ancestor_config() {
     let project = suppressed_project();
-    write(project.path().join("unaligned.py"), UNALIGNED).expect("writes");
+    std::fs::write(project.path().join("unaligned.py"), UNALIGNED).expect("writes");
 
     prose()
         .args(["check", "--no-cache", "unaligned.py"])
@@ -597,13 +605,14 @@ fn check_violation_summary_anchors_with_bookmark() {
 #[test]
 fn check_warns_a_precedence_note_once_across_both_config_loads() {
     let project = tempdir().expect("tempdir");
-    write(project.path().join("prose.toml"), "code-line-length = 90\n").expect("writes prose.toml");
-    write(
+    std::fs::write(project.path().join("prose.toml"), "code-line-length = 90\n")
+        .expect("writes prose.toml");
+    std::fs::write(
         project.path().join("pyproject.toml"),
         "[tool.prose]\ncode-line-length = 100\n",
     )
     .expect("writes pyproject");
-    write(project.path().join("a.py"), "x = 1\n").expect("writes");
+    std::fs::write(project.path().join("a.py"), "x = 1\n").expect("writes");
 
     let assert = prose()
         .args(["check", "--no-cache", "a.py"])
@@ -690,6 +699,23 @@ fn config_errors_exit_four(#[case] args: &[&str]) {
     prose().args(args).assert().code(4);
 }
 
+#[rstest]
+fn cwd_config_error_exits_four(#[values("check", "format")] subcommand: &str) {
+    let project = tempdir().expect("tempdir");
+    std::fs::write(
+        project.path().join("pyproject.toml"),
+        "[this is not valid TOML\n",
+    )
+    .expect("writes pyproject");
+    std::fs::write(project.path().join("a.py"), "x = 1\n").expect("writes");
+
+    prose()
+        .args([subcommand, "--no-cache", "a.py"])
+        .current_dir(project.path())
+        .assert()
+        .code(4);
+}
+
 /// Each input drives a rule that net-shrinks the buffer (`collection-layout`
 /// collapsing or re-laying-out a literal), the shape that overran the
 /// rewritten buffer before reporting anchored to the source as written. A
@@ -719,7 +745,17 @@ fn format_dash_keeps_escape_bytes_in_piped_stdout() {
         .write_stdin(ESCAPE_IN_LITERAL)
         .assert()
         .success()
-        .stdout("AB = \"X\u{1b}Y\"\nc  = 2\n");
+        .stdout(ESCAPE_ALIGNED);
+}
+
+#[test]
+fn format_dash_prints_canonical_source_verbatim() {
+    prose()
+        .args(["format", "-"])
+        .write_stdin("x = 1\n")
+        .assert()
+        .success()
+        .stdout("x = 1\n");
 }
 
 #[test]
@@ -733,25 +769,11 @@ fn format_dash_rewrites_unaligned_stdin_to_stdout() {
 }
 
 #[test]
-fn format_dash_writes_rewrite_to_stdout() {
-    prose()
-        .args(["format", "-"])
-        .write_stdin("x = 1\n")
-        .assert()
-        .success()
-        .stdout("x = 1\n");
-}
-
-#[test]
 fn format_diff_keeps_escape_bytes_in_a_plain_patch() {
     let (_dir, path) = fixture("escape.py", ESCAPE_IN_LITERAL);
     let (mut cmd, _cache_dir) = prose_isolated();
     let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
-    let stdout = stdout_utf8(&assert);
-    assert!(
-        stdout.contains("AB = \"X\u{1b}Y\""),
-        "escape byte dropped from the patch: {stdout:?}"
-    );
+    assert_patch_keeps_escape(&assert);
 }
 
 #[test]
@@ -898,7 +920,7 @@ fn format_keeps_escape_bytes_in_the_rewritten_file() {
     let (mut cmd, _cache_dir) = prose_isolated();
     cmd.arg("format").arg(&path).assert().success();
     let after = std::fs::read_to_string(&path).expect("reads");
-    assert_eq!(after, "AB = \"X\u{1b}Y\"\nc  = 2\n");
+    assert_eq!(after, ESCAPE_ALIGNED);
 }
 
 #[test]
@@ -944,11 +966,7 @@ fn format_stdin_diff_keeps_escape_bytes_in_a_plain_patch() {
         .write_stdin(ESCAPE_IN_LITERAL)
         .assert()
         .code(1);
-    let stdout = stdout_utf8(&assert);
-    assert!(
-        stdout.contains("AB = \"X\u{1b}Y\""),
-        "escape byte dropped from the patch: {stdout:?}"
-    );
+    assert_patch_keeps_escape(&assert);
 }
 
 #[test]
@@ -980,13 +998,13 @@ fn format_unaligned_rewrites_and_re_check_is_clean() {
 #[test]
 fn format_warns_an_unknown_key_once_across_both_config_loads() {
     let project = tempdir().expect("tempdir");
-    write(
+    std::fs::write(
         project.path().join("pyproject.toml"),
         "[tool.prose]\nmax-shft = 4\n",
     )
     .expect("writes pyproject");
     let py = project.path().join("a.py");
-    write(&py, UNALIGNED).expect("writes");
+    std::fs::write(&py, UNALIGNED).expect("writes");
 
     let assert = prose()
         .args(["format", "--no-cache"])
@@ -1151,7 +1169,7 @@ fn notebook_diff_renders_per_cell_hunks() {
 #[test]
 fn notebook_discovered_in_a_directory_walk() {
     let dir = tempdir().expect("tempdir");
-    write(dir.path().join("nb.ipynb"), ALIGNS).expect("writes");
+    std::fs::write(dir.path().join("nb.ipynb"), ALIGNS).expect("writes");
     prose()
         .args(["format", "--no-cache"])
         .arg(dir.path())
