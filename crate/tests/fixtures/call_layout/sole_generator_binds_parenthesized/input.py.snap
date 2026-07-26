@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/sole_generator_binds_parenthesized/input.py
+---
+def collect_visible_rows(entries):
+    return entries
+
+
+collect_visible_rows(
+    entries=(row for row in rows if row.enabled)
+)

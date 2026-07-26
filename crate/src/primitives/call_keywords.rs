@@ -25,23 +25,13 @@ pub(crate) struct KeywordArg<'src> {
     /// `all_unique` collision guard in `keyword_args`.
     pub name: &'src str,
     /// The `name=value` text, borrowed for a keyword already in that
-    /// form and owned for a positional argument named from its parameter.
+    /// form and owned for a positional argument named from its
+    /// parameter, grouped in parentheses where the bare value does not
+    /// parse after `name=`.
     pub rendered: Cow<'src, str>,
     /// The argument's value expression, the recursion point for a
     /// consumer that reshapes a nested call.
     pub value: &'src Expr,
-}
-
-/// Resolves `call`'s callee to the parameters it binds via `targets`, the
-/// offset map [`module_call_params`] returns. `None` for an attribute
-/// call, an unresolved name, or a callee outside the map.
-pub(crate) fn resolve_call_params<'src>(
-    call: &ExprCall,
-    targets: &HashMap<TextSize, &'src Parameters>,
-) -> Option<&'src Parameters> {
-    targets
-        .get(&call.func.as_name_expr()?.range().start())
-        .copied()
 }
 
 /// Renders `call`'s arguments past any positional-only prefix as
@@ -75,9 +65,14 @@ pub(crate) fn keyword_args<'src>(
         .zip(named_params)
         .map(|(arg, param)| {
             let name = param.name().as_str();
+            let value = source.slice(arg);
             KeywordArg {
                 name,
-                rendered: Cow::Owned(format!("{name}={}", source.slice(arg))),
+                rendered: Cow::Owned(if requires_grouping(arg) {
+                    format!("{name}=({value})")
+                } else {
+                    format!("{name}={value}")
+                }),
                 value: arg,
             }
         })
@@ -91,7 +86,7 @@ pub(crate) fn keyword_args<'src>(
         .map(|arg| arg.name)
         .all_unique()
         .then_some(CallKeywords {
-            has_posonly_prefix: positional.len().min(posonly) > 0,
+            has_posonly_prefix: !positional.is_empty() && posonly > 0,
             args,
         })
 }
@@ -112,4 +107,57 @@ pub(crate) fn module_call_params(source: &Source) -> HashMap<TextSize, &Paramete
         .filter_map(|func| Some((analysis.module_function_reads(func.name.as_str())?, func)))
         .flat_map(|(reads, func)| reads.iter().map(move |&offset| (offset, &*func.parameters)))
         .collect()
+}
+
+/// Resolves `call`'s callee to the parameters it binds via `targets`, the
+/// offset map [`module_call_params`] returns. `None` for an attribute
+/// call, an unresolved name, or a callee outside the map.
+pub(crate) fn resolve_call_params<'src>(
+    call: &ExprCall,
+    targets: &HashMap<TextSize, &'src Parameters>,
+) -> Option<&'src Parameters> {
+    targets
+        .get(&call.func.as_name_expr()?.range().start())
+        .copied()
+}
+
+/// True for the two expression shapes a call's positional slot accepts
+/// and its keyword slot rejects, a bare generator expression and a named
+/// expression. Each needs a grouping pair before a `name=` prefix parses.
+fn requires_grouping(arg: &Expr) -> bool {
+    arg.is_named_expr() || arg.as_generator_expr().is_some_and(|g| !g.parenthesized)
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+    use crate::testing::{first_def, parse};
+
+    #[rstest]
+    #[case("1", "x=1")]
+    #[case("a if b else c", "x=a if b else c")]
+    #[case("lambda: 1", "x=lambda: 1")]
+    #[case("[n for n in items]", "x=[n for n in items]")]
+    #[case("a for a in items", "x=(a for a in items)")]
+    #[case("(a for a in items)", "x=(a for a in items)")]
+    #[case("y := 1", "x=(y := 1)")]
+    #[case("(y := 1)", "x=(y := 1)")]
+    fn a_positional_renders_in_a_form_the_keyword_slot_accepts(
+        #[case] argument: &str,
+        #[case] expected: &str,
+    ) {
+        let source = parse(&format!("def f(x): pass\nf({argument})\n"));
+        let call = source.ast().body[1]
+            .as_expr_stmt()
+            .expect("second statement is the call")
+            .value
+            .as_call_expr()
+            .expect("the call expression");
+        let keywords = keyword_args(&source, call, Some(&first_def(&source).parameters))
+            .expect("a sole resolved positional takes keyword form");
+
+        assert_eq!(keywords.args[0].rendered, expected);
+    }
 }

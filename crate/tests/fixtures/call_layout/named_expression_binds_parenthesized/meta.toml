@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Named Expression Argument Takes a Grouping Pair"
+
+description = '''
+A named expression binds its value and passes it positionally in one argument, a form the keyword slot rejects, so the count trigger's explode parenthesizes it and keeps the walrus binding intact.
+'''
