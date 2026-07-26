@@ -34,12 +34,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "single-use-variables",
     "end_location": {
       "column": 11,
-      "row": 27
+      "row": 26
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 27
+      "row": 26
     },
     "message": "`cutoff` is assigned and used once. Consider inlining `before or 0.0`"
   },
@@ -47,12 +47,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "single-use-variables",
     "end_location": {
       "column": 11,
-      "row": 44
+      "row": 43
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 44
+      "row": 43
     },
     "message": "`digest` is assigned and used once. Consider inlining `hashlib.sha256(payload.encode(encoding)).hexdigest()`"
   },
@@ -60,12 +60,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "unsorted-positionals",
     "end_location": {
       "column": 2,
-      "row": 39
+      "row": 38
     },
     "fix": null,
     "location": {
       "column": 19,
-      "row": 33
+      "row": 32
     },
     "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
   },
@@ -73,12 +73,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "unsorted-positionals",
     "end_location": {
       "column": 37,
-      "row": 57
+      "row": 56
     },
     "fix": null,
     "location": {
       "column": 17,
-      "row": 57
+      "row": 56
     },
     "message": "Positional run is out of alphabetical order. Reordering rebinds every positional call site, so apply it by hand where every caller binds by keyword"
   },
@@ -86,12 +86,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "signature-annotations",
     "end_location": {
       "column": 23,
-      "row": 18
+      "row": 17
     },
     "fix": null,
     "location": {
       "column": 11,
-      "row": 18
+      "row": 17
     },
     "message": "Parameter `archive_root` has no type annotation"
   },
@@ -99,12 +99,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "signature-annotations",
     "end_location": {
       "column": 13,
-      "row": 36
+      "row": 35
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 36
+      "row": 35
     },
     "message": "Parameter `encoding` has no type annotation"
   },
@@ -112,12 +112,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "signature-annotations",
     "end_location": {
       "column": 11,
-      "row": 37
+      "row": 36
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 37
+      "row": 36
     },
     "message": "Parameter `indent` has no type annotation"
   },
@@ -125,12 +125,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "signature-annotations",
     "end_location": {
       "column": 14,
-      "row": 38
+      "row": 37
     },
     "fix": null,
     "location": {
       "column": 5,
-      "row": 38
+      "row": 37
     },
     "message": "Parameter `overwrite` has no type annotation"
   },
@@ -138,12 +138,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "signature-annotations",
     "end_location": {
       "column": 28,
-      "row": 57
+      "row": 56
     },
     "fix": null,
     "location": {
       "column": 24,
-      "row": 57
+      "row": 56
     },
     "message": "Parameter `root` has no type annotation"
   },
@@ -151,12 +151,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "signature-annotations",
     "end_location": {
       "column": 36,
-      "row": 57
+      "row": 56
     },
     "fix": null,
     "location": {
       "column": 30,
-      "row": 57
+      "row": 56
     },
     "message": "Parameter `loader` has no type annotation"
   },
@@ -164,12 +164,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "signature-annotations",
     "end_location": {
       "column": 22,
-      "row": 63
+      "row": 62
     },
     "fix": null,
     "location": {
       "column": 19,
-      "row": 63
+      "row": 62
     },
     "message": "Parameter `key` has no type annotation"
   },
@@ -177,12 +177,12 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
     "code": "signature-annotations",
     "end_location": {
       "column": 12,
-      "row": 63
+      "row": 62
     },
     "fix": null,
     "location": {
       "column": 9,
-      "row": 63
+      "row": 62
     },
     "message": "`get` returns a value but has no return type annotation"
   }

@@ -10,16 +10,17 @@ import logging
 from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Text
 from typing import Tuple, Union
 
-Interval       = Union[int, float]
-Payload        = Dict[Text, Any]
+Interval      = Union[int, float]
+Payload       = Dict[Text, Any]
+POLL_INTERVAL = 2.5
+
+Handler        = Callable[[Payload], Awaitable[None]]
+log            = logging.getLogger("atlas.client")
 BACKOFF_CAPS   = {"default": 30.0}
-POLL_INTERVAL  = 2.5
 RETRY_STATUSES = [429, 500, 502, 503]
 USER_AGENT     = "atlas-client/0.4"
 _handlers: Dict[Text, Callable] = {}
-log = logging.getLogger("atlas.client")
 
-Handler         = Callable[[Payload], Awaitable[None]]
 DEFAULT_HEADERS = {
     "Accept"          : "application/json",
     "Accept-Encoding" : "gzip",

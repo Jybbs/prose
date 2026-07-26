@@ -33,8 +33,8 @@ use crate::{
 /// names in its value and its non-deferred annotation, and whether the
 /// value runs code at binding. Value references pin the constant when
 /// unresolved, whereas annotation references only constrain band order.
-/// `effectful` holds only inside a notebook cell, pinning the constant
-/// there.
+/// `effectful` holds when the value runs code as it binds, pinning the
+/// constant in place.
 struct ConstSite<'src> {
     annot_refs: Vec<&'src str>,
     effectful: bool,
@@ -58,7 +58,6 @@ pub(super) fn module_band_plan<'src>(
     let analysis = source.binding_analysis();
     let aliases = group_constants.then(|| AliasContext::new(body, analysis));
     let builtins_minor = target_version.unwrap_or_default().minor;
-    let notebook = source.is_notebook();
     let suppression = source.suppression_map();
     let mut def_at: HashMap<&'src str, usize> = HashMap::new();
     let mut dup_defs: HashSet<&'src str> = HashSet::new();
@@ -129,7 +128,7 @@ pub(super) fn module_band_plan<'src>(
                             .as_ann_assign_stmt()
                             .filter(|_| !defer_annotations)
                             .map_or_else(Vec::new, |ann| eval_refs(&ann.annotation)),
-                        effectful: notebook && value.is_some_and(value_is_effectful),
+                        effectful: value.is_some_and(value_is_effectful),
                         idx,
                         name,
                         subcategory: aliases
@@ -220,6 +219,10 @@ pub(super) fn module_band_plan<'src>(
             continue;
         }
         for &name in site.value_refs.iter().chain(&site.annot_refs) {
+            // A recursive self-reference does not constrain band order.
+            if name == site.name {
+                continue;
+            }
             if let Some(&def) = def_at.get(name) {
                 edges.push((site.idx, def));
             } else {
@@ -301,8 +304,13 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::primitives::orderer::block_ranges;
+    use crate::primitives::{orderer::block_ranges, sections::Sections};
     use crate::testing::{notebook, parse};
+
+    /// `src` parsed as the sole statement below a module-level definition.
+    fn below_a_definition(src: &str) -> Source {
+        parse(&format!("def build():\n    return 1\n\n\n{src}\n"))
+    }
 
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
@@ -329,14 +337,59 @@ mod tests {
         );
     }
 
+    #[rstest]
+    #[case("TABLE = dict(timeout=30)")]
+    #[case("SIZES = [sum([1, 2]), 3]")]
+    fn module_band_plan_anchors_an_effectful_constant(#[case] src: &str) {
+        let source = below_a_definition(src);
+        let plan = plan_of(&source).expect("acyclic module plans");
+        assert!(
+            !plan.ranks.contains_key(&1),
+            "{src} runs code as it binds, so it pins in place"
+        );
+    }
+
     #[test]
-    fn module_band_plan_bands_a_builtin_valued_constant_as_leading() {
-        let source = parse("def build():\n    return 1\n\n\nTABLE = dict(timeout=30)\n");
+    fn module_band_plan_bands_a_builtin_named_constant_as_leading() {
+        let source = below_a_definition("TABLE = dict");
         let plan = plan_of(&source).expect("acyclic module plans");
         assert_eq!(
             plan.ranks[&1],
             BandRank::Leading,
-            "dict is a builtin, so TABLE rides the leading band"
+            "dict is a builtin name, so TABLE rides the leading band"
+        );
+    }
+
+    #[test]
+    fn module_band_plan_bands_across_a_constant_self_reference() {
+        let source = parse("def build():\n    return 1\n\n\ntype Node = Node | None\nLIMIT = 5\n");
+        let body = &source.ast().body;
+        let blocks = block_ranges(&source, body, source.module_range());
+        let sections = Sections::of(&source, &blocks);
+        let mut order: Vec<usize> = (0..body.len()).collect();
+        plan_of(&source)
+            .expect("acyclic module plans")
+            .apply(body, &sections, &[], true, None, &mut order)
+            .expect("a self-reference builds no edge, so the band stays sound");
+        assert_eq!(
+            order,
+            vec![1, 2, 0],
+            "the alias and the constant hoist above build"
+        );
+    }
+
+    #[rstest]
+    #[case("SCALE = 2 * 3")]
+    #[case("LIMITS = [1, 2]")]
+    #[case("LOOKUP = {\"a\": 1}")]
+    #[case("KEY = lambda row: row.score")]
+    fn module_band_plan_bands_an_inert_constant_as_leading(#[case] src: &str) {
+        let source = below_a_definition(src);
+        let plan = plan_of(&source).expect("acyclic module plans");
+        assert_eq!(
+            plan.ranks[&1],
+            BandRank::Leading,
+            "{src} only builds a result, so it rides the leading band"
         );
     }
 
