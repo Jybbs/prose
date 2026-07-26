@@ -26,11 +26,21 @@ Line-level directives split by severity, with rewrite suppression taking the `sk
 
 ### Rewrite Suppression
 
-`# fmt: skip` *(equivalent to `# prose: skip`)* suppresses every auto-fix rewrite on the line:
+`# fmt: skip` *(equivalent to `# prose: skip`)* suppresses every auto-fix rewrite on the logical line it trails:
 
 ```python
 data = {"a": 1, "b": 2, "c": 3}  # fmt: skip
 ```
+
+A directive trailing a wrapped statement covers every physical line that statement spans, from its opening line through the directive's own, so a rule's co-dependent edits are withheld together rather than half-applied:
+
+```python
+z = (
+    x
+)  # fmt: skip
+```
+
+A directive sitting inside a bracketed construct, where the logical line runs on past it, covers its own physical line alone.
 
 `# prose: skip` and its bracketed variants narrow to listed rules:
 
@@ -39,7 +49,7 @@ foo = 1  # prose: skip[align-equals]
 bar = 2  # prose: skip[align-equals, strip-trailing-commas]
 ```
 
-A bare `# fmt: skip` or `# prose: skip` widens to every rewrite rule on the line. A bracketed list scopes to the named rules, with unknown rule slugs dropped silently and two bracketed directives on the same line unioning their rule sets.
+A bare `# fmt: skip` or `# prose: skip` widens to every rewrite rule on that logical line. A bracketed list scopes to the named rules, with unknown rule slugs dropped silently and two bracketed directives on the same line unioning their rule sets.
 
 ### Lint Suppression
 

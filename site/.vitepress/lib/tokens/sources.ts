@@ -107,7 +107,7 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: '# prose: keep',           href: '/reference/suppression-directives#dict-literal-order-preservation', blurb: 'Preserve the authored shape against rewrites.' },
     { key: '# fmt: off',              href: '/reference/suppression-directives#block-markers',                   blurb: 'Block-format suppression open.' },
     { key: '# fmt: on',               href: '/reference/suppression-directives#block-markers',                   blurb: 'Block-format suppression close.' },
-    { key: '# fmt: skip',             href: '/reference/suppression-directives#line-markers',                    blurb: 'Single-line format suppression.' }
+    { key: '# fmt: skip',             href: '/reference/suppression-directives#line-markers',                    blurb: 'Format suppression across the logical line it trails.' }
   ]
 }
 

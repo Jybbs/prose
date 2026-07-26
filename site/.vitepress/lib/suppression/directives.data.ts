@@ -82,7 +82,7 @@ const SOURCES: readonly DirectiveSource[] = [
     scope   : 'dict'
   },
   {
-    effect  : 'Every auto-fix rule skips the line carrying the directive. Pairs with '
+    effect  : 'Every auto-fix rule skips the logical line the directive trails. Pairs with '
             + '`[<rule>, ...]` to narrow the scope.',
     example : 'data = {"a": 1, "b": 2, "c": 3}  # fmt: skip',
     form    : '# fmt: skip',
@@ -90,15 +90,15 @@ const SOURCES: readonly DirectiveSource[] = [
     scope   : 'line'
   },
   {
-    effect  : 'Alias for `# fmt: skip`. Every auto-fix rule skips the line carrying the directive.',
+    effect  : 'Alias for `# fmt: skip`. Every auto-fix rule skips the logical line it trails.',
     example : 'data = {"a": 1, "b": 2, "c": 3}  # prose: skip',
     form    : '# prose: skip',
     id      : 'prose-skip',
     scope   : 'line'
   },
   {
-    effect  : 'Only the listed auto-fix rules skip the line. Two bracketed directives on one '
-            + 'line union their rule slugs.',
+    effect  : 'Only the listed auto-fix rules skip that logical line. Two bracketed directives '
+            + 'on one line union their rule slugs.',
     example : 'foo = 1  # prose: skip[align-equals, strip-trailing-commas]',
     form    : '# prose: skip[<rule>, ...]',
     id      : 'prose-skip-rules',

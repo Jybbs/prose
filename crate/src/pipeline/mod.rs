@@ -54,23 +54,17 @@ impl Pipeline {
     /// diagnostics, both filtered through the suppression map exactly as
     /// [`run`](Self::run) filters them.
     pub fn diagnose(&self, source: &Source) -> Vec<Diagnostic> {
-        let suppression = source.suppression_map();
-        if suppression.file_is_suppressed() {
+        if source.suppression_map().file_is_suppressed() {
             return Vec::new();
         }
         let mut diagnostics = Vec::new();
         for rule in &self.rules {
             let rule_id = rule.id();
-            let groups = prepared_groups(&**rule, source, suppression, rule_id);
-            let message = rule.message();
-            diagnostics.extend(
-                groups
-                    .into_iter()
-                    .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
-            );
-            diagnostics.extend(unsuppressed_lints(&**rule, source, suppression));
+            let groups = prepared_groups(&**rule, source, rule_id);
+            diagnostics.extend(format_diagnostics(rule_id, groups, rule.message()));
+            diagnostics.extend(unsuppressed_lints(&**rule, source));
         }
-        drop_suppressed_lints(&mut diagnostics, source, suppression);
+        drop_suppressed_lints(&mut diagnostics, source);
         diagnostics
     }
 
@@ -93,11 +87,11 @@ impl Pipeline {
     /// rule emitted.
     ///
     /// File-level `# prose: off` short-circuits to identity. The
-    /// suppression map otherwise filters each fix group's edits per-rule
-    /// (off spans plus `# prose: skip[<id>]`), drops a group left empty,
-    /// and filters lint diagnostics per-line (`# prose: ignore`).
-    /// Alignment rules pre-exclude suppressed rows before grouping, so
-    /// this edit-level pass is a no-op for them.
+    /// suppression map otherwise drops each fix group holding a
+    /// suppressed edit (off spans plus `# prose: skip[<id>]`), drops an
+    /// empty group, and filters lint diagnostics per-line
+    /// (`# prose: ignore`). Alignment rules pre-exclude suppressed rows
+    /// before grouping, so this group-level pass is a no-op for them.
     ///
     /// # Errors
     ///
@@ -110,31 +104,21 @@ impl Pipeline {
         let (source, mut diagnostics) = self.rules.iter().try_fold(
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
-                let suppression = source.suppression_map();
                 let rule_id = rule.id();
-                let groups = prepared_groups(&**rule, &source, suppression, rule_id);
-                diagnostics.extend(unsuppressed_lints(&**rule, &source, suppression));
-                if groups.is_empty() {
-                    return Ok((source, diagnostics));
-                }
-                let message = rule.message();
-                let Some((new_text, map)) = weave_groups(&source, groups.concat()) else {
+                diagnostics.extend(unsuppressed_lints(&**rule, &source));
+                let Some((groups, new_text, map)) = woven_groups(&**rule, &source, rule_id) else {
                     return Ok((source, diagnostics));
                 };
                 debug_assert!(
                     new_text != source.text(),
                     "rule `{rule_id}` emitted edits that produced identical text",
                 );
-                diagnostics.extend(
-                    groups
-                        .into_iter()
-                        .map(|group| Diagnostic::format(rule_id, group, message.to_owned())),
-                );
+                diagnostics.extend(format_diagnostics(rule_id, groups, rule.message()));
                 let next = reparse_or_reject(&source, new_text, rule_id, map)?;
                 Ok((next, diagnostics))
             },
         )?;
-        drop_suppressed_lints(&mut diagnostics, &source, source.suppression_map());
+        drop_suppressed_lints(&mut diagnostics, &source);
         Ok((source, diagnostics))
     }
 
@@ -153,11 +137,7 @@ impl Pipeline {
             .iter()
             .try_fold(source, |source, rule| {
                 let rule_id = rule.id();
-                let groups = prepared_groups(&**rule, &source, source.suppression_map(), rule_id);
-                if groups.is_empty() {
-                    return Ok(source);
-                }
-                let Some((new_text, map)) = weave_groups(&source, groups.concat()) else {
+                let Some((_, new_text, map)) = woven_groups(&**rule, &source, rule_id) else {
                     return Ok(source);
                 };
                 reparse_or_reject(&source, new_text, rule_id, map)
@@ -166,15 +146,43 @@ impl Pipeline {
     }
 }
 
+/// The format diagnostics `rule_id`'s surviving fix groups emit, one
+/// per group.
+fn format_diagnostics(
+    rule_id: RuleId,
+    groups: Vec<Vec<Edit>>,
+    message: &'static str,
+) -> impl Iterator<Item = Diagnostic> {
+    groups
+        .into_iter()
+        .map(move |group| Diagnostic::format(rule_id, group, message.to_owned()))
+}
+
 /// Splices a rule's concatenated edits into `source`, returning the
 /// woven text and, for a notebook, the `SourceMap` of cell-offset
 /// deltas. An ordinary module skips the map.
 fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<SourceMap>)> {
-    if !source.is_notebook() {
-        apply_edits(source.text(), edits).map(|text| (text, None))
-    } else {
+    if source.is_notebook() {
         apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
+    } else {
+        apply_edits(source.text(), edits).map(|text| (text, None))
     }
+}
+
+/// Applies `rule` to `source` and weaves its surviving fix groups into
+/// new text, returning `None` when no group survives or the edits do not
+/// apply.
+fn woven_groups(
+    rule: &dyn Rule,
+    source: &Source,
+    rule_id: RuleId,
+) -> Option<(Vec<Vec<Edit>>, String, Option<SourceMap>)> {
+    let groups = prepared_groups(rule, source, rule_id);
+    if groups.is_empty() {
+        return None;
+    }
+    let (new_text, map) = weave_groups(source, groups.concat())?;
+    Some((groups, new_text, map))
 }
 
 #[cfg(test)]
@@ -453,12 +461,34 @@ mod tests {
     }
 
     #[test]
+    fn run_drops_a_whole_group_holding_one_suppressed_edit() {
+        // Source: "# fmt: off\nx = 1\n# fmt: on\nz = 9\n"
+        //         |0--------|11----|17--------|27----|33
+        // The group bundles an edit at 11..16 (inside the suppressed
+        // [0..17) span) with one at 27..32. The group drops as a unit,
+        // so the unsuppressed edit never applies alone.
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![
+                Edit::range_replacement("y".to_owned(), range(11, 16)),
+                Edit::range_replacement("Z".to_owned(), range(27, 32)),
+            ]],
+            id: RuleId::from("rewrite-x-and-z"),
+        })]);
+        let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
+
+        let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
+
+        assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
+        assert!(diagnostics.is_empty());
+    }
+
+    #[test]
     fn run_drops_edits_whose_range_overlaps_a_suppressed_span() {
         // Source: "# fmt: off\nx = 1\n# fmt: on\nz = 9\n"
         //         |0--------|11----|17--------|27----|33
         // Edit at 11..16 (`x = 1`) sits inside the suppressed
         // [0..17) span and must be dropped, leaving the unsuppressed
-        // edit at 27..32 (`z = 9`) to apply.
+        // edit at 27..32 (`z = 9`) in its own group to apply.
         let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
             groups: singleton_groups(vec![
                 Edit::range_replacement("y".to_owned(), range(11, 16)),
@@ -473,38 +503,6 @@ mod tests {
         assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nZ\n");
         assert_eq!(diagnostics.len(), 1);
         assert_eq!(diagnostics[0].rule.as_str(), "rewrite-x-and-z");
-    }
-
-    #[test]
-    fn run_drops_only_the_suppressed_edit_within_a_group() {
-        // Source: "# fmt: off\nx = 1\n# fmt: on\nz = 9\n"
-        //         |0--------|11----|17--------|27----|33
-        // The group bundles an edit at 11..16 (inside the suppressed
-        // [0..17) span) with one at 27..32. Per-edit filtering drops
-        // only the suppressed edit, leaving the survivor to apply as a
-        // single-edit fix.
-        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
-            groups: vec![vec![
-                Edit::range_replacement("y".to_owned(), range(11, 16)),
-                Edit::range_replacement("Z".to_owned(), range(27, 32)),
-            ]],
-            id: RuleId::from("rewrite-x-and-z"),
-        })]);
-        let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
-
-        let (result, diagnostics) = pipeline.run(source).expect("filtered run succeeds");
-
-        assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nZ\n");
-        assert_eq!(diagnostics.len(), 1);
-        assert_eq!(
-            diagnostics[0]
-                .fix
-                .as_ref()
-                .expect("survivor fix")
-                .edits()
-                .len(),
-            1
-        );
     }
 
     #[test]

@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 
 use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_python_stdlib::builtins::is_python_builtin;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::TextRange;
 
 use super::{
     BandConstants,
@@ -67,13 +67,10 @@ pub(super) fn module_band_plan<'src>(
     let mut carries: Vec<(usize, TextRange)> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
-        // A `# fmt: off` span or a `# prose: skip` line pins its
-        // statement, so a single-edit reorder never crosses a region the
-        // pipeline drops the whole edit for.
-        if suppression.intersects(stmt)
-            || suppression
-                .is_format_suppressed_at(source.line_index(stmt.start()), BandConstants::SLUG)
-        {
+        // A `# fmt: off` span or a skip directive pins its statement, so
+        // a reorder never moves a member the pipeline would then drop the
+        // whole group for.
+        if suppression.suppresses(stmt, BandConstants::SLUG) {
             continue;
         }
         // The own-line comment in the gap above the statement, if any.
