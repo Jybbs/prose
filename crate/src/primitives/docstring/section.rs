@@ -193,6 +193,13 @@ pub(crate) fn section_heading(trimmed: &str) -> bool {
     SECTION_HEADING.is_match(trimmed)
 }
 
+/// True when `trimmed` is an [`entry_head`] carrying a parenthesized
+/// type group, the `name (type): description` shape.
+pub(crate) fn typed_entry_head(trimmed: &str) -> bool {
+    unbracketed_colon(trimmed).is_some_and(|colon| trimmed[..colon].trim_end().ends_with(')'))
+        && entry_head(trimmed).is_some()
+}
+
 /// Byte offset of the first `:` in `s` that sits at paren-and-bracket
 /// depth zero, skipping the colons nested inside a parenthesized type
 /// or a bracketed subscript. `None` when every colon is nested or the
@@ -416,6 +423,17 @@ mod tests {
         assert!(!section_heading("Foo bar:"));
         assert!(!section_heading("1Args:"));
         assert!(!section_heading(": no name"));
+    }
+
+    #[test]
+    fn typed_entry_head_requires_a_parenthesized_type_group() {
+        assert!(typed_entry_head("markup (str): a string."));
+        assert!(typed_entry_head("records (List[Tuple[int, str]]): rows"));
+        assert!(typed_entry_head("*args (int): payload"));
+        assert!(!typed_entry_head("markup: a string."));
+        assert!(!typed_entry_head("name (only: parens)"));
+        assert!(!typed_entry_head("See https://example.com for details."));
+        assert!(!typed_entry_head("just prose with no colon"));
     }
 
     #[test]

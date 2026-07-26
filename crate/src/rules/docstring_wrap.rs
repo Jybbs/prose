@@ -4,11 +4,9 @@
 //! `docstring_structured_policy` selects. Entry-carrying sections, those
 //! holding `name: description` entries, wrap each entry to
 //! `docstring_line_length` with a hanging indent at the description's
-//! start column. Verbatim regions
-//! (triple-backtick fences, blocks indented one step beyond the body,
-//! list items, and doctest blocks) pass through unchanged.
-//! reStructuredText markup, Sphinx directives, and Numpydoc style
-//! pass through unwrapped.
+//! start column. Every region [`LineScan`] marks verbatim passes
+//! through unchanged, as does a `name (type):` field header standing
+//! outside any section.
 
 use ruff_diagnostics::Edit;
 use textwrap::{Options, WordSeparator, WordSplitter};
@@ -18,7 +16,7 @@ use crate::{
     primitives::{
         docstring::{
             DocstringBody, LineScan, LineScanner, ScannedLine, entry_head, indent_prefix,
-            rewrite_docstrings, section_heading, triple_quoted_body,
+            rewrite_docstrings, section_heading, triple_quoted_body, typed_entry_head,
         },
         edit::narrowed_replacement,
     },
@@ -90,12 +88,12 @@ struct Walker<'a> {
 }
 
 impl Walker<'_> {
-    fn buffer_description(&mut self, indent: &str, line: &str) {
+    fn buffer_description(&mut self, indent: &str, trimmed: &str) {
         if self.paragraph.lines.is_empty() {
             indent.clone_into(&mut self.paragraph.initial_indent);
             indent.clone_into(&mut self.paragraph.subsequent_indent);
         }
-        self.paragraph.lines.push(line.to_owned());
+        self.paragraph.lines.push(trimmed.to_owned());
     }
 
     fn consume(&mut self, line: &str) {
@@ -108,8 +106,7 @@ impl Walker<'_> {
 
         match scan {
             LineScan::Fence | LineScan::ListMarker | LineScan::VerbatimOpen => {
-                self.flush_paragraph();
-                self.emit_verbatim(line);
+                self.flush_verbatim(line);
                 return;
             }
             LineScan::InFence | LineScan::ListContinuation | LineScan::Verbatim => {
@@ -126,16 +123,14 @@ impl Walker<'_> {
 
         let body_indent = self.scanner.body_indent_chars();
         if indent_chars == body_indent && section_heading(trimmed) {
-            self.flush_paragraph();
+            self.flush_verbatim(line);
             self.region = Region::Section;
-            self.emit_verbatim(line);
             return;
         }
 
-        let text = trimmed.trim_end();
         if let Region::SectionEntry(hanging_col) = self.region {
-            if self.is_entry_continuation(indent_chars, text, hanging_col) {
-                self.paragraph.lines.push(text.to_owned());
+            if self.is_entry_continuation(indent_chars, trimmed, hanging_col) {
+                self.paragraph.lines.push(trimmed.to_owned());
                 return;
             }
             self.flush_paragraph();
@@ -147,8 +142,7 @@ impl Walker<'_> {
             Region::SectionEntry(_) => unreachable!("entries handled above"),
         };
         if indent_chars > prose_indent {
-            self.flush_paragraph();
-            self.emit_verbatim(line);
+            self.flush_verbatim(line);
             return;
         }
 
@@ -158,13 +152,14 @@ impl Walker<'_> {
         }
 
         match self.region {
-            Region::Description => self.buffer_description(indent, text),
+            Region::Description if typed_entry_head(trimmed) => self.flush_verbatim(line),
+            Region::Description => self.buffer_description(indent, trimmed),
             Region::Section => {
-                if let Some((_, desc_col)) = entry_head(text) {
-                    self.start_entry(indent, indent_chars, text, desc_col);
+                if let Some((_, desc_col)) = entry_head(trimmed) {
+                    self.start_entry(indent, indent_chars, trimmed, desc_col);
                     return;
                 }
-                self.emit_wrapped(indent, indent, text, self.rule.section_width);
+                self.emit_wrapped(indent, indent, trimmed, self.rule.section_width);
             }
             Region::SectionEntry(_) => unreachable!("entries handled above"),
         }
@@ -205,6 +200,11 @@ impl Walker<'_> {
         }
     }
 
+    fn flush_verbatim(&mut self, line: &str) {
+        self.flush_paragraph();
+        self.emit_verbatim(line);
+    }
+
     fn is_entry_continuation(
         &self,
         indent_chars: usize,
@@ -216,11 +216,11 @@ impl Walker<'_> {
                 && entry_head(trimmed).is_none())
     }
 
-    fn start_entry(&mut self, indent_str: &str, indent_chars: usize, text: &str, desc_col: usize) {
+    fn start_entry(&mut self, indent: &str, indent_chars: usize, trimmed: &str, desc_col: usize) {
         let hanging_col = indent_chars + desc_col;
-        indent_str.clone_into(&mut self.paragraph.initial_indent);
+        indent.clone_into(&mut self.paragraph.initial_indent);
         self.paragraph.subsequent_indent = " ".repeat(hanging_col);
-        self.paragraph.lines.push(text.to_owned());
+        self.paragraph.lines.push(trimmed.to_owned());
         self.region = Region::SectionEntry(hanging_col);
     }
 }
