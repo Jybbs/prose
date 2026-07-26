@@ -167,7 +167,7 @@ pub(super) fn module_band_plan<'src>(
                     deps[s].push(dep);
                 } else if anchor_unresolved
                     && !imports.contains(name)
-                    && !is_python_builtin(name, builtins_minor, false)
+                    && !is_python_builtin(name, builtins_minor, notebook)
                 {
                     anchored[s] = true;
                 }
@@ -177,11 +177,13 @@ pub(super) fn module_band_plan<'src>(
     propagate(&mut anchored, &deps);
     let mut trailing: Vec<bool> = (0..n).map(|s| reaches_def[s] && !anchored[s]).collect();
     propagate(&mut trailing, &deps);
+    let (trailing_members, leading_members): (Vec<usize>, Vec<usize>) =
+        (0..n).filter(|&s| !anchored[s]).partition(|&s| trailing[s]);
     let mut keys: HashMap<usize, (usize, Subcategory, &'src str)> = HashMap::new();
-    for band in [false, true] {
-        let members: Vec<usize> = (0..n)
-            .filter(|&s| !anchored[s] && trailing[s] == band)
-            .collect();
+    for (rank, members) in [
+        (BandRank::Leading, leading_members),
+        (BandRank::Trailing, trailing_members),
+    ] {
         let local: HashMap<usize, usize> =
             members.iter().enumerate().map(|(at, &s)| (s, at)).collect();
         let dep_sets: Vec<HashSet<usize>> = members
@@ -193,40 +195,37 @@ pub(super) fn module_band_plan<'src>(
                     .collect()
             })
             .collect();
-        for (s, tier) in members.iter().copied().zip(tier_levels(&dep_sets)?) {
+        for (s, tier) in members.into_iter().zip(tier_levels(&dep_sets)?) {
             keys.insert(sites[s].idx, (tier, sites[s].subcategory, sites[s].name));
-            ranks.insert(
-                sites[s].idx,
-                if band {
-                    BandRank::Trailing
-                } else {
-                    BandRank::Leading
-                },
-            );
+            ranks.insert(sites[s].idx, rank);
         }
     }
     let mut edges: Vec<(usize, usize)> = Vec::new();
-    let push_site_edge = |edges: &mut Vec<(usize, usize)>, from: usize, name: &str| {
-        if let Some(&dep) = site_at.get(name).filter(|&&dep| !anchored[dep]) {
-            edges.push((from, sites[dep].idx));
-        }
+    let site_edge = |from: usize, name: &str| {
+        site_at
+            .get(name)
+            .filter(|&&dep| !anchored[dep])
+            .map(|&dep| (from, sites[dep].idx))
     };
     for (s, site) in sites.iter().enumerate() {
         if anchored[s] {
             continue;
         }
         for &name in site.value_refs.iter().chain(&site.annot_refs) {
+            if name == site.name {
+                continue;
+            }
             if let Some(&def) = def_at.get(name) {
                 edges.push((site.idx, def));
             } else {
-                push_site_edge(&mut edges, site.idx, name);
+                edges.extend(site_edge(site.idx, name));
             }
         }
     }
     for (idx, stmt) in body.iter().enumerate() {
         if ranks.get(&idx) == Some(&BandRank::Definition) {
             for name in eval_time_refs(stmt, defer_annotations) {
-                push_site_edge(&mut edges, idx, name);
+                edges.extend(site_edge(idx, name));
             }
         }
     }
@@ -298,8 +297,10 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::primitives::orderer::block_ranges;
-    use crate::testing::{notebook, parse};
+    use crate::{
+        primitives::orderer::block_ranges,
+        testing::{notebook, parse},
+    };
 
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
@@ -345,6 +346,17 @@ mod tests {
             plan.ranks[&1],
             BandRank::Leading,
             "a literal is inert, so SEED bands even inside a cell"
+        );
+    }
+
+    #[test]
+    fn module_band_plan_bands_an_ipython_builtin_reference_in_a_notebook() {
+        let source = notebook(&["def helper():\n    return 1\nSHELL = get_ipython\n"]);
+        let plan = plan_of(&source).expect("acyclic notebook plans");
+        assert_eq!(
+            plan.ranks[&1],
+            BandRank::Leading,
+            "get_ipython is a builtin inside a cell, so SHELL bands"
         );
     }
 
@@ -396,6 +408,10 @@ mod tests {
             BandRank::Leading,
             "a self-reference constrains nothing, so X leads"
         );
+        assert!(
+            plan.edges.is_empty(),
+            "a self-reference emits no edge, leaving the assembled order sound"
+        );
     }
 
     #[rstest]
@@ -445,6 +461,16 @@ mod tests {
         assert!(
             !plan.ranks.contains_key(&2),
             "SCALED references effectful RAW, so anchoring propagates and it pins"
+        );
+    }
+
+    #[test]
+    fn module_band_plan_pins_an_ipython_builtin_reference_in_a_module() {
+        let source = parse("def helper():\n    return 1\n\n\nSHELL = get_ipython\n");
+        let plan = plan_of(&source).expect("acyclic module plans");
+        assert!(
+            !plan.ranks.contains_key(&1),
+            "get_ipython resolves to nothing in a module, so SHELL pins"
         );
     }
 

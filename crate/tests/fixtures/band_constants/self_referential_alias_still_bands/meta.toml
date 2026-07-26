@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Self-Referential Type Alias Does Not Hold the Band Back"
+
+description = '''
+`Node` names itself in its own value, and the band still assembles. A self-reference constrains no ordering, so it contributes no edge to the soundness graph and the constants around it **sort as they would without it**.
+'''

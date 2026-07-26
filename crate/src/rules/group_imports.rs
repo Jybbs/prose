@@ -105,8 +105,7 @@ impl Walker<'_> {
 
 /// Returns the body and enclosing range of every direct sub-body a
 /// statement opens, the class- or function-definition suite and each arm
-/// of a compound statement alike. Empty sub-bodies are returned as-is and
-/// skipped by the caller.
+/// of a compound statement alike.
 fn sub_bodies(stmt: &Stmt) -> Vec<(&[Stmt], TextRange)> {
     if let Some((body, _)) = scoped_body(stmt) {
         return vec![(body, stmt.range())];

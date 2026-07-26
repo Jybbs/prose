@@ -72,13 +72,12 @@ impl Rule for BandConstants {
             target_version: self.target_version,
         };
         let layout = bander.band_layout(body, source.module_range());
-        let forced = layout.forced();
         let edits = assembled_cell_edits(
             source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
-            forced,
+            layout.forced(),
             |i| bander.band_gap(&layout, body, i),
         );
         singleton_groups(edits)
@@ -86,24 +85,6 @@ impl Rule for BandConstants {
 
     fn id(&self) -> RuleId {
         Self::SLUG
-    }
-}
-
-/// The banding layout of a module body: its member blocks, their
-/// rendered text, the new-order permutation, and the applied band. The
-/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
-struct BandLayout<'a> {
-    band: Option<Banding>,
-    blocks: Vec<TextRange>,
-    order: Vec<usize>,
-    rendered: Vec<Cow<'a, str>>,
-}
-
-impl BandLayout<'_> {
-    /// True when the band opens a tier blank, forcing an owned assembly
-    /// so the spacing lands even when the order is already settled.
-    fn forced(&self) -> bool {
-        self.band.as_ref().is_some_and(Banding::stratifies)
     }
 }
 
@@ -127,13 +108,12 @@ impl<'a> Bander<'a> {
     /// falling back to `Cow::Borrowed` over `source.slice(span)`.
     fn band_body(&self, body: &'a [Stmt], outer: TextRange) -> (Cow<'a, str>, TextRange) {
         let layout = self.band_layout(body, outer);
-        let forced = layout.forced();
         assemble_or_borrow(
             self.source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
-            forced,
+            layout.forced(),
             |i| self.band_gap(&layout, body, i),
         )
     }
@@ -216,7 +196,6 @@ impl<'a> Bander<'a> {
         if scoped_body(stmt).is_none() && is_compound_statement(stmt) {
             let bodies = compound_sub_bodies(stmt)
                 .into_iter()
-                .filter(|(body, _)| !body.is_empty())
                 .map(|(body, outer)| self.band_body(body, outer));
             return splice_bodies(self.source, block, bodies, &[]);
         }
@@ -224,12 +203,28 @@ impl<'a> Bander<'a> {
     }
 }
 
-/// Relocates each carried comment up with its banded statement,
-/// extending the statement's block back over the comment and prepending
-/// it to the rendered text so the hoist moves the comment rather than
-/// stranding it. The comment forward-attaches to a block opening on its
-/// statement's own line, whereas a block already opening on an attached
-/// comment keeps the source separation between the two.
+/// The banding layout of a module body: its member blocks, their
+/// rendered text, the new-order permutation, and the applied band. The
+/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
+struct BandLayout<'a> {
+    band: Option<Banding>,
+    blocks: Vec<TextRange>,
+    order: Vec<usize>,
+    rendered: Vec<Cow<'a, str>>,
+}
+
+impl BandLayout<'_> {
+    /// True when the band opens a tier blank, forcing an owned assembly
+    /// so the spacing lands even when the order is already settled.
+    fn forced(&self) -> bool {
+        self.band.as_ref().is_some_and(Banding::stratifies)
+    }
+}
+
+/// Prepends each carried comment to its banded statement's rendered text
+/// and extends the block back over it. A block opening on the statement's
+/// own line takes one newline, whereas a block already opening on an
+/// attached comment keeps the separation the source holds.
 fn apply_band_carries(
     source: &Source,
     band: &Banding,
@@ -253,8 +248,7 @@ fn apply_band_carries(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::primitives::orderer::block_ranges;
-    use crate::testing::parse;
+    use crate::{primitives::orderer::block_ranges, testing::parse};
 
     #[test]
     fn band_module_constants_hoists_an_import_below_a_definition() {
