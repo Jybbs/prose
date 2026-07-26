@@ -22,6 +22,11 @@ const INTERLEAVED: &str = include_str!("fixtures/notebook/markdown_interleaved/i
 /// lint rules pass it silently while `align-equals` still reshapes it.
 const UNALIGNED: &str = "AB = 1\nx = 2\n";
 
+/// An unaligned assignment pair whose first value holds a literal
+/// `U+001B`, the byte an ANSI-stripping writer reads as an escape
+/// opener and drops along with the character after it.
+const ESCAPE_IN_LITERAL: &str = "AB = \"X\u{1b}Y\"\nc = 2\n";
+
 /// Two code cells, the second carrying a misaligned assignment pair so
 /// its diagnostic ranges into a row the first cell pushes past in the
 /// concatenated source, proving the report translates it cell-relative.
@@ -166,6 +171,19 @@ fn assert_warm_run_matches_cold(paths: &[&Path]) -> String {
 
     assert_eq!(cold.get_output().stdout, warm.get_output().stdout);
     stdout_utf8(&warm)
+}
+
+/// Runs `check` with the JSON emitter over a fresh fixture holding
+/// `source`, returning the summary line the run closed with.
+fn check_json_summary(name: &str, source: &str, code: i32) -> serde_json::Value {
+    let (_dir, path) = fixture(name, source);
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd
+        .args(["check", "--output-format", "json"])
+        .arg(&path)
+        .assert()
+        .code(code);
+    summary_line(&stdout_utf8(&assert))
 }
 
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
@@ -389,15 +407,8 @@ fn check_file_in_another_project_draws_its_own_config() {
 
 #[test]
 fn check_json_closes_clean_run_with_summary_envelope() {
-    let (_dir, path) = fixture("clean.py", "x = 1\n");
-    let (mut cmd, _cache_dir) = prose_isolated();
-    let assert = cmd
-        .args(["check", "--output-format", "json"])
-        .arg(&path)
-        .assert()
-        .success();
-    let out = stdout_utf8(&assert);
-    let summary = summary_line(&out);
+    let summary = check_json_summary("clean.py", "x = 1\n", 0);
+
     assert_eq!(summary["kind"], "summary");
     assert_eq!(summary["diagnostics_total"], 0);
     assert_eq!(summary["files_visited"], 1);
@@ -406,29 +417,15 @@ fn check_json_closes_clean_run_with_summary_envelope() {
 
 #[test]
 fn check_json_counts_a_collapsing_literal_as_changed() {
-    let (_dir, path) = fixture("collapse.py", "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n");
-    let (mut cmd, _cache_dir) = prose_isolated();
-    let assert = cmd
-        .args(["check", "--output-format", "json"])
-        .arg(&path)
-        .assert()
-        .code(1);
-    let out = stdout_utf8(&assert);
-    let summary = summary_line(&out);
+    let summary = check_json_summary("collapse.py", "d = {\n    \"a\": 1,\n    \"b\": 2,\n}\n", 1);
+
     assert_eq!(summary["files_changed"], 1);
 }
 
 #[test]
 fn check_json_summary_counts_a_changed_file() {
-    let (_dir, path) = fixture("misaligned.py", UNALIGNED);
-    let (mut cmd, _cache_dir) = prose_isolated();
-    let assert = cmd
-        .args(["check", "--output-format", "json"])
-        .arg(&path)
-        .assert()
-        .code(1);
-    let out = stdout_utf8(&assert);
-    let summary = summary_line(&out);
+    let summary = check_json_summary("misaligned.py", UNALIGNED, 1);
+
     assert_eq!(summary["kind"], "summary");
     assert_eq!(summary["files_visited"], 1);
     assert_eq!(summary["files_changed"], 1);
@@ -716,6 +713,16 @@ fn emitters_render_shrinking_literals_without_aborting(
 }
 
 #[test]
+fn format_dash_keeps_escape_bytes_in_piped_stdout() {
+    prose()
+        .args(["format", "-"])
+        .write_stdin(ESCAPE_IN_LITERAL)
+        .assert()
+        .success()
+        .stdout("AB = \"X\u{1b}Y\"\nc  = 2\n");
+}
+
+#[test]
 fn format_dash_rewrites_unaligned_stdin_to_stdout() {
     prose()
         .args(["format", "-"])
@@ -733,6 +740,18 @@ fn format_dash_writes_rewrite_to_stdout() {
         .assert()
         .success()
         .stdout("x = 1\n");
+}
+
+#[test]
+fn format_diff_keeps_escape_bytes_in_a_plain_patch() {
+    let (_dir, path) = fixture("escape.py", ESCAPE_IN_LITERAL);
+    let (mut cmd, _cache_dir) = prose_isolated();
+    let assert = cmd.args(["format", "--diff"]).arg(&path).assert().code(1);
+    let stdout = stdout_utf8(&assert);
+    assert!(
+        stdout.contains("AB = \"X\u{1b}Y\""),
+        "escape byte dropped from the patch: {stdout:?}"
+    );
 }
 
 #[test]
@@ -874,6 +893,15 @@ fn format_json_with_surviving_lint_exits_two_without_a_stderr_disclosure() {
 }
 
 #[test]
+fn format_keeps_escape_bytes_in_the_rewritten_file() {
+    let (_dir, path) = fixture("escape.py", ESCAPE_IN_LITERAL);
+    let (mut cmd, _cache_dir) = prose_isolated();
+    cmd.arg("format").arg(&path).assert().success();
+    let after = std::fs::read_to_string(&path).expect("reads");
+    assert_eq!(after, "AB = \"X\u{1b}Y\"\nc  = 2\n");
+}
+
+#[test]
 fn format_no_cache_flag_rewrites_when_needed() {
     let (_dir, path) = fixture("unaligned.py", UNALIGNED);
     prose()
@@ -907,6 +935,20 @@ fn format_rewrites_after_check_populated_the_cache() {
         .success();
     let after = std::fs::read_to_string(&path).expect("reads");
     assert_ne!(after, UNALIGNED);
+}
+
+#[test]
+fn format_stdin_diff_keeps_escape_bytes_in_a_plain_patch() {
+    let assert = prose()
+        .args(["format", "--stdin", "--diff"])
+        .write_stdin(ESCAPE_IN_LITERAL)
+        .assert()
+        .code(1);
+    let stdout = stdout_utf8(&assert);
+    assert!(
+        stdout.contains("AB = \"X\u{1b}Y\""),
+        "escape byte dropped from the patch: {stdout:?}"
+    );
 }
 
 #[test]
@@ -972,18 +1014,6 @@ fn no_args_prints_help_and_exits_clean() {
 }
 
 #[test]
-fn notebook_check_reports_the_align_diagnostic() {
-    let (_dir, path) = fixture("nb.ipynb", ALIGNS);
-    let assert = prose()
-        .args(["check", "--no-cache"])
-        .arg(&path)
-        .assert()
-        .code(1);
-    let out = stdout_utf8(&assert);
-    assert!(out.contains("align-equals"), "stdout was {out:?}");
-}
-
-#[test]
 fn notebook_check_json_renders_cell_relative_with_cell_number() {
     let (_dir, path) = fixture("nb.ipynb", TWO_CODE_CELLS);
     let assert = prose()
@@ -1005,15 +1035,32 @@ fn notebook_check_json_renders_cell_relative_with_cell_number() {
 }
 
 #[test]
-fn notebook_check_text_renders_under_a_cell_header() {
-    let (_dir, path) = fixture("nb.ipynb", TWO_CODE_CELLS);
+fn notebook_check_reports_the_align_diagnostic() {
+    let (_dir, path) = fixture("nb.ipynb", ALIGNS);
     let assert = prose()
         .args(["check", "--no-cache"])
         .arg(&path)
         .assert()
         .code(1);
     let out = stdout_utf8(&assert);
-    assert!(out.contains("cell 2"), "cell header missing: {out:?}");
+    assert!(out.contains("align-equals"), "stdout was {out:?}");
+}
+
+#[test]
+fn notebook_check_survives_a_cache_round_trip() {
+    let (_dir, path) = fixture("nb.ipynb", ALIGNS);
+    let (mut cold, cache_dir) = prose_isolated();
+    cold.args(["check"]).arg(&path).assert().code(1);
+    let warm = prose()
+        .args(["--verbose", "check"])
+        .arg(&path)
+        .env("PROSE_CACHE_DIR", cache_dir.path())
+        .assert()
+        .code(1);
+    assert!(
+        stderr_utf8(&warm).contains("1 hits"),
+        "the second run should rehydrate from the cache",
+    );
 }
 
 #[test]
@@ -1032,20 +1079,15 @@ fn notebook_check_text_renders_a_non_last_cell_under_its_header() {
 }
 
 #[test]
-fn notebook_check_survives_a_cache_round_trip() {
-    let (_dir, path) = fixture("nb.ipynb", ALIGNS);
-    let (mut cold, cache_dir) = prose_isolated();
-    cold.args(["check"]).arg(&path).assert().code(1);
-    let warm = prose()
-        .args(["--verbose", "check"])
+fn notebook_check_text_renders_under_a_cell_header() {
+    let (_dir, path) = fixture("nb.ipynb", TWO_CODE_CELLS);
+    let assert = prose()
+        .args(["check", "--no-cache"])
         .arg(&path)
-        .env("PROSE_CACHE_DIR", cache_dir.path())
         .assert()
         .code(1);
-    assert!(
-        stderr_utf8(&warm).contains("1 hits"),
-        "the second run should rehydrate from the cache",
-    );
+    let out = stdout_utf8(&assert);
+    assert!(out.contains("cell 2"), "cell header missing: {out:?}");
 }
 
 #[test]
