@@ -15,23 +15,21 @@ use crate::{primitives::params::pins_positional_params, source::Source};
 /// Every nameable argument of a call in source order, flagged when a
 /// leading positional-only argument keeps its slot.
 pub(crate) struct CallKeywords<'src> {
-    pub args: Vec<KeywordArg<'src>>,
-    pub has_posonly_prefix: bool,
+    pub(crate) args: Vec<KeywordArg<'src>>,
+    pub(crate) has_posonly_prefix: bool,
 }
 
 /// One argument of a call rendered as a `name=value` keyword binding.
 pub(crate) struct KeywordArg<'src> {
     /// The bound parameter or keyword name, the key for the
     /// `all_unique` collision guard in `keyword_args`.
-    pub name: &'src str,
+    pub(crate) name: &'src str,
     /// The `name=value` text, borrowed for a keyword already in that
-    /// form and owned for a positional argument named from its
-    /// parameter, grouped in parentheses where the bare value does not
-    /// parse after `name=`.
-    pub rendered: Cow<'src, str>,
+    /// form and owned for a positional argument named from its parameter.
+    pub(crate) rendered: Cow<'src, str>,
     /// The argument's value expression, the recursion point for a
     /// consumer that reshapes a nested call.
-    pub value: &'src Expr,
+    pub(crate) value: &'src Expr,
 }
 
 /// Renders `call`'s arguments past any positional-only prefix as
@@ -49,9 +47,6 @@ pub(crate) fn keyword_args<'src>(
     let positional = &call.arguments.args;
     let keywords = &call.arguments.keywords;
     if positional.iter().any(Expr::is_starred_expr) || keywords.iter().any(|kw| kw.arg.is_none()) {
-        return None;
-    }
-    if !positional.is_empty() && params.is_none() {
         return None;
     }
     let posonly = params.map_or(0, |p| p.posonlyargs.len());
@@ -86,8 +81,8 @@ pub(crate) fn keyword_args<'src>(
         .map(|arg| arg.name)
         .all_unique()
         .then_some(CallKeywords {
-            has_posonly_prefix: !positional.is_empty() && posonly > 0,
             args,
+            has_posonly_prefix: !positional.is_empty() && posonly > 0,
         })
 }
 
@@ -121,9 +116,8 @@ pub(crate) fn resolve_call_params<'src>(
         .copied()
 }
 
-/// True for the two expression shapes a call's positional slot accepts
-/// and its keyword slot rejects, a bare generator expression and a named
-/// expression. Each needs a grouping pair before a `name=` prefix parses.
+/// True for a bare generator expression or a named expression, the
+/// shapes a call's positional slot accepts and its keyword slot rejects.
 fn requires_grouping(arg: &Expr) -> bool {
     arg.is_named_expr() || arg.as_generator_expr().is_some_and(|g| !g.parenthesized)
 }

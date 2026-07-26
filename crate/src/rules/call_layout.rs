@@ -47,13 +47,12 @@ impl CallLayout {
 
 impl Rule for CallLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let targets = module_call_params(source);
         let mut exploder = Exploder {
             cap: self.max_args,
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             source,
-            targets: &targets,
+            targets: module_call_params(source),
         };
         exploder.visit_body(&source.ast().body);
         singleton_groups(exploder.edits)
@@ -69,7 +68,7 @@ struct Exploder<'a> {
     code_line_length: usize,
     edits: Vec<Edit>,
     source: &'a Source,
-    targets: &'a HashMap<TextSize, &'a Parameters>,
+    targets: HashMap<TextSize, &'a Parameters>,
 }
 
 impl Exploder<'_> {
@@ -89,7 +88,7 @@ impl Exploder<'_> {
         if !count_trips && !length_trips {
             return None;
         }
-        match keyword_args(self.source, call, resolve_call_params(call, self.targets)) {
+        match keyword_args(self.source, call, resolve_call_params(call, &self.targets)) {
             Some(keywords) if !keywords.has_posonly_prefix => {
                 Some(self.explode_keywords(&keywords, arguments, indent))
             }
