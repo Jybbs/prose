@@ -150,13 +150,10 @@ fn annotated_assignment_groups(
 }
 
 /// Builds a `:`-anchored alignment member whose left-hand side is `lhs`,
-/// searching for the colon between `lhs.end()` and `value`'s
-/// parenthesis-aware start recovered against `parent`. The scan opens
-/// past `lhs.end()` so a colon inside the left-hand side (a slice, a
-/// nested annotation) never anchors, and the member is rejected when the
-/// colon does not share `lhs`'s opening line. `value_gap` runs from just
-/// past the colon to that start, the span an aligned or stripped row
-/// rewrites to one space, so a wrapping `(` before the value stays put.
+/// scanning between `lhs.end()` and `value`'s parenthesis-aware start
+/// recovered against `parent`, leaving a colon inside the left-hand side
+/// unanchored. Rejects a colon that does not share `lhs`'s opening line.
+/// `value_gap` runs from just past the colon to that start.
 fn colon_member(
     source: &Source,
     lhs: TextRange,
@@ -195,7 +192,7 @@ fn dict_member_groups(source: &Source, rule: RuleId, dict: &ExprDict) -> Vec<Vec
         // A keyed entry whose colon sits on a later line carries no
         // single-line anchor, so it breaks the run rather than stranding
         // its colon inside a column its neighbors share.
-        dict_item(source, dict, item).map_or(aligner::Slot::Break, aligner::Slot::Member)
+        dict_item(source, dict, item).into()
     })
 }
 
@@ -257,7 +254,7 @@ fn parameter_groups(
 ) -> Vec<Vec<aligner::Member>> {
     aligner::parameter_split_groups(params, |p| parameter(source, p))
         .into_iter()
-        .map(|group| aligner::retain_unheld(source, rule, group, |m| m.line_start))
+        .map(|group| aligner::retain_unheld(source, rule, group))
         .collect()
 }
 

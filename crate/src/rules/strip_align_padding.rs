@@ -4,6 +4,7 @@
 //! bracket delimiter. Runs after the alignment rules in
 //! `Pipeline::with_defaults` so it sees their output.
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::token::TokenKind;
 use ruff_text_size::{Ranged, TextRange};
@@ -87,7 +88,7 @@ fn delimiter_padding_edits(source: &Source) -> Vec<Edit> {
     let tokens = source.tokens();
     let mut interp_depth: u32 = 0;
     let mut edits = Vec::new();
-    for (token, next) in tokens.iter().zip(tokens.iter().skip(1)) {
+    for (token, next) in tokens.iter().tuple_windows() {
         let kind = token.kind();
         if matches!(kind, TokenKind::FStringStart | TokenKind::TStringStart) {
             interp_depth += 1;

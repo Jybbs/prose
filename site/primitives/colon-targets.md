@@ -48,7 +48,7 @@ pub(crate) trait ColonEmitter {
 }
 ```
 
-`handle` is the catch-all for annotated assignments, docstring entries, dict entries, and parameters. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[align-match-case]] owns the match-arm context)*, with its default delegating to `handle` for any rule that wants the unified callback.
+`handle` is the catch-all for annotated assignments, docstring entries, dict entries, and parameters. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[align-match-case]] owns the match-arm context)*, with its default delegating to `handle` for any rule that leaves it alone.
 
 `walk(source)` is the provided driver across `source`'s module body, recursing into nested classes, functions, matches, and expressions so a single call covers the whole tree. A consuming rule never overrides `walk`, because calling the provided method is enough to drive the receiver across every relevant context.
 
@@ -56,7 +56,7 @@ pub(crate) trait ColonEmitter {
 
 ## Build Pattern
 
-A rule implementing `ColonEmitter` carries a single accumulator *(typically `Vec<Vec<aligner::Member>>` for grouped members)* and pushes into it from each handler. After `walk(source)` returns, the accumulator carries every group the rule cares about, and the rule emits `Vec<Edit>` by calling [[aligner]]'s `emit_group` against each group.
+A rule implementing `ColonEmitter` carries a single accumulator *(typically `Vec<Vec<aligner::Member>>` for grouped members)* and pushes into it from each handler. After `walk(source)` returns, the accumulator carries every group the rule handles, and the rule emits `Vec<Edit>` by calling [[aligner]]'s `emit_if_candidate` against each group.
 
 ## How Grouping Works
 
@@ -72,7 +72,7 @@ Each group is handed to the receiver as one `&[aligner::Member]` slice, so the c
 
 ## Re-Using This Primitive
 
-A new `:`-context rule implements `ColonEmitter`, overrides the handlers for the contexts it cares about, and calls `walk(source)` from inside its `apply` method. The shared walker, the same-indentation grouping, and the per-context member construction come for free.
+A new `:`-context rule implements `ColonEmitter`, overrides the handlers for the contexts it covers, and calls `walk(source)` from inside its `apply` method. The shared walker, the same-indentation grouping, and the per-context member construction come for free.
 
 <template #related>
 

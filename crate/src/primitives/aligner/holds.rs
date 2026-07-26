@@ -34,17 +34,14 @@ pub(crate) fn is_held(source: &Source, rule: RuleId, anchor: TextSize) -> bool {
 
 /// Returns the rows of `members` whose anchor line is not skip-held for
 /// `rule`, dropping the held rows so neighbors align around them.
-/// `line_start` yields each row's anchor line, so a row type wrapping a
-/// `Member` filters by the same line the member carries.
-pub(crate) fn retain_unheld<M>(
+pub(crate) fn retain_unheld(
     source: &Source,
     rule: RuleId,
-    members: impl IntoIterator<Item = M>,
-    line_start: impl Fn(&M) -> TextSize,
-) -> Vec<M> {
+    members: impl IntoIterator<Item = Member>,
+) -> Vec<Member> {
     members
         .into_iter()
-        .filter(|m| !is_held(source, rule, line_start(m)))
+        .filter(|m| !is_held(source, rule, m.line_start))
         .collect()
 }
 

@@ -5,6 +5,7 @@
 //! statements carry 1 blank line above the comment block, 0 blank lines
 //! below a description block, and 1 blank line below a banner block.
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Stmt,
@@ -120,7 +121,7 @@ impl Walker<'_> {
     }
 
     fn pair_siblings(&mut self, body: &[Stmt], scope: BodyScope) {
-        for (prev, curr) in body.iter().zip(body.iter().skip(1)) {
+        for (prev, curr) in body.iter().tuple_windows() {
             self.pair_with_end(prev, prev.end(), curr, scope);
         }
     }
@@ -162,8 +163,8 @@ mod tests {
     use super::*;
     use crate::testing::{notebook, parse};
 
-    /// A function in cell 0 and a call in cell 1. Module spacing wants a
-    /// blank after the def, but a cell boundary sits in that gap.
+    /// A function in cell 0 and a call in cell 1. Module spacing puts a
+    /// blank after the def, whereas a cell boundary sits in that gap.
     fn split_across_two_cells() -> Source {
         notebook(&["def f():\n    return 1", "x = f()"])
     }

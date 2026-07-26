@@ -44,17 +44,16 @@ pub(crate) fn operator_columns(
             .map(|m| baseline(source, *m) + m.width + 1)
             .collect();
     }
-    let mut columns = Vec::with_capacity(members.len());
-    for (group, max_w) in reading_order_groups(source, members, settings) {
-        let suffix = settings.suffix_len(group.len());
-        let max_op = max_op_width(group);
-        columns.extend(
-            group
-                .iter()
-                .map(|m| baseline(source, *m) + m.width + padding_width(*m, max_w, max_op, suffix)),
-        );
-    }
-    columns
+    reading_order_groups(source, members, settings)
+        .into_iter()
+        .flat_map(|(group, max_w)| {
+            let max_op = max_op_width(group);
+            let suffix = settings.suffix_len(group.len());
+            group.iter().map(move |m| {
+                baseline(source, *m) + m.width + padding_width(*m, max_w, max_op, suffix)
+            })
+        })
+        .collect()
 }
 
 /// Returns the edit needed to make `range` carry exactly `n` ASCII
@@ -92,9 +91,8 @@ fn emit_with_paddings(
 }
 
 /// The width of `member`'s line as the aligner emits it, less the
-/// pre-operator gap the padding replaces. A rewritten post-operator gap
-/// collapses to the one space an emitted row carries, so both spaces the
-/// aligner inserts around the operator count against the budget.
+/// pre-operator gap the padding replaces and with any rewritten
+/// post-operator gap collapsed to the one space an emitted row carries.
 fn emitted_base_width(source: &Source, member: Member) -> usize {
     let line = source.text().line_str(member.line_start).width();
     let base = line - source.slice(member.gap).width();
@@ -225,12 +223,11 @@ mod tests {
     }
 
     /// Builds a two-row source whose `=` carries no space before it and
-    /// `spaces` after it on the leading row, returning one `Member` per
-    /// row with both its pre- and post-operator gaps. The width-1 row
-    /// runs one column longer than the width-6 row, so padding it to the
-    /// shared column is what crosses a cap.
-    fn paired_rows(spaces: usize) -> (Source, Vec<Member>) {
-        let head = format!("a={}", " ".repeat(spaces));
+    /// `sep` between the operator and the value on the leading row,
+    /// returning one width-1 and one width-6 `Member`, each with its
+    /// pre- and post-operator gaps.
+    fn paired_rows(sep: &str) -> (Source, Vec<Member>) {
+        let head = format!("a={sep}");
         let first = format!("{head}11\n");
         let second = TextSize::of(&first);
         let members = vec![
@@ -375,7 +372,7 @@ mod tests {
 
     #[test]
     fn line_cap_counts_the_post_operator_space() {
-        let (source, members) = paired_rows(0);
+        let (source, members) = paired_rows("");
         let mut edits = Vec::new();
 
         emit_group(
@@ -394,9 +391,30 @@ mod tests {
         );
     }
 
+    #[test]
+    fn line_cap_discounts_a_value_gap_that_crosses_a_line_break() {
+        let (source, members) = paired_rows("\\\n    ");
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(16)).with_line_length(10),
+            &mut edits,
+        );
+
+        // The continued row's value opens on a later line, so its gap is
+        // measured as written rather than collapsed, leaving the pair
+        // inside the cap and sharing a column.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![fill(&members[0], 6), fill(&members[1], 1)],
+        );
+    }
+
     #[rstest]
-    fn line_cap_holds_the_run_when_both_spaces_fit(#[values(0, 3)] spaces: usize) {
-        let (source, members) = paired_rows(spaces);
+    fn line_cap_holds_the_run_when_both_spaces_fit(#[values("", "   ")] sep: &str) {
+        let (source, members) = paired_rows(sep);
         let mut edits = Vec::new();
 
         emit_group(

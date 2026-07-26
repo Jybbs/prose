@@ -64,7 +64,7 @@ Variable-width operators opt in to right-alignment by setting `op_width`, shifti
 
 ## Build Pattern
 
-Each alignment rule wraps an `AlignWalker` in its visitor struct, walks the AST, collects `Vec<Member>` per group, and calls `walker.emit_group(&members)` once per group. The grouping shapes are rule-specific *(consecutive assignments, dict items, `import` keywords, match-arm patterns)*, because the per-rule definition of *"what counts as a group"* varies, but the math afterward is shared across every alignment rule.
+Each alignment rule wraps an `AlignWalker` in its visitor struct, walks the AST, collects `Vec<Member>` per group, and calls `walker.emit_if_candidate(&members)` once per group. The grouping shapes are rule-specific *(consecutive assignments, dict items, `import` keywords, match-arm patterns)*, because the per-rule definition of *"what counts as a group"* varies, but the math afterward is shared across every alignment rule.
 
 A rule's `apply` method takes the canonical shape:
 
@@ -85,22 +85,23 @@ impl Rule for MyAlignmentRule {
 
 impl Visitor<'_> {
     fn process_body(&mut self, body: &[Stmt]) {
-        for members in line_adjacent_groups(self.walker.source, body, |s| qualify(s)) {
-            self.walker.emit_group(&members);
+        let source = self.walker.source;
+        for members in line_adjacent_groups(source, body, self.walker.rule, |s| qualify(source, s)) {
+            self.walker.emit_if_candidate(&members);
         }
     }
 }
 ```
 
-`line_adjacent_groups` handles the grouping for the common contiguous-statements shape, with the per-item qualifier folding through `line_anchored_member` or `line_anchored_member_at_kind` depending on whether the gap anchors at a known offset or at a specific token. `walker.emit_group(&members)` records each group's edits in the walker's `groups` accumulator, so the rule never has to thread a returned `Vec<Edit>` per group, and `apply` returns `visitor.walker.groups` at the end.
+`line_adjacent_groups` handles the grouping for the common contiguous-statements shape, with the per-item qualifier folding through `line_anchored_member` or `line_anchored_member_at_kind` depending on whether the gap anchors at a known offset or at a specific token. `walker.emit_if_candidate(&members)` records each group's edits in the walker's `groups` accumulator, so the rule never has to thread a returned `Vec<Edit>` per group, and `apply` returns `visitor.walker.groups` at the end.
 
-When the alignment context is `:`-shaped *(dict items, annotated assignments, annotated parameters, docstring sections, match arms)*, the grouping logic lives in [[colon-targets]] instead. A new colon-shaped rule implements `ColonEmitter`'s required `rule` and `handle` methods plus the `match_arms` override when it wants one, calls `walk(source)`, and forwards each yielded `&[aligner::Member]` slice to the walker for emission.
+When the alignment context is `:`-shaped *(dict items, annotated assignments, annotated parameters, docstring sections, match arms)*, the grouping logic lives in [[colon-targets]] instead. A new colon-shaped rule implements `ColonEmitter`'s required `rule` and `handle` methods plus the optional `match_arms` override, calls `walk(source)`, and forwards each yielded `&[aligner::Member]` slice to the walker for emission.
 
 When the context is `=`-shaped *(single-target assignments, exploded-call keyword arguments, annotated parameter defaults)*, the per-row member construction lives in `equal_targets`, which carries no walker because its consumers group differently. [[align-equals]] builds its runs with a multi-line break and calls `emit_group` to pad each `=`, whereas [[collection-layout]] treats a collapsing value as single-line and reads `operator_columns` to predict where each `=` shifts, testing its collapse against the value's resulting column so the decision survives the alignment that runs later. A new `=`-shaped rule calls `equal_targets`'s `assignment` or `parameter` per row and groups the members to its own adjacency, or `keyword_groups` for an exploded call's pre-grouped keyword runs.
 
 ## Re-Using This Primitive
 
-Writing a new alignment rule comes down to wrapping an `AlignWalker` in a visitor struct, building the grouping logic that yields `Vec<Member>` per source-line run, and calling `walker.emit_group(&members)` per group. The padding math, the reading-order regrouping, the singleton handling, and the right-alignment hook all carry through, leaving the rule to focus on its own grouping logic.
+Writing a new alignment rule comes down to wrapping an `AlignWalker` in a visitor struct, building the grouping logic that yields `Vec<Member>` per source-line run, and calling `walker.emit_if_candidate(&members)` per group. The padding math, the reading-order regrouping, the singleton handling, and the right-alignment hook all carry through, leaving the rule to focus on its own grouping logic.
 
 <template #related>
 

@@ -32,11 +32,12 @@ impl ReserveVisitor<'_> {
     fn record(&mut self, groups: Vec<Vec<aligner::Member>>) {
         for group in groups {
             let columns = aligner::operator_columns(self.source, &group, self.settings);
-            for (member, column) in group.iter().zip(columns) {
-                if let Some(gap) = member.value_gap {
-                    self.columns.insert(gap.end(), column + 2);
-                }
-            }
+            self.columns.extend(
+                group
+                    .iter()
+                    .zip(columns)
+                    .filter_map(|(member, column)| Some((member.value_gap?.end(), column + 2))),
+            );
         }
     }
 }

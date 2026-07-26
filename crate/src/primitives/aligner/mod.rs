@@ -69,9 +69,6 @@ impl<'a> AlignWalker<'a> {
     /// Aligns `members` as one fix group when they form an alignment
     /// candidate, folding in a one-space rewrite of each member's
     /// [post-operator gap](Self::value_gaps). Records nothing otherwise.
-    /// The candidate-gated counterpart to [`Self::emit_group_with_gaps`],
-    /// which a rule reaches for when its secondary spans come from
-    /// somewhere other than the members.
     pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
         if is_alignment_candidate(self.source, members) {
             let gaps = self.value_gaps(members);
@@ -82,7 +79,7 @@ impl<'a> AlignWalker<'a> {
     /// Drops the held rows from `members`, then emits the survivors as
     /// one group when they still form an alignment candidate.
     pub(crate) fn emit_unheld(&mut self, members: impl IntoIterator<Item = Member>) {
-        let kept = self.retain_unheld(members, |m| m.line_start);
+        let kept = retain_unheld(self.source, self.rule, members);
         self.emit_if_candidate(&kept);
     }
 
@@ -127,16 +124,6 @@ impl<'a> AlignWalker<'a> {
         self.push_group(name_edits);
     }
 
-    /// Returns the rows of `members` whose anchor line is not skip-held
-    /// for this rule. The walker-bound form of the free [`retain_unheld`].
-    pub(crate) fn retain_unheld<M>(
-        &self,
-        members: impl IntoIterator<Item = M>,
-        line_start: impl Fn(&M) -> TextSize,
-    ) -> Vec<M> {
-        retain_unheld(self.source, self.rule, members, line_start)
-    }
-
     /// The post-operator gaps this rule rewrites to one space, one per
     /// member whose value shares the operator's line.
     pub(crate) fn value_gaps(&self, members: &[Member]) -> Vec<TextRange> {
@@ -171,8 +158,8 @@ pub(crate) struct Member {
 
 impl Member {
     /// The post-operator gap an aligned row rewrites to one space,
-    /// `None` when the rule leaves that spacing alone or the value opens
-    /// on a later line, where the row keeps the placement it has.
+    /// `None` when the rule leaves that spacing alone or the value
+    /// opens on a later line.
     pub(crate) fn rewritten_value_gap(self, source: &Source) -> Option<TextRange> {
         self.value_gap
             .filter(|gap| !source.contains_line_break(*gap))
