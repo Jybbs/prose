@@ -38,7 +38,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "sort-dict-keys": {
           "default": true,
-          "description": "Reorders the keyed entries of a dict literal, single-line entries\nbefore multi-line and alphabetical by key within each. `false`\nkeeps the authored order, which iteration, `.items()`, and `**`\nexpansion all observe.",
+          "description": "Reorders the keyed entries of a dict literal, scalar-valued\nentries before collection-valued and alphabetical by key within\neach. `false` keeps the authored order, which iteration,\n`.items()`, and `**` expansion all observe.",
           "type": "boolean"
         },
         "sort-docstring-entries": {

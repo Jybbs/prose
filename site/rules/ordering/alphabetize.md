@@ -18,7 +18,7 @@ A reader who already knows the codebase carries a **mental map** of where things
 | **Pydantic `BaseModel` and `TypedDict` fields** | Required before optional |
 | **Dataclass and `NamedTuple` fields** | Source order held |
 | **Parameters and keyword arguments** | Keyword-only and call keywords alphabetical, positional held |
-| **Dict literal keys** | Single-line entries before multi-line, alphabetical within each |
+| **Dict literal keys** | Scalar entries before collection entries, alphabetical within each |
 | **Imports** | Alphabetical within each [[group-imports]] section |
 | **Docstring entries** | Parameter entries mirror the signature, all else alphabetical |
 

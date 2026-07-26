@@ -95,13 +95,9 @@ impl<'a> LeafCollector<'a> {
     }
 
     /// Replaces the leaf edits nested inside `span` with a single edit
-    /// carrying `folded`, that span reordered with the nested edits
-    /// already applied. A `Cow::Borrowed` folded nothing, so emits
-    /// nothing. The insert keeps `edits` sorted by start.
-    fn fold_into(&mut self, span: TextRange, folded: Cow<'a, str>) {
-        let Cow::Owned(text) = folded else {
-            return;
-        };
+    /// carrying `text`, that span reordered with the nested edits
+    /// already applied. The insert keeps `edits` sorted by start.
+    fn fold_into(&mut self, span: TextRange, text: String) {
         self.edits.retain(|e| !span.contains_range(e.range()));
         insert_sorted_by_key(&mut self.edits, Edit::range_replacement(text, span), |e| {
             e.start()
@@ -131,7 +127,9 @@ impl<'a> LeafCollector<'a> {
         } else {
             reorder_text(source, items, classify, render)
         };
-        self.fold_into(span, folded);
+        if let Cow::Owned(text) = folded {
+            self.fold_into(span, text);
+        }
     }
 }
 

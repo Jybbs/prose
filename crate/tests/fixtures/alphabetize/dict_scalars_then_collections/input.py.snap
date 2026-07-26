@@ -1,23 +1,23 @@
 ---
 source: crate/tests/integration.rs
-expression: output
-input_file: crate/tests/fixtures/alphabetize/dict_single_then_multi_line/input.py
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize/dict_scalars_then_collections/input.py
 ---
 mixed = {
     "author"   : "jibbs",
-    "deps"     : ["ruff_python_parser", "clap"],
     "metadata" : load_metadata(),
     "name"     : "prose",
-    "tags"     : ["staging", "ingest"],
     "version"  : "0.1.0",
     "config": {
         "strict"     : True,
         "tracebacks" : "short",
         "verbose"    : False,
     },
+    "deps"     : ["ruff_python_parser", "clap"],
+    "tags"     : ["staging", "ingest"],
 }
 
-inline = {"config": {"strict": True}, "name": "prose", "version": "0.1.0"}
+inline = {"name": "prose", "version": "0.1.0", "config": {"strict": True}}
 
 with_spread = {
     "version" : "0.1.0",
@@ -31,10 +31,10 @@ with_spread = {
 }
 
 single_line_only = {
-    "config"   : {"strict": True},
-    "deps"     : ["ruff_python_parser", "clap"],
     "metadata" : load_metadata(),
     "version"  : "0.1.0",
+    "config"   : {"strict": True},
+    "deps"     : ["ruff_python_parser", "clap"],
 }
 
 deep_nesting = {

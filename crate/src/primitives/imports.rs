@@ -111,18 +111,11 @@ pub(crate) fn import_sort_key<'a>(
 pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<Range<usize>> {
     let mut runs = Vec::new();
     for section in sections.ranges() {
-        for run in import_runs(&body[section.clone()]) {
+        for run in runs_where(&body[section.clone()], is_import) {
             runs.push(section.start + run.start..section.start + run.end);
         }
     }
     runs
-}
-
-/// Slot ranges of each run of two or more adjacent imports in `stmts`,
-/// the per-section unit `sectioned_import_runs` offsets to absolute
-/// slot indices.
-fn import_runs(stmts: &[Stmt]) -> Vec<Range<usize>> {
-    runs_where(stmts, is_import)
 }
 
 /// True when the root package of `name` (the substring up to the
