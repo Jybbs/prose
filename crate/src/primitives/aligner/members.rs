@@ -38,6 +38,7 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
         gap: TextRange::new(gap_start, anchor),
         line_start,
         op_width: 0,
+        value_gap: None,
         width: trimmed_end.trim_whitespace_start().width(),
     }
 }
@@ -125,6 +126,7 @@ fn range_anchored_member(
         gap: TextRange::new(target.end(), anchor),
         line_start: source.text().line_start(anchor),
         op_width: 0,
+        value_gap: None,
         width: source.slice(target).width() + extra_width,
     }
 }

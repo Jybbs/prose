@@ -14,10 +14,7 @@ use ruff_python_ast::{
 use ruff_text_size::TextSize;
 
 use crate::{
-    primitives::{
-        aligner,
-        equal_targets::{self, EqualMember},
-    },
+    primitives::{aligner, equal_targets},
     rules::align_equals::AlignEquals,
     source::Source,
 };
@@ -32,12 +29,13 @@ impl ReserveVisitor<'_> {
     /// Records each member's aligned value column. The value follows the
     /// operator's column by the operator's final character and the
     /// one-space value gap.
-    fn record(&mut self, groups: Vec<Vec<EqualMember>>) {
+    fn record(&mut self, groups: Vec<Vec<aligner::Member>>) {
         for group in groups {
-            let members: Vec<aligner::Member> = group.iter().map(|m| m.member).collect();
-            let columns = aligner::operator_columns(self.source, &members, self.settings);
+            let columns = aligner::operator_columns(self.source, &group, self.settings);
             for (member, column) in group.iter().zip(columns) {
-                self.columns.insert(member.value_start(), column + 2);
+                if let Some(gap) = member.value_gap {
+                    self.columns.insert(gap.end(), column + 2);
+                }
             }
         }
     }

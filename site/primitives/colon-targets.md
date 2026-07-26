@@ -28,7 +28,7 @@ At `1.0` the trait promotes to `pub`, so a downstream can implement a `:`-contex
 4. **Google-style docstring sections.** Every `Args:`, `Returns:`, `Raises:`, or other Title-case-headed section, where each `name: description` entry line contributes a member and each section aligns independently.
 5. **Match-arm cases.** `match x: case Pattern: ...`, where each case's pattern-to-body colon contributes a member.
 
-Each context resolves a `ColonMember`, pairing the pre-colon alignment `member` *(its `width` the display-column width of the left-hand side, its `gap` the whitespace immediately before the colon)* with an optional post-colon `value_gap` an aligned or stripped row rewrites to one space.
+Each context resolves an [[aligner]] `Member` directly, carrying its `width` *(the display-column width of the left-hand side)*, its `gap` *(the whitespace immediately before the colon)*, and its optional `value_gap` *(the post-colon span an aligned or stripped row rewrites to one space)*. Match arms and docstring entries leave `value_gap` unset, deferring their post-colon spacing to [[align-match-case]] and to the source as written.
 
 ## Internal Surface
 
@@ -36,9 +36,9 @@ The receiver trait carries the per-context handlers. `rule` and `handle` are the
 
 ```rust
 pub(crate) trait ColonEmitter {
-    fn handle(&mut self, members: &[ColonMember]);
+    fn handle(&mut self, members: &[aligner::Member]);
 
-    fn match_arms(&mut self, members: &[ColonMember]) {
+    fn match_arms(&mut self, members: &[aligner::Member]) {
         self.handle(members);
     }
 
@@ -56,7 +56,7 @@ pub(crate) trait ColonEmitter {
 
 ## Build Pattern
 
-A rule implementing `ColonEmitter` carries a single accumulator *(typically `Vec<Vec<ColonMember>>` for grouped members)* and pushes into it from each handler. After `walk(source)` returns, the accumulator carries every group the rule cares about, and the rule emits `Vec<Edit>` by calling [[aligner]]'s `emit_group` against each group.
+A rule implementing `ColonEmitter` carries a single accumulator *(typically `Vec<Vec<aligner::Member>>` for grouped members)* and pushes into it from each handler. After `walk(source)` returns, the accumulator carries every group the rule cares about, and the rule emits `Vec<Edit>` by calling [[aligner]]'s `emit_group` against each group.
 
 ## How Grouping Works
 
@@ -68,7 +68,7 @@ Each context defines its own grouping shape, because what counts as *"adjacent"*
 4. **Match arms** group one per `match` statement, with every arm's colon contributing a member. Patterns may span multiple lines, so the alignment column is per-`match` rather than per-line-run.
 5. **Docstring sections** group one per Google-style section, with the structured-section parser invoked inline to find each section's entries, so a section's entries align without reaching across the section break.
 
-Each group is handed to the receiver as one `&[ColonMember]` slice, so the consumer aligns within the group without seeing cross-group state. The docstring-args context borrows [[docstring]]'s `body_docstring` to find a body's leading docstring literal, then runs its own line scan for each entry's `:` position, because the two primitives surface different shapes. [[docstring]] yields entry names with the byte range a reorder carries along, whereas the colon walker yields each line's colon anchor for the aligner's padding math.
+Each group is handed to the receiver as one `&[aligner::Member]` slice, so the consumer aligns within the group without seeing cross-group state. The docstring-args context borrows [[docstring]]'s `body_docstring` to find a body's leading docstring literal, then runs its own line scan for each entry's `:` position, because the two primitives surface different shapes. [[docstring]] yields entry names with the byte range a reorder carries along, whereas the colon walker yields each line's colon anchor for the aligner's padding math.
 
 ## Re-Using This Primitive
 

@@ -37,7 +37,7 @@ pub(crate) use members::{
 pub(crate) struct AlignWalker<'a> {
     pub groups: Vec<Vec<Edit>>,
     pub rule: RuleId,
-    pub settings: Settings,
+    settings: Settings,
     pub source: &'a Source,
 }
 
@@ -67,21 +67,14 @@ impl<'a> AlignWalker<'a> {
     }
 
     /// Aligns `members` as one fix group when they form an alignment
-    /// candidate, recording nothing otherwise.
+    /// candidate, folding in a one-space rewrite of each member's
+    /// [post-operator gap](Self::value_gaps). Records nothing otherwise.
+    /// The candidate-gated counterpart to [`Self::emit_group_with_gaps`],
+    /// which a rule reaches for when its secondary spans come from
+    /// somewhere other than the members.
     pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
-        self.emit_if_candidate_with_gaps(members, std::iter::empty());
-    }
-
-    /// Aligns `members` as one fix group when they form an alignment
-    /// candidate, folding a one-space rewrite of each gap in `gaps` into
-    /// the same group. Records nothing otherwise. The candidate-gated
-    /// counterpart to [`Self::emit_group_with_gaps`].
-    pub(crate) fn emit_if_candidate_with_gaps(
-        &mut self,
-        members: &[Member],
-        gaps: impl IntoIterator<Item = TextRange>,
-    ) {
         if is_alignment_candidate(self.source, members) {
+            let gaps = self.value_gaps(members);
             self.emit_group_with_gaps(members, gaps);
         }
     }
@@ -143,6 +136,15 @@ impl<'a> AlignWalker<'a> {
     ) -> Vec<M> {
         retain_unheld(self.source, self.rule, members, line_start)
     }
+
+    /// The post-operator gaps this rule rewrites to one space, one per
+    /// member whose value shares the operator's line.
+    pub(crate) fn value_gaps(&self, members: &[Member]) -> Vec<TextRange> {
+        members
+            .iter()
+            .filter_map(|m| m.rewritten_value_gap(self.source))
+            .collect()
+    }
 }
 
 /// One row in an alignment group.
@@ -154,20 +156,50 @@ impl<'a> AlignWalker<'a> {
 /// the start of the source line containing the gap. `op_width` is the
 /// display width of the aligned operator itself, used to right-align
 /// variable-width operators within a group. Rules with fixed-width
-/// operators leave `op_width` at zero.
+/// operators leave `op_width` at zero. `value_gap` is the span from
+/// just past the operator to the value, which an aligned row rewrites
+/// to one space, and stays `None` for a rule that leaves the
+/// post-operator spacing alone.
 #[derive(Clone, Copy)]
 pub(crate) struct Member {
     pub gap: TextRange,
     pub line_start: TextSize,
     pub op_width: usize,
+    pub value_gap: Option<TextRange>,
     pub width: usize,
 }
 
 impl Member {
+    /// The post-operator gap an aligned row rewrites to one space,
+    /// `None` when the rule leaves that spacing alone or the value opens
+    /// on a later line, where the row keeps the placement it has.
+    pub(crate) fn rewritten_value_gap(self, source: &Source) -> Option<TextRange> {
+        self.value_gap
+            .filter(|gap| !source.contains_line_break(*gap))
+    }
+
+    /// This member's alignment slot, bridging the run when its row is
+    /// skip-held for `rule` so neighbors align around it.
+    pub(crate) fn slot(self, source: &Source, rule: RuleId) -> Slot<Self> {
+        if is_held(source, rule, self.line_start) {
+            Slot::Bridge
+        } else {
+            Slot::Member(self)
+        }
+    }
+
     /// Returns a copy of `self` with `op_width` set to the operator's
     /// display width, opting the member into right-alignment math.
     pub(crate) fn with_op_width(mut self, op_width: usize) -> Self {
         self.op_width = op_width;
+        self
+    }
+
+    /// Returns a copy of `self` carrying the post-operator span an
+    /// aligned row rewrites to one space, running from just past the
+    /// `op_len`-wide operator to `value_start`.
+    pub(crate) fn with_value_gap(mut self, op_len: TextSize, value_start: TextSize) -> Self {
+        self.value_gap = Some(TextRange::new(self.gap.end() + op_len, value_start));
         self
     }
 }

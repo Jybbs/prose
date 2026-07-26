@@ -51,25 +51,15 @@ pub(crate) fn retain_unheld<M>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{parse, range};
+    use crate::testing::{align_member, parse, range};
 
     #[test]
     fn is_alignment_candidate_holds_for_shared_baseline() {
         // Two `=` rows on distinct lines, each opening at column 0.
         let source = parse("ab = 1\ncd = 2\n");
         let members = [
-            Member {
-                gap: range(2, 3),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 2,
-            },
-            Member {
-                gap: range(9, 10),
-                line_start: TextSize::new(7),
-                op_width: 0,
-                width: 2,
-            },
+            align_member(range(2, 3), 0, 2),
+            align_member(range(9, 10), 7, 2),
         ];
 
         assert!(is_alignment_candidate(&source, &members));
@@ -81,18 +71,8 @@ mod tests {
         // columns right, so a shared `=` column would land where no row sits.
         let source = parse("ab = 1\nq.cd = 2\n");
         let members = [
-            Member {
-                gap: range(2, 3),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 2,
-            },
-            Member {
-                gap: range(11, 12),
-                line_start: TextSize::new(7),
-                op_width: 0,
-                width: 2,
-            },
+            align_member(range(2, 3), 0, 2),
+            align_member(range(11, 12), 7, 2),
         ];
 
         assert!(!is_alignment_candidate(&source, &members));
@@ -103,18 +83,8 @@ mod tests {
         // Two rows sharing a source line never form a column.
         let source = parse("ab = cd = 1\n");
         let members = [
-            Member {
-                gap: range(2, 3),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 2,
-            },
-            Member {
-                gap: range(7, 8),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 2,
-            },
+            align_member(range(2, 3), 0, 2),
+            align_member(range(7, 8), 0, 2),
         ];
 
         assert!(!is_alignment_candidate(&source, &members));
@@ -123,13 +93,10 @@ mod tests {
     #[test]
     fn is_alignment_candidate_rejects_singleton() {
         let source = parse("ab = 1\n");
-        let members = [Member {
-            gap: range(2, 3),
-            line_start: TextSize::new(0),
-            op_width: 0,
-            width: 2,
-        }];
 
-        assert!(!is_alignment_candidate(&source, &members));
+        assert!(!is_alignment_candidate(
+            &source,
+            &[align_member(range(2, 3), 0, 2)]
+        ));
     }
 }

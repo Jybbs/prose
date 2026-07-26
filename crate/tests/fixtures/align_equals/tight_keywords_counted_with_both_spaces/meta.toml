@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Tight Keywords Are Measured With Both Inserted Spaces"
+
+description = '''
+Every keyword sits flush against its `=`, so aligning the run inserts a space on each side of the operator. The fit test counts both, leaving `label` to decline the shared column rather than emit one column past `code-line-length`, while `verbose` and `dry` align beneath it.
+'''

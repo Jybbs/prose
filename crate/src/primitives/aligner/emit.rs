@@ -91,14 +91,25 @@ fn emit_with_paddings(
     }));
 }
 
+/// The width of `member`'s line as the aligner emits it, less the
+/// pre-operator gap the padding replaces. A rewritten post-operator gap
+/// collapses to the one space an emitted row carries, so both spaces the
+/// aligner inserts around the operator count against the budget.
+fn emitted_base_width(source: &Source, member: Member) -> usize {
+    let line = source.text().line_str(member.line_start).width();
+    let base = line - source.slice(member.gap).width();
+    member
+        .rewritten_value_gap(source)
+        .map_or(base, |gap| base + 1 - source.slice(gap).width())
+}
+
 /// True when no member of `group` aligned to `max_w` has its line
 /// pushed past `cap` by the padding. A member already over `cap`
 /// unpadded stays in the run rather than partitioning to no gain.
 fn fits_line_cap(source: &Source, group: &[Member], max_w: usize, cap: usize) -> bool {
     let max_op = max_op_width(group);
     group.iter().all(|m| {
-        let line = source.text().line_str(m.line_start).width();
-        let base = line - source.slice(m.gap).width();
+        let base = emitted_base_width(source, *m);
         base + padding_width(*m, max_w, max_op, 1) <= cap || base + 1 > cap
     })
 }
@@ -182,10 +193,11 @@ fn reading_order_groups<'m>(
 mod tests {
     use std::num::NonZeroUsize;
 
+    use rstest::rstest;
     use ruff_text_size::{Ranged, TextSize};
 
     use super::*;
-    use crate::testing::{parse, range};
+    use crate::testing::{align_member, parse, range};
 
     /// Builds a `MaxShift::Cap` from a non-zero literal.
     fn cap(n: usize) -> MaxShift {
@@ -212,27 +224,47 @@ mod tests {
         )
     }
 
+    /// Builds a two-row source whose `=` carries no space before it and
+    /// `spaces` after it on the leading row, returning one `Member` per
+    /// row with both its pre- and post-operator gaps. The width-1 row
+    /// runs one column longer than the width-6 row, so padding it to the
+    /// shared column is what crosses a cap.
+    fn paired_rows(spaces: usize) -> (Source, Vec<Member>) {
+        let head = format!("a={}", " ".repeat(spaces));
+        let first = format!("{head}11\n");
+        let second = TextSize::of(&first);
+        let members = vec![
+            align_member(TextRange::empty(TextSize::new(1)), 0, 1)
+                .with_value_gap(TextSize::of('='), TextSize::of(&head)),
+            align_member(
+                TextRange::empty(second + TextSize::new(6)),
+                second.to_u32(),
+                6,
+            )
+            .with_value_gap(TextSize::of('='), second + TextSize::new(7)),
+        ];
+        (parse(&format!("{first}abcdef=2\n")), members)
+    }
+
     /// Builds a multi-line Python source where each row is
     /// `x...x{spaces}= 0\n`, returns the source plus one `Member` per
     /// row pointing at that row's pre-`=` whitespace. `gap_chars` seeds
     /// the existing pre-`=` whitespace.
     fn rows(specs: &[(usize, usize)]) -> (Source, Vec<Member>) {
-        let offset = |t: &str| TextSize::try_from(t.len()).expect("test source fits in u32");
         let mut text = String::new();
         let mut members = Vec::new();
         for &(width, gap_chars) in specs {
-            let line_start = offset(&text);
+            let line_start = TextSize::of(&text);
             text.push_str(&"x".repeat(width));
-            let gap_start = offset(&text);
+            let gap_start = TextSize::of(&text);
             text.push_str(&" ".repeat(gap_chars));
-            let gap_end = offset(&text);
+            let gap_end = TextSize::of(&text);
             text.push_str("= 0\n");
-            members.push(Member {
-                gap: TextRange::new(gap_start, gap_end),
-                line_start,
-                op_width: 0,
+            members.push(align_member(
+                TextRange::new(gap_start, gap_end),
+                line_start.to_u32(),
                 width,
-            });
+            ));
         }
         (parse(&text), members)
     }
@@ -342,6 +374,49 @@ mod tests {
     }
 
     #[test]
+    fn line_cap_counts_the_post_operator_space() {
+        let (source, members) = paired_rows(0);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(16)).with_line_length(10),
+            &mut edits,
+        );
+
+        // Padding the width-1 row to the width-6 name lands its line on
+        // the cap only while the space after `=` goes uncounted, so the
+        // run declines the shared column and each row buffers by one.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![fill(&members[0], 1), fill(&members[1], 1)],
+        );
+    }
+
+    #[rstest]
+    fn line_cap_holds_the_run_when_both_spaces_fit(#[values(0, 3)] spaces: usize) {
+        let (source, members) = paired_rows(spaces);
+        let mut edits = Vec::new();
+
+        emit_group(
+            &source,
+            &members,
+            Settings::aligned(cap(16)).with_line_length(11),
+            &mut edits,
+        );
+
+        // One column of headroom past the declining case covers both
+        // inserted spaces. The three-space variant collapses to that same
+        // one space when emitted, so its existing gap is discounted
+        // rather than counted on top of the inserted one.
+        assert_eq!(
+            sorted_summaries(&edits),
+            vec![fill(&members[0], 6), fill(&members[1], 1)],
+        );
+    }
+
+    #[test]
     fn no_shift_collapses_every_row_to_one_space() {
         let (source, members) = rows(&[(1, 3), (2, 3), (3, 3)]);
         let mut edits = Vec::new();
@@ -420,6 +495,29 @@ mod tests {
             operator_columns(&source, &members, Settings::aligned(cap(8))),
             vec![2, 16],
         );
+    }
+
+    #[test]
+    fn space_padding_edit_inserts_when_range_empty_and_n_positive() {
+        let source = parse("xy\n");
+        let range = range(1, 1);
+        let edit = space_padding_edit(&source, range, 2).expect("0-vs-2 spaces emits");
+        assert_eq!(summary(&edit), (1, 1, "  ".to_owned()));
+    }
+
+    #[test]
+    fn space_padding_edit_replaces_when_text_has_non_space_chars() {
+        let source = parse("a:b\n");
+        let range = range(1, 2);
+        let edit = space_padding_edit(&source, range, 1).expect("non-space content emits");
+        assert_eq!(summary(&edit), (1, 2, " ".to_owned()));
+    }
+
+    #[test]
+    fn space_padding_edit_returns_none_for_empty_range_at_zero() {
+        let source = parse("xy\n");
+        let range = range(1, 1);
+        assert!(space_padding_edit(&source, range, 0).is_none());
     }
 
     #[test]
@@ -531,28 +629,5 @@ mod tests {
             sorted_summaries(&edits),
             vec![delete(&members[0]), fill(&members[1], 2)],
         );
-    }
-
-    #[test]
-    fn space_padding_edit_inserts_when_range_empty_and_n_positive() {
-        let source = parse("xy\n");
-        let range = range(1, 1);
-        let edit = space_padding_edit(&source, range, 2).expect("0-vs-2 spaces emits");
-        assert_eq!(summary(&edit), (1, 1, "  ".to_owned()));
-    }
-
-    #[test]
-    fn space_padding_edit_replaces_when_text_has_non_space_chars() {
-        let source = parse("a:b\n");
-        let range = range(1, 2);
-        let edit = space_padding_edit(&source, range, 1).expect("non-space content emits");
-        assert_eq!(summary(&edit), (1, 2, " ".to_owned()));
-    }
-
-    #[test]
-    fn space_padding_edit_returns_none_for_empty_range_at_zero() {
-        let source = parse("xy\n");
-        let range = range(1, 1);
-        assert!(space_padding_edit(&source, range, 0).is_none());
     }
 }

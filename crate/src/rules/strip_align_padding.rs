@@ -10,11 +10,7 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
-    primitives::{
-        aligner,
-        colon_targets::{ColonEmitter, ColonMember},
-        edit::singleton_groups,
-    },
+    primitives::{aligner, colon_targets::ColonEmitter, edit::singleton_groups},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -60,19 +56,16 @@ impl ColonEmitter for Emitter<'_> {
     /// guard rejects the edge case where a `:` sits on its own indented
     /// line and the gap is leading indent rather than padding. The
     /// `value_gap` rewrite skips a value that opens on a later line.
-    fn handle(&mut self, members: &[ColonMember]) {
-        let aligned: Vec<aligner::Member> = members.iter().map(|m| m.member).collect();
-        if aligner::is_alignment_candidate(self.source, &aligned) {
+    fn handle(&mut self, members: &[aligner::Member]) {
+        if aligner::is_alignment_candidate(self.source, members) {
             return;
         }
         for m in members {
-            if m.member.width > 0 {
+            if m.width > 0 {
                 self.edits
-                    .extend(aligner::space_padding_edit(self.source, m.member.gap, 0));
+                    .extend(aligner::space_padding_edit(self.source, m.gap, 0));
             }
-            if let Some(gap) = m.value_gap
-                && !self.source.contains_line_break(gap)
-            {
+            if let Some(gap) = m.rewritten_value_gap(self.source) {
                 self.edits
                     .extend(aligner::space_padding_edit(self.source, gap, 1));
             }
@@ -133,21 +126,14 @@ mod tests {
     use ruff_text_size::{Ranged, TextSize};
 
     use super::*;
-    use crate::testing::{parse, range};
+    use crate::testing::{align_member, parse, range};
 
     fn run_strip(source: &Source, members: &[aligner::Member]) -> Vec<Edit> {
-        let colon_members: Vec<ColonMember> = members
-            .iter()
-            .map(|&member| ColonMember {
-                member,
-                value_gap: None,
-            })
-            .collect();
         let mut emitter = Emitter {
             edits: Vec::new(),
             source,
         };
-        emitter.handle(&colon_members);
+        emitter.handle(members);
         emitter.edits
     }
 
@@ -224,27 +210,15 @@ mod tests {
 
     #[test]
     fn strip_leaves_a_value_gap_that_crosses_a_line_break() {
-        // A colon whose value opens on a later line keeps its placement:
-        // the pre-colon padding strips, but the post-colon gap is not
-        // collapsed across the break.
+        // A colon whose value opens on a later line keeps its placement,
+        // so the pre-colon padding strips whereas the post-colon gap is
+        // not collapsed across the break.
         let source = parse("d = {\"k\"  :\n    v}\n");
-        let member = aligner::Member {
-            gap: range(8, 10),
-            line_start: TextSize::new(0),
-            op_width: 0,
-            width: 3,
-        };
-        let colon_member = ColonMember {
-            member,
-            value_gap: Some(range(11, 16)),
-        };
-        let mut emitter = Emitter {
-            edits: Vec::new(),
-            source: &source,
-        };
-        emitter.handle(&[colon_member]);
-        assert_eq!(emitter.edits.len(), 1);
-        assert_eq!(emitter.edits[0].range(), range(8, 10));
+        let member =
+            align_member(range(8, 10), 0, 3).with_value_gap(TextSize::of(':'), TextSize::new(16));
+        let edits = run_strip(&source, &[member]);
+        assert_eq!(edits.len(), 1);
+        assert_eq!(edits[0].range(), range(8, 10));
     }
 
     #[test]
@@ -253,60 +227,28 @@ mod tests {
         // group stays a candidate and passes through to `align_colons`.
         let source = parse("ab: 1\ncd: 2\n");
         let members = [
-            aligner::Member {
-                gap: range(2, 2),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 2,
-            },
-            aligner::Member {
-                gap: range(8, 8),
-                line_start: TextSize::new(6),
-                op_width: 0,
-                width: 2,
-            },
+            align_member(range(2, 2), 0, 2),
+            align_member(range(8, 8), 6, 2),
         ];
         assert!(run_strip(&source, &members).is_empty());
     }
 
     #[test]
     fn strip_skips_zero_width_member_with_empty_gap() {
-        let member = aligner::Member {
-            gap: range(0, 0),
-            line_start: TextSize::new(0),
-            op_width: 0,
-            width: 0,
-        };
-        assert!(run_strip(&parse(""), &[member]).is_empty());
+        assert!(run_strip(&parse(""), &[align_member(range(0, 0), 0, 0)]).is_empty());
     }
 
     #[test]
     fn strip_skips_zero_width_member_with_indent_gap() {
-        let member = aligner::Member {
-            gap: range(0, 4),
-            line_start: TextSize::new(0),
-            op_width: 0,
-            width: 0,
-        };
-        assert!(run_strip(&parse("x: 1\n"), &[member]).is_empty());
+        assert!(run_strip(&parse("x: 1\n"), &[align_member(range(0, 4), 0, 0)]).is_empty());
     }
 
     #[test]
     fn strip_strips_every_member_when_colons_share_a_line() {
         let source = parse("{x: 1, y: 2}\n");
         let members = [
-            aligner::Member {
-                gap: range(3, 5),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 3,
-            },
-            aligner::Member {
-                gap: range(8, 10),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 5,
-            },
+            align_member(range(3, 5), 0, 3),
+            align_member(range(8, 10), 0, 5),
         ];
         assert_eq!(run_strip(&source, &members).len(), 2);
     }
@@ -318,31 +260,15 @@ mod tests {
         // strips the way a singleton's does.
         let source = parse("d = {\n    \"ab\"  : 1,\n        \"cd\"  : 2,\n}\n");
         let members = [
-            aligner::Member {
-                gap: range(14, 16),
-                line_start: TextSize::new(6),
-                op_width: 0,
-                width: 4,
-            },
-            aligner::Member {
-                gap: range(33, 35),
-                line_start: TextSize::new(21),
-                op_width: 0,
-                width: 4,
-            },
+            align_member(range(14, 16), 6, 4),
+            align_member(range(33, 35), 21, 4),
         ];
         assert_eq!(run_strip(&source, &members).len(), 2);
     }
 
     #[test]
     fn strip_strips_singleton_with_content_and_gap() {
-        let member = aligner::Member {
-            gap: range(3, 5),
-            line_start: TextSize::new(0),
-            op_width: 0,
-            width: 3,
-        };
-        let edits = run_strip(&parse("abc  : 1\n"), &[member]);
+        let edits = run_strip(&parse("abc  : 1\n"), &[align_member(range(3, 5), 0, 3)]);
         assert_eq!(edits.len(), 1);
         assert_eq!(edits[0].start(), TextSize::new(3));
         assert_eq!(edits[0].end(), TextSize::new(5));
