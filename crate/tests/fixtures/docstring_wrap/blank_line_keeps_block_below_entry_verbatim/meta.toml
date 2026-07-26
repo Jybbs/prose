@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Blank Line Keeps an Indented Block Below an Entry Verbatim"
+
+description = '''
+A blank line closes the entry above it, so the indented block that follows **passes through verbatim** rather than folding into the description. Without that blank line the same block would read as continuation, which is what separates a literal block from a wrapped description.
+'''

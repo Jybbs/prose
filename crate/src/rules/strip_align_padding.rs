@@ -70,9 +70,7 @@ impl ColonEmitter for Emitter<'_> {
                 self.edits
                     .extend(aligner::space_padding_edit(self.source, m.member.gap, 0));
             }
-            if let Some(gap) = m.value_gap
-                && !self.source.contains_line_break(gap)
-            {
+            if let Some(gap) = m.single_line_value_gap(self.source) {
                 self.edits
                     .extend(aligner::space_padding_edit(self.source, gap, 1));
             }

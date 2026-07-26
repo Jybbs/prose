@@ -4,11 +4,15 @@
 //! `docstring_structured_policy` selects. Entry-carrying sections, those
 //! holding `name: description` entries, wrap each entry to
 //! `docstring_line_length` with a hanging indent at the description's
-//! start column. Verbatim regions
-//! (triple-backtick fences, blocks indented one step beyond the body,
-//! list items, and doctest blocks) pass through unchanged.
-//! reStructuredText markup, Sphinx directives, and Numpydoc style
-//! pass through unwrapped.
+//! start column, gathering the entry's head line and every following
+//! line from the section body indent onward that opens no entry of its
+//! own into one paragraph, so a moved hanging column reflows the whole
+//! description. Verbatim regions (triple-backtick fences, list items,
+//! doctest blocks, and blocks indented past their surrounding prose
+//! column) pass through unchanged, and a blank line closes an entry, so
+//! an indented block below one reads as verbatim rather than as
+//! continuation. reStructuredText markup, Sphinx directives, and
+//! Numpydoc style pass through unwrapped.
 
 use ruff_diagnostics::Edit;
 use textwrap::{Options, WordSeparator, WordSplitter};
@@ -17,8 +21,8 @@ use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            DocstringBody, LineScan, LineScanner, ScannedLine, entry_head, indent_prefix,
-            rewrite_docstrings, section_heading, triple_quoted_body,
+            DocstringBody, LineScan, LineScanner, ScannedLine, indent_prefix, rewrite_docstrings,
+            section_heading, sibling_entry_head, triple_quoted_body,
         },
         edit::narrowed_replacement,
     },
@@ -77,7 +81,7 @@ struct Paragraph {
 enum Region {
     Description,
     Section,
-    SectionEntry(usize),
+    SectionEntry,
 }
 
 struct Walker<'a> {
@@ -133,8 +137,8 @@ impl Walker<'_> {
         }
 
         let text = trimmed.trim_end();
-        if let Region::SectionEntry(hanging_col) = self.region {
-            if self.is_entry_continuation(indent_chars, text, hanging_col) {
+        if self.region == Region::SectionEntry {
+            if self.is_entry_continuation(indent_chars, text) {
                 self.paragraph.lines.push(text.to_owned());
                 return;
             }
@@ -144,7 +148,7 @@ impl Walker<'_> {
         let prose_indent = match self.region {
             Region::Description => body_indent,
             Region::Section => self.scanner.section_body_indent_chars(),
-            Region::SectionEntry(_) => unreachable!("entries handled above"),
+            Region::SectionEntry => unreachable!("entries handled above"),
         };
         if indent_chars > prose_indent {
             self.flush_paragraph();
@@ -160,13 +164,13 @@ impl Walker<'_> {
         match self.region {
             Region::Description => self.buffer_description(indent, text),
             Region::Section => {
-                if let Some((_, desc_col)) = entry_head(text) {
+                if let Some((_, desc_col)) = sibling_entry_head(indent_chars, prose_indent, text) {
                     self.start_entry(indent, indent_chars, text, desc_col);
                     return;
                 }
                 self.emit_wrapped(indent, indent, text, self.rule.section_width);
             }
-            Region::SectionEntry(_) => unreachable!("entries handled above"),
+            Region::SectionEntry => unreachable!("entries handled above"),
         }
     }
 
@@ -200,28 +204,28 @@ impl Walker<'_> {
                 self.rule.description_width,
             );
         }
-        if matches!(self.region, Region::SectionEntry(_)) {
+        if self.region == Region::SectionEntry {
             self.region = Region::Section;
         }
     }
 
-    fn is_entry_continuation(
-        &self,
-        indent_chars: usize,
-        trimmed: &str,
-        hanging_col: usize,
-    ) -> bool {
-        indent_chars == hanging_col
-            || (indent_chars == self.scanner.section_body_indent_chars()
-                && entry_head(trimmed).is_none())
+    /// True when `trimmed` continues the open entry's description,
+    /// sitting from the section body indent onward and opening no
+    /// sibling entry there. Every indent past the section body
+    /// qualifies, so a continuation left at a column the entry no longer
+    /// hangs from rejoins the description instead of passing through
+    /// verbatim.
+    fn is_entry_continuation(&self, indent_chars: usize, trimmed: &str) -> bool {
+        let section_body = self.scanner.section_body_indent_chars();
+        indent_chars >= section_body
+            && sibling_entry_head(indent_chars, section_body, trimmed).is_none()
     }
 
     fn start_entry(&mut self, indent_str: &str, indent_chars: usize, text: &str, desc_col: usize) {
-        let hanging_col = indent_chars + desc_col;
         indent_str.clone_into(&mut self.paragraph.initial_indent);
-        self.paragraph.subsequent_indent = " ".repeat(hanging_col);
+        self.paragraph.subsequent_indent = " ".repeat(indent_chars + desc_col);
         self.paragraph.lines.push(text.to_owned());
-        self.region = Region::SectionEntry(hanging_col);
+        self.region = Region::SectionEntry;
     }
 }
 
@@ -286,6 +290,16 @@ mod tests {
             out.lines()
                 .filter(|l| !l.starts_with("\"\"\""))
                 .all(|l| l.chars().count() <= 76)
+        );
+    }
+
+    #[test]
+    fn entry_continuation_below_the_hanging_column_rejoins_the_description() {
+        let src = "\"\"\"\nArgs:\n    name    : A descriptive parameter whose continuation was left under a narrower colon column than this entry now carries.\n      stranded at the older column.\n\"\"\"\n";
+        let out = run(src);
+        assert!(
+            !out.contains("\n      stranded"),
+            "continuation held its stale column instead of rejoining: {out:?}",
         );
     }
 

@@ -46,16 +46,32 @@ impl ColonMember {
             value_gap: None,
         }
     }
+
+    /// This row's post-colon gap when it stays on one line, `None` for a
+    /// row carrying no gap and for one whose value opens on a later
+    /// line, which a rewrite to a single space would fold onto the head.
+    pub(crate) fn single_line_value_gap(&self, source: &Source) -> Option<TextRange> {
+        self.value_gap
+            .filter(|gap| !source.contains_line_break(*gap))
+    }
 }
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
-/// for annotated assignments, docstring entries, dict entries, and
-/// parameters. `match_arms` is split out so a rule can opt out of
-/// match-arm alignment by overriding it to a no-op. `rule` names the
-/// consuming rule so the group builders can hold its skip-suppressed
-/// rows out of alignment. Call `walk` to drive the emitter across
-/// `source`'s body.
+/// for annotated assignments, dict entries, and parameters.
+/// `docstring_entries` and `match_arms` are split out so a rule can
+/// resolve a docstring section against its own length cap and opt out
+/// of match-arm alignment by overriding it to a no-op, both defaulting
+/// to `handle`. `rule` names the consuming rule so the group builders
+/// can hold its skip-suppressed rows out of alignment. Call `walk` to
+/// drive the emitter across `source`'s body.
 pub(crate) trait ColonEmitter {
+    /// Receives one Google-style docstring section's entries. Defaults
+    /// to `handle`, split out so a rule can resolve an entry against a
+    /// different length cap than the code contexts take.
+    fn docstring_entries(&mut self, members: &[ColonMember]) {
+        self.handle(members);
+    }
+
     fn handle(&mut self, members: &[ColonMember]);
 
     fn match_arms(&mut self, members: &[ColonMember]) {
@@ -115,7 +131,7 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
         }
         if let Some((body, _)) = scoped_body(stmt) {
             for group in docstring_sections(self.source, body) {
-                self.emitter.handle(&group);
+                self.emitter.docstring_entries(&group);
             }
         }
         walk_stmt(self, stmt);
@@ -203,7 +219,7 @@ fn dict_item(source: &Source, dict: &ExprDict, item: &DictItem) -> Option<ColonM
 }
 
 /// Returns one group per run of consecutive-line `key: value` entries
-/// in `d`. A trailing comment on an entry rides with it and keeps the
+/// in `d`. A trailing comment on an entry stays with it and keeps the
 /// run going, whereas a standalone comment line or a blank line between
 /// two entries closes the active run and starts a fresh one, so each
 /// run aligns independently. `**spread` entries skip the colon scan but

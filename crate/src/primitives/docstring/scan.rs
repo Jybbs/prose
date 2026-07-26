@@ -4,6 +4,8 @@
 
 use ruff_python_trivia::leading_indentation;
 
+use crate::primitives::INDENT_STEP;
+
 /// The classification of a docstring body line by the shared fence,
 /// blank, list, and verbatim scanner. Every variant but `Body` is
 /// terminal for the line, with `Body` handed to the walker's own
@@ -103,9 +105,9 @@ impl LineScanner {
     }
 
     /// The character column of a section's entry heads and body
-    /// prose, one 4-space step past the body indent.
+    /// prose, one `INDENT_STEP` past the body indent.
     pub(crate) fn section_body_indent_chars(&self) -> usize {
-        self.body_indent_chars + 4
+        self.body_indent_chars + INDENT_STEP
     }
 }
 

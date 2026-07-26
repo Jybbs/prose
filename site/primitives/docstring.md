@@ -70,10 +70,14 @@ A second layer of `pub(crate)` helpers parses Title-case-headed docstring sectio
 
 ```rust
 pub(crate) fn section_heading(trimmed: &str) -> bool;
-pub(crate) fn entry_description_col(trimmed: &str) -> Option<usize>;
+pub(crate) fn sibling_entry_head(
+    indent_chars: usize,
+    section_body_indent: usize,
+    trimmed: &str,
+) -> Option<(&str, usize)>;
 ```
 
-`section_heading` matches a Title-case word or multi-word run with every word capitalized, immediately followed by `:`, so Google's canonical headings (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`), Numpy's multi-word headings (`Other Parameters:`, `See Also:`), and project-specific custom headings (`Inputs:`, `Steps:`, `Outputs:`) all qualify. `entry_description_col` returns the character column where an entry's description begins after the `name: ` head, matched against a `\w[\w.]*\s*:\s+\S` shape. List-marker recognition (`-`, `*`, `+`, numeric openers) lives in the shared `LineScanner`, which classifies fences, list items, doctest blocks, reStructuredText field lists, section underlines, Sphinx directives, and their continuations as verbatim passthrough, so a section entry whose description carries a bulleted list or interactive example keeps it attached as part of the entry.
+`section_heading` matches a Title-case word or multi-word run with every word capitalized, immediately followed by `:`, so Google's canonical headings (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`), Numpy's multi-word headings (`Other Parameters:`, `See Also:`), and project-specific custom headings (`Inputs:`, `Steps:`, `Outputs:`) all qualify. `sibling_entry_head` reads a line as the `name: description` head of a sibling to the entry above it, allowing a leading `*` or `**` on the name and a parenthesized type group before the `:`, and returns that name with the character column where its description begins. A head opens only at the section body indent, one `INDENT_STEP` past the body indent, so a deeper line returns `None` whatever its shape, leaving it a continuation of the entry above. List-marker recognition (`-`, `*`, `+`, numeric openers) lives in the shared `LineScanner`, which classifies fences, list items, doctest blocks, reStructuredText field lists, section underlines, Sphinx directives, and their continuations as verbatim passthrough, so a section entry whose description carries a bulleted list or interactive example keeps it attached as part of the entry.
 
 The entry iterator composes those leaves into a section walk:
 

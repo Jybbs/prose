@@ -1,6 +1,6 @@
 ---
 caption : "Aligns the `:` separator across dict literals, annotated assignments, function-signature annotations, and Google-style docstring sections."
-related : [align-equals, align-imports, alphabetize, collection-layout, align-match-case, strip-align-padding]
+related : [align-equals, align-imports, alphabetize, collection-layout, align-match-case, strip-align-padding, docstring-wrap]
 layout  : doc
 ---
 

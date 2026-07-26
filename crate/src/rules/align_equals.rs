@@ -87,7 +87,7 @@ impl Visitor<'_> {
         let source = self.walker.source;
         let members: Vec<aligner::Member> = group.iter().map(|m| m.member).collect();
         let name_edits = if aligner::is_alignment_candidate(source, &members) {
-            self.walker.group_edits(&members)
+            self.walker.group_edits(self.walker.settings, &members)
         } else {
             group
                 .iter()

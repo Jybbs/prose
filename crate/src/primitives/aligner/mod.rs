@@ -59,10 +59,11 @@ impl<'a> AlignWalker<'a> {
     /// normalization.
     pub(crate) fn emit_group_with_gaps(
         &mut self,
+        settings: Settings,
         members: &[Member],
         gaps: impl IntoIterator<Item = TextRange>,
     ) {
-        let name_edits = self.group_edits(members);
+        let name_edits = self.group_edits(settings, members);
         self.push_with_gaps(name_edits, gaps);
     }
 
@@ -70,6 +71,22 @@ impl<'a> AlignWalker<'a> {
     /// candidate, recording nothing otherwise.
     pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
         self.emit_if_candidate_with_gaps(members, std::iter::empty());
+    }
+
+    /// Aligns `members` as one fix group under `settings` rather than
+    /// the walker's own, folding a one-space rewrite of each gap in
+    /// `gaps` into that group and recording nothing when `members` form
+    /// no alignment candidate. A rule whose contexts resolve within
+    /// different length caps emits each through this.
+    pub(crate) fn emit_if_candidate_under(
+        &mut self,
+        settings: Settings,
+        members: &[Member],
+        gaps: impl IntoIterator<Item = TextRange>,
+    ) {
+        if is_alignment_candidate(self.source, members) {
+            self.emit_group_with_gaps(settings, members, gaps);
+        }
     }
 
     /// Aligns `members` as one fix group when they form an alignment
@@ -81,9 +98,7 @@ impl<'a> AlignWalker<'a> {
         members: &[Member],
         gaps: impl IntoIterator<Item = TextRange>,
     ) {
-        if is_alignment_candidate(self.source, members) {
-            self.emit_group_with_gaps(members, gaps);
-        }
+        self.emit_if_candidate_under(self.settings, members, gaps);
     }
 
     /// Drops the held rows from `members`, then emits the survivors as
@@ -93,12 +108,12 @@ impl<'a> AlignWalker<'a> {
         self.emit_if_candidate(&kept);
     }
 
-    /// Computes the alignment edits for `members` without recording
-    /// them, leaving the caller to fold in further edits before
-    /// committing the group through [`Self::push_group`].
-    pub(crate) fn group_edits(&self, members: &[Member]) -> Vec<Edit> {
+    /// Computes the alignment edits for `members` under `settings`
+    /// without recording them, leaving the caller to fold in further
+    /// edits before committing the group through [`Self::push_group`].
+    pub(crate) fn group_edits(&self, settings: Settings, members: &[Member]) -> Vec<Edit> {
         let mut edits = Vec::new();
-        emit_group(self.source, members, self.settings, &mut edits);
+        emit_group(self.source, members, settings, &mut edits);
         edits
     }
 

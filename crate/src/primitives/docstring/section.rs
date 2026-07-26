@@ -90,9 +90,11 @@ impl<'src> EntryWalker<'src> {
         if self.open_section.is_none() {
             return;
         }
-        if indent_chars == self.scanner.section_body_indent_chars()
-            && let Some((name, _)) = entry_head(trimmed)
-        {
+        if let Some((name, _)) = sibling_entry_head(
+            indent_chars,
+            self.scanner.section_body_indent_chars(),
+            trimmed,
+        ) {
             self.finish_entry();
             self.open_entry = Some(SectionEntry {
                 name,
@@ -150,6 +152,44 @@ pub(crate) fn entry_carrying_sections<'src>(
     walker.sections
 }
 
+/// True when `trimmed` opens with a Title-case word or multi-word
+/// run with every word capitalized, immediately followed by `:`.
+/// Trailing content after the `:` is permitted.
+pub(crate) fn section_heading(trimmed: &str) -> bool {
+    SECTION_HEADING.is_match(trimmed)
+}
+
+/// Parses `trimmed` as a sibling of the entry above it, returning that
+/// head's name and description-start character column. `None` when the
+/// line continues the entry above it instead, which covers every line
+/// deeper than `section_body_indent` whatever its shape.
+pub(crate) fn sibling_entry_head(
+    indent_chars: usize,
+    section_body_indent: usize,
+    trimmed: &str,
+) -> Option<(&str, usize)> {
+    (indent_chars == section_body_indent)
+        .then_some(trimmed)
+        .and_then(entry_head)
+}
+
+/// Byte offset of the first `:` in `s` that sits at paren-and-bracket
+/// depth zero, skipping the colons nested inside a parenthesized type
+/// or a bracketed subscript. `None` when every colon is nested or the
+/// line carries none.
+pub(crate) fn unbracketed_colon(s: &str) -> Option<usize> {
+    let mut depth = 0usize;
+    for (cursor, byte) in s.bytes().enumerate() {
+        match byte {
+            b'(' | b'[' => depth += 1,
+            b')' | b']' => depth = depth.saturating_sub(1),
+            b':' if depth == 0 => return Some(cursor),
+            _ => {}
+        }
+    }
+    None
+}
+
 /// Parses `trimmed` as a Google-style `name: description` entry head,
 /// allowing a leading `*` or `**` on the name and a balanced
 /// parenthesized type group between the name and the `:` (e.g.
@@ -157,7 +197,7 @@ pub(crate) fn entry_carrying_sections<'src>(
 /// name with any `*`/`**` prefix excluded, plus the description-start
 /// character column. `None` for any line that does not match the head
 /// shape or carries no description after the `:`.
-pub(crate) fn entry_head(trimmed: &str) -> Option<(&str, usize)> {
+fn entry_head(trimmed: &str) -> Option<(&str, usize)> {
     let colon = unbracketed_colon(trimmed)?;
     let head = trimmed[..colon].trim_end();
     let after_stars = head.trim_start_matches('*');
@@ -184,30 +224,6 @@ pub(crate) fn entry_head(trimmed: &str) -> Option<(&str, usize)> {
     }
     let desc_col = trimmed[..trimmed.len() - description.len()].chars().count();
     Some((name, desc_col))
-}
-
-/// True when `trimmed` opens with a Title-case word or multi-word
-/// run with every word capitalized, immediately followed by `:`.
-/// Trailing content after the `:` is permitted.
-pub(crate) fn section_heading(trimmed: &str) -> bool {
-    SECTION_HEADING.is_match(trimmed)
-}
-
-/// Byte offset of the first `:` in `s` that sits at paren-and-bracket
-/// depth zero, skipping the colons nested inside a parenthesized type
-/// or a bracketed subscript. `None` when every colon is nested or the
-/// line carries none.
-pub(crate) fn unbracketed_colon(s: &str) -> Option<usize> {
-    let mut depth = 0usize;
-    for (cursor, byte) in s.bytes().enumerate() {
-        match byte {
-            b'(' | b'[' => depth += 1,
-            b')' | b']' => depth = depth.saturating_sub(1),
-            b':' if depth == 0 => return Some(cursor),
-            _ => {}
-        }
-    }
-    None
 }
 
 #[cfg(test)]
@@ -416,6 +432,14 @@ mod tests {
         assert!(!section_heading("Foo bar:"));
         assert!(!section_heading("1Args:"));
         assert!(!section_heading(": no name"));
+    }
+
+    #[test]
+    fn sibling_entry_head_opens_only_at_the_section_body_indent() {
+        assert_eq!(sibling_entry_head(8, 8, "name: desc"), Some(("name", 6)));
+        assert!(sibling_entry_head(9, 8, "name: desc").is_none());
+        assert!(sibling_entry_head(4, 8, "name: desc").is_none());
+        assert!(sibling_entry_head(8, 8, "just prose").is_none());
     }
 
     #[test]
