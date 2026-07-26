@@ -6,6 +6,7 @@ import * as paths            from '../shared/paths'
 import * as registries       from '../shared/registries'
 
 interface PipelineRule {
+  after         : readonly string[]
   category      : registries.RuleCategory | null
   categoryBadge : string | null
   categoryLabel : string | null
@@ -31,11 +32,12 @@ export default defineLoader({
   watch: [...paths.proseBinaryCandidates(paths.repoRoot(import.meta.url)), `${rulesDirectory}/*.md`],
   load(): PipelineData {
     const discovered = discoverRuleIndex(rulesDirectory)
-    const rules      = readPipeline(import.meta.url).map(({ imperative, position, slug }) => {
+    const rules      = readPipeline(import.meta.url).map(({ after, imperative, position, slug }) => {
       const entry        = discovered.get(slug)
       const categoryMeta = entry ? registries.CATEGORY_META[entry.category] : null
       const familyMeta   = entry ? registries.FAMILY_META[entry.family]     : null
       return {
+        after,
         category      : entry?.category ?? null,
         categoryBadge : categoryMeta?.badge ?? null,
         categoryLabel : categoryMeta?.label ?? null,

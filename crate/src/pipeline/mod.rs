@@ -3,8 +3,12 @@
 //! Each rule returns a `Vec<Edit>` and a `Vec<TextRange>` of lint
 //! ranges. The pipeline sorts and applies the edits into a fresh
 //! buffer, then reparses before handing the new `Source` to the next
-//! rule. Alignment rules run last so earlier rewrites settle before
-//! padding widths are computed.
+//! rule. Registration order follows the data dependency, so every rule
+//! that mutates a line's width, a group's member order, or a
+//! statement's position runs ahead of every rule that reads one, and a
+//! single pass emits what a second pass would. Where two rules depend
+//! on each other, the earlier one predicts the later one's output
+//! rather than leaving the correction to a repeated pass.
 
 use ruff_diagnostics::{Edit, SourceMap};
 

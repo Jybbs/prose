@@ -8,7 +8,7 @@
 
 ## Why Ordering Matters
 
-Each rule's edits shape the source the next rule reads. Three kinds of dependency drive the ordering.
+Each rule's edits shape the source the next rule reads, so the registry seats every rule that mutates a geometry ahead of every rule that reads it. The list above falls into bands on that law, opening with the content rewrites that only ever shrink a line, then the import sectioning, then the layout rules that commit each construct's break decisions, then the order and position rules, then the alignment run, and closing on the lints. A rule reads a settled surface because everything that could still move it has already run, which is what lets one invocation emit what a second would. Three kinds of dependency drive it.
 
 ### Layout Before Alignment
 

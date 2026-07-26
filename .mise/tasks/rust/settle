@@ -1,0 +1,24 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description="Report every corpus file the formatter rewrites on a second pass"
+
+corpus="${1:-$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')}"
+
+cargo build --release --bin prose --locked
+prose="$MISE_PROJECT_ROOT/target/release/prose"
+
+visited=0
+moved=0
+while IFS= read -r -d '' file; do
+  visited=$((visited + 1))
+  once=$("$prose" format --no-cache --stdin --stdin-filename "$file" < "$file" 2>/dev/null || true)
+  twice=$(printf '%s' "$once" | "$prose" format --no-cache --stdin --stdin-filename "$file" 2>/dev/null || true)
+  if [[ -z "$once" || -z "$twice" ]]; then
+    continue
+  fi
+  if [[ "$once" != "$twice" ]]; then
+    moved=$((moved + 1))
+    printf '%s\n' "${file#"$corpus"/}"
+  fi
+done < <(find "$corpus" -name '*.py' -not -path '*/test/*' -not -path '*/tests/*' -not -path '*/site-packages/*' -print0)
+
+printf '\n%d of %d files rewrite on a second pass\n' "$moved" "$visited"

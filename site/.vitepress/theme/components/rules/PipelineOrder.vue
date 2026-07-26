@@ -4,6 +4,14 @@ import { data as rules }    from '../../../lib/rules/rules.data'
 import { formatFolio }      from '../../../lib/shared/numerals'
 
 import MiddleEllipsis from '../base/MiddleEllipsis.vue'
+
+type PipelineRule = (typeof pipeline.rules)[number]
+
+function label(rule: PipelineRule): string {
+  const family = rule.family ? ` (${rule.family})` : ''
+  const after  = rule.after.length > 0 ? ` · reads ${rule.after.join(', ')}` : ''
+  return `${rule.slug}${family}${after}`
+}
 </script>
 
 <template>
@@ -24,7 +32,7 @@ import MiddleEllipsis from '../base/MiddleEllipsis.vue'
           <a
             class="pipeline-order-link"
             :href="rule.documented ? rules.bySlug[rule.slug].href : undefined"
-            :title="`${rule.slug}${rule.family ? ` (${rule.family})` : ''}`"
+            :title="label(rule)"
           >
             <span class="folio">№ {{ formatFolio(rule.position) }}</span>
             <MiddleEllipsis class="pipeline-order-name" :text="rule.slug" :tail="2" />

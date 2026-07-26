@@ -54,6 +54,7 @@ impl Rule for BlankLines {
             group_imports: self.group_imports,
             source,
         };
+        walker.normalize_module_head(body);
         walker.pair_siblings(body, BodyScope::Module);
         walker.visit_body(body);
         singleton_groups(walker.edits)
@@ -81,11 +82,13 @@ impl Walker<'_> {
             return;
         }
         let span_start = whitespace_start_before(text, line_start);
+        let span = TextRange::new(span_start, line_start);
         let replacement = self.source.newline_str().repeat(target_newlines as usize);
-        self.edits.push(Edit::range_replacement(
-            replacement,
-            TextRange::new(span_start, line_start),
-        ));
+        self.edits.push(if replacement.is_empty() {
+            Edit::range_deletion(span)
+        } else {
+            Edit::range_replacement(replacement, span)
+        });
     }
 
     /// Places `target_newlines` line breaks between `block_end` and
@@ -104,6 +107,18 @@ impl Walker<'_> {
             self.source.newline_str().repeat(target_newlines as usize),
             TextRange::new(block_end, curr_line_start),
         ));
+    }
+
+    /// Clears the blank run opening the module, measured above the first
+    /// statement or above the comment block leading it, so a file starts
+    /// on content.
+    fn normalize_module_head(&mut self, body: &[Stmt]) {
+        let Some(first) = body.first() else {
+            return;
+        };
+        let block = leading_comment_block(self.source, TextSize::default(), first.start());
+        let line_start = self.source.text().line_start(first.start());
+        self.normalize_above(block.map_or(line_start, TextRange::start), 0);
     }
 
     fn pair_in_scope(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
@@ -126,9 +141,13 @@ impl Walker<'_> {
     }
 
     fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
-        if self
-            .source
-            .has_cell_boundary(TextRange::new(prev_end, curr.start()))
+        // A `;`-joined pair shares one line, leaving no own-line gap to
+        // normalize. Normalizing anyway targets the line both statements
+        // open, prepending the gap above the pair rather than between them.
+        if self.source.same_line(prev_end, curr.start())
+            || self
+                .source
+                .has_cell_boundary(TextRange::new(prev_end, curr.start()))
         {
             return;
         }
@@ -162,8 +181,8 @@ mod tests {
     use super::*;
     use crate::testing::{notebook, parse};
 
-    /// A function in cell 0 and a call in cell 1. Module spacing wants a
-    /// blank after the def, but a cell boundary sits in that gap.
+    /// A function in cell 0 and a call in cell 1. Module spacing calls
+    /// for a blank after the def, but a cell boundary sits in that gap.
     fn split_across_two_cells() -> Source {
         notebook(&["def f():\n    return 1", "x = f()"])
     }
