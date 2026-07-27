@@ -1,17 +1,15 @@
-//! Line classification for a docstring body: fences, blanks, list
-//! markers, section underlines, doctest blocks, reStructuredText
-//! field lists, Sphinx directives, and their continuations.
+//! Line classification for a docstring body, separating verbatim
+//! structures from the prose a walker reflows.
 
-use ruff_python_trivia::leading_indentation;
+use ruff_python_trivia::{PythonWhitespace, leading_indentation};
 
 use crate::primitives::INDENT_STEP;
 
 /// The classification of a docstring body line by [`LineScanner`].
 /// Every variant but `Body` is terminal for the line, with `Body`
-/// handed to the walker's own dispatch. `VerbatimOpen` opens or
-/// stands as a passthrough region (section underline, doctest,
-/// field list, or directive) and `Verbatim` carries a line inside
-/// an open region.
+/// handed to the walker's own dispatch. `VerbatimOpen` either stands
+/// alone for its line or opens a region running to the next blank,
+/// and `Verbatim` carries a line inside an open region.
 #[derive(Debug)]
 pub(crate) enum LineScan {
     Blank,
@@ -74,12 +72,14 @@ impl LineScanner {
                 self.list_indent = Some(indent_chars);
                 return LineScan::ListMarker;
             }
-            if is_section_underline(trimmed) {
+            if is_grid_table_line(trimmed) || is_section_underline(trimmed) {
                 return LineScan::VerbatimOpen;
             }
-            if is_directive(trimmed)
+            if is_comment_marker(trimmed)
+                || is_directive(trimmed)
                 || is_doctest_prompt(trimmed)
                 || (at_block_start && is_field_marker(trimmed))
+                || is_simple_table_rule(trimmed)
             {
                 self.in_block = true;
                 return LineScan::VerbatimOpen;
@@ -93,11 +93,10 @@ impl LineScanner {
     }
 
     /// Splits `line` into its indent prefix and trimmed body, then
-    /// classifies the body, so a walker reads geometry and scan from
-    /// one call.
+    /// classifies the body.
     pub(crate) fn scan_line<'a>(&mut self, line: &'a str) -> ScannedLine<'a> {
         let indent = leading_indentation(line);
-        let trimmed = &line[indent.len()..];
+        let trimmed = line.trim_whitespace();
         let indent_chars = indent.chars().count();
         let scan = self.classify(trimmed, indent_chars);
         ScannedLine {
@@ -115,9 +114,7 @@ impl LineScanner {
     }
 }
 
-/// A docstring body line's geometry paired with its classification:
-/// the indent prefix, its character width, the trimmed body, and the
-/// [`LineScan`] the scanner advanced to.
+/// A docstring body line's geometry paired with its classification.
 pub(crate) struct ScannedLine<'a> {
     pub(crate) indent: &'a str,
     pub(crate) indent_chars: usize,
@@ -137,6 +134,12 @@ fn head_delimited(trimmed: &str, open: &str, close: &str) -> bool {
         })
 }
 
+/// True when `trimmed` opens a comment-led code example, the `# `
+/// prefix a Python comment carries.
+fn is_comment_marker(trimmed: &str) -> bool {
+    trimmed.starts_with("# ")
+}
+
 /// True when `trimmed` opens a reStructuredText directive, a `.. `
 /// prefix then a name then a `::` close.
 fn is_directive(trimmed: &str) -> bool {
@@ -154,6 +157,16 @@ fn is_doctest_prompt(trimmed: &str) -> bool {
 /// role closes on a backtick, so a line opening with one is prose.
 fn is_field_marker(trimmed: &str) -> bool {
     head_delimited(trimmed, ":", ":")
+}
+
+/// True when `trimmed` is a grid-table line, either a row opening with
+/// the `|` cell delimiter or a rule built from `+` corners joined by
+/// runs of `-` or `=`.
+fn is_grid_table_line(trimmed: &str) -> bool {
+    trimmed.starts_with('|')
+        || (trimmed.starts_with('+')
+            && trimmed.contains(['-', '='])
+            && trimmed.bytes().all(|b| matches!(b, b'+' | b'-' | b'=')))
 }
 
 /// True when `trimmed` opens with a Markdown list marker (`-`, `*`,
@@ -177,6 +190,15 @@ fn is_section_underline(trimmed: &str) -> bool {
     chars
         .next()
         .is_some_and(|first| matches!(first, '-' | '=' | '~') && chars.all(|c| c == first))
+}
+
+/// True when `trimmed` is a simple-table rule, two or more runs of one
+/// adornment character (`-` or `=`) separated by spaces.
+fn is_simple_table_rule(trimmed: &str) -> bool {
+    let Some(adornment) = trimmed.chars().next().filter(|c| matches!(c, '-' | '=')) else {
+        return false;
+    };
+    trimmed.contains(' ') && trimmed.chars().all(|c| c == adornment || c == ' ')
 }
 
 #[cfg(test)]
@@ -207,15 +229,41 @@ mod tests {
         );
     }
 
-    #[test]
-    fn classify_runs_doctest_block_through_to_blank() {
+    #[rstest]
+    fn classify_opens_no_block_for_grid_or_underline_lines(
+        #[values("+---+---+", "----------")] opener: &str,
+    ) {
         let mut scanner = LineScanner::new(0);
-        assert_matches!(scanner.classify(">>> add(1, 2)", 0), LineScan::VerbatimOpen);
-        assert_matches!(scanner.classify("3", 0), LineScan::Verbatim);
+        assert_matches!(scanner.classify(opener, 0), LineScan::VerbatimOpen);
+        assert_matches!(scanner.classify("Back to prose.", 0), LineScan::Body);
+    }
+
+    #[rstest]
+    fn classify_runs_a_verbatim_block_through_to_blank(
+        #[values(
+            ">>> add(1, 2)",
+            "# sum the rows",
+            ".. note:: text",
+            ":param x: input",
+            "=====  ====="
+        )]
+        opener: &str,
+    ) {
+        let mut scanner = LineScanner::new(0);
+        assert_matches!(scanner.classify(opener, 0), LineScan::VerbatimOpen);
+        assert_matches!(scanner.classify("total = sum(rows)", 0), LineScan::Verbatim);
         assert_matches!(scanner.classify(">>> add(3, 4)", 0), LineScan::Verbatim);
         assert_matches!(scanner.classify("7", 0), LineScan::Verbatim);
         assert_matches!(scanner.classify("", 0), LineScan::Blank);
         assert_matches!(scanner.classify("Back to prose.", 0), LineScan::Body);
+    }
+
+    #[test]
+    fn is_comment_marker_matches_hash_followed_by_a_space() {
+        assert!(is_comment_marker("# compute the total"));
+        assert!(!is_comment_marker("#1. open the file"));
+        assert!(!is_comment_marker("#"));
+        assert!(!is_comment_marker("plain prose"));
     }
 
     #[test]
@@ -262,6 +310,18 @@ mod tests {
     }
 
     #[test]
+    fn is_grid_table_line_matches_pipe_rows_and_corner_rules() {
+        assert!(is_grid_table_line("| Python | JSON |"));
+        assert!(is_grid_table_line("| line block continuation"));
+        assert!(is_grid_table_line("+--------+------+"));
+        assert!(is_grid_table_line("+========+======+"));
+        assert!(!is_grid_table_line("+ list item"));
+        assert!(!is_grid_table_line("++++"));
+        assert!(!is_grid_table_line("Accepts int | None."));
+        assert!(!is_grid_table_line("plain prose"));
+    }
+
+    #[test]
     fn is_list_marker_matches_dash_star_plus_and_numeric() {
         assert!(is_list_marker("- foo"));
         assert!(is_list_marker("* foo"));
@@ -281,5 +341,25 @@ mod tests {
         assert!(!is_section_underline("-=-=-"));
         assert!(!is_section_underline("--- text"));
         assert!(!is_section_underline("Parameters"));
+    }
+
+    #[test]
+    fn is_simple_table_rule_matches_spaced_adornment_runs() {
+        assert!(is_simple_table_rule("=====  ====="));
+        assert!(is_simple_table_rule("-----  ---  --"));
+        assert!(!is_simple_table_rule("====="));
+        assert!(!is_simple_table_rule("=====  -----"));
+        assert!(!is_simple_table_rule("~~~  ~~~"));
+        assert!(!is_simple_table_rule("Name   Meaning"));
+        assert!(!is_simple_table_rule("--- text"));
+    }
+
+    #[test]
+    fn scan_line_trims_trailing_whitespace_before_classifying() {
+        let mut scanner = LineScanner::new(0);
+        assert_matches!(
+            scanner.scan_line("+---+---+   ").scan,
+            LineScan::VerbatimOpen
+        );
     }
 }

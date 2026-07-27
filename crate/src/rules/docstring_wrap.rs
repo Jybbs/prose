@@ -2,14 +2,15 @@
 //! Description prose wraps to `docstring_line_length`, Title-case-headed
 //! sections to the budget `docstring_structured_policy` selects, and
 //! each `name: description` entry to `docstring_line_length` with a
-//! hanging indent, its head left verbatim. Fences, over-indented
-//! blocks, list items, doctests, section underlines, directives, and a
-//! field list opening its own block pass through unchanged, whereas an
-//! interpreted-text role is prose. Description and section prose alike
-//! collapse every interior whitespace run to one space, and a backslash
-//! continuing a line of non-raw prose resolves into that join rather
-//! than reaching the output as a word, whereas a continuation inside a
-//! passthrough region travels with the region untouched.
+//! hanging indent, its head left verbatim. Every region [`LineScan`]
+//! marks verbatim passes through unchanged, as does a `name (type):`
+//! field header opening a paragraph outside any section, whereas one
+//! sitting under prose reflows into the paragraph above it. Description
+//! and section prose alike collapse every interior whitespace run to
+//! one space, and a backslash continuing a line of non-raw prose
+//! resolves into that join rather than reaching the output as a word,
+//! whereas a continuation inside a passthrough region travels with the
+//! region untouched.
 
 use std::borrow::Cow;
 
@@ -23,7 +24,7 @@ use crate::{
     primitives::{
         docstring::{
             DocstringBody, LineScan, LineScanner, ScannedLine, entry_head, rewrite_docstrings,
-            section_heading, triple_quoted_body,
+            section_heading, triple_quoted_body, typed_entry_head,
         },
         edit::narrowed_replacement,
     },
@@ -58,8 +59,8 @@ impl Rule for DocstringWrap {
                 return;
             };
             let newline = source.newline_str();
-            let width = source.line_indent_width(lit.start());
-            let Some(rewritten) = rewrite_body(&body, width, newline, self) else {
+            let indent_chars = source.line_indent_width(lit.start());
+            let Some(rewritten) = rewrite_body(&body, indent_chars, newline, self) else {
                 return;
             };
             edits.extend(narrowed_replacement(source, body.range, rewritten));
@@ -97,12 +98,12 @@ struct Walker<'a> {
 }
 
 impl<'a> Walker<'a> {
-    fn buffer_description(&mut self, indent: &'a str, line: &'a str) {
+    fn buffer_description(&mut self, indent: &'a str, text: &'a str) {
         if self.paragraph.lines.is_empty() {
             self.paragraph.initial_indent = indent;
             self.paragraph.subsequent_indent = Cow::Borrowed(indent);
         }
-        self.paragraph.lines.push(line);
+        self.paragraph.lines.push(text);
     }
 
     fn consume(&mut self, line: &'a str) {
@@ -115,8 +116,7 @@ impl<'a> Walker<'a> {
 
         match scan {
             LineScan::Fence | LineScan::ListMarker | LineScan::VerbatimOpen => {
-                self.flush_paragraph();
-                self.emit_verbatim(line);
+                self.flush_verbatim(line);
                 return;
             }
             LineScan::InFence | LineScan::ListContinuation | LineScan::Verbatim => {
@@ -133,9 +133,8 @@ impl<'a> Walker<'a> {
 
         let body_indent = self.scanner.body_indent_chars();
         if indent_chars == body_indent && section_heading(trimmed) {
-            self.flush_paragraph();
+            self.flush_verbatim(line);
             self.region = Region::Section;
-            self.emit_verbatim(line);
             return;
         }
 
@@ -154,8 +153,7 @@ impl<'a> Walker<'a> {
             Region::SectionEntry(_) => unreachable!("entries handled above"),
         };
         if indent_chars > prose_indent {
-            self.flush_paragraph();
-            self.emit_verbatim(line);
+            self.flush_verbatim(line);
             return;
         }
 
@@ -164,6 +162,9 @@ impl<'a> Walker<'a> {
         }
 
         match self.region {
+            Region::Description if self.paragraph.lines.is_empty() && typed_entry_head(text) => {
+                self.flush_verbatim(line);
+            }
             Region::Description => self.buffer_description(indent, text),
             Region::Section => {
                 if let Some((_, desc_start)) = entry_head(text) {
@@ -214,6 +215,11 @@ impl<'a> Walker<'a> {
         if matches!(self.region, Region::SectionEntry(_)) {
             self.region = Region::Section;
         }
+    }
+
+    fn flush_verbatim(&mut self, line: &str) {
+        self.flush_paragraph();
+        self.emit_verbatim(line);
     }
 
     fn is_entry_continuation(
@@ -452,6 +458,15 @@ mod tests {
         assert_eq!(
             indent, 18,
             "continuation hangs under the description column"
+        );
+    }
+
+    #[test]
+    fn typed_head_under_prose_reflows_into_the_paragraph() {
+        let src = "def f():\n    \"\"\"\n    Short intro.\n    config (dict): more prose carrying the same paragraph.\n    \"\"\"\n    pass\n";
+        assert!(
+            run(src).contains("Short intro. config (dict):"),
+            "a head with no blank line above it split the paragraph",
         );
     }
 
