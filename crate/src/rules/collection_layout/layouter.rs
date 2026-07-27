@@ -185,8 +185,8 @@ impl<'a> Layouter<'a> {
     }
 
     /// True when `expr` contains an over-cap `Dict` at any depth,
-    /// including itself. A `Dict` inside an f-string or t-string
-    /// replacement field does not count.
+    /// including itself. A `Dict` inside a replacement field does not
+    /// count.
     fn has_over_count_dict(&self, expr: &Expr) -> bool {
         let range = expr.range();
         self.tripping_dicts
@@ -489,7 +489,6 @@ impl<'a> Visitor<'a> for Layouter<'a> {
         }
     }
 
-    /// Leaves a replacement field unwalked, so a collection inside an
-    /// f-string or t-string keeps its source shape.
+    /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 }

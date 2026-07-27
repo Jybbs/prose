@@ -68,8 +68,7 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
         walk_expr(self, expr);
     }
 
-    /// Leaves a replacement field unwalked, so no column is reserved for
-    /// a keyword inside an f-string or t-string.
+    /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 }
 

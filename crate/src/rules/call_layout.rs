@@ -4,11 +4,10 @@
 //! trigger fires on any call whose line crosses `code_line_length`,
 //! exploding a keyword-expressible call in keyword form and any other
 //! call positionally. The closing `)` drops to the call's own indent,
-//! and a nested call in an argument value explodes in the same pass. A
-//! replacement field is opaque, so neither trigger reaches a call inside
-//! an f-string or t-string. Argument order, `=` alignment, and
-//! trailing-comma policy stay with `alphabetize`, `align_equals`, and
-//! `strip_trailing_commas`.
+//! and a nested call in an argument value explodes in the same pass.
+//! Neither trigger reaches a call inside an f-string or t-string.
+//! Argument order, `=` alignment, and trailing-comma policy stay with
+//! `alphabetize`, `align_equals`, and `strip_trailing_commas`.
 
 use std::collections::HashMap;
 
@@ -227,8 +226,7 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         walk_expr(self, expr);
     }
 
-    /// Leaves a replacement field unwalked, so a call inside an f-string
-    /// or t-string keeps its source shape.
+    /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 }
 

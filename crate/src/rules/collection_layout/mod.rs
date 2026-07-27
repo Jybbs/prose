@@ -68,9 +68,9 @@ impl CollectionLayout {
 impl Rule for CollectionLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let body = &source.ast().body;
-        // The count cap rides the `explode` facet, so a cleared `explode`
-        // leaves no tripping dicts and the cap goes inert. Precomputed once
-        // so the per-node check is a containment scan rather than a re-walk.
+        // The count cap applies only while `explode` is set, so a cleared
+        // `explode` leaves no tripping dicts and the cap goes inert. It is
+        // precomputed once, leaving the per-node check a containment scan.
         let count_cap = self.max_dict_entries.filter(|_| self.explode);
         let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| over_count_dicts(body, cap));
         let reservations = self.align_equals.map_or_else(HashMap::new, |settings| {
@@ -97,8 +97,6 @@ impl Rule for CollectionLayout {
     }
 }
 
-/// Collects the range of every `Dict` literal carrying more than `cap`
-/// entries.
 struct DictScan {
     cap: usize,
     ranges: Vec<TextRange>,
@@ -114,14 +112,12 @@ impl<'a> Visitor<'a> for DictScan {
         walk_expr(self, expr);
     }
 
-    /// Leaves a replacement field unwalked, so a dict inside an f-string
-    /// or t-string trips the count cap neither for itself nor for the
-    /// collection enclosing the literal.
+    /// Leaves a replacement field unwalked.
     fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 }
 
 /// The range of every `Dict` literal in `body` carrying more than `cap`
-/// entries, the shape the count cap expands whatever its width.
+/// entries. A `Dict` inside a replacement field does not count.
 fn over_count_dicts(body: &[Stmt], cap: usize) -> Vec<TextRange> {
     let mut scan = DictScan {
         cap,
