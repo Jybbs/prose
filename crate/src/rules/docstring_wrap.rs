@@ -6,7 +6,10 @@
 //! blocks, list items, doctests, section underlines, directives, and a
 //! field list opening its own block pass through unchanged, whereas an
 //! interpreted-text role is prose. Description and section prose alike
-//! collapse every interior whitespace run to one space.
+//! collapse every interior whitespace run to one space, and a backslash
+//! continuing a line of non-raw prose resolves into that join rather
+//! than reaching the output as a word, whereas a continuation inside a
+//! passthrough region travels with the region untouched.
 
 use std::borrow::Cow;
 
@@ -56,7 +59,7 @@ impl Rule for DocstringWrap {
             };
             let newline = source.newline_str();
             let width = source.line_indent_width(lit.start());
-            let Some(rewritten) = rewrite_body(body.text, width, newline, self) else {
+            let Some(rewritten) = rewrite_body(&body, width, newline, self) else {
                 return;
             };
             edits.extend(narrowed_replacement(source, body.range, rewritten));
@@ -87,6 +90,7 @@ struct Walker<'a> {
     newline: &'a str,
     out: String,
     paragraph: Paragraph<'a>,
+    raw: bool,
     region: Region,
     rule: &'a DocstringWrap,
     scanner: LineScanner,
@@ -135,7 +139,7 @@ impl<'a> Walker<'a> {
             return;
         }
 
-        let text = trimmed.trim_end();
+        let text = without_continuation(trimmed, self.raw).trim_end();
         if let Region::SectionEntry(hanging_col) = self.region {
             if self.is_entry_continuation(indent_chars, text, hanging_col) {
                 self.paragraph.lines.push(text);
@@ -246,29 +250,74 @@ fn collapsed<'a>(lines: impl IntoIterator<Item = &'a str>) -> String {
     lines.into_iter().flat_map(str::split_whitespace).join(" ")
 }
 
-fn rewrite_body(
-    body: &str,
+/// True when a backslash ends `line` and suppresses the newline after it,
+/// an odd run of trailing backslashes closing on a continuation and an
+/// even run closing on an escaped backslash.
+fn ends_in_continuation(line: &str) -> bool {
+    !(line.len() - line.trim_end_matches('\\').len()).is_multiple_of(2)
+}
+
+fn rewrite_body<'a>(
+    body: &DocstringBody<'a>,
     body_indent_chars: usize,
-    newline: &str,
-    rule: &DocstringWrap,
+    newline: &'a str,
+    rule: &'a DocstringWrap,
 ) -> Option<String> {
-    let (content, closer_indent) = body.strip_prefix(newline)?.rsplit_once(newline)?;
+    let (content, closer_indent) = body.text.strip_prefix(newline)?.rsplit_once(newline)?;
+    let lines = spliced_continuations(content, newline, body.raw);
 
     let mut walker = Walker {
         newline,
         out: String::with_capacity(content.len()),
         paragraph: Paragraph::default(),
+        raw: body.raw,
         region: Region::Description,
         rule,
         scanner: LineScanner::new(body_indent_chars),
     };
-    for line in content.split(newline) {
+    for line in &lines {
         walker.consume(line);
     }
     walker.flush_paragraph();
 
     let wrapped = walker.out.trim_end_matches(newline);
     Some([newline, wrapped, newline, closer_indent].concat())
+}
+
+/// Splits `content` on `newline`, merging a continued line with the one
+/// below it when neither side of the dropped backslash carries
+/// whitespace, the one join the paragraph collapse cannot reproduce.
+/// Every other line passes through split as written, leaving a
+/// continuation inside a passthrough region byte-identical.
+fn spliced_continuations<'a>(content: &'a str, newline: &str, raw: bool) -> Vec<Cow<'a, str>> {
+    let physical: Vec<&'a str> = content.split(newline).collect();
+    let mut lines: Vec<Cow<'a, str>> = Vec::new();
+    let mut splicing = false;
+    for (index, &line) in physical.iter().enumerate() {
+        let tight = !raw
+            && ends_in_continuation(line)
+            && !line[..line.len() - 1].ends_with(char::is_whitespace)
+            && physical
+                .get(index + 1)
+                .is_some_and(|next| !next.starts_with(char::is_whitespace));
+        let text = if tight { &line[..line.len() - 1] } else { line };
+        match lines.last_mut().filter(|_| splicing) {
+            Some(last) => last.to_mut().push_str(text),
+            None => lines.push(Cow::Borrowed(text)),
+        }
+        splicing = tight;
+    }
+    lines
+}
+
+/// Drops the trailing backslash of a line continuation, leaving the join
+/// to the paragraph collapse, which reads the whitespace on either side
+/// of it as the separator. A raw docstring holds no continuations.
+fn without_continuation(line: &str, raw: bool) -> &str {
+    if raw || !ends_in_continuation(line) {
+        return line;
+    }
+    &line[..line.len() - 1]
 }
 
 #[cfg(test)]
@@ -321,6 +370,18 @@ mod tests {
         );
     }
 
+    #[rstest]
+    #[case("plain prose", false)]
+    #[case("escaped \\\\", false)]
+    #[case("continues \\", true)]
+    #[case("continues \\\\\\", true)]
+    fn ends_in_continuation_reads_only_an_odd_trailing_run(
+        #[case] line: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(ends_in_continuation(line), expected);
+    }
+
     #[test]
     fn fenced_code_block_passes_through_verbatim() {
         let src = "\"\"\"\nSummary.\n\n```python\nx = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12\n```\n\"\"\"\n";
@@ -337,6 +398,16 @@ mod tests {
     fn non_triple_quoted_string_is_left_alone() {
         let src = "def f():\n    \"summary\"\n";
         assert_eq!(run(src), src);
+    }
+
+    #[test]
+    fn opening_continuation_joins_the_summary_below_it() {
+        let src = "\"\"\"\n\\\nA summary left flush against the opener by a continuation that ran past the docstring budget.\n\"\"\"\n";
+        let out = run(src);
+        assert!(
+            !out.contains('\\'),
+            "a stranded continuation reached the output: {out:?}"
+        );
     }
 
     #[rstest]
@@ -369,6 +440,19 @@ mod tests {
     fn singleton_docstring_is_left_alone() {
         let src = "def f():\n    \"\"\"summary\"\"\"\n";
         assert_eq!(run(src), src);
+    }
+
+    #[rstest]
+    #[case("see https://host/\\\npath.html", false, &["see https://host/path.html"])]
+    #[case("trailing run \\\n    indented", false, &["trailing run \\", "    indented"])]
+    #[case("spaced out \\\nflush", false, &["spaced out \\", "flush"])]
+    #[case("raw https://host/\\\npath.html", true, &["raw https://host/\\", "path.html"])]
+    fn spliced_continuations_merges_only_a_join_carrying_no_whitespace(
+        #[case] content: &str,
+        #[case] raw: bool,
+        #[case] expected: &[&str],
+    ) {
+        assert_eq!(spliced_continuations(content, "\n", raw), expected);
     }
 
     #[test]

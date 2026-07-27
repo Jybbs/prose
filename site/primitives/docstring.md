@@ -58,7 +58,7 @@ trait DocstringHandler {
 The `pub(crate)` helpers reach for the docstring literal and its body:
 
 1. `body_docstring(body) -> Option<&StringLiteral>` returns a body's leading PEP 257 docstring literal, the shared detection point for consumers that already hold a `&[Stmt]` body rather than walking the whole module.
-2. `docstring_body(source, lit) -> Option<DocstringBody>` returns the body slice between a docstring's opener and closer whatever its quote style, paired with the source range the slice covers. Returns `None` only for an inline shape like `def f(): "doc"`.
+2. `docstring_body(source, lit) -> Option<DocstringBody>` returns the body slice between a docstring's opener and closer whatever its quote style, paired with the source range the slice covers and a `raw` flag carrying whether the literal took an `r` prefix, which is what decides whether a backslash in the slice escapes the character after it. Returns `None` only for an inline shape like `def f(): "doc"`.
 3. `triple_quoted_body(source, lit) -> Option<DocstringBody>` narrows `docstring_body` to the canonical `"""` form, the slice `docstring-expand` and `docstring-wrap` act on once `docstring-frame` has requoted every docstring. Returns `None` for a non-triple-quoted literal.
 4. `indent_prefix(source, lit) -> &str` returns the whitespace preceding the docstring on its first line, useful when a rule rewraps the body and needs to re-indent the result.
 
