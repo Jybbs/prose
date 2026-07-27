@@ -125,8 +125,7 @@ pub(super) fn module_band_plan<'src>(
                     // stays in the cell that holds it, so the constant
                     // bands without it.
                     if let Some(block) = gap_comment
-                        && !source
-                            .has_cell_boundary(TextRange::new(block.start(), blocks[idx].start()))
+                        && source.same_cell(block.start(), blocks[idx].start())
                     {
                         carries.push((idx, block));
                     }

@@ -126,10 +126,7 @@ impl Walker<'_> {
     }
 
     fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
-        if self
-            .source
-            .has_cell_boundary(TextRange::new(prev_end, curr.start()))
-        {
+        if !self.source.same_cell(prev_end, curr.start()) {
             return;
         }
         let Some(canonical) =
@@ -162,8 +159,8 @@ mod tests {
     use super::*;
     use crate::testing::{notebook, parse};
 
-    /// A function in cell 0 and a call in cell 1. Module spacing wants a
-    /// blank after the def, but a cell boundary sits in that gap.
+    /// A function in cell 0 and a call in cell 1. Module spacing puts a
+    /// blank line after the def, and a cell boundary sits in that gap.
     fn split_across_two_cells() -> Source {
         notebook(&["def f():\n    return 1", "x = f()"])
     }

@@ -2,45 +2,16 @@
 //! its concatenated code cells, and re-emit the JSON with outputs,
 //! metadata, and structure preserved.
 
+use itertools::Itertools;
 use ruff_diagnostics::SourceMap;
 use ruff_notebook::{CellOffsets, Notebook, NotebookIndex};
 use ruff_source_file::SourceFileBuilder;
 
-use super::process::{drive, failed};
-use super::{FileOutcome, Pass};
+use super::{
+    FileOutcome, Pass,
+    process::{drive, failed},
+};
 use crate::{cache::Rewrite, cli::exit_status::ExitStatus, pipeline::Pipeline, source::Source};
-
-/// Builds the notebook rewrite, sliding the cell offsets against the
-/// run's deltas before re-emitting the JSON.
-fn build_rewrite(
-    notebook: &mut Notebook,
-    original_offsets: &CellOffsets,
-    original_code: &str,
-    formatted: &Source,
-) -> Rewrite {
-    let formatted_code = formatted.text();
-    if formatted_code == original_code {
-        return Rewrite::Unchanged;
-    }
-    let final_offsets = formatted.cell_offsets();
-    let mut update_map = SourceMap::default();
-    for (&original, &updated) in original_offsets.iter().zip(final_offsets.iter()) {
-        update_map.push_marker(original, updated);
-    }
-    notebook.update(&update_map, formatted_code.to_owned());
-    let before = slice_cells(original_code, original_offsets);
-    let after = slice_cells(formatted_code, final_offsets);
-    Rewrite::notebook(before, after, emit(notebook))
-}
-
-/// Serializes `notebook` back to its JSON document.
-fn emit(notebook: &Notebook) -> String {
-    let mut bytes = Vec::new();
-    notebook
-        .write(&mut bytes)
-        .expect("re-emitting a parsed notebook to memory cannot fail");
-    String::from_utf8(bytes).expect("notebook JSON is valid UTF-8")
-}
 
 /// Parses `text` as a notebook and runs `pass` over its code cells. A
 /// non-Python notebook is passed over clean, and a read or parse
@@ -82,6 +53,38 @@ pub(super) fn rehydrated(text: &str) -> Option<(String, NotebookIndex)> {
         let source = notebook.source_code().to_owned();
         (source, notebook.into_index())
     })
+}
+
+/// Builds the notebook rewrite, sliding the cell offsets against the
+/// run's deltas before re-emitting the JSON.
+fn build_rewrite(
+    notebook: &mut Notebook,
+    original_offsets: &CellOffsets,
+    original_code: &str,
+    formatted: &Source,
+) -> Rewrite {
+    let formatted_code = formatted.text();
+    if formatted_code == original_code {
+        return Rewrite::Unchanged;
+    }
+    let final_offsets = formatted.cell_offsets();
+    let mut update_map = SourceMap::default();
+    for (&original, &updated) in original_offsets.iter().zip_eq(final_offsets.iter()) {
+        update_map.push_marker(original, updated);
+    }
+    notebook.update(&update_map, formatted_code.to_owned());
+    let before = slice_cells(original_code, original_offsets);
+    let after = slice_cells(formatted_code, final_offsets);
+    Rewrite::notebook(before, after, emit(notebook))
+}
+
+/// Serializes `notebook` back to its JSON document.
+fn emit(notebook: &Notebook) -> String {
+    let mut bytes = Vec::new();
+    notebook
+        .write(&mut bytes)
+        .expect("re-emitting a parsed notebook to memory cannot fail");
+    String::from_utf8(bytes).expect("notebook JSON is valid UTF-8")
 }
 
 /// Runs the notebook's concatenated source through the pipeline,

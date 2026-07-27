@@ -32,11 +32,13 @@ use crate::{
 /// the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]` and
 /// `# prose: ignore[<id>]` per-line directives, plus a
 /// `BindingAnalysis` table of every name's writes and reads.
-/// `source_type` is the parse mode and `cell_offsets` the notebook
-/// cell boundaries, empty for an ordinary module.
+/// `source_type` is the parse mode, `cell_offsets` the notebook cell
+/// boundaries, and `cell_numbers` each cell's notebook position, the
+/// last two empty for an ordinary module.
 #[derive(Debug)]
 pub struct Source {
     binding_analysis: Box<BindingAnalysis>,
+    cell_numbers: Box<[OneIndexed]>,
     cell_offsets: CellOffsets,
     comment_ranges: CommentRanges,
     file: SourceFile,
@@ -46,7 +48,7 @@ pub struct Source {
 }
 
 impl Source {
-    pub(crate) fn build(
+    fn build(
         text: String,
         name: impl Into<Box<str>>,
         source_type: PySourceType,
@@ -71,19 +73,25 @@ impl Source {
         Self::build(text, name, source_type, CellOffsets::default())
     }
 
-    /// Builds the concatenated source of a parsed notebook, attaching
-    /// its cell boundaries. The caller keeps `notebook` to re-emit the
-    /// document after formatting.
+    /// Builds the concatenated source of a parsed notebook, attaching its
+    /// cell boundaries and each code cell's notebook position. The caller
+    /// keeps `notebook` to re-emit the document after formatting.
     pub(crate) fn from_notebook(
         notebook: &Notebook,
         name: impl Into<Box<str>>,
     ) -> Result<Self, ParseError> {
-        Self::build(
+        let mut source = Self::build(
             notebook.source_code().to_owned(),
             name,
             PySourceType::Ipynb,
             notebook.cell_offsets().clone(),
-        )
+        )?;
+        source.cell_numbers = notebook
+            .index()
+            .iter()
+            .map(|cell| cell.cell_index())
+            .collect();
+        Ok(source)
     }
 
     /// Wraps an already-parsed module in its indexes, the shared tail of
@@ -107,6 +115,7 @@ impl Source {
         let binding_analysis = Box::new(BindingAnalysis::new(parsed.syntax()));
         Self {
             binding_analysis,
+            cell_numbers: Box::default(),
             cell_offsets,
             comment_ranges,
             file,
@@ -136,6 +145,27 @@ impl Source {
         Self::build_module(text, name, source_type).map_err(Into::into)
     }
 
+    /// Recuts `offsets` onto the statement boundaries `body` and `text`
+    /// carry, moving a boundary that splits this source's statements but
+    /// none of the replacement's to the start of the statement it now
+    /// falls inside. One already run through a statement holds, as does
+    /// one whose recut would not clear its predecessor, leaving `offsets`
+    /// strictly ascending.
+    fn recut_cells(&self, mut offsets: CellOffsets, body: &[Stmt], text: &str) -> CellOffsets {
+        for index in 1..offsets.len().saturating_sub(1) {
+            let offset = offsets[index];
+            if splits_statements(offset, body, text) || !self.cell_splits_cleanly(index) {
+                continue;
+            }
+            let line_start = text.line_start(offset);
+            let cut = statement_spanning(line_start, body).map_or(line_start, Ranged::start);
+            if cut > offsets[index - 1] {
+                offsets[index] = cut;
+            }
+        }
+        offsets
+    }
+
     pub fn ast(&self) -> &ModModule {
         self.parsed.syntax()
     }
@@ -145,15 +175,14 @@ impl Source {
         &self.binding_analysis
     }
 
-    /// Returns the content range of the notebook cell containing
-    /// `offset`, with the synthetic cell separator excluded, or `None`
-    /// for an ordinary module or an offset past the last cell.
-    pub(crate) fn cell_content_range(&self, offset: TextSize) -> Option<TextRange> {
-        let opened = self.cell_offsets.partition_point(|&start| start <= offset);
-        self.cell_offsets
-            .content_ranges()
-            .nth(opened.checked_sub(1)?)
-            .filter(|range| range.contains(offset))
+    /// Returns the absolute notebook position of the code cell at
+    /// `index`, counting Markdown cells, or `index` one-indexed for an
+    /// ordinary module.
+    pub(crate) fn cell_number(&self, index: usize) -> OneIndexed {
+        self.cell_numbers
+            .get(index)
+            .copied()
+            .unwrap_or_else(|| OneIndexed::from_zero_indexed(index))
     }
 
     /// Returns the notebook cell boundaries in the concatenated buffer,
@@ -170,6 +199,14 @@ impl Source {
         self.cell_offsets
             .get(index)
             .is_none_or(|&offset| splits_statements(offset, &self.ast().body, self.text()))
+    }
+
+    /// Returns the start of the notebook cell containing `offset`, or
+    /// `None` for an ordinary module or an offset past the last cell.
+    pub(crate) fn cell_start(&self, offset: TextSize) -> Option<TextSize> {
+        self.cell_offsets
+            .containing_range(offset)
+            .map(TextRange::start)
     }
 
     /// Returns the source text of each notebook cell, the whole buffer
@@ -247,13 +284,6 @@ impl Source {
         lines_before(offset, self.text()) >= 2
     }
 
-    /// Returns `true` when a notebook cell boundary falls within
-    /// `range`, the wall a sibling reorder never moves a member across.
-    /// Always `false` for an ordinary module.
-    pub(crate) fn has_cell_boundary(&self, range: TextRange) -> bool {
-        self.cell_offsets.has_cell_boundary(range)
-    }
-
     /// Returns `true` when at least one comment lies within `ranged`.
     pub fn intersects_comment<R: Ranged>(&self, ranged: R) -> bool {
         self.comment_ranges.intersects(ranged.range())
@@ -323,34 +353,10 @@ impl Source {
             .next()
     }
 
-    /// Recuts `offsets` onto the statement boundaries `body` and `text`
-    /// carry. A boundary that split this source's statements and splits
-    /// none of the replacement's moves back to the start of the statement
-    /// it now falls inside. A boundary that already ran through a
-    /// statement here holds where it is, as does one whose recut would
-    /// not clear the boundary before it, leaving the offsets strictly
-    /// ascending so every cell keeps room for its separator.
-    fn recut_cells(&self, mut offsets: CellOffsets, body: &[Stmt], text: &str) -> CellOffsets {
-        for index in 1..offsets.len().saturating_sub(1) {
-            let offset = offsets[index];
-            if splits_statements(offset, body, text) || !self.cell_splits_cleanly(index) {
-                continue;
-            }
-            let line_start = text.line_start(offset);
-            let cut = statement_spanning(line_start, body).map_or(line_start, Ranged::start);
-            if cut > offsets[index - 1] {
-                offsets[index] = cut;
-            }
-        }
-        offsets
-    }
-
     /// Reparses with replacement source text, preserving the original
-    /// name, and carrying `cell_offsets` forward so a notebook keeps its
-    /// cell boundaries across a rule. A boundary the edits slid off a
-    /// statement recuts onto one the replacement text actually carries,
-    /// where a boundary this source already ran through a statement holds.
-    /// Diagnostic labels keep the original path or `<source>` placeholder.
+    /// name, and carrying `cell_offsets` forward through [`Self::recut_cells`]
+    /// so a notebook keeps its cell boundaries across a rule. Diagnostic
+    /// labels keep the original path or `<source>` placeholder.
     ///
     /// # Errors
     ///
@@ -362,21 +368,22 @@ impl Source {
     ) -> Result<Self, ParseError> {
         let parsed = parse_typed_module(&text, self.source_type)?;
         let cell_offsets = self.recut_cells(cell_offsets, &parsed.syntax().body, &text);
-        Ok(Self::from_parsed(
+        let mut next = Self::from_parsed(
             text,
             self.file.name(),
             self.source_type,
             cell_offsets,
             parsed,
-        ))
+        );
+        next.cell_numbers = self.cell_numbers.clone();
+        Ok(next)
     }
 
-    /// Returns `true` when `a` and `b` sit in one notebook cell, the wall
-    /// a sibling reorder never moves a member across and the partition a
-    /// per-cell emit groups by. Always `true` for an ordinary module,
-    /// which carries no cell boundary.
+    /// Returns `true` when `a` and `b` sit in one notebook cell, with `a`
+    /// at or before `b`. Always `true` for an ordinary module, which
+    /// carries no cell boundary.
     pub(crate) fn same_cell(&self, a: TextSize, b: TextSize) -> bool {
-        self.cell_content_range(a) == self.cell_content_range(b)
+        !self.cell_offsets.has_cell_boundary(TextRange::new(a, b))
     }
 
     /// Returns `true` when `a` and `b` sit on one physical source line,
@@ -468,14 +475,14 @@ fn parse_typed_module(
 /// Returns `true` when `offset` opens a statement boundary in `text`,
 /// sitting at a line start with no statement of `body` spanning it.
 fn splits_statements(offset: TextSize, body: &[Stmt], text: &str) -> bool {
-    offset == text.line_start(offset) && statement_spanning(offset, body).is_none()
+    text.is_at_start_of_line(offset) && statement_spanning(offset, body).is_none()
 }
 
 /// Returns the statement of `body` that `offset` falls strictly inside,
 /// or `None` when `offset` sits at a statement's own start or between two.
 fn statement_spanning(offset: TextSize, body: &[Stmt]) -> Option<&Stmt> {
-    body.iter()
-        .find(|stmt| stmt.start() < offset && offset < stmt.end())
+    let after = body.partition_point(|stmt| stmt.start() < offset);
+    body[..after].last().filter(|stmt| offset < stmt.end())
 }
 
 #[cfg(test)]
@@ -565,6 +572,42 @@ mod tests {
         let nb = notebook(&["x = 1\n", "y = 2\n"]);
         assert!(nb.cell_splits_cleanly(nb.cell_offsets().len()));
         assert!(parse("x = 1\n").cell_splits_cleanly(0));
+    }
+
+    #[test]
+    fn cell_number_counts_markdown_cells_and_survives_a_reparse() {
+        let json = r##"{
+            "cells": [
+                {"cell_type": "markdown", "metadata": {}, "source": "# Notes"},
+                {"cell_type": "code", "execution_count": null, "metadata": {},
+                 "outputs": [], "source": "x = 1\n"}
+            ],
+            "metadata": {"language_info": {"name": "python"}},
+            "nbformat": 4,
+            "nbformat_minor": 5
+        }"##;
+        let parsed = Notebook::from_source_code(json).expect("notebook parses");
+        let nb = Source::from_notebook(&parsed, "<nb>").expect("notebook source builds");
+
+        assert_eq!(nb.cell_number(0), OneIndexed::from_zero_indexed(1));
+
+        let reparsed = nb
+            .reparse_carrying(nb.text().to_owned(), nb.cell_offsets().clone())
+            .expect("reparses");
+        assert_eq!(reparsed.cell_number(0), OneIndexed::from_zero_indexed(1));
+    }
+
+    #[test]
+    fn cell_number_falls_back_to_the_position_for_a_module() {
+        assert_eq!(
+            parse("x = 1\n").cell_number(3),
+            OneIndexed::from_zero_indexed(3)
+        );
+    }
+
+    #[test]
+    fn cell_texts_returns_the_whole_buffer_for_a_module() {
+        assert_eq!(parse("x = 1\ny = 2\n").cell_texts(), vec!["x = 1\ny = 2\n"]);
     }
 
     #[test]

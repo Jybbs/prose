@@ -29,10 +29,8 @@ pub enum PipelineError {
 
 /// Reparses `new_text`, sliding the source's cell offsets through `map`
 /// so a notebook keeps current boundaries, and tags a parse failure with
-/// the `rule` whose edits produced it. A notebook cell that split the
-/// source's statements before the rule ran is checked past the
-/// whole-buffer reparse, so a split leaving it unparseable is rejected
-/// rather than written out.
+/// the `rule` whose edits produced it. A cell the source split cleanly is
+/// then checked on its own through [`reject_split_cell`].
 pub(super) fn reparse_or_reject(
     source: &Source,
     new_text: String,
@@ -50,10 +48,9 @@ pub(super) fn reparse_or_reject(
 }
 
 /// Parses each of `after`'s notebook cells on its own, tagging the first
-/// failure with its one-indexed cell number and `rule`. Only a cell whose
-/// boundaries both split `before`'s statements is checked, so one the
-/// author already wrote through a statement is left as it stands. An
-/// ordinary module holds no cell boundary and passes through.
+/// failure with its absolute notebook cell number and `rule`. Only a cell
+/// `before` split cleanly at both boundaries is checked, and an ordinary
+/// module holds no cell boundary and passes through.
 fn reject_split_cell(before: &Source, after: &Source, rule: RuleId) -> Result<(), PipelineError> {
     if !after.is_notebook() {
         return Ok(());
@@ -62,7 +59,7 @@ fn reject_split_cell(before: &Source, after: &Source, rule: RuleId) -> Result<()
         if before.cell_splits_cleanly(index) && before.cell_splits_cleanly(index + 1) {
             parse(text, ParseOptions::from(PySourceType::Ipynb)).map_err(|source| {
                 PipelineError::Cell {
-                    cell: OneIndexed::from_zero_indexed(index),
+                    cell: after.cell_number(index),
                     rule,
                     source,
                 }

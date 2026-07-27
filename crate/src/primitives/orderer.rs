@@ -132,16 +132,9 @@ pub(crate) fn assemble_separated(
 
 /// Assembles a body rewrite into edits: one narrowed edit per notebook
 /// cell the `blocks` span, or a single body-spanning edit for an ordinary
-/// module. The arguments mirror [`assemble_or_borrow`]. Each block opens
-/// inside one cell, the floor [`block_range`] applies, and `order` never
-/// crosses a cell boundary, the invariant
-/// [`Sections`](crate::primitives::sections::Sections) upholds, so the run
-/// this walks and the sections that permuted it partition the slots the
-/// same way and each cell's slots stay a contiguous run that reassembles
-/// against the cell's own block span.
-/// That span ends exactly at the cell boundary, the last member's block
-/// folding in the synthetic separator, so every emitted edit lands inside
-/// one cell and its woven offset slides in bounds.
+/// module. The arguments mirror [`assemble_or_borrow`]. `order` never
+/// crosses a cell boundary, so each cell's slots stay a contiguous run
+/// that reassembles against the cell's own block span.
 pub(crate) fn assembled_cell_edits<'src>(
     source: &'src Source,
     blocks: &[TextRange],
@@ -160,37 +153,23 @@ pub(crate) fn assembled_cell_edits<'src>(
         };
     }
     let mut edits = Vec::new();
-    let mut start = 0;
-    while start < blocks.len() {
-        let mut end = start + 1;
-        while end < blocks.len() && source.same_cell(blocks[start].start(), blocks[end].start()) {
-            end += 1;
-        }
+    for Range { start, end } in slot_runs(blocks, |a, b| source.same_cell(a.start(), b.start())) {
+        let cell = &blocks[start..end];
         let rebased: Vec<usize> = order[start..end].iter().map(|&slot| slot - start).collect();
-        let assembled = assemble_blocks(
-            source,
-            &blocks[start..end],
-            &rendered[start..end],
-            &rebased,
-            |slot| gap(start + slot),
-        );
-        edits.extend(narrowed_replacement(
-            source,
-            blocks_span(&blocks[start..end]),
-            assembled,
-        ));
-        start = end;
+        let assembled = assemble_blocks(source, cell, &rendered[start..end], &rebased, |slot| {
+            gap(start + slot)
+        });
+        edits.extend(narrowed_replacement(source, blocks_span(cell), assembled));
     }
     edits
 }
 
 /// Returns the source-level extent of `items[i]`: its own range, any
 /// comment-only lines directly above it (no intervening blank line), and its
-/// trailing comma and inline comment. Bounded below by the previous item's end
-/// (or `outer.start()` for the first) and by the start of the item's own
-/// notebook cell, and forward by the next item's start, or for the last item
-/// by [`tail_end`], which stops at a closing delimiter on the line rather than
-/// crossing it.
+/// trailing comma and inline comment. Bounded below by the later of the
+/// previous item's end (`outer.start()` for the first) and the item's own
+/// notebook cell start, and forward by the next item's start, or [`tail_end`]
+/// for the last item.
 pub(crate) fn block_range<T: Ranged>(
     source: &Source,
     items: &[T],
@@ -198,9 +177,7 @@ pub(crate) fn block_range<T: Ranged>(
     outer: TextRange,
 ) -> TextRange {
     let item = items[i].range();
-    let cell_floor = source
-        .cell_content_range(item.start())
-        .map_or(outer.start(), TextRange::start);
+    let cell_floor = source.cell_start(item.start()).unwrap_or(outer.start());
     let lower = items[..i]
         .last()
         .map_or(outer.start(), Ranged::end)
@@ -227,24 +204,6 @@ pub(crate) fn block_ranges<T: Ranged>(
 /// Total source extent covered by `blocks`. Requires non-empty input.
 pub(crate) fn blocks_span(blocks: &[TextRange]) -> TextRange {
     blocks[0].cover(*blocks.last().expect("non-empty blocks"))
-}
-
-/// [`block_range`] for `items[i]` with its start pushed below any section
-/// marker leading it, so a banner or hash heading stays in the gap above
-/// the member rather than traveling with it through a reorder. The
-/// marker-bearing gap is what [`Sections`](crate::primitives::sections::Sections)
-/// reads to divide the body.
-pub(crate) fn member_block<T: Ranged>(
-    source: &Source,
-    items: &[T],
-    i: usize,
-    outer: TextRange,
-) -> TextRange {
-    let raw = block_range(source, items, i, outer);
-    TextRange::new(
-        marker_floor(source, raw.start(), items[i].start()),
-        raw.end(),
-    )
 }
 
 /// Member blocks for every slot of `items`, the `Vec<TextRange>` a
@@ -427,13 +386,14 @@ where
 
 /// Slot ranges of each run of two or more adjacent items that each
 /// satisfy `qualifies`, an item failing it bounding the runs on either
-/// side. The unary-predicate face of [`chunk_runs`], folding the
-/// per-item test into the pairwise neighbor check.
+/// side.
 pub(crate) fn runs_where<T>(
     items: &[T],
     mut qualifies: impl FnMut(&T) -> bool,
 ) -> Vec<Range<usize>> {
-    chunk_runs(items, |a, b| qualifies(a) && qualifies(b))
+    slot_runs(items, |a, b| qualifies(a) && qualifies(b))
+        .filter(|run| run.len() >= 2)
+        .collect()
 }
 
 /// Inverts `order` into the slot each item index occupies, the reverse
@@ -447,19 +407,20 @@ pub(crate) fn slot_positions(order: &[usize]) -> Vec<usize> {
     positions
 }
 
-/// Returns the slot ranges of consecutive items whose pairwise neighbors
-/// satisfy `adjacent`. Singleton runs drop.
-fn chunk_runs<T>(items: &[T], adjacent: impl FnMut(&T, &T) -> bool) -> Vec<Range<usize>> {
+/// Slot ranges of each run of adjacent items whose pairwise neighbors
+/// satisfy `adjacent`, singletons included. An empty `items` yields no
+/// run.
+pub(crate) fn slot_runs<T>(
+    items: &[T],
+    adjacent: impl FnMut(&T, &T) -> bool,
+) -> impl Iterator<Item = Range<usize>> {
     let mut start = 0;
-    items
-        .chunk_by(adjacent)
-        .filter_map(|chunk| {
-            let end = start + chunk.len();
-            let range = (chunk.len() >= 2).then_some(start..end);
-            start = end;
-            range
-        })
-        .collect()
+    items.chunk_by(adjacent).map(move |chunk| {
+        let end = start + chunk.len();
+        let run = start..end;
+        start = end;
+        run
+    })
 }
 
 /// True when `order` is the identity permutation `0..order.len()`, the
@@ -501,6 +462,19 @@ fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize
         current = text.line_start(comment.start());
     }
     current
+}
+
+/// [`block_range`] for `items[i]` with its start pushed below any section
+/// marker leading it, so a banner or hash heading stays in the gap above
+/// the member rather than traveling with it through a reorder. The
+/// marker-bearing gap is what [`Sections`](crate::primitives::sections::Sections)
+/// reads to divide the body.
+fn member_block<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRange) -> TextRange {
+    let raw = block_range(source, items, i, outer);
+    TextRange::new(
+        marker_floor(source, raw.start(), items[i].start()),
+        raw.end(),
+    )
 }
 
 /// Extends `item_end` over a trailing comma and inline comment on its line,
@@ -653,12 +627,6 @@ mod tests {
         let source = parse("def a(): pass\ndef b(): pass\n");
         let block = block_range(&source, &source.ast().body, 1, source.module_range());
         assert_eq!(source.slice(block), "def b(): pass");
-    }
-
-    #[test]
-    fn chunk_runs_returns_runs_of_two_or_more_dropping_singletons() {
-        let items = [1, 1, 2, 3, 3, 3];
-        assert_eq!(chunk_runs(&items, |a, b| a == b), vec![0..2, 3..6]);
     }
 
     #[rstest]
@@ -850,6 +818,15 @@ mod tests {
     #[test]
     fn slot_positions_inverts_an_order() {
         assert_eq!(slot_positions(&[2, 0, 1]), vec![1, 2, 0]);
+    }
+
+    #[test]
+    fn slot_runs_keeps_singleton_runs() {
+        let items = [1, 1, 2, 3, 3, 3];
+        assert_eq!(
+            slot_runs(&items, |a, b| a == b).collect::<Vec<_>>(),
+            vec![0..2, 2..3, 3..6]
+        );
     }
 
     #[test]

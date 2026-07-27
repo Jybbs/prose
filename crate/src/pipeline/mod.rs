@@ -174,10 +174,10 @@ impl Pipeline {
 /// woven text and, for a notebook, the `SourceMap` of cell-offset
 /// deltas. An ordinary module skips the map.
 fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<SourceMap>)> {
-    if !source.is_notebook() {
-        apply_edits(source.text(), edits).map(|text| (text, None))
-    } else {
+    if source.is_notebook() {
         apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
+    } else {
+        apply_edits(source.text(), edits).map(|text| (text, None))
     }
 }
 
@@ -422,8 +422,8 @@ mod tests {
 
     #[test]
     fn run_applies_a_reordering_rule_on_a_notebook() {
-        // 325 held a sibling reorder out of the notebook path entirely;
-        // 326 runs it cell-aware, so a rewrite now lands on the cell.
+        // A sibling reorder runs cell-aware on a notebook, so its
+        // rewrite lands inside the cell that holds the members.
         let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
             groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
             id: RuleId::from("rewrite-x-to-y"),
