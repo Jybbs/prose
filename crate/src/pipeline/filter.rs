@@ -4,11 +4,7 @@
 use ruff_diagnostics::Edit;
 use ruff_text_size::Ranged;
 
-use crate::{
-    diagnostics::Diagnostic,
-    rule::{Rule, RuleId},
-    source::Source,
-};
+use crate::{diagnostics::Diagnostic, rule::Rule, source::Source};
 
 /// Drops the lint diagnostics a `# prose: ignore[<id>]` directive
 /// covers, matched per line and rule.
@@ -24,11 +20,10 @@ pub(super) fn drop_suppressed_lints(diagnostics: &mut Vec<Diagnostic>, source: &
 
 /// Applies `rule` to `source` and returns its fix groups with the
 /// suppressed and empty ones removed. A group is dropped whole as soon
-/// as one of its edits falls under a `# fmt: off` span or a
-/// `# prose: skip[<id>]` directive, so a rule's co-dependent edits
-/// never split across a suppression boundary.
-pub(super) fn prepared_groups(rule: &dyn Rule, source: &Source, rule_id: RuleId) -> Vec<Vec<Edit>> {
+/// as one of its edits falls under a suppression span for `rule`.
+pub(super) fn prepared_groups(rule: &dyn Rule, source: &Source) -> Vec<Vec<Edit>> {
     let mut groups = rule.apply(source);
+    let rule_id = rule.id();
     let suppression = source.suppression_map();
     groups.retain(|g| !g.is_empty() && !g.iter().any(|e| suppression.suppresses(e, rule_id)));
     groups

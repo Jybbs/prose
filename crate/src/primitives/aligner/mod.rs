@@ -103,8 +103,7 @@ impl<'a> AlignWalker<'a> {
     }
 
     /// Returns `true` when `anchor`'s source line is skip-suppressed for
-    /// this rule, so the row drops out of its alignment group as a
-    /// transparent hole that neighbors still align around.
+    /// this rule.
     pub(crate) fn is_held(&self, anchor: TextSize) -> bool {
         is_held(self.source, self.rule, anchor)
     }

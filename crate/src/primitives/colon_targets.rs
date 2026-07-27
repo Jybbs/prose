@@ -27,27 +27,6 @@ use crate::{
     source::Source,
 };
 
-/// One row in a `:` alignment context, pairing the pre-colon alignment
-/// `member` with `value_gap`, the span from just past the colon to the
-/// value that an aligned or stripped row rewrites to one space. `None`
-/// leaves the post-colon spacing to another rule, as match arms defer to
-/// `align_match_case` and docstring entries stay as written.
-#[derive(Clone, Copy)]
-pub(crate) struct ColonMember {
-    pub(crate) member: aligner::Member,
-    pub(crate) value_gap: Option<TextRange>,
-}
-
-impl ColonMember {
-    /// Pairs `member` with no post-colon gap.
-    fn bare(member: aligner::Member) -> Self {
-        Self {
-            member,
-            value_gap: None,
-        }
-    }
-}
-
 /// Receiver for the colon-context walker. `handle` is the catch-all
 /// for annotated assignments, docstring entries, dict entries, and
 /// parameters. `match_arms` is split out so a rule can opt out of
@@ -76,6 +55,27 @@ pub(crate) trait ColonEmitter {
             source,
         };
         visitor.visit_body(&source.ast().body);
+    }
+}
+
+/// One row in a `:` alignment context, pairing the pre-colon alignment
+/// `member` with `value_gap`, the span from just past the colon to the
+/// value that an aligned or stripped row rewrites to one space. `None`
+/// leaves the post-colon spacing to another rule, as match arms defer to
+/// `align_match_case` and docstring entries stay as written.
+#[derive(Clone, Copy)]
+pub(crate) struct ColonMember {
+    pub(crate) member: aligner::Member,
+    pub(crate) value_gap: Option<TextRange>,
+}
+
+impl ColonMember {
+    /// Pairs `member` with no post-colon gap.
+    fn bare(member: aligner::Member) -> Self {
+        Self {
+            member,
+            value_gap: None,
+        }
     }
 }
 
@@ -159,7 +159,7 @@ fn annotated_assignment(source: &Source, stmt: &Stmt) -> Option<ColonMember> {
 
 /// Walks `body`, qualifying each statement through `annotated_assignment`,
 /// and returns one group per run of contiguous line-adjacent
-/// annotated-assignment statements. A row skip-suppressed for `rule`
+/// annotated-assignment statements. A single-line row held for `rule`
 /// drops out as a transparent hole per [`aligner::line_adjacent_groups`].
 fn annotated_assignment_groups(
     source: &Source,

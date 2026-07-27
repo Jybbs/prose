@@ -59,9 +59,8 @@ impl Pipeline {
         }
         let mut diagnostics = Vec::new();
         for rule in &self.rules {
-            let rule_id = rule.id();
-            let groups = prepared_groups(&**rule, source, rule_id);
-            diagnostics.extend(format_diagnostics(rule_id, groups, rule.message()));
+            let groups = prepared_groups(&**rule, source);
+            diagnostics.extend(format_diagnostics(&**rule, groups));
             diagnostics.extend(unsuppressed_lints(&**rule, source));
         }
         drop_suppressed_lints(&mut diagnostics, source);
@@ -88,10 +87,10 @@ impl Pipeline {
     ///
     /// File-level `# prose: off` short-circuits to identity. The
     /// suppression map otherwise drops each fix group holding a
-    /// suppressed edit (off spans plus `# prose: skip[<id>]`), drops an
-    /// empty group, and filters lint diagnostics per-line
-    /// (`# prose: ignore`). Alignment rules pre-exclude suppressed rows
-    /// before grouping, so this group-level pass is a no-op for them.
+    /// suppressed edit, drops an empty group, and filters lint
+    /// diagnostics per-line (`# prose: ignore`). Alignment rules
+    /// pre-exclude suppressed rows before grouping, so this
+    /// group-level pass is a no-op for them.
     ///
     /// # Errors
     ///
@@ -106,14 +105,14 @@ impl Pipeline {
             |(source, mut diagnostics), rule| {
                 let rule_id = rule.id();
                 diagnostics.extend(unsuppressed_lints(&**rule, &source));
-                let Some((groups, new_text, map)) = woven_groups(&**rule, &source, rule_id) else {
+                let Some((groups, new_text, map)) = woven_groups(&**rule, &source) else {
                     return Ok((source, diagnostics));
                 };
                 debug_assert!(
                     new_text != source.text(),
                     "rule `{rule_id}` emitted edits that produced identical text",
                 );
-                diagnostics.extend(format_diagnostics(rule_id, groups, rule.message()));
+                diagnostics.extend(format_diagnostics(&**rule, groups));
                 let next = reparse_or_reject(&source, new_text, rule_id, map)?;
                 Ok((next, diagnostics))
             },
@@ -136,23 +135,20 @@ impl Pipeline {
         self.rules
             .iter()
             .try_fold(source, |source, rule| {
-                let rule_id = rule.id();
-                let Some((_, new_text, map)) = woven_groups(&**rule, &source, rule_id) else {
+                let Some((_, new_text, map)) = woven_groups(&**rule, &source) else {
                     return Ok(source);
                 };
-                reparse_or_reject(&source, new_text, rule_id, map)
+                reparse_or_reject(&source, new_text, rule.id(), map)
             })
             .map(drop)
     }
 }
 
-/// The format diagnostics `rule_id`'s surviving fix groups emit, one
-/// per group.
-fn format_diagnostics(
-    rule_id: RuleId,
-    groups: Vec<Vec<Edit>>,
-    message: &'static str,
-) -> impl Iterator<Item = Diagnostic> {
+/// The format diagnostics `rule`'s surviving fix groups emit, one per
+/// group.
+fn format_diagnostics(rule: &dyn Rule, groups: Vec<Vec<Edit>>) -> impl Iterator<Item = Diagnostic> {
+    let rule_id = rule.id();
+    let message = rule.message();
     groups
         .into_iter()
         .map(move |group| Diagnostic::format(rule_id, group, message.to_owned()))
@@ -175,9 +171,8 @@ fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<Sou
 fn woven_groups(
     rule: &dyn Rule,
     source: &Source,
-    rule_id: RuleId,
 ) -> Option<(Vec<Vec<Edit>>, String, Option<SourceMap>)> {
-    let groups = prepared_groups(rule, source, rule_id);
+    let groups = prepared_groups(rule, source);
     if groups.is_empty() {
         return None;
     }
@@ -324,6 +319,25 @@ mod tests {
             ranges: vec![range(0, 1)],
         })]);
         let source = parse("x = 1  # prose: ignore\n");
+
+        assert!(pipeline.diagnose(&source).is_empty());
+    }
+
+    #[test]
+    fn diagnose_drops_a_whole_group_holding_one_suppressed_edit() {
+        // Source: "# fmt: off\nx = 1\n# fmt: on\nz = 9\n"
+        //         |0--------|11----|17--------|27----|33
+        // The group bundles an edit at 11..16 (inside the suppressed
+        // [0..17) span) with one at 27..32. The group drops as a unit,
+        // so diagnose emits nothing.
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![
+                Edit::range_replacement("y".to_owned(), range(11, 16)),
+                Edit::range_replacement("Z".to_owned(), range(27, 32)),
+            ]],
+            id: RuleId::from("rewrite-x-and-z"),
+        })]);
+        let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
 
         assert!(pipeline.diagnose(&source).is_empty());
     }

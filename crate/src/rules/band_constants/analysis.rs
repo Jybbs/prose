@@ -67,7 +67,7 @@ pub(super) fn module_band_plan<'src>(
     let mut carries: Vec<(usize, TextRange)> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
-        // A `# fmt: off` span or a skip directive pins its statement, so
+        // A `# prose: off` span or a skip directive pins its statement, so
         // a reorder never moves a member the pipeline would then drop the
         // whole group for.
         if suppression.suppresses(stmt, BandConstants::SLUG) {

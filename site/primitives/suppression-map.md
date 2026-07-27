@@ -31,7 +31,7 @@ For consumers reading this from within the *Prose* crate, the map exposes a cons
 
 1. `from_comments(source, comments, tokens, first_code_offset, cell_offsets) -> Self` builds the map by scanning the token stream for the comment shapes the suppression surface recognizes, with `tokens` resolving each skip directive's logical line and `first_code_offset` powering the `file_is_suppressed` shortcut.
 2. `file_is_suppressed() -> bool` returns true when an unmatched `# prose: off` *(or `# fmt: off`)* sits at or before the first non-blank, non-comment line of the file, letting the pipeline short-circuit to identity before any rule fires.
-3. `has_format_directive() -> bool` answers whether any format-suppression span or `# prose: skip[<rule>]` directive sits in the file.
+3. `has_format_suppression() -> bool` answers whether any format-suppression span or `# prose: skip[<rule>]` directive sits in the file.
 4. `has_lint_suppression() -> bool` answers the same for `# prose: ignore` directives.
 5. `intersects<R: Ranged>(ranged: R) -> bool` returns true when the given range overlaps any format-suppression span.
 6. `is_lint_suppressed_at(line: OneIndexed, rule: RuleId) -> bool` returns true when the line carries a `# prose: ignore` directive that names the rule, or a bare directive that widens to every rule.

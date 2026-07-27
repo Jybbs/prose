@@ -33,7 +33,7 @@ The bracket bounds its own scope, leaving rules outside the markers to fire on e
 
 ### Tagging a Line
 
-Line-level directives split by severity, because rewrites and lints want different escape hatches.
+Line-level directives split by severity, because rewrites and lints take different escape hatches.
 
 The **`skip`** family covers rewrite suppression. `# fmt: skip` *(equivalent to `# prose: skip`)* exempts the whole logical line it trails from every auto-fix rule, so a statement wrapped across several physical lines is held from its opening line through the directive's own, fitting cases wherein a single statement carries a deliberate token layout *(a hand-padded dict expression, a one-off argument list whose spacing carries intent)*. `# prose: skip[<rule>]` narrows to the listed rules, so a project that wants only `align-equals` held on one statement writes `# prose: skip[align-equals]` and leaves the other rewrite rules free to fire. When the exempted statement occupies a single line inside an alignment group, the group's other rows still align as one block around it, so the held row reads as a deliberate exception rather than collapsing the surrounding alignment.
 

@@ -1,14 +1,13 @@
 //! Parsing of the lint-suppression namespace: `# prose: ignore` and
-//! its `ignore[rule]` form, plus the rule entry both the lint and the
+//! its `ignore[<id>]` form, plus the rule entry both the lint and the
 //! format namespaces record.
 
 use std::collections::HashSet;
 
 use ruff_python_trivia::PythonWhitespace;
 
-use crate::rule::RuleId;
-
 use super::parse_common::{after_prose_prefix, parse_bracketed_rule_list};
+use crate::rule::RuleId;
 
 /// The rule set one `# prose: ignore` or `# prose: skip[<id>]`
 /// directive records, indexed per line for `ignore` and per skip span

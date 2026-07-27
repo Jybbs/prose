@@ -39,21 +39,11 @@ pub(crate) struct SuppressionMap {
 }
 
 impl SuppressionMap {
-    /// Walks `comments` against `source`, classifying each comment via
-    /// `classify_format_directive` for the format spans and the per-rule
-    /// skip index, and `find_prose_ignore` for the lint index. `tokens`
-    /// resolves each skip directive's logical line through `skip_span`.
-    /// `first_code_offset` carries the start of the source's first
-    /// top-level statement (or `None` for code-free input), powering
-    /// the `file_is_suppressed` shortcut.
-    ///
-    /// An unmatched `# prose: off` (or alias) extends through end of
-    /// file in a module and through the end of its own cell in a
-    /// notebook, a stray `# prose: on` is a no-op, and two consecutive
-    /// `# prose: off` directives flatten with the first `# prose: on`
-    /// closing the block. Multiple `# prose: ignore` directives on the
-    /// same line merge with bare-wins precedence, and `# prose: skip[<id>]`
-    /// directives union their listed ids.
+    /// Walks `comments` against `source`, indexing the format spans, the
+    /// per-rule skip spans, and the per-line lint directives. `tokens`
+    /// resolves each skip directive's logical line, and
+    /// `first_code_offset` is the start of the source's first top-level
+    /// statement, or `None` for code-free input.
     pub(crate) fn from_comments(
         source: &SourceCode<'_, '_>,
         comments: &CommentRanges,
@@ -96,15 +86,13 @@ impl SuppressionMap {
                 lints.entry(line).or_default().merge(entry);
             }
         }
-        let off_end = open_off.map(|start| cell_close_end(cell_offsets, source_text, start));
-        let file_suppressed = open_off.zip(off_end).is_some_and(|(off, end)| {
-            end == source_text.text_len() && first_code_offset.is_none_or(|code| off <= code)
+        let unmatched_span = open_off
+            .map(|start| TextRange::new(start, cell_close_end(cell_offsets, source_text, start)));
+        let file_suppressed = unmatched_span.is_some_and(|span| {
+            span.end() == source_text.text_len()
+                && first_code_offset.is_none_or(|code| span.start() <= code)
         });
-        spans.extend(
-            open_off
-                .zip(off_end)
-                .map(|(start, end)| TextRange::new(start, end)),
-        );
+        spans.extend(unmatched_span);
         Self {
             file_suppressed,
             lints,
@@ -121,7 +109,7 @@ impl SuppressionMap {
 
     /// Returns `true` when the source carries at least one
     /// format-suppression span or `# prose: skip[<id>]` directive.
-    pub(crate) fn has_format_directive(&self) -> bool {
+    pub(crate) fn has_format_suppression(&self) -> bool {
         !self.spans.is_empty() || !self.skips.is_empty()
     }
 
@@ -189,13 +177,9 @@ fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
 
 /// The span a skip directive occupying `comment` suppresses.
 ///
-/// A directive closing its logical line covers that whole line, opening
-/// at the first non-trivia token after the preceding logical newline and
-/// closing at the end of the comment's own physical line, so a wrapped
-/// statement or compound header pins every physical line it spans. A
-/// directive whose logical line runs on past it, sitting inside a
-/// bracketed construct or on its own line, covers its physical line
-/// alone.
+/// A directive closing its logical line covers that line from its first
+/// non-trivia token through the comment's own physical line. A directive
+/// whose logical line runs on past it covers its physical line alone.
 fn skip_span(source_text: &str, tokens: &Tokens, comment: TextRange) -> TextRange {
     let physical = source_text.full_line_range(comment.start());
     let closes_line = tokens
@@ -205,14 +189,11 @@ fn skip_span(source_text: &str, tokens: &Tokens, comment: TextRange) -> TextRang
     if !closes_line {
         return physical;
     }
-    let before = tokens.before(comment.start());
-    let line_open = before
-        .iter()
-        .rposition(|token| token.kind() == TokenKind::Newline)
-        .map_or(0, |index| index + 1);
-    let anchor = before[line_open..]
-        .iter()
-        .find(|token| !token.kind().is_trivia())
+    let anchor = tokens
+        .before(comment.start())
+        .rsplit(|token| token.kind() == TokenKind::Newline)
+        .next()
+        .and_then(|line| line.iter().find(|token| !token.kind().is_trivia()))
         .map_or(comment.start(), Token::start);
     TextRange::new(source_text.line_start(anchor), physical.end())
 }
@@ -221,9 +202,11 @@ fn skip_span(source_text: &str, tokens: &Tokens, comment: TextRange) -> TextRang
 mod tests {
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
+    use ruff_text_size::TextRange;
 
     use super::is_directive_comment;
     use crate::rule::RuleId;
+    use crate::source::Source;
     use crate::testing::{notebook, parse, range};
 
     fn align_equals() -> RuleId {
@@ -232,6 +215,11 @@ mod tests {
 
     fn alphabetize() -> RuleId {
         "alphabetize".parse().expect("alphabetize is registered")
+    }
+
+    fn at(source: &Source, needle: &str) -> TextRange {
+        let start = source.text().find(needle).expect("needle is present") as u32;
+        range(start, start + needle.len() as u32)
     }
 
     fn line(zero_indexed: usize) -> OneIndexed {
@@ -250,7 +238,7 @@ mod tests {
     fn bare_prose_skip_opens_a_full_line_span() {
         let source = parse("x = 1  # prose: skip\n");
         let map = source.suppression_map();
-        assert!(map.has_format_directive());
+        assert!(map.has_format_suppression());
         assert!(map.intersects(range(0, 6)));
     }
 
@@ -268,7 +256,7 @@ mod tests {
         let map = source.suppression_map();
         assert!(!map.intersects(range(0, 1)));
         assert!(!map.intersects(range(0, 0)));
-        assert!(!map.has_format_directive());
+        assert!(!map.has_format_suppression());
         assert!(!map.has_lint_suppression());
         assert!(!map.file_is_suppressed());
     }
@@ -316,7 +304,7 @@ mod tests {
         );
         let map = source.suppression_map();
         assert!(!map.has_lint_suppression());
-        assert!(!map.has_format_directive());
+        assert!(!map.has_format_suppression());
         assert!(!map.is_lint_suppressed_at(line(0), align_equals()));
         assert!(!map.is_lint_suppressed_at(line(1), align_equals()));
         assert!(!map.is_lint_suppressed_at(line(2), align_equals()));
@@ -360,7 +348,7 @@ mod tests {
         let source = parse(src);
         let map = source.suppression_map();
         assert!(!map.has_lint_suppression());
-        assert!(!map.has_format_directive());
+        assert!(!map.has_format_suppression());
     }
 
     #[test]
@@ -396,12 +384,7 @@ mod tests {
     #[test]
     fn nested_prose_off_after_non_pragma_hash_is_recognized() {
         let source = parse("# my note # prose: off\nx = 1\n");
-        let x_offset = source.text().find('x').expect("x is present") as u32;
-        assert!(
-            source
-                .suppression_map()
-                .intersects(range(x_offset, x_offset + 5)),
-        );
+        assert!(source.suppression_map().intersects(at(&source, "x = 1")));
     }
 
     #[test]
@@ -420,9 +403,8 @@ mod tests {
     fn own_line_skip_stays_on_its_own_line() {
         let source = parse("x = 1\n# fmt: skip\ny = 2\n");
         let map = source.suppression_map();
-        let offset = |needle: char| source.text().find(needle).expect("present") as u32;
-        assert!(!map.intersects(range(offset('x'), offset('x') + 5)));
-        assert!(!map.intersects(range(offset('y'), offset('y') + 5)));
+        assert!(!map.intersects(at(&source, "x = 1")));
+        assert!(!map.intersects(at(&source, "y = 2")));
     }
 
     #[rstest]
@@ -436,11 +418,7 @@ mod tests {
         text: &str,
     ) {
         let src = parse(text);
-        let x_offset = src.text().find('x').expect("x is present") as u32;
-        assert!(
-            src.suppression_map()
-                .intersects(range(x_offset, x_offset + 5))
-        );
+        assert!(src.suppression_map().intersects(at(&src, "x = 1")));
     }
 
     #[test]
@@ -471,16 +449,15 @@ mod tests {
     fn skip_after_a_backslash_continuation_reaches_the_opening_line() {
         let source = parse("x = 1 + \\\n    2  # fmt: skip\ny = 3\n");
         let map = source.suppression_map();
-        let y = source.text().find('y').expect("y is present") as u32;
         assert!(map.intersects(range(0, 1)));
-        assert!(!map.intersects(range(y, y + 5)));
+        assert!(!map.intersects(at(&source, "y = 3")));
     }
 
     #[test]
     fn skip_brackets_target_only_listed_rules() {
         let source = parse("x = 1  # prose: skip[align-equals]\n");
         let map = source.suppression_map();
-        assert!(map.has_format_directive());
+        assert!(map.has_format_suppression());
         assert!(map.suppresses(range(0, 5), align_equals()));
         assert!(!map.suppresses(range(0, 5), alphabetize()));
     }
@@ -489,17 +466,15 @@ mod tests {
     fn skip_in_a_notebook_cell_spans_its_logical_line() {
         let source = notebook(&["z = (\n    x\n)  # fmt: skip", "y = 2"]);
         let map = source.suppression_map();
-        let y = source.text().find('y').expect("y is present") as u32;
         assert!(map.intersects(range(0, 1)));
-        assert!(!map.intersects(range(y, y + 5)));
+        assert!(!map.intersects(at(&source, "y = 2")));
     }
 
     #[test]
     fn skip_inside_a_bracketed_construct_stays_on_its_own_line() {
         let source = parse("config = {\n    \"a\": 1,  # fmt: skip\n    \"b\": 2,\n}\n");
         let map = source.suppression_map();
-        let entry = source.text().find("\"a\"").expect("first entry is present") as u32;
-        assert!(map.intersects(range(entry, entry + 3)));
+        assert!(map.intersects(at(&source, "\"a\"")));
         assert!(!map.intersects(range(0, 6)));
     }
 
@@ -515,9 +490,8 @@ mod tests {
     fn skip_on_a_compound_header_stops_at_the_body() {
         let source = parse("if (\n    ready\n):  # fmt: skip\n    pass\n");
         let map = source.suppression_map();
-        let body = source.text().find("pass").expect("pass is present") as u32;
         assert!(map.intersects(range(0, 2)));
-        assert!(!map.intersects(range(body, body + 4)));
+        assert!(!map.intersects(at(&source, "pass")));
     }
 
     #[test]
@@ -530,19 +504,17 @@ mod tests {
     fn skip_span_opens_at_the_statement_below_a_comment_gap() {
         let source = parse("a = 1\n\n# note\nz = (\n    x\n)  # fmt: skip\n");
         let map = source.suppression_map();
-        let offset = |needle: &str| source.text().find(needle).expect("present") as u32;
-        assert!(map.intersects(range(offset("z"), offset("z") + 1)));
+        assert!(map.intersects(at(&source, "z")));
         assert!(!map.intersects(range(0, 5)));
-        assert!(!map.intersects(range(offset("# note"), offset("# note") + 6)));
+        assert!(!map.intersects(at(&source, "# note")));
     }
 
     #[test]
     fn skip_span_survives_crlf_line_endings() {
         let source = parse("z = (\r\n    x\r\n)  # fmt: skip\r\ny = 2\r\n");
         let map = source.suppression_map();
-        let y = source.text().find('y').expect("y is present") as u32;
         assert!(map.intersects(range(0, 1)));
-        assert!(!map.intersects(range(y, y + 5)));
+        assert!(!map.intersects(at(&source, "y = 2")));
     }
 
     #[test]
@@ -580,7 +552,7 @@ mod tests {
     fn trailing_prose_off_does_not_open_a_format_span() {
         let source = parse("x = 1  # prose: off\ny = 2\n");
         let map = source.suppression_map();
-        assert!(!map.has_format_directive());
+        assert!(!map.has_format_suppression());
         assert!(!map.file_is_suppressed());
     }
 
@@ -606,11 +578,8 @@ mod tests {
         // but not cell 1's `y`, and the file is not wholly suppressed.
         let source = notebook(&["# prose: off\nx = 1", "y = 2"]);
         let map = source.suppression_map();
-        let offset = |needle: char| source.text().find(needle).expect("present") as u32;
-        let x = offset('x');
-        let y = offset('y');
-        assert!(map.intersects(range(x, x + 1)));
-        assert!(!map.intersects(range(y, y + 1)));
+        assert!(map.intersects(at(&source, "x")));
+        assert!(!map.intersects(at(&source, "y")));
         assert!(!map.file_is_suppressed());
     }
 
