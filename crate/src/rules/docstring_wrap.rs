@@ -1,15 +1,16 @@
 //! Wraps Google-style docstring prose to its configured budget.
-//! Description prose wraps to `docstring_line_length`. Title-case-headed
-//! structured sections wrap to the budget that
-//! `docstring_structured_policy` selects. Entry-carrying sections, those
-//! holding `name: description` entries, wrap each entry to
-//! `docstring_line_length` with a hanging indent at the description's
-//! start column. Verbatim regions
-//! (triple-backtick fences, blocks indented one step beyond the body,
-//! list items, and doctest blocks) pass through unchanged.
-//! reStructuredText markup, Sphinx directives, and Numpydoc style
-//! pass through unwrapped.
+//! Description prose wraps to `docstring_line_length`, Title-case-headed
+//! sections to the budget `docstring_structured_policy` selects, and
+//! each `name: description` entry to `docstring_line_length` with a
+//! hanging indent, its head left verbatim. Fences, over-indented
+//! blocks, list items, doctests, section underlines, directives, and a
+//! field list opening its own block pass through unchanged, whereas an
+//! interpreted-text role is prose. Description and section prose alike
+//! collapse every interior whitespace run to one space.
 
+use std::borrow::Cow;
+
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use textwrap::{Options, WordSeparator, WordSplitter};
 
@@ -67,10 +68,11 @@ impl Rule for DocstringWrap {
 }
 
 #[derive(Default)]
-struct Paragraph {
-    initial_indent: String,
-    lines: Vec<String>,
-    subsequent_indent: String,
+struct Paragraph<'a> {
+    head: &'a str,
+    initial_indent: &'a str,
+    lines: Vec<&'a str>,
+    subsequent_indent: Cow<'a, str>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -83,22 +85,22 @@ enum Region {
 struct Walker<'a> {
     newline: &'a str,
     out: String,
-    paragraph: Paragraph,
+    paragraph: Paragraph<'a>,
     region: Region,
     rule: &'a DocstringWrap,
     scanner: LineScanner,
 }
 
-impl Walker<'_> {
-    fn buffer_description(&mut self, indent: &str, line: &str) {
+impl<'a> Walker<'a> {
+    fn buffer_description(&mut self, indent: &'a str, line: &'a str) {
         if self.paragraph.lines.is_empty() {
-            indent.clone_into(&mut self.paragraph.initial_indent);
-            indent.clone_into(&mut self.paragraph.subsequent_indent);
+            self.paragraph.initial_indent = indent;
+            self.paragraph.subsequent_indent = Cow::Borrowed(indent);
         }
-        self.paragraph.lines.push(line.to_owned());
+        self.paragraph.lines.push(line);
     }
 
-    fn consume(&mut self, line: &str) {
+    fn consume(&mut self, line: &'a str) {
         let ScannedLine {
             indent,
             indent_chars,
@@ -135,7 +137,7 @@ impl Walker<'_> {
         let text = trimmed.trim_end();
         if let Region::SectionEntry(hanging_col) = self.region {
             if self.is_entry_continuation(indent_chars, text, hanging_col) {
-                self.paragraph.lines.push(text.to_owned());
+                self.paragraph.lines.push(text);
                 return;
             }
             self.flush_paragraph();
@@ -160,11 +162,11 @@ impl Walker<'_> {
         match self.region {
             Region::Description => self.buffer_description(indent, text),
             Region::Section => {
-                if let Some((_, desc_col)) = entry_head(text) {
-                    self.start_entry(indent, indent_chars, text, desc_col);
+                if let Some((_, desc_start)) = entry_head(text) {
+                    self.start_entry(indent, indent_chars, text, desc_start);
                     return;
                 }
-                self.emit_wrapped(indent, indent, text, self.rule.section_width);
+                self.emit_wrapped(indent, indent, &collapsed([text]), self.rule.section_width);
             }
             Region::SectionEntry(_) => unreachable!("entries handled above"),
         }
@@ -191,11 +193,16 @@ impl Walker<'_> {
 
     fn flush_paragraph(&mut self) {
         if !self.paragraph.lines.is_empty() {
-            let para = std::mem::take(&mut self.paragraph);
-            let text = para.lines.join(" ");
+            let Paragraph {
+                head,
+                initial_indent,
+                lines,
+                subsequent_indent,
+            } = std::mem::take(&mut self.paragraph);
+            let text = [head, &collapsed(lines)].concat();
             self.emit_wrapped(
-                &para.initial_indent,
-                &para.subsequent_indent,
+                initial_indent,
+                &subsequent_indent,
                 &text,
                 self.rule.description_width,
             );
@@ -216,13 +223,27 @@ impl Walker<'_> {
                 && entry_head(trimmed).is_none())
     }
 
-    fn start_entry(&mut self, indent_str: &str, indent_chars: usize, text: &str, desc_col: usize) {
-        let hanging_col = indent_chars + desc_col;
-        indent_str.clone_into(&mut self.paragraph.initial_indent);
-        self.paragraph.subsequent_indent = " ".repeat(hanging_col);
-        self.paragraph.lines.push(text.to_owned());
+    fn start_entry(
+        &mut self,
+        indent_str: &'a str,
+        indent_chars: usize,
+        text: &'a str,
+        desc_start: usize,
+    ) {
+        let (head, description) = text.split_at(desc_start);
+        let hanging_col = indent_chars + head.chars().count();
+        self.paragraph.head = head;
+        self.paragraph.initial_indent = indent_str;
+        self.paragraph.subsequent_indent = " ".repeat(hanging_col).into();
+        self.paragraph.lines.push(description);
         self.region = Region::SectionEntry(hanging_col);
     }
+}
+
+/// Joins `lines` into one prose run, collapsing every whitespace run
+/// between words to a single space.
+fn collapsed<'a>(lines: impl IntoIterator<Item = &'a str>) -> String {
+    lines.into_iter().flat_map(str::split_whitespace).join(" ")
 }
 
 fn rewrite_body(
@@ -258,10 +279,20 @@ fn rewrite_body(
 mod tests {
     use rstest::rstest;
 
+    use super::*;
     use crate::testing::run_rule;
 
     fn run(src: &str) -> String {
         run_rule("docstring-wrap", src)
+    }
+
+    #[test]
+    fn aligned_entry_gap_survives_the_rewrap() {
+        let src = "def f():\n    \"\"\"\n    Args:\n        host     : A descriptive parameter that runs on long enough to force a wrap onto a second line.\n        encoding : Short.\n    \"\"\"\n    pass\n";
+        assert!(
+            run(src).contains("host     : A descriptive"),
+            "the column `align-colons` set was collapsed by the wrap",
+        );
     }
 
     #[test]
@@ -270,6 +301,11 @@ mod tests {
         let src = format!("def f():\n    \"\"\"\n    {long}\n    \"\"\"\n");
         let out = run(&src);
         assert!(out.ends_with("\n    \"\"\"\n"));
+    }
+
+    #[test]
+    fn collapsed_joins_lines_and_squeezes_interior_runs() {
+        assert_eq!(collapsed(["one  two", "three\tfour"]), "one two three four");
     }
 
     #[test]

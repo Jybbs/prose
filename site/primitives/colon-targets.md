@@ -1,6 +1,6 @@
 ---
 consumedBy: [align-colons, strip-align-padding]
-consumes: [aligner, source]
+consumes: [aligner, docstring, source]
 layer: analysis
 stability: internal
 summary: "Walks the five `:` contexts in Python and emits alignment members for each."

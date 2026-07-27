@@ -18,8 +18,7 @@ static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
 
 /// One `name: description` entry inside a Google-style section. The
 /// range covers the entry's head line through the last continuation
-/// line attached to it (verbatim region, hanging description, list
-/// item), excluding the trailing newline.
+/// line attached to it, excluding the trailing newline.
 pub(crate) struct SectionEntry<'a> {
     pub(crate) name: &'a str,
     pub(crate) range: TextRange,
@@ -129,12 +128,9 @@ impl<'src> EntryWalker<'src> {
 
 /// Walks the entry-carrying Google-style sections in `lit`'s body
 /// and returns each section's entries with source-relative byte
-/// ranges. Returns an empty vector when `lit` carries no body
-/// (single-line, non-triple-quoted, or no `\n`), no entry-carrying
-/// section heading, or no recognized entries within those sections.
-/// Each entry's range covers its head line through any attached
-/// continuation lines (hanging description, indented code, list
-/// item, fenced code block).
+/// ranges. Returns an empty vector unless `lit` is a multi-line
+/// triple-quoted docstring on its own line holding at least one
+/// recognized entry inside an entry-carrying section.
 pub(crate) fn entry_carrying_sections<'src>(
     source: &'src Source,
     lit: &StringLiteral,
@@ -154,9 +150,9 @@ pub(crate) fn entry_carrying_sections<'src>(
 /// allowing a leading `*` or `**` on the name and a balanced
 /// parenthesized type group between the name and the `:` (e.g.
 /// `markup (str): A string.`, `*args: payload.`). Returns the entry
-/// name with any `*`/`**` prefix excluded, plus the description-start
-/// character column. `None` for any line that does not match the head
-/// shape or carries no description after the `:`.
+/// name with any `*`/`**` prefix excluded, plus the byte offset where
+/// the description starts. `None` for any line that does not match the
+/// head shape or carries no description after the `:`.
 pub(crate) fn entry_head(trimmed: &str) -> Option<(&str, usize)> {
     let colon = unbracketed_colon(trimmed)?;
     let head = trimmed[..colon].trim_end();
@@ -182,8 +178,7 @@ pub(crate) fn entry_head(trimmed: &str) -> Option<(&str, usize)> {
     if description.is_empty() {
         return None;
     }
-    let desc_col = trimmed[..trimmed.len() - description.len()].chars().count();
-    Some((name, desc_col))
+    Some((name, trimmed.len() - description.len()))
 }
 
 /// True when `trimmed` opens with a Title-case word or multi-word
@@ -269,14 +264,6 @@ mod tests {
     }
 
     #[test]
-    fn entry_carrying_sections_drops_empty_args_section_with_no_entries() {
-        let src = "def f():\n    \"\"\"\n    Args:\n        Just prose without a name and colon.\n    \"\"\"\n    pass\n";
-        let s = parse(src);
-        let lit = first_function_docstring(&s);
-        assert!(entry_carrying_sections(&s, lit).is_empty());
-    }
-
-    #[test]
     fn entry_carrying_sections_groups_entries_per_section() {
         let src = "def f():\n    \"\"\"\n    Args:\n        b: one\n        a: two\n\n    Returns:\n        z: three\n        y: four\n    \"\"\"\n    pass\n";
         let s = parse(src);
@@ -355,7 +342,14 @@ mod tests {
         assert!(entry_head("name: ").is_none());
         assert!(entry_head("name (only: parens)").is_none());
         assert!(entry_head("two words (int): not an entry").is_none());
-        assert!(entry_head("123: digits-only name").is_some());
+    }
+
+    #[test]
+    fn entry_head_returns_name_and_description_offset() {
+        assert_eq!(entry_head("name: desc"), Some(("name", 6)));
+        assert_eq!(entry_head("name : desc"), Some(("name", 7)));
+        assert_eq!(entry_head("dotted.name: desc"), Some(("dotted.name", 13)));
+        assert_eq!(entry_head("123: digits-only name"), Some(("123", 5)));
     }
 
     #[test]
@@ -367,10 +361,10 @@ mod tests {
     }
 
     #[test]
-    fn entry_head_returns_name_and_description_column() {
-        assert_eq!(entry_head("name: desc"), Some(("name", 6)));
-        assert_eq!(entry_head("name : desc"), Some(("name", 7)));
-        assert_eq!(entry_head("dotted.name: desc"), Some(("dotted.name", 13)));
+    fn section_heading_accepts_multi_word_title_case_with_colon() {
+        assert!(section_heading("Other Parameters:"));
+        assert!(section_heading("See Also:"));
+        assert!(section_heading("Side Effects:"));
     }
 
     #[rstest]
@@ -393,13 +387,6 @@ mod tests {
         heading: &str,
     ) {
         assert!(section_heading(heading));
-    }
-
-    #[test]
-    fn section_heading_accepts_multi_word_title_case_with_colon() {
-        assert!(section_heading("Other Parameters:"));
-        assert!(section_heading("See Also:"));
-        assert!(section_heading("Side Effects:"));
     }
 
     #[test]

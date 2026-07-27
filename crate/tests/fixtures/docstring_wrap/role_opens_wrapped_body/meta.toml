@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Body Opening on a Role Still Wraps"
+
+description = '''
+A docstring whose first body line opens with a role **wraps to the budget like any other paragraph**. That line is a true block boundary, so the field-list test runs and rejects it on the closing backtick, leaving the overflow measured rather than passed through untouched.
+'''
