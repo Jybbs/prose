@@ -57,6 +57,16 @@ pub(super) fn is_collapsible(expr: &Expr) -> bool {
     is_layoutable(expr) || is_collapse_only(expr)
 }
 
+/// The ASCII-space run `gap` opens with when those spaces sit directly
+/// before its `:`, the padding `align_colons` holds a dict key at.
+/// Returns `""` for a canonical `": "` and for any other gap shape.
+pub(super) fn pre_colon_padding(gap: &str) -> &str {
+    gap.split_once(':')
+        .map(|(padding, _)| padding)
+        .filter(|padding| padding.bytes().all(|b| b == b' '))
+        .unwrap_or_default()
+}
+
 /// True for a `Dict`, `List`, `Set`, or parenthesized `Tuple` shape
 /// the expand path canonicalizes. Multi-item `List`, `Set`, and
 /// parenthesized `Tuple` qualify, as does any non-empty `Dict`. A bare
@@ -133,6 +143,19 @@ mod tests {
         let source = parse(src);
         let expr = first_expr(&source);
         assert_eq!(is_collapsible(expr), expected);
+    }
+
+    #[rstest]
+    #[case(": ", "")]
+    #[case(" : ", " ")]
+    #[case("    : ", "    ")]
+    #[case(" :\n        ", " ")]
+    #[case(":\n        ", "")]
+    #[case("\t: ", "")]
+    #[case(" # note\n: ", "")]
+    #[case("", "")]
+    fn pre_colon_padding_keeps_only_a_leading_space_run(#[case] gap: &str, #[case] expected: &str) {
+        assert_eq!(pre_colon_padding(gap), expected);
     }
 
     #[rstest]
