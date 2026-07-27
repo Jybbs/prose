@@ -9,7 +9,7 @@ use ruff_text_size::TextRange;
 use unicode_width::UnicodeWidthStr;
 
 use super::{Member, Settings, holds::is_alignment_candidate, members::baseline};
-use crate::{config::MaxShift, source::Source};
+use crate::{config::MaxShift, primitives::edit::repeat_edit, source::Source};
 
 /// Aligns `members` by splitting the source-ordered run into the
 /// contiguous groups `reading_order_groups` yields and emitting each at
@@ -58,17 +58,13 @@ pub(crate) fn operator_columns(
 }
 
 /// Returns the edit needed to make `range` carry exactly `n` ASCII
-/// spaces, or `None` if it already does. Emits `Edit::range_deletion`
-/// when `n` is zero.
+/// spaces, or `None` if it already does.
 pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) -> Option<Edit> {
     let text = source.slice(range);
     if text.len() == n && text.bytes().all(|b| b == b' ') {
         return None;
     }
-    if n == 0 {
-        return Some(Edit::range_deletion(range));
-    }
-    Some(Edit::range_replacement(" ".repeat(n), range))
+    Some(repeat_edit(range, " ", n))
 }
 
 /// Rewrites each member's gap to its [`padding_width`], the spacing that
