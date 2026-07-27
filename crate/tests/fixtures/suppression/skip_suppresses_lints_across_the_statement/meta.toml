@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Bare Skip Reaches Lint Diagnostics, Not Only Rewrites"
-
-description = '''
-A bare `# fmt: skip` trailing a wrapped assignment **suppresses lint diagnostics across every line the statement spans**, not only rewrites, leaving `single-use-variables` silent on `value` while the unmarked `other` below it still draws it.
-'''

@@ -16,5 +16,18 @@ input_file: crate/tests/fixtures/suppression/skip_suppresses_lints_across_the_st
       "row": 5
     },
     "message": "`other` is assigned and used once. Consider inlining `compute()`"
+  },
+  {
+    "code": "single-use-variables",
+    "end_location": {
+      "column": 10,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 2
+    },
+    "message": "`value` is assigned and used once. Consider inlining `compute()`"
   }
 ]

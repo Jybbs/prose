@@ -51,6 +51,8 @@ bar = 2  # prose: skip[align-equals, strip-trailing-commas]
 
 A bare `# fmt: skip` or `# prose: skip` widens to every rewrite rule on that logical line. A bracketed list scopes to the named rules, with unknown rule slugs dropped silently and two bracketed directives on the same line unioning their rule sets.
 
+A skip reaches the rewrite rules alone, so lint diagnostics on the statement still report and silencing one takes a `# prose: ignore` alongside the skip. The block markers above differ, in that a `# fmt: off` region suppresses rewrites and lint diagnostics together.
+
 ### Lint Suppression
 
 `# prose: ignore` and its bracketed variants suppress lint diagnostics on the same line:

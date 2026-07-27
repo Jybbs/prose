@@ -39,6 +39,8 @@ The **`skip`** family covers rewrite suppression. `# fmt: skip` *(equivalent to 
 
 The **`ignore`** family covers lint suppression. `# prose: ignore[<rule>]` exempts the line from the named lint rules, fitting cases wherein the lint's recommended refactor doesn't apply *(a constant the project genuinely wants pinned at module scope, a single-use variable whose name carries documentation value)*. A bare `# prose: ignore` widens to every lint rule on the line, and the bracketed form scopes precisely.
 
+The two families stay separate, so a statement that needs its layout pinned and its lint silenced carries one of each. Only the block markers cover both at once, a `# fmt: off` region suppressing rewrites and lint diagnostics together for every line it brackets.
+
 ### Pinning a Dict Literal
 
 `# prose: keep` is the one directive tied to a single construct. [[alphabetize]] reorders dict entries by key as its default, which is the wrong call when source order encodes meaning *(a pipeline whose stages run in declared order, a state machine whose transitions read top-to-bottom as a narrative, a dispatch table whose first match wins)*. The marker on the opening `{` line tells [[alphabetize]] to leave that one literal's authored order alone, and [[band-constants]] reads it too, pinning the statement where the author left it rather than gathering it into the leading band. Where a whole project reads its dicts positionally, the `sort-dict-keys` facet turns the reorder off everywhere and leaves the directive for the remaining exceptions.

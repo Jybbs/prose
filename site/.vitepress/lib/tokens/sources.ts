@@ -1,4 +1,6 @@
-import type { InlineNode } from '../markdown/inline-nodes'
+import type { InlineNode }      from '../markdown/inline-nodes'
+import { DIRECTIVES }           from '../suppression/directives'
+import { directiveHref }        from '../suppression/scopes'
 
 export type Domain =
   | 'cli-flag'
@@ -100,15 +102,11 @@ export const SOURCES: Record<Domain, readonly TokenSource[]> = {
     { key: 'prose schema',        href: '/reference/cli#prose-schema',          blurb: 'Print the configuration\'s JSON Schema, every key with its type, default, and range.' },
     { key: 'prose server',        href: '/reference/cli#prose-server',          blurb: 'Serve format-on-save and live diagnostics over the language-server protocol.' }
   ],
-  'suppression': [
-    { key: '# yapf: disable',         href: '/reference/suppression-directives#block-markers',                   blurb: 'Yapf alias for `# fmt: off`.' },
-    { key: '# yapf: enable',          href: '/reference/suppression-directives#block-markers',                   blurb: 'Yapf alias for `# fmt: on`.' },
-    { key: '# prose: ignore[<slug>]', href: '/reference/suppression-directives#line-markers',                    blurb: 'Per-line lint suppression for the listed rule.' },
-    { key: '# prose: keep',           href: '/reference/suppression-directives#dict-literal-order-preservation', blurb: 'Preserve the authored shape against rewrites.' },
-    { key: '# fmt: off',              href: '/reference/suppression-directives#block-markers',                   blurb: 'Block-format suppression open.' },
-    { key: '# fmt: on',               href: '/reference/suppression-directives#block-markers',                   blurb: 'Block-format suppression close.' },
-    { key: '# fmt: skip',             href: '/reference/suppression-directives#line-markers',                    blurb: 'Format suppression across the logical line it trails.' }
-  ]
+  'suppression': DIRECTIVES.map(d => ({
+    key   : d.form,
+    href  : directiveHref(d.scope),
+    blurb : d.blurb
+  }))
 }
 
 export function groupByDomain(tokens: readonly Token[]): [Domain, Token[]][] {

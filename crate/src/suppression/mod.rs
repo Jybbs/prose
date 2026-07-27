@@ -4,9 +4,11 @@
 //! directives. Built once during `Source` construction and consulted by
 //! `Pipeline::run` to drop suppressed fix groups and `Severity::Lint`
 //! diagnostics. A skip directive that closes its logical line spans
-//! every physical line that line occupies. A `file_is_suppressed`
-//! shortcut lets the pipeline skip rule execution entirely when an
-//! unmatched off precedes every statement.
+//! every physical line that line occupies and suppresses rewrites
+//! alone, leaving lint diagnostics to the `ignore` directives, whereas
+//! an off region suppresses both. A `file_is_suppressed` shortcut lets
+//! the pipeline skip rule execution entirely when an unmatched off
+//! precedes every statement.
 
 use std::collections::HashMap;
 
@@ -25,25 +27,28 @@ mod parse_common;
 use format_directive::{FormatDirective, classify_format_directive};
 use lint_directive::{RuleEntry, find_prose_ignore};
 
-/// Sorted byte-range list for format-suppression spans, paired with the
-/// `# prose: skip[<id>]` per-rule spans and a per-line `OneIndexed` map
-/// of `# prose: ignore` lint directives. Span queries run in O(log n)
-/// against `spans` and O(n) against `skips`, per-line lint queries in
-/// O(1).
+/// Sorted byte-range lists for the `# prose: off` regions and the bare
+/// `# prose: skip` spans, paired with the `# prose: skip[<id>]` per-rule
+/// spans and a per-line `OneIndexed` map of `# prose: ignore` lint
+/// directives. An off region suppresses rewrites and lint diagnostics
+/// alike, whereas a skip span suppresses rewrites alone and leaves lints
+/// to the `ignore` directives. Span queries run in O(log n) against
+/// `spans` and `skip_spans`, O(n) against `skips`, and O(1) per line.
 #[derive(Debug)]
 pub(crate) struct SuppressionMap {
     file_suppressed: bool,
     lints: HashMap<OneIndexed, RuleEntry>,
+    skip_spans: Vec<TextRange>,
     skips: Vec<(TextRange, RuleEntry)>,
     spans: Vec<TextRange>,
 }
 
 impl SuppressionMap {
-    /// Walks `comments` against `source`, indexing the format spans, the
-    /// per-rule skip spans, and the per-line lint directives. `tokens`
-    /// resolves each skip directive's logical line, and
-    /// `first_code_offset` is the start of the source's first top-level
-    /// statement, or `None` for code-free input.
+    /// Walks `comments` against `source`, indexing the off regions, the
+    /// bare skip spans, the per-rule skip spans, and the per-line lint
+    /// directives. `tokens` resolves each skip directive's logical line,
+    /// and `first_code_offset` is the start of the source's first
+    /// top-level statement, or `None` for code-free input.
     pub(crate) fn from_comments(
         source: &SourceCode<'_, '_>,
         comments: &CommentRanges,
@@ -53,6 +58,7 @@ impl SuppressionMap {
     ) -> Self {
         let source_text = source.text();
         let mut lints: HashMap<OneIndexed, RuleEntry> = HashMap::new();
+        let mut skip_spans: Vec<TextRange> = Vec::new();
         let mut skips: Vec<(TextRange, RuleEntry)> = Vec::new();
         let mut spans: Vec<TextRange> = Vec::new();
         let mut open_off: Option<TextSize> = None;
@@ -70,7 +76,7 @@ impl SuppressionMap {
                         }));
                     }
                     FormatDirective::Kind(SuppressionKind::Skip) => {
-                        spans.push(skip_span(source_text, tokens, range));
+                        skip_spans.push(skip_span(source_text, tokens, range));
                     }
                     FormatDirective::SkipRules(rules) => {
                         skips.push((
@@ -96,6 +102,7 @@ impl SuppressionMap {
         Self {
             file_suppressed,
             lints,
+            skip_spans: merge_spans(skip_spans),
             skips,
             spans: merge_spans(spans),
         }
@@ -107,10 +114,10 @@ impl SuppressionMap {
         self.file_suppressed
     }
 
-    /// Returns `true` when the source carries at least one
-    /// format-suppression span or `# prose: skip[<id>]` directive.
+    /// Returns `true` when the source carries at least one off region,
+    /// bare skip span, or `# prose: skip[<id>]` directive.
     pub(crate) fn has_format_suppression(&self) -> bool {
-        !self.spans.is_empty() || !self.skips.is_empty()
+        !self.spans.is_empty() || !self.skip_spans.is_empty() || !self.skips.is_empty()
     }
 
     /// Returns `true` when the source carries at least one
@@ -119,13 +126,13 @@ impl SuppressionMap {
         !self.lints.is_empty()
     }
 
-    /// Returns `true` when `ranged`'s span overlaps any
-    /// format-suppressed span by at least one byte. Empty ranges
-    /// report overlap when their offset strictly sits inside a span.
+    /// Returns `true` when `ranged`'s span overlaps a `# prose: off`
+    /// region by at least one byte. Empty ranges report overlap when
+    /// their offset strictly sits inside a region. A bare
+    /// `# prose: skip` opens no region, so it does not report here and
+    /// lint diagnostics on its line survive.
     pub(crate) fn intersects<R: Ranged>(&self, ranged: R) -> bool {
-        self.spans
-            .binary_search_by(|s| s.ordering(ranged.range()))
-            .is_ok()
+        covers(&self.spans, ranged.range())
     }
 
     /// Returns `true` when `line` carries a `# prose: ignore`
@@ -135,11 +142,13 @@ impl SuppressionMap {
         self.lints.get(&line).is_some_and(|e| e.matches(rule))
     }
 
-    /// Returns `true` when `ranged` overlaps a format-suppressed span
-    /// or a `# prose: skip[<id>]` span listing `rule`.
+    /// Returns `true` when `ranged` overlaps a `# prose: off` region, a
+    /// bare `# prose: skip` span, or a `# prose: skip[<id>]` span
+    /// listing `rule`.
     pub(crate) fn suppresses<R: Ranged>(&self, ranged: R, rule: RuleId) -> bool {
         let range = ranged.range();
-        self.intersects(range)
+        covers(&self.spans, range)
+            || covers(&self.skip_spans, range)
             || self
                 .skips
                 .iter()
@@ -161,6 +170,12 @@ fn cell_close_end(cell_offsets: &CellOffsets, source_text: &str, start: TextSize
     cell_offsets
         .containing_range(start)
         .map_or(source_text.text_len(), TextRange::end)
+}
+
+/// Returns `true` when `range` overlaps one of the sorted, merged
+/// `spans` by at least one byte.
+fn covers(spans: &[TextRange], range: TextRange) -> bool {
+    spans.binary_search_by(|s| s.ordering(range)).is_ok()
 }
 
 fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
@@ -239,7 +254,9 @@ mod tests {
         let source = parse("x = 1  # prose: skip\n");
         let map = source.suppression_map();
         assert!(map.has_format_suppression());
-        assert!(map.intersects(range(0, 6)));
+        assert!(map.suppresses(range(0, 6), align_equals()));
+        // A bare skip opens no off region, so a lint on the line survives.
+        assert!(!map.intersects(range(0, 6)));
     }
 
     #[test]
@@ -449,8 +466,8 @@ mod tests {
     fn skip_after_a_backslash_continuation_reaches_the_opening_line() {
         let source = parse("x = 1 + \\\n    2  # fmt: skip\ny = 3\n");
         let map = source.suppression_map();
-        assert!(map.intersects(range(0, 1)));
-        assert!(!map.intersects(at(&source, "y = 3")));
+        assert!(map.suppresses(range(0, 1), align_equals()));
+        assert!(!map.suppresses(at(&source, "y = 3"), align_equals()));
     }
 
     #[test]
@@ -466,16 +483,16 @@ mod tests {
     fn skip_in_a_notebook_cell_spans_its_logical_line() {
         let source = notebook(&["z = (\n    x\n)  # fmt: skip", "y = 2"]);
         let map = source.suppression_map();
-        assert!(map.intersects(range(0, 1)));
-        assert!(!map.intersects(at(&source, "y = 2")));
+        assert!(map.suppresses(range(0, 1), align_equals()));
+        assert!(!map.suppresses(at(&source, "y = 2"), align_equals()));
     }
 
     #[test]
     fn skip_inside_a_bracketed_construct_stays_on_its_own_line() {
         let source = parse("config = {\n    \"a\": 1,  # fmt: skip\n    \"b\": 2,\n}\n");
         let map = source.suppression_map();
-        assert!(map.intersects(at(&source, "\"a\"")));
-        assert!(!map.intersects(range(0, 6)));
+        assert!(map.suppresses(at(&source, "\"a\""), align_equals()));
+        assert!(!map.suppresses(range(0, 6), align_equals()));
     }
 
     #[test]
@@ -490,31 +507,35 @@ mod tests {
     fn skip_on_a_compound_header_stops_at_the_body() {
         let source = parse("if (\n    ready\n):  # fmt: skip\n    pass\n");
         let map = source.suppression_map();
-        assert!(map.intersects(range(0, 2)));
-        assert!(!map.intersects(at(&source, "pass")));
+        assert!(map.suppresses(range(0, 2), align_equals()));
+        assert!(!map.suppresses(at(&source, "pass"), align_equals()));
     }
 
     #[test]
     fn skip_on_a_wrapped_statement_reaches_its_opening_line() {
         let source = parse("z = (\n    x\n)  # fmt: skip\n");
-        assert!(source.suppression_map().intersects(range(0, 1)));
+        assert!(
+            source
+                .suppression_map()
+                .suppresses(range(0, 1), align_equals())
+        );
     }
 
     #[test]
     fn skip_span_opens_at_the_statement_below_a_comment_gap() {
         let source = parse("a = 1\n\n# note\nz = (\n    x\n)  # fmt: skip\n");
         let map = source.suppression_map();
-        assert!(map.intersects(at(&source, "z")));
-        assert!(!map.intersects(range(0, 5)));
-        assert!(!map.intersects(at(&source, "# note")));
+        assert!(map.suppresses(at(&source, "z"), align_equals()));
+        assert!(!map.suppresses(range(0, 5), align_equals()));
+        assert!(!map.suppresses(at(&source, "# note"), align_equals()));
     }
 
     #[test]
     fn skip_span_survives_crlf_line_endings() {
         let source = parse("z = (\r\n    x\r\n)  # fmt: skip\r\ny = 2\r\n");
         let map = source.suppression_map();
-        assert!(map.intersects(range(0, 1)));
-        assert!(!map.intersects(at(&source, "y = 2")));
+        assert!(map.suppresses(range(0, 1), align_equals()));
+        assert!(!map.suppresses(at(&source, "y = 2"), align_equals()));
     }
 
     #[test]

@@ -85,6 +85,10 @@ impl Pipeline {
     /// returns the rewritten source paired with the diagnostics each
     /// rule emitted.
     ///
+    /// Lint diagnostics are collected once the rewrites settle, so
+    /// every lint range resolves against the returned source rather
+    /// than against the buffer as it stood when its rule ran.
+    ///
     /// File-level `# prose: off` short-circuits to identity. The
     /// suppression map otherwise drops each fix group holding a
     /// suppressed edit, drops an empty group, and filters lint
@@ -104,7 +108,6 @@ impl Pipeline {
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
                 let rule_id = rule.id();
-                diagnostics.extend(unsuppressed_lints(&**rule, &source));
                 let Some((groups, new_text, map)) = woven_groups(&**rule, &source) else {
                     return Ok((source, diagnostics));
                 };
@@ -117,6 +120,9 @@ impl Pipeline {
                 Ok((next, diagnostics))
             },
         )?;
+        for rule in &self.rules {
+            diagnostics.extend(unsuppressed_lints(&**rule, &source));
+        }
         drop_suppressed_lints(&mut diagnostics, &source);
         Ok((source, diagnostics))
     }
@@ -186,7 +192,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use ruff_diagnostics::Edit;
-    use ruff_text_size::TextRange;
+    use ruff_text_size::{TextRange, TextSize};
 
     use super::*;
     use crate::config::Config;
@@ -223,6 +229,34 @@ mod tests {
 
         fn message(&self) -> &'static str {
             "lint test rule"
+        }
+    }
+
+    /// Test-only lint-only rule that locates `needle` in the source it
+    /// is handed and emits one lint over it, so its range tracks the
+    /// buffer the rule actually reads rather than a fixed offset.
+    struct NeedleLintRule {
+        id: RuleId,
+        needle: &'static str,
+    }
+
+    impl Rule for NeedleLintRule {
+        fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
+            Vec::new()
+        }
+
+        fn id(&self) -> RuleId {
+            self.id
+        }
+
+        fn lint(&self, source: &Source) -> Vec<Diagnostic> {
+            let start = source.text().find(self.needle).expect("needle is present") as u32;
+            let found = range(start, start + self.needle.len() as u32);
+            vec![Diagnostic::lint(self.id, found, self.message().to_owned())]
+        }
+
+        fn message(&self) -> &'static str {
+            "needle lint test rule"
         }
     }
 
@@ -472,6 +506,36 @@ mod tests {
 
         assert_eq!(result.text(), "x = 1\n");
         assert!(diagnostics.is_empty());
+    }
+
+    #[test]
+    fn run_resolves_a_lint_range_against_the_settled_source() {
+        // The lint rule registers ahead of the rewriting rule, which
+        // inserts a line above the ignored statement. Collecting lints
+        // after the rewrites settle keeps the lint's range on the row
+        // carrying the directive, so the ignore still matches.
+        let pipeline = Pipeline::from_rules(vec![
+            Box::new(NeedleLintRule {
+                id: RuleId::from("single-use-variables"),
+                needle: "y = 2",
+            }),
+            Box::new(GroupSentinelRule {
+                groups: vec![vec![Edit::insertion(
+                    "a = 0\n".to_owned(),
+                    TextSize::new(0),
+                )]],
+                id: RuleId::from("prepend-a"),
+            }),
+        ]);
+        let source = parse("x = 1\ny = 2  # prose: ignore[single-use-variables]\n");
+
+        let (result, diagnostics) = pipeline.run(source).expect("prepend run succeeds");
+
+        assert_eq!(
+            result.text(),
+            "a = 0\nx = 1\ny = 2  # prose: ignore[single-use-variables]\n",
+        );
+        assert!(diagnostics.iter().all(|d| !d.severity.is_lint()));
     }
 
     #[test]
