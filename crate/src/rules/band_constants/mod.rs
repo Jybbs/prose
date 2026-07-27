@@ -34,7 +34,7 @@ mod plan;
 
 use self::{
     analysis::module_band_plan,
-    plan::{Banding, Placement, banded_gap},
+    plan::{Banding, Carry, Placement, banded_gap},
 };
 
 /// The gap PEP 8 seats between code and a trailing comment.
@@ -69,26 +69,19 @@ impl Rule for BandConstants {
             return Vec::new();
         }
         let bander = Bander {
-            code_width: self.code_width,
             defer_annotations: defers_annotations(body),
-            first_party: &self.first_party,
-            group_constants: self.group_constants,
-            group_imports: self.group_imports,
-            max_tiers: self.max_tiers,
+            rule: self,
             source,
-            target_version: self.target_version,
         };
         let layout = bander.band_layout(body, source.module_range());
-        let forced = layout.forced();
-        let edits = assembled_cell_edits(
+        singleton_groups(assembled_cell_edits(
             source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
-            forced,
+            layout.forced(),
             |i| bander.band_gap(&layout, body, i),
-        );
-        singleton_groups(edits)
+        ))
     }
 
     fn id(&self) -> RuleId {
@@ -116,14 +109,9 @@ impl BandLayout<'_> {
 
 /// Invariant banding context threaded through the recursion.
 struct Bander<'a> {
-    code_width: usize,
     defer_annotations: bool,
-    first_party: &'a [String],
-    group_constants: bool,
-    group_imports: bool,
-    max_tiers: Option<usize>,
+    rule: &'a BandConstants,
     source: &'a Source,
-    target_version: Option<PythonVersion>,
 }
 
 impl<'a> Bander<'a> {
@@ -135,13 +123,12 @@ impl<'a> Bander<'a> {
     /// falling back to `Cow::Borrowed` over `source.slice(span)`.
     fn band_body(&self, body: &'a [Stmt], outer: TextRange) -> (Cow<'a, str>, TextRange) {
         let layout = self.band_layout(body, outer);
-        let forced = layout.forced();
         assemble_or_borrow(
             self.source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
-            forced,
+            layout.forced(),
             |i| self.band_gap(&layout, body, i),
         )
     }
@@ -153,8 +140,8 @@ impl<'a> Bander<'a> {
             banded_gap(
                 b,
                 body,
-                self.first_party,
-                self.group_imports,
+                &self.rule.first_party,
+                self.rule.group_imports,
                 layout.order[i],
                 layout.order[i + 1],
             )
@@ -178,7 +165,7 @@ impl<'a> Bander<'a> {
             })
             .flatten();
         if let Some(b) = &band {
-            apply_band_carries(self.source, b, &mut blocks, &mut rendered);
+            apply_band_carries(self.source, &b.carries, &mut blocks, &mut rendered);
         }
         BandLayout {
             band,
@@ -202,17 +189,17 @@ impl<'a> Bander<'a> {
             self.source,
             body,
             blocks,
-            self.code_width,
+            self.rule.code_width,
             self.defer_annotations,
-            self.group_constants,
-            self.target_version,
+            self.rule.group_constants,
+            self.rule.target_version,
         )?
         .apply(
             body,
             sections,
-            self.first_party,
-            self.group_imports,
-            self.max_tiers,
+            &self.rule.first_party,
+            self.rule.group_imports,
+            self.rule.max_tiers,
             order,
         )
     }
@@ -239,18 +226,18 @@ impl<'a> Bander<'a> {
 /// absorbing member's text, and a second places each on its carrier.
 fn apply_band_carries<'src>(
     source: &'src Source,
-    band: &Banding,
+    carries: &[Carry],
     blocks: &mut [TextRange],
     rendered: &mut [Cow<'src, str>],
 ) {
-    for carry in &band.carries {
+    for carry in carries {
         if carry.absorbs != carry.carrier && blocks[carry.absorbs].contains_range(carry.comment) {
             let below = source.text().full_line_end(carry.comment.end());
             rendered[carry.absorbs] =
                 Cow::Borrowed(source.slice(TextRange::new(below, blocks[carry.absorbs].end())));
         }
     }
-    for carry in &band.carries {
+    for carry in carries {
         let comment = source.slice(carry.comment);
         let carried = &rendered[carry.carrier];
         rendered[carry.carrier] = Cow::Owned(match carry.placement {
@@ -278,15 +265,18 @@ mod tests {
         let body = &source.ast().body;
         let blocks = member_blocks(&source, body, source.module_range());
         let mut order: Vec<usize> = (0..body.len()).collect();
-        let bander = Bander {
+        let rule = BandConstants {
             code_width: 88,
-            defer_annotations: false,
-            first_party: &[],
+            first_party: Vec::new(),
             group_constants: true,
             group_imports: true,
             max_tiers: Some(2),
-            source: &source,
             target_version: None,
+        };
+        let bander = Bander {
+            defer_annotations: false,
+            rule: &rule,
+            source: &source,
         };
         let sections = Sections::of(&source, &blocks);
         bander

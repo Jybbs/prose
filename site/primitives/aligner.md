@@ -39,12 +39,12 @@ The entry point `emit_group(source: &Source, members: &[Member], settings: Setti
 
 A consuming rule rarely hand-builds the walker from raw AST traversal, since the aligner module exposes a set of `pub(crate)` helpers covering the common shapes a new alignment rule needs:
 
-1. `line_adjacent_groups(items, member_of)` partitions `items` into runs of line-adjacent siblings via `Source::consecutive_lines`, then maps each item through `member_of`. A trailing comment rides inside its own row and leaves the run intact, whereas an own-line comment or a blank line closes it. Single-member runs drop out.
-2. `keyed_line_adjacent_groups(items, key_of, member_of)` is the same shape with a per-item key that further partitions adjacent items into sub-groups by key.
+1. `line_adjacent_groups(source, body, rule, qualify)` partitions `body` into runs of line-adjacent siblings via `Source::consecutive_lines`, then maps each statement through `qualify`. A trailing comment sits inside its own row and leaves the run intact, whereas an own-line comment or a blank line closes it.
+2. `keyed_line_adjacent_groups(source, body, rule, qualify)` is the same shape with a per-statement key that further partitions adjacent statements into sub-groups by key.
 3. `parameter_split_groups(params, qualify)` walks a `Parameters` node and splits at the first parameter that does not qualify, used by rules over annotated function signatures.
 4. `line_anchored_member(source, anchor)` builds a `Member` whose `gap` starts at `anchor` and whose `width` measures the leading display column on the line.
-5. `line_anchored_member_at_kind(source, line, kind)` finds the first token of `kind` on `line` and anchors a `Member` at its end.
-6. `range_anchored_member_single_line(source, range, anchor_of)` builds a `Member` whose `width` is the display-column width of `range`'s slice, for left-hand sides that are sub-ranges of one line.
+5. `line_anchored_member_at_kind(source, lhs_start, search, kind)` finds the first token of `kind` in `search` and anchors a `Member` at its end.
+6. `range_anchored_member_single_line(source, target, search, predicate, extra_width)` builds a `Member` whose `width` is the display-column width of `target`'s slice plus `extra_width`, for left-hand sides that are sub-ranges of one line.
 7. `space_padding_edit(source, range, n)` produces a `Some(Edit)` replacing `range` with `n` spaces, or `None` when the current contents already match.
 8. `is_alignment_candidate(source, members)` returns `true` when the group has at least two members, each on a distinct line and opening at a shared column baseline, so the padding lands on a column every row can reach.
 
@@ -56,7 +56,7 @@ When a run's width spread exceeds `max_shift`, the walk regroups it in source or
 
 `emit_group` walks each run from the first row, growing a group while its width spread stays within `max_shift` and breaking a fresh group at the first row that would exceed it. Each group aligns to its widest member, and a row left alone keeps its minimal spacing, so a column never reaches past a narrow row to gather wider neighbors. `max_shift` reads as `false` to lift the cap so a contiguous run always folds into one column, a positive `N` to bound the spread at `N`, and `0` to forbid any shift so every row sits flush.
 
-A row carrying a line-level skip directive *(`# prose: skip`, `# fmt: skip`, or `# prose: skip[<rule>]`)* is **held** out of its group, excluded from the column math, emitting no edit, and transparent to the run so the rows on either side align as one block around it. A held row's own trailing skip comment rides inside its row the way any trailing comment does, leaving the run intact, whereas a standalone comment or blank line between rows still breaks it.
+A row carrying a line-level skip directive *(`# prose: skip`, `# fmt: skip`, or `# prose: skip[<rule>]`)* is **held** out of its group, excluded from the column math, emitting no edit, and transparent to the run so the rows on either side align as one block around it. A held row's own trailing skip comment sits inside its row the way any trailing comment does, leaving the run intact, whereas a standalone comment or blank line between rows still breaks it.
 
 Variable-width operators opt in to right-alignment by setting `op_width`, shifting each row's padding inward by `max(op_width) - row.op_width`. [[align-comparisons]] is the shipped consumer of this hook, with the infrastructure leaving the door open for future variable-width-operator rules to land as a grouping walker plus a facet set rather than a from-scratch implementation.
 
@@ -83,7 +83,7 @@ impl Rule for MyAlignmentRule {
 
 impl Visitor<'_> {
     fn process_body(&mut self, body: &[Stmt]) {
-        for members in line_adjacent_groups(self.walker.source, body, |s| qualify(s)) {
+        for members in line_adjacent_groups(self.walker.source, body, self.walker.rule, qualify) {
             self.walker.emit_group(&members);
         }
     }

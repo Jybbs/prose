@@ -91,12 +91,12 @@ where
 /// the prior statement, and the prior statement itself fits on one
 /// source line. A key change at an otherwise-adjacent boundary closes
 /// the active run and starts a fresh one without losing the boundary
-/// statement. A statement [held](is_held) for `rule` is transparent: it
-/// joins no group and does not close the run, leaving neighbors on
-/// either side to align as one block. A trailing comment on a row rides
-/// inside that row, so it leaves the run intact, while a standalone
-/// comment line or a blank line between rows breaks it. Walks `body`
-/// exactly once.
+/// statement. A statement [held](is_held) for `rule` is transparent, in
+/// that it joins no group and does not close the run, leaving neighbors
+/// on either side to align as one block. A trailing comment on a row
+/// sits inside that row, so it leaves the run intact, while a
+/// standalone comment line or a blank line between rows breaks it.
+/// Walks `body` exactly once.
 pub(crate) fn keyed_line_adjacent_groups<'a, K, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -171,6 +171,8 @@ fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::testing::parse;
 
@@ -277,9 +279,34 @@ mod tests {
         assert_eq!(groups, vec![vec![0], vec![1]]);
     }
 
-    #[test]
-    fn keyed_line_adjacent_groups_breaks_on_blank_line_after_held() {
-        let source = parse("x = 1\ny = 2  # prose: skip[align-equals]\n\nz = 3\n");
+    #[rstest]
+    #[case::lone_qualifier("x = 1\n", vec![1])]
+    #[case::adjacent_same_key("x = 1\ny = 2\nz = 3\n", vec![3])]
+    #[case::trailing_active_run("x = 1\ny = 2\n", vec![2])]
+    #[case::empty_body("", vec![])]
+    #[case::blank_line("x = 1\n\ny = 2\n", vec![1, 1])]
+    #[case::comment_in_gap("x = 1\n# comment\ny = 2\n", vec![1, 1])]
+    #[case::multiline_prior_stmt("x = {\n    'a': 1,\n}\ny = 2\n", vec![1, 1])]
+    #[case::non_qualifier("x = 1\npass\ny = 2\n", vec![1, 1])]
+    #[case::trailing_comment("x = 1  # note\ny = 2\nz = 3\n", vec![3])]
+    #[case::held_row_bridges("x = 1\ny = 2  # prose: skip[align-equals]\nz = 3\n", vec![2])]
+    #[case::held_row_with_extra_comment(
+        "x = 1\ny = 2  # note  # prose: skip[align-equals]\nz = 3\n",
+        vec![2]
+    )]
+    #[case::blank_line_after_held(
+        "x = 1\ny = 2  # prose: skip[align-equals]\n\nz = 3\n",
+        vec![1, 1]
+    )]
+    #[case::standalone_comment_after_held(
+        "x = 1\ny = 2  # prose: skip[align-equals]\n# note\nz = 3\n",
+        vec![1, 1]
+    )]
+    fn keyed_line_adjacent_groups_partitions_by_adjacency(
+        #[case] src: &str,
+        #[case] expected: Vec<usize>,
+    ) {
+        let source = parse(src);
         let groups = keyed_line_adjacent_groups(
             &source,
             &source.ast().body,
@@ -287,149 +314,7 @@ mod tests {
             |s| s.as_assign_stmt().map(|_| ((), ())),
         );
 
-        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_breaks_on_standalone_comment_after_held() {
-        let source = parse("x = 1\ny = 2  # prose: skip[align-equals]\n# note\nz = 3\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        // A standalone comment after the held line is not consecutive,
-        // so the relaxed adjacency still breaks the run.
-        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_flushes_trailing_active_run() {
-        let source = parse("x = 1\ny = 2\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        assert_eq!(groups.len(), 1);
-        assert_eq!(groups[0].len(), 2);
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_holds_member_with_extra_comment_on_its_line() {
-        let source = parse("x = 1\ny = 2  # note  # prose: skip[align-equals]\nz = 3\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        // The held line's extra trailing comment rides along with it,
-        // so x and z still bridge across it into one run.
-        assert_eq!(groups.len(), 1);
-        assert_eq!(groups[0].len(), 2);
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_holds_skip_suppressed_member_and_bridges_run() {
-        let source = parse("x = 1\ny = 2  # prose: skip[align-equals]\nz = 3\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        // y is held, so it joins no group, yet x and z bridge across it
-        // into one run.
-        assert_eq!(groups.len(), 1);
-        assert_eq!(groups[0].len(), 2);
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_merges_same_key_adjacent_stmts() {
-        let source = parse("x = 1\ny = 2\nz = 3\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        assert_eq!(groups.len(), 1);
-        assert_eq!(groups[0].len(), 3);
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_non_qualifier_closes_active_run() {
-        let source = parse("x = 1\npass\ny = 2\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_returns_empty_for_empty_body() {
-        let source = parse("");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        assert!(groups.is_empty());
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_spans_a_trailing_comment() {
-        let source = parse("x = 1  # note\ny = 2\nz = 3\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        // The comment rides inside x's own row, so all three rows align
-        // as one block.
-        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![3]);
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_splits_on_blank_line() {
-        let source = parse("x = 1\n\ny = 2\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_splits_on_comment_in_gap() {
-        let source = parse("x = 1\n# comment\ny = 2\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
+        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), expected);
     }
 
     #[test]
@@ -457,32 +342,5 @@ mod tests {
             groups.iter().map(Vec::len).collect::<Vec<_>>(),
             vec![1, 1, 1],
         );
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_splits_on_multiline_prior_stmt() {
-        let source = parse("x = {\n    'a': 1,\n}\ny = 2\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
-    }
-
-    #[test]
-    fn keyed_line_adjacent_groups_yields_singleton_for_lone_qualifier() {
-        let source = parse("x = 1\n");
-        let groups = keyed_line_adjacent_groups(
-            &source,
-            &source.ast().body,
-            RuleId::from("align-equals"),
-            |s| s.as_assign_stmt().map(|_| ((), ())),
-        );
-
-        assert_eq!(groups.len(), 1);
-        assert_eq!(groups[0].len(), 1);
     }
 }

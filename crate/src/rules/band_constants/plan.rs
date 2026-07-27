@@ -26,9 +26,10 @@ pub(super) struct Banding {
 }
 
 impl Banding {
-    /// True when `idx` opens a blank-separated sub-band: its rendered
-    /// tier climbs past the base and holds at least two members. A lone
-    /// nested constant folds tight into the tier above and aligns with it.
+    /// True when `idx` opens a blank-separated sub-band, meaning its
+    /// rendered tier climbs past the base and holds at least two
+    /// members. A lone nested constant folds tight into the tier above
+    /// and aligns with it.
     fn opens_band(&self, idx: usize) -> bool {
         let tier = self.rendered_tier(idx);
         let members = self
@@ -118,10 +119,8 @@ impl BandPlan<'_> {
             source_heads
                 .into_iter()
                 .zip(sorted_heads)
-                .filter_map(|(before, after)| {
-                    let (before, after) = (before?, after?);
-                    (before != after).then_some((before, after))
-                }),
+                .filter_map(|(before, after)| before.zip(after))
+                .filter(|(before, after)| before != after),
         );
         out.append(&mut imports);
         out.append(&mut leading);

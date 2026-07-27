@@ -177,7 +177,7 @@ pub(super) fn module_band_plan<'src>(
         // A value reference to an unresolved name pins the constant unless
         // the name is an import or a builtin, both clean terminals, whereas
         // an annotation reference only ever constrains order, so `x: int = 1`
-        // rides the leading band.
+        // sits in the leading band.
         for (refs, anchor_unresolved) in [(&site.value_refs, true), (&site.annot_refs, false)] {
             for &name in refs {
                 if name == site.name {
@@ -202,7 +202,7 @@ pub(super) fn module_band_plan<'src>(
     let mut trailing: Vec<bool> = (0..n).map(|s| reaches_def[s] && !anchored[s]).collect();
     propagate(&mut trailing, &deps);
     let mut keys: HashMap<usize, (usize, Subcategory, &'src str)> = HashMap::new();
-    for band in [false, true] {
+    for (band, rank) in [(false, BandRank::Leading), (true, BandRank::Trailing)] {
         let members: Vec<usize> = (0..n)
             .filter(|&s| !anchored[s] && trailing[s] == band)
             .collect();
@@ -219,14 +219,7 @@ pub(super) fn module_band_plan<'src>(
             .collect();
         for (s, tier) in members.iter().copied().zip(tier_levels(&dep_sets)?) {
             keys.insert(sites[s].idx, (tier, sites[s].subcategory, sites[s].name));
-            ranks.insert(
-                sites[s].idx,
-                if band {
-                    BandRank::Trailing
-                } else {
-                    BandRank::Leading
-                },
-            );
+            ranks.insert(sites[s].idx, rank);
         }
     }
     let mut edges: Vec<(usize, usize)> = Vec::new();
@@ -399,7 +392,7 @@ mod tests {
         assert_eq!(
             plan.ranks[&1],
             BandRank::Leading,
-            "dict is a builtin, so TABLE rides the leading band"
+            "dict is a builtin, so TABLE sits in the leading band"
         );
     }
 
@@ -472,17 +465,6 @@ mod tests {
     }
 
     #[test]
-    fn module_band_plan_declines_a_backward_bind_below_a_banner() {
-        let source = parse("ZETA = 1\n# =========\n\nALPHA = 2\n");
-        let plan = plan_of(&source).expect("acyclic module plans");
-        assert!(plan.carries.is_empty(), "a divider binds to neither side");
-        assert!(
-            !plan.ranks.contains_key(&1),
-            "the banner pins ALPHA below it"
-        );
-    }
-
-    #[test]
     fn module_band_plan_declines_a_constant_cycle() {
         let source = parse("A = B\nB = A\n");
         assert!(plan_of(&source).is_none());
@@ -499,26 +481,18 @@ mod tests {
         );
     }
 
-    #[test]
-    fn module_band_plan_pins_a_constant_below_a_banner() {
-        let source = parse("def f():\n    pass\n\n# =====\n\nX = 1\n");
+    #[rstest]
+    #[case::banner_above_a_constant("def f():\n    pass\n\n# =====\n\nX = 1\n")]
+    #[case::banner_below_a_constant("ZETA = 1\n# =========\n\nALPHA = 2\n")]
+    #[case::directive_above_a_constant("def f():\n    pass\n\n# fmt: on\n\nX = 1\n")]
+    fn module_band_plan_pins_a_member_beside_an_unbindable_comment(#[case] src: &str) {
+        let source = parse(src);
         let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&1),
-            "a banner divides sections, so X pins below it"
+            "an unbindable comment pins the member beside it"
         );
-        assert!(plan.carries.is_empty());
-    }
-
-    #[test]
-    fn module_band_plan_pins_a_constant_below_a_directive() {
-        let source = parse("def f():\n    pass\n\n# fmt: on\n\nX = 1\n");
-        let plan = plan_of(&source).expect("acyclic module plans");
-        assert!(
-            !plan.ranks.contains_key(&1),
-            "a format directive drives its own line, so X pins below it"
-        );
-        assert!(plan.carries.is_empty());
+        assert!(plan.carries.is_empty(), "the comment binds to neither side");
     }
 
     #[rstest]
