@@ -1,10 +1,11 @@
 //! Computes padding widths and emits alignment edits for rules that
-//! align a shared token across a group of lines. Each rule wraps an
-//! `AlignWalker` and drives it through the `emit_*` methods. Per-rule
-//! knobs travel through `Settings`. Aligned rows always carry a
-//! one-space buffer between content and the aligned token.
+//! align a shared token across a group of lines. Each rule wraps the
+//! `AlignWalker` in `walker` and drives it through the `emit_*`
+//! methods, with the grouping, hold, and member-construction machinery
+//! in the sibling modules. This root carries the `Member` row and the
+//! per-rule `Settings` knobs both of those share. Aligned rows always
+//! carry a one-space buffer between content and the aligned token.
 
-use ruff_diagnostics::Edit;
 use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
@@ -17,8 +18,8 @@ mod emit;
 mod grouping;
 mod holds;
 mod members;
+mod walker;
 
-use emit::emit_group;
 pub(crate) use emit::{operator_columns, space_padding_edit};
 pub(crate) use grouping::{
     Slot, adjacent_member_groups, keyed_line_adjacent_groups, line_adjacent_groups,
@@ -28,122 +29,7 @@ pub(crate) use members::{
     line_anchored_member, line_anchored_member_at_kind, line_anchored_member_between,
     parameter_split_groups, range_anchored_member_single_line,
 };
-
-/// Bundles the `groups` accumulator, `settings`, the owning `rule`, and
-/// borrowed `source` shared by every alignment-rule visitor. Each entry
-/// in `groups` is one fix the pipeline maps to a single diagnostic. The
-/// `rule` id powers the skip-directive check that holds a row out of
-/// its group.
-pub(crate) struct AlignWalker<'a> {
-    pub groups: Vec<Vec<Edit>>,
-    pub rule: RuleId,
-    pub settings: Settings,
-    pub source: &'a Source,
-}
-
-impl<'a> AlignWalker<'a> {
-    /// Builds a walker with an empty `groups` accumulator.
-    pub(crate) fn new(source: &'a Source, settings: Settings, rule: RuleId) -> Self {
-        Self {
-            groups: Vec::new(),
-            rule,
-            settings,
-            source,
-        }
-    }
-
-    /// Aligns `members` to their shared column and folds in a one-space
-    /// rewrite of each gap in `gaps`, recording the combined fix as one
-    /// group. The members-level analog of [`Self::push_with_gaps`],
-    /// pairing the column math of [`Self::group_edits`] with the gap
-    /// normalization.
-    pub(crate) fn emit_group_with_gaps(
-        &mut self,
-        members: &[Member],
-        gaps: impl IntoIterator<Item = TextRange>,
-    ) {
-        let name_edits = self.group_edits(members);
-        self.push_with_gaps(name_edits, gaps);
-    }
-
-    /// Aligns `members` as one fix group when they form an alignment
-    /// candidate, recording nothing otherwise.
-    pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
-        self.emit_if_candidate_with_gaps(members, std::iter::empty());
-    }
-
-    /// Aligns `members` as one fix group when they form an alignment
-    /// candidate, folding a one-space rewrite of each gap in `gaps` into
-    /// the same group. Records nothing otherwise. The candidate-gated
-    /// counterpart to [`Self::emit_group_with_gaps`].
-    pub(crate) fn emit_if_candidate_with_gaps(
-        &mut self,
-        members: &[Member],
-        gaps: impl IntoIterator<Item = TextRange>,
-    ) {
-        if is_alignment_candidate(self.source, members) {
-            self.emit_group_with_gaps(members, gaps);
-        }
-    }
-
-    /// Drops the held rows from `members`, then emits the survivors as
-    /// one group when they still form an alignment candidate.
-    pub(crate) fn emit_unheld(&mut self, members: impl IntoIterator<Item = Member>) {
-        let kept = self.retain_unheld(members, |m| m.line_start);
-        self.emit_if_candidate(&kept);
-    }
-
-    /// Computes the alignment edits for `members` without recording
-    /// them, leaving the caller to fold in further edits before
-    /// committing the group through [`Self::push_group`].
-    pub(crate) fn group_edits(&self, members: &[Member]) -> Vec<Edit> {
-        let mut edits = Vec::new();
-        emit_group(self.source, members, self.settings, &mut edits);
-        edits
-    }
-
-    /// Returns `true` when `anchor`'s source line is skip-suppressed for
-    /// this rule, so the row drops out of its alignment group as a
-    /// transparent hole that neighbors still align around.
-    pub(crate) fn is_held(&self, anchor: TextSize) -> bool {
-        is_held(self.source, self.rule, anchor)
-    }
-
-    /// Records `edits` as one fix group, dropping an empty group so a
-    /// no-op pass emits no diagnostic.
-    pub(crate) fn push_group(&mut self, edits: Vec<Edit>) {
-        if !edits.is_empty() {
-            self.groups.push(edits);
-        }
-    }
-
-    /// Records `name_edits` together with a one-space rewrite of each gap
-    /// in `gaps` as one fix group. A gap already holding one space emits
-    /// nothing. The gaps are the secondary spans a rule normalizes beside
-    /// its aligned column, like the `=`-to-value gap or the `:`-to-body
-    /// gap.
-    pub(crate) fn push_with_gaps(
-        &mut self,
-        mut name_edits: Vec<Edit>,
-        gaps: impl IntoIterator<Item = TextRange>,
-    ) {
-        name_edits.extend(
-            gaps.into_iter()
-                .filter_map(|r| space_padding_edit(self.source, r, 1)),
-        );
-        self.push_group(name_edits);
-    }
-
-    /// Returns the rows of `members` whose anchor line is not skip-held
-    /// for this rule. The walker-bound form of the free [`retain_unheld`].
-    pub(crate) fn retain_unheld<M>(
-        &self,
-        members: impl IntoIterator<Item = M>,
-        line_start: impl Fn(&M) -> TextSize,
-    ) -> Vec<M> {
-        retain_unheld(self.source, self.rule, members, line_start)
-    }
-}
+pub(crate) use walker::AlignWalker;
 
 /// One row in an alignment group.
 ///
@@ -154,20 +40,50 @@ impl<'a> AlignWalker<'a> {
 /// the start of the source line containing the gap. `op_width` is the
 /// display width of the aligned operator itself, used to right-align
 /// variable-width operators within a group. Rules with fixed-width
-/// operators leave `op_width` at zero.
+/// operators leave `op_width` at zero. `value_gap` is the span from
+/// just past the operator to the value, which an aligned row rewrites
+/// to one space, and stays `None` for a rule that leaves the
+/// post-operator spacing alone.
 #[derive(Clone, Copy)]
 pub(crate) struct Member {
     pub gap: TextRange,
     pub line_start: TextSize,
     pub op_width: usize,
+    pub value_gap: Option<TextRange>,
     pub width: usize,
 }
 
 impl Member {
+    /// The post-operator gap an aligned row rewrites to one space,
+    /// `None` when the rule leaves that spacing alone or the value
+    /// opens on a later line.
+    pub(crate) fn rewritten_value_gap(self, source: &Source) -> Option<TextRange> {
+        self.value_gap
+            .filter(|gap| !source.contains_line_break(*gap))
+    }
+
+    /// This member's alignment slot, bridging the run when its row is
+    /// skip-held for `rule` so neighbors align around it.
+    pub(crate) fn slot(self, source: &Source, rule: RuleId) -> Slot<Self> {
+        if is_held(source, rule, self.line_start) {
+            Slot::Bridge
+        } else {
+            Slot::Member(self)
+        }
+    }
+
     /// Returns a copy of `self` with `op_width` set to the operator's
     /// display width, opting the member into right-alignment math.
     pub(crate) fn with_op_width(mut self, op_width: usize) -> Self {
         self.op_width = op_width;
+        self
+    }
+
+    /// Returns a copy of `self` carrying the post-operator span an
+    /// aligned row rewrites to one space, running from just past the
+    /// `op_len`-wide operator to `value_start`.
+    pub(crate) fn with_value_gap(mut self, op_len: TextSize, value_start: TextSize) -> Self {
+        self.value_gap = Some(TextRange::new(self.gap.end() + op_len, value_start));
         self
     }
 }

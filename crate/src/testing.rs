@@ -8,14 +8,14 @@ use std::{
 use ruff_diagnostics::Edit;
 use ruff_notebook::Notebook;
 use ruff_python_ast::{Expr, StmtClassDef, StmtFunctionDef};
-use ruff_text_size::{TextLen, TextRange};
+use ruff_text_size::{TextLen, TextRange, TextSize};
 use serde_json::{Value, json};
 
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
     pipeline::Pipeline,
-    primitives::edit::apply_edits,
+    primitives::{aligner, edit::apply_edits},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -55,6 +55,20 @@ impl Rule for GroupSentinelRule {
 
     fn message(&self) -> &'static str {
         "group test rule"
+    }
+}
+
+/// Builds an alignment `Member` whose pre-operator whitespace is `gap`,
+/// carrying no operator width and no post-operator gap. Layer
+/// `with_op_width` or `with_value_gap` on top for a row that needs
+/// either.
+pub(crate) fn align_member(gap: TextRange, line_start: u32, width: usize) -> aligner::Member {
+    aligner::Member {
+        gap,
+        line_start: TextSize::new(line_start),
+        op_width: 0,
+        value_gap: None,
+        width,
     }
 }
 
@@ -168,6 +182,18 @@ pub(crate) fn run_rule(slug: &str, src: &str) -> String {
         .0
         .text()
         .to_owned()
+}
+
+/// Returns a rule whose single group holds two edits over overlapping
+/// ranges, a group the splice declines to apply.
+pub(crate) fn self_overlapping() -> GroupSentinelRule {
+    GroupSentinelRule {
+        groups: vec![vec![
+            Edit::range_replacement("Y".to_owned(), range(0, 3)),
+            Edit::range_replacement("Z".to_owned(), range(2, 5)),
+        ]],
+        id: RuleId::from("self-overlapping"),
+    }
 }
 
 pub(crate) fn write_dotconfig_prose_toml(dir: &Path, contents: &str) {

@@ -97,6 +97,8 @@ impl SemanticSyntaxContext for ModuleScope<'_> {
     }
 }
 
+/// The version each rule's output is checked against, or `None` when
+/// `source` does not itself compile, which disarms the gate for the run.
 pub(super) fn compile_gate(source: &Source, version: PythonVersion) -> Option<PythonVersion> {
     first_semantic_error(source, version)
         .is_none()

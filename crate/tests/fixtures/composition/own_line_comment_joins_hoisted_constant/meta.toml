@@ -3,5 +3,5 @@ previewable = true
 title       = "An Own-Line Comment Rides Its Constant Into the Leading Band"
 
 description = '''
-`alphabetize` and `blank-lines` agree on where the own-line comment belongs. The comment forward-attaches to `MAX_WORKERS`, so banding hoists the pair above `configure` **on the first pass** rather than relocating the block only after a second format settles the blank-line texture.
+A prose comment binds to the member below it whatever blank line separates the two, so `band-constants` and `blank-lines` read one answer rather than each settling a different half. The comment rides `MAX_WORKERS` above `configure` **on the first pass**, leaving nothing for a second format to relocate.
 '''

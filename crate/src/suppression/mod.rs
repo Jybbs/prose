@@ -1,15 +1,19 @@
 //! Per-`Source` index of `# prose: off` / `# prose: on` / `# prose: skip`
 //! spans (plus the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]`
-//! per-line format-rule directives, and `# prose: ignore[<id>]` per-line
-//! lint directives. Built once during `Source` construction and consulted
-//! by `Pipeline::run` to drop suppressed edits and `Severity::Lint`
-//! diagnostics. A `file_is_suppressed` shortcut lets the pipeline
-//! skip rule execution entirely when an unmatched off precedes every
-//! statement.
+//! per-rule format directives, and `# prose: ignore[<id>]` per-line lint
+//! directives. Built once during `Source` construction and consulted by
+//! `Pipeline::run` to drop suppressed fix groups and `Severity::Lint`
+//! diagnostics. A skip directive that closes its logical line spans
+//! every physical line that line occupies and suppresses rewrites
+//! alone, leaving lint diagnostics to the `ignore` directives, whereas
+//! an off region suppresses both. A `file_is_suppressed` shortcut lets
+//! the pipeline skip rule execution entirely when an unmatched off
+//! precedes every statement.
 
 use std::collections::HashMap;
 
 use ruff_notebook::CellOffsets;
+use ruff_python_ast::token::{Token, TokenKind, Tokens};
 use ruff_python_trivia::{CommentLinePosition, CommentRanges, SuppressionKind};
 use ruff_source_file::{LineRanges, OneIndexed, SourceCode};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
@@ -23,42 +27,39 @@ mod parse_common;
 use format_directive::{FormatDirective, classify_format_directive};
 use lint_directive::{RuleEntry, find_prose_ignore};
 
-/// Sorted byte-range list for format-suppression spans paired with two
-/// per-line `OneIndexed` maps. `lints` carries `# prose: ignore` per-line
-/// lint directives, `skips` carries `# prose: skip[<id>]` per-rule format
-/// directives. Span queries run in O(log n), per-line queries in O(1).
+/// Sorted byte-range lists for the `# prose: off` regions and the bare
+/// `# prose: skip` spans, paired with the `# prose: skip[<id>]` per-rule
+/// spans and a per-line `OneIndexed` map of `# prose: ignore` lint
+/// directives. An off region suppresses rewrites and lint diagnostics
+/// alike, whereas a skip span suppresses rewrites alone and leaves lints
+/// to the `ignore` directives. Span queries run in O(log n) against
+/// `spans` and `skip_spans`, O(n) against `skips`, and O(1) per line.
 #[derive(Debug)]
 pub(crate) struct SuppressionMap {
     file_suppressed: bool,
     lints: HashMap<OneIndexed, RuleEntry>,
-    skips: HashMap<OneIndexed, RuleEntry>,
+    skip_spans: Vec<TextRange>,
+    skips: Vec<(TextRange, RuleEntry)>,
     spans: Vec<TextRange>,
 }
 
 impl SuppressionMap {
-    /// Walks `comments` against `source`, classifying each comment via
-    /// `classify_format_directive` for the format spans and per-line
-    /// skip index, and `find_prose_ignore` for the lint index.
-    /// `first_code_offset` carries the start of the source's first
-    /// top-level statement (or `None` for code-free input), powering
-    /// the `file_is_suppressed` shortcut.
-    ///
-    /// An unmatched `# prose: off` (or alias) extends through end of
-    /// file in a module and through the end of its own cell in a
-    /// notebook, a stray `# prose: on` is a no-op, and two consecutive
-    /// `# prose: off` directives flatten with the first `# prose: on`
-    /// closing the block. Multiple `# prose: ignore` directives on the
-    /// same line merge with bare-wins precedence, and `# prose: skip[<id>]`
-    /// directives union their listed ids.
+    /// Walks `comments` against `source`, indexing the off regions, the
+    /// bare skip spans, the per-rule skip spans, and the per-line lint
+    /// directives. `tokens` resolves each skip directive's logical line,
+    /// and `first_code_offset` is the start of the source's first
+    /// top-level statement, or `None` for code-free input.
     pub(crate) fn from_comments(
         source: &SourceCode<'_, '_>,
         comments: &CommentRanges,
+        tokens: &Tokens,
         first_code_offset: Option<TextSize>,
         cell_offsets: &CellOffsets,
     ) -> Self {
         let source_text = source.text();
         let mut lints: HashMap<OneIndexed, RuleEntry> = HashMap::new();
-        let mut skips: HashMap<OneIndexed, RuleEntry> = HashMap::new();
+        let mut skip_spans: Vec<TextRange> = Vec::new();
+        let mut skips: Vec<(TextRange, RuleEntry)> = Vec::new();
         let mut spans: Vec<TextRange> = Vec::new();
         let mut open_off: Option<TextSize> = None;
         for range in comments {
@@ -75,16 +76,15 @@ impl SuppressionMap {
                         }));
                     }
                     FormatDirective::Kind(SuppressionKind::Skip) => {
-                        spans.push(source_text.full_line_range(range.start()));
+                        skip_spans.push(skip_span(source_text, tokens, range));
                     }
                     FormatDirective::SkipRules(rules) => {
-                        let line = source.line_index(range.start());
-                        skips
-                            .entry(line)
-                            .or_default()
-                            .merge(RuleEntry::Specific(rules));
+                        skips.push((
+                            skip_span(source_text, tokens, range),
+                            RuleEntry::Specific(rules),
+                        ));
                     }
-                    _ => {}
+                    FormatDirective::Kind(_) => {}
                 }
             }
             if let Some(entry) = find_prose_ignore(comment) {
@@ -92,18 +92,17 @@ impl SuppressionMap {
                 lints.entry(line).or_default().merge(entry);
             }
         }
-        let off_end = open_off.map(|start| cell_close_end(cell_offsets, source_text, start));
-        let file_suppressed = open_off.zip(off_end).is_some_and(|(off, end)| {
-            end == source_text.text_len() && first_code_offset.is_none_or(|code| off <= code)
+        let unmatched_span = open_off
+            .map(|start| TextRange::new(start, cell_close_end(cell_offsets, source_text, start)));
+        let file_suppressed = unmatched_span.is_some_and(|span| {
+            span.end() == source_text.text_len()
+                && first_code_offset.is_none_or(|code| span.start() <= code)
         });
-        spans.extend(
-            open_off
-                .zip(off_end)
-                .map(|(start, end)| TextRange::new(start, end)),
-        );
+        spans.extend(unmatched_span);
         Self {
             file_suppressed,
             lints,
+            skip_spans: merge_spans(skip_spans),
             skips,
             spans: merge_spans(spans),
         }
@@ -115,10 +114,10 @@ impl SuppressionMap {
         self.file_suppressed
     }
 
-    /// Returns `true` when the source carries at least one
-    /// format-suppression span.
+    /// Returns `true` when the source carries at least one off region,
+    /// bare skip span, or `# prose: skip[<id>]` directive.
     pub(crate) fn has_format_suppression(&self) -> bool {
-        !self.spans.is_empty()
+        !self.spans.is_empty() || !self.skip_spans.is_empty() || !self.skips.is_empty()
     }
 
     /// Returns `true` when the source carries at least one
@@ -127,25 +126,13 @@ impl SuppressionMap {
         !self.lints.is_empty()
     }
 
-    /// Returns `true` when the source carries at least one
-    /// `# prose: skip[<id>]` directive.
-    pub(crate) fn has_skip_suppression(&self) -> bool {
-        !self.skips.is_empty()
-    }
-
-    /// Returns `true` when `ranged`'s span overlaps any
-    /// format-suppressed span by at least one byte. Empty ranges
-    /// report overlap when their offset strictly sits inside a span.
+    /// Returns `true` when `ranged`'s span overlaps a `# prose: off`
+    /// region by at least one byte. Empty ranges report overlap when
+    /// their offset strictly sits inside a region. A bare
+    /// `# prose: skip` opens no region, so it does not report here and
+    /// lint diagnostics on its line survive.
     pub(crate) fn intersects<R: Ranged>(&self, ranged: R) -> bool {
-        self.spans
-            .binary_search_by(|s| s.ordering(ranged.range()))
-            .is_ok()
-    }
-
-    /// Returns `true` when `line` carries a `# prose: skip[<id>]`
-    /// directive that lists `rule`.
-    pub(crate) fn is_format_suppressed_at(&self, line: OneIndexed, rule: RuleId) -> bool {
-        self.skips.get(&line).is_some_and(|e| e.matches(rule))
+        covers(&self.spans, ranged.range())
     }
 
     /// Returns `true` when `line` carries a `# prose: ignore`
@@ -153,6 +140,19 @@ impl SuppressionMap {
     /// every rule on their line.
     pub(crate) fn is_lint_suppressed_at(&self, line: OneIndexed, rule: RuleId) -> bool {
         self.lints.get(&line).is_some_and(|e| e.matches(rule))
+    }
+
+    /// Returns `true` when `ranged` overlaps a `# prose: off` region, a
+    /// bare `# prose: skip` span, or a `# prose: skip[<id>]` span
+    /// listing `rule`.
+    pub(crate) fn suppresses<R: Ranged>(&self, ranged: R, rule: RuleId) -> bool {
+        let range = ranged.range();
+        covers(&self.spans, range)
+            || covers(&self.skip_spans, range)
+            || self
+                .skips
+                .iter()
+                .any(|(span, entry)| span.ordering(range).is_eq() && entry.matches(rule))
     }
 }
 
@@ -169,7 +169,13 @@ pub(crate) fn is_directive_comment(comment: &str) -> bool {
 fn cell_close_end(cell_offsets: &CellOffsets, source_text: &str, start: TextSize) -> TextSize {
     cell_offsets
         .containing_range(start)
-        .map_or(source_text.text_len(), |range| range.end())
+        .map_or(source_text.text_len(), TextRange::end)
+}
+
+/// Returns `true` when `range` overlaps one of the sorted, merged
+/// `spans` by at least one byte.
+fn covers(spans: &[TextRange], range: TextRange) -> bool {
+    spans.binary_search_by(|s| s.ordering(range)).is_ok()
 }
 
 fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
@@ -184,13 +190,38 @@ fn merge_spans(mut spans: Vec<TextRange>) -> Vec<TextRange> {
     spans
 }
 
+/// The span a skip directive occupying `comment` suppresses.
+///
+/// A directive closing its logical line covers that line from its first
+/// non-trivia token through the comment's own physical line. A directive
+/// whose logical line runs on past it covers its physical line alone.
+fn skip_span(source_text: &str, tokens: &Tokens, comment: TextRange) -> TextRange {
+    let physical = source_text.full_line_range(comment.start());
+    let closes_line = tokens
+        .after(comment.end())
+        .first()
+        .is_none_or(|token| token.kind() == TokenKind::Newline);
+    if !closes_line {
+        return physical;
+    }
+    let anchor = tokens
+        .before(comment.start())
+        .rsplit(|token| token.kind() == TokenKind::Newline)
+        .next()
+        .and_then(|line| line.iter().find(|token| !token.kind().is_trivia()))
+        .map_or(comment.start(), Token::start);
+    TextRange::new(source_text.line_start(anchor), physical.end())
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
+    use ruff_text_size::TextRange;
 
     use super::is_directive_comment;
     use crate::rule::RuleId;
+    use crate::source::Source;
     use crate::testing::{notebook, parse, range};
 
     fn align_equals() -> RuleId {
@@ -199,6 +230,11 @@ mod tests {
 
     fn alphabetize() -> RuleId {
         "alphabetize".parse().expect("alphabetize is registered")
+    }
+
+    fn at(source: &Source, needle: &str) -> TextRange {
+        let start = source.text().find(needle).expect("needle is present") as u32;
+        range(start, start + needle.len() as u32)
     }
 
     fn line(zero_indexed: usize) -> OneIndexed {
@@ -218,7 +254,9 @@ mod tests {
         let source = parse("x = 1  # prose: skip\n");
         let map = source.suppression_map();
         assert!(map.has_format_suppression());
-        assert!(map.intersects(range(0, 6)));
+        assert!(map.suppresses(range(0, 6), align_equals()));
+        // A bare skip opens no off region, so a lint on the line survives.
+        assert!(!map.intersects(range(0, 6)));
     }
 
     #[test]
@@ -237,7 +275,6 @@ mod tests {
         assert!(!map.intersects(range(0, 0)));
         assert!(!map.has_format_suppression());
         assert!(!map.has_lint_suppression());
-        assert!(!map.has_skip_suppression());
         assert!(!map.file_is_suppressed());
     }
 
@@ -284,7 +321,7 @@ mod tests {
         );
         let map = source.suppression_map();
         assert!(!map.has_lint_suppression());
-        assert!(!map.has_skip_suppression());
+        assert!(!map.has_format_suppression());
         assert!(!map.is_lint_suppressed_at(line(0), align_equals()));
         assert!(!map.is_lint_suppressed_at(line(1), align_equals()));
         assert!(!map.is_lint_suppressed_at(line(2), align_equals()));
@@ -328,7 +365,7 @@ mod tests {
         let source = parse(src);
         let map = source.suppression_map();
         assert!(!map.has_lint_suppression());
-        assert!(!map.has_skip_suppression());
+        assert!(!map.has_format_suppression());
     }
 
     #[test]
@@ -350,8 +387,8 @@ mod tests {
     fn multiple_skip_directives_on_one_comment_union_their_rules() {
         let source = parse("x = 1  # prose: skip[align-equals]  # prose: skip[alphabetize]\n");
         let map = source.suppression_map();
-        assert!(map.is_format_suppressed_at(line(0), align_equals()));
-        assert!(map.is_format_suppressed_at(line(0), alphabetize()));
+        assert!(map.suppresses(range(0, 5), align_equals()));
+        assert!(map.suppresses(range(0, 5), alphabetize()));
     }
 
     #[test]
@@ -364,18 +401,27 @@ mod tests {
     #[test]
     fn nested_prose_off_after_non_pragma_hash_is_recognized() {
         let source = parse("# my note # prose: off\nx = 1\n");
-        let x_offset = source.text().find('x').expect("x is present") as u32;
-        assert!(
-            source
-                .suppression_map()
-                .intersects(range(x_offset, x_offset + 5)),
-        );
+        assert!(source.suppression_map().intersects(at(&source, "x = 1")));
     }
 
     #[test]
     fn off_at_the_top_of_a_single_cell_notebook_suppresses_the_file() {
         let source = notebook(&["# prose: off\nx = 1"]);
         assert!(source.suppression_map().file_is_suppressed());
+    }
+
+    #[test]
+    fn own_line_skip_at_end_of_file_stays_on_its_own_line() {
+        let source = parse("x = 1\n# fmt: skip");
+        assert!(!source.suppression_map().intersects(range(0, 5)));
+    }
+
+    #[test]
+    fn own_line_skip_stays_on_its_own_line() {
+        let source = parse("x = 1\n# fmt: skip\ny = 2\n");
+        let map = source.suppression_map();
+        assert!(!map.intersects(at(&source, "x = 1")));
+        assert!(!map.intersects(at(&source, "y = 2")));
     }
 
     #[rstest]
@@ -389,11 +435,15 @@ mod tests {
         text: &str,
     ) {
         let src = parse(text);
-        let x_offset = src.text().find('x').expect("x is present") as u32;
-        assert!(
-            src.suppression_map()
-                .intersects(range(x_offset, x_offset + 5))
-        );
+        assert!(src.suppression_map().intersects(at(&src, "x = 1")));
+    }
+
+    #[test]
+    fn rule_skip_on_a_wrapped_statement_reaches_its_opening_line() {
+        let source = parse("z = (\n    x\n)  # prose: skip[alphabetize]\n");
+        let map = source.suppression_map();
+        assert!(map.suppresses(range(0, 1), alphabetize()));
+        assert!(!map.suppresses(range(0, 1), align_equals()));
     }
 
     #[test]
@@ -413,28 +463,87 @@ mod tests {
     }
 
     #[test]
+    fn skip_after_a_backslash_continuation_reaches_the_opening_line() {
+        let source = parse("x = 1 + \\\n    2  # fmt: skip\ny = 3\n");
+        let map = source.suppression_map();
+        assert!(map.suppresses(range(0, 1), align_equals()));
+        assert!(!map.suppresses(at(&source, "y = 3"), align_equals()));
+    }
+
+    #[test]
     fn skip_brackets_target_only_listed_rules() {
         let source = parse("x = 1  # prose: skip[align-equals]\n");
         let map = source.suppression_map();
-        assert!(map.has_skip_suppression());
-        assert!(map.is_format_suppressed_at(line(0), align_equals()));
-        assert!(!map.is_format_suppressed_at(line(0), alphabetize()));
+        assert!(map.has_format_suppression());
+        assert!(map.suppresses(range(0, 5), align_equals()));
+        assert!(!map.suppresses(range(0, 5), alphabetize()));
+    }
+
+    #[test]
+    fn skip_in_a_notebook_cell_spans_its_logical_line() {
+        let source = notebook(&["z = (\n    x\n)  # fmt: skip", "y = 2"]);
+        let map = source.suppression_map();
+        assert!(map.suppresses(range(0, 1), align_equals()));
+        assert!(!map.suppresses(at(&source, "y = 2"), align_equals()));
+    }
+
+    #[test]
+    fn skip_inside_a_bracketed_construct_stays_on_its_own_line() {
+        let source = parse("config = {\n    \"a\": 1,  # fmt: skip\n    \"b\": 2,\n}\n");
+        let map = source.suppression_map();
+        assert!(map.suppresses(at(&source, "\"a\""), align_equals()));
+        assert!(!map.suppresses(range(0, 6), align_equals()));
     }
 
     #[test]
     fn skip_multi_id_suppresses_each_listed_rule() {
         let source = parse("x = 1  # prose: skip[align-equals, alphabetize]\n");
         let map = source.suppression_map();
-        assert!(map.is_format_suppressed_at(line(0), align_equals()));
-        assert!(map.is_format_suppressed_at(line(0), alphabetize()));
+        assert!(map.suppresses(range(0, 5), align_equals()));
+        assert!(map.suppresses(range(0, 5), alphabetize()));
+    }
+
+    #[test]
+    fn skip_on_a_compound_header_stops_at_the_body() {
+        let source = parse("if (\n    ready\n):  # fmt: skip\n    pass\n");
+        let map = source.suppression_map();
+        assert!(map.suppresses(range(0, 2), align_equals()));
+        assert!(!map.suppresses(at(&source, "pass"), align_equals()));
+    }
+
+    #[test]
+    fn skip_on_a_wrapped_statement_reaches_its_opening_line() {
+        let source = parse("z = (\n    x\n)  # fmt: skip\n");
+        assert!(
+            source
+                .suppression_map()
+                .suppresses(range(0, 1), align_equals())
+        );
+    }
+
+    #[test]
+    fn skip_span_opens_at_the_statement_below_a_comment_gap() {
+        let source = parse("a = 1\n\n# note\nz = (\n    x\n)  # fmt: skip\n");
+        let map = source.suppression_map();
+        assert!(map.suppresses(at(&source, "z"), align_equals()));
+        assert!(!map.suppresses(range(0, 5), align_equals()));
+        assert!(!map.suppresses(at(&source, "# note"), align_equals()));
+    }
+
+    #[test]
+    fn skip_span_survives_crlf_line_endings() {
+        let source = parse("z = (\r\n    x\r\n)  # fmt: skip\r\ny = 2\r\n");
+        let map = source.suppression_map();
+        assert!(map.suppresses(range(0, 1), align_equals()));
+        assert!(!map.suppresses(at(&source, "y = 2"), align_equals()));
     }
 
     #[test]
     fn skip_unknown_id_is_dropped_silently() {
         let source = parse("x = 1  # prose: skip[align-equals, not-a-rule]\n");
         let map = source.suppression_map();
-        assert!(map.is_format_suppressed_at(line(0), align_equals()));
-        assert!(!map.is_format_suppressed_at(line(0), alphabetize()));
+        assert!(map.suppresses(range(0, 5), align_equals()));
+        assert!(!map.suppresses(range(0, 5), alphabetize()));
     }
 
     #[rstest]
@@ -446,10 +555,10 @@ mod tests {
         let canonical_map = canonical.suppression_map();
         let compact_map = compact.suppression_map();
         assert_eq!(
-            canonical_map.is_format_suppressed_at(line(0), rule),
-            compact_map.is_format_suppressed_at(line(0), rule),
+            canonical_map.suppresses(range(0, 5), rule),
+            compact_map.suppresses(range(0, 5), rule),
         );
-        assert!(canonical_map.is_format_suppressed_at(line(0), rule));
+        assert!(canonical_map.suppresses(range(0, 5), rule));
     }
 
     #[test]
@@ -490,11 +599,8 @@ mod tests {
         // but not cell 1's `y`, and the file is not wholly suppressed.
         let source = notebook(&["# prose: off\nx = 1", "y = 2"]);
         let map = source.suppression_map();
-        let offset = |needle: char| source.text().find(needle).expect("present") as u32;
-        let x = offset('x');
-        let y = offset('y');
-        assert!(map.intersects(range(x, x + 1)));
-        assert!(!map.intersects(range(y, y + 1)));
+        assert!(map.intersects(at(&source, "x")));
+        assert!(!map.intersects(at(&source, "y")));
         assert!(!map.file_is_suppressed());
     }
 

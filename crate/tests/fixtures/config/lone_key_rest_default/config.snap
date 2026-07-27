@@ -22,6 +22,27 @@ Config {
         first_party: [],
     },
     rules: RuleConfigs {
+        unused_future_annotations: ToggleOnly {
+            enabled: true,
+        },
+        strip_none_return: ToggleOnly {
+            enabled: true,
+        },
+        strip_trailing_commas: ToggleOnly {
+            enabled: true,
+        },
+        shed_parentheses: ToggleOnly {
+            enabled: true,
+        },
+        docstring_frame: ToggleOnly {
+            enabled: true,
+        },
+        docstring_expand: ToggleOnly {
+            enabled: true,
+        },
+        group_imports: ToggleOnly {
+            enabled: true,
+        },
         collection_layout: CollectionLayoutConfig {
             collapse: true,
             enabled: true,
@@ -38,9 +59,6 @@ Config {
             ),
             wrap_dict_entries: true,
         },
-        shed_parentheses: ToggleOnly {
-            enabled: true,
-        },
         call_layout: CallLayoutConfig {
             enabled: true,
             max_args: InlineBudget(
@@ -49,16 +67,18 @@ Config {
                 ),
             ),
         },
-        group_imports: ToggleOnly {
+        signature_layout: SignatureLayoutConfig {
             enabled: true,
-        },
-        band_constants: BandConstantsConfig {
-            enabled: true,
-            group_constants: true,
-            max_tiers: InlineBudget(
+            max_params: InlineBudget(
                 Some(
-                    2,
+                    4,
                 ),
+            ),
+        },
+        align_match_case: AlignmentConfig {
+            enabled: true,
+            max_shift: Cap(
+                16,
             ),
         },
         alphabetize: AlphabetizeConfig {
@@ -69,43 +89,17 @@ Config {
             sort_docstring_entries: true,
             sort_dunder_lists: true,
         },
-        strip_trailing_commas: ToggleOnly {
+        band_constants: BandConstantsConfig {
             enabled: true,
-        },
-        docstring_frame: ToggleOnly {
-            enabled: true,
-        },
-        docstring_expand: ToggleOnly {
-            enabled: true,
-        },
-        unused_future_annotations: ToggleOnly {
-            enabled: true,
+            group_constants: true,
+            max_tiers: InlineBudget(
+                Some(
+                    2,
+                ),
+            ),
         },
         blank_lines: ToggleOnly {
             enabled: true,
-        },
-        bare_imports: BareImportsConfig {
-            allow: [],
-            enabled: true,
-            exempt_aliased: true,
-            max_attributes: 4,
-        },
-        align_match_case: AlignmentConfig {
-            enabled: true,
-            max_shift: Cap(
-                16,
-            ),
-        },
-        strip_none_return: ToggleOnly {
-            enabled: true,
-        },
-        signature_layout: SignatureLayoutConfig {
-            enabled: true,
-            max_params: InlineBudget(
-                Some(
-                    4,
-                ),
-            ),
         },
         import_layout: ToggleOnly {
             enabled: true,
@@ -139,6 +133,12 @@ Config {
         },
         strip_align_padding: ToggleOnly {
             enabled: true,
+        },
+        bare_imports: BareImportsConfig {
+            allow: [],
+            enabled: true,
+            exempt_aliased: true,
+            max_attributes: 4,
         },
         miscased_constants: MiscasedConstantsConfig {
             allow_pattern: Regex(

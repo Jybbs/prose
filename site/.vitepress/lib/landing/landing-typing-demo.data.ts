@@ -28,7 +28,7 @@ export { data }
 const root = paths.repoRoot(import.meta.url)
 
 export default defineLoader({
-  watch: paths.proseBinaryCandidates(root),
+  watch: [paths.proseBinaryPath(root)],
   async load(): Promise<LandingTypingDemoData> {
     const states: string[] = [typingDemo.SOURCE]
     for (let i = 0; i < typingDemo.RULES.length; i++) {

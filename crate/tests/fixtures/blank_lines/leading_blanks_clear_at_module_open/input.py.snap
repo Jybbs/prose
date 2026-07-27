@@ -1,9 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: snapshot
-input_file: crate/tests/fixtures/blank_lines/leading_blanks_clear_at_module_open/input.py
----
-import os
-
-
-TIMEOUT = 30

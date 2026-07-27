@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Wrapped Row's Skip Holds Every Line It Spans"
+
+description = '''
+A `# prose: skip[align-equals]` trailing a wrapped assignment **holds every line that statement spans out of the column math**, so the single-line row above it no longer pairs with the wrapped row into a shared column.
+'''

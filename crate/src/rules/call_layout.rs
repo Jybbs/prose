@@ -16,7 +16,7 @@ use ruff_python_ast::{
     helpers::any_over_expr,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
-use ruff_text_size::{Ranged, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
@@ -25,6 +25,7 @@ use crate::{
         INDENT_STEP,
         call_keywords::{CallKeywords, keyword_args, module_call_params, resolve_call_params},
         edit::{narrowed_replacement, singleton_groups},
+        equal_targets::keyword_groups,
         layout::{explode_parens, is_layoutable, reindent_block},
     },
     rule::{Rule, RuleId},
@@ -52,6 +53,7 @@ impl Rule for CallLayout {
             cap: self.max_args,
             code_line_length: self.code_line_length,
             edits: Vec::new(),
+            shifts: Vec::new(),
             source,
             targets: &targets,
         };
@@ -68,11 +70,23 @@ struct Exploder<'a> {
     cap: Option<usize>,
     code_line_length: usize,
     edits: Vec<Edit>,
+    shifts: Vec<(TextSize, usize)>,
     source: &'a Source,
     targets: &'a HashMap<TextSize, &'a Parameters>,
 }
 
 impl Exploder<'_> {
+    /// The columns `align_equals` adds before `call` when it is the value
+    /// of an enclosing keyword whose `=` gaps collapse to one space
+    /// apiece, zero for a call reached by any other route.
+    fn align_shift(&self, call: &ExprCall) -> usize {
+        self.shifts
+            .iter()
+            .rev()
+            .find(|(start, _)| *start == call.start())
+            .map_or(0, |(_, shift)| *shift)
+    }
+
     /// Returns the exploded `(...)` text for `call` when the count or
     /// length trigger fires, the closing `)` landing at `indent`. A
     /// keyword-expressible call renders one keyword per line, while any
@@ -160,13 +174,16 @@ impl Exploder<'_> {
     }
 
     /// True when `call` sits inline on its physical line and rendering it
-    /// there crosses `code_line_length`.
+    /// there crosses `code_line_length`, measured at the column
+    /// [`Self::align_shift`] leaves it in.
     fn overflows_line(&self, call: &ExprCall) -> bool {
         let text = self.source.slice(call.range());
         !self.source.contains_line_break(call.range())
-            && self
-                .source
-                .column_overflows(call.start(), text.width(), self.code_line_length)
+            && self.source.column_overflows(
+                call.start(),
+                text.width() + self.align_shift(call),
+                self.code_line_length,
+            )
     }
 
     /// True for a multi-line collection or comprehension value whose
@@ -221,9 +238,38 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
                 ));
                 return;
             }
+            let depth = self.shifts.len();
+            self.shifts
+                .extend(buffered_keyword_values(self.source, call));
+            walk_expr(self, expr);
+            self.shifts.truncate(depth);
+            return;
         }
         walk_expr(self, expr);
     }
+}
+
+/// Each keyword value of `call` that `align_equals` shifts right, paired
+/// with the columns it gains as the gaps on either side of its `=`
+/// collapse to one space apiece. A keyword sharing its physical line
+/// with another argument keeps its tight `name=value` and is absent, as
+/// is one whose value opens on a later line.
+fn buffered_keyword_values(source: &Source, call: &ExprCall) -> Vec<(TextSize, usize)> {
+    keyword_groups(source, CallLayout::SLUG, call, true)
+        .into_iter()
+        .flatten()
+        .filter_map(|m| {
+            let value_gap = m.rewritten_value_gap(source)?;
+            let gained = one_space_gain(m.gap) + one_space_gain(value_gap);
+            Some((value_gap.end(), gained))
+        })
+        .collect()
+}
+
+/// The columns `gap` gains when it collapses to one space, zero for a
+/// gap already at least that wide.
+fn one_space_gain(gap: TextRange) -> usize {
+    1usize.saturating_sub(gap.len().to_usize())
 }
 
 #[cfg(test)]
