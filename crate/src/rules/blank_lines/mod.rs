@@ -162,8 +162,8 @@ mod tests {
     use super::*;
     use crate::testing::{notebook, parse};
 
-    /// A function in cell 0 and a call in cell 1. Module spacing wants a
-    /// blank after the def, but a cell boundary sits in that gap.
+    /// A function in cell 0 and a call in cell 1. Module spacing calls for
+    /// a blank after the def, but a cell boundary sits in that gap.
     fn split_across_two_cells() -> Source {
         notebook(&["def f():\n    return 1", "x = f()"])
     }

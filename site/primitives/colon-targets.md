@@ -60,7 +60,7 @@ pub(crate) trait ColonEmitter {
 
 ## Build Pattern
 
-A rule implementing `ColonEmitter` carries a single accumulator *(typically `Vec<Vec<ColonMember>>` for grouped members)* and pushes into it from each handler. After `walk(source)` returns, the accumulator carries every group the rule cares about, and the rule emits `Vec<Edit>` by calling [[aligner]]'s `emit_group` against each group.
+A rule implementing `ColonEmitter` carries a single accumulator *(typically `Vec<Vec<ColonMember>>` for grouped members)* and pushes into it from each handler. After `walk(source)` returns, the accumulator carries every group from the contexts the rule handles, and the rule emits `Vec<Edit>` by calling [[aligner]]'s `emit_group` against each group.
 
 ## How Grouping Works
 
@@ -76,7 +76,7 @@ Each group is handed to the receiver as one `&[ColonMember]` slice, so the consu
 
 ## Re-Using This Primitive
 
-A new `:`-context rule implements `ColonEmitter`, overrides the handlers for the contexts it cares about, and calls `walk(source)` from inside its `apply` method. The shared walker, the same-indentation grouping, and the per-context member construction come for free.
+A new `:`-context rule implements `ColonEmitter`, overrides the handlers for the contexts it targets, and calls `walk(source)` from inside its `apply` method. The shared walker, the same-indentation grouping, and the per-context member construction come for free.
 
 <template #related>
 

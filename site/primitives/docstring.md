@@ -62,7 +62,7 @@ The `pub(crate)` helpers reach for the docstring literal and its body:
 3. `triple_quoted_body(source, lit) -> Option<DocstringBody>` narrows `docstring_body` to the canonical `"""` form, the slice `docstring-expand` and `docstring-wrap` act on once `docstring-frame` has requoted every docstring. Returns `None` for a non-triple-quoted literal.
 4. `indent_prefix(source, lit) -> &str` returns the whitespace preceding the docstring on its first line, useful when a rule rewraps the body and needs to re-indent the result.
 
-[[colon-targets]] finds leading docstrings through `body_docstring`, then scans their `Args:` lines itself when emitting members for colon alignment. The split is deliberate, because the two primitives answer structurally different questions. *Docstring* surfaces entry names and the byte range a reorder would carry along, whereas *Colon-Targets* surfaces each line's `:`-position for the aligner's padding math. Two views of the same source, each shaped for its consumer.
+[[colon-targets]] finds leading docstrings through `body_docstring` and their section entries through `entry_carrying_sections`, then locates each entry head's `:` itself when emitting members for colon alignment. The split is deliberate, because the two primitives answer structurally different questions. *Docstring* surfaces entry names and the byte range a reorder would carry along, whereas *Colon-Targets* surfaces each line's `:`-position for the aligner's padding math. Two views of the same source, each shaped for its consumer.
 
 ## Section-Parsing Surface
 
