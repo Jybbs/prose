@@ -32,10 +32,14 @@ Each context resolves an [[aligner]] `Member` directly, carrying its `width` *(t
 
 ## Internal Surface
 
-The receiver trait carries the per-context handlers. `rule` and `handle` are the required methods, `rule` naming the consuming rule so the group builders can hold its skip-suppressed rows out of alignment, while `match_arms` carries a default a consuming rule overrides for match-arm-specific handling:
+The receiver trait carries the per-context handlers. `rule` and `handle` are the required methods, `rule` naming the consuming rule so the group builders can hold its skip-suppressed rows out of alignment, while `docstring_entries` and `match_arms` each carry a default a consuming rule overrides for context-specific handling:
 
 ```rust
 pub(crate) trait ColonEmitter {
+    fn docstring_entries(&mut self, members: &[aligner::Member]) {
+        self.handle(members);
+    }
+
     fn handle(&mut self, members: &[aligner::Member]);
 
     fn match_arms(&mut self, members: &[aligner::Member]) {
@@ -48,7 +52,7 @@ pub(crate) trait ColonEmitter {
 }
 ```
 
-`handle` is the catch-all for annotated assignments, docstring entries, dict entries, and parameters. `match_arms` is split out so a rule can opt out of match-arm alignment by overriding it to a no-op *(which is what [[align-colons]] does, since [[align-match-case]] owns the match-arm context)*, with its default delegating to `handle` for any rule that leaves it alone.
+`handle` is the catch-all for annotated assignments, dict entries, and parameters. `docstring_entries` and `match_arms` are split out so a rule can take either context on its own terms, each defaulting to `handle` for a rule that reads every context through the one callback. [[align-colons]] overrides `match_arms` to a no-op, since [[align-match-case]] owns the match-arm context, and overrides `docstring_entries` to resolve a docstring run without the length cap its other contexts take.
 
 `walk(source)` is the provided driver across `source`'s module body, recursing into nested classes, functions, matches, and expressions so a single call covers the whole tree. A consuming rule never overrides `walk`, because calling the provided method is enough to drive the receiver across every relevant context.
 

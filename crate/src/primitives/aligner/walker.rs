@@ -34,6 +34,14 @@ impl<'a> AlignWalker<'a> {
         }
     }
 
+    /// Computes the alignment edits for `members` under `settings`
+    /// rather than the walker's own.
+    fn group_edits_under(&self, settings: Settings, members: &[Member]) -> Vec<Edit> {
+        let mut edits = Vec::new();
+        emit_group(self.source, members, settings, &mut edits);
+        edits
+    }
+
     /// Aligns `members` to their shared column and folds in a one-space
     /// rewrite of each gap in `gaps`, recording the combined fix as one
     /// group. The members-level analog of [`Self::push_with_gaps`],
@@ -52,9 +60,18 @@ impl<'a> AlignWalker<'a> {
     /// candidate, folding in a one-space rewrite of each member's
     /// [post-operator gap](Self::value_gaps). Records nothing otherwise.
     pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
+        self.emit_if_candidate_under(self.settings, members);
+    }
+
+    /// Aligns `members` as one fix group under `settings` rather than the
+    /// walker's own, folding in the same post-operator gap rewrite
+    /// [`Self::emit_if_candidate`] applies. Records nothing when
+    /// `members` form no alignment candidate.
+    pub(crate) fn emit_if_candidate_under(&mut self, settings: Settings, members: &[Member]) {
         if is_alignment_candidate(self.source, members) {
             let gaps = self.value_gaps(members);
-            self.emit_group_with_gaps(members, gaps);
+            let name_edits = self.group_edits_under(settings, members);
+            self.push_with_gaps(name_edits, gaps);
         }
     }
 
@@ -69,9 +86,7 @@ impl<'a> AlignWalker<'a> {
     /// them, leaving the caller to fold in further edits before
     /// committing the group through [`Self::push_group`].
     pub(crate) fn group_edits(&self, members: &[Member]) -> Vec<Edit> {
-        let mut edits = Vec::new();
-        emit_group(self.source, members, self.settings, &mut edits);
-        edits
+        self.group_edits_under(self.settings, members)
     }
 
     /// Returns `true` when `anchor`'s source line is skip-suppressed for

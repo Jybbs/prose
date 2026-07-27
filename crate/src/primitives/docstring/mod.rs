@@ -3,9 +3,9 @@
 //! holds a string literal as its first expression statement.
 //! Implementors of [`DocstringHandler`] receive every such docstring
 //! literal in source order via the trait's `walk` method. Implicitly
-//! concatenated docstring expressions are skipped. The `body`, `scan`,
-//! and `section` submodules carry the text-level helpers for walking a
-//! docstring body directly.
+//! concatenated docstring expressions are skipped. The `body`,
+//! `grammar`, `scan`, and `section` submodules carry the text-level
+//! helpers for walking a docstring body directly.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -16,14 +16,14 @@ use ruff_python_ast::{
 use crate::{primitives::scope::scoped_body, source::Source};
 
 mod body;
+mod grammar;
 mod scan;
 mod section;
 
 pub(crate) use body::{DocstringBody, docstring_body, indent_prefix, triple_quoted_body};
+pub(crate) use grammar::{section_heading, sibling_entry_head, typed_entry_head};
 pub(crate) use scan::{LineScan, LineScanner, ScannedLine};
-pub(crate) use section::{
-    entry_carrying_sections, entry_head, section_heading, typed_entry_head, unbracketed_colon,
-};
+pub(crate) use section::entry_carrying_sections;
 
 /// Receiver for the docstring walker. Implementors handle each
 /// docstring `StringLiteral` reached in source order. Call `walk`

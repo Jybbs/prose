@@ -21,10 +21,10 @@ pub(super) fn emit_group(
     settings: Settings,
     edits: &mut Vec<Edit>,
 ) {
-    for (group, max_w) in reading_order_groups(source, members, settings) {
-        let suffix = settings.suffix_len(group.len());
-        emit_with_paddings(source, group, max_w, max_op_width(group), suffix, edits);
-    }
+    edits.extend(
+        group_paddings(source, members, settings)
+            .filter_map(|(m, pad)| space_padding_edit(source, m.gap, pad)),
+    );
 }
 
 /// Per-member display column where each member's aligned token lands
@@ -44,15 +44,8 @@ pub(crate) fn operator_columns(
             .map(|m| baseline(source, *m) + m.width + 1)
             .collect();
     }
-    reading_order_groups(source, members, settings)
-        .into_iter()
-        .flat_map(|(group, max_w)| {
-            let max_op = max_op_width(group);
-            let suffix = settings.suffix_len(group.len());
-            group.iter().map(move |m| {
-                baseline(source, *m) + m.width + padding_width(*m, max_w, max_op, suffix)
-            })
-        })
+    group_paddings(source, members, settings)
+        .map(|(m, pad)| baseline(source, m) + m.width + pad)
         .collect()
 }
 
@@ -64,26 +57,6 @@ pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) ->
         return None;
     }
     Some(repeat_edit(range, " ", n))
-}
-
-/// Rewrites each member's gap to its [`padding_width`], the spacing that
-/// lands every operator's last character in the shared column. Members
-/// whose gap already carries that width of ASCII spaces emit nothing.
-fn emit_with_paddings(
-    source: &Source,
-    members: &[Member],
-    max_w: usize,
-    max_op_w: usize,
-    suffix_len: usize,
-    edits: &mut Vec<Edit>,
-) {
-    edits.extend(members.iter().filter_map(|m| {
-        space_padding_edit(
-            source,
-            m.gap,
-            padding_width(*m, max_w, max_op_w, suffix_len),
-        )
-    }));
 }
 
 /// The width of `member`'s line as the aligner emits it, less the
@@ -126,6 +99,25 @@ fn group_holds(
 /// The widest member width in `group`, zero for an empty slice.
 fn group_max_width(group: &[Member]) -> usize {
     group.iter().map(|m| m.width).max().unwrap_or(0)
+}
+
+/// Pairs every member with the gap width that lands its aligned token in
+/// its group's shared column, walking the groups `reading_order_groups`
+/// yields in source order.
+fn group_paddings<'m>(
+    source: &Source,
+    members: &'m [Member],
+    settings: Settings,
+) -> impl Iterator<Item = (Member, usize)> + 'm {
+    reading_order_groups(source, members, settings)
+        .into_iter()
+        .flat_map(move |(group, max_w)| {
+            let suffix = settings.suffix_len(group.len());
+            let max_op = max_op_width(group);
+            group
+                .iter()
+                .map(move |m| (*m, padding_width(*m, max_w, max_op, suffix)))
+        })
 }
 
 /// Returns the widest `op_width` in `members`, or `0` when the slice
@@ -329,41 +321,6 @@ mod tests {
         // A lone member is its own group, so strip collapses the
         // five-space gap to zero rather than the one-space suffix.
         assert_eq!(sorted_summaries(&edits), vec![delete(&members[0])]);
-    }
-
-    #[test]
-    fn emit_with_paddings_emits_deletion_when_target_len_is_zero() {
-        let (source, members) = rows(&[(3, 4)]);
-        let mut edits = Vec::new();
-
-        // max_w == m.width → padding = 0, suffix_len = 0 → target_len = 0
-        // → must emit deletion (range_replacement rejects empty content).
-        emit_with_paddings(&source, &members, members[0].width, 0, 0, &mut edits);
-
-        assert_eq!(edits.len(), 1);
-        assert_eq!(
-            summary(&edits[0]),
-            (
-                members[0].gap.start().to_u32(),
-                members[0].gap.end().to_u32(),
-                String::new()
-            )
-        );
-    }
-
-    #[test]
-    fn emit_with_paddings_skips_already_correct_gap() {
-        let (source, members) = rows(&[(3, 1)]);
-        let mut edits = Vec::new();
-
-        // max_w == m.width → padding = 0, suffix_len = 1 → target_len = 1.
-        // The fabricated gap is one space already, so emit nothing.
-        emit_with_paddings(&source, &members, members[0].width, 0, 1, &mut edits);
-
-        assert!(
-            edits.is_empty(),
-            "gap that already matches the target width must not emit",
-        );
     }
 
     #[test]

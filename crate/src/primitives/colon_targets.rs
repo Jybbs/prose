@@ -14,14 +14,12 @@ use ruff_python_ast::{
     token::TokenKind,
     visitor::{Visitor as AstVisitor, walk_body, walk_expr, walk_parameters, walk_stmt},
 };
-use ruff_python_trivia::PythonWhitespace;
-use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     primitives::{
         aligner,
-        docstring::{body_docstring, entry_carrying_sections, unbracketed_colon},
+        docstring::{body_docstring, entry_carrying_sections},
         scope::scoped_body,
     },
     rule::RuleId,
@@ -29,13 +27,16 @@ use crate::{
 };
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
-/// for annotated assignments, docstring entries, dict entries, and
-/// parameters. `match_arms` is split out so a rule can opt out of
-/// match-arm alignment by overriding it to a no-op. `rule` names the
-/// consuming rule so the group builders can hold its skip-suppressed
-/// rows out of alignment. Call `walk` to drive the emitter across
-/// `source`'s body.
+/// for annotated assignments, dict entries, and parameters, with
+/// `docstring_entries` and `match_arms` defaulting to it so a rule can
+/// override either. `rule` names the consuming rule so the group
+/// builders can hold its skip-suppressed rows out of alignment. Call
+/// `walk` to drive the emitter across `source`'s body.
 pub(crate) trait ColonEmitter {
+    fn docstring_entries(&mut self, members: &[aligner::Member]) {
+        self.handle(members);
+    }
+
     fn handle(&mut self, members: &[aligner::Member]);
 
     fn match_arms(&mut self, members: &[aligner::Member]) {
@@ -95,7 +96,7 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
         }
         if let Some((body, _)) = scoped_body(stmt) {
             for group in docstring_sections(self.source, body) {
-                self.emitter.handle(&group);
+                self.emitter.docstring_entries(&group);
             }
         }
         walk_stmt(self, stmt);
@@ -174,7 +175,7 @@ fn dict_item(source: &Source, dict: &ExprDict, item: &DictItem) -> Option<aligne
 }
 
 /// Returns one group per run of consecutive-line `key: value` entries
-/// in `d`. A trailing comment on an entry rides with it and keeps the
+/// in `d`. A trailing comment on an entry stays with it and keeps the
 /// run going, whereas a standalone comment line or a blank line between
 /// two entries closes the active run and starts a fresh one, so each
 /// run aligns independently. `**spread` entries skip the colon scan but
@@ -211,15 +212,7 @@ fn docstring_sections(source: &Source, body: &[Stmt]) -> Vec<Vec<aligner::Member
         .map(|section| {
             section
                 .iter()
-                .filter_map(|entry| {
-                    let head = source.slice(entry.range).universal_newlines().next()?;
-                    let stripped = head.trim_whitespace_start();
-                    let colon_rel = unbracketed_colon(stripped)?;
-                    let indent_len = head.len() - stripped.len();
-                    let colon_start =
-                        entry.range.start() + TextSize::of(&head[..indent_len + colon_rel]);
-                    Some(aligner::line_anchored_member(source, colon_start))
-                })
+                .map(|entry| aligner::line_anchored_member(source, entry.colon))
                 .collect()
         })
         .collect()

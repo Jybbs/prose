@@ -535,8 +535,9 @@ export const glossary: Record<string, GlossaryEntry> = {
     ],
     definition : 'A structured section is a docstring section like `Args:`, `Returns:`, or '
                + '`Raises:` that reads as a code-shaped table rather than prose. '
-               + '`docstring-wrap` budgets these against `code-line-length` by default, so '
-               + 'argument lines align with surrounding code.',
+               + '`docstring-wrap` budgets its prose lines against `code-line-length` by '
+               + 'default, whereas its `name: description` entries wrap to `docstring-line-length` '
+               + 'with a hanging indent at the description\'s start column.',
     families   : ['docs', 'alignment'],
     rule       : 'docstring-wrap'
   },

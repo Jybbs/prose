@@ -75,7 +75,8 @@ impl LineScanner {
             if is_grid_table_line(trimmed) || is_section_underline(trimmed) {
                 return LineScan::VerbatimOpen;
             }
-            if is_comment_marker(trimmed)
+            if is_bracketed_literal(trimmed)
+                || is_comment_marker(trimmed)
                 || is_directive(trimmed)
                 || is_doctest_prompt(trimmed)
                 || (at_block_start && is_field_marker(trimmed))
@@ -132,6 +133,13 @@ fn head_delimited(trimmed: &str, open: &str, close: &str) -> bool {
         .is_some_and(|(name, body)| {
             !name.is_empty() && (body.is_empty() || body.starts_with(char::is_whitespace))
         })
+}
+
+/// True when `trimmed` opens a bracketed literal, the `{` or `[` a
+/// dict, set, or list example carries. A prose parenthetical takes the
+/// `(` shape, so that delimiter reads as prose.
+fn is_bracketed_literal(trimmed: &str) -> bool {
+    trimmed.starts_with(['{', '['])
 }
 
 /// True when `trimmed` opens a comment-led code example, the `# `
@@ -245,7 +253,8 @@ mod tests {
             "# sum the rows",
             ".. note:: text",
             ":param x: input",
-            "=====  ====="
+            "=====  =====",
+            "{\"retries\": 3}"
         )]
         opener: &str,
     ) {
@@ -256,6 +265,16 @@ mod tests {
         assert_matches!(scanner.classify("7", 0), LineScan::Verbatim);
         assert_matches!(scanner.classify("", 0), LineScan::Blank);
         assert_matches!(scanner.classify("Back to prose.", 0), LineScan::Body);
+    }
+
+    #[test]
+    fn is_bracketed_literal_matches_brace_and_square_openers() {
+        assert!(is_bracketed_literal("{\"retries\": 3, \"timeout\": 30}"));
+        assert!(is_bracketed_literal("{"));
+        assert!(is_bracketed_literal("[1, 2, 3]"));
+        assert!(!is_bracketed_literal("(a parenthetical aside)"));
+        assert!(!is_bracketed_literal("a mapping of {key: value} pairs"));
+        assert!(!is_bracketed_literal("plain prose"));
     }
 
     #[test]
