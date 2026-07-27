@@ -13,7 +13,7 @@ declare const data: RuleConfigData
 export { data }
 
 export default defineLoader({
-  watch : paths.proseBinaryCandidates(root),
+  watch : [paths.proseBinaryPath(root)],
   async load(): Promise<RuleConfigData> {
     const md     = await getRenderer()
     const schema = JSON.parse(paths.runProse(root, ['schema']))

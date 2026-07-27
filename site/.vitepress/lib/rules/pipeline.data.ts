@@ -24,7 +24,7 @@ declare const data: PipelineData
 export { data }
 
 export default defineLoader({
-  watch: [...paths.proseBinaryCandidates(paths.repoRoot(import.meta.url)), `${rulesDirectory}/*.md`],
+  watch: [paths.proseBinaryPath(paths.repoRoot(import.meta.url)), `${rulesDirectory}/*.md`],
   load(): PipelineData {
     const discovered = discoverRuleIndex(rulesDirectory)
     const rules      = readPipeline(import.meta.url).map(({ after, position, slug }) => {

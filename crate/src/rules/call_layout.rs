@@ -252,14 +252,16 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
 /// Each keyword value of `call` that `align_equals` shifts right, paired
 /// with the columns it gains as the gaps on either side of its `=`
 /// collapse to one space apiece. A keyword sharing its physical line
-/// with another argument keeps its tight `name=value` and is absent.
+/// with another argument keeps its tight `name=value` and is absent, as
+/// is one whose value opens on a later line.
 fn buffered_keyword_values(source: &Source, call: &ExprCall) -> Vec<(TextSize, usize)> {
     keyword_groups(source, CallLayout::SLUG, call, true)
         .into_iter()
         .flatten()
-        .map(|m| {
-            let gained = one_space_gain(m.member.gap) + one_space_gain(m.value_gap);
-            (m.value_start(), gained)
+        .filter_map(|m| {
+            let value_gap = m.rewritten_value_gap(source)?;
+            let gained = one_space_gain(m.gap) + one_space_gain(value_gap);
+            Some((value_gap.end(), gained))
         })
         .collect()
 }
