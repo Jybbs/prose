@@ -9,13 +9,13 @@ describe('parsePipelineJson', () => {
   })
 
   it.each([
-    ['an empty array',        '[]',                                            /emitted no pipeline entries/],
-    ['a non-array payload',   '{}',                                            /emitted no pipeline entries/],
-    ['a missing slug',        '[{"after":[],"imperative":"x","position":1}]',  /invalid or missing slug/],
-    ['a missing position',    '[{"after":[],"imperative":"x","slug":"a"}]',    /invalid or missing position/],
-    ['a missing imperative',  '[{"after":[],"position":1,"slug":"a"}]',        /invalid or missing imperative/],
-    ['a missing after list',  '[{"imperative":"x","position":1,"slug":"a"}]',  /invalid or missing after list/],
-    ['a non-slug dependency', '[{"after":[7],"imperative":"x","position":1,"slug":"a"}]', /dependency 0 is not a slug/]
+    ['an empty array',        '[]',                                                        /emitted no pipeline entries/],
+    ['a non-array payload',   '{}',                                                        /emitted no pipeline entries/],
+    ['a missing slug',        '[{"after":[],"imperative":"x","position":1}]',              /invalid or missing slug/],
+    ['a missing position',    '[{"after":[],"imperative":"x","slug":"a"}]',                /invalid or missing position/],
+    ['a missing imperative',  '[{"after":[],"position":1,"slug":"a"}]',                    /invalid or missing imperative/],
+    ['a missing after list',  '[{"imperative":"x","position":1,"slug":"a"}]',              /invalid or missing after list/],
+    ['a non-slug dependency', '[{"after":[7],"imperative":"x","position":1,"slug":"a"}]',  /dependency 0 is not a slug/]
   ])('rejects %s', (_name, payload, message) => {
     expect(() => parsePipelineJson(payload)).toThrow(message)
   })

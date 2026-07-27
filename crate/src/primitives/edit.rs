@@ -93,11 +93,13 @@ pub(crate) fn forward_offsets(offsets: &CellOffsets, map: &SourceMap) -> CellOff
 /// Returns `None` when the text already matches the source slice.
 pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: String) -> Option<Edit> {
     let (narrowed_span, narrowed_text) = narrow_edit(text, span, source.slice(span))?;
-    Some(if narrowed_text.is_empty() {
-        Edit::range_deletion(narrowed_span)
-    } else {
-        Edit::range_replacement(narrowed_text, narrowed_span)
-    })
+    Some(replacement_or_deletion(narrowed_span, narrowed_text))
+}
+
+/// The edit rewriting `range` to `n` copies of `unit`, a deletion when
+/// `n` is zero.
+pub(crate) fn repeat_edit(range: TextRange, unit: &str, n: usize) -> Edit {
+    replacement_or_deletion(range, unit.repeat(n))
 }
 
 /// Wraps each edit in its own single-edit fix group, the shape a rule
@@ -244,6 +246,14 @@ fn narrow_edit(
     text.truncate(text.len() - suffix_bytes);
     text.drain(..prefix_bytes);
     Some((span.add_start(prefix_len).sub_end(suffix_len), text))
+}
+
+fn replacement_or_deletion(range: TextRange, content: String) -> Edit {
+    if content.is_empty() {
+        Edit::range_deletion(range)
+    } else {
+        Edit::range_replacement(content, range)
+    }
 }
 
 /// Weaves `edits` into the `span` slice of `text` and returns the

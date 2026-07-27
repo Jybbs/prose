@@ -21,8 +21,11 @@ export function parsePipelineJson(text: string): readonly PipelineEntry[] {
     if (!Array.isArray(after)) {
       throw new TypeError(`pipeline entry ${i} has invalid or missing after list`)
     }
+    const dependencies = after.map(
+      (name, j) => requireString(name, `pipeline entry ${i} dependency ${j} is not a slug`)
+    )
     return {
-      after      : after.map((name, j) => requireString(name, `pipeline entry ${i} dependency ${j} is not a slug`)),
+      after      : dependencies,
       imperative : requireString(imperative, `pipeline entry ${i} has invalid or missing imperative`),
       position   : position,
       slug       : requireString(slug, `pipeline entry ${i} has invalid or missing slug`)

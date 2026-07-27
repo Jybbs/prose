@@ -9,9 +9,8 @@ use super::exit_status::ExitStatus;
 use crate::pipeline::Pipeline;
 use crate::rule::{dependencies_of, message_for_id};
 
-/// One registered rule: its kebab slug, one-based pipeline position,
-/// the imperative the registry carries for it, and the slugs whose
-/// output it reads.
+/// One registered rule, carrying its one-based pipeline position and
+/// the slugs whose output it reads.
 #[derive(Serialize)]
 struct RuleInfo {
     after: &'static [&'static str],
@@ -70,20 +69,16 @@ mod tests {
     fn json_carries_each_rule_dependency_list() {
         let rules: Vec<serde_json::Value> =
             serde_json::from_str(&render(RulesFormat::Json)).expect("valid JSON array");
-        let by_slug = |slug: &str| {
-            rules
-                .iter()
-                .find(|rule| rule["slug"].as_str() == Some(slug))
-                .expect("registered rule appears in the listing")["after"]
+        for rule in &rules {
+            let slug = rule["slug"].as_str().expect("slug renders as a string");
+            let after: Vec<&str> = rule["after"]
                 .as_array()
                 .expect("after renders as an array")
-                .len()
-        };
-        assert_eq!(by_slug("unused-future-annotations"), 0);
-        assert_eq!(
-            by_slug("align-equals"),
-            dependencies_of("align-equals").len()
-        );
+                .iter()
+                .map(|name| name.as_str().expect("dependency renders as a string"))
+                .collect();
+            assert_eq!(after, dependencies_of(slug));
+        }
     }
 
     #[test]

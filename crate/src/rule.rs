@@ -131,10 +131,8 @@ impl FromStr for RuleId {
     type Err = ParseRuleIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        KNOWN_IDS
-            .iter()
-            .copied()
-            .find(|id| id.0 == s)
+        slug_index(s)
+            .map(|i| KNOWN_IDS[i])
             .ok_or_else(|| ParseRuleIdError(s.to_owned()))
     }
 }
@@ -148,10 +146,7 @@ impl Serialize for RuleId {
 /// The slugs whose output the rule named `slug` reads, empty for a rule
 /// that depends on nothing seated ahead of it and for an unknown slug.
 pub(crate) fn dependencies_of(slug: &str) -> &'static [&'static str] {
-    PIPELINE_DEPENDENCIES
-        .iter()
-        .find(|(name, _)| *name == slug)
-        .map_or(&[], |(_, after)| *after)
+    slug_index(slug).map_or(&[], |i| PIPELINE_DEPENDENCIES[i])
 }
 
 /// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,
@@ -178,11 +173,10 @@ const fn is_valid_slug(bytes: &[u8]) -> bool {
     !prev_was_dash
 }
 
-/// Returns `true` when `earlier` occupies a lower index than `later` in
-/// `slugs`. A slug absent from `slugs` returns `false`, so a stale
-/// dependency name fails the same assertion an out-of-order one does.
-const fn precedes(earlier: &str, later: &str, slugs: &[&str]) -> bool {
-    match (slug_index(earlier, slugs), slug_index(later, slugs)) {
+/// Returns `true` when `earlier` is registered before `later`, and
+/// `false` when either is absent from the registry.
+const fn precedes(earlier: &str, later: &str) -> bool {
+    match (slug_index(earlier), slug_index(later)) {
         (Some(a), Some(b)) => a < b,
         _ => false,
     }
@@ -203,11 +197,11 @@ const fn slug_bytes_equal(a: &[u8], b: &[u8]) -> bool {
     true
 }
 
-/// The index of `slug` within `slugs`, or `None` when it is absent.
-const fn slug_index(slug: &str, slugs: &[&str]) -> Option<usize> {
+/// The registry index of `slug`, or `None` when it is absent.
+const fn slug_index(slug: &str) -> Option<usize> {
     let mut i = 0;
-    while i < slugs.len() {
-        if slug_bytes_equal(slugs[i].as_bytes(), slug.as_bytes()) {
+    while i < KNOWN_IDS.len() {
+        if slug_bytes_equal(KNOWN_IDS[i].as_str().as_bytes(), slug.as_bytes()) {
             return Some(i);
         }
         i += 1;
@@ -225,12 +219,7 @@ const fn slug_index(slug: &str, slugs: &[&str]) -> Option<usize> {
 /// `RuleId::from_str`, the `[tool.prose.rules.<slug>]` section name,
 /// the `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
 ///
-/// Row order is pipeline order, reading as content rewrites, docstring
-/// reshaping, import sectioning, layout, order and position, the
-/// alignment run, then the lints. Those bands are a reading aid,
-/// whereas the bracketed dependency list is the contract, naming for
-/// each rule the earlier rules whose width, member order, or statement
-/// position it measures against.
+/// Row order is pipeline order.
 ///
 /// The macro asserts each slug's kebab shape and cross-row uniqueness
 /// at compile time, holds every dependency to a rule seated earlier,
@@ -243,18 +232,12 @@ macro_rules! register_rules {
             $(RuleId($slug)),*
         ];
 
-        /// Every registered slug in pipeline order, the sequence the
-        /// dependency assertions and [`PIPELINE_DEPENDENCIES`] index into.
-        pub(crate) const SLUGS: &[&str] = &[$($slug),*];
-
-        /// Each rule paired with the rules it reads the output of, the
-        /// edges the compile-time assertion below holds the table to.
-        pub(crate) const PIPELINE_DEPENDENCIES: &[(&str, &[&str])] =
-            &[$(($slug, &[$($after),*])),*];
+        /// Each rule's dependency slugs, indexed alongside [`KNOWN_IDS`].
+        const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
 
         // Asserts each declared dependency names a rule seated earlier.
         $($(const _: () = assert!(
-            precedes($after, $slug, SLUGS),
+            precedes($after, $slug),
             concat!("`", $after, "` must be registered before `", $slug, "`"),
         );)*)*
 
@@ -307,13 +290,15 @@ macro_rules! register_rules {
 
         // Asserts cross-row slug uniqueness at compile time.
         const _: () = {
-            const SLUGS: &[&str] = &[$($slug),*];
             let mut i = 0;
-            while i < SLUGS.len() {
+            while i < KNOWN_IDS.len() {
                 let mut j = i + 1;
-                while j < SLUGS.len() {
+                while j < KNOWN_IDS.len() {
                     assert!(
-                        !slug_bytes_equal(SLUGS[i].as_bytes(), SLUGS[j].as_bytes()),
+                        !slug_bytes_equal(
+                            KNOWN_IDS[i].as_str().as_bytes(),
+                            KNOWN_IDS[j].as_str().as_bytes(),
+                        ),
                         "duplicate rule slug in register_rules!",
                     );
                     j += 1;
@@ -396,14 +381,14 @@ register_rules! {
     "align-match-case":          align_match_case:          AlignmentConfig           => AlignMatchCase          => [] => "align match-case colons",
     "alphabetize":               alphabetize:               AlphabetizeConfig         => Alphabetize             => ["collection-layout", "call-layout", "signature-layout"] => "alphabetize this group",
     "band-constants":            band_constants:            BandConstantsConfig       => BandConstants           => ["alphabetize"] => "band module constants into leading and trailing bands",
-    "blank-lines":               blank_lines:               ToggleOnly                => BlankLines              => ["alphabetize"] => "normalize blank-line spacing",
+    "blank-lines":               blank_lines:               ToggleOnly                => BlankLines              => ["group-imports", "alphabetize"] => "normalize blank-line spacing",
     "import-layout":             import_layout:             ToggleOnly                => ImportLayout            => ["alphabetize"] => "split an over-long `from` import into repeated-prefix lines",
-    "align-imports":             align_imports:             AlignmentConfig           => AlignImports            => ["import-layout"] => "align consecutive `import`s",
+    "align-imports":             align_imports:             AlignmentConfig           => AlignImports            => ["alphabetize", "blank-lines", "import-layout"] => "align consecutive `import`s",
     "align-colons":              align_colons:              AlignmentConfig           => AlignColons             => [] => "align consecutive `:` separators",
-    "docstring-wrap":            docstring_wrap:            ToggleOnly                => DocstringWrap           => ["docstring-frame", "align-colons"] => "wrap docstring prose to the configured budget",
+    "docstring-wrap":            docstring_wrap:            ToggleOnly                => DocstringWrap           => ["docstring-frame", "docstring-expand", "align-colons"] => "wrap docstring prose to the configured budget",
     "align-equals":              align_equals:              AlignmentConfig           => AlignEquals             => ["collection-layout", "alphabetize", "align-colons"] => "align consecutive `=` operators",
     "align-comparisons":         align_comparisons:         AlignmentConfig           => AlignComparisons        => [] => "align consecutive comparison operators",
-    "strip-align-padding":       strip_align_padding:       ToggleOnly                => StripAlignPadding       => ["align-imports", "align-colons", "align-equals", "align-comparisons"] => "drop padding that lines up with nothing",
+    "strip-align-padding":       strip_align_padding:       ToggleOnly                => StripAlignPadding       => ["align-match-case", "align-imports", "align-colons", "align-equals", "align-comparisons"] => "drop padding that lines up with nothing",
     "bare-imports":              bare_imports:              BareImportsConfig         => BareImports             => [] => "Flag a bare import a `from` import could replace",
     "miscased-constants":        miscased_constants:        MiscasedConstantsConfig   => MiscasedConstants       => [] => "Module constant is not SCREAMING_CASE. Rename it to the SCREAMING_CASE form",
     "reassigned-constants":      reassigned_constants:      ReassignedConstantsConfig => ReassignedConstants     => [] => "SCREAMING_CASE name is reassigned despite its constant casing. Rename it lowercase or keep it write-once",
@@ -421,23 +406,19 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn dependencies_of_names_every_rule_seated_earlier() {
-        let deps = dependencies_of("align-equals");
-        assert!(!deps.is_empty(), "align-equals declares predecessors");
-        for dep in deps {
-            assert!(
-                precedes(dep, "align-equals", SLUGS),
-                "`{dep}` should be registered before `align-equals`",
-            );
-        }
-    }
-
     #[rstest]
     fn dependencies_of_returns_empty_for_a_rule_without_predecessors(
         #[values("unused-future-annotations", "collection-layout", "not-a-rule")] slug: &str,
     ) {
         assert!(dependencies_of(slug).is_empty());
+    }
+
+    #[test]
+    fn dependencies_of_returns_the_declared_predecessors() {
+        assert_eq!(
+            dependencies_of("align-equals"),
+            ["collection-layout", "alphabetize", "align-colons"],
+        );
     }
 
     #[rstest]
@@ -454,6 +435,19 @@ mod tests {
         assert!(!is_valid_slug(invalid.as_bytes()));
     }
 
+    #[rstest]
+    #[case("collection-layout", "align-equals", true)]
+    #[case("align-equals", "collection-layout", false)]
+    #[case("align-equals", "not-a-rule", false)]
+    #[case("not-a-rule", "align-equals", false)]
+    fn precedes_orders_registered_slugs(
+        #[case] earlier: &str,
+        #[case] later: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(precedes(earlier, later), expected);
+    }
+
     #[test]
     fn rule_id_display_and_debug_print_bare_slug() {
         let id = RuleId("align-equals");
@@ -461,20 +455,14 @@ mod tests {
         assert_eq!(format!("{id:?}"), "align-equals");
     }
 
-    #[test]
-    fn rule_id_from_str_rejects_prose_prefixed_slug() {
-        let err = "PROSE-align-equals"
+    #[rstest]
+    fn rule_id_from_str_rejects_an_unregistered_slug(
+        #[values("not-a-rule", "PROSE-align-equals")] input: &str,
+    ) {
+        let err = input
             .parse::<RuleId>()
-            .expect_err("prefixed form is not the canonical");
-        assert_eq!(err.0, "PROSE-align-equals");
-    }
-
-    #[test]
-    fn rule_id_from_str_rejects_unknown_slug() {
-        let err = "not-a-rule"
-            .parse::<RuleId>()
-            .expect_err("unknown rejected");
-        assert_eq!(err.0, "not-a-rule");
+            .expect_err("unregistered slug is rejected");
+        assert_eq!(err.0, input);
     }
 
     #[test]

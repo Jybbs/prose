@@ -18,7 +18,7 @@ use crate::{
     config::Config,
     primitives::{
         comments::{is_banner_block, leading_comment_block},
-        edit::singleton_groups,
+        edit::{repeat_edit, singleton_groups},
         scope::{BodyScope, scoped_body},
     },
     rule::{Rule, RuleId},
@@ -74,26 +74,24 @@ struct Walker<'a> {
 
 impl Walker<'_> {
     /// Places `target_newlines` line breaks immediately above
-    /// `line_start`. Emits a replacement edit when the actual count
-    /// differs. Preserves any indent that sits on `line_start`'s line.
+    /// `line_start`, emitting an edit when the actual count differs.
+    /// Preserves any indent that sits on `line_start`'s line.
     fn normalize_above(&mut self, line_start: TextSize, target_newlines: u32) {
         let text = self.source.text();
         if lines_before(line_start, text) == target_newlines {
             return;
         }
-        let span_start = whitespace_start_before(text, line_start);
-        let span = TextRange::new(span_start, line_start);
-        let replacement = self.source.newline_str().repeat(target_newlines as usize);
-        self.edits.push(if replacement.is_empty() {
-            Edit::range_deletion(span)
-        } else {
-            Edit::range_replacement(replacement, span)
-        });
+        let span = TextRange::new(whitespace_start_before(text, line_start), line_start);
+        self.edits.push(repeat_edit(
+            span,
+            self.source.newline_str(),
+            target_newlines as usize,
+        ));
     }
 
     /// Places `target_newlines` line breaks between `block_end` and
-    /// `curr_line_start`. Emits a replacement edit when the actual
-    /// count differs.
+    /// `curr_line_start`, emitting an edit when the actual count
+    /// differs.
     fn normalize_below_block(
         &mut self,
         block_end: TextSize,
@@ -103,15 +101,15 @@ impl Walker<'_> {
         if lines_after(block_end, self.source.text()) == target_newlines {
             return;
         }
-        self.edits.push(Edit::range_replacement(
-            self.source.newline_str().repeat(target_newlines as usize),
+        self.edits.push(repeat_edit(
             TextRange::new(block_end, curr_line_start),
+            self.source.newline_str(),
+            target_newlines as usize,
         ));
     }
 
-    /// Clears the blank run opening the module, measured above the first
-    /// statement or above the comment block leading it, so a file starts
-    /// on content.
+    /// Clears the blank run above the module's first statement, or
+    /// above the comment block leading it.
     fn normalize_module_head(&mut self, body: &[Stmt]) {
         let Some(first) = body.first() else {
             return;
@@ -124,12 +122,7 @@ impl Walker<'_> {
     fn pair_in_scope(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
         if let Some(first) = body.first() {
             let prev_end = header_signature_end(self.source, first.start());
-            // A single-line suite opens its body on the header line, leaving no
-            // own-line gap above it to normalize. Pairing it would collide with
-            // the sibling pair over the gap above the header's own line.
-            if !self.source.same_line(prev_end, first.start()) {
-                self.pair_with_end(header, prev_end, first, scope);
-            }
+            self.pair_with_end(header, prev_end, first, scope);
         }
         self.pair_siblings(body, scope);
     }
@@ -141,9 +134,8 @@ impl Walker<'_> {
     }
 
     fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
-        // A `;`-joined pair shares one line, leaving no own-line gap to
-        // normalize. Normalizing anyway targets the line both statements
-        // open, prepending the gap above the pair rather than between them.
+        // A `;`-joined pair or a single-line suite shares one physical
+        // line, leaving no own-line gap to normalize.
         if self.source.same_line(prev_end, curr.start())
             || self
                 .source
