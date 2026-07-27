@@ -99,9 +99,11 @@ impl<'a> LeafCollector<'a> {
     /// already applied. The insert keeps `edits` sorted by start.
     fn fold_into(&mut self, span: TextRange, text: String) {
         self.edits.retain(|e| !span.contains_range(e.range()));
-        insert_sorted_by_key(&mut self.edits, Edit::range_replacement(text, span), |e| {
-            e.start()
-        });
+        insert_sorted_by_key(
+            &mut self.edits,
+            Edit::range_replacement(text, span),
+            Ranged::start,
+        );
     }
 
     fn try_emit_inline_reorder<T, S>(
@@ -180,7 +182,7 @@ pub(super) fn collect_docstring_entry_edits(
     param_docs: &HashMap<TextSize, Vec<&str>>,
 ) -> Vec<Edit> {
     rewrite_docstrings(source, |source, lit, edits| {
-        let signature = param_docs.get(&lit.start());
+        let signature = param_docs.get(&lit.start()).map(Vec::as_slice);
         for entries in entry_carrying_sections(source, lit) {
             let (cow, span) = reorder_text(
                 source,
@@ -224,7 +226,7 @@ pub(super) fn collect_leaf_edits(
 /// Composite docstring-entry sort key. An entry naming a signature
 /// parameter takes that parameter's position, and any other entry
 /// sinks below the signature's, alphabetized by name.
-fn entry_key<'e>(name: &'e str, signature: Option<&Vec<&str>>) -> (usize, &'e str) {
+fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) {
     match signature.and_then(|names| names.iter().position(|&n| n == name)) {
         Some(i) => (i, ""),
         None => (usize::MAX, name),
@@ -392,6 +394,15 @@ mod tests {
         let source = parse(src);
         let (edits, _) = collect_leaf_edits(&source, true, true);
         assert_eq!(applied_text(&source, edits), expected);
+    }
+
+    #[rstest]
+    fn collect_leaf_edits_skips_a_dunder_list_bound_to_a_non_sequence(
+        #[values("__all__ = get_names()\n", "__slots__ = BASE_SLOTS\n")] src: &str,
+    ) {
+        let source = parse(src);
+        let (edits, _) = collect_leaf_edits(&source, true, true);
+        assert!(edits.is_empty());
     }
 
     #[test]

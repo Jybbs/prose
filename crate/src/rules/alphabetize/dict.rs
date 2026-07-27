@@ -69,7 +69,7 @@ pub(super) fn rewrite_dict_text(
         |item| dict_sort_key(source, item),
     );
     let assembled = if multi_line {
-        let divider_slots = partition_divider_slots(source, &order, &d.items);
+        let divider_slots = partition_divider_slots(source, &order, &d.items, &item_ranges);
         let source_last_has_comma = source.trailing_comma(d.range()).is_some();
         let value_ends: Vec<TextSize> = item_ranges.iter().map(Ranged::end).collect();
         assemble_separated(
@@ -114,16 +114,22 @@ fn item_value_end(source: &Source, dict: &ExprDict, item: &DictItem) -> TextSize
 }
 
 /// Returns the new-order slot indices after which a blank-line divider
-/// should sit, one on either side of each keyed multi-line entry. A dict
-/// with fewer than two such entries yields none, leaving a lone multi-line
-/// entry to sit against its neighbors rather than behind a divider.
-fn partition_divider_slots(source: &Source, order: &[usize], items: &[DictItem]) -> Vec<usize> {
-    let is_multiline =
-        |i: usize| items[i].key.is_some() && source.contains_line_break(items[i].range());
-    if order.iter().filter(|&&i| is_multiline(i)).nth(1).is_none() {
+/// should sit, one on either side of each keyed entry whose block spans
+/// lines. A dict with fewer than two such entries yields none, leaving a
+/// lone block entry to sit against its neighbors rather than behind a
+/// divider.
+fn partition_divider_slots(
+    source: &Source,
+    order: &[usize],
+    items: &[DictItem],
+    item_ranges: &[TextRange],
+) -> Vec<usize> {
+    let spans_lines =
+        |i: usize| items[i].key.is_some() && source.contains_line_break(item_ranges[i]);
+    if order.iter().filter(|&&i| spans_lines(i)).nth(1).is_none() {
         return Vec::new();
     }
-    adjacent_slots(order, |_, a, b| is_multiline(a) || is_multiline(b))
+    adjacent_slots(order, |_, a, b| spans_lines(a) || spans_lines(b))
 }
 
 #[cfg(test)]

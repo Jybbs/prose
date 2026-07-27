@@ -1,0 +1,21 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize/dict_multiline_scalars_take_dividers/input.py
+---
+notice = {
+    "alpha": "a",
+
+    "bravo": (
+        "first part "
+        "second part"
+    ),
+
+    "charlie": (
+        "third part "
+        "fourth part"
+    ),
+
+    "delta" : "d",
+    "echo"  : "e",
+}

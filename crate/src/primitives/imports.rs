@@ -109,13 +109,15 @@ pub(crate) fn import_sort_key<'a>(
 /// The unit `group-imports` partitions and `alphabetize` sorts, one run
 /// at a time within each section.
 pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<Range<usize>> {
-    let mut runs = Vec::new();
-    for section in sections.ranges() {
-        for run in runs_where(&body[section.clone()], is_import) {
-            runs.push(section.start + run.start..section.start + run.end);
-        }
-    }
-    runs
+    sections
+        .ranges()
+        .iter()
+        .flat_map(|section| {
+            runs_where(&body[section.clone()], is_import)
+                .into_iter()
+                .map(move |run| section.start + run.start..section.start + run.end)
+        })
+        .collect()
 }
 
 /// True when the root package of `name` (the substring up to the
