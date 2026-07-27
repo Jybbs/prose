@@ -4,4 +4,3 @@ expression: render(&diagnostics)
 input_file: crate/tests/fixtures/call_layout/chained_receiver_explodes/input.py
 ---
 call-layout@39..51
-call-layout@59..60

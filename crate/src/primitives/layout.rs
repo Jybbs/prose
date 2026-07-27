@@ -3,24 +3,20 @@
 use std::borrow::Cow;
 
 use ruff_python_ast::Expr;
-use ruff_python_trivia::{
-    leading_indentation,
-    textwrap::{dedent, indent},
-};
+use ruff_python_trivia::textwrap::{dedent, indent};
 
-use crate::primitives::INDENT_STEP;
+use crate::primitives::{INDENT_STEP, inline::indent_width};
 
 /// Builds the one-per-line expansion `(\n<prefix>item,\n…\n<indent>)`
 /// for `count` items at `indent`. `render` writes item `i` into the
-/// buffer and `comma` decides whether item `i` carries a trailing
-/// comma. Items sit one `INDENT_STEP` past `indent`, the closing `)`
-/// at `indent`.
+/// buffer, and `trailing` adds a comma after the last item. Items sit
+/// one `INDENT_STEP` past `indent`, the closing `)` at `indent`.
 pub(crate) fn explode_parens(
     newline: &str,
     indent: usize,
     count: usize,
     mut render: impl FnMut(&mut String, usize),
-    comma: impl Fn(usize) -> bool,
+    trailing: bool,
 ) -> String {
     let prefix = " ".repeat(indent + INDENT_STEP);
     let mut out = String::from("(");
@@ -28,12 +24,12 @@ pub(crate) fn explode_parens(
         out.push_str(newline);
         out.push_str(&prefix);
         render(&mut out, i);
-        if comma(i) {
+        if trailing || i + 1 < count {
             out.push(',');
         }
     }
     out.push_str(newline);
-    out.extend(std::iter::repeat_n(' ', indent));
+    out.push_str(&prefix[..indent]);
     out.push(')');
     out
 }
@@ -82,9 +78,7 @@ pub(crate) fn reindent_shift(block: &str, to: usize) -> isize {
 
 /// The indent width of `block`'s last line.
 fn closing_indent(block: &str) -> usize {
-    leading_indentation(block.rsplit_once('\n').map_or(block, |(_, last)| last))
-        .chars()
-        .count()
+    indent_width(block.rsplit_once('\n').map_or(block, |(_, last)| last))
 }
 
 #[cfg(test)]

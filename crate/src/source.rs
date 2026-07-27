@@ -9,8 +9,7 @@ use ruff_python_ast::{
 };
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
 use ruff_python_trivia::{
-    BackwardsTokenizer, CommentRanges, SimpleToken, SimpleTokenKind, leading_indentation,
-    lines_before,
+    BackwardsTokenizer, CommentRanges, SimpleToken, SimpleTokenKind, lines_before,
 };
 use ruff_source_file::{
     LineColumn, LineEnding, LineRanges, OneIndexed, PositionEncoding, SourceFile,
@@ -18,9 +17,10 @@ use ruff_source_file::{
 };
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 use thiserror::Error;
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    primitives::{binding::BindingAnalysis, range::paren_aware_range},
+    primitives::{binding::BindingAnalysis, inline::indent_width, range::paren_aware_range},
     suppression::SuppressionMap,
 };
 
@@ -255,12 +255,9 @@ impl Source {
 
     /// Returns the character-width of the leading-whitespace prefix on
     /// the line containing `offset`. Tabs and form-feeds count as one
-    /// character each. Recognizes Python's full whitespace set via
-    /// `ruff_python_trivia`.
+    /// character each.
     pub fn line_indent_width(&self, offset: TextSize) -> usize {
-        leading_indentation(self.text().line_str(offset))
-            .chars()
-            .count()
+        indent_width(self.text().line_str(offset))
     }
 
     /// Returns the one-indexed line number for `offset`.
@@ -360,6 +357,11 @@ impl Source {
         self.prev_non_trivia_token(container.end() - TextSize::from(1u32))
             .filter(|token| token.kind() == SimpleTokenKind::Comma)
             .map(|token| token.range)
+    }
+
+    /// Returns the display width of the source text between `a` and `b`.
+    pub(crate) fn width_between(&self, a: TextSize, b: TextSize) -> usize {
+        self.slice(TextRange::new(a, b)).width()
     }
 }
 

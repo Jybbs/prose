@@ -10,9 +10,7 @@
 //!
 //! Both fit checks stay invariant to the later alignment: a dict entry
 //! measures at its canonical `": "`, and a collapse tests against the
-//! column `align_equals` shifts the value's `=` to.
-
-use std::collections::HashMap;
+//! column `align_equals` shifts the value to.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{helpers::any_over_body, visitor::Visitor};
@@ -74,9 +72,7 @@ impl Rule for CollectionLayout {
             });
             ranges
         });
-        let reservations = self.align_equals.map_or_else(HashMap::new, |settings| {
-            reserved_columns(source, settings, AlignEquals::SLUG)
-        });
+        let reservations = reserved_columns(source, self.align_equals, AlignEquals::SLUG);
         let mut visitor = Layouter {
             code_line_length: self.code_line_length,
             collapse: self.collapse,

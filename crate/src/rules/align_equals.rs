@@ -154,7 +154,7 @@ impl Visitor<'_> {
         let source = self.walker.source;
         group
             .iter()
-            .filter(|m| !source.contains_line_break(m.value_gap))
+            .filter(|m| m.value_on_operator_line(source))
             .map(|m| m.value_gap)
             .collect()
     }

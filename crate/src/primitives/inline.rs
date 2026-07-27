@@ -1,11 +1,12 @@
 //! The single-line form of a leaf expression, collapsing a soft-wrapped
 //! operator-atom tree onto one line and declining a leaf whose join
-//! would respace a token, plus the column measures a rendered form
-//! answers the budget with.
+//! would respace a token, plus the column measures a rendered form or a
+//! source line answers the budget with.
 
 use std::borrow::Cow;
 
 use ruff_python_ast::{Expr, helpers::is_dotted_name};
+use ruff_python_trivia::leading_indentation;
 use unicode_width::UnicodeWidthStr;
 
 /// The column `text` ends at when its opening line starts at `indent`,
@@ -15,9 +16,15 @@ pub(crate) fn end_column(text: &str, indent: usize) -> usize {
         .map_or_else(|| indent + text.width(), |(_, last)| last.width())
 }
 
+/// The character width of `line`'s leading indentation. Tabs and
+/// form-feeds count as one character each.
+pub(crate) fn indent_width(line: &str) -> usize {
+    leading_indentation(line).chars().count()
+}
+
 /// The display width of `text`'s opening line.
 pub(crate) fn opening_width(text: &str) -> usize {
-    text.lines().next().unwrap_or(text).width()
+    text.lines().next().unwrap_or_default().width()
 }
 
 /// `expr`'s single-line form when collapsing it respaces no token: the
@@ -113,6 +120,19 @@ mod tests {
         #[case] expected: usize,
     ) {
         assert_eq!(end_column(text, indent), expected);
+    }
+
+    #[rstest]
+    #[case("", 0)]
+    #[case("value", 0)]
+    #[case("    value", 4)]
+    #[case("\t\tvalue", 2)]
+    #[case("\x0c value", 2)]
+    fn indent_width_counts_each_whitespace_character_once(
+        #[case] line: &str,
+        #[case] expected: usize,
+    ) {
+        assert_eq!(indent_width(line), expected);
     }
 
     #[rstest]

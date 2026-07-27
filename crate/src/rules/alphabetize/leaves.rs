@@ -103,9 +103,11 @@ impl<'a> LeafCollector<'a> {
             return;
         };
         self.edits.retain(|e| !span.contains_range(e.range()));
-        insert_sorted_by_key(&mut self.edits, Edit::range_replacement(text, span), |e| {
-            e.start()
-        });
+        insert_sorted_by_key(
+            &mut self.edits,
+            Edit::range_replacement(text, span),
+            Edit::start,
+        );
     }
 
     fn try_emit_inline_reorder<T, S>(

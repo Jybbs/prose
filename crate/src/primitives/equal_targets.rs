@@ -2,8 +2,8 @@
 //! single-target assignments, augmented assignments, initialized
 //! annotated assignments, exploded-call keyword arguments, and
 //! annotated parameter defaults. `align_equals` consumes them to emit
-//! alignment edits, and `collection_layout` consumes them to reserve
-//! the column `align_equals` shifts a value to.
+//! alignment edits, and the `reserve` primitive consumes them to predict
+//! the column `align_equals` shifts a value to for both layout rules.
 
 use ruff_python_ast::{
     AnyNodeRef, AnyParameterRef, ArgOrKeyword, ExprCall, ExprRef, Stmt, token::TokenKind,
@@ -39,6 +39,13 @@ impl EqualMember {
         } else {
             aligner::Slot::Member(self)
         }
+    }
+
+    /// True when the value shares its operator's line, the row an
+    /// aligned run closes the value gap for. A value on a later line
+    /// keeps its source placement.
+    pub(crate) fn value_on_operator_line(self, source: &Source) -> bool {
+        !source.contains_line_break(self.value_gap)
     }
 
     /// The value's parenthesis-aware start, where the `=`-side gap closes.

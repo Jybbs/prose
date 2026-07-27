@@ -32,13 +32,16 @@ struct ReserveVisitor<'a> {
 impl ReserveVisitor<'_> {
     /// Records each member's aligned value column. The value follows the
     /// operator's column by the operator's final character and the
-    /// one-space value gap.
+    /// one-space value gap. A member whose value opens on a later line
+    /// records nothing.
     fn record(&mut self, groups: Vec<Vec<EqualMember>>) {
         for group in groups {
             let members: Vec<aligner::Member> = group.iter().map(|m| m.member).collect();
             let columns = aligner::operator_columns(self.source, &members, self.settings);
             for (member, column) in group.iter().zip(columns) {
-                self.columns.insert(member.value_start(), column + 2);
+                if member.value_on_operator_line(self.source) {
+                    self.columns.insert(member.value_start(), column + 2);
+                }
             }
         }
     }
@@ -72,12 +75,16 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
 /// Maps each aligned value's start offset to the display column it lands
 /// at once `rule`'s run is aligned. A value the run leaves at its current
 /// column maps to that same column, so a lookup is a no-op for a value
-/// the alignment does not move.
+/// the alignment does not move. Passing `None` for `settings` yields an
+/// empty map.
 pub(crate) fn reserved_columns(
     source: &Source,
-    settings: aligner::Settings,
+    settings: Option<aligner::Settings>,
     rule: RuleId,
 ) -> HashMap<TextSize, usize> {
+    let Some(settings) = settings else {
+        return HashMap::new();
+    };
     let mut visitor = ReserveVisitor {
         columns: HashMap::new(),
         rule,
