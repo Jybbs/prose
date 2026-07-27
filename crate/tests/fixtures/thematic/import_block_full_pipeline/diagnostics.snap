@@ -1,13 +1,13 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/thematic/import_block_full_pipeline/input.py
+input_file: crate/tests/fixtures/thematic/import_block_full_pipeline/input.py
 ---
 align-imports@125..126
-alphabetize@0..160
-band-constants@0..160
+alphabetize@43..160
+band-constants@43..160
 blank-lines@160..161
-group-imports@0..160
+group-imports@35..160
 signature-annotations@165..171
 signature-annotations@172..176
 unused-future-annotations@0..35

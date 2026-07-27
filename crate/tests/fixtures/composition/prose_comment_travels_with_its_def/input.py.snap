@@ -1,0 +1,22 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/prose_comment_travels_with_its_def/input.py
+---
+ONE_SIXTH = 1.0 / 6.0
+ONE_THIRD = 1.0 / 3.0
+
+
+def hls_to_rgb(h):
+    return h
+
+
+# coefficients the converters rely on
+# drawn from the FCC reference
+
+def rgb_to_yiq(r):
+    return r
+
+
+def yiq_to_rgb(y):
+    return y

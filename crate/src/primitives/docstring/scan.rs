@@ -5,11 +5,11 @@ use ruff_python_trivia::{PythonWhitespace, leading_indentation};
 
 use crate::primitives::INDENT_STEP;
 
-/// The classification of a docstring body line. Every variant but
-/// `Body` is terminal for the line, with `Body` handed to the
-/// walker's own dispatch. `VerbatimOpen` either stands alone for its
-/// line or opens a region running to the next blank, and `Verbatim`
-/// carries a line inside an open region.
+/// The classification of a docstring body line by [`LineScanner`].
+/// Every variant but `Body` is terminal for the line, with `Body`
+/// handed to the walker's own dispatch. `VerbatimOpen` either stands
+/// alone for its line or opens a region running to the next blank,
+/// and `Verbatim` carries a line inside an open region.
 #[derive(Debug)]
 pub(crate) enum LineScan {
     Blank,
@@ -22,11 +22,12 @@ pub(crate) enum LineScan {
     VerbatimOpen,
 }
 
-/// The fence, list, and verbatim-block state a docstring walker
-/// carries across lines. [`LineScanner::scan_line`] advances the state
-/// per line and returns its [`ScannedLine`], leaving each walker to
-/// dispatch its own effect.
+/// The scan state a docstring walker carries across a body's lines.
+/// [`LineScanner::scan_line`] advances the state per line and returns
+/// its [`ScannedLine`], leaving each walker to dispatch its own
+/// effect.
 pub(crate) struct LineScanner {
+    at_block_start: bool,
     body_indent_chars: usize,
     in_block: bool,
     in_fence: bool,
@@ -36,6 +37,7 @@ pub(crate) struct LineScanner {
 impl LineScanner {
     pub(crate) fn new(body_indent_chars: usize) -> Self {
         Self {
+            at_block_start: true,
             body_indent_chars,
             in_block: false,
             in_fence: false,
@@ -44,6 +46,7 @@ impl LineScanner {
     }
 
     fn classify(&mut self, trimmed: &str, indent_chars: usize) -> LineScan {
+        let at_block_start = std::mem::replace(&mut self.at_block_start, trimmed.is_empty());
         if trimmed.starts_with("```") {
             self.in_fence = !self.in_fence;
             self.list_indent = None;
@@ -60,12 +63,10 @@ impl LineScanner {
             self.list_indent = None;
             return LineScan::Blank;
         }
-        if let Some(marker) = self.list_indent {
-            if indent_chars > marker {
-                return LineScan::ListContinuation;
-            }
-            self.list_indent = None;
+        if self.list_indent.is_some_and(|marker| indent_chars > marker) {
+            return LineScan::ListContinuation;
         }
+        self.list_indent = None;
         if indent_chars >= self.body_indent_chars {
             if is_list_marker(trimmed) {
                 self.list_indent = Some(indent_chars);
@@ -77,7 +78,7 @@ impl LineScanner {
             if is_comment_marker(trimmed)
                 || is_directive(trimmed)
                 || is_doctest_prompt(trimmed)
-                || is_field_marker(trimmed)
+                || (at_block_start && is_field_marker(trimmed))
                 || is_simple_table_rule(trimmed)
             {
                 self.in_block = true;
@@ -122,12 +123,15 @@ pub(crate) struct ScannedLine<'a> {
 }
 
 /// True when `trimmed` is a delimited head, an `open` prefix then a
-/// non-empty name run then a `close` delimiter.
+/// non-empty name run then a `close` delimiter that ends the line or
+/// carries whitespace after it.
 fn head_delimited(trimmed: &str, open: &str, close: &str) -> bool {
     trimmed
         .strip_prefix(open)
         .and_then(|rest| rest.split_once(close))
-        .is_some_and(|(name, _)| !name.is_empty())
+        .is_some_and(|(name, body)| {
+            !name.is_empty() && (body.is_empty() || body.starts_with(char::is_whitespace))
+        })
 }
 
 /// True when `trimmed` opens a comment-led code example, the `# `
@@ -149,7 +153,8 @@ fn is_doctest_prompt(trimmed: &str) -> bool {
 }
 
 /// True when `trimmed` is a reStructuredText field-list head, an
-/// opening `:` then a non-colon name run then a closing `:`.
+/// opening `:` then a name then a closing `:`. An interpreted-text
+/// role closes on a backtick, so a line opening with one is prose.
 fn is_field_marker(trimmed: &str) -> bool {
     head_delimited(trimmed, ":", ":")
 }
@@ -204,6 +209,26 @@ mod tests {
 
     use super::*;
 
+    #[test]
+    fn classify_opens_field_list_only_at_block_boundary() {
+        let mut scanner = LineScanner::new(0);
+        assert_matches!(
+            scanner.classify(":param x: the input", 0),
+            LineScan::VerbatimOpen
+        );
+        assert_matches!(scanner.classify("", 0), LineScan::Blank);
+        assert_matches!(
+            scanner.classify("Prose running to the marker.", 0),
+            LineScan::Body
+        );
+        assert_matches!(scanner.classify(":param x: the input", 0), LineScan::Body);
+        assert_matches!(scanner.classify("", 0), LineScan::Blank);
+        assert_matches!(
+            scanner.classify(":param y: restored", 0),
+            LineScan::VerbatimOpen
+        );
+    }
+
     #[rstest]
     fn classify_opens_no_block_for_grid_or_underline_lines(
         #[values("+---+---+", "----------")] opener: &str,
@@ -245,8 +270,10 @@ mod tests {
     fn is_directive_matches_dotdot_name_double_colon() {
         assert!(is_directive(".. versionadded:: 0.10"));
         assert!(is_directive(".. deprecated:: 1.0"));
+        assert!(is_directive(".. note::"));
         assert!(!is_directive(".. a plain comment"));
         assert!(!is_directive(".. :: no name"));
+        assert!(!is_directive(".. note::text"));
         assert!(!is_directive("..versionadded:: 0.10"));
     }
 
@@ -263,9 +290,23 @@ mod tests {
         assert!(is_field_marker(":codeauthor: name"));
         assert!(is_field_marker(":maturity:   new"));
         assert!(is_field_marker(":param x: the input"));
+        assert!(is_field_marker(":platform:"));
         assert!(!is_field_marker("::"));
         assert!(!is_field_marker(":no closing colon"));
         assert!(!is_field_marker("name: value"));
+    }
+
+    #[rstest]
+    fn is_field_marker_rejects_interpreted_text_role(
+        #[values(
+            ":class:`~ensemble.VotingClassifier`",
+            ":class:`~ensemble.VotingClassifier` averages the probabilities",
+            ":math:`x^2` opens the line",
+            ":ref:`section-label`"
+        )]
+        role: &str,
+    ) {
+        assert!(!is_field_marker(role));
     }
 
     #[test]

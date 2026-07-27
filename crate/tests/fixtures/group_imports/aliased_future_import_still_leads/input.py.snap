@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/group_imports/aliased_future_import_still_leads/input.py
+---
+from __future__ import annotations as _annotations
+import os
+from collections import Counter
