@@ -4,10 +4,10 @@
 //! [`DocstringHandler`] receive every such literal in source order
 //! through the trait's `walk` method, and implicitly concatenated
 //! docstring expressions are skipped. `body_docstring` returns one
-//! body's leading docstring literal. The re-exported section helpers
-//! parse a body's Title-case-headed sections for consumers that walk
+//! body's leading docstring literal. The re-exported grammar helpers
+//! read a body's Title-case-headed sections for consumers that walk
 //! text rather than the AST, recognizing a section by content shape
-//! and reading a sibling entry only at the section body indent.
+//! and a sibling entry only at the section body indent.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -18,14 +18,14 @@ use ruff_python_ast::{
 use crate::{primitives::scope::scoped_body, source::Source};
 
 mod body;
+mod grammar;
 mod scan;
 mod section;
 
 pub(crate) use body::{DocstringBody, docstring_body, indent_prefix, triple_quoted_body};
+pub(crate) use grammar::{section_heading, sibling_entry_head};
 pub(crate) use scan::{LineScan, LineScanner, ScannedLine};
-pub(crate) use section::{
-    entry_carrying_sections, section_heading, sibling_entry_head, unbracketed_colon,
-};
+pub(crate) use section::entry_carrying_sections;
 
 /// Receiver for the docstring walker. Implementors handle each
 /// docstring `StringLiteral` reached in source order. Call `walk`

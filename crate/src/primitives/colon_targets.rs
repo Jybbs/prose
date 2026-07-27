@@ -13,14 +13,12 @@ use ruff_python_ast::{
     token::TokenKind,
     visitor::{Visitor as AstVisitor, walk_body, walk_expr, walk_parameters, walk_stmt},
 };
-use ruff_python_trivia::PythonWhitespace;
-use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     primitives::{
         aligner,
-        docstring::{body_docstring, entry_carrying_sections, unbracketed_colon},
+        docstring::{body_docstring, entry_carrying_sections},
         scope::scoped_body,
     },
     rule::RuleId,
@@ -250,18 +248,7 @@ fn docstring_sections(source: &Source, body: &[Stmt]) -> Vec<Vec<ColonMember>> {
         .map(|section| {
             section
                 .iter()
-                .filter_map(|entry| {
-                    let head = source.slice(entry.range).universal_newlines().next()?;
-                    let stripped = head.trim_whitespace_start();
-                    let colon_rel = unbracketed_colon(stripped)?;
-                    let indent_len = head.len() - stripped.len();
-                    let colon_start =
-                        entry.range.start() + TextSize::of(&head[..indent_len + colon_rel]);
-                    Some(ColonMember::bare(aligner::line_anchored_member(
-                        source,
-                        colon_start,
-                    )))
-                })
+                .map(|entry| ColonMember::bare(aligner::line_anchored_member(source, entry.colon)))
                 .collect()
         })
         .collect()

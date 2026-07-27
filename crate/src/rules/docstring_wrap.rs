@@ -159,8 +159,8 @@ impl Walker<'_> {
         match self.region {
             Region::Description => self.buffer_description(indent, text),
             Region::Section => {
-                if let Some((_, desc_col)) = sibling_entry_head(indent_chars, prose_indent, text) {
-                    self.start_entry(indent, indent_chars, text, desc_col);
+                if let Some(head) = sibling_entry_head(indent_chars, prose_indent, text) {
+                    self.start_entry(indent, indent_chars, text, head.desc_col);
                     return;
                 }
                 self.emit_wrapped(indent, indent, text, self.rule.section_width);
