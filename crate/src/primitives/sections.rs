@@ -9,7 +9,10 @@ use std::ops::Range;
 use ruff_text_size::TextRange;
 
 use crate::{
-    primitives::comments::{is_banner_block, leading_comment_block},
+    primitives::{
+        comments::{is_banner_block, leading_comment_block},
+        orderer::slot_runs,
+    },
     source::Source,
 };
 
@@ -24,24 +27,15 @@ pub(crate) struct Sections {
 impl Sections {
     /// Partitions `blocks` into sections, splitting at each marker-bearing
     /// gap and between two members that sit in different notebook cells.
-    /// `blocks` must be in source order. A cell boundary abuts its
-    /// neighbors with no gap, the synthetic separator folding into the
-    /// preceding block, so the split reads the members' cells through
-    /// `cell_content_range` rather than the empty gap between blocks.
+    /// `blocks` must be in source order.
     pub(crate) fn of(source: &Source, blocks: &[TextRange]) -> Self {
-        let mut ranges = Vec::new();
-        let mut start = 0;
-        for i in 1..blocks.len() {
-            let crosses_cell = source.cell_content_range(blocks[i - 1].start())
-                != source.cell_content_range(blocks[i].start());
-            let gap = TextRange::new(blocks[i - 1].end(), blocks[i].start());
-            if crosses_cell || marker_in_gap(source, gap) {
-                ranges.push(start..i);
-                start = i;
-            }
+        Self {
+            ranges: slot_runs(blocks, |prev, next| {
+                source.same_cell(prev.start(), next.start())
+                    && !marker_in_gap(source, TextRange::new(prev.end(), next.start()))
+            })
+            .collect(),
         }
-        ranges.push(start..blocks.len());
-        Self { ranges }
     }
 
     /// True when `slot` opens a section past the first, the divider a

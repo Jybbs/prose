@@ -42,6 +42,11 @@ describe('ScopeSpecimen', () => {
     ])
   })
 
+  it('brackets the skipped statement across every line it spans', () => {
+    const lines = mount(ScopeSpecimen).findAll('.scope-specimen-line[data-scope="line"]')
+    expect(lines.map(l => l.attributes('data-bracket'))).toEqual(['open', 'mid', 'close', 'solo'])
+  })
+
   it('renders with no axe violations', async () => {
     await expectAccessible(mount(ScopeSpecimen).html())
   })

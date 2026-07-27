@@ -52,6 +52,7 @@ mod tests {
     use lsp_types::{DiagnosticSeverity, NumberOrString, Position};
 
     use super::*;
+    use crate::testing::BARE_IMPORT_LINT;
 
     #[test]
     fn diagnostics_are_empty_for_clean_source() {
@@ -66,7 +67,7 @@ mod tests {
     #[test]
     fn diagnostics_surface_a_lint_finding_as_a_warning() {
         let published = diagnostics(
-            "import os\n\nos.getcwd()\n",
+            BARE_IMPORT_LINT,
             PositionEncoding::Utf16,
             &Config::default(),
         );

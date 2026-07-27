@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_equals/skip_holds_a_wrapped_row/input.py
+---
+a = 1
+beta = {
+    "key": "value"
+}  # prose: skip[align-equals]
+gamma_wide = 3

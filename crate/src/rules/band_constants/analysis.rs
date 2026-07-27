@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 
 use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_python_stdlib::builtins::is_python_builtin;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::TextRange;
 
 use super::{
     BandConstants,
@@ -20,12 +20,11 @@ use crate::{
             bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
             is_screaming_case, single_name_assignment,
         },
-        comments::{has_keep_marker, is_banner_block, leading_comment_block},
+        comments::{anchors_in_place, has_keep_marker, leading_comment_block},
         effect::value_is_effectful,
         tiering::{eval_refs, eval_time_refs, tier_levels},
     },
     source::Source,
-    suppression::is_directive_comment,
 };
 
 /// A module-scope single-name assignment considered for hoisting,
@@ -56,8 +55,7 @@ impl<'src> ConstSite<'src> {
     }
 }
 
-/// Builds the module-scope hoist plan, ranking each statement and
-/// pairing each banded constant with the comment it carries. Returns
+/// Builds the module-scope hoist plan, ranking each statement. Returns
 /// `None` when a constant band's reference graph carries a cycle.
 pub(super) fn module_band_plan<'src>(
     source: &'src Source,
@@ -75,16 +73,12 @@ pub(super) fn module_band_plan<'src>(
     let mut dup_defs: HashSet<&'src str> = HashSet::new();
     let mut imports: HashSet<&'src str> = HashSet::new();
     let mut ranks: HashMap<usize, BandRank> = HashMap::new();
-    let mut carries: Vec<(usize, TextRange)> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
-        // A `# fmt: off` span or a `# prose: skip` line pins its
-        // statement, so a single-edit reorder never crosses a region the
-        // pipeline drops the whole edit for.
-        if suppression.intersects(stmt)
-            || suppression
-                .is_format_suppressed_at(source.line_index(stmt.start()), BandConstants::SLUG)
-        {
+        // A `# prose: off` span or a skip directive pins its statement, so
+        // a reorder never moves a member the pipeline would then drop the
+        // whole group for.
+        if suppression.suppresses(stmt, BandConstants::SLUG) {
             continue;
         }
         // The own-line comment in the gap above the statement, if any.
@@ -100,11 +94,9 @@ pub(super) fn module_band_plan<'src>(
         // instead forward-attaches a prose comment the way `blank-lines`
         // settles it, while a banner section divider or a suppression
         // directive pins the constant too, since neither may relocate.
-        if gap_comment.is_some_and(|block| {
-            const_target.is_none()
-                || is_banner_block(source, block)
-                || source.slice(block).lines().any(is_directive_comment)
-        }) {
+        if gap_comment
+            .is_some_and(|block| const_target.is_none() || anchors_in_place(source, block))
+        {
             continue;
         }
         match stmt {
@@ -131,9 +123,6 @@ pub(super) fn module_band_plan<'src>(
                         && has_keep_marker(source, dict)
                     {
                         continue;
-                    }
-                    if let Some(block) = gap_comment {
-                        carries.push((idx, block));
                     }
                     sites.push(ConstSite {
                         annot_refs: stmt
@@ -233,15 +222,7 @@ pub(super) fn module_band_plan<'src>(
             }
         }
     }
-    // A carried comment only travels when its constant bands, leaving an
-    // anchored constant's comment in its source gap.
-    carries.retain(|(idx, _)| ranks.contains_key(idx));
-    Some(BandPlan {
-        carries,
-        edges,
-        keys,
-        ranks,
-    })
+    Some(BandPlan { edges, keys, ranks })
 }
 
 /// The target name and value of a module constant candidate: an `Assign`
@@ -300,8 +281,8 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::primitives::{orderer::block_ranges, sections::Sections};
-    use crate::testing::{notebook, parse};
+    use crate::primitives::orderer::member_blocks;
+    use crate::testing::parse;
 
     /// `src` parsed as the sole statement below a module-level definition.
     fn below_a_definition(src: &str) -> Source {
@@ -310,7 +291,7 @@ mod tests {
 
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
-        let blocks = block_ranges(source, body, source.module_range());
+        let blocks = member_blocks(source, body, source.module_range());
         module_band_plan(source, body, &blocks, false, true, None)
     }
 
@@ -356,24 +337,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn module_band_plan_bands_across_a_constant_self_reference() {
-        let source = parse("def build():\n    return 1\n\n\ntype Node = Node | None\nLIMIT = 5\n");
-        let body = &source.ast().body;
-        let blocks = block_ranges(&source, body, source.module_range());
-        let sections = Sections::of(&source, &blocks);
-        let mut order: Vec<usize> = (0..body.len()).collect();
-        plan_of(&source)
-            .expect("acyclic module plans")
-            .apply(body, &sections, &[], true, None, &mut order)
-            .expect("a self-reference builds no edge, so the band stays sound");
-        assert_eq!(
-            order,
-            vec![1, 2, 0],
-            "the alias and the constant hoist above build"
-        );
-    }
-
     #[rstest]
     #[case("SCALE = 2 * 3")]
     #[case("LIMITS = [1, 2]")]
@@ -390,17 +353,6 @@ mod tests {
     }
 
     #[test]
-    fn module_band_plan_bands_an_inert_constant_in_a_notebook() {
-        let source = notebook(&["def helper():\n    return 1\nSEED = 42\n"]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
-        assert_eq!(
-            plan.ranks[&1],
-            BandRank::Leading,
-            "a literal is inert, so SEED bands even inside a cell"
-        );
-    }
-
-    #[test]
     fn module_band_plan_bands_leading_and_trailing_constants() {
         let source = parse("LEAD = 1\n\n\ndef make():\n    return 1\n\n\nTRAIL = make\n");
         let plan = plan_of(&source).expect("acyclic module plans");
@@ -413,22 +365,30 @@ mod tests {
         assert_eq!(plan.ranks[&2], BandRank::Trailing, "TRAIL names make");
     }
 
-    #[test]
-    fn module_band_plan_carries_a_prose_comment_into_the_band() {
-        let source = parse("def f():\n    pass\n\n# note\n\nX = 1\n");
+    #[rstest]
+    #[case("def f():\n    pass\n\n# note\nX = 1\n")]
+    #[case("def f():\n    pass\n\n# note\n\nX = 1\n")]
+    fn module_band_plan_bands_a_constant_under_a_prose_comment(#[case] src: &str) {
+        let source = parse(src);
         let plan = plan_of(&source).expect("acyclic module plans");
         assert_eq!(
             plan.ranks[&1],
             BandRank::Leading,
-            "X leads, hoisting above f"
+            "the comment binds to X either side of the blank, so X leads"
         );
-        let (idx, comment) = plan
-            .carries
-            .first()
-            .copied()
-            .expect("X carries its comment");
-        assert_eq!(idx, 1);
-        assert_eq!(source.slice(comment), "# note");
+    }
+
+    #[rstest]
+    #[case("X = 1\n\n# note\ndef f():\n    pass\n")]
+    #[case("X = 1\n\n# note\n\ndef f():\n    pass\n")]
+    fn module_band_plan_ranks_a_definition_under_a_prose_comment(#[case] src: &str) {
+        let source = parse(src);
+        let plan = plan_of(&source).expect("acyclic module plans");
+        assert_eq!(
+            plan.ranks[&1],
+            BandRank::Definition,
+            "a prose comment binds to f rather than pinning it, whatever the blank run",
+        );
     }
 
     #[test]
@@ -456,7 +416,6 @@ mod tests {
             !plan.ranks.contains_key(&1),
             "a banner divides sections, so X pins below it"
         );
-        assert!(plan.carries.is_empty());
     }
 
     #[test]
@@ -467,27 +426,12 @@ mod tests {
             !plan.ranks.contains_key(&1),
             "a format directive drives its own line, so X pins below it"
         );
-        assert!(plan.carries.is_empty());
-    }
-
-    #[rstest]
-    #[case("DATA = await fetch()")]
-    #[case("CACHE = dict(size=10)")]
-    #[case("SHELL = !ls")]
-    fn module_band_plan_pins_an_effectful_constant_in_a_notebook(#[case] value_src: &str) {
-        let cell = format!("def helper():\n    return 1\n{value_src}\n");
-        let source = notebook(&[cell.as_str()]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
-        assert!(
-            !plan.ranks.contains_key(&1),
-            "{value_src} runs code, so it pins in its cell"
-        );
     }
 
     #[test]
-    fn module_band_plan_pins_an_inert_constant_referencing_an_effectful_one_in_a_notebook() {
-        let source = notebook(&["def helper():\n    return 1\nRAW = compute()\nSCALED = RAW\n"]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
+    fn module_band_plan_pins_an_inert_constant_referencing_an_effectful_one() {
+        let source = parse("def helper():\n    return 1\n\n\nRAW = compute()\nSCALED = RAW\n");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&2),
             "SCALED references effectful RAW, so anchoring propagates and it pins"

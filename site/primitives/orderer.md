@@ -54,7 +54,7 @@ The borrow-aware finalizer over `assemble_blocks`, returning the assembled text 
 
 ### Block-Geometry Helpers
 
-`block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line. `outer` bounds the leading-comment scan's lower edge to a parent extent *(the previous item's end, or `outer.start()` for the first item)*, while the forward scan reaches the next item's start or, for the last item, its own line end. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, used to size the outer `Edit` that replaces the reordered region.
+`block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line. `outer` bounds the leading-comment scan's lower edge to a parent extent *(the previous item's end, or `outer.start()` for the first item)*, raised inside a notebook to the item's own cell start whenever that sits later, so an attached comment never reaches back across a cell boundary, while the forward scan reaches the next item's start or, for the last item, its own line end. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, used to size the outer `Edit` that replaces the reordered region.
 
 ## How Comment Attachment Works
 

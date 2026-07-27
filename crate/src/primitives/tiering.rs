@@ -208,19 +208,6 @@ pub(super) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda
     }
 }
 
-/// Indexes each `member_name` entry in `range` to its body index.
-fn member_index<'src>(
-    body: &'src [Stmt],
-    range: &Range<usize>,
-    member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
-) -> HashMap<&'src str, usize> {
-    body[range.clone()]
-        .iter()
-        .zip(range.clone())
-        .filter_map(|(stmt, at)| member_name(stmt).map(|name| (name, at)))
-        .collect()
-}
-
 /// True when every statement in `range` keeps each `member_name` entry
 /// it names ahead of itself in `order`, a statement naming itself
 /// excepted.
@@ -231,7 +218,11 @@ fn order_keeps_refs_backward<'src>(
     defer_annotations: bool,
     member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
 ) -> bool {
-    let member_at = member_index(body, range, &member_name);
+    let member_at: HashMap<&'src str, usize> = body[range.clone()]
+        .iter()
+        .zip(range.clone())
+        .filter_map(|(stmt, at)| member_name(stmt).map(|name| (name, at)))
+        .collect();
     let position = slot_positions(order);
     body[range.clone()]
         .iter()

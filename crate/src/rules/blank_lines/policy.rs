@@ -80,12 +80,11 @@ fn is_main_guard(stmt: &Stmt) -> bool {
 
 /// Module-scope pair dispatch. A statement following an
 /// `if __name__ == "__main__":` block carries 1 blank line. A grouped
-/// import pair lands 1 blank line across distinct canonical groups
-/// (bare, external `from`, local-package) and none within a group, while
-/// an ungrouped pair reads as one flat block and never divides. A
-/// top-level `FunctionDef` or `ClassDef` carries 2 blank lines on each
-/// side, whatever statement kind neighbors it, and any other statement
-/// following an import carries 1.
+/// import pair lands 1 blank line across distinct canonical groups and
+/// none within a group, while an ungrouped pair reads as one flat block
+/// and never divides. A top-level `FunctionDef` or `ClassDef` carries 2
+/// blank lines on each side, whatever statement kind neighbors it, and
+/// any other statement following an import carries 1.
 fn module_scope_blanks(
     prev: &Stmt,
     curr: &Stmt,

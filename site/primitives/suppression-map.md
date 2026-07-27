@@ -11,7 +11,7 @@ tagline: directive index
 
 <PrimitiveLayout primitive="suppression-map">
 
-Every source file in *Prose* gets a one-time scan for suppression directives during [[source]] construction, and the result lands in a *SuppressionMap*. The map indexes the format-suppression spans *(`# fmt: off` / `# fmt: on`, `# prose: off` / `# prose: on`, and the `# yapf: disable` / `# yapf: enable` aliases)*, the line-level format markers *(`# fmt: skip` and its `# prose: skip` alias)*, the per-rule format directives *(`# prose: skip[<rule>]`)*, and the per-line lint directives *(`# prose: ignore` and `# prose: ignore[<rule>]`)*. The [[pipeline]] consults the map at the edit-emission boundary, dropping suppressed edits and lint diagnostics before they surface to the caller.
+Every source file in *Prose* gets a one-time scan for suppression directives during [[source]] construction, and the result lands in a *SuppressionMap*. The map indexes the format-suppression spans *(`# fmt: off` / `# fmt: on`, `# prose: off` / `# prose: on`, and the `# yapf: disable` / `# yapf: enable` aliases)*, the statement-level format markers *(`# fmt: skip` and its `# prose: skip` alias)*, the per-rule format directives *(`# prose: skip[<rule>]`)*, and the per-line lint directives *(`# prose: ignore` and `# prose: ignore[<rule>]`)*. The [[pipeline]] consults the map at the edit-emission boundary, dropping suppressed fix groups and lint diagnostics before they surface to the caller.
 
 ## Public Surface
 
@@ -29,14 +29,13 @@ The type stabilizes toward `1.0`, where the lookup methods open up so consumers 
 
 For consumers reading this from within the *Prose* crate, the map exposes a constructor and predicate set:
 
-1. `from_comments(source, comments, first_code_offset) -> Self` builds the map by scanning the token stream for the comment shapes the suppression surface recognizes, with `first_code_offset` powering the `file_is_suppressed` shortcut.
+1. `from_comments(source, comments, tokens, first_code_offset, cell_offsets) -> Self` builds the map by scanning the token stream for the comment shapes the suppression surface recognizes, with `tokens` resolving each skip directive's logical line and `first_code_offset` powering the `file_is_suppressed` shortcut.
 2. `file_is_suppressed() -> bool` returns true when an unmatched `# prose: off` *(or `# fmt: off`)* sits at or before the first non-blank, non-comment line of the file, letting the pipeline short-circuit to identity before any rule fires.
-3. `has_format_suppression() -> bool` answers whether any format-suppression span sits in the file.
+3. `has_format_suppression() -> bool` answers whether any `# prose: off` region, bare `# prose: skip` span, or `# prose: skip[<rule>]` directive sits in the file.
 4. `has_lint_suppression() -> bool` answers the same for `# prose: ignore` directives.
-5. `has_skip_suppression() -> bool` answers the same for `# prose: skip[<rule>]` per-rule format directives.
-6. `intersects<R: Ranged>(ranged: R) -> bool` returns true when the given range overlaps any format-suppression span.
-7. `is_format_suppressed_at(line: OneIndexed, rule: RuleId) -> bool` returns true when the line carries a `# prose: skip[<rule>]` directive that names the rule.
-8. `is_lint_suppressed_at(line: OneIndexed, rule: RuleId) -> bool` returns true when the line carries a `# prose: ignore` directive that names the rule, or a bare directive that widens to every rule.
+5. `intersects<R: Ranged>(ranged: R) -> bool` returns true when the given range overlaps a `# prose: off` region, which is the check the lint filter reads, so a bare `# prose: skip` opens nothing here and lint diagnostics on its statement survive.
+6. `is_lint_suppressed_at(line: OneIndexed, rule: RuleId) -> bool` returns true when the line carries a `# prose: ignore` directive that names the rule, or a bare directive that widens to every rule.
+7. `suppresses<R: Ranged>(ranged: R, rule: RuleId) -> bool` returns true when the given range overlaps a `# prose: off` region, a bare `# prose: skip` span, or a `# prose: skip[<rule>]` span naming the rule, which is the check the rewrite filter reads.
 
 The [[source]] accessor `suppression_map(&self) -> &SuppressionMap` is also `pub(crate)`. Every entry point above opens at `1.0`.
 
@@ -47,15 +46,15 @@ The directive shapes that feed the map share a grammar living in the [**Suppress
 1. `# fmt: off` opens a format-suppression span and `# fmt: on` closes it. A span without a matching closer runs to EOF. Nested or overlapping `# fmt: off` markers flatten, so the first `# fmt: on` after any number of `off` markers closes the span.
 2. `# prose: off` and `# prose: on` share the same span machinery, so a project can pick whichever prefix reads better. When `# prose: off` sits at or before the first non-blank, non-comment line of the file and no `# prose: on` follows, the map sets `file_is_suppressed`.
 3. `# yapf: disable` and `# yapf: enable` are recognized as aliases for `# fmt: off` and `# fmt: on`, covering the yapf-conventioned suppression. Other yapf directives are not recognized.
-4. `# fmt: skip` at end-of-line marks one logical line for format suppression, scoped to that statement. `# prose: skip` is the equivalent alias.
-5. `# prose: skip[<rule>, <rule>, …]` suppresses the listed auto-fix rules at the directive's line, with whitespace inside the brackets tolerated and two bracketed directives on one line unioning their rule sets. Unknown rule slugs are dropped silently.
+4. `# fmt: skip` at end-of-line marks one logical line for rewrite suppression, scoped to that statement and leaving its lint diagnostics to report. `# prose: skip` is the equivalent alias.
+5. `# prose: skip[<rule>, <rule>, …]` suppresses the listed auto-fix rules across the same logical line `# fmt: skip` covers, with whitespace inside the brackets tolerated and two bracketed directives on one line unioning their rule sets. Unknown rule slugs are dropped silently.
 6. `# prose: ignore[<rule>, <rule>, …]` suppresses the listed lint rules at the directive's line, with the same bracket-whitespace tolerance and union behavior. A bare `# prose: ignore` widens to every lint rule on the line.
 
 ## Re-Using This Primitive
 
 Rules do not consult the map directly, because the [[pipeline]] is the canonical consumer and applies the filter at the edit-emission boundary. A rule author writing a new rule emits edits unconditionally and trusts the pipeline to drop the suppressed ones. The map is built once per source and handed across rule boundaries by reference, but downstream of the pipeline's filter step rather than inside any rule's `apply` body.
 
-A consumer reusing the suppression surface in a different formatter would build the same map shape and apply the same filter at their own edit-emission boundary, picking up the directive coverage *(format spans, line-level format markers, per-rule format directives, and per-line lint directives)* without re-implementing the scan.
+A consumer reusing the suppression surface in a different formatter would build the same map shape and apply the same filter at their own edit-emission boundary, picking up the directive coverage *(format spans, statement-level format markers, per-rule format directives, and per-line lint directives)* without re-implementing the scan.
 
 The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page. The consumption path runs indirectly through `Pipeline::run`'s suppressed-diagnostics behavior rather than direct method calls, and the user-facing surface lives entirely in the source-file directives the [**Suppression**](/usage/suppression) chapter covers.
 
