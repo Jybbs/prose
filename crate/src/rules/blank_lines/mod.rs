@@ -136,6 +136,8 @@ impl Walker<'_> {
         }
     }
 
+    /// Normalizes the gap above `curr`, whose predecessor ends at
+    /// `prev_end`.
     fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
         // A `;`-joined pair or a single-line suite shares one physical
         // line, leaving no own-line gap to normalize.

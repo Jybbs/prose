@@ -328,7 +328,7 @@ macro_rules! register_rules {
                     $($slug => Box::new($ty::from_config(config)),)*
                     _ => return None,
                 };
-                Some(Self::from_rules(vec![rule]))
+                Some(Self::from_rules(vec![rule]).targeting(config.target_version))
             }
 
             /// Builds a pipeline from every rule whose `enabled`
@@ -361,7 +361,7 @@ macro_rules! register_rules {
                         rules.push(Box::new($ty::from_config(config)));
                     }
                 })*
-                Self::from_rules(rules)
+                Self::from_rules(rules).targeting(config.target_version)
             }
         }
     };
