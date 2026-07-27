@@ -5,11 +5,11 @@ const token = (key: string, domain: sources.Domain): sources.Token =>
 
 describe('stripPrefix', () => {
   it.each([
-    ['# fmt: off',              'off'],
-    ['# prose: ignore[<slug>]', 'ignore[<slug>]'],
-    ['# yapf: disable',         'disable'],
-    ['--color',                 'color'],
-    ['prose check',             'check']
+    ['# fmt: off',                   'off'],
+    ['# prose: ignore[<rule>, ...]', 'ignore[<rule>, ...]'],
+    ['# yapf: disable',              'disable'],
+    ['--color',                      'color'],
+    ['prose check',                  'check']
   ])('reduces %s to its sort key', (input, expected) => {
     expect(sources.stripPrefix(input)).toBe(expected)
   })

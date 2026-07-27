@@ -1,7 +1,7 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: json
-input_file: tests/fixtures/suppression/all_directives_preformatted_noop/input.py
+input_file: crate/tests/fixtures/suppression/all_directives_preformatted_noop/input.py
 ---
 [
   {
@@ -45,6 +45,27 @@ input_file: tests/fixtures/suppression/all_directives_preformatted_noop/input.py
       "row": 2
     },
     "message": "Module constant `foo` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 11
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "skipped",
+          "content": "SKIPPED"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 11
+    },
+    "message": "Module constant `skipped` is not SCREAMING_CASE"
   },
   {
     "code": "miscased-constants",

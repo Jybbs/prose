@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/suppression/skip_pins_a_wrapped_collection/input.py
+---
+items = [
+    1,
+    2,
+]  # fmt: skip

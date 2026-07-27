@@ -250,13 +250,6 @@ fn collapsed<'a>(lines: impl IntoIterator<Item = &'a str>) -> String {
     lines.into_iter().flat_map(str::split_whitespace).join(" ")
 }
 
-/// True when a backslash ends `line` and suppresses the newline after it,
-/// an odd run of trailing backslashes closing on a continuation and an
-/// even run closing on an escaped backslash.
-fn ends_in_continuation(line: &str) -> bool {
-    !(line.len() - line.trim_end_matches('\\').len()).is_multiple_of(2)
-}
-
 fn rewrite_body<'a>(
     body: &DocstringBody<'a>,
     body_indent_chars: usize,
@@ -290,17 +283,17 @@ fn rewrite_body<'a>(
 /// Every other line passes through split as written, leaving a
 /// continuation inside a passthrough region byte-identical.
 fn spliced_continuations<'a>(content: &'a str, newline: &str, raw: bool) -> Vec<Cow<'a, str>> {
-    let physical: Vec<&'a str> = content.split(newline).collect();
     let mut lines: Vec<Cow<'a, str>> = Vec::new();
+    let mut physical = content.split(newline).peekable();
     let mut splicing = false;
-    for (index, &line) in physical.iter().enumerate() {
-        let tight = !raw
-            && ends_in_continuation(line)
-            && !line[..line.len() - 1].ends_with(char::is_whitespace)
+    while let Some(line) = physical.next() {
+        let head = without_continuation(line, raw);
+        let tight = head.len() < line.len()
+            && !head.ends_with(char::is_whitespace)
             && physical
-                .get(index + 1)
+                .peek()
                 .is_some_and(|next| !next.starts_with(char::is_whitespace));
-        let text = if tight { &line[..line.len() - 1] } else { line };
+        let text = if tight { head } else { line };
         match lines.last_mut().filter(|_| splicing) {
             Some(last) => last.to_mut().push_str(text),
             None => lines.push(Cow::Borrowed(text)),
@@ -312,9 +305,12 @@ fn spliced_continuations<'a>(content: &'a str, newline: &str, raw: bool) -> Vec<
 
 /// Drops the trailing backslash of a line continuation, leaving the join
 /// to the paragraph collapse, which reads the whitespace on either side
-/// of it as the separator. A raw docstring holds no continuations.
+/// of it as the separator. An odd run of trailing backslashes closes on
+/// a continuation and an even run closes on an escaped backslash, and a
+/// raw docstring holds no continuations at all.
 fn without_continuation(line: &str, raw: bool) -> &str {
-    if raw || !ends_in_continuation(line) {
+    let backslashes = line.len() - line.trim_end_matches('\\').len();
+    if raw || backslashes.is_multiple_of(2) {
         return line;
     }
     &line[..line.len() - 1]
@@ -368,18 +364,6 @@ mod tests {
                 .filter(|l| !l.starts_with("\"\"\""))
                 .all(|l| l.chars().count() <= 76)
         );
-    }
-
-    #[rstest]
-    #[case("plain prose", false)]
-    #[case("escaped \\\\", false)]
-    #[case("continues \\", true)]
-    #[case("continues \\\\\\", true)]
-    fn ends_in_continuation_reads_only_an_odd_trailing_run(
-        #[case] line: &str,
-        #[case] expected: bool,
-    ) {
-        assert_eq!(ends_in_continuation(line), expected);
     }
 
     #[test]
@@ -469,5 +453,18 @@ mod tests {
             indent, 18,
             "continuation hangs under the description column"
         );
+    }
+
+    #[rstest]
+    #[case("plain prose", false, "plain prose")]
+    #[case("escaped \\\\", false, "escaped \\\\")]
+    #[case("continues \\", false, "continues ")]
+    #[case("literal \\", true, "literal \\")]
+    fn without_continuation_drops_only_an_odd_run_in_a_non_raw_body(
+        #[case] line: &str,
+        #[case] raw: bool,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(without_continuation(line, raw), expected);
     }
 }

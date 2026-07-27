@@ -1,13 +1,13 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/alphabetize/attached_comment_travels_with_method/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize/attached_comment_travels_with_method/input.py
 ---
 class Matcher:
+    # describes the constructor
+
     def __init__(self, clusters):
         pass
-
-    # describes the constructor
 
     # describes the private validator
     def _validate(self, resume):

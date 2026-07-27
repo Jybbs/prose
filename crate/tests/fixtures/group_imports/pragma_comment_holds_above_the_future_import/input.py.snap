@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/group_imports/pragma_comment_holds_above_the_future_import/input.py
+---
+# type: ignore
+from __future__ import annotations
+import os
+from collections import Counter

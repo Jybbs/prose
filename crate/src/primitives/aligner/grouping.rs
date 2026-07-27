@@ -91,12 +91,11 @@ where
 /// statement, and the prior statement itself fits on one source line.
 /// A key change at an otherwise-adjacent boundary closes the active
 /// run and starts a fresh one without losing the boundary statement.
-/// A statement [held](is_held) for `rule` is transparent: it joins no
-/// group and does not close the run, leaving neighbors on either side
-/// to align as one block. Adjacency across a held statement relaxes to
-/// a consecutive-line check, so the held row's own trailing skip
-/// comment does not break the run while a standalone comment or blank
-/// line between rows still does. Walks `body` exactly once.
+/// A single-line statement [held](is_held) for `rule` is transparent,
+/// joining no group and leaving neighbors to align as one block, and a
+/// held multi-line statement closes the run instead. Adjacency across a
+/// held statement relaxes to a consecutive-line check. Walks `body`
+/// exactly once.
 pub(crate) fn keyed_line_adjacent_groups<'a, K, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -144,12 +143,12 @@ where
 /// grouping the qualified members into runs where every consecutive
 /// pair sits on adjacent source lines. A multi-line prior statement,
 /// a non-qualifying statement, a comment in the inter-statement gap,
-/// or a blank line breaks the current run. A statement held for `rule`
-/// is transparent per [`keyed_line_adjacent_groups`]. Empty groups
-/// (statements that fail qualification with no qualified neighbors) are
-/// skipped. Thin wrapper over [`keyed_line_adjacent_groups`] for rules
-/// whose qualifier produces only one form, so every member shares an
-/// implicit `()` key.
+/// or a blank line breaks the current run. A single-line statement
+/// held for `rule` is transparent per [`keyed_line_adjacent_groups`].
+/// Empty groups (statements that fail qualification with no qualified
+/// neighbors) are skipped. Thin wrapper over
+/// [`keyed_line_adjacent_groups`] for rules whose qualifier produces
+/// only one form, so every member shares an implicit `()` key.
 pub(crate) fn line_adjacent_groups<'a, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -324,6 +323,21 @@ mod tests {
 
         // A standalone comment after the held line is not consecutive,
         // so the relaxed adjacency still breaks the run.
+        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_closes_the_run_after_a_held_multiline_stmt() {
+        let source = parse("x = 1\ny = {\n    'a': 1,\n}  # prose: skip[align-equals]\nz = 3\n");
+        let groups = keyed_line_adjacent_groups(
+            &source,
+            &source.ast().body,
+            RuleId::from("align-equals"),
+            |s| s.as_assign_stmt().map(|_| ((), ())),
+        );
+
+        // The held statement spans lines, so the run closes after it
+        // rather than bridging, leaving x and z in separate groups.
         assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![1, 1]);
     }
 

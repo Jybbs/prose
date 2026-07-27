@@ -20,7 +20,7 @@ The rewrite stays purely mechanical, firing only when the return annotation is a
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[strip-none-return]` directive.
+For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[strip-none-return]` directive, which holds every line a wrapped statement spans.
 
 </template>
 
