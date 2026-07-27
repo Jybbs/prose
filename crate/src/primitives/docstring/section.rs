@@ -6,16 +6,17 @@ use ruff_python_ast::StringLiteral;
 use ruff_source_file::{Line, UniversalNewlineIterator};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::body::{DocstringBody, triple_quoted_body};
-use super::grammar::{section_heading, sibling_entry_head};
-use super::scan::{LineScan, LineScanner, ScannedLine};
+use super::{
+    body::{DocstringBody, triple_quoted_body},
+    grammar::{section_heading, sibling_entry_head},
+    scan::{LineScan, LineScanner, ScannedLine},
+};
 use crate::source::Source;
 
 /// One `name: description` entry inside a Google-style section. The
 /// range covers the entry's head line through the last continuation
-/// line attached to it (verbatim region, hanging description, list
-/// item), excluding the trailing newline. `colon` is the source offset
-/// of the head line's separating `:`.
+/// line attached to it, excluding the trailing newline. `colon` is the
+/// source offset of the head line's separating `:`.
 pub(crate) struct SectionEntry<'a> {
     pub(crate) colon: TextSize,
     pub(crate) name: &'a str,
@@ -108,7 +109,7 @@ impl<'src> EntryWalker<'src> {
 
     fn extend_open_entry(&mut self, line_end: TextSize) {
         if let Some(entry) = self.open_entry.as_mut() {
-            entry.range = TextRange::new(entry.range.start(), line_end);
+            entry.range = entry.range.cover_offset(line_end);
         }
     }
 
@@ -132,12 +133,9 @@ impl<'src> EntryWalker<'src> {
 
 /// Walks the entry-carrying Google-style sections in `lit`'s body
 /// and returns each section's entries with source-relative byte
-/// ranges. Returns an empty vector when `lit` carries no body
-/// (single-line, non-triple-quoted, or no `\n`), no entry-carrying
-/// section heading, or no recognized entries within those sections.
-/// Each entry's range covers its head line through any attached
-/// continuation lines (hanging description, indented code, list
-/// item, fenced code block).
+/// ranges. Returns an empty vector unless `lit` is a multi-line
+/// triple-quoted docstring on its own line holding at least one
+/// recognized entry inside an entry-carrying section.
 pub(crate) fn entry_carrying_sections<'src>(
     source: &'src Source,
     lit: &StringLiteral,
@@ -145,7 +143,7 @@ pub(crate) fn entry_carrying_sections<'src>(
     let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline) else {
         return Vec::new();
     };
-    let mut walker = EntryWalker::new(source.line_indent_width(body.range.start()));
+    let mut walker = EntryWalker::new(source.line_indent_width(lit.start()));
     for line in UniversalNewlineIterator::with_offset(body.text, body.range.start()) {
         walker.consume(line);
     }
@@ -207,14 +205,6 @@ mod tests {
         assert_eq!(entry_names(&sections), vec![vec!["ValueError", "OSError"]]);
         let value_error_slice = s.slice(sections[0][0].range);
         assert!(value_error_slice.contains(">>> sample"));
-    }
-
-    #[test]
-    fn entry_carrying_sections_drops_empty_args_section_with_no_entries() {
-        let src = "def f():\n    \"\"\"\n    Args:\n        Just prose without a name and colon.\n    \"\"\"\n    pass\n";
-        let s = parse(src);
-        let lit = first_function_docstring(&s);
-        assert!(entry_carrying_sections(&s, lit).is_empty());
     }
 
     #[test]

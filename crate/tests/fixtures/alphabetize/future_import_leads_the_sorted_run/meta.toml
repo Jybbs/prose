@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A `__future__` Import Leads the Sorted Run"
+
+description = '''
+The bare imports below the directive sort by name while `from __future__ import annotations` holds the first slot, since sorting it by module name would seat it under them and break the module.
+'''

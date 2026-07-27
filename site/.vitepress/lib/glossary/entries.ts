@@ -19,8 +19,9 @@ export const glossary: Record<string, GlossaryEntry> = {
   },
 
   '# fmt: skip': {
-    definition : '`# fmt: skip` is a line-level marker that exempts the statement it sits on '
-               + 'from every rewriting rule, without needing surrounding block markers.',
+    definition : '`# fmt: skip` is a statement-level marker that exempts the whole logical '
+               + 'line it trails from every rewriting rule, without needing surrounding block '
+               + 'markers.',
     families   : ['formatting', 'engine'],
     href       : '/usage/suppression#line-markers'
   },

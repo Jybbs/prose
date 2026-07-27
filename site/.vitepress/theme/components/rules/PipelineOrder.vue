@@ -24,7 +24,7 @@ import MiddleEllipsis from '../base/MiddleEllipsis.vue'
           <a
             class="pipeline-order-link"
             :href="rule.documented ? rules.bySlug[rule.slug].href : undefined"
-            :title="`${rule.slug}${rule.family ? ` (${rule.family})` : ''}`"
+            :title="rule.title"
           >
             <span class="folio">№ {{ formatFolio(rule.position) }}</span>
             <MiddleEllipsis class="pipeline-order-name" :text="rule.slug" :tail="2" />

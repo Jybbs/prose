@@ -6,7 +6,7 @@ use std::ops::Range;
 
 use ruff_python_ast::{Expr, helpers::is_dotted_name};
 
-use crate::primitives::layout::is_layoutable;
+use crate::primitives::{layout::is_layoutable, orderer::slot_runs};
 
 /// Describes how a contiguous slice of items should lay out.
 #[derive(Debug, PartialEq)]
@@ -72,21 +72,18 @@ pub(super) fn requires_expand(expr: &Expr) -> bool {
     }
 }
 
-/// Partitions `atomics` into segments. Every contiguous run of
-/// atomic items becomes one `Flow` segment. Every non-atomic item
-/// becomes a singleton `OnePerLine` segment. Non-atomic items always
-/// break atomic runs.
+/// Partitions `atomics` into segments. Each contiguous run of atomic
+/// items becomes one `Flow` segment and each contiguous run of
+/// non-atomic items one `OnePerLine` segment, so a non-atomic item
+/// breaks the atomic run around it.
 pub(super) fn segments(atomics: &[bool]) -> Vec<Segment> {
-    atomics
-        .chunk_by(|a, b| a == b)
-        .scan(0, |start, chunk| {
-            let range = *start..*start + chunk.len();
-            *start += chunk.len();
-            Some(if chunk[0] {
-                Segment::Flow(range)
+    slot_runs(atomics, |a, b| a == b)
+        .map(|run| {
+            if atomics[run.start] {
+                Segment::Flow(run)
             } else {
-                Segment::OnePerLine(range)
-            })
+                Segment::OnePerLine(run)
+            }
         })
         .collect()
 }

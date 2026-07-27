@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Heading Directly After an Entry Closes Its Section"
+
+description = '''
+A second section heading arriving with no blank line above it flushes the open entry at its hanging column before passing the heading through, which is the one path where a heading is reached while an entry paragraph is still buffered.
+'''

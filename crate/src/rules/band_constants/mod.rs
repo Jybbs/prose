@@ -153,15 +153,13 @@ impl<'a> Bander<'a> {
         })
     }
 
-    /// Renders `body`, builds the module band over it, and folds each
-    /// carried comment up with its constant, leaving the assembly to the
-    /// caller. The section partition walls each notebook cell, so a band
-    /// never crosses one.
+    /// Renders `body` and builds the module band over it, leaving the
+    /// assembly to the caller. The section partition walls each notebook
+    /// cell, so a band never crosses one.
     fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
-        let (mut blocks, mut rendered) =
-            rendered_member_blocks(self.source, body, outer, |stmt, block| {
-                self.band_stmt(stmt, block)
-            });
+        let (blocks, rendered) = rendered_member_blocks(self.source, body, outer, |stmt, block| {
+            self.band_stmt(stmt, block)
+        });
         let mut order: Vec<usize> = (0..body.len()).collect();
         let band = (!any_sibling_shares_line(self.source, body))
             .then(|| {
@@ -169,9 +167,6 @@ impl<'a> Bander<'a> {
                 self.band_module_constants(body, &blocks, &sections, &mut order)
             })
             .flatten();
-        if let Some(b) = &band {
-            apply_band_carries(self.source, b, &mut blocks, &mut rendered);
-        }
         BandLayout {
             band,
             blocks,
@@ -224,31 +219,10 @@ impl<'a> Bander<'a> {
     }
 }
 
-/// Relocates each carried comment up with its banded constant, extending
-/// the constant's block back over the comment and prepending it to the
-/// rendered text so the hoist moves the comment rather than stranding it.
-fn apply_band_carries(
-    source: &Source,
-    band: &Banding,
-    blocks: &mut [TextRange],
-    rendered: &mut [Cow<'_, str>],
-) {
-    for &(idx, comment) in &band.carries {
-        let carried = format!(
-            "{}{}{}",
-            source.slice(comment),
-            source.newline_str(),
-            rendered[idx],
-        );
-        blocks[idx] = comment.cover(blocks[idx]);
-        rendered[idx] = Cow::Owned(carried);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::primitives::orderer::block_ranges;
+    use crate::primitives::orderer::member_blocks;
     use crate::testing::parse;
 
     #[test]
@@ -256,7 +230,7 @@ mod tests {
         let source =
             parse("def helper(value):\n    return value\n\n\nimport os\n\n\nCONFIG = helper\n");
         let body = &source.ast().body;
-        let blocks = block_ranges(&source, body, source.module_range());
+        let blocks = member_blocks(&source, body, source.module_range());
         let mut order: Vec<usize> = (0..body.len()).collect();
         let bander = Bander {
             defer_annotations: false,

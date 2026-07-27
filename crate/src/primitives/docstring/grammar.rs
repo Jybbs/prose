@@ -12,11 +12,11 @@ static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 /// A parsed `name: description` entry head. `colon` is the byte offset
-/// of the separating `:` within the trimmed line, and `desc_col` is the
-/// character column where the description begins.
+/// of the separating `:` within the trimmed line, and `desc_start` is
+/// the byte offset where the description begins.
 pub(crate) struct EntryHead<'a> {
     pub(crate) colon: usize,
-    pub(crate) desc_col: usize,
+    pub(crate) desc_start: usize,
     pub(crate) name: &'a str,
 }
 
@@ -38,6 +38,13 @@ pub(crate) fn sibling_entry_head(
     (indent_chars == section_body_indent)
         .then_some(trimmed)
         .and_then(entry_head)
+}
+
+/// True when `trimmed` is an entry head carrying a parenthesized type
+/// group, the `name (type): description` shape.
+pub(crate) fn typed_entry_head(trimmed: &str) -> bool {
+    unbracketed_colon(trimmed).is_some_and(|colon| trimmed[..colon].trim_end().ends_with(')'))
+        && entry_head(trimmed).is_some()
 }
 
 /// Parses `trimmed` as a Google-style `name: description` entry head,
@@ -71,10 +78,9 @@ fn entry_head(trimmed: &str) -> Option<EntryHead<'_>> {
     if description.is_empty() {
         return None;
     }
-    let desc_col = trimmed[..trimmed.len() - description.len()].chars().count();
     Some(EntryHead {
         colon,
-        desc_col,
+        desc_start: trimmed.len() - description.len(),
         name,
     })
 }
@@ -102,22 +108,22 @@ mod tests {
 
     use super::*;
 
-    fn name_and_col(head: Option<EntryHead<'_>>) -> Option<(&str, usize)> {
-        head.map(|h| (h.name, h.desc_col))
+    fn name_and_start(head: Option<EntryHead<'_>>) -> Option<(&str, usize)> {
+        head.map(|h| (h.name, h.desc_start))
     }
 
     #[test]
     fn entry_head_measures_past_parenthesized_type() {
         assert_eq!(
-            name_and_col(entry_head("markup (str): a string.")),
+            name_and_start(entry_head("markup (str): a string.")),
             Some(("markup", 14)),
         );
         assert_eq!(
-            name_and_col(entry_head("flag (bool): on or off")),
+            name_and_start(entry_head("flag (bool): on or off")),
             Some(("flag", 13)),
         );
         assert_eq!(
-            name_and_col(entry_head("records (List[Tuple[int, str]]): rows")),
+            name_and_start(entry_head("records (List[Tuple[int, str]]): rows")),
             Some(("records", 33)),
         );
     }
@@ -130,7 +136,6 @@ mod tests {
         assert!(entry_head("name: ").is_none());
         assert!(entry_head("name (only: parens)").is_none());
         assert!(entry_head("two words (int): not an entry").is_none());
-        assert!(entry_head("123: digits-only name").is_some());
     }
 
     #[test]
@@ -141,30 +146,41 @@ mod tests {
     }
 
     #[test]
-    fn entry_head_returns_name_and_description_column() {
-        assert_eq!(name_and_col(entry_head("name: desc")), Some(("name", 6)));
-        assert_eq!(name_and_col(entry_head("name : desc")), Some(("name", 7)));
+    fn entry_head_returns_name_and_description_offset() {
+        assert_eq!(name_and_start(entry_head("name: desc")), Some(("name", 6)));
+        assert_eq!(name_and_start(entry_head("name : desc")), Some(("name", 7)));
         assert_eq!(
-            name_and_col(entry_head("dotted.name: desc")),
+            name_and_start(entry_head("dotted.name: desc")),
             Some(("dotted.name", 13)),
+        );
+        assert_eq!(
+            name_and_start(entry_head("123: digits-only name")),
+            Some(("123", 5)),
         );
     }
 
     #[test]
     fn entry_head_strips_up_to_two_star_prefixes_from_the_name() {
         assert_eq!(
-            name_and_col(entry_head("*args: payload")),
-            Some(("args", 7))
+            name_and_start(entry_head("*args: payload")),
+            Some(("args", 7)),
         );
         assert_eq!(
-            name_and_col(entry_head("**kwargs: extra")),
+            name_and_start(entry_head("**kwargs: extra")),
             Some(("kwargs", 10)),
         );
         assert_eq!(
-            name_and_col(entry_head("**kwargs  : extra")),
+            name_and_start(entry_head("**kwargs  : extra")),
             Some(("kwargs", 12)),
         );
         assert!(entry_head("***nope: three stars").is_none());
+    }
+
+    #[test]
+    fn section_heading_accepts_multi_word_title_case_with_colon() {
+        assert!(section_heading("Other Parameters:"));
+        assert!(section_heading("See Also:"));
+        assert!(section_heading("Side Effects:"));
     }
 
     #[rstest]
@@ -190,13 +206,6 @@ mod tests {
     }
 
     #[test]
-    fn section_heading_accepts_multi_word_title_case_with_colon() {
-        assert!(section_heading("Other Parameters:"));
-        assert!(section_heading("See Also:"));
-        assert!(section_heading("Side Effects:"));
-    }
-
-    #[test]
     fn section_heading_accepts_trailing_content_after_colon() {
         assert!(section_heading("Returns: int"));
         assert!(section_heading("Note: see below"));
@@ -215,12 +224,24 @@ mod tests {
     #[test]
     fn sibling_entry_head_opens_only_at_the_section_body_indent() {
         assert_eq!(
-            name_and_col(sibling_entry_head(8, 8, "name: desc")),
+            name_and_start(sibling_entry_head(8, 8, "name: desc")),
             Some(("name", 6)),
         );
         assert!(sibling_entry_head(9, 8, "name: desc").is_none());
         assert!(sibling_entry_head(4, 8, "name: desc").is_none());
         assert!(sibling_entry_head(8, 8, "just prose").is_none());
+    }
+
+    #[test]
+    fn typed_entry_head_requires_a_parenthesized_type_group() {
+        assert!(typed_entry_head("markup (str): a string."));
+        assert!(typed_entry_head("records (List[Tuple[int, str]]): rows"));
+        assert!(typed_entry_head("*args (int): payload"));
+        assert!(!typed_entry_head("markup: a string."));
+        assert!(!typed_entry_head("name (only: parens)"));
+        assert!(!typed_entry_head("two words (int): not an entry"));
+        assert!(!typed_entry_head("See https://example.com for details."));
+        assert!(!typed_entry_head("just prose with no colon"));
     }
 
     #[test]

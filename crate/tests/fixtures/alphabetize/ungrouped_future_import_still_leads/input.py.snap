@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize/ungrouped_future_import_still_leads/input.py
+---
+from __future__ import division
+import os
+import sys
+from collections import Counter

@@ -13,10 +13,7 @@ use ruff_diagnostics::Edit;
 
 use crate::{
     config::Config,
-    primitives::{
-        aligner,
-        colon_targets::{ColonEmitter, ColonMember},
-    },
+    primitives::{aligner, colon_targets::ColonEmitter},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -57,30 +54,17 @@ struct Emitter<'a> {
     walker: aligner::AlignWalker<'a>,
 }
 
-impl Emitter<'_> {
-    /// Aligns `members` under `settings`, rewriting each single-line
-    /// post-colon gap to one space in the same fix group.
-    fn emit(&mut self, settings: aligner::Settings, members: &[ColonMember]) {
-        let source = self.walker.source;
-        let aligned: Vec<aligner::Member> = members.iter().map(|m| m.member).collect();
-        let value_gaps = members
-            .iter()
-            .filter_map(|m| m.single_line_value_gap(source));
-        self.walker
-            .emit_if_candidate_under(settings, &aligned, value_gaps);
-    }
-}
-
 impl ColonEmitter for Emitter<'_> {
-    fn docstring_entries(&mut self, members: &[ColonMember]) {
-        self.emit(self.docstring_settings, members);
+    fn docstring_entries(&mut self, members: &[aligner::Member]) {
+        self.walker
+            .emit_if_candidate_under(self.docstring_settings, members);
     }
 
-    fn handle(&mut self, members: &[ColonMember]) {
-        self.emit(self.walker.settings, members);
+    fn handle(&mut self, members: &[aligner::Member]) {
+        self.walker.emit_if_candidate(members);
     }
 
-    fn match_arms(&mut self, _: &[ColonMember]) {}
+    fn match_arms(&mut self, _: &[aligner::Member]) {}
 
     fn rule(&self) -> RuleId {
         self.walker.rule

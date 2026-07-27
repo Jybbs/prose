@@ -130,7 +130,7 @@ The [**Shell Completions**](/integrations/shell-completions) integration page co
 
 ## `prose rules`
 
-Lists every registered rule in pipeline order, one row per rule carrying its one-based position, slug, and imperative. The JSON form emits the same listing as an array of `{slug, position, imperative}` records for scripting consumers.
+Lists every registered rule in pipeline order, one row per rule carrying its one-based position, slug, and imperative. The JSON form emits the same listing as an array of `{after, imperative, position, slug}` records for scripting consumers.
 
 | Flag | Type | Default | Description |
 |---|---|---|---|

@@ -3,7 +3,8 @@
 //! predecessor and emits edits to bring the gap to the canonical count
 //! returned by `canonical_blanks`. Own-line comments between adjacent
 //! statements carry 1 blank line above the comment block, 0 blank lines
-//! below a description block, and 1 blank line below a banner block.
+//! below a description block, and 1 blank line below a run that anchors
+//! in place, a section banner or a suppression directive.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -17,8 +18,8 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     config::Config,
     primitives::{
-        comments::{is_banner_block, leading_comment_block},
-        edit::singleton_groups,
+        comments::{anchors_in_place, leading_comment_block},
+        edit::{repeat_edit, singleton_groups},
         scope::{BodyScope, scoped_body},
     },
     rule::{Rule, RuleId},
@@ -54,6 +55,7 @@ impl Rule for BlankLines {
             group_imports: self.group_imports,
             source,
         };
+        walker.normalize_module_head(body);
         walker.pair_siblings(body, BodyScope::Module);
         walker.visit_body(body);
         singleton_groups(walker.edits)
@@ -73,24 +75,24 @@ struct Walker<'a> {
 
 impl Walker<'_> {
     /// Places `target_newlines` line breaks immediately above
-    /// `line_start`. Emits a replacement edit when the actual count
-    /// differs. Preserves any indent that sits on `line_start`'s line.
+    /// `line_start`, emitting an edit when the actual count differs.
+    /// Preserves any indent that sits on `line_start`'s line.
     fn normalize_above(&mut self, line_start: TextSize, target_newlines: u32) {
         let text = self.source.text();
         if lines_before(line_start, text) == target_newlines {
             return;
         }
-        let span_start = whitespace_start_before(text, line_start);
-        let replacement = self.source.newline_str().repeat(target_newlines as usize);
-        self.edits.push(Edit::range_replacement(
-            replacement,
-            TextRange::new(span_start, line_start),
+        let span = TextRange::new(whitespace_start_before(text, line_start), line_start);
+        self.edits.push(repeat_edit(
+            span,
+            self.source.newline_str(),
+            target_newlines as usize,
         ));
     }
 
     /// Places `target_newlines` line breaks between `block_end` and
-    /// `curr_line_start`. Emits a replacement edit when the actual
-    /// count differs.
+    /// `curr_line_start`, emitting an edit when the actual count
+    /// differs.
     fn normalize_below_block(
         &mut self,
         block_end: TextSize,
@@ -100,21 +102,30 @@ impl Walker<'_> {
         if lines_after(block_end, self.source.text()) == target_newlines {
             return;
         }
-        self.edits.push(Edit::range_replacement(
-            self.source.newline_str().repeat(target_newlines as usize),
+        self.edits.push(repeat_edit(
             TextRange::new(block_end, curr_line_start),
+            self.source.newline_str(),
+            target_newlines as usize,
         ));
+    }
+
+    /// Clears the blank run above the module's first statement, or
+    /// above the comment block leading it. The run beneath that block
+    /// stays as written, the head sitting outside the member span every
+    /// reorder assembles.
+    fn normalize_module_head(&mut self, body: &[Stmt]) {
+        let Some(first) = body.first() else {
+            return;
+        };
+        let block = leading_comment_block(self.source, TextSize::default(), first.start());
+        let line_start = self.source.text().line_start(first.start());
+        self.normalize_above(block.map_or(line_start, TextRange::start), 0);
     }
 
     fn pair_in_scope(&mut self, header: &Stmt, body: &[Stmt], scope: BodyScope) {
         if let Some(first) = body.first() {
             let prev_end = header_signature_end(self.source, first.start());
-            // A single-line suite opens its body on the header line, leaving no
-            // own-line gap above it to normalize. Pairing it would collide with
-            // the sibling pair over the gap above the header's own line.
-            if !self.source.same_line(prev_end, first.start()) {
-                self.pair_with_end(header, prev_end, first, scope);
-            }
+            self.pair_with_end(header, prev_end, first, scope);
         }
         self.pair_siblings(body, scope);
     }
@@ -125,10 +136,13 @@ impl Walker<'_> {
         }
     }
 
+    /// Normalizes the gap above `curr`, whose predecessor ends at
+    /// `prev_end`.
     fn pair_with_end(&mut self, prev: &Stmt, prev_end: TextSize, curr: &Stmt, scope: BodyScope) {
-        if self
-            .source
-            .has_cell_boundary(TextRange::new(prev_end, curr.start()))
+        // A `;`-joined pair or a single-line suite shares one physical
+        // line, leaving no own-line gap to normalize.
+        if self.source.same_line(prev_end, curr.start())
+            || !self.source.same_cell(prev_end, curr.start())
         {
             return;
         }
@@ -142,7 +156,7 @@ impl Walker<'_> {
         let above_line_start = block.map_or(curr_line_start, TextRange::start);
         self.normalize_above(above_line_start, canonical + 1);
         if let Some(b) = block {
-            let below_target = 1 + u32::from(is_banner_block(self.source, b));
+            let below_target = 1 + u32::from(anchors_in_place(self.source, b));
             self.normalize_below_block(b.end(), curr_line_start, below_target);
         }
     }
@@ -162,8 +176,8 @@ mod tests {
     use super::*;
     use crate::testing::{notebook, parse};
 
-    /// A function in cell 0 and a call in cell 1. Module spacing calls for
-    /// a blank after the def, but a cell boundary sits in that gap.
+    /// A function in cell 0 and a call in cell 1. Module spacing puts a
+    /// blank line after the def, and a cell boundary sits in that gap.
     fn split_across_two_cells() -> Source {
         notebook(&["def f():\n    return 1", "x = f()"])
     }

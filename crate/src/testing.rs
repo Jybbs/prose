@@ -8,17 +8,21 @@ use std::{
 use ruff_diagnostics::Edit;
 use ruff_notebook::Notebook;
 use ruff_python_ast::{Expr, StmtClassDef, StmtFunctionDef};
-use ruff_text_size::TextRange;
+use ruff_text_size::{TextLen, TextRange, TextSize};
 use serde_json::{Value, json};
 
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
     pipeline::Pipeline,
-    primitives::edit::apply_edits,
+    primitives::{aligner, edit::apply_edits},
     rule::{Rule, RuleId},
     source::Source,
 };
+
+/// Module source leading with a `__future__` import, the input
+/// [`breaks_compile`] demotes.
+pub(crate) const FUTURE_LEAD: &str = "from __future__ import annotations\nimport os\n";
 
 /// Test-only writer whose `write` fails with the supplied kind.
 pub(crate) struct FailingWriter(pub(crate) io::ErrorKind);
@@ -54,11 +58,38 @@ impl Rule for GroupSentinelRule {
     }
 }
 
+/// Builds an alignment `Member` whose pre-operator whitespace is `gap`,
+/// carrying no operator width and no post-operator gap. Layer
+/// `with_op_width` or `with_value_gap` on top for a row that needs
+/// either.
+pub(crate) fn align_member(gap: TextRange, line_start: u32, width: usize) -> aligner::Member {
+    aligner::Member {
+        gap,
+        line_start: TextSize::new(line_start),
+        op_width: 0,
+        value_gap: None,
+        width,
+    }
+}
+
 pub(crate) fn applied_text(source: &Source, edits: Vec<Edit>) -> String {
     apply_edits(source.text(), edits).expect("non-overlapping edits")
 }
 
 pub(crate) fn assert_send_sync<T: Send + Sync>() {}
+
+/// Returns a rule whose single edit demotes a leading `__future__`
+/// import below the import after it, output that parses and no longer
+/// compiles. Pair it with [`FUTURE_LEAD`] as the source.
+pub(crate) fn breaks_compile() -> GroupSentinelRule {
+    GroupSentinelRule {
+        groups: vec![vec![Edit::range_replacement(
+            "import os\nfrom __future__ import annotations".to_owned(),
+            TextRange::up_to(FUTURE_LEAD.trim_end().text_len()),
+        )]],
+        id: RuleId::from("breaks-compile"),
+    }
+}
 
 /// Returns a rule whose single edit rewrites the leading statement
 /// into unparseable source.
@@ -151,6 +182,18 @@ pub(crate) fn run_rule(slug: &str, src: &str) -> String {
         .0
         .text()
         .to_owned()
+}
+
+/// Returns a rule whose single group holds two edits over overlapping
+/// ranges, a group the splice declines to apply.
+pub(crate) fn self_overlapping() -> GroupSentinelRule {
+    GroupSentinelRule {
+        groups: vec![vec![
+            Edit::range_replacement("Y".to_owned(), range(0, 3)),
+            Edit::range_replacement("Z".to_owned(), range(2, 5)),
+        ]],
+        id: RuleId::from("self-overlapping"),
+    }
 }
 
 pub(crate) fn write_dotconfig_prose_toml(dir: &Path, contents: &str) {

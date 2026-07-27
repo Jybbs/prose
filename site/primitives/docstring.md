@@ -1,5 +1,5 @@
 ---
-consumedBy: [docstring-wrap, docstring-frame, docstring-expand]
+consumedBy: [alphabetize, colon-targets, docstring-expand, docstring-frame, docstring-wrap]
 consumes: [edit, source]
 layer: analysis
 stability: internal
@@ -58,11 +58,11 @@ trait DocstringHandler {
 The `pub(crate)` helpers reach for the docstring literal and its body:
 
 1. `body_docstring(body) -> Option<&StringLiteral>` returns a body's leading PEP 257 docstring literal, the shared detection point for consumers that already hold a `&[Stmt]` body rather than walking the whole module.
-2. `docstring_body(source, lit) -> Option<DocstringBody>` returns the body slice between a docstring's opener and closer whatever its quote style, paired with the source range the slice covers. Returns `None` only for an inline shape like `def f(): "doc"`.
+2. `docstring_body(source, lit) -> Option<DocstringBody>` returns the body slice between a docstring's opener and closer whatever its quote style, paired with the source range the slice covers and a `raw` flag carrying whether the literal took an `r` prefix, which is what decides whether a backslash in the slice escapes the character after it. Returns `None` only for an inline shape like `def f(): "doc"`.
 3. `triple_quoted_body(source, lit) -> Option<DocstringBody>` narrows `docstring_body` to the canonical `"""` form, the slice `docstring-expand` and `docstring-wrap` act on once `docstring-frame` has requoted every docstring. Returns `None` for a non-triple-quoted literal.
 4. `indent_prefix(source, lit) -> &str` returns the whitespace preceding the docstring on its first line, useful when a rule rewraps the body and needs to re-indent the result.
 
-[[colon-targets]] finds leading docstrings through `body_docstring` and their section entries through `entry_carrying_sections`, then locates each entry head's `:` itself when emitting members for colon alignment. The split is deliberate, because the two primitives answer structurally different questions. *Docstring* surfaces entry names and the byte range a reorder would carry along, whereas *Colon-Targets* surfaces each line's `:`-position for the aligner's padding math. Two views of the same source, each shaped for its consumer.
+[[colon-targets]] finds leading docstrings through `body_docstring` and their section entries through `entry_carrying_sections`, reading each entry's recorded `:` offset when emitting members for colon alignment. The split is deliberate, because the two primitives answer structurally different questions. *Docstring* surfaces entry names, the `:` separating each from its description, and the byte range a reorder would carry along, whereas *Colon-Targets* shapes those into the members the aligner's padding math consumes. Two views of the same source, each shaped for its consumer.
 
 ## Section-Parsing Surface
 
@@ -74,10 +74,11 @@ pub(crate) fn sibling_entry_head(
     indent_chars: usize,
     section_body_indent: usize,
     trimmed: &str,
-) -> Option<(&str, usize)>;
+) -> Option<EntryHead<'_>>;
+pub(crate) fn typed_entry_head(trimmed: &str) -> bool;
 ```
 
-`section_heading` matches a Title-case word or multi-word run with every word capitalized, immediately followed by `:`, so Google's canonical headings (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`), Numpy's multi-word headings (`Other Parameters:`, `See Also:`), and project-specific custom headings (`Inputs:`, `Steps:`, `Outputs:`) all qualify. `sibling_entry_head` reads a line as the `name: description` head of a sibling to the entry above it, allowing a leading `*` or `**` on the name and a parenthesized type group before the `:`, and returns that name with the character column where its description begins. A head opens only at the section body indent, one `INDENT_STEP` past the body indent, so a deeper line returns `None` whatever its shape, leaving it a continuation of the entry above. List-marker recognition (`-`, `*`, `+`, numeric openers) lives in the shared `LineScanner`, which classifies fences, list items, doctest blocks, reStructuredText field lists, section underlines, Sphinx directives, and their continuations as verbatim passthrough, so a section entry whose description carries a bulleted list or interactive example keeps it attached as part of the entry.
+`section_heading` matches a Title-case word or multi-word run with every word capitalized, immediately followed by `:`, so Google's canonical headings (`Args:`, `Attributes:`, `Raises:`, `Returns:`, `Yields:`), Numpy's multi-word headings (`Other Parameters:`, `See Also:`), and project-specific custom headings (`Inputs:`, `Steps:`, `Outputs:`) all qualify. `sibling_entry_head` reads a line as the `name: description` head of a sibling to the entry above it, returning an `EntryHead` carrying that name with any `*` or `**` prefix excluded, the byte offset where its description begins, and the offset of the separating `:`, with a colon nested inside a parenthesized type (*`markup (str): a string`*) or a bracketed subscript skipped rather than read as the separator. A head opens only at the section body indent, one `INDENT_STEP` past the body indent, so a deeper line returns `None` whatever its shape, leaving it a continuation of the entry above. `typed_entry_head` reports whether a head carries that parenthesized type group, which is what holds a `name (type):` line standing outside any section clear of the description wrap. List-marker recognition (`-`, `*`, `+`, numeric openers) lives in the shared `LineScanner`, which classifies every structured shape it recognizes, along with their continuations, as verbatim passthrough, so a section entry whose description carries a bulleted list, a table, or an interactive example keeps it attached as part of the entry. An interpreted-text role closes its name on a backtick rather than on whitespace, so a line opening with one reads as prose and wraps with the paragraph carrying it.
 
 The entry iterator composes those leaves into a section walk:
 
@@ -88,20 +89,21 @@ pub(crate) fn entry_carrying_sections<'src>(
 ) -> Vec<Vec<SectionEntry<'src>>>;
 
 pub(crate) struct SectionEntry<'a> {
+    pub(crate) colon: TextSize,
     pub(crate) name: &'a str,
     pub(crate) range: TextRange,
 }
 ```
 
-`entry_carrying_sections` returns one inner vector per section whose body carries at least one entry-shaped line, with each `SectionEntry` carrying the parameter name and the byte range covering the entry's head line through any attached continuations *(verbatim region, hanging description, list item, fenced code block)*. The walker drops sections whose body is prose-only, since the content-shape check filters them out, and drops any docstring whose body is single-line or non-triple-quoted. Continuation attachment reuses the fence and list-indent state the leaf classifiers expose, so a section entry whose description embeds an indented code block keeps the block attached through any downstream reorder.
+`entry_carrying_sections` returns one inner vector per section whose body carries at least one entry-shaped line, with each `SectionEntry` carrying the parameter name, the source offset of its head line's separating `:`, and the byte range covering the entry's head line through every line attached to it. The walker drops sections whose body is prose-only, since the content-shape check filters them out, and drops any docstring whose body is single-line or non-triple-quoted. Continuation attachment reuses the fence and list-indent state the leaf classifiers expose, so a section entry whose description embeds an indented code block keeps the block attached through any downstream reorder.
 
-## How Alphabetize Composes
+## How `alphabetize` Composes
 
 [[alphabetize]] consumes the entry iterator when its `sort-docstring-entries` facet is on, which is the default. For each docstring, the rule walks `entry_carrying_sections` and reorders the entries within each section, threading the result through the shared `reorder_text` machinery from [[orderer]], so the no-op case allocates nothing. An entry naming a parameter of the documented signature takes that parameter's position as the rule leaves the signature (*source order for the positional run, sorted for the keyword-only block*), and every other entry sinks below the mirrored ones, alphabetized by name. Module and class docstrings carry no signature, so their sections alphabetize throughout. Each section emits one [[edit]] when its entries arrive out of order, with the edit's range covering the section's entries span and leaving the heading and trailing blank line untouched.
 
 Section headings, blank lines between entries, and verbatim continuations *(indented code blocks, fenced blocks, list items)* stay attached to their parent entries through the move because each `SectionEntry`'s range already covers its continuations, leaving the reorder as a straight permutation of byte slices. The `alphabetize` rule carries `sort-docstring-entries` in the `[rules]` table, defaulting to `true`. Setting `alphabetize = { sort-docstring-entries = false }` keeps the AST-level sorts firing while opting out of the docstring-entry reorder, useful when a project curates entry order to match a narrative rather than the signature alphabet.
 
-## How Docstring-Wrap Composes
+## How `docstring-wrap` Composes
 
 [[docstring-wrap]] consumes the walker and the body helper together. For each discovered docstring, the rule extracts the body, partitions it into description prose and structured sections *(`Args:`, `Returns:`, `Raises:`)*, and rewraps each part against its configured budget *(`docstring-line-length` for description prose, `code-line-length` for structured sections, or both collapsed to one when `docstring-structured-policy = "docstring-line-length"`)*. The rule emits one [[edit]] per docstring body that needs rewrapping.
 

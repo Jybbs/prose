@@ -1,13 +1,11 @@
 //! Shared walker for PEP 257 docstring statements, the first
-//! body-statement of the module, each class, and each function whose
-//! first expression statement is a string literal. Implementors of
-//! [`DocstringHandler`] receive every such literal in source order
-//! through the trait's `walk` method, and implicitly concatenated
-//! docstring expressions are skipped. `body_docstring` returns one
-//! body's leading docstring literal. The re-exported grammar helpers
-//! read a body's Title-case-headed sections for consumers that walk
-//! text rather than the AST, recognizing a section by content shape
-//! and a sibling entry only at the section body indent.
+//! body-statement of the module, each class, and each function that
+//! holds a string literal as its first expression statement.
+//! Implementors of [`DocstringHandler`] receive every such docstring
+//! literal in source order via the trait's `walk` method. Implicitly
+//! concatenated docstring expressions are skipped. The `body`,
+//! `grammar`, `scan`, and `section` submodules carry the text-level
+//! helpers for walking a docstring body directly.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -23,7 +21,7 @@ mod scan;
 mod section;
 
 pub(crate) use body::{DocstringBody, docstring_body, indent_prefix, triple_quoted_body};
-pub(crate) use grammar::{section_heading, sibling_entry_head};
+pub(crate) use grammar::{section_heading, sibling_entry_head, typed_entry_head};
 pub(crate) use scan::{LineScan, LineScanner, ScannedLine};
 pub(crate) use section::entry_carrying_sections;
 
