@@ -1,14 +1,13 @@
 //! Aligns `:` vertically in dict/mapping literals, annotated
 //! assignments, annotated function parameters, and Google-style
-//! docstring sections. Single-line groups, single-item groups,
-//! and groups whose rows open at differing column baselines pass
-//! through, leaving them to `strip_align_padding` downstream. Each
-//! aligned `:` keeps a one-space buffer before the colon, and the dict,
-//! annotation, and parameter contexts collapse the gap after it to one
-//! space. The code contexts resolve within `code_line_length`, whereas
-//! a docstring section's run carries no cap and reads the column it
-//! aligns to once wrapped, since `docstring_wrap` reflows each entry to
-//! `docstring_line_length` from the padded column downstream.
+//! docstring sections. Single-line groups, single-item groups, and
+//! groups whose rows open at differing column baselines pass through to
+//! `strip_align_padding` downstream. Each aligned `:` keeps a one-space
+//! buffer before it, and the dict, annotation, and parameter contexts
+//! collapse the gap after it to one space. Those three resolve within
+//! `code_line_length`, whereas a docstring run carries no cap and
+//! `docstring_wrap` reflows each entry to `docstring_line_length` from
+//! the padded column.
 
 use ruff_diagnostics::Edit;
 
@@ -61,7 +60,7 @@ struct Emitter<'a> {
 impl Emitter<'_> {
     /// Aligns `members` under `settings`, rewriting each single-line
     /// post-colon gap to one space in the same fix group.
-    fn emit(&mut self, members: &[ColonMember], settings: aligner::Settings) {
+    fn emit(&mut self, settings: aligner::Settings, members: &[ColonMember]) {
         let source = self.walker.source;
         let aligned: Vec<aligner::Member> = members.iter().map(|m| m.member).collect();
         let value_gaps = members
@@ -74,11 +73,11 @@ impl Emitter<'_> {
 
 impl ColonEmitter for Emitter<'_> {
     fn docstring_entries(&mut self, members: &[ColonMember]) {
-        self.emit(members, self.docstring_settings);
+        self.emit(self.docstring_settings, members);
     }
 
     fn handle(&mut self, members: &[ColonMember]) {
-        self.emit(members, self.walker.settings);
+        self.emit(self.walker.settings, members);
     }
 
     fn match_arms(&mut self, _: &[ColonMember]) {}

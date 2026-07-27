@@ -52,11 +52,9 @@ impl<'a> AlignWalker<'a> {
         }
     }
 
-    /// Aligns `members` to their shared column and folds in a one-space
-    /// rewrite of each gap in `gaps`, recording the combined fix as one
-    /// group. The members-level analog of [`Self::push_with_gaps`],
-    /// pairing the column math of [`Self::group_edits`] with the gap
-    /// normalization.
+    /// Aligns `members` to their shared column under `settings` and folds
+    /// in a one-space rewrite of each gap in `gaps`, recording the combined
+    /// fix as one group.
     pub(crate) fn emit_group_with_gaps(
         &mut self,
         settings: Settings,
@@ -76,8 +74,7 @@ impl<'a> AlignWalker<'a> {
     /// Aligns `members` as one fix group under `settings` rather than
     /// the walker's own, folding a one-space rewrite of each gap in
     /// `gaps` into that group and recording nothing when `members` form
-    /// no alignment candidate. A rule whose contexts resolve within
-    /// different length caps emits each through this.
+    /// no alignment candidate.
     pub(crate) fn emit_if_candidate_under(
         &mut self,
         settings: Settings,
@@ -89,10 +86,10 @@ impl<'a> AlignWalker<'a> {
         }
     }
 
-    /// Aligns `members` as one fix group when they form an alignment
-    /// candidate, folding a one-space rewrite of each gap in `gaps` into
-    /// the same group. Records nothing otherwise. The candidate-gated
-    /// counterpart to [`Self::emit_group_with_gaps`].
+    /// Aligns `members` as one fix group under the walker's own settings
+    /// when they form an alignment candidate, folding a one-space rewrite
+    /// of each gap in `gaps` into the same group. Records nothing
+    /// otherwise.
     pub(crate) fn emit_if_candidate_with_gaps(
         &mut self,
         members: &[Member],

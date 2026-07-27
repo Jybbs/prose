@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_colons/wide_docstring_run_ignores_code_budget/input.py
+---
+class Client:
+    """
+    Attributes:
+        host               : The remote hostname this client opens its connection against.
+        connection_timeout : Seconds to wait before abandoning the connect attempt entirely.
+    """

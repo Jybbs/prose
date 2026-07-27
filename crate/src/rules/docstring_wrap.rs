@@ -1,18 +1,13 @@
 //! Wraps Google-style docstring prose to its configured budget.
-//! Description prose wraps to `docstring_line_length`. Title-case-headed
-//! structured sections wrap to the budget that
-//! `docstring_structured_policy` selects. Entry-carrying sections, those
-//! holding `name: description` entries, wrap each entry to
-//! `docstring_line_length` with a hanging indent at the description's
-//! start column, gathering the entry's head line and every following
-//! line from the section body indent onward that opens no entry of its
-//! own into one paragraph, so a moved hanging column reflows the whole
-//! description. Verbatim regions (triple-backtick fences, list items,
-//! doctest blocks, and blocks indented past their surrounding prose
-//! column) pass through unchanged, and a blank line closes an entry, so
-//! an indented block below one reads as verbatim rather than as
-//! continuation. reStructuredText markup, Sphinx directives, and
-//! Numpydoc style pass through unwrapped.
+//! Description prose wraps to `docstring_line_length`, and Title-case
+//! sections wrap to the budget `docstring_structured_policy` selects.
+//! An entry-carrying section wraps each `name: description` entry to
+//! `docstring_line_length`, hanging at the description's start column
+//! and gathering every following line from the section body indent
+//! onward that opens no entry of its own. A blank line closes an entry.
+//! Fences, list items, doctest blocks, section underlines,
+//! reStructuredText markup, Sphinx directives, and blocks indented past
+//! a description's or a section's prose column pass through verbatim.
 
 use ruff_diagnostics::Edit;
 use textwrap::{Options, WordSeparator, WordSplitter};
@@ -21,8 +16,8 @@ use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            DocstringBody, LineScan, LineScanner, ScannedLine, indent_prefix, rewrite_docstrings,
-            section_heading, sibling_entry_head, triple_quoted_body,
+            DocstringBody, LineScan, LineScanner, ScannedLine, rewrite_docstrings, section_heading,
+            sibling_entry_head, triple_quoted_body,
         },
         edit::narrowed_replacement,
     },
@@ -56,9 +51,9 @@ impl Rule for DocstringWrap {
             else {
                 return;
             };
-            let indent = indent_prefix(source, lit);
+            let indent_chars = source.line_indent_width(body.range.start());
             let newline = source.newline_str();
-            let Some(rewritten) = rewrite_body(body.text, indent, newline, self) else {
+            let Some(rewritten) = rewrite_body(body.text, indent_chars, newline, self) else {
                 return;
             };
             edits.extend(narrowed_replacement(source, body.range, rewritten));
@@ -211,10 +206,7 @@ impl Walker<'_> {
 
     /// True when `trimmed` continues the open entry's description,
     /// sitting from the section body indent onward and opening no
-    /// sibling entry there. Every indent past the section body
-    /// qualifies, so a continuation left at a column the entry no longer
-    /// hangs from rejoins the description instead of passing through
-    /// verbatim.
+    /// sibling entry there.
     fn is_entry_continuation(&self, indent_chars: usize, trimmed: &str) -> bool {
         let section_body = self.scanner.section_body_indent_chars();
         indent_chars >= section_body
@@ -231,7 +223,7 @@ impl Walker<'_> {
 
 fn rewrite_body(
     body: &str,
-    body_indent: &str,
+    body_indent_chars: usize,
     newline: &str,
     rule: &DocstringWrap,
 ) -> Option<String> {
@@ -243,7 +235,7 @@ fn rewrite_body(
         paragraph: Paragraph::default(),
         region: Region::Description,
         rule,
-        scanner: LineScanner::new(body_indent.chars().count()),
+        scanner: LineScanner::new(body_indent_chars),
     };
     for line in content.split(newline) {
         walker.consume(line);

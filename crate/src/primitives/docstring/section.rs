@@ -8,7 +8,7 @@ use ruff_python_ast::StringLiteral;
 use ruff_source_file::{Line, UniversalNewlineIterator};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::body::{DocstringBody, indent_prefix, triple_quoted_body};
+use super::body::{DocstringBody, triple_quoted_body};
 use super::scan::{LineScan, LineScanner, ScannedLine};
 use crate::source::Source;
 
@@ -144,7 +144,7 @@ pub(crate) fn entry_carrying_sections<'src>(
     let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline) else {
         return Vec::new();
     };
-    let mut walker = EntryWalker::new(indent_prefix(source, lit).chars().count());
+    let mut walker = EntryWalker::new(source.line_indent_width(body.range.start()));
     for line in UniversalNewlineIterator::with_offset(body.text, body.range.start()) {
         walker.consume(line);
     }

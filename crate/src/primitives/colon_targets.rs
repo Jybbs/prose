@@ -27,47 +27,13 @@ use crate::{
     source::Source,
 };
 
-/// One row in a `:` alignment context, pairing the pre-colon alignment
-/// `member` with `value_gap`, the span from just past the colon to the
-/// value that an aligned or stripped row rewrites to one space. `None`
-/// leaves the post-colon spacing to another rule, as match arms defer to
-/// `align_match_case` and docstring entries stay as written.
-#[derive(Clone, Copy)]
-pub(crate) struct ColonMember {
-    pub(crate) member: aligner::Member,
-    pub(crate) value_gap: Option<TextRange>,
-}
-
-impl ColonMember {
-    /// Pairs `member` with no post-colon gap.
-    fn bare(member: aligner::Member) -> Self {
-        Self {
-            member,
-            value_gap: None,
-        }
-    }
-
-    /// This row's post-colon gap when it stays on one line, `None` for a
-    /// row carrying no gap and for one whose value opens on a later
-    /// line, which a rewrite to a single space would fold onto the head.
-    pub(crate) fn single_line_value_gap(&self, source: &Source) -> Option<TextRange> {
-        self.value_gap
-            .filter(|gap| !source.contains_line_break(*gap))
-    }
-}
-
 /// Receiver for the colon-context walker. `handle` is the catch-all
-/// for annotated assignments, dict entries, and parameters.
-/// `docstring_entries` and `match_arms` are split out so a rule can
-/// resolve a docstring section against its own length cap and opt out
-/// of match-arm alignment by overriding it to a no-op, both defaulting
-/// to `handle`. `rule` names the consuming rule so the group builders
-/// can hold its skip-suppressed rows out of alignment. Call `walk` to
-/// drive the emitter across `source`'s body.
+/// for annotated assignments, dict entries, and parameters, with
+/// `docstring_entries` and `match_arms` defaulting to it so a rule can
+/// override either. `rule` names the consuming rule so the group
+/// builders can hold its skip-suppressed rows out of alignment. Call
+/// `walk` to drive the emitter across `source`'s body.
 pub(crate) trait ColonEmitter {
-    /// Receives one Google-style docstring section's entries. Defaults
-    /// to `handle`, split out so a rule can resolve an entry against a
-    /// different length cap than the code contexts take.
     fn docstring_entries(&mut self, members: &[ColonMember]) {
         self.handle(members);
     }
@@ -92,6 +58,34 @@ pub(crate) trait ColonEmitter {
             source,
         };
         visitor.visit_body(&source.ast().body);
+    }
+}
+
+/// One row in a `:` alignment context, pairing the pre-colon alignment
+/// `member` with `value_gap`, the span from just past the colon to the
+/// value that an aligned or stripped row rewrites to one space. `None`
+/// leaves the post-colon spacing to another rule, as match arms defer to
+/// `align_match_case` and docstring entries stay as written.
+#[derive(Clone, Copy)]
+pub(crate) struct ColonMember {
+    pub(crate) member: aligner::Member,
+    pub(crate) value_gap: Option<TextRange>,
+}
+
+impl ColonMember {
+    /// Pairs `member` with no post-colon gap.
+    fn bare(member: aligner::Member) -> Self {
+        Self {
+            member,
+            value_gap: None,
+        }
+    }
+
+    /// This row's post-colon gap when it stays on one line, `None` for a
+    /// row carrying no gap and for one whose value opens on a later line.
+    pub(crate) fn single_line_value_gap(&self, source: &Source) -> Option<TextRange> {
+        self.value_gap
+            .filter(|gap| !source.contains_line_break(*gap))
     }
 }
 

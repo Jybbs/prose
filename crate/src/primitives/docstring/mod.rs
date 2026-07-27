@@ -1,18 +1,13 @@
 //! Shared walker for PEP 257 docstring statements, the first
-//! body-statement of the module, each class, and each function that
-//! holds a string literal as its first expression statement.
-//! Implementors of [`DocstringHandler`] receive every such docstring
-//! literal in source order via the trait's `walk` method. Implicitly
-//! concatenated docstring expressions are skipped. `body_docstring`
-//! returns one body's leading docstring literal for consumers that
-//! already hold the body. The section
-//! helpers `section_heading`, `sibling_entry_head`, and
-//! `entry_carrying_sections` parse a docstring body's Title-case-headed
-//! sections for consumers that walk text rather than the AST,
-//! recognizing entry-carrying sections by content shape rather than
-//! against a closed name list, and reading a sibling entry only at the
-//! section body indent. `unbracketed_colon` locates an entry head's
-//! separating `:` past a parenthesized type.
+//! body-statement of the module, each class, and each function whose
+//! first expression statement is a string literal. Implementors of
+//! [`DocstringHandler`] receive every such literal in source order
+//! through the trait's `walk` method, and implicitly concatenated
+//! docstring expressions are skipped. `body_docstring` returns one
+//! body's leading docstring literal. The re-exported section helpers
+//! parse a body's Title-case-headed sections for consumers that walk
+//! text rather than the AST, recognizing a section by content shape
+//! and reading a sibling entry only at the section body indent.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
