@@ -4,12 +4,13 @@
 //! each `name: description` entry to `docstring_line_length` with a
 //! hanging indent, its head left verbatim. Every region [`LineScan`]
 //! marks verbatim passes through unchanged, as does a `name (type):`
-//! field header standing outside any section. Description and section
-//! prose alike collapse every interior whitespace run to one space, and
-//! a backslash continuing a line of non-raw prose resolves into that
-//! join rather than reaching the output as a word, whereas a
-//! continuation inside a passthrough region travels with the region
-//! untouched.
+//! field header opening a paragraph outside any section, whereas one
+//! sitting under prose reflows into the paragraph above it. Description
+//! and section prose alike collapse every interior whitespace run to
+//! one space, and a backslash continuing a line of non-raw prose
+//! resolves into that join rather than reaching the output as a word,
+//! whereas a continuation inside a passthrough region travels with the
+//! region untouched.
 
 use std::borrow::Cow;
 
@@ -161,7 +162,9 @@ impl<'a> Walker<'a> {
         }
 
         match self.region {
-            Region::Description if typed_entry_head(text) => self.flush_verbatim(line),
+            Region::Description if self.paragraph.lines.is_empty() && typed_entry_head(text) => {
+                self.flush_verbatim(line);
+            }
             Region::Description => self.buffer_description(indent, text),
             Region::Section => {
                 if let Some((_, desc_start)) = entry_head(text) {
@@ -455,6 +458,15 @@ mod tests {
         assert_eq!(
             indent, 18,
             "continuation hangs under the description column"
+        );
+    }
+
+    #[test]
+    fn typed_head_under_prose_reflows_into_the_paragraph() {
+        let src = "def f():\n    \"\"\"\n    Short intro.\n    config (dict): more prose carrying the same paragraph.\n    \"\"\"\n    pass\n";
+        assert!(
+            run(src).contains("Short intro. config (dict):"),
+            "a head with no blank line above it split the paragraph",
         );
     }
 
