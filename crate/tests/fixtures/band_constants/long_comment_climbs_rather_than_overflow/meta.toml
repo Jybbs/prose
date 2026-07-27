@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Long Comment Climbs Rather Than Overrun the Budget"
+
+description = '''
+Joining this comment to its constant's line would carry it past the code budget, so the block takes the line above instead. The comment stays bound to the constant it documents without the band handing `line-overflow` a line the source never wrote that way.
+'''

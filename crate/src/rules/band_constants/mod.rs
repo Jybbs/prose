@@ -10,6 +10,7 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{PythonVersion, Stmt, helpers::is_compound_statement};
+use ruff_source_file::LineRanges;
 use ruff_text_size::TextRange;
 
 use crate::{
@@ -33,10 +34,14 @@ mod plan;
 
 use self::{
     analysis::module_band_plan,
-    plan::{Banding, banded_gap},
+    plan::{Banding, Placement, banded_gap},
 };
 
+/// The gap PEP 8 seats between code and a trailing comment.
+const TRAILING_GAP: &str = "  ";
+
 pub(crate) struct BandConstants {
+    code_width: usize,
     first_party: Vec<String>,
     group_constants: bool,
     group_imports: bool,
@@ -47,6 +52,7 @@ pub(crate) struct BandConstants {
 impl BandConstants {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
+            code_width: config.code_width(),
             first_party: config.first_party(),
             group_constants: config.rules.band_constants.group_constants,
             group_imports: config.group_imports_enabled(),
@@ -63,6 +69,7 @@ impl Rule for BandConstants {
             return Vec::new();
         }
         let bander = Bander {
+            code_width: self.code_width,
             defer_annotations: defers_annotations(body),
             first_party: &self.first_party,
             group_constants: self.group_constants,
@@ -109,6 +116,7 @@ impl BandLayout<'_> {
 
 /// Invariant banding context threaded through the recursion.
 struct Bander<'a> {
+    code_width: usize,
     defer_annotations: bool,
     first_party: &'a [String],
     group_constants: bool,
@@ -153,10 +161,10 @@ impl<'a> Bander<'a> {
         })
     }
 
-    /// Renders `body`, builds the module band over it, and folds each
-    /// carried comment up with its constant, leaving the assembly to the
-    /// caller. The section partition walls each notebook cell, so a band
-    /// never crosses one.
+    /// Renders `body`, builds the module band over it, and places each
+    /// bound comment on the member carrying it, leaving the assembly to
+    /// the caller. The section partition walls each notebook cell, so a
+    /// band never crosses one.
     fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
         let (mut blocks, mut rendered) =
             rendered_member_blocks(self.source, body, outer, |stmt, block| {
@@ -194,6 +202,7 @@ impl<'a> Bander<'a> {
             self.source,
             body,
             blocks,
+            self.code_width,
             self.defer_annotations,
             self.group_constants,
             self.target_version,
@@ -224,31 +233,42 @@ impl<'a> Bander<'a> {
     }
 }
 
-/// Relocates each carried comment up with its banded constant, extending
-/// the constant's block back over the comment and prepending it to the
-/// rendered text so the hoist moves the comment rather than stranding it.
-fn apply_band_carries(
-    source: &Source,
+/// Places each bound comment on the member that carries it, extending the
+/// absorbing member's block over the comment so the surrounding gap no
+/// longer holds it. A first pass lifts every relocating comment out of its
+/// absorbing member's text, and a second places each on its carrier.
+fn apply_band_carries<'src>(
+    source: &'src Source,
     band: &Banding,
     blocks: &mut [TextRange],
-    rendered: &mut [Cow<'_, str>],
+    rendered: &mut [Cow<'src, str>],
 ) {
-    for &(idx, comment) in &band.carries {
-        let carried = format!(
-            "{}{}{}",
-            source.slice(comment),
-            source.newline_str(),
-            rendered[idx],
-        );
-        blocks[idx] = comment.cover(blocks[idx]);
-        rendered[idx] = Cow::Owned(carried);
+    for carry in &band.carries {
+        if carry.absorbs != carry.carrier && blocks[carry.absorbs].contains_range(carry.comment) {
+            let below = source.text().full_line_end(carry.comment.end());
+            rendered[carry.absorbs] =
+                Cow::Borrowed(source.slice(TextRange::new(below, blocks[carry.absorbs].end())));
+        }
+    }
+    for carry in &band.carries {
+        let comment = source.slice(carry.comment);
+        let carried = &rendered[carry.carrier];
+        rendered[carry.carrier] = Cow::Owned(match carry.placement {
+            // The block reaches back to its line start, so its indent
+            // belongs to a line of its own rather than to a trailing slot.
+            Placement::Trails => format!("{carried}{TRAILING_GAP}{}", comment.trim_start()),
+            Placement::Above | Placement::Climbs => {
+                format!("{comment}{}{carried}", source.newline_str())
+            }
+        });
+        blocks[carry.absorbs] = carry.comment.cover(blocks[carry.absorbs]);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::primitives::orderer::block_ranges;
+    use crate::primitives::orderer::member_blocks;
     use crate::testing::parse;
 
     #[test]
@@ -256,9 +276,10 @@ mod tests {
         let source =
             parse("def helper(value):\n    return value\n\n\nimport os\n\n\nCONFIG = helper\n");
         let body = &source.ast().body;
-        let blocks = block_ranges(&source, body, source.module_range());
+        let blocks = member_blocks(&source, body, source.module_range());
         let mut order: Vec<usize> = (0..body.len()).collect();
         let bander = Bander {
+            code_width: 88,
             defer_annotations: false,
             first_party: &[],
             group_constants: true,

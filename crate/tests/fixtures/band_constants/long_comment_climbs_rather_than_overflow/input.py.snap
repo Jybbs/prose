@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/long_comment_climbs_rather_than_overflow/input.py
+---
+ALPHA_CAP = 2
+# a considerably longer explanatory note that will not fit alongside the code
+ZETA_WITH_A_RATHER_LONG_NAME = 1

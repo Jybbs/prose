@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Detached Heading Stays Above the Hoisted Band"
+
+description = '''
+A blank line stands on either side of the comment, so it binds forward to the band rather than to the definition above it. Heading the band's first constant in source order, it rides to the head of the hoisted band rather than travelling with `MAX_INT` alone.
+'''

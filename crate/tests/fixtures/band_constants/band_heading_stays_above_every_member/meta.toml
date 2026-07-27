@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Band Heading Stays Above Every Member"
+
+description = '''
+A comment leading the band's first constant heads the whole band rather than documenting the one constant beneath it, so it **holds the head** as `ALPHA_DECAY` sorts past `MAX_INT` instead of being stranded mid-band.
+'''

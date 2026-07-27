@@ -39,7 +39,7 @@ The entry point `emit_group(source: &Source, members: &[Member], settings: Setti
 
 A consuming rule rarely hand-builds the walker from raw AST traversal, since the aligner module exposes a set of `pub(crate)` helpers covering the common shapes a new alignment rule needs:
 
-1. `line_adjacent_groups(items, member_of)` partitions `items` into runs of line-adjacent siblings via `Source::is_line_adjacent`, then maps each item through `member_of`. Single-member runs drop out.
+1. `line_adjacent_groups(items, member_of)` partitions `items` into runs of line-adjacent siblings via `Source::consecutive_lines`, then maps each item through `member_of`. A trailing comment rides inside its own row and leaves the run intact, whereas an own-line comment or a blank line closes it. Single-member runs drop out.
 2. `keyed_line_adjacent_groups(items, key_of, member_of)` is the same shape with a per-item key that further partitions adjacent items into sub-groups by key.
 3. `parameter_split_groups(params, qualify)` walks a `Parameters` node and splits at the first parameter that does not qualify, used by rules over annotated function signatures.
 4. `line_anchored_member(source, anchor)` builds a `Member` whose `gap` starts at `anchor` and whose `width` measures the leading display column on the line.
@@ -56,7 +56,7 @@ When a run's width spread exceeds `max_shift`, the walk regroups it in source or
 
 `emit_group` walks each run from the first row, growing a group while its width spread stays within `max_shift` and breaking a fresh group at the first row that would exceed it. Each group aligns to its widest member, and a row left alone keeps its minimal spacing, so a column never reaches past a narrow row to gather wider neighbors. `max_shift` reads as `false` to lift the cap so a contiguous run always folds into one column, a positive `N` to bound the spread at `N`, and `0` to forbid any shift so every row sits flush.
 
-A row carrying a line-level skip directive *(`# prose: skip`, `# fmt: skip`, or `# prose: skip[<rule>]`)* is **held** out of its group, excluded from the column math, emitting no edit, and transparent to the run so the rows on either side align as one block around it. The grouping treats a held row's own trailing skip comment as not breaking the run, while a standalone comment or blank line between rows still does.
+A row carrying a line-level skip directive *(`# prose: skip`, `# fmt: skip`, or `# prose: skip[<rule>]`)* is **held** out of its group, excluded from the column math, emitting no edit, and transparent to the run so the rows on either side align as one block around it. A held row's own trailing skip comment rides inside its row the way any trailing comment does, leaving the run intact, whereas a standalone comment or blank line between rows still breaks it.
 
 Variable-width operators opt in to right-alignment by setting `op_width`, shifting each row's padding inward by `max(op_width) - row.op_width`. [[align-comparisons]] is the shipped consumer of this hook, with the infrastructure leaving the door open for future variable-width-operator rules to land as a grouping walker plus a facet set rather than a from-scratch implementation.
 

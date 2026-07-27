@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment Below Its Constant Climbs onto That Line"
+
+description = '''
+The blank line under the comment binds it to `DEFAULT_EPSILON` above rather than to `MAX_INT` below, so packing the band carries the comment onto its own constant's line as a **trailing note** rather than stranding it over whichever constant sorts in beneath it.
+'''

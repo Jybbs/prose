@@ -1,6 +1,6 @@
 //! Statement grouping for the alignment rules. Walks a body into
-//! line-adjacent runs of qualified members, relaxing adjacency across a
-//! skip-held row so its neighbors align as one block.
+//! line-adjacent runs of qualified members, passing a skip-held row
+//! through so its neighbors align as one block.
 
 use ruff_python_ast::Stmt;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -87,16 +87,16 @@ where
 /// Generalization of [`line_adjacent_groups`] for rules that admit
 /// more than one member shape. The qualifier returns `Option<(K, M)>`
 /// where `K` tags the shape, and a run extends only while the next
-/// member shares the active key, sits line-adjacent to the prior
-/// statement, and the prior statement itself fits on one source line.
-/// A key change at an otherwise-adjacent boundary closes the active
-/// run and starts a fresh one without losing the boundary statement.
-/// A statement [held](is_held) for `rule` is transparent: it joins no
-/// group and does not close the run, leaving neighbors on either side
-/// to align as one block. Adjacency across a held statement relaxes to
-/// a consecutive-line check, so the held row's own trailing skip
-/// comment does not break the run while a standalone comment or blank
-/// line between rows still does. Walks `body` exactly once.
+/// member shares the active key, sits on the source line directly below
+/// the prior statement, and the prior statement itself fits on one
+/// source line. A key change at an otherwise-adjacent boundary closes
+/// the active run and starts a fresh one without losing the boundary
+/// statement. A statement [held](is_held) for `rule` is transparent: it
+/// joins no group and does not close the run, leaving neighbors on
+/// either side to align as one block. A trailing comment on a row rides
+/// inside that row, so it leaves the run intact, while a standalone
+/// comment line or a blank line between rows breaks it. Walks `body`
+/// exactly once.
 pub(crate) fn keyed_line_adjacent_groups<'a, K, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -109,7 +109,7 @@ where
 {
     let mut groups: Vec<Vec<M>> = Vec::new();
     let mut current: Vec<M> = Vec::new();
-    let mut active: Option<(K, TextRange, bool)> = None;
+    let mut active: Option<(K, TextRange)> = None;
     for stmt in body {
         let Some((key, member)) = qualify(stmt) else {
             flush_run(&mut groups, &mut current);
@@ -117,24 +117,21 @@ where
             continue;
         };
         if is_held(source, rule, stmt.start()) {
-            if let Some((_, prev, prev_held)) = active.as_mut() {
+            if let Some((_, prev)) = active.as_mut() {
                 *prev = stmt.range();
-                *prev_held = true;
             }
             continue;
         }
-        let extends = active
-            .as_ref()
-            .is_some_and(|(active_key, prev, prev_held)| {
-                active_key == &key
-                    && !source.contains_line_break(prev)
-                    && run_continues(source, prev.end(), *prev_held, stmt.start())
-            });
+        let extends = active.as_ref().is_some_and(|(active_key, prev)| {
+            active_key == &key
+                && !source.contains_line_break(prev)
+                && source.consecutive_lines(prev.end(), stmt.start())
+        });
         if !extends {
             flush_run(&mut groups, &mut current);
         }
         current.push(member);
-        active = Some((key, stmt.range(), false));
+        active = Some((key, stmt.range()));
     }
     flush_run(&mut groups, &mut current);
     groups
@@ -143,7 +140,7 @@ where
 /// Walks `body`, qualifying each statement through `qualify` and
 /// grouping the qualified members into runs where every consecutive
 /// pair sits on adjacent source lines. A multi-line prior statement,
-/// a non-qualifying statement, a comment in the inter-statement gap,
+/// a non-qualifying statement, an own-line comment between two rows,
 /// or a blank line breaks the current run. A statement held for `rule`
 /// is transparent per [`keyed_line_adjacent_groups`]. Empty groups
 /// (statements that fail qualification with no qualified neighbors) are
@@ -169,25 +166,6 @@ where
 fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {
     if !current.is_empty() {
         groups.push(std::mem::take(current));
-    }
-}
-
-/// Returns whether a run continues from a row ending at `prev_end` to
-/// the next row starting at `next_start`. A non-held predecessor uses
-/// the standard inter-statement adjacency. A [held](is_held)
-/// predecessor relaxes to a consecutive-line check, so the held row's
-/// own trailing skip comment does not break the run while a standalone
-/// comment or blank line between rows still does.
-fn run_continues(
-    source: &Source,
-    prev_end: TextSize,
-    prev_held: bool,
-    next_start: TextSize,
-) -> bool {
-    if prev_held {
-        source.consecutive_lines(prev_end, next_start)
-    } else {
-        source.is_line_adjacent(TextRange::new(prev_end, next_start))
     }
 }
 
@@ -411,6 +389,21 @@ mod tests {
         );
 
         assert!(groups.is_empty());
+    }
+
+    #[test]
+    fn keyed_line_adjacent_groups_spans_a_trailing_comment() {
+        let source = parse("x = 1  # note\ny = 2\nz = 3\n");
+        let groups = keyed_line_adjacent_groups(
+            &source,
+            &source.ast().body,
+            RuleId::from("align-equals"),
+            |s| s.as_assign_stmt().map(|_| ((), ())),
+        );
+
+        // The comment rides inside x's own row, so all three rows align
+        // as one block.
+        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), vec![3]);
     }
 
     #[test]

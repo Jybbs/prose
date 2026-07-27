@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Own-Line Comments Reset the Run, like Blank Lines"
+
+description = '''
+An own-line comment between two imports **breaks adjacency**, so each comment-bracketed sub-run aligns only with its own contiguous neighbors. A trailing comment sits inside its own import's row rather than between two rows, leaving the run around it intact.
+'''

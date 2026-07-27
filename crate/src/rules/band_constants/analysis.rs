@@ -1,17 +1,21 @@
 //! The banding analysis. Ranks each module-scope statement into an
 //! import, leading-constant, definition, or trailing-constant band and
 //! tiers the constant bands through the shared `primitives::tiering`
-//! graph, declining when a band's reference graph carries a cycle.
+//! graph, declining when a band's reference graph carries a cycle. Each
+//! own-line comment binds to the member above or below it that it
+//! documents.
 
 use std::collections::{HashMap, HashSet};
 
 use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_python_stdlib::builtins::is_python_builtin;
+use ruff_python_trivia::is_pragma_comment;
 use ruff_text_size::{Ranged, TextRange};
+use unicode_width::UnicodeWidthStr;
 
 use super::{
-    BandConstants,
-    plan::{BandPlan, BandRank, Subcategory},
+    BandConstants, TRAILING_GAP,
+    plan::{BandPlan, BandRank, Carry, Subcategory},
 };
 use crate::{
     primitives::{
@@ -44,13 +48,28 @@ struct ConstSite<'src> {
     value_refs: Vec<&'src str>,
 }
 
+/// How the own-line comment in the gap above a statement binds to the
+/// members around it.
+enum Gap {
+    /// Bound to the member above, carrying the placement it renders at.
+    Backward(Carry),
+    /// Bound to the statement below, which pins unless it is a constant.
+    Forward(TextRange),
+    /// No own-line comment sits in the gap.
+    None,
+    /// Bound to neither, keeping the slot the source gave it.
+    Pins,
+}
+
 /// Builds the module-scope hoist plan, ranking each statement and
-/// pairing each banded constant with the comment it carries. Returns
-/// `None` when a constant band's reference graph carries a cycle.
+/// pairing each banded member with the comment it carries and the side
+/// that comment lands on. Returns `None` when a constant band's
+/// reference graph carries a cycle.
 pub(super) fn module_band_plan<'src>(
     source: &'src Source,
     body: &'src [Stmt],
     blocks: &[TextRange],
+    code_width: usize,
     defer_annotations: bool,
     group_constants: bool,
     target_version: Option<PythonVersion>,
@@ -64,7 +83,8 @@ pub(super) fn module_band_plan<'src>(
     let mut dup_defs: HashSet<&'src str> = HashSet::new();
     let mut imports: HashSet<&'src str> = HashSet::new();
     let mut ranks: HashMap<usize, BandRank> = HashMap::new();
-    let mut carries: Vec<(usize, TextRange)> = Vec::new();
+    let mut attached: HashMap<usize, TextRange> = HashMap::new();
+    let mut carries: Vec<Carry> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
         // A `# fmt: off` span or a `# prose: skip` line pins its
@@ -76,26 +96,26 @@ pub(super) fn module_band_plan<'src>(
         {
             continue;
         }
-        // The own-line comment in the gap above the statement, if any.
-        // `block_range` folds a statement's trailing and attached comments
-        // into its own block, so a comment surviving in the gap is a
-        // free-floating own-line comment a blank line separates from below.
-        let gap_comment = idx.checked_sub(1).and_then(|prev| {
-            leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
-        });
-        let const_target = const_binding(stmt);
-        // A definition, class, import, or any non-constant pins beneath an
-        // own-line comment, bounding the bands to its side. A constant
-        // instead forward-attaches a prose comment the way `blank-lines`
-        // settles it, while a banner section divider or a suppression
-        // directive pins the constant too, since neither may relocate.
-        if gap_comment.is_some_and(|block| {
-            const_target.is_none()
-                || is_banner_block(source, block)
-                || source.slice(block).lines().any(is_directive_comment)
-        }) {
-            continue;
+        // The own-line comment block folded into this member's own extent,
+        // which heads the band when the member sorts first.
+        if let Some(block) = leading_comment_block(source, blocks[idx].start(), stmt.start()) {
+            attached.insert(idx, block);
         }
+        let const_target = const_binding(stmt);
+        // A definition, class, import, or any non-constant pins beneath a
+        // forward-binding own-line comment, bounding the bands to its side.
+        // A constant instead carries that comment up with it the way
+        // `blank-lines` settles it.
+        let forward = match gap_binding(source, body, blocks, idx, code_width) {
+            Gap::Backward(carry) => {
+                carries.push(carry);
+                None
+            }
+            Gap::Forward(_) if const_target.is_none() => continue,
+            Gap::Forward(block) => Some(block),
+            Gap::None => None,
+            Gap::Pins => continue,
+        };
         match stmt {
             Stmt::ClassDef(StmtClassDef { name, .. })
             | Stmt::FunctionDef(StmtFunctionDef { name, .. }) => {
@@ -121,8 +141,8 @@ pub(super) fn module_band_plan<'src>(
                     {
                         continue;
                     }
-                    if let Some(block) = gap_comment {
-                        carries.push((idx, block));
+                    if let Some(block) = forward {
+                        carries.push(Carry::above(idx, block));
                     }
                     sites.push(ConstSite {
                         annot_refs: stmt
@@ -234,10 +254,12 @@ pub(super) fn module_band_plan<'src>(
             }
         }
     }
-    // A carried comment only travels when its constant bands, leaving an
-    // anchored constant's comment in its source gap.
-    carries.retain(|(idx, _)| ranks.contains_key(idx));
+    // A bound comment only travels when its member bands, leaving an
+    // anchored member's comment where the source put it.
+    attached.retain(|idx, _| ranks.contains_key(idx));
+    carries.retain(|carry| ranks.contains_key(&carry.carrier));
     Some(BandPlan {
+        attached,
         carries,
         edges,
         keys,
@@ -257,6 +279,46 @@ fn const_binding(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
         )),
         _ => single_name_assignment(stmt).map(|(target, value)| (target.id.as_str(), value)),
     }
+}
+
+/// How the own-line comment in the gap above `body[idx]` binds. A banner,
+/// a directive, a pragma, or a block at a foreign indent pins. A block on
+/// the line directly below the previous member binds backward, trailing
+/// that member's code where it fits. Every other block binds forward.
+fn gap_binding(
+    source: &Source,
+    body: &[Stmt],
+    blocks: &[TextRange],
+    idx: usize,
+    code_width: usize,
+) -> Gap {
+    let Some((prev, block)) = idx.checked_sub(1).and_then(|prev| {
+        leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
+            .map(|block| (prev, block))
+    }) else {
+        return Gap::None;
+    };
+    if is_banner_block(source, block)
+        || source.line_indent_width(block.start()) != source.line_indent_width(body[idx].start())
+        || source
+            .slice(block)
+            .lines()
+            .map(str::trim_start)
+            .any(|line| is_directive_comment(line) || is_pragma_comment(line))
+    {
+        return Gap::Pins;
+    }
+    if !source.consecutive_lines(blocks[prev].end(), block.start()) {
+        return Gap::Forward(block);
+    }
+    let trails = !source.contains_line_break(block)
+        && !source.contains_line_break(&body[prev])
+        && !source.column_overflows(
+            blocks[prev].end(),
+            TRAILING_GAP.width() + source.slice(block).trim_start().width(),
+            code_width,
+        );
+    Gap::Backward(Carry::below(prev, block, trails))
 }
 
 /// Closes `state` over `deps` to a fixed point, flipping a slot true
@@ -301,13 +363,14 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::primitives::orderer::block_ranges;
+    use crate::primitives::orderer::member_blocks;
+    use crate::rules::band_constants::plan::Placement;
     use crate::testing::{notebook, parse};
 
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
-        let blocks = block_ranges(source, body, source.module_range());
-        module_band_plan(source, body, &blocks, false, true, None)
+        let blocks = member_blocks(source, body, source.module_range());
+        module_band_plan(source, body, &blocks, 88, false, true, None)
     }
 
     #[test]
@@ -364,6 +427,31 @@ mod tests {
         assert_eq!(plan.ranks[&2], BandRank::Trailing, "TRAIL names make");
     }
 
+    #[rstest]
+    #[case("ZETA = 1\n# documents ZETA\n\nALPHA = 2\n", Placement::Trails)]
+    #[case(
+        "ZETA = 1\n# documents ZETA\n# at length\n\nALPHA = 2\n",
+        Placement::Climbs
+    )]
+    #[case("def f():\n    pass\n# documents f\n\nALPHA = 2\n", Placement::Climbs)]
+    #[case(
+        "ZETA = 1\n# a note long enough that joining it onto the constant line would outrun the code budget\n\nALPHA = 2\n",
+        Placement::Climbs
+    )]
+    fn module_band_plan_binds_a_comment_below_a_member_backward(
+        #[case] src: &str,
+        #[case] expected: Placement,
+    ) {
+        let source = parse(src);
+        let plan = plan_of(&source).expect("acyclic module plans");
+        let carry = plan
+            .carries
+            .first()
+            .expect("the member carries its comment");
+        assert_eq!(carry.carrier, 0);
+        assert_eq!(carry.placement, expected);
+    }
+
     #[test]
     fn module_band_plan_carries_a_prose_comment_into_the_band() {
         let source = parse("def f():\n    pass\n\n# note\n\nX = 1\n");
@@ -373,13 +461,25 @@ mod tests {
             BandRank::Leading,
             "X leads, hoisting above f"
         );
-        let (idx, comment) = plan
-            .carries
-            .first()
-            .copied()
-            .expect("X carries its comment");
-        assert_eq!(idx, 1);
-        assert_eq!(source.slice(comment), "# note");
+        let carry = plan.carries.first().expect("X carries its comment");
+        assert_eq!(carry.carrier, 1);
+        assert_eq!(
+            carry.placement,
+            Placement::Above,
+            "a blank above binds the comment forward"
+        );
+        assert_eq!(source.slice(carry.comment), "# note");
+    }
+
+    #[test]
+    fn module_band_plan_declines_a_backward_bind_below_a_banner() {
+        let source = parse("ZETA = 1\n# =========\n\nALPHA = 2\n");
+        let plan = plan_of(&source).expect("acyclic module plans");
+        assert!(plan.carries.is_empty(), "a divider binds to neither side");
+        assert!(
+            !plan.ranks.contains_key(&1),
+            "the banner pins ALPHA below it"
+        );
     }
 
     #[test]
@@ -443,6 +543,15 @@ mod tests {
             !plan.ranks.contains_key(&2),
             "SCALED references effectful RAW, so anchoring propagates and it pins"
         );
+    }
+
+    #[test]
+    fn module_band_plan_records_the_comment_attached_above_a_member() {
+        let source = parse("# the tunable knobs\nZETA = 1\nALPHA = 2\n");
+        let plan = plan_of(&source).expect("acyclic module plans");
+        let attached = plan.attached.get(&0).expect("ZETA folds in its comment");
+        assert_eq!(source.slice(*attached), "# the tunable knobs");
+        assert!(!plan.attached.contains_key(&1));
     }
 
     #[test]

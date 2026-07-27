@@ -1,11 +1,11 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/suppression/trailing_off_not_block_opener/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/suppression/trailing_off_not_block_opener/input.py
 ---
 aa    = 4
 bbb   = 5
 cccc  = 6
 foo   = 2
 short = 3  # fmt: off
-x = 1
+x     = 1
