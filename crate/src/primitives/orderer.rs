@@ -14,7 +14,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     primitives::{
-        comments::marker_floor,
+        comments::bound_block_start,
         edit::{any_owned, narrowed_replacement, splice_parses},
     },
     source::Source,
@@ -177,11 +177,7 @@ pub(crate) fn block_range<T: Ranged>(
     outer: TextRange,
 ) -> TextRange {
     let item = items[i].range();
-    let cell_floor = source.cell_start(item.start()).unwrap_or(outer.start());
-    let lower = items[..i]
-        .last()
-        .map_or(outer.start(), Ranged::end)
-        .max(cell_floor);
+    let lower = block_lower(source, items, i, outer, outer.start());
     let forward = match items.get(i + 1) {
         Some(next) => source.text().line_end(item.end()).min(next.start()),
         None => tail_end(source, item.end()),
@@ -423,6 +419,23 @@ pub(crate) fn slot_runs<T>(
     })
 }
 
+/// Lower bound of the backward comment scan for `items[i]`, the latest
+/// of the previous item's end, `first` when the item has no predecessor,
+/// and the start of the notebook cell holding the item. Flooring at the
+/// cell keeps a block from reaching back over a cell boundary.
+fn block_lower<T: Ranged>(
+    source: &Source,
+    items: &[T],
+    i: usize,
+    outer: TextRange,
+    first: TextSize,
+) -> TextSize {
+    items[..i]
+        .last()
+        .map_or(first, Ranged::end)
+        .max(source.cell_start(items[i].start()).unwrap_or(outer.start()))
+}
+
 /// True when `order` is the identity permutation `0..order.len()`, the
 /// signal a reorder left every slot in source position.
 fn is_identity(order: &[usize]) -> bool {
@@ -464,15 +477,20 @@ fn leading_attached_start(source: &Source, item_start: TextSize, lower: TextSize
     current
 }
 
-/// [`block_range`] for `items[i]` with its start pushed below any section
-/// marker leading it, so a banner or hash heading stays in the gap above
-/// the member rather than traveling with it through a reorder. The
-/// marker-bearing gap is what [`Sections`](crate::primitives::sections::Sections)
-/// reads to divide the body.
+/// [`block_range`] for `items[i]` with its start settled by
+/// [`bound_block_start`], so a comment run leading the member binds to
+/// it across a blank line while a banner, hash heading, or suppression
+/// directive stays in the gap rather than traveling through a reorder.
+/// That gap is what [`Sections`](crate::primitives::sections::Sections)
+/// reads to divide the body. Binding never reads the blank run, so a
+/// block spans the same text either side of `blank-lines`.
 fn member_block<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRange) -> TextRange {
     let raw = block_range(source, items, i, outer);
+    // The first member has no predecessor to bound the gap, so its own
+    // attached run stands in as the lower bound.
+    let lower = block_lower(source, items, i, outer, raw.start());
     TextRange::new(
-        marker_floor(source, raw.start(), items[i].start()),
+        bound_block_start(source, lower, items[i].start()),
         raw.end(),
     )
 }

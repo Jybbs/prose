@@ -18,58 +18,41 @@ pub(crate) fn is_alignment_candidate(source: &Source, members: &[Member]) -> boo
         })
 }
 
-/// Returns `true` when the line containing `anchor` carries a skip
-/// directive for `rule`: a bare `# prose: skip` / `# fmt: skip` span, a
-/// `# fmt: off` region, or `# prose: skip[rule]`. A held row stays out
-/// of the column math and emits no edit, so its neighbors align around
-/// it. Short-circuits when the source carries no format suppression.
+/// Returns `true` when the line containing `anchor` falls under a skip
+/// directive for `rule`: a bare `# prose: skip` span, a `# prose: off`
+/// region, or a `# prose: skip[<id>]` listing `rule`. A directive
+/// trailing a wrapped statement covers every line that statement spans.
 pub(crate) fn is_held(source: &Source, rule: RuleId, anchor: TextSize) -> bool {
     let suppression = source.suppression_map();
-    if !suppression.has_format_suppression() && !suppression.has_skip_suppression() {
-        return false;
-    }
-    suppression.intersects(source.text().full_line_range(anchor))
-        || suppression.is_format_suppressed_at(source.line_index(anchor), rule)
+    suppression.has_format_suppression()
+        && suppression.suppresses(source.text().full_line_range(anchor), rule)
 }
 
 /// Returns the rows of `members` whose anchor line is not skip-held for
 /// `rule`, dropping the held rows so neighbors align around them.
-/// `line_start` yields each row's anchor line, so a row type wrapping a
-/// `Member` filters by the same line the member carries.
-pub(crate) fn retain_unheld<M>(
+pub(crate) fn retain_unheld(
     source: &Source,
     rule: RuleId,
-    members: impl IntoIterator<Item = M>,
-    line_start: impl Fn(&M) -> TextSize,
-) -> Vec<M> {
+    members: impl IntoIterator<Item = Member>,
+) -> Vec<Member> {
     members
         .into_iter()
-        .filter(|m| !is_held(source, rule, line_start(m)))
+        .filter(|m| !is_held(source, rule, m.line_start))
         .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{parse, range};
+    use crate::testing::{align_member, parse, range};
 
     #[test]
     fn is_alignment_candidate_holds_for_shared_baseline() {
         // Two `=` rows on distinct lines, each opening at column 0.
         let source = parse("ab = 1\ncd = 2\n");
         let members = [
-            Member {
-                gap: range(2, 3),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 2,
-            },
-            Member {
-                gap: range(9, 10),
-                line_start: TextSize::new(7),
-                op_width: 0,
-                width: 2,
-            },
+            align_member(range(2, 3), 0, 2),
+            align_member(range(9, 10), 7, 2),
         ];
 
         assert!(is_alignment_candidate(&source, &members));
@@ -81,18 +64,8 @@ mod tests {
         // columns right, so a shared `=` column would land where no row sits.
         let source = parse("ab = 1\nq.cd = 2\n");
         let members = [
-            Member {
-                gap: range(2, 3),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 2,
-            },
-            Member {
-                gap: range(11, 12),
-                line_start: TextSize::new(7),
-                op_width: 0,
-                width: 2,
-            },
+            align_member(range(2, 3), 0, 2),
+            align_member(range(11, 12), 7, 2),
         ];
 
         assert!(!is_alignment_candidate(&source, &members));
@@ -103,18 +76,8 @@ mod tests {
         // Two rows sharing a source line never form a column.
         let source = parse("ab = cd = 1\n");
         let members = [
-            Member {
-                gap: range(2, 3),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 2,
-            },
-            Member {
-                gap: range(7, 8),
-                line_start: TextSize::new(0),
-                op_width: 0,
-                width: 2,
-            },
+            align_member(range(2, 3), 0, 2),
+            align_member(range(7, 8), 0, 2),
         ];
 
         assert!(!is_alignment_candidate(&source, &members));
@@ -123,13 +86,10 @@ mod tests {
     #[test]
     fn is_alignment_candidate_rejects_singleton() {
         let source = parse("ab = 1\n");
-        let members = [Member {
-            gap: range(2, 3),
-            line_start: TextSize::new(0),
-            op_width: 0,
-            width: 2,
-        }];
 
-        assert!(!is_alignment_candidate(&source, &members));
+        assert!(!is_alignment_candidate(
+            &source,
+            &[align_member(range(2, 3), 0, 2)]
+        ));
     }
 }

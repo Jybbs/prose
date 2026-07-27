@@ -1,13 +1,12 @@
 //! Parsing of the format-suppression namespace: `# prose: off` /
-//! `on` / `skip` and their `skip[rule]` form.
+//! `on` / `skip` and their `skip[<id>]` form.
 
 use std::collections::HashSet;
 
 use ruff_python_trivia::{PythonWhitespace, SuppressionKind};
 
-use crate::rule::RuleId;
-
 use super::parse_common::{after_prose_prefix, parse_bracketed_rule_list};
+use crate::rule::RuleId;
 
 /// Result of `classify_format_directive`. `Kind` carries an upstream
 /// or `# prose:`-prefixed off/on/skip directive that drives the span

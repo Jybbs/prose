@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/suppression/skip_suppresses_lints_across_the_statement/input.py
+---
+def f() -> tuple[int, int]:
+    value = (
+        compute()
+    )  # fmt: skip
+    other = compute()
+    return value, other

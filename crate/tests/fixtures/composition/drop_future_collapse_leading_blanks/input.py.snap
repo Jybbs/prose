@@ -3,7 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/composition/drop_future_collapse_leading_blanks/input.py
 ---
-
 CONFIG = {}
 
 

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Demoted `__future__` Import Returns to the Front"
+
+description = '''
+A module arrives with `from __future__ import annotations` seated below the imports it should lead, a placement Python rejects outright, and the partition **lifts the directive back to the front** rather than leaving the file uncompilable.
+'''

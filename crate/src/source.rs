@@ -29,8 +29,8 @@ use crate::{
 /// Holds the source text, the parsed AST, the token stream, a lazy
 /// line index, a `CommentRanges` index built during parsing, and a
 /// `SuppressionMap` of `# prose: off` / `# prose: skip` spans (plus
-/// the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]` and
-/// `# prose: ignore[<id>]` per-line directives, plus a
+/// the `# fmt:` and `# yapf:` aliases), `# prose: skip[<id>]` per-rule
+/// spans and `# prose: ignore[<id>]` per-line directives, plus a
 /// `BindingAnalysis` table of every name's writes and reads.
 /// `source_type` is the parse mode, `cell_offsets` the notebook cell
 /// boundaries, and `cell_numbers` each cell's notebook position, the
@@ -109,6 +109,7 @@ impl Source {
         let suppression = Box::new(SuppressionMap::from_comments(
             &file.to_source_code(),
             &comment_ranges,
+            parsed.tokens(),
             first_code_offset,
             &cell_offsets,
         ));
