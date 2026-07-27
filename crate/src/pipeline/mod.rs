@@ -114,8 +114,10 @@ impl Pipeline {
     /// # Errors
     ///
     /// Returns `PipelineError::Reparse` when a rule's edit list produces
-    /// text that does not re-parse as Python, and
-    /// `PipelineError::Compile` when it parses but no longer compiles.
+    /// text that does not re-parse as Python, `PipelineError::Compile`
+    /// when it parses but no longer compiles, and `PipelineError::Cell`
+    /// when a notebook cell that parsed on its own before the rule ran no
+    /// longer does.
     pub fn run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError> {
         if source.suppression_map().file_is_suppressed() {
             return Ok((source, Vec::new()));
@@ -150,8 +152,10 @@ impl Pipeline {
     /// # Errors
     ///
     /// Returns `PipelineError::Reparse` when a rule's edit list produces
-    /// text that does not re-parse as Python, and
-    /// `PipelineError::Compile` when it parses but no longer compiles.
+    /// text that does not re-parse as Python, `PipelineError::Compile`
+    /// when it parses but no longer compiles, and `PipelineError::Cell`
+    /// when a notebook cell that parsed on its own before the rule ran no
+    /// longer does.
     pub(crate) fn validate(&self, source: Source) -> Result<(), PipelineError> {
         let gate = compile_gate(&source, self.target_version);
         self.rules
@@ -471,9 +475,10 @@ mod tests {
         let pipeline = Pipeline::from_rules(vec![Box::new(breaks_parse())]);
         let source = parse("x = 1\n");
 
-        let err = pipeline.run(source).expect_err("reparse should fail");
-
-        assert_matches!(err, PipelineError::Reparse { rule, .. } if rule.as_str() == "breaks-parse");
+        assert_matches!(
+            pipeline.run(source),
+            Err(PipelineError::Reparse { rule, .. }) if rule.as_str() == "breaks-parse"
+        );
     }
 
     #[test]
@@ -505,6 +510,8 @@ mod tests {
 
     #[test]
     fn run_applies_a_reordering_rule_on_a_notebook() {
+        // A sibling reorder runs cell-aware on a notebook, so its
+        // rewrite lands inside the cell that holds the members.
         let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
             groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
             id: RuleId::from("rewrite-x-to-y"),
