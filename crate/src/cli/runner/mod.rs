@@ -7,11 +7,10 @@ use std::{
 };
 
 use anstream::{
-    AutoStream,
+    AutoStream, ColorChoice,
     stream::{AsLockedWrite, RawStream},
 };
 use anyhow::Context;
-use itertools::Either;
 use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
 use ruff_source_file::SourceFile;
@@ -34,7 +33,7 @@ mod process;
 mod report;
 mod resolve;
 
-use diff::write_rewrite_diff;
+use diff::{Heading, write_rewrite_diff};
 use process::{apply_rewrite, process_path, process_paths, process_stdin, read_stdin};
 use report::{emit_outcomes, emitter_summary, finish, render_summary, status_from_outcomes};
 use resolve::{ConfigResolver, Resolved};
@@ -177,16 +176,15 @@ fn build_run(rules: RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> 
     })
 }
 
-/// Resolves the diff's sink, `stdout` for a decorated diff and the raw
-/// stream beneath it for a plain patch.
-fn diff_writer<O: RawStream + AsLockedWrite>(
-    stdout: AutoStream<O>,
-    decorate: bool,
-) -> Either<AutoStream<O>, O> {
-    if decorate {
-        Either::Left(stdout)
+/// Resolves how the diff heads each file, painting the `🧵` line only
+/// where `stdout` carries color through.
+fn diff_heading<O: RawStream>(present: &Presentation, stdout: &AutoStream<O>) -> Heading {
+    if present.decorate_diff() {
+        Heading::Thread {
+            color: stdout.current_choice() != ColorChoice::Never,
+        }
     } else {
-        Either::Right(stdout.into_inner())
+        Heading::Patch
     }
 }
 
@@ -202,7 +200,7 @@ fn format_pass(diff: bool, format: OutputFormat) -> Pass {
     }
 }
 
-fn format_paths_diff<O: RawStream + AsLockedWrite, E: Write>(
+fn format_paths_diff<O: RawStream, E: Write>(
     paths: &[PathBuf],
     setup: &RunSetup,
     verbose: bool,
@@ -213,8 +211,8 @@ fn format_paths_diff<O: RawStream + AsLockedWrite, E: Write>(
     let outcomes = process_paths(paths, |path, source_type| {
         process_path(path, source_type, setup, Pass::Rewrite)
     });
-    let decorate = present.decorate_diff();
-    let mut writer = diff_writer(stdout, decorate);
+    let heading = diff_heading(present, &stdout);
+    let mut writer = stdout.into_inner();
     for outcome in &outcomes {
         if let FileOutcome::Done {
             file,
@@ -229,7 +227,7 @@ fn format_paths_diff<O: RawStream + AsLockedWrite, E: Write>(
                 file.source_text(),
                 kind,
                 notebook_index.as_deref(),
-                decorate,
+                heading,
             )?;
         }
     }
@@ -299,14 +297,14 @@ fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
     {
         if diff {
             if let Rewrite::Changed(kind) = rewrite {
-                let decorate = present.decorate_diff();
+                let heading = diff_heading(present, &writer);
                 write_rewrite_diff(
-                    &mut diff_writer(writer, decorate),
+                    &mut writer.into_inner(),
                     "<stdin>",
                     &original,
                     kind,
                     notebook_index.as_deref(),
-                    decorate,
+                    heading,
                 )?;
             }
         } else if format.is_text() {
@@ -571,16 +569,40 @@ mod tests {
         assert_eq!(status, ExitStatus::ParseError);
     }
 
-    #[rstest]
-    #[case::decorated(true, false)]
-    #[case::plain(false, true)]
-    fn diff_writer_routes_a_plain_patch_to_the_raw_stream(
-        #[case] decorate: bool,
-        #[case] raw: bool,
-    ) {
-        let writer = diff_writer(AutoStream::never(Vec::new()), decorate);
+    #[test]
+    fn diff_heading_falls_back_to_the_patch_header_off_a_tty() {
+        let present = Presentation {
+            quiet: false,
+            stdout_tty: false,
+        };
 
-        assert_eq!(writer.is_right(), raw);
+        assert_matches!(
+            diff_heading(&present, &AutoStream::always_ansi(Vec::new())),
+            Heading::Patch
+        );
+    }
+
+    #[rstest]
+    #[case::color_on(true, true)]
+    #[case::color_off(false, false)]
+    fn diff_heading_paints_the_thread_line_only_under_color(
+        #[case] color: bool,
+        #[case] painted: bool,
+    ) {
+        let stdout = if color {
+            AutoStream::always_ansi(Vec::new())
+        } else {
+            AutoStream::never(Vec::new())
+        };
+        let present = Presentation {
+            quiet: false,
+            stdout_tty: true,
+        };
+
+        assert_matches!(
+            diff_heading(&present, &stdout),
+            Heading::Thread { color } if color == painted
+        );
     }
 
     #[test]
