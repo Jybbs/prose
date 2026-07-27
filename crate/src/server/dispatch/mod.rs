@@ -308,7 +308,7 @@ mod tests {
                     content_changes: vec![TextDocumentContentChangeEvent {
                         range: None,
                         range_length: None,
-                        text: "import os\nos.getcwd()\n".to_owned(),
+                        text: "import os\n\nos.getcwd()\n".to_owned(),
                     }],
                 },
             ))
@@ -322,7 +322,7 @@ mod tests {
         let (server, client) = Connection::memory();
         let handle = thread::spawn(move || serve(server));
         handshake(&client);
-        did_open(&client, "import os\nos.getcwd()\n");
+        did_open(&client, "import os\n\nos.getcwd()\n");
         let _ = published(&client);
         client
             .sender
@@ -342,7 +342,7 @@ mod tests {
         let (server, client) = Connection::memory();
         let handle = thread::spawn(move || serve(server));
         handshake(&client);
-        did_open(&client, "import os\nos.getcwd()\n");
+        did_open(&client, "import os\n\nos.getcwd()\n");
         let params = published(&client);
         assert_eq!(params.diagnostics.len(), 1);
         assert_eq!(params.diagnostics[0].source.as_deref(), Some("prose"));
@@ -492,7 +492,7 @@ mod tests {
                 serde_json::json!({ "bogus": true }),
             ))
             .expect("send malformed didOpen");
-        did_open(&client, "import os\nos.getcwd()\n");
+        did_open(&client, "import os\n\nos.getcwd()\n");
         assert_eq!(published(&client).diagnostics.len(), 1);
         teardown(&client, handle);
     }
@@ -532,7 +532,7 @@ mod tests {
                 serde_json::json!({ "bogus": true }),
             ))
             .expect("send malformed didChangeWatchedFiles");
-        did_open(&client, "import os\nos.getcwd()\n");
+        did_open(&client, "import os\n\nos.getcwd()\n");
         assert_eq!(published(&client).diagnostics.len(), 1);
         teardown(&client, handle);
     }
@@ -561,7 +561,7 @@ mod tests {
         let (server, client) = Connection::memory();
         let handle = thread::spawn(move || serve(server));
         handshake(&client);
-        did_open(&client, "import os\nos.getcwd()\n");
+        did_open(&client, "import os\n\nos.getcwd()\n");
         assert_eq!(published(&client).version, Some(1));
         teardown(&client, handle);
     }
@@ -575,7 +575,7 @@ mod tests {
             .sender
             .send(note(DidSaveTextDocument::METHOD, serde_json::json!({})))
             .expect("send unknown notification");
-        did_open(&client, "import os\nos.getcwd()\n");
+        did_open(&client, "import os\n\nos.getcwd()\n");
         assert_eq!(published(&client).diagnostics.len(), 1);
         teardown(&client, handle);
     }
@@ -614,7 +614,7 @@ mod tests {
         let (server, client) = Connection::memory();
         let handle = thread::spawn(move || serve(server));
         handshake(&client);
-        did_open(&client, "import os\nos.getcwd()\n");
+        did_open(&client, "import os\n\nos.getcwd()\n");
         assert_eq!(published(&client).diagnostics.len(), 1);
         client
             .sender

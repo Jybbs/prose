@@ -112,8 +112,8 @@ mod tests {
     #[test]
     fn lint_findings_do_not_error() {
         let result =
-            try_format("", "import os\nos.getcwd()\n").expect("formats despite a lint finding");
-        assert_eq!(result.formatted, "import os\nos.getcwd()\n");
+            try_format("", "import os\n\nos.getcwd()\n").expect("formats despite a lint finding");
+        assert_eq!(result.formatted, "import os\n\nos.getcwd()\n");
     }
 
     #[test]
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn reports_lint_findings_against_the_output() {
-        let result = formatted("", "import os\nos.getcwd()\n");
+        let result = formatted("", "import os\n\nos.getcwd()\n");
         assert!(result.diagnostics.contains("bare-imports"));
     }
 

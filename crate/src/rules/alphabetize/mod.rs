@@ -178,7 +178,6 @@ fn body_layout<'a>(
         if scope != BodyScope::Function {
             let holds = |stmt: &Stmt| !in_class && is_decorated(stmt);
             for section in sections.ranges() {
-                let members = &body[section.clone()];
                 if sort_definitions {
                     permute_defs(
                         &mut order,
@@ -203,7 +202,7 @@ fn body_layout<'a>(
                         keyword_fields_from,
                     );
                 }
-                if sort_definitions && !(in_class && class_pins_methods(members)) {
+                if sort_definitions && !(in_class && class_pins_methods(&body[section.clone()])) {
                     permute_defs(
                         &mut order,
                         body,

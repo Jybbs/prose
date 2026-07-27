@@ -1,13 +1,11 @@
 //! Class-scope assignment tiering. Sorts the constant family (bare
 //! `NAME = value` and `ClassVar`-annotated assignments) and the
 //! data-field family (other single-name annotated assignments) through
-//! one shared dependency graph, so a member never sorts above a sibling,
-//! or below a definition, that reads it at class-definition time. Each
+//! one shared dependency graph, so a member never sorts above a sibling
+//! or below a statement that reads it at class-definition time. Each
 //! family still redistributes only across the slots it already holds.
 //! A field bound by position in a generated constructor holds its slot
 //! while the constants around it still sort.
-//! Reverts the reorder on a duplicate name, a reference cycle, or an
-//! assembled order that would seat a referent after a reader.
 
 use std::ops::Range;
 
@@ -18,7 +16,7 @@ use crate::primitives::{
     binding::{ann_assign_with_named_field, is_classvar, single_name_target},
     constructor::classify_field,
     orderer::permute_in_place,
-    tiering::{def_run_tier_keys, order_keeps_refs_backward},
+    tiering::{def_run_tier_keys, permute_or_revert},
 };
 
 /// Sorts a section's constant and data-field families through one tiered
@@ -43,32 +41,29 @@ pub(super) fn permute_class_assigns(
     if tier_keys.len() < 2 {
         return;
     }
-    let snapshot = order.to_vec();
-    let fields_moved = permute_in_place(order, body, range.clone(), |stmt| {
-        if stmt.start() < keyword_fields_from {
-            return None;
-        }
-        let (default, _) = classify_field(stmt)?;
-        let (tier, name) = tier_keys[&stmt.start()];
-        Some((tier, default, name))
-    });
-    let constants_moved = permute_in_place(order, body, range.clone(), |stmt| {
-        class_assign_member(stmt)
-            .filter(|&(_, is_const)| is_const)
-            .map(|_| tier_keys[&stmt.start()])
-    });
-    if (fields_moved || constants_moved)
-        && !order_keeps_refs_backward(
-            order,
-            body,
-            &range,
-            defer_annotations,
-            |stmt| class_assign_member(stmt).map(|(name, _)| name),
-            |stmt| matches!(stmt, Stmt::ClassDef(_) | Stmt::FunctionDef(_)),
-        )
-    {
-        order.copy_from_slice(&snapshot);
-    }
+    permute_or_revert(
+        order,
+        body,
+        &range,
+        defer_annotations,
+        |stmt| class_assign_member(stmt).map(|(name, _)| name),
+        |order| {
+            let fields_moved = permute_in_place(order, body, range.clone(), |stmt| {
+                if stmt.start() < keyword_fields_from {
+                    return None;
+                }
+                let (default, _) = classify_field(stmt)?;
+                let (tier, name) = tier_keys[&stmt.start()];
+                Some((tier, default, name))
+            });
+            let constants_moved = permute_in_place(order, body, range.clone(), |stmt| {
+                class_assign_member(stmt)
+                    .filter(|&(_, is_const)| is_const)
+                    .map(|_| tier_keys[&stmt.start()])
+            });
+            fields_moved || constants_moved
+        },
+    );
 }
 
 /// Classifies a class-body statement as a single-name assignment,

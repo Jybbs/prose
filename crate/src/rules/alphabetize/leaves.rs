@@ -127,15 +127,14 @@ impl<'a> LeafCollector<'a> {
         }
         let source = self.source;
         let render = |_: usize, block| apply_inline_edits(source, block, &self.edits);
-        // One member per line routes through `reorder_separated` so each
-        // trailing comment travels with its member. A single-line or
-        // atomics-packed group shares lines, so the lighter `reorder_text`
-        // keeps its verbatim gaps.
-        let one_per_line = !any_sibling_shares_line(source, items);
-        let (folded, span) = if one_per_line {
-            reorder_separated(source, items, classify, render)
-        } else {
+        // A single-line or atomics-packed group shares lines, so the lighter
+        // `reorder_text` keeps its verbatim gaps. One member per line routes
+        // through `reorder_separated` so each trailing comment travels with
+        // its member.
+        let (folded, span) = if any_sibling_shares_line(source, items) {
             reorder_text(source, items, classify, render)
+        } else {
+            reorder_separated(source, items, classify, render)
         };
         self.fold_into(span, folded);
     }
@@ -188,7 +187,7 @@ pub(super) fn collect_docstring_entry_edits(
     param_docs: &HashMap<TextSize, Vec<&str>>,
 ) -> Vec<Edit> {
     rewrite_docstrings(source, |source, lit, edits| {
-        let signature = param_docs.get(&lit.start());
+        let signature = param_docs.get(&lit.start()).map(Vec::as_slice);
         for entries in entry_carrying_sections(source, lit) {
             let (cow, span) = reorder_text(
                 source,
@@ -232,7 +231,7 @@ pub(super) fn collect_leaf_edits(
 /// Composite docstring-entry sort key. An entry naming a signature
 /// parameter takes that parameter's position, and any other entry
 /// sinks below the signature's, alphabetized by name.
-fn entry_key<'e>(name: &'e str, signature: Option<&Vec<&str>>) -> (usize, &'e str) {
+fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) {
     match signature.and_then(|names| names.iter().position(|&n| n == name)) {
         Some(i) => (i, ""),
         None => (usize::MAX, name),

@@ -124,34 +124,11 @@ pub(crate) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> 
     visitor.names
 }
 
-/// True when every reader in `range` keeps each `member_name` entry it
-/// names ahead of itself in `order`, a reader naming itself excepted. A
-/// reader is any member, plus any statement `non_member_reader` selects.
-pub(crate) fn order_keeps_refs_backward<'src>(
-    order: &[usize],
-    body: &'src [Stmt],
-    range: &Range<usize>,
-    defer_annotations: bool,
-    member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
-    non_member_reader: impl Fn(&'src Stmt) -> bool,
-) -> bool {
-    let member_at = member_index(body, range, &member_name);
-    let position = slot_positions(order);
-    body[range.clone()].iter().enumerate().all(|(i, stmt)| {
-        let reader = range.start + i;
-        (member_name(stmt).is_none() && !non_member_reader(stmt))
-            || eval_time_refs(stmt, defer_annotations).iter().all(|name| {
-                member_at.get(name).is_none_or(|&referent| {
-                    referent == reader || position[referent] < position[reader]
-                })
-            })
-    })
-}
-
 /// Tiers the `member`-selected definitions within `range` and permutes
 /// those slots of `order` by `(tier, key)`, leaving `order` untouched
 /// when the run declines. A member `holds` selects keeps its source
-/// slot, and the permutation reverts when it strands a named member.
+/// slot, and the permutation reverts when it seats a definition below a
+/// statement that names it.
 pub(crate) fn permute_defs<'src, K: Copy + Ord>(
     order: &mut [usize],
     body: &'src [Stmt],
@@ -163,25 +140,36 @@ pub(crate) fn permute_defs<'src, K: Copy + Ord>(
     let Some(keys) = def_run_tier_keys(&body[range.clone()], defer_annotations, &member) else {
         return;
     };
-    let snapshot = body[range.clone()]
-        .iter()
-        .any(&holds)
-        .then(|| order.to_vec());
-    let permuted = permute_in_place(order, body, range.clone(), |stmt| {
-        (!holds(stmt))
-            .then(|| keys.get(&stmt.range().start()).copied())
-            .flatten()
-    });
-    if let Some(snapshot) = snapshot
-        && permuted
-        && !order_keeps_refs_backward(
-            order,
-            body,
-            &range,
-            defer_annotations,
-            |stmt| member(stmt).map(|(name, _)| name),
-            |_| false,
-        )
+    permute_or_revert(
+        order,
+        body,
+        &range,
+        defer_annotations,
+        |stmt| member(stmt).map(|(name, _)| name),
+        |order| {
+            permute_in_place(order, body, range.clone(), |stmt| {
+                keys.get(&stmt.range().start())
+                    .copied()
+                    .filter(|_| !holds(stmt))
+            })
+        },
+    );
+}
+
+/// Runs `permute` against `order`, restoring the pre-permutation slots
+/// when it moves a slot and the result seats a `member_name` entry below
+/// a statement that names it.
+pub(crate) fn permute_or_revert<'src>(
+    order: &mut [usize],
+    body: &'src [Stmt],
+    range: &Range<usize>,
+    defer_annotations: bool,
+    member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
+    permute: impl FnOnce(&mut [usize]) -> bool,
+) {
+    let snapshot = order.to_vec();
+    if permute(order)
+        && !order_keeps_refs_backward(order, body, range, defer_annotations, member_name)
     {
         order.copy_from_slice(&snapshot);
     }
@@ -214,7 +202,7 @@ pub(crate) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
 
 /// Walks a lambda's parameter defaults, pruning its body, the eval-time
 /// surface a lambda contributes when it binds.
-pub(crate) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda: &'a ExprLambda) {
+pub(super) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda: &'a ExprLambda) {
     if let Some(params) = lambda.parameters.as_deref() {
         walk_parameters(visitor, params);
     }
@@ -228,9 +216,35 @@ fn member_index<'src>(
 ) -> HashMap<&'src str, usize> {
     body[range.clone()]
         .iter()
-        .enumerate()
-        .filter_map(|(i, stmt)| member_name(stmt).map(|name| (name, range.start + i)))
+        .zip(range.clone())
+        .filter_map(|(stmt, at)| member_name(stmt).map(|name| (name, at)))
         .collect()
+}
+
+/// True when every statement in `range` keeps each `member_name` entry
+/// it names ahead of itself in `order`, a statement naming itself
+/// excepted.
+fn order_keeps_refs_backward<'src>(
+    order: &[usize],
+    body: &'src [Stmt],
+    range: &Range<usize>,
+    defer_annotations: bool,
+    member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
+) -> bool {
+    let member_at = member_index(body, range, &member_name);
+    let position = slot_positions(order);
+    body[range.clone()]
+        .iter()
+        .zip(range.clone())
+        .all(|(stmt, reader)| {
+            eval_time_refs(stmt, defer_annotations)
+                .into_iter()
+                .all(|name| {
+                    member_at.get(name).is_none_or(|&referent| {
+                        referent == reader || position[referent] < position[reader]
+                    })
+                })
+        })
 }
 
 /// Tiers `dep_sets` and assembles a per-statement `(tier, key)` lookup

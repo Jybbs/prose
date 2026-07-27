@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn diagnostics_surface_a_lint_finding_as_a_warning() {
         let published = diagnostics(
-            "import os\nos.getcwd()\n",
+            "import os\n\nos.getcwd()\n",
             PositionEncoding::Utf16,
             &Config::default(),
         );

@@ -33,8 +33,6 @@ use crate::{
 /// names in its value and its non-deferred annotation, and whether the
 /// value runs code at binding. Value references pin the constant when
 /// unresolved, whereas annotation references only constrain band order.
-/// `effectful` holds when the value runs code as it binds, pinning the
-/// constant in place.
 struct ConstSite<'src> {
     annot_refs: Vec<&'src str>,
     effectful: bool,
@@ -42,6 +40,20 @@ struct ConstSite<'src> {
     name: &'src str,
     subcategory: Subcategory,
     value_refs: Vec<&'src str>,
+}
+
+impl<'src> ConstSite<'src> {
+    /// The load-context names in the site's value and annotation, a
+    /// value reference paired with `true` and an annotation reference
+    /// with `false`, skipping the site's own name.
+    fn foreign_refs(&self) -> impl Iterator<Item = (&'src str, bool)> {
+        let name = self.name;
+        self.value_refs
+            .iter()
+            .map(|&r| (r, true))
+            .chain(self.annot_refs.iter().map(|&r| (r, false)))
+            .filter(move |&(r, _)| r != name)
+    }
 }
 
 /// Builds the module-scope hoist plan, ranking each statement and
@@ -157,23 +169,18 @@ pub(super) fn module_band_plan<'src>(
         // the name is an import or a builtin, both clean terminals, whereas
         // an annotation reference only ever constrains order, so `x: int = 1`
         // rides the leading band.
-        for (refs, anchor_unresolved) in [(&site.value_refs, true), (&site.annot_refs, false)] {
-            for &name in refs {
-                if name == site.name {
-                    continue;
-                }
-                if dup_defs.contains(name) {
-                    anchored[s] = true;
-                } else if def_at.contains_key(name) {
-                    reaches_def[s] = true;
-                } else if let Some(&dep) = site_at.get(name) {
-                    deps[s].push(dep);
-                } else if anchor_unresolved
-                    && !imports.contains(name)
-                    && !is_python_builtin(name, builtins_minor, false)
-                {
-                    anchored[s] = true;
-                }
+        for (name, anchor_unresolved) in site.foreign_refs() {
+            if dup_defs.contains(name) {
+                anchored[s] = true;
+            } else if def_at.contains_key(name) {
+                reaches_def[s] = true;
+            } else if let Some(&dep) = site_at.get(name) {
+                deps[s].push(dep);
+            } else if anchor_unresolved
+                && !imports.contains(name)
+                && !is_python_builtin(name, builtins_minor, false)
+            {
+                anchored[s] = true;
             }
         }
     }
@@ -181,7 +188,7 @@ pub(super) fn module_band_plan<'src>(
     let mut trailing: Vec<bool> = (0..n).map(|s| reaches_def[s] && !anchored[s]).collect();
     propagate(&mut trailing, &deps);
     let mut keys: HashMap<usize, (usize, Subcategory, &'src str)> = HashMap::new();
-    for band in [false, true] {
+    for (band, rank) in [(false, BandRank::Leading), (true, BandRank::Trailing)] {
         let members: Vec<usize> = (0..n)
             .filter(|&s| !anchored[s] && trailing[s] == band)
             .collect();
@@ -198,14 +205,7 @@ pub(super) fn module_band_plan<'src>(
             .collect();
         for (s, tier) in members.iter().copied().zip(tier_levels(&dep_sets)?) {
             keys.insert(sites[s].idx, (tier, sites[s].subcategory, sites[s].name));
-            ranks.insert(
-                sites[s].idx,
-                if band {
-                    BandRank::Trailing
-                } else {
-                    BandRank::Leading
-                },
-            );
+            ranks.insert(sites[s].idx, rank);
         }
     }
     let mut edges: Vec<(usize, usize)> = Vec::new();
@@ -218,11 +218,7 @@ pub(super) fn module_band_plan<'src>(
         if anchored[s] {
             continue;
         }
-        for &name in site.value_refs.iter().chain(&site.annot_refs) {
-            // A recursive self-reference does not constrain band order.
-            if name == site.name {
-                continue;
-            }
+        for (name, _) in site.foreign_refs() {
             if let Some(&def) = def_at.get(name) {
                 edges.push((site.idx, def));
             } else {
