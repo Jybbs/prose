@@ -65,12 +65,10 @@ impl LineScanner {
             self.list_indent = None;
             return LineScan::Blank;
         }
-        if let Some(marker) = self.list_indent {
-            if indent_chars > marker {
-                return LineScan::ListContinuation;
-            }
-            self.list_indent = None;
+        if self.list_indent.is_some_and(|marker| indent_chars > marker) {
+            return LineScan::ListContinuation;
         }
+        self.list_indent = None;
         if indent_chars >= self.body_indent_chars {
             if is_list_marker(trimmed) {
                 self.list_indent = Some(indent_chars);
