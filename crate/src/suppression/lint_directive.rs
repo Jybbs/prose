@@ -1,16 +1,17 @@
 //! Parsing of the lint-suppression namespace: `# prose: ignore` and
-//! its `ignore[rule]` form, plus the per-line rule entry it records.
+//! its `ignore[<id>]` form, plus the rule entry both the lint and the
+//! format namespaces record.
 
 use std::collections::HashSet;
 
 use ruff_python_trivia::PythonWhitespace;
 
+use super::parse_common::{after_prose_prefix, parse_bracketed_rule_list};
 use crate::rule::RuleId;
 
-use super::parse_common::{after_prose_prefix, parse_bracketed_rule_list};
-
-/// One line's parsed `# prose: ignore` or `# prose: skip[<id>]`
-/// directive.
+/// The rule set one `# prose: ignore` or `# prose: skip[<id>]`
+/// directive records, indexed per line for `ignore` and per skip span
+/// for `skip`.
 #[derive(Debug)]
 pub(super) enum RuleEntry {
     /// Bare `# prose: ignore`. Suppresses every rule on the line.

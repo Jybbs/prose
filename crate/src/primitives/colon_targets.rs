@@ -139,7 +139,7 @@ fn annotated_assignment(source: &Source, stmt: &Stmt) -> Option<aligner::Member>
 
 /// Walks `body`, qualifying each statement through `annotated_assignment`,
 /// and returns one group per run of contiguous line-adjacent
-/// annotated-assignment statements. A row skip-suppressed for `rule`
+/// annotated-assignment statements. A single-line row held for `rule`
 /// drops out as a transparent hole per [`aligner::line_adjacent_groups`].
 fn annotated_assignment_groups(
     source: &Source,

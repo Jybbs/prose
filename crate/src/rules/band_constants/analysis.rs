@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 
 use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_python_stdlib::builtins::is_python_builtin;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::TextRange;
 
 use super::{
     BandConstants,
@@ -20,12 +20,11 @@ use crate::{
             bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
             is_screaming_case, single_name_assignment,
         },
-        comments::{has_keep_marker, is_banner_block, leading_comment_block},
+        comments::{anchors_in_place, has_keep_marker, leading_comment_block},
         effect::value_is_effectful,
         tiering::{eval_refs, eval_time_refs, tier_levels},
     },
     source::Source,
-    suppression::is_directive_comment,
 };
 
 /// A module-scope single-name assignment considered for hoisting,
@@ -65,13 +64,10 @@ pub(super) fn module_band_plan<'src>(
     let mut ranks: HashMap<usize, BandRank> = HashMap::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
-        // A `# fmt: off` span or a `# prose: skip` line pins its
-        // statement, so a single-edit reorder never crosses a region the
-        // pipeline drops the whole edit for.
-        if suppression.intersects(stmt)
-            || suppression
-                .is_format_suppressed_at(source.line_index(stmt.start()), BandConstants::SLUG)
-        {
+        // A `# prose: off` span or a skip directive pins its statement, so
+        // a reorder never moves a member the pipeline would then drop the
+        // whole group for.
+        if suppression.suppresses(stmt, BandConstants::SLUG) {
             continue;
         }
         // The own-line comment in the gap above the statement, if any.
@@ -87,11 +83,9 @@ pub(super) fn module_band_plan<'src>(
         // instead forward-attaches a prose comment the way `blank-lines`
         // settles it, while a banner section divider or a suppression
         // directive pins the constant too, since neither may relocate.
-        if gap_comment.is_some_and(|block| {
-            const_target.is_none()
-                || is_banner_block(source, block)
-                || source.slice(block).lines().any(is_directive_comment)
-        }) {
+        if gap_comment
+            .is_some_and(|block| const_target.is_none() || anchors_in_place(source, block))
+        {
             continue;
         }
         match stmt {

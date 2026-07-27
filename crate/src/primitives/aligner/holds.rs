@@ -18,18 +18,14 @@ pub(crate) fn is_alignment_candidate(source: &Source, members: &[Member]) -> boo
         })
 }
 
-/// Returns `true` when the line containing `anchor` carries a skip
-/// directive for `rule`: a bare `# prose: skip` / `# fmt: skip` span, a
-/// `# fmt: off` region, or `# prose: skip[rule]`. A held row stays out
-/// of the column math and emits no edit, so its neighbors align around
-/// it. Short-circuits when the source carries no format suppression.
+/// Returns `true` when the line containing `anchor` falls under a skip
+/// directive for `rule`: a bare `# prose: skip` span, a `# prose: off`
+/// region, or a `# prose: skip[<id>]` listing `rule`. A directive
+/// trailing a wrapped statement covers every line that statement spans.
 pub(crate) fn is_held(source: &Source, rule: RuleId, anchor: TextSize) -> bool {
     let suppression = source.suppression_map();
-    if !suppression.has_format_suppression() && !suppression.has_skip_suppression() {
-        return false;
-    }
-    suppression.intersects(source.text().full_line_range(anchor))
-        || suppression.is_format_suppressed_at(source.line_index(anchor), rule)
+    suppression.has_format_suppression()
+        && suppression.suppresses(source.text().full_line_range(anchor), rule)
 }
 
 /// Returns the rows of `members` whose anchor line is not skip-held for
