@@ -19,7 +19,7 @@ use crate::{rule::RuleId, source::Source};
 pub(crate) struct AlignWalker<'a> {
     pub groups: Vec<Vec<Edit>>,
     pub rule: RuleId,
-    pub settings: Settings,
+    settings: Settings,
     pub source: &'a Source,
 }
 
@@ -49,21 +49,11 @@ impl<'a> AlignWalker<'a> {
     }
 
     /// Aligns `members` as one fix group when they form an alignment
-    /// candidate, recording nothing otherwise.
+    /// candidate, folding in a one-space rewrite of each member's
+    /// [post-operator gap](Self::value_gaps). Records nothing otherwise.
     pub(crate) fn emit_if_candidate(&mut self, members: &[Member]) {
-        self.emit_if_candidate_with_gaps(members, std::iter::empty());
-    }
-
-    /// Aligns `members` as one fix group when they form an alignment
-    /// candidate, folding a one-space rewrite of each gap in `gaps` into
-    /// the same group. Records nothing otherwise. The candidate-gated
-    /// counterpart to [`Self::emit_group_with_gaps`].
-    pub(crate) fn emit_if_candidate_with_gaps(
-        &mut self,
-        members: &[Member],
-        gaps: impl IntoIterator<Item = TextRange>,
-    ) {
         if is_alignment_candidate(self.source, members) {
+            let gaps = self.value_gaps(members);
             self.emit_group_with_gaps(members, gaps);
         }
     }
@@ -71,7 +61,7 @@ impl<'a> AlignWalker<'a> {
     /// Drops the held rows from `members`, then emits the survivors as
     /// one group when they still form an alignment candidate.
     pub(crate) fn emit_unheld(&mut self, members: impl IntoIterator<Item = Member>) {
-        let kept = self.retain_unheld(members, |m| m.line_start);
+        let kept = retain_unheld(self.source, self.rule, members);
         self.emit_if_candidate(&kept);
     }
 
@@ -115,13 +105,12 @@ impl<'a> AlignWalker<'a> {
         self.push_group(name_edits);
     }
 
-    /// Returns the rows of `members` whose anchor line is not skip-held
-    /// for this rule. The walker-bound form of the free [`retain_unheld`].
-    pub(crate) fn retain_unheld<M>(
-        &self,
-        members: impl IntoIterator<Item = M>,
-        line_start: impl Fn(&M) -> TextSize,
-    ) -> Vec<M> {
-        retain_unheld(self.source, self.rule, members, line_start)
+    /// The post-operator gaps this rule rewrites to one space, one per
+    /// member whose value shares the operator's line.
+    pub(crate) fn value_gaps(&self, members: &[Member]) -> Vec<TextRange> {
+        members
+            .iter()
+            .filter_map(|m| m.rewritten_value_gap(self.source))
+            .collect()
     }
 }

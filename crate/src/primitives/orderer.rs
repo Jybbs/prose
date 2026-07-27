@@ -14,7 +14,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     primitives::{
-        comments::marker_floor,
+        comments::bound_block_start,
         edit::{any_owned, narrowed_replacement, splice_parses},
     },
     source::Source,
@@ -220,11 +220,13 @@ pub(crate) fn blocks_span(blocks: &[TextRange]) -> TextRange {
     blocks[0].cover(*blocks.last().expect("non-empty blocks"))
 }
 
-/// [`block_range`] for `items[i]` with its start pushed below any section
-/// marker leading it, so a banner or hash heading stays in the gap above
-/// the member rather than traveling with it through a reorder. The
-/// marker-bearing gap is what [`Sections`](crate::primitives::sections::Sections)
-/// reads to divide the body.
+/// [`block_range`] for `items[i]` with its start settled by
+/// [`bound_block_start`], so a comment run leading the member binds to
+/// it across a blank line while a banner, hash heading, or suppression
+/// directive stays in the gap rather than traveling through a reorder.
+/// That gap is what [`Sections`](crate::primitives::sections::Sections)
+/// reads to divide the body. Binding never reads the blank run, so a
+/// block spans the same text either side of `blank-lines`.
 pub(crate) fn member_block<T: Ranged>(
     source: &Source,
     items: &[T],
@@ -232,8 +234,11 @@ pub(crate) fn member_block<T: Ranged>(
     outer: TextRange,
 ) -> TextRange {
     let raw = block_range(source, items, i, outer);
+    // The first member has no predecessor to bound the gap, so its own
+    // attached run stands in as the lower bound.
+    let lower = items[..i].last().map_or(raw.start(), Ranged::end);
     TextRange::new(
-        marker_floor(source, raw.start(), items[i].start()),
+        bound_block_start(source, lower, items[i].start()),
         raw.end(),
     )
 }

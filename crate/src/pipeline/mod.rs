@@ -3,8 +3,9 @@
 //! Each rule returns a `Vec<Edit>` and a `Vec<TextRange>` of lint
 //! ranges. The pipeline sorts and applies the edits into a fresh
 //! buffer, then reparses before handing the new `Source` to the next
-//! rule. Alignment rules run last so earlier rewrites settle before
-//! padding widths are computed.
+//! rule. Registration order follows the data dependency, seating every
+//! rule that mutates a line's width, a group's member order, or a
+//! statement's position ahead of every rule that reads one.
 
 use ruff_diagnostics::{Edit, SourceMap};
 
@@ -20,7 +21,7 @@ mod filter;
 
 pub use error::PipelineError;
 use error::reparse_or_reject;
-use filter::{drop_suppressed_lints, prepared_groups, unsuppressed_lints};
+use filter::{prepared_groups, settled_lints};
 
 /// Ordered sequence of enabled rules, run against each source file.
 pub struct Pipeline {
@@ -61,9 +62,8 @@ impl Pipeline {
         for rule in &self.rules {
             let groups = prepared_groups(&**rule, source);
             diagnostics.extend(format_diagnostics(&**rule, groups));
-            diagnostics.extend(unsuppressed_lints(&**rule, source));
         }
-        drop_suppressed_lints(&mut diagnostics, source);
+        diagnostics.extend(settled_lints(&self.rules, source));
         diagnostics
     }
 
@@ -120,10 +120,7 @@ impl Pipeline {
                 Ok((next, diagnostics))
             },
         )?;
-        for rule in &self.rules {
-            diagnostics.extend(unsuppressed_lints(&**rule, &source));
-        }
-        drop_suppressed_lints(&mut diagnostics, &source);
+        diagnostics.extend(settled_lints(&self.rules, &source));
         Ok((source, diagnostics))
     }
 

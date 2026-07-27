@@ -8,7 +8,11 @@
 
 use ruff_text_size::{TextRange, TextSize};
 
-use crate::config::{AlignmentConfig, MaxShift};
+use crate::{
+    config::{AlignmentConfig, MaxShift},
+    rule::RuleId,
+    source::Source,
+};
 
 mod emit;
 mod grouping;
@@ -36,20 +40,50 @@ pub(crate) use walker::AlignWalker;
 /// the start of the source line containing the gap. `op_width` is the
 /// display width of the aligned operator itself, used to right-align
 /// variable-width operators within a group. Rules with fixed-width
-/// operators leave `op_width` at zero.
+/// operators leave `op_width` at zero. `value_gap` is the span from
+/// just past the operator to the value, which an aligned row rewrites
+/// to one space, and stays `None` for a rule that leaves the
+/// post-operator spacing alone.
 #[derive(Clone, Copy)]
 pub(crate) struct Member {
     pub gap: TextRange,
     pub line_start: TextSize,
     pub op_width: usize,
+    pub value_gap: Option<TextRange>,
     pub width: usize,
 }
 
 impl Member {
+    /// The post-operator gap an aligned row rewrites to one space,
+    /// `None` when the rule leaves that spacing alone or the value
+    /// opens on a later line.
+    pub(crate) fn rewritten_value_gap(self, source: &Source) -> Option<TextRange> {
+        self.value_gap
+            .filter(|gap| !source.contains_line_break(*gap))
+    }
+
+    /// This member's alignment slot, bridging the run when its row is
+    /// skip-held for `rule` so neighbors align around it.
+    pub(crate) fn slot(self, source: &Source, rule: RuleId) -> Slot<Self> {
+        if is_held(source, rule, self.line_start) {
+            Slot::Bridge
+        } else {
+            Slot::Member(self)
+        }
+    }
+
     /// Returns a copy of `self` with `op_width` set to the operator's
     /// display width, opting the member into right-alignment math.
     pub(crate) fn with_op_width(mut self, op_width: usize) -> Self {
         self.op_width = op_width;
+        self
+    }
+
+    /// Returns a copy of `self` carrying the post-operator span an
+    /// aligned row rewrites to one space, running from just past the
+    /// `op_len`-wide operator to `value_start`.
+    pub(crate) fn with_value_gap(mut self, op_len: TextSize, value_start: TextSize) -> Self {
+        self.value_gap = Some(TextRange::new(self.gap.end() + op_len, value_start));
         self
     }
 }
