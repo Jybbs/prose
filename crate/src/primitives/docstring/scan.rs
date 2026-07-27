@@ -1,16 +1,15 @@
-//! Line classification for a docstring body: fences, blanks, list
-//! markers, section underlines, table rows and rules, comment-led
-//! code examples, doctest blocks, reStructuredText field lists,
-//! Sphinx directives, and their continuations.
+//! Line classification for a docstring body, separating verbatim
+//! structures from the prose a walker reflows.
 
 use ruff_python_trivia::{PythonWhitespace, leading_indentation};
 
-/// The classification of a docstring body line by the shared fence,
-/// blank, list, and verbatim scanner. Every variant but `Body` is
-/// terminal for the line, with `Body` handed to the walker's own
-/// dispatch. `VerbatimOpen` either stands alone for its line or
-/// opens a region running to the next blank, and `Verbatim` carries
-/// a line inside an open region.
+use crate::primitives::INDENT_STEP;
+
+/// The classification of a docstring body line. Every variant but
+/// `Body` is terminal for the line, with `Body` handed to the
+/// walker's own dispatch. `VerbatimOpen` either stands alone for its
+/// line or opens a region running to the next blank, and `Verbatim`
+/// carries a line inside an open region.
 #[derive(Debug)]
 pub(crate) enum LineScan {
     Blank,
@@ -93,11 +92,10 @@ impl LineScanner {
     }
 
     /// Splits `line` into its indent prefix and trimmed body, then
-    /// classifies the body, so a walker reads geometry and scan from
-    /// one call.
+    /// classifies the body.
     pub(crate) fn scan_line<'a>(&mut self, line: &'a str) -> ScannedLine<'a> {
         let indent = leading_indentation(line);
-        let trimmed = line[indent.len()..].trim_whitespace_end();
+        let trimmed = line.trim_whitespace();
         let indent_chars = indent.chars().count();
         let scan = self.classify(trimmed, indent_chars);
         ScannedLine {
@@ -109,15 +107,13 @@ impl LineScanner {
     }
 
     /// The character column of a section's entry heads and body
-    /// prose, one 4-space step past the body indent.
+    /// prose, one `INDENT_STEP` past the body indent.
     pub(crate) fn section_body_indent_chars(&self) -> usize {
-        self.body_indent_chars + 4
+        self.body_indent_chars + INDENT_STEP
     }
 }
 
-/// A docstring body line's geometry paired with its classification:
-/// the indent prefix, its character width, the trimmed body, and the
-/// [`LineScan`] the scanner advanced to.
+/// A docstring body line's geometry paired with its classification.
 pub(crate) struct ScannedLine<'a> {
     pub(crate) indent: &'a str,
     pub(crate) indent_chars: usize,
@@ -170,8 +166,7 @@ fn is_grid_table_line(trimmed: &str) -> bool {
 
 /// True when `trimmed` opens with a Markdown list marker (`-`, `*`,
 /// or `+` followed by a space) or a numeric marker (one or more
-/// digits followed by `. `). Used by the shared line scanner to
-/// recognize verbatim-passthrough list items.
+/// digits followed by `. `).
 fn is_list_marker(trimmed: &str) -> bool {
     if trimmed
         .strip_prefix(['-', '*', '+'])
@@ -208,6 +203,15 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
+
+    #[rstest]
+    fn classify_opens_no_block_for_grid_or_underline_lines(
+        #[values("+---+---+", "----------")] opener: &str,
+    ) {
+        let mut scanner = LineScanner::new(0);
+        assert_matches!(scanner.classify(opener, 0), LineScan::VerbatimOpen);
+        assert_matches!(scanner.classify("Back to prose.", 0), LineScan::Body);
+    }
 
     #[rstest]
     fn classify_runs_a_verbatim_block_through_to_blank(

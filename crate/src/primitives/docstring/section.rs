@@ -8,8 +8,10 @@ use ruff_python_ast::StringLiteral;
 use ruff_source_file::{Line, UniversalNewlineIterator};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::body::{DocstringBody, indent_prefix, triple_quoted_body};
-use super::scan::{LineScan, LineScanner, ScannedLine};
+use super::{
+    body::{DocstringBody, triple_quoted_body},
+    scan::{LineScan, LineScanner, ScannedLine},
+};
 use crate::source::Source;
 
 static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
@@ -17,9 +19,8 @@ static SECTION_HEADING: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 /// One `name: description` entry inside a Google-style section. The
-/// range covers the entry's head line through the last continuation
-/// line attached to it (verbatim region, hanging description, list
-/// item), excluding the trailing newline.
+/// range covers the entry's head line through every line attached
+/// to it, excluding the trailing newline.
 pub(crate) struct SectionEntry<'a> {
     pub(crate) name: &'a str,
     pub(crate) range: TextRange,
@@ -105,7 +106,7 @@ impl<'src> EntryWalker<'src> {
 
     fn extend_open_entry(&mut self, line_end: TextSize) {
         if let Some(entry) = self.open_entry.as_mut() {
-            entry.range = TextRange::new(entry.range.start(), line_end);
+            entry.range = entry.range.cover_offset(line_end);
         }
     }
 
@@ -132,9 +133,6 @@ impl<'src> EntryWalker<'src> {
 /// ranges. Returns an empty vector when `lit` carries no body
 /// (single-line, non-triple-quoted, or no `\n`), no entry-carrying
 /// section heading, or no recognized entries within those sections.
-/// Each entry's range covers its head line through any attached
-/// continuation lines (hanging description, indented code, list
-/// item, fenced code block).
 pub(crate) fn entry_carrying_sections<'src>(
     source: &'src Source,
     lit: &StringLiteral,
@@ -142,7 +140,7 @@ pub(crate) fn entry_carrying_sections<'src>(
     let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline) else {
         return Vec::new();
     };
-    let mut walker = EntryWalker::new(indent_prefix(source, lit).chars().count());
+    let mut walker = EntryWalker::new(source.line_indent_width(lit.start()));
     for line in UniversalNewlineIterator::with_offset(body.text, body.range.start()) {
         walker.consume(line);
     }
@@ -366,6 +364,13 @@ mod tests {
     }
 
     #[test]
+    fn entry_head_returns_name_and_description_column() {
+        assert_eq!(entry_head("name: desc"), Some(("name", 6)));
+        assert_eq!(entry_head("name : desc"), Some(("name", 7)));
+        assert_eq!(entry_head("dotted.name: desc"), Some(("dotted.name", 13)));
+    }
+
+    #[test]
     fn entry_head_strips_up_to_two_star_prefixes_from_the_name() {
         assert_eq!(entry_head("*args: payload"), Some(("args", 7)));
         assert_eq!(entry_head("**kwargs: extra"), Some(("kwargs", 10)));
@@ -374,10 +379,10 @@ mod tests {
     }
 
     #[test]
-    fn entry_head_returns_name_and_description_column() {
-        assert_eq!(entry_head("name: desc"), Some(("name", 6)));
-        assert_eq!(entry_head("name : desc"), Some(("name", 7)));
-        assert_eq!(entry_head("dotted.name: desc"), Some(("dotted.name", 13)));
+    fn section_heading_accepts_multi_word_title_case_with_colon() {
+        assert!(section_heading("Other Parameters:"));
+        assert!(section_heading("See Also:"));
+        assert!(section_heading("Side Effects:"));
     }
 
     #[rstest]
@@ -403,13 +408,6 @@ mod tests {
     }
 
     #[test]
-    fn section_heading_accepts_multi_word_title_case_with_colon() {
-        assert!(section_heading("Other Parameters:"));
-        assert!(section_heading("See Also:"));
-        assert!(section_heading("Side Effects:"));
-    }
-
-    #[test]
     fn section_heading_accepts_trailing_content_after_colon() {
         assert!(section_heading("Returns: int"));
         assert!(section_heading("Note: see below"));
@@ -432,6 +430,7 @@ mod tests {
         assert!(typed_entry_head("*args (int): payload"));
         assert!(!typed_entry_head("markup: a string."));
         assert!(!typed_entry_head("name (only: parens)"));
+        assert!(!typed_entry_head("two words (int): not an entry"));
         assert!(!typed_entry_head("See https://example.com for details."));
         assert!(!typed_entry_head("just prose with no colon"));
     }

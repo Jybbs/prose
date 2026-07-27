@@ -9,14 +9,15 @@
 //! outside any section.
 
 use ruff_diagnostics::Edit;
+use ruff_text_size::Ranged;
 use textwrap::{Options, WordSeparator, WordSplitter};
 
 use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
         docstring::{
-            DocstringBody, LineScan, LineScanner, ScannedLine, entry_head, indent_prefix,
-            rewrite_docstrings, section_heading, triple_quoted_body, typed_entry_head,
+            DocstringBody, LineScan, LineScanner, ScannedLine, entry_head, rewrite_docstrings,
+            section_heading, triple_quoted_body, typed_entry_head,
         },
         edit::narrowed_replacement,
     },
@@ -50,9 +51,9 @@ impl Rule for DocstringWrap {
             else {
                 return;
             };
-            let indent = indent_prefix(source, lit);
             let newline = source.newline_str();
-            let Some(rewritten) = rewrite_body(body.text, indent, newline, self) else {
+            let indent_chars = source.line_indent_width(lit.start());
+            let Some(rewritten) = rewrite_body(body.text, indent_chars, newline, self) else {
                 return;
             };
             edits.extend(narrowed_replacement(source, body.range, rewritten));
@@ -187,11 +188,10 @@ impl Walker<'_> {
     fn flush_paragraph(&mut self) {
         if !self.paragraph.lines.is_empty() {
             let para = std::mem::take(&mut self.paragraph);
-            let text = para.lines.join(" ");
             self.emit_wrapped(
                 &para.initial_indent,
                 &para.subsequent_indent,
-                &text,
+                &para.lines.join(" "),
                 self.rule.description_width,
             );
         }
@@ -227,7 +227,7 @@ impl Walker<'_> {
 
 fn rewrite_body(
     body: &str,
-    body_indent: &str,
+    body_indent_chars: usize,
     newline: &str,
     rule: &DocstringWrap,
 ) -> Option<String> {
@@ -239,19 +239,15 @@ fn rewrite_body(
         paragraph: Paragraph::default(),
         region: Region::Description,
         rule,
-        scanner: LineScanner::new(body_indent.chars().count()),
+        scanner: LineScanner::new(body_indent_chars),
     };
     for line in content.split(newline) {
         walker.consume(line);
     }
     walker.flush_paragraph();
 
-    let mut result = String::with_capacity(body.len());
-    result.push_str(newline);
-    result.push_str(walker.out.trim_end_matches(newline));
-    result.push_str(newline);
-    result.push_str(closer_indent);
-    Some(result)
+    let wrapped = walker.out.trim_end_matches(newline);
+    Some(format!("{newline}{wrapped}{newline}{closer_indent}"))
 }
 
 #[cfg(test)]
