@@ -3,7 +3,8 @@
 //! predecessor and emits edits to bring the gap to the canonical count
 //! returned by `canonical_blanks`. Own-line comments between adjacent
 //! statements carry 1 blank line above the comment block, 0 blank lines
-//! below a description block, and 1 blank line below a banner block.
+//! below a description block, and 1 blank line below a run that anchors
+//! in place, a section banner or a suppression directive.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -17,7 +18,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     config::Config,
     primitives::{
-        comments::{is_banner_block, leading_comment_block},
+        comments::{anchors_in_place, leading_comment_block},
         edit::{repeat_edit, singleton_groups},
         scope::{BodyScope, scoped_body},
     },
@@ -109,7 +110,9 @@ impl Walker<'_> {
     }
 
     /// Clears the blank run above the module's first statement, or
-    /// above the comment block leading it.
+    /// above the comment block leading it. The run beneath that block
+    /// stays as written, the head sitting outside the member span every
+    /// reorder assembles.
     fn normalize_module_head(&mut self, body: &[Stmt]) {
         let Some(first) = body.first() else {
             return;
@@ -153,7 +156,7 @@ impl Walker<'_> {
         let above_line_start = block.map_or(curr_line_start, TextRange::start);
         self.normalize_above(above_line_start, canonical + 1);
         if let Some(b) = block {
-            let below_target = 1 + u32::from(is_banner_block(self.source, b));
+            let below_target = 1 + u32::from(anchors_in_place(self.source, b));
             self.normalize_below_block(b.end(), curr_line_start, below_target);
         }
     }
