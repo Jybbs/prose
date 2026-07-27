@@ -93,11 +93,17 @@ pub(crate) fn forward_offsets(offsets: &CellOffsets, map: &SourceMap) -> CellOff
 /// Returns `None` when the text already matches the source slice.
 pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: String) -> Option<Edit> {
     let (narrowed_span, narrowed_text) = narrow_edit(text, span, source.slice(span))?;
-    Some(if narrowed_text.is_empty() {
-        Edit::range_deletion(narrowed_span)
+    Some(replacement(narrowed_text, narrowed_span))
+}
+
+/// Replaces `span` with `text`, shaping the edit as a deletion when
+/// `text` is empty.
+pub(crate) fn replacement(text: String, span: TextRange) -> Edit {
+    if text.is_empty() {
+        Edit::range_deletion(span)
     } else {
-        Edit::range_replacement(narrowed_text, narrowed_span)
-    })
+        Edit::range_replacement(text, span)
+    }
 }
 
 /// Wraps each edit in its own single-edit fix group, the shape a rule

@@ -8,6 +8,7 @@
 //! computed.
 
 use ruff_diagnostics::{Edit, SourceMap};
+use ruff_python_ast::PythonVersion;
 
 use crate::{
     diagnostics::Diagnostic,
@@ -23,21 +24,32 @@ mod validity;
 pub use error::PipelineError;
 use error::reparse_or_reject;
 use filter::{drop_suppressed_lints, prepared_groups, unsuppressed_lints};
-use validity::compiles;
+use validity::compile_gate;
 
 /// Ordered sequence of enabled rules, run against each source file.
 pub struct Pipeline {
     rules: Vec<Box<dyn Rule>>,
+    target_version: PythonVersion,
 }
 
 impl Pipeline {
     /// Constructs a pipeline that performs no rewrites.
     pub fn empty() -> Self {
-        Self { rules: Vec::new() }
+        Self::from_rules(Vec::new())
     }
 
     pub(crate) fn from_rules(rules: Vec<Box<dyn Rule>>) -> Self {
-        Self { rules }
+        Self {
+            rules,
+            target_version: PythonVersion::default(),
+        }
+    }
+
+    /// Sets the Python version the compile gate evaluates against.
+    #[must_use]
+    pub(crate) fn targeting(mut self, target_version: Option<PythonVersion>) -> Self {
+        self.target_version = target_version.unwrap_or_default();
+        self
     }
 
     #[cfg(test)]
@@ -63,8 +75,7 @@ impl Pipeline {
         }
         let mut diagnostics = Vec::new();
         for rule in &self.rules {
-            let rule_id = rule.id();
-            let groups = prepared_groups(&**rule, source, suppression, rule_id);
+            let groups = prepared_groups(&**rule, source, suppression);
             diagnostics.extend(format_findings(&**rule, groups));
             diagnostics.extend(unsuppressed_lints(&**rule, source, suppression));
         }
@@ -106,13 +117,13 @@ impl Pipeline {
         if source.suppression_map().file_is_suppressed() {
             return Ok((source, Vec::new()));
         }
-        let input_compiles = compiles(&source);
+        let gate = compile_gate(&source, self.target_version);
         let (source, mut diagnostics) = self.rules.iter().try_fold(
             (source, Vec::new()),
             |(source, mut diagnostics), rule| {
                 let suppression = source.suppression_map();
                 let rule_id = rule.id();
-                let groups = prepared_groups(&**rule, &source, suppression, rule_id);
+                let groups = prepared_groups(&**rule, &source, suppression);
                 diagnostics.extend(unsuppressed_lints(&**rule, &source, suppression));
                 if groups.is_empty() {
                     return Ok((source, diagnostics));
@@ -125,7 +136,7 @@ impl Pipeline {
                     "rule `{rule_id}` emitted edits that produced identical text",
                 );
                 diagnostics.extend(format_findings(&**rule, groups));
-                let next = reparse_or_reject(&source, new_text, rule_id, map, input_compiles)?;
+                let next = reparse_or_reject(&source, new_text, rule_id, map, gate)?;
                 Ok((next, diagnostics))
             },
         )?;
@@ -145,19 +156,19 @@ impl Pipeline {
     /// text that does not re-parse as Python, and
     /// `PipelineError::Compile` when it parses but no longer compiles.
     pub(crate) fn validate(&self, source: Source) -> Result<(), PipelineError> {
-        let input_compiles = compiles(&source);
+        let gate = compile_gate(&source, self.target_version);
         self.rules
             .iter()
             .try_fold(source, |source, rule| {
                 let rule_id = rule.id();
-                let groups = prepared_groups(&**rule, &source, source.suppression_map(), rule_id);
+                let groups = prepared_groups(&**rule, &source, source.suppression_map());
                 if groups.is_empty() {
                     return Ok(source);
                 }
                 let Some((new_text, map)) = weave_groups(&source, groups.concat()) else {
                     return Ok(source);
                 };
-                reparse_or_reject(&source, new_text, rule_id, map, input_compiles)
+                reparse_or_reject(&source, new_text, rule_id, map, gate)
             })
             .map(drop)
     }
@@ -174,10 +185,10 @@ fn format_findings(rule: &dyn Rule, groups: Vec<Vec<Edit>>) -> impl Iterator<Ite
 /// woven text and, for a notebook, the `SourceMap` of cell-offset
 /// deltas. An ordinary module skips the map.
 fn weave_groups(source: &Source, edits: Vec<Edit>) -> Option<(String, Option<SourceMap>)> {
-    if !source.is_notebook() {
-        apply_edits(source.text(), edits).map(|text| (text, None))
-    } else {
+    if source.is_notebook() {
         apply_edits_mapped(source.text(), edits).map(|(text, map)| (text, Some(map)))
+    } else {
+        apply_edits(source.text(), edits).map(|text| (text, None))
     }
 }
 
@@ -654,6 +665,20 @@ mod tests {
         let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
             groups: vec![vec![Edit::range_replacement("y".to_owned(), range(0, 1))]],
             id: RuleId::from("rewrite-x-to-y"),
+        })]);
+        let source = parse("x = 1\n");
+
+        assert!(pipeline.validate(source).is_ok());
+    }
+
+    #[test]
+    fn validate_passes_an_overlapping_group_as_a_no_op() {
+        let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+            groups: vec![vec![
+                Edit::range_replacement("Y".to_owned(), range(0, 3)),
+                Edit::range_replacement("Z".to_owned(), range(2, 5)),
+            ]],
+            id: RuleId::from("self-overlapping"),
         })]);
         let source = parse("x = 1\n");
 

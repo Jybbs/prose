@@ -18,7 +18,7 @@ use crate::{
     config::Config,
     primitives::{
         comments::{is_banner_block, leading_comment_block},
-        edit::singleton_groups,
+        edit::{replacement, singleton_groups},
         scope::{BodyScope, scoped_body},
     },
     rule::{Rule, RuleId},
@@ -74,25 +74,22 @@ struct Walker<'a> {
 
 impl Walker<'_> {
     /// Places `target_newlines` line breaks immediately above
-    /// `line_start`. Emits a replacement edit when the actual count
-    /// differs. Preserves any indent that sits on `line_start`'s line.
+    /// `line_start`, emitting nothing when the count already matches.
+    /// Preserves any indent that sits on `line_start`'s line.
     fn normalize_above(&mut self, line_start: TextSize, target_newlines: u32) {
         let text = self.source.text();
         if lines_before(line_start, text) == target_newlines {
             return;
         }
-        let span = TextRange::new(whitespace_start_before(text, line_start), line_start);
-        let replacement = self.source.newline_str().repeat(target_newlines as usize);
-        self.edits.push(if replacement.is_empty() {
-            Edit::range_deletion(span)
-        } else {
-            Edit::range_replacement(replacement, span)
-        });
+        self.set_newlines(
+            TextRange::new(whitespace_start_before(text, line_start), line_start),
+            target_newlines,
+        );
     }
 
     /// Places `target_newlines` line breaks between `block_end` and
-    /// `curr_line_start`. Emits a replacement edit when the actual
-    /// count differs.
+    /// `curr_line_start`, emitting nothing when the count already
+    /// matches.
     fn normalize_below_block(
         &mut self,
         block_end: TextSize,
@@ -102,10 +99,7 @@ impl Walker<'_> {
         if lines_after(block_end, self.source.text()) == target_newlines {
             return;
         }
-        self.edits.push(Edit::range_replacement(
-            self.source.newline_str().repeat(target_newlines as usize),
-            TextRange::new(block_end, curr_line_start),
-        ));
+        self.set_newlines(TextRange::new(block_end, curr_line_start), target_newlines);
     }
 
     /// Clears the blank lines opening a module, the one gap no sibling
@@ -163,6 +157,15 @@ impl Walker<'_> {
             let below_target = 1 + u32::from(is_banner_block(self.source, b));
             self.normalize_below_block(b.end(), curr_line_start, below_target);
         }
+    }
+
+    /// Replaces `span` with `count` line breaks, deleting the span when
+    /// `count` is zero.
+    fn set_newlines(&mut self, span: TextRange, count: u32) {
+        self.edits.push(replacement(
+            self.source.newline_str().repeat(count as usize),
+            span,
+        ));
     }
 }
 

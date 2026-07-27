@@ -1,6 +1,6 @@
 [docs]
 previewable = false
-title       = "Blank Lines Opening a Module Clear"
+title       = "Blank Lines Clear above a Module's First Statement"
 
 description = '''
 A module opening on blank lines **clears them**, the gap above the first statement being the one no sibling pair reaches.

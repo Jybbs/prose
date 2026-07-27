@@ -20,6 +20,7 @@ use crate::source::Source;
 struct ModuleScope<'src> {
     error: OnceCell<SemanticSyntaxError>,
     module: &'src Source,
+    version: PythonVersion,
 }
 
 impl SemanticSyntaxContext for ModuleScope<'_> {
@@ -84,7 +85,7 @@ impl SemanticSyntaxContext for ModuleScope<'_> {
     }
 
     fn python_version(&self) -> PythonVersion {
-        PythonVersion::default()
+        self.version
     }
 
     fn report_semantic_error(&self, error: SemanticSyntaxError) {
@@ -96,18 +97,24 @@ impl SemanticSyntaxContext for ModuleScope<'_> {
     }
 }
 
-pub(super) fn compiles(source: &Source) -> bool {
-    first_semantic_error(source).is_none()
+pub(super) fn compile_gate(source: &Source, version: PythonVersion) -> Option<PythonVersion> {
+    first_semantic_error(source, version)
+        .is_none()
+        .then_some(version)
 }
 
 /// Returns the first semantic-syntax error across `source`'s module-level
 /// statements, `None` for a module that compiles. The walk stops at
 /// module scope and carries the checker's `__future__` boundary state
 /// across the run.
-pub(super) fn first_semantic_error(source: &Source) -> Option<SemanticSyntaxError> {
+pub(super) fn first_semantic_error(
+    source: &Source,
+    version: PythonVersion,
+) -> Option<SemanticSyntaxError> {
     let context = ModuleScope {
         error: OnceCell::new(),
         module: source,
+        version,
     };
     let mut checker = SemanticSyntaxChecker::new();
     for stmt in &source.ast().body {
@@ -132,7 +139,7 @@ mod tests {
     #[case("import os\nfrom collections import deque\n")]
     #[case("")]
     fn first_semantic_error_clears_a_compiling_module(#[case] src: &str) {
-        assert!(first_semantic_error(&parse(src)).is_none());
+        assert!(first_semantic_error(&parse(src), PythonVersion::default()).is_none());
     }
 
     #[rstest]
@@ -140,7 +147,8 @@ mod tests {
     #[case("x = 1\nfrom __future__ import division\n")]
     #[case("\"\"\"Doc.\"\"\"\nimport os\nfrom __future__ import annotations\n")]
     fn first_semantic_error_flags_a_demoted_future_import(#[case] src: &str) {
-        let error = first_semantic_error(&parse(src)).expect("late future import reports");
+        let error = first_semantic_error(&parse(src), PythonVersion::default())
+            .expect("late future import reports");
         assert_eq!(error.kind, SemanticSyntaxErrorKind::LateFutureImport);
     }
 
@@ -149,7 +157,8 @@ mod tests {
         let source = parse(
             "import os\nfrom __future__ import annotations\nfrom __future__ import division\n",
         );
-        let error = first_semantic_error(&source).expect("first late future import reports");
+        let error = first_semantic_error(&source, PythonVersion::default())
+            .expect("first late future import reports");
         assert_eq!(
             source.slice(error.range),
             "from __future__ import annotations"
@@ -159,7 +168,8 @@ mod tests {
     #[test]
     fn first_semantic_error_reads_a_notebook_as_one_module() {
         let source = notebook(&["import os\n", "from __future__ import annotations\n"]);
-        let error = first_semantic_error(&source).expect("late future import reports");
+        let error = first_semantic_error(&source, PythonVersion::default())
+            .expect("late future import reports");
         assert_eq!(error.kind, SemanticSyntaxErrorKind::LateFutureImport);
     }
 
@@ -169,8 +179,10 @@ mod tests {
         let context = ModuleScope {
             error: OnceCell::new(),
             module: &source,
+            version: PythonVersion::PY313,
         };
         assert_eq!(context.source(), "x = 1\n");
+        assert_eq!(context.python_version(), PythonVersion::PY313);
         assert!(context.in_module_scope());
         assert!(!context.in_function_scope());
         assert!(!context.in_notebook());
@@ -179,6 +191,7 @@ mod tests {
         let cell_context = ModuleScope {
             error: OnceCell::new(),
             module: &cells,
+            version: PythonVersion::default(),
         };
         assert!(cell_context.in_notebook());
     }
@@ -189,8 +202,8 @@ mod tests {
         let context = ModuleScope {
             error: OnceCell::new(),
             module: &source,
+            version: PythonVersion::default(),
         };
-        assert_eq!(context.python_version(), PythonVersion::default());
         assert!(context.global("x").is_none());
         assert!(context.lazy_import_context().is_none());
         assert!(context.has_nonlocal_binding("x"));

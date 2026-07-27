@@ -33,10 +33,9 @@ pub(super) fn prepared_groups(
     rule: &dyn Rule,
     source: &Source,
     suppression: &SuppressionMap,
-    rule_id: RuleId,
 ) -> Vec<Vec<Edit>> {
     let mut groups = rule.apply(source);
-    retain_unsuppressed(&mut groups, source, suppression, rule_id);
+    retain_unsuppressed(&mut groups, source, suppression, rule.id());
     groups.retain(|group| !group.is_empty());
     groups
 }

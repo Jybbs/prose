@@ -9,7 +9,7 @@ use ruff_text_size::TextRange;
 use unicode_width::UnicodeWidthStr;
 
 use super::{Member, Settings, holds::is_alignment_candidate, members::baseline};
-use crate::{config::MaxShift, source::Source};
+use crate::{config::MaxShift, primitives::edit::replacement, source::Source};
 
 /// Aligns `members` by splitting the source-ordered run into the
 /// contiguous groups `reading_order_groups` yields and emitting each at
@@ -65,10 +65,7 @@ pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) ->
     if text.len() == n && text.bytes().all(|b| b == b' ') {
         return None;
     }
-    if n == 0 {
-        return Some(Edit::range_deletion(range));
-    }
-    Some(Edit::range_replacement(" ".repeat(n), range))
+    Some(replacement(" ".repeat(n), range))
 }
 
 /// Rewrites each member's gap to its [`padding_width`], the spacing that

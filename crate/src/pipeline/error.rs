@@ -2,6 +2,7 @@
 
 use ruff_diagnostics::SourceMap;
 use ruff_notebook::CellOffsets;
+use ruff_python_ast::PythonVersion;
 use ruff_python_parser::{ParseError, semantic_errors::SemanticSyntaxError};
 use thiserror::Error;
 
@@ -26,14 +27,14 @@ pub enum PipelineError {
 
 /// Reparses `new_text`, sliding the source's cell offsets through `map`
 /// so a notebook keeps current boundaries, and tags either failure with
-/// the `rule` whose edits produced it. The semantic check runs only
-/// under `input_compiles`.
+/// the `rule` whose edits produced it. The semantic check runs only when
+/// `gate` carries the version to evaluate against.
 pub(super) fn reparse_or_reject(
     source: &Source,
     new_text: String,
     rule: RuleId,
     map: Option<SourceMap>,
-    input_compiles: bool,
+    gate: Option<PythonVersion>,
 ) -> Result<Source, PipelineError> {
     let cell_offsets = map.map_or_else(CellOffsets::default, |m| {
         forward_offsets(source.cell_offsets(), &m)
@@ -41,7 +42,9 @@ pub(super) fn reparse_or_reject(
     let next = source
         .reparse_carrying(new_text, cell_offsets)
         .map_err(|source| PipelineError::Reparse { rule, source })?;
-    if input_compiles && let Some(error) = first_semantic_error(&next) {
+    if let Some(version) = gate
+        && let Some(error) = first_semantic_error(&next, version)
+    {
         return Err(PipelineError::Compile { error, rule });
     }
     Ok(next)
