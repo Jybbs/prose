@@ -20,15 +20,15 @@ use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::{aligner, edit::singleton_groups},
+    primitives::{aligner, edit::singleton_groups, reserve::reserved_columns},
     rule::{Rule, RuleId},
+    rules::align_equals::AlignEquals,
     source::Source,
 };
 
 mod classify;
 mod flow;
 mod layouter;
-mod reserve;
 
 use layouter::Layouter;
 
@@ -45,13 +45,8 @@ pub(crate) struct CollectionLayout {
 impl CollectionLayout {
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.collection_layout;
-        let align_equals = &config.rules.align_equals;
         Self {
-            // Reserve the column `align_equals` shifts a value to only when
-            // it runs, since a disabled rule leaves the `=` unaligned.
-            align_equals: align_equals.enabled.then(|| {
-                aligner::Settings::from(align_equals).with_line_length(config.code_width())
-            }),
+            align_equals: AlignEquals::reserve_settings(config),
             code_line_length: config.code_width(),
             collapse: rules.collapse,
             explode: rules.explode,
@@ -65,9 +60,9 @@ impl CollectionLayout {
 impl Rule for CollectionLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let body = &source.ast().body;
-        // The count cap rides the `explode` facet, so a cleared `explode`
-        // leaves no tripping dicts and the cap goes inert. Precomputed once
-        // so the per-node check is a containment scan rather than a re-walk.
+        // The count cap is read only under the `explode` facet, so a cleared
+        // `explode` leaves no tripping dicts and the cap goes inert. Precomputed
+        // once so the per-node check is a containment scan rather than a re-walk.
         let count_cap = self.max_dict_entries.filter(|_| self.explode);
         let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
             let mut ranges = Vec::new();
@@ -80,7 +75,7 @@ impl Rule for CollectionLayout {
             ranges
         });
         let reservations = self.align_equals.map_or_else(HashMap::new, |settings| {
-            reserve::reserved_columns(source, settings)
+            reserved_columns(source, settings, AlignEquals::SLUG)
         });
         let mut visitor = Layouter {
             code_line_length: self.code_line_length,

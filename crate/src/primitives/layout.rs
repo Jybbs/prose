@@ -3,7 +3,10 @@
 use std::borrow::Cow;
 
 use ruff_python_ast::Expr;
-use ruff_python_trivia::textwrap::{dedent, indent};
+use ruff_python_trivia::{
+    leading_indentation,
+    textwrap::{dedent, indent},
+};
 
 use crate::primitives::INDENT_STEP;
 
@@ -68,6 +71,22 @@ pub(crate) fn reindent_block(block: &str, to: usize) -> Cow<'_, str> {
     ))
 }
 
+/// The columns [`reindent_block`] moves `block`'s body by when it
+/// re-indents to `to`, zero where it leaves the block borrowed.
+pub(crate) fn reindent_shift(block: &str, to: usize) -> isize {
+    match reindent_block(block, to) {
+        Cow::Borrowed(_) => 0,
+        Cow::Owned(moved) => closing_indent(&moved) as isize - closing_indent(block) as isize,
+    }
+}
+
+/// The indent width of `block`'s last line.
+fn closing_indent(block: &str) -> usize {
+    leading_indentation(block.rsplit_once('\n').map_or(block, |(_, last)| last))
+        .chars()
+        .count()
+}
+
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
@@ -107,5 +126,18 @@ mod tests {
         #[case] expected: &str,
     ) {
         assert_eq!(reindent_block(block, to), expected);
+    }
+
+    #[rstest]
+    #[case("(a, b,\n    c)", 8, 0)]
+    #[case("{a: b}", 4, 0)]
+    #[case("{\n    a,\n    b,\n}", 4, 4)]
+    #[case("{\n        a,\n    }", 0, -4)]
+    fn reindent_shift_reports_the_columns_the_body_moves(
+        #[case] block: &str,
+        #[case] to: usize,
+        #[case] expected: isize,
+    ) {
+        assert_eq!(reindent_shift(block, to), expected);
     }
 }

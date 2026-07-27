@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Chained Call Settles Every Link in One Pass"
+
+description = '''
+The walk continues through the callee after an explode, so each link of a method chain answers the budget in the same pass rather than one link per run. The receiver that already fits stays inline.
+'''

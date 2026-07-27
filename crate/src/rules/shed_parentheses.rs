@@ -3,8 +3,11 @@
 //! stripped and kept where the bare form fails to parse or shifts the
 //! tree, so a precedence pair, a generator, a walrus binding, and a
 //! one-element tuple all survive. A wrapped pair folds onto one line
-//! when the bare form fits the budget, and a pair nested inside another
-//! redundant pair sheds in the same pass.
+//! when the bare form fits the budget, measured from the column the pair
+//! reaches once the pass's earlier edits apply and narrowed by the pairs
+//! nested inside it, which shed in the same pass.
+
+use std::{borrow::Cow, cmp::Reverse};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -20,8 +23,8 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     primitives::{
-        edit::{singleton_groups, splice_reparse},
-        inline::{single_line_form, whitespace_runs},
+        edit::{apply_inline_edits, singleton_groups, splice_reparse},
+        inline::{end_column, single_line_form, soft_wrap_runs},
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -41,15 +44,22 @@ impl ShedParentheses {
 
 impl Rule for ShedParentheses {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let mut walker = Walker {
-            code_line_length: self.code_line_length,
-            edits: Vec::new(),
-            in_collapse: false,
+        let mut scout = Scout {
+            candidates: Vec::new(),
             parents: vec![AnyNodeRef::from(source.ast())],
             source,
         };
-        walker.visit_body(&source.ast().body);
-        singleton_groups(walker.edits)
+        scout.visit_body(&source.ast().body);
+        let mut candidates = scout.candidates;
+        candidates.sort_unstable_by_key(|c| (c.pair.start(), Reverse(c.pair.end())));
+        let mut shedder = Shedder {
+            code_line_length: self.code_line_length,
+            edits: Vec::new(),
+            folds: Vec::new(),
+            source,
+        };
+        shedder.shed(&candidates);
+        singleton_groups(shedder.edits)
     }
 
     fn id(&self) -> RuleId {
@@ -57,15 +67,43 @@ impl Rule for ShedParentheses {
     }
 }
 
-struct Walker<'a> {
-    code_line_length: usize,
-    edits: Vec<Edit>,
-    in_collapse: bool,
+/// One grouping pair whose removal leaves the parse unchanged, carrying
+/// its interior range and that interior's single-line form.
+struct Candidate<'src> {
+    bare: Cow<'src, str>,
+    inner: TextRange,
+    pair: TextRange,
+}
+
+/// Collects every structurally redundant pair in a module, leaving the
+/// budget to [`Shedder`].
+struct Scout<'a> {
+    candidates: Vec<Candidate<'a>>,
     parents: Vec<AnyNodeRef<'a>>,
     source: &'a Source,
 }
 
-impl Walker<'_> {
+impl<'a> Scout<'a> {
+    /// The candidate `expr` contributes, or `None` where no pair
+    /// encloses it, the pair carries syntax, its interior has no
+    /// single-line form, or stripping the pair shifts the parse.
+    fn candidate(&self, expr: &'a Expr, parent: AnyNodeRef) -> Option<Candidate<'a>> {
+        let pair = parenthesized_range(expr.into(), parent, self.source.tokens())?;
+        // A walrus binding keeps its pair whatever the context, since the
+        // grammar needs it almost everywhere, and a multi-line return
+        // annotation is signature-layout's to reshape, so neither sheds here.
+        if expr.is_named_expr()
+            || (is_return_annotation(expr, parent) && self.source.contains_line_break(pair))
+            || self.source.intersects_comment(pair)
+        {
+            return None;
+        }
+        let inner = expr.range();
+        let bare = single_line_form(expr, self.source.slice(inner))?;
+        self.preserves_tree(pair, &bare)
+            .then_some(Candidate { bare, inner, pair })
+    }
+
     /// Reports whether splicing the bare interior in place of `pair`
     /// reparses to the same statement tree, the question that decides
     /// whether the pair carries syntax or only wraps.
@@ -86,81 +124,9 @@ impl Walker<'_> {
             .map(ComparableStmt::from)
             .eq(reparsed.syntax().body.iter().map(ComparableStmt::from))
     }
-
-    /// Emits an edit folding each line-spanning whitespace run inside
-    /// `inner` to a single space, the join a multi-line interior needs
-    /// before its parentheses can go. A run sitting inside a nested pair
-    /// stays whole here so the nested pair's own deletions do not collide.
-    fn push_fold_edits(&mut self, inner: TextRange) {
-        let text = self.source.slice(inner);
-        for (begin, len) in whitespace_runs(text) {
-            if text[begin..begin + len].contains('\n') {
-                let start = inner.start() + TextSize::try_from(begin).expect("offset fits u32");
-                let end = start + TextSize::try_from(len).expect("run length fits u32");
-                self.edits.push(Edit::range_replacement(
-                    " ".to_owned(),
-                    TextRange::new(start, end),
-                ));
-            }
-        }
-    }
-
-    /// Emits the edits shedding `expr`'s grouping pair when one encloses
-    /// it and removal leaves the parse unchanged. Returns whether this
-    /// pair opened a fold the caller propagates to `expr`'s children, so
-    /// each nested pair drops only its parentheses and the fold runs once.
-    fn shed(&mut self, expr: &Expr, parent: AnyNodeRef) -> bool {
-        let Some(pair) = parenthesized_range(expr.into(), parent, self.source.tokens()) else {
-            return false;
-        };
-        // A walrus binding keeps its pair whatever the context, since the
-        // grammar needs it almost everywhere, and a multi-line return
-        // annotation is signature-layout's to reshape, so neither sheds here.
-        if expr.is_named_expr()
-            || (is_return_annotation(expr, parent) && self.source.contains_line_break(pair))
-            || self.source.intersects_comment(pair)
-        {
-            return false;
-        }
-        let inner = expr.range();
-        let Some(bare) = single_line_form(expr, self.source.slice(inner)) else {
-            return false;
-        };
-        let pair_wraps = self.source.contains_line_break(pair);
-        if !self.in_collapse
-            && pair_wraps
-            && self
-                .source
-                .column_overflows(pair.start(), bare.width(), self.code_line_length)
-        {
-            return false;
-        }
-        if !self.preserves_tree(pair, &bare) {
-            return false;
-        }
-        let (open, close) = if self.in_collapse {
-            let paren = TextSize::new(1);
-            (
-                TextRange::at(pair.start(), paren),
-                TextRange::at(pair.end() - paren, paren),
-            )
-        } else {
-            (
-                TextRange::new(pair.start(), inner.start()),
-                TextRange::new(inner.end(), pair.end()),
-            )
-        };
-        self.edits.push(Edit::range_deletion(open));
-        self.edits.push(Edit::range_deletion(close));
-        if !self.in_collapse && pair_wraps {
-            self.push_fold_edits(inner);
-            return true;
-        }
-        false
-    }
 }
 
-impl<'a> Visitor<'a> for Walker<'a> {
+impl<'a> Visitor<'a> for Scout<'a> {
     fn visit_arguments(&mut self, arguments: &'a Arguments) {
         self.parents.push(arguments.into());
         walk_arguments(self, arguments);
@@ -169,19 +135,99 @@ impl<'a> Visitor<'a> for Walker<'a> {
 
     fn visit_expr(&mut self, expr: &'a Expr) {
         let parent = *self.parents.last().expect("seeded with the module node");
-        let opened_fold = self.shed(expr, parent);
-        let outer_collapse = self.in_collapse;
-        self.in_collapse |= opened_fold;
+        self.candidates.extend(self.candidate(expr, parent));
         self.parents.push(expr.into());
         walk_expr(self, expr);
         self.parents.pop();
-        self.in_collapse = outer_collapse;
     }
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         self.parents.push(stmt.into());
         walk_stmt(self, stmt);
         self.parents.pop();
+    }
+}
+
+/// Turns a candidate list into edits, walking it in source order so each
+/// budget test reads the columns the preceding edits produce.
+struct Shedder<'a> {
+    code_line_length: usize,
+    edits: Vec<Edit>,
+    folds: Vec<TextRange>,
+    source: &'a Source,
+}
+
+impl Shedder<'_> {
+    /// True when joining `candidate` leaves its line inside the budget,
+    /// the interior narrowed by the two columns each nested candidate
+    /// sheds alongside it.
+    fn fits(&self, candidate: &Candidate, candidates: &[Candidate]) -> bool {
+        let nested = candidates
+            .iter()
+            .filter(|other| candidate.inner.contains_range(other.pair))
+            .count();
+        let width = candidate.bare.width() - 2 * nested;
+        self.shifted_column(candidate.pair.start()) + width <= self.code_line_length
+    }
+
+    /// Emits an edit folding each line-spanning whitespace run inside
+    /// `inner` to a single space, the join a multi-line interior needs
+    /// before its parentheses can go.
+    fn push_fold_edits(&mut self, inner: TextRange) {
+        let text = self.source.slice(inner);
+        for (begin, len) in soft_wrap_runs(text) {
+            let start = inner.start() + TextSize::try_from(begin).expect("offset fits u32");
+            let end = start + TextSize::try_from(len).expect("run length fits u32");
+            self.edits.push(Edit::range_replacement(
+                " ".to_owned(),
+                TextRange::new(start, end),
+            ));
+        }
+    }
+
+    /// Emits the deletions for every candidate, folding a wrapped pair
+    /// whose joined line fits the budget. A candidate inside an open fold
+    /// drops its parentheses alone, leaving that fold's own edits to
+    /// close the break.
+    fn shed(&mut self, candidates: &[Candidate]) {
+        for candidate in candidates {
+            let Candidate { inner, pair, .. } = *candidate;
+            self.folds.retain(|fold| fold.contains_range(pair));
+            let collapsing = !self.folds.is_empty();
+            let wraps = self.source.contains_line_break(pair);
+            let folding = !collapsing && wraps;
+            if folding && !self.fits(candidate, candidates) {
+                continue;
+            }
+            let (open, close) = if collapsing {
+                let paren = TextSize::new(1);
+                (
+                    TextRange::at(pair.start(), paren),
+                    TextRange::at(pair.end() - paren, paren),
+                )
+            } else {
+                (
+                    TextRange::new(pair.start(), inner.start()),
+                    TextRange::new(inner.end(), pair.end()),
+                )
+            };
+            self.edits.push(Edit::range_deletion(open));
+            self.edits.push(Edit::range_deletion(close));
+            if folding {
+                self.push_fold_edits(inner);
+                self.folds.push(pair);
+            }
+        }
+    }
+
+    /// The column `offset` reaches once the edits emitted so far apply.
+    fn shifted_column(&self, offset: TextSize) -> usize {
+        let mut applied = self.edits.clone();
+        applied.sort_unstable();
+        end_column(
+            &apply_inline_edits(self.source, TextRange::up_to(offset), &applied),
+            0,
+        )
     }
 }
 

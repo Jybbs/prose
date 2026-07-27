@@ -2,6 +2,7 @@
 //! parameter per line, gated by `code_line_length` and `max_params`.
 //! Comments inside `()` pin the existing shape.
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     ParameterWithDefault, Parameters, Stmt, StmtFunctionDef,
@@ -10,12 +11,12 @@ use ruff_python_ast::{
 };
 use ruff_python_parser::parse_module;
 use ruff_text_size::{Ranged, TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::Config,
     primitives::{
         edit::{narrowed_replacement, singleton_groups, splice_parses},
+        inline::opening_width,
         layout::explode_parens,
         range::return_annotation_range,
     },
@@ -80,12 +81,7 @@ impl Layout<'_> {
 
     /// Builds the canonical inline text spanning `(` through `:`.
     fn build_inline(&self, fd: &StmtFunctionDef) -> String {
-        let mut out = format!(
-            "({})",
-            self.signature_parts(&fd.parameters)
-                .collect::<Vec<_>>()
-                .join(", "),
-        );
+        let mut out = format!("({})", self.signature_parts(&fd.parameters).join(", "));
         self.push_return_and_colon(&mut out, fd);
         out
     }
@@ -104,10 +100,9 @@ impl Layout<'_> {
         let replacement_range = self.replacement_range(fd);
         let inline = self.build_inline(fd);
         let count_trips = self.max_params.is_some_and(|cap| params.len() > cap);
-        let first_line = inline.lines().next().unwrap_or(&inline);
         let length_trips = self.source.column_overflows(
             params.range().start(),
-            first_line.width(),
+            opening_width(&inline),
             self.code_line_length,
         );
         let replacement = if count_trips || length_trips {
