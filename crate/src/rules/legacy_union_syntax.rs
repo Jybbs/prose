@@ -1,6 +1,6 @@
 //! Recommends `X | Y` and `X | None` over `Union[X, Y]` and
 //! `Optional[X]` when `target-version` is `3.10` or higher. The
-//! suggested rewrite rides as a display-only fix, recorded for the
+//! suggested rewrite is recorded as a display-only fix, held for the
 //! reader but never applied.
 
 use std::collections::HashMap;

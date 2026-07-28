@@ -169,7 +169,7 @@ mod tests {
     use serde_json::Value;
 
     use super::*;
-    use crate::server;
+    use crate::{server, testing::BARE_IMPORT_LINT};
 
     fn uri() -> Uri {
         server::uri("file:///module.py")
@@ -207,6 +207,20 @@ mod tests {
             .send(note(Initialized::METHOD, InitializedParams {}))
             .expect("send initialized");
         result
+    }
+
+    /// Spawns a server over an in-memory connection and drives the
+    /// handshake, returning the client, its join handle, and the decoded
+    /// capabilities.
+    fn boot() -> (
+        Connection,
+        thread::JoinHandle<anyhow::Result<()>>,
+        InitializeResult,
+    ) {
+        let (server, client) = Connection::memory();
+        let handle = thread::spawn(move || serve(server));
+        let capabilities = handshake(&client);
+        (client, handle, capabilities)
     }
 
     /// Sends shutdown + exit and joins the server thread cleanly.
@@ -276,9 +290,7 @@ mod tests {
 
     #[test]
     fn bare_exit_without_shutdown_ends_the_loop() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         client
             .sender
             .send(note(Exit::METHOD, ()))
@@ -291,9 +303,7 @@ mod tests {
 
     #[test]
     fn did_change_republishes_against_the_new_text() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         did_open(&client, "x = 1\n");
         assert!(published(&client).diagnostics.is_empty());
         client
@@ -308,7 +318,7 @@ mod tests {
                     content_changes: vec![TextDocumentContentChangeEvent {
                         range: None,
                         range_length: None,
-                        text: "import os\nos.getcwd()\n".to_owned(),
+                        text: BARE_IMPORT_LINT.to_owned(),
                     }],
                 },
             ))
@@ -319,10 +329,8 @@ mod tests {
 
     #[test]
     fn did_close_clears_published_diagnostics() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
-        did_open(&client, "import os\nos.getcwd()\n");
+        let (client, handle, _) = boot();
+        did_open(&client, BARE_IMPORT_LINT);
         let _ = published(&client);
         client
             .sender
@@ -339,10 +347,8 @@ mod tests {
 
     #[test]
     fn did_open_publishes_a_lint_diagnostic() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
-        did_open(&client, "import os\nos.getcwd()\n");
+        let (client, handle, _) = boot();
+        did_open(&client, BARE_IMPORT_LINT);
         let params = published(&client);
         assert_eq!(params.diagnostics.len(), 1);
         assert_eq!(params.diagnostics[0].source.as_deref(), Some("prose"));
@@ -417,9 +423,7 @@ mod tests {
 
     #[test]
     fn formatting_an_untracked_document_returns_no_edits() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         client
             .sender
             .send(req(
@@ -443,9 +447,7 @@ mod tests {
     #[case("import os\n", None)]
     #[case("alpha = 1\nb = 22\n", Some("alpha = 1"))]
     fn formatting_matches_the_buffer_state(#[case] source: &str, #[case] expected: Option<&str>) {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         did_open(&client, source);
         let _ = published(&client);
         let edits = formatting_request(&client);
@@ -461,18 +463,14 @@ mod tests {
 
     #[test]
     fn initialize_advertises_the_formatting_provider() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        let result = handshake(&client);
+        let (client, handle, result) = boot();
         assert!(result.capabilities.document_formatting_provider.is_some());
         teardown(&client, handle);
     }
 
     #[test]
     fn loop_returns_ok_when_the_client_disconnects() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         drop(client);
         handle
             .join()
@@ -482,9 +480,7 @@ mod tests {
 
     #[test]
     fn malformed_notification_is_dropped_and_server_survives() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         client
             .sender
             .send(note(
@@ -492,16 +488,14 @@ mod tests {
                 serde_json::json!({ "bogus": true }),
             ))
             .expect("send malformed didOpen");
-        did_open(&client, "import os\nos.getcwd()\n");
+        did_open(&client, BARE_IMPORT_LINT);
         assert_eq!(published(&client).diagnostics.len(), 1);
         teardown(&client, handle);
     }
 
     #[test]
     fn malformed_request_receives_invalid_params() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         client
             .sender
             .send(req(
@@ -522,9 +516,7 @@ mod tests {
 
     #[test]
     fn malformed_watched_files_notification_is_dropped_and_server_survives() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         client
             .sender
             .send(note(
@@ -532,16 +524,14 @@ mod tests {
                 serde_json::json!({ "bogus": true }),
             ))
             .expect("send malformed didChangeWatchedFiles");
-        did_open(&client, "import os\nos.getcwd()\n");
+        did_open(&client, BARE_IMPORT_LINT);
         assert_eq!(published(&client).diagnostics.len(), 1);
         teardown(&client, handle);
     }
 
     #[test]
     fn non_exit_after_shutdown_ends_the_session_cleanly() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         client
             .sender
             .send(req(3, Shutdown::METHOD, ()))
@@ -558,33 +548,27 @@ mod tests {
 
     #[test]
     fn published_diagnostics_carry_the_document_version() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
-        did_open(&client, "import os\nos.getcwd()\n");
+        let (client, handle, _) = boot();
+        did_open(&client, BARE_IMPORT_LINT);
         assert_eq!(published(&client).version, Some(1));
         teardown(&client, handle);
     }
 
     #[test]
     fn unknown_notification_is_ignored() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         client
             .sender
             .send(note(DidSaveTextDocument::METHOD, serde_json::json!({})))
             .expect("send unknown notification");
-        did_open(&client, "import os\nos.getcwd()\n");
+        did_open(&client, BARE_IMPORT_LINT);
         assert_eq!(published(&client).diagnostics.len(), 1);
         teardown(&client, handle);
     }
 
     #[test]
     fn unsupported_request_receives_method_not_found() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
+        let (client, handle, _) = boot();
         client
             .sender
             .send(req(
@@ -611,10 +595,8 @@ mod tests {
 
     #[test]
     fn watched_file_change_republishes_open_documents() {
-        let (server, client) = Connection::memory();
-        let handle = thread::spawn(move || serve(server));
-        handshake(&client);
-        did_open(&client, "import os\nos.getcwd()\n");
+        let (client, handle, _) = boot();
+        did_open(&client, BARE_IMPORT_LINT);
         assert_eq!(published(&client).diagnostics.len(), 1);
         client
             .sender

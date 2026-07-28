@@ -1,23 +1,25 @@
-//! The collection-layout serializer. Walks each literal and subscript,
-//! renders its inline and expanded forms, and emits the edit that fits
-//! the budget.
+//! The collection-layout serializer. Walks each literal and subscript
+//! outside an f-string or t-string replacement field, renders its
+//! inline and expanded forms, and emits the edit that fits the budget.
 
 use std::{borrow::Cow, collections::HashMap};
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyNodeRef, Comprehension, DictItem, Expr, ExprDict,
+    AnyNodeRef, Comprehension, DictItem, Expr, ExprDict, InterpolatedStringElement,
     visitor::{Visitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
-use super::classify::{
-    Segment, is_align_colons_gap, is_atomic, is_collapse_only, is_collapsible, requires_expand,
-    segments,
+use super::{
+    classify::{
+        Segment, is_align_colons_gap, is_atomic, is_collapse_only, is_collapsible,
+        pre_colon_padding, requires_expand, segments,
+    },
+    flow::flow_lines,
 };
-use super::flow::flow_lines;
 use crate::{
     primitives::{
         INDENT_STEP, edit::narrowed_replacement, inline::single_line_form, layout::is_layoutable,
@@ -112,7 +114,7 @@ impl<'a> Layouter<'a> {
                 }
             }
         }
-        out.extend(std::iter::repeat_n(' ', indent));
+        out.push_str(&item_prefix[..indent]);
         out.push(close);
         out
     }
@@ -167,25 +169,30 @@ impl<'a> Layouter<'a> {
 
     /// Builds the hung two-line form of a `key: value` dict entry,
     /// breaking at `:` and emitting the value at `item_indent +
-    /// INDENT_STEP`. Returns `None` for `**value` unpacking items.
+    /// INDENT_STEP`. The key's pre-colon padding carries through, the
+    /// column belonging to `align_colons`. Returns `None` for `**value`
+    /// unpacking items.
     fn hang_dict_value(
         &self,
         item: &DictItem,
         parent: AnyNodeRef,
         item_indent: usize,
     ) -> Option<String> {
-        let key_text = self.source.slice(item.key.as_ref()?);
+        let key = item.key.as_ref()?;
+        let key_text = self.source.slice(key);
+        let padding = pre_colon_padding(self.key_value_gap(key, &item.value));
         let hang_column = item_indent + INDENT_STEP;
         let value_text = self.serialize_expr(&item.value, parent, hang_column, hang_column);
         let hang_prefix = " ".repeat(hang_column);
         Some(format!(
-            "{key_text}:{newline}{hang_prefix}{value_text}",
+            "{key_text}{padding}:{newline}{hang_prefix}{value_text}",
             newline = self.newline,
         ))
     }
 
     /// True when `expr` contains an over-cap `Dict` at any depth,
-    /// including itself.
+    /// including itself. A `Dict` inside a replacement field does not
+    /// count.
     fn has_over_count_dict(&self, expr: &Expr) -> bool {
         let range = expr.range();
         self.tripping_dicts
@@ -211,6 +218,12 @@ impl<'a> Layouter<'a> {
         let inline = self.inline_form(expr);
         (!inline.contains('\n') && column + inline.width() <= self.code_line_length)
             .then_some(inline)
+    }
+
+    /// The source text between a keyed dict entry's `key` and its
+    /// `value`, the span carrying the `:` and the padding around it.
+    fn key_value_gap(&self, key: &Expr, value: &Expr) -> &'a str {
+        self.source.slice(TextRange::new(key.end(), value.start()))
     }
 
     /// Returns the canonical rewrite for `expr`, or `None` to descend
@@ -270,9 +283,7 @@ impl<'a> Layouter<'a> {
         let value_column = indent + key_text.width() + 2;
         let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
         let width = key_text.width() + 2 + value_text.width();
-        let gap = self
-            .source
-            .slice(TextRange::new(key.end(), item.value.start()));
+        let gap = self.key_value_gap(key, &item.value);
         // A rewritten key drops the source slice's alignment padding, so
         // the padded separator and the borrowed round-trip both hold only
         // while the key passes through unchanged.
@@ -487,4 +498,7 @@ impl<'a> Visitor<'a> for Layouter<'a> {
             None => walk_expr(self, expr),
         }
     }
+
+    /// Leaves a replacement field unwalked.
+    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 }

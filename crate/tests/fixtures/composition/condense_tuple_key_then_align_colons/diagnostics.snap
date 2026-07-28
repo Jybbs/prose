@@ -1,8 +1,8 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/composition/condense_tuple_key_then_align_colons/input.py
+input_file: crate/tests/fixtures/composition/condense_tuple_key_then_align_colons/input.py
 ---
 align-colons@78..125
-alphabetize@16..132
+alphabetize@69..131
 collection-layout@23..155

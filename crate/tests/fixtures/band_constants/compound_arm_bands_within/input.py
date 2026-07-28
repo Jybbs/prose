@@ -1,5 +1,5 @@
 if FEATURE:
-    SCALE = factor()
+    SCALE = factor
 
     def factor():
         return 2

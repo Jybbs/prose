@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Inside a Replacement Field Spares Its Enclosure"
+
+description = '''
+The dict carries more entries than `max-dict-entries` allows, which normally expands the dict and every collection around it whatever the widths involved. Sitting inside an f-string replacement field puts it out of reach, so the count cap reads neither the dict nor the list holding the string.
+'''

@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/docstring_wrap/blank_line_keeps_block_below_entry_verbatim/input.py
+---
+def load():
+    """
+    Args:
+        config: A description of the mapping this loader reads and then
+                hands back to the caller.
+
+            {"retries": 3, "timeout": 30}
+
+        target: The destination the loaded mapping is written to.
+    """

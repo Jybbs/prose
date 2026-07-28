@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Per-Rule Skip Reaches Back to the Statement's Opening Line"
+
+description = '''
+`# prose: skip[<rule>]` trailing a wrapped assignment **suppresses the named rule across every line the statement spans**, rather than only the physical line the directive sits on.
+'''

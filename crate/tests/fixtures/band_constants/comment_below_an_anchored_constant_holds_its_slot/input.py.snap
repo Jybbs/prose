@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/comment_below_an_anchored_constant_holds_its_slot/input.py
+---
+LIMIT = compute_limit()
+# the ceiling the scheduler honors
+
+ALPHA_DECAY = 0.9

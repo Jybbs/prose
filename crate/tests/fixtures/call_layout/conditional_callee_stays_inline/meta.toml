@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Conditional Callee Keeps Its Trailing Link Inline"
+
+description = '''
+A call whose callee is a conditional expression settles every call inside that conditional before the link that carries it, so the trailing link measures against the rendered callee and stays inline when it fits.
+'''

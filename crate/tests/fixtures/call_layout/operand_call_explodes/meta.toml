@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Inside an Operand Explodes With Its Row"
+
+description = '''
+An argument value that is not itself a call still carries its nested calls into the reshape, so a call sitting inside an operand answers the budget from the row it lands on.
+'''

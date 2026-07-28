@@ -1,7 +1,7 @@
 //! Aligns the `import` keyword across consecutive `from M import N`
 //! statements and the `as` keyword across consecutive `import M as A`
 //! statements at the same block indentation. Group boundaries are
-//! blank lines, comments in the inter-statement gap, form changes
+//! blank lines, own-line comments between two statements, form changes
 //! (`from`-imports vs `import`-as), bare `import M` statements without
 //! aliases, and multi-name imports. The two forms align independently,
 //! so a stranded `import M as A` between two `from`-imports breaks the

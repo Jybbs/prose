@@ -1,17 +1,20 @@
 //! The banding analysis. Ranks each module-scope statement into an
 //! import, leading-constant, definition, or trailing-constant band and
 //! tiers the constant bands through the shared `primitives::tiering`
-//! graph, declining when a band's reference graph carries a cycle.
+//! graph, declining when a band's reference graph carries a cycle. Each
+//! own-line comment binds to the member above or below it that it
+//! documents.
 
 use std::collections::{HashMap, HashSet};
 
 use ruff_python_ast::{Expr, PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
 use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
+use unicode_width::UnicodeWidthStr;
 
 use super::{
-    BandConstants,
-    plan::{BandPlan, BandRank, Subcategory},
+    BandConstants, TRAILING_GAP,
+    plan::{BandPlan, BandRank, Carry, Subcategory},
 };
 use crate::{
     primitives::{
@@ -20,12 +23,11 @@ use crate::{
             bare_import_bound_name, from_import_bound_name, is_explicit_type_alias,
             is_screaming_case, single_name_assignment,
         },
-        comments::{has_keep_marker, is_banner_block, leading_comment_block},
+        comments::{anchors_in_place, has_keep_marker, leading_comment_block},
         effect::value_is_effectful,
         tiering::{eval_refs, eval_time_refs, tier_levels},
     },
     source::Source,
-    suppression::is_directive_comment,
 };
 
 /// A module-scope single-name assignment considered for hoisting,
@@ -33,8 +35,6 @@ use crate::{
 /// names in its value and its non-deferred annotation, and whether the
 /// value runs code at binding. Value references pin the constant when
 /// unresolved, whereas annotation references only constrain band order.
-/// `effectful` holds only inside a notebook cell, pinning the constant
-/// there.
 struct ConstSite<'src> {
     annot_refs: Vec<&'src str>,
     effectful: bool,
@@ -44,13 +44,29 @@ struct ConstSite<'src> {
     value_refs: Vec<&'src str>,
 }
 
+impl<'src> ConstSite<'src> {
+    /// The load-context names in the site's value and annotation, a
+    /// value reference paired with `true` and an annotation reference
+    /// with `false`, skipping the site's own name.
+    fn foreign_refs(&self) -> impl Iterator<Item = (&'src str, bool)> {
+        let name = self.name;
+        self.value_refs
+            .iter()
+            .map(|&r| (r, true))
+            .chain(self.annot_refs.iter().map(|&r| (r, false)))
+            .filter(move |&(r, _)| r != name)
+    }
+}
+
 /// Builds the module-scope hoist plan, ranking each statement and
-/// pairing each banded constant with the comment it carries. Returns
-/// `None` when a constant band's reference graph carries a cycle.
+/// pairing each banded member with the comment it carries onto another
+/// member's line. Returns `None` when a constant band's reference graph
+/// carries a cycle.
 pub(super) fn module_band_plan<'src>(
     source: &'src Source,
     body: &'src [Stmt],
     blocks: &[TextRange],
+    code_width: usize,
     defer_annotations: bool,
     group_constants: bool,
     target_version: Option<PythonVersion>,
@@ -64,37 +80,46 @@ pub(super) fn module_band_plan<'src>(
     let mut dup_defs: HashSet<&'src str> = HashSet::new();
     let mut imports: HashSet<&'src str> = HashSet::new();
     let mut ranks: HashMap<usize, BandRank> = HashMap::new();
-    let mut carries: Vec<(usize, TextRange)> = Vec::new();
+    let mut attached: HashMap<usize, TextRange> = HashMap::new();
+    let mut carries: Vec<Carry> = Vec::new();
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
-        // A `# fmt: off` span or a `# prose: skip` line pins its
-        // statement, so a single-edit reorder never crosses a region the
-        // pipeline drops the whole edit for.
-        if suppression.intersects(stmt)
-            || suppression
-                .is_format_suppressed_at(source.line_index(stmt.start()), BandConstants::SLUG)
-        {
+        // A `# prose: off` span or a skip directive pins its statement, so
+        // a reorder never moves a member the pipeline would then drop the
+        // whole group for.
+        if suppression.suppresses(stmt, BandConstants::SLUG) {
             continue;
         }
-        // The own-line comment in the gap above the statement, if any.
-        // `block_range` folds a statement's trailing and attached comments
-        // into its own block, so a comment surviving in the gap is a
-        // free-floating own-line comment a blank line separates from below.
+        // The own-line comment run left standing between two blocks, one
+        // `member_block` declined to bind because it anchors in place,
+        // opens at another indent, or sits behind a notebook cell wall.
+        // The member beneath it pins, bounding the bands to its side so
+        // no reorder drops the run out of the gap holding it. A cell wall
+        // already holds a run clear of the cell-local reorder below it,
+        // leaving a constant behind one free to band.
         let gap_comment = idx.checked_sub(1).and_then(|prev| {
             leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
         });
         let const_target = const_binding(stmt);
-        // A definition, class, import, or any non-constant pins beneath an
-        // own-line comment, bounding the bands to its side. A constant
-        // instead forward-attaches a prose comment the way `blank-lines`
-        // settles it, while a banner section divider or a suppression
-        // directive pins the constant too, since neither may relocate.
         if gap_comment.is_some_and(|block| {
             const_target.is_none()
-                || is_banner_block(source, block)
-                || source.slice(block).lines().any(is_directive_comment)
+                || anchors_in_place(source, block)
+                || source.same_cell(block.start(), stmt.start())
         }) {
             continue;
+        }
+        // The run this member's block folds in ahead of its code. One
+        // sitting directly below the previous member and a blank line
+        // off this one documents that member and carries backward onto
+        // it, while every other run heads this member and relocates
+        // only when a sort reseats it.
+        if let Some(block) = leading_comment_block(source, blocks[idx].start(), stmt.start()) {
+            match backward_carry(source, body, blocks, idx, block, code_width) {
+                Some(carry) => carries.push(carry),
+                None => {
+                    attached.insert(idx, block);
+                }
+            }
         }
         match stmt {
             Stmt::ClassDef(StmtClassDef { name, .. })
@@ -121,15 +146,12 @@ pub(super) fn module_band_plan<'src>(
                     {
                         continue;
                     }
-                    if let Some(block) = gap_comment {
-                        carries.push((idx, block));
-                    }
                     sites.push(ConstSite {
                         annot_refs: stmt
                             .as_ann_assign_stmt()
                             .filter(|_| !defer_annotations)
                             .map_or_else(Vec::new, |ann| eval_refs(&ann.annotation)),
-                        effectful: notebook && value.is_some_and(value_is_effectful),
+                        effectful: value.is_some_and(value_is_effectful),
                         idx,
                         name,
                         subcategory: aliases
@@ -157,35 +179,32 @@ pub(super) fn module_band_plan<'src>(
         // A value reference to an unresolved name pins the constant unless
         // the name is an import or a builtin, both clean terminals, whereas
         // an annotation reference only ever constrains order, so `x: int = 1`
-        // rides the leading band.
-        for (refs, anchor_unresolved) in [(&site.value_refs, true), (&site.annot_refs, false)] {
-            for &name in refs {
-                if name == site.name {
-                    continue;
-                }
-                if dup_defs.contains(name) {
-                    anchored[s] = true;
-                } else if def_at.contains_key(name) {
-                    reaches_def[s] = true;
-                } else if let Some(&dep) = site_at.get(name) {
-                    deps[s].push(dep);
-                } else if anchor_unresolved
-                    && !imports.contains(name)
-                    && !is_python_builtin(name, builtins_minor, false)
-                {
-                    anchored[s] = true;
-                }
+        // sits in the leading band.
+        for (name, anchor_unresolved) in site.foreign_refs() {
+            if dup_defs.contains(name) {
+                anchored[s] = true;
+            } else if def_at.contains_key(name) {
+                reaches_def[s] = true;
+            } else if let Some(&dep) = site_at.get(name) {
+                deps[s].push(dep);
+            } else if anchor_unresolved
+                && !imports.contains(name)
+                && !is_python_builtin(name, builtins_minor, notebook)
+            {
+                anchored[s] = true;
             }
         }
     }
     propagate(&mut anchored, &deps);
     let mut trailing: Vec<bool> = (0..n).map(|s| reaches_def[s] && !anchored[s]).collect();
     propagate(&mut trailing, &deps);
+    let (trailing_members, leading_members): (Vec<usize>, Vec<usize>) =
+        (0..n).filter(|&s| !anchored[s]).partition(|&s| trailing[s]);
     let mut keys: HashMap<usize, (usize, Subcategory, &'src str)> = HashMap::new();
-    for band in [false, true] {
-        let members: Vec<usize> = (0..n)
-            .filter(|&s| !anchored[s] && trailing[s] == band)
-            .collect();
+    for (rank, members) in [
+        (BandRank::Leading, leading_members),
+        (BandRank::Trailing, trailing_members),
+    ] {
         let local: HashMap<usize, usize> =
             members.iter().enumerate().map(|(at, &s)| (s, at)).collect();
         let dep_sets: Vec<HashSet<usize>> = members
@@ -197,51 +216,82 @@ pub(super) fn module_band_plan<'src>(
                     .collect()
             })
             .collect();
-        for (s, tier) in members.iter().copied().zip(tier_levels(&dep_sets)?) {
+        for (s, tier) in members.into_iter().zip(tier_levels(&dep_sets)?) {
             keys.insert(sites[s].idx, (tier, sites[s].subcategory, sites[s].name));
-            ranks.insert(
-                sites[s].idx,
-                if band {
-                    BandRank::Trailing
-                } else {
-                    BandRank::Leading
-                },
-            );
+            ranks.insert(sites[s].idx, rank);
         }
     }
     let mut edges: Vec<(usize, usize)> = Vec::new();
-    let push_site_edge = |edges: &mut Vec<(usize, usize)>, from: usize, name: &str| {
-        if let Some(&dep) = site_at.get(name).filter(|&&dep| !anchored[dep]) {
-            edges.push((from, sites[dep].idx));
-        }
+    let site_edge = |from: usize, name: &str| {
+        site_at
+            .get(name)
+            .filter(|&&dep| !anchored[dep])
+            .map(|&dep| (from, sites[dep].idx))
     };
     for (s, site) in sites.iter().enumerate() {
         if anchored[s] {
             continue;
         }
-        for &name in site.value_refs.iter().chain(&site.annot_refs) {
+        for (name, _) in site.foreign_refs() {
             if let Some(&def) = def_at.get(name) {
                 edges.push((site.idx, def));
             } else {
-                push_site_edge(&mut edges, site.idx, name);
+                edges.extend(site_edge(site.idx, name));
             }
         }
     }
     for (idx, stmt) in body.iter().enumerate() {
         if ranks.get(&idx) == Some(&BandRank::Definition) {
             for name in eval_time_refs(stmt, defer_annotations) {
-                push_site_edge(&mut edges, idx, name);
+                edges.extend(site_edge(idx, name));
             }
         }
     }
-    // A carried comment only travels when its constant bands, leaving an
-    // anchored constant's comment in its source gap.
-    carries.retain(|(idx, _)| ranks.contains_key(idx));
+    // A bound comment only travels when its member bands, leaving an
+    // anchored member's comment where the source put it.
+    attached.retain(|idx, _| ranks.contains_key(idx));
+    carries.retain(|carry| ranks.contains_key(&carry.carrier));
     Some(BandPlan {
+        attached,
         carries,
         edges,
         keys,
         ranks,
+    })
+}
+
+/// The carry binding `block` back onto the member above `body[idx]`,
+/// which `block` sits on the line directly below while a blank line
+/// holds it off `body[idx]`. `None` for every other run, leaving it
+/// bound to `body[idx]`, a run touching both members reading as the
+/// description of the one beneath it. The comment trails the member's
+/// code when both hold to one source line and the joined line fits
+/// inside `code_width`, and climbs onto the line above it otherwise.
+fn backward_carry(
+    source: &Source,
+    body: &[Stmt],
+    blocks: &[TextRange],
+    idx: usize,
+    block: TextRange,
+    code_width: usize,
+) -> Option<Carry> {
+    let prev = idx.checked_sub(1)?;
+    if !source.consecutive_lines(blocks[prev].end(), block.start())
+        || source.consecutive_lines(block.end(), body[idx].start())
+    {
+        return None;
+    }
+    Some(Carry {
+        absorbs: idx,
+        carrier: prev,
+        comment: block,
+        trails: !source.contains_line_break(block)
+            && !source.contains_line_break(&body[prev])
+            && !source.column_overflows(
+                blocks[prev].end(),
+                TRAILING_GAP.width() + source.slice(block).trim_start().width(),
+                code_width,
+            ),
     })
 }
 
@@ -301,13 +351,24 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::primitives::orderer::block_ranges;
-    use crate::testing::{notebook, parse};
+    use crate::{
+        primitives::orderer::member_blocks,
+        testing::{notebook, parse},
+    };
+
+    /// A constant naming `get_ipython`, a builtin only inside a notebook
+    /// cell, at body slot 1 below a definition.
+    const IPYTHON_REF: &str = "def helper():\n    return 1\nSHELL = get_ipython\n";
+
+    /// `src` parsed as the sole statement below a module-level definition.
+    fn below_a_definition(src: &str) -> Source {
+        parse(&format!("def build():\n    return 1\n\n\n{src}\n"))
+    }
 
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
-        let blocks = block_ranges(source, body, source.module_range());
-        module_band_plan(source, body, &blocks, false, true, None)
+        let blocks = member_blocks(source, body, source.module_range());
+        module_band_plan(source, body, &blocks, 88, false, true, None)
     }
 
     #[test]
@@ -329,25 +390,60 @@ mod tests {
         );
     }
 
-    #[test]
-    fn module_band_plan_bands_a_builtin_valued_constant_as_leading() {
-        let source = parse("def build():\n    return 1\n\n\nTABLE = dict(timeout=30)\n");
+    #[rstest]
+    #[case("TABLE = dict(timeout=30)")]
+    #[case("SIZES = [sum([1, 2]), 3]")]
+    fn module_band_plan_anchors_an_effectful_constant(#[case] src: &str) {
+        let source = below_a_definition(src);
         let plan = plan_of(&source).expect("acyclic module plans");
-        assert_eq!(
-            plan.ranks[&1],
-            BandRank::Leading,
-            "dict is a builtin, so TABLE rides the leading band"
+        assert!(
+            !plan.ranks.contains_key(&1),
+            "{src} runs code as it binds, so it pins in place"
         );
     }
 
     #[test]
-    fn module_band_plan_bands_an_inert_constant_in_a_notebook() {
-        let source = notebook(&["def helper():\n    return 1\nSEED = 42\n"]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
+    fn module_band_plan_bands_a_builtin_named_constant_as_leading() {
+        let source = below_a_definition("TABLE = dict");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert_eq!(
             plan.ranks[&1],
             BandRank::Leading,
-            "a literal is inert, so SEED bands even inside a cell"
+            "dict is a builtin name, so TABLE sits in the leading band"
+        );
+    }
+
+    #[rstest]
+    #[case("def f():\n    pass\n\n# note\nX = 1\n", BandRank::Leading)]
+    #[case("def f():\n    pass\n\n# note\n\nX = 1\n", BandRank::Leading)]
+    #[case("X = 1\n\n# note\ndef f():\n    pass\n", BandRank::Definition)]
+    #[case("X = 1\n\n# note\n\ndef f():\n    pass\n", BandRank::Definition)]
+    #[case("X = 1\n\n# note\nimport os\n", BandRank::Import)]
+    #[case("X = 1\n\n# note\n\nimport os\n", BandRank::Import)]
+    fn module_band_plan_bands_a_member_under_a_prose_comment(
+        #[case] src: &str,
+        #[case] expected: BandRank,
+    ) {
+        let source = parse(src);
+        let plan = plan_of(&source).expect("acyclic module plans");
+        assert_eq!(
+            plan.ranks[&1], expected,
+            "a prose comment binds to the member below it, whatever the blank run"
+        );
+    }
+
+    #[rstest]
+    #[case("SCALE = 2 * 3")]
+    #[case("LIMITS = [1, 2]")]
+    #[case("LOOKUP = {\"a\": 1}")]
+    #[case("KEY = lambda row: row.score")]
+    fn module_band_plan_bands_an_inert_constant_as_leading(#[case] src: &str) {
+        let source = below_a_definition(src);
+        let plan = plan_of(&source).expect("acyclic module plans");
+        assert_eq!(
+            plan.ranks[&1],
+            BandRank::Leading,
+            "{src} only builds a result, so it sits in the leading band"
         );
     }
 
@@ -364,22 +460,26 @@ mod tests {
         assert_eq!(plan.ranks[&2], BandRank::Trailing, "TRAIL names make");
     }
 
-    #[test]
-    fn module_band_plan_carries_a_prose_comment_into_the_band() {
-        let source = parse("def f():\n    pass\n\n# note\n\nX = 1\n");
+    #[rstest]
+    #[case::single_line_note("ZETA = 1\n# documents ZETA\n\nALPHA = 2\n", true)]
+    #[case::multi_line_note("ZETA = 1\n# documents ZETA\n# at length\n\nALPHA = 2\n", false)]
+    #[case::multi_line_member("def f():\n    pass\n# documents f\n\nALPHA = 2\n", false)]
+    #[case::note_past_the_budget(
+        "ZETA = 1\n# a note long enough that joining it onto the constant line would outrun the code budget\n\nALPHA = 2\n",
+        false
+    )]
+    fn module_band_plan_binds_a_comment_below_a_member_backward(
+        #[case] src: &str,
+        #[case] trails: bool,
+    ) {
+        let source = parse(src);
         let plan = plan_of(&source).expect("acyclic module plans");
-        assert_eq!(
-            plan.ranks[&1],
-            BandRank::Leading,
-            "X leads, hoisting above f"
-        );
-        let (idx, comment) = plan
+        let carry = plan
             .carries
             .first()
-            .copied()
-            .expect("X carries its comment");
-        assert_eq!(idx, 1);
-        assert_eq!(source.slice(comment), "# note");
+            .expect("the member carries its comment");
+        assert_eq!(carry.carrier, 0);
+        assert_eq!(carry.trails, trails);
     }
 
     #[test]
@@ -397,52 +497,61 @@ mod tests {
             BandRank::Leading,
             "a self-reference constrains nothing, so X leads"
         );
-    }
-
-    #[test]
-    fn module_band_plan_pins_a_constant_below_a_banner() {
-        let source = parse("def f():\n    pass\n\n# =====\n\nX = 1\n");
-        let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
-            !plan.ranks.contains_key(&1),
-            "a banner divides sections, so X pins below it"
+            plan.edges.is_empty(),
+            "a self-reference emits no edge, leaving the assembled order sound"
         );
-        assert!(plan.carries.is_empty());
-    }
-
-    #[test]
-    fn module_band_plan_pins_a_constant_below_a_directive() {
-        let source = parse("def f():\n    pass\n\n# fmt: on\n\nX = 1\n");
-        let plan = plan_of(&source).expect("acyclic module plans");
-        assert!(
-            !plan.ranks.contains_key(&1),
-            "a format directive drives its own line, so X pins below it"
-        );
-        assert!(plan.carries.is_empty());
     }
 
     #[rstest]
-    #[case("DATA = await fetch()")]
-    #[case("CACHE = dict(size=10)")]
-    #[case("SHELL = !ls")]
-    fn module_band_plan_pins_an_effectful_constant_in_a_notebook(#[case] value_src: &str) {
-        let cell = format!("def helper():\n    return 1\n{value_src}\n");
-        let source = notebook(&[cell.as_str()]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
+    #[case::banner_above_a_constant("def f():\n    pass\n\n# =====\n\nX = 1\n")]
+    #[case::banner_above_a_definition("X = 1\n\n# =====\n\ndef f():\n    pass\n")]
+    #[case::banner_below_a_constant("ZETA = 1\n# =========\n\nALPHA = 2\n")]
+    #[case::directive_above_a_constant("def f():\n    pass\n\n# fmt: on\n\nX = 1\n")]
+    #[case::directive_above_a_definition("X = 1\n\n# fmt: on\n\ndef f():\n    pass\n")]
+    #[case::pragma_below_a_constant("ZETA = 1\n# type: ignore\n\nALPHA = 2\n")]
+    fn module_band_plan_pins_a_member_below_an_anchor(#[case] src: &str) {
+        let source = parse(src);
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&1),
-            "{value_src} runs code, so it pins in its cell"
+            "a banner, a directive, and a pragma all anchor in place, so the member below pins"
         );
+        assert!(plan.carries.is_empty(), "the comment binds to neither side");
     }
 
     #[test]
-    fn module_band_plan_pins_an_inert_constant_referencing_an_effectful_one_in_a_notebook() {
-        let source = notebook(&["def helper():\n    return 1\nRAW = compute()\nSCALED = RAW\n"]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
+    fn module_band_plan_pins_an_inert_constant_referencing_an_effectful_one() {
+        let source = parse("def helper():\n    return 1\n\n\nRAW = compute()\nSCALED = RAW\n");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&2),
             "SCALED references effectful RAW, so anchoring propagates and it pins"
         );
+    }
+
+    #[rstest]
+    #[case(notebook(&[IPYTHON_REF]), Some(BandRank::Leading))]
+    #[case(parse(IPYTHON_REF), None)]
+    fn module_band_plan_reads_an_ipython_builtin_only_inside_a_cell(
+        #[case] source: Source,
+        #[case] expected: Option<BandRank>,
+    ) {
+        let plan = plan_of(&source).expect("acyclic plans");
+        assert_eq!(
+            plan.ranks.get(&1).copied(),
+            expected,
+            "get_ipython is a builtin in a cell and unresolved in a module"
+        );
+    }
+
+    #[test]
+    fn module_band_plan_records_the_comment_attached_above_a_member() {
+        let source = parse("# the tunable knobs\nZETA = 1\nALPHA = 2\n");
+        let plan = plan_of(&source).expect("acyclic module plans");
+        let attached = plan.attached.get(&0).expect("ZETA folds in its comment");
+        assert_eq!(source.slice(*attached), "# the tunable knobs");
+        assert!(!plan.attached.contains_key(&1));
     }
 
     #[test]

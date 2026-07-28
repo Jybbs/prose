@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/notebook/comment_holds_in_its_own_cell/input.ipynb
+---
+SEED = 7
+# Sampling knobs
+
+# --- cell 2 ---
+
+BATCH  = 8
+WINDOW = 32

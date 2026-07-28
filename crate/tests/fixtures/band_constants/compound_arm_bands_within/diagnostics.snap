@@ -1,6 +1,6 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/band_constants/compound_arm_bands_within/input.py
+input_file: crate/tests/fixtures/band_constants/compound_arm_bands_within/input.py
 ---
-band-constants@16..68
+band-constants@16..66

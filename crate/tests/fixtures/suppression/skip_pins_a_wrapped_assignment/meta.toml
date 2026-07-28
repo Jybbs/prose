@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Bare Skip Pins Every Line of the Statement It Trails"
+
+description = '''
+A trailing `# fmt: skip` on a wrapped assignment **covers the whole logical statement**, so `shed-parentheses` drops its opening and closing edits together instead of applying one half and leaving source that does not parse.
+'''

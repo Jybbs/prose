@@ -1,4 +1,4 @@
-CONFIG = build()
+CONFIG = build
 
 
 class Widget:

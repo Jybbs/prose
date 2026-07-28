@@ -6,10 +6,12 @@
 
 use std::collections::HashMap;
 
+use itertools::Itertools;
 use ruff_python_ast::Stmt;
 use ruff_text_size::TextRange;
 
 use crate::primitives::{
+    blanks::{blank_gap, module_blank_lines},
     imports::{import_blank_lines, import_sort_key},
     orderer::slot_positions,
     sections::Sections,
@@ -17,26 +19,26 @@ use crate::primitives::{
 
 /// The applied banding: a band rank per banded statement, the rendered
 /// tier each banded constant sits in, the member count per rendered
-/// tier, and the prose comment each carries up with it.
+/// tier, and the comment each member carries onto another member's line.
 pub(super) struct Banding {
-    pub(super) carries: Vec<(usize, TextRange)>,
+    pub(super) carries: Vec<Carry>,
     ranks: HashMap<usize, BandRank>,
     tier_sizes: HashMap<(BandRank, usize), usize>,
     tiers: HashMap<usize, usize>,
 }
 
 impl Banding {
-    /// True when `idx` opens a blank-separated sub-band: its rendered
-    /// tier climbs past the base and holds at least two members. A lone
-    /// nested constant folds tight into the tier above and aligns with it.
+    /// True when `idx` opens a blank-separated sub-band, meaning its
+    /// rendered tier climbs past the base and holds at least two
+    /// members. A lone nested constant folds tight into the tier above
+    /// and aligns with it.
     fn opens_band(&self, idx: usize) -> bool {
         let tier = self.rendered_tier(idx);
-        let members = self
-            .tier_sizes
-            .get(&(self.ranks[&idx], tier))
-            .copied()
-            .unwrap_or(0);
-        tier > 0 && members >= 2
+        tier > 0
+            && self
+                .tier_sizes
+                .get(&(self.ranks[&idx], tier))
+                .is_some_and(|&members| members >= 2)
     }
 
     /// The rendered tier `idx` sits in, the true tier already clamped
@@ -55,10 +57,13 @@ impl Banding {
 
 /// The module-scope hoist plan: a band rank per banded statement, the
 /// intra-band `(tier, subcategory, name)` key per banded constant, the
-/// eager-reference edges the order keeps backward, and the comment each
-/// carries. A statement absent from `ranks` is a pinned anchor.
+/// eager-reference edges the order keeps backward, the comment run each
+/// member's block folds in ahead of its code, and the comment each
+/// carries onto another member's line. A statement absent from `ranks`
+/// is a pinned anchor.
 pub(super) struct BandPlan<'src> {
-    pub(super) carries: Vec<(usize, TextRange)>,
+    pub(super) attached: HashMap<usize, TextRange>,
+    pub(super) carries: Vec<Carry>,
     pub(super) edges: Vec<(usize, usize)>,
     pub(super) keys: HashMap<usize, (usize, Subcategory, &'src str)>,
     pub(super) ranks: HashMap<usize, BandRank>,
@@ -69,13 +74,16 @@ impl BandPlan<'_> {
     /// the front, the leading constants below it, the definitions in
     /// incoming order, the trailing constants last. The import run sorts by
     /// group then name when `grouped`, flat otherwise. Both constant bands
-    /// sort by `(tier, subcategory, name)`. Clears `region`.
+    /// sort by `(tier, subcategory, name)`. Pushes a `(from, to)` pair onto
+    /// `shifts` for every sorted band whose head member changed. Clears
+    /// `region`.
     fn drain_region(
         &self,
         body: &[Stmt],
         first_party: &[String],
         grouped: bool,
         region: &mut Vec<usize>,
+        shifts: &mut Vec<(usize, usize)>,
         out: &mut Vec<usize>,
     ) {
         let mut imports = Vec::new();
@@ -90,12 +98,22 @@ impl BandPlan<'_> {
                 BandRank::Trailing => trailing.push(idx),
             }
         }
+        let heads = |bands: [&[usize]; 3]| bands.map(|band| band.first().copied());
+        let source_heads = heads([&imports, &leading, &trailing]);
         imports.sort_by_key(|&idx| {
             import_sort_key(&body[idx], first_party, grouped)
                 .expect("import band holds only imports")
         });
         leading.sort_by_key(|idx| self.keys[idx]);
         trailing.sort_by_key(|idx| self.keys[idx]);
+        let sorted_heads = heads([&imports, &leading, &trailing]);
+        shifts.extend(
+            source_heads
+                .into_iter()
+                .zip(sorted_heads)
+                .filter_map(|(before, after)| before.zip(after))
+                .filter(|(before, after)| before != after),
+        );
         out.append(&mut imports);
         out.append(&mut leading);
         out.append(&mut definitions);
@@ -111,15 +129,32 @@ impl BandPlan<'_> {
             .all(|&(from, to)| position[to] < position[from])
     }
 
+    /// Moves each comment heading a band's source-order head onto the
+    /// member the sort seated first.
+    fn relocate_heads(&mut self, shifts: &[(usize, usize)]) {
+        for &(from, to) in shifts {
+            if let Some(&comment) = self.attached.get(&from) {
+                self.carries.push(Carry {
+                    absorbs: from,
+                    carrier: to,
+                    comment,
+                    trails: false,
+                });
+            }
+        }
+    }
+
     /// Applies the plan to `order`, draining each section's slots into
     /// imports, leading constants, definitions, then trailing constants.
     /// A section marker drains the running region, so a band never crosses
-    /// a divider. Returns the [`Banding`] when the plan is sound and the
-    /// assembled order either differs from `order` or opens a tier blank
-    /// line, rewriting `order` in place. Leaves `order` untouched
-    /// otherwise.
+    /// a divider. A comment heading a band's source-order head moves to
+    /// whichever member the sort seats first, so it heads the band still.
+    /// Returns the [`Banding`] when the plan is sound and the assembled
+    /// order differs from `order`, moves a comment onto another member,
+    /// or opens a tier blank line, rewriting `order` in place. Leaves
+    /// `order` untouched otherwise.
     pub(super) fn apply(
-        self,
+        mut self,
         body: &[Stmt],
         sections: &Sections,
         first_party: &[String],
@@ -127,11 +162,12 @@ impl BandPlan<'_> {
         max_tiers: Option<usize>,
         order: &mut Vec<usize>,
     ) -> Option<Banding> {
-        let drain = |region: &mut Vec<usize>, banded: &mut Vec<usize>| {
-            self.drain_region(body, first_party, grouped, region, banded);
-        };
+        let mut shifts = Vec::new();
         let mut banded = Vec::with_capacity(order.len());
         let mut region = Vec::new();
+        let mut drain = |region: &mut Vec<usize>, banded: &mut Vec<usize>| {
+            self.drain_region(body, first_party, grouped, region, &mut shifts, banded);
+        };
         for (slot, &idx) in order.iter().enumerate() {
             if sections.is_boundary(slot) {
                 drain(&mut region, &mut banded);
@@ -147,6 +183,7 @@ impl BandPlan<'_> {
         if !self.is_sound(&banded) {
             return None;
         }
+        self.relocate_heads(&shifts);
         let tiers: HashMap<usize, usize> = self
             .keys
             .iter()
@@ -157,17 +194,16 @@ impl BandPlan<'_> {
                 )
             })
             .collect();
-        let mut tier_sizes: HashMap<(BandRank, usize), usize> = HashMap::new();
-        for (&idx, &tier) in &tiers {
-            *tier_sizes.entry((self.ranks[&idx], tier)).or_default() += 1;
-        }
+        let tier_sizes = tiers
+            .iter()
+            .counts_by(|(&idx, &tier)| (self.ranks[&idx], tier));
         let banding = Banding {
             carries: self.carries,
             ranks: self.ranks,
             tier_sizes,
             tiers,
         };
-        (banded != *order || banding.stratifies()).then(|| {
+        (banded != *order || !banding.carries.is_empty() || banding.stratifies()).then(|| {
             *order = banded;
             banding
         })
@@ -184,6 +220,18 @@ pub(super) enum BandRank {
     Trailing,
 }
 
+/// A comment moving from the member whose block extent holds it onto
+/// another member's rendered text, landing after that member's code when
+/// `trails` and on the line above it otherwise. The block a comment
+/// binds backward from and the band head a sort reseats are the two
+/// moves, so `absorbs` and `carrier` always name different members.
+pub(super) struct Carry {
+    pub(super) absorbs: usize,
+    pub(super) carrier: usize,
+    pub(super) comment: TextRange,
+    pub(super) trails: bool,
+}
+
 /// The kind a banded constant sorts into within its tier. A band keys on
 /// `(tier, subcategory, name)`, so the aliases cluster ahead of the
 /// constants, and the constants ahead of the remaining module state.
@@ -198,10 +246,11 @@ pub(super) enum Subcategory {
 /// The gap the banded order seats after the block of rank `a`, ahead of
 /// the block of rank `b`. A same-band pair opens one blank line across a
 /// tier boundary into a sub-band of two or more members, a lone nested
-/// constant folding tight into the tier above instead, a definition
-/// fronts on two blank lines, and an import run keeps one blank line
-/// between canonical groups. `None` falls back to the source gap, the
-/// case for a pinned anchor on either side, leaving its spacing intact.
+/// constant folding tight into the tier above instead, and an import run
+/// keeps one blank line between canonical groups. Every other pair takes
+/// the count [`module_blank_lines`] declares, one blank line standing in
+/// wherever that policy holds no opinion. `None` falls back to the source
+/// gap, the case for a pinned anchor on either side.
 pub(super) fn banded_gap(
     band: &Banding,
     body: &[Stmt],
@@ -210,20 +259,60 @@ pub(super) fn banded_gap(
     a: usize,
     b: usize,
 ) -> Option<&'static str> {
-    Some(match (*band.ranks.get(&a)?, *band.ranks.get(&b)?) {
+    let blanks = match (*band.ranks.get(&a)?, *band.ranks.get(&b)?) {
         (BandRank::Leading, BandRank::Leading) | (BandRank::Trailing, BandRank::Trailing) => {
-            if band.rendered_tier(a) != band.rendered_tier(b) && band.opens_band(b) {
-                "\n\n"
-            } else {
-                "\n"
-            }
+            u32::from(band.rendered_tier(a) != band.rendered_tier(b) && band.opens_band(b))
         }
-        (BandRank::Import, BandRank::Import)
-            if import_blank_lines(&body[a], &body[b], first_party, grouped) == Some(0) =>
-        {
-            "\n"
+        (BandRank::Import, BandRank::Import) => {
+            import_blank_lines(&body[a], &body[b], first_party, grouped).unwrap_or(1)
         }
-        (_, BandRank::Definition) | (BandRank::Definition, _) => "\n\n\n",
-        _ => "\n\n",
-    })
+        _ => module_blank_lines(&body[a], &body[b], first_party, grouped).unwrap_or(1),
+    };
+    Some(blank_gap(blanks))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::primitives::orderer::member_blocks;
+    use crate::rules::band_constants::analysis::module_band_plan;
+    use crate::source::Source;
+    use crate::testing::parse;
+
+    /// The banding `source` produces alongside the order it rewrote.
+    fn banded(source: &Source) -> (Banding, Vec<usize>) {
+        let body = &source.ast().body;
+        let blocks = member_blocks(source, body, source.module_range());
+        let sections = Sections::of(source, &blocks);
+        let mut order: Vec<usize> = (0..body.len()).collect();
+        let banding = module_band_plan(source, body, &blocks, 88, false, true, None)
+            .expect("acyclic module plans")
+            .apply(body, &sections, &[], true, None, &mut order)
+            .expect("the band applies");
+        (banding, order)
+    }
+
+    #[test]
+    fn apply_leaves_a_backward_carry_on_its_own_member() {
+        let source = parse("ZETA = 1\n# documents ZETA\n\nALPHA = 2\n");
+        let (banding, order) = banded(&source);
+        assert_eq!(order, vec![1, 0]);
+        let carry = banding.carries.first().expect("ZETA carries its comment");
+        assert_eq!(
+            carry.carrier, 0,
+            "the note stays with the member it documents"
+        );
+        assert!(carry.trails, "the joined line fits inside the budget");
+    }
+
+    #[test]
+    fn apply_moves_a_heading_onto_the_reseated_band_head() {
+        let source = parse("# the tunable knobs\nZETA = 1\nALPHA = 2\n");
+        let (banding, order) = banded(&source);
+        assert_eq!(order, vec![1, 0]);
+        let carry = banding.carries.first().expect("the heading relocates");
+        assert_eq!(carry.absorbs, 0, "ZETA's block still covers the comment");
+        assert_eq!(carry.carrier, 1, "ALPHA heads the band after the sort");
+        assert!(!carry.trails, "a heading opens the band on its own line");
+    }
 }

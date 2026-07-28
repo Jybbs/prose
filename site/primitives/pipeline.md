@@ -30,7 +30,7 @@ tagline: deterministic rule runner
 
 ### Execution
 
-`run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError>` walks the registered rules in their canonical order. Each rule applies its edits, the pipeline reparses, and the new *Source* feeds the next rule, with the final text and every emitted diagnostic returned to the caller. Suppression is applied transparently inside `run`, with every `# fmt: off` block, `# fmt: skip` marker, and `# prose: ignore[<rule>]` directive consulted at the edit-emission boundary so suppressed edits and lint diagnostics never reach the returned vector.
+`run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>), PipelineError>` walks the registered rules in their canonical order. Each rule applies its edits, the pipeline reparses, and the new *Source* feeds the next rule, with the final text and every emitted diagnostic returned to the caller. Suppression is applied transparently inside `run`, with every `# fmt: off` block, `# fmt: skip` marker, and `# prose: ignore[<rule>]` directive consulted at the edit-emission boundary so suppressed fix groups and lint diagnostics never reach the returned vector. A fix group drops whole as soon as one of its edits falls under a directive, leaving a rule's co-dependent edits either all applied or all withheld.
 
 `diagnose(&self, source: &Source) -> Vec<Diagnostic>` collects every enabled rule's findings against the unmodified source, applying no edits and never reparsing, so each range stays anchored to the source as written rather than to an intermediate rewrite. `prose check` and `prose server` report through `diagnose`, where a rendered diagnostic points at the file the author wrote, while `run` feeds the rewritten text behind `prose format`'s diff, on-disk rewrite, and would-reformat summary. Both consult the same [[suppression-map]] and rule set, diverging only in that `diagnose` reads every rule against the original where `run` reads each against the prior rule's reparsed output.
 
@@ -48,15 +48,17 @@ pub struct Diagnostic {
 
 `Severity::Format` carries a `Some(fix)` payload the pipeline applies, whereas `Severity::Lint` carries `fix: None` and reports a finding the user has to resolve themselves. Consumers building structured output formats *(JSON, SARIF, GitHub annotations)* route by `rule` to associate findings with the originating slug.
 
-`PipelineError` is `pub` and carries one variant:
+`PipelineError` is `pub` and carries a variant per failure the pipeline can surface:
 
 ```rust
 pub enum PipelineError {
+    Cell { cell: OneIndexed, rule: RuleId, source: ParseError },
+    Compile { error: SemanticSyntaxError, rule: RuleId },
     Reparse { rule: RuleId, source: ParseError },
 }
 ```
 
-The variant captures the rule whose output failed to reparse plus the underlying `ParseError`. A `Reparse` error means a rule produced syntactically invalid Python, which is a rule-authoring bug, not a consumer-recoverable condition. The intermediate `Source` is dropped, leaving no partial output for the caller to inspect.
+Every variant names the rule whose output failed. A `Reparse` error means a rule produced syntactically invalid Python, a `Compile` error means the output parses yet fails the semantic-syntax check Python's own `compile` applies, and a `Cell` error means a notebook cell that parsed on its own before the rule ran no longer does, naming that cell by its position in the notebook. All three are rule-authoring bugs rather than consumer-recoverable conditions. The intermediate `Source` is dropped either way, leaving no partial output for the caller to inspect.
 
 ## Determinism
 

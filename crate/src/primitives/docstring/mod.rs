@@ -3,15 +3,9 @@
 //! holds a string literal as its first expression statement.
 //! Implementors of [`DocstringHandler`] receive every such docstring
 //! literal in source order via the trait's `walk` method. Implicitly
-//! concatenated docstring expressions are skipped. `body_docstring`
-//! returns one body's leading docstring literal for consumers that
-//! already hold the body. The section
-//! helpers `section_heading`, `entry_head`, and
-//! `entry_carrying_sections` parse a docstring body's Title-case-headed
-//! sections for consumers that walk text rather than the AST,
-//! recognizing entry-carrying sections by content shape rather than
-//! against a closed name list. `unbracketed_colon` locates an entry
-//! head's separating `:` past a parenthesized type.
+//! concatenated docstring expressions are skipped. The `body`,
+//! `grammar`, `scan`, and `section` submodules carry the text-level
+//! helpers for walking a docstring body directly.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -22,12 +16,14 @@ use ruff_python_ast::{
 use crate::{primitives::scope::scoped_body, source::Source};
 
 mod body;
+mod grammar;
 mod scan;
 mod section;
 
 pub(crate) use body::{DocstringBody, docstring_body, indent_prefix, triple_quoted_body};
+pub(crate) use grammar::{section_heading, sibling_entry_head, typed_entry_head};
 pub(crate) use scan::{LineScan, LineScanner, ScannedLine};
-pub(crate) use section::{entry_carrying_sections, entry_head, section_heading, unbracketed_colon};
+pub(crate) use section::entry_carrying_sections;
 
 /// Receiver for the docstring walker. Implementors handle each
 /// docstring `StringLiteral` reached in source order. Call `walk`

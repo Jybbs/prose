@@ -7,12 +7,11 @@ import FixturePairDoc     from './FixturePairDoc.vue'
 import FixturePairLanding from './FixturePairLanding.vue'
 import FixtureToggle      from './FixtureToggle.vue'
 
-import { data as fixtures } from '../../../lib/fixtures/fixtures.data'
-import { data as rules }    from '../../../lib/rules/rules.data'
-import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
-import { inlineCode }       from '../../../lib/shared/inline-code'
-import { lookup }           from '../../../lib/shared/lookup'
-import InlineProse          from '../base/InlineProse.vue'
+import { fixtureEntry }    from '../../../lib/fixtures/entry'
+import { data as rules }   from '../../../lib/rules/rules.data'
+import type { FixtureTab } from '../../../lib/shared/fixture-tab'
+import { inlineCode }      from '../../../lib/shared/inline-code'
+import InlineProse         from '../base/InlineProse.vue'
 
 const props = defineProps<{
   case     : string
@@ -22,8 +21,7 @@ const props = defineProps<{
   variant ?: 'doc' | 'landing'
 }>()
 
-const rule       = lookup(fixtures, props.rule, 'Fixture rule')
-const entry      = lookup(rule, props.case, `Fixture case under "${props.rule}"`)
+const entry      = fixtureEntry(props.rule, props.case)
 const id         = computed(() => `fixture-${props.rule}-${props.case}`)
 const activeTab  = ref<FixtureTab>('after')
 const showToggle = computed(() => props.variant !== 'landing' && entry.hasToggle)

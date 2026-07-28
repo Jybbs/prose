@@ -1,5 +1,4 @@
 [docs]
-canonical   = false
 previewable = false
 title       = "A Nested Call's Generator Takes Its Own Grouping Pair"
 

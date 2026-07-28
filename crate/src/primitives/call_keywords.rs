@@ -129,7 +129,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{first_def, parse};
+    use crate::testing::{first_def, first_expr, parse};
 
     #[rstest]
     #[case("1", "x=1")]
@@ -144,14 +144,12 @@ mod tests {
         #[case] argument: &str,
         #[case] expected: &str,
     ) {
-        let source = parse(&format!("def f(x): pass\nf({argument})\n"));
-        let call = source.ast().body[1]
-            .as_expr_stmt()
-            .expect("second statement is the call")
-            .value
+        let source = parse(&format!("f({argument})\n"));
+        let callee = parse("def f(x): pass\n");
+        let call = first_expr(&source)
             .as_call_expr()
-            .expect("the call expression");
-        let keywords = keyword_args(&source, call, Some(&first_def(&source).parameters))
+            .expect("the statement is a call");
+        let keywords = keyword_args(&source, call, Some(&first_def(&callee).parameters))
             .expect("a sole resolved positional takes keyword form");
 
         assert_eq!(keywords.args[0].rendered, expected);

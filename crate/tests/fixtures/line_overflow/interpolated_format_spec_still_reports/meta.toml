@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Computed Format Spec Still Reports"
+
+description = '''
+The format spec after the `:` carries a replacement field of its own, and the call inside it is as opaque to layout as one in the outer field, so the over-cap line surfaces as a finding rather than being left for `call-layout`.
+'''

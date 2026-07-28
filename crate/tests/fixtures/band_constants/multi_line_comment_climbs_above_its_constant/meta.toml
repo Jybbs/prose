@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Multi-Line Comment Climbs Above Its Constant"
+
+description = '''
+The block binds backward to `DEFAULT_EPSILON` the same way a one-line comment does, and having no trailing form it takes the line above its constant instead. The band still packs as one aligned run beneath it.
+'''

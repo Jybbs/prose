@@ -3,5 +3,5 @@ previewable = false
 title       = "An Async Filtered Comprehension Joins onto One Line"
 
 description = '''
-An `async` comprehension carrying an `if` clause joins onto one line when it fits, the `async for` keyword and the filter clause riding the joined form intact.
+An `async` comprehension carrying an `if` clause joins onto one line when it fits, the `async for` keyword and the filter clause surviving the join intact.
 '''
