@@ -72,13 +72,12 @@ impl Rule for BandConstants {
             target_version: self.target_version,
         };
         let layout = bander.band_layout(body, source.module_range());
-        let forced = layout.forced();
         let edits = assembled_cell_edits(
             source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
-            forced,
+            layout.forced(),
             |i| bander.band_gap(&layout, body, i),
         );
         singleton_groups(edits)
@@ -86,24 +85,6 @@ impl Rule for BandConstants {
 
     fn id(&self) -> RuleId {
         Self::SLUG
-    }
-}
-
-/// The banding layout of a module body: its member blocks, their
-/// rendered text, the new-order permutation, and the applied band. The
-/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
-struct BandLayout<'a> {
-    band: Option<Banding>,
-    blocks: Vec<TextRange>,
-    order: Vec<usize>,
-    rendered: Vec<Cow<'a, str>>,
-}
-
-impl BandLayout<'_> {
-    /// True when the band opens a tier blank, forcing an owned assembly
-    /// so the spacing lands even when the order is already settled.
-    fn forced(&self) -> bool {
-        self.band.as_ref().is_some_and(Banding::stratifies)
     }
 }
 
@@ -127,13 +108,12 @@ impl<'a> Bander<'a> {
     /// falling back to `Cow::Borrowed` over `source.slice(span)`.
     fn band_body(&self, body: &'a [Stmt], outer: TextRange) -> (Cow<'a, str>, TextRange) {
         let layout = self.band_layout(body, outer);
-        let forced = layout.forced();
         assemble_or_borrow(
             self.source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
-            forced,
+            layout.forced(),
             |i| self.band_gap(&layout, body, i),
         )
     }
@@ -177,7 +157,7 @@ impl<'a> Bander<'a> {
 
     /// Builds the hoist plan over `body` and applies it to `order`,
     /// seating the leading band beneath the import run each section opens.
-    /// Returns the [`Banding`] when constants relocated soundly.
+    /// Returns the [`Banding`] when the members relocated soundly.
     fn band_module_constants(
         &self,
         body: &'a [Stmt],
@@ -211,7 +191,6 @@ impl<'a> Bander<'a> {
         if scoped_body(stmt).is_none() && is_compound_statement(stmt) {
             let bodies = compound_sub_bodies(stmt)
                 .into_iter()
-                .filter(|(body, _)| !body.is_empty())
                 .map(|(body, outer)| self.band_body(body, outer));
             return splice_bodies(self.source, block, bodies, &[]);
         }
@@ -219,11 +198,28 @@ impl<'a> Bander<'a> {
     }
 }
 
+/// The banding layout of a module body: its member blocks, their
+/// rendered text, the new-order permutation, and the applied band. The
+/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
+struct BandLayout<'a> {
+    band: Option<Banding>,
+    blocks: Vec<TextRange>,
+    order: Vec<usize>,
+    rendered: Vec<Cow<'a, str>>,
+}
+
+impl BandLayout<'_> {
+    /// True when the band opens a tier blank, forcing an owned assembly
+    /// so the spacing lands even when the order is already settled.
+    fn forced(&self) -> bool {
+        self.band.as_ref().is_some_and(Banding::stratifies)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::primitives::orderer::member_blocks;
-    use crate::testing::parse;
+    use crate::{primitives::orderer::member_blocks, testing::parse};
 
     #[test]
     fn band_module_constants_hoists_an_import_below_a_definition() {

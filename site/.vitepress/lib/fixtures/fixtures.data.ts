@@ -12,7 +12,7 @@ import { crateDir }          from '../shared/paths'
 
 const crate = crateDir(import.meta.url)
 
-interface FixtureEntry {
+export interface FixtureEntry {
   changesSource    : boolean
   descriptionNodes ?: InlineNode[]
   hasFindings      : boolean

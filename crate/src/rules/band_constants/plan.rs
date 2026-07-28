@@ -6,9 +6,11 @@
 
 use std::collections::HashMap;
 
+use itertools::Itertools;
 use ruff_python_ast::Stmt;
 
 use crate::primitives::{
+    blanks::{blank_gap, module_blank_lines},
     imports::{import_blank_lines, import_sort_key},
     orderer::slot_positions,
     sections::Sections,
@@ -29,12 +31,11 @@ impl Banding {
     /// nested constant folds tight into the tier above and aligns with it.
     fn opens_band(&self, idx: usize) -> bool {
         let tier = self.rendered_tier(idx);
-        let members = self
-            .tier_sizes
-            .get(&(self.ranks[&idx], tier))
-            .copied()
-            .unwrap_or(0);
-        tier > 0 && members >= 2
+        tier > 0
+            && self
+                .tier_sizes
+                .get(&(self.ranks[&idx], tier))
+                .is_some_and(|&members| members >= 2)
     }
 
     /// The rendered tier `idx` sits in, the true tier already clamped
@@ -154,10 +155,9 @@ impl BandPlan<'_> {
                 )
             })
             .collect();
-        let mut tier_sizes: HashMap<(BandRank, usize), usize> = HashMap::new();
-        for (&idx, &tier) in &tiers {
-            *tier_sizes.entry((self.ranks[&idx], tier)).or_default() += 1;
-        }
+        let tier_sizes = tiers
+            .iter()
+            .counts_by(|(&idx, &tier)| (self.ranks[&idx], tier));
         let banding = Banding {
             ranks: self.ranks,
             tier_sizes,
@@ -194,10 +194,11 @@ pub(super) enum Subcategory {
 /// The gap the banded order seats after the block of rank `a`, ahead of
 /// the block of rank `b`. A same-band pair opens one blank line across a
 /// tier boundary into a sub-band of two or more members, a lone nested
-/// constant folding tight into the tier above instead, a definition
-/// fronts on two blank lines, and an import run keeps one blank line
-/// between canonical groups. `None` falls back to the source gap, the
-/// case for a pinned anchor on either side, leaving its spacing intact.
+/// constant folding tight into the tier above instead, and an import run
+/// keeps one blank line between canonical groups. Every other pair takes
+/// the count [`module_blank_lines`] declares, one blank line standing in
+/// wherever that policy holds no opinion. `None` falls back to the source
+/// gap, the case for a pinned anchor on either side.
 pub(super) fn banded_gap(
     band: &Banding,
     body: &[Stmt],
@@ -206,20 +207,14 @@ pub(super) fn banded_gap(
     a: usize,
     b: usize,
 ) -> Option<&'static str> {
-    Some(match (*band.ranks.get(&a)?, *band.ranks.get(&b)?) {
+    let blanks = match (*band.ranks.get(&a)?, *band.ranks.get(&b)?) {
         (BandRank::Leading, BandRank::Leading) | (BandRank::Trailing, BandRank::Trailing) => {
-            if band.rendered_tier(a) != band.rendered_tier(b) && band.opens_band(b) {
-                "\n\n"
-            } else {
-                "\n"
-            }
+            u32::from(band.rendered_tier(a) != band.rendered_tier(b) && band.opens_band(b))
         }
-        (BandRank::Import, BandRank::Import)
-            if import_blank_lines(&body[a], &body[b], first_party, grouped) == Some(0) =>
-        {
-            "\n"
+        (BandRank::Import, BandRank::Import) => {
+            import_blank_lines(&body[a], &body[b], first_party, grouped).unwrap_or(1)
         }
-        (_, BandRank::Definition) | (BandRank::Definition, _) => "\n\n\n",
-        _ => "\n\n",
-    })
+        _ => module_blank_lines(&body[a], &body[b], first_party, grouped).unwrap_or(1),
+    };
+    Some(blank_gap(blanks))
 }

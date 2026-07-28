@@ -68,6 +68,7 @@ pub(super) fn module_band_plan<'src>(
     let analysis = source.binding_analysis();
     let aliases = group_constants.then(|| AliasContext::new(body, analysis));
     let builtins_minor = target_version.unwrap_or_default().minor;
+    let notebook = source.is_notebook();
     let suppression = source.suppression_map();
     let mut def_at: HashMap<&'src str, usize> = HashMap::new();
     let mut dup_defs: HashSet<&'src str> = HashSet::new();
@@ -167,7 +168,7 @@ pub(super) fn module_band_plan<'src>(
                 deps[s].push(dep);
             } else if anchor_unresolved
                 && !imports.contains(name)
-                && !is_python_builtin(name, builtins_minor, false)
+                && !is_python_builtin(name, builtins_minor, notebook)
             {
                 anchored[s] = true;
             }
@@ -176,11 +177,13 @@ pub(super) fn module_band_plan<'src>(
     propagate(&mut anchored, &deps);
     let mut trailing: Vec<bool> = (0..n).map(|s| reaches_def[s] && !anchored[s]).collect();
     propagate(&mut trailing, &deps);
+    let (trailing_members, leading_members): (Vec<usize>, Vec<usize>) =
+        (0..n).filter(|&s| !anchored[s]).partition(|&s| trailing[s]);
     let mut keys: HashMap<usize, (usize, Subcategory, &'src str)> = HashMap::new();
-    for (band, rank) in [(false, BandRank::Leading), (true, BandRank::Trailing)] {
-        let members: Vec<usize> = (0..n)
-            .filter(|&s| !anchored[s] && trailing[s] == band)
-            .collect();
+    for (rank, members) in [
+        (BandRank::Leading, leading_members),
+        (BandRank::Trailing, trailing_members),
+    ] {
         let local: HashMap<usize, usize> =
             members.iter().enumerate().map(|(at, &s)| (s, at)).collect();
         let dep_sets: Vec<HashSet<usize>> = members
@@ -192,16 +195,17 @@ pub(super) fn module_band_plan<'src>(
                     .collect()
             })
             .collect();
-        for (s, tier) in members.iter().copied().zip(tier_levels(&dep_sets)?) {
+        for (s, tier) in members.into_iter().zip(tier_levels(&dep_sets)?) {
             keys.insert(sites[s].idx, (tier, sites[s].subcategory, sites[s].name));
             ranks.insert(sites[s].idx, rank);
         }
     }
     let mut edges: Vec<(usize, usize)> = Vec::new();
-    let push_site_edge = |edges: &mut Vec<(usize, usize)>, from: usize, name: &str| {
-        if let Some(&dep) = site_at.get(name).filter(|&&dep| !anchored[dep]) {
-            edges.push((from, sites[dep].idx));
-        }
+    let site_edge = |from: usize, name: &str| {
+        site_at
+            .get(name)
+            .filter(|&&dep| !anchored[dep])
+            .map(|&dep| (from, sites[dep].idx))
     };
     for (s, site) in sites.iter().enumerate() {
         if anchored[s] {
@@ -211,14 +215,14 @@ pub(super) fn module_band_plan<'src>(
             if let Some(&def) = def_at.get(name) {
                 edges.push((site.idx, def));
             } else {
-                push_site_edge(&mut edges, site.idx, name);
+                edges.extend(site_edge(site.idx, name));
             }
         }
     }
     for (idx, stmt) in body.iter().enumerate() {
         if ranks.get(&idx) == Some(&BandRank::Definition) {
             for name in eval_time_refs(stmt, defer_annotations) {
-                push_site_edge(&mut edges, idx, name);
+                edges.extend(site_edge(idx, name));
             }
         }
     }
@@ -281,8 +285,14 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::primitives::orderer::member_blocks;
-    use crate::testing::parse;
+    use crate::{
+        primitives::orderer::member_blocks,
+        testing::{notebook, parse},
+    };
+
+    /// A constant naming `get_ipython`, a builtin only inside a notebook
+    /// cell, at body slot 1 below a definition.
+    const IPYTHON_REF: &str = "def helper():\n    return 1\nSHELL = get_ipython\n";
 
     /// `src` parsed as the sole statement below a module-level definition.
     fn below_a_definition(src: &str) -> Source {
@@ -338,6 +348,25 @@ mod tests {
     }
 
     #[rstest]
+    #[case("def f():\n    pass\n\n# note\nX = 1\n", BandRank::Leading)]
+    #[case("def f():\n    pass\n\n# note\n\nX = 1\n", BandRank::Leading)]
+    #[case("X = 1\n\n# note\ndef f():\n    pass\n", BandRank::Definition)]
+    #[case("X = 1\n\n# note\n\ndef f():\n    pass\n", BandRank::Definition)]
+    #[case("X = 1\n\n# note\nimport os\n", BandRank::Import)]
+    #[case("X = 1\n\n# note\n\nimport os\n", BandRank::Import)]
+    fn module_band_plan_bands_a_member_under_a_prose_comment(
+        #[case] src: &str,
+        #[case] expected: BandRank,
+    ) {
+        let source = parse(src);
+        let plan = plan_of(&source).expect("acyclic module plans");
+        assert_eq!(
+            plan.ranks[&1], expected,
+            "a prose comment binds to the member below it, whatever the blank run"
+        );
+    }
+
+    #[rstest]
     #[case("SCALE = 2 * 3")]
     #[case("LIMITS = [1, 2]")]
     #[case("LOOKUP = {\"a\": 1}")]
@@ -365,32 +394,6 @@ mod tests {
         assert_eq!(plan.ranks[&2], BandRank::Trailing, "TRAIL names make");
     }
 
-    #[rstest]
-    #[case("def f():\n    pass\n\n# note\nX = 1\n")]
-    #[case("def f():\n    pass\n\n# note\n\nX = 1\n")]
-    fn module_band_plan_bands_a_constant_under_a_prose_comment(#[case] src: &str) {
-        let source = parse(src);
-        let plan = plan_of(&source).expect("acyclic module plans");
-        assert_eq!(
-            plan.ranks[&1],
-            BandRank::Leading,
-            "the comment binds to X either side of the blank, so X leads"
-        );
-    }
-
-    #[rstest]
-    #[case("X = 1\n\n# note\ndef f():\n    pass\n")]
-    #[case("X = 1\n\n# note\n\ndef f():\n    pass\n")]
-    fn module_band_plan_ranks_a_definition_under_a_prose_comment(#[case] src: &str) {
-        let source = parse(src);
-        let plan = plan_of(&source).expect("acyclic module plans");
-        assert_eq!(
-            plan.ranks[&1],
-            BandRank::Definition,
-            "a prose comment binds to f rather than pinning it, whatever the blank run",
-        );
-    }
-
     #[test]
     fn module_band_plan_declines_a_constant_cycle() {
         let source = parse("A = B\nB = A\n");
@@ -406,25 +409,23 @@ mod tests {
             BandRank::Leading,
             "a self-reference constrains nothing, so X leads"
         );
-    }
-
-    #[test]
-    fn module_band_plan_pins_a_constant_below_a_banner() {
-        let source = parse("def f():\n    pass\n\n# =====\n\nX = 1\n");
-        let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
-            !plan.ranks.contains_key(&1),
-            "a banner divides sections, so X pins below it"
+            plan.edges.is_empty(),
+            "a self-reference emits no edge, leaving the assembled order sound"
         );
     }
 
-    #[test]
-    fn module_band_plan_pins_a_constant_below_a_directive() {
-        let source = parse("def f():\n    pass\n\n# fmt: on\n\nX = 1\n");
+    #[rstest]
+    #[case("def f():\n    pass\n\n# =====\n\nX = 1\n")]
+    #[case("X = 1\n\n# =====\n\ndef f():\n    pass\n")]
+    #[case("def f():\n    pass\n\n# fmt: on\n\nX = 1\n")]
+    #[case("X = 1\n\n# fmt: on\n\ndef f():\n    pass\n")]
+    fn module_band_plan_pins_a_member_below_an_anchor(#[case] src: &str) {
+        let source = parse(src);
         let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&1),
-            "a format directive drives its own line, so X pins below it"
+            "a banner and a directive both anchor in place, so the member below pins"
         );
     }
 
@@ -435,6 +436,21 @@ mod tests {
         assert!(
             !plan.ranks.contains_key(&2),
             "SCALED references effectful RAW, so anchoring propagates and it pins"
+        );
+    }
+
+    #[rstest]
+    #[case(notebook(&[IPYTHON_REF]), Some(BandRank::Leading))]
+    #[case(parse(IPYTHON_REF), None)]
+    fn module_band_plan_reads_an_ipython_builtin_only_inside_a_cell(
+        #[case] source: Source,
+        #[case] expected: Option<BandRank>,
+    ) {
+        let plan = plan_of(&source).expect("acyclic plans");
+        assert_eq!(
+            plan.ranks.get(&1).copied(),
+            expected,
+            "get_ipython is a builtin in a cell and unresolved in a module"
         );
     }
 

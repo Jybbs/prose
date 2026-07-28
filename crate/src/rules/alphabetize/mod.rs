@@ -281,7 +281,6 @@ fn rewrite_compound<'a>(
 ) -> Cow<'a, str> {
     let bodies = compound_sub_bodies(stmt)
         .into_iter()
-        .filter(|(body, _)| !body.is_empty())
         .map(|(body, outer)| rewrite_body(ctx, body, outer, scope));
     splice_bodies(ctx.source, block, bodies, ctx.leaf_edits)
 }

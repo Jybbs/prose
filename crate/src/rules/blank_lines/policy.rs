@@ -1,9 +1,9 @@
 //! Canonical blank-line counts per scope. Dispatches a `(prev,
 //! curr)` pair to the class-, function-, or module-scope policy.
 
-use ruff_python_ast::{CmpOp, Expr, Stmt, helpers::is_docstring_stmt};
+use ruff_python_ast::{Stmt, helpers::is_docstring_stmt};
 
-use crate::primitives::{imports::import_blank_lines, scope::BodyScope};
+use crate::primitives::{blanks::module_blank_lines, scope::BodyScope};
 
 /// Returns the canonical blank-line count for the pair `(prev, curr)`
 /// at `scope`. `None` means no case applies and the pair is skipped,
@@ -21,7 +21,7 @@ pub(super) fn canonical_blanks(
     match scope {
         BodyScope::Class => class_scope_blanks(prev, curr),
         BodyScope::Function => function_scope_blanks(prev, curr),
-        BodyScope::Module => module_scope_blanks(prev, curr, first_party, grouped),
+        BodyScope::Module => module_blank_lines(prev, curr, first_party, grouped),
     }
 }
 
@@ -58,63 +58,12 @@ fn function_scope_blanks(prev: &Stmt, curr: &Stmt) -> Option<u32> {
     }
 }
 
-/// True when `stmt` is `if __name__ == "__main__":`.
-fn is_main_guard(stmt: &Stmt) -> bool {
-    let Some(if_stmt) = stmt.as_if_stmt() else {
-        return false;
-    };
-    let Some(cmp) = if_stmt.test.as_compare_expr() else {
-        return false;
-    };
-    let ([CmpOp::Eq], Some(left), Some(right)) = (
-        cmp.ops.as_ref(),
-        cmp.left.as_name_expr(),
-        cmp.comparators
-            .first()
-            .and_then(Expr::as_string_literal_expr),
-    ) else {
-        return false;
-    };
-    left.id == "__name__" && right.value.to_str() == "__main__"
-}
-
-/// Module-scope pair dispatch. A statement following an
-/// `if __name__ == "__main__":` block carries 1 blank line. A grouped
-/// import pair lands 1 blank line across distinct canonical groups and
-/// none within a group, while an ungrouped pair reads as one flat block
-/// and never divides. A top-level `FunctionDef` or `ClassDef` carries 2
-/// blank lines on each side, whatever statement kind neighbors it, and
-/// any other statement following an import carries 1.
-fn module_scope_blanks(
-    prev: &Stmt,
-    curr: &Stmt,
-    first_party: &[String],
-    grouped: bool,
-) -> Option<u32> {
-    if is_main_guard(prev) {
-        return Some(1);
-    }
-    if let Some(blanks) = import_blank_lines(prev, curr, first_party, grouped) {
-        return (blanks != 0).then_some(blanks);
-    }
-    match (prev, curr) {
-        (_, Stmt::FunctionDef(_) | Stmt::ClassDef(_))
-        | (Stmt::FunctionDef(_) | Stmt::ClassDef(_), _) => Some(2),
-        (Stmt::Import(_) | Stmt::ImportFrom(_), _) => Some(1),
-        _ => None,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
 
     use super::*;
     use crate::testing::{first_class, first_def, parse};
-
-    fn main_guard_src() -> &'static str {
-        "if __name__ == \"__main__\":\n    main()\n"
-    }
 
     #[test]
     fn canonical_blanks_class_docstring_predecessor_returns_one() {
@@ -255,165 +204,19 @@ mod tests {
         );
     }
 
-    #[test]
-    fn canonical_blanks_module_after_main_guard_returns_one() {
-        let s = parse(&format!("{}xs = 1\n", main_guard_src()));
-        let body = &s.ast().body;
-        assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
-            Some(1)
-        );
-    }
-
     #[rstest]
-    fn canonical_blanks_module_def_or_class_after_module_stmt_returns_two(
-        #[values(
-            "x = 1\nclass C: pass\n",
-            "x = 1\ndef f(): pass\n",
-            "import os\ndef f(): pass\n",
-            "from sys import path\nclass C: pass\n"
-        )]
-        src: &str,
-    ) {
-        let s = parse(src);
-        let body = &s.ast().body;
-        assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
-            Some(2),
-        );
-    }
-
-    #[rstest]
-    #[case("from os import path\nfrom . import x\n", &[], Some(1))]
-    #[case("from os import path\nfrom myapp import x\n", &["myapp"], Some(1))]
-    #[case("import os\nimport myapp\n", &["myapp"], Some(1))]
-    #[case("import myapp\nfrom myapp import x\n", &["myapp"], None)]
-    #[case("from myapp import a\nfrom myapp.db import b\n", &["myapp"], None)]
-    fn canonical_blanks_module_import_group_boundary_separates_distinct_groups(
+    #[case("def f(): pass\nPORT = 8080\n", Some(2))]
+    #[case("import os\nPORT = 8080\n", Some(1))]
+    #[case("x = 1\ny = 2\n", None)]
+    fn canonical_blanks_routes_module_scope_to_the_shared_policy(
         #[case] src: &str,
-        #[case] first_party: &[&str],
         #[case] expected: Option<u32>,
     ) {
-        let list: Vec<String> = first_party.iter().map(|&s| s.to_owned()).collect();
         let s = parse(src);
         let body = &s.ast().body;
         assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &list, true),
+            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
             expected,
         );
-    }
-
-    #[rstest]
-    fn canonical_blanks_module_import_kind_boundary_returns_one(
-        #[values(
-            "import os\nfrom sys import argv\n",
-            "from sys import argv\nimport os\n"
-        )]
-        src: &str,
-    ) {
-        let s = parse(src);
-        let body = &s.ast().body;
-        assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
-            Some(1),
-        );
-    }
-
-    #[rstest]
-    fn canonical_blanks_module_same_kind_import_run_returns_none(
-        #[values(
-            "import os\nimport sys\n",
-            "from os import path\nfrom sys import argv\n"
-        )]
-        src: &str,
-    ) {
-        let s = parse(src);
-        let body = &s.ast().body;
-        assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
-            None
-        );
-    }
-
-    #[rstest]
-    fn canonical_blanks_module_statement_after_def_or_class_returns_two(
-        #[values(
-            "class C: pass\nPORT = 8080\n",
-            "class C: pass\nPORT: int = 8080\n",
-            "class C: pass\nlaunch()\n",
-            "class C: pass\nfor x in y:\n    pass\n",
-            "def f(): pass\nPORT = 8080\n",
-            "def f(): pass\nPORT: int = 8080\n",
-            "def f(): pass\nprint(1)\n",
-            "def f(): pass\nif ready:\n    go()\n",
-            "def f(): pass\nimport os\n",
-            "def f(): pass\nfrom os import path\n",
-            "async def f(): pass\nprint(1)\n"
-        )]
-        src: &str,
-    ) {
-        let s = parse(src);
-        let body = &s.ast().body;
-        assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
-            Some(2),
-        );
-    }
-
-    #[rstest]
-    fn canonical_blanks_module_statement_after_import_returns_one(
-        #[values(
-            "import os\nPORT = 8080\n",
-            "from sys import path\nPORT: int = 8080\n",
-            "import os\nlaunch()\n",
-            "from sys import path\nif ready:\n    go()\n",
-            "from __future__ import annotations\nPORT = 8080\n"
-        )]
-        src: &str,
-    ) {
-        let s = parse(src);
-        let body = &s.ast().body;
-        assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
-            Some(1),
-        );
-    }
-
-    #[test]
-    fn canonical_blanks_unrelated_pair_returns_none() {
-        let s = parse("x = 1\ny = 2\n");
-        let body = &s.ast().body;
-        assert_eq!(
-            canonical_blanks(&body[0], &body[1], BodyScope::Module, &[], true),
-            None
-        );
-    }
-
-    #[test]
-    fn is_main_guard_accepts_canonical_form() {
-        let s = parse(main_guard_src());
-        assert!(is_main_guard(&s.ast().body[0]));
-    }
-
-    #[test]
-    fn is_main_guard_rejects_non_if_statements() {
-        let s = parse("x = 1\n");
-        assert!(!is_main_guard(&s.ast().body[0]));
-    }
-
-    #[rstest]
-    fn is_main_guard_rejects_other_if_conditions(
-        #[values(
-            "if x:\n    pass\n",
-            "if __name__ != \"__main__\":\n    pass\n",
-            "if __name__ == \"main\":\n    pass\n",
-            "if other == \"__main__\":\n    pass\n",
-            "if __name__ == __main__:\n    pass\n",
-            "if __name__ == \"__main__\" and x:\n    pass\n"
-        )]
-        src: &str,
-    ) {
-        let s = parse(src);
-        assert!(!is_main_guard(&s.ast().body[0]));
     }
 }
