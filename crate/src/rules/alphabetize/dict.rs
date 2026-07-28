@@ -13,6 +13,7 @@ use crate::{
     primitives::{
         comments::has_keep_marker,
         edit::{any_owned, apply_inline_edits, splice_parses},
+        effect::value_is_effectful,
         layout::is_layoutable,
         orderer::{
             adjacent_slots, any_sibling_shares_line, assemble_blocks, assemble_separated,
@@ -101,9 +102,13 @@ pub(super) fn rewrite_dict_text(
 
 /// Composite within-run dict-entry sort key, scalar-valued entries sorting
 /// before collection-valued and alphabetizing within each partition by the
-/// key's source slice. A keyless `**` spread returns `None`.
+/// key's source slice. A keyless `**` spread returns `None`, as does an
+/// entry whose value runs code, pinning that entry in its source slot.
 fn dict_sort_key<'a>(source: &'a Source, item: &DictItem) -> Option<(bool, &'a str)> {
-    let key = item.key.as_ref()?;
+    let key = item
+        .key
+        .as_ref()
+        .filter(|_| !value_is_effectful(&item.value))?;
     Some((is_layoutable(&item.value), source.slice(key)))
 }
 
@@ -136,8 +141,6 @@ mod tests {
     #[rstest]
     #[case::string_literal("x = {\"a\": \"lit\"}\n", false)]
     #[case::implicit_concatenation("x = {\"a\": (\n    \"one \"\n    \"two\"\n)}\n", false)]
-    #[case::call("x = {\"a\": load()}\n", false)]
-    #[case::comprehension("x = {\"a\": [i for i in y]}\n", false)]
     #[case::subscript("x = {\"a\": data[k]}\n", false)]
     #[case::dict("x = {\"a\": {\"b\": 1}}\n", true)]
     #[case::list("x = {\"a\": [1, 2]}\n", true)]
@@ -150,6 +153,20 @@ mod tests {
             dict_sort_key(&source, &dict.items[0]),
             Some((collection, "\"a\"")),
         );
+    }
+
+    #[rstest]
+    fn dict_sort_key_pins_an_entry_whose_value_runs_code(
+        #[values(
+            "x = {\"a\": load()}\n",
+            "x = {\"a\": [i for i in y]}\n",
+            "x = {\"a\": [make()]}\n"
+        )]
+        src: &str,
+    ) {
+        let source = parse(src);
+        let dict = first_value(&source).as_dict_expr().expect("dict value");
+        assert!(dict_sort_key(&source, &dict.items[0]).is_none());
     }
 
     #[test]
