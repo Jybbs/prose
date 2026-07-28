@@ -65,7 +65,7 @@ impl CollectionLayout {
 impl Rule for CollectionLayout {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let body = &source.ast().body;
-        // The count cap rides the `explode` facet, so a cleared `explode`
+        // The count cap reads the `explode` facet, so a cleared `explode`
         // leaves no tripping dicts and the cap goes inert. Precomputed once
         // so the per-node check is a containment scan rather than a re-walk.
         let count_cap = self.max_dict_entries.filter(|_| self.explode);

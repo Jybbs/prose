@@ -66,7 +66,7 @@ A rule implementing `ColonEmitter` carries a single accumulator *(typically `Vec
 
 Each context defines its own grouping shape, because what counts as *"adjacent"* inside a dict literal differs from what counts as *"adjacent"* across class-body statements:
 
-1. **Dict items** group by line-adjacency between one key's end and the next item's start. A trailing comment rides with its entry and a `**spread` entry skips the colon scan, neither breaking the run, so the rest of the dict aligns around them.
+1. **Dict items** group by line-adjacency between one key's end and the next item's start. A trailing comment stays with its entry and a `**spread` entry skips the colon scan, neither breaking the run, so the rest of the dict aligns around them.
 2. **Annotated assignments** group via `line_adjacent_groups` over each scope's statements, treating any non-`target: T` statement as a divider.
 3. **Annotated function parameters** group via `parameter_split_groups`, splitting at the first parameter that does not qualify *(an un-annotated argument, a `*args` or `**kwargs`, a `/` or `*` separator)*.
 4. **Match arms** group one per `match` statement, with every arm's colon contributing a member. Patterns may span multiple lines, so the alignment column is per-`match` rather than per-line-run.

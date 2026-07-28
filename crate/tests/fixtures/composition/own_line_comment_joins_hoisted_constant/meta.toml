@@ -3,5 +3,5 @@ previewable = true
 title       = "An Own-Line Comment Rides Its Constant Into the Leading Band"
 
 description = '''
-A prose comment binds to the member below it whatever blank line separates the two, so `band-constants` and `blank-lines` read one answer rather than each settling a different half. The comment rides `MAX_WORKERS` above `configure` **on the first pass**, leaving nothing for a second format to relocate.
+A prose comment binds to the member below it whatever blank line separates the two, so `band-constants` and `blank-lines` read one answer rather than each settling a different half. The comment moves above `configure` with `MAX_WORKERS` **on the first pass**, leaving nothing for a second format to relocate.
 '''

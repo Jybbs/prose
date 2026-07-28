@@ -30,7 +30,7 @@ The high-level wrapper that covers the common case, rendering each item over its
 
 ### `reorder_separated(source, items, classify, render)`
 
-The variant for a comma-separated group laid out one member per line, where a trailing inline comment must travel with its member through the sort. The separating comma is re-emitted per slot rather than left in a verbatim gap, because a comment ends its line and a moved member that gained or lost its source comma would otherwise strand the comma after the comment. An own-line comment sitting above a member rides with it as well, the block reaching back over the attached comment lines so an interstitial comment never strands in the slot the member vacated. A reparse guard declines the rewrite when an irregular layout reassembles into source the parser rejects.
+The variant for a comma-separated group laid out one member per line, where a trailing inline comment must travel with its member through the sort. The separating comma is re-emitted per slot rather than left in a verbatim gap, because a comment ends its line and a moved member that gained or lost its source comma would otherwise strand the comma after the comment. An own-line comment sitting above a member travels with it as well, the block reaching back over the attached comment lines so an interstitial comment never strands in the slot the member vacated. A reparse guard declines the rewrite when an irregular layout reassembles into source the parser rejects.
 
 ### `permute_full(order, items, classify)`
 
@@ -46,7 +46,7 @@ Splices the reordered children into a final string the rule can emit as a single
 
 ### `assemble_separated(value_ends, blocks, block_texts, order, divider_slots, source_last_has_comma)`
 
-The comma-aware counterpart to `assemble_blocks` for one-member-per-line groups. It splits each block into code, separator comma, and trailing comment at `value_ends`, then re-emits the comma after the value and before the comment per slot, so the comment rides with its member. Non-last slots always carry a comma, the new-last slot matches `source_last_has_comma`, and a blank line follows every slot in `divider_slots`. [[alphabetize]]'s dict and leaf reorders share it.
+The comma-aware counterpart to `assemble_blocks` for one-member-per-line groups. It splits each block into code, separator comma, and trailing comment at `value_ends`, then re-emits the comma after the value and before the comment per slot, so the comment stays with its member. Non-last slots always carry a comma, the new-last slot matches `source_last_has_comma`, and a blank line follows every slot in `divider_slots`. [[alphabetize]]'s dict and leaf reorders share it.
 
 ### `assemble_or_borrow(source, blocks, rendered, order, forced, gap)`
 
