@@ -101,17 +101,15 @@ impl<'a> LeafCollector<'a> {
     }
 
     /// Replaces the leaf edits nested inside `span` with a single edit
-    /// carrying `folded`, that span reordered with the nested edits
-    /// already applied. A `Cow::Borrowed` folded nothing, so emits
-    /// nothing. The insert keeps `edits` sorted by start.
-    fn fold_into(&mut self, span: TextRange, folded: Cow<'a, str>) {
-        let Cow::Owned(text) = folded else {
-            return;
-        };
+    /// carrying `text`, that span reordered with the nested edits
+    /// already applied. The insert keeps `edits` sorted by start.
+    fn fold_into(&mut self, span: TextRange, text: String) {
         self.edits.retain(|e| !span.contains_range(e.range()));
-        insert_sorted_by_key(&mut self.edits, Edit::range_replacement(text, span), |e| {
-            e.start()
-        });
+        insert_sorted_by_key(
+            &mut self.edits,
+            Edit::range_replacement(text, span),
+            Ranged::start,
+        );
     }
 
     fn try_emit_inline_reorder<T, S>(
@@ -136,7 +134,9 @@ impl<'a> LeafCollector<'a> {
         } else {
             reorder_separated(source, items, classify, render)
         };
-        self.fold_into(span, folded);
+        if let Cow::Owned(text) = folded {
+            self.fold_into(span, text);
+        }
     }
 }
 
@@ -399,6 +399,15 @@ mod tests {
         let source = parse(src);
         let (edits, _) = collect_leaf_edits(&source, true, true);
         assert_eq!(applied_text(&source, edits), expected);
+    }
+
+    #[rstest]
+    fn collect_leaf_edits_skips_a_dunder_list_bound_to_a_non_sequence(
+        #[values("__all__ = get_names()\n", "__slots__ = BASE_SLOTS\n")] src: &str,
+    ) {
+        let source = parse(src);
+        let (edits, _) = collect_leaf_edits(&source, true, true);
+        assert!(edits.is_empty());
     }
 
     #[rstest]

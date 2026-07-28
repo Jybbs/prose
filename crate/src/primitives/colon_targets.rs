@@ -254,7 +254,7 @@ fn parameter_groups(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_value, parse};
 
     #[test]
     fn annotated_assignment_rejects_cross_line_colon() {
@@ -270,12 +270,7 @@ mod tests {
         // The key ends on its own line and the `:` opens the next, so the
         // entry yields no alignable member.
         let source = parse("d = {\n    k\n    : v,\n}\n");
-        let dict = source.ast().body[0]
-            .as_assign_stmt()
-            .expect("assign")
-            .value
-            .as_dict_expr()
-            .expect("dict");
+        let dict = first_value(&source).as_dict_expr().expect("dict");
         assert!(dict_item(&source, dict, &dict.items[0]).is_none());
     }
 

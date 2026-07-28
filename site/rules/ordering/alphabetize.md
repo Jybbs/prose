@@ -18,7 +18,7 @@ A reader who already knows the codebase carries a **mental map** of where things
 | **Pydantic `BaseModel` and `TypedDict` fields** | Required before optional |
 | **Dataclass and `NamedTuple` fields** | Source order held |
 | **Parameters and keyword arguments** | Keyword-only and call keywords alphabetical, positional held |
-| **Dict literal keys** | Single-line entries before multi-line, alphabetical within each |
+| **Dict literal keys** | Scalar entries before collection entries, alphabetical within each |
 | **Imports** | Alphabetical within each [[group-imports]] section |
 | **Docstring entries** | Parameter entries mirror the signature, all else alphabetical |
 
@@ -36,7 +36,7 @@ The same contract governs a class whose header generates its constructor. A `Nam
 
 At a call site, keyword arguments already in `name=value` form alphabetize, on any callee including a method, because their order never affects which parameter each binds. A keyword whose value **runs code** at the call *(a call, a comprehension, or an `await`)* holds its slot instead, since Python evaluates arguments left to right and moving one reorders that work, leaving the inert keywords around it to sort. Positional arguments hold their slot, since naming them would require resolving the callee's signature, which *Prose* does only for a plain in-module function and never for a method.
 
-A dict literal's keys sort by default, because most dicts are lookup tables nobody iterates and the sort gives them the same landmarks every other surface gets. Dict insertion order has been a language guarantee since Python 3.7 though, observable through iteration, `.items()`, and `**` expansion, so a dict that feeds a rendered table or a serialized payload changes what a program outputs once its keys move. Setting `sort-dict-keys = false` holds every dict in its authored order across a project, whereas `# prose: keep` holds the one literal that matters, the facet setting the default and the directive overriding a single site. Set literals sort on regardless, since a set carries no observable order to disturb.
+A dict literal's keys sort by default, because most dicts are lookup tables nobody iterates and the sort gives them the same landmarks every other surface gets. Dict insertion order has been a language guarantee since Python 3.7 though, observable through iteration, `.items()`, and `**` expansion, so a dict that feeds a rendered table or a serialized payload changes what a program outputs once its keys move. An entry whose value **runs code** *(a call, a comprehension, or an `await`)* holds its slot for the same reason a call's effectful keyword does, since a dict evaluates its values left to right at construction. Setting `sort-dict-keys = false` holds every dict in its authored order across a project, whereas `# prose: keep` holds the one literal that matters, the facet setting the default and the directive overriding a single site. Set literals sort on regardless, since a set carries no observable order to disturb.
 
 A docstring entry naming a parameter of the signature it documents takes that parameter's position as the rule leaves the signature, which for the positional run is source order and for the keyword-only block is sorted order. An entry naming nothing in the signature (*a parameter renamed or removed since the docs were written*) sinks below the mirrored entries, stragglers alphabetizing among themselves. A section with no parameter entries (*`Raises:`, `Returns:`*) alphabetizes throughout.
 
@@ -46,7 +46,7 @@ Pair with [[align-imports]] to align the `import` keyword across the freshly-sor
 
 <RuleConfigTable />
 
-The ordering itself follows fixed per-construct conventions. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. [[group-imports]] partitions consecutive imports into their canonical sections (*bare first, then external `from`, then local-package*) and `alphabetize` sorts the names within each, the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that lift into the local-package section alongside relative imports. Each sort pass also switches off on its own through the facets above, so a project can keep its methods grouped while leaving its definitions in source order, or hold a hand-curated `__all__` while every other surface still sorts.
+The ordering itself follows fixed per-construct conventions. Method groups follow the dunders-properties-privates-publics rhythm. Pydantic fields follow required-then-optional. [[group-imports]] partitions consecutive imports into their canonical sections (*a `from __future__` import first, then bare, then external `from`, then local-package*) and `alphabetize` sorts the names within each, the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that lift into the local-package section alongside relative imports. Each sort pass also switches off on its own through the facets above, so a project can keep its methods grouped while leaving its definitions in source order, or hold a hand-curated `__all__` while every other surface still sorts.
 
 </template>
 

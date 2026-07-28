@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/paired_wrapped_scalars_split_align_runs/input.py
+---
+LABELS = {
+    "alpha": "a",
+
+    "bravo":
+        "the quick brown fox jumps over the lazy dog and keeps running onward here",
+
+    "charlie":
+        "another rather long sentence that will not fit inside the width budget ok",
+
+    "delta" : "d",
+    "echo"  : "e"
+}

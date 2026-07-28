@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Paired Wrapped Scalars Split the Alignment Runs"
+
+description = '''
+Two long string values wrap onto continuation lines and hold their alphabetical slots among the scalars, so a blank-line divider opens between two scalars rather than fencing one contiguous trailing block. Each divider ends the `align-colons` run where it sits, leaving the lone scalar above unpadded and only the pair below sharing a colon column.
+'''

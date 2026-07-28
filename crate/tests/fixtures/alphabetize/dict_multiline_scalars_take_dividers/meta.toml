@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Paired Multi-Line Scalars Take Their Dividers Mid-Run"
+
+description = '''
+A second keyed multi-line entry brings the blank-line dividers out, and because each parenthesized scalar now holds its alphabetical slot among the scalars rather than sinking to the tail, a divider opens **mid-run** instead of fencing one contiguous trailing block.
+'''

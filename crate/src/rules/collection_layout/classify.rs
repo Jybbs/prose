@@ -20,8 +20,7 @@ pub(super) enum Segment {
 /// Returns `true` when `gap` is zero or more ASCII spaces, then
 /// `:`, then one ASCII space.
 pub(super) fn is_align_colons_gap(gap: &str) -> bool {
-    gap.strip_suffix(": ")
-        .is_some_and(|prefix| prefix.bytes().all(|b| b == b' '))
+    split_colon_gap(gap).is_some_and(|(_, tail)| tail == " ")
 }
 
 /// True for expressions that render as a single compact token and
@@ -57,6 +56,13 @@ pub(super) fn is_collapsible(expr: &Expr) -> bool {
     is_layoutable(expr) || is_collapse_only(expr)
 }
 
+/// The ASCII-space run `gap` opens with when those spaces sit directly
+/// before its `:`, the padding `align_colons` holds a dict key at.
+/// Returns `""` for a canonical `": "` and for any other gap shape.
+pub(super) fn pre_colon_padding(gap: &str) -> &str {
+    split_colon_gap(gap).map_or("", |(padding, _)| padding)
+}
+
 /// True for a `Dict`, `List`, `Set`, or parenthesized `Tuple` shape
 /// the expand path canonicalizes. Multi-item `List`, `Set`, and
 /// parenthesized `Tuple` qualify, as does any non-empty `Dict`. A bare
@@ -86,6 +92,18 @@ pub(super) fn segments(atomics: &[bool]) -> Vec<Segment> {
             }
         })
         .collect()
+}
+
+/// Splits `gap`, the span between a dict key and its value, at its
+/// first `:` into the run before it and the tail after. Returns `None`
+/// when `gap` carries no `:` or that leading run holds anything but
+/// ASCII spaces.
+fn split_colon_gap(gap: &str) -> Option<(&str, &str)> {
+    let (padding, tail) = gap.split_once(':')?;
+    padding
+        .bytes()
+        .all(|b| b == b' ')
+        .then_some((padding, tail))
 }
 
 #[cfg(test)]
@@ -130,6 +148,19 @@ mod tests {
         let source = parse(src);
         let expr = first_expr(&source);
         assert_eq!(is_collapsible(expr), expected);
+    }
+
+    #[rstest]
+    #[case(": ", "")]
+    #[case(" : ", " ")]
+    #[case("    : ", "    ")]
+    #[case(" :\n        ", " ")]
+    #[case(":\n        ", "")]
+    #[case("\t: ", "")]
+    #[case(" # note\n: ", "")]
+    #[case("", "")]
+    fn pre_colon_padding_keeps_only_a_leading_space_run(#[case] gap: &str, #[case] expected: &str) {
+        assert_eq!(pre_colon_padding(gap), expected);
     }
 
     #[rstest]

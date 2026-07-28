@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Wrapped Scalar Holds Its Partition Slot Across Passes"
+
+description = '''
+A long string value the layout rules wrap onto a continuation line keeps its alphabetical slot among the scalars, so the ordering and the wrapping settle together rather than alternating across passes. The same dict written unaligned and unwrapped reaches this form in a single pipeline pass.
+'''

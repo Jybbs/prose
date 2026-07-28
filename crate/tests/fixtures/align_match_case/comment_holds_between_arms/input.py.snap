@@ -1,7 +1,7 @@
 ---
 source: tests/integration.rs
 expression: output
-input_file: tests/fixtures/align_match_case/comment_rides_between_arms/input.py
+input_file: tests/fixtures/align_match_case/comment_holds_between_arms/input.py
 ---
 match credential.kind:
     case "apprenticeship" : icon = "wrench"
