@@ -95,13 +95,14 @@ impl<'a> Exploder<'a> {
 
     /// Appends `rendered` to `out`, swapping a multi-line collection or
     /// comprehension value for that block re-indented to the keyword
-    /// column and any other value for its nested-call reshape.
+    /// column and any other value for its nested-call reshape. A grouping
+    /// pair around the value stays outside the reshape, whether the source
+    /// carries it or `keyword_args` adds it.
     fn render_value(&self, out: &mut String, value: &'a Expr, rendered: &str, indent: usize) {
         let slice = self.source.slice(value.range());
-        let Some(head) = rendered.strip_suffix(slice) else {
-            out.push_str(rendered);
-            return;
-        };
+        let (head, tail) = rendered
+            .rsplit_once(slice)
+            .expect("a rendered argument carries its value's source text");
         out.push_str(head);
         let column = end_column(head, indent).saturating_add_signed(self.line_shift);
         if self.reindentable(value) {
@@ -113,6 +114,7 @@ impl<'a> Exploder<'a> {
         } else {
             out.push_str(&self.reshape_value(value, Some(indent), column, self.line_shift));
         }
+        out.push_str(tail);
     }
 
     /// `value`'s text with every call inside it exploded, its opening
