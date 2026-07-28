@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Below an Anchored Constant Holds Its Slot"
+
+description = '''
+`LIMIT` reaches the unresolved `compute_limit`, so it anchors in place and never bands. The comment bound to it stays where the source put it rather than climbing onto a line the sort never touches.
+'''

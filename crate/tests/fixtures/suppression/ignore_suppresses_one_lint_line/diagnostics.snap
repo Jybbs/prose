@@ -1,9 +1,8 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/suppression/ignore_suppresses_one_lint_line/input.py
+input_file: crate/tests/fixtures/suppression/ignore_suppresses_one_lint_line/input.py
 ---
-align-equals@13..14
-align-equals@87..142
+align-equals@13..142
 reassigned-constants@0..18
 reassigned-constants@78..92

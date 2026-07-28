@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/comment_at_a_foreign_indent_holds_its_slot/input.py
+---
+ZETA_CAP = 1
+
+__all__ = ["copyfile",
+           "copytree"]
+           # disk_usage is added later, if available on the platform
+
+ALPHA_CAP = 2

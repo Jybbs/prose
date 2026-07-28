@@ -10,7 +10,8 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{PythonVersion, Stmt, helpers::is_compound_statement};
-use ruff_text_size::TextRange;
+use ruff_source_file::LineRanges;
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
@@ -33,10 +34,14 @@ mod plan;
 
 use self::{
     analysis::module_band_plan,
-    plan::{Banding, banded_gap},
+    plan::{Banding, Carry, banded_gap},
 };
 
+/// The gap PEP 8 seats between code and a trailing comment.
+const TRAILING_GAP: &str = "  ";
+
 pub(crate) struct BandConstants {
+    code_width: usize,
     first_party: Vec<String>,
     group_constants: bool,
     group_imports: bool,
@@ -47,6 +52,7 @@ pub(crate) struct BandConstants {
 impl BandConstants {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
+            code_width: config.code_width(),
             first_party: config.first_party(),
             group_constants: config.rules.band_constants.group_constants,
             group_imports: config.group_imports_enabled(),
@@ -64,23 +70,18 @@ impl Rule for BandConstants {
         }
         let bander = Bander {
             defer_annotations: defers_annotations(body),
-            first_party: &self.first_party,
-            group_constants: self.group_constants,
-            group_imports: self.group_imports,
-            max_tiers: self.max_tiers,
+            rule: self,
             source,
-            target_version: self.target_version,
         };
         let layout = bander.band_layout(body, source.module_range());
-        let edits = assembled_cell_edits(
+        singleton_groups(assembled_cell_edits(
             source,
             &layout.blocks,
             &layout.rendered,
             &layout.order,
             layout.forced(),
             |i| bander.band_gap(&layout, body, i),
-        );
-        singleton_groups(edits)
+        ))
     }
 
     fn id(&self) -> RuleId {
@@ -91,12 +92,8 @@ impl Rule for BandConstants {
 /// Invariant banding context threaded through the recursion.
 struct Bander<'a> {
     defer_annotations: bool,
-    first_party: &'a [String],
-    group_constants: bool,
-    group_imports: bool,
-    max_tiers: Option<usize>,
+    rule: &'a BandConstants,
     source: &'a Source,
-    target_version: Option<PythonVersion>,
 }
 
 impl<'a> Bander<'a> {
@@ -125,21 +122,23 @@ impl<'a> Bander<'a> {
             banded_gap(
                 b,
                 body,
-                self.first_party,
-                self.group_imports,
+                &self.rule.first_party,
+                self.rule.group_imports,
                 layout.order[i],
                 layout.order[i + 1],
             )
         })
     }
 
-    /// Renders `body` and builds the module band over it, leaving the
-    /// assembly to the caller. The section partition walls each notebook
-    /// cell, so a band never crosses one.
+    /// Renders `body`, builds the module band over it, and moves each
+    /// carried comment onto the member it binds to, leaving the assembly
+    /// to the caller. The section partition walls each notebook cell, so
+    /// a band never crosses one.
     fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
-        let (blocks, rendered) = rendered_member_blocks(self.source, body, outer, |stmt, block| {
-            self.band_stmt(stmt, block)
-        });
+        let (blocks, mut rendered) =
+            rendered_member_blocks(self.source, body, outer, |stmt, block| {
+                self.band_stmt(stmt, block)
+            });
         let mut order: Vec<usize> = (0..body.len()).collect();
         let band = (!any_sibling_shares_line(self.source, body))
             .then(|| {
@@ -147,6 +146,9 @@ impl<'a> Bander<'a> {
                 self.band_module_constants(body, &blocks, &sections, &mut order)
             })
             .flatten();
+        if let Some(b) = &band {
+            apply_band_carries(self.source, body, &b.carries, &mut rendered);
+        }
         BandLayout {
             band,
             blocks,
@@ -169,16 +171,17 @@ impl<'a> Bander<'a> {
             self.source,
             body,
             blocks,
+            self.rule.code_width,
             self.defer_annotations,
-            self.group_constants,
-            self.target_version,
+            self.rule.group_constants,
+            self.rule.target_version,
         )?
         .apply(
             body,
             sections,
-            self.first_party,
-            self.group_imports,
-            self.max_tiers,
+            &self.rule.first_party,
+            self.rule.group_imports,
+            self.rule.max_tiers,
             order,
         )
     }
@@ -216,6 +219,37 @@ impl BandLayout<'_> {
     }
 }
 
+/// Moves each carried comment onto the member it binds to. A first pass
+/// drops the comment and the blank run beneath it from the text of the
+/// member whose block folded them in, that block opening on the comment
+/// itself, and a second prepends or trails it on the carrier's text.
+fn apply_band_carries<'src>(
+    source: &'src Source,
+    body: &[Stmt],
+    carries: &[Carry],
+    rendered: &mut [Cow<'src, str>],
+) {
+    for carry in carries {
+        let own_line = source.text().line_start(body[carry.absorbs].start());
+        let held = usize::from(own_line - carry.comment.start());
+        rendered[carry.absorbs] = match std::mem::take(&mut rendered[carry.absorbs]) {
+            Cow::Borrowed(text) => Cow::Borrowed(&text[held..]),
+            Cow::Owned(mut text) => Cow::Owned(text.split_off(held)),
+        };
+    }
+    for carry in carries {
+        let comment = source.slice(carry.comment);
+        let carried = &rendered[carry.carrier];
+        rendered[carry.carrier] = Cow::Owned(if carry.trails {
+            // The block reaches back to its line start, so its indent
+            // belongs to a line of its own rather than to a trailing slot.
+            format!("{carried}{TRAILING_GAP}{}", comment.trim_start())
+        } else {
+            format!("{comment}{}{carried}", source.newline_str())
+        });
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -228,14 +262,18 @@ mod tests {
         let body = &source.ast().body;
         let blocks = member_blocks(&source, body, source.module_range());
         let mut order: Vec<usize> = (0..body.len()).collect();
-        let bander = Bander {
-            defer_annotations: false,
-            first_party: &[],
+        let rule = BandConstants {
+            code_width: 88,
+            first_party: Vec::new(),
             group_constants: true,
             group_imports: true,
             max_tiers: Some(2),
-            source: &source,
             target_version: None,
+        };
+        let bander = Bander {
+            defer_annotations: false,
+            rule: &rule,
+            source: &source,
         };
         let sections = Sections::of(&source, &blocks);
         bander

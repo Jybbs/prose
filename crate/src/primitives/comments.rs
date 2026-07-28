@@ -1,32 +1,34 @@
 //! Own-line comment-block detection between two statements, covering
 //! the leading block, whether it reads as a decorative banner or a
 //! multi-hash heading, and where the block binding to the member below
-//! it starts. A run anchors in place on a section marker or a
-//! suppression directive and binds to the member otherwise, whatever
-//! blank line sits between the two.
+//! it starts. A run anchors in place on a section marker, a suppression
+//! directive, or a tool pragma, and binds to the member otherwise,
+//! whatever blank line sits between the two.
 
 use ruff_python_ast::ExprDict;
-use ruff_python_trivia::CommentRanges;
+use ruff_python_trivia::{CommentRanges, is_pragma_comment};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{source::Source, suppression::is_directive_comment};
 
 /// True when `block` holds its position rather than binding to the
-/// member below it, carrying a section marker or a suppression
-/// directive on any of its lines.
+/// member below it, carrying a section marker, a suppression directive,
+/// or a tool pragma on any of its lines.
 pub(crate) fn anchors_in_place(source: &Source, block: TextRange) -> bool {
     source
         .slice(block)
         .lines()
-        .any(|line| is_marker_line(line) || is_directive_comment(line))
+        .map(str::trim_start)
+        .any(|line| is_marker_line(line) || is_directive_comment(line) || is_pragma_comment(line))
 }
 
 /// The start of the block binding to the member at `item_start`, the
 /// own-line comment run in `[lower, item_start)` when that run binds,
-/// or `item_start`'s line start when the run anchors in place or no
-/// comment sits there. A blank line above the member leaves the run
-/// bound, matching the gap `blank-lines` settles beneath a description.
+/// or `item_start`'s line start when the run anchors in place, opens at
+/// another indent, or no comment sits there. A blank line above the
+/// member leaves the run bound, matching the gap `blank-lines` settles
+/// beneath a description.
 pub(crate) fn bound_block_start(
     source: &Source,
     lower: TextSize,
@@ -37,7 +39,10 @@ pub(crate) fn bound_block_start(
         return item_start;
     }
     leading_comment_block(source, lower, item_start)
-        .filter(|block| !anchors_in_place(source, *block))
+        .filter(|block| {
+            !anchors_in_place(source, *block)
+                && source.line_indent_width(block.start()) == source.line_indent_width(item_start)
+        })
         .map_or(line_start, |block| block.start())
 }
 
@@ -243,6 +248,8 @@ mod tests {
     #[case("x = 1\n# --- Section ---\ndef a(): pass\n", "")]
     #[case("x = 1\n# --- Section ---\n# describes a\ndef a(): pass\n", "")]
     #[case("x = 1\n# fmt: on\n\ndef a(): pass\n", "")]
+    #[case("x = 1\n# type: ignore\n\ndef a(): pass\n", "")]
+    #[case("if x:\n    pass\n    # describes a\ndef a(): pass\n", "")]
     #[case("x = 1\n\ndef a(): pass\n", "")]
     fn bound_block_start_binds_a_run_that_holds_no_anchor(#[case] src: &str, #[case] bound: &str) {
         let s = parse(src);
@@ -273,7 +280,12 @@ mod tests {
     #[case("x = 1\n# --- Section ---\ndef a(): pass\n", true)]
     #[case("x = 1\n# prose: off\ndef a(): pass\n", true)]
     #[case("x = 1\n### Heading\ndef a(): pass\n", true)]
-    fn anchors_in_place_spots_a_marker_or_a_directive(#[case] src: &str, #[case] expected: bool) {
+    #[case("x = 1\n# noqa: E501\ndef a(): pass\n", true)]
+    #[case("if x:\n    pass\n    # type: ignore\ndef a(): pass\n", true)]
+    fn anchors_in_place_spots_a_marker_a_directive_or_a_pragma(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
         let s = parse(src);
         let block = gap_block(&s).expect("block");
         assert_eq!(anchors_in_place(&s, block), expected);

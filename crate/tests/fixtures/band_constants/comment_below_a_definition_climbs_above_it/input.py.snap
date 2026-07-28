@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/comment_below_a_definition_climbs_above_it/input.py
+---
+ALPHA_DECAY = 1
+
+
+# documents render
+def render(template):
+    return template

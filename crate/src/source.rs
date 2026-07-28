@@ -248,8 +248,7 @@ impl Source {
     /// after `prev_end`'s line. A trailing comment on `prev_end`'s line
     /// keeps the two consecutive, whereas a standalone comment line or a
     /// blank line pushes `next_start` two or more lines down and breaks
-    /// adjacency. Contrast [`Self::is_line_adjacent`], which breaks on any
-    /// comment in the gap.
+    /// adjacency.
     pub fn consecutive_lines(&self, prev_end: TextSize, next_start: TextSize) -> bool {
         self.line_index(next_start) == self.line_index(prev_end).saturating_add(1)
     }
@@ -288,15 +287,6 @@ impl Source {
     /// Returns `true` when at least one comment lies within `ranged`.
     pub fn intersects_comment<R: Ranged>(&self, ranged: R) -> bool {
         self.comment_ranges.intersects(ranged.range())
-    }
-
-    /// Returns `true` when the gap between two AST nodes carries
-    /// exactly one newline and no comment, meaning the surrounding
-    /// nodes sit on directly adjacent source lines. Contrast
-    /// [`Self::consecutive_lines`], which tolerates a trailing comment
-    /// on the preceding line.
-    pub fn is_line_adjacent(&self, gap: TextRange) -> bool {
-        !self.slice(gap).contains('#') && lines_before(gap.end(), self.text()) == 1
     }
 
     /// Returns `true` when this source is a notebook, carrying at least

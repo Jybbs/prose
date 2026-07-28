@@ -4,5 +4,5 @@ from typing import Optional
 from sys import path
 from os.path import join
 
-import re as regex  # trailing comment splits the next run
+import re as regex  # trailing comment sits inside its row
 import json as parser
