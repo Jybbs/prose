@@ -1,14 +1,16 @@
 //! Predicts the column an alignment rule shifts each assignment and
 //! keyword value to, so a layout decision tests a construct against the
-//! position it lands at after alignment rather than its current one. A
-//! row whose value spans lines groups as if single-line, since a
-//! collapsing construct becomes single-line before the alignment runs,
-//! and a wider sibling then joins the run the collapse closes.
+//! position it lands at after alignment rather than its current one. No
+//! column is reserved for a value inside an f-string or t-string
+//! replacement field. A row whose value spans lines groups as if
+//! single-line, since a collapsing construct becomes single-line before
+//! the alignment runs, and a wider sibling then joins the run the
+//! collapse closes.
 
 use std::collections::HashMap;
 
 use ruff_python_ast::{
-    Expr, Stmt,
+    Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor, walk_body, walk_expr},
 };
 use ruff_text_size::TextSize;
@@ -65,6 +67,9 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
         }
         walk_expr(self, expr);
     }
+
+    /// Leaves a replacement field unwalked.
+    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 }
 
 /// Maps each aligned value's start offset to the display column it lands

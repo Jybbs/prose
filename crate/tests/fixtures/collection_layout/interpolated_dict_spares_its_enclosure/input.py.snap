@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/collection_layout/interpolated_dict_spares_its_enclosure/input.py
+---
+ROWS = [f"{ {alpha: 1, beta: 2, gamma: 3, delta: 4} }", "z"]

@@ -1,13 +1,13 @@
-//! The collection-layout serializer. Walks each literal and subscript,
-//! renders its inline and expanded forms, and emits the edit that fits
-//! the budget.
+//! The collection-layout serializer. Walks each literal and subscript
+//! outside an f-string or t-string replacement field, renders its
+//! inline and expanded forms, and emits the edit that fits the budget.
 
 use std::{borrow::Cow, collections::HashMap};
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    AnyNodeRef, Comprehension, DictItem, Expr, ExprDict,
+    AnyNodeRef, Comprehension, DictItem, Expr, ExprDict, InterpolatedStringElement,
     visitor::{Visitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -191,7 +191,8 @@ impl<'a> Layouter<'a> {
     }
 
     /// True when `expr` contains an over-cap `Dict` at any depth,
-    /// including itself.
+    /// including itself. A `Dict` inside a replacement field does not
+    /// count.
     fn has_over_count_dict(&self, expr: &Expr) -> bool {
         let range = expr.range();
         self.tripping_dicts
@@ -497,4 +498,7 @@ impl<'a> Visitor<'a> for Layouter<'a> {
             None => walk_expr(self, expr),
         }
     }
+
+    /// Leaves a replacement field unwalked.
+    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 }

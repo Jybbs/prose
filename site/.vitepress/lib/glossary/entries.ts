@@ -303,8 +303,10 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : 'An f-string is a Python string literal prefixed `f"..."` that interpolates '
                + 'expressions inside `{}` placeholders. The `docstring` walker skips an f-string '
                + 'in docstring position, since Python assigns it no `__doc__`, leaving it outside '
-               + 'every docstring rule.',
-    families   : ['formatting', 'docs'],
+               + 'every docstring rule. The layout rules treat the replacement field as opaque '
+               + 'too, since a line break spliced there parses only on Python 3.12 and later, '
+               + 'leaving an over-wide interpolation for `line-overflow` to report.',
+    families   : ['docs', 'formatting', 'layout', 'lint'],
     href       : 'https://docs.python.org/3/reference/lexical_analysis.html#f-strings'
   },
 

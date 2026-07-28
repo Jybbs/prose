@@ -16,6 +16,8 @@ A call whose source already spans lines answers the budget the same way a single
 
 Where an exploded keyword's value is a `dict`, `list`, or comprehension an earlier pass already broke across lines, `call-layout` re-indents that block to the keyword column rather than splicing it in at its old position, its body one step past the keyword and its closing bracket back at the keyword column. A value whose lines run through a multi-line string keeps its source shape, leaving the string's interior untouched.
 
+Neither trigger reaches a call inside an f-string or t-string replacement field. A line break spliced into a single-quoted field is PEP 701 syntax that parses on Python 3.12 and later and fails everywhere earlier, so the literal is opaque to layout whatever its width and an over-wide interpolation is left for [`line-overflow`](/rules/lint/line-overflow) to report.
+
 The rule reshapes layout and nothing more, leaving argument order to [`alphabetize`](/rules/ordering/alphabetize), which runs ahead of it, so disabling alphabetization leaves the exploded arguments in source order. The `=` spacing stays with [`align-equals`](/rules/alignment/align-equals), and whether the last argument carries a trailing comma stays with [`strip-trailing-commas`](/rules/formatting/strip-trailing-commas), which the explode carries through untouched.
 
 <template #configuration>

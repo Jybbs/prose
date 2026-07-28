@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/interpolated_call_still_reports/input.py
+---
+result = f"{compute(alpha, beta)} and the remainder"

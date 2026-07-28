@@ -7,7 +7,8 @@
 //! positionally. The closing `)` drops to the indent of the row carrying
 //! the call, a nested call in an argument value explodes in the same
 //! pass, and a chained call settles its receiver before the link that
-//! carries it, so every link measures the column it lands at. Order,
+//! carries it, so every link measures the column it lands at. Neither
+//! trigger reaches a call inside an f-string or t-string. Order,
 //! `=` alignment, and trailing commas stay with `alphabetize`,
 //! `align_equals`, and `strip_trailing_commas`.
 //!
@@ -18,7 +19,7 @@ use std::collections::HashMap;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Expr, Parameters,
+    Expr, InterpolatedStringElement, Parameters,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextSize};
@@ -118,14 +119,36 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         }
         self.visit_arguments(&call.arguments);
     }
+
+    /// Leaves a replacement field unwalked.
+    fn visit_interpolated_string_element(&mut self, _: &'a InterpolatedStringElement) {}
 }
 
 #[cfg(test)]
 mod tests {
     use std::num::NonZeroUsize;
 
+    use rstest::rstest;
+
     use super::*;
     use crate::testing::{applied_text, parse};
+
+    #[rstest]
+    fn a_call_inside_a_replacement_field_emits_no_edit(#[values("f", "t")] prefix: &str) {
+        // The narration runs long enough that the call inside it clears
+        // the width trigger from its own column.
+        let src = format!(
+            "value = {prefix}\"a fairly long narration wrapping the gathered \
+             values {{gather(alpha, beta, gamma)}}\"\n"
+        );
+        let source = parse(&src);
+        assert!(
+            CallLayout::from_config(&Config::default())
+                .apply(&source)
+                .is_empty(),
+            "replacement field should emit no edit:\n{src}",
+        );
+    }
 
     #[test]
     fn call_two_levels_inside_a_collection_value_measures_where_it_lands() {
