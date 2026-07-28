@@ -32,8 +32,6 @@ use crate::{
 /// names in its value and its non-deferred annotation, and whether the
 /// value runs code at binding. Value references pin the constant when
 /// unresolved, whereas annotation references only constrain band order.
-/// `effectful` holds only inside a notebook cell, pinning the constant
-/// there.
 struct ConstSite<'src> {
     annot_refs: Vec<&'src str>,
     effectful: bool,
@@ -41,6 +39,20 @@ struct ConstSite<'src> {
     name: &'src str,
     subcategory: Subcategory,
     value_refs: Vec<&'src str>,
+}
+
+impl<'src> ConstSite<'src> {
+    /// The load-context names in the site's value and annotation, a
+    /// value reference paired with `true` and an annotation reference
+    /// with `false`, skipping the site's own name.
+    fn foreign_refs(&self) -> impl Iterator<Item = (&'src str, bool)> {
+        let name = self.name;
+        self.value_refs
+            .iter()
+            .map(|&r| (r, true))
+            .chain(self.annot_refs.iter().map(|&r| (r, false)))
+            .filter(move |&(r, _)| r != name)
+    }
 }
 
 /// Builds the module-scope hoist plan, ranking each statement. Returns
@@ -56,7 +68,6 @@ pub(super) fn module_band_plan<'src>(
     let analysis = source.binding_analysis();
     let aliases = group_constants.then(|| AliasContext::new(body, analysis));
     let builtins_minor = target_version.unwrap_or_default().minor;
-    let notebook = source.is_notebook();
     let suppression = source.suppression_map();
     let mut def_at: HashMap<&'src str, usize> = HashMap::new();
     let mut dup_defs: HashSet<&'src str> = HashSet::new();
@@ -118,7 +129,7 @@ pub(super) fn module_band_plan<'src>(
                             .as_ann_assign_stmt()
                             .filter(|_| !defer_annotations)
                             .map_or_else(Vec::new, |ann| eval_refs(&ann.annotation)),
-                        effectful: notebook && value.is_some_and(value_is_effectful),
+                        effectful: value.is_some_and(value_is_effectful),
                         idx,
                         name,
                         subcategory: aliases
@@ -147,23 +158,18 @@ pub(super) fn module_band_plan<'src>(
         // the name is an import or a builtin, both clean terminals, whereas
         // an annotation reference only ever constrains order, so `x: int = 1`
         // rides the leading band.
-        for (refs, anchor_unresolved) in [(&site.value_refs, true), (&site.annot_refs, false)] {
-            for &name in refs {
-                if name == site.name {
-                    continue;
-                }
-                if dup_defs.contains(name) {
-                    anchored[s] = true;
-                } else if def_at.contains_key(name) {
-                    reaches_def[s] = true;
-                } else if let Some(&dep) = site_at.get(name) {
-                    deps[s].push(dep);
-                } else if anchor_unresolved
-                    && !imports.contains(name)
-                    && !is_python_builtin(name, builtins_minor, false)
-                {
-                    anchored[s] = true;
-                }
+        for (name, anchor_unresolved) in site.foreign_refs() {
+            if dup_defs.contains(name) {
+                anchored[s] = true;
+            } else if def_at.contains_key(name) {
+                reaches_def[s] = true;
+            } else if let Some(&dep) = site_at.get(name) {
+                deps[s].push(dep);
+            } else if anchor_unresolved
+                && !imports.contains(name)
+                && !is_python_builtin(name, builtins_minor, false)
+            {
+                anchored[s] = true;
             }
         }
     }
@@ -171,7 +177,7 @@ pub(super) fn module_band_plan<'src>(
     let mut trailing: Vec<bool> = (0..n).map(|s| reaches_def[s] && !anchored[s]).collect();
     propagate(&mut trailing, &deps);
     let mut keys: HashMap<usize, (usize, Subcategory, &'src str)> = HashMap::new();
-    for band in [false, true] {
+    for (band, rank) in [(false, BandRank::Leading), (true, BandRank::Trailing)] {
         let members: Vec<usize> = (0..n)
             .filter(|&s| !anchored[s] && trailing[s] == band)
             .collect();
@@ -188,14 +194,7 @@ pub(super) fn module_band_plan<'src>(
             .collect();
         for (s, tier) in members.iter().copied().zip(tier_levels(&dep_sets)?) {
             keys.insert(sites[s].idx, (tier, sites[s].subcategory, sites[s].name));
-            ranks.insert(
-                sites[s].idx,
-                if band {
-                    BandRank::Trailing
-                } else {
-                    BandRank::Leading
-                },
-            );
+            ranks.insert(sites[s].idx, rank);
         }
     }
     let mut edges: Vec<(usize, usize)> = Vec::new();
@@ -208,7 +207,7 @@ pub(super) fn module_band_plan<'src>(
         if anchored[s] {
             continue;
         }
-        for &name in site.value_refs.iter().chain(&site.annot_refs) {
+        for (name, _) in site.foreign_refs() {
             if let Some(&def) = def_at.get(name) {
                 edges.push((site.idx, def));
             } else {
@@ -283,7 +282,12 @@ mod tests {
 
     use super::*;
     use crate::primitives::orderer::member_blocks;
-    use crate::testing::{notebook, parse};
+    use crate::testing::parse;
+
+    /// `src` parsed as the sole statement below a module-level definition.
+    fn below_a_definition(src: &str) -> Source {
+        parse(&format!("def build():\n    return 1\n\n\n{src}\n"))
+    }
 
     fn plan_of(source: &Source) -> Option<BandPlan<'_>> {
         let body = &source.ast().body;
@@ -310,25 +314,41 @@ mod tests {
         );
     }
 
-    #[test]
-    fn module_band_plan_bands_a_builtin_valued_constant_as_leading() {
-        let source = parse("def build():\n    return 1\n\n\nTABLE = dict(timeout=30)\n");
+    #[rstest]
+    #[case("TABLE = dict(timeout=30)")]
+    #[case("SIZES = [sum([1, 2]), 3]")]
+    fn module_band_plan_anchors_an_effectful_constant(#[case] src: &str) {
+        let source = below_a_definition(src);
         let plan = plan_of(&source).expect("acyclic module plans");
-        assert_eq!(
-            plan.ranks[&1],
-            BandRank::Leading,
-            "dict is a builtin, so TABLE rides the leading band"
+        assert!(
+            !plan.ranks.contains_key(&1),
+            "{src} runs code as it binds, so it pins in place"
         );
     }
 
     #[test]
-    fn module_band_plan_bands_an_inert_constant_in_a_notebook() {
-        let source = notebook(&["def helper():\n    return 1\nSEED = 42\n"]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
+    fn module_band_plan_bands_a_builtin_named_constant_as_leading() {
+        let source = below_a_definition("TABLE = dict");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert_eq!(
             plan.ranks[&1],
             BandRank::Leading,
-            "a literal is inert, so SEED bands even inside a cell"
+            "dict is a builtin name, so TABLE rides the leading band"
+        );
+    }
+
+    #[rstest]
+    #[case("SCALE = 2 * 3")]
+    #[case("LIMITS = [1, 2]")]
+    #[case("LOOKUP = {\"a\": 1}")]
+    #[case("KEY = lambda row: row.score")]
+    fn module_band_plan_bands_an_inert_constant_as_leading(#[case] src: &str) {
+        let source = below_a_definition(src);
+        let plan = plan_of(&source).expect("acyclic module plans");
+        assert_eq!(
+            plan.ranks[&1],
+            BandRank::Leading,
+            "{src} only builds a result, so it rides the leading band"
         );
     }
 
@@ -408,24 +428,10 @@ mod tests {
         );
     }
 
-    #[rstest]
-    #[case("DATA = await fetch()")]
-    #[case("CACHE = dict(size=10)")]
-    #[case("SHELL = !ls")]
-    fn module_band_plan_pins_an_effectful_constant_in_a_notebook(#[case] value_src: &str) {
-        let cell = format!("def helper():\n    return 1\n{value_src}\n");
-        let source = notebook(&[cell.as_str()]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
-        assert!(
-            !plan.ranks.contains_key(&1),
-            "{value_src} runs code, so it pins in its cell"
-        );
-    }
-
     #[test]
-    fn module_band_plan_pins_an_inert_constant_referencing_an_effectful_one_in_a_notebook() {
-        let source = notebook(&["def helper():\n    return 1\nRAW = compute()\nSCALED = RAW\n"]);
-        let plan = plan_of(&source).expect("acyclic notebook plans");
+    fn module_band_plan_pins_an_inert_constant_referencing_an_effectful_one() {
+        let source = parse("def helper():\n    return 1\n\n\nRAW = compute()\nSCALED = RAW\n");
+        let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
             !plan.ranks.contains_key(&2),
             "SCALED references effectful RAW, so anchoring propagates and it pins"

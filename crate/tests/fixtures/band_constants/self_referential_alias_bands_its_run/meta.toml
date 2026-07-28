@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Self-Referential Type Alias Bands With Its Run"
+
+description = '''
+A recursive `type` alias names itself in its own value, which constrains nothing about the order the band seats it in. The alias and the constant beside it **both hoist above the definition**, the self-reference neither pinning the alias nor declining the run around it.
+'''

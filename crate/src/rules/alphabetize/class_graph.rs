@@ -1,15 +1,13 @@
 //! Class-scope assignment tiering. Sorts the constant family (bare
 //! `NAME = value` and `ClassVar`-annotated assignments) and the
 //! data-field family (other single-name annotated assignments) through
-//! one shared dependency graph, so a member never sorts above a sibling,
-//! or below a definition, that reads it at class-definition time. Each
+//! one shared dependency graph, so a member never sorts above a sibling
+//! or below a statement that reads it at class-definition time. Each
 //! family still redistributes only across the slots it already holds.
 //! A field bound by position in a generated constructor holds its slot
 //! while the constants around it still sort.
-//! Reverts the reorder on a duplicate name, a reference cycle, or an
-//! assembled order that would seat a referent after a reader.
 
-use std::{collections::HashMap, ops::Range};
+use std::ops::Range;
 
 use ruff_python_ast::Stmt;
 use ruff_text_size::{Ranged, TextSize};
@@ -17,8 +15,8 @@ use ruff_text_size::{Ranged, TextSize};
 use crate::primitives::{
     binding::{ann_assign_with_named_field, is_classvar, single_name_target},
     constructor::classify_field,
-    orderer::{permute_in_place, slot_positions},
-    tiering::{def_run_tier_keys, eval_time_refs},
+    orderer::permute_in_place,
+    tiering::{def_run_tier_keys, permute_or_revert},
 };
 
 /// Sorts a section's constant and data-field families through one tiered
@@ -43,28 +41,29 @@ pub(super) fn permute_class_assigns(
     if tier_keys.len() < 2 {
         return;
     }
-    let member_at: HashMap<&str, usize> = body[range.clone()]
-        .iter()
-        .enumerate()
-        .filter_map(|(i, stmt)| class_assign_member(stmt).map(|(name, _)| (name, range.start + i)))
-        .collect();
-    let snapshot = order.to_vec();
-    permute_in_place(order, body, range.clone(), |stmt| {
-        if stmt.start() < keyword_fields_from {
-            return None;
-        }
-        let (default, _) = classify_field(stmt)?;
-        let (tier, name) = tier_keys[&stmt.start()];
-        Some((tier, default, name))
-    });
-    permute_in_place(order, body, range.clone(), |stmt| {
-        class_assign_member(stmt)
-            .filter(|&(_, is_const)| is_const)
-            .map(|_| tier_keys[&stmt.start()])
-    });
-    if !order_is_sound(order, body, &range, &member_at, defer_annotations) {
-        order.copy_from_slice(&snapshot);
-    }
+    permute_or_revert(
+        order,
+        body,
+        &range,
+        defer_annotations,
+        |stmt| class_assign_member(stmt).map(|(name, _)| name),
+        |order| {
+            let fields_moved = permute_in_place(order, body, range.clone(), |stmt| {
+                if stmt.start() < keyword_fields_from {
+                    return None;
+                }
+                let (default, _) = classify_field(stmt)?;
+                let (tier, name) = tier_keys[&stmt.start()];
+                Some((tier, default, name))
+            });
+            let constants_moved = permute_in_place(order, body, range.clone(), |stmt| {
+                class_assign_member(stmt)
+                    .filter(|&(_, is_const)| is_const)
+                    .map(|_| tier_keys[&stmt.start()])
+            });
+            fields_moved || constants_moved
+        },
+    );
 }
 
 /// Classifies a class-body statement as a single-name assignment,
@@ -79,36 +78,9 @@ fn class_assign_member(stmt: &Stmt) -> Option<(&str, bool)> {
     }
 }
 
-/// True when every reader in `range` keeps each assignment member it
-/// names ahead of itself in `order`. A reader is an assignment member or
-/// a class or function definition, the latter naming a constant through
-/// its decorators, base classes, or parameter defaults. Scoped to
-/// `range`, so a reader in another section never constrains this one.
-fn order_is_sound(
-    order: &[usize],
-    body: &[Stmt],
-    range: &Range<usize>,
-    member_at: &HashMap<&str, usize>,
-    defer_annotations: bool,
-) -> bool {
-    let position = slot_positions(order);
-    body[range.clone()].iter().enumerate().all(|(i, stmt)| {
-        let reader = range.start + i;
-        let reads_eval_time = class_assign_member(stmt).is_some()
-            || matches!(stmt, Stmt::ClassDef(_) | Stmt::FunctionDef(_));
-        if !reads_eval_time {
-            return true;
-        }
-        eval_time_refs(stmt, defer_annotations).iter().all(|name| {
-            member_at
-                .get(name)
-                .is_none_or(|&referent| referent == reader || position[referent] < position[reader])
-        })
-    })
-}
-
 #[cfg(test)]
 mod tests {
+    use indoc::indoc;
     use rstest::rstest;
 
     use super::*;
@@ -184,9 +156,13 @@ mod tests {
 
     #[test]
     fn routes_a_classvar_among_the_bare_constants() {
-        let order = class_order(
-            "class C:\n    TIMEOUT = 30\n    RETRIES: ClassVar[int] = 3\n    host: str\n    port: int\n",
-        );
+        let order = class_order(indoc! {"
+            class C:
+                TIMEOUT = 30
+                RETRIES: ClassVar[int] = 3
+                host: str
+                port: int
+        "});
         assert_eq!(order, vec![1, 0, 2, 3], "RETRIES sorts ahead of TIMEOUT");
     }
 
@@ -207,9 +183,14 @@ mod tests {
 
     #[test]
     fn sorts_only_the_fields_below_a_kw_only_sentinel() {
-        let order = class_order(
-            "@dataclass\nclass C:\n    width: int\n    _: KW_ONLY\n    zebra: int\n    apple: int\n",
-        );
+        let order = class_order(indoc! {"
+            @dataclass
+            class C:
+                width: int
+                _: KW_ONLY
+                zebra: int
+                apple: int
+        "});
         assert_eq!(order, vec![0, 1, 3, 2], "the sentinel splits the run");
     }
 }

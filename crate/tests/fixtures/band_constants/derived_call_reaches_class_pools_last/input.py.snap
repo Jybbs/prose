@@ -1,7 +1,7 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/band_constants/derived_call_reaches_class_pools_last/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/derived_call_reaches_class_pools_last/input.py
 ---
 class Widget:
     pass
@@ -11,4 +11,4 @@ def build(factory=Widget):
     return factory()
 
 
-CONFIG = build()
+CONFIG = build

@@ -20,6 +20,10 @@ use crate::{
     source::Source,
 };
 
+/// Formatted module source whose bare `import os` draws one
+/// `bare-imports` finding and no format edit.
+pub(crate) const BARE_IMPORT_LINT: &str = "import os\n\nos.getcwd()\n";
+
 /// Module source leading with a `__future__` import, the input
 /// [`breaks_compile`] demotes.
 pub(crate) const FUTURE_LEAD: &str = "from __future__ import annotations\nimport os\n";
