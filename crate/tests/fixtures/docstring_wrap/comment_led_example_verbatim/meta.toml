@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Comment-Led Code Examples Pass Through Verbatim"
+
+description = '''
+A code example introduced by a `#` comment **keeps one statement per line**. The comment opens a passthrough block that runs to the next blank line, so the statements below it stay valid Python instead of merging into a single run-on.
+'''

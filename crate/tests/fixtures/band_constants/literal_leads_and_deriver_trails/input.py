@@ -5,5 +5,5 @@ def build(spec):
     return logging.getLogger(spec)
 
 
-SESSION = build("app")
+SESSION = build
 TIMEOUT = 30

@@ -15,33 +15,21 @@ use crate::{primitives::params::pins_positional_params, source::Source};
 /// Every nameable argument of a call in source order, flagged when a
 /// leading positional-only argument keeps its slot.
 pub(crate) struct CallKeywords<'src> {
-    pub args: Vec<KeywordArg<'src>>,
-    pub has_posonly_prefix: bool,
+    pub(crate) args: Vec<KeywordArg<'src>>,
+    pub(crate) has_posonly_prefix: bool,
 }
 
 /// One argument of a call rendered as a `name=value` keyword binding.
 pub(crate) struct KeywordArg<'src> {
     /// The bound parameter or keyword name, the key for the
     /// `all_unique` collision guard in `keyword_args`.
-    pub name: &'src str,
+    pub(crate) name: &'src str,
     /// The `name=value` text, borrowed for a keyword already in that
     /// form and owned for a positional argument named from its parameter.
-    pub rendered: Cow<'src, str>,
+    pub(crate) rendered: Cow<'src, str>,
     /// The argument's value expression, the recursion point for a
     /// consumer that reshapes a nested call.
-    pub value: &'src Expr,
-}
-
-/// Resolves `call`'s callee to the parameters it binds via `targets`, the
-/// offset map [`module_call_params`] returns. `None` for an attribute
-/// call, an unresolved name, or a callee outside the map.
-pub(crate) fn resolve_call_params<'src>(
-    call: &ExprCall,
-    targets: &HashMap<TextSize, &'src Parameters>,
-) -> Option<&'src Parameters> {
-    targets
-        .get(&call.func.as_name_expr()?.range().start())
-        .copied()
+    pub(crate) value: &'src Expr,
 }
 
 /// Renders `call`'s arguments past any positional-only prefix as
@@ -61,9 +49,6 @@ pub(crate) fn keyword_args<'src>(
     if positional.iter().any(Expr::is_starred_expr) || keywords.iter().any(|kw| kw.arg.is_none()) {
         return None;
     }
-    if !positional.is_empty() && params.is_none() {
-        return None;
-    }
     let posonly = params.map_or(0, |p| p.posonlyargs.len());
     let named_params: &[ParameterWithDefault] = params.map_or(&[], |p| &p.args);
     if positional.len() > posonly + named_params.len() {
@@ -75,9 +60,14 @@ pub(crate) fn keyword_args<'src>(
         .zip(named_params)
         .map(|(arg, param)| {
             let name = param.name().as_str();
+            let value = source.slice(arg);
             KeywordArg {
                 name,
-                rendered: Cow::Owned(format!("{name}={}", source.slice(arg))),
+                rendered: Cow::Owned(if requires_grouping(arg) {
+                    format!("{name}=({value})")
+                } else {
+                    format!("{name}={value}")
+                }),
                 value: arg,
             }
         })
@@ -91,8 +81,8 @@ pub(crate) fn keyword_args<'src>(
         .map(|arg| arg.name)
         .all_unique()
         .then_some(CallKeywords {
-            has_posonly_prefix: positional.len().min(posonly) > 0,
             args,
+            has_posonly_prefix: !positional.is_empty() && posonly > 0,
         })
 }
 
@@ -112,4 +102,56 @@ pub(crate) fn module_call_params(source: &Source) -> HashMap<TextSize, &Paramete
         .filter_map(|func| Some((analysis.module_function_reads(func.name.as_str())?, func)))
         .flat_map(|(reads, func)| reads.iter().map(move |&offset| (offset, &*func.parameters)))
         .collect()
+}
+
+/// Resolves `call`'s callee to the parameters it binds via `targets`, the
+/// offset map [`module_call_params`] returns. `None` for an attribute
+/// call, an unresolved name, or a callee outside the map.
+pub(crate) fn resolve_call_params<'src>(
+    call: &ExprCall,
+    targets: &HashMap<TextSize, &'src Parameters>,
+) -> Option<&'src Parameters> {
+    targets
+        .get(&call.func.as_name_expr()?.range().start())
+        .copied()
+}
+
+/// True for the argument shapes whose source slice does not parse after
+/// a `name=` prefix, a named expression, a `yield`, a `yield from`, and
+/// a generator expression carrying no parentheses of its own.
+fn requires_grouping(arg: &Expr) -> bool {
+    matches!(arg, Expr::Named(_) | Expr::Yield(_) | Expr::YieldFrom(_))
+        || arg.as_generator_expr().is_some_and(|g| !g.parenthesized)
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+    use crate::testing::{first_def, first_expr, parse};
+
+    #[rstest]
+    #[case("1", "x=1")]
+    #[case("a if b else c", "x=a if b else c")]
+    #[case("lambda: 1", "x=lambda: 1")]
+    #[case("[n for n in items]", "x=[n for n in items]")]
+    #[case("a for a in items", "x=(a for a in items)")]
+    #[case("(a for a in items)", "x=(a for a in items)")]
+    #[case("y := 1", "x=(y := 1)")]
+    #[case("(y := 1)", "x=(y := 1)")]
+    fn a_positional_renders_in_a_form_the_keyword_slot_accepts(
+        #[case] argument: &str,
+        #[case] expected: &str,
+    ) {
+        let source = parse(&format!("f({argument})\n"));
+        let callee = parse("def f(x): pass\n");
+        let call = first_expr(&source)
+            .as_call_expr()
+            .expect("the statement is a call");
+        let keywords = keyword_args(&source, call, Some(&first_def(&callee).parameters))
+            .expect("a sole resolved positional takes keyword form");
+
+        assert_eq!(keywords.args[0].rendered, expected);
+    }
 }

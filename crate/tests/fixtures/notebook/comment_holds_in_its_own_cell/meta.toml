@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Trailing Comment Holds in the Cell That Carries It"
+
+description = '''
+The first cell closes on a standalone comment and the second opens on the constants it introduces. `band-constants` folds a comment up with the constant beneath it, so the band holds the fold back at the cell boundary and the comment stays where the author typed it while the second cell's constants sort among themselves.
+'''

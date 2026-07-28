@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Yield Argument Keeps the Parentheses Its Range Omits"
+
+description = '''
+A `yield` and a `yield from` are legal positional arguments only in parenthesized form, and the parser reports each one's range without those parentheses, so binding either to its resolved parameter name restores the pair rather than emitting source Python rejects.
+'''

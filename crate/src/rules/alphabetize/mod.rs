@@ -18,7 +18,8 @@
 //! positional binding intact. Only the keyword-only block past `*`
 //! sorts. A class whose header generates a field-ordered constructor
 //! holds its annotated field run for that same reason, leaving the
-//! block past a `KW_ONLY` sentinel to sort.
+//! block past a `KW_ONLY` sentinel to sort. A decorated definition holds
+//! its source slot at module scope and sorts inside a class body.
 
 use std::borrow::Cow;
 
@@ -30,6 +31,7 @@ use crate::{
     config::Config,
     primitives::{
         constructor::keyword_field_start,
+        decorator::is_decorated,
         edit::{apply_inline_edits, singleton_groups, splice_bodies},
         imports::{defers_annotations, import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
@@ -174,15 +176,22 @@ fn body_layout<'a>(
         let sections = Sections::of(source, &blocks);
         let in_class = scope == BodyScope::Class;
         if scope != BodyScope::Function {
+            let holds = |stmt: &Stmt| !in_class && is_decorated(stmt);
             for section in sections.ranges() {
-                let members = &body[section.clone()];
                 if sort_definitions {
-                    permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
-                        s.as_class_def_stmt().map(|c| {
-                            let name = c.name.as_str();
-                            (name, name)
-                        })
-                    });
+                    permute_defs(
+                        &mut order,
+                        body,
+                        section.clone(),
+                        defer_annotations,
+                        holds,
+                        |s| {
+                            s.as_class_def_stmt().map(|c| {
+                                let name = c.name.as_str();
+                                (name, name)
+                            })
+                        },
+                    );
                 }
                 if in_class {
                     permute_class_assigns(
@@ -193,14 +202,21 @@ fn body_layout<'a>(
                         keyword_fields_from,
                     );
                 }
-                if sort_definitions && !(in_class && class_pins_methods(members)) {
-                    permute_defs(&mut order, body, section.clone(), defer_annotations, |s| {
-                        s.as_function_def_stmt().map(|f| {
-                            let name = f.name.as_str();
-                            let group = if group_methods { method_group(f) } else { 0 };
-                            (name, (group, name))
-                        })
-                    });
+                if sort_definitions && !(in_class && class_pins_methods(&body[section.clone()])) {
+                    permute_defs(
+                        &mut order,
+                        body,
+                        section.clone(),
+                        defer_annotations,
+                        holds,
+                        |s| {
+                            s.as_function_def_stmt().map(|f| {
+                                let name = f.name.as_str();
+                                let group = if group_methods { method_group(f) } else { 0 };
+                                (name, (group, name))
+                            })
+                        },
+                    );
                 }
             }
         }
@@ -265,7 +281,6 @@ fn rewrite_compound<'a>(
 ) -> Cow<'a, str> {
     let bodies = compound_sub_bodies(stmt)
         .into_iter()
-        .filter(|(body, _)| !body.is_empty())
         .map(|(body, outer)| rewrite_body(ctx, body, outer, scope));
     splice_bodies(ctx.source, block, bodies, ctx.leaf_edits)
 }

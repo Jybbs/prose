@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/docstring_wrap/role_opens_wrapped_body/input.py
+---
+"""
+:class:`~ensemble.VotingClassifier` averages the predicted class
+probabilities of three different classifiers to show the effect of soft
+voting.
+"""

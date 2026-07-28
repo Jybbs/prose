@@ -66,7 +66,8 @@ enum Pass {
     /// as-written diagnostics and the rewrite.
     Both,
     /// `check`: the as-written diagnostics, no rewrite. `validate` adds
-    /// the opt-in reparse guard that fails on an unparseable rule output.
+    /// the opt-in guard that rejects a rule whose output fails to
+    /// re-parse or to compile.
     Diagnose { validate: bool },
     /// Plain `format` and `--diff`: the rewrite alone.
     Rewrite,

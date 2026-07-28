@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Padded Attribute Keys and Their Descriptions Settle in One Pass"
+
+description = '''
+Two `Attributes:` entries run past the docstring budget unwrapped. **`align-colons` pads the run with no line cap, and `docstring-wrap` then reflows both descriptions within `docstring-line-length`, hanging them from the padded column**, so the pair reaches its final shape on the first pass instead of drifting for two more.
+'''

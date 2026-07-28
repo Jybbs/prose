@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Skip on a Wrapped Signature Holds the Parameter List Open"
+
+description = '''
+A `# fmt: skip` trailing a wrapped `def` header **spans the whole signature**, so `signature-layout` leaves the exploded parameter list and its trailing comma exactly as written.
+'''

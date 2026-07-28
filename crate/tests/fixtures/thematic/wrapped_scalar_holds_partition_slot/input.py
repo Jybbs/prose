@@ -1,0 +1,8 @@
+def outer():
+    def inner():
+        expected = {
+            "legacy" : "a" * 1000,
+            "sha256" :
+                "41edece42d63e8d9bf515a9ba6932e1c20cbc9f5a5d134645adb5db1b9737ea3",
+            "short"  : "a0"
+        }

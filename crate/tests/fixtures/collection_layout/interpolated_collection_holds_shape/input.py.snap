@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/collection_layout/interpolated_collection_holds_shape/input.py
+---
+raise ValueError(
+    f"the configured thresholds did not validate against the schema {[alpha, beta, gamma]}"
+)

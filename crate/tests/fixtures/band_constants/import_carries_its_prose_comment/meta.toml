@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Import Carries Its Prose Comment Into the Sorted Run"
+
+description = '''
+A free-standing prose comment heads `binascii`, and the import run sorts around it. The comment forward-attaches to the import it heads and **moves to the front of the run with it**, rather than stranding above whichever import lands there.
+'''

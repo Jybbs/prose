@@ -86,7 +86,7 @@ Every key follows one shape so its name predicts its kind. A boolean key reads a
 
 ## Docstring Budgets
 
-Docstrings carry two readings inside one triple-quoted region. Description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Every Title-case-headed section that follows reads as a code-shaped table and reuses `code-line-length` (*88 by default*) to match surrounding indentation. `docstring-structured-policy` switches them to `docstring-line-length` if a project prefers a single narrower budget across the whole docstring. The [[docstring-wrap]] rule consumes both budgets.
+Docstrings carry two readings inside one triple-quoted region. Description prose between the opening `"""` and the first section heading reads as paragraphs, where 76 characters is the comfortable line for sustained reading. Every Title-case-headed section that follows reads as a code-shaped table whose prose lines reuse `code-line-length` (*88 by default*) to match surrounding indentation, whereas its `name: description` entries wrap to `docstring-line-length` with a hanging indent at the description's start column. `docstring-structured-policy` switches the prose lines to `docstring-line-length` if a project prefers a single narrower budget across the whole docstring. The [[docstring-wrap]] rule consumes both budgets.
 
 ## Per-Pattern Overrides
 

@@ -1,7 +1,7 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: json
-input_file: tests/fixtures/suppression/fmt_skip_pins_one_member/input.py
+input_file: crate/tests/fixtures/suppression/fmt_skip_pins_one_member/input.py
 ---
 [
   {
@@ -45,6 +45,27 @@ input_file: tests/fixtures/suppression/fmt_skip_pins_one_member/input.py
       "row": 2
     },
     "message": "Module constant `foo` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 6,
+      "row": 4
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "short",
+          "content": "SHORT"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 4
+    },
+    "message": "Module constant `short` is not SCREAMING_CASE"
   },
   {
     "code": "miscased-constants",

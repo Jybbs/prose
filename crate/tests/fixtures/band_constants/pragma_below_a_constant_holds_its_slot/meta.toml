@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pragma Below a Constant Holds Its Slot"
+
+description = '''
+A tool pragma such as `# type: ignore` annotates whatever line it sits on, so it reads as inert on a line of its own and would take effect were the band to carry it onto a constant's line. It pins where the source put it, alongside the banner dividers and suppression directives, and pins the constant below it too.
+'''

@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/group_imports/future_import_leads_every_section/input.py
+---
+from __future__ import annotations
+import os
+from collections import Counter
+from myapp import helper

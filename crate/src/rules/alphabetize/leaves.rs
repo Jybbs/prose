@@ -3,7 +3,9 @@
 //! each function docstring to its signature-order names, the mirror key
 //! the docstring-entry sort consumes. Positional-or-keyword parameters
 //! never reorder, since no single-file rewrite can keep every caller's
-//! positional binding intact. Only the keyword-only block sorts.
+//! positional binding intact. Only the keyword-only block sorts. A call
+//! keyword bound to an effectful value holds its slot while the inert
+//! keywords around it sort.
 
 use std::{borrow::Cow, collections::HashMap};
 
@@ -20,8 +22,8 @@ use crate::{
     primitives::{
         binding::single_name_target,
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
-        edit::{apply_inline_edits, narrowed_replacement},
-        insert_sorted_by_key,
+        edit::{apply_inline_edits, insert_edit, narrowed_replacement},
+        effect::value_is_effectful,
         orderer::{any_sibling_shares_line, permute_full, reorder_separated, reorder_text},
         params::classify_param,
     },
@@ -41,9 +43,12 @@ impl<'a> LeafCollector<'a> {
         self.try_emit_inline_reorder(names, |a| Some(a.name.as_str()));
     }
 
+    /// Sorts only the keywords binding an inert value.
     fn emit_call(&mut self, c: &'a ExprCall) {
         for chunk in c.arguments.keywords.split(|kw| kw.arg.is_none()) {
-            self.try_emit_inline_reorder(chunk, |kw| kw.arg.as_deref());
+            self.try_emit_inline_reorder(chunk, |kw| {
+                kw.arg.as_deref().filter(|_| !value_is_effectful(&kw.value))
+            });
         }
     }
 
@@ -95,17 +100,11 @@ impl<'a> LeafCollector<'a> {
     }
 
     /// Replaces the leaf edits nested inside `span` with a single edit
-    /// carrying `folded`, that span reordered with the nested edits
-    /// already applied. A `Cow::Borrowed` folded nothing, so emits
-    /// nothing. The insert keeps `edits` sorted by start.
-    fn fold_into(&mut self, span: TextRange, folded: Cow<'a, str>) {
-        let Cow::Owned(text) = folded else {
-            return;
-        };
+    /// carrying `text`, that span reordered with the nested edits
+    /// already applied. The insert keeps `edits` sorted by start.
+    fn fold_into(&mut self, span: TextRange, text: String) {
         self.edits.retain(|e| !span.contains_range(e.range()));
-        insert_sorted_by_key(&mut self.edits, Edit::range_replacement(text, span), |e| {
-            e.start()
-        });
+        insert_edit(&mut self.edits, Edit::range_replacement(text, span));
     }
 
     fn try_emit_inline_reorder<T, S>(
@@ -121,17 +120,18 @@ impl<'a> LeafCollector<'a> {
         }
         let source = self.source;
         let render = |_: usize, block| apply_inline_edits(source, block, &self.edits);
-        // One member per line routes through `reorder_separated` so each
-        // trailing comment travels with its member. A single-line or
-        // atomics-packed group shares lines, so the lighter `reorder_text`
-        // keeps its verbatim gaps.
-        let one_per_line = !any_sibling_shares_line(source, items);
-        let (folded, span) = if one_per_line {
-            reorder_separated(source, items, classify, render)
-        } else {
+        // A single-line or atomics-packed group shares lines, so the lighter
+        // `reorder_text` keeps its verbatim gaps. One member per line routes
+        // through `reorder_separated` so each trailing comment travels with
+        // its member.
+        let (folded, span) = if any_sibling_shares_line(source, items) {
             reorder_text(source, items, classify, render)
+        } else {
+            reorder_separated(source, items, classify, render)
         };
-        self.fold_into(span, folded);
+        if let Cow::Owned(text) = folded {
+            self.fold_into(span, text);
+        }
     }
 }
 
@@ -182,7 +182,7 @@ pub(super) fn collect_docstring_entry_edits(
     param_docs: &HashMap<TextSize, Vec<&str>>,
 ) -> Vec<Edit> {
     rewrite_docstrings(source, |source, lit, edits| {
-        let signature = param_docs.get(&lit.start());
+        let signature = param_docs.get(&lit.start()).map(Vec::as_slice);
         for entries in entry_carrying_sections(source, lit) {
             let (cow, span) = reorder_text(
                 source,
@@ -226,7 +226,7 @@ pub(super) fn collect_leaf_edits(
 /// Composite docstring-entry sort key. An entry naming a signature
 /// parameter takes that parameter's position, and any other entry
 /// sinks below the signature's, alphabetized by name.
-fn entry_key<'e>(name: &'e str, signature: Option<&Vec<&str>>) -> (usize, &'e str) {
+fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) {
     match signature.and_then(|names| names.iter().position(|&n| n == name)) {
         Some(i) => (i, ""),
         None => (usize::MAX, name),
@@ -388,6 +388,28 @@ mod tests {
         "def m(b, a):\n    foo(a=1, b=2)\n"
     )]
     fn collect_leaf_edits_holds_positionals_and_sorts_keyword_only(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        let source = parse(src);
+        let (edits, _) = collect_leaf_edits(&source, true, true);
+        assert_eq!(applied_text(&source, edits), expected);
+    }
+
+    #[rstest]
+    fn collect_leaf_edits_skips_a_dunder_list_bound_to_a_non_sequence(
+        #[values("__all__ = get_names()\n", "__slots__ = BASE_SLOTS\n")] src: &str,
+    ) {
+        let source = parse(src);
+        let (edits, _) = collect_leaf_edits(&source, true, true);
+        assert!(edits.is_empty());
+    }
+
+    #[rstest]
+    #[case("foo(b=make(), a=1)\n", "foo(b=make(), a=1)\n")]
+    #[case("foo(z=1, b=make(), a=3)\n", "foo(a=3, b=make(), z=1)\n")]
+    #[case("foo(b=obj.attr, a=other.attr)\n", "foo(a=other.attr, b=obj.attr)\n")]
+    fn collect_leaf_edits_sorts_only_inert_keyword_values(
         #[case] src: &str,
         #[case] expected: &str,
     ) {

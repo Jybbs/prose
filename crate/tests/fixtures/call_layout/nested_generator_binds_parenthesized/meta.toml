@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested Call's Generator Takes Its Own Grouping Pair"
+
+description = '''
+The width trigger explodes an outer call and re-explodes the nested call inside it in the same pass, so the inner call's bare generator argument takes its own grouping pair as it binds to the resolved parameter name.
+'''

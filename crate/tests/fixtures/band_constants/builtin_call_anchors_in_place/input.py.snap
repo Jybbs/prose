@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/builtin_call_anchors_in_place/input.py
+---
+def build():
+    return TABLE
+
+
+TABLE = dict(timeout=30)

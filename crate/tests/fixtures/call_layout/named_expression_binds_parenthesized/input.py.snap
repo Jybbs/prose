@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/named_expression_binds_parenthesized/input.py
+---
+def window(anchor, count, offset, source):
+    return (anchor, count, offset, source)
+
+
+window(
+    anchor=(seen := len(rows)),
+    count=page_size,
+    offset=start,
+    source=rows
+)
