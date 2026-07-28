@@ -1,8 +1,8 @@
-//! Predicts the column `align_equals` shifts each assignment and keyword
-//! value to, so the collapse decision tests a literal against the
+//! Predicts the column an alignment rule shifts each assignment and
+//! keyword value to, so a layout decision tests a construct against the
 //! position it lands at after alignment rather than its current one. A
 //! row whose value spans lines groups as if single-line, since a
-//! collapsing collection becomes single-line before `align_equals` runs,
+//! collapsing construct becomes single-line before the alignment runs,
 //! and a wider sibling then joins the run the collapse closes.
 
 use std::collections::HashMap;
@@ -15,12 +15,13 @@ use ruff_text_size::TextSize;
 
 use crate::{
     primitives::{aligner, equal_targets},
-    rules::align_equals::AlignEquals,
+    rule::RuleId,
     source::Source,
 };
 
 struct ReserveVisitor<'a> {
     columns: HashMap<TextSize, usize>,
+    rule: RuleId,
     settings: aligner::Settings,
     source: &'a Source,
 }
@@ -28,16 +29,15 @@ struct ReserveVisitor<'a> {
 impl ReserveVisitor<'_> {
     /// Records each member's aligned value column. The value follows the
     /// operator's column by the operator's final character and the
-    /// one-space value gap.
+    /// one-space value gap. A member whose value opens on a later line
+    /// records nothing.
     fn record(&mut self, groups: Vec<Vec<aligner::Member>>) {
         for group in groups {
             let columns = aligner::operator_columns(self.source, &group, self.settings);
-            self.columns.extend(
-                group
-                    .iter()
-                    .zip(columns)
-                    .filter_map(|(member, column)| Some((member.value_gap?.end(), column + 2))),
-            );
+            self.columns
+                .extend(group.iter().zip(columns).filter_map(|(member, column)| {
+                    Some((member.rewritten_value_gap(self.source)?.end(), column + 2))
+                }));
         }
     }
 }
@@ -45,9 +45,10 @@ impl ReserveVisitor<'_> {
 impl<'a> Visitor<'a> for ReserveVisitor<'a> {
     fn visit_body(&mut self, body: &'a [Stmt]) {
         let source = self.source;
+        let rule = self.rule;
         let groups = aligner::adjacent_member_groups(source, body, false, |stmt| {
             equal_targets::assignment(source, stmt)
-                .map_or(aligner::Slot::Break, |m| m.slot(source, AlignEquals::SLUG))
+                .map_or(aligner::Slot::Break, |m| m.slot(source, rule))
         });
         self.record(groups);
         walk_body(self, body);
@@ -57,7 +58,7 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
         if let Expr::Call(call) = expr {
             self.record(equal_targets::keyword_groups(
                 self.source,
-                AlignEquals::SLUG,
+                self.rule,
                 call,
                 false,
             ));
@@ -66,16 +67,22 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
     }
 }
 
-/// Maps each `align_equals`-aligned value's start offset to the display
-/// column it lands at once the run is aligned. A value the run leaves at
-/// its current column maps to that same column, so a lookup is a no-op
-/// for a value `align_equals` does not move.
-pub(super) fn reserved_columns(
+/// Maps each aligned value's start offset to the display column it lands
+/// at once `rule`'s run is aligned. A value the run leaves at its current
+/// column maps to that same column, so a lookup is a no-op for a value
+/// the alignment does not move. Passing `None` for `settings` yields an
+/// empty map.
+pub(crate) fn reserved_columns(
     source: &Source,
-    settings: aligner::Settings,
+    settings: Option<aligner::Settings>,
+    rule: RuleId,
 ) -> HashMap<TextSize, usize> {
+    let Some(settings) = settings else {
+        return HashMap::new();
+    };
     let mut visitor = ReserveVisitor {
         columns: HashMap::new(),
+        rule,
         settings,
         source,
     };

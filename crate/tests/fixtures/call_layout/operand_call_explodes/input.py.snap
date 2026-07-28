@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/operand_call_explodes/input.py
+---
+emit(
+    prefix + join(
+        alpha,
+        beta,
+        gamma
+    ) + suffix
+)

@@ -20,8 +20,7 @@ use crate::source::Source;
 /// the subtraction saturates at the leftmost column rather than wrapping.
 pub(super) fn baseline(source: &Source, member: Member) -> usize {
     source
-        .slice(TextRange::new(member.line_start, member.gap.start()))
-        .width()
+        .width_between(member.line_start, member.gap.start())
         .saturating_sub(member.width)
 }
 

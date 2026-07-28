@@ -97,14 +97,11 @@ impl Visitor<'_> {
     /// `[indent]case PATTERN[ if GUARD] : BODY` form for `case` would
     /// exceed `code_line_length`.
     fn overflows_budget(&self, case: &MatchCase, body_first: &Stmt) -> bool {
+        let source = self.walker.source;
         let pre_colon_end = colon_targets::match_case_pre_colon_end(case);
-        let lhs_width = self
-            .walker
-            .source
-            .slice(TextRange::new(case.start(), pre_colon_end))
-            .width();
-        let body_width = self.walker.source.slice(body_first.range()).width();
-        self.walker.source.column_overflows(
+        let lhs_width = source.width_between(case.start(), pre_colon_end);
+        let body_width = source.slice(body_first.range()).width();
+        source.column_overflows(
             case.start(),
             lhs_width + 3 + body_width,
             self.code_line_length,

@@ -6,7 +6,8 @@
 //! when no edit applies. Both decline overlapping edits, `apply_edits`
 //! with `None` and `apply_inline_edits` with `Cow::Borrowed`.
 //! `narrow_edit` trims a candidate replacement to its minimal divergent
-//! range against the source.
+//! range against the source, and `insert_edit` keeps a rule's own
+//! accumulator in that sorted order as it emits.
 
 use std::{borrow::Cow, cmp::Ordering};
 
@@ -14,7 +15,7 @@ use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::CellOffsets;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
-use crate::source::Source;
+use crate::{primitives::insert_sorted_by_key, source::Source};
 
 /// True when any element of `parts` is `Cow::Owned`, the signal a
 /// rewrite produced fresh content rather than a borrow of the source.
@@ -86,6 +87,12 @@ pub(crate) fn forward_offsets(offsets: &CellOffsets, map: &SourceMap) -> CellOff
         *offset = forward_offset(*offset, map, i == last);
     }
     forwarded
+}
+
+/// Inserts `edit` at the slot keeping `edits` ascending by start, the
+/// order [`apply_inline_edits`] reads them in.
+pub(crate) fn insert_edit(edits: &mut Vec<Edit>, edit: Edit) {
+    insert_sorted_by_key(edits, edit, Ranged::start);
 }
 
 /// Narrows `text` against the source slice covered by `span` and

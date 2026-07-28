@@ -22,9 +22,8 @@ use crate::{
     primitives::{
         binding::single_name_target,
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
-        edit::{apply_inline_edits, narrowed_replacement},
+        edit::{apply_inline_edits, insert_edit, narrowed_replacement},
         effect::value_is_effectful,
-        insert_sorted_by_key,
         orderer::{any_sibling_shares_line, permute_full, reorder_separated, reorder_text},
         params::classify_param,
     },
@@ -105,11 +104,7 @@ impl<'a> LeafCollector<'a> {
     /// already applied. The insert keeps `edits` sorted by start.
     fn fold_into(&mut self, span: TextRange, text: String) {
         self.edits.retain(|e| !span.contains_range(e.range()));
-        insert_sorted_by_key(
-            &mut self.edits,
-            Edit::range_replacement(text, span),
-            Ranged::start,
-        );
+        insert_edit(&mut self.edits, Edit::range_replacement(text, span));
     }
 
     fn try_emit_inline_reorder<T, S>(

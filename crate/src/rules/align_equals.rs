@@ -40,6 +40,14 @@ impl AlignEquals {
                 .with_line_length(config.code_width()),
         }
     }
+
+    /// The settings `align_equals` runs with, or `None` where the rule
+    /// is disabled.
+    pub(crate) fn reserve_settings(config: &Config) -> Option<aligner::Settings> {
+        let rule = &config.rules.align_equals;
+        rule.enabled
+            .then(|| aligner::Settings::from(rule).with_line_length(config.code_width()))
+    }
 }
 
 impl Rule for AlignEquals {

@@ -2,8 +2,8 @@
 //! single-target assignments, augmented assignments, initialized
 //! annotated assignments, exploded-call keyword arguments, and
 //! annotated parameter defaults. `align_equals` consumes them to emit
-//! alignment edits, and `collection_layout` consumes them to reserve
-//! the column `align_equals` shifts a value to.
+//! alignment edits, and the `reserve` primitive consumes them to predict
+//! the column `align_equals` shifts a value to for both layout rules.
 
 use ruff_python_ast::{
     AnyNodeRef, AnyParameterRef, ArgOrKeyword, ExprCall, ExprRef, Stmt, token::TokenKind,
