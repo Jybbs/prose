@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Decorated Definition Holds Its Slot Inside an Arm"
+
+description = '''
+A module-scope `if` arm carries the module's own reordering rules into its body, so a decorated definition inside it holds its source slot while the undecorated classes around it sort.
+'''

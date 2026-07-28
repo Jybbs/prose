@@ -91,12 +91,13 @@ where
 /// the prior statement, and the prior statement itself fits on one
 /// source line. A key change at an otherwise-adjacent boundary closes
 /// the active run and starts a fresh one without losing the boundary
-/// statement. A statement [held](is_held) for `rule` is transparent, in
-/// that it joins no group and does not close the run, leaving neighbors
-/// on either side to align as one block. A trailing comment on a row
-/// sits inside that row, so it leaves the run intact, while a
-/// standalone comment line or a blank line between rows breaks it.
-/// Walks `body` exactly once.
+/// statement. A single-line statement [held](is_held) for `rule` is
+/// transparent, in that it joins no group and leaves neighbors on
+/// either side to align as one block, whereas a held multi-line
+/// statement stands as the prior statement and closes the run. A
+/// trailing comment on a row sits inside that row, so it leaves the run
+/// intact, while a standalone comment line or a blank line between rows
+/// breaks it. Walks `body` exactly once.
 pub(crate) fn keyed_line_adjacent_groups<'a, K, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -141,12 +142,12 @@ where
 /// grouping the qualified members into runs where every consecutive
 /// pair sits on adjacent source lines. A multi-line prior statement,
 /// a non-qualifying statement, an own-line comment between two rows,
-/// or a blank line breaks the current run. A statement held for `rule`
-/// is transparent per [`keyed_line_adjacent_groups`]. Empty groups
-/// (statements that fail qualification with no qualified neighbors) are
-/// skipped. Thin wrapper over [`keyed_line_adjacent_groups`] for rules
-/// whose qualifier produces only one form, so every member shares an
-/// implicit `()` key.
+/// or a blank line breaks the current run. A single-line statement held
+/// for `rule` is transparent per [`keyed_line_adjacent_groups`]. Empty
+/// groups (statements that fail qualification with no qualified
+/// neighbors) are skipped. Thin wrapper over
+/// [`keyed_line_adjacent_groups`] for rules whose qualifier produces
+/// only one form, so every member shares an implicit `()` key.
 pub(crate) fn line_adjacent_groups<'a, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
@@ -300,6 +301,10 @@ mod tests {
     )]
     #[case::standalone_comment_after_held(
         "x = 1\ny = 2  # prose: skip[align-equals]\n# note\nz = 3\n",
+        vec![1, 1]
+    )]
+    #[case::held_multiline_stmt(
+        "x = 1\ny = {\n    'a': 1,\n}  # prose: skip[align-equals]\nz = 3\n",
         vec![1, 1]
     )]
     fn keyed_line_adjacent_groups_partitions_by_adjacency(

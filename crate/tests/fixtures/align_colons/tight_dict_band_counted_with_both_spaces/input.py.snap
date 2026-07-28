@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_colons/tight_dict_band_counted_with_both_spaces/input.py
+---
+paths = {
+    "label": "docs/annual-summary.html",
+    "verbose" : True,
+    "dry"     : False,
+}

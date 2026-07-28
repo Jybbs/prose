@@ -11,7 +11,7 @@ use std::borrow::Cow;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{PythonVersion, Stmt, helpers::is_compound_statement};
 use ruff_source_file::LineRanges;
-use ruff_text_size::TextRange;
+use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
@@ -34,7 +34,7 @@ mod plan;
 
 use self::{
     analysis::module_band_plan,
-    plan::{Banding, Carry, Placement, banded_gap},
+    plan::{Banding, Carry, banded_gap},
 };
 
 /// The gap PEP 8 seats between code and a trailing comment.
@@ -89,24 +89,6 @@ impl Rule for BandConstants {
     }
 }
 
-/// The banding layout of a module body: its member blocks, their
-/// rendered text, the new-order permutation, and the applied band. The
-/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
-struct BandLayout<'a> {
-    band: Option<Banding>,
-    blocks: Vec<TextRange>,
-    order: Vec<usize>,
-    rendered: Vec<Cow<'a, str>>,
-}
-
-impl BandLayout<'_> {
-    /// True when the band opens a tier blank, forcing an owned assembly
-    /// so the spacing lands even when the order is already settled.
-    fn forced(&self) -> bool {
-        self.band.as_ref().is_some_and(Banding::stratifies)
-    }
-}
-
 /// Invariant banding context threaded through the recursion.
 struct Bander<'a> {
     defer_annotations: bool,
@@ -148,12 +130,12 @@ impl<'a> Bander<'a> {
         })
     }
 
-    /// Renders `body`, builds the module band over it, and places each
-    /// bound comment on the member carrying it, leaving the assembly to
-    /// the caller. The section partition walls each notebook cell, so a
-    /// band never crosses one.
+    /// Renders `body`, builds the module band over it, and moves each
+    /// carried comment onto the member it binds to, leaving the assembly
+    /// to the caller. The section partition walls each notebook cell, so
+    /// a band never crosses one.
     fn band_layout(&self, body: &'a [Stmt], outer: TextRange) -> BandLayout<'a> {
-        let (mut blocks, mut rendered) =
+        let (blocks, mut rendered) =
             rendered_member_blocks(self.source, body, outer, |stmt, block| {
                 self.band_stmt(stmt, block)
             });
@@ -165,7 +147,7 @@ impl<'a> Bander<'a> {
             })
             .flatten();
         if let Some(b) = &band {
-            apply_band_carries(self.source, &b.carries, &mut blocks, &mut rendered);
+            apply_band_carries(self.source, body, &b.carries, &mut rendered);
         }
         BandLayout {
             band,
@@ -177,7 +159,7 @@ impl<'a> Bander<'a> {
 
     /// Builds the hoist plan over `body` and applies it to `order`,
     /// seating the leading band beneath the import run each section opens.
-    /// Returns the [`Banding`] when constants relocated soundly.
+    /// Returns the [`Banding`] when the members relocated soundly.
     fn band_module_constants(
         &self,
         body: &'a [Stmt],
@@ -212,7 +194,6 @@ impl<'a> Bander<'a> {
         if scoped_body(stmt).is_none() && is_compound_statement(stmt) {
             let bodies = compound_sub_bodies(stmt)
                 .into_iter()
-                .filter(|(body, _)| !body.is_empty())
                 .map(|(body, outer)| self.band_body(body, outer));
             return splice_bodies(self.source, block, bodies, &[]);
         }
@@ -220,43 +201,59 @@ impl<'a> Bander<'a> {
     }
 }
 
-/// Places each bound comment on the member that carries it, extending the
-/// absorbing member's block over the comment so the surrounding gap no
-/// longer holds it. A first pass lifts every relocating comment out of its
-/// absorbing member's text, and a second places each on its carrier.
+/// The banding layout of a module body: its member blocks, their
+/// rendered text, the new-order permutation, and the applied band. The
+/// combined [`Bander::band_body`] and the per-cell notebook emit read it.
+struct BandLayout<'a> {
+    band: Option<Banding>,
+    blocks: Vec<TextRange>,
+    order: Vec<usize>,
+    rendered: Vec<Cow<'a, str>>,
+}
+
+impl BandLayout<'_> {
+    /// True when the band opens a tier blank, forcing an owned assembly
+    /// so the spacing lands even when the order is already settled.
+    fn forced(&self) -> bool {
+        self.band.as_ref().is_some_and(Banding::stratifies)
+    }
+}
+
+/// Moves each carried comment onto the member it binds to. A first pass
+/// drops the comment and the blank run beneath it from the text of the
+/// member whose block folded them in, that block opening on the comment
+/// itself, and a second prepends or trails it on the carrier's text.
 fn apply_band_carries<'src>(
     source: &'src Source,
+    body: &[Stmt],
     carries: &[Carry],
-    blocks: &mut [TextRange],
     rendered: &mut [Cow<'src, str>],
 ) {
     for carry in carries {
-        if carry.absorbs != carry.carrier && blocks[carry.absorbs].contains_range(carry.comment) {
-            let below = source.text().full_line_end(carry.comment.end());
-            rendered[carry.absorbs] =
-                Cow::Borrowed(source.slice(TextRange::new(below, blocks[carry.absorbs].end())));
-        }
+        let own_line = source.text().line_start(body[carry.absorbs].start());
+        let held = usize::from(own_line - carry.comment.start());
+        rendered[carry.absorbs] = match std::mem::take(&mut rendered[carry.absorbs]) {
+            Cow::Borrowed(text) => Cow::Borrowed(&text[held..]),
+            Cow::Owned(mut text) => Cow::Owned(text.split_off(held)),
+        };
     }
     for carry in carries {
         let comment = source.slice(carry.comment);
         let carried = &rendered[carry.carrier];
-        rendered[carry.carrier] = Cow::Owned(match carry.placement {
+        rendered[carry.carrier] = Cow::Owned(if carry.trails {
             // The block reaches back to its line start, so its indent
             // belongs to a line of its own rather than to a trailing slot.
-            Placement::Trails => format!("{carried}{TRAILING_GAP}{}", comment.trim_start()),
-            Placement::Above | Placement::Climbs => {
-                format!("{comment}{}{carried}", source.newline_str())
-            }
+            format!("{carried}{TRAILING_GAP}{}", comment.trim_start())
+        } else {
+            format!("{comment}{}{carried}", source.newline_str())
         });
-        blocks[carry.absorbs] = carry.comment.cover(blocks[carry.absorbs]);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::primitives::orderer::member_blocks;
-    use crate::testing::parse;
+    use crate::{primitives::orderer::member_blocks, testing::parse};
 
     #[test]
     fn band_module_constants_hoists_an_import_below_a_definition() {

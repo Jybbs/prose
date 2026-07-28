@@ -7,12 +7,13 @@ use serde::Serialize;
 use super::args::{RulesArgs, RulesFormat};
 use super::exit_status::ExitStatus;
 use crate::pipeline::Pipeline;
-use crate::rule::message_for_id;
+use crate::rule::{dependencies_of, message_for_id};
 
-/// One registered rule: its kebab slug, one-based pipeline position,
-/// and the imperative the registry carries for it.
+/// One registered rule, carrying its one-based pipeline position and
+/// the slugs whose output it reads.
 #[derive(Serialize)]
 struct RuleInfo {
+    after: &'static [&'static str],
     imperative: &'static str,
     position: usize,
     slug: &'static str,
@@ -25,6 +26,7 @@ pub(crate) fn list<W: Write>(args: &RulesArgs, mut stdout: W) -> anyhow::Result<
         .iter()
         .enumerate()
         .map(|(index, id)| RuleInfo {
+            after: dependencies_of(id.as_str()),
             imperative: message_for_id(*id),
             position: index + 1,
             slug: id.as_str(),
@@ -61,6 +63,22 @@ mod tests {
         let mut out = Vec::new();
         list(&RulesArgs { output_format }, &mut out).expect("rules listing succeeds");
         String::from_utf8(out).expect("utf8 output")
+    }
+
+    #[test]
+    fn json_carries_each_rule_dependency_list() {
+        let rules: Vec<serde_json::Value> =
+            serde_json::from_str(&render(RulesFormat::Json)).expect("valid JSON array");
+        for rule in &rules {
+            let slug = rule["slug"].as_str().expect("slug renders as a string");
+            let after: Vec<&str> = rule["after"]
+                .as_array()
+                .expect("after renders as an array")
+                .iter()
+                .map(|name| name.as_str().expect("dependency renders as a string"))
+                .collect();
+            assert_eq!(after, dependencies_of(slug));
+        }
     }
 
     #[test]

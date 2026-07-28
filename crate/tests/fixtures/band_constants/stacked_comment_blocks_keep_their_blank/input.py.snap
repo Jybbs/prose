@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/stacked_comment_blocks_keep_their_blank/input.py
+---
+import os
+
+# the retry envelope the loader reads
+
+# per-attempt ceiling, in milliseconds
+ATTEMPT_MS = 250
+RETRY_LIMIT = 3
+
+MAX_ATTEMPTS = RETRY_LIMIT
+TOTAL_BUDGET_MS = ATTEMPT_MS
+
+
+def load(path):
+    return os.stat(path)

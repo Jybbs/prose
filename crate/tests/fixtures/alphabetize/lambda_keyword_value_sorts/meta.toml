@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lambda-Valued Keyword Sorts With Its Run"
+
+description = '''
+Binding a `lambda` runs none of its body, so the keyword holding one sorts alongside the literals beside it rather than pinning the way a call-valued keyword does.
+'''

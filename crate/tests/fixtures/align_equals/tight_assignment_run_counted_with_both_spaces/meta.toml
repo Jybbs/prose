@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Tight Statement Run Is Measured With Both Inserted Spaces"
+
+description = '''
+A run of flush `name=value` assignments takes a space on each side of its `=` once aligned. `label` would cross `code-line-length` by the space after the operator alone, so it partitions out at a single space while the two narrower rows align.
+'''

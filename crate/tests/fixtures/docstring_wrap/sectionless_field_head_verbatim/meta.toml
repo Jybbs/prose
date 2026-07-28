@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Field Header Outside Any Section Passes Through Verbatim"
+
+description = '''
+A `name (type):` field header written without an `Args:` heading above it **stays on one line**. The parenthesized type marks the line as a header rather than prose, so no wrap splits it at a comma inside the type and lands the remainder at the column a new field name would occupy.
+'''

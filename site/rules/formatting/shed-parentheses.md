@@ -22,7 +22,7 @@ A wrapped multi-line grouping folds onto one line when the bare form fits the bu
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[shed-parentheses]` directive.
+For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[shed-parentheses]` directive, which holds every line a wrapped statement spans.
 
 </template>
 

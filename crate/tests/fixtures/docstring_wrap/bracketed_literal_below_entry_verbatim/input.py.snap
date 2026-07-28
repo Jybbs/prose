@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/docstring_wrap/block_on_indent_grid_stays_verbatim/input.py
+---
+def load():
+    """
+    Args:
+        config: A description of the mapping this loader reads and then
+                hands back to the caller.
+            {"retries": 3, "timeout": 30}
+        target: The destination the loaded mapping is written to.
+    """

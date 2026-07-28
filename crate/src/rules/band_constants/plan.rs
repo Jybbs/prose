@@ -6,10 +6,12 @@
 
 use std::collections::HashMap;
 
+use itertools::Itertools;
 use ruff_python_ast::Stmt;
 use ruff_text_size::TextRange;
 
 use crate::primitives::{
+    blanks::{blank_gap, module_blank_lines},
     imports::{import_blank_lines, import_sort_key},
     orderer::slot_positions,
     sections::Sections,
@@ -17,7 +19,7 @@ use crate::primitives::{
 
 /// The applied banding: a band rank per banded statement, the rendered
 /// tier each banded constant sits in, the member count per rendered
-/// tier, and the prose comment each member carries through the sort.
+/// tier, and the comment each member carries onto another member's line.
 pub(super) struct Banding {
     pub(super) carries: Vec<Carry>,
     ranks: HashMap<usize, BandRank>,
@@ -32,21 +34,11 @@ impl Banding {
     /// and aligns with it.
     fn opens_band(&self, idx: usize) -> bool {
         let tier = self.rendered_tier(idx);
-        let members = self
-            .tier_sizes
-            .get(&(self.ranks[&idx], tier))
-            .copied()
-            .unwrap_or(0);
-        tier > 0 && members >= 2
-    }
-
-    /// True when a bound comment crosses its member's code to reach the
-    /// side that keeps them bound, so the assembly re-emits even when the
-    /// order is already settled.
-    fn rebinds(&self) -> bool {
-        self.carries
-            .iter()
-            .any(|carry| carry.placement != Placement::Above)
+        tier > 0
+            && self
+                .tier_sizes
+                .get(&(self.ranks[&idx], tier))
+                .is_some_and(|&members| members >= 2)
     }
 
     /// The rendered tier `idx` sits in, the true tier already clamped
@@ -65,9 +57,9 @@ impl Banding {
 
 /// The module-scope hoist plan: a band rank per banded statement, the
 /// intra-band `(tier, subcategory, name)` key per banded constant, the
-/// eager-reference edges the order keeps backward, the comment each
-/// carries out of the surrounding gap, and the comment block already
-/// folded into a member's own extent. A statement absent from `ranks`
+/// eager-reference edges the order keeps backward, the comment run each
+/// member's block folds in ahead of its code, and the comment each
+/// carries onto another member's line. A statement absent from `ranks`
 /// is a pinned anchor.
 pub(super) struct BandPlan<'src> {
     pub(super) attached: HashMap<usize, TextRange>,
@@ -137,21 +129,16 @@ impl BandPlan<'_> {
             .all(|&(from, to)| position[to] < position[from])
     }
 
-    /// Moves each comment bound to a band's source-order head onto the
+    /// Moves each comment heading a band's source-order head onto the
     /// member the sort seated first.
     fn relocate_heads(&mut self, shifts: &[(usize, usize)]) {
         for &(from, to) in shifts {
-            for carry in &mut self.carries {
-                if carry.carrier == from && carry.placement == Placement::Above {
-                    carry.carrier = to;
-                }
-            }
             if let Some(&comment) = self.attached.get(&from) {
                 self.carries.push(Carry {
                     absorbs: from,
                     carrier: to,
                     comment,
-                    placement: Placement::Above,
+                    trails: false,
                 });
             }
         }
@@ -160,11 +147,12 @@ impl BandPlan<'_> {
     /// Applies the plan to `order`, draining each section's slots into
     /// imports, leading constants, definitions, then trailing constants.
     /// A section marker drains the running region, so a band never crosses
-    /// a divider. A comment bound to a band's source-order head moves to
+    /// a divider. A comment heading a band's source-order head moves to
     /// whichever member the sort seats first, so it heads the band still.
     /// Returns the [`Banding`] when the plan is sound and the assembled
-    /// order either differs from `order` or opens a tier blank line,
-    /// rewriting `order` in place. Leaves `order` untouched otherwise.
+    /// order differs from `order`, moves a comment onto another member,
+    /// or opens a tier blank line, rewriting `order` in place. Leaves
+    /// `order` untouched otherwise.
     pub(super) fn apply(
         mut self,
         body: &[Stmt],
@@ -206,17 +194,16 @@ impl BandPlan<'_> {
                 )
             })
             .collect();
-        let mut tier_sizes: HashMap<(BandRank, usize), usize> = HashMap::new();
-        for (&idx, &tier) in &tiers {
-            *tier_sizes.entry((self.ranks[&idx], tier)).or_default() += 1;
-        }
+        let tier_sizes = tiers
+            .iter()
+            .counts_by(|(&idx, &tier)| (self.ranks[&idx], tier));
         let banding = Banding {
             carries: self.carries,
             ranks: self.ranks,
             tier_sizes,
             tiers,
         };
-        (banded != *order || banding.rebinds() || banding.stratifies()).then(|| {
+        (banded != *order || !banding.carries.is_empty() || banding.stratifies()).then(|| {
             *order = banded;
             banding
         })
@@ -233,51 +220,16 @@ pub(super) enum BandRank {
     Trailing,
 }
 
-/// A comment bound to a banded member: the member whose block extent
-/// absorbs it out of the surrounding gap, the member whose rendered text
-/// carries it, and where the assembly seats it. The two members differ
-/// only where the comment heads a band the sort reseats.
+/// A comment moving from the member whose block extent holds it onto
+/// another member's rendered text, landing after that member's code when
+/// `trails` and on the line above it otherwise. The block a comment
+/// binds backward from and the band head a sort reseats are the two
+/// moves, so `absorbs` and `carrier` always name different members.
 pub(super) struct Carry {
     pub(super) absorbs: usize,
     pub(super) carrier: usize,
     pub(super) comment: TextRange,
-    pub(super) placement: Placement,
-}
-
-impl Carry {
-    /// A comment the source placed above `idx`, which renders there still.
-    pub(super) fn above(idx: usize, comment: TextRange) -> Self {
-        Self {
-            absorbs: idx,
-            carrier: idx,
-            comment,
-            placement: Placement::Above,
-        }
-    }
-
-    /// A comment the source placed below `idx`, landing after that
-    /// member's code when `trails` and on the line above it otherwise.
-    pub(super) fn below(idx: usize, comment: TextRange, trails: bool) -> Self {
-        Self {
-            absorbs: idx,
-            carrier: idx,
-            comment,
-            placement: if trails {
-                Placement::Trails
-            } else {
-                Placement::Climbs
-            },
-        }
-    }
-}
-
-/// Where the assembly seats a bound comment. One the source placed below
-/// its member either trails that member's code or climbs above it.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum Placement {
-    Above,
-    Climbs,
-    Trails,
+    pub(super) trails: bool,
 }
 
 /// The kind a banded constant sorts into within its tier. A band keys on
@@ -294,10 +246,11 @@ pub(super) enum Subcategory {
 /// The gap the banded order seats after the block of rank `a`, ahead of
 /// the block of rank `b`. A same-band pair opens one blank line across a
 /// tier boundary into a sub-band of two or more members, a lone nested
-/// constant folding tight into the tier above instead, a definition
-/// fronts on two blank lines, and an import run keeps one blank line
-/// between canonical groups. `None` falls back to the source gap, the
-/// case for a pinned anchor on either side, leaving its spacing intact.
+/// constant folding tight into the tier above instead, and an import run
+/// keeps one blank line between canonical groups. Every other pair takes
+/// the count [`module_blank_lines`] declares, one blank line standing in
+/// wherever that policy holds no opinion. `None` falls back to the source
+/// gap, the case for a pinned anchor on either side.
 pub(super) fn banded_gap(
     band: &Banding,
     body: &[Stmt],
@@ -306,22 +259,16 @@ pub(super) fn banded_gap(
     a: usize,
     b: usize,
 ) -> Option<&'static str> {
-    Some(match (*band.ranks.get(&a)?, *band.ranks.get(&b)?) {
+    let blanks = match (*band.ranks.get(&a)?, *band.ranks.get(&b)?) {
         (BandRank::Leading, BandRank::Leading) | (BandRank::Trailing, BandRank::Trailing) => {
-            if band.rendered_tier(a) != band.rendered_tier(b) && band.opens_band(b) {
-                "\n\n"
-            } else {
-                "\n"
-            }
+            u32::from(band.rendered_tier(a) != band.rendered_tier(b) && band.opens_band(b))
         }
-        (BandRank::Import, BandRank::Import)
-            if import_blank_lines(&body[a], &body[b], first_party, grouped) == Some(0) =>
-        {
-            "\n"
+        (BandRank::Import, BandRank::Import) => {
+            import_blank_lines(&body[a], &body[b], first_party, grouped).unwrap_or(1)
         }
-        (_, BandRank::Definition) | (BandRank::Definition, _) => "\n\n\n",
-        _ => "\n\n",
-    })
+        _ => module_blank_lines(&body[a], &body[b], first_party, grouped).unwrap_or(1),
+    };
+    Some(blank_gap(blanks))
 }
 
 #[cfg(test)]
@@ -355,17 +302,17 @@ mod tests {
             carry.carrier, 0,
             "the note stays with the member it documents"
         );
-        assert_eq!(carry.placement, Placement::Trails);
+        assert!(carry.trails, "the joined line fits inside the budget");
     }
 
     #[test]
-    fn apply_retargets_an_above_carry_to_the_reseated_band_head() {
+    fn apply_moves_a_heading_onto_the_reseated_band_head() {
         let source = parse("# the tunable knobs\nZETA = 1\nALPHA = 2\n");
         let (banding, order) = banded(&source);
         assert_eq!(order, vec![1, 0]);
         let carry = banding.carries.first().expect("the heading relocates");
         assert_eq!(carry.absorbs, 0, "ZETA's block still covers the comment");
         assert_eq!(carry.carrier, 1, "ALPHA heads the band after the sort");
-        assert_eq!(carry.placement, Placement::Above);
+        assert!(!carry.trails, "a heading opens the band on its own line");
     }
 }

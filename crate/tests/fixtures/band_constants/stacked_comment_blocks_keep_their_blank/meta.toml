@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Stacked Comment Blocks Keep the Blank Between Them"
+
+description = '''
+Two comment blocks separated by a blank line lead a band that opens a tier blank, so the assembly re-emits on every pass. The lower block forward-attaches to `ATTEMPT_MS` and the blank above it **survives the hoist**, leaving the two blocks distinct however often the file is formatted.
+'''

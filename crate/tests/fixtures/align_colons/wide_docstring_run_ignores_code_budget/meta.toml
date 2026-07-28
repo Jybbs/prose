@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Docstring Run Aligns Past the Code Budget"
+
+description = '''
+A docstring section whose padded entries would cross `code-line-length` **still aligns as one column**, because the docstring contexts resolve under no line cap while the dict, annotation, and parameter contexts resolve within `code-line-length`.
+'''

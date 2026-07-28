@@ -1,13 +1,50 @@
 //! Own-line comment-block detection between two statements, covering
-//! the contiguous leading block and whether it reads as a decorative
-//! banner or a multi-hash heading.
+//! the leading block, whether it reads as a decorative banner or a
+//! multi-hash heading, and where the block binding to the member below
+//! it starts. A run anchors in place on a section marker, a suppression
+//! directive, or a tool pragma, and binds to the member otherwise,
+//! whatever blank line sits between the two.
 
 use ruff_python_ast::ExprDict;
-use ruff_python_trivia::CommentRanges;
+use ruff_python_trivia::{CommentRanges, is_pragma_comment};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::source::Source;
+use crate::{source::Source, suppression::is_directive_comment};
+
+/// True when `block` holds its position rather than binding to the
+/// member below it, carrying a section marker, a suppression directive,
+/// or a tool pragma on any of its lines.
+pub(crate) fn anchors_in_place(source: &Source, block: TextRange) -> bool {
+    source
+        .slice(block)
+        .lines()
+        .map(str::trim_start)
+        .any(|line| is_marker_line(line) || is_directive_comment(line) || is_pragma_comment(line))
+}
+
+/// The start of the block binding to the member at `item_start`, the
+/// own-line comment run in `[lower, item_start)` when that run binds,
+/// or `item_start`'s line start when the run anchors in place, opens at
+/// another indent, or no comment sits there. A blank line above the
+/// member leaves the run bound, matching the gap `blank-lines` settles
+/// beneath a description.
+pub(crate) fn bound_block_start(
+    source: &Source,
+    lower: TextSize,
+    item_start: TextSize,
+) -> TextSize {
+    let line_start = source.text().line_start(item_start);
+    if lower > line_start {
+        return item_start;
+    }
+    leading_comment_block(source, lower, item_start)
+        .filter(|block| {
+            !anchors_in_place(source, *block)
+                && source.line_indent_width(block.start()) == source.line_indent_width(item_start)
+        })
+        .map_or(line_start, |block| block.start())
+}
 
 /// True when the line containing the dict's opening `{` carries a
 /// trailing `# prose: keep` comment, the marker that pins a dict against
@@ -51,26 +88,6 @@ pub(crate) fn leading_comment_block(
     let first = own_lines.next()?;
     let last = own_lines.next_back().unwrap_or(first);
     Some(TextRange::new(text.line_start(first.start()), last.end()))
-}
-
-/// Advances past any section-marker comment leading the attached block, so
-/// a banner or hash heading divider stays in the gap above the member
-/// rather than traveling with it through a sort. Returns the line start
-/// below the marker nearest the member, or `attached_start` when none leads.
-pub(crate) fn marker_floor(
-    source: &Source,
-    attached_start: TextSize,
-    item_start: TextSize,
-) -> TextSize {
-    source
-        .comment_ranges()
-        .comments_in_range(TextRange::new(attached_start, item_start))
-        .iter()
-        .rev()
-        .find(|comment| is_marker_line(source.slice(**comment)))
-        .map_or(attached_start, |comment| {
-            source.text().full_line_end(comment.start())
-        })
 }
 
 /// True when `line` opens with two or more `#`, the Markdown-style
@@ -224,32 +241,53 @@ mod tests {
         assert!(gap_block(&s).is_none());
     }
 
-    #[test]
-    fn marker_floor_skips_a_leading_banner() {
-        let s = parse("# --- Section ---\ndef a(): pass\n");
-        let item_start = s.ast().body[0].start();
-        let floored = marker_floor(&s, TextSize::from(0), item_start);
-        assert_eq!(floored, s.text().line_start(item_start));
-    }
-
-    #[test]
-    fn marker_floor_stops_below_the_marker_keeping_prose() {
-        let s = parse("# --- Section ---\n# describes a\ndef a(): pass\n");
-        let item_start = s.ast().body[0].start();
-        let floored = marker_floor(&s, TextSize::from(0), item_start);
+    #[rstest]
+    #[case("x = 1\n# describes a\ndef a(): pass\n", "# describes a")]
+    #[case("x = 1\n# describes a\n\ndef a(): pass\n", "# describes a")]
+    #[case("x = 1\n# one\n# two\n\ndef a(): pass\n", "# one\n# two")]
+    #[case("x = 1\n# --- Section ---\ndef a(): pass\n", "")]
+    #[case("x = 1\n# --- Section ---\n# describes a\ndef a(): pass\n", "")]
+    #[case("x = 1\n# fmt: on\n\ndef a(): pass\n", "")]
+    #[case("x = 1\n# type: ignore\n\ndef a(): pass\n", "")]
+    #[case("if x:\n    pass\n    # describes a\ndef a(): pass\n", "")]
+    #[case("x = 1\n\ndef a(): pass\n", "")]
+    fn bound_block_start_binds_a_run_that_holds_no_anchor(#[case] src: &str, #[case] bound: &str) {
+        let s = parse(src);
+        let body = &s.ast().body;
+        let item_start = body[1].start();
+        let start = bound_block_start(&s, body[0].end(), item_start);
         assert_eq!(
-            s.slice(TextRange::new(floored, item_start)).trim_end(),
-            "# describes a"
+            s.slice(TextRange::new(start, s.text().line_start(item_start)))
+                .trim_end(),
+            bound,
         );
     }
 
     #[test]
-    fn marker_floor_returns_attached_start_when_no_marker_leads() {
-        let s = parse("# describes a\ndef a(): pass\n");
-        let item_start = s.ast().body[0].start();
+    fn bound_block_start_holds_at_a_member_sharing_its_line() {
+        let s = parse("x = 1; y = 2\n");
+        let body = &s.ast().body;
+        let item_start = body[1].start();
         assert_eq!(
-            marker_floor(&s, TextSize::from(0), item_start),
-            TextSize::from(0)
+            bound_block_start(&s, body[0].end(), item_start),
+            item_start,
+            "a second statement on one line reaches back over nothing",
         );
+    }
+
+    #[rstest]
+    #[case("x = 1\n# describes a\ndef a(): pass\n", false)]
+    #[case("x = 1\n# --- Section ---\ndef a(): pass\n", true)]
+    #[case("x = 1\n# prose: off\ndef a(): pass\n", true)]
+    #[case("x = 1\n### Heading\ndef a(): pass\n", true)]
+    #[case("x = 1\n# noqa: E501\ndef a(): pass\n", true)]
+    #[case("if x:\n    pass\n    # type: ignore\ndef a(): pass\n", true)]
+    fn anchors_in_place_spots_a_marker_a_directive_or_a_pragma(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let s = parse(src);
+        let block = gap_block(&s).expect("block");
+        assert_eq!(anchors_in_place(&s, block), expected);
     }
 }
