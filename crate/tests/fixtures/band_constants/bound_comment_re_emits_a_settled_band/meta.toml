@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Bound Comment Re-Emits an Already-Settled Band"
+
+description = '''
+These three constants are already in band order, so the sort rewrites nothing and the rule would otherwise emit no edit at all. The comment still has to cross `DEFAULT_EPSILON`'s code to reach the line that keeps them bound, and that alone forces the band to re-emit.
+'''

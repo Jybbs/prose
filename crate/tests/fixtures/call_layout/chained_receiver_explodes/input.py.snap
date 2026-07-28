@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/call_layout/chained_receiver_explodes/input.py
+---
+result = obj.first(alpha, beta).second(
+    gamma,
+    delta
+).third(0)

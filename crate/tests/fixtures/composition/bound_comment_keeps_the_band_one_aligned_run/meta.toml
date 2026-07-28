@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Bound Comment Keeps the Band One Aligned Run"
+
+description = '''
+`band-constants` binds the comment to `DEFAULT_EPSILON` above it and carries it onto that constant's line as the band packs, then `align-equals` settles all three constants onto **one shared column**. The documented constant stays in the run rather than dropping out of it at a comment line.
+'''

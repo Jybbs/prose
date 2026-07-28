@@ -1,0 +1,28 @@
+---
+source: crate/tests/diagnostics.rs
+expression: json
+input_file: crate/tests/fixtures/suppression/skip_pins_a_wrapped_collection/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 6,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "items",
+          "content": "ITEMS"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Module constant `items` is not SCREAMING_CASE"
+  }
+]

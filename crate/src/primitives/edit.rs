@@ -6,7 +6,8 @@
 //! when no edit applies. Both decline overlapping edits, `apply_edits`
 //! with `None` and `apply_inline_edits` with `Cow::Borrowed`.
 //! `narrow_edit` trims a candidate replacement to its minimal divergent
-//! range against the source.
+//! range against the source, and `insert_edit` keeps a rule's own
+//! accumulator in that sorted order as it emits.
 
 use std::{borrow::Cow, cmp::Ordering};
 
@@ -14,7 +15,7 @@ use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::CellOffsets;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
-use crate::source::Source;
+use crate::{primitives::insert_sorted_by_key, source::Source};
 
 /// True when any element of `parts` is `Cow::Owned`, the signal a
 /// rewrite produced fresh content rather than a borrow of the source.
@@ -88,16 +89,24 @@ pub(crate) fn forward_offsets(offsets: &CellOffsets, map: &SourceMap) -> CellOff
     forwarded
 }
 
+/// Inserts `edit` at the slot keeping `edits` ascending by start, the
+/// order [`apply_inline_edits`] reads them in.
+pub(crate) fn insert_edit(edits: &mut Vec<Edit>, edit: Edit) {
+    insert_sorted_by_key(edits, edit, Ranged::start);
+}
+
 /// Narrows `text` against the source slice covered by `span` and
 /// shapes the result as either a deletion or replacement Edit.
 /// Returns `None` when the text already matches the source slice.
 pub(crate) fn narrowed_replacement(source: &Source, span: TextRange, text: String) -> Option<Edit> {
     let (narrowed_span, narrowed_text) = narrow_edit(text, span, source.slice(span))?;
-    Some(if narrowed_text.is_empty() {
-        Edit::range_deletion(narrowed_span)
-    } else {
-        Edit::range_replacement(narrowed_text, narrowed_span)
-    })
+    Some(replacement_or_deletion(narrowed_span, narrowed_text))
+}
+
+/// The edit rewriting `range` to `n` copies of `unit`, a deletion when
+/// `n` is zero.
+pub(crate) fn repeat_edit(range: TextRange, unit: &str, n: usize) -> Edit {
+    replacement_or_deletion(range, unit.repeat(n))
 }
 
 /// Wraps each edit in its own single-edit fix group, the shape a rule
@@ -244,6 +253,14 @@ fn narrow_edit(
     text.truncate(text.len() - suffix_bytes);
     text.drain(..prefix_bytes);
     Some((span.add_start(prefix_len).sub_end(suffix_len), text))
+}
+
+fn replacement_or_deletion(range: TextRange, content: String) -> Edit {
+    if content.is_empty() {
+        Edit::range_deletion(range)
+    } else {
+        Edit::range_replacement(content, range)
+    }
 }
 
 /// Weaves `edits` into the `span` slice of `text` and returns the

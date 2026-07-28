@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/heading_and_bound_comment_travel_together/input.py
+---
+# the tunable solver knobs
+ALPHA_DECAY = 2
+BETA_DECAY = 1  # the decay the scheduler honors
+GAMMA_DECAY = 3

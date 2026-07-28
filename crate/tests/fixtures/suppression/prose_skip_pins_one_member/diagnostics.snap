@@ -1,11 +1,12 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/suppression/prose_skip_pins_one_member/input.py
+input_file: crate/tests/fixtures/suppression/prose_skip_pins_one_member/input.py
 ---
 align-equals@1..71
 band-constants@0..25
 miscased-constants@14..21
+miscased-constants@26..31
 miscased-constants@51..53
 miscased-constants@58..61
 miscased-constants@6..9

@@ -250,7 +250,7 @@ mod tests {
     use super::*;
     use crate::{
         diagnostics::Severity,
-        testing::{first_def, parse},
+        testing::{first_def, first_value, parse},
     };
 
     fn param_report<'a>(diagnostics: &'a [Diagnostic], name: &str) -> &'a Diagnostic {
@@ -264,13 +264,7 @@ mod tests {
         let mut signals = SignalSet::default();
         for value in values {
             let source = parse(&format!("_ = {value}\n"));
-            signals.add(
-                source.ast().body[0]
-                    .as_assign_stmt()
-                    .expect("assign")
-                    .value
-                    .as_ref(),
-            );
+            signals.add(first_value(&source));
         }
         signals.suggestion()
     }

@@ -1,10 +1,8 @@
-//! Dict-literal reordering. Sorts a dict's keyed entries single-line
-//! before multi-line and alphabetizes within each partition by the key's
-//! source slice, a `**` spread bounding each run so no key crosses it,
-//! folding nested reorders into each item block and declining when the
+//! Dict-literal reordering. Sorts a dict's keyed entries scalar-valued
+//! before collection-valued and alphabetizes within each partition by the
+//! key's source slice, a `**` spread bounding each run so no key crosses
+//! it, folding nested reorders into each item block and declining when the
 //! reassembled dict no longer parses.
-
-use std::{borrow::Cow, ops::Range};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{DictItem, ExprDict};
@@ -15,6 +13,8 @@ use crate::{
     primitives::{
         comments::has_keep_marker,
         edit::{any_owned, apply_inline_edits, splice_parses},
+        effect::value_is_effectful,
+        layout::is_layoutable,
         orderer::{
             adjacent_slots, any_sibling_shares_line, assemble_blocks, assemble_separated,
             block_ranges, blocks_span, permute_runs, runs_where,
@@ -29,17 +29,17 @@ use crate::{
 /// empty dicts, dicts marked `# prose: keep`, single-item dicts, and any
 /// already-canonical case. `edits` are the leaf edits collected from the
 /// dict's descendants, folded into each item block.
-pub(super) fn rewrite_dict_text<'src>(
-    source: &'src Source,
+pub(super) fn rewrite_dict_text(
+    source: &Source,
     d: &ExprDict,
     edits: &[Edit],
-) -> Option<(TextRange, Cow<'src, str>)> {
-    if d.is_empty() || has_keep_marker(source, d) {
-        return None;
-    }
+) -> Option<(TextRange, String)> {
     let [first, .., last] = d.items.as_slice() else {
         return None;
     };
+    if has_keep_marker(source, d) {
+        return None;
+    }
     let multi_line = source.contains_line_break(first.range().cover(last.range()));
     // The block model decomposes one item per line. A multi-line dict that
     // packs entries onto a shared physical line has no such decomposition, so a
@@ -53,39 +53,41 @@ pub(super) fn rewrite_dict_text<'src>(
     let item_ranges: Vec<TextRange> = d
         .items
         .iter()
-        .map(|item| TextRange::new(item.start(), item_value_end(source, d, item)))
+        .map(|item| {
+            let value = source.paren_aware_range((&item.value).into(), d.into());
+            TextRange::new(item.start(), value.end())
+        })
         .collect();
-    let blocks: Vec<TextRange> = if multi_line {
-        block_ranges(source, &item_ranges, d.range())
-    } else {
-        item_ranges.clone()
-    };
-    let span = blocks_span(&blocks);
-    let block_texts: Vec<Cow<'src, str>> = blocks
+    let expanded = multi_line.then(|| block_ranges(source, &item_ranges, d.range()));
+    let blocks = expanded.as_deref().unwrap_or(&item_ranges);
+    let span = blocks_span(blocks);
+    let block_texts: Vec<_> = blocks
         .iter()
         .map(|&block| apply_inline_edits(source, block, edits))
         .collect();
-    let any_nested_rewrite = any_owned(&block_texts);
     let mut order: Vec<usize> = (0..d.len()).collect();
-    let permuted = permute_runs(&mut order, &d.items, keyed_runs(&d.items), |item| {
-        dict_sort_key(source, item)
-    });
+    let permuted = permute_runs(
+        &mut order,
+        &d.items,
+        runs_where(&d.items, |item| item.key.is_some()),
+        |item| dict_sort_key(source, item),
+    );
     let assembled = if multi_line {
-        let divider_slots = partition_divider_slots(source, &order, &d.items);
+        let divider_slots = partition_divider_slots(source, &order, &d.items, &item_ranges);
         let source_last_has_comma = source.trailing_comma(d.range()).is_some();
         let value_ends: Vec<TextSize> = item_ranges.iter().map(Ranged::end).collect();
         assemble_separated(
             &value_ends,
-            &blocks,
+            blocks,
             &block_texts,
             &order,
             &divider_slots,
             source_last_has_comma,
         )
     } else {
-        assemble_blocks(source, &blocks, &block_texts, &order, |_| None)
+        assemble_blocks(source, blocks, &block_texts, &order, |_| None)
     };
-    if !permuted && !any_nested_rewrite && assembled == source.slice(span) {
+    if !permuted && !any_owned(&block_texts) && assembled == source.slice(span) {
         return None;
     }
     // Decline the reorder when the reassembled dict no longer parses, the
@@ -95,60 +97,82 @@ pub(super) fn rewrite_dict_text<'src>(
     if !splice_parses(source, d.range(), span, &assembled, parse_expression) {
         return None;
     }
-    Some((span, Cow::Owned(assembled)))
+    Some((span, assembled))
 }
 
-/// Composite within-run dict-entry sort key, single-line entries sorting
-/// before multi-line and alphabetizing within each partition by the key's
-/// source slice. A keyless `**` spread returns `None`.
-fn dict_sort_key<'a>(source: &'a Source, item: &'a DictItem) -> Option<(u8, &'a str)> {
-    let key = item.key.as_ref()?;
-    let group = u8::from(source.contains_line_break(item.range()));
-    Some((group, source.slice(key)))
-}
-
-/// The end offset of a dict item's value, widened past any parentheses
-/// enclosing it. A multiline reorder splits each entry at this offset, so
-/// excluding the closing parens would shed them into the separator tail.
-fn item_value_end(source: &Source, dict: &ExprDict, item: &DictItem) -> TextSize {
-    source
-        .paren_aware_range((&item.value).into(), dict.into())
-        .end()
-}
-
-/// Slot ranges of each run of two or more adjacent keyed entries, a `**`
-/// spread carrying no key and so bounding the runs on either side.
-fn keyed_runs(items: &[DictItem]) -> Vec<Range<usize>> {
-    runs_where(items, |item| item.key.is_some())
+/// Composite within-run dict-entry sort key, scalar-valued entries sorting
+/// before collection-valued and alphabetizing within each partition by the
+/// key's source slice. A keyless `**` spread returns `None`, as does an
+/// entry whose value runs code, pinning that entry in its source slot.
+fn dict_sort_key<'a>(source: &'a Source, item: &DictItem) -> Option<(bool, &'a str)> {
+    let key = item
+        .key
+        .as_ref()
+        .filter(|_| !value_is_effectful(&item.value))?;
+    Some((is_layoutable(&item.value), source.slice(key)))
 }
 
 /// Returns the new-order slot indices after which a blank-line divider
-/// should sit, one on either side of each keyed multi-line entry. A dict
-/// with fewer than two such entries yields none, leaving a lone multi-line
-/// entry to align into the scalar block rather than sit behind a divider.
-fn partition_divider_slots(source: &Source, order: &[usize], items: &[DictItem]) -> Vec<usize> {
-    let is_multiline =
-        |i: usize| items[i].key.is_some() && source.contains_line_break(items[i].range());
-    if order.iter().filter(|&&i| is_multiline(i)).nth(1).is_none() {
+/// should sit, one on either side of each keyed entry whose block spans
+/// lines. A dict with fewer than two such entries yields none, leaving a
+/// lone block entry to sit against its neighbors rather than behind a
+/// divider.
+fn partition_divider_slots(
+    source: &Source,
+    order: &[usize],
+    items: &[DictItem],
+    item_ranges: &[TextRange],
+) -> Vec<usize> {
+    let spans_lines =
+        |i: usize| items[i].key.is_some() && source.contains_line_break(item_ranges[i]);
+    if order.iter().filter(|&&i| spans_lines(i)).nth(1).is_none() {
         return Vec::new();
     }
-    adjacent_slots(order, |_, a, b| is_multiline(a) || is_multiline(b))
+    adjacent_slots(order, |_, a, b| spans_lines(a) || spans_lines(b))
 }
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_value, parse};
+
+    #[rstest]
+    #[case::string_literal("x = {\"a\": \"lit\"}\n", false)]
+    #[case::implicit_concatenation("x = {\"a\": (\n    \"one \"\n    \"two\"\n)}\n", false)]
+    #[case::subscript("x = {\"a\": data[k]}\n", false)]
+    #[case::dict("x = {\"a\": {\"b\": 1}}\n", true)]
+    #[case::list("x = {\"a\": [1, 2]}\n", true)]
+    #[case::set("x = {\"a\": {1, 2}}\n", true)]
+    #[case::tuple("x = {\"a\": (1, 2)}\n", true)]
+    fn dict_sort_key_partitions_on_the_value_ast_kind(#[case] src: &str, #[case] collection: bool) {
+        let source = parse(src);
+        let dict = first_value(&source).as_dict_expr().expect("dict value");
+        assert_eq!(
+            dict_sort_key(&source, &dict.items[0]),
+            Some((collection, "\"a\"")),
+        );
+    }
+
+    #[rstest]
+    fn dict_sort_key_pins_an_entry_whose_value_runs_code(
+        #[values(
+            "x = {\"a\": load()}\n",
+            "x = {\"a\": [i for i in y]}\n",
+            "x = {\"a\": [make()]}\n"
+        )]
+        src: &str,
+    ) {
+        let source = parse(src);
+        let dict = first_value(&source).as_dict_expr().expect("dict value");
+        assert!(dict_sort_key(&source, &dict.items[0]).is_none());
+    }
 
     #[test]
     fn dict_sort_key_returns_none_for_a_spread_entry() {
         let source = parse("x = {**base, \"a\": 1}\n");
-        let dict = source.ast().body[0]
-            .as_assign_stmt()
-            .expect("assign statement")
-            .value
-            .as_dict_expr()
-            .expect("dict value");
+        let dict = first_value(&source).as_dict_expr().expect("dict value");
         assert!(dict_sort_key(&source, &dict.items[0]).is_none());
         assert!(dict_sort_key(&source, &dict.items[1]).is_some());
     }

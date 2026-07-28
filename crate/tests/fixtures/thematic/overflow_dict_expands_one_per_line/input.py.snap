@@ -1,13 +1,12 @@
 ---
 source: crate/tests/integration.rs
-expression: output
+expression: snapshot
 input_file: crate/tests/fixtures/thematic/overflow_dict_expands_one_per_line/input.py
 ---
 CONFIG = {
     "backoff" : 1.5,
     "label"   : "primary-region-default",
     "retries" : 5,
-    "tags"    : ["staging", "ingest"],
     "timeout" : 30,
     "verbose" : True,
     "limits"  : {
@@ -15,5 +14,6 @@ CONFIG = {
         "concurrent_streams"  : 8,
         "queue_depth"         : 256,
         "requests_per_minute" : 600
-    }
+    },
+    "tags"    : ["staging", "ingest"]
 }

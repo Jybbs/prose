@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Inside a Collection Value Explodes Too"
+
+description = '''
+A multi-line collection argument re-indents to the keyword column, and the calls inside it explode in the same run, each measured from the row it lands on rather than the row it occupied in the source.
+'''

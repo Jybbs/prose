@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Heading and a Bound Comment Both Travel"
+
+description = '''
+`BETA_DECAY` leads the band under a heading and also carries a comment bound from below it. The heading relocates to whichever member the sort seats first while the bound comment stays with `BETA_DECAY`, so neither placement overwrites the other.
+'''

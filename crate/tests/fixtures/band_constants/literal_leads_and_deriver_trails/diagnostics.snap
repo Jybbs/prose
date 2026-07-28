@@ -1,6 +1,6 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/band_constants/literal_leads_and_deriver_trails/input.py
+input_file: crate/tests/fixtures/band_constants/literal_leads_and_deriver_trails/input.py
 ---
-band-constants@16..106
+band-constants@16..99

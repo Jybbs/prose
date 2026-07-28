@@ -4,5 +4,5 @@ previewable = true
 title       = "A Literal Default Suggests the Parameter's Type"
 
 description = '''
-An unannotated parameter draws the report, and a literal default rides a display-only type suggestion the formatter records but never applies.
+An unannotated parameter draws the report, and a literal default carries a display-only type suggestion the formatter records but never applies.
 '''

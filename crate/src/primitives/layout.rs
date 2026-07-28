@@ -5,19 +5,18 @@ use std::borrow::Cow;
 use ruff_python_ast::Expr;
 use ruff_python_trivia::textwrap::{dedent, indent};
 
-use crate::primitives::INDENT_STEP;
+use crate::primitives::{INDENT_STEP, inline::indent_width};
 
 /// Builds the one-per-line expansion `(\n<prefix>item,\n…\n<indent>)`
 /// for `count` items at `indent`. `render` writes item `i` into the
-/// buffer and `comma` decides whether item `i` carries a trailing
-/// comma. Items sit one `INDENT_STEP` past `indent`, the closing `)`
-/// at `indent`.
+/// buffer, and `trailing` adds a comma after the last item. Items sit
+/// one `INDENT_STEP` past `indent`, the closing `)` at `indent`.
 pub(crate) fn explode_parens(
     newline: &str,
     indent: usize,
     count: usize,
     mut render: impl FnMut(&mut String, usize),
-    comma: impl Fn(usize) -> bool,
+    trailing: bool,
 ) -> String {
     let prefix = " ".repeat(indent + INDENT_STEP);
     let mut out = String::from("(");
@@ -25,12 +24,12 @@ pub(crate) fn explode_parens(
         out.push_str(newline);
         out.push_str(&prefix);
         render(&mut out, i);
-        if comma(i) {
+        if trailing || i + 1 < count {
             out.push(',');
         }
     }
     out.push_str(newline);
-    out.extend(std::iter::repeat_n(' ', indent));
+    out.push_str(&prefix[..indent]);
     out.push(')');
     out
 }
@@ -66,6 +65,20 @@ pub(crate) fn reindent_block(block: &str, to: usize) -> Cow<'_, str> {
         "{open}\n{}",
         indent(&dedent(body), &" ".repeat(to))
     ))
+}
+
+/// The columns [`reindent_block`] moves `block`'s body by when it
+/// re-indents to `to`, zero where it leaves the block borrowed.
+pub(crate) fn reindent_shift(block: &str, to: usize) -> isize {
+    match reindent_block(block, to) {
+        Cow::Borrowed(_) => 0,
+        Cow::Owned(moved) => closing_indent(&moved) as isize - closing_indent(block) as isize,
+    }
+}
+
+/// The indent width of `block`'s last line.
+fn closing_indent(block: &str) -> usize {
+    indent_width(block.rsplit_once('\n').map_or(block, |(_, last)| last))
 }
 
 #[cfg(test)]
@@ -107,5 +120,18 @@ mod tests {
         #[case] expected: &str,
     ) {
         assert_eq!(reindent_block(block, to), expected);
+    }
+
+    #[rstest]
+    #[case("(a, b,\n    c)", 8, 0)]
+    #[case("{a: b}", 4, 0)]
+    #[case("{\n    a,\n    b,\n}", 4, 4)]
+    #[case("{\n        a,\n    }", 0, -4)]
+    fn reindent_shift_reports_the_columns_the_body_moves(
+        #[case] block: &str,
+        #[case] to: usize,
+        #[case] expected: isize,
+    ) {
+        assert_eq!(reindent_shift(block, to), expected);
     }
 }

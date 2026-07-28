@@ -12,7 +12,7 @@ A parenthesis pair wrapped around an expression only to span lines, or out of ha
 
 The decision is structural rather than textual, so a pair sheds only where removing it leaves the parse unchanged. A precedence-bearing pair such as `(a + b) * c` stays because dropping it would rebind the multiplication, a generator and a walrus binding keep the parentheses the grammar requires of them, and the parentheses that form a one-element tuple stay part of the tuple rather than wrapping it. A pair whose interior carries a comment stays too, since folding the break would strand the comment off the line it describes.
 
-A wrapped multi-line grouping folds onto one line when the bare form fits the budget and stays wrapped when it would overflow, so a short boolean condition reads as one clean line whereas a long one keeps its parentheses across the lines it needs. A pair nested inside another redundant pair sheds in the same pass.
+A wrapped multi-line grouping folds onto one line when the bare form fits the budget and stays wrapped when it would overflow, so a short boolean condition reads as one clean line whereas a long one keeps its parentheses across the lines it needs. A pair nested inside another redundant pair sheds in the same pass, and each pair weighs its own fold against the text the pass's earlier sheds produce, so two sibling pairs on one statement answer the budget the joined line actually reaches rather than the width the source opened with.
 
 <template #configuration>
 
@@ -22,7 +22,7 @@ A wrapped multi-line grouping folds onto one line when the bare form fits the bu
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[shed-parentheses]` directive.
+For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[shed-parentheses]` directive, which holds every line a wrapped statement spans.
 
 </template>
 

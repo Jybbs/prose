@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/docstring_wrap/role_at_wrapped_line_start/input.py
+---
+"""
+Plot the predicted class probabilities in a toy dataset
+predicted by three different classifiers and averaged by the
+:class:`~ensemble.VotingClassifier`.
+"""
