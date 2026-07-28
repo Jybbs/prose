@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Second Note Climbs When the Line Is Already Full"
+
+description = '''
+`ZETA_CAP` already carries a trailing note, so the budget check measures from its block end rather than from the end of its code, counting the comment its line holds. The bound block takes the line above instead of joining a line that would run past the code budget.
+'''

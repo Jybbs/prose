@@ -3,5 +3,5 @@ previewable = false
 title       = "Own-Line Comments Travel With Their Set Element"
 
 description = '''
-An own-line comment sitting above a set element **rides with that element as the elements alphabetize**, where the leaf-level reorder once dropped such a comment into the gap the element left behind.
+An own-line comment sitting above a set element **travels with that element as the elements alphabetize**, where the leaf-level reorder once dropped such a comment into the gap the element left behind.
 '''

@@ -14,10 +14,7 @@ use ruff_python_ast::{
 use ruff_text_size::TextSize;
 
 use crate::{
-    primitives::{
-        aligner,
-        equal_targets::{self, EqualMember},
-    },
+    primitives::{aligner, equal_targets},
     rule::RuleId,
     source::Source,
 };
@@ -34,15 +31,13 @@ impl ReserveVisitor<'_> {
     /// operator's column by the operator's final character and the
     /// one-space value gap. A member whose value opens on a later line
     /// records nothing.
-    fn record(&mut self, groups: Vec<Vec<EqualMember>>) {
+    fn record(&mut self, groups: Vec<Vec<aligner::Member>>) {
         for group in groups {
-            let members: Vec<aligner::Member> = group.iter().map(|m| m.member).collect();
-            let columns = aligner::operator_columns(self.source, &members, self.settings);
-            for (member, column) in group.iter().zip(columns) {
-                if member.value_on_operator_line(self.source) {
-                    self.columns.insert(member.value_start(), column + 2);
-                }
-            }
+            let columns = aligner::operator_columns(self.source, &group, self.settings);
+            self.columns
+                .extend(group.iter().zip(columns).filter_map(|(member, column)| {
+                    Some((member.rewritten_value_gap(self.source)?.end(), column + 2))
+                }));
         }
     }
 }

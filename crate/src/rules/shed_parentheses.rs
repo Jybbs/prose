@@ -23,9 +23,8 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::Config,
     primitives::{
-        edit::{apply_inline_edits, singleton_groups, splice_reparse},
+        edit::{apply_inline_edits, insert_edit, singleton_groups, splice_reparse},
         inline::{end_column, single_line_form, soft_wrap_runs},
-        insert_sorted_by_key,
     },
     rule::{Rule, RuleId},
     source::Source,
@@ -171,12 +170,6 @@ impl Shedder<'_> {
         self.shifted_column(candidate.pair.start()) + width <= self.code_line_length
     }
 
-    /// Inserts `edit` at the slot keeping `edits` ascending by start,
-    /// the order [`apply_inline_edits`] reads them in.
-    fn push_edit(&mut self, edit: Edit) {
-        insert_sorted_by_key(&mut self.edits, edit, Edit::start);
-    }
-
     /// Emits an edit folding each line-spanning whitespace run inside
     /// `inner` to a single space, the join a multi-line interior needs
     /// before its parentheses can go.
@@ -185,10 +178,10 @@ impl Shedder<'_> {
         for (begin, len) in soft_wrap_runs(text) {
             let start = inner.start() + TextSize::try_from(begin).expect("offset fits u32");
             let end = start + TextSize::try_from(len).expect("run length fits u32");
-            self.push_edit(Edit::range_replacement(
-                " ".to_owned(),
-                TextRange::new(start, end),
-            ));
+            insert_edit(
+                &mut self.edits,
+                Edit::range_replacement(" ".to_owned(), TextRange::new(start, end)),
+            );
         }
     }
 
@@ -217,8 +210,8 @@ impl Shedder<'_> {
                     TextRange::new(inner.end(), pair.end()),
                 )
             };
-            self.push_edit(Edit::range_deletion(open));
-            self.push_edit(Edit::range_deletion(close));
+            insert_edit(&mut self.edits, Edit::range_deletion(open));
+            insert_edit(&mut self.edits, Edit::range_deletion(close));
             if folding {
                 self.push_fold_edits(inner);
                 self.folds.push(pair);

@@ -150,7 +150,7 @@ fn every_case_directory_is_well_formed() {
 fn every_fixture_invocation_resolves() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let site = root.join("../site");
-    let pattern = Regex::new(r#"<Fixture rule="([^"]+)" case="([^"]+)" /?>"#).unwrap();
+    let pattern = Regex::new(r#"<Fixture\w* rule="([^"]+)" case="([^"]+)" /?>"#).unwrap();
     let mut types = TypesBuilder::new();
     types.add_defaults();
     types.select("markdown");

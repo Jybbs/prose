@@ -1,5 +1,5 @@
 ---
-caption : "Partitions a module's imports into bare, external `from`, and local-package sections."
+caption : "Partitions a module's imports into `__future__`, bare, external `from`, and local-package sections."
 related : [alphabetize, align-imports, import-layout, blank-lines, bare-imports]
 layout  : doc
 ---
@@ -8,15 +8,18 @@ layout  : doc
 
 <RuleLayout rule="group_imports">
 
-A reader scanning a module's head wants to know at a glance what it draws on and from where. When the imports arrive in the order they were typed, the standard library, the third-party packages, and the project's own modules tangle together, and the reader has to read each line to place it. `group-imports` **partitions a contiguous import run into three canonical sections**, the bare `import` statements first, the external `from … import …` statements next, and the local-package imports last:
+A reader scanning a module's head wants to know at a glance what it draws on and from where. When the imports arrive in the order they were typed, the standard library, the third-party packages, and the project's own modules tangle together, and the reader has to read each line to place it. `group-imports` **partitions a contiguous import run into its canonical sections**, a `from __future__` import ahead of everything, then the bare `import` statements, the external `from … import …` statements, and the local-package imports last:
 
 | Section | Holds |
 |---|---|
+| **`__future__`** | `from __future__ import annotations` |
 | **Bare** | `import os`, `import numpy as np` |
 | **External `from`** | `from collections import Counter` |
 | **Local-package** | relative imports and any package on the `first-party` list |
 
 The rule **relocates** imports into their section, the move that makes the grouping a structural concern rather than an alphabetizing one. It leaves the order of the names within a section untouched, the sort within each left to [[alphabetize]], so the two agree on the grouping through one shared classifier rather than each deciding membership on its own. A run already sitting in section order passes through with no edit.
+
+An absolute `from __future__ import …` takes the leading section on its own, because Python rejects a module that places the statement below any other code, so the section is a compiler requirement rather than a legibility preference. A relative `from .__future__ import …` and a bare `import __future__` name ordinary modules and classify as any other import would.
 
 A `from` import is local when it is relative (*`from . import x`, `from ..pkg import y`*) or its module's root package appears on the `first-party` list. A bare `import` is local when any aliased root package is first-party. Everything else outside the standard `from` shape stays bare, and a name the rule cannot classify is no import at all and pins where it sits, ending the run.
 

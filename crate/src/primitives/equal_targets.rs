@@ -12,53 +12,11 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{primitives::aligner, rule::RuleId, source::Source};
 
-/// An `=`-anchored alignment member paired with `value_gap`, the span
-/// between the operator and the value that an aligned run rewrites to
-/// one space.
-#[derive(Clone, Copy)]
-pub(crate) struct EqualMember {
-    pub(crate) member: aligner::Member,
-    pub(crate) value_gap: TextRange,
-}
-
-impl EqualMember {
-    /// Pairs `member` with the value-side gap running from just past its
-    /// `op_len`-wide operator to the parenthesis-aware `value_start`.
-    fn new(member: aligner::Member, op_len: TextSize, value_start: TextSize) -> Self {
-        Self {
-            member,
-            value_gap: TextRange::new(member.gap.end() + op_len, value_start),
-        }
-    }
-
-    /// This member's alignment slot, bridging the run when its row is
-    /// skip-held for `rule` so neighbors align around it.
-    pub(crate) fn slot(self, source: &Source, rule: RuleId) -> aligner::Slot<Self> {
-        if aligner::is_held(source, rule, self.member.line_start) {
-            aligner::Slot::Bridge
-        } else {
-            aligner::Slot::Member(self)
-        }
-    }
-
-    /// True when the value shares its operator's line, the row an
-    /// aligned run closes the value gap for. A value on a later line
-    /// keeps its source placement.
-    pub(crate) fn value_on_operator_line(self, source: &Source) -> bool {
-        !source.contains_line_break(self.value_gap)
-    }
-
-    /// The value's parenthesis-aware start, where the `=`-side gap closes.
-    pub(crate) fn value_start(self) -> TextSize {
-        self.value_gap.end()
-    }
-}
-
 /// Returns the alignment member for an annotated `x: int = 1`, plain
 /// `x = 1`, or augmented `x += 1` statement, measuring the left-hand
 /// side paren-aware. `None` for any other shape or when the span up to
 /// the operator breaks across lines.
-pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<EqualMember> {
+pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
     match stmt {
         Stmt::AnnAssign(a) => {
             let value = a.value.as_deref()?;
@@ -97,7 +55,7 @@ pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<EqualMember> {
             // `op` is the binary form (`+`), so the augmented operator
             // runs one column longer for its trailing `=`.
             let op_len = TextSize::of(op) + TextSize::of('=');
-            Some(EqualMember::new(member, op_len, value_start))
+            Some(member.with_value_gap(op_len, value_start))
         }
         _ => None,
     }
@@ -116,7 +74,7 @@ pub(crate) fn keyword_groups(
     rule: RuleId,
     call: &ExprCall,
     break_after_multiline: bool,
-) -> Vec<Vec<EqualMember>> {
+) -> Vec<Vec<aligner::Member>> {
     if !source.contains_line_break(call.arguments.range()) {
         return Vec::new();
     }
@@ -133,7 +91,7 @@ pub(crate) fn keyword_groups(
             let Some(member) = keyword(source, arg) else {
                 return aligner::Slot::Break;
             };
-            let line = source.line_index(member.member.line_start);
+            let line = source.line_index(member.line_start);
             if arg_lines.iter().filter(|&&l| l == line).count() > 1 {
                 return aligner::Slot::Break;
             }
@@ -147,7 +105,7 @@ pub(crate) fn keyword_groups(
 /// the parameter name through the annotation's paren-aware end, and the
 /// value-side gap is recovered against the parameter-with-default node so
 /// a parenthesized default keeps its `(`.
-pub(crate) fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<EqualMember> {
+pub(crate) fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Member> {
     let AnyParameterRef::NonVariadic(with_default) = param else {
         return None;
     };
@@ -173,7 +131,7 @@ fn equal_member(
     target: TextRange,
     value: ExprRef,
     parent: AnyNodeRef,
-) -> Option<EqualMember> {
+) -> Option<aligner::Member> {
     let value_start = source.paren_aware_range(value, parent).start();
     let member = aligner::range_anchored_member_single_line(
         source,
@@ -182,14 +140,14 @@ fn equal_member(
         |t| t.kind() == TokenKind::Equal,
         0,
     )?;
-    Some(EqualMember::new(member, TextSize::of('='), value_start))
+    Some(member.with_value_gap(TextSize::of('='), value_start))
 }
 
 /// Returns the alignment member for a `name=value` keyword argument, or
 /// `None` for a positional argument or a `**` unpacking. A keyword whose
 /// value spans lines still qualifies, since its `=` sits on the keyword's
 /// first line where [`equal_member`] anchors it.
-fn keyword(source: &Source, arg: ArgOrKeyword<'_>) -> Option<EqualMember> {
+fn keyword(source: &Source, arg: ArgOrKeyword<'_>) -> Option<aligner::Member> {
     let ArgOrKeyword::Keyword(keyword) = arg else {
         return None;
     };

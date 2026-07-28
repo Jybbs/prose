@@ -1,0 +1,59 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize/dict_scalars_then_collections/input.py
+---
+mixed = {
+    "author"   : "jibbs",
+    "name"     : "prose",
+    "version"  : "0.1.0",
+    "config": {
+        "strict"     : True,
+        "tracebacks" : "short",
+        "verbose"    : False,
+    },
+    "deps"     : ["ruff_python_parser", "clap"],
+    "metadata" : load_metadata(),
+    "tags"     : ["staging", "ingest"],
+}
+
+inline = {"name": "prose", "version": "0.1.0", "config": {"strict": True}}
+
+with_spread = {
+    "version" : "0.1.0",
+    **defaults,
+    "name"    : "prose",
+    "config": {
+        "strict"  : True,
+        "tracing" : "off",
+        "verbose" : False,
+    },
+}
+
+single_line_only = {
+    "version"  : "0.1.0",
+    "metadata" : load_metadata(),
+    "config"   : {"strict": True},
+    "deps"     : ["ruff_python_parser", "clap"],
+}
+
+deep_nesting = {
+    "alpha" : 1,
+    "beta"  : 2,
+    "delta" : "...",
+    "settings": {
+        "logging": {
+            "stderr" : "warn",
+            "stdout" : "info",
+            "format": {
+                "compact" : False,
+                "json"    : True,
+            },
+        },
+
+        "network": {
+            "retries" : 5,
+            "timeout" : 30,
+        },
+    },
+}

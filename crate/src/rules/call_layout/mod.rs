@@ -28,8 +28,7 @@ use crate::{
     primitives::{
         aligner,
         call_keywords::module_call_params,
-        edit::{narrowed_replacement, singleton_groups},
-        insert_sorted_by_key,
+        edit::{insert_edit, narrowed_replacement, singleton_groups},
         reserve::reserved_columns,
     },
     rule::{Rule, RuleId},
@@ -114,7 +113,7 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         if let Some(text) = self.explode_args(call, indent, column)
             && let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text)
         {
-            insert_sorted_by_key(&mut self.edits, edit, Edit::start);
+            insert_edit(&mut self.edits, edit);
             return;
         }
         self.visit_arguments(&call.arguments);

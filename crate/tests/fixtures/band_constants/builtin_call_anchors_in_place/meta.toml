@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Builtin-Call Constant Anchors in Place"
+
+description = '''
+A constant whose value calls a builtin names no module definition, so the name-resolution guard clears it for a hoist. The side-effect guard **holds it in source position** anyway, since evaluating the call runs code that a lift above the definition below would reorder.
+'''

@@ -41,7 +41,7 @@ impl CleanReport {
     }
 }
 
-/// What a mode knows about the file's rewrite. `Skipped` marks a mode
+/// What a mode records about the file's rewrite. `Skipped` marks a mode
 /// that never computed the rewrite, whereas the other two record a
 /// completed `run`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

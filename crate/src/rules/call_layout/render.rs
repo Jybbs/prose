@@ -127,16 +127,12 @@ impl<'a> Exploder<'a> {
         line_shift: isize,
     ) -> Cow<'a, str> {
         let mut nested = Exploder {
-            cap: self.cap,
-            code_line_length: self.code_line_length,
             edits: Vec::new(),
             indent,
             line_shift,
             origin: value.start(),
             origin_column: column,
-            reservations: self.reservations,
-            source: self.source,
-            targets: self.targets,
+            ..*self
         };
         nested.visit_expr(value);
         apply_inline_edits(self.source, value.range(), &nested.edits)

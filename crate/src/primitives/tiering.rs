@@ -1,7 +1,6 @@
 //! Topological tiering of definition runs by evaluation-time
-//! dependency, so a definition never sorts ahead of a sibling it names
-//! at evaluation time. Shared by `band-constants`' module-constant
-//! banding and `alphabetize`'s def-run reorder.
+//! dependency, alongside the soundness check a reorder runs against
+//! that same reference graph.
 
 use std::{
     collections::{HashMap, HashSet},
@@ -14,7 +13,7 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextSize};
 
-use crate::primitives::orderer::permute_in_place;
+use crate::primitives::orderer::{permute_in_place, slot_positions};
 
 /// Accumulates load-context names through `eval_time_refs`, pruning
 /// function and lambda bodies and skipping deferred annotations.
@@ -126,20 +125,53 @@ pub(crate) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> 
 }
 
 /// Tiers the `member`-selected definitions within `range` and permutes
-/// those slots of `order` by `(tier, key)`, leaving `order` untouched when
-/// the run declines. Tiering scopes to `range`, so a duplicate name or
-/// cycle in another section never declines this one.
+/// those slots of `order` by `(tier, key)`, leaving `order` untouched
+/// when the run declines. A member `holds` selects keeps its source
+/// slot, and the permutation reverts when it seats a definition below a
+/// statement that names it.
 pub(crate) fn permute_defs<'src, K: Copy + Ord>(
     order: &mut [usize],
     body: &'src [Stmt],
     range: Range<usize>,
     defer_annotations: bool,
+    holds: impl Fn(&'src Stmt) -> bool,
     member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,
 ) {
-    if let Some(keys) = def_run_tier_keys(&body[range.clone()], defer_annotations, member) {
-        permute_in_place(order, body, range, |s| {
-            keys.get(&s.range().start()).copied()
-        });
+    let Some(keys) = def_run_tier_keys(&body[range.clone()], defer_annotations, &member) else {
+        return;
+    };
+    permute_or_revert(
+        order,
+        body,
+        &range,
+        defer_annotations,
+        |stmt| member(stmt).map(|(name, _)| name),
+        |order| {
+            permute_in_place(order, body, range.clone(), |stmt| {
+                keys.get(&stmt.range().start())
+                    .copied()
+                    .filter(|_| !holds(stmt))
+            })
+        },
+    );
+}
+
+/// Runs `permute` against `order`, restoring the pre-permutation slots
+/// when it moves a slot and the result seats a `member_name` entry below
+/// a statement that names it.
+pub(crate) fn permute_or_revert<'src>(
+    order: &mut [usize],
+    body: &'src [Stmt],
+    range: &Range<usize>,
+    defer_annotations: bool,
+    member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
+    permute: impl FnOnce(&mut [usize]) -> bool,
+) {
+    let snapshot = order.to_vec();
+    if permute(order)
+        && !order_keeps_refs_backward(order, body, range, defer_annotations, member_name)
+    {
+        order.copy_from_slice(&snapshot);
     }
 }
 
@@ -170,10 +202,40 @@ pub(crate) fn tier_levels(dep_sets: &[HashSet<usize>]) -> Option<Vec<usize>> {
 
 /// Walks a lambda's parameter defaults, pruning its body, the eval-time
 /// surface a lambda contributes when it binds.
-pub(crate) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda: &'a ExprLambda) {
+pub(super) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda: &'a ExprLambda) {
     if let Some(params) = lambda.parameters.as_deref() {
         walk_parameters(visitor, params);
     }
+}
+
+/// True when every statement in `range` keeps each `member_name` entry
+/// it names ahead of itself in `order`, a statement naming itself
+/// excepted.
+fn order_keeps_refs_backward<'src>(
+    order: &[usize],
+    body: &'src [Stmt],
+    range: &Range<usize>,
+    defer_annotations: bool,
+    member_name: impl Fn(&'src Stmt) -> Option<&'src str>,
+) -> bool {
+    let member_at: HashMap<&'src str, usize> = body[range.clone()]
+        .iter()
+        .zip(range.clone())
+        .filter_map(|(stmt, at)| member_name(stmt).map(|name| (name, at)))
+        .collect();
+    let position = slot_positions(order);
+    body[range.clone()]
+        .iter()
+        .zip(range.clone())
+        .all(|(stmt, reader)| {
+            eval_time_refs(stmt, defer_annotations)
+                .into_iter()
+                .all(|name| {
+                    member_at.get(name).is_none_or(|&referent| {
+                        referent == reader || position[referent] < position[reader]
+                    })
+                })
+        })
 }
 
 /// Tiers `dep_sets` and assembles a per-statement `(tier, key)` lookup
@@ -213,13 +275,23 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::{primitives::decorator::is_decorated, testing::parse};
 
     fn class_member(stmt: &Stmt) -> Option<(&str, &str)> {
         stmt.as_class_def_stmt().map(|class| {
             let name = class.name.as_str();
             (name, name)
         })
+    }
+
+    /// The new-order permutation `permute_defs` produces over `src`'s
+    /// class run, holding each member `holds` selects.
+    fn class_order(src: &str, holds: fn(&Stmt) -> bool) -> Vec<usize> {
+        let source = parse(src);
+        let body = &source.ast().body;
+        let mut order: Vec<usize> = (0..body.len()).collect();
+        permute_defs(&mut order, body, 0..body.len(), false, holds, class_member);
+        order
     }
 
     #[test]
@@ -292,6 +364,82 @@ mod tests {
             .into_iter()
             .collect();
         assert_eq!(collected, HashSet::from(["BaseRef", "DefaultRef"]));
+    }
+
+    #[test]
+    fn permute_defs_exempts_a_held_member_naming_itself() {
+        let src = indoc! {"
+            class Mid:
+                pass
+
+
+            @dec
+            class Node:
+                child: Node
+
+
+            class Alpha:
+                pass
+        "};
+        assert_eq!(
+            class_order(src, is_decorated),
+            vec![2, 1, 0],
+            "Node names only itself, so the hold strands nothing"
+        );
+    }
+
+    #[test]
+    fn permute_defs_holds_a_decorated_definition() {
+        let src = indoc! {"
+            class Zeta:
+                pass
+
+
+            @dec
+            class Alpha:
+                pass
+
+
+            class Mid:
+                pass
+        "};
+        assert_eq!(
+            class_order(src, is_decorated),
+            vec![2, 1, 0],
+            "Alpha holds slot 1 while Zeta and Mid swap around it"
+        );
+        assert_eq!(
+            class_order(src, |_| false),
+            vec![1, 2, 0],
+            "without the hold Alpha sorts to the front"
+        );
+    }
+
+    #[test]
+    fn permute_defs_reverts_when_a_hold_strands_a_base_class() {
+        let src = indoc! {"
+            class Mid:
+                pass
+
+
+            @dec
+            class Zeta(Mid):
+                pass
+
+
+            class Alpha:
+                pass
+        "};
+        assert_eq!(
+            class_order(src, is_decorated),
+            vec![0, 1, 2],
+            "Zeta holds its slot, so Mid may not sort below it"
+        );
+        assert_eq!(
+            class_order(src, |_| false),
+            vec![2, 0, 1],
+            "without the hold the tier graph seats Mid ahead of Zeta"
+        );
     }
 
     #[test]

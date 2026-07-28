@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/band_constants/definition_under_a_comment_still_bands/input.py
+---
+band-constants@12..129

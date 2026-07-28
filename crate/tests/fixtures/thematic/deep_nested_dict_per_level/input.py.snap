@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: output
+expression: snapshot
 input_file: crate/tests/fixtures/thematic/deep_nested_dict_per_level/input.py
 ---
 DEPLOY = {
@@ -10,8 +10,6 @@ DEPLOY = {
     "version" : 12,
 
     "services": {
-        "worker": {"concurrency": 8, "queue": "tasks"},
-
         "api": {
             "port"    : 8080,
             "retries" : 3,
@@ -35,7 +33,9 @@ DEPLOY = {
             "rate_limit" : 1000,
             "timeout"    : 5,
             "upstream"   : {"fallback": "api.backup", "primary": "api.internal"}
-        }
+        },
+
+        "worker": {"concurrency": 8, "queue": "tasks"}
     },
 
     "telemetry": {

@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/docstring_wrap/sectionless_field_head_verbatim/input.py
+---
+def dispatch(handlers):
+    """
+    Route each event to the handler registered against it.
+
+    handlers (Callable[[Mapping[str, int], Sequence[str]], Awaitable[None]]): The callback.
+    """
+    return handlers

@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/detached_heading_stays_above_the_band/input.py
+---
+# the tunable solver knobs
+ALPHA_DECAY = 0.9
+MAX_INT = 5
+
+
+def solve(problem):
+    return problem

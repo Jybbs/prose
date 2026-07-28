@@ -37,6 +37,7 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
         gap: TextRange::new(gap_start, anchor),
         line_start,
         op_width: 0,
+        value_gap: None,
         width: trimmed_end.trim_whitespace_start().width(),
     }
 }
@@ -77,10 +78,9 @@ pub(crate) fn line_anchored_member_between(
 /// `qualify` and returning one group per run of contiguous qualified
 /// parameters. A parameter that fails to qualify breaks the current
 /// run without joining either neighbor. Empty runs are filtered out.
-pub(crate) fn parameter_split_groups<M, F>(params: &Parameters, qualify: F) -> Vec<Vec<M>>
+pub(crate) fn parameter_split_groups<F>(params: &Parameters, qualify: F) -> Vec<Vec<Member>>
 where
-    M: Copy,
-    F: FnMut(AnyParameterRef<'_>) -> Option<M>,
+    F: FnMut(AnyParameterRef<'_>) -> Option<Member>,
 {
     let qualified: Vec<_> = params.iter_source_order().map(qualify).collect();
     qualified
@@ -124,6 +124,7 @@ fn range_anchored_member(
         gap: TextRange::new(target.end(), anchor),
         line_start: source.text().line_start(anchor),
         op_width: 0,
+        value_gap: None,
         width: source.slice(target).width() + extra_width,
     }
 }

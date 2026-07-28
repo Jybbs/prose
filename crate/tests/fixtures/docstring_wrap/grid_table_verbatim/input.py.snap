@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/docstring_wrap/grid_table_verbatim/input.py
+---
+class Encoder:
+    """
+    Encode Python values into their JSON equivalents.
+
+    +-------------------+---------------+
+    | Python            | JSON          |
+    +===================+===============+
+    | dict              | object        |
+    +-------------------+---------------+
+    | list, tuple       | array         |
+    +-------------------+---------------+
+    """

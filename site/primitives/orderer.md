@@ -30,7 +30,7 @@ The high-level wrapper that covers the common case, rendering each item over its
 
 ### `reorder_separated(source, items, classify, render)`
 
-The variant for a comma-separated group laid out one member per line, where a trailing inline comment must travel with its member through the sort. The separating comma is re-emitted per slot rather than left in a verbatim gap, because a comment ends its line and a moved member that gained or lost its source comma would otherwise strand the comma after the comment. An own-line comment sitting above a member rides with it as well, the block reaching back over the attached comment lines so an interstitial comment never strands in the slot the member vacated. A reparse guard declines the rewrite when an irregular layout reassembles into source the parser rejects.
+The variant for a comma-separated group laid out one member per line, where a trailing inline comment must travel with its member through the sort. The separating comma is re-emitted per slot rather than left in a verbatim gap, because a comment ends its line and a moved member that gained or lost its source comma would otherwise strand the comma after the comment. An own-line comment sitting above a member travels with it as well, the block reaching back over the attached comment lines so an interstitial comment never strands in the slot the member vacated. A reparse guard declines the rewrite when an irregular layout reassembles into source the parser rejects.
 
 ### `permute_full(order, items, classify)`
 
@@ -46,7 +46,7 @@ Splices the reordered children into a final string the rule can emit as a single
 
 ### `assemble_separated(value_ends, blocks, block_texts, order, divider_slots, source_last_has_comma)`
 
-The comma-aware counterpart to `assemble_blocks` for one-member-per-line groups. It splits each block into code, separator comma, and trailing comment at `value_ends`, then re-emits the comma after the value and before the comment per slot, so the comment rides with its member. Non-last slots always carry a comma, the new-last slot matches `source_last_has_comma`, and a blank line follows every slot in `divider_slots`. [[alphabetize]]'s dict and leaf reorders share it.
+The comma-aware counterpart to `assemble_blocks` for one-member-per-line groups. It splits each block into code, separator comma, and trailing comment at `value_ends`, then re-emits the comma after the value and before the comment per slot, so the comment stays with its member. Non-last slots always carry a comma, the new-last slot matches `source_last_has_comma`, and a blank line follows every slot in `divider_slots`. [[alphabetize]]'s dict and leaf reorders share it.
 
 ### `assemble_or_borrow(source, blocks, rendered, order, forced, gap)`
 
@@ -54,7 +54,7 @@ The borrow-aware finalizer over `assemble_blocks`, returning the assembled text 
 
 ### Block-Geometry Helpers
 
-`block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line. `outer` bounds the leading-comment scan's lower edge to a parent extent *(the previous item's end, or `outer.start()` for the first item)*, while the forward scan reaches the next item's start or, for the last item, its own line end. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, used to size the outer `Edit` that replaces the reordered region.
+`block_range(source, items, i, outer)` covers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the leading comment-only lines directly above the item and the rest of its last line. `outer` bounds the leading-comment scan's lower edge to a parent extent *(the previous item's end, or `outer.start()` for the first item)*, raised inside a notebook to the item's own cell start whenever that sits later, so an attached comment never reaches back across a cell boundary, while the forward scan reaches the next item's start or, for the last item, its own line end. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, used to size the outer `Edit` that replaces the reordered region.
 
 ## How Comment Attachment Works
 

@@ -6,7 +6,7 @@ use std::ops::Range;
 
 use ruff_python_ast::{Expr, helpers::is_dotted_name};
 
-use crate::primitives::layout::is_layoutable;
+use crate::primitives::{layout::is_layoutable, orderer::slot_runs};
 
 /// Describes how a contiguous slice of items should lay out.
 #[derive(Debug, PartialEq)]
@@ -20,8 +20,7 @@ pub(super) enum Segment {
 /// Returns `true` when `gap` is zero or more ASCII spaces, then
 /// `:`, then one ASCII space.
 pub(super) fn is_align_colons_gap(gap: &str) -> bool {
-    gap.strip_suffix(": ")
-        .is_some_and(|prefix| prefix.bytes().all(|b| b == b' '))
+    split_colon_gap(gap).is_some_and(|(_, tail)| tail == " ")
 }
 
 /// True for expressions that render as a single compact token and
@@ -57,6 +56,13 @@ pub(super) fn is_collapsible(expr: &Expr) -> bool {
     is_layoutable(expr) || is_collapse_only(expr)
 }
 
+/// The ASCII-space run `gap` opens with when those spaces sit directly
+/// before its `:`, the padding `align_colons` holds a dict key at.
+/// Returns `""` for a canonical `": "` and for any other gap shape.
+pub(super) fn pre_colon_padding(gap: &str) -> &str {
+    split_colon_gap(gap).map_or("", |(padding, _)| padding)
+}
+
 /// True for a `Dict`, `List`, `Set`, or parenthesized `Tuple` shape
 /// the expand path canonicalizes. Multi-item `List`, `Set`, and
 /// parenthesized `Tuple` qualify, as does any non-empty `Dict`. A bare
@@ -72,23 +78,32 @@ pub(super) fn requires_expand(expr: &Expr) -> bool {
     }
 }
 
-/// Partitions `atomics` into segments. Every contiguous run of
-/// atomic items becomes one `Flow` segment. Every non-atomic item
-/// becomes a singleton `OnePerLine` segment. Non-atomic items always
-/// break atomic runs.
+/// Partitions `atomics` into segments. Each contiguous run of atomic
+/// items becomes one `Flow` segment and each contiguous run of
+/// non-atomic items one `OnePerLine` segment, so a non-atomic item
+/// breaks the atomic run around it.
 pub(super) fn segments(atomics: &[bool]) -> Vec<Segment> {
-    atomics
-        .chunk_by(|a, b| a == b)
-        .scan(0, |start, chunk| {
-            let range = *start..*start + chunk.len();
-            *start += chunk.len();
-            Some(if chunk[0] {
-                Segment::Flow(range)
+    slot_runs(atomics, |a, b| a == b)
+        .map(|run| {
+            if atomics[run.start] {
+                Segment::Flow(run)
             } else {
-                Segment::OnePerLine(range)
-            })
+                Segment::OnePerLine(run)
+            }
         })
         .collect()
+}
+
+/// Splits `gap`, the span between a dict key and its value, at its
+/// first `:` into the run before it and the tail after. Returns `None`
+/// when `gap` carries no `:` or that leading run holds anything but
+/// ASCII spaces.
+fn split_colon_gap(gap: &str) -> Option<(&str, &str)> {
+    let (padding, tail) = gap.split_once(':')?;
+    padding
+        .bytes()
+        .all(|b| b == b' ')
+        .then_some((padding, tail))
 }
 
 #[cfg(test)]
@@ -133,6 +148,19 @@ mod tests {
         let source = parse(src);
         let expr = first_expr(&source);
         assert_eq!(is_collapsible(expr), expected);
+    }
+
+    #[rstest]
+    #[case(": ", "")]
+    #[case(" : ", " ")]
+    #[case("    : ", "    ")]
+    #[case(" :\n        ", " ")]
+    #[case(":\n        ", "")]
+    #[case("\t: ", "")]
+    #[case(" # note\n: ", "")]
+    #[case("", "")]
+    fn pre_colon_padding_keeps_only_a_leading_space_run(#[case] gap: &str, #[case] expected: &str) {
+        assert_eq!(pre_colon_padding(gap), expected);
     }
 
     #[rstest]

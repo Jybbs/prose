@@ -33,11 +33,13 @@ The bracket bounds its own scope, leaving rules outside the markers to fire on e
 
 ### Tagging a Line
 
-Line-level directives split by severity, because rewrites and lints want different escape hatches.
+Line-level directives split by severity, because rewrites and lints take different escape hatches.
 
-The **`skip`** family covers rewrite suppression. `# fmt: skip` *(equivalent to `# prose: skip`)* exempts the line from every auto-fix rule, fitting cases wherein a single statement carries a deliberate token layout *(a hand-padded dict expression, a one-off argument list whose spacing carries intent)*. `# prose: skip[<rule>]` narrows to the listed rules, so a project that wants only `align-equals` to skip one line writes `# prose: skip[align-equals]` and leaves the other rewrite rules free to fire. When the exempted line sits inside an alignment group, the group's other rows still align as one block around it, so the held line reads as a deliberate exception rather than collapsing the surrounding alignment.
+The **`skip`** family covers rewrite suppression. `# fmt: skip` *(equivalent to `# prose: skip`)* exempts the whole logical line it trails from every auto-fix rule, so a statement wrapped across several physical lines is held from its opening line through the directive's own, fitting cases wherein a single statement carries a deliberate token layout *(a hand-padded dict expression, a one-off argument list whose spacing carries intent)*. `# prose: skip[<rule>]` narrows to the listed rules, so a project that wants only `align-equals` held on one statement writes `# prose: skip[align-equals]` and leaves the other rewrite rules free to fire. When the exempted statement occupies a single line inside an alignment group, the group's other rows still align as one block around it, so the held row reads as a deliberate exception rather than collapsing the surrounding alignment.
 
 The **`ignore`** family covers lint suppression. `# prose: ignore[<rule>]` exempts the line from the named lint rules, fitting cases wherein the lint's recommended refactor doesn't apply *(a constant the project genuinely wants pinned at module scope, a single-use variable whose name carries documentation value)*. A bare `# prose: ignore` widens to every lint rule on the line, and the bracketed form scopes precisely.
+
+The two families stay separate, so a statement that needs its layout pinned and its lint silenced carries one of each. Only the block markers cover both at once, a `# fmt: off` region suppressing rewrites and lint diagnostics together for every line it brackets.
 
 ### Pinning a Dict Literal
 
