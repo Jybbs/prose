@@ -1,0 +1,89 @@
+.fixture-converge {
+  margin : 1.25rem 0;
+}
+
+.fixture-converge-lead {
+  margin : 0 0 1rem;
+}
+
+.fixture-converge-lead :first-child { margin-top    : 0; }
+.fixture-converge-lead :last-child  { margin-bottom : 0; }
+
+.fixture-converge-track {
+  display        : flex;
+  flex-direction : column;
+  gap            : 10px;
+  margin         : 0;
+  padding        : 0 0 0 1.5rem;
+  border-left    : 1px solid var(--vp-c-divider);
+  list-style     : none;
+}
+
+.fixture-converge-step {
+  position : relative;
+  margin   : 0;
+}
+
+.fixture-converge-step::before {
+  position      : absolute;
+  top           : 0.45rem;
+  left          : calc(-1.5rem - 4px);
+  width         : 7px;
+  height        : 7px;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : 50%;
+  background    : var(--vp-c-bg);
+  content       : "";
+}
+
+.fixture-converge-step[data-badge="settled"]::before {
+  border-color : var(--prose-palette-celadon);
+  background   : var(--prose-palette-celadon);
+}
+
+.fixture-converge-mark {
+  display     : flex;
+  align-items : baseline;
+  gap         : 10px;
+  margin      : 0 0 6px;
+}
+
+.fixture-converge-run {
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-label-tracking-loose);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-1);
+}
+
+.fixture-converge-badge {
+  padding        : 2px 8px;
+  border         : 1px solid var(--vp-c-divider);
+  border-radius  : var(--prose-radius-sm);
+  background     : var(--vp-c-bg-soft);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-label-tracking-loose);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+}
+
+.fixture-converge-step[data-badge="settled"] .fixture-converge-badge {
+  border-color : color-mix(in srgb, var(--prose-palette-celadon) 40%, transparent);
+  color        : var(--prose-palette-celadon);
+}
+
+.fixture-converge-state {
+  overflow   : hidden;
+  background : var(--vp-code-block-bg);
+}
+
+.fixture-converge-state pre {
+  margin : 0;
+}
+
+.fixture-converge-note {
+  margin    : 0;
+  font-size : var(--prose-text-meta);
+  color     : var(--vp-c-text-2);
+}

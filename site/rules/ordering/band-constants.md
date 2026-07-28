@@ -27,6 +27,10 @@ An own-line comment above a member rides with it wherever the rule seats it, a c
 
 [[group-imports]] sections the import run before `band-constants` seats the leading band beneath it, and [[blank-lines]] settles the spacing around the definitions and the single blank line dividing the imports from the leading band.
 
+A member's relocation and the spacing around it settle in **the same run**, so the file reaches its final shape the first time it is formatted rather than advancing one structural gap per invocation. Running `prose format` again reads that output and rewrites nothing.
+
+<FixtureConvergence rule="band_constants" case="stacked_comment_blocks_keep_their_blank" />
+
 Pair with [[alphabetize]] to sort the names within each import section and the definition runs, with [[group-imports]] to partition the imports the leading band seats below, and with [[reassigned-constants]] to flag a `SCREAMING_CASE` name whose reassignment pins it out of a band.
 
 <template #configuration>
