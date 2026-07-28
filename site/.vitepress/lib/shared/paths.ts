@@ -3,16 +3,6 @@ import fs                from 'node:fs'
 import path              from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export function repoRoot(metaUrl: string): string {
-  let dir = path.dirname(fileURLToPath(metaUrl))
-  while (!fs.existsSync(path.join(dir, '.mise', 'config.toml'))) {
-    const parent = path.dirname(dir)
-    if (parent === dir) throw new Error(`repo root not found from ${metaUrl}`)
-    dir = parent
-  }
-  return dir
-}
-
 export function cacheDirFrom(root: string, name: string): string {
   return path.join(root, '.cache', name)
 }
@@ -43,6 +33,16 @@ export function primitivesDir(metaUrl: string): string {
 
 export function proseBinaryPath(root: string): string {
   return path.join(root, 'target', 'debug', 'prose')
+}
+
+export function repoRoot(metaUrl: string): string {
+  let dir = path.dirname(fileURLToPath(metaUrl))
+  while (!fs.existsSync(path.join(dir, '.git'))) {
+    const parent = path.dirname(dir)
+    if (parent === dir) throw new Error(`repo root not found from ${metaUrl}`)
+    dir = parent
+  }
+  return dir
 }
 
 export function rulesDir(metaUrl: string): string {

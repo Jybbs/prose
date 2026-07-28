@@ -88,14 +88,14 @@ describe('conditionalFetch', () => {
     vi.stubGlobal('fetch', fetchMock)
     await expect(conditionalFetch(makeSource())).resolves.toBe('fallback')
     expect(fetchMock).toHaveBeenCalledTimes(3)
-    expect(warn).toHaveBeenCalledWith('[data:probe] upstream returned 500, seeding the static fallback')
+    expect(warn).toHaveBeenCalledWith('[data:probe] upstream returned 500, seeding the fallback')
   })
 
   warnTest('falls back when a 200 payload rejects at parse', async ({ warn }) => {
     vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(new Response('{}', { status: 200 })))
     const source = { ...makeSource(), parse: () => { throw new Error('no value field') } }
     await expect(conditionalFetch(source)).resolves.toBe('fallback')
-    expect(warn).toHaveBeenCalledWith('[data:probe] payload rejected (no value field), seeding the static fallback')
+    expect(warn).toHaveBeenCalledWith('[data:probe] payload rejected (no value field), seeding the fallback')
   })
 
   it('returns the stored payload offline without a request', async () => {
