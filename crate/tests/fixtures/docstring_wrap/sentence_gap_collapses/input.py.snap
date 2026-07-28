@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/docstring_wrap/sentence_gap_collapses/input.py
+---
+"""
+The archive index rebuilds whenever a source document changes on disk. A
+second sentence follows the two-space separator that classic typography
+keeps.
+"""

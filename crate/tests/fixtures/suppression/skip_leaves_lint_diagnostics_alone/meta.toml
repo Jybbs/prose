@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Bare Skip Pins Layout Without Silencing Lints"
+
+description = '''
+A bare `# fmt: skip` trailing a wrapped assignment **holds every line the statement spans out of the rewrite rules without suppressing lint diagnostics on it**, so `single-use-variables` still reports `value`. Silencing that lint takes a `# prose: ignore` alongside the skip.
+'''

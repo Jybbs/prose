@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/second_note_climbs_when_the_line_is_full/input.py
+---
+ALPHA_CAP = 2
+# and a second note bound from below
+ZETA_CAP = 1  # an existing trailing note that already runs a fair way along

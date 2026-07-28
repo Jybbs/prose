@@ -3,7 +3,9 @@
 //! each function docstring to its signature-order names, the mirror key
 //! the docstring-entry sort consumes. Positional-or-keyword parameters
 //! never reorder, since no single-file rewrite can keep every caller's
-//! positional binding intact. Only the keyword-only block sorts.
+//! positional binding intact. Only the keyword-only block sorts. A call
+//! keyword bound to an effectful value holds its slot while the inert
+//! keywords around it sort.
 
 use std::{borrow::Cow, collections::HashMap};
 
@@ -21,6 +23,7 @@ use crate::{
         binding::single_name_target,
         docstring::{body_docstring, entry_carrying_sections, rewrite_docstrings},
         edit::{apply_inline_edits, narrowed_replacement},
+        effect::value_is_effectful,
         insert_sorted_by_key,
         orderer::{any_sibling_shares_line, permute_full, reorder_separated, reorder_text},
         params::classify_param,
@@ -41,9 +44,12 @@ impl<'a> LeafCollector<'a> {
         self.try_emit_inline_reorder(names, |a| Some(a.name.as_str()));
     }
 
+    /// Sorts only the keywords binding an inert value.
     fn emit_call(&mut self, c: &'a ExprCall) {
         for chunk in c.arguments.keywords.split(|kw| kw.arg.is_none()) {
-            self.try_emit_inline_reorder(chunk, |kw| kw.arg.as_deref());
+            self.try_emit_inline_reorder(chunk, |kw| {
+                kw.arg.as_deref().filter(|_| !value_is_effectful(&kw.value))
+            });
         }
     }
 
@@ -119,15 +125,14 @@ impl<'a> LeafCollector<'a> {
         }
         let source = self.source;
         let render = |_: usize, block| apply_inline_edits(source, block, &self.edits);
-        // One member per line routes through `reorder_separated` so each
-        // trailing comment travels with its member. A single-line or
-        // atomics-packed group shares lines, so the lighter `reorder_text`
-        // keeps its verbatim gaps.
-        let one_per_line = !any_sibling_shares_line(source, items);
-        let (folded, span) = if one_per_line {
-            reorder_separated(source, items, classify, render)
-        } else {
+        // A single-line or atomics-packed group shares lines, so the lighter
+        // `reorder_text` keeps its verbatim gaps. One member per line routes
+        // through `reorder_separated` so each trailing comment travels with
+        // its member.
+        let (folded, span) = if any_sibling_shares_line(source, items) {
             reorder_text(source, items, classify, render)
+        } else {
+            reorder_separated(source, items, classify, render)
         };
         if let Cow::Owned(text) = folded {
             self.fold_into(span, text);
@@ -403,6 +408,19 @@ mod tests {
         let source = parse(src);
         let (edits, _) = collect_leaf_edits(&source, true, true);
         assert!(edits.is_empty());
+    }
+
+    #[rstest]
+    #[case("foo(b=make(), a=1)\n", "foo(b=make(), a=1)\n")]
+    #[case("foo(z=1, b=make(), a=3)\n", "foo(a=3, b=make(), z=1)\n")]
+    #[case("foo(b=obj.attr, a=other.attr)\n", "foo(a=other.attr, b=obj.attr)\n")]
+    fn collect_leaf_edits_sorts_only_inert_keyword_values(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        let source = parse(src);
+        let (edits, _) = collect_leaf_edits(&source, true, true);
+        assert_eq!(applied_text(&source, edits), expected);
     }
 
     #[test]

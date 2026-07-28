@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/definition_under_a_comment_still_bands/input.py
+---
+_Norm = "x"
+__all__ = ["fft", "fftn"]
+
+
+# the reference implementation both transforms share
+
+def fft(values):
+    return values

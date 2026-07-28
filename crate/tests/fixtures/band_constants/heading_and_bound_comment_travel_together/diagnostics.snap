@@ -1,0 +1,6 @@
+---
+source: crate/tests/diagnostics.rs
+expression: render(&diagnostics)
+input_file: crate/tests/fixtures/band_constants/heading_and_bound_comment_travel_together/input.py
+---
+band-constants@27..91

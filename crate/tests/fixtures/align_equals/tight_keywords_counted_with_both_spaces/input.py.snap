@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_equals/tight_keywords_counted_with_both_spaces/input.py
+---
+configure(
+    label = "docs/annual-summary.html",
+    verbose = True,
+    dry     = False,
+)

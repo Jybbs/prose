@@ -204,7 +204,7 @@ pub(super) fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
 }
 
 /// Collects the as-written diagnostics, and with `validate` guards the
-/// would-be rewrite against an unparseable output.
+/// would-be rewrite against an output that fails to re-parse or compile.
 fn diagnose_only(
     source: Source,
     pipeline: &Pipeline,

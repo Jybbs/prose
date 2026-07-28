@@ -2,7 +2,7 @@
 //! prefix. `docstring_body` accepts any quote style, `triple_quoted_body`
 //! narrows to the canonical `"""` form.
 
-use ruff_python_ast::{StringFlags, StringLiteral};
+use ruff_python_ast::{AnyStringFlags, StringFlags, StringLiteral};
 use ruff_python_trivia::{has_leading_content, leading_indentation};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
@@ -10,9 +10,12 @@ use ruff_text_size::{Ranged, TextRange};
 use crate::source::Source;
 
 /// Body slice between a triple-quoted docstring's opener and closer,
-/// paired with the source range that slice covers.
+/// paired with the source range that slice covers and whether the
+/// literal carries an `r` prefix, which decides whether a backslash in
+/// the slice is an escape or a literal character.
 pub(crate) struct DocstringBody<'a> {
     pub(crate) range: TextRange,
+    pub(crate) raw: bool,
     pub(crate) text: &'a str,
 }
 
@@ -36,6 +39,7 @@ pub(crate) fn docstring_body<'a>(
     let range = lit.content_range();
     Some(DocstringBody {
         range,
+        raw: AnyStringFlags::from(lit.flags).is_raw_string(),
         text: source.slice(range),
     })
 }

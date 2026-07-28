@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Bound Comment Trails Its Constant Inside a Compound Arm"
+
+description = '''
+Banding runs inside each module-scope compound arm, so a comment bound backward there lands after its constant's code at the arm's own indent. The comment block reaches back to its line start, and that leading indent belongs to a line of its own rather than to the gap before a trailing note.
+'''

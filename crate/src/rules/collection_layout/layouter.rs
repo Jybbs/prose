@@ -178,10 +178,7 @@ impl<'a> Layouter<'a> {
     ) -> Option<String> {
         let key = item.key.as_ref()?;
         let key_text = self.source.slice(key);
-        let gap = self
-            .source
-            .slice(TextRange::new(key.end(), item.value.start()));
-        let padding = pre_colon_padding(gap);
+        let padding = pre_colon_padding(self.key_value_gap(key, &item.value));
         let hang_column = item_indent + INDENT_STEP;
         let value_text = self.serialize_expr(&item.value, parent, hang_column, hang_column);
         let hang_prefix = " ".repeat(hang_column);
@@ -218,6 +215,12 @@ impl<'a> Layouter<'a> {
         let inline = self.inline_form(expr);
         (!inline.contains('\n') && column + inline.width() <= self.code_line_length)
             .then_some(inline)
+    }
+
+    /// The source text between a keyed dict entry's `key` and its
+    /// `value`, the span carrying the `:` and the padding around it.
+    fn key_value_gap(&self, key: &Expr, value: &Expr) -> &'a str {
+        self.source.slice(TextRange::new(key.end(), value.start()))
     }
 
     /// Returns the canonical rewrite for `expr`, or `None` to descend
@@ -277,9 +280,7 @@ impl<'a> Layouter<'a> {
         let value_column = indent + key_text.width() + 2;
         let value_text = self.serialize_expr(&item.value, parent, value_column, indent);
         let width = key_text.width() + 2 + value_text.width();
-        let gap = self
-            .source
-            .slice(TextRange::new(key.end(), item.value.start()));
+        let gap = self.key_value_gap(key, &item.value);
         // A rewritten key drops the source slice's alignment padding, so
         // the padded separator and the borrowed round-trip both hold only
         // while the key passes through unchanged.

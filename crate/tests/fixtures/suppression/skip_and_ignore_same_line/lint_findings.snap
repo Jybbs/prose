@@ -1,13 +1,13 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: json
-input_file: tests/fixtures/suppression/skip_and_ignore_same_line/input.py
+input_file: crate/tests/fixtures/suppression/skip_and_ignore_same_line/input.py
 ---
 [
   {
     "code": "reassigned-constants",
     "end_location": {
-      "column": 20,
+      "column": 21,
       "row": 1
     },
     "fix": null,

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Tight Dict Band Is Measured With Both Inserted Spaces"
+
+description = '''
+Each entry sits flush against its `:`, so aligning the band inserts a space before the colon and another after it. Counting both puts the long-valued entry one column past `code-line-length` at the shared column, so it partitions out and sits flush against its own colon under the singleton rule while the two narrower entries align beneath it.
+'''

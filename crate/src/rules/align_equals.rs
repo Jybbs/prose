@@ -21,14 +21,10 @@ use ruff_python_ast::{
     Expr, ExprCall, Parameters, Stmt,
     visitor::{Visitor as AstVisitor, walk_body, walk_expr, walk_stmt},
 };
-use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
-    primitives::{
-        aligner,
-        equal_targets::{self, EqualMember},
-    },
+    primitives::{aligner, equal_targets},
     rule::{Rule, RuleId},
     source::Source,
 };
@@ -65,36 +61,21 @@ struct Visitor<'a> {
 }
 
 impl Visitor<'_> {
-    /// Emits the unheld members of `group` as one fix when at least two
-    /// survive to align, padding each name side to the shared column and
-    /// folding in the [value-side gaps](Self::value_gaps). A lone
-    /// surviving member emits nothing, leaving a single defaulted
-    /// parameter untouched.
-    fn emit_aligned(&mut self, group: &[EqualMember]) {
-        let kept = self
-            .walker
-            .retain_unheld(group.iter().copied(), |m| m.member.line_start);
-        let members: Vec<aligner::Member> = kept.iter().map(|m| m.member).collect();
-        let gaps = self.value_gaps(&kept);
-        self.walker.emit_if_candidate_with_gaps(&members, gaps);
-    }
-
     /// Emits `group` as one fix: the aligner's column when the members
     /// align on distinct lines, a one-space name-side buffer otherwise,
-    /// plus the [value-side gaps](Self::value_gaps) so every row reads as
-    /// `name = value`.
-    fn emit_equal_group(&mut self, group: &[EqualMember]) {
+    /// plus the [value-side gaps](aligner::AlignWalker::value_gaps) so
+    /// every row reads as `name = value`.
+    fn emit_equal_group(&mut self, group: &[aligner::Member]) {
         let source = self.walker.source;
-        let members: Vec<aligner::Member> = group.iter().map(|m| m.member).collect();
-        let name_edits = if aligner::is_alignment_candidate(source, &members) {
-            self.walker.group_edits(&members)
+        let name_edits = if aligner::is_alignment_candidate(source, group) {
+            self.walker.group_edits(group)
         } else {
             group
                 .iter()
-                .filter_map(|m| aligner::space_padding_edit(source, m.member.gap, 1))
+                .filter_map(|m| aligner::space_padding_edit(source, m.gap, 1))
                 .collect()
         };
-        let gaps = self.value_gaps(group);
+        let gaps = self.walker.value_gaps(group);
         self.walker.push_with_gaps(name_edits, gaps);
     }
 
@@ -135,20 +116,8 @@ impl Visitor<'_> {
                 equal_targets::parameter(source, p).into()
             });
         for group in groups {
-            self.emit_aligned(&group);
+            self.walker.emit_unheld(group);
         }
-    }
-
-    /// The value-side gaps for every member in `group` whose value
-    /// shares the operator's line. A gap spanning a line break is
-    /// dropped, leaving a continued value where the source placed it.
-    fn value_gaps(&self, group: &[EqualMember]) -> Vec<TextRange> {
-        let source = self.walker.source;
-        group
-            .iter()
-            .filter(|m| !source.contains_line_break(m.value_gap))
-            .map(|m| m.value_gap)
-            .collect()
     }
 }
 

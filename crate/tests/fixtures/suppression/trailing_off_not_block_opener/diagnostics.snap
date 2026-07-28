@@ -1,10 +1,9 @@
 ---
-source: tests/diagnostics.rs
+source: crate/tests/diagnostics.rs
 expression: render(&diagnostics)
-input_file: tests/fixtures/suppression/trailing_off_not_block_opener/input.py
+input_file: crate/tests/fixtures/suppression/trailing_off_not_block_opener/input.py
 ---
-align-equals@1..10
-align-equals@38..47
+align-equals@1..56
 band-constants@0..59
 miscased-constants@14..19
 miscased-constants@36..38

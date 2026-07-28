@@ -52,7 +52,10 @@ pub(super) fn rewrite_dict_text(
     let item_ranges: Vec<TextRange> = d
         .items
         .iter()
-        .map(|item| TextRange::new(item.start(), item_value_end(source, d, item)))
+        .map(|item| {
+            let value = source.paren_aware_range((&item.value).into(), d.into());
+            TextRange::new(item.start(), value.end())
+        })
         .collect();
     let expanded = multi_line.then(|| block_ranges(source, &item_ranges, d.range()));
     let blocks = expanded.as_deref().unwrap_or(&item_ranges);
@@ -102,15 +105,6 @@ pub(super) fn rewrite_dict_text(
 fn dict_sort_key<'a>(source: &'a Source, item: &DictItem) -> Option<(bool, &'a str)> {
     let key = item.key.as_ref()?;
     Some((is_layoutable(&item.value), source.slice(key)))
-}
-
-/// The end offset of a dict item's value, widened past any parentheses
-/// enclosing it. A multiline reorder splits each entry at this offset, so
-/// excluding the closing parens would shed them into the separator tail.
-fn item_value_end(source: &Source, dict: &ExprDict, item: &DictItem) -> TextSize {
-    source
-        .paren_aware_range((&item.value).into(), dict.into())
-        .end()
 }
 
 /// Returns the new-order slot indices after which a blank-line divider

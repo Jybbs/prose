@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A `__future__` Import Leads Every Section"
+
+description = '''
+A module opens with `from __future__ import annotations` above an unsorted mix of bare, external, and first-party imports. **The future import holds the front while the rest partition into their sections**, the placement Python requires of the statement.
+'''
