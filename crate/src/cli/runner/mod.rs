@@ -6,6 +6,10 @@ use std::{
     sync::Arc,
 };
 
+use anstream::{
+    AutoStream, ColorChoice,
+    stream::{AsLockedWrite, RawStream},
+};
 use anyhow::Context;
 use ruff_notebook::NotebookIndex;
 use ruff_python_ast::PySourceType;
@@ -29,7 +33,7 @@ mod process;
 mod report;
 mod resolve;
 
-use diff::write_rewrite_diff;
+use diff::{Heading, write_rewrite_diff};
 use process::{apply_rewrite, process_path, process_paths, process_stdin, read_stdin};
 use report::{emit_outcomes, emitter_summary, finish, render_summary, status_from_outcomes};
 use resolve::{ConfigResolver, Resolved};
@@ -117,12 +121,14 @@ pub(crate) fn check_with_io<R: Read, O: Write, E: Write>(
     Ok(status)
 }
 
-pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
+/// Runs `format`, writing formatted source and undecorated diffs to the
+/// raw stream beneath `stdout` and every other surface through `stdout`.
+pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
     args: FormatArgs,
     verbose: bool,
     present: &Presentation,
     stdin: R,
-    mut stdout: O,
+    mut stdout: AutoStream<O>,
     mut stderr: E,
 ) -> anyhow::Result<ExitStatus> {
     let setup = match build_run(args.common.rules, args.common.no_cache) {
@@ -137,19 +143,12 @@ pub(crate) fn format_with_io<R: Read, O: Write, E: Write>(
             args.common.output_format,
             present,
             &setup.cwd.pipeline,
-            &mut stdout,
+            stdout,
             &mut stderr,
         );
     }
     if args.diff {
-        format_paths_diff(
-            &args.paths,
-            &setup,
-            verbose,
-            present,
-            &mut stdout,
-            &mut stderr,
-        )
+        format_paths_diff(&args.paths, &setup, verbose, present, stdout, &mut stderr)
     } else {
         format_paths_rewrite(
             &args.paths,
@@ -178,6 +177,18 @@ fn build_run(rules: RuleFilter, no_cache: bool) -> Result<RunSetup, ExitStatus> 
     })
 }
 
+/// Resolves how the diff heads each file, painting the `🧵` line only
+/// where `stdout` carries color through.
+fn diff_heading<O: RawStream>(present: &Presentation, stdout: &AutoStream<O>) -> Heading {
+    if present.decorate_diff() {
+        Heading::Thread {
+            color: stdout.current_choice() != ColorChoice::Never,
+        }
+    } else {
+        Heading::Patch
+    }
+}
+
 /// Resolves which pipeline passes a `format` invocation reads. Plain
 /// text rewrites and `--diff` need `run` alone, whereas a `json`,
 /// `sarif`, or `github` output format also renders the as-written
@@ -190,17 +201,19 @@ fn format_pass(diff: bool, format: OutputFormat) -> Pass {
     }
 }
 
-fn format_paths_diff<O: Write, E: Write>(
+fn format_paths_diff<O: RawStream, E: Write>(
     paths: &[PathBuf],
     setup: &RunSetup,
     verbose: bool,
     present: &Presentation,
-    stdout: &mut O,
+    stdout: AutoStream<O>,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let outcomes = process_paths(paths, |path, source_type| {
         process_path(path, source_type, setup, Pass::Rewrite)
     });
+    let heading = diff_heading(present, &stdout);
+    let mut writer = stdout.into_inner();
     for outcome in &outcomes {
         if let FileOutcome::Done {
             file,
@@ -210,12 +223,12 @@ fn format_paths_diff<O: Write, E: Write>(
         } = outcome
         {
             write_rewrite_diff(
-                stdout,
+                &mut writer,
                 file.name(),
                 file.source_text(),
                 kind,
                 notebook_index.as_deref(),
-                present.decorate_diff(),
+                heading,
             )?;
         }
     }
@@ -254,13 +267,13 @@ fn format_paths_rewrite<O: Write, E: Write>(
     Ok(status)
 }
 
-fn format_stdin<O: Write, E: Write>(
+fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
     input: Result<(String, PySourceType), FileOutcome>,
     diff: bool,
     format: OutputFormat,
     present: &Presentation,
     pipeline: &Pipeline,
-    writer: &mut O,
+    mut writer: AutoStream<O>,
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let (outcome, original) = match input {
@@ -285,13 +298,14 @@ fn format_stdin<O: Write, E: Write>(
     {
         if diff {
             if let Rewrite::Changed(kind) = rewrite {
+                let heading = diff_heading(present, &writer);
                 write_rewrite_diff(
-                    writer,
+                    &mut writer.into_inner(),
                     "<stdin>",
                     &original,
                     kind,
                     notebook_index.as_deref(),
-                    present.decorate_diff(),
+                    heading,
                 )?;
             }
         } else if format.is_text() {
@@ -300,9 +314,12 @@ fn format_stdin<O: Write, E: Write>(
                 // A non-Python notebook skips the rewrite, so echo stdin verbatim.
                 Rewrite::Skipped | Rewrite::Unchanged => original.as_bytes(),
             };
-            writer.write_all(to_write).context("writing stdout")?;
+            writer
+                .into_inner()
+                .write_all(to_write)
+                .context("writing stdout")?;
         } else {
-            emit_outcomes(outcomes, format, writer, &summary)?;
+            emit_outcomes(outcomes, format, &mut writer, &summary)?;
         }
     }
     let mode = if diff { Mode::Preview } else { Mode::Reformat };
@@ -342,15 +359,17 @@ fn stdin_source_type(filename: Option<&Path>) -> PySourceType {
 
 #[cfg(test)]
 mod tests {
-    use std::assert_matches;
-    use std::io::{self, Cursor};
+    use std::{assert_matches, io};
 
+    use rstest::rstest;
     use tempfile::TempDir;
 
     use super::*;
-    use crate::cli::args::RunArgs;
-    use crate::rule::RuleId;
-    use crate::testing::write_pyproject;
+    use crate::{
+        cli::args::RunArgs,
+        rule::RuleId,
+        testing::{FailingWriter, write_pyproject},
+    };
 
     /// The unaligned two-assignment source the runner tests reuse.
     /// `ALPHA` is SCREAMING_CASE and `B` a single character, so the lint
@@ -397,27 +416,51 @@ mod tests {
     }
 
     fn run_check(args: CheckArgs) -> ExitStatus {
-        check_with_io(
-            args,
-            false,
-            &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs without anyhow")
+        run_check_io(args, io::empty()).0
+    }
+
+    fn run_check_io<R: Read>(args: CheckArgs, stdin: R) -> (ExitStatus, Vec<u8>) {
+        let mut stdout = Vec::new();
+        let status = check_with_io(args, false, &windowed(), stdin, &mut stdout, io::sink())
+            .expect("runs without anyhow");
+        (status, stdout)
     }
 
     fn run_format(args: FormatArgs) -> ExitStatus {
+        run_format_io(args, io::empty()).0
+    }
+
+    /// Runs `format` against a stdout whose writes fail with a broken
+    /// pipe, returning the `io::ErrorKind` the propagated error carries.
+    fn run_format_broken_pipe<R: Read>(args: FormatArgs, stdin: R) -> Option<io::ErrorKind> {
+        let mut failing = FailingWriter(io::ErrorKind::BrokenPipe);
+        let writer: &mut dyn Write = &mut failing;
         format_with_io(
             args,
             false,
             &windowed(),
-            io::empty(),
-            Vec::<u8>::new(),
+            stdin,
+            AutoStream::never(writer),
             io::sink(),
         )
-        .expect("runs without anyhow")
+        .expect_err("writer failure propagates")
+        .downcast_ref::<io::Error>()
+        .map(io::Error::kind)
+    }
+
+    /// Runs `format` against `stdin` through a stripping stdout.
+    fn run_format_io<R: Read>(args: FormatArgs, stdin: R) -> (ExitStatus, Vec<u8>) {
+        let mut stdout = Vec::new();
+        let status = format_with_io(
+            args,
+            false,
+            &windowed(),
+            stdin,
+            AutoStream::never(&mut stdout),
+            io::sink(),
+        )
+        .expect("runs without anyhow");
+        (status, stdout)
     }
 
     fn windowed() -> Presentation {
@@ -440,16 +483,8 @@ mod tests {
 
         let mut args = check_args(vec![broken.join("a.py"), plain.join("b.py")], false);
         args.common.output_format = OutputFormat::Json;
-        let mut stdout = Vec::new();
-        let status = check_with_io(
-            args,
-            false,
-            &windowed(),
-            io::empty(),
-            &mut stdout,
-            io::sink(),
-        )
-        .expect("runs without anyhow");
+
+        let (status, stdout) = run_check_io(args, io::empty());
 
         assert_eq!(status, ExitStatus::ConfigError);
         let out = String::from_utf8(stdout).expect("utf-8");
@@ -506,31 +541,16 @@ mod tests {
     }
 
     #[test]
-    fn check_stdin_returns_clean_when_pipeline_is_empty() {
-        let stdin = Cursor::new(b"x = 1\n".to_vec());
-        let status = check_with_io(
-            check_args(Vec::new(), true),
-            false,
-            &windowed(),
-            stdin,
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs successfully");
+    fn check_stdin_returns_clean_for_canonical_source() {
+        let (status, _) = run_check_io(check_args(Vec::new(), true), b"x = 1\n".as_slice());
+
         assert_eq!(status, ExitStatus::Clean);
     }
 
     #[test]
     fn check_stdin_with_read_failure_returns_config_error() {
-        let status = check_with_io(
-            check_args(Vec::new(), true),
-            false,
-            &windowed(),
-            ErrorReader,
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs without anyhow");
+        let (status, _) = run_check_io(check_args(Vec::new(), true), ErrorReader);
+
         assert_eq!(status, ExitStatus::ConfigError);
     }
 
@@ -545,17 +565,45 @@ mod tests {
 
     #[test]
     fn check_unparseable_stdin_returns_parse_error() {
-        let stdin = Cursor::new(b"def foo(".to_vec());
-        let status = check_with_io(
-            check_args(Vec::new(), true),
-            false,
-            &windowed(),
-            stdin,
-            Vec::<u8>::new(),
-            io::sink(),
-        )
-        .expect("runs without anyhow");
+        let (status, _) = run_check_io(check_args(Vec::new(), true), b"def foo(".as_slice());
+
         assert_eq!(status, ExitStatus::ParseError);
+    }
+
+    #[test]
+    fn diff_heading_falls_back_to_the_patch_header_off_a_tty() {
+        let present = Presentation {
+            quiet: false,
+            stdout_tty: false,
+        };
+
+        assert_matches!(
+            diff_heading(&present, &AutoStream::always_ansi(Vec::new())),
+            Heading::Patch
+        );
+    }
+
+    #[rstest]
+    #[case::color_on(true, true)]
+    #[case::color_off(false, false)]
+    fn diff_heading_paints_the_thread_line_only_under_color(
+        #[case] color: bool,
+        #[case] painted: bool,
+    ) {
+        let stdout = if color {
+            AutoStream::always_ansi(Vec::new())
+        } else {
+            AutoStream::never(Vec::new())
+        };
+        let present = Presentation {
+            quiet: false,
+            stdout_tty: true,
+        };
+
+        assert_matches!(
+            diff_heading(&present, &stdout),
+            Heading::Thread { color } if color == painted
+        );
     }
 
     #[test]
@@ -604,7 +652,19 @@ mod tests {
     }
 
     #[test]
-    fn format_paths_does_not_rewrite_when_pipeline_is_empty() {
+    fn format_paths_diff_propagates_a_broken_pipe() {
+        let (tmp, _file) = fixture(UNALIGNED);
+
+        let kind = run_format_broken_pipe(
+            format_args(vec![tmp.path().to_path_buf()], false, true),
+            io::empty(),
+        );
+
+        assert_eq!(kind, Some(io::ErrorKind::BrokenPipe));
+    }
+
+    #[test]
+    fn format_paths_leaves_a_canonical_file_unchanged() {
         let (tmp, file) = fixture("x = 1\n");
 
         let status = run_format(format_args(vec![tmp.path().to_path_buf()], false, false));
@@ -620,16 +680,8 @@ mod tests {
 
         let mut args = format_args(vec![tmp.path().to_path_buf()], false, false);
         args.common.output_format = OutputFormat::Json;
-        let mut stdout = Vec::new();
-        let status = format_with_io(
-            args,
-            false,
-            &windowed(),
-            io::empty(),
-            &mut stdout,
-            io::sink(),
-        )
-        .expect("runs successfully");
+
+        let (status, stdout) = run_format_io(args, io::empty());
 
         assert_eq!(status, ExitStatus::Clean);
         assert!(!stdout.is_empty());
@@ -648,18 +700,18 @@ mod tests {
     }
 
     #[test]
+    fn format_stdin_diff_propagates_a_broken_pipe() {
+        let kind =
+            run_format_broken_pipe(format_args(Vec::new(), true, true), UNALIGNED.as_bytes());
+
+        assert_eq!(kind, Some(io::ErrorKind::BrokenPipe));
+    }
+
+    #[test]
     fn format_stdin_diff_writes_unified_hunks() {
-        let stdin = Cursor::new(UNALIGNED.as_bytes().to_vec());
-        let mut stdout = Vec::new();
-        let status = format_with_io(
-            format_args(Vec::new(), true, true),
-            false,
-            &windowed(),
-            stdin,
-            &mut stdout,
-            io::sink(),
-        )
-        .expect("runs successfully");
+        let (status, stdout) =
+            run_format_io(format_args(Vec::new(), true, true), UNALIGNED.as_bytes());
+
         assert_eq!(status, ExitStatus::FormatChange);
         let out = String::from_utf8(stdout).expect("utf-8");
         assert!(out.contains("@@"));
@@ -667,46 +719,61 @@ mod tests {
 
     #[test]
     fn format_stdin_emits_json_when_format_is_non_text() {
-        let stdin = Cursor::new(UNALIGNED.as_bytes().to_vec());
-        let mut stdout = Vec::new();
         let mut args = format_args(Vec::new(), true, false);
         args.common.output_format = OutputFormat::Json;
-        let status = format_with_io(args, false, &windowed(), stdin, &mut stdout, io::sink())
-            .expect("runs successfully");
+
+        let (status, stdout) = run_format_io(args, UNALIGNED.as_bytes());
+
         assert_eq!(status, ExitStatus::Clean);
         assert!(!stdout.is_empty());
     }
 
     #[test]
-    fn format_stdin_prints_input_verbatim_when_pipeline_is_empty() {
-        let stdin = Cursor::new(b"x = 1\n".to_vec());
-        let mut stdout = Vec::new();
-        let status = format_with_io(
-            format_args(Vec::new(), true, false),
-            false,
-            &windowed(),
-            stdin,
-            &mut stdout,
-            io::sink(),
-        )
-        .expect("runs successfully");
+    fn format_stdin_prints_canonical_source_verbatim() {
+        let (status, stdout) =
+            run_format_io(format_args(Vec::new(), true, false), b"x = 1\n".as_slice());
+
         assert_eq!(status, ExitStatus::Clean);
         assert_eq!(stdout, b"x = 1\n");
     }
 
     #[test]
+    fn format_stdin_propagates_a_broken_pipe_from_the_raw_stream() {
+        let kind =
+            run_format_broken_pipe(format_args(Vec::new(), true, false), UNALIGNED.as_bytes());
+
+        assert_eq!(kind, Some(io::ErrorKind::BrokenPipe));
+    }
+
+    #[test]
     fn format_stdin_with_read_failure_returns_config_error() {
-        let mut stdout = Vec::new();
-        let status = format_with_io(
-            format_args(Vec::new(), true, false),
-            false,
-            &windowed(),
-            ErrorReader,
-            &mut stdout,
-            io::sink(),
-        )
-        .expect("runs without anyhow");
+        let (status, _) = run_format_io(format_args(Vec::new(), true, false), ErrorReader);
+
         assert_eq!(status, ExitStatus::ConfigError);
+    }
+
+    #[rstest]
+    #[case::bell("x = \"a\u{7}b\"\n")]
+    #[case::comment("# note \u{1b}here\nx = 1\n")]
+    #[case::embedded("x = \"AB\u{1b}CD\"\n")]
+    #[case::lone("x = \"\u{1b}\"\n")]
+    fn format_stdin_writes_escape_bytes_to_the_raw_stream(#[case] source: &str) {
+        let (status, stdout) =
+            run_format_io(format_args(Vec::new(), true, false), source.as_bytes());
+
+        assert_eq!(status, ExitStatus::Clean);
+        assert_eq!(stdout, source.as_bytes());
+    }
+
+    #[test]
+    fn format_stdin_writes_the_rewrite_to_the_raw_stream() {
+        let source = "AB = \"X\u{1b}Y\"\nc = 2\n";
+
+        let (status, stdout) =
+            run_format_io(format_args(Vec::new(), true, false), source.as_bytes());
+
+        assert_eq!(status, ExitStatus::Clean);
+        assert_eq!(stdout, "AB = \"X\u{1b}Y\"\nc  = 2\n".as_bytes());
     }
 
     #[test]
