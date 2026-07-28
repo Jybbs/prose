@@ -1,8 +1,9 @@
 import { defineLoader } from 'vitepress'
 
-import { conditionalFetch } from '../shared/conditional-fetch'
-import { PYPI_PACKAGE }     from '../shared/constants'
-import { fetchCacheDir }    from '../shared/paths'
+import { conditionalFetch }        from '../shared/conditional-fetch'
+import { PYPI_PACKAGE }            from '../shared/constants'
+import { crateDir, fetchCacheDir } from '../shared/paths'
+import { readCargoVersion }        from '../shared/version'
 
 export interface PyPIRelease {
   date      : string
@@ -25,6 +26,7 @@ interface PyPIPayload {
   releases : Record<string, readonly PyPIReleaseFile[]>
 }
 
+const CRATE     = crateDir(import.meta.url)
 const ENDPOINT  = `https://pypi.org/pypi/${PYPI_PACKAGE}/json`
 const MONTH_FMT = new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'UTC' })
 
@@ -34,20 +36,18 @@ function projectUrl(version: string): string {
 
 function render(version: string, date: string): PyPIRelease {
   const d     = new Date(date)
-  const month = Number.isNaN(d.getTime()) ? '—' : MONTH_FMT.format(d).toUpperCase()
+  const dated = !Number.isNaN(d.getTime())
   return {
     date,
-    month,
+    month     : dated ? MONTH_FMT.format(d).toUpperCase() : '—',
     url       : projectUrl(version),
     version,
-    year      : date.slice(0, 4),
-    yearShort : date.slice(2, 4)
+    year      : dated ? date.slice(0, 4) : '—',
+    yearShort : dated ? date.slice(2, 4) : '—'
   }
 }
 
-const FALLBACK: readonly PyPIRelease[] = (
-  [['0.8.1', '2026-07-16'], ['0.8.0', '2026-07-13']] as const
-).map(([version, date]) => render(version, date))
+const FALLBACK: readonly PyPIRelease[] = [render(readCargoVersion(CRATE), '')]
 
 function compareDesc(a: PyPIRelease, b: PyPIRelease): number {
   return b.date.localeCompare(a.date)

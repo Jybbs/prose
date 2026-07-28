@@ -81,7 +81,7 @@ function settle<T>(
   stored : FetchStore<T> | null,
   reason : string
 ): T {
-  const note = stored ? 'keeping the last-good payload' : 'seeding the static fallback'
+  const note = stored ? 'keeping the last-good payload' : 'seeding the fallback'
   console.warn(`[data:${source.key}] ${reason}, ${note}`)
   return stored ? stored.payload : source.fallback
 }

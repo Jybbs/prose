@@ -1,16 +1,35 @@
-import fs   from 'node:fs'
-import path from 'node:path'
+import fs                from 'node:fs'
+import os                from 'node:os'
+import path              from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 import * as paths from '../../lib/shared/paths'
 
 const meta = import.meta.url
 
 describe('repoRoot', () => {
-  it('walks up to the directory holding .mise/config.toml', () => {
-    expect(fs.existsSync(path.join(paths.repoRoot(meta), '.mise', 'config.toml'))).toBe(true)
+  let dir: string
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prose-root-'))
   })
 
-  it('throws when no .mise/config.toml ancestor exists', () => {
+  afterEach(() => {
+    fs.rmSync(dir, { force: true, recursive: true })
+  })
+
+  it('walks up to the directory holding .git', () => {
+    expect(fs.existsSync(path.join(paths.repoRoot(meta), '.git'))).toBe(true)
+  })
+
+  it('stops at the nearest ancestor carrying .git', () => {
+    fs.writeFileSync(path.join(dir, '.git'), '')
+    const nested = path.join(dir, 'a', 'b')
+    fs.mkdirSync(nested, { recursive: true })
+    expect(paths.repoRoot(pathToFileURL(path.join(nested, 'probe.ts')).href)).toBe(dir)
+  })
+
+  it('throws when no .git ancestor exists', () => {
     expect(() => paths.repoRoot('file:///')).toThrow(/repo root not found/)
   })
 })
